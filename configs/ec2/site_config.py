@@ -95,7 +95,7 @@ site_config = {
     'pointing_calibration_on_startup': False,
     'periodic_focus_time' : 0.5, # This is a time, in hours, over which to bypass automated focussing (e.g. at the start of a project it will not refocus if a new project starts X hours after the last focus)
     'stdev_fwhm' : 0.5, # This is the expected variation in FWHM at a given telescope/camera/site combination. This is used to check if a fwhm is within normal range or the focus has shifted
-    'focus_exposure_time': 20, # Exposure time in seconds for exposure image
+    'focus_exposure_time': 10, # Exposure time in seconds for exposure image
 
     'focus_trigger' : 5.0, # What FWHM increase is needed to trigger an autofocus
     'solve_nth_image' : 10, # Only solve every nth image
@@ -187,7 +187,7 @@ site_config = {
             'eve_screen_flat_dur': 1.0,   #  hours Duration, prior to next.
             'operations_begin':  -1.0,   #  - hours from Sunset
             'eve_cooldown_offset': -.99,   #  - hours beforeSunset
-            'eve_sky_flat_offset':  0.5,   #  - hours beforeSunset
+            'eve_sky_flat_offset':  0.25,   #  - hours beforeSunset
             'morn_sky_flat_offset':  0.4,   #  + hours after Sunrise
             'morning_close_offset':  0.41,   #  + hours after Sunrise
             'operations_end':  0.42,
@@ -214,7 +214,10 @@ site_config = {
             'west_clutch_dec_correction': 0.0, #
             'east_flip_ra_correction':  0.0, #
             'east_flip_dec_correction': 0.0,  #  #
+            'home_after_unpark' : True,
             'permissive_mount_reset' : 'yes', # if this is set to yes, it will reset the mount at startup and when coordinates are out significantly
+            'lowest_acceptable_altitude' : -5.0, # Below this altitude, it will automatically try to home and park the scope to recover.
+            'time_inactive_until_park' : 3600.0, # How many seconds of inactivity until it will park the telescope
             'settings': {
 			    'latitude_offset': 0.0,     #Decimal degrees, North is Positive   These *could* be slightly different than site.
 			    'longitude_offset': 0.0,   #Decimal degrees, West is negative  #NB This could be an eval( <<site config data>>))
@@ -339,11 +342,11 @@ site_config = {
 			'com_port':  'COM9',
             #F4.9 setup
             'start_at_config_reference': True,
-            'use_focuser_temperature': True,
-            'reference':13277,    #  20210313  Nominal at 10C Primary temperature
+            'use_focuser_temperature': False,
+            'reference':13212,    #  20210313  Nominal at 10C Primary temperature
             'ref_temp':  6265.0,    #  Update when pinning reference
             'coef_c': 0,   #  Negative means focus moves out as Primary gets colder
-            'coef_0': 13277,  #  Nominal intercept when Primary is at 0.0 C.
+            'coef_0': 13212,  #  Nominal intercept when Primary is at 0.0 C.
             'coef_date':  '20220914',    #This appears to be sensible result 44 points -13 to 3C'reference':  6431,    #  Nominal at 10C Primary temperature
             # #F9 setup
             # 'reference': 4375,    #   Guess 20210904  Nominal at 10C Primary temperature
@@ -355,7 +358,7 @@ site_config = {
             'maximum': 18000,   #12672 actually
             'step_size': 1,
             'backlash': 0,
-            'throw' : 500,
+            'throw' : 750,
             'unit': 'micron',
             #'unit_conversion': 9.09090909091,
             'unit_conversion': 1.0,
@@ -436,6 +439,7 @@ site_config = {
             "parent": "telescope1",
             "name": "RGGB" ,  # When there is no filter wheel, the filter will be named this.
             'service_date': '20180101',
+            'flat_sky_gain' : 1148,
             "driver":   None,   #"LCO.dual",  #  'ASCOM.FLI.FilterWheel',
             #"driver":   "Maxim.Image",   #"LCO.dual",  #  'ASCOM.FLI.FilterWheel',
             'ip_string': None,
@@ -470,13 +474,39 @@ site_config = {
 
             'settings': {
                 'is_osc' : True,
+                'osc_brightness_enhance' : 1.0,
+                'osc_contrast_enhance' : 1.3,
+                'osc_saturation_enhance' : 2.0,
+                'osc_colour_enhance' : 1.5,
+                'osc_sharpness_enhance' : 1.5,
+                
+                # ONLY TRANSFORM THE FITS IF YOU HAVE
+                # A DATA-BASED REASON TO DO SO.....
+                # USUALLY TO GET A BAYER GRID ORIENTATED CORRECTLY
+                # ***** ONLY ONE OF THESE SHOULD BE ON! *********
+                'transpose_fits' : False,
+                'flipx_fits' : False,
+                'flipy_fits' : False,
+                'rotate180_fits' : False, # This also should be flipxy!
+                'rotate90_fits' : False,
+                'rotate270_fits' : False,
+                
+                # HERE YOU CAN FLIP THE IMAGE TO YOUR HEARTS DESIRE
+                # HOPEFULLY YOUR HEARTS DESIRE IS SIMILAR TO THE
+                # RECOMMENDED DEFAULT DESIRE OF PTR
+                'transpose_jpeg' : False,
+                'flipx_jpeg' : False,
+                'flipy_jpeg' : False,
+                'rotate180_jpeg' : False,
+                'rotate90_jpeg' : False,
+                'rotate270_jpeg' : False,
                 'osc_bayer' : 'RGGB',
                 'crop_preview': False,
                 'crop_preview_ybottom': 1,
                 'crop_preview_ytop': 1,
                 'crop_preview_xleft': 1,
                 'crop_preview_xright': 1,
-                'temp_setpoint': -10,   #Updated from -18 WER 20220914 Afternoon
+                'temp_setpoint': -5,   #Updated from -18 WER 20220914 Afternoon
                 'calib_setpoints': [-35,-30, -25, -20, -15, -10 ],  #  Should vary with season?
                 'day_warm': False,
                 'cooler_on': True,
@@ -511,11 +541,11 @@ site_config = {
                 'trim_sec': ['[1:9576, 1:6388]', '[1:4788, 1:3194]', '[1:3192, 1:2129]', '[1:2394, 1:1597]'],
                 'x_pixel':  6,
                 'y_pixel':  6,
-                'pix_scale': [1.569],
+                
                 'CameraXSize' : 4096,
                 'CameraYSize' : 4096,
-                'MaxBinX' : 2,
-                'MaxBinY' : 2,
+                #'MaxBinX' : 2,
+                #'MaxBinY' : 2,
                 'StartX' : 1,
                 'StartY' : 1,
 
@@ -526,24 +556,23 @@ site_config = {
                 'north_offset': 0.0,    #  These three are normally 0.0 for the primary telescope
                 'east_offset': 0.0,     #  Not sure why these three are even here.
                 'rotation': 0.0,        #  Probably remove.
-                'min_exposure': 0.2,
+                'min_exposure': 0.02,
                 'max_exposure': 3600,
                 'can_subframe':  True,
                 'min_subframe':  [128, 128],
-                'bin_modes':  [[1, 1, 0.269]], #  , [2, 2, 2.13], [3, 3, 3.21], [4, 4, 4.27]],   #Meaning no binning choice if list has only one entry, default should be first.
-                'default_bin':  [1, 1, 0.269],    #  Matched to seeing situation by owner
-                'maximum_bin':  [1, 1, 0.269],    #  Matched to seeing situation by owner
-                'cosmics_at_default' : 'yes',
-                'cosmics_at_maximum' : 'yes',
-                'bin_enable': ['1 1'],
-                'cycle_time':  [2, 2, 2, 2],  # 3x3 requires a 1, 1 reaout then a software bin, so slower.
+                'bin_modes':  [[1, 1, 1.59]], #  , [2, 2, 2.13], [3, 3, 3.21], [4, 4, 4.27]],   #Meaning no binning choice if list has only one entry, default should be first.
+                'optimal_bin':  [1, 1, 1.59],    #  Matched to seeing situation by owner
+                'max_res_bin':  [1, 1, 1.59],    #  Matched to seeing situation by owner
+                'do_cosmics' : 'no',
+                'pix_scale': 1.569,
+                'cycle_time':  2,
                 'rbi_delay':  0.,      #  This being zero says RBI is not available, eg. for SBIG.
-                'is_cmos':  False,
-                'is_color':  False,
-                'bayer_pattern':  None,    #  'RGGB" is a valid string in camera is color.
+                'is_cmos':  True,
+                'is_color':  True,
+                'bayer_pattern':  'RGGB',    #  'RGGB" is a valid string in camera is color.
                 'can_set_gain':  True,
-                'reference_gain': [2., 4., 18., 32.],     #  One val for each binning. SWAG!
-                'reference_noise': [10, 10, 10, 10],    #  All SWAGs right now!
+                'reference_gain': 2.0,     #  One val for each binning. SWAG!
+                'reference_noise': 10.0,    #  All SWAGs right now!
 
                 'reference_dark': [0.0, 0.0, 0.0, 0.0],     #  Might these best be pedastal values?  NO!
                                     #hdu.header['RDMODE'] = (self.config['camera'][self.name]['settings']['read_mode'], 'Camera read mode')
@@ -554,15 +583,20 @@ site_config = {
                 'readout_speed': 0.4,
                 'readout_seconds': 2,
                 'smart_stack_exposure_time' : 10,
-                'saturate':  65000,    # e-.  This is a close guess, not measured, but taken from data sheet.
+                'saturate': 65000,    # e-.  This is a close guess, not measured, but taken from data sheet.
                 'max_linearity': 65000,
-                'fullwell_capacity': [65000, 65000, 65000, 65000],  #e-.   We need to sort out the units properly NB NB NB
+                'fullwell_capacity': 65000,  #e-.   We need to sort out the units properly NB NB NB
                 'areas_implemented': ["Full",'4x4d', "600%", "500%", "450%", "300%", "220%", "150%", "133%", "Full", "Sqr", '71%', '50%',  '35%', '25%', '12%'],
                 'default_area':  "Full",
                 'default_rotation': 0.0000,
-                'flat_bin_spec': '1,1',    #Default binning for flats
                 'has_darkslide':  False,
                 'darkslide_com':  None,
+                'flat_bin_spec': ['1,1'],    #Default binning for flats
+                'bias_dark_bin_spec': ['1,1'],    #Default binning for flats
+                'bin_enable': ['1 1'],
+                'dark_length' : 900,
+                'bias_count' : 10,
+                'dark_count' : 10,
                 
                 'shutter_type': "Electronic",
                 'has_screen': True,

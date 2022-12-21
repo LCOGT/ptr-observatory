@@ -1,4 +1,5 @@
-""""
+\
+    """"
 IMPORTANT TODOs:
 
 WER 20211211
@@ -25,22 +26,14 @@ import shutil
 import astroalign as aa
 from astropy.io import fits
 from astropy.nddata import block_reduce
+from astropy.utils.data import check_download_cache
 from dotenv import load_dotenv
 import numpy as np
 import redis  # Client, can work with Memurai
 
 import requests
-# from requests.adapters import HTTPAdapter
-# from requests.packages.urllib3.util.retry import Retry
-# retry_strategy = Retry(
-#     total=10, backoff_factor=0.1
-# )
-# adapter = HTTPAdapter(max_retries=retry_strategy)
-# requests = requests.Session()
 
-
-
-import sep
+#import sep
 from skimage.io import imsave
 from skimage.transform import resize
 import func_timeout
@@ -65,7 +58,7 @@ from planewave import platesolve
 import ptr_events
 from ptr_utility import plog
 
-from PIL import Image
+from PIL import Image, ImageEnhance
 
 # The ingester should only be imported after environment variables are loaded in.
 load_dotenv(".env")
@@ -189,7 +182,7 @@ class Observatory:
             shutil.rmtree(g_dev["cam"].site_path + "smartstacks")
         except:
             print ("problems with removing the smartstacks directory... usually a file is open elsewhere")
-        time.sleep(20)
+        time.sleep(3)
         if not os.path.exists(g_dev["cam"].site_path + "smartstacks"):
             os.makedirs(g_dev["cam"].site_path + "smartstacks")
 
@@ -222,6 +215,11 @@ class Observatory:
         self.fast_queue_thread = threading.Thread(target=self.fast_to_aws, args=())
         self.fast_queue_thread.start()
 
+        self.slow_camera_queue = queue.PriorityQueue(maxsize=0)
+        self.slow_camera_queue_thread = threading.Thread(target=self.slow_camera_process, args=())
+        self.slow_camera_queue_thread.start()
+
+        
 
         # Set up command_queue for incoming jobs
         self.cmd_queue = queue.Queue(
@@ -243,10 +241,27 @@ class Observatory:
         self.reset_last_reference()
         self.env_exists = os.path.exists(os.getcwd() + '\.env')  # Boolean, check if .env present
 
+
+        # If mount is permissively set, reset mount reference
+        # This is necessary for SRO and it seems for ECO
+        # I actually think it may be necessary for all telescopes
+        # Not all who wander are lost.... but those that point below altitude -10 probably are.
+        if self.config["mount"]["mount1"]["permissive_mount_reset"] == "yes":
+            g_dev["mnt"].reset_mount_reference()
+
+
+        # Keep track of how long it has been since the last activity
+        self.time_since_last_slew_or_exposure = time.time()
+
+        # Only poll the broad safety checks (altitude and inactivity) every 5 minutes
+        self.time_since_safety_checks=time.time()
+
         # Need to set this for the night log
         #g_dev['foc'].set_focal_ref_reset_log(self.config["focuser"]["focuser1"]["reference"])
         # Send the config to AWS. TODO This has faulted.
         self.update_config()   #This is the never-ending control loop
+
+
 
     def set_last_reference(self, delta_ra, delta_dec, last_time):
         mnt_shelf = shelve.open(self.site_path + "ptr_night_shelf/" + "last")
@@ -319,6 +334,9 @@ class Observatory:
                 # Add the instantiated device to the collection of all devices.
                 self.all_devices[dev_type][name] = device
         plog("Finished creating devices.")
+        
+        
+       
 
     def update_config(self):
         """Sends the config to AWS."""
@@ -400,8 +418,8 @@ class Observatory:
                                 "Pending reductions and transfers to the PTR Archive are not affected."
                             )
                             # Now we need to cancel possibly a pending camera cycle or a
-                            # script running in the sequencer.  NOTE a stop or cancel empties outgoing queue at AWS side and only
-                            # a Cancel/Stop action is sent.  But we need to same any subsequent commands.
+                            # script running in the sequencer.  NOTE a stop or cancel empties outgoing queue at AWS side and 
+                            # only a Cancel/Stop action is sent.  But we need to same any subsequent commands.
                             try:
                                 if g_dev["cam"].exposure_busy:
                                     
@@ -555,7 +573,7 @@ class Observatory:
         loud = False
         if bpt:
             print('UpdateStatus bpt was invoked.')
-            breakpoint()
+            #breakpoint()
 
         # Wait a bit between status updates
         while time.time() < self.time_last_status + self.status_interval:
@@ -695,6 +713,81 @@ class Observatory:
         if self.status_count > 1:  # Give time for status to form
             g_dev["seq"].manager()  # Go see if there is something new to do.
         
+        # An important check to make sure equatorial telescopes are pointed appropriately
+        # above the horizon. SRO and ECO have shown that it is possible to get entirely
+        # confuzzled and take images of the dirt. This should save them from this fate.
+        # Also it should generically save any telescope from pointing weirdly down
+        # or just tracking forever after being left tracking for far too long.
+        #
+        # Also an area to put things to irregularly check if things are still connected, e.g. cooler
+        #
+        # Probably we don't want to run these checkes EVERY status update, just every 5 minutes
+        if time.time() - self.time_since_safety_checks > 300:
+            self.time_since_safety_checks=time.time()
+            
+            # Check that the mount hasn't tracked too low or an odd slew hasn't sent it pointing to the ground.
+            try:
+                mount_altitude=g_dev['mnt'].mount.Altitude
+                lowest_acceptable_altitude= self.config['mount']['mount1']['lowest_acceptable_altitude'] 
+                if mount_altitude < lowest_acceptable_altitude:
+                    print ("Altitude too low! " + str(mount_altitude) + ". Parking scope for safety!")
+                    if not g_dev['mnt'].mount.AtPark:  
+                        g_dev['mnt'].home_command()
+                        g_dev['mnt'].park_command()  
+                        # Reset mount reference because thats how it probably got pointing at the dirt in the first place!
+                        if self.config["mount"]["mount1"]["permissive_mount_reset"] == "yes":
+                            g_dev["mnt"].reset_mount_reference()
+            except Exception as e:
+                print (traceback.format_exc())
+                print (e)
+                breakpoint()
+                if 'GetAltAz' in str(e) and 'ASCOM.SoftwareBisque.Telescope' in str(e):
+                    print ("The SkyX Altitude detection had an error.")
+                    print ("Usually this is because of a broken connection.")
+                    print ("Waiting 60 seconds then reconnecting")
+                    
+                    time.sleep(60)
+                    
+                    self.mount.Connected = True
+                    #g_dev['mnt'].home_command()
+                
+    
+            # If no activity for an hour, park the scope               
+            if time.time() - self.time_since_last_slew_or_exposure > self.config['mount']['mount1']\
+                                                                                ['time_inactive_until_park']:
+                if not g_dev['mnt'].mount.AtPark:  
+                    print ("Parking scope due to inactivity")
+                    g_dev['mnt'].home_command()
+                    g_dev['mnt'].park_command()
+                    self.time_since_last_slew_or_exposure = time.time()
+                    
+            # Check that cooler is alive
+            #print ("Cooler check")
+            probe = g_dev['cam']._cooler_on()
+            if probe == True:
+                print ("Cooler is still on at " + str(g_dev['cam']._temperature()))            
+            
+            try:
+                probe = g_dev['cam']._cooler_on()
+                if not probe:
+                    g_dev['cam']._set_cooler_on()
+                    plog("Found cooler off.")
+                    try:
+                        g_dev['cam']._connect(False)
+                        g_dev['cam']._connect(True)
+                        g_dev['cam']._set_cooler_on()
+                    except:
+                        plog("Camera cooler reconnect failed.")
+            except Exception as e:
+                plog("\n\nCamera was not connected @ expose entry:  ", e, "\n\n")
+                try:
+                    g_dev['cam']._connect(False)
+                    g_dev['cam']._connect(True)
+                    g_dev['cam']._set_cooler_on()
+                except:
+                    plog("Camera cooler reconnect failed 2nd time.")
+            
+        
 
     def run(self):  # run is a poor name for this function.
         try:
@@ -733,7 +826,7 @@ class Observatory:
                     plog("Got an empty entry in aws_queue.")
                     self.aws_queue.task_done()
                     one_at_a_time = 0
-                    time.sleep(0.2)
+                    #time.sleep(0.2)
                     continue
 
                 # Here we parse the file, set up and send to AWS
@@ -748,18 +841,18 @@ class Observatory:
 
 
                 # Only ingest new large fits.fz files to the PTR archive.
-                print (self.env_exists)
+                #print (self.env_exists)
                 if filename.endswith("-EX00.fits.fz"):
                     with open(filepath, "rb") as fileobj:
-                        print (frame_exists(fileobj))
+                        #print (frame_exists(fileobj))
                         tempPTR=0
                         if self.env_exists == True and (not frame_exists(fileobj)):
-                            print ("attempting ingester")
+                            #print ("attempting ingester")
                             try:
                                 #tt = time.time()
                                 print ("attempting ingest to aws@  ", tt)
                                 upload_file_and_ingest_to_archive(fileobj)
-                                print ("did ingester")
+                                #print ("did ingester")
                                 plog(f"--> To PTR ARCHIVE --> {str(filepath)}")
                                 plog('*.fz ingestion took:  ', round(time.time() - tt, 1), ' sec.')
                                 self.aws_queue.task_done()
@@ -769,7 +862,7 @@ class Observatory:
                             except Exception as e:
                                 print ("couldn't send to PTR archive for some reason")
                                 print (e)
-                                print (print (traceback.format_exc()))
+                                print ((traceback.format_exc()))
                                 tempPTR=0
                         # If ingester fails, send to default S3 bucket.
                         if tempPTR ==0:
@@ -816,6 +909,7 @@ class Observatory:
                     os.remove(filepath)
                 except:
                     pass
+                
                 if (
                     filename[-3:] == "jpg"
                     or filename[-3:] == "txt"
@@ -829,9 +923,155 @@ class Observatory:
 
 
                 one_at_a_time = 0
-                time.sleep(0.1)
+                #3time.sleep(0.1)
             else:
-                time.sleep(0.2)
+                time.sleep(0.5)
+
+
+
+    def slow_camera_process(self):
+        """A place to process non-process dependant images from the camera pile
+        
+        """
+
+        one_at_a_time = 0
+        # This stopping mechanism allows for threads to close cleanly.
+        while True:
+            if (not self.slow_camera_queue.empty()) and one_at_a_time == 0:
+                one_at_a_time = 1
+                slow_process = self.slow_camera_queue.get(block=False)
+                #print (slow_process[0])
+                #print (slow_process[1][0])
+                slow_process=slow_process[1]
+                #print ("********** slow queue : " + str(slow_process[0]) )
+                if slow_process[0] == 'focus':
+                    hdufocus=fits.PrimaryHDU()
+                    hdufocus.data=slow_process[2]                            
+                    hdufocus.header=slow_process[3]
+                    hdufocus.header["NAXIS1"] = hdufocus.data.shape[0]
+                    hdufocus.header["NAXIS2"] = hdufocus.data.shape[1]
+                    hdufocus.writeto(slow_process[1], overwrite=True, output_verify='silentfix')
+
+                    try:
+                        hdufocus.close()
+                    except:
+                        pass                    
+                    del hdufocus
+                
+                if slow_process[0] == 'raw':
+                    saver = 0
+                    saverretries = 0
+                    while saver == 0 and saverretries < 10:
+                        try:
+                            hdu=fits.PrimaryHDU()
+                            hdu.data=slow_process[2]                            
+                            hdu.header=slow_process[3]
+                            hdu.writeto(
+                                slow_process[1], overwrite=True, output_verify='silentfix'
+                            )  # Save full raw file locally
+                            try:
+                                hdu.close()
+                            except:
+                                pass                    
+                            del hdu
+                            saver = 1
+                            
+                        except Exception as e:
+                            plog("Failed to write raw file: ", e)
+                            if "requested" in e and "written" in e:
+                                plog(check_download_cache())
+                            plog(traceback.format_exc())
+                            time.sleep(10)
+                            saverretries = saverretries + 1
+                
+                if slow_process[0] == 'fz_and_send':
+
+                    # Create the fz file ready for BANZAI and the AWS/UI
+                    # Note that even though the raw file is int16,
+                    # The compression and a few pieces of software require float32
+                    # BUT it actually compresses to the same size either way
+                    hdufz = fits.CompImageHDU(
+                        np.array(slow_process[2], dtype=np.float32), slow_process[3]
+                    )
+                    hdufz.verify("fix")
+                    hdufz.header[
+                        "BZERO"
+                    ] = 0  # Make sure there is no integer scaling left over
+                    hdufz.header[
+                        "BSCALE"
+                    ] = 1  # Make sure there is no integer scaling left over
+
+                    # This routine saves the file ready for uploading to AWS
+                    # It usually works perfectly 99.9999% of the time except
+                    # when there is an astropy cache error. It is likely that
+                    # the cache will need to be cleared when it fails, but
+                    # I am still waiting for it to fail again (rare)
+                    saver = 0
+                    saverretries = 0
+                    while saver == 0 and saverretries < 10:
+                        try:
+                            hdufz.writeto(
+                                slow_process[1], overwrite=True, output_verify='silentfix'
+                            )  # Save full fz file locally
+                            saver = 1
+                        except Exception as e:
+                            plog("Failed to write raw fz file: ", e)
+                            if "requested" in e and "written" in e:
+                                plog(check_download_cache())
+                            plog(traceback.format_exc())
+                            time.sleep(10)
+                            saverretries = saverretries + 1
+                    
+                    try: 
+                        hdufz.close()
+                    except:
+                        pass
+                    del hdufz  # remove file from memory now that we are doing with it
+                    
+                    # Send this file up to AWS (THIS WILL BE SENT TO BANZAI INSTEAD, SO THIS IS THE INGESTER POSITION)
+                    if self.config['send_files_at_end_of_night'] == 'no':
+                        g_dev['cam'].enqueue_for_AWS(
+                            26000000, '',slow_process[1]
+                        )
+                        g_dev["obs"].send_to_user(
+                            "An image has been readout from the camera and queued for transfer to the cloud.",
+                            p_level="INFO",
+                        )
+                    #print ("fz done.")
+                
+                if slow_process[0] == 'reduced':
+                    saver = 0
+                    saverretries = 0
+                    while saver == 0 and saverretries < 10:
+                        try:
+                            hdureduced=fits.PrimaryHDU()
+                            hdureduced.data=slow_process[2]                            
+                            hdureduced.header=slow_process[3]
+                            hdureduced.header["NAXIS1"] = hdureduced.data.shape[0]
+                            hdureduced.header["NAXIS2"] = hdureduced.data.shape[1]
+                            hdureduced.data=hdureduced.data.astype("float32")
+                            hdureduced.writeto(
+                                slow_process[1], overwrite=True, output_verify='silentfix'
+                            )  # Save flash reduced file locally
+                            saver = 1
+                        except Exception as e:
+                            plog("Failed to write raw file: ", e)
+                            if "requested" in e and "written" in e:
+
+                                plog(check_download_cache())
+                            plog(traceback.format_exc())
+                            time.sleep(10)
+                            saverretries = saverretries + 1
+                
+                self.slow_camera_queue.task_done()
+                one_at_a_time = 0
+
+            else:
+                time.sleep(0.5)
+                #breakpoint()
+                
+
+
 
     # Note this is a thread!
     def fast_to_aws(self):
@@ -856,7 +1096,7 @@ class Observatory:
                     plog("Got an empty entry in fast_queue.")
                     self.fast_queue.task_done()
                     one_at_a_time = 0
-                    time.sleep(0.2)
+                    #time.sleep(0.2)
                     continue
 
                 # Here we parse the file, set up and send to AWS
@@ -889,9 +1129,9 @@ class Observatory:
 
                 self.fast_queue.task_done()
                 one_at_a_time = 0
-                time.sleep(0.1)
+                #time.sleep(0.1)
             else:
-                time.sleep(0.2)
+                time.sleep(0.05)
 
     def send_to_user(self, p_log, p_level="INFO"):
         url_log = "https://logs.photonranch.org/logs/newlog"
@@ -927,55 +1167,46 @@ class Observatory:
                 ) = self.reduce_queue.get(block=False)
 
                 if paths is None:
-                    time.sleep(0.5)
+                    #time.sleep(0.5)
                     continue
 
-
-                # Each image that is not a calibration frame gets it's focus examined and
-                # Recorded. In the future this is intended to trigger an auto_focus if the
-                # Focus gets wildly worse..
-                # Also the number of sources indicates whether astroalign should run.
-                if not paths["frame_type"] in [
-                    "bias",
-                    "dark",
-                    "flat",
-                    "solar",
-                    "lunar",
-                    "skyflat",
-                    "screen",
-                    "spectrum",
-                    "auto_focus",
-                ]:
-                    img = fits.open(
-                        paths["red_path"] + paths["red_name01"],
-                        ignore_missing_end=True,
-                    )
-                    imgdata=img[0].data.copy()
-                    # Pick up some header items for smartstacking later
-                    ssfilter = str(img[0].header["FILTER"])
-                    ssobject = str(img[0].header["OBJECT"])
-                    ssexptime = str(img[0].header["EXPTIME"])
-                    ssframenumber = str(img[0].header["FRAMENUM"])
-                    img.close()
-                    del img
-                    sstackimghold=np.asarray(imgdata)                    
+                                  
 
                 # SmartStack Section
                 if smartstackid != "no" :
+                    
+                    if not paths["frame_type"] in [
+                        "bias",
+                        "dark",
+                        "flat",
+                        "solar",
+                        "lunar",
+                        "skyflat",
+                        "screen",
+                        "spectrum",
+                        "auto_focus",
+                    ]:
+                        img = fits.open(
+                            paths["red_path"] + paths["red_name01"],
+                            ignore_missing_end=True,
+                        )
+                        imgdata=img[0].data.copy()
+                        # Pick up some header items for smartstacking later
+                        ssfilter = str(img[0].header["FILTER"])
+                        ssobject = str(img[0].header["OBJECT"])
+                        ssexptime = str(img[0].header["EXPTIME"])
+                        ssframenumber = str(img[0].header["FRAMENUM"])
+                        img.close()
+                        del img
+                        sstackimghold=np.array(imgdata)  
 
                     print ("Number of sources just prior to smartstacks: " + str(len(sources)))
                     if len(sources) < 12:
                         print ("skipping stacking as there are not enough sources " + str(len(sources)) +" in this image")
 
-
                     # No need to open the same image twice, just using the same one as SEP.
                     img = sstackimghold.copy()
                     del sstackimghold
-
-                    #plog(img[0].header["FILTER"])
-
-                    #stackHoldheader = img[0].header
-                    #plog(g_dev["cam"].site_path + "smartstacks")
 
                     smartStackFilename = (
                         str(ssobject)
@@ -988,14 +1219,7 @@ class Observatory:
                         + ".npy"
                     )
 
-                    #cleanhdu=fits.PrimaryHDU()
-                    #cleanhdu.data=img
 
-                    #cleanhdr=cleanhdu.header
-                    #cleanhdu.writeto(g_dev["cam"].site_path + "smartstacks/" + smartStackFilename.replace('.npy','.fit'))
-
-                    #plog(smartStackFilename)
-                    #img = np.asarray(img[0].data)
                     # Detect and swap img to the correct endianness - needed for the smartstack jpg
                     if sys.byteorder=='little':
                         img=img.newbyteorder('little').byteswap()
@@ -1011,23 +1235,12 @@ class Observatory:
                         if len(sources) >= 12:
                             # Store original image
                             plog("Storing First smartstack image")
-                            # storedsStack=np.nan_to_num(img)
-                            # backgroundLevel =(np.nanmedian(sep.Background(storedsStack.byteswap().newbyteorder())))
-                            # print (backgroundLevel)
-                            # storedsStack= storedsStack - backgroundLevel
-
                             np.save(
                                 g_dev["cam"].site_path
                                 + "smartstacks/"
                                 + smartStackFilename,
                                 img,
                             )
-
-                            #cleanhdu=fits.PrimaryHDU()
-                            #cleanhdu.data=img
-
-                            #cleanhdr=cleanhdu.header
-                            #cleanhdu.writeto(g_dev["cam"].site_path + "smartstacks/" + smartStackFilename.replace('.npy','.fit'))
 
                         else:
                             print ("Not storing first smartstack image as not enough sources")
@@ -1049,13 +1262,12 @@ class Observatory:
                         plog(datetime.datetime.now())
                         if len(sources) > 12:
                             try:
-                                reprojectedimage, _ = func_timeout.func_timeout (60, aa.register, args=(img, storedsStack), kwargs={"detection_sigma":3, "min_area":9})
-                                #(20, aa.register, args=(img, storedsStack, detection_sigma=3, min_area=9)
-
+                                reprojectedimage, _ = func_timeout.func_timeout (60, aa.register, args=(img, storedsStack),\
+                                                                                 kwargs={"detection_sigma":3, "min_area":9})
                                 # scalingFactor= np.nanmedian(reprojectedimage / storedsStack)
                                 # print (" Scaling Factor : " +str(scalingFactor))
                                 # reprojectedimage=(scalingFactor) * reprojectedimage # Insert a scaling factor
-                                storedsStack = np.asarray((reprojectedimage + storedsStack))
+                                storedsStack = np.array((reprojectedimage + storedsStack))
                                 # Save new stack to disk
                                 np.save(
                                     g_dev["cam"].site_path
@@ -1074,89 +1286,60 @@ class Observatory:
                                 print ("astroalign failed")
                                 print (traceback.format_exc())
                                 reprojection_failed=True
-
-
-                            #except func_timeout.FunctionTimedOut:
-                            #    print ("astroalign Timed Out")
                         else:
                             reprojection_failed=True
 
 
                     if reprojection_failed == True: # If we couldn't make a stack send a jpeg of the original image.
                         storedsStack=img
+                    
 
-
-
-                    if self.config["camera"][self.name]["settings"]["is_osc"]:
-                        print ("interpolating bayer grid for focusing purposes.")
-                        if self.config["camera"][self.name]["settings"]["osc_bayer"] == 'RGGB':                           
+                    if self.config["camera"][g_dev['cam'].name]["settings"]["is_osc"]:
+                        
+                        if self.config["camera"][g_dev['cam'].name]["settings"]["osc_bayer"] == 'RGGB':                           
                             
-                            # Checkerboard collapse for other colours for temporary jpeg
-                            
-                            # Create indexes for B, G, G, R images
-                            
+                            # Checkerboard collapse for other colours for temporary jpeg                            
+                            # Create indexes for B, G, G, R images                            
                             xshape=storedsStack.shape[0]
                             yshape=storedsStack.shape[1]
-                            #print (xshape)
-                            #print (yshape)
-                            
+
                             # B pixels
                             list_0_1 = np.array([ [0,0], [0,1] ])
                             checkerboard=np.tile(list_0_1, (xshape//2, yshape//2))
-                            checkerboard=np.asarray(checkerboard)
+                            checkerboard=np.array(checkerboard)
                             hdublue=(block_reduce(storedsStack * checkerboard ,2))
                             
                             # R Pixels
                             list_0_1 = np.array([ [1,0], [0,0] ])
                             checkerboard=np.tile(list_0_1, (xshape//2, yshape//2))
-                            checkerboard=np.asarray(checkerboard)
+                            checkerboard=np.array(checkerboard)
                             hdured=(block_reduce(storedsStack * checkerboard ,2))
                             
                             # G top right Pixels
                             list_0_1 = np.array([ [0,1], [0,0] ])
                             checkerboard=np.tile(list_0_1, (xshape//2, yshape//2))
-                            checkerboard=np.asarray(checkerboard)
+                            checkerboard=np.array(checkerboard)
                             GTRonly=(block_reduce(storedsStack * checkerboard ,2))
                             
                             # G bottom left Pixels
                             list_0_1 = np.array([ [0,0], [1,0] ])
                             checkerboard=np.tile(list_0_1, (xshape//2, yshape//2))
-                            checkerboard=np.asarray(checkerboard)
+                            checkerboard=np.array(checkerboard)
                             GBLonly=(block_reduce(storedsStack * checkerboard ,2))                                
                             
                             # Sum two Gs together and half them to be vaguely on the same scale
-                            hdugreen = np.asarray(GTRonly + GBLonly)
+                            hdugreen = np.array(GTRonly + GBLonly) / 2
                             del GTRonly
                             del GBLonly
                             del checkerboard
-                            
-
-                            
-                            # Interpolate to make a high resolution version for focussing
-                            # and platesolving
-                            hdufocus.data=demosaicing_CFA_Bayer_bilinear(storedsStack, 'RGGB')[:,:,1]
-                            hdufocus.data=hdufocus.data.astype("float32")
-                            
-                            
 
                         else:
                             print ("this bayer grid not implemented yet")
-
-            
-                    # Resizing the array to an appropriate shape for the jpg and the small fits
-                    iy, ix = storedsStack.shape
-                    if iy == ix:
-                        storedsStack = resize(
-                            storedsStack, (1280, 1280), preserve_range=True
-                        )
-                    else:
-                        storedsStack = resize(
-                            storedsStack,
-                            (int(1536 * iy / ix), 1536),
-                            preserve_range=True,
-                        )  #  We should trim chips so ratio is exact.
-
-                    if self.config["camera"][self.name]["settings"]["is_osc"]:
+                        
+                        
+                        
+                        xshape=hdugreen.shape[0]
+                        yshape=hdugreen.shape[1]      
                         blue_stretched_data_float = Stretch().stretch(hdublue+1000)
                         del hdublue
                         green_stretched_data_float = Stretch().stretch(hdugreen+1000)
@@ -1169,23 +1352,76 @@ class Observatory:
                         rgbArray[..., 0] = red_stretched_data_float*256
                         rgbArray[..., 1] = green_stretched_data_float*256
                         rgbArray[..., 2] = blue_stretched_data_float*256
-                        stretched_data_uint8 = Image.fromarray(rgbArray)
+
                         del red_stretched_data_float
                         del blue_stretched_data_float
                         del green_stretched_data_float
-                        colour_img = Image.fromarray(rgbArray)
-                        ## Resizing the array to an appropriate shape for the jpg and the small fits
-                        iy, ix = colour_img.size
-                        if iy == ix:
-                            colour_img.resize((1280, 1280))
-                        else:
-                            colour_img.resize((int(1536 * iy / ix), 1536))
+                        colour_img = Image.fromarray(rgbArray, mode="RGB")
                         
-                        colour_img.save(
+                       # adjust brightness
+                        brightness=ImageEnhance.Brightness(colour_img)
+                        brightness_image=brightness.enhance(self.config["camera"][g_dev['cam'].name]["settings"]['osc_brightness_enhance'])
+                        del colour_img
+                        del brightness
+                        
+                        # adjust contrast
+                        contrast=ImageEnhance.Contrast(brightness_image)
+                        contrast_image=contrast.enhance(self.config["camera"][g_dev['cam'].name]["settings"]['osc_contrast_enhance'])
+                        del brightness_image
+                        del contrast
+                        
+                        # adjust colour
+                        colouradj=ImageEnhance.Color(contrast_image)
+                        colour_image=colouradj.enhance(self.config["camera"][g_dev['cam'].name]["settings"]['osc_colour_enhance'])
+                        del contrast_image
+                        del colouradj
+                        
+                        # adjust saturation
+                        satur=ImageEnhance.Color(colour_image)
+                        satur_image=satur.enhance(self.config["camera"][g_dev['cam'].name]["settings"]['osc_saturation_enhance'])
+                        del colour_image
+                        del satur
+                        
+                        # adjust sharpness
+                        sharpness=ImageEnhance.Sharpness(satur_image)
+                        final_image=sharpness.enhance(self.config["camera"][g_dev['cam'].name]["settings"]['osc_sharpness_enhance'])
+                        del satur_image
+                        del sharpness
+                        
+                        #colour_img = colour_img.satur(3)
+                        
+                        if self.config["camera"][g_dev['cam'].name]["settings"]["transpose_jpeg"]:
+                            final_image=final_image.transpose(Image.TRANSPOSE)
+                        
+                        ## Resizing the array to an appropriate shape for the jpg and the small fits
+                        iy, ix = final_image.size
+                        if iy == ix:
+                            final_image.resize((1280, 1280))
+                        else:
+                            final_image.resize((int(1536 * iy / ix), 1536))
+                        
+                        
+                            
+                        final_image.save(
                             paths["im_path"] + paths["jpeg_name10"]
                         )
-                        del colour_img
+                        del final_image
+                                
+             
                     else:
+                        # Resizing the array to an appropriate shape for the jpg and the small fits
+                        iy, ix = storedsStack.shape
+                        if iy == ix:
+                            storedsStack = resize(
+                                storedsStack, (1280, 1280), preserve_range=True
+                            )
+                        else:
+                            storedsStack = resize(
+                                storedsStack,
+                                (int(1536 * iy / ix), 1536),
+                                preserve_range=True,
+                            )  #  We should trim chips so ratio is exact.
+                        
                         # Code to stretch the image to fit into the 256 levels of grey for a jpeg
                         stretched_data_float = Stretch().stretch(storedsStack + 1000)
                         del storedsStack
@@ -1214,11 +1450,7 @@ class Observatory:
                             stretched_data_uint8,
                         )
 
-                    #g_dev["cam"].enqueue_for_fastAWS(
-                    #    100, paths["im_path"], paths["jpeg_name10"]
-                    #)
 
-                    #image = (paths["im_path"], paths["jpeg_name10"])
                     self.fast_queue.put((15, (paths["im_path"], paths["jpeg_name10"])), block=False)
 
                     if reprojection_failed == True:
@@ -1236,7 +1468,6 @@ class Observatory:
                             + ", has been sent to the GUI.",
                             p_level="INFO",
                         )
-                    #    )
 
                     plog(datetime.datetime.now())
 
@@ -1247,148 +1478,10 @@ class Observatory:
                         pass
                     del img
 
+                # WE CANNOT SOLVE FOR POINTING IN THE REDUCE THREAD! 
+                # POINTING SOLUTIONS HAVE TO HAPPEN AND COMPLETE IN BETWEEN EXPOSURES AND SLEWS
 
-                # Solve for pointing. Note: as the raw and reduced file are already saved and an fz file
-                # has already been sent up, this is purely for pointing purposes.
-                if not paths["frame_type"] in [
-                    "bias",
-                    "dark",
-                    "flat",
-                    "solar",
-                    "lunar",
-                    "skyflat",
-                    "screen",
-                    "spectrum",
-                    "auto_focus",
-                ]:
-
-                    # check that both enough time and images have past between last solve
-                    if self.images_since_last_solve > self.config[
-                        "solve_nth_image"
-                    ] and (
-                        datetime.datetime.now() - self.last_solve_time
-                    ) > datetime.timedelta(
-                        minutes=self.config["solve_timer"]
-                    ):
-
-                        if smartstackid == "no" and len(sources) > 12:
-                            try:
-
-                                solve = platesolve.platesolve(
-                                    paths["red_path"] + paths["red_name01"], pixscale
-                                )  # 0.5478)
-                                plog(
-                                    "PW Solves: ",
-                                    solve["ra_j2000_hours"],
-                                    solve["dec_j2000_degrees"],
-                                )
-                                target_ra = g_dev["mnt"].current_icrs_ra
-                                target_dec = g_dev["mnt"].current_icrs_dec
-                                solved_ra = solve["ra_j2000_hours"]
-                                solved_dec = solve["dec_j2000_degrees"]
-                                solved_arcsecperpixel = solve["arcsec_per_pixel"]
-                                solved_rotangledegs = solve["rot_angle_degs"]
-                                err_ha = target_ra - solved_ra
-                                err_dec = target_dec - solved_dec
-                                #solved_arcsecperpixel = solve["arcsec_per_pixel"]
-                                #solved_rotangledegs = solve["rot_angle_degs"]
-                                plog(
-                                    " coordinate error in ra, dec:  (asec) ",
-                                    round(err_ha * 15 * 3600, 2),
-                                    round(err_dec * 3600, 2),
-                                )  # NB WER changed units 20221012
-                                try:
-                                    f_err_ha = err_ha*math.cos(math.radians(solved_dec))
-                                    plog(
-                                        " *field* error in ra, dec:  (asec) ",      
-                                        round(f_err_ha * 15 * 3600, 2),
-                                        round(err_dec * 3600, 2),
-                                    )  # NB WER changed to apply to err_ha
-                                except:
-                                        pass
-                                # We do not want to reset solve timers during a smartStack
-                                self.last_solve_time = datetime.datetime.now()
-                                self.images_since_last_solve = 0
-
-                                # IF IMAGE IS PART OF A SMARTSTACK
-                                # THEN OPEN THE REDUCED FILE AND PROVIDE A WCS READY FOR STACKING
-                                # if smartStack == 70000080: # This is currently a silly value... we may not be using WCS for smartstacks
-                                #     img = fits.open(
-                                #         paths["red_path"] + paths["red_name01"],
-                                #         mode="update",
-                                #         ignore_missing_end=True,
-                                #     )
-                                #     img[0].header["CTYPE1"] = "RA---TAN"
-                                #     img[0].header["CTYPE2"] = "DEC--TAN"
-                                #     img[0].header["CRVAL1"] = solved_ra * 15
-                                #     img[0].header["CRVAL2"] = solved_dec
-                                #     img[0].header["CRPIX1"] = float(
-                                #         img[0].header["NAXIS1"] / 2
-                                #     )
-                                #     img[0].header["CRPIX2"] = float(
-                                #         img[0].header["NAXIS2"] / 2
-                                #     )
-                                #     img[0].header["CUNIT1"] = "deg"
-                                #     img[0].header["CUNIT2"] = "deg"
-                                #     img[0].header["CROTA2"] = 180 - solved_rotangledegs
-                                #     img[0].header["CDELT1"] = solved_arcsecperpixel / 3600
-                                #     img[0].header["CDELT2"] = solved_arcsecperpixel / 3600
-                                #     img.writeto(
-                                #         paths["red_path"] + "SOLVED_" + paths["red_name01"]
-                                #     )
-
-                                # IF IMAGE IS PART OF A SMARTSTACK
-                                # DO NOT UPDATE THE POINTING!
-
-                                # NB NB NB this needs rethinking, the incoming units are hours in HA or degrees of dec
-                                if (
-                                    err_ha * 15 * 3600 > 1200
-                                    or err_dec * 3600 > 1200
-                                    or err_ha * 15 * 3600 < -1200
-                                    or err_dec * 3600 < -1200
-                                ) and self.config["mount"]["mount1"][
-                                    "permissive_mount_reset"
-                                ] == "yes":
-                                    g_dev["mnt"].reset_mount_reference()
-                                    plog("I've  reset the mount_reference 1")
-                                    g_dev["mnt"].current_icrs_ra = solve[
-                                        "ra_j2000_hours"
-                                    ]
-                                    g_dev["mnt"].current_icrs_dec = solve[
-                                        "dec_j2000_hours"
-                                    ]
-                                    err_ha = 0
-                                    err_dec = 0
-
-                                if (
-                                    err_ha * 15 * 3600
-                                    > self.config["threshold_mount_update"]
-                                    or err_dec * 3600
-                                    > self.config["threshold_mount_update"]
-                                ):
-                                    try:
-                                        if g_dev["mnt"].pier_side_str == "Looking West":
-                                            g_dev["mnt"].adjust_mount_reference(
-                                                err_ha, err_dec
-                                            )
-                                        else:
-                                            g_dev["mnt"].adjust_flip_reference(
-                                                err_ha, err_dec
-                                            )  # Need to verify signs
-                                    except:
-                                        plog("This mount doesn't report pierside")
-
-                            except Exception as e:
-                                plog(
-                                    "Image: did not platesolve; this is usually OK. ", e
-                                )
-
-                    else:
-                        plog("skipping solve as not enough time or images have passed")
-                        self.images_since_last_solve = self.images_since_last_solve + 1
-
-
-                time.sleep(0.5)
+                #time.sleep(0.5)
                 self.img = None  # Clean up all big objects.
                 self.reduce_queue.task_done()
             else:

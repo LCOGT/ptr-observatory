@@ -229,6 +229,10 @@ site_config = {
             'east_flip_ra_correction':  0.0, #
             'east_flip_dec_correction': 0.0,  #
             'permissive_mount_reset' : 'yes', # if this is set to yes, it will reset the mount at startup and when coordinates are out significantly
+            'home_after_unpark' : False,            
+            'lowest_acceptable_altitude' : -5.0, # Below this altitude, it will automatically try to home and park the scope to recover.
+            
+            'time_inactive_until_park' : 3600.0, # How many seconds of inactivity until it will park the telescope
             'settings': {
 			    'latitude_offset': 0.0,     #Decimal degrees, North is Positive   These *could* be slightly different than site.
 			    'longitude_offset': 0.0,   #Decimal degrees, West is negative  #NB This could be an eval( <<site config data>>))
@@ -404,9 +408,9 @@ site_config = {
                 'filter_count': 11,   #  This must be correct as to the number of filters
                 'home_filter':  0,
                 'default_filter': "PL",
-                'filter_list': ['PL','PR','PG','PB','HA','O3','S2', 'air'], # A list of actual physical filters for the substitution function
                 'filter_reference': 0,   #  We choose to use W as the default filter.  Gains taken at F9, Ceravolo 300mm
-                'filter_data': [['filter', 'filter_index', 'filter_offset', 'sky_gain', 'screen_gain', 'alias'],  #NB NB NB add cwl & bw in nm.
+                # Columns for filter data are : ['filter', 'filter_index', 'filter_offset', 'sky_gain', 'screen_gain', 'alias']
+                'filter_data': [  #NB NB NB add cwl & bw in nm.
 
                         #['w',     [0,  0],     0, 72.7, [1.00 ,  72], 'PL'],    #0.   For sequencer autofocus  consider foc or f filter
                         ['focus', [0,  0],     0, 72.7, [1.00 ,  72], 'focus'],    #0.
@@ -464,6 +468,9 @@ site_config = {
 
             'settings': {                
                 'is_osc' : False,
+                
+                'transpose_fits' : False,
+                'transpose_jpeg' : True,
                 'osc_bayer' : 'RGGB',
                 'crop_preview': True,
                 'crop_preview_ybottom': 1,  #### IMPORTANT: CROPS NEED TO BE SYMMETRICAL FOR POINTING SOLVES TO WORK.
@@ -505,12 +512,12 @@ site_config = {
                 'trim_sec': ['[1:9576, 1:6388]', '[1:4788, 1:3194]', '[1:3192, 1:2129]', '[1:2394, 1:1597]'],
                 'x_pixel':  6,
                 'y_pixel':  6,
-                'pix_scale': [1.104, 2.134, 3.201, 4.268],
+                
 
                 'CameraXSize' : 4556,
                 'CameraYSize' : 3656,
-                'MaxBinX' : 2,
-                'MaxBinY' : 2,
+                #'MaxBinX' : 2,
+                #'MaxBinY' : 2,
                 'StartX' : 1,
                 'StartY' : 1,
 
@@ -526,11 +533,10 @@ site_config = {
                 'can_subframe':  True,
                 'min_subframe':  [128, 128],
                 'bin_modes':  [[1, 1, 1.07]], #  , [2, 2, 2.13], [3, 3, 3.21], [4, 4, 4.27]],   #Meaning no binning choice if list has only one entry, default should be first.
-                'default_bin':  [1, 1, 1.07],    #  This is the OPTIMAL binning
-                'maximum_bin':  [1, 1, 1.07],    #  This is the MAXIMUM binning
+                'optimal_bin':  [1, 1, 1.07],    #  This is the OPTIMAL binning
+                'max_res_bin':  [1, 1, 1.07],    #  This is the MAXIMUM binning
                 'cosmics_at_default' : 'no',
                 'cosmics_at_maximum' : 'no',
-                'bin_enable': ['1 1'],
                 'cycle_time':  [30, 20, 15, 12],  # 3x3 requires a 1, 1 reaout then a software bin, so slower.
                 'rbi_delay':  0.,      #  This being zero says RBI is not available, eg. for SBIG.
                 'is_cmos':  False,
@@ -549,18 +555,23 @@ site_config = {
                 'readout_speed': 0.4,
                 'readout_seconds': 12,
                 'smart_stack_exposure_time' : 30,
-                'saturate':  62000,    # e-.  This is a close guess, not measured, but taken from data sheet.
+                'saturate':  [[1, 65000], [2,262000], [3,589815], [4, 1048560]] ,   # e-.  This is a close guess, not measured, but taken from data sheet.    # e-.  This is a close guess, not measured, but taken from data sheet.
                 'max_linearity': 60000,
                 'fullwell_capacity': [63000, 63000, 63000, 63000],  #e-.   We need to sort out the units properly NB NB NB
                 'areas_implemented': ["Full",'4x4d', "600%", "500%", "450%", "300%", "220%", "150%", "133%", "Full", "Sqr", '71%', '50%',  '35%', '25%', '12%'],
                 'default_area':  "Full",
                 'default_rotation': 0.0000,
-                'flat_bin_spec': '1,1',    #Default binning for flats
                 'has_darkslide':  False,
                 'darkslide_com':  None,
                 'shutter_type': "Electronic",
+                'flat_bin_spec': ['1,1'],    #Default binning for flats
+                'bias_dark_bin_spec': ['1,1'],    #Default binning for flats
+                'bin_enable': ['1 1'],
+                'dark_length' : 900,
+                'bias_count' : 10,
+                'dark_count' : 10,
+                'pix_scale': [1.104, 2.134, 3.201, 4.268],
                 
-                'flat_bin_spec': ['1,1'],    # List of binnings for flats
                 'has_screen': True,
                 'screen_settings':  {
                     'screen_saturation':  157.0,   #  This reflects WMD setting and needs proper values.

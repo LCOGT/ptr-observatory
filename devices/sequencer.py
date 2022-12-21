@@ -55,6 +55,30 @@ and or visit more altitudes and temeperatures.
 
 '''
 
+def wait_for_slew():    
+    
+    try:
+        if not g_dev['mnt'].mount.AtPark:              
+            while g_dev['mnt'].mount.Slewing: #or g_dev['enc'].status['dome_slewing']:   #Filter is moving??
+                #if g_dev['mnt'].mount.Slewing: plog( 'm>')
+                #if g_dev['enc'].status['dome_slewing']: st += 'd>'
+                plog( 'm>')
+                time.sleep(0.5)
+                g_dev['obs'].update_status()            
+            
+    except Exception as e:
+        plog("Motion check faulted.")
+        plog(traceback.format_exc())
+        if 'pywintypes.com_error' in str(e):
+            print ("Mount disconnected. Recovering.....")
+            time.sleep(30)
+            g_dev['mnt'].mount.Connected = True
+            #g_dev['mnt'].home_command()
+        else:
+            breakpoint()
+    return 
+
+
 
 def fit_quadratic(x, y):
     #From Meeus, works fine.
@@ -246,6 +270,7 @@ class Sequencer:
                     g_dev['mnt'].slewToSkyFlatAsync()
                     time.sleep(10)
                 plog("Open and slew Dome to azimuth opposite the Sun:  ", round(flat_spot, 1))
+                plog("Cooling down and waiting for skyflat / observing to begin")
 
                 if enc_status['shutter_status'] in ['Closed', 'closed'] and g_dev['enc'].mode == 'Automatic' \
                     and ocn_status['hold_duration'] <= 0.1:   #NB
@@ -253,7 +278,10 @@ class Sequencer:
                     g_dev['enc'].open_command({}, {})
                     plog("Opening dome, will set Synchronize in 10 seconds.")
                     time.sleep(10)
-                g_dev['enc'].sync_mount_command({}, {})
+                try:
+                    g_dev['enc'].sync_mount_command({}, {})
+                except:
+                    pass
                 #Prior to skyflats no dome following.
                 self.dome_homed = False
                 
@@ -304,15 +332,17 @@ class Sequencer:
         if self.bias_dark_latch and ((events['Eve Bias Dark'] <= ephem_now < events['End Eve Bias Dark']) and \
              self.config['auto_eve_bias_dark'] and g_dev['enc'].mode in ['Automatic', 'Autonomous', 'Manual'] ):
             self.bias_dark_latch = False
-            req = {'bin1': False, 'bin2': True, 'bin3': False, 'bin4': False, 'numOfBias': 45, \
+            req = {'bin1': True, 'bin2': False, 'bin3': False, 'bin4': False, 'numOfBias': 45, \
                    'numOfDark': 15, 'darkTime': 180, 'numOfDark2': 3, 'dark2Time': 360, \
-                   'hotMap': True, 'coldMap': True, 'script': 'genBiasDarkMaster', }
+                   'hotMap': True, 'coldMap': True, 'script': 'genBiasDarkMaster', }  # NB NB All of the prior is obsolete
             opt = {}
             #No action needed on  the enclosure at this level
             self.park_and_close(enc_status)
             #NB The above put dome closed and telescope at Park, Which is where it should have been upon entry.
             self.bias_dark_script(req, opt, morn=False)
             self.bias_dark_latch = False
+            
+            g_dev['mnt'].park_command({}, {})
 
         elif ((g_dev['events']['Cool Down, Open']  <= ephem_now < g_dev['events']['Eve Sky Flats']) and \
                g_dev['enc'].mode == 'Automatic') and not g_dev['ocn'].wx_hold:
@@ -347,7 +377,7 @@ class Sequencer:
                 # Pointing
                 req = {'time': self.config['focus_exposure_time'],  'alias':  str(self.config['camera']['camera_1_1']['name']), 'image_type': 'focus'}   #  NB Should pick up filter and constats from config
                 #opt = {'area': 150, 'count': 1, 'bin': '2, 2', 'filter': 'focus'}
-                opt = {'area': 150, 'count': 1, 'bin': 'default', 'filter': 'focus'}
+                opt = {'area': 150, 'count': 1, 'bin': 1, 'filter': 'focus'}
                 result = g_dev['cam'].expose_command(req, opt, no_AWS=False, solve_it=True)
             self.night_focus_ready=False
 
@@ -379,6 +409,7 @@ class Sequencer:
                                    is not None:
             try:
                 
+               
                 self.nightly_reset_complete = False
                 
                 if enc_status['enclosure_mode'] in ['Autonomous!', 'Automatic']:
@@ -392,7 +423,10 @@ class Sequencer:
                         g_dev['enc'].open_command({}, {})
                         plog("Opening dome, will set Synchronize in 10 seconds.")
                         time.sleep(10)
-                    g_dev['enc'].sync_mount_command({}, {})
+                    try:
+                        g_dev['enc'].sync_mount_command({}, {})
+                    except: 
+                        pass
         
                     if debug:
                         plog("# of Blocks, projects:  ", len(g_dev['obs'].blocks),  len(g_dev['obs'].projects))
@@ -531,11 +565,15 @@ class Sequencer:
             self.sky_flat_script({}, {}, morn=True)   #Null command dictionaries
             self.morn_sky_flat_latch = False
             #self.park_and_close(enc_status)
+            
+            # Park at the end of morning sky flats
+            g_dev['mnt'].park_command({}, {})
+            
         elif self.morn_bias_dark_latch and (events['Morn Bias Dark'] <= ephem_now < events['End Morn Bias Dark']) and \
                   self.config['auto_morn_bias_dark']: # and g_dev['enc'].mode == 'Automatic' ):
             #breakpoint()
             self.morn_bias_dark_latch = False
-            req = {'bin1': False, 'bin2': True, 'bin3': False, 'bin4': False, 'numOfBias': 63, \
+            req = {'bin1': True, 'bin2': False, 'bin3': False, 'bin4': False, 'numOfBias': 63, \
                     'numOfDark': 31, 'darkTime': 600, 'numOfDark2': 31, 'dark2Time': 600, \
                     'hotMap': True, 'coldMap': True, 'script': 'genBiasDarkMaster', }  #This specificatin is obsolete
             opt = {}
@@ -549,9 +587,7 @@ class Sequencer:
         elif (events['Nightly Reset'] <= ephem_now < events['End Nightly Reset']): # and g_dev['enc'].mode == 'Automatic' ):
             
             if self.nightly_reset_complete == False:
-                req = {}
-                opt = {}
-                self.nightly_reset_script(req, opt, morn=True)
+                self.nightly_reset_script()
 
             
         
@@ -658,8 +694,8 @@ class Sequencer:
         g_dev['cam'].user_name = 'tobor'
         g_dev['cam'].user_id = 'tobor'
         #NB  Servo the Dome??
-        timer = time.time() - 1  #This should force an immediate autofocus.
-        req2 = {'target': 'near_tycho_star', 'area': 150}
+        #timer = time.time() - 1  #This should force an immediate autofocus.
+        
         opt = {}
         t = 0
         '''
@@ -686,8 +722,6 @@ class Sequencer:
                 g_dev['cam'].user_id = block_specification['creator_id']
                 
                 longstackname=block_specification['project']['created_at'].replace('-','').replace(':','') # If longstack is to be used.
-                
-                
 
             except Exception as e:                
                 print ("Could not execute project due to poorly formatted or corrupt project")
@@ -701,7 +735,10 @@ class Sequencer:
                 g_dev['enc'].open_command({}, {})
                 plog("Opening dome, will set Synchronize in 10 seconds.")
                 time.sleep(10)
-            g_dev['enc'].sync_mount_command({}, {})
+            try:
+                g_dev['enc'].sync_mount_command({}, {})
+            except: 
+                pass
 
             '''
             We be starting a block:
@@ -729,6 +766,20 @@ class Sequencer:
             except:
                 pass
             g_dev['mnt'].go_coord(dest_ra, dest_dec)
+            
+            # Quick pointing check and re_seek at the start of each project block
+            # Otherwise everyone will get slightly off-pointing images
+            # Necessary
+            # Pointing
+            # Reset Solve timers
+            print ("Taking a quick pointing check and re_seek for new project block")
+            g_dev['obs'].last_solve_time = datetime.datetime.now()
+            g_dev['obs'].images_since_last_solve = 0
+            req = {'time': self.config['focus_exposure_time'],  'alias':  str(self.config['camera']['camera_1_1']['name']), 'image_type': 'focus'}   #  NB Should pick up filter and constats from config
+            #opt = {'area': 150, 'count': 1, 'bin': '2, 2', 'filter': 'focus'}
+            opt = {'area': 150, 'count': 1, 'bin': 1, 'filter': 'focus'}
+            result = g_dev['cam'].expose_command(req, opt, no_AWS=False, solve_it=True)
+            g_dev['mnt'].re_seek(dither=0)
 
             plog("CAUTION:  rotator may block")
             pa = float(block_specification['project']['project_constraints']['position_angle'])
@@ -780,52 +831,52 @@ class Sequencer:
 
                     g_dev['obs'].send_to_user("Running an initial autofocus run.")
 
-
-                    #self.auto_focus_script(req2, opt, throw = g_dev['foc'].throw)
-
+                    req2 = {'target': 'near_tycho_star', 'area': 150}
+                    self.auto_focus_script(req2, opt, throw = g_dev['foc'].throw)
                     just_focused = True
-                    #initial_focus = False    #  Make above on-time event per block
                     g_dev["foc"].focus_needed = False
-                    #timer = time.time() + af_delay  # 45 minutes
 
                 # A flag to make sure the first image after a slew in an exposure set is solved, but then onto the normal solve timer
                 reset_solve = True
-
-
+                
                 #cycle through exposures decrementing counts    MAY want to double check left-to do but do nut remultiply by 4
                 for exposure in block['project']['exposures']:
 
-                    #initial_focus = False
                     just_focused = True
-                    #timer = time.time() + af_delay  #40 minutes to refocus
 
-                    print ("Observing " + str(block['project']['project_targets'][0]['name']))
+                    plog ("Observing " + str(block['project']['project_targets'][0]['name']))
 
                     plog("Executing: ", exposure, left_to_do)
                     color = exposure['filter']
                     exp_time =  float(exposure['exposure'])
+                    binning = '1 1'
 
-
-
-
-                    if exposure['bin'] == '"optimal"':
-                        tempBinString=str(g_dev['cam'].config['camera']['camera_1_1']['settings']['default_bin'][0])
-                        binning = tempBinString + ' ' + tempBinString
-                    elif exposure['bin'] == '"maximum"' :
-                        tempBinString=str(g_dev['cam'].config['camera']['camera_1_1']['settings']['maximum_bin'][0])
-                        binning = tempBinString + ' ' + tempBinString
-                    elif exposure['bin'] in[0, '0', '0,0', '0, 0', '0 0']:
-                        tempBinString=str(g_dev['cam'].config['camera']['camera_1_1']['settings']['default_bin'][0])
-                        binning = tempBinString + ' ' + tempBinString
-                    elif exposure['bin'] in [2, '2,2', '2, 2', '2 2']:
-                        binning = '2 2'
-                    elif exposure['bin'] in [3, '3,3', '3, 3', '3 3']:
-                        binning = '3 3'
-                    elif exposure['bin'] in [4, '4,4', '4, 4', '4 4']:
-                        binning = '4 4'
-                    else:
-                        tempBinString=str(g_dev['cam'].config['camera']['camera_1_1']['settings']['default_bin'][0])
-                        binning = tempBinString + ' ' + tempBinString
+                    # if exposure['bin'] == '"optimal"':
+                    #     tempBinString=str(g_dev['cam'].config['camera']['camera_1_1']['settings']['optimal_bin'][0])
+                    #     binning = tempBinString + ' ' + tempBinString
+                    # elif exposure['bin'] == '"fine"' :
+                    #     tempBinString=str(g_dev['cam'].config['camera']['camera_1_1']['settings']['fine_bin'][0])
+                    #     binning = tempBinString + ' ' + tempBinString
+                    # elif exposure['bin'] == '"coarse"' :
+                    #     tempBinString=str(g_dev['cam'].config['camera']['camera_1_1']['settings']['coarse_bin'][0])
+                    #     binning = tempBinString + ' ' + tempBinString
+                    # elif exposure['bin'] == '"eng"' :
+                    #     tempBinString=str(g_dev['cam'].config['camera']['camera_1_1']['settings']['eng_bin'][0])
+                    #     binning = tempBinString + ' ' + tempBinString
+                    # elif exposure['bin'] in[0, '0', '0,0', '0, 0', '0 0']:
+                    #     tempBinString=str(g_dev['cam'].config['camera']['camera_1_1']['settings']['fine_bin'][0])
+                    #     binning = tempBinString + ' ' + tempBinString
+                    # elif exposure['bin'] in [1, '1,1', '1, 1', '1 1']:
+                    #     binning = '1 1'
+                    # elif exposure['bin'] in [2, '2,2', '2, 2', '2 2']:
+                    #     binning = '2 2'
+                    # elif exposure['bin'] in [3, '3,3', '3, 3', '3 3']:
+                    #     binning = '3 3'
+                    # elif exposure['bin'] in [4, '4,4', '4, 4', '4 4']:
+                    #     binning = '4 4'
+                    # else:
+                    #     tempBinString=str(g_dev['cam'].config['camera']['camera_1_1']['settings']['optimal_bin'][0])
+                    #     binning = tempBinString + ' ' + tempBinString
                     count = int(exposure['count'])
                     #  We should add a frame repeat count
                     imtype = exposure['imtype']
@@ -904,9 +955,9 @@ class Sequencer:
                         #if not just_focused:
                         #    g_dev['foc'].adjust_focus()
                         just_focused = False
-                        if imtype in ['light'] and count > 0:
-                            
+                        if imtype in ['light'] and count > 0:                            
 
+                            # Sort out Longstack and Smartstack names and switches
                             if exposure['longstack'] == False:
                                 longstackswitch='no'
                                 longstackname='no'
@@ -922,11 +973,10 @@ class Sequencer:
                                 smartstackswitch='yes'
                             else:
                                 smartstackswitch='no'
-                            
-                            
 
+                            # Set up options for exposure and take exposure.
                             req = {'time': exp_time,  'alias':  str(self.config['camera']['camera_1_1']['name']), 'image_type': imtype, 'smartstack' : smartstackswitch, 'longstackswitch' : longstackswitch, 'longstackname' : longstackname, 'block_end' : block['end']}   #  NB Should pick up filter and constants from config
-                            opt = {'area': 150, 'count': 1, 'bin': binning, 'filter': color, \
+                            opt = {'area': 150, 'count': 1, 'bin': 1, 'filter': color, \
                                    'hint': block['project_id'] + "##" + dest_name, 'object_name': block['project']['project_targets'][0]['name'], 'pane': pane}
                             plog('Seq Blk sent to camera:  ', req, opt)
                             obs_win_begin, sunZ88Op, sunZ88Cl, ephem_now = self.astro_events.getSunEvents()
@@ -948,10 +998,10 @@ class Sequencer:
                             plog("Left to do:  ", left_to_do)
                         pane += 1
 
+                    # Check that the observing time hasn't completed or then night has not completed. 
+                    # If so, set ended to True so that it cancels out of the exposure block.
                     now_date_timeZ = datetime.datetime.now().isoformat().split('.')[0] +'Z'
-
                     events = g_dev['events']
-
                     ended = left_to_do <= 0 or now_date_timeZ >= block['end'] \
                             or ephem.now() >= events['Observing Ends']
                     #                                                    ]\
@@ -961,8 +1011,6 @@ class Sequencer:
 
         plog("Project block has finished!")   #NB Should we consider turning off mount tracking?
         if block_specification['project']['project_constraints']['close_on_block_completion']:
-            #g_dev['mnt'].park_command({}, {})
-            # NB NBNeed to write a more robust and generalized clean up.
             try:
                 pass#g_dev['enc'].enclosure.Slaved = False   NB with wema no longer exists
             except:
@@ -970,102 +1018,103 @@ class Sequencer:
             #self.redis_server.set('unsync_enc', True, ex=1200)
             #g_dev['enc'].close_command({}, {})
             g_dev['mnt'].park_command({}, {})
-
             plog("Auto PARK (not Close) attempted at end of block.")
         self.block_guard = False
+        
         return block_specification #used to flush the queue as it completes.
 
 
     def bias_dark_script(self, req=None, opt=None, morn=False):
-        """
 
-        20200618   This has been drastically simplied for now to deal with only QHY600M.
-
-        May still have a bug where it latches up only outputting 2x2 frames.
-
-        """
-        print (morn)
         self.sequencer_hold = True
         self.current_script = 'Bias Dark'
         if morn:
             ending = g_dev['events']['End Morn Bias Dark']
         else:
-            ending = g_dev['events']['End Eve Bias Dark']
+            ending = g_dev['events']['End Eve Bias Dark']+0.3
         while ephem.now() < ending :   #Do not overrun the window end
 
             g_dev['mnt'].park_command({}, {}) # Get there early
 
             plog("Expose Biases and normal darks by configured binning.")
 
-            short_dark_time = self.config['camera']['camera_1_1']['settings']['ref_dark']
-            long_dark_time = self.config['camera']['camera_1_1']['settings']['long_dark']
-            bias_count = 7
+            #short_dark_time = self.config['camera']['camera_1_1']['settings']['ref_dark']
+            #long_dark_time = self.config['camera']['camera_1_1']['settings']['long_dark']
+            # NB NB Long term it would be slightly better to interleave bias and darks
+            #bias_dark_bin_spec=self.config['camera']['camera_1_1']['settings']['bias_dark_bin_spec']  #Each is these is a list.
+            bias_count = self.config['camera']['camera_1_1']['settings']['bias_count']
+            dark_count = self.config['camera']['camera_1_1']['settings']['dark_count']
+            dark_exp_time = self.config['camera']['camera_1_1']['settings']['dark_exposure']
+            cycle_time = self.config['camera']['camera_1_1']['settings']['cycle_time']
+            #enable_bin= self.config['camera']['camera_1_1']['settings']['enable_bin']
+            #for n_of_bias in range(bias_count):   #9*(9 +1) per cycle.
+            if ephem.now() + 120/86400 > ending:
+                break     #Terminate Bias dark phase if within 2 min of ending the phas.             
+            
+            # The way we make different binnings for CMOS camera is derived from a single
+            # exposure of 1x1. So if it is a cmos camera, it is just 1x1.
+            # Do not fear, the bin specs are used later on.
+            #bias_dark_bin_spec=['1,1']
+            
+            # For each enabled binning in biasdark_bin_spec
+            # Take.... biases and darks, then advance to another binning and repeat
+            
+            
+            b_d_to_do = bias_count + dark_count
+            try:
+                stride = bias_count//dark_count
+                plog("Tobor will interleave a dark every  " + str(stride) + "  biases.")
+                single_dark = True
+            except:
+                stride = bias_count   #Just do all of the biases first.
+                single_dark = False
+            while b_d_to_do > 0:
+                min_to_do = min(b_d_to_do, stride)
+                plog("Expose " + str(stride) +" 1x1 bias frames.")
+                req = {'time': 0.0,  'script': 'True', 'image_type': 'bias'}
+                opt = {'area': "Full", 'count': min_to_do, 'bin': 1 , \
+                       'filter': 'dark'}
+                  
+                result = g_dev['cam'].expose_command(req, opt, no_AWS=False, \
+                                do_sep=False, quick=False)
+                b_d_to_do -= min_to_do
+                
 
-            for bias in range(bias_count):   #9*(9 +1) per cycle.
-                if ephem.now() + 210/86400 > ending:
+                g_dev['obs'].update_status()
+                
+                # if ephem.now() + 210/86400 > ending:   #NB NB needs to be checked out
+                #     break
+                #I am changing this so the darks for the above binning are done after the biases  WER
+                    
+                #for ctr_darks in range((dark_count[ctr_dbb])):
+                if ephem.now() + (dark_exp_time + cycle_time + 30)/86400 > ending:
                     break
-                if "1 1" in self.config['camera']['camera_1_1']['settings']['bin_enable']:
-                    req = {'time': 0.0,  'script': 'True', 'image_type': 'bias'}
-                    opt = {'area': "Full", 'count': bias_count, 'bin':'1 1', \
+                if not single_dark:
+                    
+                    plog("Expose 1x1 dark of " \
+                         + str(dark_count) + " using exposure:  " + str(dark_exp_time) )
+                    req = {'time': dark_exp_time ,  'script': 'True', 'image_type': 'dark'}
+                    opt = {'area': "Full", 'count': 1, 'bin': 1, \
                             'filter': 'dark'}
-                    plog("Expose b_1")
                     result = g_dev['cam'].expose_command(req, opt, no_AWS=False, \
-                                    do_sep=False, quick=False)
+                                       do_sep=False, quick=False)
+                    b_d_to_do -= 1
                     g_dev['obs'].update_status()
-                    dark_time = short_dark_time
-                    if ephem.now() + (dark_time + 30)/86400 > ending:
+                    if ephem.now() + (dark_exp_time + cycle_time + 30)/86400 > ending:
                         break
-                    plog("Expose ref_dark using exposure:  ", dark_time )
-                    req = {'time':dark_time ,  'script': 'True', 'image_type': 'dark'}
-                    opt = {'area': "Full", 'count':1, 'bin': '1 1', \
+                else:
+                    plog("Expose 1x1 dark " + str(1) + " of " \
+                             + str(dark_count) + " using exposure:  " + str(dark_exp_time) )
+                    req = {'time': dark_exp_time,  'script': 'True', 'image_type': 'dark'}
+                    opt = {'area': "Full", 'count': 1, 'bin': 1, \
                             'filter': 'dark'}
                     result = g_dev['cam'].expose_command(req, opt, no_AWS=False, \
-                                        do_sep=False, quick=False)
-
+                                       do_sep=False, quick=False)
+                    b_d_to_do -= 1
                     g_dev['obs'].update_status()
-                    if long_dark_time is not None and long_dark_time > dark_time:
-
-                        if ephem.now() + (long_dark_time + 30)/86400 > ending:
-                            break
-                        plog("Expose long dark using exposure:  ", long_dark_time)
-                        req = {'time':long_dark_time ,  'script': 'True', 'image_type': 'dark'}
-                        opt = {'area': "Full", 'count':1, 'bin': '1 1', \
-                                'filter': 'dark'}
-                        result = g_dev['cam'].expose_command(req, opt, no_AWS=False, \
-                                            do_sep=False, quick=False)
-
-                        g_dev['obs'].update_status()
-                if "2 2" in self.config['camera']['camera_1_1']['settings']['bin_enable']:
-                    req = {'time': 0.0,  'script': 'True', 'image_type': 'bias'}
-                    opt = {'area': "Full", 'count': bias_count, 'bin':'2 2', \
-                            'filter': 'dark'}
-                    plog("Expose b_2")
-                    result = g_dev['cam'].expose_command(req, opt, no_AWS=False, \
-                                    do_sep=False, quick=False)
-                    g_dev['obs'].update_status()
-                    dark_time = short_dark_time
-                    if ephem.now() + (dark_time + 30)/86400 > ending:
+                    if ephem.now() + (dark_exp_time + cycle_time + 30)/86400 > ending:
                         break
-                    plog("Expose ref_dark using exposure:  ", dark_time )
-                    req = {'time':dark_time ,  'script': 'True', 'image_type': 'dark'}
-                    opt = {'area': "Full", 'count':1, 'bin': '2 2', \
-                            'filter': 'dark'}
-                    result = g_dev['cam'].expose_command(req, opt, no_AWS=False, \
-                                        do_sep=False, quick=False)
-
-                    g_dev['obs'].update_status()
-                    if long_dark_time is not None and long_dark_time > dark_time:
-
-                        if ephem.now() + (long_dark_time + 30)/86400 > ending:
-                            break
-                        plog("Expose long dark using exposure:  ", long_dark_time)
-                        req = {'time':long_dark_time ,  'script': 'True', 'image_type': 'dark'}
-                        opt = {'area': "Full", 'count':1, 'bin': '2 2', \
-                                'filter': 'dark'}
-                        result = g_dev['cam'].expose_command(req, opt, no_AWS=True, \
-                                            do_sep=False, quick=False)
-
-                        g_dev['obs'].update_status()
+                        
 
                 g_dev['obs'].update_status()
                 if ephem.now() + 30/86400 >= ending:
@@ -1073,16 +1122,17 @@ class Sequencer:
 
             plog(" Bias/Dark acquisition is finished normally.")
 
-        self.sequencer_hold = False
-        g_dev['mnt'].park_command({}, {}) # Get there early
-        plog("Bias/Dark Phase has passed.")
-
-
-        time.sleep(300) # Wait for telescope to park
-
-        
-    def nightly_reset_script(self, req=None, opt=None, morn=False):
+            self.sequencer_hold = False
+            g_dev['mnt'].park_command({}, {}) # Get there early
+            plog("Bias/Dark Phase has passed.")
+            break
+        return
+            
+    def nightly_reset_script(self):
         # UNDERTAKING END OF NIGHT ROUTINES
+
+        # Never hurts to make sure the telescope is parked for the night
+        g_dev['mnt'].park_command({}, {})
 
         # Setting runnight for mop up scripts
         yesterday = datetime.datetime.now() - timedelta(1)
@@ -1159,7 +1209,10 @@ class Sequencer:
                 g_dev['obs'].send_to_user("Culling " + str(len(deleteDirectories)) +" from the local archive.", p_level='INFO')
                 for entry in range(len(deleteDirectories)):
                     print (deleteDirectories[entry] + ' ' + str(deleteTimes[entry]) + ' weeks old.')
-                    shutil.rmtree(deleteDirectories[entry])
+                    try:
+                        shutil.rmtree(deleteDirectories[entry])
+                    except:
+                        print ("Could not remove: " + str(deleteDirectories[entry]) + ". Usually a file is open in that directory.")
 
         # Clear out smartstacks directory
         print ("removing and reconstituting smartstacks directory")
@@ -1254,7 +1307,11 @@ class Sequencer:
         # Allow midnight calibrations
         self.midnight_calibration_done = False
         self.nightly_reset_complete = True
+        
+        g_dev['mnt'].theskyx_tracking_rescues = 0
 
+        # No harm in doubly checking it has parked
+        g_dev['mnt'].park_command({}, {})
 
         return
 
@@ -1350,21 +1407,13 @@ class Sequencer:
 
         self.sky_guard = True   #20220409 I think this is obsolete or unused.
         plog('Sky Flat sequence Starting, Enclosure PRESUMED Open. Telescope should be on sky flat spot.')
-
+        self.next_flat_observe = time.time()
         g_dev['obs'].send_to_user('Sky Flat sequence Starting, Enclosure PRESUMED Open. Telescope should be on sky flat spot.', p_level='INFO')
         evening = not morn
         camera_name = str(self.config['camera']['camera_1_1']['name'])
-        flat_count = 7
+        flat_count = 5
         min_exposure = float(self.config['camera']['camera_1_1']['settings']['min_exposure'])
-        #bin_spec = '1,1'
-        #try:
-        #    bin_spec = self.config['camera']['camera_1_1']['settings']['flat_bin_spec']
-        #except:
-        #    pass
-    
-        # Get LIST of binnings to collect with flats
-        bin_spec = self.config['camera']['camera_1_1']['settings']['flat_bin_spec']
-    
+
         exp_time = min_exposure # added 20220207 WER  0.2 sec for SRO
 
 
@@ -1384,199 +1433,213 @@ class Sequencer:
             
         if morn:            
             ending = g_dev['events']['End Morn Sky Flats']
+            #min_exposure=100 * min_exposure
         else:            
             ending = g_dev['events']['End Eve Sky Flats']
         #length = len(pop_list)
         obs_win_begin, sunset, sunrise, ephem_now = self.astro_events.getSunEvents()
         exp_time = 0
         scale = 1.0
-        prior_scale = 1   #THIS will be inhereted upon completion of the prior filter
-        collecting_area = self.config['telescope']['telescope1']['collecting_area']/76147.   # mrc 14" at F6.5 is the reference
+        #prior_scale = 1   #THIS will be inhereted upon completion of the prior filter
+        collecting_area = self.config['telescope']['telescope1']['collecting_area']/31808.   # SAF at F4.9 is the reference
         #   and (g_dev['events']['Eve Sky Flats'] <
 
         while len(pop_list) > 0  and ephem.now() < ending:
-
-            if g_dev["fil"].null_filterwheel == False:
-                current_filter = int(pop_list[0])                
-                g_dev['fil'].set_number_command(current_filter)  #  20220825  NB NB NB Change this to using a list of filter names.
             
-            acquired_count = 0
-            #g_dev['mnt'].slewToSkyFlatAsync()
-            target_flat = 0.5 * g_dev['cam'].config["camera"][g_dev['cam'].name]["settings"]["saturate"]
-
-            # if not g_dev['enc'].status['shutter_status'] in ['Open', 'open']:
-            #     g_dev['obs'].send_to_user("Wait for roof to be open to take skyflats. 60 sec delay loop.", p_level='INFO')
-            #     time.sleep(60)
-            #     g_dev['obs'].update_status()
-            #     continue
-            while (acquired_count < flat_count):# and g_dev['enc'].status['shutter_status'] in ['Open', 'open']: # NB NB NB and roof is OPEN! and (ephem_now +3/1440) < g_dev['events']['End Eve Sky Flats' ]:
-                #if g_dev['enc'].is_dome:   #Does not apply
+                # This is just a very occasional slew to keep it pointing in the same general vicinity
                 
                 if time.time() >= self.time_of_next_slew:
-                    g_dev['mnt'].slewToSkyFlatAsync()  #FRequently do this to dither.
-                    self.time_of_next_slew = time.time() + 120 # But not everytime you check exposure times!
-                    # This slew timer gets reset each exposure, so it will move each flat image
-                g_dev['obs'].update_status()
-
-                try:
-                    try:
-                        sky_lux = eval(self.redis_server.get('ocn_status'))['calc_HSI_lux']     #Why Eval, whould have float?
-                    except:
-                        #plog("Redis not running. lux set to 1000.")
-                        sky_lux = float(g_dev['ocn'].status['calc_HSI_lux'])
-                except:
-                    sky_lux = None
-
-                    # MF SHIFTING EXPOSURE TIME CALCULATOR EQUATION TO BE MORE GENERAL FOR ALL TELESCOPES
-                if sky_lux != None:
-                    exp_time = prior_scale*scale*target_flat/(2*collecting_area*sky_lux*float(g_dev['fil'].filter_data[current_filter][3]))  #g_dev['ocn'].calc_HSI_lux)  #meas_sky_lux)
-                    plog('Ex:  ', exp_time, scale, prior_scale, sky_lux, float(g_dev['fil'].filter_data[current_filter][3]))
-
-                else:
-                    if g_dev["fil"].null_filterwheel == False:
-                        exp_time = prior_scale*scale*target_flat/float(g_dev['fil'].filter_data[current_filter][3])  #g_dev['ocn'].calc_HSI_lux)  #meas_sky_lux)
-                        plog('Exposure time:  ', exp_time, scale, prior_scale, float(g_dev['fil'].filter_data[current_filter][3]))
-
-                    else:
-
-                        #exp_time = prior_scale*scale*target_flat
-                        exp_time = prior_scale*scale*min_exposure
-                        plog('Exposure time:  ', exp_time, scale, prior_scale)
-
-    
-                
-                if evening and exp_time > 120:
-                     #exp_time = 60    #Live with this limit.  Basically started too late
-                     plog('Break because proposed evening exposure > 180 seconds:  ', exp_time)
-                     g_dev['obs'].send_to_user('Try next filter because proposed  flat exposure > 180 seconds.', p_level='INFO')
-                     pop_list.pop(0)
-                     break
-                if morn and exp_time < min_exposure:
-                     #exp_time = 60    #Live with this limit.  Basically started too late
-                     plog('Break because proposed evening exposure > 180 seconds:  ', exp_time)
-                     g_dev['obs'].send_to_user('Try next filter because proposed  flat exposure < min_exposure.', p_level='INFO')
-                     pop_list.pop(0)
-                     break
-                if evening and exp_time < min_exposure:   #NB it is too bright, should consider a delay here.
-                 #**************THIS SHOUD BE A WHILE LOOP! WAITING FOR THE SKY TO GET DARK AND EXP TIME TO BE LONGER********************
-                     plog("Too bright, wating 180 seconds.")
-                     g_dev['obs'].send_to_user('Delay 180 seconds to let it get darker.', p_level='INFO')
-                     time.sleep(180)
-                if morn and exp_time > 120 :   #NB it is too bright, should consider a delay here.
-                  #**************THIS SHOUD BE A WHILE LOOP! WAITING FOR THE SKY TO GET DARK AND EXP TIME TO BE LONGER********************
-                     plog("Too dim, wating 180 seconds.")
-                     g_dev['obs'].send_to_user('Delay 180 seconds to let it get lighterer.', p_level='INFO')
-                     time.sleep(180)
-                     #*****************NB Recompute exposure or otherwise wait
-                     exp_time = min_exposure
-                exp_time = round(exp_time, 5)
-                # prior_scale = prior_scale*scale  #Only update prior scale when changing filters
-                plog("Sky flat estimated exposure time, scale are:  ", exp_time, scale)               
-                                
-                req = {'time': float(exp_time),  'alias': camera_name, 'image_type': 'sky flat', 'script': 'On'}
-                
-                
-                # FIRST, lets get the highest resolution flat
-
-                if g_dev["fil"].null_filterwheel == False:
-                    opt = { 'count': 1, 'bin':  bin_spec[0], 'area': 150, 'filter': g_dev['fil'].filter_data[current_filter][0]}   #nb nb nb BIN CHNAGED FROM 2,2 ON 20220618 wer
-                    plog("using:  ", g_dev['fil'].filter_data[current_filter][0])
-                else:
-                    opt = { 'count': 1, 'bin':  bin_spec[0], 'area': 150}   
-                
-                if ephem.now() >= ending:
-                    return
-                try:
-
-                    self.time_of_next_slew = time.time()
-                    result = g_dev['cam'].expose_command(req, opt, no_AWS=True, do_sep = False)
-
-
-                    bright = result['patch']    #  Patch should be circular and 20% of Chip area. ToDo project
-                    plog('Returned:  ', bright)
+                    g_dev['mnt'].slewToSkyFlatAsync()  
+                    self.time_of_next_slew = time.time() + 600
                     
-                    if (bright > 0.25 * g_dev['cam'].config["camera"][g_dev['cam'].name]["settings"]["saturate"] and
-                        bright < 0.75 * g_dev['cam'].config["camera"][g_dev['cam'].name]["settings"]["saturate"]):
-                        if len(bin_spec) > 1:
-                            print ("Good range for a flat, firing off the other flat types")
+                g_dev['obs'].update_status()
+            
+                if g_dev["fil"].null_filterwheel == False:
+                    current_filter = int(pop_list[0])                
+                    g_dev['fil'].set_number_command(current_filter)  #  20220825  NB NB NB Change this to using a list of filter names.
+                
+                acquired_count = 0
+                
+                flat_saturation_level = g_dev['cam'].config["camera"][g_dev['cam'].name]["settings"]["saturate"]
+                
+                    
+                target_flat = 0.5 * flat_saturation_level
+                # if not g_dev['enc'].status['shutter_status'] in ['Open', 'open']:
+                #     g_dev['obs'].send_to_user("Wait for roof to be open to take skyflats. 60 sec delay loop.", p_level='INFO')
+                #     time.sleep(60)
+                #     g_dev['obs'].update_status()
+                #     continue
+                scale = 1
+                self.estimated_first_flat_exposure = False
+                while (acquired_count < flat_count):# and g_dev['enc'].status['shutter_status'] in ['Open', 'open']: # NB NB NB and roof is OPEN! and (ephem_now +3/1440) < g_dev['events']['End Eve Sky Flats' ]:
+                    #if g_dev['enc'].is_dome:   #Does not apply
+                    g_dev['obs'].update_status()
+                    if self.next_flat_observe < time.time():                
+                        
+                            
+                        try:
+                            try:
+                                sky_lux = eval(self.redis_server.get('ocn_status'))['calc_HSI_lux']     #Why Eval, whould have float?
+                            except:
+                                #plog("Redis not running. lux set to 1000.")
+                                try:
+                                    sky_lux = float(g_dev['ocn'].status['calc_HSI_lux'])
+                                except:
+                                    sky_lux, _ = g_dev['evnt'].illuminationNow()
+                                    
+                        except:
+                            sky_lux = None
+        
+                        print ("sky lux " + str(sky_lux))
+        
+                        # MF SHIFTING EXPOSURE TIME CALCULATOR EQUATION TO BE MORE GENERAL FOR ALL TELESCOPES
+                        # This bit here estimates the initial exposure time for a telescope given the skylux
+                        # or given no skylux at all!
+                        if self.estimated_first_flat_exposure == False:
+                            self.estimated_first_flat_exposure = True
+                            if sky_lux != None:
+                                if g_dev["fil"].null_filterwheel == False:
+                                    exp_time = target_flat/(collecting_area*sky_lux*float(g_dev['fil'].filter_data[current_filter][3]))  #g_dev['ocn'].calc_HSI_lux)  #meas_sky_lux)
+                                    plog('Exposure time:  ', exp_time, scale, sky_lux, float(g_dev['fil'].filter_data[current_filter][3]))
+                                else:
+                                    #exp_time = scale*min_exposure
+                                    exp_time = target_flat/(collecting_area*sky_lux*self.config['filter_wheel']['filter_wheel1']['flat_sky_gain'])  #g_dev['ocn'].calc_HSI_lux)  #meas_sky_lux)
+                                    plog('Exposure time:  ', exp_time, scale)
+                            else:                    
+                                #exp_time = prior_scale*scale*target_flat
+                                if morn:
+                                
+                                    exp_time = 5.0
+                                else:
+                                    exp_time = min_exposure
+                                plog('Exposure time:  ', exp_time, scale)
+                        else:
+                            exp_time = scale * exp_time
+            
+                        
+                        # Here it makes four tests and if it doesn't match those tests, then it will attempt a flat. 
+                        if evening and exp_time > 120:
+                             #exp_time = 60    #Live with this limit.  Basically started too late
+                             plog('Break because proposed evening exposure > 180 seconds:  ', exp_time)
+                             g_dev['obs'].send_to_user('Try next filter because proposed  flat exposure > 120 seconds.', p_level='INFO')
+                             pop_list.pop(0)
+                             acquired_count = flat_count + 1 # trigger end of loop
+                             #break
+                        elif morn and exp_time < min_exposure:
+                             #exp_time = 60    #Live with this limit.  Basically started too late
+                             plog('Break because proposed morning exposure < minimum exposure time:  ', exp_time)
+                             g_dev['obs'].send_to_user('Try next filter because proposed  flat exposure < min_exposure.', p_level='INFO')
+                             pop_list.pop(0)
+                             #min_exposure=min_exposure = float(self.config['camera']['camera_1_1']['settings']['min_exposure'])
+                             acquired_count = flat_count + 1 # trigger end of loop
+                             #break
+                        elif evening and exp_time < min_exposure:   #NB it is too bright, should consider a delay here.
+                         #**************THIS SHOUD BE A WHILE LOOP! WAITING FOR THE SKY TO GET DARK AND EXP TIME TO BE LONGER********************
+                             plog("Too bright, wating 180 seconds. Estimated Exposure time is " + str(exp_time))
+                             g_dev['obs'].send_to_user('Delay 60 seconds to let it get darker.', p_level='INFO')
+                             self.estimated_first_flat_exposure = False
+                             if time.time() >= self.time_of_next_slew:
+                                g_dev['mnt'].slewToSkyFlatAsync()  
+                                self.time_of_next_slew = time.time() + 600
+                             self.next_flat_observe = time.time() + 60
+                        elif morn and exp_time > 120 :   #NB it is too bright, should consider a delay here.
+                          #**************THIS SHOUD BE A WHILE LOOP! WAITING FOR THE SKY TO GET DARK AND EXP TIME TO BE LONGER********************
+                             plog("Too dim, wating 180 seconds. Estimated Exposure time is " + str(exp_time))
+                             g_dev['obs'].send_to_user('Delay 60 seconds to let it get lighterer.', p_level='INFO')
+                             self.estimated_first_flat_exposure = False
+                             if time.time() >= self.time_of_next_slew:
+                                g_dev['mnt'].slewToSkyFlatAsync()  
+                                self.time_of_next_slew = time.time() + 600
+                             self.next_flat_observe = time.time() + 60
+                             #*****************NB Recompute exposure or otherwise wait
+                             exp_time = min_exposure
+                        else:
+                            exp_time = round(exp_time, 5)
+                            # prior_scale = prior_scale*scale  #Only update prior scale when changing filters
+                            plog("Sky flat estimated exposure time, scale are:  ", exp_time, scale)               
+                                            
+                            req = {'time': float(exp_time),  'alias': camera_name, 'image_type': 'sky flat', 'script': 'On'}
+                            
+                            
+                            # FIRST, lets get the highest resolution flat
+            
                             if g_dev["fil"].null_filterwheel == False:
-                                opt = { 'count': 1, 'bin':  bin_spec[1], 'area': 150, 'filter': g_dev['fil'].filter_data[current_filter][0]}   #nb nb nb BIN CHNAGED FROM 2,2 ON 20220618 wer
+                                opt = { 'count': 1, 'bin':  1, 'area': 150, 'filter': g_dev['fil'].filter_data[current_filter][0]}   #nb nb nb BIN CHNAGED FROM 2,2 ON 20220618 wer
                                 plog("using:  ", g_dev['fil'].filter_data[current_filter][0])
                             else:
-                                opt = { 'count': 1, 'bin':  bin_spec[1], 'area': 150}
+                                opt = { 'count': 1, 'bin':  1, 'area': 150}   
                             
-                            ored = g_dev['cam'].expose_command(req, opt, no_AWS=True, do_sep = False)
+                            if ephem.now() >= ending:
+                                if morn: # This needs to be here because some scopes do not do morning bias and darks
+                                    try:
+                                        g_dev['mnt'].park_command({}, {})
+                                    except:
+                                        plog("Mount did not park at end of morning skyflats.")
+                                return
+                            try:
+                                self.time_of_next_slew = time.time()
+                                fred = g_dev['cam'].expose_command(req, opt, no_AWS=True, do_sep = False)
+            
+                                bright = fred['patch']    #  Patch should be circular and 20% of Chip area. ToDo project
+                                plog('Returned:  ', bright)
+                                                                
+                            except Exception as e:
+                                plog('Failed to get a flat image: ', e)
+                                plog(traceback.format_exc())
+                                plog("*****NO result returned*****  Will need to restart Camera")  #NB NB  NB this is drastic action needed.
+                                g_dev['obs'].update_status()
+                                continue
+                            g_dev['obs'].update_status()
+                            
+                            try:
+                                scale = target_flat / bright
+                                plog("New scale is:  ", scale)
+                            except:
+                                scale = 1.0
+                                
+                            # We only want to move after a successful set of independant binning flats
+                            # If we move before we calculate exposure, we are wasting time slewing. 
+                            g_dev['mnt'].slewToSkyFlatAsync()
+                            
+                            
+            
+                            if g_dev["fil"].null_filterwheel == False:
+                                if sky_lux != None:
+                                    plog('\n\n', "Patch/Bright:  ", bright, g_dev['fil'].filter_data[current_filter][0], \
+                                          'New Gain value: ', round(bright/(sky_lux*collecting_area*exp_time), 3), '\n\n')
+                                else:
+                                    plog('\n\n', "Patch/Bright:  ", bright, g_dev['fil'].filter_data[current_filter][0], \
+                                          'New Gain value: ', round(bright/(collecting_area*exp_time), 3), '\n\n')
+                            else:
+                                if sky_lux != None:
+                                    plog('\n\n', "Patch/Bright:  ", bright, \
+            
+                                         'New Gain value: ', round(bright/(sky_lux*collecting_area*exp_time), 3), '\n\n')
+                                else:
+                                    plog('\n\n', "Patch/Bright:  ", bright,  \
+                                          'New Gain value: ', round(bright/(collecting_area*exp_time), 3), '\n\n')
+            
 
-                            obright = ored['patch']    #  Patch should be circular and 20% of Chip area. ToDo project
-                            plog('Returned:  ', obright)
-                    
-                except Exception as e:
-                    plog('Failed to get a flat image: ', e)
-                    plog(traceback.format_exc())
-                    plog("*****NO result returned*****  Will need to restart Camera")  #NB NB  NB this is drastic action needed.
-                    g_dev['obs'].update_status()
-                    continue
-                g_dev['obs'].update_status()
-                try:
-
-                    scale *= target_flat / bright           #Note we are scaling the scale
-                    plog("New scale is:  ", scale)
-                    if scale > 500:   #NB this seems absurdly hight.
-                        scale = 500
-                    if scale < 0.01:
-                        scale = 0.01
-                except:
-                    scale = 1.0
-
-                if 'sky_lux' not in locals():
-                    sky_lux=1000
-                plog ("sky lux: " + str(sky_lux))
-
-                if g_dev["fil"].null_filterwheel == False:
-                    if sky_lux != None:
-                        plog('\n\n', "Patch/Bright:  ", bright, g_dev['fil'].filter_data[current_filter][0], \
-                              'New Gain value: ', round(bright/(sky_lux*collecting_area*exp_time), 3), '\n\n')
+                            acquired_count += 1
+                            if acquired_count == flat_count:
+                                pop_list.pop(0)
+                                plog("SCALE USED *************************:  ", scale)
+                                #prior_scale = scale     #Here is where we pre-scale the next filter. TEMPORARILLY TAKE THIS OUT
+                                scale = 1
+            
+                            #obs_win_begin, sunset, sunrise, ephem_now = self.astro_events.getSunEvents()
+                            #g_dev['obs'].update_status()
+                            continue
                     else:
-                        plog('\n\n', "Patch/Bright:  ", bright, g_dev['fil'].filter_data[current_filter][0], \
-                              'New Gain value: ', round(bright/(collecting_area*exp_time), 3), '\n\n')
-                else:
-                    if sky_lux != None:
-                        plog('\n\n', "Patch/Bright:  ", bright, \
+                        time.sleep(10)
 
-                             'New Gain value: ', round(bright/(sky_lux*collecting_area*exp_time), 3), '\n\n')
-                    else:
-                        plog('\n\n', "Patch/Bright:  ", bright,  \
-                              'New Gain value: ', round(bright/(collecting_area*exp_time), 3), '\n\n')
-
-
-                obs_win_begin, sunset, sunrise, ephem_now = self.astro_events.getSunEvents()
-                #  THE following code looks like a debug patch gone rogue.
-
-                if bright > 0.85 * g_dev['cam'].config["camera"][g_dev['cam'].name]["settings"]["saturate"]  and (ephem.now() < ending):    #NB should gate with end of skyflat window as well.
-                    for i in range(1):
-                        time.sleep(2)  #  #0 seconds of wait time.  Maybe shorten for wide bands?
-                        g_dev['obs'].update_status()
-                else:
-                    acquired_count += 1
-                    if acquired_count == flat_count:
-                        pop_list.pop(0)
-                        plog("SCALE USED *************************:  ", scale)
-                        prior_scale = scale     #Here is where we pre-scale the next filter. TEMPORARILLY TAKE THIS OUT
-                        scale = 1
-
-                obs_win_begin, sunset, sunrise, ephem_now = self.astro_events.getSunEvents()
-                g_dev['obs'].update_status()
-                continue
-        if morn is False:
-            g_dev['mnt'].tracking = False   #  park_command({}, {})  #  NB this is provisional, Ok when simulating
-            self.eve_sky_flat_latch = False
-        elif morn:
-            try:
-                g_dev['mnt'].park_command({}, {})
-            except:
-                plog("Mount did not park at end of morning skyflats.")
+        if morn: 
             self.morn_sky_flat_latch = False
+        else:
+            self.eve_sky_flat_latch = False
+            
         plog('\nSky flat complete, or too early. Telescope Tracking is off.\n')
+        g_dev['mnt'].park_command({}, {}) # You actually always want it to park, TheSkyX can't stop the telescope tracking, so park is safer... it is before focus anyway.
         self.sky_guard = False
 
 
@@ -1658,6 +1721,8 @@ class Sequencer:
         g_dev['mnt'].Tracking = False   #park_command({}, {})
         plog('Sky Flat sequence completed, Telescope tracking is off.')
         self.guard = False
+        
+        g_dev['mnt'].park_command({}, {})
 
 
 
@@ -1747,17 +1812,14 @@ class Sequencer:
             except:
                 print ("Issues pointing to a tycho star. Focussing at the current pointing.")
             req = {'time': self.config['focus_exposure_time'],  'alias':  str(self.config['camera']['camera_1_1']['name']), 'image_type': 'focus'}   #  NB Should pick up filter and constats from config
-            #opt = {'area': 150, 'count': 1, 'bin': '2, 2', 'filter': 'focus'}
-            opt = {'area': 150, 'count': 1, 'bin': 'default', 'filter': 'focus'}
+
+            opt = {'area': 150, 'count': 1, 'bin': 1, 'filter': 'focus'}
         else:
             pass   #Just take an image where currently pointed.
             req = {'time': self.config['focus_exposure_time'],  'alias':  str(self.config['camera']['camera_1_1']['name']), 'image_type': 'focus'}   #  NB Should pick up filter and constats from config
-            #opt = {'area': 150, 'count': 1, 'bin': '2, 2', 'filter': 'focus'}
-            opt = {'area': 150, 'count': 1, 'bin': 'default', 'filter': 'focus'}
+            opt = {'area': 150, 'count': 1, 'bin': 1, 'filter': 'focus'}
         foc_pos0 = focus_start
         result = {}
-        #plog("temporary patch in Sim values")
-        
         
         try:
             #Check here for filter, guider, still moving  THIS IS A CLASSIC
@@ -1820,6 +1882,7 @@ class Sequencer:
                 print ("spot1 failed in autofocus script")
 
             print (spot1)
+            g_dev['obs'].send_to_user("Central focus FWHM: " + str(spot1), p_level='INFO')
 
             if math.isnan(spot1) or spot1 ==False:
                 retry += 1
@@ -1843,7 +1906,9 @@ class Sequencer:
             spot2 = False
             foc_pos2 = False
             print ("spot2 failed on autofocus moving in")
-
+        
+        g_dev['obs'].send_to_user("Inward focus FWHM: " + str(spot2), p_level='INFO')
+        
         plog('Autofocus Overtaveling Out.\n\n')
         g_dev['foc'].guarded_move((foc_pos0 + 2*throw)*g_dev['foc'].micron_to_steps)
        #time.sleep(10)#It is important to overshoot to overcome any backlash  WE need to be sure Exposure waits.
@@ -1864,9 +1929,14 @@ class Sequencer:
             spot3 = False
             foc_pos3 = False
             print ("spot3 failed on autofocus moving in")
+            
+        g_dev['obs'].send_to_user("Outward focus FWHM: " + str(spot3), p_level='INFO')
+        
         x = [foc_pos2, foc_pos1, foc_pos3]
         y = [spot2, spot1, spot3]
         plog('X, Y:  ', x, y, 'Desire center to be smallest.')
+
+        
 
         if spot1 is None or spot2 is None or spot3 is None or spot1 == False or spot2 == False or spot3 == False:  #New additon to stop crash when no spots
             plog("No stars detected. Returning to original focus setting and pointing.")
@@ -1875,6 +1945,7 @@ class Sequencer:
             self.sequencer_hold = False   #Allow comand checks.
             self.af_guard = False
             g_dev['mnt'].mount.SlewToCoordinatesAsync(start_ra, start_dec)  #MAKE sure same style coordinates.
+            wait_for_slew()
             self.sequencer_hold = False
             self.guard = False
             self.af_guard = False
@@ -1894,12 +1965,14 @@ class Sequencer:
                 self.sequencer_hold = False   #Allow comand checks.
                 self.af_guard = False
                 g_dev['mnt'].mount.SlewToCoordinatesAsync(start_ra, start_dec)   #NB NB Does this really take us back to starting point?
+                wait_for_slew()
                 self.sequencer_hold = False
                 self.guard = False
                 self.af_guard = False
                 return
             if min(x) <= d1 <= max(x):
                 print ('Moving to Solved focus:  ', round(d1, 2), ' calculated:  ',  new_spot)
+                g_dev['obs'].send_to_user('Moving to Solved focus:  ' +str(round(d1, 2)), p_level='INFO')
                 pos = int(d1*g_dev['foc'].micron_to_steps)
 
 
@@ -1926,9 +1999,11 @@ class Sequencer:
                     foc_pos4 = False
                     print ("spot4 failed ")
                 plog('\nFound best focus at:  ', foc_pos4,' measured is:  ',  round(spot4, 2), '\n')
+                g_dev['obs'].send_to_user('Found best focus at:  ' +str(foc_pos4) +' measured FWHM is:  ' + str(round(spot4, 2)), p_level='INFO')
                 g_dev['foc'].af_log(foc_pos4, spot4, new_spot)
                 plog("Returning to:  ", start_ra, start_dec)
                 g_dev['mnt'].mount.SlewToCoordinatesAsync(start_ra, start_dec)   #Return to pre-focus pointing.
+                wait_for_slew()
             if sim:
 
                 g_dev['foc'].guarded_move((focus_start)*g_dev['foc'].micron_to_steps)
@@ -1960,6 +2035,7 @@ class Sequencer:
             x = [foc_pos4, foc_pos2, foc_pos1, foc_pos3]
             y = [spot4, spot2, spot1, spot3]
             plog('X, Y:  ', x, y, 'Desire center to be smallest.')
+            g_dev['obs'].send_to_user('X, Y:  '+ str(x) + " " + str(y)+ ' Desire center to be smallest.', p_level='INFO')
             try:
                 #Digits are to help out pdb commands!
                 a1, b1, c1, d1 = fit_quadratic(x, y)
@@ -1974,12 +2050,14 @@ class Sequencer:
                 self.sequencer_hold = False   #Allow comand checks.
                 self.af_guard = False
                 g_dev['mnt'].mount.SlewToCoordinatesAsync(start_ra, start_dec)   #NB NB Does this really take us back to starting point?
+                wait_for_slew()
                 self.sequencer_hold = False
                 self.guard = False
                 self.af_guard = False
                 return
             if min(x) <= d1 <= max(x):
                 print ('Moving to Solved focus:  ', round(d1, 2), ' calculated:  ',  new_spot)
+                
                 pos = int(d1*g_dev['foc'].micron_to_steps)
 
 
@@ -2006,9 +2084,11 @@ class Sequencer:
                     foc_pos4 = False
                     print ("spot4 failed ")
                 plog('\nFound best focus at:  ', foc_pos4,' measured is:  ',  round(spot4, 2), '\n')
+                g_dev['obs'].send_to_user('Found best focus at: ' + str(foc_pos4) +' measured FWHM is: ' + str(round(spot4, 2)), p_level='INFO')
                 g_dev['foc'].af_log(foc_pos4, spot4, new_spot)
                 plog("Returning to:  ", start_ra, start_dec)
                 g_dev['mnt'].mount.SlewToCoordinatesAsync(start_ra, start_dec)   #Return to pre-focus pointing.
+                wait_for_slew()
             if sim:
 
                 g_dev['foc'].guarded_move((focus_start)*g_dev['foc'].micron_to_steps)
@@ -2042,6 +2122,7 @@ class Sequencer:
             x = [foc_pos2, foc_pos1, foc_pos3, foc_pos4]
             y = [spot2, spot1, spot3, spot4]
             plog('X, Y:  ', x, y, 'Desire center to be smallest.')
+            g_dev['obs'].send_to_user('X, Y:  '+ str(x) + " " + str(y)+ ' Desire center to be smallest.', p_level='INFO')
             try:
                 #Digits are to help out pdb commands!
                 a1, b1, c1, d1 = fit_quadratic(x, y)
@@ -2056,6 +2137,7 @@ class Sequencer:
                 self.sequencer_hold = False   #Allow comand checks.
                 self.af_guard = False
                 g_dev['mnt'].mount.SlewToCoordinatesAsync(start_ra, start_dec)   #NB NB Does this really take us back to starting point?
+                wait_for_slew()
                 self.sequencer_hold = False
                 self.guard = False
                 self.af_guard = False
@@ -2088,9 +2170,11 @@ class Sequencer:
                     foc_pos4 = False
                     print ("spot4 failed ")
                 plog('\nFound best focus at:  ', foc_pos4,' measured is:  ',  round(spot4, 2), '\n')
+                g_dev['obs'].send_to_user('Found best focus at: ' + str(foc_pos4) +' measured FWHM is: ' + str(round(spot4, 2)), p_level='INFO')
                 g_dev['foc'].af_log(foc_pos4, spot4, new_spot)
                 plog("Returning to:  ", start_ra, start_dec)
                 g_dev['mnt'].mount.SlewToCoordinatesAsync(start_ra, start_dec)   #Return to pre-focus pointing.
+                wait_for_slew()
             if sim:
 
                 g_dev['foc'].guarded_move((focus_start)*g_dev['foc'].micron_to_steps)
@@ -2125,6 +2209,7 @@ class Sequencer:
             g_dev['foc'].focuser.Move((focus_start)*g_dev['foc'].micron_to_steps)
         plog("Returning to:  ", start_ra, start_dec)
         g_dev['mnt'].mount.SlewToCoordinatesAsync(start_ra, start_dec)   #Return to pre-focus pointing.
+        wait_for_slew()
         if sim:
 
             g_dev['foc'].guarded_move((focus_start)*g_dev['foc'].micron_to_steps)
@@ -2181,8 +2266,23 @@ class Sequencer:
                 st = ""
                 time.sleep(0.2)
                 g_dev['obs'].update_status()
-        except:
-            plog("Motion check faulted.")
+        except: # most problems are that there is no rotator.
+            try:
+                st = ""
+                while g_dev['foc'].focuser.IsMoving or \
+                      g_dev['mnt'].mount.Slewing: #or g_dev['enc'].status['dome_slewing']:   #Filter is moving??
+                    if g_dev['foc'].focuser.IsMoving: st += 'f>'
+                    if g_dev['mnt'].mount.Slewing: st += 'm>'
+                    #if g_dev['enc'].status['dome_slewing']: st += 'd>'
+                    plog(st)
+                    st = ""
+                    time.sleep(0.2)
+                    g_dev['obs'].update_status()
+            except:
+                plog("Motion check faulted.")
+                plog(traceback.format_exc())
+                breakpoint()
+        
         if req['target'] == 'near_tycho_star':   ## 'bin', 'area'  Other parameters
             #  Go to closest Mag 7.5 Tycho * with no flip
             focus_star = tycho.dist_sort_targets(g_dev['mnt'].current_icrs_ra, g_dev['mnt'].current_icrs_dec, \
@@ -2213,13 +2313,8 @@ class Sequencer:
             spot1 = False
             foc_pos1 = False
             print ("spot1 failed on coarse focus script")
-        # if not sim:
-        #     result = g_dev['cam'].expose_command(req, opt, no_AWS=True) ## , script = 'auto_focus_script_0')  #  This is where we start.
-        # else:
-        #     result['FWHM'] = 3
-        #     result['mean_focus'] = foc_pos0
-        # spot1 = result['FWHM']
-        # foc_pos1 = result['mean_focus']
+
+        g_dev['obs'].send_to_user("Coarse focus center FWHM: " + str(spot1), p_level='INFO')
 
 
         plog('Autofocus Moving In -1x, second time.\n\n')
@@ -2238,7 +2333,10 @@ class Sequencer:
             spot2 = False
             foc_pos2 = False
             print ("spot2 failed on coarse focus script")
+        g_dev['obs'].send_to_user("First Inward focus center FWHM: " + str(spot2), p_level='INFO')
+        
         plog('Autofocus Moving In -2x, second time.\n\n')
+        
 
         g_dev['foc'].guarded_move((foc_pos0 - 2*throw)*g_dev['foc'].micron_to_steps)
         #opt['fwhm_sim'] = 4.
@@ -2254,6 +2352,7 @@ class Sequencer:
             spot3 = False
             foc_pos3 = False
             print ("spot3 failed on coarse focus script")
+        g_dev['obs'].send_to_user("Second Inward focus center FWHM: " + str(spot3), p_level='INFO')
         #Need to check we are not going out too far!
         plog('Autofocus Moving out +3X.\n\n')
 
@@ -2273,6 +2372,9 @@ class Sequencer:
             spot4 = False
             foc_pos4 = False
             print ("spot4 failed on coarse focus script")
+        
+        g_dev['obs'].send_to_user("First Outward focus center FWHM: " + str(spot4), p_level='INFO')
+            
         plog('Autofocus back in for backlash to +1X\n\n')
 
         g_dev['foc'].guarded_move((foc_pos0 + throw)*g_dev['foc'].micron_to_steps)
@@ -2289,6 +2391,9 @@ class Sequencer:
             spot5 = False
             foc_pos5 = False
             print ("spot5 failed on coarse focus script")
+        
+        g_dev['obs'].send_to_user("Second Outward focus center FWHM: " + str(spot2), p_level='INFO')
+        
         x = [foc_pos3, foc_pos2, foc_pos1, foc_pos5, foc_pos4]  # NB NB 20220218 This assigment is bogus!!!!
         y = [spot3, spot2, spot1, spot5, spot4]
         plog('X, Y:  ', x, y)
@@ -2326,14 +2431,17 @@ class Sequencer:
                 spot6 = result['FWHM']
                 foc_pos4 = result['mean_focus']
                 plog('\n\n\nFound best focus at:  ', foc_pos4,' measured is:  ',  round(spot6, 2), '\n\n\n')
+                g_dev['obs'].send_to_user("Found best focus at: " +str(foc_pos4) + ' measured FWHM is: ' + str(round(spot6, 2)), p_level='INFO')
             except:
                 plog('Known bug, Verifcation did not work. Returing to target using solved focus.')
         else:
             plog('Coarse_focus did not converge. Moving back to starting focus:  ', foc_pos0)
+            g_dev['obs'].send_to_user('Coarse_focus did not converge. Moving back to starting focus:  ' + str(foc_pos0), p_level='INFO')
 
             g_dev['foc'].guarded_move((foc_start)*g_dev['foc'].micron_to_steps)
         plog("Returning to:  ", start_ra, start_dec)
         g_dev['mnt'].mount.SlewToCoordinatesAsync(start_ra, start_dec)   #Return to pre-focus pointing.
+        wait_for_slew()
         if sim:
             g_dev['foc'].guarded_move((foc_start)*g_dev['foc'].micron_to_steps)
         self.sequencer_hold = False
@@ -2374,3 +2482,5 @@ class Sequencer:
         except:
             plog('Found an empty shelf.  Reset_(block)completes for:  ', camera)
         return
+    
+    
