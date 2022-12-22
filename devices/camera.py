@@ -1001,10 +1001,15 @@ class Camera:
         self.len_xs = 0  # THIS IS A HACK, indicating no overscan.
         
          # Always check rotator just before exposure
+        rot_report=0
         if g_dev['rot']!=None:                
             while g_dev['rot'].rotator.IsMoving:                    
                 if g_dev['rot'].rotator.IsMoving:                                         
-                    plog('r>')
+                    if rot_report == 0:
+                        plog("Waiting for camera rotator to catch up. ")
+                        g_dev["obs"].send_to_user("Waiting for camera rotator to chatch up before exposing.")
+                                    
+                        rot_report=1
                     time.sleep(0.2)                                
                             
 
