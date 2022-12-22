@@ -1322,31 +1322,31 @@ class Observatory:
                             # B pixels
                             list_0_1 = np.array([ [0,0], [0,1] ])
                             checkerboard=np.tile(list_0_1, (xshape//2, yshape//2))
-                            checkerboard=np.array(checkerboard)
+                            #checkerboard=np.array(checkerboard)
                             hdublue=(block_reduce(storedsStack * checkerboard ,2))
                             
                             # R Pixels
                             list_0_1 = np.array([ [1,0], [0,0] ])
                             checkerboard=np.tile(list_0_1, (xshape//2, yshape//2))
-                            checkerboard=np.array(checkerboard)
+                            #checkerboard=np.array(checkerboard)
                             hdured=(block_reduce(storedsStack * checkerboard ,2))
                             
                             # G top right Pixels
                             list_0_1 = np.array([ [0,1], [0,0] ])
                             checkerboard=np.tile(list_0_1, (xshape//2, yshape//2))
-                            checkerboard=np.array(checkerboard)
-                            GTRonly=(block_reduce(storedsStack * checkerboard ,2))
+                            #checkerboard=np.array(checkerboard)
+                            hdugreen=(block_reduce(storedsStack * checkerboard ,2))
                             
                             # G bottom left Pixels
                             list_0_1 = np.array([ [0,0], [1,0] ])
                             checkerboard=np.tile(list_0_1, (xshape//2, yshape//2))
-                            checkerboard=np.array(checkerboard)
-                            GBLonly=(block_reduce(storedsStack * checkerboard ,2))                                
+                            #checkerboard=np.array(checkerboard)
+                            #GBLonly=(block_reduce(storedsStack * checkerboard ,2))                                
                             
                             # Sum two Gs together and half them to be vaguely on the same scale
-                            hdugreen = np.array(GTRonly + GBLonly) / 2
-                            del GTRonly
-                            del GBLonly
+                            #hdugreen = np.array(GTRonly + GBLonly) / 2
+                            #del GTRonly
+                            #del GBLonly
                             del checkerboard
 
                         else:
@@ -1355,14 +1355,29 @@ class Observatory:
                         
                         
                         xshape=hdugreen.shape[0]
-                        yshape=hdugreen.shape[1]      
-                        blue_stretched_data_float = Stretch().stretch(hdublue+1000)
-                        del hdublue
-                        green_stretched_data_float = Stretch().stretch(hdugreen+1000)
-                        red_stretched_data_float = Stretch().stretch(hdured+1000)
-                        del hdured
-                        xshape=hdugreen.shape[0]
                         yshape=hdugreen.shape[1]
+                        
+                        #histogram matching
+                        
+                        #print (np.median(hdublue))
+                        #print (np.median(hdugreen))
+                        #print (np.median(hdured))
+
+                        
+                        
+                        hdublue[hdublue < 1] = 1
+                        hdugreen[hdugreen < 1] = 1
+                        hdured[hdured < 1] = 1
+                        
+                        #hdublue = hdublue * (np.median(hdugreen) / np.median(hdublue))
+                        #hdured = hdured * (np.median(hdugreen) / np.median(hdured))
+ 
+                        
+                        blue_stretched_data_float = Stretch().stretch(hdublue)
+                        del hdublue
+                        green_stretched_data_float = Stretch().stretch(hdugreen)
+                        red_stretched_data_float = Stretch().stretch(hdured)
+                        del hdured                                
                         del hdugreen
                         rgbArray=np.zeros((xshape,yshape,3), 'uint8')
                         rgbArray[..., 0] = red_stretched_data_float*256

@@ -138,7 +138,7 @@ def wait_for_slew():
                 #if g_dev['mnt'].mount.Slewing: plog( 'm>')
                 #if g_dev['enc'].status['dome_slewing']: st += 'd>'
                 plog( 'm>')
-                time.sleep(0.5)
+                time.sleep(0.1)
                 g_dev['obs'].update_status()            
             
     except Exception as e:
