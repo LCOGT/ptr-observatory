@@ -1223,246 +1223,103 @@ class Observatory:
                     # No need to open the same image twice, just using the same one as SEP.
                     img = sstackimghold.copy()
                     del sstackimghold
-
                     smartStackFilename = (
-                        str(ssobject)
-                        + "_"
-                        + str(ssfilter)
-                        + "_"
-                        + str(ssexptime)
-                        + "_"
-                        + str(smartstackid)
-                        + ".npy"
-                    )
-
-
-                    # Detect and swap img to the correct endianness - needed for the smartstack jpg
-                    if sys.byteorder=='little':
-                        img=img.newbyteorder('little').byteswap()
-                    else:
-                        img=img.newbyteorder('big').byteswap()
-
-
-                    # IF SMARSTACK NPY FILE EXISTS DO STUFF, OTHERWISE THIS IMAGE IS THE START OF A SMARTSTACK
-                    reprojection_failed=False
-                    if not os.path.exists(
-                        g_dev["cam"].site_path + "smartstacks/" + smartStackFilename
-                    ):
-                        if len(sources) >= 5:
-                            # Store original image
-                            plog("Storing First smartstack image")
-                            np.save(
-                                g_dev["cam"].site_path
-                                + "smartstacks/"
-                                + smartStackFilename,
-                                img,
-                            )
-
-                        else:
-                            print ("Not storing first smartstack image as not enough sources")
-                            reprojection_failed=True
-                        storedsStack = img
-                    else:
-                        # Collect stored SmartStack
-                        storedsStack = np.load(
-                            g_dev["cam"].site_path + "smartstacks/" + smartStackFilename
+                            str(ssobject)
+                            + "_"
+                            + str(ssfilter)
+                            + "_"
+                            + str(ssexptime)
+                            + "_"
+                            + str(smartstackid)
+                            + ".npy"
                         )
-                        #print (storedsStack.dtype.byteorder)
-                        # Prep new image
-                        plog("Pasting Next smartstack image")
-                        # img=np.nan_to_num(img)
-                        # backgroundLevel =(np.nanmedian(sep.Background(img.byteswap().newbyteorder())))
-                        # print (" Background Level : " + str(backgroundLevel))
-                        # img= img - backgroundLevel
-                        # Reproject new image onto footprint of old image.
-                        plog(datetime.datetime.now())
-                        if len(sources) > 5:
-                            try:
-                                reprojectedimage, _ = func_timeout.func_timeout (60, aa.register, args=(img, storedsStack),\
-                                                                                 kwargs={"detection_sigma":3, "min_area":9})
-                                # scalingFactor= np.nanmedian(reprojectedimage / storedsStack)
-                                # print (" Scaling Factor : " +str(scalingFactor))
-                                # reprojectedimage=(scalingFactor) * reprojectedimage # Insert a scaling factor
-                                storedsStack = np.array((reprojectedimage + storedsStack))
-                                # Save new stack to disk
+                    
+                    
+                    # For OSC, we need to smartstack individual frames. 
+                    if not self.config["camera"][g_dev['cam'].name]["settings"]["is_osc"]:
+                    
+
+                        
+    
+    
+                        # Detect and swap img to the correct endianness - needed for the smartstack jpg
+                        if sys.byteorder=='little':
+                            img=img.newbyteorder('little').byteswap()
+                        else:
+                            img=img.newbyteorder('big').byteswap()
+    
+    
+                        # IF SMARSTACK NPY FILE EXISTS DO STUFF, OTHERWISE THIS IMAGE IS THE START OF A SMARTSTACK
+                        reprojection_failed=False
+                        if not os.path.exists(
+                            g_dev["cam"].site_path + "smartstacks/" + smartStackFilename
+                        ):
+                            if len(sources) >= 5:
+                                # Store original image
+                                plog("Storing First smartstack image")
                                 np.save(
                                     g_dev["cam"].site_path
                                     + "smartstacks/"
                                     + smartStackFilename,
-                                    storedsStack,
+                                    img,
                                 )
-                                reprojection_failed=False
-                            except func_timeout.FunctionTimedOut:
-                                print ("astroalign timed out")
+    
+                            else:
+                                print ("Not storing first smartstack image as not enough sources")
                                 reprojection_failed=True
-                            except aa.MaxIterError:
-                                print ("astroalign could not find a solution in this image")
+                            storedsStack = img
+                        else:
+                            # Collect stored SmartStack
+                            storedsStack = np.load(
+                                g_dev["cam"].site_path + "smartstacks/" + smartStackFilename
+                            )
+                            #print (storedsStack.dtype.byteorder)
+                            # Prep new image
+                            plog("Pasting Next smartstack image")
+                            # img=np.nan_to_num(img)
+                            # backgroundLevel =(np.nanmedian(sep.Background(img.byteswap().newbyteorder())))
+                            # print (" Background Level : " + str(backgroundLevel))
+                            # img= img - backgroundLevel
+                            # Reproject new image onto footprint of old image.
+                            #plog(datetime.datetime.now())
+                            if len(sources) > 5:
+                                try:
+                                    reprojectedimage, _ = func_timeout.func_timeout (60, aa.register, args=(img, storedsStack),\
+                                                                                     kwargs={"detection_sigma":3, "min_area":9})
+                                    # scalingFactor= np.nanmedian(reprojectedimage / storedsStack)
+                                    # print (" Scaling Factor : " +str(scalingFactor))
+                                    # reprojectedimage=(scalingFactor) * reprojectedimage # Insert a scaling factor
+                                    storedsStack = np.array((reprojectedimage + storedsStack))
+                                    # Save new stack to disk
+                                    np.save(
+                                        g_dev["cam"].site_path
+                                        + "smartstacks/"
+                                        + smartStackFilename,
+                                        storedsStack,
+                                    )
+                                    reprojection_failed=False
+                                except func_timeout.FunctionTimedOut:
+                                    print ("astroalign timed out")
+                                    reprojection_failed=True
+                                except aa.MaxIterError:
+                                    print ("astroalign could not find a solution in this image")
+                                    reprojection_failed=True
+                                except Exception:
+                                    print ("astroalign failed")
+                                    print (traceback.format_exc())
+                                    reprojection_failed=True
+                            else:
                                 reprojection_failed=True
-                            except Exception:
-                                print ("astroalign failed")
-                                print (traceback.format_exc())
-                                reprojection_failed=True
-                        else:
-                            reprojection_failed=True
-
-
-                    if reprojection_failed == True: # If we couldn't make a stack send a jpeg of the original image.
-                        storedsStack=img
-                    
-
-                    if self.config["camera"][g_dev['cam'].name]["settings"]["is_osc"]:
+    
+    
+                        if reprojection_failed == True: # If we couldn't make a stack send a jpeg of the original image.
+                            storedsStack=img
                         
-                        if self.config["camera"][g_dev['cam'].name]["settings"]["osc_bayer"] == 'RGGB':                           
+                        
+                         # Resizing the array to an appropriate shape for the jpg and the small fits
+
                             
-                            # Checkerboard collapse for other colours for temporary jpeg                            
-                            # Create indexes for B, G, G, R images                            
-                            xshape=storedsStack.shape[0]
-                            yshape=storedsStack.shape[1]
-
-                            # B pixels
-                            list_0_1 = np.array([ [0,0], [0,1] ])
-                            checkerboard=np.tile(list_0_1, (xshape//2, yshape//2))
-                            #checkerboard=np.array(checkerboard)
-                            hdublue=(block_reduce(storedsStack * checkerboard ,2))
                             
-                            # R Pixels
-                            list_0_1 = np.array([ [1,0], [0,0] ])
-                            checkerboard=np.tile(list_0_1, (xshape//2, yshape//2))
-                            #checkerboard=np.array(checkerboard)
-                            hdured=(block_reduce(storedsStack * checkerboard ,2))
-                            
-                            # G top right Pixels
-                            list_0_1 = np.array([ [0,1], [0,0] ])
-                            checkerboard=np.tile(list_0_1, (xshape//2, yshape//2))
-                            #checkerboard=np.array(checkerboard)
-                            hdugreen=(block_reduce(storedsStack * checkerboard ,2))
-                            
-                            # G bottom left Pixels
-                            list_0_1 = np.array([ [0,0], [1,0] ])
-                            checkerboard=np.tile(list_0_1, (xshape//2, yshape//2))
-                            #checkerboard=np.array(checkerboard)
-                            #GBLonly=(block_reduce(storedsStack * checkerboard ,2))                                
-                            
-                            # Sum two Gs together and half them to be vaguely on the same scale
-                            #hdugreen = np.array(GTRonly + GBLonly) / 2
-                            #del GTRonly
-                            #del GBLonly
-                            del checkerboard
-
-                        else:
-                            print ("this bayer grid not implemented yet")
-                        
-                        
-                        
-                        xshape=hdugreen.shape[0]
-                        yshape=hdugreen.shape[1]
-                        
-                        #histogram matching
-                        
-                        #print (np.median(hdublue))
-                        #print (np.median(hdugreen))
-                        #print (np.median(hdured))
-
-                        
-                        
-                        hdublue[hdublue < 1] = 1
-                        hdugreen[hdugreen < 1] = 1
-                        hdured[hdured < 1] = 1
-                        
-                        #hdublue = hdublue * (np.median(hdugreen) / np.median(hdublue))
-                        #hdured = hdured * (np.median(hdugreen) / np.median(hdured))
- 
-                        
-                        blue_stretched_data_float = Stretch().stretch(hdublue)
-                        del hdublue
-                        green_stretched_data_float = Stretch().stretch(hdugreen)
-                        red_stretched_data_float = Stretch().stretch(hdured)
-                        del hdured                                
-                        del hdugreen
-                        rgbArray=np.zeros((xshape,yshape,3), 'uint8')
-                        rgbArray[..., 0] = red_stretched_data_float*256
-                        rgbArray[..., 1] = green_stretched_data_float*256
-                        rgbArray[..., 2] = blue_stretched_data_float*256
-
-                        del red_stretched_data_float
-                        del blue_stretched_data_float
-                        del green_stretched_data_float
-                        colour_img = Image.fromarray(rgbArray, mode="RGB")
-                        
-                       # adjust brightness
-                        brightness=ImageEnhance.Brightness(colour_img)
-                        brightness_image=brightness.enhance(self.config["camera"][g_dev['cam'].name]["settings"]['osc_brightness_enhance'])
-                        del colour_img
-                        del brightness
-                        
-                        # adjust contrast
-                        contrast=ImageEnhance.Contrast(brightness_image)
-                        contrast_image=contrast.enhance(self.config["camera"][g_dev['cam'].name]["settings"]['osc_contrast_enhance'])
-                        del brightness_image
-                        del contrast
-                        
-                        # adjust colour
-                        colouradj=ImageEnhance.Color(contrast_image)
-                        colour_image=colouradj.enhance(self.config["camera"][g_dev['cam'].name]["settings"]['osc_colour_enhance'])
-                        del contrast_image
-                        del colouradj
-                        
-                        # adjust saturation
-                        satur=ImageEnhance.Color(colour_image)
-                        satur_image=satur.enhance(self.config["camera"][g_dev['cam'].name]["settings"]['osc_saturation_enhance'])
-                        del colour_image
-                        del satur
-                        
-                        # adjust sharpness
-                        sharpness=ImageEnhance.Sharpness(satur_image)
-                        final_image=sharpness.enhance(self.config["camera"][g_dev['cam'].name]["settings"]['osc_sharpness_enhance'])
-                        del satur_image
-                        del sharpness
-                        
-                        # These steps flip and rotate the jpeg according to the settings in the site-config for this camera
-                        if self.config["camera"][g_dev['cam'].name]["settings"]["transpose_jpeg"]:
-                            final_image=final_image.transpose(Image.TRANSPOSE)
-                        if self.config["camera"][g_dev['cam'].name]["settings"]['flipx_jpeg']:
-                            final_image=final_image.transpose(Image.FLIP_LEFT_RIGHT)
-                        if self.config["camera"][g_dev['cam'].name]["settings"]['flipy_jpeg']:
-                            final_image=final_image.transpose(Image.FLIP_TOP_BOTTOM)
-                        if self.config["camera"][g_dev['cam'].name]["settings"]['rotate180_jpeg']:
-                            final_image=final_image.transpose(Image.ROTATE_180)
-                        if self.config["camera"][g_dev['cam'].name]["settings"]['rotate90_jpeg']:
-                            final_image=final_image.transpose(Image.ROTATE_90)
-                        if self.config["camera"][g_dev['cam'].name]["settings"]['rotate270_jpeg']:
-                            final_image=final_image.transpose(Image.ROTATE_270)
-                        
-                        # Detect the pierside and if it is one way, rotate the jpeg 180 degrees
-                        # to maintain the orientation. whether it is 1 or 0 that is flipped
-                        # is sorta arbitrary... you'd use the site-config settings above to 
-                        # set it appropriately and leave this alone.
-                        if g_dev['mnt'].pier_side == 1:
-                            final_image=final_image.transpose(Image.ROTATE_180)
-                        
-                        
-                        ## Resizing the array to an appropriate shape for the jpg and the small fits
-                        iy, ix = final_image.size
-                        if iy == ix:
-                            #final_image.resize((1280, 1280))
-                            final_image.resize((900, 900))
-                        else:
-                            #final_image.resize((int(1536 * iy / ix), 1536))
-                            final_image.resize((int(900 * iy / ix), 900))
-                        
-                        
-                            
-                        final_image.save(
-                            paths["im_path"] + paths["jpeg_name10"]
-                        )
-                        del final_image
-                                
-             
-                    else:
-                        # Resizing the array to an appropriate shape for the jpg and the small fits
-                        #iy, ix = storedsStack.shape
-                        
-                        
                         # Code to stretch the image to fit into the 256 levels of grey for a jpeg
                         stretched_data_float = Stretch().stretch(storedsStack + 1000)
                         del storedsStack
@@ -1479,57 +1336,277 @@ class Observatory:
     
                         iy, ix = stretched_data_uint8.shape
                         stretched_data_uint8 = Image.fromarray(stretched_data_uint8)
-    
+        
                         if iy == ix:
-                            # storedsStack = resize(
-                            #     storedsStack, (1280, 1280), preserve_range=True
-                            # )
-                            # storedsStack = resize(
-                            #     storedsStack, (900, 900), preserve_range=True
-                            # )
+
                             stretched_data_uint8 = stretched_data_uint8.resize(
                                          (900, 900)
                                     )
                         else:
-                            # storedsStack = resize(
-                            #     storedsStack,
-                            #     (int(1536 * iy / ix), 1536),
-                            #     preserve_range=True,
-                            # )  #  We should trim chips so ratio is exact.
-                            # storedsStack = resize(
-                            #     storedsStack,
-                            #     (int(900 * iy / ix), 900),
-                            #     preserve_range=True,
-                            # )  #  We should trim chips so ratio is exact.
+
                             stretched_data_uint8 = stretched_data_uint8.resize(
                                         
                                         (int(900 * iy / ix), 900)
                                         
                                     ) 
-    
-                        # imsave(
-                        #     g_dev["cam"].site_path
-                        #     + "smartstacks/"
-                        #     + smartStackFilename.replace(
-                        #         ".npy", "_" + str(ssframenumber) + ".jpg"
-                        #     ),
-                        #     stretched_data_uint8,
-                        # )
-    
-                        # imsave(
-                        #     paths["im_path"] + paths["jpeg_name10"],
-                        #     stretched_data_uint8,
-                        # )
-
+           
                         stretched_data_uint8=stretched_data_uint8.transpose(Image.TRANSPOSE) # Not sure why it transposes on array creation ... but it does!
                         stretched_data_uint8.save(
                             paths["im_path"] + paths["jpeg_name10"]
                         )
+                            
+
                         
-                        # imsave(
-                        #     paths["im_path"] + paths["jpeg_name10"],
-                        #     stretched_data_uint8,
-                        # )
+                        
+                        
+                        
+                        
+                        
+                        
+                        
+                    # This is where the OSC smartstack stuff is. 
+                    else:   
+                        
+                        # img is the image coming in
+                        
+                        
+                                                
+    
+                        if self.config["camera"][g_dev['cam'].name]["settings"]["is_osc"]:
+                            
+                            if self.config["camera"][g_dev['cam'].name]["settings"]["osc_bayer"] == 'RGGB':                           
+                                
+                                # Checkerboard collapse for other colours for temporary jpeg                            
+                                # Create indexes for B, G, G, R images                            
+                                xshape=img.shape[0]
+                                yshape=img.shape[1]
+    
+                                # B pixels
+                                list_0_1 = np.array([ [0,0], [0,1] ])
+                                checkerboard=np.tile(list_0_1, (xshape//2, yshape//2))
+                                #checkerboard=np.array(checkerboard)
+                                newhdublue=(block_reduce(img * checkerboard ,2))
+                                
+                                # R Pixels
+                                list_0_1 = np.array([ [1,0], [0,0] ])
+                                checkerboard=np.tile(list_0_1, (xshape//2, yshape//2))
+                                #checkerboard=np.array(checkerboard)
+                                newhdured=(block_reduce(img * checkerboard ,2))
+                                
+                                # G top right Pixels
+                                list_0_1 = np.array([ [0,1], [0,0] ])
+                                checkerboard=np.tile(list_0_1, (xshape//2, yshape//2))
+                                #checkerboard=np.array(checkerboard)
+                                newhdugreen=(block_reduce(img * checkerboard ,2))
+                                
+                                # G bottom left Pixels
+                                #list_0_1 = np.array([ [0,0], [1,0] ])
+                                #checkerboard=np.tile(list_0_1, (xshape//2, yshape//2))
+                                #checkerboard=np.array(checkerboard)
+                                #GBLonly=(block_reduce(storedsStack * checkerboard ,2))                                
+                                
+                                # Sum two Gs together and half them to be vaguely on the same scale
+                                #hdugreen = np.array(GTRonly + GBLonly) / 2
+                                #del GTRonly
+                                #del GBLonly
+                                del checkerboard
+    
+                            else:
+                                print ("this bayer grid not implemented yet")
+                            
+                            
+                            # IF SMARSTACK NPY FILE EXISTS DO STUFF, OTHERWISE THIS IMAGE IS THE START OF A SMARTSTACK
+                            reprojection_failed=False
+                            for colstack in ['blue','green','red']:
+                                if not os.path.exists(
+                                    g_dev["cam"].site_path + "smartstacks/" + smartStackFilename.replace(smartstackid, smartstackid + str(colstack))
+                                ):
+                                    if len(sources) >= 5:
+                                        # Store original image
+                                        plog("Storing First smartstack image")
+                                        if colstack == 'blue':
+                                            np.save(
+                                                g_dev["cam"].site_path
+                                                + "smartstacks/"
+                                                + smartStackFilename.replace(smartstackid, smartstackid + str(colstack)),
+                                                newhdublue,
+                                            )
+                                        if colstack == 'green':
+                                            np.save(
+                                                g_dev["cam"].site_path
+                                                + "smartstacks/"
+                                                + smartStackFilename.replace(smartstackid, smartstackid + str(colstack)),
+                                                newhdugreen,
+                                            )
+                                        if colstack == 'red':
+                                            np.save(
+                                                g_dev["cam"].site_path
+                                                + "smartstacks/"
+                                                + smartStackFilename.replace(smartstackid, smartstackid + str(colstack)),
+                                                newhdured,
+                                            )
+            
+                                    else:
+                                        print ("Not storing first smartstack image as not enough sources")
+                                        reprojection_failed=True
+                                    # if colstack == 'blue':
+                                    #     bluestoredsStack = newhdublue
+                                    # if colstack == 'green':
+                                    #     greenstoredsStack = newhdugreen
+                                    # if colstack == 'red':
+                                    #     redstoredsStack = newhdured
+                                else:
+                                    # Collect stored SmartStack
+                                    storedsStack = np.load(
+                                        g_dev["cam"].site_path + "smartstacks/" + smartStackFilename.replace(smartstackid, smartstackid + str(colstack))
+                                    )
+                                    #print (storedsStack.dtype.byteorder)
+                                    # Prep new image
+                                    plog("Pasting Next smartstack image")
+                                    # img=np.nan_to_num(img)
+                                    # backgroundLevel =(np.nanmedian(sep.Background(img.byteswap().newbyteorder())))
+                                    # print (" Background Level : " + str(backgroundLevel))
+                                    # img= img - backgroundLevel
+                                    # Reproject new image onto footprint of old image.
+                                    #plog(datetime.datetime.now())
+                                    if len(sources) > 5:
+                                        try:
+                                            if colstack == 'red':
+                                                reprojectedimage, _ = func_timeout.func_timeout (60, aa.register, args=(newhdured, storedsStack),\
+                                                                                                 kwargs={"detection_sigma":3, "min_area":9})
+                                                
+                                            if colstack == 'blue':
+                                                reprojectedimage, _ = func_timeout.func_timeout (60, aa.register, args=(newhdublue, storedsStack),\
+                                                                                                 kwargs={"detection_sigma":3, "min_area":9})
+                                            if colstack == 'green':
+                                                reprojectedimage, _ = func_timeout.func_timeout (60, aa.register, args=(newhdugreen, storedsStack),\
+                                                                                                 kwargs={"detection_sigma":3, "min_area":9})
+                                                # scalingFactor= np.nanmedian(reprojectedimage / storedsStack)
+                                            # print (" Scaling Factor : " +str(scalingFactor))
+                                            # reprojectedimage=(scalingFactor) * reprojectedimage # Insert a scaling factor
+                                            storedsStack = np.array((reprojectedimage + storedsStack))
+                                            # Save new stack to disk
+                                            np.save(
+                                                g_dev["cam"].site_path
+                                                + "smartstacks/"
+                                                + smartStackFilename.replace(smartstackid, smartstackid + str(colstack)),
+                                                storedsStack,
+                                            )
+                                            if colstack == 'green':
+                                                newhdugreen=np.array(storedsStack)
+                                            if colstack == 'red':
+                                                newhdured=np.array(storedsStack)
+                                            if colstack == 'blue':
+                                                newhdublue=np.array(storedsStack)
+                                            del storedsStack
+                                            reprojection_failed=False
+                                        except func_timeout.FunctionTimedOut:
+                                            print ("astroalign timed out")
+                                            reprojection_failed=True
+                                        except aa.MaxIterError:
+                                            print ("astroalign could not find a solution in this image")
+                                            reprojection_failed=True
+                                        except Exception:
+                                            print ("astroalign failed")
+                                            print (traceback.format_exc())
+                                            reprojection_failed=True
+                                    else:
+                                        reprojection_failed=True
+                            
+                            # NOW THAT WE HAVE THE INDIVIDUAL IMAGES THEN PUT THEM TOGETHER
+                            xshape=newhdugreen.shape[0]
+                            yshape=newhdugreen.shape[1]                          
+                            
+                            newhdublue[newhdublue < 1] = 1
+                            newhdugreen[newhdugreen < 1] = 1
+                            newhdured[newhdured < 1] = 1
+                                                        
+                            blue_stretched_data_float = Stretch().stretch(newhdublue)
+                            del newhdublue
+                            green_stretched_data_float = Stretch().stretch(newhdugreen)
+                            red_stretched_data_float = Stretch().stretch(newhdured)
+                            del newhdured                                
+                            del newhdugreen
+                            rgbArray=np.zeros((xshape,yshape,3), 'uint8')
+                            rgbArray[..., 0] = red_stretched_data_float*256
+                            rgbArray[..., 1] = green_stretched_data_float*256
+                            rgbArray[..., 2] = blue_stretched_data_float*256
+    
+                            del red_stretched_data_float
+                            del blue_stretched_data_float
+                            del green_stretched_data_float
+                            colour_img = Image.fromarray(rgbArray, mode="RGB")
+                            
+                           # adjust brightness
+                            brightness=ImageEnhance.Brightness(colour_img)
+                            brightness_image=brightness.enhance(self.config["camera"][g_dev['cam'].name]["settings"]['osc_brightness_enhance'])
+                            del colour_img
+                            del brightness
+                            
+                            # adjust contrast
+                            contrast=ImageEnhance.Contrast(brightness_image)
+                            contrast_image=contrast.enhance(self.config["camera"][g_dev['cam'].name]["settings"]['osc_contrast_enhance'])
+                            del brightness_image
+                            del contrast
+                            
+                            # adjust colour
+                            colouradj=ImageEnhance.Color(contrast_image)
+                            colour_image=colouradj.enhance(self.config["camera"][g_dev['cam'].name]["settings"]['osc_colour_enhance'])
+                            del contrast_image
+                            del colouradj
+                            
+                            # adjust saturation
+                            satur=ImageEnhance.Color(colour_image)
+                            satur_image=satur.enhance(self.config["camera"][g_dev['cam'].name]["settings"]['osc_saturation_enhance'])
+                            del colour_image
+                            del satur
+                            
+                            # adjust sharpness
+                            sharpness=ImageEnhance.Sharpness(satur_image)
+                            final_image=sharpness.enhance(self.config["camera"][g_dev['cam'].name]["settings"]['osc_sharpness_enhance'])
+                            del satur_image
+                            del sharpness
+                            
+                            # These steps flip and rotate the jpeg according to the settings in the site-config for this camera
+                            if self.config["camera"][g_dev['cam'].name]["settings"]["transpose_jpeg"]:
+                                final_image=final_image.transpose(Image.TRANSPOSE)
+                            if self.config["camera"][g_dev['cam'].name]["settings"]['flipx_jpeg']:
+                                final_image=final_image.transpose(Image.FLIP_LEFT_RIGHT)
+                            if self.config["camera"][g_dev['cam'].name]["settings"]['flipy_jpeg']:
+                                final_image=final_image.transpose(Image.FLIP_TOP_BOTTOM)
+                            if self.config["camera"][g_dev['cam'].name]["settings"]['rotate180_jpeg']:
+                                final_image=final_image.transpose(Image.ROTATE_180)
+                            if self.config["camera"][g_dev['cam'].name]["settings"]['rotate90_jpeg']:
+                                final_image=final_image.transpose(Image.ROTATE_90)
+                            if self.config["camera"][g_dev['cam'].name]["settings"]['rotate270_jpeg']:
+                                final_image=final_image.transpose(Image.ROTATE_270)
+                            
+                            # Detect the pierside and if it is one way, rotate the jpeg 180 degrees
+                            # to maintain the orientation. whether it is 1 or 0 that is flipped
+                            # is sorta arbitrary... you'd use the site-config settings above to 
+                            # set it appropriately and leave this alone.
+                            if g_dev['mnt'].pier_side == 1:
+                                final_image=final_image.transpose(Image.ROTATE_180)
+                            
+                            
+                            ## Resizing the array to an appropriate shape for the jpg and the small fits
+                            iy, ix = final_image.size
+                            if iy == ix:
+                                #final_image.resize((1280, 1280))
+                                final_image.resize((900, 900))
+                            else:
+                                #final_image.resize((int(1536 * iy / ix), 1536))
+                                final_image.resize((int(900 * iy / ix), 900))
+                            
+                            
+                                
+                            final_image.save(
+                                paths["im_path"] + paths["jpeg_name10"]
+                            )
+                            del final_image
+                                    
+                
+                           
 
 
 
