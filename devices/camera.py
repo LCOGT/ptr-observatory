@@ -2455,13 +2455,27 @@ class Camera:
                                 xshape=hdugreen.shape[0]
                                 yshape=hdugreen.shape[1]
                                 
-                                blue_stretched_data_float = Stretch().stretch(hdublue+1000)
+                                #histogram matching
+                                
+                                #print (np.median(hdublue))
+                                #print (np.median(hdugreen))
+                                #print (np.median(hdured))
+
+                                
+                                
+                                hdublue[hdublue < 1] = 1
+                                hdugreen[hdugreen < 1] = 1
+                                hdured[hdured < 1] = 1
+                                
+                                #hdublue = hdublue * (np.median(hdugreen) / np.median(hdublue))
+                                #hdured = hdured * (np.median(hdugreen) / np.median(hdured))
+ 
+                                
+                                blue_stretched_data_float = Stretch().stretch(hdublue)
                                 del hdublue
-                                green_stretched_data_float = Stretch().stretch(hdugreen+1000)
-                                red_stretched_data_float = Stretch().stretch(hdured+1000)
-                                del hdured
-                                xshape=hdugreen.shape[0]
-                                yshape=hdugreen.shape[1]
+                                green_stretched_data_float = Stretch().stretch(hdugreen)
+                                red_stretched_data_float = Stretch().stretch(hdured)
+                                del hdured                                
                                 del hdugreen
                                 rgbArray=np.zeros((xshape,yshape,3), 'uint8')
                                 rgbArray[..., 0] = red_stretched_data_float*256
