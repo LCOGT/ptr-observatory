@@ -240,7 +240,9 @@ class Enclosure:
             #  assuming the transducers are connected to the WEMA.
             self.site_is_generic = True
             win32com.client.pythoncom.CoInitialize()
+
             self.enclosure = win32com.client.Dispatch(driver)
+            
             plog(self.enclosure)
             try:
                 if not self.enclosure.Connected:
@@ -257,6 +259,11 @@ class Enclosure:
             plog('\n&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&& \n') 
             plog('      20221014  Close commands are blocked,  System defaults to manual. \n ')
             plog('&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&& \n')
+        
+
+              
+            
+        
     def get_status(self) -> dict:
 
         if not self.is_wema and self.site_has_proxy and self.dome_on_wema:
@@ -317,7 +324,7 @@ class Enclosure:
             try:
                 self.dome_home = self.enclosure.AtHome
             except:
-                self.come_home = True
+                self.dome_home = True
 
             if shutter_status == 0:
                 stat_string = "Open"

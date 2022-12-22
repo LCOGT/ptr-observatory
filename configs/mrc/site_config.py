@@ -121,17 +121,17 @@ site_config = {
 
     'auto_eve_bias_dark': False,
     
-    'auto_midnight_moonless_bias_dark': False,
-    'auto_eve_sky_flat': False,
-    'eve_sky_flat_sunset_offset': -90.,  #  Minutes  neg means before, + after.
-    'eve_cool_down_open' : -95.0,
+    'auto_midnight_moonless_bias_dark': True,
+    'auto_eve_sky_flat': True,
+    'eve_sky_flat_sunset_offset': -40.,  #  Minutes  neg means before, + after.
+    'eve_cool_down_open' : -45.0,
     'auto_morn_sky_flat': False,
     'auto_morn_bias_dark': False,
-    're-calibrate_on_solve': False,
-    'pointing_calibration_on_startup': False,
+    're-calibrate_on_solve': True,
+    'pointing_calibration_on_startup': False,  #MF I am leaving this alone.
     'periodic_focus_time' : 0.5, # This is a time, in hours, over which to bypass automated focussing (e.g. at the start of a project it will not refocus if a new project starts X hours after the last focus)
     'stdev_fwhm' : 0.5, # This is the expected variation in FWHM at a given telescope/camera/site combination. This is used to check if a fwhm is within normal range or the focus has shifted
-    'focus_exposure_time': 10, # Exposure time in seconds for exposure image
+    'focus_exposure_time': 25, # Exposure time in seconds for exposure image
     'focus_trigger' : 1.0, # What FWHM increase is needed to trigger an autofocus
     'solve_nth_image' : 10, # Only solve every nth image
     'solve_timer' : 5, # Only solve every X minutes
@@ -434,10 +434,10 @@ site_config = {
             'start_at_config_reference': False,
             'use_focuser_temperature': True,
             #*********Guesses   7379@10 7457@20  7497 @ 25
-            'reference': 6900, #20221103    #7418,    # Nominal at 15C Primary temperature, in microns not steps. Guess
+            'reference': 7250, #20221103    #7418,    # Nominal at 15C Primary temperature, in microns not steps. Guess
             'ref_temp':  15,      # Update when pinning reference  Larger at lower temperatures.
             'coef_c': 11.892,    # Negative means focus moves out (larger numerically) as Primary gets colder
-            'coef_0': 6782,  #20221103# Nominal intercept when Primary is at 0.0 C.
+            'coef_0': 7250,  #20221103# Nominal intercept when Primary is at 0.0 C.
             'coef_date':  '20221103',   #A Guess as to coef_c
             'z_compression': 0.0, #  microns per degree of zenith distance
             'z_coef_date':  '20221002',   # 'reference': 4375,    #   Guess 20210904  Nominal at 10C Primary temperature
@@ -478,7 +478,7 @@ site_config = {
             "parent": "telescope1",
             "alias": "Dual filter wheel",
             "desc":  'FLI Centerline Custom Dual 50mm sq.',
-            "driver": "Maxim.CCDCamera",  #['ASCOM.FLI.FilterWheel1', 'ASCOM.FLI.FilterWheel2'],   #"Maxim",   #
+            "driver": "Maxim.CCDCamera",  #'ASCOM.FLI.FilterWheel',   #['ASCOM.FLI.FilterWheel1', 'ASCOM.FLI.FilterWheel2'],   #"Maxim",   #"Maxim.CCDCamera",  #
             #"driver":   'ASCOM.FLI.FilterWheel',   #  NB THIS IS THE NEW DRIVER FROM peter.oleynikov@gmail.com  Found in Kepler ASCOM section
             "dual_wheel": True,
             
@@ -508,7 +508,7 @@ site_config = {
                 #'filter_list': ['PL','PR','PG','PB','HA','O3','S2', 'air','dif','w','CR','N2','up','gp','rp','ip','z', 'difup','difgp','difrp','difip','dark'], # A list of actual physical filters for the substitution function
 
                 'filter_data': [['air',     [0, 0], -1000,  357.1, [2, 17], 'ai'], #  0
-                                ['dif',     [4, 0],     0,  330.0, [2, 17], 'df'], #  1  NB NB NB THis in series should change focus about 1mm more.
+                                ['dif',     [4, 0],     0,  330.0, [2, 17], 'df'], #  1  NB NB NB If this in series should change focus about 1mm more.
                                 ['w',       [2, 0],     0,  346.2, [2, 17], 'w '], #  2
                                 ['PL',      [0, 4],     0,  317.5, [2, 17], "PL"], #  3
                                 ['gp',      [0, 6],     0,  108.7, [2, 17], 'gp'], #  4 
@@ -524,20 +524,14 @@ site_config = {
                                 ['CR',      [1, 0],     0,  2.83,  [2, 17], 'CR'], # 14
                                 ['S2',      [8, 0],     0,  1.64,  [2, 17], 'S2'], # 15   
                                 ['HA',      [6, 0],     0,  1.58,  [2, 17], 'HA'], # 16  
-                                ['difup',   [4, 5],  1000,  4.8,   [2, 17], 'du'], # 17
-                                ['difgp',   [4, 6],  1000,   90,   [2, 17], 'dg'], # 18
-                                ['difrp',   [4, 7],  1000,   48,   [2, 17], 'dr'], # 19
-                                ['difip',   [4, 8],  1000,   44,   [2, 17], 'di'], # 20
-                                ['focus',   [2, 0],     0,  0.0,   [2, 17], 'fo'], # 21
-                                #['focus',   [0, 0],     0,  0.0,   [2, 17], 'fo'], # 21
-                                ['dark',    [8, 5],     0,  0.0,   [2, 17], 'dk']],# 22
+                                ['focus',   [2, 0],     0,  0.0,   [2, 17], 'fo'], # 17
+                                ['dark',    [8, 5],     0,  0.0,   [2, 17], 'dk']],# 18
 
                                 #Screen = 100; QHY400 ~ 92% DQE   HDR Mode    Screen = 160 sat  20190825 measured.
-                'filter_screen_sort':  [0, 1, 2, 10, 7, 19, 6, 18, 12, 11, 13, 8, 20, 3, \
-                                        14, 15, 4, 16],   #  9, 21],  # 5, 17], #Most to least throughput, \
+                'filter_screen_sort':  ['air','w','PL','dif', 'gp','PB','rp','PG','PR','ip','O3','N2','CR','S2','HA'],   #  9, 21],  # 5, 17], #Most to least throughput, \
                                 #so screen brightens, skipping u and zs which really need sky.
 
-                'filter_sky_sort':     [16, 15, 14, 13, 12, 11, 10, 9, 8, 7, 6, 5, 4, 3, 2, 1, 0]  #Least to most throughput  \
+                'filter_sky_sort':     ['HA', 'S2', 'CR', 'N2', 'up', 'O3', 'z', 'ip', 'PR', 'PG', 'rp', 'PB', 'gp', 'PL', 'w', 'dif', 'air']  #Least to most throughput  \
 
 
             },
@@ -579,7 +573,18 @@ site_config = {
 
             'settings': {
                 
-                'is_osc' : True, 
+                'is_osc' : True,
+                # 'osc_brightness_enhance' : 1.0,
+                # 'osc_contrast_enhance' : 1.3,
+                # 'osc_saturation_enhance' : 2.0,
+                # 'osc_colour_enhance' : 1.5,
+                # 'osc_sharpness_enhance' : 1.5,
+                'osc_brightness_enhance' : 1.0,
+                'osc_contrast_enhance' : 1.5,
+                'osc_saturation_enhance' : 2.5,
+                'osc_colour_enhance' : 1.7,
+                'osc_sharpness_enhance' : 1.5,
+                'bin_for_focus' : True, # This setting will bin the image for focussing rather than interpolating. Good for 1x1 pixel sizes < 0.6.
                 
                 # ONLY TRANSFORM THE FITS IF YOU HAVE
                 # A DATA-BASED REASON TO DO SO.....
@@ -595,7 +600,7 @@ site_config = {
                 # HERE YOU CAN FLIP THE IMAGE TO YOUR HEARTS DESIRE
                 # HOPEFULLY YOUR HEARTS DESIRE IS SIMILAR TO THE
                 # RECOMMENDED DEFAULT DESIRE OF PTR
-                'transpose_jpeg' : False,
+                'transpose_jpeg' : True,
                 'flipx_jpeg' : False,
                 'flipy_jpeg' : False,
                 'rotate180_jpeg' : False,

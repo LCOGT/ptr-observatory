@@ -51,8 +51,8 @@ site_config = {
     'wema_write_share_path':  None,   # This and below provide two different ways to define
     'client_read_share_path':  None,  #     a path to a network share.
     'redis_ip': None,  #'127.0.0.1', None if no redis path present,
-    'site_is_generic':  False,   # A simple single computer ASCOM site.
-    'site_is_specific':  True,  # Indicates some special code for this site, found at end of config.
+    'site_is_generic':  True,   # A simple single computer ASCOM site.
+    'site_is_specific':  False,  # Indicates some special code for this site, found at end of config.
 
 
     'host_wema_site_name':  'ECO',  #  The umbrella header for obsys in close geographic proximity.
@@ -79,7 +79,7 @@ site_config = {
     'reference_ambient':  10,  #  Degrees Celsius.  Alternately 12 entries, one for every - mid month.
     'reference_pressure':  867.254,    #mbar   A rough guess 20200315
 
-    'site_roof_control': 'no', #MTF entered this in to remove sro specific code.... Basically do we have control of the roof or not see line 338 sequencer.py
+    'site_roof_control': 'yes', #MTF entered this in to remove sro specific code.... Basically do we have control of the roof or not see line 338 sequencer.py
     'site_in_automatic_default': "Automatic",   #  ["Manual", "Shutdown", "Automatic"]
     'automatic_detail_default': "Enclosure is initially set to Automatic mode.",
     'observing_check_period' : 5,    # How many minutes between weather checks
@@ -95,7 +95,7 @@ site_config = {
     'pointing_calibration_on_startup': False,
     'periodic_focus_time' : 0.5, # This is a time, in hours, over which to bypass automated focussing (e.g. at the start of a project it will not refocus if a new project starts X hours after the last focus)
     'stdev_fwhm' : 0.5, # This is the expected variation in FWHM at a given telescope/camera/site combination. This is used to check if a fwhm is within normal range or the focus has shifted
-    'focus_exposure_time': 60, # Exposure time in seconds for exposure image
+    'focus_exposure_time': 20, # Exposure time in seconds for exposure image
 
     'focus_trigger' : 5.0, # What FWHM increase is needed to trigger an autofocus
     'solve_nth_image' : 10, # Only solve every nth image
@@ -151,10 +151,10 @@ site_config = {
     'observing_conditions' : {
         'observing_conditions1': {
             'parent': 'site',
-            'ocn_is_specific':  True,  # Indicates some special site code.
+            'ocn_is_specific':  False,  # Indicates some special site code.
             # Intention it is found in this file.
             'name': 'SRO File',
-            'driver': 'Windows.Share',  # Could be redis, ASCOM, ...
+            'driver': None,  # Could be redis, ASCOM, ...
             'share_path_name': 'F:/ptr/',
             'driver_2':  None,   #' ASCOM.Boltwood.OkToOpen.SafetyMonitor',
             'driver_3':  None,    # 'ASCOM.Boltwood.OkToImage.SafetyMonitor'
@@ -169,15 +169,15 @@ site_config = {
     'enclosure': {
         'enclosure1': {
             'parent': 'site',
-            'enc_is_specific':  True,  # Indicates some special site code.
-            'name': 'SRO File',
+            'enc_is_specific':  False,  # Indicates some special site code.
+            'name': 'Dragonfly Roof',
             'hostIP':  None,
-            'driver': None,  #'ASCOM.DigitalDomeWorks.Dome',  #  ASCOMDome.Dome',  #  ASCOM.DeviceHub.Dome',  #  ASCOM.DigitalDomeWorks.Dome',  #"  ASCOMDome.Dome',
+            'driver': 'Dragonfly.Dome',  #'ASCOM.DigitalDomeWorks.Dome',  #  ASCOMDome.Dome',  #  ASCOM.DeviceHub.Dome',  #  ASCOM.DigitalDomeWorks.Dome',  #"  ASCOMDome.Dome',
             'has_lights':  False,
             'controlled_by': 'mount1',
 			'is_dome': False,
             'mode': 'Automatic',
-            'cool_down': 35.0,    #  Minutes prior to sunset.
+            'cool_down': -35.0,    #  Minutes prior to sunset.
             'settings': {
                 'lights':  ['Auto', 'White', 'Red', 'IR', 'Off'],       #A way to encode possible states or options???
                                                                         #First Entry is always default condition.
@@ -407,7 +407,7 @@ site_config = {
             'ip_string': None,
             "dual_wheel": False,
             'settings': {
-                'filter_count': 11,   #  This must be correct as to the number of filters
+                #'filter_count': 11,   #  This must be correct as to the number of filters
                 'home_filter':  4,
                 'default_filter': "pr",
                 'filter_reference': 4,   #  We choose to use W as the default filter.  Gains taken at F9, Ceravolo 300mm
@@ -433,11 +433,11 @@ site_config = {
                         
                         #['w',     [0,  0],     0, 72.7, [1.00 ,  72], 'PL'],    #0.   For sequencer autofocus  consider foc or f filter
                         ['focus', [0,  0],     0, 148, [1.00 ,  72], 'focus'],    #0.
-                        ['Lum',    [0,  0],     0, 148, [1.00 ,  72], 'PhLum'],    #1.
+                        ['lum',    [0,  0],     0, 148, [1.00 ,  72], 'PhLum'],    #1.
                         ['dark',    [1,  1],     0, 17, [1.00 , 119], 'PhRed'],    #2.
-                        ['pb',    [2,  2],     0, 75, [1.00 , 113], 'PhGreen'],    #3.
+                        ['pb',    [2,  2],     0, 39, [1.00 , 113], 'PhGreen'],    #3.
                         ['pg',    [3,  3],     0, 50, [0.80 ,  97], 'PhBlue'],    #4.
-                        ['pr',    [4,  4],     0, 39, [0.80 ,  97], 'PhBlue'],    #4.
+                        ['pr',    [4,  4],     0, 75, [0.80 ,  97], 'PhBlue'],    #4.
                         #['PR',    [1,  1],     0, 170, [1.00 , 119], 'PhBlue'],    #2.
                         #['PG',    [2,  2],     0, 220, [1.00 , 113], 'PhGreen'],    #3.
                         #['PB',    [3,  3],     0, 300, [0.80 ,  97], 'PhRed'],    #4.
@@ -449,10 +449,10 @@ site_config = {
                         #['LRGB',  [0,  0],     0, .221, [   0,    0], 'LRGB']],   #10.
 
 
-                'filter_screen_sort':  [1, 4, 3, 2, 6, 5, 7],   #  don't use narrow yet,  8, 10, 9], useless to try.
+                'filter_screen_sort':  ['s2','o3','ha','pb','pg','pr','lum'],   #  don't use narrow yet,  8, 10, 9], useless to try.
 
 
-                'filter_sky_sort': [8, 7, 6, 3, 4, 5,  1]    #No diffuser based filters
+                'filter_sky_sort': ['s2','o3','ha','pb','pg','pr','lum']    #No diffuser based filters
                 #'filter_sky_sort': [7, 19, 2, 13, 18, 5, 15,\
                 #                    12, 4, 11, 16, 10, 9, 17, 3, 14, 1, 0]    #basically no diffuser based filters
                 #[32, 8, 22, 21, 20, 23, 31, 6, 7, 19, 27, 2, 37, 13, 18, 30, 5, 15, 36, 12,\
@@ -560,8 +560,8 @@ site_config = {
                 'StartX' : 1,
                 'StartY' : 1,
 
-                #'x_field_deg': 1.3333,   #   round(4784*1.0481/3600, 4),
-                #'y_field_deg': 1.0665,   #  round(3194*1.0481/3600, 4),
+                'x_field_deg': 1.3333,   #   round(4784*1.0481/3600, 4),
+                'y_field_deg': 1.0665,   #  round(3194*1.0481/3600, 4),
                 'overscan_x': 24,
                 'overscan_y': 3,
                 'north_offset': 0.0,    #  These three are normally 0.0 for the primary telescope
@@ -590,7 +590,7 @@ site_config = {
                 'readout_mode':  'Normal',
                 'readout_speed': 0.4,
                 'readout_seconds': 2,
-                'smart_stack_exposure_time' : 10,
+                'smart_stack_exposure_time' : 30,
                 'saturate':   65000 ,   # e-.  This is a close guess, not measured, but taken from data sheet.
                 'max_linearity': 65000,
                 'fullwell_capacity': 65000,  #e-.   We need to sort out the units properly NB NB NB
@@ -915,15 +915,20 @@ site_config = {
 #         print('Dictionaries matched.')
 
 #get_ocn_status = None   # NB these are placeholders for site specific routines for in a config file
-def get_enc_status(g_dev=None):
-    status = {'shutter_status': "bluib",   # NB NB NB "Roof is open|closed' is more inforative for FAT, but we make boolean decsions on 'Open'
-              'enclosure_synchronized': True,
-              'dome_azimuth': 0.0,
-              'dome_slewing': False,
-              'enclosure_mode': "Autonomous!",
-              'enclosure_message':  ''
-             }
-    return status
-def get_ocn_status(g_dev=None):
-    #print ("no encolsure control")
+# def get_enc_status(g_dev=None):
+#     status = {'shutter_status': "bluib",   # NB NB NB "Roof is open|closed' is more inforative for FAT, but we make boolean decsions on 'Open'
+#               'enclosure_synchronized': True,
+#               'dome_azimuth': 0.0,
+#               'dome_slewing': False,
+#               'enclosure_mode': "Autonomous!",
+#               'enclosure_message':  ''
+#              }
+#     return status
+# def get_ocn_status(g_dev=None):
+#     #print ("no encolsure control")
+#     pass
+
+def get_ocn_status():
+    pass
+def get_enc_status():
     pass

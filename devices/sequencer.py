@@ -3,6 +3,9 @@ import datetime
 from datetime import timedelta
 import copy
 from global_yard import g_dev
+from astropy.coordinates import SkyCoord, AltAz
+from astropy import units as u
+from astropy.time import Time
 import ephem
 import build_tycho as tycho
 import shelve
@@ -189,6 +192,10 @@ class Sequencer:
             self.is_in_completes(None)
         except:
             self.reset_completes()
+            
+        # Load up focus catalogue
+        self.focus_catalogue = np.genfromtxt('support_info/focusCatalogue.csv', delimiter=',')
+        
 
 
     def get_status(self):
@@ -239,7 +246,6 @@ class Sequencer:
         elif action.lower() in ["stop", "cancel"]:
             self.stop_command(req, opt)
         elif action == "home":
-            #breakpoint()
             self.home_command(req, opt)
         elif action == 'run' and script == 'findFieldCenter':
             g_dev['mnt'].go_command(req, opt, calibrate=True, auto_center=True)
@@ -272,7 +278,7 @@ class Sequencer:
                 plog("Open and slew Dome to azimuth opposite the Sun:  ", round(flat_spot, 1))
                 plog("Cooling down and waiting for skyflat / observing to begin")
 
-                if enc_status['shutter_status'] in ['Closed', 'closed'] and g_dev['enc'].mode == 'Automatic' \
+                if self.config['site_roof_control'] != 'no' and enc_status['shutter_status'] in ['Closed', 'closed'] and g_dev['enc'].mode == 'Automatic' \
                     and ocn_status['hold_duration'] <= 0.1:   #NB
                     #breakpoint()
                     g_dev['enc'].open_command({}, {})
@@ -296,7 +302,7 @@ class Sequencer:
         except:
             plog("Park not executed during Park and Close" )
         try:
-            if enc_status['shutter_status'] in ['open', ] and g_dev['enc'].mode == 'Automatic':
+            if self.config['site_roof_control'] != 'no' and enc_status['shutter_status'] in ['open', ] and g_dev['enc'].mode == 'Automatic':
                 g_dev['enc'].close_command( {}, {})
         except:
             plog('Dome close not executed during Park and Close.')
@@ -729,7 +735,7 @@ class Sequencer:
                 g_dev['obs'].send_to_user("Could not execute project due to poorly formatted or corrupt project", p_level='INFO')
                 continue
 
-            if enc_status['shutter_status'] in ['Closed', 'closed'] and ocn_status['hold_duration'] <= 0.1:   #NB  # \  NB NB 20220901 WER fix this!
+            if self.config['site_roof_control'] != 'no' and enc_status['shutter_status'] in ['Closed', 'closed'] and ocn_status['hold_duration'] <= 0.1:   #NB  # \  NB NB 20220901 WER fix this!
 
                 #breakpoint()
                 g_dev['enc'].open_command({}, {})
@@ -933,6 +939,7 @@ class Sequencer:
 
                     for displacement in offset:
 
+                        
                         x_field_deg = g_dev['cam'].config['camera']['camera_1_1']['settings']['x_field_deg']
                         y_field_deg = g_dev['cam'].config['camera']['camera_1_1']['settings']['y_field_deg']
                         if pitch == -1:
@@ -1455,8 +1462,10 @@ class Sequencer:
                 g_dev['obs'].update_status()
             
                 if g_dev["fil"].null_filterwheel == False:
-                    current_filter = int(pop_list[0])                
-                    g_dev['fil'].set_number_command(current_filter)  #  20220825  NB NB NB Change this to using a list of filter names.
+                    current_filter = pop_list[0]                
+                    #g_dev['fil'].set_number_command(current_filter)  #  20220825  NB NB NB Change this to using a list of filter names.
+                    _, filt_pointer = g_dev['fil'].set_name_command({"filter": current_filter}, {})  #  20220825  NB NB NB Chan
+                    # filter number for skylux colle
                 
                 acquired_count = 0
                 
@@ -1498,9 +1507,9 @@ class Sequencer:
                         if self.estimated_first_flat_exposure == False:
                             self.estimated_first_flat_exposure = True
                             if sky_lux != None:
-                                if g_dev["fil"].null_filterwheel == False:
-                                    exp_time = target_flat/(collecting_area*sky_lux*float(g_dev['fil'].filter_data[current_filter][3]))  #g_dev['ocn'].calc_HSI_lux)  #meas_sky_lux)
-                                    plog('Exposure time:  ', exp_time, scale, sky_lux, float(g_dev['fil'].filter_data[current_filter][3]))
+                                if g_dev["fil"].null_filterwheel == False:                                    
+                                    exp_time = target_flat/(collecting_area*sky_lux*float(g_dev['fil'].filter_data[filt_pointer][3]))  #g_dev['ocn'].calc_HSI_lux)  #meas_sky_lux)
+                                    plog('Exposure time:  ', exp_time, scale, sky_lux, float(g_dev['fil'].filter_data[filt_pointer][3]))
                                 else:
                                     #exp_time = scale*min_exposure
                                     exp_time = target_flat/(collecting_area*sky_lux*self.config['filter_wheel']['filter_wheel1']['flat_sky_gain'])  #g_dev['ocn'].calc_HSI_lux)  #meas_sky_lux)
@@ -1564,8 +1573,8 @@ class Sequencer:
                             # FIRST, lets get the highest resolution flat
             
                             if g_dev["fil"].null_filterwheel == False:
-                                opt = { 'count': 1, 'bin':  1, 'area': 150, 'filter': g_dev['fil'].filter_data[current_filter][0]}   #nb nb nb BIN CHNAGED FROM 2,2 ON 20220618 wer
-                                plog("using:  ", g_dev['fil'].filter_data[current_filter][0])
+                                opt = { 'count': 1, 'bin':  1, 'area': 150, 'filter': g_dev['fil'].filter_data[filt_pointer][0]}   #nb nb nb BIN CHNAGED FROM 2,2 ON 20220618 wer
+                                plog("using:  ", g_dev['fil'].filter_data[filt_pointer][0])
                             else:
                                 opt = { 'count': 1, 'bin':  1, 'area': 150}   
                             
@@ -1605,10 +1614,10 @@ class Sequencer:
             
                             if g_dev["fil"].null_filterwheel == False:
                                 if sky_lux != None:
-                                    plog('\n\n', "Patch/Bright:  ", bright, g_dev['fil'].filter_data[current_filter][0], \
+                                    plog('\n\n', "Patch/Bright:  ", bright, g_dev['fil'].filter_data[filt_pointer][0], \
                                           'New Gain value: ', round(bright/(sky_lux*collecting_area*exp_time), 3), '\n\n')
                                 else:
-                                    plog('\n\n', "Patch/Bright:  ", bright, g_dev['fil'].filter_data[current_filter][0], \
+                                    plog('\n\n', "Patch/Bright:  ", bright, g_dev['fil'].filter_data[filt_pointer][0], \
                                           'New Gain value: ', round(bright/(collecting_area*exp_time), 3), '\n\n')
                             else:
                                 if sky_lux != None:
@@ -1803,14 +1812,36 @@ class Sequencer:
         if req2['target'] == 'near_tycho_star':   ## 'bin', 'area'  Other parameters
 
             #  Go to closest Mag 7.5 Tycho * with no flip
+            #focus_star = tycho.dist_sort_targets(g_dev['mnt'].current_icrs_ra, g_dev['mnt'].current_icrs_dec,g_dev['mnt'].current_sidereal)
+            
+            # Trim catalogue so that only fields 45 degrees altitude are in there.
+            self.focus_catalogue_skycoord= SkyCoord(ra = self.focus_catalogue[:,0]*u.deg, dec = self.focus_catalogue[:,1]*u.deg)
+            aa = AltAz (location=g_dev['mnt'].site_coordinates, obstime=Time.now())
+            self.focus_catalogue_altitudes=self.focus_catalogue_skycoord.transform_to(aa)            
+            above_altitude_patches=[]
 
-            focus_star = tycho.dist_sort_targets(g_dev['mnt'].current_icrs_ra, g_dev['mnt'].current_icrs_dec, \
-                                    g_dev['mnt'].current_sidereal)
+            for ctr in range(len(self.focus_catalogue_altitudes)):
+                if self.focus_catalogue_altitudes[ctr].alt /u.deg > 45.0:
+                    above_altitude_patches.append([self.focus_catalogue[ctr,0], self.focus_catalogue[ctr,1], self.focus_catalogue[ctr,2]])
+            above_altitude_patches=np.asarray(above_altitude_patches)
+            self.focus_catalogue_skycoord= SkyCoord(ra = above_altitude_patches[:,0]*u.deg, dec = above_altitude_patches[:,1]*u.deg)  
+            
+            # d2d of the closest field.
+            teststar = SkyCoord(ra = g_dev['mnt'].current_icrs_ra*15*u.deg, dec = g_dev['mnt'].current_icrs_dec*u.deg)
+            idx, d2d, _ = teststar.match_to_catalog_sky(self.focus_catalogue_skycoord)
+            
+            focus_patch_ra=above_altitude_patches[idx,0] /15
+            focus_patch_dec=above_altitude_patches[idx,1]
+            focus_patch_n=above_altitude_patches[idx,2]                
+            
             try:
-                plog("Going to near focus star " + str(focus_star[0][0]) + "  degrees away.")
-                g_dev['mnt'].go_coord(focus_star[0][1][1], focus_star[0][1][0])
-            except:
-                print ("Issues pointing to a tycho star. Focussing at the current pointing.")
+                plog("Going to near focus patch of " + str(focus_patch_n) + " 9th to 12th mag stars " + str(d2d.deg) + "  degrees away.")
+                plog("RA " + str(focus_patch_ra) + " DEC " + str(focus_patch_dec) )
+                g_dev['mnt'].go_coord(focus_patch_ra, focus_patch_dec)
+            except Exception as e:
+                print ("Issues pointing to a focus patch. Focussing at the current pointing." , e)
+                plog(traceback.format_exc())
+
             req = {'time': self.config['focus_exposure_time'],  'alias':  str(self.config['camera']['camera_1_1']['name']), 'image_type': 'focus'}   #  NB Should pick up filter and constats from config
 
             opt = {'area': 150, 'count': 1, 'bin': 1, 'filter': 'focus'}
@@ -2285,15 +2316,38 @@ class Sequencer:
         
         if req['target'] == 'near_tycho_star':   ## 'bin', 'area'  Other parameters
             #  Go to closest Mag 7.5 Tycho * with no flip
-            focus_star = tycho.dist_sort_targets(g_dev['mnt'].current_icrs_ra, g_dev['mnt'].current_icrs_dec, \
-                                    g_dev['mnt'].current_sidereal)
-            plog("Going to near focus star " + str(focus_star[0][0]) + "  degrees away.")
-            g_dev['mnt'].go_coord(focus_star[0][1][1], focus_star[0][1][0])
-            req = {'time': 12.5,  'alias':  str(self.config['camera']['camera_1_1']['name']), 'image_type': 'auto_focus'}   #  NB Should pick up filter and constats from config
+            #focus_star = tycho.dist_sort_targets(g_dev['mnt'].current_icrs_ra, g_dev['mnt'].current_icrs_dec, \
+            #                        g_dev['mnt'].current_sidereal)
+            #plog("Going to near focus star " + str(focus_star[0][0]) + "  degrees away.")
+            
+            # Trim catalogue so that only fields 45 degrees altitude are in there.
+            self.focus_catalogue_skycoord= SkyCoord(ra = self.focus_catalogue[:,0]*u.deg, dec = self.focus_catalogue[:,1]*u.deg)
+            aa = AltAz (location=g_dev['mnt'].site_coordinates, obstime=Time.now())
+            self.focus_catalogue_altitudes=self.focus_catalogue_skycoord.transform_to(aa)            
+            above_altitude_patches=[]
+
+            for ctr in range(len(self.focus_catalogue_altitudes)):
+                if self.focus_catalogue_altitudes[ctr].alt /u.deg > 45.0:
+                    above_altitude_patches.append([self.focus_catalogue[ctr,0], self.focus_catalogue[ctr,1], self.focus_catalogue[ctr,2]])
+            above_altitude_patches=np.asarray(above_altitude_patches)
+            self.focus_catalogue_skycoord= SkyCoord(ra = above_altitude_patches[:,0]*u.deg, dec = above_altitude_patches[:,1]*u.deg)  
+            
+            # d2d of the closest field.
+            teststar = SkyCoord(ra = g_dev['mnt'].current_icrs_ra*15*u.deg, dec = g_dev['mnt'].current_icrs_dec*u.deg)
+            idx, d2d, _ = teststar.match_to_catalog_sky(self.focus_catalogue_skycoord)
+            
+            focus_patch_ra=above_altitude_patches[idx,0] /15
+            focus_patch_dec=above_altitude_patches[idx,1]
+            focus_patch_n=above_altitude_patches[idx,2]   
+            
+            
+            #g_dev['mnt'].go_coord(focus_star[0][1][1], focus_star[0][1][0])
+            g_dev['mnt'].go_coord(focus_patch_ra, focus_patch_dec)
+            req = {'time': self.config['focus_exposure_time'],  'alias':  str(self.config['camera']['camera_1_1']['name']), 'image_type': 'auto_focus'}   #  NB Should pick up filter and constats from config
             opt = {'area': 100, 'count': 1, 'filter': 'focus'}
         else:
             pass   #Just take time image where currently pointed.
-            req = {'time': 15,  'alias':  str(self.config['camera']['camera_1_1']['name']), 'image_type': 'auto_focus'}   #  NB Should pick up filter and constats from config
+            req = {'time': self.config['focus_exposure_time'],  'alias':  str(self.config['camera']['camera_1_1']['name']), 'image_type': 'auto_focus'}   #  NB Should pick up filter and constats from config
             opt = {'area': 100, 'count': 1, 'filter': 'focus'}
         foc_pos0 = foc_start
         result = {}

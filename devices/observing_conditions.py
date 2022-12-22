@@ -105,7 +105,8 @@ class ObservingConditions:
             self.get_status = get_ocn_status
             # Get current ocn status just as a test.
             self.status = self.get_status(g_dev)
-        elif self.is_wema or self.site_is_specific:
+        
+        elif self.is_wema or self.config["site_is_specific"]:
             #  This is meant to be a generic Observing_condition code
             #  instance that can be accessed by a simple site or by the WEMA,
             #  assuming the transducers are connected to the WEMA.
@@ -146,7 +147,12 @@ class ObservingConditions:
                     )
                     self.unihedron_connected = False
                     # NB NB if no unihedron is installed the status code needs to not report it.
+        elif not self.config["site_is_specific"]:
+            self.site_is_generic = False
+            self.site_is_specific = True
+        
         self.last_wx = None
+
 
     def get_status(self):
         """

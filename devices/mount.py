@@ -138,7 +138,7 @@ def wait_for_slew():
                 #if g_dev['mnt'].mount.Slewing: plog( 'm>')
                 #if g_dev['enc'].status['dome_slewing']: st += 'd>'
                 plog( 'm>')
-                time.sleep(0.5)
+                time.sleep(0.1)
                 g_dev['obs'].update_status()            
             
     except Exception as e:
@@ -277,7 +277,47 @@ class Mount:
         self.obs.lat = config['latitude']*DTOR
 
         self.theskyx_tracking_rescues = 0
-
+        
+        # Here we figure out if it can report pierside. If it cannot, we need 
+        # not keep calling the mount to ask for it, which is slow and prone
+        # to an ascom crash.
+        try:
+            self.pier_side = g_dev[
+                "mnt"
+            ].mount.sideOfPier  # 0 == Tel Looking West, is flipped.
+            self.can_report_pierside = True
+        except Exception as e:
+            #print (e)
+            print ("Mount cannot report pierside. Setting the code not to ask again, assuming default pointing west.")
+            self.can_report_pierside = False
+            self.pier_side = 0
+            
+            #plog("This mount doesn't report sideofpier")
+            pass
+        # Similarly for DestinationSideOfPier
+        try:
+            g_dev[
+                "mnt"
+            ].mount.DestinationSideOfPier(0,0)  # 0 == Tel Looking West, is flipped.
+            self.can_report_destination_pierside = True
+        except Exception as e:
+            #print (e)
+            print ("Mount cannot report destination pierside. Setting the code not to ask again.")
+            self.can_report_destination_pierside = False
+            self.pier_side = 0
+            #plog("This mount doesn't report sideofpier")
+            pass
+        
+        # NEED to initialise these variables here in case the mount isn't slewed
+        # before exposures after bootup
+        self.last_ra = self.mount.RightAscension
+            
+        self.last_dec = self.mount.Declination
+        self.last_tracking_rate_ra = 0
+        self.last_tracking_rate_dec = 0
+        self.last_seek_time = time.time() - 5000
+        
+        #breakpoint()
         plog("exiting mount _init")
 
     def check_connect(self):
@@ -321,13 +361,15 @@ class Mount:
                # breakpoint()
                 pass
             self.get_current_times()
+            
             try:
-                if self.mount.sideOfPier == 1:
-                    pierside = 1    #West (flip) side so Looking East   #Make this assignment a code-wide convention.
-                else:
-                    pierside = 0   #East side so Looking West
+                if self.can_report_pierside == True:
+                    if self.mount.sideOfPier == 1:
+                        self.pier_side = 1    #West (flip) side so Looking East   #Make this assignment a code-wide convention.
+                    else:
+                        self.pier_side = 0   #East side so Looking West
             except:
-                pierside=0
+                self.pier_side=0
                 #print ("Mount does not report pier side.")
             
             #self.current_sidereal = self.mount.SiderealTime
@@ -340,7 +382,7 @@ class Mount:
 
             uncorr_mech_ha_r, uncorr_mech_dec_r = ptr_utility.transform_raDec_to_haDec_r(uncorr_mech_ra_h*HTOR, uncorr_mech_dec_d*DTOR, self.sid_now_r)
             self.hour_angle = uncorr_mech_ha_r*RTOH
-            roll_obs_r, pitch_obs_r = ptr_utility.transform_mount_to_observed_r(uncorr_mech_ha_r, uncorr_mech_dec_r, pierside, loud=False)
+            roll_obs_r, pitch_obs_r = ptr_utility.transform_mount_to_observed_r(uncorr_mech_ha_r, uncorr_mech_dec_r, self.pier_side, loud=False)
 
             app_ra_r, app_dec_r, refr_asec = ptr_utility.obsToAppHaRa(roll_obs_r, pitch_obs_r, self.sid_now_r)
             self.refraction_rev = refr_asec
@@ -361,10 +403,14 @@ class Mount:
             #     plog("mount status rate adjust exception.")
 
             try:
-                if self.mount.sideOfPier == look_west:
-                    ra_cal_offset, dec_cal_offset = self.get_mount_reference()
+                if self.can_report_pierside == True:
+                    if self.pier_side == 1:
+                        ra_cal_offset, dec_cal_offset = self.get_mount_reference()
+                    else:
+                        ra_cal_offset, dec_cal_offset = self.get_flip_reference()
                 else:
-                    ra_cal_offset, dec_cal_offset = self.get_flip_reference()
+                    ra_cal_offset=0
+                    dec_cal_offset=0
             except:
                 try:
                     ra_cal_offset, dec_cal_offset = self.get_mount_reference()
@@ -462,15 +508,16 @@ class Mount:
             if ha > 12:
                 ha -= 24
             try:
-                self.pier_side = self.mount.SideOfPier  #DID not work early on with PW Alt Az mounts
-                #plog('ASCOM SideOfPier ==  ', self.pier_side)
+                if self.can_report_pierside == True:
+                    self.pier_side = self.mount.SideOfPier 
             except:
-                self.pier_side = 0.   # This explicitly defines alt-az (Planewave) as Looking West (tel on East side)
+                self.pier_side = 0.  
+                
             if self.pier_side == 0:
                 self.pier_side_str ="Looking West"
             else:
                 self.pier_side_str = "Looking East"
-            #breakpoint()
+
             try:
                 status = {
                     'timestamp': round(time.time(), 3),
@@ -971,11 +1018,14 @@ class Mount:
         g_dev['obs'].images_since_last_solve = 10000
 
     def re_seek(self, dither):
-        if dither == 0:
-            self.go_coord(self.last_ra, self.last_dec, self.last_tracking_rate_ra, self.last_tracking_rate_dec)
+        
+        try:
+            if dither == 0:
+                self.go_coord(self.last_ra, self.last_dec, self.last_tracking_rate_ra, self.last_tracking_rate_dec)
+                
+        except Exception as e:
+            print ("Could not re_seek: ",e)
             
-        else:
-            pass#breakpoint()
         wait_for_slew()   
 
     def go_coord(self, ra, dec, tracking_rate_ra=0, tracking_rate_dec=0, reset_solve=True):  #Note these rates need a system specification
@@ -988,16 +1038,16 @@ class Mount:
         self.last_dec = dec
         self.last_tracking_rate_ra = tracking_rate_ra
         self.last_tracking_rate_dec = tracking_rate_dec
-        self.last_seek_time = time.time()
+        self.last_seek_time = time.time() - 5000
 
         self.unpark_command()  
         #Note this initiates a mount move.  WE should Evaluate if the destination is on the flip side and pick up the
         #flip offset.  So a GEM could track into positive HA territory without a problem but the next reseek should
         #result in a flip.  So first figure out if there will be a flip:
 
-        try:
-            
-            try:                          #  NB NB Might be good to log is flipping on a re-seek.
+        
+        if self.can_report_destination_pierside == True:   
+            try:                          #  NB NB Might be good to log is flipping on a re-seek.                
                 new_pierside =  self.mount.DestinationSideOfPier(ra, dec) #  A tuple gets returned: (pierside, Ra.h and dec.d)    
                 if len(new_pierside) > 1:
                     if new_pierside[0] == 0:
@@ -1018,13 +1068,18 @@ class Mount:
                 except:
                     delta_ra, delta_dec = self.get_mount_reference()
                     pier_east = 1
-        except Exception as e:
-            print ("mount really doesn't like pierside calls ", e)
-            pier_east = 1
+        else: 
+            if self.pier_side == 0:
+                pier_east = 1
+            else:
+                pier_east = 0
          #Update incoming ra and dec with mounting offsets.
 
-        ra += delta_ra #NB it takes a restart to pick up a new correction which is also J.now.
-        dec += delta_dec
+        try:        
+            ra += delta_ra #NB it takes a restart to pick up a new correction which is also J.now.
+            dec += delta_dec
+        except:
+            pass
         ra, dec = ra_dec_fix_h(ra,dec)
         if self.mount.EquatorialSystem == 1:    #equTopocentric
             self.get_current_times()   #  NB We should find a way to refresh this once a day, esp. for status return.
