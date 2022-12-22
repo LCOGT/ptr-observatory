@@ -726,10 +726,10 @@ class Camera:
             status["darkslide"] = g_dev["drk"].slideStatus
         else:
             status["darkslide"] = "unknown"
-        if self.exposure_busy:
-            status["busy_lock"] = True
-        else:
-            status["busy_lock"] = False
+        # if self.exposure_busy:
+        #     status["busy_lock"] = True
+        # else:
+        #     status["busy_lock"] = False
         if self.maxim:
             cam_stat = "Not implemented yet"  #
         if self.ascom:

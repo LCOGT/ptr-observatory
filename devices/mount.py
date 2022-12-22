@@ -308,6 +308,11 @@ class Mount:
             #plog("This mount doesn't report sideofpier")
             pass
         
+        if self.pier_side == 0:
+            self.pier_side_str ="Looking West"
+        else:
+            self.pier_side_str = "Looking East"
+        
         # NEED to initialise these variables here in case the mount isn't slewed
         # before exposures after bootup
         self.last_ra = self.mount.RightAscension
@@ -316,6 +321,20 @@ class Mount:
         self.last_tracking_rate_ra = 0
         self.last_tracking_rate_dec = 0
         self.last_seek_time = time.time() - 5000
+        
+        # Minimising ASCOM calls by holding these as internal variables
+        if self.mount.CanSetRightAscensionRate:
+            self.CanSetRightAscensionRate=True            
+        else:
+            self.CanSetRightAscensionRate=False            
+        self.RightAscensionRate = self.mount.RightAscensionRate
+        if self.mount.CanSetDeclinationRate:
+            self.CanSetDeclinationRate = True
+        else:
+            self.CanSetDeclinationRate = False            
+        self.DeclinationRate = self.mount.DeclinationRate
+        
+        self.EquatorialSystem=self.mount.EquatorialSystem
         
         #breakpoint()
         plog("exiting mount _init")
@@ -409,8 +428,9 @@ class Mount:
                     else:
                         ra_cal_offset, dec_cal_offset = self.get_flip_reference()
                 else:
-                    ra_cal_offset=0
-                    dec_cal_offset=0
+                    ra_cal_offset, dec_cal_offset = self.get_mount_reference()
+                    #ra_cal_offset=0
+                    #dec_cal_offset=0
             except:
                 try:
                     ra_cal_offset, dec_cal_offset = self.get_mount_reference()
@@ -443,21 +463,10 @@ class Mount:
 
     def get_status(self):
         #This is for now 20201230, the primary place to source mount/tel status, needs fixing.\#NB a lot of the status time is taken up with Mount communication.
-        self.check_connect()
+        #self.check_connect()
         #breakpoint()
         #self.paddle()   # NB Should ohly be called if in config.
-        alt = self.mount.Altitude
-        zen = round((90 - alt), 3)
-        if zen > 90:
-            zen = 90.0
-        if zen < 0.1:    #This can blow up when zen <=0!
-            new_z = 0.1
-        else:
-            new_z = zen
-        sec_z = 1/cos(radians(new_z))
-        airmass = abs(round(sec_z - 0.0018167*(sec_z - 1) - 0.002875*((sec_z - 1)**2) - 0.0008083*((sec_z - 1)**3),3))
-        if airmass > 10: airmass = 10.0   # We should caution the user if AM > 2, and alert them if >3
-        airmass = round(airmass, 4)
+        
         #Be careful to preserve order
         #plog(self.device_name, self.name)
         # if self.site_is_proxy:
@@ -488,6 +497,39 @@ class Mount:
                 'message': self.mount_message[:32]
             }
         elif self.tel == True:
+            
+            try:
+                icrs_ra, icrs_dec = self.get_mount_coordinates()
+                rd = SkyCoord(ra=icrs_ra*u.hour, dec=icrs_dec*u.deg)
+            except:            
+                icrs_ra=self.current_icrs_ra
+                icrs_dec=self.current_icrs_dec
+                rd = SkyCoord(ra=self.current_icrs_ra*u.hour, dec=self.current_icrs_dec*u.deg)  
+            
+            aa = AltAz (location=self.site_coordinates, obstime=Time.now())
+            rd = rd.transform_to(aa)
+            alt = float(rd.alt/u.deg)
+            az = float(rd.az/u.deg)         
+            
+                      
+            
+            #icrs_ra, icrs_dec = self.get_mount_coordinates()  #20210430  Looks like thie faulted during a slew.
+            
+            #alt = self.mount.Altitude
+            zen = round((90 - alt), 3)
+            if zen > 90:
+                zen = 90.0
+            if zen < 0.1:    #This can blow up when zen <=0!
+                new_z = 0.1
+            else:
+                new_z = zen
+            sec_z = 1/cos(radians(new_z))
+            airmass = abs(round(sec_z - 0.0018167*(sec_z - 1) - 0.002875*((sec_z - 1)**2) - 0.0008083*((sec_z - 1)**3),3))
+            if airmass > 10: airmass = 10.0   # We should caution the user if AM > 2, and alert them if >3
+            airmass = round(airmass, 4)
+            
+            
+            
             try:
                 #self.current_sidereal = self.mount.SiderealTime
                 # Replaced mount call above with much faster more accurate astropy calculation below
@@ -495,11 +537,11 @@ class Mount:
                 
             except:
                 print ("Mount didn't accept request for sidereal time. Need to make a calculation for this.")
-            icrs_ra, icrs_dec = self.get_mount_coordinates()  #20210430  Looks like thie faulted during a slew.
-            if self.seek_commanded:
+            
+            #if self.seek_commanded:
                 #plog('In Status:  ', self.prior_roll_rate, self.prior_pitch_rate)
                 #plog('From Mnt :  ', self.mount.RightAscensionRate, self.mount.DeclinationRate)
-                icrs_ra, icrs_dec = self.get_mount_coordinates()  #20210430  Looks like this faulted during a slew.
+                #icrs_ra, icrs_dec = self.get_mount_coordinates()  #20210430  Looks like this faulted during a slew.
             if self.prior_roll_rate == 0:
                 pass
             ha = icrs_ra - self.current_sidereal
@@ -507,56 +549,57 @@ class Mount:
                 ha  += 24
             if ha > 12:
                 ha -= 24
-            try:
-                if self.can_report_pierside == True:
-                    self.pier_side = self.mount.SideOfPier 
-            except:
-                self.pier_side = 0.  
+            #try:
+            #    if self.can_report_pierside == True:
+            #        self.pier_side = self.mount.SideOfPier 
+            #except:
+            #    self.pier_side = 0.  
                 
-            if self.pier_side == 0:
-                self.pier_side_str ="Looking West"
-            else:
-                self.pier_side_str = "Looking East"
+            #if self.pier_side == 0:
+            #    self.pier_side_str ="Looking West"
+            #else:
+            #    self.pier_side_str = "Looking East"
 
-            try:
-                status = {
-                    'timestamp': round(time.time(), 3),
-                    'right_ascension': round(icrs_ra, 5),
-                    'declination': round(icrs_dec, 4),
-                    'sidereal_time': round(self.current_sidereal, 5),  #Should we add HA?
-                    'refraction': round(self.refraction_rev, 2),
-                    'correction_ra': round(self.ha_corr, 4),  #If mount model = 0, these are very small numbers.
-                    'correction_dec': round(self.dec_corr, 4),
-                    'hour_angle': round(ha, 4),
-                    'demand_right_ascension_rate': round(self.prior_roll_rate, 9),
-                    'mount_right_ascension_rate': round(self.mount.RightAscensionRate, 9),   #Will use sec-RA/sid-sec
-                    'demand_declination_rate': round(self.prior_pitch_rate, 8),
-                    'mount_declination_rate': round(self.mount.DeclinationRate, 8),
-                    'pier_side':self.pier_side,
-                    'pier_side_str': self.pier_side_str,
-                    'azimuth': round(self.mount.Azimuth, 3),
-                    'target_az': round(self.target_az, 3),
-                    'altitude': round(alt, 3),
-                    'zenith_distance': round(zen, 3),
-                    'airmass': round(airmass,4),
-                    'coordinate_system': str(self.rdsys),
-                    'equinox':  self.equinox_now,
-                    'pointing_instrument': str(self.inst),  # needs fixing
-                    'is_parked': self.mount.AtPark,     #  Send strings to AWS so JSON does not change case  Wrong. 20211202 'False' evaluates to True
-                    'is_tracking': self.mount.Tracking,
-                    'is_slewing': self.mount.Slewing,
-                    'message': str(self.mount_message[:54]),
-                    #'site_in_automatic': self.site_in_automatic,
-                    #'automatic_detail': str(self.automatic_detail),
-                    'move_time': self.move_time
-                }
-            except Exception as e:
-                if ('Object reference not set to an instance of an object.' in str(e)):
-                    print ("There is a TheSkyX undetermined error. Re-parking and waiting for further instructions from the site-code.")
-                    breakpoint()
-                    self.home_command()
-                    self.park_command()
-                    wait_for_slew()
+            #try:
+                
+            status = {
+                'timestamp': round(time.time(), 3),
+                'right_ascension': round(icrs_ra, 5),
+                'declination': round(icrs_dec, 4),
+                'sidereal_time': round(self.current_sidereal, 5),  #Should we add HA?
+                'refraction': round(self.refraction_rev, 2),
+                'correction_ra': round(self.ha_corr, 4),  #If mount model = 0, these are very small numbers.
+                'correction_dec': round(self.dec_corr, 4),
+                'hour_angle': round(ha, 4),
+                'demand_right_ascension_rate': round(self.prior_roll_rate, 9),
+                'mount_right_ascension_rate': round(self.RightAscensionRate, 9),   #Will use sec-RA/sid-sec
+                'demand_declination_rate': round(self.prior_pitch_rate, 8),
+                'mount_declination_rate': round(self.DeclinationRate, 8),
+                'pier_side':self.pier_side,
+                'pier_side_str': self.pier_side_str,
+                'azimuth': round(az, 3),
+                'target_az': round(self.target_az, 3),
+                'altitude': round(alt, 3),
+                'zenith_distance': round(zen, 3),
+                'airmass': round(airmass,4),
+                'coordinate_system': str(self.rdsys),
+                'equinox':  self.equinox_now,
+                'pointing_instrument': str(self.inst),  # needs fixing
+                #'is_parked': self.mount.AtPark,     #  Send strings to AWS so JSON does not change case  Wrong. 20211202 'False' evaluates to True
+                #'is_tracking': self.mount.Tracking,
+                #'is_slewing': self.mount.Slewing,
+                'message': str(self.mount_message[:54]),
+                #'site_in_automatic': self.site_in_automatic,
+                #'automatic_detail': str(self.automatic_detail),
+                'move_time': self.move_time
+            }
+            # except Exception as e:
+            #     if ('Object reference not set to an instance of an object.' in str(e)):
+            #         print ("There is a TheSkyX undetermined error. Re-parking and waiting for further instructions from the site-code.")
+            #         breakpoint()
+            #         self.home_command()
+            #         self.park_command()
+            #         wait_for_slew()
             # This write the mount conditin back to the dome, only needed if self.is_dome
 # =============================================================================
 #             #  Here we should add any correction to fine tune the dome azimuth and sent that to
@@ -599,8 +642,24 @@ class Mount:
 
     def get_quick_status(self, pre):
 
-        self.check_connect()
-        alt = self.mount.Altitude
+        #self.check_connect()
+        
+        try:
+            icrs_ra, icrs_dec = self.get_mount_coordinates()
+            rd = SkyCoord(ra=icrs_ra*u.hour, dec=icrs_dec*u.deg)
+        except:            
+            icrs_ra=self.current_icrs_ra
+            icrs_dec=self.current_icrs_dec
+            rd = SkyCoord(ra=self.current_icrs_ra*u.hour, dec=self.current_icrs_dec*u.deg)  
+        
+        aa = AltAz (location=self.site_coordinates, obstime=Time.now())
+        rd = rd.transform_to(aa)
+        alt = float(rd.alt/u.deg)
+        az = float(rd.az/u.deg)  
+        
+        
+        
+        #alt = self.mount.Altitude
         zen = round((90 - alt), 3)
         if zen > 90:
             zen = 90.0
@@ -620,14 +679,14 @@ class Mount:
         #     dec_off = 0
         # NB NB THis code would be safer as a dict or other explicity named structure
         pre.append(time.time())
-        icrs_ra, icrs_dec = self.get_mount_coordinates()
+        #icrs_ra, icrs_dec = self.get_mount_coordinates()
         pre.append(icrs_ra)
         pre.append(icrs_dec)
         # the following command is the sidereal time
         pre.append(float((Time(datetime.datetime.utcnow(), scale='utc', location=g_dev['mnt'].site_coordinates).sidereal_time('apparent')*u.deg) / u.deg / u.hourangle))
-        pre.append(self.mount.RightAscensionRate)
-        pre.append(self.mount.DeclinationRate)
-        pre.append(self.mount.Azimuth)
+        pre.append(self.RightAscensionRate)
+        pre.append(self.DeclinationRate)
+        pre.append(az)
         pre.append(alt)
         pre.append(zen)
         pre.append(airmass)
@@ -1081,7 +1140,7 @@ class Mount:
         except:
             pass
         ra, dec = ra_dec_fix_h(ra,dec)
-        if self.mount.EquatorialSystem == 1:    #equTopocentric
+        if self.EquatorialSystem == 1:    #equTopocentric
             self.get_current_times()   #  NB We should find a way to refresh this once a day, esp. for status return.
             #  Input is meant to be IRCS, so change to that Astropy type;
             icrs_coord = SkyCoord(ra*u.hour, dec*u.degree, frame='icrs')
@@ -1109,32 +1168,32 @@ class Mount:
         self.dec_corr = ptr_utility.reduce_dec_r(self.dec_mech - self.dec_obs_r)*RTOS
 
 
-        if self.mount.Tracking == False:
-            try:
-                wait_for_slew()
-                self.mount.Tracking = True
-            except Exception as e:
-                # Yes, this is an awfully non-elegant way to force a mount to start 
-                # Tracking when it isn't implemented in the ASCOM driver. But if anyone has any better ideas, I am all ears - MF
-                # It also doesn't want to get into an endless loop of parking and unparking and homing, hence the rescue counter
-                if ('Property write Tracking is not implemented in this driver.' in str(e)) and self.theskyx_tracking_rescues < 5:
-                    self.theskyx_tracking_rescues=self.theskyx_tracking_rescues + 1
-                    self.home_command()
-                    self.park_command()
-                    wait_for_slew()
-                    self.unpark_command()
-                    wait_for_slew()
-                    self.mount.SlewToCoordinatesAsync(self.ra_mech*RTOH, self.dec_mech*RTOD)  #Is this needed?
-                    wait_for_slew()                  
+        # if self.mount.Tracking == False:
+        #     try:
+        #         wait_for_slew()
+        #         self.mount.Tracking = True
+        #     except Exception as e:
+        #         # Yes, this is an awfully non-elegant way to force a mount to start 
+        #         # Tracking when it isn't implemented in the ASCOM driver. But if anyone has any better ideas, I am all ears - MF
+        #         # It also doesn't want to get into an endless loop of parking and unparking and homing, hence the rescue counter
+        #         if ('Property write Tracking is not implemented in this driver.' in str(e)) and self.theskyx_tracking_rescues < 5:
+        #             self.theskyx_tracking_rescues=self.theskyx_tracking_rescues + 1
+        #             self.home_command()
+        #             self.park_command()
+        #             wait_for_slew()
+        #             self.unpark_command()
+        #             wait_for_slew()
+        #             self.mount.SlewToCoordinatesAsync(self.ra_mech*RTOH, self.dec_mech*RTOD)  #Is this needed?
+        #             wait_for_slew()                  
                 
-                    print ("this mount may not accept tracking commands")
-                elif ('Property write Tracking is not implemented in this driver.' in str(e)) and self.theskyx_tracking_rescues >= 5:
-                    print ("theskyx has been rescued one too many times. Just sending it to park.")
-                    self.park_command()
-                    wait_for_slew()
-                    return
-                else:
-                    print ("problem with setting tracking: ", e)
+        #             print ("this mount may not accept tracking commands")
+        #         elif ('Property write Tracking is not implemented in this driver.' in str(e)) and self.theskyx_tracking_rescues >= 5:
+        #             print ("theskyx has been rescued one too many times. Just sending it to park.")
+        #             self.park_command()
+        #             wait_for_slew()
+        #             return
+        #         else:
+        #             print ("problem with setting tracking: ", e)
                 
                 
         self.move_time = time.time()
@@ -1206,26 +1265,29 @@ class Mount:
         Please note that for historic reasons the units of the
         RightAscensionRate property are seconds of RA per sidereal second.
         '''
-        if self.mount.CanSetRightAscensionRate:
+        if self.CanSetRightAscensionRate:
             self.prior_roll_rate = -((self.ha_mech_adv - self. ha_mech)*RTOS*MOUNTRATE/self.delta_t_s - MOUNTRATE)/(APPTOSID*15)    #Conversion right 20219329
             self.mount.RightAscensionRate = 0.0 # self.prior_roll_rate  #Neg number makes RA decrease
+            self.RightAscensionRate = 0.0
         else:
             self.prior_roll_rate = 0.0
-        if self.mount.CanSetDeclinationRate:
+        if self.CanSetDeclinationRate:
            self.prior_pitch_rate = -(self.dec_mech_adv - self.dec_mech)*RTOS/self.delta_t_s    #20210329 OK 1 hour from zenith.  No Appsid correction per ASCOM spec.
            self.mount.DeclinationRate = self.prior_pitch_rate  #Neg sign makes Dec decrease
+           self.DeclinationRate = self.prior_pitch_rate
            #plog("Rates, refr are:  ", self.prior_roll_rate, self.prior_pitch_rate, self.refr_asec)
         else:
             self.prior_pitch_rate = 0.0
         #plog(self.prior_roll_rate, self.prior_pitch_rate, refr_asec)
         # time.sleep(.5)
         # self.mount.SlewToCoordinatesAsync(ra_mech*RTOH, dec_mech*RTOD)
-        time.sleep(1)   #fOR SOME REASON REPEATING THIS HELPS!
-        if self.mount.CanSetRightAscensionRate:
+        #time.sleep(1)   #fOR SOME REASON REPEATING THIS HELPS!
+        if self.CanSetRightAscensionRate:
             self.mount.RightAscensionRate = 0.0 #self.prior_roll_rate
-
-        if self.mount.CanSetDeclinationRate:
+            self.RightAscensionRate = 0.0
+        if self.CanSetDeclinationRate:
             self.mount.DeclinationRate = self.prior_pitch_rate
+            self.DeclinationRate = self.prior_pitch_rate
 
         plog("Rates set:  ", self.prior_roll_rate, self.prior_pitch_rate, self.refr_adv)
         self.seek_commanded = True
