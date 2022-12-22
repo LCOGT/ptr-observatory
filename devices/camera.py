@@ -2636,10 +2636,11 @@ class Camera:
                             border_x = int(ix * 0.05)
                             border_y = int(iy * 0.05)
                             sep.set_extract_pixstack(int(ix*iy -1))
+                            minarea=int(pow((0.7/pixscale),2) * 3.14)
                             sources = sep.extract(
-                                focusimg, 2.5, err=bkg.globalrms, minarea=int(pow((0.7/pixscale),2) * 3.14)
+                                focusimg, 2.5, err=bkg.globalrms, minarea=minarea
                             )
-                            print ("min_area: " + str(int(pow((0.7/pixscale),2) * 3.14)))
+                            print ("min_area: " + str(minarea))
                             sources = Table(sources)
                             sources = sources[sources['flag'] < 8]
                             sources = sources[sources["peak"] < 0.9* image_saturation_level * pow(binfocus,2)]

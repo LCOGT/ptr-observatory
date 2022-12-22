@@ -131,7 +131,7 @@ site_config = {
     'pointing_calibration_on_startup': False,  #MF I am leaving this alone.
     'periodic_focus_time' : 0.5, # This is a time, in hours, over which to bypass automated focussing (e.g. at the start of a project it will not refocus if a new project starts X hours after the last focus)
     'stdev_fwhm' : 0.5, # This is the expected variation in FWHM at a given telescope/camera/site combination. This is used to check if a fwhm is within normal range or the focus has shifted
-    'focus_exposure_time': 12.5, # Exposure time in seconds for exposure image
+    'focus_exposure_time': 25, # Exposure time in seconds for exposure image
     'focus_trigger' : 1.0, # What FWHM increase is needed to trigger an autofocus
     'solve_nth_image' : 10, # Only solve every nth image
     'solve_timer' : 5, # Only solve every X minutes
@@ -574,6 +574,11 @@ site_config = {
             'settings': {
                 
                 'is_osc' : True,
+                # 'osc_brightness_enhance' : 1.0,
+                # 'osc_contrast_enhance' : 1.3,
+                # 'osc_saturation_enhance' : 2.0,
+                # 'osc_colour_enhance' : 1.5,
+                # 'osc_sharpness_enhance' : 1.5,
                 'osc_brightness_enhance' : 1.0,
                 'osc_contrast_enhance' : 1.3,
                 'osc_saturation_enhance' : 2.0,
