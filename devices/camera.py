@@ -769,7 +769,15 @@ class Camera:
             self.active_script = None
 
         elif action == "expose" and self.exposure_busy:
-            plog("Cannot expose, camera is currently busy")
+            plog("Cannot expose, camera is currently busy, waiting for exposure to clear")
+            while True:
+                if self.exposure_busy:
+                    time.sleep(0.5)
+                else:
+                    break
+            self.expose_command(req, opt, do_sep=True, quick=False)
+            self.exposure_busy = False  # Hangup needs to be guarded with a timeout.
+            self.active_script = None
 
         elif action == "darkslide_close":
 
