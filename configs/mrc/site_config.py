@@ -580,9 +580,9 @@ site_config = {
                 # 'osc_colour_enhance' : 1.5,
                 # 'osc_sharpness_enhance' : 1.5,
                 'osc_brightness_enhance' : 1.0,
-                'osc_contrast_enhance' : 1.3,
-                'osc_saturation_enhance' : 2.0,
-                'osc_colour_enhance' : 1.5,
+                'osc_contrast_enhance' : 1.5,
+                'osc_saturation_enhance' : 2.5,
+                'osc_colour_enhance' : 1.7,
                 'osc_sharpness_enhance' : 1.5,
                 'bin_for_focus' : True, # This setting will bin the image for focussing rather than interpolating. Good for 1x1 pixel sizes < 0.6.
                 

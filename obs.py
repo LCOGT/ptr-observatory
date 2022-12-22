@@ -229,7 +229,7 @@ class Observatory:
 
         # Set up command_queue for incoming jobs
         self.cmd_queue = queue.Queue(
-            maxsize=30
+            maxsize=0
         )  # Note this is not a thread but a FIFO buffer
         self.stop_all_activity = False  # This is used to stop the camera or sequencer
 
@@ -496,8 +496,8 @@ class Observatory:
     
                             plog("Exception in obs.scan_requests:  ", e, 'cmd:  ', cmd)
                             
-                else:
-                    print ("current command under way, waiting until complete for next in queue")
+                else:                    
+                    time.sleep(0.5)
                             
                 url_blk = "https://calendar.photonranch.org/dev/siteevents"
                 # UTC VERSION
