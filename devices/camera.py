@@ -1063,6 +1063,7 @@ class Camera:
             for sskcounter in range(int(Nsmartstack)):
                 if Nsmartstack > 1 :
                     print ("Smartstack " + str(sskcounter+1) + " out of " + str(Nsmartstack))
+                    g_dev['obs'].update_status(cancel_check=False)
                 self.retry_camera = 3
                 self.retry_camera_start_time = time.time()
                 while self.retry_camera > 0:
