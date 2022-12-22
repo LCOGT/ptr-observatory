@@ -1334,6 +1334,8 @@ class Camera:
                             + " sec.",
                             p_level="INFO",
                         )
+                        if (exposure_time > 120):
+                            g_dev["obs"].update_status(cancel_check=False)
 
                     if (
                         quartileExposureReport == 2
@@ -1347,6 +1349,8 @@ class Camera:
                             + " sec.",
                             p_level="INFO",
                         )
+                        if (exposure_time > 60):
+                            g_dev["obs"].update_status(cancel_check=False)
 
                     if (
                         quartileExposureReport == 3
@@ -1360,6 +1364,8 @@ class Camera:
                             + " sec.",
                             p_level="INFO",
                         )
+                        if (exposure_time > 120):
+                            g_dev["obs"].update_status(cancel_check=False)
 
                 continue
 
