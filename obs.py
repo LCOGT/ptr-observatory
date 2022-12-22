@@ -451,47 +451,54 @@ class Observatory:
                             result={'stopped': True}
                             return  # Note we do not process any commands.
 
-
-                while self.cmd_queue.qsize() > 0:
-                    self.send_to_user(
-                        "Number of queued commands:  " + str(self.cmd_queue.qsize())
-                    )
-                    cmd = self.cmd_queue.get()
-                    # This code is redundant
-                    if self.config["selector"]["selector1"]["driver"] is None:
-                        port = cmd["optional_params"]["instrument_selector_position"]
-                        g_dev["mnt"].instrument_port = port
-                        cam_name = self.config["selector"]["selector1"]["cameras"][port]
-                        if cmd["deviceType"][:6] == "camera":
-                            # Note camelCase is the format of command keys
-                            cmd["required_params"]["deviceInstance"] = cam_name
-                            cmd["deviceInstance"] = cam_name
-                            device_instance = cam_name
-                        else:
-                            try:
+                # NEED TO WAIT UNTIL CURRENT COMMAND IS FINISHED UNTIL MOVING ONTO THE NEXT ONE!
+                # THAT IS WHAT CAUSES THE "CAMERA BUSY" ISSUE. We don't need to wait for the
+                # rotator as the exposure routine in camera.py already waits for that.                
+                if (not g_dev["cam"].exposure_busy) and (not g_dev['mnt'].mount.Slewing):
+                    while self.cmd_queue.qsize() > 0:
+                        self.send_to_user(
+                            "Number of queued commands:  " + str(self.cmd_queue.qsize())
+                        )
+                        cmd = self.cmd_queue.get()
+                        # This code is redundant
+                        if self.config["selector"]["selector1"]["driver"] is None:
+                            port = cmd["optional_params"]["instrument_selector_position"]
+                            g_dev["mnt"].instrument_port = port
+                            cam_name = self.config["selector"]["selector1"]["cameras"][port]
+                            if cmd["deviceType"][:6] == "camera":
+                                # Note camelCase is the format of command keys
+                                cmd["required_params"]["deviceInstance"] = cam_name
+                                cmd["deviceInstance"] = cam_name
+                                device_instance = cam_name
+                            else:
                                 try:
-                                    device_instance = cmd["deviceInstance"]
+                                    try:
+                                        device_instance = cmd["deviceInstance"]
+                                    except:
+                                        device_instance = cmd["required_params"][
+                                            "deviceInstance"
+                                        ]
                                 except:
-                                    device_instance = cmd["required_params"][
-                                        "deviceInstance"
-                                    ]
-                            except:
-                                pass
-                    else:
-                        device_instance = cmd["deviceInstance"]
-                    plog("obs.scan_request: ", cmd)
-
-                    device_type = cmd["deviceType"]
-                    device = self.all_devices[device_type][device_instance]
-                    try:
-                        #plog("Trying to parse:  ", cmd)
-
-                        device.parse_command(cmd)
-                    except Exception as e:
-
-                        plog(traceback.format_exc())
-
-                        plog("Exception in obs.scan_requests:  ", e, 'cmd:  ', cmd)
+                                    pass
+                        else:
+                            device_instance = cmd["deviceInstance"]
+                        plog("obs.scan_request: ", cmd)
+    
+                        device_type = cmd["deviceType"]
+                        device = self.all_devices[device_type][device_instance]
+                        try:
+                            #plog("Trying to parse:  ", cmd)
+    
+                            device.parse_command(cmd)
+                        except Exception as e:
+    
+                            plog(traceback.format_exc())
+    
+                            plog("Exception in obs.scan_requests:  ", e, 'cmd:  ', cmd)
+                            
+                else:
+                    print ("current command under way, waiting until complete for next in queue")
+                            
                 url_blk = "https://calendar.photonranch.org/dev/siteevents"
                 # UTC VERSION
                 start_aperture = str(g_dev['events']['Eve Sky Flats']).split()

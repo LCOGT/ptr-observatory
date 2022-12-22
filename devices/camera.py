@@ -1007,7 +1007,7 @@ class Camera:
                 if g_dev['rot'].rotator.IsMoving:                                         
                     if rot_report == 0:
                         plog("Waiting for camera rotator to catch up. ")
-                        g_dev["obs"].send_to_user("Waiting for camera rotator to chatch up before exposing.")
+                        g_dev["obs"].send_to_user("Waiting for camera rotator to catch up before exposing.")
                                     
                         rot_report=1
                     time.sleep(0.2)                                
@@ -2416,18 +2416,19 @@ class Camera:
                                     list_0_1 = np.asarray([ [0,1], [0,0] ])
                                     checkerboard=np.tile(list_0_1, (xshape//2, yshape//2))
                                     #checkerboard=np.array(checkerboard)
-                                    GTRonly=(block_reduce(hdufocusdata * checkerboard ,2))
+                                    #GTRonly=(block_reduce(hdufocusdata * checkerboard ,2))
+                                    hdugreen=(block_reduce(hdufocusdata * checkerboard ,2))
                                     
                                     # G bottom left Pixels
-                                    list_0_1 = np.asarray([ [0,0], [1,0] ])
-                                    checkerboard=np.tile(list_0_1, (xshape//2, yshape//2))
+                                    #list_0_1 = np.asarray([ [0,0], [1,0] ])
+                                    #checkerboard=np.tile(list_0_1, (xshape//2, yshape//2))
                                     #checkerboard=np.array(checkerboard)
-                                    GBLonly=(block_reduce(hdufocusdata * checkerboard ,2))                                
+                                    #GBLonly=(block_reduce(hdufocusdata * checkerboard ,2))                                
                                     
                                     # Sum two Gs together and half them to be vaguely on the same scale
-                                    hdugreen = np.array((GTRonly + GBLonly) / 2)
-                                    del GTRonly
-                                    del GBLonly
+                                    #hdugreen = np.array((GTRonly + GBLonly) / 2)
+                                    #del GTRonly
+                                    #del GBLonly
                                     del checkerboard
                                     
                                 # Interpolate to make a high resolution version for focussing
