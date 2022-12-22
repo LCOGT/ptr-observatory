@@ -51,8 +51,8 @@ site_config = {
     'wema_write_share_path':  None,   # This and below provide two different ways to define
     'client_read_share_path':  None,  #     a path to a network share.
     'redis_ip': None,  #'127.0.0.1', None if no redis path present,
-    'site_is_generic':  False,   # A simple single computer ASCOM site.
-    'site_is_specific':  True,  # Indicates some special code for this site, found at end of config.
+    'site_is_generic':  True,   # A simple single computer ASCOM site.
+    'site_is_specific':  False,  # Indicates some special code for this site, found at end of config.
 
 
     'host_wema_site_name':  'ECO',  #  The umbrella header for obsys in close geographic proximity.
@@ -79,7 +79,7 @@ site_config = {
     'reference_ambient':  10,  #  Degrees Celsius.  Alternately 12 entries, one for every - mid month.
     'reference_pressure':  867.254,    #mbar   A rough guess 20200315
 
-    'site_roof_control': 'no', #MTF entered this in to remove sro specific code.... Basically do we have control of the roof or not see line 338 sequencer.py
+    'site_roof_control': 'yes', #MTF entered this in to remove sro specific code.... Basically do we have control of the roof or not see line 338 sequencer.py
     'site_in_automatic_default': "Automatic",   #  ["Manual", "Shutdown", "Automatic"]
     'automatic_detail_default': "Enclosure is initially set to Automatic mode.",
     'observing_check_period' : 5,    # How many minutes between weather checks
@@ -151,10 +151,10 @@ site_config = {
     'observing_conditions' : {
         'observing_conditions1': {
             'parent': 'site',
-            'ocn_is_specific':  True,  # Indicates some special site code.
+            'ocn_is_specific':  False,  # Indicates some special site code.
             # Intention it is found in this file.
             'name': 'SRO File',
-            'driver': 'Windows.Share',  # Could be redis, ASCOM, ...
+            'driver': None,  # Could be redis, ASCOM, ...
             'share_path_name': 'F:/ptr/',
             'driver_2':  None,   #' ASCOM.Boltwood.OkToOpen.SafetyMonitor',
             'driver_3':  None,    # 'ASCOM.Boltwood.OkToImage.SafetyMonitor'
@@ -169,15 +169,15 @@ site_config = {
     'enclosure': {
         'enclosure1': {
             'parent': 'site',
-            'enc_is_specific':  True,  # Indicates some special site code.
-            'name': 'SRO File',
+            'enc_is_specific':  False,  # Indicates some special site code.
+            'name': 'Dragonfly Roof',
             'hostIP':  None,
-            'driver': None,  #'ASCOM.DigitalDomeWorks.Dome',  #  ASCOMDome.Dome',  #  ASCOM.DeviceHub.Dome',  #  ASCOM.DigitalDomeWorks.Dome',  #"  ASCOMDome.Dome',
+            'driver': 'Dragonfly.Dome',  #'ASCOM.DigitalDomeWorks.Dome',  #  ASCOMDome.Dome',  #  ASCOM.DeviceHub.Dome',  #  ASCOM.DigitalDomeWorks.Dome',  #"  ASCOMDome.Dome',
             'has_lights':  False,
             'controlled_by': 'mount1',
 			'is_dome': False,
             'mode': 'Automatic',
-            'cool_down': 35.0,    #  Minutes prior to sunset.
+            'cool_down': -35.0,    #  Minutes prior to sunset.
             'settings': {
                 'lights':  ['Auto', 'White', 'Red', 'IR', 'Off'],       #A way to encode possible states or options???
                                                                         #First Entry is always default condition.
@@ -915,15 +915,20 @@ site_config = {
 #         print('Dictionaries matched.')
 
 #get_ocn_status = None   # NB these are placeholders for site specific routines for in a config file
-def get_enc_status(g_dev=None):
-    status = {'shutter_status': "bluib",   # NB NB NB "Roof is open|closed' is more inforative for FAT, but we make boolean decsions on 'Open'
-              'enclosure_synchronized': True,
-              'dome_azimuth': 0.0,
-              'dome_slewing': False,
-              'enclosure_mode': "Autonomous!",
-              'enclosure_message':  ''
-             }
-    return status
-def get_ocn_status(g_dev=None):
-    #print ("no encolsure control")
+# def get_enc_status(g_dev=None):
+#     status = {'shutter_status': "bluib",   # NB NB NB "Roof is open|closed' is more inforative for FAT, but we make boolean decsions on 'Open'
+#               'enclosure_synchronized': True,
+#               'dome_azimuth': 0.0,
+#               'dome_slewing': False,
+#               'enclosure_mode': "Autonomous!",
+#               'enclosure_message':  ''
+#              }
+#     return status
+# def get_ocn_status(g_dev=None):
+#     #print ("no encolsure control")
+#     pass
+
+def get_ocn_status():
+    pass
+def get_enc_status():
     pass

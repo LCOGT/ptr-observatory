@@ -278,7 +278,7 @@ class Sequencer:
                 plog("Open and slew Dome to azimuth opposite the Sun:  ", round(flat_spot, 1))
                 plog("Cooling down and waiting for skyflat / observing to begin")
 
-                if enc_status['shutter_status'] in ['Closed', 'closed'] and g_dev['enc'].mode == 'Automatic' \
+                if self.config['site_roof_control'] != 'no' and enc_status['shutter_status'] in ['Closed', 'closed'] and g_dev['enc'].mode == 'Automatic' \
                     and ocn_status['hold_duration'] <= 0.1:   #NB
                     #breakpoint()
                     g_dev['enc'].open_command({}, {})
@@ -302,7 +302,7 @@ class Sequencer:
         except:
             plog("Park not executed during Park and Close" )
         try:
-            if enc_status['shutter_status'] in ['open', ] and g_dev['enc'].mode == 'Automatic':
+            if self.config['site_roof_control'] != 'no' and enc_status['shutter_status'] in ['open', ] and g_dev['enc'].mode == 'Automatic':
                 g_dev['enc'].close_command( {}, {})
         except:
             plog('Dome close not executed during Park and Close.')
@@ -735,7 +735,7 @@ class Sequencer:
                 g_dev['obs'].send_to_user("Could not execute project due to poorly formatted or corrupt project", p_level='INFO')
                 continue
 
-            if enc_status['shutter_status'] in ['Closed', 'closed'] and ocn_status['hold_duration'] <= 0.1:   #NB  # \  NB NB 20220901 WER fix this!
+            if self.config['site_roof_control'] != 'no' and enc_status['shutter_status'] in ['Closed', 'closed'] and ocn_status['hold_duration'] <= 0.1:   #NB  # \  NB NB 20220901 WER fix this!
 
                 #breakpoint()
                 g_dev['enc'].open_command({}, {})
