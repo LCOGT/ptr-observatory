@@ -153,6 +153,8 @@ class Observatory:
             "enclosure_check_period"
         ]  # How many minutes between enclosure check
 
+        self.project_call_timer = time.time()
+
         # Instantiate the helper class for astronomical events
         # Soon the primary event / time values can come from AWS.
         self.astro_events = ptr_events.Events(self.config)
@@ -225,7 +227,9 @@ class Observatory:
         self.slow_camera_queue_thread = threading.Thread(target=self.slow_camera_process, args=())
         self.slow_camera_queue_thread.start()
 
-        
+        self.send_status_queue = queue.Queue(maxsize=0)
+        self.send_status_queue_thread = threading.Thread(target=self.send_status_process, args=())
+        self.send_status_queue_thread.start()
 
         # Set up command_queue for incoming jobs
         self.cmd_queue = queue.Queue(
@@ -454,7 +458,8 @@ class Observatory:
                 # NEED TO WAIT UNTIL CURRENT COMMAND IS FINISHED UNTIL MOVING ONTO THE NEXT ONE!
                 # THAT IS WHAT CAUSES THE "CAMERA BUSY" ISSUE. We don't need to wait for the
                 # rotator as the exposure routine in camera.py already waits for that.                
-                if (not g_dev["cam"].exposure_busy) and (not g_dev['mnt'].mount.Slewing):
+                #if (not g_dev["cam"].exposure_busy) and (not g_dev['mnt'].mount.Slewing):
+                if (not g_dev["cam"].exposure_busy):
                     while self.cmd_queue.qsize() > 0:
                         self.send_to_user(
                             "Number of queued commands:  " + str(self.cmd_queue.qsize())
@@ -496,79 +501,82 @@ class Observatory:
     
                             plog("Exception in obs.scan_requests:  ", e, 'cmd:  ', cmd)
                             
-                else:                    
-                    time.sleep(0.5)
-                            
-                url_blk = "https://calendar.photonranch.org/dev/siteevents"
-                # UTC VERSION
-                start_aperture = str(g_dev['events']['Eve Sky Flats']).split()
-                close_aperture = str(g_dev['events']['End Morn Sky Flats']).split()
-                
-
-                # Reformat ephem.Date into format required by the UI
-                startapyear=start_aperture[0].split('/')[0]
-                startapmonth=start_aperture[0].split('/')[1]
-                startapday=start_aperture[0].split('/')[2]
-                closeapyear=close_aperture[0].split('/')[0]
-                closeapmonth=close_aperture[0].split('/')[1]
-                closeapday=close_aperture[0].split('/')[2]                
-                
-                if len(str(startapmonth)) == 1:
-                    startapmonth='0' + startapmonth
-                if len(str(startapday)) == 1:
-                    startapday='0' + str(startapday)
-                if len(str(closeapmonth)) == 1:
-                    closeapmonth='0' + closeapmonth
-                if len(str(closeapday)) == 1:
-                    closeapday='0' + str(closeapday)
-
-                start_aperture_date = startapyear + '-' + startapmonth + '-' + startapday
-                close_aperture_date = closeapyear + '-' + closeapmonth + '-' + closeapday
-
-                start_aperture[0] =start_aperture_date 
-                close_aperture[0] =close_aperture_date 
-
-
-                
-                body = json.dumps(
-                    {
-                        "site": self.config["site"],
-                        "start": start_aperture[0].replace('/','-') +'T' + start_aperture[1] +'Z',
-                        "end": close_aperture[0].replace('/','-') +'T' + close_aperture[1] +'Z',
-                        "full_project_details:": False,
-                    }
-                )
-
-                if (
-                    True
-                ):  # self.blocks is None: # This currently prevents pick up of calendar changes.
-                    blocks = requests.post(url_blk, body).json()
-                    if len(blocks) > 0:
-                        self.blocks = blocks
-
-                url_proj = "https://projects.photonranch.org/dev/get-all-projects"
-                if True:
-                    all_projects = requests.post(url_proj).json()
-                    self.projects = []
-                    if len(all_projects) > 0 and len(blocks) > 0:
-                        self.projects = all_projects  # NOTE creating a list with a dict entry as item 0
-                    # Note the above does not load projects if there are no blocks scheduled.
-                    # A sched block may or may not havean associated project.
-
-                # Design Note. Blocks relate to scheduled time at a site so we expect AWS to mediate block
-                # assignments. Priority of blocks is determined by the owner and a 'equipment match' for
-                # background projects.
-
-                # Projects on the other hand can be a very large pool so how to manage becomes an issue.
-                # To the extent a project is not visible at a site, aws should not present it. If it is
-                # visible and passes the owners priority it should then be presented to the site.
-
-                if self.events_new is None:
-                    url = (
-                        "https://api.photonranch.org/api/events?site="
-                        + self.site_name.upper()
+                 
+                # TO KEEP THE REAL-TIME USE A BIT SNAPPIER, POLL FOR NEW PROJECTS ON A MUCH SLOWER TIMESCALE
+                # TO REMOVE UNNECESSARY CALLS FOR PROJECTS.
+                if time.time() - self.project_call_timer > 30: 
+                    self.project_call_timer = time.time()
+                    plog(".")  # We print this to stay informed of process on the console.
+                    url_blk = "https://calendar.photonranch.org/dev/siteevents"
+                    # UTC VERSION
+                    start_aperture = str(g_dev['events']['Eve Sky Flats']).split()
+                    close_aperture = str(g_dev['events']['End Morn Sky Flats']).split()
+                    
+    
+                    # Reformat ephem.Date into format required by the UI
+                    startapyear=start_aperture[0].split('/')[0]
+                    startapmonth=start_aperture[0].split('/')[1]
+                    startapday=start_aperture[0].split('/')[2]
+                    closeapyear=close_aperture[0].split('/')[0]
+                    closeapmonth=close_aperture[0].split('/')[1]
+                    closeapday=close_aperture[0].split('/')[2]                
+                    
+                    if len(str(startapmonth)) == 1:
+                        startapmonth='0' + startapmonth
+                    if len(str(startapday)) == 1:
+                        startapday='0' + str(startapday)
+                    if len(str(closeapmonth)) == 1:
+                        closeapmonth='0' + closeapmonth
+                    if len(str(closeapday)) == 1:
+                        closeapday='0' + str(closeapday)
+    
+                    start_aperture_date = startapyear + '-' + startapmonth + '-' + startapday
+                    close_aperture_date = closeapyear + '-' + closeapmonth + '-' + closeapday
+    
+                    start_aperture[0] =start_aperture_date 
+                    close_aperture[0] =close_aperture_date 
+    
+    
+                    
+                    body = json.dumps(
+                        {
+                            "site": self.config["site"],
+                            "start": start_aperture[0].replace('/','-') +'T' + start_aperture[1] +'Z',
+                            "end": close_aperture[0].replace('/','-') +'T' + close_aperture[1] +'Z',
+                            "full_project_details:": False,
+                        }
                     )
-                    self.events_new = requests.get(url).json()
+    
+                    if (
+                        True
+                    ):  # self.blocks is None: # This currently prevents pick up of calendar changes.
+                        blocks = requests.post(url_blk, body).json()
+                        if len(blocks) > 0:
+                            self.blocks = blocks
+    
+                    url_proj = "https://projects.photonranch.org/dev/get-all-projects"
+                    if True:
+                        all_projects = requests.post(url_proj).json()
+                        self.projects = []
+                        if len(all_projects) > 0 and len(blocks) > 0:
+                            self.projects = all_projects  # NOTE creating a list with a dict entry as item 0
+                        # Note the above does not load projects if there are no blocks scheduled.
+                        # A sched block may or may not havean associated project.
+    
+                    # Design Note. Blocks relate to scheduled time at a site so we expect AWS to mediate block
+                    # assignments. Priority of blocks is determined by the owner and a 'equipment match' for
+                    # background projects.
+    
+                    # Projects on the other hand can be a very large pool so how to manage becomes an issue.
+                    # To the extent a project is not visible at a site, aws should not present it. If it is
+                    # visible and passes the owners priority it should then be presented to the site.
+    
+                    if self.events_new is None:
+                        url = (
+                            "https://api.photonranch.org/api/events?site="
+                            + self.site_name.upper()
+                        )
+                        self.events_new = requests.get(url).json()
                 return  # This creates an infinite loop
 
             else:
@@ -582,17 +590,25 @@ class Observatory:
         `get_status`, which returns a dictionary.
         """
         
+        
+        
+        
         loud = False
         if bpt:
             print('UpdateStatus bpt was invoked.')
             #breakpoint()
-
+        
+        
+        
         # Wait a bit between status updates
         while time.time() < self.time_last_status + self.status_interval:
             return  # Note we are just not sending status, too soon.
 
+        #print ("Time between status updates: " + str(time.time() - self.time_last_status))
+
         t1 = time.time()
         status = {}
+
         # Loop through all types of devices.
         # For each type, we get and save the status of each device.
 
@@ -631,10 +647,11 @@ class Observatory:
                         datetime.datetime.now() - self.enclosure_status_timer
                     ) < datetime.timedelta(minutes=self.enclosure_check_period):
                         result = None
+                        send_enc = False
                     else:
                         plog("Running enclosure status check")
                         self.enclosure_status_timer = datetime.datetime.now()
-
+                        send_enc = True
 
                         result = device.get_status()
 
@@ -648,10 +665,12 @@ class Observatory:
                         datetime.datetime.now() - self.observing_status_timer
                     ) < datetime.timedelta(minutes=self.observing_check_period):
                         result = None
+                        send_ocn = False
                     else:
                         plog("Running weather status check.")
                         self.observing_status_timer = datetime.datetime.now()
                         result = device.get_status(g_dev=g_dev)
+                        send_ocn = True
                         if self.site_is_specific:
                             remove_enc = False
 
@@ -670,30 +689,36 @@ class Observatory:
             device_status = status
         except:
             pass
+        #print ("Status update length: " + str(time.time() - beginning_update_status))
         loud = False
         # Consider inhibiting unless status rate is low
         obsy = self.name
-        if ocn_status is not None:
-            lane = "weather"
-            send_status(obsy, lane, ocn_status)  # NB Do not remove this send for SAF!
-        if enc_status is not None:
-            lane = "enclosure"
-            send_status(obsy, lane, enc_status)
+        
+
         if status is not None:
             lane = "device"
-            send_status(obsy, lane, status)
-        if loud:
-            plog("\n\nStatus Sent:  \n", status)
-        else:
-            plog(".")  # We print this to stay informed of process on the console.
+            #send_status(obsy, lane, status)
+            self.send_status_queue.put((obsy, lane, status), block=False)
+        if ocn_status is not None:
+            lane = "weather"
+            #send_status(obsy, lane, ocn_status)  # NB Do not remove this send for SAF!
+            if send_ocn == True:
+                self.send_status_queue.put((obsy, lane, ocn_status), block=False)
+        if enc_status is not None:
+            lane = "enclosure"
+            #send_status(obsy, lane, enc_status)
+            if send_enc == True:
+                self.send_status_queue.put((obsy, lane, enc_status), block=False)
+        #if loud:
+        #    plog("\n\nStatus Sent:  \n", status)
+        #else:
+            
         # NB should qualify acceptance and type '.' at that point.
         self.time_last_status = time.time()
         self.status_count += 1
-        try:
-            self.scan_requests(cancel_check=True
-            )  # NB THis has faulted, usually empty input lists.
-        except:
-            pass
+    
+        
+        
 
     def update(self):
         """
@@ -736,6 +761,9 @@ class Observatory:
         # Probably we don't want to run these checkes EVERY status update, just every 5 minutes
         if time.time() - self.time_since_safety_checks > 300:
             self.time_since_safety_checks=time.time()
+            
+            # Check the mount is still connected
+            g_dev['mnt'].check_connect()
             
             # Check that the mount hasn't tracked too low or an odd slew hasn't sent it pointing to the ground.
             try:
@@ -939,7 +967,29 @@ class Observatory:
             else:
                 time.sleep(0.5)
 
+    def send_status_process(self):
+        """A place to process non-process dependant images from the camera pile
+        
+        """
 
+        one_at_a_time = 0
+        # This stopping mechanism allows for threads to close cleanly.
+        while True:
+            if (not self.send_status_queue.empty()) and one_at_a_time == 0:
+                one_at_a_time = 1
+                pre_upload=time.time()
+                received_status = self.send_status_queue.get(block=False)
+                #print ("****************")
+                #print (received_status)                
+                send_status(received_status[0], received_status[1], received_status[2])
+                self.send_status_queue.task_done()
+                upload_time=time.time() - pre_upload                
+                self.status_interval = 2 * upload_time
+                #print ("New status interval: " + str(self.status_interval))
+                one_at_a_time = 0
+            else:
+                time.sleep(0.1)
+                
 
     def slow_camera_process(self):
         """A place to process non-process dependant images from the camera pile
