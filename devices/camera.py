@@ -2636,7 +2636,9 @@ class Camera:
                             border_x = int(ix * 0.05)
                             border_y = int(iy * 0.05)
                             sep.set_extract_pixstack(int(ix*iy -1))
-                            minarea=int(pow((0.7/pixscale),2) * 3.14)
+                            # minarea is set as roughly how big we think a 0.7 arcsecond seeing star
+                            # would be at this pixelscale and binning. Different for different cameras/telescopes.
+                            minarea=int(pow(0.7*1.5 / (pixscale*binfocus),2)* 3.14)
                             sources = sep.extract(
                                 focusimg, 2.5, err=bkg.globalrms, minarea=minarea
                             )
@@ -2694,7 +2696,9 @@ class Camera:
                             sources['peak'] = (sources['peak'] ) / pow(binfocus,2)
                             sources['cpeak'] = (sources['cpeak'] ) / pow(binfocus,2)
                             
-                            sources = sources[sources['FWHM'] > 1.0]
+                            # Need to reject any stars that have FWHM that are less than a extremely
+                            # perfect night as artifacts
+                            sources = sources[sources['FWHM'] > (0.6 / (pixscale))]
                             sources = sources[sources['FWHM'] != 0]
                             
                             # BANZAI prune nans from table
