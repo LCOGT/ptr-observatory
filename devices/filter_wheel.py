@@ -99,11 +99,10 @@ class FilterWheel:
             elif driver == "ASCOM.FLI.FilterWheel" and self.dual_filter:
                 self.maxim = False
                 self.dual = True
-    
                 fw0 = win32com.client.Dispatch(driver)  # Closest to Camera
                 fw1 = win32com.client.Dispatch(driver)  # Closest to Telescope
                 plog(fw0, fw1)
-    
+
                 actions0 = fw0.SupportedActions
                 actions1 = fw1.SupportedActions
                 for action in actions0:

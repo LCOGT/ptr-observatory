@@ -1237,11 +1237,6 @@ class Observatory:
                     
                     # For OSC, we need to smartstack individual frames. 
                     if not self.config["camera"][g_dev['cam'].name]["settings"]["is_osc"]:
-                    
-
-                        
-    
-    
                         # Detect and swap img to the correct endianness - needed for the smartstack jpg
                         if sys.byteorder=='little':
                             img=img.newbyteorder('little').byteswap()
@@ -1356,13 +1351,6 @@ class Observatory:
                         )
                             
 
-                        
-                        
-                        
-                        
-                        
-                        
-                        
                         
                     # This is where the OSC smartstack stuff is. 
                     else:   
