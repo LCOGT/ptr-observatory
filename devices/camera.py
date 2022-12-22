@@ -999,7 +999,14 @@ class Camera:
         self.len_x = self.camera_x_size // bin_x
         self.len_y = self.camera_y_size // bin_y  # Unit is binned pixels.
         self.len_xs = 0  # THIS IS A HACK, indicating no overscan.
-
+        
+         # Always check rotator just before exposure
+        if g_dev['rot']!=None:                
+            while g_dev['rot'].rotator.IsMoving:                    
+                if g_dev['rot'].rotator.IsMoving:                                         
+                    plog('r>')
+                    time.sleep(0.2)                                
+                            
 
         result = {}  #  This is a default return just in case
         num_retries = 0
@@ -1169,7 +1176,10 @@ class Camera:
                             else:
                                 imtypeb = 0
                             self.t2 = time.time()
+                
+                           
                             self._expose(exposure_time, imtypeb)
+                            
                             g_dev['obs'].time_since_last_slew_or_exposure = time.time()
                         else:
                             plog("Something terribly wrong, driver not recognized.!")
@@ -2410,7 +2420,7 @@ class Camera:
                                     GBLonly=(block_reduce(hdufocusdata * checkerboard ,2))                                
                                     
                                     # Sum two Gs together and half them to be vaguely on the same scale
-                                    hdugreen = (GTRonly + GBLonly) / 2
+                                    hdugreen = np.array((GTRonly + GBLonly) / 2)
                                     del GTRonly
                                     del GBLonly
                                     del checkerboard
@@ -2627,8 +2637,9 @@ class Camera:
                             border_y = int(iy * 0.05)
                             sep.set_extract_pixstack(int(ix*iy -1))
                             sources = sep.extract(
-                                focusimg, 4.5, err=bkg.globalrms, minarea=15
+                                focusimg, 2.5, err=bkg.globalrms, minarea=int(pow((0.7/pixscale),2) * 3.14)
                             )
+                            print ("min_area: " + str(int(pow((0.7/pixscale),2) * 3.14)))
                             sources = Table(sources)
                             sources = sources[sources['flag'] < 8]
                             sources = sources[sources["peak"] < 0.9* image_saturation_level * pow(binfocus,2)]

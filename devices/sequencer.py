@@ -1836,6 +1836,7 @@ class Sequencer:
             
             try:
                 plog("Going to near focus patch of " + str(focus_patch_n) + " 9th to 12th mag stars " + str(d2d.deg) + "  degrees away.")
+                plog("RA " + str(focus_patch_ra) + " DEC " + str(focus_patch_dec) )
                 g_dev['mnt'].go_coord(focus_patch_ra, focus_patch_dec)
             except Exception as e:
                 print ("Issues pointing to a focus patch. Focussing at the current pointing." , e)
