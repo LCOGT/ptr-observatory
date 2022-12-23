@@ -1876,15 +1876,13 @@ class Sequencer:
                 time.sleep(0.2)
                 g_dev['obs'].update_status()
             
-            st = ""
+            
             if g_dev['rot']!=None:  
                 rot_report=0
-                while g_dev['rot'].rotator.IsMoving:                    
-                    if g_dev['rot'].rotator.IsMoving: st += 'r>'                    
+                while g_dev['rot'].rotator.IsMoving:                                                           
                     #if g_dev['enc'].status['dome_slewing']: st += 'd>'
                     if rot_report == 0:
-                        print ("Waiting for Rotator to shift")
-                        st = ""
+                        print ("Waiting for Rotator to rotation")
                         rot_report =1
                     time.sleep(0.2)
                     g_dev['obs'].update_status()
@@ -2296,32 +2294,37 @@ class Sequencer:
             #case where a timeout is a smart idea.
             #Wait for external motion to cease before exposing.  Note this precludes satellite tracking.
             st = ""
-            while g_dev['foc'].focuser.IsMoving or g_dev['rot'].rotator.IsMoving or \
+            
+            #breakpoint()
+            #20210817  g_dev['enc'] does not exist,  so this faults. Cascade problem with user_id...
+            rot_report=0
+            while g_dev['foc'].focuser.IsMoving or \
                   g_dev['mnt'].mount.Slewing: #or g_dev['enc'].status['dome_slewing']:   #Filter is moving??
-                if g_dev['foc'].focuser.IsMoving: st += 'f>'
-                if g_dev['rot'].rotator.IsMoving: st += 'r>'
-                if g_dev['mnt'].mount.Slewing: st += 'm>'
+                if g_dev['foc'].focuser.IsMoving: st += 'Waiting for Focuser to shift.\n'
+                if g_dev['mnt'].mount.Slewing: st += 'Waiting for Mount to Slew\n'
                 #if g_dev['enc'].status['dome_slewing']: st += 'd>'
-                plog(st)
-                st = ""
-                time.sleep(0.2)
-                g_dev['obs'].update_status()
-        except: # most problems are that there is no rotator.
-            try:
-                st = ""
-                while g_dev['foc'].focuser.IsMoving or \
-                      g_dev['mnt'].mount.Slewing: #or g_dev['enc'].status['dome_slewing']:   #Filter is moving??
-                    if g_dev['foc'].focuser.IsMoving: st += 'f>'
-                    if g_dev['mnt'].mount.Slewing: st += 'm>'
-                    #if g_dev['enc'].status['dome_slewing']: st += 'd>'
+                if rot_report == 0:
                     plog(st)
                     st = ""
+                    rot_report =1
+                time.sleep(0.2)
+                g_dev['obs'].update_status()
+            
+            
+            if g_dev['rot']!=None:  
+                rot_report=0
+                while g_dev['rot'].rotator.IsMoving:                                                           
+                    #if g_dev['enc'].status['dome_slewing']: st += 'd>'
+                    if rot_report == 0:
+                        print ("Waiting for Rotator to rotation")
+                        rot_report =1
                     time.sleep(0.2)
                     g_dev['obs'].update_status()
-            except:
-                plog("Motion check faulted.")
-                plog(traceback.format_exc())
-                breakpoint()
+                
+        except:
+            plog("Motion check faulted.")
+            plog(traceback.format_exc())
+            breakpoint()
         
         if req['target'] == 'near_tycho_star':   ## 'bin', 'area'  Other parameters
             #  Go to closest Mag 7.5 Tycho * with no flip
