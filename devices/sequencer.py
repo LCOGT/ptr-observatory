@@ -62,12 +62,15 @@ def wait_for_slew():
     
     try:
         if not g_dev['mnt'].mount.AtPark:              
+            movement_reporting_timer=time.time()
             while g_dev['mnt'].mount.Slewing: #or g_dev['enc'].status['dome_slewing']:   #Filter is moving??
                 #if g_dev['mnt'].mount.Slewing: plog( 'm>')
                 #if g_dev['enc'].status['dome_slewing']: st += 'd>'
-                plog( 'm>')
-                time.sleep(0.5)
-                g_dev['obs'].update_status()            
+                if time.time() - movement_reporting_timer > 2.0:
+                    plog( 'm>')
+                    movement_reporting_timer=time.time()
+                #time.sleep(0.1)
+                g_dev['obs'].update_status(mount_only=True, dont_wait=True)            
             
     except Exception as e:
         plog("Motion check faulted.")

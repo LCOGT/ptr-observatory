@@ -154,6 +154,7 @@ class Observatory:
         ]  # How many minutes between enclosure check
 
         self.project_call_timer = time.time()
+        self.get_new_job_timer = time.time()
 
         # Instantiate the helper class for astronomical events
         # Soon the primary event / time values can come from AWS.
@@ -397,6 +398,7 @@ class Observatory:
         while not self.stopped:    #This variable is not used.
 
             if  True:  #not g_dev["seq"].sequencer_hold:  THis causes an infinte loope witht he above while
+                
                 url_job = "https://jobs.photonranch.org/jobs/getnewjobs"
                 body = {"site": self.name}
                 cmd = {}
@@ -583,7 +585,7 @@ class Observatory:
                 
                 continue
 
-    def update_status(self, bpt=False, cancel_check=False):
+    def update_status(self, bpt=False, cancel_check=False, mount_only=False, dont_wait=False):
         """Collects status from all devices and sends an update to AWS.
 
         Each device class is responsible for implementing the method
@@ -601,8 +603,9 @@ class Observatory:
         
         
         # Wait a bit between status updates
-        while time.time() < self.time_last_status + self.status_interval:
-            return  # Note we are just not sending status, too soon.
+        if dont_wait == False:
+            while time.time() < self.time_last_status + self.status_interval:
+                return  # Note we are just not sending status, too soon.
 
         #print ("Time between status updates: " + str(time.time() - self.time_last_status))
 
@@ -623,6 +626,10 @@ class Observatory:
         else:
             device_list = self.device_types  #  used when one computer is doing everything for a site.
             remove_enc = True
+        
+        if mount_only == True:
+            device_list=['mount', 'telescope']
+        
         for dev_type in device_list:
             #  The status that we will send is grouped into lists of
             #  devices by dev_type.
@@ -631,7 +638,7 @@ class Observatory:
             # Recall that self.all_devices[type] is a dictionary of all
             # `type` devices, with key=name and val=device object itself.
             devices_of_type = self.all_devices.get(dev_type, {})
-            device_names = devices_of_type.keys()
+            device_names = devices_of_type.keys()            
 
             for device_name in device_names:
 
@@ -675,7 +682,10 @@ class Observatory:
                             remove_enc = False
 
                 else:
-                    result = device.get_status()
+                    if  'telescope' in device_name:
+                        status['telescope']=status['mount']
+                    else:
+                        result = device.get_status()
                 if result is not None:
                     status[dev_type][device_name] = result
 
@@ -741,12 +751,15 @@ class Observatory:
         """
 
         self.update_status()
-        try:
-            self.scan_requests(
-                "mount1"
-            )  # NBNBNB THis has faulted, usually empty input lists.
-        except:
-            pass
+        
+        if time.time() - self.get_new_job_timer > 3:
+            self.get_new_job_timer = time.time()
+            try:
+                self.scan_requests(
+                    "mount1"
+                )  # NBNBNB THis has faulted, usually empty input lists.
+            except:
+                pass
         if self.status_count > 1:  # Give time for status to form
             g_dev["seq"].manager()  # Go see if there is something new to do.
         
@@ -985,6 +998,8 @@ class Observatory:
                 self.send_status_queue.task_done()
                 upload_time=time.time() - pre_upload                
                 self.status_interval = 2 * upload_time
+                if self.status_interval < 10:
+                    self.status_interval = 10
                 #print ("New status interval: " + str(self.status_interval))
                 one_at_a_time = 0
             else:
