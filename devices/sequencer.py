@@ -1863,23 +1863,29 @@ class Sequencer:
             
             #breakpoint()
             #20210817  g_dev['enc'] does not exist,  so this faults. Cascade problem with user_id...
+            rot_report=0
             while g_dev['foc'].focuser.IsMoving or \
                   g_dev['mnt'].mount.Slewing: #or g_dev['enc'].status['dome_slewing']:   #Filter is moving??
-                if g_dev['foc'].focuser.IsMoving: st += 'f>'
-                if g_dev['mnt'].mount.Slewing: st += 'm>'
+                if g_dev['foc'].focuser.IsMoving: st += 'Waiting for Focuser to shift.\n'
+                if g_dev['mnt'].mount.Slewing: st += 'Waiting for Mount to Slew\n'
                 #if g_dev['enc'].status['dome_slewing']: st += 'd>'
-                plog(st)
-                st = ""
+                if rot_report == 0:
+                    plog(st)
+                    st = ""
+                    rot_report =1
                 time.sleep(0.2)
                 g_dev['obs'].update_status()
             
             st = ""
-            if g_dev['rot']!=None:                
+            if g_dev['rot']!=None:  
+                rot_report=0
                 while g_dev['rot'].rotator.IsMoving:                    
                     if g_dev['rot'].rotator.IsMoving: st += 'r>'                    
                     #if g_dev['enc'].status['dome_slewing']: st += 'd>'
-                    plog(st)
-                    st = ""
+                    if rot_report == 0:
+                        print ("Waiting for Rotator to shift")
+                        st = ""
+                        rot_report =1
                     time.sleep(0.2)
                     g_dev['obs'].update_status()
                 
