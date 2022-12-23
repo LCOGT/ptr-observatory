@@ -628,7 +628,7 @@ class Observatory:
             remove_enc = True
         
         if mount_only == True:
-            device_list=['mount']
+            device_list=['mount', 'telescope']
         
         for dev_type in device_list:
             #  The status that we will send is grouped into lists of
@@ -638,8 +638,7 @@ class Observatory:
             # Recall that self.all_devices[type] is a dictionary of all
             # `type` devices, with key=name and val=device object itself.
             devices_of_type = self.all_devices.get(dev_type, {})
-            device_names = devices_of_type.keys()
-
+            device_names = devices_of_type.keys()            
 
             for device_name in device_names:
 
@@ -683,7 +682,10 @@ class Observatory:
                             remove_enc = False
 
                 else:
-                    result = device.get_status()
+                    if  'telescope' in device_name:
+                        status['telescope']=status['mount']
+                    else:
+                        result = device.get_status()
                 if result is not None:
                     status[dev_type][device_name] = result
 
@@ -996,8 +998,8 @@ class Observatory:
                 self.send_status_queue.task_done()
                 upload_time=time.time() - pre_upload                
                 self.status_interval = 2 * upload_time
-                if self.status_interval < 5:
-                    self.status_interval = 5
+                if self.status_interval < 10:
+                    self.status_interval = 10
                 #print ("New status interval: " + str(self.status_interval))
                 one_at_a_time = 0
             else:
