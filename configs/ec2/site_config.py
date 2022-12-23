@@ -151,10 +151,10 @@ site_config = {
     'observing_conditions' : {
         'observing_conditions1': {
             'parent': 'site',
-            'ocn_is_specific':  True,  # Indicates some special site code.
+            'ocn_is_specific':  False,  # Indicates some special site code.
             # Intention it is found in this file.
             'name': 'SRO File',
-            'driver': 'Windows.Share',  # Could be redis, ASCOM, ...
+            'driver': None,  # Could be redis, ASCOM, ...
             'share_path_name': 'F:/ptr/',
             'driver_2':  None,   #' ASCOM.Boltwood.OkToOpen.SafetyMonitor',
             'driver_3':  None,    # 'ASCOM.Boltwood.OkToImage.SafetyMonitor'

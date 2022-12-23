@@ -271,6 +271,8 @@ class Observatory:
         #g_dev['foc'].set_focal_ref_reset_log(self.config["focuser"]["focuser1"]["reference"])
         # Send the config to AWS. TODO This has faulted.
         self.update_config()   #This is the never-ending control loop
+        
+        #breakpoint()
 
 
 
@@ -600,7 +602,8 @@ class Observatory:
         if bpt:
             print('UpdateStatus bpt was invoked.')
             #breakpoint()
-        
+        send_enc = False
+        send_ocn = False
         
         
         # Wait a bit between status updates
@@ -774,9 +777,34 @@ class Observatory:
         # Also an area to put things to irregularly check if things are still connected, e.g. cooler
         #
         # Probably we don't want to run these checkes EVERY status update, just every 5 minutes
-        if time.time() - self.time_since_safety_checks > 300:
+        if time.time() - self.time_since_safety_checks > 10:
             self.time_since_safety_checks=time.time()
             
+            
+            # 5 minute roof check - middle of the daytime check
+            #breakpoint()
+            
+            # If the shutter is open, check it is meant to be.
+            # Very very roughly, it does it by hour
+            # This is just a brute force overriding safety check.
+            print (g_dev['enc'].status['shutter_status'])
+            
+            if g_dev['enc'].status['shutter_status'] == 'Error':
+                print ("Detected an Error in the Roof Status. Closing up for safety.")
+                g_dev['enc'].enclosure.CloseShutter()
+                while g_dev['enc'].enclosure.ShutterStatus == 3:
+                    print ("closing")
+
+            
+            
+            if g_dev['enc'].status['shutter_status'] == 'Open':
+                if g_dev['events']['Cool Down, Open'] < ephem.now() < g_dev['events']['Close and Park']:
+                    print ("Safety check found that the roof was open outside of the normal observing period")    
+                    print ("Dhutting the roof out of an abundance of caution.")
+                    g_dev['enc'].enclosure.CloseShutter()
+                
+                
+                
             # Check the mount is still connected
             g_dev['mnt'].check_connect()
             
