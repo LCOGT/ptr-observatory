@@ -1738,7 +1738,7 @@ class Sequencer:
 
 
 
-    def auto_focus_script(self, req, opt, throw=600):
+    def auto_focus_script(self, req, opt, throw=600, skip_check=False):
         '''
         V curve is a big move focus designed to fit two lines adjacent to the more normal focus curve.
         It finds the approximate focus, particulary for a new instrument. It requires 8 points plus
@@ -1766,14 +1766,17 @@ class Sequencer:
 
         print ("Threshold time between auto focus routines (hours)")
         print (self.config['periodic_focus_time'])
-
-        # if ((datetime.datetime.now() - g_dev['foc'].time_of_last_focus)) > datetime.timedelta(hours=self.config['periodic_focus_time']):
-        #     print ("Sufficient time has passed since last focus to do auto_focus")
-        #     g_dev['foc'].time_of_last_focus = datetime.datetime.now()
-        # else:
-        #     print ("too soon since last autofacus")
-        #     return
-
+        
+        if skip_check == False:
+            if ((datetime.datetime.now() - g_dev['foc'].time_of_last_focus)) > datetime.timedelta(hours=self.config['periodic_focus_time']):
+                print ("Sufficient time has passed since last focus to do auto_focus")
+                
+            else:
+                print ("too soon since last autofacus")
+                return
+        
+        g_dev['foc'].time_of_last_focus = datetime.datetime.now()
+        
         # Reset focus tracker
         g_dev['foc'].focus_tracker = [np.nan] * 10
 
