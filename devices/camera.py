@@ -1004,7 +1004,7 @@ class Camera:
         rot_report=0
         if g_dev['rot']!=None:                
             while g_dev['rot'].rotator.IsMoving:                    
-                if g_dev['rot'].rotator.IsMoving:                                         
+                #if g_dev['rot'].rotator.IsMoving:                                         
                     if rot_report == 0:
                         plog("Waiting for camera rotator to catch up. ")
                         g_dev["obs"].send_to_user("Waiting for camera rotator to catch up before exposing.")

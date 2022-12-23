@@ -1767,12 +1767,12 @@ class Sequencer:
         print ("Threshold time between auto focus routines (hours)")
         print (self.config['periodic_focus_time'])
 
-        if ((datetime.datetime.now() - g_dev['foc'].time_of_last_focus)) > datetime.timedelta(hours=self.config['periodic_focus_time']):
-            print ("Sufficient time has passed since last focus to do auto_focus")
-            g_dev['foc'].time_of_last_focus = datetime.datetime.now()
-        else:
-            print ("too soon since last autofacus")
-            return
+        # if ((datetime.datetime.now() - g_dev['foc'].time_of_last_focus)) > datetime.timedelta(hours=self.config['periodic_focus_time']):
+        #     print ("Sufficient time has passed since last focus to do auto_focus")
+        #     g_dev['foc'].time_of_last_focus = datetime.datetime.now()
+        # else:
+        #     print ("too soon since last autofacus")
+        #     return
 
         # Reset focus tracker
         g_dev['foc'].focus_tracker = [np.nan] * 10
@@ -1877,15 +1877,16 @@ class Sequencer:
                 g_dev['obs'].update_status()
             
             
-            if g_dev['rot']!=None:  
-                rot_report=0
-                while g_dev['rot'].rotator.IsMoving:                                                           
-                    #if g_dev['enc'].status['dome_slewing']: st += 'd>'
-                    if rot_report == 0:
-                        print ("Waiting for Rotator to rotation")
-                        rot_report =1
-                    time.sleep(0.2)
-                    g_dev['obs'].update_status()
+            # if g_dev['rot']!=None:  
+            #     rot_report=0
+            #     while g_dev['rot'].rotator.IsMoving:                                                           
+            #         #if g_dev['enc'].status['dome_slewing']: st += 'd>'
+            #         if rot_report == 0:
+            #             print ("Waiting for Rotator to rotation")
+            #             g_dev["obs"].send_to_user("Waiting for camera rotator to catch up before exposing.")
+            #             rot_report =1
+            #         time.sleep(0.2)
+            #         g_dev['obs'].update_status()
                 
         except:
             plog("Motion check faulted.")
@@ -2261,6 +2262,215 @@ class Sequencer:
 
         return
 
+
+    def extensive_focus_script(self, req, opt, throw=700, begin_at=None):
+        '''
+        This is an extensive focus that covers a wide berth of central values
+        and throws.
+        
+        It first trys 6 throws inwards, 6 throws outwards
+        
+        then moves to the minimum focus found there
+        
+        and runs a normal focus
+        
+        '''
+        plog('AF entered with:  ', req, opt)
+        self.sequencer_hold = False
+        self.guard = False
+        self.af_guard = True
+        sim = False
+        # Reset focus tracker
+        if begin_at is None:  #  ADDED 20120821 WER
+            foc_start = g_dev['foc'].focuser.Position*g_dev['foc'].steps_to_micron
+        else:
+            foc_start = begin_at  #In this case we start at a place close to a 3 point minimum.
+            g_dev['foc'].guarded_move((foc_start)*g_dev['foc'].micron_to_steps)
+        start_ra = g_dev['mnt'].mount.RightAscension
+        start_dec = g_dev['mnt'].mount.Declination
+        plog("Saved ra, dec, focus:  ", start_ra, start_dec, foc_start)
+        try:
+            #Check here for filter, guider, still moving  THIS IS A CLASSIC
+            #case where a timeout is a smart idea.
+            #Wait for external motion to cease before exposing.  Note this precludes satellite tracking.
+            st = ""
+            
+            #breakpoint()
+            #20210817  g_dev['enc'] does not exist,  so this faults. Cascade problem with user_id...
+            rot_report=0
+            while g_dev['foc'].focuser.IsMoving or \
+                  g_dev['mnt'].mount.Slewing: #or g_dev['enc'].status['dome_slewing']:   #Filter is moving??
+                if g_dev['foc'].focuser.IsMoving: st += 'Waiting for Focuser to shift.\n'
+                if g_dev['mnt'].mount.Slewing: st += 'Waiting for Mount to Slew\n'
+                #if g_dev['enc'].status['dome_slewing']: st += 'd>'
+                if rot_report == 0:
+                    plog(st)
+                    st = ""
+                    rot_report =1
+                time.sleep(0.2)
+                g_dev['obs'].update_status()
+            
+            
+            # if g_dev['rot']!=None:  
+            #     rot_report=0
+            #     while g_dev['rot'].rotator.IsMoving:                                                           
+            #         #if g_dev['enc'].status['dome_slewing']: st += 'd>'
+            #         if rot_report == 0:
+            #             print ("Waiting for Rotator to rotation")
+            #             rot_report =1
+            #         time.sleep(0.2)
+            #         g_dev['obs'].update_status()
+                
+        except:
+            plog("Motion check faulted.")
+            plog(traceback.format_exc())
+            breakpoint()
+        
+        if req['target'] == 'near_tycho_star':   ## 'bin', 'area'  Other parameters
+            #  Go to closest Mag 7.5 Tycho * with no flip
+            #focus_star = tycho.dist_sort_targets(g_dev['mnt'].current_icrs_ra, g_dev['mnt'].current_icrs_dec, \
+            #                        g_dev['mnt'].current_sidereal)
+            #plog("Going to near focus star " + str(focus_star[0][0]) + "  degrees away.")
+            
+            # Trim catalogue so that only fields 45 degrees altitude are in there.
+            self.focus_catalogue_skycoord= SkyCoord(ra = self.focus_catalogue[:,0]*u.deg, dec = self.focus_catalogue[:,1]*u.deg)
+            aa = AltAz (location=g_dev['mnt'].site_coordinates, obstime=Time.now())
+            self.focus_catalogue_altitudes=self.focus_catalogue_skycoord.transform_to(aa)            
+            above_altitude_patches=[]
+
+            for ctr in range(len(self.focus_catalogue_altitudes)):
+                if self.focus_catalogue_altitudes[ctr].alt /u.deg > 45.0:
+                    above_altitude_patches.append([self.focus_catalogue[ctr,0], self.focus_catalogue[ctr,1], self.focus_catalogue[ctr,2]])
+            above_altitude_patches=np.asarray(above_altitude_patches)
+            self.focus_catalogue_skycoord= SkyCoord(ra = above_altitude_patches[:,0]*u.deg, dec = above_altitude_patches[:,1]*u.deg)  
+            
+            # d2d of the closest field.
+            teststar = SkyCoord(ra = g_dev['mnt'].current_icrs_ra*15*u.deg, dec = g_dev['mnt'].current_icrs_dec*u.deg)
+            idx, d2d, _ = teststar.match_to_catalog_sky(self.focus_catalogue_skycoord)
+            
+            focus_patch_ra=above_altitude_patches[idx,0] /15
+            focus_patch_dec=above_altitude_patches[idx,1]
+            focus_patch_n=above_altitude_patches[idx,2]   
+            
+            
+            #g_dev['mnt'].go_coord(focus_star[0][1][1], focus_star[0][1][0])
+            g_dev['mnt'].go_coord(focus_patch_ra, focus_patch_dec)
+            req = {'time': self.config['focus_exposure_time'],  'alias':  str(self.config['camera']['camera_1_1']['name']), 'image_type': 'auto_focus'}   #  NB Should pick up filter and constats from config
+            opt = {'area': 100, 'count': 1, 'filter': 'focus'}
+        else:
+            pass   #Just take time image where currently pointed.
+            req = {'time': self.config['focus_exposure_time'],  'alias':  str(self.config['camera']['camera_1_1']['name']), 'image_type': 'auto_focus'}   #  NB Should pick up filter and constats from config
+            opt = {'area': 100, 'count': 1, 'filter': 'focus'}
+        foc_pos0 = foc_start
+        result = {}
+        plog('Autofocus Starting at:  ', foc_pos0, '\n\n')
+        
+        extensive_focus=[]
+        for ctr in range(7):
+            g_dev['foc'].guarded_move((foc_pos0 - (ctr+0)*throw)*g_dev['foc'].micron_to_steps)  #Added 20220209! A bit late
+            #throw = 100  # NB again, from config.  Units are microns
+            if not sim:
+                result = g_dev['cam'].expose_command(req, opt, no_AWS=True, solve_it=False)
+            else:
+                result['FWHM'] = 4
+                result['mean_focus'] = g_dev['foc'].focuser.Position*g_dev['foc'].steps_to_micron
+            try:
+                spot = result['FWHM']
+                foc_pos = result['mean_focus']
+            except:
+                spot = False
+                foc_pos = False
+                print ("spot failed on extensive focus script")
+
+            g_dev['obs'].send_to_user("Extensive focus center " + str(foc_pos) + " FWHM: " + str(spot), p_level='INFO')
+            extensive_focus.append([foc_pos, spot])
+        
+        for ctr in range(6):
+            g_dev['foc'].guarded_move((foc_pos0 + (ctr+1)*throw)*g_dev['foc'].micron_to_steps)  #Added 20220209! A bit late
+            #throw = 100  # NB again, from config.  Units are microns
+            if not sim:
+                result = g_dev['cam'].expose_command(req, opt, no_AWS=True, solve_it=False)
+            else:
+                result['FWHM'] = 4
+                result['mean_focus'] = g_dev['foc'].focuser.Position*g_dev['foc'].steps_to_micron
+            try:
+                spot = result['FWHM']
+                foc_pos = result['mean_focus']
+            except:
+                spot = False
+                foc_pos = False
+                print ("spot failed on extensive focus script")
+
+            g_dev['obs'].send_to_user("Extensive focus center " + str(foc_pos) + " FWHM: " + str(spot), p_level='INFO')
+            extensive_focus.append([foc_pos, spot])
+        
+        minimumFWHM = 100
+        for focentry in extensive_focus:
+            if focentry[1] < minimumFWHM:
+                solved_pos = focentry[0]
+                minimumFWHM = focentry[1]
+        
+        print (extensive_focus)
+        print (solved_pos)
+        print (minimumFWHM)
+        g_dev['foc'].guarded_move((solved_pos)*g_dev['foc'].micron_to_steps)
+        
+        try:
+            #Check here for filter, guider, still moving  THIS IS A CLASSIC
+            #case where a timeout is a smart idea.
+            #Wait for external motion to cease before exposing.  Note this precludes satellite tracking.
+            st = ""
+            
+            #breakpoint()
+            #20210817  g_dev['enc'] does not exist,  so this faults. Cascade problem with user_id...
+            rot_report=0
+            while g_dev['foc'].focuser.IsMoving or \
+                  g_dev['mnt'].mount.Slewing: #or g_dev['enc'].status['dome_slewing']:   #Filter is moving??
+                if g_dev['foc'].focuser.IsMoving: st += 'Waiting for Focuser to shift.\n'
+                if g_dev['mnt'].mount.Slewing: st += 'Waiting for Mount to Slew\n'
+                #if g_dev['enc'].status['dome_slewing']: st += 'd>'
+                if rot_report == 0:
+                    plog(st)
+                    st = ""
+                    rot_report =1
+                time.sleep(0.2)
+                g_dev['obs'].update_status()
+            
+            
+            # if g_dev['rot']!=None:  
+            #     rot_report=0
+            #     while g_dev['rot'].rotator.IsMoving:                                                           
+            #         #if g_dev['enc'].status['dome_slewing']: st += 'd>'
+            #         if rot_report == 0:
+            #             print ("Waiting for Rotator to rotation")
+            #             rot_report =1
+            #         time.sleep(0.2)
+            #         g_dev['obs'].update_status()
+                
+        except:
+            plog("Motion check faulted.")
+            plog(traceback.format_exc())
+            breakpoint()
+            
+        self.auto_focus_script()
+        
+        plog("Returning to:  ", start_ra, start_dec)
+        g_dev['mnt'].mount.SlewToCoordinatesAsync(start_ra, start_dec)   #Return to pre-focus pointing.
+        wait_for_slew()
+        #if sim:
+        #    g_dev['foc'].guarded_move((focus_start)*g_dev['foc'].micron_to_steps)
+        #  NB here we could re-solve with the overlay spot just to verify solution is sane.
+        #self.sequencer_hold = False   #Allow comand checks.
+        #self.af_guard = False
+        #  NB NB We may want to consider sending the result image patch to AWS
+        self.sequencer_hold = False
+        self.guard = False
+        self.af_guard = False
+        
+        
+            
+            
+        
 
     def coarse_focus_script(self, req, opt, throw=700, begin_at=None):
         '''
