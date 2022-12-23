@@ -1312,7 +1312,7 @@ class Camera:
                 #self.t7b = time.time()
                 remaining = round(self.completion_time - time.time(), 1)
                 if remaining > 0:  
-                    if time.time() - self.plog_exposure_time_counter_timer > 2.0:
+                    if time.time() - self.plog_exposure_time_counter_timer > 10.0:
                         self.plog_exposure_time_counter_timer=time.time()
                         plog(
                             '||  ' + str(round(remaining, 1)) + "sec.",
