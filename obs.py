@@ -155,6 +155,7 @@ class Observatory:
 
         self.project_call_timer = time.time()
         self.get_new_job_timer = time.time()
+        self.status_upload_time = 0.5
 
         # Instantiate the helper class for astronomical events
         # Soon the primary event / time values can come from AWS.
@@ -603,9 +604,10 @@ class Observatory:
         
         
         # Wait a bit between status updates
-        if dont_wait == False:
-            while time.time() < self.time_last_status + self.status_interval:
-                return  # Note we are just not sending status, too soon.
+        if dont_wait == True:
+            self.status_interval = self.status_upload_time + 0.25
+        while time.time() < self.time_last_status + self.status_interval:
+            return  # Note we are just not sending status, too soon.
 
         #print ("Time between status updates: " + str(time.time() - self.time_last_status))
 
@@ -1000,6 +1002,7 @@ class Observatory:
                 self.status_interval = 2 * upload_time
                 if self.status_interval < 10:
                     self.status_interval = 10
+                self.status_upload_time = upload_time
                 #print ("New status interval: " + str(self.status_interval))
                 one_at_a_time = 0
             else:
