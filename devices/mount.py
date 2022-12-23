@@ -1346,14 +1346,14 @@ class Mount:
                 wait_for_slew()
                 #home_alt = self.settings["home_altitude"]
                 #home_az = self.settings["home_azimuth"]
-                #self.move_to_altaz(home_alt, home_az)
+                #self.move_to_altaz(home_az, home_alt)
                 self.move_time = time.time()
                 self.mount.FindHome()
                 wait_for_slew()
         else:
             plog("Mount is not capable of finding home. Slewing to zenith....ish")
             self.move_time = time.time()
-            self.move_to_altaz(75, 270)
+            self.move_to_azalt(270, 75)  #az, alt  --badly named method.
             wait_for_slew()
         wait_for_slew()
 
@@ -1600,7 +1600,7 @@ class Mount:
         mnt_shelf.close()
         return
     
-    def move_to_altaz(self, az, alt):
+    def move_to_azalt(self, az, alt):
         print ("Moving to Alt " + str(alt) + " Az " + str(az))
         if self.config['mount']['mount1']['has_ascom_altaz'] == True:
             wait_for_slew() 
