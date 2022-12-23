@@ -1336,21 +1336,22 @@ class Mount:
     def home_command(self, req=None, opt=None):
         ''' slew to the home position '''
         plog("mount cmd: homing mount")
-        mount_at_home = self.mount.AtHome
-        if mount_at_home:
-            plog("Mount is at home.")
-        elif not mount_at_home: #self.mount.CanFindHome:    # NB what is this all about?
-            plog(f"can find home: {self.mount.CanFindHome}")
-            self.unpark_command()  
-            wait_for_slew()
-            #home_alt = self.settings["home_altitude"]
-            #home_az = self.settings["home_azimuth"]
-            #self.move_to_altaz(home_alt, home_az)
-            self.move_time = time.time()
-            self.mount.FindHome()
-            wait_for_slew()
+        if self.mount.CanFindHome:
+            mount_at_home = self.mount.AtHome
+            if mount_at_home:
+                plog("Mount is at home.")
+            elif not mount_at_home:
+                plog(f"can find home: {self.mount.CanFindHome}")
+                self.unpark_command()  
+                wait_for_slew()
+                #home_alt = self.settings["home_altitude"]
+                #home_az = self.settings["home_azimuth"]
+                #self.move_to_altaz(home_alt, home_az)
+                self.move_time = time.time()
+                self.mount.FindHome()
+                wait_for_slew()
         else:
-            plog("Mount is not capable of finding home. Slewing to zenith.")
+            plog("Mount is not capable of finding home. Slewing to zenith....ish")
             self.move_time = time.time()
             self.move_to_altaz(75, 270)
             wait_for_slew()
