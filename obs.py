@@ -585,7 +585,7 @@ class Observatory:
                 
                 continue
 
-    def update_status(self, bpt=False, cancel_check=False, mount_only=False):
+    def update_status(self, bpt=False, cancel_check=False, mount_only=False, dont_wait=False):
         """Collects status from all devices and sends an update to AWS.
 
         Each device class is responsible for implementing the method
@@ -603,8 +603,9 @@ class Observatory:
         
         
         # Wait a bit between status updates
-        while time.time() < self.time_last_status + self.status_interval:
-            return  # Note we are just not sending status, too soon.
+        if dont_wait == False:
+            while time.time() < self.time_last_status + self.status_interval:
+                return  # Note we are just not sending status, too soon.
 
         #print ("Time between status updates: " + str(time.time() - self.time_last_status))
 
@@ -995,6 +996,8 @@ class Observatory:
                 self.send_status_queue.task_done()
                 upload_time=time.time() - pre_upload                
                 self.status_interval = 2 * upload_time
+                if self.status_interval < 5:
+                    self.status_interval = 5
                 #print ("New status interval: " + str(self.status_interval))
                 one_at_a_time = 0
             else:

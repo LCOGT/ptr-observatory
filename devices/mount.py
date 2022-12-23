@@ -142,7 +142,7 @@ def wait_for_slew():
                     plog( 'm>')
                     movement_reporting_timer=time.time()
                 #time.sleep(0.1)
-                g_dev['obs'].update_status(mount_only=True)            
+                g_dev['obs'].update_status(mount_only=True, dont_wait=True)            
             
     except Exception as e:
         plog("Motion check faulted.")
