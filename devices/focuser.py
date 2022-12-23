@@ -331,9 +331,14 @@ class Focuser:
         try:
             self.focuser.Move(int(to_focus))
             time.sleep(0.1)
+            movement_report=0
             while self.focuser.IsMoving:
+                if movement_report==0:
+                    plog("Focuser is moving.....")
+                    movement_report=1
                 time.sleep(0.3)
-                plog(">f")
+                
+                #plog(">f")
         except:
             plog("AF Guarded move failed.")
 
@@ -343,22 +348,27 @@ class Focuser:
 
         position_string = req["position"]
         position = int(self.focuser.Position * self.steps_to_micron)
+        movement_report=0
         if position_string[0] != "-":
             relative = int(position_string)
             position += relative
             self.focuser.Move(int(position * self.micron_to_steps))
             time.sleep(0.1)
-            while self.focuser.IsMoving:
-                time.sleep(0.5)
-                plog(">f++")
+            while self.focuser.IsMoving:                
+                if movement_report==0:
+                    plog("Focuser is moving ++ .....")
+                    movement_report=1
+                time.sleep(0.2)
         elif position_string[0] == "-":
             relative = int(position_string[1:])
             position -= relative
             self.focuser.Move(int(position * self.micron_to_steps))
             time.sleep(0.1)
             while self.focuser.IsMoving:
-                time.sleep(0.5)
-                plog(">f rel")
+                if movement_report==0:
+                    plog("Focuser is moving >f rel.....")
+                    movement_report=1
+                time.sleep(0.2)
         else:
             plog("Supplied relative move is lacking a sign; ignoring.")
 

@@ -122,7 +122,7 @@ site_config = {
     'auto_eve_bias_dark': False,
     
     'auto_midnight_moonless_bias_dark': True,
-    'auto_eve_sky_flat': True,
+    'auto_eve_sky_flat': False,
     'eve_sky_flat_sunset_offset': -40.,  #  Minutes  neg means before, + after.
     'eve_cool_down_open' : -45.0,
     'auto_morn_sky_flat': False,
@@ -434,10 +434,12 @@ site_config = {
             'start_at_config_reference': False,
             'use_focuser_temperature': True,
             #*********Guesses   7379@10 7457@20  7497 @ 25
-            'reference': 7250, #20221103    #7418,    # Nominal at 15C Primary temperature, in microns not steps. Guess
+            #'reference': 7250, #20221103    #7418,    # Nominal at 15C Primary temperature, in microns not steps. Guess
+            'reference': 5682, #20221103    #7418,    # Nominal at 15C Primary temperature, in microns not steps. Guess
             'ref_temp':  15,      # Update when pinning reference  Larger at lower temperatures.
             'coef_c': 11.892,    # Negative means focus moves out (larger numerically) as Primary gets colder
-            'coef_0': 7250,  #20221103# Nominal intercept when Primary is at 0.0 C.
+            #'coef_0': 7250,  #20221103# Nominal intercept when Primary is at 0.0 C.
+            'coef_0': 5682,  #20221103# Nominal intercept when Primary is at 0.0 C.
             'coef_date':  '20221103',   #A Guess as to coef_c
             'z_compression': 0.0, #  microns per degree of zenith distance
             'z_coef_date':  '20221002',   # 'reference': 4375,    #   Guess 20210904  Nominal at 10C Primary temperature
