@@ -263,25 +263,32 @@ class Sequencer:
         #self.time_of_next_slew = time.time() -1  #Set up so next block executes if unparked.
         if g_dev['mnt'].mount.AtParK:
             g_dev['mnt'].unpark_command({}, {}) # Get there early
-            time.sleep(3)
-            self.time_of_next_slew = time.time() + 120   #NB 120 is enough time to telescope to get pointed to East
+            #time.sleep(3)
+            self.time_of_next_slew = time.time() + 600   #NB 120 is enough time to telescope to get pointed to East
             if not no_sky:
                 g_dev['mnt'].slewToSkyFlatAsync()
                 #This should run once. Next time this phase is entered in > 120 seconds we
             #flat_spot, flat_alt = g_dev['evnt'].flat_spot_now()
 
         if time.time() >= self.time_of_next_slew:
-            self.time_of_next_slew = time.time() + 120  # seconds between slews.
+            self.time_of_next_slew = time.time() + 600  # seconds between slews.
             #We slew to anti-solar Az and reissue this command every 120 seconds
             flat_spot, flat_alt = g_dev['evnt'].flat_spot_now()
+
             try:
                 if not no_sky:
                     g_dev['mnt'].slewToSkyFlatAsync()
-                    time.sleep(10)
+                    #time.sleep(10)
                 plog("Open and slew Dome to azimuth opposite the Sun:  ", round(flat_spot, 1))
                 plog("Cooling down and waiting for skyflat / observing to begin")
-
-                if self.config['site_roof_control'] != 'no' and enc_status['shutter_status'] in ['Closed', 'closed'] and g_dev['enc'].mode == 'Automatic' \
+                
+                if ocn_status == None:
+                    if self.config['site_roof_control'] != 'no' and enc_status['shutter_status'] in ['Closed', 'closed'] and g_dev['enc'].mode == 'Automatic':
+                        #breakpoint()
+                        g_dev['enc'].open_command({}, {})
+                        plog("Opening dome, will set Synchronize in 10 seconds.")
+                        time.sleep(10)
+                elif self.config['site_roof_control'] != 'no' and enc_status['shutter_status'] in ['Closed', 'closed'] and g_dev['enc'].mode == 'Automatic' \
                     and ocn_status['hold_duration'] <= 0.1:   #NB
                     #breakpoint()
                     g_dev['enc'].open_command({}, {})

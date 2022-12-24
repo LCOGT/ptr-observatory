@@ -800,7 +800,8 @@ class Observatory:
             
             
             if g_dev['enc'].status['shutter_status'] == 'Open':
-                if g_dev['events']['Cool Down, Open'] < ephem.now() < g_dev['events']['Close and Park']:
+
+                if not (g_dev['events']['Cool Down, Open'] < ephem.now() < g_dev['events']['Close and Park']):
                     print ("Safety check found that the roof was open outside of the normal observing period")    
                     print ("Dhutting the roof out of an abundance of caution.")
                     g_dev['enc'].enclosure.CloseShutter()
