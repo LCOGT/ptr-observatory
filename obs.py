@@ -22,6 +22,7 @@ import threading
 import time
 import sys
 import shutil
+import signal
 
 import astroalign as aa
 from astropy.io import fits
@@ -38,6 +39,7 @@ from skimage.io import imsave
 from skimage.transform import resize
 import func_timeout
 import traceback
+import psutil
 
 from api_calls import API_calls
 from auto_stretch.stretch import Stretch
@@ -57,12 +59,38 @@ from global_yard import g_dev
 from planewave import platesolve
 import ptr_events
 from ptr_utility import plog
-
+from scipy import stats
 from PIL import Image, ImageEnhance
 
 # The ingester should only be imported after environment variables are loaded in.
 load_dotenv(".env")
 from ocs_ingester.ingester import frame_exists, upload_file_and_ingest_to_archive
+
+
+
+def findProcessIdByName(processName):
+    '''
+    Get a list of all the PIDs of a all the running process whose name contains
+    the given string processName
+    '''
+    listOfProcessObjects = []
+    #Iterate over the all the running process
+    for proc in psutil.process_iter():
+       try:
+           pinfo = proc.as_dict(attrs=['pid', 'name', 'create_time'])
+           # Check if process name contains the given name string.
+           if processName.lower() in pinfo['name'].lower() :
+               listOfProcessObjects.append(pinfo)
+       except (psutil.NoSuchProcess, psutil.AccessDenied , psutil.ZombieProcess) :
+           pass
+    return listOfProcessObjects
+
+listOfProcessIds = findProcessIdByName('maxim_dl')
+for pid in listOfProcessIds:
+    pid_num = pid['pid']
+    plog("Terminating existing Maxim process:  ", pid_num)
+    p2k = psutil.Process(pid_num)
+    p2k.terminate()
 
 
 def send_status(obsy, column, status_to_send):
@@ -76,12 +104,12 @@ def send_status(obsy, column, status_to_send):
         
         data = json.dumps(payload)
     except Exception as e:
-        plog("Failed to send_status. usually not fatal:  ", e)
+        plog("Failed to create status payload. Usually not fatal:  ", e)
     
     try:
         requests.post(uri_status, data=data)
     except Exception as e:
-        plog("Failed to send_status. usually not fatal:  ", e)
+        plog("Failed to send_status. Usually not fatal:  ", e)
 
 
 class Observatory:
@@ -185,7 +213,6 @@ class Observatory:
         site_str = config["site"]
         g_dev["site"]: site_str
         self.g_dev = g_dev
-
         # Clear out smartstacks directory
         #print ("removing and reconstituting smartstacks directory")
         try:
@@ -198,6 +225,8 @@ class Observatory:
 
         # Check directory system has been constructed
         # for new sites or changed directories in configs.
+        #NB NB be careful if we have a site with multiple cameras, etc,
+        #some of these directores seem up a level or two. WER
         if not os.path.exists(g_dev["cam"].site_path + "ptr_night_shelf"):
             os.makedirs(g_dev["cam"].site_path + "ptr_night_shelf")
         if not os.path.exists(g_dev["cam"].site_path + "archive"):
@@ -208,9 +237,11 @@ class Observatory:
             os.makedirs(g_dev["cam"].site_path + "astropycache")
         if not os.path.exists(g_dev["cam"].site_path + "smartstacks"):
             os.makedirs(g_dev["cam"].site_path + "smartstacks")
-        if not os.path.exists(g_dev["cam"].site_path + "calibmasters"):
+        if not os.path.exists(g_dev["cam"].site_path + "calibmasters"):  #retaining for backward compatibility
             os.makedirs(g_dev["cam"].site_path + "calibmasters")
-
+        camera_name = config['camera']['camera_1_1']['name']
+        if not os.path.exists(g_dev["cam"].site_path + "archive/" + camera_name + "/calibmasters"):
+            os.makedirs(g_dev["cam"].site_path + "archive/" + camera_name + "/calibmasters")
         self.last_solve_time = datetime.datetime.now() - datetime.timedelta(days=1)
         self.images_since_last_solve = 10000
 
@@ -1573,20 +1604,85 @@ class Observatory:
                             xshape=newhdugreen.shape[0]
                             yshape=newhdugreen.shape[1]                          
                             
-                            newhdublue[newhdublue < 1] = 1
-                            newhdugreen[newhdugreen < 1] = 1
-                            newhdured[newhdured < 1] = 1
-                                                        
-                            blue_stretched_data_float = Stretch().stretch(newhdublue)
+                            # The integer mode of an image is typically the sky value, so squish anything below that
+                            bluemode=stats.mode((newhdublue.astype('int16').flatten()))[0] - 25
+                            redmode=stats.mode((newhdured.astype('int16').flatten()))[0] - 25
+                            greenmode=stats.mode((newhdugreen.astype('int16').flatten()))[0] - 25                          
+                            newhdublue[newhdublue < bluemode] = bluemode
+                            newhdugreen[newhdugreen < greenmode] = greenmode
+                            newhdured[newhdured < redmode] =redmode
+                            
+                            
+                            # Then bring the background level up a little from there
+                            # blueperc=np.nanpercentile(newhdublue,0.75)
+                            # greenperc=np.nanpercentile(newhdugreen,0.75)
+                            # redperc=np.nanpercentile(newhdured,0.75)
+                            # newhdublue[newhdublue < blueperc] = blueperc
+                            # newhdugreen[newhdugreen < greenperc] = greenperc
+                            # newhdured[newhdured < redperc] = redperc
+                            
+                            
+                            
+                            
+                            #newhdublue = newhdublue * (np.median(newhdugreen) / np.median(newhdublue))
+                            #newhdured = newhdured * (np.median(newhdugreen) / np.median(newhdured))
+ 
+                            
+                            blue_stretched_data_float = Stretch().stretch(newhdublue)*256
+                            ceil = np.percentile(blue_stretched_data_float,100) # 5% of pixels will be white
+                            floor = np.percentile(blue_stretched_data_float,60) # 5% of pixels will be black
+                            #a = 255/(ceil-floor)
+                            #b = floor*255/(floor-ceil)
+                            blue_stretched_data_float[blue_stretched_data_float<floor]=floor
+                            blue_stretched_data_float=blue_stretched_data_float-floor
+                            blue_stretched_data_float=blue_stretched_data_float * (255/np.max(blue_stretched_data_float))
+                            
+                            #blue_stretched_data_float = np.maximum(0,np.minimum(255,blue_stretched_data_float*a+b)).astype(np.uint8)
+                            #blue_stretched_data_float[blue_stretched_data_float < floor] = floor
                             del newhdublue
-                            green_stretched_data_float = Stretch().stretch(newhdugreen)
-                            red_stretched_data_float = Stretch().stretch(newhdured)
-                            del newhdured                                
+                            
+                            
+                            green_stretched_data_float = Stretch().stretch(newhdugreen)*256
+                            ceil = np.percentile(green_stretched_data_float,100) # 5% of pixels will be white
+                            floor = np.percentile(green_stretched_data_float,60) # 5% of pixels will be black
+                            #a = 255/(ceil-floor)
+                            green_stretched_data_float[green_stretched_data_float<floor]=floor
+                            green_stretched_data_float=green_stretched_data_float-floor
+                            green_stretched_data_float=green_stretched_data_float * (255/np.max(green_stretched_data_float))
+                            
+                            
+                            #b = floor*255/(floor-ceil)
+                            
+                            
+                            #green_stretched_data_float[green_stretched_data_float < floor] = floor
+                            #green_stretched_data_float = np.maximum(0,np.minimum(255,green_stretched_data_float*a+b)).astype(np.uint8)
                             del newhdugreen
+                            
+                            red_stretched_data_float = Stretch().stretch(newhdured)*256
+                            ceil = np.percentile(red_stretched_data_float,100) # 5% of pixels will be white
+                            floor = np.percentile(red_stretched_data_float,60) # 5% of pixels will be black
+                            #a = 255/(ceil-floor)
+                            #b = floor*255/(floor-ceil)
+                            #breakpoint()
+                            
+                            red_stretched_data_float[red_stretched_data_float<floor]=floor
+                            red_stretched_data_float=red_stretched_data_float-floor
+                            red_stretched_data_float=red_stretched_data_float * (255/np.max(red_stretched_data_float))
+                            
+                            
+                            #red_stretched_data_float[red_stretched_data_float < floor] = floor
+                            #red_stretched_data_float = np.maximum(0,np.minimum(255,red_stretched_data_float*a+b)).astype(np.uint8)
+                            del newhdured 
+                            
+                            
+                            
+                            
+                            
+                            
                             rgbArray=np.zeros((xshape,yshape,3), 'uint8')
-                            rgbArray[..., 0] = red_stretched_data_float*256
-                            rgbArray[..., 1] = green_stretched_data_float*256
-                            rgbArray[..., 2] = blue_stretched_data_float*256
+                            rgbArray[..., 0] = red_stretched_data_float#*256
+                            rgbArray[..., 1] = green_stretched_data_float#*256
+                            rgbArray[..., 2] = blue_stretched_data_float#*256
     
                             del red_stretched_data_float
                             del blue_stretched_data_float
