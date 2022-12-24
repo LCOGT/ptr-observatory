@@ -1630,7 +1630,7 @@ class Observatory:
                             
                             blue_stretched_data_float = Stretch().stretch(newhdublue)*256
                             ceil = np.percentile(blue_stretched_data_float,100) # 5% of pixels will be white
-                            floor = np.percentile(blue_stretched_data_float,75) # 5% of pixels will be black
+                            floor = np.percentile(blue_stretched_data_float,60) # 5% of pixels will be black
                             #a = 255/(ceil-floor)
                             #b = floor*255/(floor-ceil)
                             blue_stretched_data_float[blue_stretched_data_float<floor]=floor
@@ -1644,7 +1644,7 @@ class Observatory:
                             
                             green_stretched_data_float = Stretch().stretch(newhdugreen)*256
                             ceil = np.percentile(green_stretched_data_float,100) # 5% of pixels will be white
-                            floor = np.percentile(green_stretched_data_float,75) # 5% of pixels will be black
+                            floor = np.percentile(green_stretched_data_float,60) # 5% of pixels will be black
                             #a = 255/(ceil-floor)
                             green_stretched_data_float[green_stretched_data_float<floor]=floor
                             green_stretched_data_float=green_stretched_data_float-floor
@@ -1660,7 +1660,7 @@ class Observatory:
                             
                             red_stretched_data_float = Stretch().stretch(newhdured)*256
                             ceil = np.percentile(red_stretched_data_float,100) # 5% of pixels will be white
-                            floor = np.percentile(red_stretched_data_float,75) # 5% of pixels will be black
+                            floor = np.percentile(red_stretched_data_float,60) # 5% of pixels will be black
                             #a = 255/(ceil-floor)
                             #b = floor*255/(floor-ceil)
                             #breakpoint()

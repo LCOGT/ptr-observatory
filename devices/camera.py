@@ -2488,7 +2488,7 @@ class Camera:
                                 
                                 blue_stretched_data_float = Stretch().stretch(hdublue)*256
                                 ceil = np.percentile(blue_stretched_data_float,100) # 5% of pixels will be white
-                                floor = np.percentile(blue_stretched_data_float,75) # 5% of pixels will be black
+                                floor = np.percentile(blue_stretched_data_float,60) # 5% of pixels will be black
                                 #a = 255/(ceil-floor)
                                 #b = floor*255/(floor-ceil)
                                 blue_stretched_data_float[blue_stretched_data_float<floor]=floor
@@ -2502,7 +2502,7 @@ class Camera:
                                 
                                 green_stretched_data_float = Stretch().stretch(hdugreen)*256
                                 ceil = np.percentile(green_stretched_data_float,100) # 5% of pixels will be white
-                                floor = np.percentile(green_stretched_data_float,75) # 5% of pixels will be black
+                                floor = np.percentile(green_stretched_data_float,60) # 5% of pixels will be black
                                 #a = 255/(ceil-floor)
                                 green_stretched_data_float[green_stretched_data_float<floor]=floor
                                 green_stretched_data_float=green_stretched_data_float-floor
@@ -2518,7 +2518,7 @@ class Camera:
                                 
                                 red_stretched_data_float = Stretch().stretch(hdured)*256
                                 ceil = np.percentile(red_stretched_data_float,100) # 5% of pixels will be white
-                                floor = np.percentile(red_stretched_data_float,75) # 5% of pixels will be black
+                                floor = np.percentile(red_stretched_data_float,60) # 5% of pixels will be black
                                 #a = 255/(ceil-floor)
                                 #b = floor*255/(floor-ceil)
                                 #breakpoint()
@@ -3003,7 +3003,7 @@ class Camera:
                                 cal_name[:-9] + "F012" + cal_name[-7:]
                             )                            
                             
-                            if len(sources) >= 5 and len(sources) < 200:
+                            if len(sources) >= 5 and len(sources) < 1000:
                                 
                                 # We only need to save the focus image immediately if there is enough sources to 
                                 #  rationalise that.  It only needs to be on the disk immediately now if platesolve 
