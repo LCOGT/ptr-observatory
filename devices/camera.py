@@ -488,6 +488,7 @@ class Camera:
 
         self.last_user_name = "Tobor"
         self.last_user_id = "Tobor"
+        self.user_name = "Tobor"
         
         try:
             seq = test_sequence(self.alias)

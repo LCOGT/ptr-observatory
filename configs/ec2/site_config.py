@@ -88,7 +88,7 @@ site_config = {
     'auto_midnight_moonless_bias_dark': True,
     'auto_eve_sky_flat': True,
     'eve_sky_flat_sunset_offset': -30.5,  #  Minutes  neg means before, + after.
-    'eve_cool_down_open' : -60.0,
+    'eve_cool_down_open' : -150.0,
     'auto_morn_sky_flat': True,
     'auto_morn_bias_dark': False,
     're-calibrate_on_solve': True,
