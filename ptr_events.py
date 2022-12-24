@@ -494,6 +494,8 @@ class Events:
                 civilDawn=civilDawn- 24*ephem.hour
             if ephem.Date(sunrise) > endNightTime:
                 sunrise=sunrise - 24*ephem.hour
+            if ephem.Date(cool_down_open) > endNightTime:
+                cool_down_open = cool_down_open - 24*ephem.hour
 
         plog('Events module reporting for duty. \n')
         plog('Ephem date     :    ', dayNow)

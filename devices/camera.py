@@ -2608,7 +2608,10 @@ class Camera:
                                     final_image.resize((900, 900))
                                 else:
                                     #final_image.resize((int(1536 * iy / ix), 1536))
-                                    final_image.resize((int(900 * iy / ix), 900))
+                                    if self.config["camera"][g_dev['cam'].name]["settings"]["squash_on_x_axis"]:
+                                        final_image.resize((int(900 * iy / ix), 900))
+                                    else:
+                                        final_image.resize((900, int(900 * iy / ix)))
                                 
                                     
                                 final_image.save(
@@ -2644,7 +2647,28 @@ class Camera:
                                 stretched_data_uint8[cold] = 0
                                 
                                 iy, ix = stretched_data_uint8.shape
-                                stretched_data_uint8 = Image.fromarray(stretched_data_uint8)
+                                #stretched_data_uint8 = Image.fromarray(stretched_data_uint8)
+                                final_image = Image.fromarray(stretched_data_uint8)
+                                # These steps flip and rotate the jpeg according to the settings in the site-config for this camera
+                                if self.config["camera"][g_dev['cam'].name]["settings"]["transpose_jpeg"]:
+                                    final_image=final_image.transpose(Image.TRANSPOSE)
+                                if self.config["camera"][g_dev['cam'].name]["settings"]['flipx_jpeg']:
+                                    final_image=final_image.transpose(Image.FLIP_LEFT_RIGHT)
+                                if self.config["camera"][g_dev['cam'].name]["settings"]['flipy_jpeg']:
+                                    final_image=final_image.transpose(Image.FLIP_TOP_BOTTOM)
+                                if self.config["camera"][g_dev['cam'].name]["settings"]['rotate180_jpeg']:
+                                    final_image=final_image.transpose(Image.ROTATE_180)
+                                if self.config["camera"][g_dev['cam'].name]["settings"]['rotate90_jpeg']:
+                                    final_image=final_image.transpose(Image.ROTATE_90)
+                                if self.config["camera"][g_dev['cam'].name]["settings"]['rotate270_jpeg']:
+                                    final_image=final_image.transpose(Image.ROTATE_270)
+                                    
+                                # Detect the pierside and if it is one way, rotate the jpeg 180 degrees
+                                # to maintain the orientation. whether it is 1 or 0 that is flipped
+                                # is sorta arbitrary... you'd use the site-config settings above to 
+                                # set it appropriately and leave this alone.
+                                if g_dev['mnt'].pier_side == 1:
+                                    final_image=final_image.transpose(Image.ROTATE_180)
                                 
 
                                 # Resizing the array to an appropriate shape for the jpg and the small fits
@@ -2654,7 +2678,7 @@ class Camera:
                                     # hdusmalldata = resize(
                                     #     hdusmalldata, (1280, 1280), preserve_range=True
                                     # )
-                                    stretched_data_uint8 = stretched_data_uint8.resize(
+                                    final_image = final_image.resize(
                                          (900, 900)
                                     )
                                 else:
@@ -2668,17 +2692,23 @@ class Camera:
                                     #     (int(900 * iy / ix), 900),
                                     #     preserve_range=True,
                                     # ) 
-                                    
-                                    stretched_data_uint8 = stretched_data_uint8.resize(
-                                        
-                                        (int(900 * iy / ix), 900)
-                                        
-                                    ) 
-                                stretched_data_uint8=stretched_data_uint8.transpose(Image.TRANSPOSE) # Not sure why it transposes on array creation ... but it does!
-                                stretched_data_uint8.save(
+                                    if self.config["camera"][g_dev['cam'].name]["settings"]["squash_on_x_axis"]:
+                                        final_image = final_image.resize(
+                                            
+                                            (int(900 * iy / ix), 900)
+                                            
+                                        ) 
+                                    else:
+                                        final_image = final_image.resize(
+                                            
+                                            (900, int(900 * iy / ix))
+                                            
+                                        ) 
+                                #stretched_data_uint8=stretched_data_uint8.transpose(Image.TRANSPOSE) # Not sure why it transposes on array creation ... but it does!
+                                final_image.save(
                                     paths["im_path"] + paths["jpeg_name10"]
                                 )
-                                del stretched_data_uint8
+                                del final_image
                             
                         del hdusmalldata
                             

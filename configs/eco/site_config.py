@@ -488,7 +488,7 @@ site_config = {
 
             'settings': {                
                 'is_osc' : False,
-                
+                'squash_on_x_axis' : True,
                 # ONLY TRANSFORM THE FITS IF YOU HAVE
                # A DATA-BASED REASON TO DO SO.....
                # USUALLY TO GET A BAYER GRID ORIENTATED CORRECTLY
@@ -507,7 +507,7 @@ site_config = {
                'flipx_jpeg' : False,
                'flipy_jpeg' : False,
                'rotate180_jpeg' : False,
-               'rotate90_jpeg' : False,
+               'rotate90_jpeg' : True,
                'rotate270_jpeg' : False,
                
                 'osc_bayer' : 'RGGB',
