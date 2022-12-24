@@ -35,9 +35,9 @@ class FilterWheel:
             self.filter_screen_sort = self.config["filter_wheel1"]["settings"][
                 "filter_screen_sort"
             ]
-            self.filter_reference = int(
-                self.config["filter_wheel1"]["settings"]["filter_reference"]
-            )
+            #self.filter_reference = int(
+            #    self.config["filter_wheel1"]["settings"]["filter_reference"]
+            #)
     
             # NOTE: THIS CODE DOES NOT implement a filter via the Maxim application
             # which is passed in as a valid instance of class camera.
