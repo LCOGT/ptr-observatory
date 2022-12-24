@@ -2339,7 +2339,7 @@ class Camera:
                         flashbinning=1
                         
                         try:
-
+                            breakpoint()
                             hdusmalldata = hdusmalldata - self.biasFiles[str(flashbinning)]
                             hdusmalldata = hdusmalldata - (self.darkFiles[str(flashbinning)] * exposure_time)
                             
