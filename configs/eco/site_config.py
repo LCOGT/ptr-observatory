@@ -88,7 +88,7 @@ site_config = {
     'auto_midnight_moonless_bias_dark': True,
     'auto_eve_sky_flat': True,
     'eve_sky_flat_sunset_offset': -30.5,  #  Minutes  neg means before, + after.
-    'eve_cool_down_open' : -60.0,
+    'eve_cool_down_open' : -90.0,
     'auto_morn_sky_flat': False,
     'auto_morn_bias_dark': False,
     're-calibrate_on_solve': True,
@@ -177,7 +177,7 @@ site_config = {
             'controlled_by': 'mount1',
 			'is_dome': False,
             'mode': 'Automatic',
-            'cool_down': -35.0,    #  Minutes prior to sunset.
+            'cool_down': -90.0,    #  Minutes prior to sunset.
             'settings': {
                 'lights':  ['Auto', 'White', 'Red', 'IR', 'Off'],       #A way to encode possible states or options???
                                                                         #First Entry is always default condition.
@@ -408,9 +408,9 @@ site_config = {
             "dual_wheel": False,
             'settings': {
                 #'filter_count': 11,   #  This must be correct as to the number of filters
-                'home_filter':  4,
-                'default_filter': "pr",
-                'filter_reference': 4,   #  We choose to use W as the default filter.  Gains taken at F9, Ceravolo 300mm
+                #'home_filter':  4,
+                'default_filter': "lum",
+                #'filter_reference': 4,   #  We choose to use W as the default filter.  Gains taken at F9, Ceravolo 300mm
                 # Columns for filter data are : ['filter', 'filter_index', 'filter_offset', 'sky_gain', 'screen_gain', 'alias']
                 'filter_data': [  
 

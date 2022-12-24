@@ -373,7 +373,7 @@ class Sequencer:
                     else:
                         plog("mount is not tracking but this mount doesn't support ASCOM changing tracking")
 
-                g_dev['mnt'].move_to_altaz(90, 70)
+                g_dev['mnt'].move_to_altaz(70, 70)
                 g_dev['foc'].time_of_last_focus = datetime.datetime.now() - datetime.timedelta(
                     days=1
                 )  # Initialise last focus as yesterday
@@ -381,7 +381,7 @@ class Sequencer:
                 # Autofocus
                 req2 = {'target': 'near_tycho_star', 'area': 150}
                 opt = {}
-                self.auto_focus_script(req2, opt, throw = g_dev['foc'].throw)
+                self.extensive_focus_script(req2, opt, throw = g_dev['foc'].throw)
 
                 # Pointing
                 req = {'time': self.config['focus_exposure_time'],  'alias':  str(self.config['camera']['camera_1_1']['name']), 'image_type': 'focus'}   #  NB Should pick up filter and constats from config

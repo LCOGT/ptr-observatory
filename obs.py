@@ -791,6 +791,8 @@ class Observatory:
             
             if g_dev['enc'].status['shutter_status'] == 'Error':
                 print ("Detected an Error in the Roof Status. Closing up for safety.")
+                print ("This is usually because the weather system forced the roof to shut.")
+                print ("By closing it again, it resets the switch to closed.")
                 g_dev['enc'].enclosure.CloseShutter()
                 while g_dev['enc'].enclosure.ShutterStatus == 3:
                     print ("closing")
@@ -802,7 +804,8 @@ class Observatory:
                     print ("Safety check found that the roof was open outside of the normal observing period")    
                     print ("Dhutting the roof out of an abundance of caution.")
                     g_dev['enc'].enclosure.CloseShutter()
-                
+                    while g_dev['enc'].enclosure.ShutterStatus == 3:
+                        print ("closing")
                 
                 
             # Check the mount is still connected
