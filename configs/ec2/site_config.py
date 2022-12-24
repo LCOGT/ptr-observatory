@@ -53,7 +53,8 @@ site_config = {
     'redis_ip': None,  #'127.0.0.1', None if no redis path present,
     'site_is_generic':  False,   # A simple single computer ASCOM site.
     'site_is_specific':  True,  # Indicates some special code for this site, found at end of config.
-
+    'home_altitude' : 70,
+    'home_azimuth' : 160,
 
     'host_wema_site_name':  'EC2',  #  The umbrella header for obsys in close geographic proximity.
     'name': 'Eltham College Observatory, 0m28',
