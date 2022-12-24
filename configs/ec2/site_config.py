@@ -91,7 +91,7 @@ site_config = {
 
     'eve_sky_flat_sunset_offset': -0.5,  #  Minutes  neg means before, + after.
     'eve_cool_down_open' : -10.0,
-    'auto_morn_sky_flat': True,
+    'auto_morn_sky_flat': False,
     'auto_morn_bias_dark': False,
     're-calibrate_on_solve': True,
     'pointing_calibration_on_startup': False,
