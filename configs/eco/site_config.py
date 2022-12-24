@@ -488,7 +488,7 @@ site_config = {
 
             'settings': {                
                 'is_osc' : False,
-                
+                'squash_on_x_axis' : False,
                 # ONLY TRANSFORM THE FITS IF YOU HAVE
                # A DATA-BASED REASON TO DO SO.....
                # USUALLY TO GET A BAYER GRID ORIENTATED CORRECTLY

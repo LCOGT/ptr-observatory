@@ -1469,12 +1469,18 @@ class Observatory:
                                          (900, 900)
                                     )
                         else:
-
-                            stretched_data_uint8 = stretched_data_uint8.resize(
-                                        
-                                        (int(900 * iy / ix), 900)
-                                        
-                                    ) 
+                            if self.config["camera"][g_dev['cam'].name]["settings"]["squash_on_x_axis"]:
+                                stretched_data_uint8 = stretched_data_uint8.resize(
+                                            
+                                            (int(900 * iy / ix), 900)
+                                            
+                                        ) 
+                            else:
+                                stretched_data_uint8 = stretched_data_uint8.resize(
+                                            
+                                            (900, int(900 * iy / ix))
+                                            
+                                        ) 
            
                         stretched_data_uint8=stretched_data_uint8.transpose(Image.TRANSPOSE) # Not sure why it transposes on array creation ... but it does!
                         stretched_data_uint8.save(
@@ -1780,8 +1786,10 @@ class Observatory:
                                 final_image.resize((900, 900))
                             else:
                                 #final_image.resize((int(1536 * iy / ix), 1536))
-                                final_image.resize((int(900 * iy / ix), 900))
-                            
+                                if self.config["camera"][g_dev['cam'].name]["settings"]["squash_on_x_axis"]:
+                                    final_image.resize((int(900 * iy / ix), 900))
+                                else:
+                                    final_image.resize(900, (int(900 * iy / ix)))
                             
                                 
                             final_image.save(
