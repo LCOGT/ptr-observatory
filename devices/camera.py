@@ -479,6 +479,7 @@ class Camera:
 
         self.last_user_name = "Tobor"
         self.last_user_id = "Tobor"
+        self.user_name = "Tobor"
         
         try:
             seq = test_sequence(self.alias)
@@ -995,7 +996,7 @@ class Camera:
         rot_report=0
         if g_dev['rot']!=None:                
             while g_dev['rot'].rotator.IsMoving:                    
-                if g_dev['rot'].rotator.IsMoving:                                         
+                #if g_dev['rot'].rotator.IsMoving:                                         
                     if rot_report == 0:
                         plog("Waiting for camera rotator to catch up. ")
                         g_dev["obs"].send_to_user("Waiting for camera rotator to catch up before exposing.")

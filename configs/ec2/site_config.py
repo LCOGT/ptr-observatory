@@ -87,8 +87,9 @@ site_config = {
     'auto_eve_bias_dark': False,
     'auto_midnight_moonless_bias_dark': True,
     'auto_eve_sky_flat': True,
-    'eve_sky_flat_sunset_offset': -30.5,  #  Minutes  neg means before, + after.
-    'eve_cool_down_open' : -60.0,
+
+    'eve_sky_flat_sunset_offset': -0.5,  #  Minutes  neg means before, + after.
+    'eve_cool_down_open' : -10.0,
     'auto_morn_sky_flat': True,
     'auto_morn_bias_dark': False,
     're-calibrate_on_solve': True,
@@ -151,10 +152,10 @@ site_config = {
     'observing_conditions' : {
         'observing_conditions1': {
             'parent': 'site',
-            'ocn_is_specific':  True,  # Indicates some special site code.
+            'ocn_is_specific':  False,  # Indicates some special site code.
             # Intention it is found in this file.
             'name': 'SRO File',
-            'driver': 'Windows.Share',  # Could be redis, ASCOM, ...
+            'driver': None,  # Could be redis, ASCOM, ...
             'share_path_name': 'F:/ptr/',
             'driver_2':  None,   #' ASCOM.Boltwood.OkToOpen.SafetyMonitor',
             'driver_3':  None,    # 'ASCOM.Boltwood.OkToImage.SafetyMonitor'

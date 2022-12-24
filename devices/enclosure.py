@@ -343,6 +343,7 @@ class Enclosure:
                  self.shutter_is_closed = False
                  #g_dev['redis'].set('Shutter_is_open', False)
             elif shutter_status == 4:
+                 #breakpoint()
                  stat_string = "Error"
                  self.shutter_is_closed = False
                  #g_dev['redis'].set('Shutter_is_open', False)
@@ -770,7 +771,8 @@ class Enclosure:
 
     def sync_mount_command(self, req: dict, opt: dict):
         #plog("enclosure cmd: sync_az")
-        if self.site not in ['sro', 'mrc', 'mrc2', 'aro', 'eco']:  #NB NB GASP, this needs a re-think!!
+        #if self.site not in ['sro', 'mrc', 'mrc2', 'aro', 'eco']:  #NB NB GASP, this needs a re-think!!
+        #if False: # Currently this does nothing?
             self.enclosure.Slaved = True
             self.following = True
             self.enclosure_synchronized =True
@@ -784,8 +786,9 @@ class Enclosure:
     def guarded_open(self):
             #The guard is obsessively redundant!
 
-            if g_dev['ocn'].status['wx_ok'] in [True, 'Yes'] and not (g_dev['ocn'].wx_hold \
-                                              or g_dev['ocn'].clamp_latch):     # NB Is Wx ok really the right criterion???
+            if self.config['observing_conditions']['observing_conditions1']['driver'] == None or \
+                (g_dev['ocn'].status['wx_ok'] in [True, 'Yes'] and not (g_dev['ocn'].wx_hold \
+                                              or g_dev['ocn'].clamp_latch)):     # NB Is Wx ok really the right criterion???
                 try:
                     self.enclosure.OpenShutter()
                     plog("An actual shutter open command has been issued.")
@@ -854,11 +857,14 @@ class Enclosure:
                     self.enclosure_synchronized = False
                 except:
                     plog('Could not decouple dome following.')
-            if self.status_string in ['Open']:
-                try:
-                    self.enclosure.CloseShutter()
-                except:
-                    plog('Dome refused close command.')
+            #if self.status_string in ['Open']:
+                
+            # Always attempt to close.... the string may be wrong!
+            try:
+                self.enclosure.CloseShutter()
+            except:
+                plog('Dome refused close command.')
+                
             self.dome_opened = False
             self.dome_homed = True
             self.enclosure_synchronized = False
@@ -909,12 +915,14 @@ class Enclosure:
         elif ((g_dev['events']['Cool Down, Open']  <= ephem_now < g_dev['events']['Observing Ends']) and \
                g_dev['enc'].mode == 'Automatic') and not (g_dev['ocn'].wx_hold or g_dev['ocn'].clamp_latch):
             try:
-                if self.status_string in ['Closed']:   #Fails at SRO, attriute not set. 20220806 wer
+                #if self.status_string in ['Closed']:   #Fails at SRO, attriute not set. 20220806 wer
                 #****************************NB NB NB For SRO we have no control so just observe and skip all this logic
-                    plog("Entering Guarded open, Expect slew opposite Sun")
-                    self.guarded_open()
-            except:
-                pass
+                
+                # Don't check the string, the string could be wrong!
+                plog("Entering Guarded open, Expect slew opposite Sun")
+                self.guarded_open()
+            except Exception as e:
+                print ("Error while opening the roof ",e)
             self.dome_opened = True
             self.dome_homed = True
             #if _redis: g_dev['redis'].set('Enc Auto Opened', True, ex= 600)   # Unused
@@ -928,7 +936,7 @@ class Enclosure:
             except:
                 pass
         #THIS should be the ultimate backup to force a close
-        elif ephem_now >=  g_dev['events']['Civil Dawn']:  #sunrise + 45/1440:
+        elif ephem_now >=  g_dev['events']['Close and Park']:  #sunrise + 45/1440:
             #WE are now outside the observing window, so Sun is up!!!
             if self.site_in_automatic or (close_cmd and self.mode in ['Manual', 'Shutdown']):  #If Automatic just close straight away.
                 if self.is_dome and self.enclosure.CanSlave:
@@ -943,19 +951,14 @@ class Enclosure:
                 else:
                     self.state = 'Automatic Daytime normally Closed the ' + shutter_str
                 try:
-                   try:
-                       if self.status_string in ['Open']:
-                           self.enclosure.CloseShutter()
-                   except:
-                       pass
-
-
-                   self.dome_opened = False
-                   self.dome_homed = True
+                    self.enclosure.CloseShutter()
+                    self.dome_opened = False
+                    self.dome_homed = True
+                    
                    # plog("Daytime Close issued to the " + shutter_str  + "   No longer following Mount.")
                 except:
-                    plog("Shutter Failed to close at Civil Dawn.")
-                self.mode = 'Manual'
+                    plog("Shutter Failed to close at End of Morning Sky Flats.")
+                #self.mode = 'Manual'
         return
 
 
