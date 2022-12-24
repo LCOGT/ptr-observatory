@@ -2462,7 +2462,7 @@ class Sequencer:
             plog(traceback.format_exc())
             breakpoint()
             
-        self.auto_focus_script()
+        self.auto_focus_script(None,None)
         
         plog("Returning to:  ", start_ra, start_dec)
         g_dev['mnt'].mount.SlewToCoordinatesAsync(start_ra, start_dec)   #Return to pre-focus pointing.
