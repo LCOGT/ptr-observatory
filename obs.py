@@ -827,6 +827,9 @@ class Observatory:
                 g_dev['enc'].enclosure.CloseShutter()
                 while g_dev['enc'].enclosure.ShutterStatus == 3:
                     print ("closing")
+                if not g_dev['mnt'].mount.AtPark:  
+                    g_dev['mnt'].home_command()
+                    g_dev['mnt'].park_command()  
 
             
             
@@ -834,10 +837,25 @@ class Observatory:
 
                 if not (g_dev['events']['Cool Down, Open'] < ephem.now() < g_dev['events']['Close and Park']):
                     print ("Safety check found that the roof was open outside of the normal observing period")    
-                    print ("Dhutting the roof out of an abundance of caution.")
+                    print ("Shutting the roof out of an abundance of caution.")
                     g_dev['enc'].enclosure.CloseShutter()
                     while g_dev['enc'].enclosure.ShutterStatus == 3:
                         print ("closing")
+                    if not g_dev['mnt'].mount.AtPark:  
+                        g_dev['mnt'].home_command()
+                        g_dev['mnt'].park_command()  
+            
+            if g_dev['enc'].status['shutter_status'] == 'Open':
+
+                if not (g_dev['events']['Close and Park'] < ephem.now() < g_dev['events']['End Morn Bias Dark']):
+                    print ("Safety check found that it is in the period where the observatory should be closing up")    
+                    print ("Checking on the dome being closed and the telescope at park.")                    
+                    g_dev['enc'].enclosure.CloseShutter()
+                    while g_dev['enc'].enclosure.ShutterStatus == 3:
+                        print ("closing")
+                    if not g_dev['mnt'].mount.AtPark:  
+                        g_dev['mnt'].home_command()
+                        g_dev['mnt'].park_command()  
                 
                 
             # Check the mount is still connected

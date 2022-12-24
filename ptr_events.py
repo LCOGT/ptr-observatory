@@ -465,6 +465,7 @@ class Events:
         # as this is when the night ends and the schedule gets reconfigured. So anything scheduled AFTER
         # then needs to be pulled back a day. Primarily because it sometimes does weird things.....
         endNightTime = ephem.Date(sunrise + 120/1440.)
+        #endNightTime = ephem.Date(nautDawn_minus_half + 10/1440.)
         cool_down_open = sunset + self.config['eve_cool_down_open']/1440
         eve_skyFlatBegin = sunset +  self.config['eve_sky_flat_sunset_offset']/1440
         

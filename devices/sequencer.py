@@ -312,7 +312,7 @@ class Sequencer:
         except:
             plog("Park not executed during Park and Close" )
         try:
-            if self.config['site_roof_control'] != 'no' and enc_status['shutter_status'] in ['open', ] and g_dev['enc'].mode == 'Automatic':
+            if self.config['site_roof_control'] != 'no' and g_dev['enc'].mode == 'Automatic': # and enc_status['shutter_status'] in ['open', ] $ Don't check, just close!
                 g_dev['enc'].close_command( {}, {})
         except:
             plog('Dome close not executed during Park and Close.')
@@ -1654,6 +1654,7 @@ class Sequencer:
 
         if morn: 
             self.morn_sky_flat_latch = False
+            self.park_and_close(enc_status = g_dev['enc'].status)
         else:
             self.eve_sky_flat_latch = False
             
