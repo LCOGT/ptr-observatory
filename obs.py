@@ -835,7 +835,7 @@ class Observatory:
             
             if (g_dev['events']['Close and Park'] < ephem.now() < g_dev['events']['End Morn Bias Dark']):
                 roof_should_be_shut=True
-            if not self.config['settings']['auto_morn_sky_flat']:
+            if not self.config['auto_morn_sky_flat']:
                 if (g_dev['events']['Observing Ends'] < ephem.now() < g_dev['events']['End Morn Bias Dark']):
                     roof_should_be_shut=True
                 if (g_dev['events']['Naut Dawn'] < ephem.now() < g_dev['events']['Morn Bias Dark']):
