@@ -171,15 +171,15 @@ site_config = {
     'enclosure': {
         'enclosure1': {
             'parent': 'site',
-            'enc_is_specific':  True,  # Indicates some special site code.
-            'name': 'SRO File',
+            'enc_is_specific':  False,  # Indicates some special site code.
+            'name': 'Dragonfly Roof',
             'hostIP':  None,
-            'driver': None,  #'ASCOM.DigitalDomeWorks.Dome',  #  ASCOMDome.Dome',  #  ASCOM.DeviceHub.Dome',  #  ASCOM.DigitalDomeWorks.Dome',  #"  ASCOMDome.Dome',
+            'driver': 'Dragonfly.Dome',  #'ASCOM.DigitalDomeWorks.Dome',  #  ASCOMDome.Dome',  #  ASCOM.DeviceHub.Dome',  #  ASCOM.DigitalDomeWorks.Dome',  #"  ASCOMDome.Dome',
             'has_lights':  False,
             'controlled_by': 'mount1',
-			'is_dome': False,
+            'is_dome': False,
             'mode': 'Automatic',
-            'cool_down': 35.0,    #  Minutes prior to sunset.
+            #'cool_down': -90.0,    #  Minutes prior to sunset.
             'settings': {
                 'lights':  ['Auto', 'White', 'Red', 'IR', 'Off'],       #A way to encode possible states or options???
                                                                         #First Entry is always default condition.
@@ -189,7 +189,7 @@ site_config = {
             'eve_screen_flat_dur': 1.0,   #  hours Duration, prior to next.
             'operations_begin':  -1.0,   #  - hours from Sunset
             'eve_cooldown_offset': -.99,   #  - hours beforeSunset
-            'eve_sky_flat_offset':  0.25,   #  - hours beforeSunset
+            'eve_sky_flat_offset':  0.5,   #  - hours beforeSunset
             'morn_sky_flat_offset':  0.4,   #  + hours after Sunrise
             'morning_close_offset':  0.41,   #  + hours after Sunrise
             'operations_end':  0.42,
