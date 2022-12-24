@@ -831,31 +831,46 @@ class Observatory:
                     g_dev['mnt'].home_command()
                     g_dev['mnt'].park_command()  
 
+            roof_should_be_shut=False
+            
+            if (g_dev['events']['Close and Park'] < ephem.now() < g_dev['events']['End Morn Bias Dark']):
+                roof_should_be_shut=True
+            if not self.config['settings']['auto_morn_sky_flat']:
+                if (g_dev['events']['Observing Ends'] < ephem.now() < g_dev['events']['End Morn Bias Dark']):
+                    roof_should_be_shut=True
+                if (g_dev['events']['Naut Dawn'] < ephem.now() < g_dev['events']['Morn Bias Dark']):
+                    roof_should_be_shut=True 
+            if not (g_dev['events']['Cool Down, Open'] < ephem.now() < g_dev['events']['Close and Park']):
+                roof_should_be_shut=True 
             
             
             if g_dev['enc'].status['shutter_status'] == 'Open':
-
-                if not (g_dev['events']['Cool Down, Open'] < ephem.now() < g_dev['events']['Close and Park']):
+                if roof_should_be_shut==True :
                     print ("Safety check found that the roof was open outside of the normal observing period")    
-                    print ("Shutting the roof out of an abundance of caution.")
+                    print ("Shutting the roof out of an abundance of caution. This may also be normal functioning")                    
                     g_dev['enc'].enclosure.CloseShutter()
                     while g_dev['enc'].enclosure.ShutterStatus == 3:
                         print ("closing")
-                    if not g_dev['mnt'].mount.AtPark:  
-                        g_dev['mnt'].home_command()
-                        g_dev['mnt'].park_command()  
             
-            if g_dev['enc'].status['shutter_status'] == 'Open':
-
-                if (g_dev['events']['Close and Park'] < ephem.now() < g_dev['events']['End Morn Bias Dark']):
-                    print ("Safety check found that it is in the period where the observatory should be closing up")    
-                    print ("Checking on the dome being closed and the telescope at park.")                    
-                    g_dev['enc'].enclosure.CloseShutter()
-                    while g_dev['enc'].enclosure.ShutterStatus == 3:
-                        print ("closing")
-                    if not g_dev['mnt'].mount.AtPark:  
-                        g_dev['mnt'].home_command()
-                        g_dev['mnt'].park_command()  
+            
+            if roof_should_be_shut==True : # If the roof should be shut, then the telescope should be parked. 
+                if not g_dev['mnt'].mount.AtPark:
+                    print ("Telescope found not parked when the observatory is meant to be closed. Parking scope.")   
+                    
+                    g_dev['mnt'].home_command()
+                    g_dev['mnt'].park_command()  
+            
+            # if g_dev['enc'].status['shutter_status'] == 'Open':
+            #     self.config['mount']'auto_morn_sky_flat': False,
+            #     if (g_dev['events']['Close and Park'] < ephem.now() < g_dev['events']['End Morn Bias Dark']):
+            #         print ("Safety check found that it is in the period where the observatory should be closing up")    
+            #         print ("Checking on the dome being closed and the telescope at park.")                    
+            #         g_dev['enc'].enclosure.CloseShutter()
+            #         while g_dev['enc'].enclosure.ShutterStatus == 3:
+            #             print ("closing")
+            #         if not g_dev['mnt'].mount.AtPark:  
+            #             g_dev['mnt'].home_command()
+            #             g_dev['mnt'].park_command()  
                 
                 
             # Check the mount is still connected
