@@ -777,7 +777,7 @@ class Observatory:
         # Also an area to put things to irregularly check if things are still connected, e.g. cooler
         #
         # Probably we don't want to run these checkes EVERY status update, just every 5 minutes
-        if time.time() - self.time_since_safety_checks > 10:
+        if time.time() - self.time_since_safety_checks > 300:
             self.time_since_safety_checks=time.time()
             
             
