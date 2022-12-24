@@ -479,7 +479,8 @@ site_config = {
                 'osc_contrast_enhance' : 1.3,
                 'osc_saturation_enhance' : 2.0,
                 'osc_colour_enhance' : 1.5,
-                'osc_sharpness_enhance' : 1.5,                
+                'osc_sharpness_enhance' : 1.5,
+                'osc_background_cut' : 25.0,
                 'bin_for_focus' : False, # This setting will bin the image for focussing rather than interpolating. Good for 1x1 pixel sizes < 0.6. It is also a little faster. Not good for blockier pixel scales
                 
                 # ONLY TRANSFORM THE FITS IF YOU HAVE

@@ -2489,7 +2489,7 @@ class Camera:
                                 
                                 blue_stretched_data_float = Stretch().stretch(hdublue)*256
                                 ceil = np.percentile(blue_stretched_data_float,100) # 5% of pixels will be white
-                                floor = np.percentile(blue_stretched_data_float,60) # 5% of pixels will be black
+                                floor = np.percentile(blue_stretched_data_float,self.config["camera"][g_dev['cam'].name]["settings"]['osc_background_cut']) # 5% of pixels will be black
                                 #a = 255/(ceil-floor)
                                 #b = floor*255/(floor-ceil)
                                 blue_stretched_data_float[blue_stretched_data_float<floor]=floor
@@ -2503,7 +2503,7 @@ class Camera:
                                 
                                 green_stretched_data_float = Stretch().stretch(hdugreen)*256
                                 ceil = np.percentile(green_stretched_data_float,100) # 5% of pixels will be white
-                                floor = np.percentile(green_stretched_data_float,60) # 5% of pixels will be black
+                                floor = np.percentile(green_stretched_data_float,self.config["camera"][g_dev['cam'].name]["settings"]['osc_background_cut']) # 5% of pixels will be black
                                 #a = 255/(ceil-floor)
                                 green_stretched_data_float[green_stretched_data_float<floor]=floor
                                 green_stretched_data_float=green_stretched_data_float-floor
@@ -2519,7 +2519,7 @@ class Camera:
                                 
                                 red_stretched_data_float = Stretch().stretch(hdured)*256
                                 ceil = np.percentile(red_stretched_data_float,100) # 5% of pixels will be white
-                                floor = np.percentile(red_stretched_data_float,60) # 5% of pixels will be black
+                                floor = np.percentile(red_stretched_data_float,self.config["camera"][g_dev['cam'].name]["settings"]['osc_background_cut']) # 5% of pixels will be black
                                 #a = 255/(ceil-floor)
                                 #b = floor*255/(floor-ceil)
                                 #breakpoint()
