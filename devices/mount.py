@@ -1063,7 +1063,7 @@ class Mount:
         if object_is_moon:
             self.go_coord(ra1, dec1, tracking_rate_ra=dra_moon, tracking_rate_dec = ddec_moon)
         elif alt_az == True:
-            self.move_to_altaz(az, alt)
+            self.move_to_azalt(az, alt)
 
         elif ra_dec == True:
             self.go_coord(ra, dec, tracking_rate_ra=tracking_rate_ra, tracking_rate_dec = tracking_rate_dec)
@@ -1318,7 +1318,7 @@ class Mount:
 
         self.move_time = time.time()
         try:
-            self.move_to_altaz(az, alt)
+            self.move_to_azalt(az, alt)
             # On successful movement of telescope reset the solving timer
             g_dev['obs'].last_solve_time = datetime.datetime.now() - datetime.timedelta(days=1)
             g_dev['obs'].images_since_last_solve = 10000
@@ -1344,16 +1344,16 @@ class Mount:
                 plog(f"can find home: {self.mount.CanFindHome}")
                 self.unpark_command()  
                 wait_for_slew()
-                #home_alt = self.settings["home_altitude"]
-                #home_az = self.settings["home_azimuth"]
-                #self.move_to_altaz(home_az, home_alt)
+                home_alt = self.settings["home_altitude"]
+                home_az = self.settings["home_azimuth"]
+                self.move_to_azalt(home_az, home_alt)
                 self.move_time = time.time()
                 self.mount.FindHome()
                 wait_for_slew()
         else:
             plog("Mount is not capable of finding home. Slewing to zenith....ish")
             self.move_time = time.time()
-            self.move_to_azalt(270, 75)  #az, alt  --badly named method.
+            self.move_to_azalt(270, 75)  #az, alt  --badly named method.  NB NB Is this a sun-safe place to park?
             wait_for_slew()
         wait_for_slew()
 

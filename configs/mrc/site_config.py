@@ -283,7 +283,7 @@ site_config = {
                 'home_park_altitude': 0,    #Having these settings is important for PWI4 where it can easily be messed up.
                 'home_park_azimuth': 180,
                 'fixed_screen_azimuth': 167.25,
-                'Fixed_screen _altitude': 0.54,
+                'fixed_screen _altitude': 0.54,
                 'refraction_on': True,
                 'model_on': True,
                 'rates_on': True,

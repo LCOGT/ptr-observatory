@@ -30,6 +30,8 @@ from auto_stretch.stretch import Stretch
 import win32com.client
 from planewave import platesolve
 
+from scipy import stats
+
 import colour
 import queue
 import threading
@@ -227,12 +229,8 @@ class Camera:
         
         try:
             #self.biasframe = fits.open(
-            tempbiasframe = fits.open(
-                self.config["archive_path"]
-                + "calibmasters/"
-                + self.alias
-                + "/BIAS_master_bin1.fits"
-            )
+            tempbiasframe = fits.open(self.config["archive_path"] +'archive/' + self.alias + "/calibmasters" \
+                                      + "/BIAS_master_bin1.fits")
             tempbiasframe = np.array(tempbiasframe[0].data, dtype=np.float32)
             self.biasFiles.update({'1': tempbiasframe})
             del tempbiasframe
@@ -242,12 +240,9 @@ class Camera:
         
         try:
             #self.darkframe = fits.open(
-            tempdarkframe = fits.open(
-                self.config["archive_path"]
-                + "calibmasters/"
-                + self.alias
-                + "/DARK_master_bin1.fits"
-            )
+            tempdarkframe = fits.open(self.config["archive_path"] + 'archive/' + self.alias + "/calibmasters" \
+                                      + "/DARK_master_bin1.fits")
+
             tempdarkframe = np.array(tempdarkframe[0].data, dtype=np.float32)
             self.darkFiles.update({'1': tempdarkframe})
             del tempdarkframe
@@ -255,12 +250,8 @@ class Camera:
             plog("Dark frame for Binning 1 not available")  
 
         try:            
-            fileList = glob.glob(
-                self.config["archive_path"]
-                + "calibmasters/"
-                + self.alias
-                + "/masterFlat*_bin1.npy"
-            )
+            fileList = glob.glob(self.config["archive_path"] + 'archive/' + self.alias + "/calibmasters" \
+                                 + "/masterFlat*_bin1.npy")
             
             for file in fileList:
                 self.flatFiles.update({file.split("_")[1].replace ('.npy','') + '_bin1': file})
@@ -2469,26 +2460,87 @@ class Camera:
                                 #print (np.median(hdugreen))
                                 #print (np.median(hdured))
 
+                                #breakpoint()
+                                
+                                # The integer mode of an image is typically the sky value, so squish anything below that
+                                bluemode=stats.mode((hdublue.astype('int16').flatten()))[0] - 25
+                                redmode=stats.mode((hdured.astype('int16').flatten()))[0] - 25
+                                greenmode=stats.mode((hdugreen.astype('int16').flatten()))[0] - 25                          
+                                hdublue[hdublue < bluemode] = bluemode
+                                hdugreen[hdugreen < greenmode] = greenmode
+                                hdured[hdured < redmode] =redmode
                                 
                                 
-                                hdublue[hdublue < 1] = 1
-                                hdugreen[hdugreen < 1] = 1
-                                hdured[hdured < 1] = 1
+                                # Then bring the background level up a little from there
+                                # blueperc=np.nanpercentile(hdublue,0.75)
+                                # greenperc=np.nanpercentile(hdugreen,0.75)
+                                # redperc=np.nanpercentile(hdured,0.75)
+                                # hdublue[hdublue < blueperc] = blueperc
+                                # hdugreen[hdugreen < greenperc] = greenperc
+                                # hdured[hdured < redperc] = redperc
+                                
+                                
+                                
                                 
                                 #hdublue = hdublue * (np.median(hdugreen) / np.median(hdublue))
                                 #hdured = hdured * (np.median(hdugreen) / np.median(hdured))
  
                                 
-                                blue_stretched_data_float = Stretch().stretch(hdublue)
+                                blue_stretched_data_float = Stretch().stretch(hdublue)*256
+                                ceil = np.percentile(blue_stretched_data_float,100) # 5% of pixels will be white
+                                floor = np.percentile(blue_stretched_data_float,75) # 5% of pixels will be black
+                                #a = 255/(ceil-floor)
+                                #b = floor*255/(floor-ceil)
+                                blue_stretched_data_float[blue_stretched_data_float<floor]=floor
+                                blue_stretched_data_float=blue_stretched_data_float-floor
+                                blue_stretched_data_float=blue_stretched_data_float * (255/np.max(blue_stretched_data_float))
+                                
+                                #blue_stretched_data_float = np.maximum(0,np.minimum(255,blue_stretched_data_float*a+b)).astype(np.uint8)
+                                #blue_stretched_data_float[blue_stretched_data_float < floor] = floor
                                 del hdublue
-                                green_stretched_data_float = Stretch().stretch(hdugreen)
-                                red_stretched_data_float = Stretch().stretch(hdured)
-                                del hdured                                
+                                
+                                
+                                green_stretched_data_float = Stretch().stretch(hdugreen)*256
+                                ceil = np.percentile(green_stretched_data_float,100) # 5% of pixels will be white
+                                floor = np.percentile(green_stretched_data_float,75) # 5% of pixels will be black
+                                #a = 255/(ceil-floor)
+                                green_stretched_data_float[green_stretched_data_float<floor]=floor
+                                green_stretched_data_float=green_stretched_data_float-floor
+                                green_stretched_data_float=green_stretched_data_float * (255/np.max(green_stretched_data_float))
+                                
+                                
+                                #b = floor*255/(floor-ceil)
+                                
+                                
+                                #green_stretched_data_float[green_stretched_data_float < floor] = floor
+                                #green_stretched_data_float = np.maximum(0,np.minimum(255,green_stretched_data_float*a+b)).astype(np.uint8)
                                 del hdugreen
+                                
+                                red_stretched_data_float = Stretch().stretch(hdured)*256
+                                ceil = np.percentile(red_stretched_data_float,100) # 5% of pixels will be white
+                                floor = np.percentile(red_stretched_data_float,75) # 5% of pixels will be black
+                                #a = 255/(ceil-floor)
+                                #b = floor*255/(floor-ceil)
+                                #breakpoint()
+                                
+                                red_stretched_data_float[red_stretched_data_float<floor]=floor
+                                red_stretched_data_float=red_stretched_data_float-floor
+                                red_stretched_data_float=red_stretched_data_float * (255/np.max(red_stretched_data_float))
+                                
+                                
+                                #red_stretched_data_float[red_stretched_data_float < floor] = floor
+                                #red_stretched_data_float = np.maximum(0,np.minimum(255,red_stretched_data_float*a+b)).astype(np.uint8)
+                                del hdured 
+                                
+                                
+                                
+                                
+                                
+                                
                                 rgbArray=np.zeros((xshape,yshape,3), 'uint8')
-                                rgbArray[..., 0] = red_stretched_data_float*256
-                                rgbArray[..., 1] = green_stretched_data_float*256
-                                rgbArray[..., 2] = blue_stretched_data_float*256
+                                rgbArray[..., 0] = red_stretched_data_float#*256
+                                rgbArray[..., 1] = green_stretched_data_float#*256
+                                rgbArray[..., 2] = blue_stretched_data_float#*256
 
                                 del red_stretched_data_float
                                 del blue_stretched_data_float
