@@ -576,6 +576,8 @@ site_config = {
             'settings': {
                 
                 'is_osc' : True,
+                
+                'squash_on_x_axis' : True,
                 # 'osc_brightness_enhance' : 1.0,
                 # 'osc_contrast_enhance' : 1.3,
                 # 'osc_saturation_enhance' : 2.0,
