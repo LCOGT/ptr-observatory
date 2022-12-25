@@ -832,6 +832,13 @@ class Camera:
         image data.
         """
         
+        
+        
+        self.exposure_busy = True # This really needs to be here from the start
+        # We've had multiple cases of multiple camera exposures trying to go at once
+        # And it is likely because it takes a non-zero time to get to Phase II
+        # So even in the setup phase the "exposure" is "busy"
+        
         self.tempStartupExposureTime=time.time()
 
 
@@ -1079,6 +1086,9 @@ class Camera:
                         if blockended or ephem.Date(ephem.now()+ (exposure_time *ephem.second)) >= \
                             g_dev['events']['End Morn Bias Dark']:
                             print ("Exposure overlays the end of a block or the end of observing. Skipping Exposure.")
+                            print ("And Cancelling SmartStacks.")
+                            Nsmartstack=1
+                            sskcounter=2
                             return
                         
                     # NB Here we enter Phase 2
@@ -1227,6 +1237,7 @@ class Camera:
 
     def stop_command(self, required_params, optional_params):
         """Stop the current exposure and return the camera to Idle state."""
+        self._stop_expose()
         self.exposure_busy = False
         self.exposure_halted = True
 

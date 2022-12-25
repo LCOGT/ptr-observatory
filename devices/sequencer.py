@@ -1539,7 +1539,7 @@ class Sequencer:
                         # Here it makes four tests and if it doesn't match those tests, then it will attempt a flat. 
                         if evening and exp_time > 120:
                              #exp_time = 60    #Live with this limit.  Basically started too late
-                             plog('Break because proposed evening exposure > 180 seconds:  ', exp_time)
+                             plog('Break because proposed evening exposure > 120 seconds:  ', exp_time)
                              g_dev['obs'].send_to_user('Try next filter because proposed  flat exposure > 120 seconds.', p_level='INFO')
                              pop_list.pop(0)
                              acquired_count = flat_count + 1 # trigger end of loop
@@ -1554,7 +1554,7 @@ class Sequencer:
                              #break
                         elif evening and exp_time < min_exposure:   #NB it is too bright, should consider a delay here.
                          #**************THIS SHOUD BE A WHILE LOOP! WAITING FOR THE SKY TO GET DARK AND EXP TIME TO BE LONGER********************
-                             plog("Too bright, wating 180 seconds. Estimated Exposure time is " + str(exp_time))
+                             plog("Too bright, wating 60 seconds. Estimated Exposure time is " + str(exp_time))
                              g_dev['obs'].send_to_user('Delay 60 seconds to let it get darker.', p_level='INFO')
                              self.estimated_first_flat_exposure = False
                              if time.time() >= self.time_of_next_slew:
@@ -1563,7 +1563,7 @@ class Sequencer:
                              self.next_flat_observe = time.time() + 60
                         elif morn and exp_time > 120 :   #NB it is too bright, should consider a delay here.
                           #**************THIS SHOUD BE A WHILE LOOP! WAITING FOR THE SKY TO GET DARK AND EXP TIME TO BE LONGER********************
-                             plog("Too dim, wating 180 seconds. Estimated Exposure time is " + str(exp_time))
+                             plog("Too dim, wating 60 seconds. Estimated Exposure time is " + str(exp_time))
                              g_dev['obs'].send_to_user('Delay 60 seconds to let it get lighterer.', p_level='INFO')
                              self.estimated_first_flat_exposure = False
                              if time.time() >= self.time_of_next_slew:
@@ -1575,7 +1575,7 @@ class Sequencer:
                         else:
                             exp_time = round(exp_time, 5)
                             # prior_scale = prior_scale*scale  #Only update prior scale when changing filters
-                            plog("Sky flat estimated exposure time, scale are:  ", exp_time, scale)               
+                            plog("Sky flat estimated exposure time: " + str(exp_time) + ", Scale:  " +str(scale))               
                                             
                             req = {'time': float(exp_time),  'alias': camera_name, 'image_type': 'sky flat', 'script': 'On'}
                             

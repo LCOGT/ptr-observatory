@@ -184,7 +184,7 @@ class Observatory:
         self.project_call_timer = time.time()
         self.get_new_job_timer = time.time()
         self.status_upload_time = 0.5
-
+        self.command_busy=False
         # Instantiate the helper class for astronomical events
         # Soon the primary event / time values can come from AWS.
         self.astro_events = ptr_events.Events(self.config)
@@ -407,6 +407,42 @@ class Observatory:
             print ("Response to site config upload unclear. Here is the response")
             print (response)
 
+    def cancel_all_activity(self):
+        
+
+        g_dev["obs"].stop_all_activity = True
+        plog("Stop_all_activity is now set True.")
+        self.send_to_user(
+            "Cancel/Stop received. Exposure stopped, camera may begin readout, then will discard image."
+        )
+        self.send_to_user(
+            "Pending reductions and transfers to the PTR Archive are not affected."
+        )
+        # Now we need to cancel possibly a pending camera cycle or a
+        # script running in the sequencer.  NOTE a stop or cancel empties outgoing queue at AWS side and 
+        # only a Cancel/Stop action is sent.  But we need to same any subsequent commands.
+        #try:
+        plog ("Emptying Command Queue")
+        with self.cmd_queue.mutex:
+            self.cmd_queue.queue.clear()
+            
+        
+        plog("Stopping Exposure")
+        try:
+            #if g_dev["cam"].exposure_busy:            
+            g_dev["cam"]._stop_expose()                # Should we try to flush the image array?                
+            g_dev["cam"].exposure_busy = False
+        except Exception as e:
+            plog("Camera is not busy.", e)
+        #except:
+        #    plog("Camera stop faulted.")
+        
+        
+        #while self.cmd_queue.qsize() > 0:
+        #    plog("Deleting Job:  ", self.cmd_queue.get())
+        
+        #return  # Note we basically do nothing and let camera, etc settle down.
+
     def scan_requests(self, cancel_check=False):
         """Gets commands from AWS, and post a STOP/Cancel flag.
 
@@ -454,32 +490,8 @@ class Observatory:
 
                     for cmd in unread_commands:
                         if cmd["action"] in ["cancel_all_commands", "stop"]:
-                            g_dev["obs"].stop_all_activity = True
-                            plog("Stop_all_activity is now set True.")
-                            self.send_to_user(
-                                "Cancel/Stop received. Exposure stopped, camera may begin readout, then will discard image."
-                            )
-                            self.send_to_user(
-                                "Pending reductions and transfers to the PTR Archive are not affected."
-                            )
-                            # Now we need to cancel possibly a pending camera cycle or a
-                            # script running in the sequencer.  NOTE a stop or cancel empties outgoing queue at AWS side and 
-                            # only a Cancel/Stop action is sent.  But we need to same any subsequent commands.
-                            try:
-                                if g_dev["cam"].exposure_busy:
-                                    
-                                    g_dev["cam"]._stop_expose()
-                                    # Should we try to flush the image array?
-                                    g_dev["obs"].stop_all_activity = True
-                                    g_dev["cam"].exposure_busy = False
-                                else:
-                                    plog("Camera is not busy.")
-                            except:
-                                plog("Camera stop faulted.")
-                            while self.cmd_queue.qsize() > 0:
-                                plog("Deleting Job:  ", self.cmd_queue.get())
-                            
-                            #return  # Note we basically do nothing and let camera, etc settle down.
+                            self.cancel_all_acivity() # Hi Wayne, I have to cancel all acitivity with some roof stuff
+                            # So I've moved the cancelling to it's own function just above so it can be called from multiple locations.
                         else:
                             self.cmd_queue.put(cmd)  # SAVE THE COMMAND FOR LATER
                             g_dev["obs"].stop_all_activity = False
@@ -496,46 +508,49 @@ class Observatory:
                 # rotator as the exposure routine in camera.py already waits for that.                
                 #if (not g_dev["cam"].exposure_busy) and (not g_dev['mnt'].mount.Slewing):
                 if (not g_dev["cam"].exposure_busy):
-                    while self.cmd_queue.qsize() > 0:
-                        self.send_to_user(
-                            "Number of queued commands:  " + str(self.cmd_queue.qsize())
-                        )
-                        cmd = self.cmd_queue.get()
-                        # This code is redundant
-                        if self.config["selector"]["selector1"]["driver"] is None:
-                            port = cmd["optional_params"]["instrument_selector_position"]
-                            g_dev["mnt"].instrument_port = port
-                            cam_name = self.config["selector"]["selector1"]["cameras"][port]
-                            if cmd["deviceType"][:6] == "camera":
-                                # Note camelCase is the format of command keys
-                                cmd["required_params"]["deviceInstance"] = cam_name
-                                cmd["deviceInstance"] = cam_name
-                                device_instance = cam_name
-                            else:
-                                try:
+                    while self.cmd_queue.qsize() > 0:                        
+                        if not self.command_busy: # This is to stop multiple commands running over the top of each other.
+                            self.command_busy=True
+                            self.send_to_user(
+                                "Number of queued commands:  " + str(self.cmd_queue.qsize())
+                            )
+                            cmd = self.cmd_queue.get()
+                            # This code is redundant
+                            if self.config["selector"]["selector1"]["driver"] is None:
+                                port = cmd["optional_params"]["instrument_selector_position"]
+                                g_dev["mnt"].instrument_port = port
+                                cam_name = self.config["selector"]["selector1"]["cameras"][port]
+                                if cmd["deviceType"][:6] == "camera":
+                                    # Note camelCase is the format of command keys
+                                    cmd["required_params"]["deviceInstance"] = cam_name
+                                    cmd["deviceInstance"] = cam_name
+                                    device_instance = cam_name
+                                else:
                                     try:
-                                        device_instance = cmd["deviceInstance"]
+                                        try:
+                                            device_instance = cmd["deviceInstance"]
+                                        except:
+                                            device_instance = cmd["required_params"][
+                                                "deviceInstance"
+                                            ]
                                     except:
-                                        device_instance = cmd["required_params"][
-                                            "deviceInstance"
-                                        ]
-                                except:
-                                    pass
-                        else:
-                            device_instance = cmd["deviceInstance"]
-                        plog("obs.scan_request: ", cmd)
-    
-                        device_type = cmd["deviceType"]
-                        device = self.all_devices[device_type][device_instance]
-                        try:
-                            #plog("Trying to parse:  ", cmd)
-    
-                            device.parse_command(cmd)
-                        except Exception as e:
-    
-                            plog(traceback.format_exc())
-    
-                            plog("Exception in obs.scan_requests:  ", e, 'cmd:  ', cmd)
+                                        pass
+                            else:
+                                device_instance = cmd["deviceInstance"]
+                            plog("obs.scan_request: ", cmd)
+        
+                            device_type = cmd["deviceType"]
+                            device = self.all_devices[device_type][device_instance]
+                            try:
+                                #plog("Trying to parse:  ", cmd)
+        
+                                device.parse_command(cmd)
+                            except Exception as e:
+        
+                                plog(traceback.format_exc())
+        
+                                plog("Exception in obs.scan_requests:  ", e, 'cmd:  ', cmd)
+                            self.command_busy=False
                             
                  
                 # TO KEEP THE REAL-TIME USE A BIT SNAPPIER, POLL FOR NEW PROJECTS ON A MUCH SLOWER TIMESCALE
@@ -832,6 +847,7 @@ class Observatory:
             if g_dev['enc'].status['shutter_status'] == 'Closing':
                 if self.config['site_roof_control'] != 'no' and g_dev['enc'].mode == 'Automatic':
                     print ("Detected Roof Closing. Sending another close command just in case the roof got stuck on this status (this happens!)")
+                    self.cancel_all_activity()
                     g_dev['enc'].enclosure.CloseShutter()
             
             if g_dev['enc'].status['shutter_status'] == 'Error':
@@ -839,6 +855,7 @@ class Observatory:
                     print ("Detected an Error in the Roof Status. Closing up for safety.")
                     print ("This is usually because the weather system forced the roof to shut.")
                     print ("By closing it again, it resets the switch to closed.")
+                    self.cancel_all_activity()
                     g_dev['enc'].enclosure.CloseShutter()
                     #while g_dev['enc'].enclosure.ShutterStatus == 3:
                     #print ("closing")
@@ -864,7 +881,8 @@ class Observatory:
                 if roof_should_be_shut==True :
                     print ("Safety check found that the roof was open outside of the normal observing period")    
                     if self.config['site_roof_control'] != 'no' and g_dev['enc'].mode == 'Automatic':
-                        print ("Shutting the roof out of an abundance of caution. This may also be normal functioning")                    
+                        print ("Shutting the roof out of an abundance of caution. This may also be normal functioning")
+                        self.cancel_all_activity()
                         g_dev['enc'].enclosure.CloseShutter()
                         while g_dev['enc'].enclosure.ShutterStatus == 3:
                             print ("closing")
@@ -875,7 +893,7 @@ class Observatory:
             if roof_should_be_shut==True and g_dev['enc'].mode == 'Automatic' : # If the roof should be shut, then the telescope should be parked. 
                 if not g_dev['mnt'].mount.AtPark:
                     print ("Telescope found not parked when the observatory is meant to be closed. Parking scope.")   
-                    
+                    self.cancel_all_activity()
                     g_dev['mnt'].home_command()
                     g_dev['mnt'].park_command()  
             
@@ -901,7 +919,8 @@ class Observatory:
                 lowest_acceptable_altitude= self.config['mount']['mount1']['lowest_acceptable_altitude'] 
                 if mount_altitude < lowest_acceptable_altitude:
                     print ("Altitude too low! " + str(mount_altitude) + ". Parking scope for safety!")
-                    if not g_dev['mnt'].mount.AtPark:  
+                    if not g_dev['mnt'].mount.AtPark:
+                        self.cancel_all_activity()
                         g_dev['mnt'].home_command()
                         g_dev['mnt'].park_command()  
                         # Reset mount reference because thats how it probably got pointing at the dirt in the first place!
