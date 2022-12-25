@@ -304,7 +304,7 @@ class Observatory:
         self.update_config()   #This is the never-ending control loop
         
         #breakpoint()
-
+        #breakpoint()
 
 
     def set_last_reference(self, delta_ra, delta_dec, last_time):
@@ -762,7 +762,7 @@ class Observatory:
         # NB should qualify acceptance and type '.' at that point.
         self.time_last_status = time.time()
         self.status_count += 1
-    
+        #breakpoint()
         
         
 
@@ -808,17 +808,26 @@ class Observatory:
         # Also an area to put things to irregularly check if things are still connected, e.g. cooler
         #
         # Probably we don't want to run these checkes EVERY status update, just every 5 minutes
-        if time.time() - self.time_since_safety_checks > 300:
+        if time.time() - self.time_since_safety_checks > 10:
             self.time_since_safety_checks=time.time()
             
-            
-            # 5 minute roof check - middle of the daytime check
-            #breakpoint()
-            
+            breakpoint()
+
             # If the shutter is open, check it is meant to be.
-            # Very very roughly, it does it by hour
             # This is just a brute force overriding safety check.
+            # Opening and Shutting should be done more glamorously through the
+            # sequencer, but if all else fails, this routine should save
+            # the observatory from rain, wasps and acts of god.
             print ("Roof Status: " + str(g_dev['enc'].status['shutter_status']))
+            
+            
+            if g_dev['enc'].status['shutter_status'] == 'Software Fault':
+                print ("Software Fault Detected. Will alert the authorities!")
+                print ("Parking Scope in the meantime")
+                if not g_dev['mnt'].mount.AtPark:  
+                    g_dev['mnt'].home_command()
+                    g_dev['mnt'].park_command()  
+                
             
             if g_dev['enc'].status['shutter_status'] == 'Closing':
                 if self.config['site_roof_control'] != 'no' and g_dev['enc'].mode == 'Automatic':
