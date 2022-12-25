@@ -839,9 +839,12 @@ class Observatory:
             if g_dev['enc'].status['shutter_status'] == 'Software Fault':
                 print ("Software Fault Detected. Will alert the authorities!")
                 print ("Parking Scope in the meantime")
+                self.cancel_all_activity()
                 if not g_dev['mnt'].mount.AtPark:  
                     g_dev['mnt'].home_command()
-                    g_dev['mnt'].park_command()  
+                    g_dev['mnt'].park_command()
+                # will send a Close call out into the blue just in case it catches
+                g_dev['enc'].enclosure.CloseShutter()
                 
             
             if g_dev['enc'].status['shutter_status'] == 'Closing':
