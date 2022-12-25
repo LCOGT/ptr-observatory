@@ -820,18 +820,23 @@ class Observatory:
             # This is just a brute force overriding safety check.
             print ("Roof Status: " + str(g_dev['enc'].status['shutter_status']))
             
+            if g_dev['enc'].status['shutter_status'] == 'Closing':
+                if self.config['site_roof_control'] != 'no' and g_dev['enc'].mode == 'Automatic':
+                    print ("Detected Roof Closing. Sending another close command just in case the roof got stuck on this status (this happens!)")
+                    g_dev['enc'].enclosure.CloseShutter()
+            
             if g_dev['enc'].status['shutter_status'] == 'Error':
-                if self.config['site_roof_control'] != 'no':
+                if self.config['site_roof_control'] != 'no' and g_dev['enc'].mode == 'Automatic':
                     print ("Detected an Error in the Roof Status. Closing up for safety.")
                     print ("This is usually because the weather system forced the roof to shut.")
                     print ("By closing it again, it resets the switch to closed.")
                     g_dev['enc'].enclosure.CloseShutter()
                     #while g_dev['enc'].enclosure.ShutterStatus == 3:
                     #print ("closing")
-                print ("Also Parking the Scope")    
-                if not g_dev['mnt'].mount.AtPark:  
-                    g_dev['mnt'].home_command()
-                    g_dev['mnt'].park_command()  
+                    print ("Also Parking the Scope")    
+                    if not g_dev['mnt'].mount.AtPark:  
+                        g_dev['mnt'].home_command()
+                        g_dev['mnt'].park_command()  
 
             roof_should_be_shut=False
             
@@ -849,14 +854,16 @@ class Observatory:
             if g_dev['enc'].status['shutter_status'] == 'Open':
                 if roof_should_be_shut==True :
                     print ("Safety check found that the roof was open outside of the normal observing period")    
-                    if self.config['site_roof_control'] != 'no':
+                    if self.config['site_roof_control'] != 'no' and g_dev['enc'].mode == 'Automatic':
                         print ("Shutting the roof out of an abundance of caution. This may also be normal functioning")                    
                         g_dev['enc'].enclosure.CloseShutter()
                         while g_dev['enc'].enclosure.ShutterStatus == 3:
                             print ("closing")
+                    else:
+                        print ("This scope does not have control of the roof though.")
                 
             
-            if roof_should_be_shut==True : # If the roof should be shut, then the telescope should be parked. 
+            if roof_should_be_shut==True and g_dev['enc'].mode == 'Automatic' : # If the roof should be shut, then the telescope should be parked. 
                 if not g_dev['mnt'].mount.AtPark:
                     print ("Telescope found not parked when the observatory is meant to be closed. Parking scope.")   
                     
