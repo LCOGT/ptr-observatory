@@ -2845,7 +2845,7 @@ class Camera:
                                 fwhmcalc=sources['FWHM']
                                 fwhmcalc=fwhmcalc[fwhmcalc > 1.0]
                                 fwhmcalc=fwhmcalc[fwhmcalc != 0] # Remove 0 entries
-                                fwhmcalc=fwhmcalc[fwhmcalc < 75] # remove stupidly large entries
+                                #fwhmcalc=fwhmcalc[fwhmcalc < 75] # remove stupidly large entries
                                 fwhmcalc=fwhmcalc[fwhmcalc < np.median(fwhmcalc)+ 3* np.std(fwhmcalc)]
                                 fwhmcalc=fwhmcalc[fwhmcalc > np.median(fwhmcalc)- 3* np.std(fwhmcalc)]
                                 rfp = round(np.median(fwhmcalc),3)

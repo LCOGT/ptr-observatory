@@ -380,7 +380,7 @@ class Sequencer:
                     else:
                         plog("mount is not tracking but this mount doesn't support ASCOM changing tracking")
 
-                g_dev['mnt'].move_to_altaz(70, 70)
+                g_dev['mnt'].move_to_azalt(70, 70)
                 g_dev['foc'].time_of_last_focus = datetime.datetime.now() - datetime.timedelta(
                     days=1
                 )  # Initialise last focus as yesterday
@@ -1823,7 +1823,7 @@ class Sequencer:
 # =============================================================================
         plog("Saved  *mounting* ra, dec, focus:  ", start_ra, start_dec, focus_start)
 
-        if req2['target'] == 'near_tycho_star':   ## 'bin', 'area'  Other parameters
+        if True: #req2['target'] == 'near_tycho_star':   ## 'bin', 'area'  Other parameters
 
             #  Go to closest Mag 7.5 Tycho * with no flip
             #focus_star = tycho.dist_sort_targets(g_dev['mnt'].current_icrs_ra, g_dev['mnt'].current_icrs_dec,g_dev['mnt'].current_sidereal)
@@ -2377,7 +2377,7 @@ class Sequencer:
         plog('Autofocus Starting at:  ', foc_pos0, '\n\n')
         
         extensive_focus=[]
-        for ctr in range(7):
+        for ctr in range(4):
             g_dev['foc'].guarded_move((foc_pos0 - (ctr+0)*throw)*g_dev['foc'].micron_to_steps)  #Added 20220209! A bit late
             #throw = 100  # NB again, from config.  Units are microns
             if not sim:
@@ -2395,8 +2395,9 @@ class Sequencer:
 
             g_dev['obs'].send_to_user("Extensive focus center " + str(foc_pos) + " FWHM: " + str(spot), p_level='INFO')
             extensive_focus.append([foc_pos, spot])
+            plog(extensive_focus)
         
-        for ctr in range(6):
+        for ctr in range(3):
             g_dev['foc'].guarded_move((foc_pos0 + (ctr+1)*throw)*g_dev['foc'].micron_to_steps)  #Added 20220209! A bit late
             #throw = 100  # NB again, from config.  Units are microns
             if not sim:
@@ -2414,8 +2415,9 @@ class Sequencer:
 
             g_dev['obs'].send_to_user("Extensive focus center " + str(foc_pos) + " FWHM: " + str(spot), p_level='INFO')
             extensive_focus.append([foc_pos, spot])
+            plog(extensive_focus)
         
-        minimumFWHM = 100
+        minimumFWHM = 100.0
         for focentry in extensive_focus:
             if focentry[1] < minimumFWHM:
                 solved_pos = focentry[0]

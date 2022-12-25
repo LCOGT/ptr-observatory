@@ -284,6 +284,8 @@ class Observatory:
         self.reset_last_reference()
         self.env_exists = os.path.exists(os.getcwd() + '\.env')  # Boolean, check if .env present
 
+        # Get initial coordinates into the global system
+        g_dev['mnt'].get_mount_coordinates()
 
         # If mount is permissively set, reset mount reference
         # This is necessary for SRO and it seems for ECO
@@ -305,6 +307,9 @@ class Observatory:
         
         #breakpoint()
         #breakpoint()
+        req2 = {'target': 'near_tycho_star', 'area': 150}
+        opt = {}
+        g_dev['seq'].extensive_focus_script(req2,opt)
 
 
     def set_last_reference(self, delta_ra, delta_dec, last_time):
@@ -823,10 +828,10 @@ class Observatory:
         # Also an area to put things to irregularly check if things are still connected, e.g. cooler
         #
         # Probably we don't want to run these checkes EVERY status update, just every 5 minutes
-        if time.time() - self.time_since_safety_checks > 10:
+        if time.time() - self.time_since_safety_checks > 300:
             self.time_since_safety_checks=time.time()
             
-            breakpoint()
+            #breakpoint()
 
             # If the shutter is open, check it is meant to be.
             # This is just a brute force overriding safety check.
@@ -853,19 +858,19 @@ class Observatory:
                     self.cancel_all_activity()
                     g_dev['enc'].enclosure.CloseShutter()
             
-            if g_dev['enc'].status['shutter_status'] == 'Error':
-                if self.config['site_roof_control'] != 'no' and g_dev['enc'].mode == 'Automatic':
-                    print ("Detected an Error in the Roof Status. Closing up for safety.")
-                    print ("This is usually because the weather system forced the roof to shut.")
-                    print ("By closing it again, it resets the switch to closed.")
-                    self.cancel_all_activity()
-                    g_dev['enc'].enclosure.CloseShutter()
-                    #while g_dev['enc'].enclosure.ShutterStatus == 3:
-                    #print ("closing")
-                    print ("Also Parking the Scope")    
-                    if not g_dev['mnt'].mount.AtPark:  
-                        g_dev['mnt'].home_command()
-                        g_dev['mnt'].park_command()  
+            # if g_dev['enc'].status['shutter_status'] == 'Error':
+            #     if self.config['site_roof_control'] != 'no' and g_dev['enc'].mode == 'Automatic':
+            #         print ("Detected an Error in the Roof Status. Closing up for safety.")
+            #         print ("This is usually because the weather system forced the roof to shut.")
+            #         print ("By closing it again, it resets the switch to closed.")
+            #         self.cancel_all_activity()
+            #         g_dev['enc'].enclosure.CloseShutter()
+            #         #while g_dev['enc'].enclosure.ShutterStatus == 3:
+            #         #print ("closing")
+            #         print ("Also Parking the Scope")    
+            #         if not g_dev['mnt'].mount.AtPark:  
+            #             g_dev['mnt'].home_command()
+            #             g_dev['mnt'].park_command()  
 
             roof_should_be_shut=False
             
