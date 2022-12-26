@@ -479,7 +479,6 @@ class Camera:
 
         self.last_user_name = "Tobor"
         self.last_user_id = "Tobor"
-        self.user_name = "Tobor"
         
         try:
             seq = test_sequence(self.alias)
@@ -917,7 +916,12 @@ class Camera:
 
         self.pane = optional_params.get("pane", None)
 
-
+        #breakpoint()
+        if optional_params.get('bin', '"optimal"') == '"coarse"':
+            self.debify = True
+        else:
+            self.debify = False
+        
         bin_x = 1               
         bin_y = 1  # NB This needs fixing someday!
         self.bin = 1
@@ -996,7 +1000,7 @@ class Camera:
         rot_report=0
         if g_dev['rot']!=None:                
             while g_dev['rot'].rotator.IsMoving:                    
-                #if g_dev['rot'].rotator.IsMoving:                                         
+                if g_dev['rot'].rotator.IsMoving:                                         
                     if rot_report == 0:
                         plog("Waiting for camera rotator to catch up. ")
                         g_dev["obs"].send_to_user("Waiting for camera rotator to catch up before exposing.")
@@ -1155,9 +1159,10 @@ class Camera:
                                     self.pre_ocn
                                 )  # NB NB WEMA must be running or this may fault.
                             except:
-                                plog(
-                                    "Failed to collect quick status on observing conditions"
-                                )
+                                pass
+                                #plog(
+                                  ## "Failed to collect quick status on observing conditions")
+                           
                             g_dev["foc"].get_quick_status(self.pre_foc)
                             try:
                                 g_dev["rot"].get_quick_status(self.pre_rot)
@@ -1406,7 +1411,7 @@ class Camera:
                 self.t4p5 = time.time()
 
                 
-                print("READOUT READOUT READOUT:  ", round(self.t4p5-self.t4p4, 1))
+                print("Array READOUT time (sec):  ", round(self.t4p5-self.t4p4, 1))
 
                 if frame_type in ["bias", "dark"] or frame_type[-4:] == ['flat']:
                     plog("Median of full-image area bias, dark or flat:  ", np.median(self.img))
@@ -1418,18 +1423,18 @@ class Camera:
                 pier_side = g_dev["mnt"].pier_side  # 0 == Tel Looking West, is flipped.
             
                 ix, iy = self.img.shape
-                #self.t77 = time.time() 
-
+                #self.t77 = time.time()
                 image_saturation_level = g_dev['cam'].config["camera"][g_dev['cam'].name]["settings"]["saturate"]
+                #This shoudl be a camera.Class attribute
+                
                 # Get bi_mean of middle patch for flat usage                
                 #test_saturated = np.array(self.img[ix // 3 : ix * 2 // 3, iy // 3 : iy * 2 // 3]) 
                 test_saturated = self.img[ix // 3 : ix * 2 // 3, iy // 3 : iy * 2 // 3]
                 # 1/9th the chip area, but central.   NB NB why 3, is this what flat uses???
-                bi_mean = round((test_saturated.mean() + np.median(test_saturated)) / 2, 1)
-                
-                
-                if frame_type[-4:] == "flat":                      
-                    
+                bi_mean = round((test_saturated.mean() + np.median(test_saturated)) / 2, 1) 
+
+                if frame_type[-4:] == "flat":
+
                     if (
                         bi_mean
                         >= 0.75* image_saturation_level
@@ -1730,7 +1735,6 @@ class Camera:
                             "Screen brightness setting",
                         )
                     try:
-                        
                         hdu.header["DATASEC"] = self.config["camera"][self.name][
                             "settings"
                         ]["data_sec"]
@@ -1745,7 +1749,7 @@ class Camera:
                         ]["trim_sec"]
                         
                     except:
-                        print ("need to fix TIMSEC etc. in site-config")
+                        print ("need to fix TRIMSEC etc. in site-config")
                         pass
 
                     hdu.header["SATURATE"] = (
@@ -2340,7 +2344,6 @@ class Camera:
                         flashbinning=1
                         
                         try:
-                            breakpoint()
                             hdusmalldata = hdusmalldata - self.biasFiles[str(flashbinning)]
                             hdusmalldata = hdusmalldata - (self.darkFiles[str(flashbinning)] * exposure_time)
                             
@@ -2433,6 +2436,7 @@ class Camera:
                                 # Interpolate to make a high resolution version for focussing
                                 # and platesolving
                                 if self.config["camera"][self.name]["settings"]['bin_for_focus']:
+                                    breakpoint()
                                     hdufocusdata=block_reduce(hdufocusdata,2)
                                     binfocus=2
                                 else:
@@ -3047,26 +3051,30 @@ class Camera:
                                     solved_dec = solve["dec_j2000_degrees"]
                                     solved_arcsecperpixel = solve["arcsec_per_pixel"]
                                     solved_rotangledegs = solve["rot_angle_degs"]
-                                    err_ha = target_ra - solved_ra
-                                    err_dec = target_dec - solved_dec
+                                    err_ha = round((target_ra - solved_ra)* 15 * 3600, 2)  #  Hours to asec
+                                    err_dec = round((target_dec - solved_dec)* 3600, 2)  #  Deg to asec
                                     solved_arcsecperpixel = solve["arcsec_per_pixel"]
                                     solved_rotangledegs = solve["rot_angle_degs"]
                                     plog(
                                         " coordinate error in ra, dec:  (asec) ",
-                                        round(err_ha * 15 * 3600, 2),
-                                        round(err_dec * 3600, 2),
+                                        err_ha,
+                                        err_dec 
                                     )  # NB WER changed units 20221012
-    
-                                    # Reset Solve timers
+                                    field_ha_correction = err_ha*math.cos(math.radians(target_dec))  
+                                    radial_err = math.sqrt(field_ha_correction**2 + err_dec**2)
+                                    plog("field error in Ha,  radial error:  ", field_ha_correction, radial_err)
+                                       # Reset Solve timers
                                     g_dev['obs'].last_solve_time = datetime.datetime.now()
                                     g_dev['obs'].images_since_last_solve = 0
-    
-                                    # NB NB NB this needs rethinking, the incoming units are hours in HA or degrees of dec
+# =============================================================================
+#                                     ##  NB this is where mount is potentially reset incorrectly?  WER 20221225???
+# =============================================================================
+                                    # NB the following code is a great example of linting gone over the top.
                                     if (
-                                        err_ha * 15 * 3600 > 1200
-                                        or err_dec * 3600 > 1200
-                                        or err_ha * 15 * 3600 < -1200
-                                        or err_dec * 3600 < -1200
+                                        err_ha  > 1200    #this could now just reference radial error once that is verified. WER
+                                        or err_dec  > 1200
+                                        or err_ha  < -1200
+                                        or err_dec  < -1200
                                     ) and self.config["mount"]["mount1"][
                                         "permissive_mount_reset"
                                     ] == "yes":
@@ -3082,12 +3090,14 @@ class Camera:
                                         err_dec = 0
     
                                     if (
-                                        abs(err_ha * 15 * 3600)
+                                        abs(err_ha)
                                         > self.config["threshold_mount_update"]
-                                        or abs(err_dec * 3600)
+                                        or abs(err_dec)
                                         > self.config["threshold_mount_update"]
-                                    ):
-                                        try:
+                                    ) and self.config["mount"]["mount1"][
+                                        "permissive_mount_reset"
+                                    ] == "yes":   #This is WER temp fix for drift problem.
+                                        try:   #NB NB MF thininkis may be doubline up correction.
                                             #if g_dev["mnt"].pier_side_str == "Looking West":
                                             if g_dev["mnt"].pier_side == 0:
                                                 try:

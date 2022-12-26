@@ -380,7 +380,7 @@ class Sequencer:
                     else:
                         plog("mount is not tracking but this mount doesn't support ASCOM changing tracking")
 
-                g_dev['mnt'].move_to_altaz(70, 70)
+                g_dev['mnt'].move_to_azalt(70, 70)
                 g_dev['foc'].time_of_last_focus = datetime.datetime.now() - datetime.timedelta(
                     days=1
                 )  # Initialise last focus as yesterday
@@ -1467,7 +1467,7 @@ class Sequencer:
                 
                 if time.time() >= self.time_of_next_slew:
                     g_dev['mnt'].slewToSkyFlatAsync()  
-                    self.time_of_next_slew = time.time() + 600
+                    self.time_of_next_slew = time.time() + 120    # NB NB the flat spot moves and hence a dither.
                     
                 g_dev['obs'].update_status()
             
@@ -2049,7 +2049,7 @@ class Sequencer:
                     print ("spot4 failed ")
                 plog('\nFound best focus at:  ', foc_pos4,' measured is:  ',  round(spot4, 2), '\n')
                 g_dev['obs'].send_to_user('Found best focus at:  ' +str(foc_pos4) +' measured FWHM is:  ' + str(round(spot4, 2)), p_level='INFO')
-                g_dev['foc'].af_log(foc_pos4, spot4, new_spot)
+                g_dev['foc'].af_log(foc_pos4, round(spot4, 2), round(new_spot, 2))
                 plog("Returning to:  ", start_ra, start_dec)
                 g_dev['mnt'].mount.SlewToCoordinatesAsync(start_ra, start_dec)   #Return to pre-focus pointing.
                 wait_for_slew()
@@ -2134,7 +2134,7 @@ class Sequencer:
                     print ("spot4 failed ")
                 plog('\nFound best focus at:  ', foc_pos4,' measured is:  ',  round(spot4, 2), '\n')
                 g_dev['obs'].send_to_user('Found best focus at: ' + str(foc_pos4) +' measured FWHM is: ' + str(round(spot4, 2)), p_level='INFO')
-                g_dev['foc'].af_log(foc_pos4, spot4, new_spot)
+                g_dev['foc'].af_log(foc_pos4, round(spot4, 2), round(new_spot, 2))
                 plog("Returning to:  ", start_ra, start_dec)
                 g_dev['mnt'].mount.SlewToCoordinatesAsync(start_ra, start_dec)   #Return to pre-focus pointing.
                 wait_for_slew()
@@ -2220,7 +2220,7 @@ class Sequencer:
                     print ("spot4 failed ")
                 plog('\nFound best focus at:  ', foc_pos4,' measured is:  ',  round(spot4, 2), '\n')
                 g_dev['obs'].send_to_user('Found best focus at: ' + str(foc_pos4) +' measured FWHM is: ' + str(round(spot4, 2)), p_level='INFO')
-                g_dev['foc'].af_log(foc_pos4, spot4, new_spot)
+                g_dev['foc'].af_log(foc_pos4, round(spot4, 2), round(new_spot, 2))
                 plog("Returning to:  ", start_ra, start_dec)
                 g_dev['mnt'].mount.SlewToCoordinatesAsync(start_ra, start_dec)   #Return to pre-focus pointing.
                 wait_for_slew()

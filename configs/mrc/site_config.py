@@ -119,14 +119,15 @@ site_config = {
     'observing_check_period' : 2,    # How many minutes between weather checks
     'enclosure_check_period' : 2,    # How many minutes between enclosure checks
 
-    'auto_eve_bias_dark': False,
+    'auto_eve_bias_dark': True,
     
     'auto_midnight_moonless_bias_dark': True,
-    'auto_eve_sky_flat': False,
-    'eve_sky_flat_sunset_offset': -40.,  #  Minutes  neg means before, + after.
-    'eve_cool_down_open' : -45.0,
-    'auto_morn_sky_flat': False,
-    'auto_morn_bias_dark': False,
+    'auto_eve_sky_flat': True,
+    #NBNB  Add the offests from Sunset and Sunrise into the config so events are not hardwired in code.
+    'eve_sky_flat_sunset_offset': -45.,  #  Minutes  neg means before, + after.
+    'eve_cool_down_open' : -50.0,
+    'auto_morn_sky_flat': True,
+    'auto_morn_bias_dark': True,
     're-calibrate_on_solve': True,
     'pointing_calibration_on_startup': False,  #MF I am leaving this alone.
     'periodic_focus_time' : 0.5, # This is a time, in hours, over which to bypass automated focussing (e.g. at the start of a project it will not refocus if a new project starts X hours after the last focus)
@@ -135,7 +136,7 @@ site_config = {
     'focus_trigger' : 1.0, # What FWHM increase is needed to trigger an autofocus
     'solve_nth_image' : 10, # Only solve every nth image
     'solve_timer' : 5, # Only solve every X minutes
-    'threshold_mount_update' : 10, # only update mount when X arcseconds away
+    'threshold_mount_update' : 10, # only update mount when X arcseconds away   NB NB Should'nt this be with the Mounting config?  WER
 
     'defaults': {
         'observing_conditions': 'observing_conditions1',
@@ -255,14 +256,14 @@ site_config = {
             'recover_script':  None,
             'shutdown_script':  None,
             'alignment': 'Alt-Az',
-            'default_zenith_avoid': 7.0,   #degrees floating
+            'default_zenith_avoid': 7.0,   #degrees
             'west_clutch_ra_correction': 0.0,
             'west_clutch_dec_correction': 0.0,
             'east_flip_ra_correction': 0.0,
             'east_flip_dec_correction': 0.0,  #
             'home_after_unpark' : False,
             'permissive_mount_reset' : 'no', # if this is set to yes, it will reset the mount at startup and when coordinates are out significantly'home_after_unpark' : True,
-            'lowest_acceptable_altitude' : -10.0, # Below this altitude, it will automatically try to home and park the scope to recover.
+            'lowest_acceptable_altitude' : -5.0, # Below this altitude, it will automatically try to home and park the scope to recover.
             
             'time_inactive_until_park' : 3600.0, # How many seconds of inactivity until it will park the telescope
             'has_paddle': False,
@@ -435,11 +436,11 @@ site_config = {
             'use_focuser_temperature': True,
             #*********Guesses   7379@10 7457@20  7497 @ 25
             #'reference': 7250, #20221103    #7418,    # Nominal at 15C Primary temperature, in microns not steps. Guess
-            'reference': 5682, #20221103    #7418,    # Nominal at 15C Primary temperature, in microns not steps. Guess
+            'reference': 5382, #20221103    #7418,    # Nominal at 15C Primary temperature, in microns not steps. Guess
             'ref_temp':  15,      # Update when pinning reference  Larger at lower temperatures.
-            'coef_c': 11.892,    # Negative means focus moves out (larger numerically) as Primary gets colder
+            'coef_c': -6,    # Negative means focus moves out (larger numerically) as Primary gets colder
             #'coef_0': 7250,  #20221103# Nominal intercept when Primary is at 0.0 C.
-            'coef_0': 5682,  #20221103# Nominal intercept when Primary is at 0.0 C.
+            'coef_0': 5596,  #20221225# Nominal intercept when Primary is at 0.0 C.
             'coef_date':  '20221103',   #A Guess as to coef_c
             'z_compression': 0.0, #  microns per degree of zenith distance
             'z_coef_date':  '20221002',   # 'reference': 4375,    #   Guess 20210904  Nominal at 10C Primary temperature
@@ -508,24 +509,24 @@ site_config = {
 
 
                 #'filter_list': ['PL','PR','PG','PB','HA','O3','S2', 'air','dif','w','CR','N2','up','gp','rp','ip','z', 'difup','difgp','difrp','difip','dark'], # A list of actual physical filters for the substitution function
-
-                'filter_data': [['air',     [0, 0], -1000,  357.1, [2, 17], 'ai'], #  0
-                                ['dif',     [4, 0],     0,  330.0, [2, 17], 'df'], #  1  NB NB NB If this in series should change focus about 1mm more.
-                                ['w',       [2, 0],     0,  346.2, [2, 17], 'w '], #  2
-                                ['PL',      [0, 4],     0,  317.5, [2, 17], "PL"], #  3
-                                ['gp',      [0, 6],     0,  108.7, [2, 17], 'gp'], #  4 
-                                ['PB',      [0, 1],     0,  154.7, [2, 17], 'PB'], #  5
-                                ['rp',      [0, 7],     0,  54.6,  [2, 17], 'rp'], #  6
-                                ['PG',      [0, 2],     0,  102.4, [2, 17], 'PG'], #  7
-                                ['PR',      [0, 3],     0,  13.89, [2, 17], 'PR'], #  8
-                                ['ip',      [0, 8],     0,  47.41, [2, 17], 'ip'], #  9
-                                ['z',       [5, 0],     0,  9.95,  [2, 17], 'z' ], # 10
-                                ['O3',      [7, 0],     0,  5.35,  [2, 17], '03'], # 11
-                                ['up',      [0, 5],     0,  5.06,  [1, 17], 'up'], # 12
-                                ['N2',      [3, 0],     0,  3.0,   [2, 17], 'N2'], # 13
-                                ['CR',      [1, 0],     0,  2.83,  [2, 17], 'CR'], # 14
-                                ['S2',      [8, 0],     0,  1.64,  [2, 17], 'S2'], # 15   
-                                ['HA',      [6, 0],     0,  1.58,  [2, 17], 'HA'], # 16  
+                #  Column hdr    filter     fil#'s   Offset  Gain  Screen   Unused alias  Need CWL and BW and serial number
+                'filter_data': [['air',     [0, 0], -1039,  1.233, [2, 17], 'ai'], #  0   #computed for n = 1.53 and 3mm filter
+                                ['dif',     [4, 0],     0,  1.452, [2, 17], 'df'], #  1  NB NB NB If this in series should change focus about 1mm more.
+                                ['w',       [2, 0],     0,  1.845, [2, 17], 'w '], #  2
+                                ['PL',      [0, 4],     0,  2.153, [2, 17], "PL"], #  3
+                                ['gp',      [0, 6],     0,  1.894, [2, 17], 'gp'], #  4 
+                                ['PB',      [0, 1],     0,  1.299, [2, 17], 'PB'], #  5
+                                ['rp',      [0, 7],     0,  0.910, [2, 17], 'rp'], #  6
+                                ['PG',      [0, 2],     0,  1.846, [2, 17], 'PG'], #  7
+                                ['PR',      [0, 3],     0,  0.223, [2, 17], 'PR'], #  8
+                                ['ip',      [0, 8],     0,  0.770, [2, 17], 'ip'], #  9
+                                ['z',       [5, 0],     0,  0.280, [2, 17], 'z' ], # 10
+                                ['O3',      [7, 0],     0,  0.240, [2, 17], '03'], # 11
+                                ['up',      [0, 5],     0,  0.590, [1, 17], 'up'], # 12  #NB there should be a way to 
+                                ['N2',      [3, 0],     0,  0.200, [2, 17], 'N2'], # 13  #calculate the small focal shifts
+                                ['CR',      [1, 0],     0,  0.290, [2, 17], 'CR'], # 14
+                                ['S2',      [8, 0],     0,  0.200, [2, 17], 'S2'], # 15   
+                                ['HA',      [6, 0],     0,  0.200, [2, 17], 'HA'], # 16  
                                 ['focus',   [2, 0],     0,  0.0,   [2, 17], 'fo'], # 17
                                 ['dark',    [8, 5],     0,  0.0,   [2, 17], 'dk']],# 18
 
@@ -533,7 +534,9 @@ site_config = {
                 'filter_screen_sort':  ['air','w','PL','dif', 'gp','PB','rp','PG','PR','ip','O3','N2','CR','S2','HA'],   #  9, 21],  # 5, 17], #Most to least throughput, \
                                 #so screen brightens, skipping u and zs which really need sky.
 
-                'filter_sky_sort':     ['HA', 'S2', 'CR', 'N2', 'up', 'O3', 'z', 'ip', 'PR', 'PG', 'rp', 'PB', 'gp', 'PL', 'w', 'dif', 'air']  #Least to most throughput  \
+                'filter_sky_sort':     ['HA', 'S2', 'CR', 'N2', 'O3', 'z', 'PR', 'up', 'ip',  'rp', 'PG', 'PB', 'gp',\
+                                        'dif', 'w', 'air', 'PL']  #Least to most throughput  PR is not beleivable
+                #Adjusted 20221226 WER   Some values certainly are odd.  
 
 
             },
@@ -615,10 +618,10 @@ site_config = {
                 'crop_preview_ytop': 1,
                 'crop_preview_xleft': 1,
                 'crop_preview_xright': 1,
-                'temp_setpoint': -20,    #Verify we can go colder, this system has a chiller
+                'temp_setpoint': -25,    #Verify we can go colder, this system has a chiller
                 'has_chiller': True,
-                'calib_setpoints': [-20, -20, -20, -20, -20, -20, \
-                                    -20, -20, -20, -20, -20, -20],  #  Picked by month-of-year 
+                'calib_setpoints': [-25, -25, -25, -25, -25, -25, \
+                                    -25, -25, -25, -25, -25, -25],  #  Picked by month-of-year 
                 'day_warm': False,
                 'cooler_on': True,
                 'x_start':  0,
@@ -642,10 +645,10 @@ site_config = {
                 'y_active': 6388,
                 'det_size': '[1:9600, 1:6422]',  # Physical chip data size as returned from driver
                 'ccd_sec': '[1:9600, 1:6422]',
-                'bias_sec': ['[1:22, 1:6388]', '[1:11, 1:3194]', '[1:7, 1:2129]', '[1:5, 1:1597]'],
-                'det_sec': ['[25:9600, 1:6388]', '[13:4800, 1:3194]', '[9:3200, 1:2129]', '[7:2400, 1:1597]'],
-                'data_sec': ['[25:9600, 1:6388]', '[13:4800, 1:3194]', '[9:3200, 1:2129]', '[7:2400, 1:1597]'],
-                'trim_sec': ['[1:9576, 1:6388]', '[1:4788, 1:3194]', '[1:3192, 1:2129]', '[1:2394, 1:1597]'],
+                'bias_sec': '[1:22, 1:6388], [1:11, 1:3194], [1:7, 1:2129], [1:5, 1:1597]',
+                'det_sec': '[25:9600, 1:6388], [13:4800, 1:3194], [9:3200, 1:2129], [7:2400, 1:1597]',
+                'data_sec': '[25:9600, 1:6388], [13:4800, 1:3194], [9:3200, 1:2129], [7:2400, 1:1597]',
+                'trim_sec': '[1:9576, 1:6388], [1:4788, 1:3194], [1:3192, 1:2129], [1:2394, 1:1597]',
                 'x_pixel':  3.76,
                 'y_pixel':  3.76,
                 'pix_scale': 0.302597,    #   bin-2  2* math.degrees(math.atan(3.76/2563000))*3600

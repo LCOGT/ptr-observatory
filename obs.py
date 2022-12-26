@@ -1662,7 +1662,7 @@ class Observatory:
                             
                             blue_stretched_data_float = Stretch().stretch(newhdublue)*256
                             ceil = np.percentile(blue_stretched_data_float,100) # 5% of pixels will be white
-                            floor = np.percentile(blue_stretched_data_float,60) # 5% of pixels will be black
+                            floor = np.percentile(blue_stretched_data_float,15) # 5% of pixels will be black
                             #a = 255/(ceil-floor)
                             #b = floor*255/(floor-ceil)
                             blue_stretched_data_float[blue_stretched_data_float<floor]=floor
@@ -1676,7 +1676,7 @@ class Observatory:
                             
                             green_stretched_data_float = Stretch().stretch(newhdugreen)*256
                             ceil = np.percentile(green_stretched_data_float,100) # 5% of pixels will be white
-                            floor = np.percentile(green_stretched_data_float,60) # 5% of pixels will be black
+                            floor = np.percentile(green_stretched_data_float,15) # 5% of pixels will be black
                             #a = 255/(ceil-floor)
                             green_stretched_data_float[green_stretched_data_float<floor]=floor
                             green_stretched_data_float=green_stretched_data_float-floor
@@ -1692,7 +1692,7 @@ class Observatory:
                             
                             red_stretched_data_float = Stretch().stretch(newhdured)*256
                             ceil = np.percentile(red_stretched_data_float,100) # 5% of pixels will be white
-                            floor = np.percentile(red_stretched_data_float,60) # 5% of pixels will be black
+                            floor = np.percentile(red_stretched_data_float,15) # 5% of pixels will be black
                             #a = 255/(ceil-floor)
                             #b = floor*255/(floor-ceil)
                             #breakpoint()
@@ -1774,6 +1774,10 @@ class Observatory:
                             
                             
                             ## Resizing the array to an appropriate shape for the jpg and the small fits
+                            
+                            #  WER NOTE  Here is wher we debify by selecting s central patch of the
+                            #  image on the order of say 768 x 1024 pixels.  Later on we can specify
+                            #  a zoom--subframe.  Not ginng to work on this now. 20221224
                             iy, ix = final_image.size
                             if iy == ix:
                                 #final_image.resize((1280, 1280))

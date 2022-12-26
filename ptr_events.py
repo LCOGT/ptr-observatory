@@ -506,7 +506,7 @@ class Events:
         plog('Moon phase %   :    ', round(mid_moon_phase, 1), '%\n')
         plog("Key events for the evening, presented by the Solar System: \n")
 
-        evnt = [('Eve Bias Dark      ', ephem.Date(eve_skyFlatBegin -125/1440)),
+        evnt = [('Eve Bias Dark      ', ephem.Date(eve_skyFlatBegin -90/1440)),
                 ('End Eve Bias Dark  ', ephem.Date(eve_skyFlatBegin - 5/1440)),
                 ('Ops Window Start   ', ephem.Date(eve_skyFlatBegin)),  #Enclosure may open.
                 ('Cool Down, Open    ', ephem.Date(cool_down_open)),
@@ -522,13 +522,13 @@ class Events:
                 ('End Astro Dark     ', astroEnd),
                 ('Observing Ends     ', ephem.Date(nautDawn_minus_half )),
                 ('Naut Dawn          ', nauticalDawn),
-                ('Morn Sky Flats     ', ephem.Date(nauticalDawn + 10/1440.)),
+                ('Morn Sky Flats     ', ephem.Date(civilDawn + 10/1440.)),  #Changed from Naut WER 20221224
                 ('Civil Dawn         ', civilDawn),
-                ('End Morn Sky Flats ', ephem.Date(sunrise + 15/1440.)),    #SRO drving this
-                ('Ops Window Closes  ', ephem.Date(sunrise + 15/1440.)),   #Enclosure must close 5 min after sunrise
-                ('Close and Park     ', ephem.Date(sunrise + 15/1440.)),
+                ('End Morn Sky Flats ', ephem.Date(sunrise + 30/1440.)),    #Upped from 15  WER 20221224
+                ('Ops Window Closes  ', ephem.Date(sunrise + 30/1440.)),   #Enclosure must close 5 min after sunrise
+                ('Close and Park     ', ephem.Date(sunrise + 30/1440.)),
                 ('Sun Rise           ', sunrise),
-                ('Morn Bias Dark     ', ephem.Date(sunrise + 20/1440.)),
+                ('Morn Bias Dark     ', ephem.Date(sunrise + 35/1440.)),
                 ('End Morn Bias Dark ', ephem.Date(sunrise + 120/1440.)),
                 ('Nightly Reset      ', ephem.Date(sunrise + 180/1440.)),
                 ('End Nightly Reset  ', ephem.Date(sunrise + 200/1440.)),
