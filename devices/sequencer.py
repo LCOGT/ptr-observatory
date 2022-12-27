@@ -34,8 +34,8 @@ seeing induced errors.  If either case occurs, go to the projected point and try
 
 A second case is the focus is WAY off, and or pointing.  Make appropriate adjustments and try again.
 
-The third case is we have a minimum.  Inspection of the FWHM may imply seeing is poor.  In that case
-double the exposure and possibly do a 5-point fit rather than a 3-point.
+The third case is we have a maximum at the central stat.  Inspection of the FWHM may imply seeing is poor.  In that case
+double the exposure and do a wider  5-point fit rather than a normal 3-point.
 
 Note at the last exposure it is reasonable to do a minor recalibrate of the pointing.
 
