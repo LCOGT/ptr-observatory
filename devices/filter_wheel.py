@@ -392,7 +392,7 @@ class FilterWheel:
             #int(self.config["filter_wheel1"]["settings"]["filter_count"])
             len(self.filter_data)
         ):  # NB Filter count MUST be correct in Config.
-            breakpoint()
+   
             print(self.filter_data[match][0].lower())
             if filter_name in str(self.filter_data[match][0]).lower():
                 filt_pointer = match
