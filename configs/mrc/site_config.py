@@ -114,6 +114,7 @@ site_config = {
     'reference_pressure':  977.83,  #mbar Alternately 12 entries, one for every - mid month.
 
     'site_roof_control': 'no', #MTF entered this in to remove sro specific code  NB 'site_is_specifc' also deals with this
+    'site_allowed_to_open_roof': 'yes',
     'site_in_automatic_default': "Automatic",   #"Manual", "Shutdown"
     'automatic_detail_default': "Enclosure is initially set to Automatic mode.",
     'observing_check_period' : 2,    # How many minutes between weather checks

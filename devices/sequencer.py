@@ -261,14 +261,14 @@ class Sequencer:
         #ocn_status = eval(self.redis_server.get('ocn_status'))
            #NB 120 is enough time to telescope to get pointed to East
         #self.time_of_next_slew = time.time() -1  #Set up so next block executes if unparked.
-        if g_dev['mnt'].mount.AtParK:
-            g_dev['mnt'].unpark_command({}, {}) # Get there early
-            #time.sleep(3)
-            self.time_of_next_slew = time.time() + 600   #NB 120 is enough time to telescope to get pointed to East
-            if not no_sky:
-                g_dev['mnt'].slewToSkyFlatAsync()
-                #This should run once. Next time this phase is entered in > 120 seconds we
-            #flat_spot, flat_alt = g_dev['evnt'].flat_spot_now()
+        # if g_dev['mnt'].mount.AtParK:
+        #     g_dev['mnt'].unpark_command({}, {}) # Get there early
+        #     #time.sleep(3)
+        #     self.time_of_next_slew = time.time() + 600   #NB 120 is enough time to telescope to get pointed to East
+        #     if not no_sky:
+        #         g_dev['mnt'].slewToSkyFlatAsync()
+        #         #This should run once. Next time this phase is entered in > 120 seconds we
+        #     #flat_spot, flat_alt = g_dev['evnt'].flat_spot_now()
 
         if time.time() >= self.time_of_next_slew:
             self.time_of_next_slew = time.time() + 600  # seconds between slews.
@@ -276,20 +276,26 @@ class Sequencer:
             flat_spot, flat_alt = g_dev['evnt'].flat_spot_now()
 
             try:
-                if not no_sky:
+                if not no_sky and self.open_and_enabled_to_observe:
+                    
+                    if g_dev['mnt'].mount.AtParK:
+                        g_dev['mnt'].unpark_command({}, {})
+                    
                     g_dev['mnt'].slewToSkyFlatAsync()
+                    self.time_of_next_slew = time.time() + 600 
                     #time.sleep(10)
                 plog("Open and slew Dome to azimuth opposite the Sun:  ", round(flat_spot, 1))
                 plog("Cooling down and waiting for skyflat / observing to begin")
                 
                 if ocn_status == None:
-                    if self.config['site_roof_control'] != 'no' and enc_status['shutter_status'] in ['Closed', 'closed'] and g_dev['enc'].mode == 'Automatic':
+                    if self.config['site_roof_control'] != 'no' and enc_status['shutter_status'] in ['Closed', 'closed'] and g_dev['enc'].mode == 'Automatic'\
+                        and self.site_allowed_to_open_roof == True:
                         #breakpoint()
                         g_dev['enc'].open_command({}, {})
                         plog("Opening dome, will set Synchronize in 10 seconds.")
                         time.sleep(10)
                 elif self.config['site_roof_control'] != 'no' and enc_status['shutter_status'] in ['Closed', 'closed'] and g_dev['enc'].mode == 'Automatic' \
-                    and ocn_status['hold_duration'] <= 0.1:   #NB
+                    and ocn_status['hold_duration'] <= 0.1 and self.site_allowed_to_open_roof == True:   #NB
                     #breakpoint()
                     g_dev['enc'].open_command({}, {})
                     plog("Opening dome, will set Synchronize in 10 seconds.")
@@ -370,7 +376,7 @@ class Sequencer:
         elif ((g_dev['events']['Clock & Auto Focus']  <= ephem_now < g_dev['events']['Observing Begins']) and \
                g_dev['enc'].mode == 'Automatic') and not g_dev['ocn'].wx_hold:
 
-            if self.night_focus_ready==True:
+            if self.night_focus_ready==True and g_dev['obs'].open_and_enabled_to_observe:
                 g_dev['obs'].send_to_user("Beginning start of night Focus and Pointing Run", p_level='INFO')
 
                 # Move to reasonable spot
@@ -395,23 +401,24 @@ class Sequencer:
                 #opt = {'area': 150, 'count': 1, 'bin': '2, 2', 'filter': 'focus'}
                 opt = {'area': 150, 'count': 1, 'bin': 1, 'filter': 'focus'}
                 result = g_dev['cam'].expose_command(req, opt, no_AWS=False, solve_it=True)
-            self.night_focus_ready=False
+                self.night_focus_ready=False
 
         elif self.sky_flat_latch and ((events['Eve Sky Flats'] <= ephem_now < events['End Eve Sky Flats'])  \
                and g_dev['enc'].mode in [ 'Automatic', 'Autonomous'] and not g_dev['ocn'].wx_hold and \
                self.config['auto_eve_sky_flat']):
 
-            #self.time_of_next_slew = time.time() -1
-            self.enc_to_skyflat_and_open(enc_status, ocn_status)   #Just in case a Wx hold stopped opening
-            self.current_script = "Eve Sky Flat script starting"
-            #plog('Skipping Eve Sky Flats')
-            self.sky_flat_script({}, {}, morn=False)   #Null command dictionaries
-            self.sky_flat_latch = False
-            if g_dev['mnt'].mount.Tracking == False:
-                if g_dev['mnt'].mount.CanSetTracking:   
-                    g_dev['mnt'].mount.Tracking = True
-                else:
-                    plog("mount is not tracking but this mount doesn't support ASCOM changing tracking")
+            if g_dev['obs'].open_and_enabled_to_observe:
+                #self.time_of_next_slew = time.time() -1
+                self.enc_to_skyflat_and_open(enc_status, ocn_status)   #Just in case a Wx hold stopped opening
+                self.current_script = "Eve Sky Flat script starting"
+                #plog('Skipping Eve Sky Flats')
+                self.sky_flat_script({}, {}, morn=False)   #Null command dictionaries
+                self.sky_flat_latch = False
+                if g_dev['mnt'].mount.Tracking == False:
+                    if g_dev['mnt'].mount.CanSetTracking:   
+                        g_dev['mnt'].mount.Tracking = True
+                    else:
+                        plog("mount is not tracking but this mount doesn't support ASCOM changing tracking")
             
 
 # =============================================================================
@@ -422,7 +429,7 @@ class Sequencer:
         elif (events['Observing Begins'] <= ephem_now \
                                    < events['Observing Ends']) and not g_dev['ocn'].wx_hold \
                                    and  g_dev['obs'].blocks is not None and g_dev['obs'].projects \
-                                   is not None:
+                                   is not None and g_dev['obs'].open_and_enabled_to_observe:
             try:
                 
                
@@ -572,7 +579,7 @@ class Sequencer:
                 plog("Hang up in sequencer.")
         elif self.morn_sky_flat_latch and ((events['Morn Sky Flats'] <= ephem_now < events['End Morn Sky Flats'])  \
                and g_dev['enc'].mode == 'Automatic' and not g_dev['ocn'].wx_hold and \
-               self.config['auto_morn_sky_flat']):
+               self.config['auto_morn_sky_flat']) and g_dev['obs'].open_and_enabled_to_observe:
             #self.time_of_next_slew = time.time() -1
             self.enc_to_skyflat_and_open(enc_status, ocn_status)   #Just in case a Wx hold stopped opening
             self.current_script = "Morn Sky Flat script starting"

@@ -298,7 +298,16 @@ class Observatory:
         self.time_since_last_slew_or_exposure = time.time()
 
         # Only poll the broad safety checks (altitude and inactivity) every 5 minutes
-        self.time_since_safety_checks=time.time()
+        self.time_since_safety_checks=time.time() - 310.0
+        
+        # This variable is simply.... is it open and enabled to observe!
+        # This is set when the roof is open and everything is safe
+        # This allows sites without roof control or only able to shut
+        # the roof to know it is safe to observe but also ... useful
+        # to observe.... if the roof isn't open, don't get flats!
+        # Off at bootup, but that would quickly change to true after the code
+        # checks the roof status etc.
+        self.open_and_enabled_to_observe=False
 
         # Need to set this for the night log
         #g_dev['foc'].set_focal_ref_reset_log(self.config["focuser"]["focuser1"]["reference"])
@@ -307,9 +316,9 @@ class Observatory:
         
         #breakpoint()
         #breakpoint()
-        req2 = {'target': 'near_tycho_star', 'area': 150}
-        opt = {}
-        g_dev['seq'].extensive_focus_script(req2,opt)
+        #req2 = {'target': 'near_tycho_star', 'area': 150}
+        #opt = {}
+        #g_dev['seq'].extensive_focus_script(req2,opt)
 
 
     def set_last_reference(self, delta_ra, delta_dec, last_time):
@@ -844,6 +853,7 @@ class Observatory:
             if g_dev['enc'].status['shutter_status'] == 'Software Fault':
                 print ("Software Fault Detected. Will alert the authorities!")
                 print ("Parking Scope in the meantime")
+                self.open_and_enabled_to_observe=False
                 self.cancel_all_activity()
                 if not g_dev['mnt'].mount.AtPark:  
                     g_dev['mnt'].home_command()
@@ -855,6 +865,7 @@ class Observatory:
             if g_dev['enc'].status['shutter_status'] == 'Closing':
                 if self.config['site_roof_control'] != 'no' and g_dev['enc'].mode == 'Automatic':
                     print ("Detected Roof Closing. Sending another close command just in case the roof got stuck on this status (this happens!)")
+                    self.open_and_enabled_to_observe=False
                     self.cancel_all_activity()
                     g_dev['enc'].enclosure.CloseShutter()
             
@@ -876,13 +887,17 @@ class Observatory:
             
             if (g_dev['events']['Close and Park'] < ephem.now() < g_dev['events']['End Morn Bias Dark']):
                 roof_should_be_shut=True
+                self.open_and_enabled_to_observe=False
             if not self.config['auto_morn_sky_flat']:
                 if (g_dev['events']['Observing Ends'] < ephem.now() < g_dev['events']['End Morn Bias Dark']):
                     roof_should_be_shut=True
+                    self.open_and_enabled_to_observe=False
                 if (g_dev['events']['Naut Dawn'] < ephem.now() < g_dev['events']['Morn Bias Dark']):
                     roof_should_be_shut=True 
+                    self.open_and_enabled_to_observe=False
             if not (g_dev['events']['Cool Down, Open'] < ephem.now() < g_dev['events']['Close and Park']):
                 roof_should_be_shut=True 
+                self.open_and_enabled_to_observe=False
             
             
             if g_dev['enc'].status['shutter_status'] == 'Open':
@@ -890,6 +905,7 @@ class Observatory:
                     print ("Safety check found that the roof was open outside of the normal observing period")    
                     if self.config['site_roof_control'] != 'no' and g_dev['enc'].mode == 'Automatic':
                         print ("Shutting the roof out of an abundance of caution. This may also be normal functioning")
+                        
                         self.cancel_all_activity()
                         g_dev['enc'].enclosure.CloseShutter()
                         while g_dev['enc'].enclosure.ShutterStatus == 3:
@@ -901,6 +917,7 @@ class Observatory:
             if roof_should_be_shut==True and g_dev['enc'].mode == 'Automatic' : # If the roof should be shut, then the telescope should be parked. 
                 if not g_dev['mnt'].mount.AtPark:
                     print ("Telescope found not parked when the observatory is meant to be closed. Parking scope.")   
+                    self.open_and_enabled_to_observe=False
                     self.cancel_all_activity()
                     g_dev['mnt'].home_command()
                     g_dev['mnt'].park_command()  
@@ -916,8 +933,13 @@ class Observatory:
             #         if not g_dev['mnt'].mount.AtPark:  
             #             g_dev['mnt'].home_command()
             #             g_dev['mnt'].park_command()  
-                
-                
+            
+            # But after all that if everything is ok, then all is ok, it is safe to observe
+            if g_dev['enc'].status['shutter_status'] == 'Open' and roof_should_be_shut==False :
+                self.open_and_enabled_to_observe=False
+            
+            print ("Current Open and Enabled to Observe Status: " + str(self.open_and_enabled_to_observe))
+            
             # Check the mount is still connected
             g_dev['mnt'].check_connect()
             
