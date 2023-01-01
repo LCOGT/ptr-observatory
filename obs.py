@@ -1319,6 +1319,108 @@ class Observatory:
 
                                   
 
+
+                # Each image that is not a calibration frame gets it's focus examined and
+                # Recorded. In the future this is intended to trigger an auto_focus if the
+                # Focus gets wildly worse..
+                # Also the number of sources indicates whether astroalign should run.
+                if not paths["frame_type"] in [
+                    "bias",
+                    "dark",
+                    "flat",
+                    "solar",
+                    "lunar",
+                    "skyflat",
+                    "screen",
+                    "spectrum",
+                    "auto_focus",
+                ]:
+                    img = fits.open(
+                        paths["red_path"] + paths["red_name01"],
+                        mode="update",
+                        ignore_missing_end=True,
+                    )
+                    sstackimghold=img.copy()
+                    img[0].data = (
+                        img[0].data - np.min(img[0].data)
+                    ) + 100  # Add an artifical pedestal to background.
+                    img = img[0].data.astype("float")
+
+                    img = img.copy(
+                        order="C"
+                    )  # NB Should we move this up to where we read the array?
+                    bkg = sep.Background(img)
+                    img -= bkg
+
+                    try:
+                        sep.set_extract_pixstack(1000000)
+                        sources = sep.extract(
+                            img, 4.5, err=bkg.globalrms, minarea=15
+                        )  # Minarea should deal with hot pixels.
+                        sources.sort(order="cflux")
+                        plog("No. of detections:  ", len(sources))
+    
+    
+                        if len(sources) < 20:
+                            print ("skipping focus estimate as not enough sources in this image")
+
+                        else:
+                            ix, iy = img.shape
+                            #r0 = 0
+    
+                            border_x = int(ix * 0.05)
+                            border_y = int(iy * 0.05)
+                            r0 = []
+                            for sourcef in sources:
+                                if (
+                                    border_x < sourcef["x"] < ix - border_x
+                                    and border_y < sourcef["y"] < iy - border_y
+                                    and 1000 < sourcef["peak"] < 35000
+                                    and 1000 < sourcef["cpeak"] < 35000
+                                ):  # Consider a lower bound
+                                    a0 = sourcef["a"]
+                                    b0 = sourcef["b"]
+                                    r0.append(round(math.sqrt(a0 * a0 + b0 * b0)*2, 2))
+    
+                            FWHM = round(
+                                np.median(r0) * pixscale, 3
+                            )  # was 2x larger but a and b are diameters not radii
+                            print("This image has a FWHM of " + str(FWHM))
+    
+                            g_dev["foc"].focus_tracker.pop(0)
+                            g_dev["foc"].focus_tracker.append(FWHM)
+                            print("Last ten FWHM : ")
+                            print(g_dev["foc"].focus_tracker)
+                            print("Median last ten FWHM")
+                            print(np.nanmedian(g_dev["foc"].focus_tracker))
+                            print("Last solved focus FWHM")
+                            print(g_dev["foc"].last_focus_fwhm)
+
+                            # If there hasn't been a focus yet, then it can't check it, so make this image the last solved focus.
+                            if g_dev["foc"].last_focus_fwhm == None:
+                                g_dev["foc"].last_focus_fwhm = FWHM
+                            else:
+                                # Very dumb focus slip deteector
+                                if (
+                                    np.nanmedian(g_dev["foc"].focus_tracker)
+                                    > g_dev["foc"].last_focus_fwhm
+                                    + self.config["focus_trigger"]
+                                ):
+                                    g_dev["foc"].focus_needed = True
+                                    g_dev["obs"].send_to_user(
+                                        "Focus has drifted to "
+                                        + str(np.nanmedian(g_dev["foc"].focus_tracker))
+                                        + " from "
+                                        + str(g_dev["foc"].last_focus_fwhm)
+                                        + ". Autofocus triggered for next exposures.",
+                                        p_level="INFO",
+                                    )
+                    except:
+                        print ("something failed in the SEP calculations for exposure. This could be an overexposed image")
+                        print (traceback.format_exc())
+                        sources = [0]
+                        
+
                 # SmartStack Section
                 if smartstackid != "no" :
                     
