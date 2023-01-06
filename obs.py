@@ -936,7 +936,7 @@ class Observatory:
             
             # But after all that if everything is ok, then all is ok, it is safe to observe
             if g_dev['enc'].status['shutter_status'] == 'Open' and roof_should_be_shut==False :
-                self.open_and_enabled_to_observe=False
+                self.open_and_enabled_to_observe=True
             
             print ("Current Open and Enabled to Observe Status: " + str(self.open_and_enabled_to_observe))
             
