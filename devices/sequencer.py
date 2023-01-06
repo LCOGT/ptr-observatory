@@ -2556,7 +2556,7 @@ class Sequencer:
             plog(traceback.format_exc())
             breakpoint()
         
-        if req['target'] == 'near_tycho_star':   ## 'bin', 'area'  Other parameters
+        if True: #req['target'] == 'near_tycho_star':   ## 'bin', 'area'  Other parameters
             #  Go to closest Mag 7.5 Tycho * with no flip
             #focus_star = tycho.dist_sort_targets(g_dev['mnt'].current_icrs_ra, g_dev['mnt'].current_icrs_dec, \
             #                        g_dev['mnt'].current_sidereal)

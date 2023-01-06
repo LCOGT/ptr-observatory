@@ -869,19 +869,19 @@ class Observatory:
                     self.cancel_all_activity()
                     g_dev['enc'].enclosure.CloseShutter()
             
-            # if g_dev['enc'].status['shutter_status'] == 'Error':
-            #     if self.config['site_roof_control'] != 'no' and g_dev['enc'].mode == 'Automatic':
-            #         print ("Detected an Error in the Roof Status. Closing up for safety.")
-            #         print ("This is usually because the weather system forced the roof to shut.")
-            #         print ("By closing it again, it resets the switch to closed.")
-            #         self.cancel_all_activity()
-            #         g_dev['enc'].enclosure.CloseShutter()
-            #         #while g_dev['enc'].enclosure.ShutterStatus == 3:
-            #         #print ("closing")
-            #         print ("Also Parking the Scope")    
-            #         if not g_dev['mnt'].mount.AtPark:  
-            #             g_dev['mnt'].home_command()
-            #             g_dev['mnt'].park_command()  
+            if g_dev['enc'].status['shutter_status'] == 'Error':
+                if self.config['site_roof_control'] != 'no' and g_dev['enc'].mode == 'Automatic':
+                    print ("Detected an Error in the Roof Status. Closing up for safety.")
+                    print ("This is usually because the weather system forced the roof to shut.")
+                    print ("By closing it again, it resets the switch to closed.")
+                    self.cancel_all_activity()
+                    g_dev['enc'].enclosure.CloseShutter()
+                    #while g_dev['enc'].enclosure.ShutterStatus == 3:
+                    #print ("closing")
+                    print ("Also Parking the Scope")    
+                    if not g_dev['mnt'].mount.AtPark:  
+                        g_dev['mnt'].home_command()
+                        g_dev['mnt'].park_command()  
 
             roof_should_be_shut=False
             

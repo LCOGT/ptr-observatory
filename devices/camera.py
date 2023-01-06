@@ -571,8 +571,10 @@ class Camera:
         plog(self.camera.IsExposureComplete)
         return self.camera.IsExposureComplete
 
-    def _theskyx_getImageArray(self):        
-        return fits.open(self.camera.LastImageFileName, uint=False)[0].data.astype("float32")
+    def _theskyx_getImageArray(self): 
+        imageTempOpen=fits.open(self.camera.LastImageFileName, uint=False)[0].data.astype("float32")
+        os.remove(self.camera.LastImageFileName)
+        return imageTempOpen
 
     def _maxim_connected(self):
         return self.camera.LinkEnabled
