@@ -500,8 +500,8 @@ site_config = {
     'camera': {
         'camera_1_1': {
             'parent': 'telescope1',
-            'name': 'sq002ms',      # Important because this points to a server file structure by that name.
-            'desc':  'QHY 600Pro',
+            'name': 'sq001cs',      # Important because this points to a server file structure by that name.
+            'desc':  'QHY 600Pro Color',
             'service_date': '20211111',
             'driver': "ASCOM.QHYCCD_CAM2.Camera", #"Maxim.CCDCamera",  # "ASCOM.QHYCCD.Camera", ## 'ASCOM.FLI.Kepler.Camera',
             'detector':  'Sony IMX455',
@@ -511,7 +511,7 @@ site_config = {
 
 
             'settings': {
-                'is_osc' : False,
+                'is_osc' : True,
                 
                 'transpose_fits' : False,
                 'transpose_jpeg' : True,
@@ -521,8 +521,8 @@ site_config = {
                 'crop_preview_ytop': 1,
                 'crop_preview_xleft': 1,
                 'crop_preview_xright': 1,
-                'temp_setpoint': -12.5,
-                'calib_setpoints': [-12.5, -10, -7.5, -5],  # Should vary with season? by day-of-year mod len(list)
+                'temp_setpoint': -20,
+                'calib_setpoints': [-20, -10, -7.5, -5],  # Should vary with season? by day-of-year mod len(list)
                 'day_warm': False,
                 'cooler_on': True,
                 'x_start':  0,

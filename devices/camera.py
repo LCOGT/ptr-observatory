@@ -272,7 +272,7 @@ class Camera:
 
         if driver[:5].lower() == "ascom":
             plog("ASCOM camera is initializing.")
-            breakpoint()
+
             self._connected = self._ascom_connected
             self._connect = self._ascom_connect
             self._set_setpoint = self._ascom_set_setpoint
