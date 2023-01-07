@@ -198,8 +198,14 @@ class Sequencer:
             
         # Load up focus catalogue
         self.focus_catalogue = np.genfromtxt('support_info/focusCatalogue.csv', delimiter=',')
-        
 
+        # This variable prevents the roof being called to open every loop... currently set to 5 minutes.        
+        self.enclosure_next_open_time = time.time()
+        # This keeps a track of how many times the roof has been open this evening
+        # Which is really a measure of how many times the observatory has
+        # attempted to observe but been shut on....
+        # If it is too many, then it shuts down for the whole evening. 
+        self.opens_this_evening = 0
 
     def get_status(self):
         status = {
@@ -368,12 +374,16 @@ class Sequencer:
             
             g_dev['mnt'].park_command({}, {})
 
-        elif ((g_dev['events']['Cool Down, Open']  <= ephem_now < g_dev['events']['Eve Sky Flats']) and \
+        elif ((g_dev['events']['Cool Down, Open']  <= ephem_now < g_dev['events']['Observing Ends']) and \
                g_dev['enc'].mode == 'Automatic') and not g_dev['ocn'].wx_hold:
 
             #self.time_of_next_slew = time.time() -1
             #print ("got here")
-            self.enc_to_skyflat_and_open(enc_status, ocn_status)
+            if not g_dev['obs'].open_and_enabled_to_observe:
+                if time.time() > self.enclosure_next_open_time and self.opens_this_evening < 4:
+                    self.enclosure_next_open_time = time.time() + 300 # Only try to open the roof every five minutes
+                    self.enc_to_skyflat_and_open(enc_status, ocn_status)
+                    self.opens_this_evening= self.opens_this_evening+1
             self.night_focus_ready=True
 
         elif ((g_dev['events']['Clock & Auto Focus']  <= ephem_now < g_dev['events']['Observing Begins']) and \
@@ -1337,6 +1347,8 @@ class Sequencer:
         
         g_dev['mnt'].theskyx_tracking_rescues = 0
 
+        self.opens_this_evening=0
+    
         # No harm in doubly checking it has parked
         g_dev['mnt'].park_command({}, {})
 
