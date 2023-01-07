@@ -806,7 +806,7 @@ class Enclosure:
                         plog("An open command was sent, but this site is not allowed to open the roof (site-config)")
                 except:
                     plog("Attempt to open roof/shutter failed at quarded_open command.")
-                    g_dev['obs'].send_to_user("Roof/hutter failed to open.", p_level='INFO')
+                    g_dev['obs'].send_to_user("Roof/Shutter failed to open.", p_level='INFO')
                    # self.redis_server.set('Shutter_is_open', False)
                     return False
             return False

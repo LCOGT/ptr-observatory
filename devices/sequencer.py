@@ -300,15 +300,24 @@ class Sequencer:
                         and self.config['site_allowed_to_open_roof'] == 'yes':
                         #breakpoint()
                         g_dev['enc'].open_command({}, {})
-                        plog("Opening dome, will set Synchronize in 10 seconds.")
-                        time.sleep(10)
+                        plog("Opening dome.")
+                        #time.sleep(10)
+                        while g_dev['enc'].enclosure.ShutterStatus == 2:
+                            time.sleep(5)                            
+                        if g_dev['enc'].enclosure.ShutterStatus == 0:
+                            self.opens_this_evening= self.opens_this_evening+1
                 elif self.config['site_roof_control'] != 'no' and enc_status['shutter_status'] in ['Closed', 'closed'] and g_dev['enc'].mode == 'Automatic' \
                     and ocn_status['hold_duration'] <= 0.1 and self.config['site_allowed_to_open_roof'] == 'yes':   #NB
                     #breakpoint()
                     g_dev['enc'].open_command({}, {})
-                    plog("Opening dome, will set Synchronize in 10 seconds.")
-                    time.sleep(10)
+                    plog("Opening dome.")
+                    #time.sleep(10)
+                    while g_dev['enc'].enclosure.ShutterStatus == 2:
+                            time.sleep(5)                            
+                    if g_dev['enc'].enclosure.ShutterStatus == 0:
+                        self.opens_this_evening= self.opens_this_evening+1
                 try:
+                    plog("Synchronising dome.")
                     g_dev['enc'].sync_mount_command({}, {})
                 except:
                     pass
@@ -374,7 +383,7 @@ class Sequencer:
             
             g_dev['mnt'].park_command({}, {})
 
-        elif ((g_dev['events']['Cool Down, Open']  <= ephem_now < g_dev['events']['Observing Ends']) and \
+        elif ((g_dev['events']['Cool Down, Open']  <= ephem_now < g_dev['events']['Eve Sky Flats']) and \
                g_dev['enc'].mode == 'Automatic') and not g_dev['ocn'].wx_hold:
 
             #self.time_of_next_slew = time.time() -1
@@ -383,7 +392,8 @@ class Sequencer:
                 if time.time() > self.enclosure_next_open_time and self.opens_this_evening < 4:
                     self.enclosure_next_open_time = time.time() + 300 # Only try to open the roof every five minutes
                     self.enc_to_skyflat_and_open(enc_status, ocn_status)
-                    self.opens_this_evening= self.opens_this_evening+1
+                    
+                    
             self.night_focus_ready=True
 
         elif ((g_dev['events']['Clock & Auto Focus']  <= ephem_now < g_dev['events']['Observing Begins']) and \
