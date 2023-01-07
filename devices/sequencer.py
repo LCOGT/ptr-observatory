@@ -276,26 +276,28 @@ class Sequencer:
             flat_spot, flat_alt = g_dev['evnt'].flat_spot_now()
 
             try:
-                if not no_sky and self.open_and_enabled_to_observe:
-                    
-                    if g_dev['mnt'].mount.AtParK:
-                        g_dev['mnt'].unpark_command({}, {})
-                    
-                    g_dev['mnt'].slewToSkyFlatAsync()
-                    self.time_of_next_slew = time.time() + 600 
-                    #time.sleep(10)
+                
+               
+                # First unpark and move telescope away from the sun.    
+                plog("Unparking Scope and pointing it opposite the sun.")
+                if g_dev['mnt'].mount.AtParK:
+                    g_dev['mnt'].unpark_command({}, {})
+                
+                g_dev['mnt'].slewToSkyFlatAsync()
+                self.time_of_next_slew = time.time() + 600 
+                #time.sleep(10)
                 plog("Open and slew Dome to azimuth opposite the Sun:  ", round(flat_spot, 1))
                 plog("Cooling down and waiting for skyflat / observing to begin")
-                
+                #breakpoint()
                 if ocn_status == None:
                     if self.config['site_roof_control'] != 'no' and enc_status['shutter_status'] in ['Closed', 'closed'] and g_dev['enc'].mode == 'Automatic'\
-                        and self.site_allowed_to_open_roof == True:
+                        and self.config['site_allowed_to_open_roof'] == 'yes':
                         #breakpoint()
                         g_dev['enc'].open_command({}, {})
                         plog("Opening dome, will set Synchronize in 10 seconds.")
                         time.sleep(10)
                 elif self.config['site_roof_control'] != 'no' and enc_status['shutter_status'] in ['Closed', 'closed'] and g_dev['enc'].mode == 'Automatic' \
-                    and ocn_status['hold_duration'] <= 0.1 and self.site_allowed_to_open_roof == True:   #NB
+                    and ocn_status['hold_duration'] <= 0.1 and self.config['site_allowed_to_open_roof'] == 'yes':   #NB
                     #breakpoint()
                     g_dev['enc'].open_command({}, {})
                     plog("Opening dome, will set Synchronize in 10 seconds.")
@@ -370,6 +372,7 @@ class Sequencer:
                g_dev['enc'].mode == 'Automatic') and not g_dev['ocn'].wx_hold:
 
             #self.time_of_next_slew = time.time() -1
+            #print ("got here")
             self.enc_to_skyflat_and_open(enc_status, ocn_status)
             self.night_focus_ready=True
 
