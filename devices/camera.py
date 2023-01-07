@@ -573,7 +573,10 @@ class Camera:
 
     def _theskyx_getImageArray(self): 
         imageTempOpen=fits.open(self.camera.LastImageFileName, uint=False)[0].data.astype("float32")
-        os.remove(self.camera.LastImageFileName)
+        try:
+            os.remove(self.camera.LastImageFileName)
+        except Exception as e:
+            print ("Could not remove theskyx image file: ",e)
         return imageTempOpen
 
     def _maxim_connected(self):
