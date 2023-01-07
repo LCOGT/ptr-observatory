@@ -3163,7 +3163,8 @@ class Camera:
                                     )
                             else:
                                 print ("Platesolve wasn't attempted due to lack of sources (or sometimes too many!)")
-                                self.to_slow_process(2000,('focus', cal_path + cal_name, hdufocusdata, hdu.header, \
+                                if self.config['keep_focus_images_on_disk']:
+                                    self.to_slow_process(2000,('focus', cal_path + cal_name, hdufocusdata, hdu.header, \
                                                            frame_type))
                                 del hdufocusdata
                                 
@@ -3184,7 +3185,8 @@ class Camera:
         
                     # Similarly to the above. This saves the RAW file to disk
                     # it works 99.9999% of the time.
-                    self.to_slow_process(1000,('raw', raw_path + raw_name00, hdu.data, hdu.header, frame_type))
+                    if self.config['save_raw_to_disk']:
+                        self.to_slow_process(1000,('raw', raw_path + raw_name00, hdu.data, hdu.header, frame_type))
                     
                     # Similarly to the above. This saves the REDUCED file to disk
                     # it works 99.9999% of the time.
@@ -3194,7 +3196,7 @@ class Camera:
                             #print ("Binning 1x1 to " + str(self.bin))
                             hdureduceddata=(block_reduce(hdureduceddata,self.bin)) 
                         
-                        if smartstackid == 'no':
+                        if smartstackid == 'no' and self.config['keep_reduced_on_disk']:
                             self.to_slow_process(1000,('reduced', red_path + red_name01, hdureduceddata, hdu.header, \
                                                        frame_type))
                         else:

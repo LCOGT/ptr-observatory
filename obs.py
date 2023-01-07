@@ -1446,6 +1446,12 @@ class Observatory:
                         ssframenumber = str(img[0].header["FRAMENUM"])
                         img.close()
                         del img
+                        if not self.config['keep_reduced_on_disk']:
+                            try:
+                                os.remove(paths["red_path"] + paths["red_name01"])
+                            except Exception as e:
+                                print ("could not remove temporary reduced file: ",e)
+                        
                         sstackimghold=np.array(imgdata)  
 
                     print ("Number of sources just prior to smartstacks: " + str(len(sources)))
