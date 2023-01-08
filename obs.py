@@ -184,7 +184,7 @@ class Observatory:
         self.project_call_timer = time.time()
         self.get_new_job_timer = time.time()
         self.status_upload_time = 0.5
-
+        self.command_busy=False
         # Instantiate the helper class for astronomical events
         # Soon the primary event / time values can come from AWS.
         self.astro_events = ptr_events.Events(self.config)
@@ -284,6 +284,8 @@ class Observatory:
         self.reset_last_reference()
         self.env_exists = os.path.exists(os.getcwd() + '\.env')  # Boolean, check if .env present
 
+        # Get initial coordinates into the global system
+        g_dev['mnt'].get_mount_coordinates()
 
         # If mount is permissively set, reset mount reference
         # This is necessary for SRO and it seems for ECO
@@ -296,7 +298,16 @@ class Observatory:
         self.time_since_last_slew_or_exposure = time.time()
 
         # Only poll the broad safety checks (altitude and inactivity) every 5 minutes
-        self.time_since_safety_checks=time.time()
+        self.time_since_safety_checks=time.time() - 310.0
+        
+        # This variable is simply.... is it open and enabled to observe!
+        # This is set when the roof is open and everything is safe
+        # This allows sites without roof control or only able to shut
+        # the roof to know it is safe to observe but also ... useful
+        # to observe.... if the roof isn't open, don't get flats!
+        # Off at bootup, but that would quickly change to true after the code
+        # checks the roof status etc.
+        self.open_and_enabled_to_observe=False
 
         # Need to set this for the night log
         #g_dev['foc'].set_focal_ref_reset_log(self.config["focuser"]["focuser1"]["reference"])
@@ -304,7 +315,10 @@ class Observatory:
         self.update_config()   #This is the never-ending control loop
         
         #breakpoint()
-
+        #breakpoint()
+        #req2 = {'target': 'near_tycho_star', 'area': 150}
+        #opt = {}
+        #g_dev['seq'].extensive_focus_script(req2,opt)
 
 
     def set_last_reference(self, delta_ra, delta_dec, last_time):
@@ -407,6 +421,42 @@ class Observatory:
             print ("Response to site config upload unclear. Here is the response")
             print (response)
 
+    def cancel_all_activity(self):
+        
+
+        g_dev["obs"].stop_all_activity = True
+        plog("Stop_all_activity is now set True.")
+        self.send_to_user(
+            "Cancel/Stop received. Exposure stopped, camera may begin readout, then will discard image."
+        )
+        self.send_to_user(
+            "Pending reductions and transfers to the PTR Archive are not affected."
+        )
+        # Now we need to cancel possibly a pending camera cycle or a
+        # script running in the sequencer.  NOTE a stop or cancel empties outgoing queue at AWS side and 
+        # only a Cancel/Stop action is sent.  But we need to same any subsequent commands.
+        #try:
+        plog ("Emptying Command Queue")
+        with self.cmd_queue.mutex:
+            self.cmd_queue.queue.clear()
+            
+        
+        plog("Stopping Exposure")
+        try:
+            #if g_dev["cam"].exposure_busy:            
+            g_dev["cam"]._stop_expose()                # Should we try to flush the image array?                
+            g_dev["cam"].exposure_busy = False
+        except Exception as e:
+            plog("Camera is not busy.", e)
+        #except:
+        #    plog("Camera stop faulted.")
+        
+        
+        #while self.cmd_queue.qsize() > 0:
+        #    plog("Deleting Job:  ", self.cmd_queue.get())
+        
+        #return  # Note we basically do nothing and let camera, etc settle down.
+
     def scan_requests(self, cancel_check=False):
         """Gets commands from AWS, and post a STOP/Cancel flag.
 
@@ -454,32 +504,8 @@ class Observatory:
 
                     for cmd in unread_commands:
                         if cmd["action"] in ["cancel_all_commands", "stop"]:
-                            g_dev["obs"].stop_all_activity = True
-                            plog("Stop_all_activity is now set True.")
-                            self.send_to_user(
-                                "Cancel/Stop received. Exposure stopped, camera may begin readout, then will discard image."
-                            )
-                            self.send_to_user(
-                                "Pending reductions and transfers to the PTR Archive are not affected."
-                            )
-                            # Now we need to cancel possibly a pending camera cycle or a
-                            # script running in the sequencer.  NOTE a stop or cancel empties outgoing queue at AWS side and 
-                            # only a Cancel/Stop action is sent.  But we need to same any subsequent commands.
-                            try:
-                                if g_dev["cam"].exposure_busy:
-                                    
-                                    g_dev["cam"]._stop_expose()
-                                    # Should we try to flush the image array?
-                                    g_dev["obs"].stop_all_activity = True
-                                    g_dev["cam"].exposure_busy = False
-                                else:
-                                    plog("Camera is not busy.")
-                            except:
-                                plog("Camera stop faulted.")
-                            while self.cmd_queue.qsize() > 0:
-                                plog("Deleting Job:  ", self.cmd_queue.get())
-                            
-                            #return  # Note we basically do nothing and let camera, etc settle down.
+                            self.cancel_all_acivity() # Hi Wayne, I have to cancel all acitivity with some roof stuff
+                            # So I've moved the cancelling to it's own function just above so it can be called from multiple locations.
                         else:
                             self.cmd_queue.put(cmd)  # SAVE THE COMMAND FOR LATER
                             g_dev["obs"].stop_all_activity = False
@@ -496,46 +522,49 @@ class Observatory:
                 # rotator as the exposure routine in camera.py already waits for that.                
                 #if (not g_dev["cam"].exposure_busy) and (not g_dev['mnt'].mount.Slewing):
                 if (not g_dev["cam"].exposure_busy):
-                    while self.cmd_queue.qsize() > 0:
-                        self.send_to_user(
-                            "Number of queued commands:  " + str(self.cmd_queue.qsize())
-                        )
-                        cmd = self.cmd_queue.get()
-                        # This code is redundant
-                        if self.config["selector"]["selector1"]["driver"] is None:
-                            port = cmd["optional_params"]["instrument_selector_position"]
-                            g_dev["mnt"].instrument_port = port
-                            cam_name = self.config["selector"]["selector1"]["cameras"][port]
-                            if cmd["deviceType"][:6] == "camera":
-                                # Note camelCase is the format of command keys
-                                cmd["required_params"]["deviceInstance"] = cam_name
-                                cmd["deviceInstance"] = cam_name
-                                device_instance = cam_name
-                            else:
-                                try:
+                    while self.cmd_queue.qsize() > 0:                        
+                        if not self.command_busy: # This is to stop multiple commands running over the top of each other.
+                            self.command_busy=True
+                            self.send_to_user(
+                                "Number of queued commands:  " + str(self.cmd_queue.qsize())
+                            )
+                            cmd = self.cmd_queue.get()
+                            # This code is redundant
+                            if self.config["selector"]["selector1"]["driver"] is None:
+                                port = cmd["optional_params"]["instrument_selector_position"]
+                                g_dev["mnt"].instrument_port = port
+                                cam_name = self.config["selector"]["selector1"]["cameras"][port]
+                                if cmd["deviceType"][:6] == "camera":
+                                    # Note camelCase is the format of command keys
+                                    cmd["required_params"]["deviceInstance"] = cam_name
+                                    cmd["deviceInstance"] = cam_name
+                                    device_instance = cam_name
+                                else:
                                     try:
-                                        device_instance = cmd["deviceInstance"]
+                                        try:
+                                            device_instance = cmd["deviceInstance"]
+                                        except:
+                                            device_instance = cmd["required_params"][
+                                                "deviceInstance"
+                                            ]
                                     except:
-                                        device_instance = cmd["required_params"][
-                                            "deviceInstance"
-                                        ]
-                                except:
-                                    pass
-                        else:
-                            device_instance = cmd["deviceInstance"]
-                        plog("obs.scan_request: ", cmd)
-    
-                        device_type = cmd["deviceType"]
-                        device = self.all_devices[device_type][device_instance]
-                        try:
-                            #plog("Trying to parse:  ", cmd)
-    
-                            device.parse_command(cmd)
-                        except Exception as e:
-    
-                            plog(traceback.format_exc())
-    
-                            plog("Exception in obs.scan_requests:  ", e, 'cmd:  ', cmd)
+                                        pass
+                            else:
+                                device_instance = cmd["deviceInstance"]
+                            plog("obs.scan_request: ", cmd)
+        
+                            device_type = cmd["deviceType"]
+                            device = self.all_devices[device_type][device_instance]
+                            try:
+                                #plog("Trying to parse:  ", cmd)
+        
+                                device.parse_command(cmd)
+                            except Exception as e:
+        
+                                plog(traceback.format_exc())
+        
+                                plog("Exception in obs.scan_requests:  ", e, 'cmd:  ', cmd)
+                            self.command_busy=False
                             
                  
                 # TO KEEP THE REAL-TIME USE A BIT SNAPPIER, POLL FOR NEW PROJECTS ON A MUCH SLOWER TIMESCALE
@@ -762,7 +791,7 @@ class Observatory:
         # NB should qualify acceptance and type '.' at that point.
         self.time_last_status = time.time()
         self.status_count += 1
-    
+        #breakpoint()
         
         
 
@@ -811,35 +840,107 @@ class Observatory:
         if time.time() - self.time_since_safety_checks > 300:
             self.time_since_safety_checks=time.time()
             
-            
-            # 5 minute roof check - middle of the daytime check
             #breakpoint()
-            
+
             # If the shutter is open, check it is meant to be.
-            # Very very roughly, it does it by hour
             # This is just a brute force overriding safety check.
-            print (g_dev['enc'].status['shutter_status'])
+            # Opening and Shutting should be done more glamorously through the
+            # sequencer, but if all else fails, this routine should save
+            # the observatory from rain, wasps and acts of god.
+            print ("Roof Status: " + str(g_dev['enc'].status['shutter_status']))
+            
+            
+            if g_dev['enc'].status['shutter_status'] == 'Software Fault':
+                print ("Software Fault Detected. Will alert the authorities!")
+                print ("Parking Scope in the meantime")
+                self.open_and_enabled_to_observe=False
+                self.cancel_all_activity()
+                if not g_dev['mnt'].mount.AtPark:  
+                    g_dev['mnt'].home_command()
+                    g_dev['mnt'].park_command()
+                # will send a Close call out into the blue just in case it catches
+                g_dev['enc'].enclosure.CloseShutter()
+                
+            
+            if g_dev['enc'].status['shutter_status'] == 'Closing':
+                if self.config['site_roof_control'] != 'no' and g_dev['enc'].mode == 'Automatic':
+                    print ("Detected Roof Closing. Sending another close command just in case the roof got stuck on this status (this happens!)")
+                    self.open_and_enabled_to_observe=False
+                    self.cancel_all_activity()
+                    g_dev['enc'].enclosure.CloseShutter()
             
             if g_dev['enc'].status['shutter_status'] == 'Error':
-                print ("Detected an Error in the Roof Status. Closing up for safety.")
-                print ("This is usually because the weather system forced the roof to shut.")
-                print ("By closing it again, it resets the switch to closed.")
-                g_dev['enc'].enclosure.CloseShutter()
-                while g_dev['enc'].enclosure.ShutterStatus == 3:
-                    print ("closing")
+                if self.config['site_roof_control'] != 'no' and g_dev['enc'].mode == 'Automatic':
+                    print ("Detected an Error in the Roof Status. Closing up for safety.")
+                    print ("This is usually because the weather system forced the roof to shut.")
+                    print ("By closing it again, it resets the switch to closed.")
+                    self.cancel_all_activity()
+                    g_dev['enc'].enclosure.CloseShutter()
+                    #while g_dev['enc'].enclosure.ShutterStatus == 3:
+                    #print ("closing")
+                    print ("Also Parking the Scope")    
+                    if not g_dev['mnt'].mount.AtPark:  
+                        g_dev['mnt'].home_command()
+                        g_dev['mnt'].park_command()  
 
+            roof_should_be_shut=False
+            
+            if (g_dev['events']['Close and Park'] < ephem.now() < g_dev['events']['End Morn Bias Dark']):
+                roof_should_be_shut=True
+                self.open_and_enabled_to_observe=False
+            if not self.config['auto_morn_sky_flat']:
+                if (g_dev['events']['Observing Ends'] < ephem.now() < g_dev['events']['End Morn Bias Dark']):
+                    roof_should_be_shut=True
+                    self.open_and_enabled_to_observe=False
+                if (g_dev['events']['Naut Dawn'] < ephem.now() < g_dev['events']['Morn Bias Dark']):
+                    roof_should_be_shut=True 
+                    self.open_and_enabled_to_observe=False
+            if not (g_dev['events']['Cool Down, Open'] < ephem.now() < g_dev['events']['Close and Park']):
+                roof_should_be_shut=True 
+                self.open_and_enabled_to_observe=False
             
             
             if g_dev['enc'].status['shutter_status'] == 'Open':
-
-                if not (g_dev['events']['Cool Down, Open'] < ephem.now() < g_dev['events']['Close and Park']):
+                if roof_should_be_shut==True :
                     print ("Safety check found that the roof was open outside of the normal observing period")    
-                    print ("Dhutting the roof out of an abundance of caution.")
-                    g_dev['enc'].enclosure.CloseShutter()
-                    while g_dev['enc'].enclosure.ShutterStatus == 3:
-                        print ("closing")
+                    if self.config['site_roof_control'] != 'no' and g_dev['enc'].mode == 'Automatic':
+                        print ("Shutting the roof out of an abundance of caution. This may also be normal functioning")
+                        
+                        self.cancel_all_activity()
+                        g_dev['enc'].enclosure.CloseShutter()
+                        while g_dev['enc'].enclosure.ShutterStatus == 3:
+                            print ("closing")
+                            time.sleep(3)
+                    else:
+                        print ("This scope does not have control of the roof though.")
                 
-                
+            
+            if roof_should_be_shut==True and g_dev['enc'].mode == 'Automatic' : # If the roof should be shut, then the telescope should be parked. 
+                if not g_dev['mnt'].mount.AtPark:
+                    print ("Telescope found not parked when the observatory is meant to be closed. Parking scope.")   
+                    self.open_and_enabled_to_observe=False
+                    self.cancel_all_activity()
+                    g_dev['mnt'].home_command()
+                    g_dev['mnt'].park_command()  
+            
+            # if g_dev['enc'].status['shutter_status'] == 'Open':
+            #     self.config['mount']'auto_morn_sky_flat': False,
+            #     if (g_dev['events']['Close and Park'] < ephem.now() < g_dev['events']['End Morn Bias Dark']):
+            #         print ("Safety check found that it is in the period where the observatory should be closing up")    
+            #         print ("Checking on the dome being closed and the telescope at park.")                    
+            #         g_dev['enc'].enclosure.CloseShutter()
+            #         while g_dev['enc'].enclosure.ShutterStatus == 3:
+            #             print ("closing")
+            #         if not g_dev['mnt'].mount.AtPark:  
+            #             g_dev['mnt'].home_command()
+            #             g_dev['mnt'].park_command()  
+            
+            # But after all that if everything is ok, then all is ok, it is safe to observe
+            if g_dev['enc'].status['shutter_status'] == 'Open' and roof_should_be_shut==False :
+                self.open_and_enabled_to_observe=True
+            
+            print ("Current Open and Enabled to Observe Status: " + str(self.open_and_enabled_to_observe))
+            
             # Check the mount is still connected
             g_dev['mnt'].check_connect()
             
@@ -849,7 +950,8 @@ class Observatory:
                 lowest_acceptable_altitude= self.config['mount']['mount1']['lowest_acceptable_altitude'] 
                 if mount_altitude < lowest_acceptable_altitude:
                     print ("Altitude too low! " + str(mount_altitude) + ". Parking scope for safety!")
-                    if not g_dev['mnt'].mount.AtPark:  
+                    if not g_dev['mnt'].mount.AtPark:
+                        self.cancel_all_activity()
                         g_dev['mnt'].home_command()
                         g_dev['mnt'].park_command()  
                         # Reset mount reference because thats how it probably got pointing at the dirt in the first place!
@@ -1345,6 +1447,12 @@ class Observatory:
                         ssframenumber = str(img[0].header["FRAMENUM"])
                         img.close()
                         del img
+                        if not self.config['keep_reduced_on_disk']:
+                            try:
+                                os.remove(paths["red_path"] + paths["red_name01"])
+                            except Exception as e:
+                                print ("could not remove temporary reduced file: ",e)
+                        
                         sstackimghold=np.array(imgdata)  
 
                     print ("Number of sources just prior to smartstacks: " + str(len(sources)))
@@ -1461,25 +1569,68 @@ class Observatory:
                         stretched_data_uint8[cold] = 0
     
                         iy, ix = stretched_data_uint8.shape
-                        stretched_data_uint8 = Image.fromarray(stretched_data_uint8)
-        
+                        final_image = Image.fromarray(stretched_data_uint8)
+                        # These steps flip and rotate the jpeg according to the settings in the site-config for this camera
+                        if self.config["camera"][g_dev['cam'].name]["settings"]["transpose_jpeg"]:
+                            final_image=final_image.transpose(Image.TRANSPOSE)
+                        if self.config["camera"][g_dev['cam'].name]["settings"]['flipx_jpeg']:
+                            final_image=final_image.transpose(Image.FLIP_LEFT_RIGHT)
+                        if self.config["camera"][g_dev['cam'].name]["settings"]['flipy_jpeg']:
+                            final_image=final_image.transpose(Image.FLIP_TOP_BOTTOM)
+                        if self.config["camera"][g_dev['cam'].name]["settings"]['rotate180_jpeg']:
+                            final_image=final_image.transpose(Image.ROTATE_180)
+                        if self.config["camera"][g_dev['cam'].name]["settings"]['rotate90_jpeg']:
+                            final_image=final_image.transpose(Image.ROTATE_90)
+                        if self.config["camera"][g_dev['cam'].name]["settings"]['rotate270_jpeg']:
+                            final_image=final_image.transpose(Image.ROTATE_270)
+                            
+                        # Detect the pierside and if it is one way, rotate the jpeg 180 degrees
+                        # to maintain the orientation. whether it is 1 or 0 that is flipped
+                        # is sorta arbitrary... you'd use the site-config settings above to 
+                        # set it appropriately and leave this alone.
+                        if g_dev['mnt'].pier_side == 1:
+                            final_image=final_image.transpose(Image.ROTATE_180)
+                        
+
+                        # Resizing the array to an appropriate shape for the jpg and the small fits
+                        
+                
                         if iy == ix:
-
-                            stretched_data_uint8 = stretched_data_uint8.resize(
-                                         (900, 900)
-                                    )
+                            # hdusmalldata = resize(
+                            #     hdusmalldata, (1280, 1280), preserve_range=True
+                            # )
+                            final_image = final_image.resize(
+                                 (900, 900)
+                            )
                         else:
-
-                            stretched_data_uint8 = stretched_data_uint8.resize(
-                                        
-                                        (int(900 * iy / ix), 900)
-                                        
-                                    ) 
-           
-                        stretched_data_uint8=stretched_data_uint8.transpose(Image.TRANSPOSE) # Not sure why it transposes on array creation ... but it does!
-                        stretched_data_uint8.save(
+                            # stretched_data_uint8 = resize(
+                            #     stretched_data_uint8,
+                            #     (int(1536 * iy / ix), 1536),
+                            #     preserve_range=True,
+                            # )
+                            # stretched_data_uint8 = resize(
+                            #     stretched_data_uint8,
+                            #     (int(900 * iy / ix), 900),
+                            #     preserve_range=True,
+                            # ) 
+                            if self.config["camera"][g_dev['cam'].name]["settings"]["squash_on_x_axis"]:
+                                final_image = final_image.resize(
+                                    
+                                    (int(900 * iy / ix), 900)
+                                    
+                                ) 
+                            else:
+                                final_image = final_image.resize(
+                                    
+                                    (900, int(900 * iy / ix))
+                                    
+                                ) 
+                        #stretched_data_uint8=stretched_data_uint8.transpose(Image.TRANSPOSE) # Not sure why it transposes on array creation ... but it does!
+                        final_image.save(
                             paths["im_path"] + paths["jpeg_name10"]
                         )
+                        del final_image
+                    
                             
 
                         
@@ -1780,8 +1931,10 @@ class Observatory:
                                 final_image.resize((900, 900))
                             else:
                                 #final_image.resize((int(1536 * iy / ix), 1536))
-                                final_image.resize((int(900 * iy / ix), 900))
-                            
+                                if self.config["camera"][g_dev['cam'].name]["settings"]["squash_on_x_axis"]:
+                                    final_image.resize((int(900 * iy / ix), 900))
+                                else:
+                                    final_image.resize(900, (int(900 * iy / ix)))
                             
                                 
                             final_image.save(

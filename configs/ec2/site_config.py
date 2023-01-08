@@ -43,6 +43,9 @@ site_config = {
     'archive_path':  'C:/ptr/',  # Meant to be where /archive/<camera_id> is added by camera.
     'archive_age' : 2.0, # Number of days to keep files in the local archive before deletion. Negative means never delete
     'send_files_at_end_of_night' : 'no', # For low bandwidth sites, do not send up large files until the end of the night. set to 'no' to disable
+    'save_raw_to_disk' : False, # For low diskspace sites (or just because they aren't needed), don't save a separate raw file to disk after conversion to fz.    
+    'keep_focus_images_on_disk' : False, # To save space, the focus file can not be saved.
+    
     'aux_archive_path':  None, # '//house-computer/saf_archive_2/archive/',  #  Path to auxillary backup disk.
     'wema_is_active':  False,    #True if split computers used at a site.
     'wema_hostname':  [],  #  Prefer the shorter version
@@ -51,9 +54,10 @@ site_config = {
     'wema_write_share_path':  None,   # This and below provide two different ways to define
     'client_read_share_path':  None,  #     a path to a network share.
     'redis_ip': None,  #'127.0.0.1', None if no redis path present,
-    'site_is_generic':  False,   # A simple single computer ASCOM site.
-    'site_is_specific':  True,  # Indicates some special code for this site, found at end of config.
-
+    'site_is_generic':  True,   # A simple single computer ASCOM site.
+    'site_is_specific':  False,  # Indicates some special code for this site, found at end of config.
+    'home_altitude' : 70,
+    'home_azimuth' : 160,
 
     'host_wema_site_name':  'EC2',  #  The umbrella header for obsys in close geographic proximity.
     'name': 'Eltham College Observatory, 0m28',
@@ -79,7 +83,10 @@ site_config = {
     'reference_ambient':  10,  #  Degrees Celsius.  Alternately 12 entries, one for every - mid month.
     'reference_pressure':  867.254,    #mbar   A rough guess 20200315
 
-    'site_roof_control': 'no', #MTF entered this in to remove sro specific code.... Basically do we have control of the roof or not see line 338 sequencer.py
+    'site_roof_control': 'yes', #MTF entered this in to remove sro specific code.... Basically do we have control of the roof or not see line 338 sequencer.py
+    'site_allowed_to_open_roof': 'yes',
+    
+    'maximum_roof_opens_per_evening' : 4,
     'site_in_automatic_default': "Automatic",   #  ["Manual", "Shutdown", "Automatic"]
     'automatic_detail_default': "Enclosure is initially set to Automatic mode.",
     'observing_check_period' : 5,    # How many minutes between weather checks
@@ -89,8 +96,8 @@ site_config = {
     'auto_eve_sky_flat': True,
 
     'eve_sky_flat_sunset_offset': -0.5,  #  Minutes  neg means before, + after.
-    'eve_cool_down_open' : -10.0,
-    'auto_morn_sky_flat': True,
+    'eve_cool_down_open' : -105.0,
+    'auto_morn_sky_flat': False,
     'auto_morn_bias_dark': False,
     're-calibrate_on_solve': True,
     'pointing_calibration_on_startup': False,
@@ -170,15 +177,15 @@ site_config = {
     'enclosure': {
         'enclosure1': {
             'parent': 'site',
-            'enc_is_specific':  True,  # Indicates some special site code.
-            'name': 'SRO File',
+            'enc_is_specific':  False,  # Indicates some special site code.
+            'name': 'Dragonfly Roof',
             'hostIP':  None,
-            'driver': None,  #'ASCOM.DigitalDomeWorks.Dome',  #  ASCOMDome.Dome',  #  ASCOM.DeviceHub.Dome',  #  ASCOM.DigitalDomeWorks.Dome',  #"  ASCOMDome.Dome',
+            'driver': 'Dragonfly.Dome',  #'ASCOM.DigitalDomeWorks.Dome',  #  ASCOMDome.Dome',  #  ASCOM.DeviceHub.Dome',  #  ASCOM.DigitalDomeWorks.Dome',  #"  ASCOMDome.Dome',
             'has_lights':  False,
             'controlled_by': 'mount1',
-			'is_dome': False,
+            'is_dome': False,
             'mode': 'Automatic',
-            'cool_down': 35.0,    #  Minutes prior to sunset.
+            #'cool_down': -90.0,    #  Minutes prior to sunset.
             'settings': {
                 'lights':  ['Auto', 'White', 'Red', 'IR', 'Off'],       #A way to encode possible states or options???
                                                                         #First Entry is always default condition.
@@ -188,7 +195,7 @@ site_config = {
             'eve_screen_flat_dur': 1.0,   #  hours Duration, prior to next.
             'operations_begin':  -1.0,   #  - hours from Sunset
             'eve_cooldown_offset': -.99,   #  - hours beforeSunset
-            'eve_sky_flat_offset':  0.25,   #  - hours beforeSunset
+            'eve_sky_flat_offset':  0.5,   #  - hours beforeSunset
             'morn_sky_flat_offset':  0.4,   #  + hours after Sunrise
             'morning_close_offset':  0.41,   #  + hours after Sunrise
             'operations_end':  0.42,
@@ -475,11 +482,14 @@ site_config = {
 
             'settings': {
                 'is_osc' : True,
+                
+                'squash_on_x_axis' : True,
                 'osc_brightness_enhance' : 1.0,
                 'osc_contrast_enhance' : 1.3,
                 'osc_saturation_enhance' : 2.0,
                 'osc_colour_enhance' : 1.5,
-                'osc_sharpness_enhance' : 1.5,                
+                'osc_sharpness_enhance' : 1.5,
+                'osc_background_cut' : 25.0,
                 'bin_for_focus' : False, # This setting will bin the image for focussing rather than interpolating. Good for 1x1 pixel sizes < 0.6. It is also a little faster. Not good for blockier pixel scales
                 
                 # ONLY TRANSFORM THE FITS IF YOU HAVE
@@ -903,15 +913,13 @@ site_config = {
 #         print('Dictionaries matched.')
 
 #get_ocn_status = None   # NB these are placeholders for site specific routines for in a config file
-def get_enc_status(g_dev=None):
-    status = {'shutter_status': "bluib",   # NB NB NB "Roof is open|closed' is more inforative for FAT, but we make boolean decsions on 'Open'
-              'enclosure_synchronized': True,
-              'dome_azimuth': 0.0,
-              'dome_slewing': False,
-              'enclosure_mode': "Autonomous!",
-              'enclosure_message':  ''
-             }
-    return status
-def get_ocn_status(g_dev=None):
-    #print ("no encolsure control")
+# def get_enc_status(g_dev=None):
+#     pass
+# def get_ocn_status(g_dev=None):
+#     #print ("no encolsure control")
+#     pass
+
+def get_ocn_status():
+    pass
+def get_enc_status():
     pass

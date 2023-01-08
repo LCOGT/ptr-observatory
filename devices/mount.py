@@ -1344,16 +1344,17 @@ class Mount:
                 plog(f"can find home: {self.mount.CanFindHome}")
                 self.unpark_command()  
                 wait_for_slew()
-                home_alt = self.settings["home_altitude"]
-                home_az = self.settings["home_azimuth"]
-                self.move_to_azalt(home_az, home_alt)
+                
                 self.move_time = time.time()
                 self.mount.FindHome()
                 wait_for_slew()
         else:
             plog("Mount is not capable of finding home. Slewing to zenith....ish")
             self.move_time = time.time()
-            self.move_to_azalt(270, 75)  #az, alt  --badly named method.  NB NB Is this a sun-safe place to park?
+            #self.move_to_azalt(270, 75)  #az, alt  --badly named method.  NB NB Is this a sun-safe place to park?
+            home_alt = self.settings["home_altitude"]
+            home_az = self.settings["home_azimuth"]
+            self.move_to_azalt(home_az, home_alt)
             wait_for_slew()
         wait_for_slew()
 

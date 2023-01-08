@@ -179,10 +179,10 @@ class FilterWheel:
                 self.dual = True
                 self.custom = False
                 # This is the default expected after a home or power-up cycle.
-                self.filter_selected = self.filter_data[self.filter_reference][0]
+                #self.filter_selected = self.filter_data[self.filter_reference][0]
     
-                self.filter_number = self.filter_reference
-                self.filter_offset = self.filter_data[self.filter_reference][2]
+                #self.filter_number = self.filter_reference
+                #self.filter_offset = self.filter_data[self.filter_reference][2]
                 # We assume camera object has been created before the filter object.
                 # Note filter may be commanded directly by AWS or provided in an expose
                 # command as an optional parameter.

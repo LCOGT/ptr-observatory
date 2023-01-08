@@ -255,6 +255,12 @@ class Enclosure:
         self.last_current_az = 315.
         self.last_slewing = False
         self.prior_status = {'enclosure_mode': 'Manual'}    #Just to initialze this rarely used variable.
+        
+        if self.config['site_allowed_to_open_roof']:
+            self.site_allowed_to_open_roof = True
+        else:
+            self.site_allowed_to_open_roof = False
+        
         if self.config['site'] == 'aro':
             plog('\n&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&& \n') 
             plog('      20221014  Close commands are blocked,  System defaults to manual. \n ')
@@ -743,8 +749,7 @@ class Enclosure:
         #self.guarded_open()
         self.manager(open_cmd=True)
         plog("enclosure cmd: open.")
-        self.dome_open = True
-        self.dome_home = True
+        
     #     pass
 
     def close_command(self, req: dict, opt: dict):
@@ -752,8 +757,7 @@ class Enclosure:
          #g_dev['redis'].set('enc_cmd', 'close', ex=1200)
         self.manager(close_cmd=True)
         plog("enclosure cmd: close.")
-        self.dome_open = False
-        self.dome_home = True
+        
     #     pass
 
     # def slew_alt_command(self, req: dict, opt: dict):
@@ -790,14 +794,19 @@ class Enclosure:
                 (g_dev['ocn'].status['wx_ok'] in [True, 'Yes'] and not (g_dev['ocn'].wx_hold \
                                               or g_dev['ocn'].clamp_latch)):     # NB Is Wx ok really the right criterion???
                 try:
-                    self.enclosure.OpenShutter()
-                    plog("An actual shutter open command has been issued.")
-                    g_dev['obs'].send_to_user("Roof/shutter is opening.", p_level='INFO')
-                    #self.redis_server.set('Shutter_is_open', True)
-                    return True
+                    if self.site_allowed_to_open_roof == True:
+                        self.enclosure.OpenShutter()
+                        plog("An actual shutter open command has been issued.")
+                        g_dev['obs'].send_to_user("Roof/shutter is opening.", p_level='INFO')
+                        #self.redis_server.set('Shutter_is_open', True)
+                        self.dome_open = True
+                        self.dome_home = True
+                        return True
+                    else:
+                        plog("An open command was sent, but this site is not allowed to open the roof (site-config)")
                 except:
                     plog("Attempt to open roof/shutter failed at quarded_open command.")
-                    g_dev['obs'].send_to_user("Roof/hutter failed to open.", p_level='INFO')
+                    g_dev['obs'].send_to_user("Roof/Shutter failed to open.", p_level='INFO')
                    # self.redis_server.set('Shutter_is_open', False)
                     return False
             return False
@@ -862,6 +871,8 @@ class Enclosure:
             # Always attempt to close.... the string may be wrong!
             try:
                 self.enclosure.CloseShutter()
+                self.dome_open = False
+                self.dome_home = True
             except:
                 plog('Dome refused close command.')
                 
@@ -886,6 +897,8 @@ class Enclosure:
             if self.status_string in ['Open']:
                 try:
                     self.enclosure.CloseShutter()
+                    self.dome_open = False
+                    self.dome_home = True
                 except:
                     plog('Enclosure refused close command.')
             self.dome_opened = False
@@ -893,7 +906,7 @@ class Enclosure:
 
             #Note we left the telescope alone
 
-        elif open_cmd and self.mode == 'Manual':   #  NB NB NB Ideally Telescope parked away from Sun.
+        elif open_cmd and self.mode == 'Manual':   #  NB NB NB Ideally Telescope parked away from Sun.                
             self.guarded_open()
             self.dome_opened = True
             self.dome_homed = True
@@ -901,12 +914,16 @@ class Enclosure:
         elif close_cmd and self.mode == 'Manual':
             try:
                 self.enclosure.CloseShutter()
+                self.dome_open = False
+                self.dome_home = True
                 g_dev['obs'].send_to_user("Enclosure commanded to close in Manual mode.", p_level='INFO')
             except:
                 plog('Dome refused close command. Try again in 120 sec')
                 time.sleep(120)
                 try:
                     self.enclosure.CloseShutter()
+                    self.dome_open = False
+                    self.dome_home = True
                 except:
                     plog('Dome refused close command second time.')
                     g_dev['obs'].send_to_user("Enclosure failed to close in Manual mode.", p_level='INFO')

@@ -571,8 +571,13 @@ class Camera:
         plog(self.camera.IsExposureComplete)
         return self.camera.IsExposureComplete
 
-    def _theskyx_getImageArray(self):        
-        return fits.open(self.camera.LastImageFileName, uint=False)[0].data.astype("float32")
+    def _theskyx_getImageArray(self): 
+        imageTempOpen=fits.open(self.camera.LastImageFileName, uint=False)[0].data.astype("float32")
+        try:
+            os.remove(self.camera.LastImageFileName)
+        except Exception as e:
+            print ("Could not remove theskyx image file: ",e)
+        return imageTempOpen
 
     def _maxim_connected(self):
         return self.camera.LinkEnabled
@@ -832,6 +837,13 @@ class Camera:
         image data.
         """
         
+        
+        
+        self.exposure_busy = True # This really needs to be here from the start
+        # We've had multiple cases of multiple camera exposures trying to go at once
+        # And it is likely because it takes a non-zero time to get to Phase II
+        # So even in the setup phase the "exposure" is "busy"
+        
         self.tempStartupExposureTime=time.time()
 
 
@@ -1079,6 +1091,9 @@ class Camera:
                         if blockended or ephem.Date(ephem.now()+ (exposure_time *ephem.second)) >= \
                             g_dev['events']['End Morn Bias Dark']:
                             print ("Exposure overlays the end of a block or the end of observing. Skipping Exposure.")
+                            print ("And Cancelling SmartStacks.")
+                            Nsmartstack=1
+                            sskcounter=2
                             return
                         
                     # NB Here we enter Phase 2
@@ -1227,6 +1242,7 @@ class Camera:
 
     def stop_command(self, required_params, optional_params):
         """Stop the current exposure and return the camera to Idle state."""
+        self._stop_expose()
         self.exposure_busy = False
         self.exposure_halted = True
 
@@ -2489,7 +2505,7 @@ class Camera:
                                 
                                 blue_stretched_data_float = Stretch().stretch(hdublue)*256
                                 ceil = np.percentile(blue_stretched_data_float,100) # 5% of pixels will be white
-                                floor = np.percentile(blue_stretched_data_float,60) # 5% of pixels will be black
+                                floor = np.percentile(blue_stretched_data_float,self.config["camera"][g_dev['cam'].name]["settings"]['osc_background_cut']) # 5% of pixels will be black
                                 #a = 255/(ceil-floor)
                                 #b = floor*255/(floor-ceil)
                                 blue_stretched_data_float[blue_stretched_data_float<floor]=floor
@@ -2503,7 +2519,7 @@ class Camera:
                                 
                                 green_stretched_data_float = Stretch().stretch(hdugreen)*256
                                 ceil = np.percentile(green_stretched_data_float,100) # 5% of pixels will be white
-                                floor = np.percentile(green_stretched_data_float,60) # 5% of pixels will be black
+                                floor = np.percentile(green_stretched_data_float,self.config["camera"][g_dev['cam'].name]["settings"]['osc_background_cut']) # 5% of pixels will be black
                                 #a = 255/(ceil-floor)
                                 green_stretched_data_float[green_stretched_data_float<floor]=floor
                                 green_stretched_data_float=green_stretched_data_float-floor
@@ -2519,7 +2535,7 @@ class Camera:
                                 
                                 red_stretched_data_float = Stretch().stretch(hdured)*256
                                 ceil = np.percentile(red_stretched_data_float,100) # 5% of pixels will be white
-                                floor = np.percentile(red_stretched_data_float,60) # 5% of pixels will be black
+                                floor = np.percentile(red_stretched_data_float,self.config["camera"][g_dev['cam'].name]["settings"]['osc_background_cut']) # 5% of pixels will be black
                                 #a = 255/(ceil-floor)
                                 #b = floor*255/(floor-ceil)
                                 #breakpoint()
@@ -2608,7 +2624,10 @@ class Camera:
                                     final_image.resize((900, 900))
                                 else:
                                     #final_image.resize((int(1536 * iy / ix), 1536))
-                                    final_image.resize((int(900 * iy / ix), 900))
+                                    if self.config["camera"][g_dev['cam'].name]["settings"]["squash_on_x_axis"]:
+                                        final_image.resize((int(900 * iy / ix), 900))
+                                    else:
+                                        final_image.resize((900, int(900 * iy / ix)))
                                 
                                     
                                 final_image.save(
@@ -2644,7 +2663,28 @@ class Camera:
                                 stretched_data_uint8[cold] = 0
                                 
                                 iy, ix = stretched_data_uint8.shape
-                                stretched_data_uint8 = Image.fromarray(stretched_data_uint8)
+                                #stretched_data_uint8 = Image.fromarray(stretched_data_uint8)
+                                final_image = Image.fromarray(stretched_data_uint8)
+                                # These steps flip and rotate the jpeg according to the settings in the site-config for this camera
+                                if self.config["camera"][g_dev['cam'].name]["settings"]["transpose_jpeg"]:
+                                    final_image=final_image.transpose(Image.TRANSPOSE)
+                                if self.config["camera"][g_dev['cam'].name]["settings"]['flipx_jpeg']:
+                                    final_image=final_image.transpose(Image.FLIP_LEFT_RIGHT)
+                                if self.config["camera"][g_dev['cam'].name]["settings"]['flipy_jpeg']:
+                                    final_image=final_image.transpose(Image.FLIP_TOP_BOTTOM)
+                                if self.config["camera"][g_dev['cam'].name]["settings"]['rotate180_jpeg']:
+                                    final_image=final_image.transpose(Image.ROTATE_180)
+                                if self.config["camera"][g_dev['cam'].name]["settings"]['rotate90_jpeg']:
+                                    final_image=final_image.transpose(Image.ROTATE_90)
+                                if self.config["camera"][g_dev['cam'].name]["settings"]['rotate270_jpeg']:
+                                    final_image=final_image.transpose(Image.ROTATE_270)
+                                    
+                                # Detect the pierside and if it is one way, rotate the jpeg 180 degrees
+                                # to maintain the orientation. whether it is 1 or 0 that is flipped
+                                # is sorta arbitrary... you'd use the site-config settings above to 
+                                # set it appropriately and leave this alone.
+                                if g_dev['mnt'].pier_side == 1:
+                                    final_image=final_image.transpose(Image.ROTATE_180)
                                 
 
                                 # Resizing the array to an appropriate shape for the jpg and the small fits
@@ -2654,7 +2694,7 @@ class Camera:
                                     # hdusmalldata = resize(
                                     #     hdusmalldata, (1280, 1280), preserve_range=True
                                     # )
-                                    stretched_data_uint8 = stretched_data_uint8.resize(
+                                    final_image = final_image.resize(
                                          (900, 900)
                                     )
                                 else:
@@ -2668,17 +2708,23 @@ class Camera:
                                     #     (int(900 * iy / ix), 900),
                                     #     preserve_range=True,
                                     # ) 
-                                    
-                                    stretched_data_uint8 = stretched_data_uint8.resize(
-                                        
-                                        (int(900 * iy / ix), 900)
-                                        
-                                    ) 
-                                stretched_data_uint8=stretched_data_uint8.transpose(Image.TRANSPOSE) # Not sure why it transposes on array creation ... but it does!
-                                stretched_data_uint8.save(
+                                    if self.config["camera"][g_dev['cam'].name]["settings"]["squash_on_x_axis"]:
+                                        final_image = final_image.resize(
+                                            
+                                            (int(900 * iy / ix), 900)
+                                            
+                                        ) 
+                                    else:
+                                        final_image = final_image.resize(
+                                            
+                                            (900, int(900 * iy / ix))
+                                            
+                                        ) 
+                                #stretched_data_uint8=stretched_data_uint8.transpose(Image.TRANSPOSE) # Not sure why it transposes on array creation ... but it does!
+                                final_image.save(
                                     paths["im_path"] + paths["jpeg_name10"]
                                 )
-                                del stretched_data_uint8
+                                del final_image
                             
                         del hdusmalldata
                             
@@ -2804,7 +2850,7 @@ class Camera:
                                 fwhmcalc=sources['FWHM']
                                 fwhmcalc=fwhmcalc[fwhmcalc > 1.0]
                                 fwhmcalc=fwhmcalc[fwhmcalc != 0] # Remove 0 entries
-                                fwhmcalc=fwhmcalc[fwhmcalc < 75] # remove stupidly large entries
+                                #fwhmcalc=fwhmcalc[fwhmcalc < 75] # remove stupidly large entries
                                 fwhmcalc=fwhmcalc[fwhmcalc < np.median(fwhmcalc)+ 3* np.std(fwhmcalc)]
                                 fwhmcalc=fwhmcalc[fwhmcalc > np.median(fwhmcalc)- 3* np.std(fwhmcalc)]
                                 rfp = round(np.median(fwhmcalc),3)
@@ -3117,7 +3163,8 @@ class Camera:
                                     )
                             else:
                                 print ("Platesolve wasn't attempted due to lack of sources (or sometimes too many!)")
-                                self.to_slow_process(2000,('focus', cal_path + cal_name, hdufocusdata, hdu.header, \
+                                if self.config['keep_focus_images_on_disk']:
+                                    self.to_slow_process(2000,('focus', cal_path + cal_name, hdufocusdata, hdu.header, \
                                                            frame_type))
                                 del hdufocusdata
                                 
@@ -3138,7 +3185,8 @@ class Camera:
         
                     # Similarly to the above. This saves the RAW file to disk
                     # it works 99.9999% of the time.
-                    self.to_slow_process(1000,('raw', raw_path + raw_name00, hdu.data, hdu.header, frame_type))
+                    if self.config['save_raw_to_disk']:
+                        self.to_slow_process(1000,('raw', raw_path + raw_name00, hdu.data, hdu.header, frame_type))
                     
                     # Similarly to the above. This saves the REDUCED file to disk
                     # it works 99.9999% of the time.
@@ -3148,7 +3196,7 @@ class Camera:
                             #print ("Binning 1x1 to " + str(self.bin))
                             hdureduceddata=(block_reduce(hdureduceddata,self.bin)) 
                         
-                        if smartstackid == 'no':
+                        if smartstackid == 'no' and self.config['keep_reduced_on_disk']:
                             self.to_slow_process(1000,('reduced', red_path + red_name01, hdureduceddata, hdu.header, \
                                                        frame_type))
                         else:
