@@ -910,6 +910,7 @@ class Observatory:
                         g_dev['enc'].enclosure.CloseShutter()
                         while g_dev['enc'].enclosure.ShutterStatus == 3:
                             print ("closing")
+                            time.sleep(3)
                     else:
                         print ("This scope does not have control of the roof though.")
                 

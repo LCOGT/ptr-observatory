@@ -71,6 +71,11 @@ site_config = {
 
     'archive_age' : -99.9, # Number of days to keep files in the local archive before deletion. Negative means never delete
     'send_files_at_end_of_night' : 'no', # For low bandwidth sites, do not send up large files until the end of the night. set to 'no' to disable
+    
+    'save_raw_to_disk' : True, # For low diskspace sites (or just because they aren't needed), don't save a separate raw file to disk after conversion to fz.
+    'keep_reduced_on_disk' : True, # PTR uses the reduced file for some calculations (focus, SEP, etc.). To save space, this file can be removed after usage or not saved.
+    'keep_focus_images_on_disk' : True, # To save space, the focus file can not be saved.
+    
     'aux_archive_path':  None,   #NB NB we might want to put Q: here for MRC
     'wema_is_active':  True,          # True if the split computers used at a site.  NB CHANGE THE DAMN NAME!
     'wema_hostname': 'MRC-WMS-ENC',   # Prefer the shorter version
@@ -115,6 +120,8 @@ site_config = {
 
     'site_roof_control': 'no', #MTF entered this in to remove sro specific code  NB 'site_is_specifc' also deals with this
     'site_allowed_to_open_roof': 'yes',
+    
+    'maximum_roof_opens_per_evening' : 4,
     'site_in_automatic_default': "Automatic",   #"Manual", "Shutdown"
     'automatic_detail_default': "Enclosure is initially set to Automatic mode.",
     'observing_check_period' : 2,    # How many minutes between weather checks

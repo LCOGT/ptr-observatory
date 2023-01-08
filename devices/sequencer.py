@@ -276,56 +276,55 @@ class Sequencer:
         #         #This should run once. Next time this phase is entered in > 120 seconds we
         #     #flat_spot, flat_alt = g_dev['evnt'].flat_spot_now()
 
-        if time.time() >= self.time_of_next_slew:
-            self.time_of_next_slew = time.time() + 600  # seconds between slews.
+        #if time.time() >= self.time_of_next_slew:
+        #    self.time_of_next_slew = time.time() + 600  # seconds between slews.
             #We slew to anti-solar Az and reissue this command every 120 seconds
-            flat_spot, flat_alt = g_dev['evnt'].flat_spot_now()
+        flat_spot, flat_alt = g_dev['evnt'].flat_spot_now()
 
-            try:
-                
-               
-                # First unpark and move telescope away from the sun.    
-                plog("Unparking Scope and pointing it opposite the sun.")
-                if g_dev['mnt'].mount.AtParK:
-                    g_dev['mnt'].unpark_command({}, {})
-                
-                g_dev['mnt'].slewToSkyFlatAsync()
-                self.time_of_next_slew = time.time() + 600 
-                #time.sleep(10)
-                plog("Open and slew Dome to azimuth opposite the Sun:  ", round(flat_spot, 1))
-                plog("Cooling down and waiting for skyflat / observing to begin")
-                #breakpoint()
-                if ocn_status == None:
-                    if self.config['site_roof_control'] != 'no' and enc_status['shutter_status'] in ['Closed', 'closed'] and g_dev['enc'].mode == 'Automatic'\
-                        and self.config['site_allowed_to_open_roof'] == 'yes':
-                        #breakpoint()
-                        g_dev['enc'].open_command({}, {})
-                        plog("Opening dome.")
-                        #time.sleep(10)
-                        while g_dev['enc'].enclosure.ShutterStatus == 2:
-                            time.sleep(5)                            
-                        if g_dev['enc'].enclosure.ShutterStatus == 0:
-                            self.opens_this_evening= self.opens_this_evening+1
-                elif self.config['site_roof_control'] != 'no' and enc_status['shutter_status'] in ['Closed', 'closed'] and g_dev['enc'].mode == 'Automatic' \
-                    and ocn_status['hold_duration'] <= 0.1 and self.config['site_allowed_to_open_roof'] == 'yes':   #NB
+        try:           
+            # First unpark and move telescope away from the sun.    
+            plog("Unparking Scope and pointing it opposite the sun.")
+            if g_dev['mnt'].mount.AtParK:
+                g_dev['mnt'].unpark_command({}, {})
+            
+            g_dev['mnt'].slewToSkyFlatAsync()
+            self.time_of_next_slew = time.time() + 600 
+            #time.sleep(10)
+            plog("Open and slew Dome to azimuth opposite the Sun:  ", round(flat_spot, 1))
+            plog("Cooling down and waiting for skyflat / observing to begin")
+            #breakpoint()
+            if ocn_status == None:
+                if self.config['site_roof_control'] != 'no' and enc_status['shutter_status'] in ['Closed', 'closed'] and g_dev['enc'].mode == 'Automatic'\
+                    and self.config['site_allowed_to_open_roof'] == 'yes':
                     #breakpoint()
                     g_dev['enc'].open_command({}, {})
                     plog("Opening dome.")
-                    #time.sleep(10)
+                    time.sleep(10)
                     while g_dev['enc'].enclosure.ShutterStatus == 2:
-                            time.sleep(5)                            
+                        time.sleep(5)                            
                     if g_dev['enc'].enclosure.ShutterStatus == 0:
                         self.opens_this_evening= self.opens_this_evening+1
-                try:
-                    plog("Synchronising dome.")
-                    g_dev['enc'].sync_mount_command({}, {})
-                except:
-                    pass
-                #Prior to skyflats no dome following.
-                self.dome_homed = False
-                
+            elif self.config['site_roof_control'] != 'no' and enc_status['shutter_status'] in ['Closed', 'closed'] and g_dev['enc'].mode == 'Automatic' \
+                and ocn_status['hold_duration'] <= 0.1 and self.config['site_allowed_to_open_roof'] == 'yes':   #NB
+                #breakpoint()
+                g_dev['enc'].open_command({}, {})
+                plog("Opening dome.")
+                time.sleep(10)
+                while g_dev['enc'].enclosure.ShutterStatus == 2:
+                        time.sleep(5)                            
+                if g_dev['enc'].enclosure.ShutterStatus == 0:
+                    self.opens_this_evening= self.opens_this_evening+1
+            try:
+                plog("Synchronising dome.")
+                g_dev['enc'].sync_mount_command({}, {})
             except:
-                pass#
+                pass
+            #Prior to skyflats no dome following.
+            self.dome_homed = False
+            
+        except Exception as e:
+            print ("Enclosure opening glitched out: ", e)
+            
         return
 
     def park_and_close(self, enc_status):
@@ -389,7 +388,7 @@ class Sequencer:
             #self.time_of_next_slew = time.time() -1
             #print ("got here")
             if not g_dev['obs'].open_and_enabled_to_observe:
-                if time.time() > self.enclosure_next_open_time and self.opens_this_evening < 4:
+                if time.time() > self.enclosure_next_open_time and self.opens_this_evening < self.config['maximum_roof_opens_per_evening']:
                     self.enclosure_next_open_time = time.time() + 300 # Only try to open the roof every five minutes
                     self.enc_to_skyflat_and_open(enc_status, ocn_status)
                     
