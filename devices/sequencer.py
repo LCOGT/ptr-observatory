@@ -304,6 +304,7 @@ class Sequencer:
                         time.sleep(5)                            
                     if g_dev['enc'].enclosure.ShutterStatus == 0:
                         self.opens_this_evening= self.opens_this_evening+1
+                        g_dev['obs'].open_and_enabled_to_observe = True
             elif self.config['site_roof_control'] != 'no' and enc_status['shutter_status'] in ['Closed', 'closed'] and g_dev['enc'].mode == 'Automatic' \
                 and ocn_status['hold_duration'] <= 0.1 and self.config['site_allowed_to_open_roof'] == 'yes':   #NB
                 #breakpoint()
@@ -314,6 +315,7 @@ class Sequencer:
                         time.sleep(5)                            
                 if g_dev['enc'].enclosure.ShutterStatus == 0:
                     self.opens_this_evening= self.opens_this_evening+1
+                    g_dev['obs'].open_and_enabled_to_observe = True
             try:
                 plog("Synchronising dome.")
                 g_dev['enc'].sync_mount_command({}, {})
