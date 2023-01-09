@@ -3161,13 +3161,14 @@ class Camera:
                                     plog(
                                         "Image: did not platesolve; this is usually OK. ", e
                                     )
+                                if not self.config['keep_focus_images_on_disk']:
+                                    os.remove(cal_path + cal_name)
                             else:
                                 print ("Platesolve wasn't attempted due to lack of sources (or sometimes too many!)")
-                                if self.config['keep_focus_images_on_disk']:
-                                    self.to_slow_process(2000,('focus', cal_path + cal_name, hdufocusdata, hdu.header, \
-                                                           frame_type))
-                                del hdufocusdata
                                 
+                                del hdufocusdata
+                              
+                            
                             if focus_image == True :
                                 focus_image = False
                                 print ("Time Taken From Exposure start to finish : "  + str(time.time()\
@@ -3196,10 +3197,12 @@ class Camera:
                             #print ("Binning 1x1 to " + str(self.bin))
                             hdureduceddata=(block_reduce(hdureduceddata,self.bin)) 
                         
-                        if smartstackid == 'no' and self.config['keep_reduced_on_disk']:
-                            self.to_slow_process(1000,('reduced', red_path + red_name01, hdureduceddata, hdu.header, \
+                        if smartstackid == 'no':
+                            if self.config['keep_reduced_on_disk']:
+                                print ("saving reduced file anyway!")
+                                self.to_slow_process(1000,('reduced', red_path + red_name01, hdureduceddata, hdu.header, \
                                                        frame_type))
-                        else:
+                        else:                            
                             saver = 0
                             saverretries = 0
                             while saver == 0 and saverretries < 10:
@@ -3291,6 +3294,13 @@ class Camera:
                         "auto_focus",
                     ]) and smartstackid != 'no' :
                         self.to_reduce((paths, pixscale, smartstackid, sskcounter, Nsmartstack, sources))
+                    else:
+                        try:
+                            if not self.config['keep_reduced_on_disk']:
+                                os.remove(red_path + red_name01)
+                                print ("removed reduced file")
+                        except:
+                            print ("couldn't remove reduced file for some reason")
 
                     if not g_dev["cam"].exposure_busy:
                         result = {"stopped": True}
