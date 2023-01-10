@@ -875,6 +875,7 @@ class Observatory:
                     print ("This is usually because the weather system forced the roof to shut.")
                     print ("By closing it again, it resets the switch to closed.")
                     self.cancel_all_activity()
+                    self.open_and_enabled_to_observe=False
                     g_dev['enc'].enclosure.CloseShutter()
                     #while g_dev['enc'].enclosure.ShutterStatus == 3:
                     #print ("closing")

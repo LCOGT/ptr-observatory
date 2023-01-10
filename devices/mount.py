@@ -177,6 +177,8 @@ class Mount:
         win32com.client.pythoncom.CoInitialize()
         self.mount = win32com.client.Dispatch(driver)
         self.mount.Connected = True
+        
+        self.driver = driver
 
         if "ASCOM.SoftwareBisque.Telescope" in config['mount']['mount1']['driver']:
             self.theskyx = True
@@ -348,12 +350,34 @@ class Mount:
                 return
             else:
                 plog('Found mount not connected, reconnecting.')
-                self.mount.Connected = True
-                return
+                try:
+                    self.mount.Connected = True
+                    return
+                except Exception as e:
+                    print (traceback.format_exc())
+                    print ("mount reconnection failed.")
+                    
         except:
             plog('Found mount not connected via try: block fail, reconnecting.')
-            self.mount.Connected = True
-            return
+            time.sleep(5)
+            try:
+                self.mount.Connected = True
+                return
+            except Exception as e:
+                print (traceback.format_exc())
+                print ("mount reconnection failed.")          
+            
+            print ("Trying full-scale reboot")
+            try:
+                win32com.client.pythoncom.CoInitialize()
+                self.mount = win32com.client.Dispatch(self.driver)
+                self.mount.Connected = True
+                return
+            except Exception as e:
+                print (traceback.format_exc())
+                print ("mount full scale reboot failed.")
+                breakpoint()
+            
 
     def get_mount_coordinates(self):
         global loop_count
