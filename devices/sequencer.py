@@ -385,6 +385,44 @@ class Sequencer:
         ocn_status = g_dev['ocn'].status
         enc_status = g_dev['enc'].status
         events = g_dev['events']
+        
+        
+        # Check for delayed opening of the observatory and act accordingly.
+        
+        # If the observatory is simply delayed until opening, then wait until then, then attempt to start up the observatory
+        if self.weather_report_wait_until_open==True:
+            if ephem_now >  self.weather_report_wait_until_open_time:
+                if not g_dev['obs'].open_and_enabled_to_observe and self.weather_report_is_acceptable_to_observe==True:
+                    if time.time() > self.enclosure_next_open_time and self.opens_this_evening < self.config['maximum_roof_opens_per_evening']:
+                        self.enclosure_next_open_time = time.time() + 300 # Only try to open the roof every five minutes
+                        self.enc_to_skyflat_and_open(enc_status, ocn_status)
+                # If the observatory opens, set clock and auto focus and observing to now
+                if g_dev['obs'].open_and_enabled_to_observe:
+                    self.night_focus_ready=True
+                    obs_win_begin, sunZ88Op, sunZ88Cl, ephem_now = self.astro_events.getSunEvents()
+                    g_dev['events']['Clock & Auto Focus'] = ephem_now - 0.1/24
+                    g_dev['events']['Observing Begins'] = ephem_now + 0.1/24
+                    self.weather_report_wait_until_open==False
+                    self.weather_report_is_acceptable_to_observe=True
+        
+        # If the observatory is meant to shut during the evening
+        obs_win_begin, sunZ88Op, sunZ88Cl, ephem_now = self.astro_events.getSunEvents()
+        if self.weather_report_close_during_evening==True:
+            if ephem_now >  self.weather_report_close_during_evening_time:
+                if self.config['site_roof_control'] != 'no' and g_dev['enc'].mode == 'Automatic':
+                    self.weather_report_is_acceptable_to_observe=False
+                    plog ("End of Observing Period due to weather. Closing up observatory.")
+                    g_dev['obs'].cancel_all_activity()
+                    g_dev['obs'].open_and_enabled_to_observe=False
+                    g_dev['enc'].enclosure.CloseShutter()
+                    #while g_dev['enc'].enclosure.ShutterStatus == 3:
+                    #print ("closing")
+                    print ("Also Parking the Scope")    
+                    if not g_dev['mnt'].mount.AtPark:  
+                        g_dev['mnt'].home_command()
+                        g_dev['mnt'].park_command() 
+                    self.weather_report_close_during_evening==False
+                    
 
         if self.bias_dark_latch and ((events['Eve Bias Dark'] <= ephem_now < events['End Eve Bias Dark']) and \
              self.config['auto_eve_bias_dark'] and g_dev['enc'].mode in ['Automatic', 'Autonomous', 'Manual'] ):
@@ -536,6 +574,7 @@ class Sequencer:
                             self.weather_report_is_acceptable_to_observe=True
                             self.weather_report_close_during_evening=True
                             self.weather_report_close_during_evening_time=ephem_now + (clear_until_hour/24)
+                            g_dev['events']['Observing Ends'] = ephem_now + (clear_until_hour/24)
                         else:
                             plog ("looks like it is clear until hour " + str(clear_until_hour) )
                             plog ("But that isn't really long enough to rationalise opening the observatory")
@@ -544,22 +583,25 @@ class Sequencer:
                     
                     if later_clearing_hour != 99:
                         if number_of_hours_left_after_later_clearing_hour > 2:
-                            plog ("looks like it is not clear until hour " + str(later_clearing_hour) )
-                            plog ("Will wait and attempt to open observatory then.")                    
+                            plog ("looks like clears up at hour " + str(later_clearing_hour) )
+                            plog ("Will attempt to open/re-open observatory then.")                    
                             self.weather_report_wait_until_open=True
                             self.weather_report_wait_until_open_time=ephem_now + (later_clearing_hour/24) 
                         else:
-                            plog ("looks like it is not clear until hour " + str(later_clearing_hour) )
-                            plog ("But there isn't much time after then, so not going to open. ")
+                            plog ("looks like it clears up at hour " + str(later_clearing_hour) )
+                            plog ("But there isn't much time after then, so not going to open then. ")
                             self.weather_report_wait_until_open=False
                             
-                    if self.weather_report_close_during_evening==True or self.weather_report_wait_until_open==True:
-                        self.weather_report_is_acceptable_to_observe=True
-                    else:
-                        self.weather_report_is_acceptable_to_observe=False
+                    # if self.weather_report_close_during_evening==True or self.weather_report_wait_until_open==True:
+                    #     self.weather_report_is_acceptable_to_observe=True
+                    # else:
+                    #     self.weather_report_is_acceptable_to_observe=False
+                        
                     if clear_until_hour==99 and later_clearing_hour ==99:
                         plog ("It doesn't look like there is a clear enough patch to observe tonight")
                         self.weather_report_is_acceptable_to_observe=False
+                        
+                    
                 
             
             
@@ -572,13 +614,13 @@ class Sequencer:
 
             #self.time_of_next_slew = time.time() -1
             #print ("got here")
-            if not g_dev['obs'].open_and_enabled_to_observe and self.weather_report_is_acceptable_to_observe==True:
+            if not g_dev['obs'].open_and_enabled_to_observe and self.weather_report_is_acceptable_to_observe==True and self.weather_report_wait_until_open==False:
                 if time.time() > self.enclosure_next_open_time and self.opens_this_evening < self.config['maximum_roof_opens_per_evening']:
                     self.enclosure_next_open_time = time.time() + 300 # Only try to open the roof every five minutes
                     self.enc_to_skyflat_and_open(enc_status, ocn_status)
                     
                     
-            self.night_focus_ready=True
+                    self.night_focus_ready=True
 
         elif ((g_dev['events']['Clock & Auto Focus']  <= ephem_now < g_dev['events']['Observing Begins']) and \
                g_dev['enc'].mode == 'Automatic') and not g_dev['ocn'].wx_hold and self.weather_report_is_acceptable_to_observe==True:
