@@ -405,7 +405,7 @@ class Sequencer:
                     obs_win_begin, sunZ88Op, sunZ88Cl, ephem_now = self.astro_events.getSunEvents()
                     g_dev['events']['Clock & Auto Focus'] = ephem_now - 0.1/24
                     g_dev['events']['Observing Begins'] = ephem_now + 0.1/24
-                    self.weather_report_wait_until_open==False
+                    self.weather_report_wait_until_open=False
                     self.weather_report_is_acceptable_to_observe=True
         
         # If the observatory is meant to shut during the evening
@@ -424,7 +424,7 @@ class Sequencer:
                     if not g_dev['mnt'].mount.AtPark:  
                         g_dev['mnt'].home_command()
                         g_dev['mnt'].park_command() 
-                    self.weather_report_close_during_evening==False
+                    self.weather_report_close_during_evening=False
                     
 
         if self.bias_dark_latch and ((events['Eve Bias Dark'] <= ephem_now < events['End Eve Bias Dark']) and \
