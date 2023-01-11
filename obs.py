@@ -306,7 +306,7 @@ class Observatory:
         # the roof to know it is safe to observe but also ... useful
         # to observe.... if the roof isn't open, don't get flats!
         # Off at bootup, but that would quickly change to true after the code
-        # checks the roof status etc.
+        # checks the roof status etc. self.weather_report_is_acceptable_to_observe=False
         self.open_and_enabled_to_observe=False
 
         # Need to set this for the night log
@@ -849,6 +849,9 @@ class Observatory:
             # the observatory from rain, wasps and acts of god.
             print ("Roof Status: " + str(g_dev['enc'].status['shutter_status']))
             
+            
+            # Report on weather report status:
+            print ("Weather Report Acceptable to Open: " +  str(g_dev['seq'].weather_report_is_acceptable_to_observe))
             
             if g_dev['enc'].status['shutter_status'] == 'Software Fault':
                 print ("Software Fault Detected. Will alert the authorities!")
