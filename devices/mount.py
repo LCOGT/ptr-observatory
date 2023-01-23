@@ -915,6 +915,7 @@ class Mount:
         except:
             self.object = 'unspecified'    #NB could possibly augment with "Near --blah--"
         self.unpark_command()  
+        g_dev['obs'].send_to_user("Slewing Telescope.")
         try:
             clutch_ra = g_dev['mnt']['mount1']['east_clutch_ra_correction']
             clutch_dec = g_dev['mnt']['mount1']['east_clutch_dec_correction']
@@ -1102,6 +1103,7 @@ class Mount:
         # On successful movement of telescope reset the solving timer
         g_dev['obs'].last_solve_time = datetime.datetime.now() - datetime.timedelta(days=1)
         g_dev['obs'].images_since_last_solve = 10000
+        g_dev['obs'].send_to_user("Slew Complete.")
 
     def re_seek(self, dither):
         
@@ -1397,6 +1399,7 @@ class Mount:
         if self.mount.CanPark:
             if not g_dev['mnt'].mount.AtPark:
                 plog("mount cmd: parking mount")
+                g_dev['obs'].send_to_user("Parking Mount. This can take a moment.")
                 self.mount.Park()
                 wait_for_slew()
 
@@ -1405,7 +1408,7 @@ class Mount:
         if self.mount.CanPark:
             if self.mount.AtPark:
                 plog("mount cmd: unparking mount")
-            
+                g_dev['obs'].send_to_user("Unparking Mount. This can take a moment.")
                 self.mount.Unpark()
                 wait_for_slew()
                 if self.home_after_unpark:
