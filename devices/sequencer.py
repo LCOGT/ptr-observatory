@@ -210,6 +210,8 @@ class Sequencer:
         # If it is too many, then it shuts down for the whole evening. 
         self.opens_this_evening = 0
         
+        self.morn_bias_done = False
+        
         # The weather report has to be at least passable at some time of the night in order to 
         # allow the observatory to become active and observe. This doesn't mean that it is 
         # necessarily a GOOD night at all, just that there are patches of feasible
@@ -677,7 +679,7 @@ class Sequencer:
             g_dev['mnt'].park_command({}, {})
             
         elif self.morn_bias_dark_latch and (events['Morn Bias Dark'] <= ephem_now < events['End Morn Bias Dark']) and \
-                  self.config['auto_morn_bias_dark']: # and g_dev['enc'].mode == 'Automatic' ):
+                  self.config['auto_morn_bias_dark'] and not  self.morn_bias_done: # and g_dev['enc'].mode == 'Automatic' ):
             #breakpoint()
             self.morn_bias_dark_latch = False
             req = {'bin1': True, 'bin2': False, 'bin3': False, 'bin4': False, 'numOfBias': 63, \
@@ -691,6 +693,8 @@ class Sequencer:
 
             self.park_and_close(enc_status)
             self.morn_bias_dark_latch = True
+            self.morn_bias_done = True
+            
         elif (events['Nightly Reset'] <= ephem_now < events['End Nightly Reset']): # and g_dev['enc'].mode == 'Automatic' ):
             
             if self.nightly_reset_complete == False:
@@ -1256,7 +1260,11 @@ class Sequencer:
         # UNDERTAKING END OF NIGHT ROUTINES
 
         # Never hurts to make sure the telescope is parked for the night
-        g_dev['mnt'].park_command({}, {})
+        #g_dev['mnt'].park_command({}, {})
+        self.park_and_close(enc_status = g_dev['enc'].status)
+
+
+        self.morn_bias_done = True
 
         # Setting runnight for mop up scripts
         yesterday = datetime.datetime.now() - timedelta(1)
