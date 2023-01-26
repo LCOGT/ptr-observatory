@@ -91,13 +91,13 @@ site_config = {
     'automatic_detail_default': "Enclosure is initially set to Automatic mode.",
     'observing_check_period' : 5,    # How many minutes between weather checks
     'enclosure_check_period' : 5,    # How many minutes between enclosure checks
-    'auto_eve_bias_dark': False,
-    'auto_midnight_moonless_bias_dark': True,
+    'auto_eve_bias_dark': True,
+    'auto_midnight_moonless_bias_dark': False,
     'auto_eve_sky_flat': True,
     'eve_sky_flat_sunset_offset': -30.5,  #  Minutes  neg means before, + after.
     'eve_cool_down_open' : -105.0,
     'auto_morn_sky_flat': False,
-    'auto_morn_bias_dark': False,
+    'auto_morn_bias_dark': True,
     're-calibrate_on_solve': True,
     'pointing_calibration_on_startup': False,
     'periodic_focus_time' : 0.5, # This is a time, in hours, over which to bypass automated focussing (e.g. at the start of a project it will not refocus if a new project starts X hours after the last focus)
@@ -361,10 +361,10 @@ site_config = {
             #F4.9 setup
             'start_at_config_reference': True,
             'use_focuser_temperature': True,
-            'reference':24729,    #  20210313  Nominal at 10C Primary temperature
+            'reference': 13500,    #  20210313  Nominal at 10C Primary temperature
             'ref_temp':  6265.0,    #  Update when pinning reference
             'coef_c': 0,   #  Negative means focus moves out as Primary gets colder
-            'coef_0': 24729,  #  Nominal intercept when Primary is at 0.0 C.
+            'coef_0': 13500,  #  Nominal intercept when Primary is at 0.0 C.
             'coef_date':  '20220914',    #This appears to be sensible result 44 points -13 to 3C'reference':  6431,    #  Nominal at 10C Primary temperature
             # #F9 setup
             # 'reference': 4375,    #   Guess 20210904  Nominal at 10C Primary temperature
@@ -440,17 +440,17 @@ site_config = {
                         
                         #['w',     [0,  0],     0, 72.7, [1.00 ,  72], 'PL'],    #0.   For sequencer autofocus  consider foc or f filter
                         ['focus', [0,  0],     0, 148, [1.00 ,  72], 'focus'],    #0.
-                        ['lum',    [0,  0],     0, 148, [1.00 ,  72], 'PhLum'],    #1.
+                        ['lum',    [0,  0],     0, 179, [1.00 ,  72], 'PhLum'],    #1.
                         ['dark',    [1,  1],     0, 17, [1.00 , 119], 'PhRed'],    #2.
-                        ['pb',    [2,  2],     0, 39, [1.00 , 113], 'PhGreen'],    #3.
-                        ['pg',    [3,  3],     0, 50, [0.80 ,  97], 'PhBlue'],    #4.
-                        ['pr',    [4,  4],     0, 75, [0.80 ,  97], 'PhBlue'],    #4.
+                        ['pb',    [2,  2],     0, 43, [1.00 , 113], 'PhGreen'],    #3.
+                        ['pg',    [3,  3],     0, 55, [0.80 ,  97], 'PhBlue'],    #4.
+                        ['pr',    [4,  4],     0, 6.39, [0.80 ,  97], 'PhBlue'],    #4.
                         #['PR',    [1,  1],     0, 170, [1.00 , 119], 'PhBlue'],    #2.
                         #['PG',    [2,  2],     0, 220, [1.00 , 113], 'PhGreen'],    #3.
                         #['PB',    [3,  3],     0, 300, [0.80 ,  97], 'PhRed'],    #4.
                         ['ha',    [5,  5],     0, 2.728, [5.00 , 200], 'Halpha'],    #5.
-                        ['o3',    [6,  6],     0, 5.827, [4.00 , 200], 'OIII'],    #6.
-                        ['s2',    [7,  7],     0, 2.196, [10.0,  200], 'SII']],    #7.
+                        ['o3',    [6,  6],     0, 3.52, [4.00 , 200], 'OIII']],    #6.
+                        #['s2',    [7,  7],     0, 58.239, [10.0,  200], 'SII']],    #7.
                         #['air',   [7,  7], -1000, 100., [1.00,   70], 'air'],    #8.
                         #['gooble',  [6,  6],     0, .221, [   0,    0], 'dark'],   #9.
                         #['LRGB',  [0,  0],     0, .221, [   0,    0], 'LRGB']],   #10.
@@ -484,7 +484,7 @@ site_config = {
     'camera': {
         'camera_1_1': {
             'parent': 'telescope1',
-            'name': 'ec001ms',      #  Important because this points to a server file structure by that name.
+            'name': 'ec002c',      #  Important because this points to a server file structure by that name.
             'desc':  'SBIG16803',
             'service_date': '20211111',
             'driver': "CCDSoft2XAdaptor.ccdsoft5Camera",  # "ASCOM.QHYCCD.Camera", ##  'ASCOM.FLI.Kepler.Camera',
@@ -523,33 +523,33 @@ site_config = {
                 'crop_preview_ytop': 1,
                 'crop_preview_xleft': 1,
                 'crop_preview_xright': 1,
-                'temp_setpoint': -10,   
-                'calib_setpoints': [-35,-30, -25, -20, -15, -10 ],  #  Should vary with season?
+                'temp_setpoint': -20,   
+                #'calib_setpoints': [-35,-30, -25, -20, -15, -10 ],  #  Should vary with season?
                 'day_warm': False,
                 'cooler_on': True,
                 'x_start':  0,
                 'y_start':  0,
-                'x_width':  4656,   #  NB Should be set up with overscan, which this camera is!  20200315 WER
-                'y_width':  3520,
+                'x_width':  4096,   #  NB Should be set up with overscan, which this camera is!  20200315 WER
+                'y_width':  4096,
                 #Note please add 56 to SBIG Driver Checker 64 Update config for added overscan
-                'x_chip':  4656,   #  NB Should specify the active pixel area.   20200315 WER
-                'y_chip':  3520,
+                'x_chip':  4096,   #  NB Should specify the active pixel area.   20200315 WER
+                'y_chip':  4096,
                 'x_trim_offset':  0,   #  NB these four entries are guesses.
                 'y_trim_offset':  0,
                 'pre_bias_available': False,  #if so need to specify as below for post_bias.
                 'post_bias_available': True,  #if so need to specify as below for post_bias.
-                'x_bias_start':  4520,
-                'y_bias_start': 3620,
-                'x_bias_end':  4556,       # Vert band self.img[-38:-18, 0]
-                'y_bias_send': 3643,
+                'x_bias_start':  4096,
+                'y_bias_start': 4096,
+                'x_bias_end':  4096,       # Vert band self.img[-38:-18, 0]
+                'y_bias_send': 4096,
                 'corner_everlap': True,
                 'x_bias_line': True,
                 'y_bias_line': True,
                 #'ref_dark': 60.0,
                 #'long_dark': 600.0,
                 
-                'x_active': 4656,
-                'y_active': 3520,
+                'x_active': 4096,
+                'y_active': 4096,
                 #THIS IS ALL WRONG!
                 #'det_size': '[1:4556, 1:3656]',  # Physical chip data size as returned from driver
                 #'ccd_sec': '[1:4556, 1:3656]',
@@ -557,11 +557,11 @@ site_config = {
                 #'det_sec': ['[25:9600, 1:6388]', '[13:4800, 1:3194]', '[9:3200, 1:2129]', '[7:2400, 1:1597]'],
                 #'data_sec': ['[25:9600, 1:6388]', '[13:4800, 1:3194]', '[9:3200, 1:2129]', '[7:2400, 1:1597]'],
                 #'trim_sec': ['[1:9576, 1:6388]', '[1:4788, 1:3194]', '[1:3192, 1:2129]', '[1:2394, 1:1597]'],
-                'x_pixel':  6,
-                'y_pixel':  6,
+                'x_pixel':  9,
+                'y_pixel':  9,
                 
-                'CameraXSize' : 4656,
-                'CameraYSize' : 3520,
+                'CameraXSize' : 4096,
+                'CameraYSize' : 4096,
                 #'MaxBinX' : 4,
                 #'MaxBinY' : 4,
                 'StartX' : 1,
@@ -574,19 +574,19 @@ site_config = {
                 'north_offset': 0.0,    #  These three are normally 0.0 for the primary telescope
                 'east_offset': 0.0,     #  Not sure why these three are even here.
                 'rotation': 0.0,        #  Probably remove.
-                'min_exposure': 0.02,
+                'min_exposure': 0.2,
                 'max_exposure': 3600,
                 'can_subframe':  True,
                 'min_subframe':  [128, 128],
                
                 
-                'cycle_time':  2,  # 3x3 requires a 1, 1 reaout then a software bin, so slower.
+                'cycle_time':  12.5,  # 3x3 requires a 1, 1 reaout then a software bin, so slower.
                 'rbi_delay':  0.,      #  This being zero says RBI is not available, eg. for SBIG.
-                'is_cmos':  True,
+                'is_cmos':  False,
                 'is_color':  False,
                 'bayer_pattern':  None,    #  'RGGB" is a valid string in camera is color.
                 'can_set_gain':  True,
-                'reference_gain': 2,     #  One val for each binning. SWAG!
+                'reference_gain': 1.27,     #  One val for each binning. SWAG!
                 'reference_noise': 10,    #  All SWAGs right now!
 
                 'reference_dark': [0.0, 0.0, 0.0, 0.0],     #  Might these best be pedastal values?  NO!
@@ -595,8 +595,8 @@ site_config = {
                     #hdu.header['RDOUTSP'] = (self.config['camera'][self.name]['settings']['readout_speed'], '[FPS] Readout speed')
                 'read_mode':  'Normal',
                 'readout_mode':  'Normal',
-                'readout_speed': 0.4,
-                'readout_seconds': 2,
+                'readout_speed': 0.08,
+                'readout_seconds': 12.5,
                 'smart_stack_exposure_time' : 30,
                 'saturate':   65000 ,   # e-.  This is a close guess, not measured, but taken from data sheet.
                 'max_linearity': 65000,
@@ -611,7 +611,7 @@ site_config = {
                 #'optimal_bin':  [2, 2, 0.538],    #  Matched to seeing situation by owner
                 #'max_res_bin':  [1, 1, 0.269],    #  Matched to seeing situation by owner
                 #'bin_modes':  [[1, 1, 0.269],[2, 2, 0.538],[3, 3, 0.807],[4, 4, 1.076]], #  , [2, 2, 2.13], [3, 3, 3.21], [4, 4, 4.27]],   #Meaning no binning choice if list has only one entry, default should be first.
-                'pix_scale': 0.269,
+                'pix_scale': 0.637,
                 'do_cosmics' : 'yes',
                 #'dark_length' : 1,
                 'bias_count' : 5,

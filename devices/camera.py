@@ -992,6 +992,7 @@ class Camera:
                 
                 if self.current_filter == "none":
                     plog("skipping exposure as no adequate filter match found")
+                    self.exposure_busy = False
                     return
             else:
                 print ("No filter wheel, not selecting a filter")
@@ -1034,6 +1035,7 @@ class Camera:
             if imtype.lower() in ["light"] or imtype.lower() in ["expose"]:
                 if g_dev['events']['Observing Ends'] < ephem.Date(ephem.now()+ (exposure_time *ephem.second)):
                     print ("Sorry, exposures are outside of night time.")
+                    self.exposure_busy = False
                     break
 
             self.pre_mnt = []
@@ -1078,7 +1080,7 @@ class Camera:
                                 g_dev["obs"].stop_all_activity = False
                                 print("Camera retry loop stopped by Cancel Exposure")
                                 self.exposure_busy = False
-
+                        self.exposure_busy = False
                         return
 
                     # Check that the block isn't ending during normal observing time (don't check while biasing, flats etc.)
@@ -1094,7 +1096,8 @@ class Camera:
                             print ("And Cancelling SmartStacks.")
                             Nsmartstack=1
                             sskcounter=2
-                            return
+                            self.exposure_busy = False
+                            return 'blockend'
                         
                     # NB Here we enter Phase 2
                     try:
@@ -1198,6 +1201,7 @@ class Camera:
                             plog("Something terribly wrong, driver not recognized.!")
                             result = {}
                             result["error":True]
+                            self.exposure_busy = False
                             return result
                         #self.t9 = time.time()
                         
@@ -1237,7 +1241,7 @@ class Camera:
                         continue
         #  This is the loop point for the seq count loop
         #self.t11 = time.time()
-
+        self.exposure_busy = False
         return result
 
     def stop_command(self, required_params, optional_params):
