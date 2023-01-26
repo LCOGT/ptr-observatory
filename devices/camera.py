@@ -1035,6 +1035,7 @@ class Camera:
             if imtype.lower() in ["light"] or imtype.lower() in ["expose"]:
                 if g_dev['events']['Observing Ends'] < ephem.Date(ephem.now()+ (exposure_time *ephem.second)):
                     print ("Sorry, exposures are outside of night time.")
+                    self.exposure_busy = False
                     break
 
             self.pre_mnt = []
