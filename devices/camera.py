@@ -1094,7 +1094,8 @@ class Camera:
                             print ("And Cancelling SmartStacks.")
                             Nsmartstack=1
                             sskcounter=2
-                            return
+                            self.exposure_busy = False
+                            return 'blockend'
                         
                     # NB Here we enter Phase 2
                     try:

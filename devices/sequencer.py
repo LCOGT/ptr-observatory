@@ -316,7 +316,7 @@ class Sequencer:
             #breakpoint()
             if ocn_status == None:
                 if self.config['site_roof_control'] != 'no' and enc_status['shutter_status'] in ['Closed', 'closed'] and g_dev['enc'].mode == 'Automatic'\
-                    and self.config['site_allowed_to_open_roof'] == 'yes':
+                    and self.config['site_allowed_to_open_roof'] == 'yes' and self.weather_report_is_acceptable_to_observe:
                     #breakpoint()
                     g_dev['enc'].open_command({}, {})
                     plog("Opening dome.")
@@ -327,7 +327,7 @@ class Sequencer:
                         self.opens_this_evening= self.opens_this_evening+1
                         g_dev['obs'].open_and_enabled_to_observe = True
             elif self.config['site_roof_control'] != 'no' and enc_status['shutter_status'] in ['Closed', 'closed'] and g_dev['enc'].mode == 'Automatic' \
-                and ocn_status['hold_duration'] <= 0.1 and self.config['site_allowed_to_open_roof'] == 'yes':   #NB
+                and ocn_status['hold_duration'] <= 0.1 and self.config['site_allowed_to_open_roof'] == 'yes' and self.weather_report_is_acceptable_to_observe:   #NB
                 #breakpoint()
                 g_dev['enc'].open_command({}, {})
                 plog("Opening dome.")
@@ -525,7 +525,7 @@ class Sequencer:
                     debug = False
         
                     if self.config['site_roof_control'] != 'no' and  enc_status['shutter_status'] in ['Closed', 'closed'] \
-                        and float(ocn_status['hold_duration']) <= 0.1:
+                        and float(ocn_status['hold_duration']) <= 0.1 and self.weather_report_is_acceptable_to_observe:
                         #breakpoint()
                         g_dev['enc'].open_command({}, {})
                         plog("Opening dome, will set Synchronize in 10 seconds.")
@@ -836,7 +836,7 @@ class Sequencer:
                 g_dev['obs'].send_to_user("Could not execute project due to poorly formatted or corrupt project", p_level='INFO')
                 continue
 
-            if self.config['site_roof_control'] != 'no' and enc_status['shutter_status'] in ['Closed', 'closed'] and ocn_status['hold_duration'] <= 0.1:   #NB  # \  NB NB 20220901 WER fix this!
+            if self.config['site_roof_control'] != 'no' and enc_status['shutter_status'] in ['Closed', 'closed'] and ocn_status['hold_duration'] <= 0.1 and self.weather_report_is_acceptable_to_observe:   #NB  # \  NB NB 20220901 WER fix this!
 
                 #breakpoint()
                 g_dev['enc'].open_command({}, {})
@@ -886,6 +886,22 @@ class Sequencer:
             #opt = {'area': 150, 'count': 1, 'bin': '2, 2', 'filter': 'focus'}
             opt = {'area': 150, 'count': 1, 'bin': 1, 'filter': 'focus'}
             result = g_dev['cam'].expose_command(req, opt, no_AWS=False, solve_it=True)
+            
+            if result == 'blockend':
+                print ("End of Block, exiting project block.")
+                if block_specification['project']['project_constraints']['close_on_block_completion']:
+                    try:
+                        pass#g_dev['enc'].enclosure.Slaved = False   NB with wema no longer exists
+                    except:
+                        pass
+                    #self.redis_server.set('unsync_enc', True, ex=1200)
+                    #g_dev['enc'].close_command({}, {})
+                    g_dev['mnt'].park_command({}, {})
+                    plog("Auto PARK (not Close) attempted at end of block.")
+                self.block_guard = False
+                
+                return block_specification
+            
             g_dev['mnt'].re_seek(dither=0)
 
             plog("CAUTION:  rotator may block")
