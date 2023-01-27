@@ -577,6 +577,8 @@ site_config = {
                 'dark_length' : 900,
                 'bias_count' : 10,
                 'dark_count' : 10,
+                
+                'flat_count' : 10,
                 'pix_scale': [1.104, 2.134, 3.201, 4.268],
                 
                 'has_screen': True,

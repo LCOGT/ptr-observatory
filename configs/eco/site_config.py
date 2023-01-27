@@ -94,9 +94,9 @@ site_config = {
     'auto_eve_bias_dark': True,
     'auto_midnight_moonless_bias_dark': False,
     'auto_eve_sky_flat': True,
-    'eve_sky_flat_sunset_offset': -30.5,  #  Minutes  neg means before, + after.
+    'eve_sky_flat_sunset_offset': -60.5,  #  Minutes  neg means before, + after.
     'eve_cool_down_open' : -105.0,
-    'auto_morn_sky_flat': False,
+    'auto_morn_sky_flat': True,
     'auto_morn_bias_dark': True,
     're-calibrate_on_solve': True,
     'pointing_calibration_on_startup': False,
@@ -441,14 +441,14 @@ site_config = {
                         #['w',     [0,  0],     0, 72.7, [1.00 ,  72], 'PL'],    #0.   For sequencer autofocus  consider foc or f filter
                         ['focus', [0,  0],     0, 148, [1.00 ,  72], 'focus'],    #0.
                         ['lum',    [0,  0],     0, 179, [1.00 ,  72], 'PhLum'],    #1.
-                        ['dark',    [1,  1],     0, 17, [1.00 , 119], 'PhRed'],    #2.
-                        ['pb',    [2,  2],     0, 43, [1.00 , 113], 'PhGreen'],    #3.
-                        ['pg',    [3,  3],     0, 55, [0.80 ,  97], 'PhBlue'],    #4.
-                        ['pr',    [4,  4],     0, 6.39, [0.80 ,  97], 'PhBlue'],    #4.
+                        ['ip',    [1,  1],     0, 50, [1.00 , 119], 'PhRed'],    #2.
+                        ['V',    [2,  2],     0, 43, [1.00 , 113], 'PhGreen'],    #3.
+                        ['pb',    [3,  3],     0, 55, [0.80 ,  97], 'PhBlue'],    #4.
+                        ['ha',    [4,  4],     0, 6.39, [0.80 ,  97], 'PhBlue'],    #4.
                         #['PR',    [1,  1],     0, 170, [1.00 , 119], 'PhBlue'],    #2.
                         #['PG',    [2,  2],     0, 220, [1.00 , 113], 'PhGreen'],    #3.
                         #['PB',    [3,  3],     0, 300, [0.80 ,  97], 'PhRed'],    #4.
-                        ['ha',    [5,  5],     0, 2.728, [5.00 , 200], 'Halpha'],    #5.
+                        ['s2',    [5,  5],     0, 2.728, [5.00 , 200], 'Halpha'],    #5.
                         ['o3',    [6,  6],     0, 3.52, [4.00 , 200], 'OIII']],    #6.
                         #['s2',    [7,  7],     0, 58.239, [10.0,  200], 'SII']],    #7.
                         #['air',   [7,  7], -1000, 100., [1.00,   70], 'air'],    #8.
@@ -616,6 +616,7 @@ site_config = {
                 #'dark_length' : 1,
                 'bias_count' : 5,
                 'dark_count' : 5,
+                'flat_count' : 10,
                 'dark_exposure': 10,
                 'has_darkslide':  False,
                 'darkslide_com':  None,

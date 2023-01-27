@@ -692,6 +692,8 @@ site_config = {
                 #'bias_dark_bin_spec':    ['1,1', '2,2', '3,3', '4,4' ],    #Default binning for flats
                 'bias_count':    31,
                 'dark_count':    9,
+                
+                'flat_count' : 10,
                 'dark_exposure': 360,
                 #'flat_bin_spec':         ['1,1', '2,2', '3,3', '4,4' ],   #Is this necessary?
                 'flat_count':    5,   #This will take days to get through

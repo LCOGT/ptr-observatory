@@ -1553,7 +1553,7 @@ class Sequencer:
         g_dev['obs'].send_to_user('Sky Flat sequence Starting, Enclosure PRESUMED Open. Telescope should be on sky flat spot.', p_level='INFO')
         evening = not morn
         camera_name = str(self.config['camera']['camera_1_1']['name'])
-        flat_count = 5
+        flat_count = self.config['camera']['camera_1_1']['settings']['flat_count']
         min_exposure = float(self.config['camera']['camera_1_1']['settings']['min_exposure'])
 
         exp_time = min_exposure # added 20220207 WER  0.2 sec for SRO

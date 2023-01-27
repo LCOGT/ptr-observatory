@@ -607,6 +607,8 @@ site_config = {
                 'dark_length' : 900,
                 'bias_count' : 10,
                 'dark_count' : 10,
+                
+                'flat_count' : 10,
                 'bin_modes':  [[1, 1, 0.2876], [2, 2, 0.575], [3, 3, 0.863], [4, 4, 1.15]],   #Meaning no binning choice if list has only one entry, default should be first.
                 'optimal_bin':  [2, 2, 0.575],
                 'max_res_bin':  [1, 1, 0.2876],

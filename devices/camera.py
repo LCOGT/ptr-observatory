@@ -556,6 +556,12 @@ class Camera:
 
     def _theskyx_expose(self, exposure_time, imtypeb):
         self.camera.ExposureTime = exposure_time
+        print ("imtypeb: " + str(imtypeb))
+        if imtypeb == 0:
+            self.camera.Frame = 3 
+        else:
+            self.camera.Frame = 1
+        #breakpoint()
         #self.async_camera_exposure_queue.put('expose_please', block=False)
         thread=threading.Thread(target=self.theskyx_async_expose)
         thread.start()
