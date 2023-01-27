@@ -972,7 +972,7 @@ class Observatory:
                     
                     time.sleep(60)
                     
-                    self.mount.Connected = True
+                    g_dev['mnt'].mount.Connected = True
                     #g_dev['mnt'].home_command()
                 
     
