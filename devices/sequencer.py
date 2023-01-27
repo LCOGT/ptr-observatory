@@ -1599,7 +1599,12 @@ class Sequencer:
                 if g_dev["fil"].null_filterwheel == False:
                     current_filter = pop_list[0]                
                     #g_dev['fil'].set_number_command(current_filter)  #  20220825  NB NB NB Change this to using a list of filter names.
-                    _, filt_pointer = g_dev['fil'].set_name_command({"filter": current_filter}, {})  #  20220825  NB NB NB Chan
+                    try:
+                        _, filt_pointer = g_dev['fil'].set_name_command({"filter": current_filter}, {})  #  20220825  NB NB NB Chan
+                    except Exception as e:
+                        plog('Failed to change filter in flat script: ', e)
+                        plog("I think this happens if it can't find a substitute filter.... but need to check that! - MTF")
+                        plog(traceback.format_exc())
                     # filter number for skylux colle
                 
                 acquired_count = 0

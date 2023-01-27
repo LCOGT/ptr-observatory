@@ -459,7 +459,7 @@ site_config = {
                 'filter_screen_sort':  ['s2','o3','ha','pb','pg','pr','lum'],   #  don't use narrow yet,  8, 10, 9], useless to try.
 
 
-                'filter_sky_sort': ['s2','o3','ha','pb','pg','pr','lum']    #No diffuser based filters
+                'filter_sky_sort': ['s2','o3','ha','pb','v','ip','lum']    #No diffuser based filters
                 #'filter_sky_sort': [7, 19, 2, 13, 18, 5, 15,\
                 #                    12, 4, 11, 16, 10, 9, 17, 3, 14, 1, 0]    #basically no diffuser based filters
                 #[32, 8, 22, 21, 20, 23, 31, 6, 7, 19, 27, 2, 37, 13, 18, 30, 5, 15, 36, 12,\
