@@ -911,9 +911,9 @@ class Camera:
                 frame_type = "experimental"
             else:
                 frame_type = "expose"
-        
+
         self.smartstack = required_params.get('smartstack', 'yes')
-        self.longstack = required_params.get('longstackswitch', 'no')
+        self.longstack = required_params.get('longstack', 'no')  #'longstackswitch' key not emitted by AWS"
     
         if self.longstack == 'no':
             LongStackID ='no'
@@ -1047,6 +1047,7 @@ class Camera:
 
             # Within each count - which is a single requested exposure, IF it is a smartstack
             # Then we divide each count up into individual smartstack exposures.
+
             ssExp=self.config["camera"][self.name]["settings"]['smart_stack_exposure_time']
             if g_dev["fil"].null_filterwheel == False:
                 if self.current_filter.lower() in ['ha', 'o3', 's2', 'n2', 'y', 'up', 'u']:
@@ -2452,7 +2453,7 @@ class Camera:
                                 # Interpolate to make a high resolution version for focussing
                                 # and platesolving
                                 if self.config["camera"][self.name]["settings"]['bin_for_focus']:
-                                    breakpoint()
+
                                     hdufocusdata=block_reduce(hdufocusdata,2)
                                     binfocus=2
                                 else:

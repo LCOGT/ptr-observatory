@@ -14,7 +14,7 @@ import math
 import shutil
 import numpy as np
 import os
-from pyowm import OWM
+from pyowm import OWM       #  4a561c33f77cb0ebf65adedcdac29c2c
 from pyowm.utils import config
 from pyowm.utils import timestamps
 from glob import glob
@@ -386,7 +386,7 @@ class Sequencer:
         enc_status = g_dev['enc'].status
         events = g_dev['events']
         
-        
+
         # Check for delayed opening of the observatory and act accordingly.
         
         # If the observatory is simply delayed until opening, then wait until then, then attempt to start up the observatory

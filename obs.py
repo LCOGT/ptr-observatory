@@ -298,7 +298,7 @@ class Observatory:
         self.time_since_last_slew_or_exposure = time.time()
 
         # Only poll the broad safety checks (altitude and inactivity) every 5 minutes
-        self.time_since_safety_checks=time.time() - 310.0
+        self.time_since_safety_checks=time.time()  #- 310.0
         
         # This variable is simply.... is it open and enabled to observe!
         # This is set when the roof is open and everything is safe
@@ -847,8 +847,10 @@ class Observatory:
             # Opening and Shutting should be done more glamorously through the
             # sequencer, but if all else fails, this routine should save
             # the observatory from rain, wasps and acts of god.
-            print ("Roof Status: " + str(g_dev['enc'].status['shutter_status']))
-            
+            try:
+                print ("Roof Status: " + str(g_dev['enc'].status['shutter_status']))
+            except:
+                plog("Line 853 in obs.py.  ")
             
             if g_dev['enc'].status['shutter_status'] == 'Software Fault':
                 print ("Software Fault Detected. Will alert the authorities!")

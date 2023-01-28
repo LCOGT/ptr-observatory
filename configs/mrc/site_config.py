@@ -127,10 +127,10 @@ site_config = {
     'observing_check_period' : 2,    # How many minutes between weather checks
     'enclosure_check_period' : 2,    # How many minutes between enclosure checks
 
-    'auto_eve_bias_dark': True,
+    'auto_eve_bias_dark': False,
     
     'auto_midnight_moonless_bias_dark': True,
-    'auto_eve_sky_flat': True,
+    'auto_eve_sky_flat': False,
     #NBNB  Add the offests from Sunset and Sunrise into the config so events are not hardwired in code.
     'eve_sky_flat_sunset_offset': -45.,  #  Minutes  neg means before, + after.
     'eve_cool_down_open' : -50.0,
@@ -291,6 +291,8 @@ site_config = {
 			    'elevation_offset': 0.0,    # meters above sea level
                 'home_park_altitude': 0,    #Having these settings is important for PWI4 where it can easily be messed up.
                 'home_park_azimuth': 180,
+                'home_altitude': 0,    #Having these settings is important for PWI4 where it can easily be messed up.
+                'home_azimuth': 180,
                 'fixed_screen_azimuth': 167.25,
                 'fixed_screen _altitude': 0.54,
                 'refraction_on': True,
@@ -587,18 +589,16 @@ site_config = {
             'settings': {
                 
                 'is_osc' : True,
+                'osc_bayer' : 'RGGB',
+                'osc_brightness_enhance' : 1.0,
+                'osc_contrast_enhance' : 1.3,
+                'osc_saturation_enhance' : 2.0,
+                'osc_colour_enhance' : 1.5,
+                'osc_sharpness_enhance' : 1.5,
+                'osc_background_cut' : 25.0,  
                 
                 'squash_on_x_axis' : True,
-                # 'osc_brightness_enhance' : 1.0,
-                # 'osc_contrast_enhance' : 1.3,
-                # 'osc_saturation_enhance' : 2.0,
-                # 'osc_colour_enhance' : 1.5,
-                # 'osc_sharpness_enhance' : 1.5,
-                'osc_brightness_enhance' : 1.0,
-                'osc_contrast_enhance' : 1.5,
-                'osc_saturation_enhance' : 2.5,
-                'osc_colour_enhance' : 1.7,
-                'osc_sharpness_enhance' : 1.5,
+
                 'bin_for_focus' : True, # This setting will bin the image for focussing rather than interpolating. Good for 1x1 pixel sizes < 0.6.
                 
                 # ONLY TRANSFORM THE FITS IF YOU HAVE

@@ -271,6 +271,7 @@ class Enclosure:
             
         
     def get_status(self) -> dict:
+ 
 
         if not self.is_wema and self.site_has_proxy and self.dome_on_wema:
             if self.config['site_IPC_mechanism'] == 'shares':
