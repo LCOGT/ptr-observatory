@@ -7,6 +7,7 @@ import numpy as np
 import requests
 import serial
 import win32com.client
+import traceback
 
 from global_yard import g_dev
 from ptr_utility import plog
@@ -147,27 +148,34 @@ class Focuser:
         return float(self.config["reference"])
 
     def get_status(self):
-        #try:
-        if g_dev['fil'].null_filterwheel == False:
-            status = {
-                "focus_position": round(
-                    self.focuser.Position * self.steps_to_micron, 1
-                ),  # THIS occasionally glitches, usually no temp probe on Gemini
-                "focus_temperature": self.focuser.Temperature,
-                "focus_moving": self.focuser.IsMoving,
-                "comp": self.config["coef_c"],
-                "filter_offset": g_dev["fil"].filter_offset,
-            }
-        else:
-            status = {
-                "focus_position": round(
-                    self.focuser.Position * self.steps_to_micron, 1
-                ),  # THIS occasionally glitches, usually no temp probe on Gemini
-                "focus_temperature": self.focuser.Temperature,
-                "focus_moving": self.focuser.IsMoving,
-                "comp": self.config["coef_c"],
-                "filter_offset": 0.0,
-            }
+        try:
+            if g_dev['fil'].null_filterwheel == False:
+                status = {
+                    "focus_position": round(
+                        self.focuser.Position * self.steps_to_micron, 1
+                    ),  # THIS occasionally glitches, usually no temp probe on Gemini
+                    "focus_temperature": self.focuser.Temperature,
+                    "focus_moving": self.focuser.IsMoving,
+                    "comp": self.config["coef_c"],
+                    "filter_offset": g_dev["fil"].filter_offset,
+                }
+            else:
+                status = {
+                    "focus_position": round(
+                        self.focuser.Position * self.steps_to_micron, 1
+                    ),  # THIS occasionally glitches, usually no temp probe on Gemini
+                    "focus_temperature": self.focuser.Temperature,
+                    "focus_moving": self.focuser.IsMoving,
+                    "comp": self.config["coef_c"],
+                    "filter_offset": 0.0,
+                }
+        except Exception as e:
+            print ("focuser status breakdown: ", e)
+            print ("usually the focusser program has crashed. This breakpoint is to help catch and code in a fix - MTF")
+            print ("possibly just institute a full reboot")
+            print (traceback.format_exc())
+            breakpoint()
+
 
         # except:
         #     try:

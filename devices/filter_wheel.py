@@ -180,7 +180,7 @@ class FilterWheel:
                 self.custom = False
                 # This is the default expected after a home or power-up cycle.
                 #self.filter_selected = self.filter_data[self.filter_reference][0]
-                            # WER - THIS STUFF IS NOT USED ANYMORE, IT IS TO DO WITH NUMERICAL FILTER POSITIONS
+
                 #self.filter_number = self.filter_reference
                 #self.filter_offset = self.filter_data[self.filter_reference][2]
                 # We assume camera object has been created before the filter object.

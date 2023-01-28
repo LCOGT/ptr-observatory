@@ -177,6 +177,8 @@ class Mount:
         win32com.client.pythoncom.CoInitialize()
         self.mount = win32com.client.Dispatch(driver)
         self.mount.Connected = True
+        
+        self.driver = driver
 
         if "ASCOM.SoftwareBisque.Telescope" in config['mount']['mount1']['driver']:
             self.theskyx = True
@@ -350,12 +352,34 @@ class Mount:
                 return
             else:
                 plog('Found mount not connected, reconnecting.')
-                self.mount.Connected = True
-                return
+                try:
+                    self.mount.Connected = True
+                    return
+                except Exception as e:
+                    print (traceback.format_exc())
+                    print ("mount reconnection failed.")
+                    
         except:
             plog('Found mount not connected via try: block fail, reconnecting.')
-            self.mount.Connected = True
-            return
+            time.sleep(5)
+            try:
+                self.mount.Connected = True
+                return
+            except Exception as e:
+                print (traceback.format_exc())
+                print ("mount reconnection failed.")          
+            
+            print ("Trying full-scale reboot")
+            try:
+                win32com.client.pythoncom.CoInitialize()
+                self.mount = win32com.client.Dispatch(self.driver)
+                self.mount.Connected = True
+                return
+            except Exception as e:
+                print (traceback.format_exc())
+                print ("mount full scale reboot failed.")
+                breakpoint()
+            
 
     def get_mount_coordinates(self):
         global loop_count
@@ -1384,16 +1408,17 @@ class Mount:
                 plog(f"can find home: {self.mount.CanFindHome}")
                 self.unpark_command()  
                 wait_for_slew()
-                home_alt = self.settings["home_altitude"]
-                home_az = self.settings["home_azimuth"]
-                self.move_to_azalt(home_az, home_alt)
+                
                 self.move_time = time.time()
                 self.mount.FindHome()
                 wait_for_slew()
         else:
             plog("Mount is not capable of finding home. Slewing to zenith....ish")
             self.move_time = time.time()
-            self.move_to_azalt(270, 75)  #az, alt  --badly named method.  NB NB Is this a sun-safe place to park?
+            #self.move_to_azalt(270, 75)  #az, alt  --badly named method.  NB NB Is this a sun-safe place to park?
+            home_alt = self.settings["home_altitude"]
+            home_az = self.settings["home_azimuth"]
+            self.move_to_azalt(home_az, home_alt)
             wait_for_slew()
         wait_for_slew()
 
