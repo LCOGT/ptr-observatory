@@ -11,7 +11,7 @@ import os
 
 from site_config import get_enc_status
 
-from pprint import pprint
+#from pprint import pprint
 from ptr_utility import plog
 
 '''
@@ -939,7 +939,7 @@ class Enclosure:
                 plog("Entering Guarded open, Expect slew opposite Sun")
                 self.guarded_open()
             except Exception as e:
-                print ("Error while opening the roof ",e)
+                plog ("Error while opening the roof ",e)
             self.dome_opened = True
             self.dome_homed = True
             #if _redis: g_dev['redis'].set('Enc Auto Opened', True, ex= 600)   # Unused

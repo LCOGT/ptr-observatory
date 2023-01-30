@@ -42,13 +42,13 @@ class Focuser:
             self.focuser.Connected = True
         except:
             if self.focuser.Link == True:
-                print ("focuser doesn't have ASCOM Connected keyword, but reports a positive link")
+                plog ("focuser doesn't have ASCOM Connected keyword, but reports a positive link")
             else:
                 try:
                     self.focuser.Link = True
-                    print ("focuser doesn't have ASCOM Connected keyword, attempted to send a positive Link")
+                    plog ("focuser doesn't have ASCOM Connected keyword, attempted to send a positive Link")
                 except:
-                    print ("focuser doesn't have ASCOM Connected keyword, also crashed on focuser.Link")
+                    plog ("focuser doesn't have ASCOM Connected keyword, also crashed on focuser.Link")
                     breakpoint()
         
         self.micron_to_steps = float(
@@ -170,10 +170,10 @@ class Focuser:
                     "filter_offset": 0.0,
                 }
         except Exception as e:
-            print ("focuser status breakdown: ", e)
-            print ("usually the focusser program has crashed. This breakpoint is to help catch and code in a fix - MTF")
-            print ("possibly just institute a full reboot")
-            print (traceback.format_exc())
+            plog ("focuser status breakdown: ", e)
+            plog ("usually the focusser program has crashed. This breakpoint is to help catch and code in a fix - MTF")
+            plog ("possibly just institute a full reboot")
+            plog (traceback.format_exc())
             breakpoint()
 
 
@@ -193,7 +193,7 @@ class Focuser:
         #             "filter_offset": "n.a",  # g_dev['fil'].filter_offset  # NB A patch
         #         }
         #     except:
-        #         print ("Could not get focusser status")
+        #         plog ("Could not get focusser status")
         #         status = {}
         return status
 
@@ -456,7 +456,7 @@ class Focuser:
                 cam_shelf["af_log"]=[(f_temp, ref, round(fwhm, 2), round(solved, 2), datetime.datetime.now().isoformat())]
         else:
             f_temp=15.0
-            print ("getting f_temp failed, using 15 degrees C")
+            plog ("getting f_temp failed, using 15 degrees C")
         cam_shelf.close()
         return
 

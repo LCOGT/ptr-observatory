@@ -327,13 +327,13 @@ class FilterWheel:
     #         g_dev["cam"].camera.GuiderFilter = filter_selections[1]
     #     elif self.theskyx:
     #         breakpoint()
-    #         print ("Before Filter")            
-    #         print (self.filter.FilterIndexZeroBased)
-    #         print ("Requesto Filter")
-    #         print (self.filter_number)
+    #         plog ("Before Filter")            
+    #         plog (self.filter.FilterIndexZeroBased)
+    #         plog ("Requesto Filter")
+    #         plog (self.filter_number)
     #         self.filter.FilterIndexZeroBased = self.filter_number - 1
-    #         print ("After Filter")
-    #         print (self.filter.FilterIndexZeroBased)
+    #         plog ("After Filter")
+    #         plog (self.filter.FilterIndexZeroBased)
     #         #breakpoint()
 
     # def set_position_command(self, req: dict, opt: dict):
@@ -375,15 +375,15 @@ class FilterWheel:
     #     elif self.theskyx:
     #         #TSXSend("ccdsoftCamera.TemperatureSetPoint = -10")
     #         #TSXSend("ccdsoftCamera.RegulateTemperature = true")
-    #         # self.filter.FilterIndexZeroBased <---- prints number of current filter
+    #         # self.filter.FilterIndexZeroBased <---- plogs number of current filter
     #         breakpoint()
-    #         print ("Before Filter")            
-    #         print (self.filter.FilterIndexZeroBased)
-    #         print ("Requesto Filter")
-    #         print (self.filter_number)
+    #         plog ("Before Filter")            
+    #         plog (self.filter.FilterIndexZeroBased)
+    #         plog ("Requesto Filter")
+    #         plog (self.filter_number)
     #         self.filter.FilterIndexZeroBased = self.filter_number - 1
-    #         print ("After Filter")
-    #         print (self.filter.FilterIndexZeroBased)
+    #         plog ("After Filter")
+    #         plog (self.filter.FilterIndexZeroBased)
     #         #breakpoint()
 
     def set_name_command(self, req: dict, opt: dict):
@@ -489,13 +489,13 @@ class FilterWheel:
                 plog("Filter RPC error, Maxim not responding. Reset Maxim needed.")
         elif self.theskyx:
             #breakpoint()
-            #print ("Before Filter")            
-            #print (self.filter.FilterIndexZeroBased)
-            #print ("Requesto Filter")
-            #print (self.filter_data[match][1][0])
+            #plog ("Before Filter")            
+            #plog (self.filter.FilterIndexZeroBased)
+            #plog ("Requesto Filter")
+            #plog (self.filter_data[match][1][0])
             self.filter.FilterIndexZeroBased = self.filter_data[match][1][0]
-            #print ("After Filter")
-            #print (self.filter.FilterIndexZeroBased)
+            #plog ("After Filter")
+            #plog (self.filter.FilterIndexZeroBased)
             #breakpoint()
         else:
             try:
@@ -503,7 +503,7 @@ class FilterWheel:
                     time.sleep(0.1)
                 self.filter_front.Position = filter_selections[0]
             except:
-                print ("Failed to change filter")
+                plog ("Failed to change filter")
                 pass
 
             self.filter_offset = float(self.filter_data[filt_pointer][2])
@@ -549,7 +549,7 @@ class FilterWheel:
         # Construct available filter list
         filter_names=[]
         for ctr in range(len(self.config["filter_wheel1"]["settings"]['filter_data'])):
-            #print (self.config["filter_wheel1"]["settings"]['filter_data'][ctr][0])
+            #plog (self.config["filter_wheel1"]["settings"]['filter_data'][ctr][0])
             filter_names.append(self.config["filter_wheel1"]["settings"]['filter_data'][ctr][0])
         
         

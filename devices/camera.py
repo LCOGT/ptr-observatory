@@ -129,7 +129,7 @@ def next_sequence(pCamera):
     try:
         seq = camShelf[sKey]  # get an 8 character string
     except:
-        print ("Failed to get seq key, starting from zero again")
+        plog ("Failed to get seq key, starting from zero again")
         seq=1
     seqInt = int(seq)
     seqInt += 1
@@ -556,7 +556,7 @@ class Camera:
 
     def _theskyx_expose(self, exposure_time, imtypeb):
         self.camera.ExposureTime = exposure_time
-        print ("imtypeb: " + str(imtypeb))
+        plog ("imtypeb: " + str(imtypeb))
         if imtypeb == 0:
             self.camera.Frame = 3 
         else:
@@ -582,7 +582,7 @@ class Camera:
         try:
             os.remove(self.camera.LastImageFileName)
         except Exception as e:
-            print ("Could not remove theskyx image file: ",e)
+            plog ("Could not remove theskyx image file: ",e)
         return imageTempOpen
 
     def _maxim_connected(self):
@@ -867,7 +867,7 @@ class Camera:
 
 
         opt = optional_params
-        print ("optional params :", opt)
+        plog ("optional params :", opt)
         self.hint = optional_params.get("hint", "")
         self.script = required_params.get("script", "None")
         
@@ -1001,7 +1001,7 @@ class Camera:
                     self.exposure_busy = False
                     return
             else:
-                print ("No filter wheel, not selecting a filter")
+                plog ("No filter wheel, not selecting a filter")
                 self.current_filter = self.config["filter_wheel"]["filter_wheel1"]["name"]
         except Exception as e:
             plog("Camera filter setup:  ", e)
@@ -1040,7 +1040,7 @@ class Camera:
             ## Need to do this, SRO kept taking shots til midday without this
             if imtype.lower() in ["light"] or imtype.lower() in ["expose"]:
                 if g_dev['events']['Observing Ends'] < ephem.Date(ephem.now()+ (exposure_time *ephem.second)):
-                    print ("Sorry, exposures are outside of night time.")
+                    plog ("Sorry, exposures are outside of night time.")
                     self.exposure_busy = False
                     break
 
@@ -1074,7 +1074,7 @@ class Camera:
             #When a smartstack is not requested.
             for sskcounter in range(int(Nsmartstack)):
                 if Nsmartstack > 1 :
-                    print ("Smartstack " + str(sskcounter+1) + " out of " + str(Nsmartstack))
+                    plog ("Smartstack " + str(sskcounter+1) + " out of " + str(Nsmartstack))
                     g_dev['obs'].update_status(cancel_check=False)
                 self.retry_camera = 3
                 self.retry_camera_start_time = time.time()
@@ -1084,7 +1084,7 @@ class Camera:
                         if result != None and result != {}:
                             if result["stopped"] is True:
                                 g_dev["obs"].stop_all_activity = False
-                                print("Camera retry loop stopped by Cancel Exposure")
+                                plog("Camera retry loop stopped by Cancel Exposure")
                                 self.exposure_busy = False
                         self.exposure_busy = False
                         return
@@ -1098,8 +1098,8 @@ class Camera:
                         blockended = now_date_timeZ  >= self.blockend
                         if blockended or ephem.Date(ephem.now()+ (exposure_time *ephem.second)) >= \
                             g_dev['events']['End Morn Bias Dark']:
-                            print ("Exposure overlays the end of a block or the end of observing. Skipping Exposure.")
-                            print ("And Cancelling SmartStacks.")
+                            plog ("Exposure overlays the end of a block or the end of observing. Skipping Exposure.")
+                            plog ("And Cancelling SmartStacks.")
                             Nsmartstack=1
                             sskcounter=2
                             self.exposure_busy = False
@@ -1288,7 +1288,7 @@ class Camera:
 
 
 
-        #print ("Smart Stack ID: " + smartstackid)
+        #plog ("Smart Stack ID: " + smartstackid)
         g_dev["obs"].send_to_user(
             "Starting Exposure: "
             + str(exposure_time)
@@ -1432,7 +1432,7 @@ class Camera:
                 self.t4p5 = time.time()
 
                 
-                print("READOUT READOUT READOUT:  ", round(self.t4p5-self.t4p4, 1))
+                plog("READOUT READOUT READOUT:  ", round(self.t4p5-self.t4p4, 1))
 
                 if frame_type in ["bias", "dark"] or frame_type[-4:] == ['flat']:
                     plog("Median of full-image area bias, dark or flat:  ", np.median(self.img))
@@ -1542,9 +1542,9 @@ class Camera:
                     del self.img
 
                     
-                    #This should print out  0,0 color pixel for an OSC camera and plot it. Yellow is larger! 
+                    #This should plog out  0,0 color pixel for an OSC camera and plot it. Yellow is larger! 
                     # self.tsp = hdu.data
-                    # print(self.tsp[0:2, 24:26])
+                    # plog(self.tsp[0:2, 24:26])
                     # plt.imshow(self.tsp[0:2, 24:26])
                     # del self.tsp
 
@@ -1675,7 +1675,7 @@ class Camera:
                             "Full well capacity",
                         )
                     except:
-                        print ("Full well capacity not set for this binning in the site-config")
+                        plog ("Full well capacity not set for this binning in the site-config")
                     hdu.header["CMOSGAIN"] = (0, "CMOS Camera System Gain")
                     hdu.header["CMOSOFFS"] = (10, "CMOS Camera offset")
                     hdu.header["CAMOFFS"] = (10, "Camera offset")
@@ -1771,7 +1771,7 @@ class Camera:
                         ]["trim_sec"]
                         
                     except:
-                        print ("need to fix TIMSEC etc. in site-config")
+                        plog ("need to fix TIMSEC etc. in site-config")
                         pass
 
                     hdu.header["SATURATE"] = (
@@ -2109,7 +2109,7 @@ class Camera:
                         pixscale = float(hdu.header["PIXSCALE"])
                     except:
                         # There really needs to be a pixelscale in the header and the variable, even if it is wrong!
-                        print ("pixel scale not set in the site-config for this binning")
+                        plog ("pixel scale not set in the site-config for this binning")
                         #
                         hdu.header["PIXSCALE"] = (
                             0.6
@@ -2381,7 +2381,7 @@ class Camera:
                             del tempFlatFrame
                         except Exception as e:
                             plog("flatting light frame failed", e)
-                            #print (traceback.format_exc())
+                            #plog (traceback.format_exc())
                             #breakpoint()
 
                         # Crop unnecessary rough edges off preview images that unnecessarily skew the scaling
@@ -2415,7 +2415,7 @@ class Camera:
                         # This is best done by taking the two "real" g pixels and interpolating in-between 
                         binfocus=1
                         if self.config["camera"][self.name]["settings"]["is_osc"]:
-                            #print ("interpolating bayer grid for focusing purposes.")
+                            #plog ("interpolating bayer grid for focusing purposes.")
                             if self.config["camera"][self.name]["settings"]["osc_bayer"] == 'RGGB':                              
                                 # Only separate colours if needed for colour jpeg
                                 if smartstackid == 'no':
@@ -2466,7 +2466,7 @@ class Camera:
                                     hdufocusdata=hdufocusdata.astype("float32")
                                     binfocus=1
                             else:
-                                print ("this bayer grid not implemented yet")
+                                plog ("this bayer grid not implemented yet")
                         
                         
                         # This is holding the flash reduced fits file waiting to be saved
@@ -2483,9 +2483,9 @@ class Camera:
                                 
                                 #histogram matching
                                 
-                                #print (np.median(hdublue))
-                                #print (np.median(hdugreen))
-                                #print (np.median(hdured))
+                                #plog (np.median(hdublue))
+                                #plog (np.median(hdugreen))
+                                #plog (np.median(hdured))
 
                                 #breakpoint()
                                 
@@ -2778,7 +2778,7 @@ class Camera:
                             sources = sep.extract(
                                 focusimg, 2.5, err=bkg.globalrms, minarea=minarea
                             )
-                            print ("min_area: " + str(minarea))
+                            plog ("min_area: " + str(minarea))
                             sources = Table(sources)
                             sources = sources[sources['flag'] < 8]
                             sources = sources[sources["peak"] < 0.9* image_saturation_level * pow(binfocus,2)]
@@ -2848,7 +2848,7 @@ class Camera:
 
 
                             if len(sources) < 2:
-                                print ("not enough sources to estimate a reliable focus")
+                                plog ("not enough sources to estimate a reliable focus")
                                 result["error"]=True
                                 result["FWHM"] = np.nan
                                 sources['FWHM'] = [np.nan] * len(sources)
@@ -2866,7 +2866,7 @@ class Camera:
                                 rfp = round(np.median(fwhmcalc),3)
                                 rfr = round(np.median(fwhmcalc) * pixscale,3)
                                 rfs = round(np.std(fwhmcalc) * pixscale,3)
-                                print("This image has a FWHM of " + str(rfr) + "+/-" +str(rfs) +" arcsecs, " + str(rfp) \
+                                plog("This image has a FWHM of " + str(rfr) + "+/-" +str(rfs) +" arcsecs, " + str(rfp) \
                                       + " pixels.")
                                 #breakpoint()
                                 result["FWHM"] = rfr
@@ -2892,12 +2892,12 @@ class Camera:
                                     # Then it triggers an autofocus.
                                     g_dev["foc"].focus_tracker.pop(0)
                                     g_dev["foc"].focus_tracker.append(round(rfr,3))
-                                    print("Last ten FWHM : ")
-                                    print(g_dev["foc"].focus_tracker)
-                                    print("Median last ten FWHM")
-                                    print(np.nanmedian(g_dev["foc"].focus_tracker))
-                                    print("Last solved focus FWHM")
-                                    print(g_dev["foc"].last_focus_fwhm)
+                                    plog("Last ten FWHM : ")
+                                    plog(g_dev["foc"].focus_tracker)
+                                    plog("Median last ten FWHM")
+                                    plog(np.nanmedian(g_dev["foc"].focus_tracker))
+                                    plog("Last solved focus FWHM")
+                                    plog(g_dev["foc"].last_focus_fwhm)
 
                                     # If there hasn't been a focus yet, then it can't check it, 
                                     #so make this image the last solved focus.
@@ -2920,8 +2920,8 @@ class Camera:
                                                 p_level="INFO",
                                             )
                         except:
-                            print ("something failed in SEP calculations for exposure. This could be an overexposed image")
-                            print (traceback.format_exc())
+                            plog ("something failed in SEP calculations for exposure. This could be an overexposed image")
+                            plog (traceback.format_exc())
                             sources = [0]
 
                         
@@ -3151,14 +3151,14 @@ class Camera:
                                                         err_ha, err_dec
                                                     )
                                                 except Exception as e:
-                                                    print ("Something is up in the mount reference adjustment code ", e)
+                                                    plog ("Something is up in the mount reference adjustment code ", e)
                                             else:
                                                 try:
                                                     g_dev["mnt"].adjust_flip_reference(
                                                         err_ha, err_dec
                                                     )  # Need to verify signs
                                                 except Exception as e:
-                                                    print ("Something is up in the mount reference adjustment code ", e)
+                                                    plog ("Something is up in the mount reference adjustment code ", e)
                                             
                                             g_dev["mnt"].current_icrs_ra = solved_ra                                    
                                             g_dev["mnt"].current_icrs_dec = solved_dec
@@ -3174,14 +3174,14 @@ class Camera:
                                 if not self.config['keep_focus_images_on_disk']:
                                     os.remove(cal_path + cal_name)
                             else:
-                                print ("Platesolve wasn't attempted due to lack of sources (or sometimes too many!)")
+                                plog ("Platesolve wasn't attempted due to lack of sources (or sometimes too many!)")
                                 
                                 del hdufocusdata
                               
                             
                             if focus_image == True :
                                 focus_image = False
-                                print ("Time Taken From Exposure start to finish : "  + str(time.time()\
+                                plog ("Time Taken From Exposure start to finish : "  + str(time.time()\
                                        - self.tempStartupExposureTime))
                                 return result
 
@@ -3204,12 +3204,12 @@ class Camera:
                     if "hdureduceddata" in locals():
                         # If a CMOS camera, bin to requested binning
                         if self.is_cmos and self.bin != 1:
-                            #print ("Binning 1x1 to " + str(self.bin))
+                            #plog ("Binning 1x1 to " + str(self.bin))
                             hdureduceddata=(block_reduce(hdureduceddata,self.bin)) 
                         
                         if smartstackid == 'no':
                             if self.config['keep_reduced_on_disk']:
-                                print ("saving reduced file anyway!")
+                                plog ("saving reduced file anyway!")
                                 self.to_slow_process(1000,('reduced', red_path + red_name01, hdureduceddata, hdu.header, \
                                                        frame_type))
                         else:                            
@@ -3308,9 +3308,9 @@ class Camera:
                         try:
                             if not self.config['keep_reduced_on_disk']:
                                 os.remove(red_path + red_name01)
-                                print ("removed reduced file")
+                                plog ("removed reduced file")
                         except:
-                            print ("couldn't remove reduced file for some reason")
+                            plog ("couldn't remove reduced file for some reason")
 
                     if not g_dev["cam"].exposure_busy:
                         result = {"stopped": True}
@@ -3335,7 +3335,7 @@ class Camera:
                     result["error"] == False
                     self.exposure_busy = False
 
-                    print ("Time Taken From Exposure start to finish : "  +str(time.time() - self.tempStartupExposureTime))
+                    plog ("Time Taken From Exposure start to finish : "  +str(time.time() - self.tempStartupExposureTime))
 
                     return result
                 except Exception as e:
@@ -3344,7 +3344,7 @@ class Camera:
                     self.t7 = time.time()
                     result = {"error": True}
                 self.exposure_busy = False
-                print ("Time Taken From Exposure start to finish : "  +str(time.time() - self.tempStartupExposureTime))
+                plog ("Time Taken From Exposure start to finish : "  +str(time.time() - self.tempStartupExposureTime))
                 return result
             else:
                 #self.t7 = time.time()
@@ -3361,7 +3361,7 @@ class Camera:
                     )
                     result = {"error": True}
                     self.exposure_busy = False
-                    print ("Time Taken From Exposure start to finish : "  +str(time.time() - self.tempStartupExposureTime))
+                    plog ("Time Taken From Exposure start to finish : "  +str(time.time() - self.tempStartupExposureTime))
                     return result
             time.sleep(0.1)
 

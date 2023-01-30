@@ -13,7 +13,7 @@ Abstract away Redis, Memurai, and local shares for IPC.
 import ephem
 import datetime
 import json
-import math
+#import math
 import os
 import queue
 import shelve
@@ -22,7 +22,7 @@ import threading
 import time
 import sys
 import shutil
-import signal
+#import signal
 
 import astroalign as aa
 from astropy.io import fits
@@ -35,8 +35,8 @@ import redis  # Client, can work with Memurai
 import requests
 
 #import sep
-from skimage.io import imsave
-from skimage.transform import resize
+#from skimage.io import imsave
+#from skimage.transform import resize
 import func_timeout
 import traceback
 import psutil
@@ -56,7 +56,7 @@ from devices.selector import Selector
 from devices.screen import Screen
 from devices.sequencer import Sequencer
 from global_yard import g_dev
-from planewave import platesolve
+#from planewave import platesolve
 import ptr_events
 from ptr_utility import plog
 from scipy import stats
@@ -214,11 +214,11 @@ class Observatory:
         g_dev["site"]: site_str
         self.g_dev = g_dev
         # Clear out smartstacks directory
-        #print ("removing and reconstituting smartstacks directory")
+        #plog ("removing and reconstituting smartstacks directory")
         try:
             shutil.rmtree(g_dev["cam"].site_path + "smartstacks")
         except:
-            print ("problems with removing the smartstacks directory... usually a file is open elsewhere")
+            plog ("problems with removing the smartstacks directory... usually a file is open elsewhere")
         time.sleep(3)
         if not os.path.exists(g_dev["cam"].site_path + "smartstacks"):
             os.makedirs(g_dev["cam"].site_path + "smartstacks")
@@ -404,22 +404,22 @@ class Observatory:
         response = g_dev["obs"].api.authenticated_request("PUT", uri, self.config)
         if 'message' in response:
             if response['message'] == "Missing Authentication Token":
-                print ("Missing Authentication Token. Config unable to be uploaded. Please fix this now.")
+                plog ("Missing Authentication Token. Config unable to be uploaded. Please fix this now.")
                 sys.exit()
             else:
-                print ("There may be a problem in the config upload? Here is the response.")
-                print (response)
+                plog ("There may be a problem in the config upload? Here is the response.")
+                plog (response)
         elif 'ResponseMetadata' in response:
-            #print(response['ResponseMetadata']['HTTPStatusCode'])
+            #plog(response['ResponseMetadata']['HTTPStatusCode'])
             if response['ResponseMetadata']['HTTPStatusCode'] == 200:
                 plog("Config uploaded successfully.")
 
             else:
-                print ("Response to site config upload unclear. Here is the response")
-                print (response)
+                plog ("Response to site config upload unclear. Here is the response")
+                plog (response)
         else:
-            print ("Response to site config upload unclear. Here is the response")
-            print (response)
+            plog ("Response to site config upload unclear. Here is the response")
+            plog (response)
 
     def cancel_all_activity(self):
         
@@ -660,7 +660,7 @@ class Observatory:
         
         loud = False
         if bpt:
-            print('UpdateStatus bpt was invoked.')
+            plog('UpdateStatus bpt was invoked.')
             #breakpoint()
         send_enc = False
         send_ocn = False
@@ -672,7 +672,7 @@ class Observatory:
         while time.time() < self.time_last_status + self.status_interval:
             return  # Note we are just not sending status, too soon.
 
-        #print ("Time between status updates: " + str(time.time() - self.time_last_status))
+        #plog ("Time between status updates: " + str(time.time() - self.time_last_status))
 
         t1 = time.time()
         status = {}
@@ -764,7 +764,7 @@ class Observatory:
             device_status = status
         except:
             pass
-        #print ("Status update length: " + str(time.time() - beginning_update_status))
+        #plog ("Status update length: " + str(time.time() - beginning_update_status))
         loud = False
         # Consider inhibiting unless status rate is low
         obsy = self.name
@@ -847,15 +847,15 @@ class Observatory:
             # Opening and Shutting should be done more glamorously through the
             # sequencer, but if all else fails, this routine should save
             # the observatory from rain, wasps and acts of god.
-            print ("Roof Status: " + str(g_dev['enc'].status['shutter_status']))
+            plog ("Roof Status: " + str(g_dev['enc'].status['shutter_status']))
             
             
             # Report on weather report status:
-            print ("Weather Report Acceptable to Open: " +  str(g_dev['seq'].weather_report_is_acceptable_to_observe))
+            plog ("Weather Report Acceptable to Open: " +  str(g_dev['seq'].weather_report_is_acceptable_to_observe))
             
             if g_dev['enc'].status['shutter_status'] == 'Software Fault':
-                print ("Software Fault Detected. Will alert the authorities!")
-                print ("Parking Scope in the meantime")
+                plog ("Software Fault Detected. Will alert the authorities!")
+                plog ("Parking Scope in the meantime")
                 self.open_and_enabled_to_observe=False
                 self.cancel_all_activity()
                 if not g_dev['mnt'].mount.AtPark:  
@@ -867,22 +867,22 @@ class Observatory:
             
             if g_dev['enc'].status['shutter_status'] == 'Closing':
                 if self.config['site_roof_control'] != 'no' and g_dev['enc'].mode == 'Automatic':
-                    print ("Detected Roof Closing. Sending another close command just in case the roof got stuck on this status (this happens!)")
+                    plog ("Detected Roof Closing. Sending another close command just in case the roof got stuck on this status (this happens!)")
                     self.open_and_enabled_to_observe=False
                     self.cancel_all_activity()
                     g_dev['enc'].enclosure.CloseShutter()
             
             if g_dev['enc'].status['shutter_status'] == 'Error':
                 if self.config['site_roof_control'] != 'no' and g_dev['enc'].mode == 'Automatic':
-                    print ("Detected an Error in the Roof Status. Closing up for safety.")
-                    print ("This is usually because the weather system forced the roof to shut.")
-                    print ("By closing it again, it resets the switch to closed.")
+                    plog ("Detected an Error in the Roof Status. Closing up for safety.")
+                    plog ("This is usually because the weather system forced the roof to shut.")
+                    plog ("By closing it again, it resets the switch to closed.")
                     self.cancel_all_activity()
                     self.open_and_enabled_to_observe=False
                     g_dev['enc'].enclosure.CloseShutter()
                     #while g_dev['enc'].enclosure.ShutterStatus == 3:
-                    #print ("closing")
-                    print ("Also Parking the Scope")    
+                    #plog ("closing")
+                    plog ("Also Parking the Scope")    
                     if not g_dev['mnt'].mount.AtPark:  
                         g_dev['mnt'].home_command()
                         g_dev['mnt'].park_command()  
@@ -906,22 +906,22 @@ class Observatory:
             
             if g_dev['enc'].status['shutter_status'] == 'Open':
                 if roof_should_be_shut==True :
-                    print ("Safety check found that the roof was open outside of the normal observing period")    
+                    plog ("Safety check found that the roof was open outside of the normal observing period")    
                     if self.config['site_roof_control'] != 'no' and g_dev['enc'].mode == 'Automatic':
-                        print ("Shutting the roof out of an abundance of caution. This may also be normal functioning")
+                        plog ("Shutting the roof out of an abundance of caution. This may also be normal functioning")
                         
                         self.cancel_all_activity()
                         g_dev['enc'].enclosure.CloseShutter()
                         while g_dev['enc'].enclosure.ShutterStatus == 3:
-                            print ("closing")
+                            plog ("closing")
                             time.sleep(3)
                     else:
-                        print ("This scope does not have control of the roof though.")
+                        plog ("This scope does not have control of the roof though.")
                 
             
             if roof_should_be_shut==True and g_dev['enc'].mode == 'Automatic' : # If the roof should be shut, then the telescope should be parked. 
                 if not g_dev['mnt'].mount.AtPark:
-                    print ("Telescope found not parked when the observatory is meant to be closed. Parking scope.")   
+                    plog ("Telescope found not parked when the observatory is meant to be closed. Parking scope.")   
                     self.open_and_enabled_to_observe=False
                     self.cancel_all_activity()
                     g_dev['mnt'].home_command()
@@ -930,11 +930,11 @@ class Observatory:
             # if g_dev['enc'].status['shutter_status'] == 'Open':
             #     self.config['mount']'auto_morn_sky_flat': False,
             #     if (g_dev['events']['Close and Park'] < ephem.now() < g_dev['events']['End Morn Bias Dark']):
-            #         print ("Safety check found that it is in the period where the observatory should be closing up")    
-            #         print ("Checking on the dome being closed and the telescope at park.")                    
+            #         plog ("Safety check found that it is in the period where the observatory should be closing up")    
+            #         plog ("Checking on the dome being closed and the telescope at park.")                    
             #         g_dev['enc'].enclosure.CloseShutter()
             #         while g_dev['enc'].enclosure.ShutterStatus == 3:
-            #             print ("closing")
+            #             plog ("closing")
             #         if not g_dev['mnt'].mount.AtPark:  
             #             g_dev['mnt'].home_command()
             #             g_dev['mnt'].park_command()  
@@ -943,7 +943,7 @@ class Observatory:
             if g_dev['enc'].status['shutter_status'] == 'Open' and roof_should_be_shut==False :
                 self.open_and_enabled_to_observe=True
             
-            print ("Current Open and Enabled to Observe Status: " + str(self.open_and_enabled_to_observe))
+            plog ("Current Open and Enabled to Observe Status: " + str(self.open_and_enabled_to_observe))
             
             # Check the mount is still connected
             g_dev['mnt'].check_connect()
@@ -953,7 +953,7 @@ class Observatory:
                 mount_altitude=g_dev['mnt'].mount.Altitude
                 lowest_acceptable_altitude= self.config['mount']['mount1']['lowest_acceptable_altitude'] 
                 if mount_altitude < lowest_acceptable_altitude:
-                    print ("Altitude too low! " + str(mount_altitude) + ". Parking scope for safety!")
+                    plog ("Altitude too low! " + str(mount_altitude) + ". Parking scope for safety!")
                     if not g_dev['mnt'].mount.AtPark:
                         self.cancel_all_activity()
                         g_dev['mnt'].home_command()
@@ -962,13 +962,13 @@ class Observatory:
                         if self.config["mount"]["mount1"]["permissive_mount_reset"] == "yes":
                             g_dev["mnt"].reset_mount_reference()
             except Exception as e:
-                print (traceback.format_exc())
-                print (e)
+                plog (traceback.format_exc())
+                plog (e)
                 breakpoint()
                 if 'GetAltAz' in str(e) and 'ASCOM.SoftwareBisque.Telescope' in str(e):
-                    print ("The SkyX Altitude detection had an error.")
-                    print ("Usually this is because of a broken connection.")
-                    print ("Waiting 60 seconds then reconnecting")
+                    plog ("The SkyX Altitude detection had an error.")
+                    plog ("Usually this is because of a broken connection.")
+                    plog ("Waiting 60 seconds then reconnecting")
                     
                     time.sleep(60)
                     
@@ -980,16 +980,16 @@ class Observatory:
             if time.time() - self.time_since_last_slew_or_exposure > self.config['mount']['mount1']\
                                                                                 ['time_inactive_until_park']:
                 if not g_dev['mnt'].mount.AtPark:  
-                    print ("Parking scope due to inactivity")
+                    plog ("Parking scope due to inactivity")
                     g_dev['mnt'].home_command()
                     g_dev['mnt'].park_command()
                     self.time_since_last_slew_or_exposure = time.time()
                     
             # Check that cooler is alive
-            #print ("Cooler check")
+            #plog ("Cooler check")
             probe = g_dev['cam']._cooler_on()
             if probe == True:
-                print ("Cooler is still on at " + str(g_dev['cam']._temperature()))            
+                plog ("Cooler is still on at " + str(g_dev['cam']._temperature()))            
             
             try:
                 probe = g_dev['cam']._cooler_on()
@@ -1065,18 +1065,18 @@ class Observatory:
 
 
                 # Only ingest new large fits.fz files to the PTR archive.
-                #print (self.env_exists)
+                #plog (self.env_exists)
                 if filename.endswith("-EX00.fits.fz"):
                     with open(filepath, "rb") as fileobj:
-                        #print (frame_exists(fileobj))
+                        #plog (frame_exists(fileobj))
                         tempPTR=0
                         if self.env_exists == True and (not frame_exists(fileobj)):
-                            #print ("attempting ingester")
+                            #plog ("attempting ingester")
                             try:
                                 #tt = time.time()
-                                print ("attempting ingest to aws@  ", tt)
+                                plog ("attempting ingest to aws@  ", tt)
                                 upload_file_and_ingest_to_archive(fileobj)
-                                #print ("did ingester")
+                                #plog ("did ingester")
                                 plog(f"--> To PTR ARCHIVE --> {str(filepath)}")
                                 plog('*.fz ingestion took:  ', round(time.time() - tt, 1), ' sec.')
                                 self.aws_queue.task_done()
@@ -1084,9 +1084,9 @@ class Observatory:
                                 
                                 tempPTR=1
                             except Exception as e:
-                                print ("couldn't send to PTR archive for some reason")
-                                print (e)
-                                print ((traceback.format_exc()))
+                                plog ("couldn't send to PTR archive for some reason")
+                                plog (e)
+                                plog ((traceback.format_exc()))
                                 tempPTR=0
                         # If ingester fails, send to default S3 bucket.
                         if tempPTR ==0:
@@ -1098,9 +1098,9 @@ class Observatory:
                                 #break
 
                                 #tt = time.time()
-                                print ("attempting aws@  ", tt)
+                                plog ("attempting aws@  ", tt)
                                 req_resp = requests.post(aws_resp["url"], data=aws_resp["fields"], files=files)
-                                print ("did aws", req_resp)
+                                plog ("did aws", req_resp)
                                 plog(f"--> To AWS --> {str(filepath)}")
                                 plog('*.fz transfer took:  ', round(time.time() - tt, 1), ' sec.')
                                 self.aws_queue.task_done()
@@ -1109,7 +1109,7 @@ class Observatory:
                                 #break
 
                             except:
-                                print ("Connection glitch for the request post, waiting a moment and trying again")
+                                plog ("Connection glitch for the request post, waiting a moment and trying again")
                                 time.sleep(5)
                             
                 # Send all other files to S3.
@@ -1126,7 +1126,7 @@ class Observatory:
                             
                             #break
                         except:
-                            print ("Connection glitch for the request post, waiting a moment and trying again")
+                            plog ("Connection glitch for the request post, waiting a moment and trying again")
                             time.sleep(5)
 
                 try:   
@@ -1163,8 +1163,8 @@ class Observatory:
                 one_at_a_time = 1
                 pre_upload=time.time()
                 received_status = self.send_status_queue.get(block=False)
-                #print ("****************")
-                #print (received_status)                
+                #plog ("****************")
+                #plog (received_status)                
                 send_status(received_status[0], received_status[1], received_status[2])
                 self.send_status_queue.task_done()
                 upload_time=time.time() - pre_upload                
@@ -1172,7 +1172,7 @@ class Observatory:
                 if self.status_interval < 10:
                     self.status_interval = 10
                 self.status_upload_time = upload_time
-                #print ("New status interval: " + str(self.status_interval))
+                #plog ("New status interval: " + str(self.status_interval))
                 one_at_a_time = 0
             else:
                 time.sleep(0.1)
@@ -1189,10 +1189,10 @@ class Observatory:
             if (not self.slow_camera_queue.empty()) and one_at_a_time == 0:
                 one_at_a_time = 1
                 slow_process = self.slow_camera_queue.get(block=False)
-                #print (slow_process[0])
-                #print (slow_process[1][0])
+                #plog (slow_process[0])
+                #plog (slow_process[1][0])
                 slow_process=slow_process[1]
-                #print ("********** slow queue : " + str(slow_process[0]) )
+                #plog ("********** slow queue : " + str(slow_process[0]) )
                 if slow_process[0] == 'focus':
                     hdufocus=fits.PrimaryHDU()
                     hdufocus.data=slow_process[2]                            
@@ -1290,7 +1290,7 @@ class Observatory:
                             "An image has been readout from the camera and queued for transfer to the cloud.",
                             p_level="INFO",
                         )
-                    #print ("fz done.")
+                    #plog ("fz done.")
                 
                 if slow_process[0] == 'reduced':
                     saver = 0
@@ -1368,7 +1368,7 @@ class Observatory:
                             requests.post(aws_resp["url"], data=aws_resp["fields"], files=files)
                             break
                         except:
-                            print ("Connection glitch for the request post, waiting a moment and trying again")
+                            plog ("Connection glitch for the request post, waiting a moment and trying again")
                             time.sleep(5)
                     plog(f"--> To AWS --> {str(filepath)}")
 
@@ -1401,7 +1401,7 @@ class Observatory:
             requests.post(url_log, body)
         #if not response.ok:
         except:
-            print("Log did not send, usually not fatal.")
+            plog("Log did not send, usually not fatal.")
 
 
     # Note this is another thread!
@@ -1455,13 +1455,13 @@ class Observatory:
                             try:
                                 os.remove(paths["red_path"] + paths["red_name01"])
                             except Exception as e:
-                                print ("could not remove temporary reduced file: ",e)
+                                plog ("could not remove temporary reduced file: ",e)
                         
                         sstackimghold=np.array(imgdata)  
 
-                    print ("Number of sources just prior to smartstacks: " + str(len(sources)))
+                    plog ("Number of sources just prior to smartstacks: " + str(len(sources)))
                     if len(sources) < 5:
-                        print ("skipping stacking as there are not enough sources " + str(len(sources)) +" in this image")
+                        plog ("skipping stacking as there are not enough sources " + str(len(sources)) +" in this image")
 
                     # No need to open the same image twice, just using the same one as SEP.
                     img = sstackimghold.copy()
@@ -1503,7 +1503,7 @@ class Observatory:
                                 )
     
                             else:
-                                print ("Not storing first smartstack image as not enough sources")
+                                plog ("Not storing first smartstack image as not enough sources")
                                 reprojection_failed=True
                             storedsStack = img
                         else:
@@ -1511,21 +1511,21 @@ class Observatory:
                             storedsStack = np.load(
                                 g_dev["cam"].site_path + "smartstacks/" + smartStackFilename
                             )
-                            #print (storedsStack.dtype.byteorder)
+                            #plog (storedsStack.dtype.byteorder)
                             # Prep new image
                             plog("Pasting Next smartstack image")
                             # img=np.nan_to_num(img)
                             # backgroundLevel =(np.nanmedian(sep.Background(img.byteswap().newbyteorder())))
-                            # print (" Background Level : " + str(backgroundLevel))
+                            # plog (" Background Level : " + str(backgroundLevel))
                             # img= img - backgroundLevel
-                            # Reproject new image onto footprint of old image.
+                            # Reproject new image onto footplog of old image.
                             #plog(datetime.datetime.now())
                             if len(sources) > 5:
                                 try:
                                     reprojectedimage, _ = func_timeout.func_timeout (60, aa.register, args=(img, storedsStack),\
                                                                                      kwargs={"detection_sigma":3, "min_area":9})
                                     # scalingFactor= np.nanmedian(reprojectedimage / storedsStack)
-                                    # print (" Scaling Factor : " +str(scalingFactor))
+                                    # plog (" Scaling Factor : " +str(scalingFactor))
                                     # reprojectedimage=(scalingFactor) * reprojectedimage # Insert a scaling factor
                                     storedsStack = np.array((reprojectedimage + storedsStack))
                                     # Save new stack to disk
@@ -1537,14 +1537,14 @@ class Observatory:
                                     )
                                     reprojection_failed=False
                                 except func_timeout.FunctionTimedOut:
-                                    print ("astroalign timed out")
+                                    plog ("astroalign timed out")
                                     reprojection_failed=True
                                 except aa.MaxIterError:
-                                    print ("astroalign could not find a solution in this image")
+                                    plog ("astroalign could not find a solution in this image")
                                     reprojection_failed=True
                                 except Exception:
-                                    print ("astroalign failed")
-                                    print (traceback.format_exc())
+                                    plog ("astroalign failed")
+                                    plog (traceback.format_exc())
                                     reprojection_failed=True
                             else:
                                 reprojection_failed=True
@@ -1686,7 +1686,7 @@ class Observatory:
                                 del checkerboard
     
                             else:
-                                print ("this bayer grid not implemented yet")
+                                plog ("this bayer grid not implemented yet")
                             
                             
                             # IF SMARSTACK NPY FILE EXISTS DO STUFF, OTHERWISE THIS IMAGE IS THE START OF A SMARTSTACK
@@ -1721,7 +1721,7 @@ class Observatory:
                                             )
             
                                     else:
-                                        print ("Not storing first smartstack image as not enough sources")
+                                        plog ("Not storing first smartstack image as not enough sources")
                                         reprojection_failed=True
                                     # if colstack == 'blue':
                                     #     bluestoredsStack = newhdublue
@@ -1734,14 +1734,14 @@ class Observatory:
                                     storedsStack = np.load(
                                         g_dev["cam"].site_path + "smartstacks/" + smartStackFilename.replace(smartstackid, smartstackid + str(colstack))
                                     )
-                                    #print (storedsStack.dtype.byteorder)
+                                    #plog (storedsStack.dtype.byteorder)
                                     # Prep new image
                                     plog("Pasting Next smartstack image")
                                     # img=np.nan_to_num(img)
                                     # backgroundLevel =(np.nanmedian(sep.Background(img.byteswap().newbyteorder())))
-                                    # print (" Background Level : " + str(backgroundLevel))
+                                    # plog (" Background Level : " + str(backgroundLevel))
                                     # img= img - backgroundLevel
-                                    # Reproject new image onto footprint of old image.
+                                    # Reproject new image onto footplog of old image.
                                     #plog(datetime.datetime.now())
                                     if len(sources) > 5:
                                         try:
@@ -1756,7 +1756,7 @@ class Observatory:
                                                 reprojectedimage, _ = func_timeout.func_timeout (60, aa.register, args=(newhdugreen, storedsStack),\
                                                                                                  kwargs={"detection_sigma":3, "min_area":9})
                                                 # scalingFactor= np.nanmedian(reprojectedimage / storedsStack)
-                                            # print (" Scaling Factor : " +str(scalingFactor))
+                                            # plog (" Scaling Factor : " +str(scalingFactor))
                                             # reprojectedimage=(scalingFactor) * reprojectedimage # Insert a scaling factor
                                             storedsStack = np.array((reprojectedimage + storedsStack))
                                             # Save new stack to disk
@@ -1775,14 +1775,14 @@ class Observatory:
                                             del storedsStack
                                             reprojection_failed=False
                                         except func_timeout.FunctionTimedOut:
-                                            print ("astroalign timed out")
+                                            plog ("astroalign timed out")
                                             reprojection_failed=True
                                         except aa.MaxIterError:
-                                            print ("astroalign could not find a solution in this image")
+                                            plog ("astroalign could not find a solution in this image")
                                             reprojection_failed=True
                                         except Exception:
-                                            print ("astroalign failed")
-                                            print (traceback.format_exc())
+                                            plog ("astroalign failed")
+                                            plog (traceback.format_exc())
                                             reprojection_failed=True
                                     else:
                                         reprojection_failed=True
