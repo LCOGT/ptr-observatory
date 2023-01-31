@@ -442,7 +442,7 @@ site_config = {
                         ['focus', [0,  0],     0, 148, [1.00 ,  72], 'focus'],    #0.
                         ['lum',    [0,  0],     0, 179, [1.00 ,  72], 'PhLum'],    #1.
                         ['ip',    [1,  1],     0, 50, [1.00 , 119], 'PhRed'],    #2.
-                        ['V',    [2,  2],     0, 43, [1.00 , 113], 'PhGreen'],    #3.
+                        ['v',    [2,  2],     0, 56, [1.00 , 113], 'PhGreen'],    #3.
                         ['pb',    [3,  3],     0, 55, [0.80 ,  97], 'PhBlue'],    #4.
                         ['ha',    [4,  4],     0, 6.39, [0.80 ,  97], 'PhBlue'],    #4.
                         #['PR',    [1,  1],     0, 170, [1.00 , 119], 'PhBlue'],    #2.
@@ -614,10 +614,10 @@ site_config = {
                 'pix_scale': 0.637,
                 'do_cosmics' : 'yes',
                 #'dark_length' : 1,
-                'bias_count' : 5,
-                'dark_count' : 5,
+                'bias_count' : 64,
+                'dark_count' : 64,
                 'flat_count' : 10,
-                'dark_exposure': 10,
+                'dark_exposure': 30,
                 'has_darkslide':  False,
                 'darkslide_com':  None,
                 'shutter_type': "Electronic",

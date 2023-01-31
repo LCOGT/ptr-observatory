@@ -413,7 +413,7 @@ class Sequencer:
         # If the observatory is meant to shut during the evening
         obs_win_begin, sunZ88Op, sunZ88Cl, ephem_now = self.astro_events.getSunEvents()
         if self.weather_report_close_during_evening==True:
-            if ephem_now >  self.weather_report_close_during_evening_time:
+            if ephem_now >  self.weather_report_close_during_evening_time and ephem_now < events['Morn Bias Dark']: # Don't want scope to cancel all activity during bias/darks etc.
                 if self.config['site_roof_control'] != 'no' and g_dev['enc'].mode == 'Automatic':
                     self.weather_report_is_acceptable_to_observe=False
                     plog ("End of Observing Period due to weather. Closing up observatory.")
@@ -427,6 +427,7 @@ class Sequencer:
                         g_dev['mnt'].home_command()
                         g_dev['mnt'].park_command() 
                     self.weather_report_close_during_evening=False
+                    
                     
 
         if self.bias_dark_latch and ((events['Eve Bias Dark'] <= ephem_now < events['End Eve Bias Dark']) and \
@@ -2915,6 +2916,8 @@ class Sequencer:
             fitzgerald_weather_number_grid=[]
             hours_until_end_of_observing= math.ceil((events['Observing Ends'] - ephem_now) * 24)
             plog("Hours until end of observing: " + str(hours_until_end_of_observing))
+            
+            
             for hourly_report in one_call.forecast_hourly:
                 
                 if hourcounter > hours_until_end_of_observing:

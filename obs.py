@@ -319,6 +319,14 @@ class Observatory:
         #req2 = {'target': 'near_tycho_star', 'area': 150}
         #opt = {}
         #g_dev['seq'].extensive_focus_script(req2,opt)
+        #req = {'bin1': True, 'bin2': False, 'bin3': False, 'bin4': False, 'numOfBias': 63, \
+        #        'numOfDark': 31, 'darkTime': 600, 'numOfDark2': 31, 'dark2Time': 600, \
+        #        'hotMap': True, 'coldMap': True, 'script': 'genBiasDarkMaster', }  #This specificatin is obsolete
+        #opt = {}
+        #No action needed on  the enclosure at this level
+        #self.park_and_close(enc_status)
+        #NB The above put dome closed and telescope at Park, Which is where it should have been upon entry.
+        #g_dev['seq'].bias_dark_script(req, opt, morn=True)
 
 
     def set_last_reference(self, delta_ra, delta_dec, last_time):
@@ -448,9 +456,10 @@ class Observatory:
             g_dev["cam"].exposure_busy = False
         except Exception as e:
             plog("Camera is not busy.", e)
+            self.exposure_busy = False
         #except:
         #    plog("Camera stop faulted.")
-        
+        #self.exposure_busy = False
         
         #while self.cmd_queue.qsize() > 0:
         #    plog("Deleting Job:  ", self.cmd_queue.get())
@@ -922,6 +931,14 @@ class Observatory:
             if roof_should_be_shut==True and g_dev['enc'].mode == 'Automatic' : # If the roof should be shut, then the telescope should be parked. 
                 if not g_dev['mnt'].mount.AtPark:
                     plog ("Telescope found not parked when the observatory is meant to be closed. Parking scope.")   
+                    self.open_and_enabled_to_observe=False
+                    self.cancel_all_activity()
+                    g_dev['mnt'].home_command()
+                    g_dev['mnt'].park_command()  
+            
+            if g_dev['enc'].status['shutter_status'] == 'Closed' : # If the roof IS shut, then the telescope should be shutdown and parked. 
+                if not g_dev['mnt'].mount.AtPark:
+                    plog ("Telescope found not parked when the observatory roof is shut. Parking scope.")   
                     self.open_and_enabled_to_observe=False
                     self.cancel_all_activity()
                     g_dev['mnt'].home_command()

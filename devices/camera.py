@@ -192,6 +192,10 @@ class Camera:
         and ag's to create.  Name instances cam or ag_<tel>_<sel-port>'.
         Once this is done g_dev['cam'] refers to the selected instance.
         """
+        
+        self.last_user_name = "Tobor"
+        self.last_user_id = "Tobor"
+        self.user_name = "Tobor"
 
         self.name = name
         self.driver = driver
@@ -477,9 +481,7 @@ class Camera:
                 self.darkslide_open = True
                 self.darkslide_state = 'Open'
 
-        self.last_user_name = "Tobor"
-        self.last_user_id = "Tobor"
-        self.user_name = "Tobor"
+
         
         try:
             seq = test_sequence(self.alias)
