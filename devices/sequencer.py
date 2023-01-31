@@ -79,7 +79,7 @@ def wait_for_slew():
         plog("Motion check faulted.")
         plog(traceback.format_exc())
         if 'pywintypes.com_error' in str(e):
-            print ("Mount disconnected. Recovering.....")
+            plog ("Mount disconnected. Recovering.....")
             time.sleep(30)
             g_dev['mnt'].mount.Connected = True
             #g_dev['mnt'].home_command()
@@ -348,7 +348,7 @@ class Sequencer:
             self.dome_homed = False
             
         except Exception as e:
-            print ("Enclosure opening glitched out: ", e)
+            plog ("Enclosure opening glitched out: ", e)
             
         return
 
@@ -413,7 +413,7 @@ class Sequencer:
         # If the observatory is meant to shut during the evening
         obs_win_begin, sunZ88Op, sunZ88Cl, ephem_now = self.astro_events.getSunEvents()
         if self.weather_report_close_during_evening==True:
-            if ephem_now >  self.weather_report_close_during_evening_time:
+            if ephem_now >  self.weather_report_close_during_evening_time and ephem_now < events['Morn Bias Dark']: # Don't want scope to cancel all activity during bias/darks etc.
                 if self.config['site_roof_control'] != 'no' and g_dev['enc'].mode == 'Automatic':
                     self.weather_report_is_acceptable_to_observe=False
                     plog ("End of Observing Period due to weather. Closing up observatory.")
@@ -421,12 +421,13 @@ class Sequencer:
                     g_dev['obs'].open_and_enabled_to_observe=False
                     g_dev['enc'].enclosure.CloseShutter()
                     #while g_dev['enc'].enclosure.ShutterStatus == 3:
-                    #print ("closing")
-                    print ("Also Parking the Scope")    
+                    #plog ("closing")
+                    plog ("Also Parking the Scope")    
                     if not g_dev['mnt'].mount.AtPark:  
                         g_dev['mnt'].home_command()
                         g_dev['mnt'].park_command() 
                     self.weather_report_close_during_evening=False
+                    
                     
 
         if self.bias_dark_latch and ((events['Eve Bias Dark'] <= ephem_now < events['End Eve Bias Dark']) and \
@@ -450,7 +451,7 @@ class Sequencer:
             self.run_nightly_weather_report()            
 
             #self.time_of_next_slew = time.time() -1
-            #print ("got here")
+            #plog ("got here")
             if not g_dev['obs'].open_and_enabled_to_observe and self.weather_report_is_acceptable_to_observe==True and self.weather_report_wait_until_open==False:
                 if time.time() > self.enclosure_next_open_time and self.opens_this_evening < self.config['maximum_roof_opens_per_evening']:
                     self.enclosure_next_open_time = time.time() + 300 # Only try to open the roof every five minutes
@@ -610,8 +611,8 @@ class Sequencer:
                             self.block_guard = True
         
                             if block['project'] == None:
-                                print (block)
-                                print ("Skipping a block that contains an empty project")
+                                plog (block)
+                                plog ("Skipping a block that contains an empty project")
                                 return
         
         
@@ -645,7 +646,7 @@ class Sequencer:
                 #         if (ephem.Moon().alt < -15):
                 #             # It is somewhere around midnight
                 #             if  (events['Middle of Night'] <= ephem_now < events['End Astro Dark']):
-                #                 print ("It is dark and the moon isn't up! Lets do some biases")                                
+                #                 plog ("It is dark and the moon isn't up! Lets do some biases")                                
                 #                 g_dev['mnt'].park_command({}, {})
                 #                 self.bias_dark_script(req, opt, morn=False)
                 #                 self.midnight_calibration_done = True
@@ -661,7 +662,7 @@ class Sequencer:
                 #        g_dev['enc'].mode == 'Automatic') and not g_dev['ocn'].wx_hold and self.config['auto_morn_sky_flat']:
                 #     self.enc_to_skyflat_and_open(enc_status, ocn_status)
             except:
-                print(traceback.format_exc())
+                plog(traceback.format_exc())
                 plog("Hang up in sequencer.")
         elif self.morn_sky_flat_latch and ((events['Morn Sky Flats'] <= ephem_now < events['End Morn Sky Flats'])  \
                and g_dev['enc'].mode == 'Automatic' and not g_dev['ocn'].wx_hold and \
@@ -835,8 +836,8 @@ class Sequencer:
                 longstackname=block_specification['project']['created_at'].replace('-','').replace(':','') # If longstack is to be used.
 
             except Exception as e:                
-                print ("Could not execute project due to poorly formatted or corrupt project")
-                print (e)
+                plog ("Could not execute project due to poorly formatted or corrupt project")
+                plog (e)
                 g_dev['obs'].send_to_user("Could not execute project due to poorly formatted or corrupt project", p_level='INFO')
                 continue
 
@@ -883,7 +884,7 @@ class Sequencer:
             # Necessary
             # Pointing
             # Reset Solve timers
-            print ("Taking a quick pointing check and re_seek for new project block")
+            plog ("Taking a quick pointing check and re_seek for new project block")
             g_dev['obs'].last_solve_time = datetime.datetime.now()
             g_dev['obs'].images_since_last_solve = 0
             req = {'time': self.config['focus_exposure_time'],  'alias':  str(self.config['camera']['camera_1_1']['name']), 'image_type': 'focus'}   #  NB Should pick up filter and constats from config
@@ -892,7 +893,7 @@ class Sequencer:
             result = g_dev['cam'].expose_command(req, opt, no_AWS=False, solve_it=True)
             
             if result == 'blockend':
-                print ("End of Block, exiting project block.")
+                plog ("End of Block, exiting project block.")
                 if block_specification['project']['project_constraints']['close_on_block_completion']:
                     try:
                         pass#g_dev['enc'].enclosure.Slaved = False   NB with wema no longer exists
@@ -1277,12 +1278,12 @@ class Sequencer:
         #while True:
         dir_path=self.config['client_path'] + 'archive/'
         cameras=glob(dir_path + "*/")
-        print (cameras)
+        plog (cameras)
         for camera in cameras:
             bigfzs=glob(camera + "/" + runNight + "/raw/*.fz")
 
             for fzneglect in bigfzs:
-                print ("Reattempting upload of " + str(os.path.basename(fzneglect)))
+                plog ("Reattempting upload of " + str(os.path.basename(fzneglect)))
                 #breakpoint()
                 #image = (im_path, name)
                 #g_dev["obs"].aws_queue.put((priority, image), block=False)
@@ -1295,7 +1296,7 @@ class Sequencer:
         #break
 
         # Sending token to AWS to inform it that all files have been uploaded
-        print ("sending end of night token to AWS")
+        plog ("sending end of night token to AWS")
         #g_dev['cam'].enqueue_for_AWS(jpeg_data_size, paths['im_path'], paths['jpeg_name10'])
 
         isExist = os.path.exists(g_dev['cam'].site_path + 'tokens')
@@ -1311,7 +1312,7 @@ class Sequencer:
         # while True:
         #     if (not g_dev['obs'].aws_queue.empty()):
         #         g_dev['obs'].send_to_AWS()
-        #         print ("Emptying AWS queue at the end of the night")
+        #         plog ("Emptying AWS queue at the end of the night")
         #         time.sleep(1)
         #     else:
         #         break
@@ -1319,14 +1320,14 @@ class Sequencer:
         # Culling the archive
         #FORTNIGHT=60*60*24*7*2
         if self.config['archive_age'] > 0 :
-            print (self.config['client_path'] + 'archive/')
+            plog (self.config['client_path'] + 'archive/')
             dir_path=self.config['client_path'] + 'archive/'
             #cameras=[d for d in os.listdir(dir_path) if os.path.isdir(d)]
             cameras=glob(dir_path + "*/")
-            print (cameras)
+            plog (cameras)
             for camera in cameras:  # Go through each camera directory
-                print ("*****************************************")
-                print ("Camera: " + str(camera))
+                plog ("*****************************************")
+                plog ("Camera: " + str(camera))
                 timenow_cull=time.time()
                 directories=glob(camera + "*/")
                 deleteDirectories=[]
@@ -1335,23 +1336,23 @@ class Sequencer:
                     if ((timenow_cull)-os.path.getmtime(directories[q])) > (self.config['archive_age'] * 24* 60 * 60) :
                         deleteDirectories.append(directories[q])
                         deleteTimes.append(((timenow_cull)-os.path.getmtime(directories[q])) /60/60/24/7)
-                print ("These are the directories earmarked for  ")
-                print ("Eternal destruction. And how old they are")
-                print ("in weeks\n")
+                plog ("These are the directories earmarked for  ")
+                plog ("Eternal destruction. And how old they are")
+                plog ("in weeks\n")
                 g_dev['obs'].send_to_user("Culling " + str(len(deleteDirectories)) +" from the local archive.", p_level='INFO')
                 for entry in range(len(deleteDirectories)):
-                    print (deleteDirectories[entry] + ' ' + str(deleteTimes[entry]) + ' weeks old.')
+                    plog (deleteDirectories[entry] + ' ' + str(deleteTimes[entry]) + ' weeks old.')
                     try:
                         shutil.rmtree(deleteDirectories[entry])
                     except:
-                        print ("Could not remove: " + str(deleteDirectories[entry]) + ". Usually a file is open in that directory.")
+                        plog ("Could not remove: " + str(deleteDirectories[entry]) + ". Usually a file is open in that directory.")
 
         # Clear out smartstacks directory
-        print ("removing and reconstituting smartstacks directory")
+        plog ("removing and reconstituting smartstacks directory")
         try:
             shutil.rmtree(g_dev["cam"].site_path + "smartstacks")
         except:
-            print ("problems with removing the smartstacks directory... usually a file is open elsewhere")
+            plog ("problems with removing the smartstacks directory... usually a file is open elsewhere")
         time.sleep(20)
         if not os.path.exists(g_dev["cam"].site_path + "smartstacks"):
             os.makedirs(g_dev["cam"].site_path + "smartstacks")
@@ -1381,10 +1382,10 @@ class Sequencer:
             try:
                 os.mkdir(self.config['archive_path'] +'archive/' + datetime.datetime.strftime(datetime.datetime.now(), '%Y%m%d'))
             except:
-                print ("Couldn't make autosave directory")
+                plog ("Couldn't make autosave directory")
 
         # Resetting complete projects
-        print ("Nightly reset of complete projects")
+        plog ("Nightly reset of complete projects")
         self.reset_completes()
         g_dev['obs'].blocks = None
         g_dev['obs'].projects = None
@@ -1553,15 +1554,15 @@ class Sequencer:
         g_dev['obs'].send_to_user('Sky Flat sequence Starting, Enclosure PRESUMED Open. Telescope should be on sky flat spot.', p_level='INFO')
         evening = not morn
         camera_name = str(self.config['camera']['camera_1_1']['name'])
-        flat_count = 5
-        min_exposure = float(self.config['camera']['camera_1_1']['settings']['min_exposure'])
+        flat_count = self.config['camera']['camera_1_1']['settings']['flat_count']
+        min_exposure = float(self.config['camera']['camera_1_1']['settings']['min_flat_exposure'])
 
         exp_time = min_exposure # added 20220207 WER  0.2 sec for SRO
 
 
         #  Pick up list of filters is sky flat order of lowest to highest transparency.
         if g_dev["fil"].null_filterwheel == True:
-            print ("No Filter Wheel, just getting non-filtered flats")
+            plog ("No Filter Wheel, just getting non-filtered flats")
             pop_list = [0]
         else:
             pop_list = self.config['filter_wheel']['filter_wheel1']['settings']['filter_sky_sort'].copy()
@@ -1599,7 +1600,12 @@ class Sequencer:
                 if g_dev["fil"].null_filterwheel == False:
                     current_filter = pop_list[0]                
                     #g_dev['fil'].set_number_command(current_filter)  #  20220825  NB NB NB Change this to using a list of filter names.
-                    _, filt_pointer = g_dev['fil'].set_name_command({"filter": current_filter}, {})  #  20220825  NB NB NB Chan
+                    try:
+                        _, filt_pointer = g_dev['fil'].set_name_command({"filter": current_filter}, {})  #  20220825  NB NB NB Chan
+                    except Exception as e:
+                        plog('Failed to change filter in flat script: ', e)
+                        plog("I think this happens if it can't find a substitute filter.... but need to check that! - MTF")
+                        plog(traceback.format_exc())
                     # filter number for skylux colle
                 
                 acquired_count = 0
@@ -1634,7 +1640,7 @@ class Sequencer:
                         except:
                             sky_lux = None
         
-                        print ("sky lux " + str(sky_lux))
+                        plog ("sky lux " + str(sky_lux))
         
                         # MF SHIFTING EXPOSURE TIME CALCULATOR EQUATION TO BE MORE GENERAL FOR ALL TELESCOPES
                         # This bit here estimates the initial exposure time for a telescope given the skylux
@@ -1891,21 +1897,21 @@ class Sequencer:
         '''
 
         # First check how long it has been since the last focus
-        print ("Time of last focus")
-        print (g_dev['foc'].time_of_last_focus)
-        print ("Time since last focus")
-        print (datetime.datetime.now() - g_dev['foc'].time_of_last_focus)
+        plog ("Time of last focus")
+        plog (g_dev['foc'].time_of_last_focus)
+        plog ("Time since last focus")
+        plog (datetime.datetime.now() - g_dev['foc'].time_of_last_focus)
 
 
-        print ("Threshold time between auto focus routines (hours)")
-        print (self.config['periodic_focus_time'])
+        plog ("Threshold time between auto focus routines (hours)")
+        plog (self.config['periodic_focus_time'])
         
         if skip_check == False:
             if ((datetime.datetime.now() - g_dev['foc'].time_of_last_focus)) > datetime.timedelta(hours=self.config['periodic_focus_time']):
-                print ("Sufficient time has passed since last focus to do auto_focus")
+                plog ("Sufficient time has passed since last focus to do auto_focus")
                 
             else:
-                print ("too soon since last autofacus")
+                plog ("too soon since last autofacus")
                 return
         
         g_dev['foc'].time_of_last_focus = datetime.datetime.now()
@@ -1978,7 +1984,7 @@ class Sequencer:
                 plog("RA " + str(focus_patch_ra) + " DEC " + str(focus_patch_dec) )
                 g_dev['mnt'].go_coord(focus_patch_ra, focus_patch_dec)
             except Exception as e:
-                print ("Issues pointing to a focus patch. Focussing at the current pointing." , e)
+                plog ("Issues pointing to a focus patch. Focussing at the current pointing." , e)
                 plog(traceback.format_exc())
 
             req = {'time': self.config['focus_exposure_time'],  'alias':  str(self.config['camera']['camera_1_1']['name']), 'image_type': 'focus'}   #  NB Should pick up filter and constats from config
@@ -2018,7 +2024,7 @@ class Sequencer:
             #     while g_dev['rot'].rotator.IsMoving:                                                           
             #         #if g_dev['enc'].status['dome_slewing']: st += 'd>'
             #         if rot_report == 0:
-            #             print ("Waiting for Rotator to rotation")
+            #             plog ("Waiting for Rotator to rotation")
             #             g_dev["obs"].send_to_user("Waiting for camera rotator to catch up before exposing.")
             #             rot_report =1
             #         time.sleep(0.2)
@@ -2054,9 +2060,9 @@ class Sequencer:
             except:
                 spot1 = False
                 foc_pos1 = False
-                print ("spot1 failed in autofocus script")
+                plog ("spot1 failed in autofocus script")
 
-            print (spot1)
+            plog (spot1)
             g_dev['obs'].send_to_user("Central focus FWHM: " + str(spot1), p_level='INFO')
 
             if math.isnan(spot1) or spot1 ==False:
@@ -2080,7 +2086,7 @@ class Sequencer:
         except:
             spot2 = False
             foc_pos2 = False
-            print ("spot2 failed on autofocus moving in")
+            plog ("spot2 failed on autofocus moving in")
         
         g_dev['obs'].send_to_user("Inward focus FWHM: " + str(spot2), p_level='INFO')
         
@@ -2103,7 +2109,7 @@ class Sequencer:
         except:
             spot3 = False
             foc_pos3 = False
-            print ("spot3 failed on autofocus moving in")
+            plog ("spot3 failed on autofocus moving in")
             
         g_dev['obs'].send_to_user("Outward focus FWHM: " + str(spot3), p_level='INFO')
         
@@ -2146,7 +2152,7 @@ class Sequencer:
                 self.af_guard = False
                 return
             if min(x) <= d1 <= max(x):
-                print ('Moving to Solved focus:  ', round(d1, 2), ' calculated:  ',  new_spot)
+                plog ('Moving to Solved focus:  ', round(d1, 2), ' calculated:  ',  new_spot)
                 g_dev['obs'].send_to_user('Moving to Solved focus:  ' +str(round(d1, 2)), p_level='INFO')
                 pos = int(d1*g_dev['foc'].micron_to_steps)
 
@@ -2172,7 +2178,7 @@ class Sequencer:
                 except:
                     spot4 = False
                     foc_pos4 = False
-                    print ("spot4 failed ")
+                    plog ("spot4 failed ")
                 plog('\nFound best focus at:  ', foc_pos4,' measured is:  ',  round(spot4, 2), '\n')
                 g_dev['obs'].send_to_user('Found best focus at:  ' +str(foc_pos4) +' measured FWHM is:  ' + str(round(spot4, 2)), p_level='INFO')
                 g_dev['foc'].af_log(foc_pos4, spot4, new_spot)
@@ -2206,7 +2212,7 @@ class Sequencer:
             except:
                 spot4 = False
                 foc_pos4 = False
-                print ("spot4 failed on autofocus moving in 2nd time.")
+                plog ("spot4 failed on autofocus moving in 2nd time.")
             x = [foc_pos4, foc_pos2, foc_pos1, foc_pos3]
             y = [spot4, spot2, spot1, spot3]
             plog('X, Y:  ', x, y, 'Desire center to be smallest.')
@@ -2231,7 +2237,7 @@ class Sequencer:
                 self.af_guard = False
                 return
             if min(x) <= d1 <= max(x):
-                print ('Moving to Solved focus:  ', round(d1, 2), ' calculated:  ',  new_spot)
+                plog ('Moving to Solved focus:  ', round(d1, 2), ' calculated:  ',  new_spot)
                 
                 pos = int(d1*g_dev['foc'].micron_to_steps)
 
@@ -2257,7 +2263,7 @@ class Sequencer:
                 except:
                     spot4 = False
                     foc_pos4 = False
-                    print ("spot4 failed ")
+                    plog ("spot4 failed ")
                 plog('\nFound best focus at:  ', foc_pos4,' measured is:  ',  round(spot4, 2), '\n')
                 g_dev['obs'].send_to_user('Found best focus at: ' + str(foc_pos4) +' measured FWHM is: ' + str(round(spot4, 2)), p_level='INFO')
                 g_dev['foc'].af_log(foc_pos4, spot4, new_spot)
@@ -2293,7 +2299,7 @@ class Sequencer:
             except:
                 spot4 = False
                 foc_pos4 = False
-                print ("spot4 failed on autofocus moving out 2nd time.")
+                plog ("spot4 failed on autofocus moving out 2nd time.")
             x = [foc_pos2, foc_pos1, foc_pos3, foc_pos4]
             y = [spot2, spot1, spot3, spot4]
             plog('X, Y:  ', x, y, 'Desire center to be smallest.')
@@ -2318,7 +2324,7 @@ class Sequencer:
                 self.af_guard = False
                 return
             if min(x) <= d1 <= max(x):
-                print ('Moving to Solved focus:  ', round(d1, 2), ' calculated:  ',  new_spot)
+                plog ('Moving to Solved focus:  ', round(d1, 2), ' calculated:  ',  new_spot)
                 pos = int(d1*g_dev['foc'].micron_to_steps)
 
 
@@ -2343,7 +2349,7 @@ class Sequencer:
                 except:
                     spot4 = False
                     foc_pos4 = False
-                    print ("spot4 failed ")
+                    plog ("spot4 failed ")
                 plog('\nFound best focus at:  ', foc_pos4,' measured is:  ',  round(spot4, 2), '\n')
                 g_dev['obs'].send_to_user('Found best focus at: ' + str(foc_pos4) +' measured FWHM is: ' + str(round(spot4, 2)), p_level='INFO')
                 g_dev['foc'].af_log(foc_pos4, spot4, new_spot)
@@ -2452,7 +2458,7 @@ class Sequencer:
             #     while g_dev['rot'].rotator.IsMoving:                                                           
             #         #if g_dev['enc'].status['dome_slewing']: st += 'd>'
             #         if rot_report == 0:
-            #             print ("Waiting for Rotator to rotation")
+            #             plog ("Waiting for Rotator to rotation")
             #             rot_report =1
             #         time.sleep(0.2)
             #         g_dev['obs'].update_status()
@@ -2516,7 +2522,7 @@ class Sequencer:
             except:
                 spot = False
                 foc_pos = False
-                print ("spot failed on extensive focus script")
+                plog ("spot failed on extensive focus script")
 
             g_dev['obs'].send_to_user("Extensive focus center " + str(foc_pos) + " FWHM: " + str(spot), p_level='INFO')
             extensive_focus.append([foc_pos, spot])
@@ -2536,7 +2542,7 @@ class Sequencer:
             except:
                 spot = False
                 foc_pos = False
-                print ("spot failed on extensive focus script")
+                plog ("spot failed on extensive focus script")
 
             g_dev['obs'].send_to_user("Extensive focus center " + str(foc_pos) + " FWHM: " + str(spot), p_level='INFO')
             extensive_focus.append([foc_pos, spot])
@@ -2548,9 +2554,9 @@ class Sequencer:
                 solved_pos = focentry[0]
                 minimumFWHM = focentry[1]
         
-        print (extensive_focus)
-        print (solved_pos)
-        print (minimumFWHM)
+        plog (extensive_focus)
+        plog (solved_pos)
+        plog (minimumFWHM)
         g_dev['foc'].guarded_move((solved_pos)*g_dev['foc'].micron_to_steps)
         
         try:
@@ -2580,7 +2586,7 @@ class Sequencer:
             #     while g_dev['rot'].rotator.IsMoving:                                                           
             #         #if g_dev['enc'].status['dome_slewing']: st += 'd>'
             #         if rot_report == 0:
-            #             print ("Waiting for Rotator to rotation")
+            #             plog ("Waiting for Rotator to rotation")
             #             rot_report =1
             #         time.sleep(0.2)
             #         g_dev['obs'].update_status()
@@ -2664,7 +2670,7 @@ class Sequencer:
                 while g_dev['rot'].rotator.IsMoving:                                                           
                     #if g_dev['enc'].status['dome_slewing']: st += 'd>'
                     if rot_report == 0:
-                        print ("Waiting for Rotator to rotation")
+                        plog ("Waiting for Rotator to rotation")
                         rot_report =1
                     time.sleep(0.2)
                     g_dev['obs'].update_status()
@@ -2726,7 +2732,7 @@ class Sequencer:
         except:
             spot1 = False
             foc_pos1 = False
-            print ("spot1 failed on coarse focus script")
+            plog ("spot1 failed on coarse focus script")
 
         g_dev['obs'].send_to_user("Coarse focus center FWHM: " + str(spot1), p_level='INFO')
 
@@ -2746,7 +2752,7 @@ class Sequencer:
         except:
             spot2 = False
             foc_pos2 = False
-            print ("spot2 failed on coarse focus script")
+            plog ("spot2 failed on coarse focus script")
         g_dev['obs'].send_to_user("First Inward focus center FWHM: " + str(spot2), p_level='INFO')
         
         plog('Autofocus Moving In -2x, second time.\n\n')
@@ -2765,7 +2771,7 @@ class Sequencer:
         except:
             spot3 = False
             foc_pos3 = False
-            print ("spot3 failed on coarse focus script")
+            plog ("spot3 failed on coarse focus script")
         g_dev['obs'].send_to_user("Second Inward focus center FWHM: " + str(spot3), p_level='INFO')
         #Need to check we are not going out too far!
         plog('Autofocus Moving out +3X.\n\n')
@@ -2785,7 +2791,7 @@ class Sequencer:
         except:
             spot4 = False
             foc_pos4 = False
-            print ("spot4 failed on coarse focus script")
+            plog ("spot4 failed on coarse focus script")
         
         g_dev['obs'].send_to_user("First Outward focus center FWHM: " + str(spot4), p_level='INFO')
             
@@ -2804,7 +2810,7 @@ class Sequencer:
         except:
             spot5 = False
             foc_pos5 = False
-            print ("spot5 failed on coarse focus script")
+            plog ("spot5 failed on coarse focus script")
         
         g_dev['obs'].send_to_user("Second Outward focus center FWHM: " + str(spot2), p_level='INFO')
         
@@ -2824,7 +2830,7 @@ class Sequencer:
             self.af_guard = False
             return
         if min(x) <= d1 <= max(x):
-            print ('Moving to Solved focus:  ', round(d1, 2), ' calculated:  ',  new_spot)
+            plog ('Moving to Solved focus:  ', round(d1, 2), ' calculated:  ',  new_spot)
             #Saves a base for relative focus adjusts.
             pos = int(d1*g_dev['foc'].micron_to_steps)
 
@@ -2910,6 +2916,8 @@ class Sequencer:
             fitzgerald_weather_number_grid=[]
             hours_until_end_of_observing= math.ceil((events['Observing Ends'] - ephem_now) * 24)
             plog("Hours until end of observing: " + str(hours_until_end_of_observing))
+            
+            
             for hourly_report in one_call.forecast_hourly:
                 
                 if hourcounter > hours_until_end_of_observing:
@@ -3017,7 +3025,7 @@ class Sequencer:
                 clear_until_hour=99
                 for q in range(len(hourly_nightuptothen_fitzgerald_number)):
                     if hourly_nightuptothen_fitzgerald_number[q] < 100:
-                        #print ("looks like it is clear until hour " + str(q+1) )
+                        #plog ("looks like it is clear until hour " + str(q+1) )
                         clear_until_hour=q+1            
                             
                 if clear_until_hour != 99:

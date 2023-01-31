@@ -22,7 +22,7 @@ from math import degrees
 # import skyfield
 # from skyfield import api, almanac
 # from skyfield.nutationlib import iau2000b
-# print('ObsImports:  ', config, '\n\'', config.site_config['site'])
+# plog('ObsImports:  ', config, '\n\'', config.site_config['site'])
 from global_yard import *
 
 #import sys
@@ -160,7 +160,7 @@ class Events:
         sun.compute()
         moon = ephem.Moon()
         moon.compute()
-        #if loud: print('Sun: ', sun.ra, sun.dec, 'Moon: ', moon.ra, moon.dec)
+        #if loud: plog('Sun: ', sun.ra, sun.dec, 'Moon: ', moon.ra, moon.dec)
         ptr = ephem.Observer()     #Photon Ranch
         ptr.lat = str(self.siteLatitude)
         ptr.lon = str(self.siteLongitude)
@@ -168,9 +168,9 @@ class Events:
         ptr.compute_pressure()
         ptr.temp = self.siteRefTemp
         sun.compute(ptr)
-        #if loud: print('Sun Now: ', sun.ra, sun.dec, sun.az, sun.alt, ptr.date)
+        #if loud: plog('Sun Now: ', sun.ra, sun.dec, sun.az, sun.alt, ptr.date)
         moon.compute(ptr)
-        # if loud: print('Moon Now: ', moon.ra, moon.dec, moon.az, moon.alt, ptr.date)
+        # if loud: plog('Moon Now: ', moon.ra, moon.dec, moon.az, moon.alt, ptr.date)
         return sun.ra, sun.dec, degrees(sun.alt), degrees(sun.az), moon.ra, moon.dec,\
             degrees(moon.alt), moon.size/3600
 
@@ -179,7 +179,7 @@ class Events:
         sun.compute()
         moon = ephem.Moon()
         moon.compute()
-        #if loud: print('Sun: ', sun.ra, sun.dec, 'Moon: ', moon.ra, moon.dec)
+        #if loud: plog('Sun: ', sun.ra, sun.dec, 'Moon: ', moon.ra, moon.dec)
         ptr = ephem.Observer()     #Photon Ranch
         ptr.lat = str(self.siteLatitude)
         ptr.lon = str(self.siteLongitude)
@@ -187,17 +187,17 @@ class Events:
         ptr.compute_pressure()
         ptr.temp = self.siteRefTemp
         sun.compute(ptr)
-        #if loud: print('Sun Now: ', sun.ra, sun.dec, sun.az, sun.alt, ptr.date)
+        #if loud: plog('Sun Now: ', sun.ra, sun.dec, sun.az, sun.alt, ptr.date)
         moon.compute(ptr)
-        # if loud: print('Moon Now: ', moon.ra, moon.dec, moon.az, moon.alt, ptr.date)
+        # if loud: plog('Moon Now: ', moon.ra, moon.dec, moon.az, moon.alt, ptr.date)
         return  degrees(sun.az)
 
     def _calcEveFlatValues(self, ptr, sun, pWhen, skyFlatEnd, loud=False, now_spot=False):
         # NB This needs to deal with the Moon being too close!
         ptr.date = pWhen
         sun.compute(ptr)
-        if loud: print('Sunset, sidtime:  ', pWhen, ptr.sidereal_time())
-        if loud: print('Eve Open  Sun:  ', sun.ra, sun.dec, sun.az, sun.alt)
+        if loud: plog('Sunset, sidtime:  ', pWhen, ptr.sidereal_time())
+        if loud: plog('Eve Open  Sun:  ', sun.ra, sun.dec, sun.az, sun.alt)
         SunAz1 = degrees(sun.az) - 180
         while  SunAz1 < 0:
             SunAz1 += 360
@@ -206,12 +206,12 @@ class Events:
             SunAlt1 = 180 - SunAlt1
         else:
             SunAz1 = degrees(sun.az)
-        if loud: print('Flat spot at az alt:  ', SunAz1, SunAlt1)
+        if loud: plog('Flat spot at az alt:  ', SunAz1, SunAlt1)
         FlatStartRa, FlatStartDec = ptr.radec_of(str(SunAz1), str(SunAlt1))
-        if loud: print('Ra/Dec of Flat spot:  ', FlatStartRa, FlatStartDec)
+        if loud: plog('Ra/Dec of Flat spot:  ', FlatStartRa, FlatStartDec)
         ptr.date = skyFlatEnd
         sun.compute(ptr)
-        if loud: print('Flat End  Sun:  ', sun.ra, sun.dec, sun.az, sun.alt)#SunRa = float(sun.ra)
+        if loud: plog('Flat End  Sun:  ', sun.ra, sun.dec, sun.az, sun.alt)#SunRa = float(sun.ra)
         SunAz2 = degrees(sun.az) - 180
         while SunAz2 < 0:
             SunAz2 += 360
@@ -220,17 +220,17 @@ class Events:
             SunAlt2 = 180 - SunAlt2
         else:
             SunAz2 = degrees(sun.az)
-        if loud: print('Flatspots:  ', SunAz1, SunAlt1, SunAz2, SunAlt2)
+        if loud: plog('Flatspots:  ', SunAz1, SunAlt1, SunAz2, SunAlt2)
         FlatEndRa, FlatEndDec = ptr.radec_of(str(SunAz2), str(SunAlt2))
-        if loud: print('Eve Flat:  ', FlatStartRa, FlatStartDec, FlatEndRa, FlatEndDec)
+        if loud: plog('Eve Flat:  ', FlatStartRa, FlatStartDec, FlatEndRa, FlatEndDec)
         span = 86400*(skyFlatEnd - pWhen)
-        if loud: print('Duration:  ', str(round(span/60, 2)) +   'min')
+        if loud: plog('Duration:  ', str(round(span/60, 2)) +   'min')
         RaDot = round(3600*degrees(FlatEndRa - FlatStartRa)/span, 4)
         DecDot = round(3600*degrees(FlatEndDec - FlatStartDec)/span, 4)
-        if loud: print('Eve Rates:  ', RaDot, DecDot)
+        if loud: plog('Eve Rates:  ', RaDot, DecDot)
         if now_spot:
-            if loud: print(type(FlatStartRa))
-            if loud: print('ReturningRa/Dec of Flat spot:  ', FlatStartRa, FlatStartDec)
+            if loud: plog(type(FlatStartRa))
+            if loud: plog('ReturningRa/Dec of Flat spot:  ', FlatStartRa, FlatStartDec)
             return  degrees(FlatStartRa)/15, degrees(FlatStartDec)
         else:
             return (degrees(FlatStartRa)/15, degrees(FlatStartDec), \
@@ -239,9 +239,9 @@ class Events:
     def _calcMornFlatValues(self, ptr, sun, pWhen,  sunrise, loud=False):
         ptr.date = pWhen
         sun.compute(ptr)
-        if loud: print()
-        if loud: print('Morn Flat Start, sidtime:  ', pWhen, ptr.sidereal_time())
-        if loud: print('Morn Flat Start Sun:  ', sun.ra, sun.dec, sun.az, sun.alt)
+        if loud: plog()
+        if loud: plog('Morn Flat Start, sidtime:  ', pWhen, ptr.sidereal_time())
+        if loud: plog('Morn Flat Start Sun:  ', sun.ra, sun.dec, sun.az, sun.alt)
         SunAz1 = degrees(sun.az) + 180
         while SunAz1 < 0:
             SunAz1 += 360
@@ -250,12 +250,12 @@ class Events:
             SunAlt1 = 180 - SunAlt1
         else:
             SunAz1 = degrees(sun.az)
-        print('Flat spot at:  ', SunAz1, SunAlt1)
+        plog('Flat spot at:  ', SunAz1, SunAlt1)
         FlatStartRa, FlatStartDec = ptr.radec_of(str(SunAz1), str(SunAlt1))
-        print('Ra/Dec of Flat spot:  ', FlatStartRa, FlatStartDec)
+        plog('Ra/Dec of Flat spot:  ', FlatStartRa, FlatStartDec)
         ptr.date = sunrise
         sun.compute(ptr)
-        if loud: print('Flat End  Sun:  ', sun.ra, sun.dec, sun.az, sun.alt)#SunRa = float(sun.ra)
+        if loud: plog('Flat End  Sun:  ', sun.ra, sun.dec, sun.az, sun.alt)#SunRa = float(sun.ra)
         SunAz2 = degrees(sun.az) - 180
         while SunAz2 < 0:
             SunAz2 += 360
@@ -264,14 +264,14 @@ class Events:
             SunAlt2 = 180 - SunAlt2
         else:
             SunAz2 = degrees(sun.az)
-        if loud: print('Flatspot:  ', SunAz1, SunAlt1, SunAz2, SunAlt2)
+        if loud: plog('Flatspot:  ', SunAz1, SunAlt1, SunAz2, SunAlt2)
         FlatEndRa, FlatEndDec = ptr.radec_of(str(SunAz2), str(SunAlt2))
-        print('Morn Flat:  ', FlatStartRa, FlatStartDec, FlatEndRa, FlatEndDec)
+        plog('Morn Flat:  ', FlatStartRa, FlatStartDec, FlatEndRa, FlatEndDec)
         span = 86400*(sunrise - pWhen)
-        print('Duration:  ', str(round(span/60, 2)) +   'min')
+        plog('Duration:  ', str(round(span/60, 2)) +   'min')
         RaDot = round(3600*degrees(FlatEndRa - FlatStartRa)/span, 4)
         DecDot = round(3600*degrees(FlatEndDec - FlatStartDec)/span, 4)
-        print('Morn Rates:  ', RaDot, DecDot, '\n')
+        plog('Morn Rates:  ', RaDot, DecDot, '\n')
         return (degrees(FlatStartRa)/15, degrees(FlatStartDec), \
                 degrees(FlatEndRa)/15, degrees(FlatEndDec), RaDot, DecDot)
 
@@ -296,9 +296,9 @@ class Events:
         maz = degrees(moon.az)
         mal = degrees(moon.alt)
 
-        if loud: print('Sun Now: ', saz, degrees(sun.alt))
+        if loud: plog('Sun Now: ', saz, degrees(sun.alt))
         moon.compute(ptr)
-        if loud: print('Moon Now: ', degrees(moon.az), degrees(moon.alt))
+        if loud: plog('Moon Now: ', degrees(moon.az), degrees(moon.alt))
         return round(saz, 2)
 
     #############################
@@ -314,7 +314,7 @@ class Events:
         #sun.compute(dayNow)
         #moon = ephem.Moon()
         #moon.compute(dayNow)
-        #if loud: print('Sun: ', sun.ra, sun.dec, 'Moon: ', moon.ra, moon.dec)
+        #if loud: plog('Sun: ', sun.ra, sun.dec, 'Moon: ', moon.ra, moon.dec)
         ptr = ephem.Observer()     #Photon Ranch
         ptr.date = dayNow
         ptr.lat = str(self.siteLatitude)
@@ -328,7 +328,7 @@ class Events:
         sunrise = ptr.next_rising(sun)
         ptr.horizon = '-6'
         sun.compute(ptr)
-        #if loud: print('Sun -6: ', sun.ra, sun.dec, sun.az, sun.alt)
+        #if loud: plog('Sun -6: ', sun.ra, sun.dec, sun.az, sun.alt)
         civilDusk = ptr.next_setting(sun)
         ops_win_begin = civilDusk - 121/1440
         return (ops_win_begin, sunset, sunrise, ephem.now())
@@ -338,7 +338,7 @@ class Events:
         Return a tuple with the (az, alt) of the flattest part of the sky.
         '''
         ra, dec, sun_alt, sun_az, *other = self._sunNow()
-        print('Sun:  ', sun_az, sun_alt)
+        plog('Sun:  ', sun_az, sun_alt)
         sun_az2 = sun_az - 180.   #  Opposite az of the Sun
         if sun_az2 < 0:
             sun_az2 += 360.
@@ -357,7 +357,7 @@ class Events:
         illuminance, skyMag = self._illumination(sunRa, sunDec, sunElev, 0.5, \
                                         moonRa, moonDec, moonElev, moonDia)
         return round(illuminance, 3), round(skyMag ,2)
-        #if loud: print('Moon Now: ', moon.ra, moon.dec, moon.az, moon.alt, ptr.date)
+        #if loud: plog('Moon Now: ', moon.ra, moon.dec, moon.az, moon.alt, ptr.date)
 
     def compute_day_directory(self, loud=False):
         '''
@@ -388,7 +388,7 @@ class Events:
             nowheremonth=str(now_here.month)
         
         DAY_Directory = str(now_here.year) + str(nowheremonth) + str(nowhereday)
-        print('Day_Directory:  ', DAY_Directory)
+        plog('Day_Directory:  ', DAY_Directory)
         g_dev['day'] = DAY_Directory
 
         return DAY_Directory
@@ -454,7 +454,7 @@ class Events:
         moon.compute(ptr)
         sun=ephem.Sun()
         sun.compute(ptr)
-        #if loud: print('Middle night  Sun:  ', sun.ra, sun.dec, sun.az, sun.alt)
+        #if loud: plog('Middle night  Sun:  ', sun.ra, sun.dec, sun.az, sun.alt)
         mid_moon_ra = moon.ra
         mid_moon_dec = moon.dec
         mid_moon_phase = moon.phase

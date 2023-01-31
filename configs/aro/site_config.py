@@ -568,7 +568,8 @@ site_config = {
                 'north_offset': 0.0,    # These three are normally 0.0 for the primary telescope
                 'east_offset': 0.0,     # Not sure why these three are even here.
                 'rotation': 0.0,        # Probably remove.
-                'min_exposure': 0.00001,
+                'min_exposure': 0.00001,                
+                'min_flat_exposure': 0.00001,
                 'max_exposure': 360.0,
                 'can_subframe':  True,
                 'min_subframe':  [128, 128],
@@ -607,6 +608,8 @@ site_config = {
                 'dark_length' : 900,
                 'bias_count' : 10,
                 'dark_count' : 10,
+                
+                'flat_count' : 10,
                 'bin_modes':  [[1, 1, 0.2876], [2, 2, 0.575], [3, 3, 0.863], [4, 4, 1.15]],   #Meaning no binning choice if list has only one entry, default should be first.
                 'optimal_bin':  [2, 2, 0.575],
                 'max_res_bin':  [1, 1, 0.2876],
