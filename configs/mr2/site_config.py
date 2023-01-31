@@ -623,6 +623,8 @@ site_config = {
                 'east_offset': 0.0,
                 'rotation': 0.0,
                 'min_exposure': 0.25,  #Need to check this setting out
+                
+                'min_flat_exposure': 1.0,
                 'max_exposure': 600.0,
                 'ref_dark': 300.0,
                 'long_dark': 600.0,

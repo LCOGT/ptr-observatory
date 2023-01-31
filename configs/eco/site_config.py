@@ -575,6 +575,7 @@ site_config = {
                 'east_offset': 0.0,     #  Not sure why these three are even here.
                 'rotation': 0.0,        #  Probably remove.
                 'min_exposure': 0.2,
+                'min_flat_exposure' : 1.0, # For certain shutters, short exposures aren't good for flats. Largely applies to ccds though.
                 'max_exposure': 3600,
                 'can_subframe':  True,
                 'min_subframe':  [128, 128],

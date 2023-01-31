@@ -675,6 +675,7 @@ site_config = {
                 'east_offset': 0.0,
                 'rotation': 0.0,
                 'min_exposure': 0.0001,
+                'min_flat_exposure': 0.0001,
                 'max_exposure': 180.,
                 'can_subframe':  True,
                 'min_subframe': [128,128],
