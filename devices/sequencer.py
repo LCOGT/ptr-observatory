@@ -1623,7 +1623,17 @@ class Sequencer:
                 self.estimated_first_flat_exposure = False
                 while (acquired_count < flat_count):# and g_dev['enc'].status['shutter_status'] in ['Open', 'open']: # NB NB NB and roof is OPEN! and (ephem_now +3/1440) < g_dev['events']['End Eve Sky Flats' ]:
                     #if g_dev['enc'].is_dome:   #Does not apply
-                    g_dev['obs'].update()
+                    g_dev['obs'].update()                    
+                    
+                    if g_dev['obs'].open_and_enabled_to_observe == False:
+                        plog ("Observatory closed or disabled during flat script. Cancelling out of flat acquisition loop.")
+                        return
+                    
+                    # Check that Flat time hasn't ended
+                    if ephem.now() > ending:
+                        plog ("Flat acquisition time finished. Breaking out of the flat loop.")
+                        return
+                    
                     if self.next_flat_observe < time.time():                
                         
                             
