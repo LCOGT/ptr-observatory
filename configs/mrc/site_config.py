@@ -62,7 +62,7 @@ site_config = {
     'admin_aliases': ["ANS", "WER", "TELOPS", "TB", "DH", "KVH", "KC"],
 
     'client_hostname':  'MRC-0m35',
-                    # NB NB disk D at mrc may be faster for temp storage
+
     'client_path':  'Q:/ptr/',  # Generic place for client host to stash misc stuff
     'alt_path':  'Q:/ptr/',  # Generic place for this host to stash misc stuff
     'plog_path':  'Q:/ptr/plogs/',  #place where night logs can be found.
@@ -71,27 +71,21 @@ site_config = {
 
     'archive_age' : -99.9, # Number of days to keep files in the local archive before deletion. Negative means never delete
     'send_files_at_end_of_night' : 'no', # For low bandwidth sites, do not send up large files until the end of the night. set to 'no' to disable
-    
-    'save_raw_to_disk' : True, # For low diskspace sites (or just because they aren't needed), don't save a separate raw file to disk after conversion to fz.
-    'keep_reduced_on_disk' : True, # PTR uses the reduced file for some calculations (focus, SEP, etc.). To save space, this file can be removed after usage or not saved.
-    'keep_focus_images_on_disk' : True, # To save space, the focus file can not be saved.
-    
-    'aux_archive_path':  None,   #NB NB we might want to put Q: here for MRC
-    'wema_is_active':  True,          # True if the split computers used at a site.  NB CHANGE THE DAMN NAME!
+    'aux_archive_path':  None,
+    'wema_is_active':  True,          # True if the split computers used at a site.
     'wema_hostname': 'MRC-WMS-ENC',   # Prefer the shorter version
     'wema_path':  'Q:/ptr/',  # '/wema_transfer/',
     'dome_on_wema':   True,
     'site_IPC_mechanism':  'redis',   # ['None', shares', 'shelves', 'redis']  Pick One
     'wema_write_share_path': 'Q:/ptr/',  # Meant to be where Wema puts status data.
-    'client_read_share_path':  'Q:/ptr/', #NB these are all very confusing names.
+    'client_read_share_path':  'Q:/ptr/',
     'client_write_share_path': 'Q:/ptr/',
     'redis_ip': '10.15.0.109',  #'127.0.0.1', None if no redis path present,
     'site_is_generic':  False,   # A simply  single computer ASCOM site.
     'site_is_specific':  False,  # Indicates some special code for this site, found at end of config.
 
 
-    'host_wema_site_name':  'MRC',  #  The umbrella header for obsys in close geographic proximity,
-                                    #  under the control of one wema
+    'host_wema_site_name':  'MRC',  #  The umbrella header for obsys in close geographic proximity.
     'name': 'Mountain Ranch Camp Observatory 0m35f7.2',
     'airport_code': 'SBA',
     'location': 'Near Santa Barbara CA,  USA',
@@ -103,14 +97,14 @@ site_config = {
                     to get out and vote early and often lest
                     we lose charge of our democracy.
                     ''',    #i.e, a multi-line text block supplied by the owner.  Must be careful about the contents for now.
-    'location_day_allsky':  None,  #  Thus ultimately should be a URL, probably a color camera.
+     'location_day_allsky':  None,  #  Thus ultimately should be a URL, probably a color camera.
     'location_night_allsky':  None,  #  Thus ultimately should be a URL, usually Mono camera with filters.
     'location _pole_monitor': None,  #This probably gets us to some sort of image (Polaris in the North)
     'location_seeing_report': None,  # Probably a path to a jpeg or png graph.
 
     'TZ_database_name':  'America/Los_Angeles',
     'mpc_code':  'ZZ23',    #This is made up for now.
-    'time_offset':  -8,     # NB these two should be derived from Python libs so change is automatic
+    'time_offset':  -8,
     'timezone': 'PST',
     'latitude': 34.459375,     #Decimal degrees, North is Positive
     'longitude': -119.681172,   #Decimal degrees, West is negative
@@ -118,10 +112,7 @@ site_config = {
     'reference_ambient':  10.0,  #Degrees Celsius.  Alternately 12 entries, one for every - mid month.
     'reference_pressure':  977.83,  #mbar Alternately 12 entries, one for every - mid month.
 
-    'site_roof_control': 'no', #MTF entered this in to remove sro specific code  NB 'site_is_specifc' also deals with this
-    'site_allowed_to_open_roof': 'yes',
-    
-    'maximum_roof_opens_per_evening' : 4,
+    'site_roof_control': 'no', #MTF entered this in to remove sro specific code
     'site_in_automatic_default': "Automatic",   #"Manual", "Shutdown"
     'automatic_detail_default': "Enclosure is initially set to Automatic mode.",
     'observing_check_period' : 2,    # How many minutes between weather checks
@@ -131,20 +122,19 @@ site_config = {
     
     'auto_midnight_moonless_bias_dark': True,
     'auto_eve_sky_flat': False,
-    #NBNB  Add the offests from Sunset and Sunrise into the config so events are not hardwired in code.
-    'eve_sky_flat_sunset_offset': -45.,  #  Minutes  neg means before, + after.
-    'eve_cool_down_open' : -50.0,
+    'eve_sky_flat_sunset_offset': -90.,  #  Minutes  neg means before, + after.
+    'eve_cool_down_open' : -95.0,
     'auto_morn_sky_flat': True,
     'auto_morn_bias_dark': True,
     're-calibrate_on_solve': True,
-    'pointing_calibration_on_startup': False,  #MF I am leaving this alone.
+    'pointing_calibration_on_startup': False,
     'periodic_focus_time' : 0.5, # This is a time, in hours, over which to bypass automated focussing (e.g. at the start of a project it will not refocus if a new project starts X hours after the last focus)
     'stdev_fwhm' : 0.5, # This is the expected variation in FWHM at a given telescope/camera/site combination. This is used to check if a fwhm is within normal range or the focus has shifted
-    'focus_exposure_time': 25, # Exposure time in seconds for exposure image
+    'focus_exposure_time': 15, # Exposure time in seconds for exposure image
     'focus_trigger' : 1.0, # What FWHM increase is needed to trigger an autofocus
     'solve_nth_image' : 10, # Only solve every nth image
     'solve_timer' : 5, # Only solve every X minutes
-    'threshold_mount_update' : 10, # only update mount when X arcseconds away   NB NB Should'nt this be with the Mounting config?  WER
+    'threshold_mount_update' : 10, # only update mount when X arcseconds away
 
     'defaults': {
         'observing_conditions': 'observing_conditions1',
@@ -264,16 +254,13 @@ site_config = {
             'recover_script':  None,
             'shutdown_script':  None,
             'alignment': 'Alt-Az',
-            'default_zenith_avoid': 7.0,   #degrees
+            'default_zenith_avoid': 7.0,   #degrees floating
             'west_clutch_ra_correction': 0.0,
             'west_clutch_dec_correction': 0.0,
             'east_flip_ra_correction': 0.0,
-            'east_flip_dec_correction': 0.0,  #
+            'east_flip_dec_correction': 0.0,  #  #  #
             'home_after_unpark' : False,
-            'permissive_mount_reset' : 'no', # if this is set to yes, it will reset the mount at startup and when coordinates are out significantly'home_after_unpark' : True,
-            'lowest_acceptable_altitude' : -5.0, # Below this altitude, it will automatically try to home and park the scope to recover.
-            
-            'time_inactive_until_park' : 3600.0, # How many seconds of inactivity until it will park the telescope
+            'permissive_mount_reset' : 'no', # if this is set to yes, it will reset the mount at startup and when coordinates are out significantly
             'has_paddle': False,
             'has_ascom_altaz': True,
             'pointing_tel': 'tel1',
@@ -291,10 +278,8 @@ site_config = {
 			    'elevation_offset': 0.0,    # meters above sea level
                 'home_park_altitude': 0,    #Having these settings is important for PWI4 where it can easily be messed up.
                 'home_park_azimuth': 180,
-                'home_altitude': 0,    #Having these settings is important for PWI4 where it can easily be messed up.
-                'home_azimuth': 180,
                 'fixed_screen_azimuth': 167.25,
-                'fixed_screen _altitude': 0.54,
+                'Fixed_screen _altitude': 0.54,
                 'refraction_on': True,
                 'model_on': True,
                 'rates_on': True,
@@ -416,8 +401,7 @@ site_config = {
             'maximum':360.0,
             'step_size':  0.0001,
             'backlash':  0.0,
-            'unit':  'degree',
-            'has_rotator': True   #Indicates to camera and Project to include rotation box.
+            'unit':  'degree'
             },
 
     },
@@ -445,12 +429,10 @@ site_config = {
             'start_at_config_reference': False,
             'use_focuser_temperature': True,
             #*********Guesses   7379@10 7457@20  7497 @ 25
-            #'reference': 7250, #20221103    #7418,    # Nominal at 15C Primary temperature, in microns not steps. Guess
-            'reference': 5382, #20221103    #7418,    # Nominal at 15C Primary temperature, in microns not steps. Guess
+            'reference': 6900, #20221103    #7418,    # Nominal at 15C Primary temperature, in microns not steps. Guess
             'ref_temp':  15,      # Update when pinning reference  Larger at lower temperatures.
-            'coef_c': -6,    # Negative means focus moves out (larger numerically) as Primary gets colder
-            #'coef_0': 7250,  #20221103# Nominal intercept when Primary is at 0.0 C.
-            'coef_0': 5596,  #20221225# Nominal intercept when Primary is at 0.0 C.
+            'coef_c': 11.892,    # Negative means focus moves out (larger numerically) as Primary gets colder
+            'coef_0': 6782,  #20221103# Nominal intercept when Primary is at 0.0 C.
             'coef_date':  '20221103',   #A Guess as to coef_c
             'z_compression': 0.0, #  microns per degree of zenith distance
             'z_coef_date':  '20221002',   # 'reference': 4375,    #   Guess 20210904  Nominal at 10C Primary temperature
@@ -491,20 +473,9 @@ site_config = {
             "parent": "telescope1",
             "alias": "Dual filter wheel",
             "desc":  'FLI Centerline Custom Dual 50mm sq.',
-            "driver": "Maxim.CCDCamera",  #'ASCOM.FLI.FilterWheel',   #['ASCOM.FLI.FilterWheel1', 'ASCOM.FLI.FilterWheel2'],   #"Maxim",   #"Maxim.CCDCamera",  #
+            "driver": "Maxim.CCDCamera",  #['ASCOM.FLI.FilterWheel1', 'ASCOM.FLI.FilterWheel2'],   #"Maxim",   #
             #"driver":   'ASCOM.FLI.FilterWheel',   #  NB THIS IS THE NEW DRIVER FROM peter.oleynikov@gmail.com  Found in Kepler ASCOM section
             "dual_wheel": True,
-            
-            
-            # WER - if there is no filter wheel, then these two are used, otherwise they are harmless
-            "name" : "RGGB",
-            'flat_sky_gain' : 1148,
-            #'driver' : None <------ set driver to None for no filter wheel
-            
-            
-            
-            
-            
             # "parent": "telescope1",
             # "alias": "CWL2",
             # "desc":  'PTR Custom FLI dual wheel.',
@@ -515,38 +486,37 @@ site_config = {
                 #'home_filter':  2,
                 'default_filter':  'w',
                 'filter_reference': 2,
-                
 
-
-                #'filter_list': ['PL','PR','PG','PB','HA','O3','S2', 'air','dif','w','CR','N2','up','gp','rp','ip','z', 'difup','difgp','difrp','difip','dark'], # A list of actual physical filters for the substitution function
-                #  Column hdr    filter     fil#'s   Offset  Gain  Screen   Unused alias  Need CWL and BW and serial number
-                'filter_data': [['air',     [0, 0], -1039,  1.233, [2, 17], 'ai'], #  0   #computed for n = 1.53 and 3mm filter
-                                ['dif',     [4, 0],     0,  1.452, [2, 17], 'df'], #  1  NB NB NB If this in series should change focus about 1mm more.
-                                ['w',       [2, 0],     0,  1.845, [2, 17], 'w '], #  2
-                                ['PL',      [0, 4],     0,  2.153, [2, 17], "PL"], #  3
-                                ['gp',      [0, 6],     0,  1.894, [2, 17], 'gp'], #  4 
-                                ['PB',      [0, 1],     0,  1.299, [2, 17], 'PB'], #  5
-                                ['rp',      [0, 7],     0,  0.910, [2, 17], 'rp'], #  6
-                                ['PG',      [0, 2],     0,  1.846, [2, 17], 'PG'], #  7
-                                ['PR',      [0, 3],     0,  0.223, [2, 17], 'PR'], #  8
-                                ['ip',      [0, 8],     0,  0.770, [2, 17], 'ip'], #  9
-                                ['z',       [5, 0],     0,  0.280, [2, 17], 'z' ], # 10
-                                ['O3',      [7, 0],     0,  0.240, [2, 17], '03'], # 11
-                                ['up',      [0, 5],     0,  0.590, [1, 17], 'up'], # 12  #NB there should be a way to 
-                                ['N2',      [3, 0],     0,  0.200, [2, 17], 'N2'], # 13  #calculate the small focal shifts
-                                ['CR',      [1, 0],     0,  0.290, [2, 17], 'CR'], # 14
-                                ['S2',      [8, 0],     0,  0.200, [2, 17], 'S2'], # 15   
-                                ['HA',      [6, 0],     0,  0.200, [2, 17], 'HA'], # 16  
-                                ['focus',   [2, 0],     0,  0.0,   [2, 17], 'fo'], # 17
-                                ['dark',    [8, 5],     0,  0.0,   [2, 17], 'dk']],# 18
-
+                'filter_list': ['PL','PR','PG','PB','HA','O3','S2', 'air','dif','w','CR','N2','up','gp','rp','ip','z', 'difup','difgp','difrp','difip','dark'], # A list of actual physical filters for the substitution function
+                'filter_data': [['air',     [0, 0], -1000,  118.6, [2, 17], 'ai'], #  0
+                                ['dif',     [4, 0],     0,  104.8, [2, 17], 'df'], #  1
+                                ['w',       [2, 0],     0,  133.7, [2, 17], 'w '], #  2
+                                ['CR',      [1, 0],     0,  0.706, [2, 17], 'CR'], #  3
+                                ['N2',      [3, 0],     0,  0.371, [2, 17], 'N2'], #  4
+                                ['up',      [0, 5],     0,  5.129, [1, 17], 'up'], #  5
+                                ['gp',      [0, 6],     0,  81.10, [2, 17], 'gp'], #  6
+                                ['rp',      [0, 7],     0,  15.48, [2, 17], 'rp'], #  7
+                                ['ip',      [0, 8],     0,  11.35, [2, 17], 'ip'], #  8
+                                ['z',       [5, 0],     0,  1.872, [2, 17], 'z' ], #  9
+                                ['PL',      [0, 4],     0,  72.78, [2, 17], "PL"], # 10
+                                ['PR',      [0, 3],     0,  13.89, [2, 17], 'PR'], # 11
+                                ['PG',      [0, 2],     0,  30.24, [2, 17], 'PG'], # 12
+                                ['PB',      [0, 1],     0,  27.52, [2, 17], 'PB'], # 13
+                                ['O3',      [7, 0],     0,  1.742, [2, 17], '03'], # 14
+                                ['HA',      [6, 0],     0,  1.200, [2, 17], 'HA'], # 15   #  20221103 Oddly high result
+                                ['S2',      [8, 0],     0,  1.300, [2, 17], 'S2'], # 16   #  20221103 Oddly high result
+                                ['difup',   [4, 5],     0,  5.129,  [2, 17], 'du'], # 17
+                                ['difgp',   [4, 6],     0,  81.10,  [2, 17], 'dg'], # 18
+                                ['difrp',   [4, 7],     0,  15.48,  [2, 17], 'dr'], # 19
+                                ['difip',   [4, 8],     0,  11.35,  [2, 17], 'di'], # 20
+                                ['focus',   [2, 0],     0,  133.7, [2, 17], 'fo'], # 21
+                                ['dark',    [10, 9],    0,  99999, [2, 17], 'dk']],# 22
                                 #Screen = 100; QHY400 ~ 92% DQE   HDR Mode    Screen = 160 sat  20190825 measured.
-                'filter_screen_sort':  ['air','w','PL','dif', 'gp','PB','rp','PG','PR','ip','O3','N2','CR','S2','HA'],   #  9, 21],  # 5, 17], #Most to least throughput, \
+                'filter_screen_sort':  [0, 1, 2, 10, 7, 19, 6, 18, 12, 11, 13, 8, 20, 3, \
+                                        14, 15, 4, 16],   #  9, 21],  # 5, 17], #Most to least throughput, \
                                 #so screen brightens, skipping u and zs which really need sky.
 
-                'filter_sky_sort':     ['HA', 'S2', 'CR', 'N2', 'O3', 'z', 'PR', 'up', 'ip',  'rp', 'PG', 'PB', 'gp',\
-                                        'dif', 'w', 'air', 'PL']  #Least to most throughput  PR is not beleivable
-                #Adjusted 20221226 WER   Some values certainly are odd.  
+                'filter_sky_sort':     [16, 15, 14, 13, 12, 11, 10, 9, 8, 7, 6, 4, 4, 3, 2, 1, 0]  #Least to most throughput  \
 
 
             },
@@ -578,66 +548,31 @@ site_config = {
     'camera': {
         'camera_1_1': {
             'parent': 'telescope1',
-            'name': 'sq001cs',      #Important because this points to a server file structure by that name.
-            'desc':  'QHY 600C Pro',
-            'driver':  "ASCOM.QHYCCD.Camera", # NB Be careful this is not QHY Camera2 or Guider  "Maxim.CCDCamera",   #'ASCOM.FLI.Kepler.Camera', "ASCOM.QHYCCD.Camera",   #
-            'detector':  'Sony IMX455 Color',
+            'name': 'sq003ms',      #Important because this points to a server file structure by that name.
+            'desc':  'QHY 600M Pro',
+            'driver':  "ASCOM.QHYCCD.Camera", #"Maxim.CCDCamera",   #'ASCOM.FLI.Kepler.Camera', "ASCOM.QHYCCD.Camera",   #
+            'detector':  'Sony IMX455',
             'manufacturer':  'QHY',
             'use_file_mode':  False,
-            'file_mode_path':  'Q:/archive/sq01/maxim/',   #NB NB all file_mode Maxim stuff should go!
+            'file_mode_path':  'Q:/archive/sq01/maxim/',
 
             'settings': {
                 
-                'is_osc' : True,
-                'osc_bayer' : 'RGGB',
-                'osc_brightness_enhance' : 1.0,
-                'osc_contrast_enhance' : 1.3,
-                'osc_saturation_enhance' : 2.0,
-                'osc_colour_enhance' : 1.5,
-                'osc_sharpness_enhance' : 1.5,
-                'osc_background_cut' : 25.0,  
-                
-                'squash_on_x_axis' : True,
-
-                'bin_for_focus' : True, # This setting will bin the image for focussing rather than interpolating. Good for 1x1 pixel sizes < 0.6.
-                
-                # ONLY TRANSFORM THE FITS IF YOU HAVE
-                # A DATA-BASED REASON TO DO SO.....
-                # USUALLY TO GET A BAYER GRID ORIENTATED CORRECTLY
-                # ***** ONLY ONE OF THESE SHOULD BE ON! *********
-                'transpose_fits' : False,
-                'flipx_fits' : False,
-                'flipy_fits' : False,
-                'rotate180_fits' : False, # This also should be flipxy!
-                'rotate90_fits' : False,
-                'rotate270_fits' : False,
-                
-                # HERE YOU CAN FLIP THE IMAGE TO YOUR HEARTS DESIRE
-                # HOPEFULLY YOUR HEARTS DESIRE IS SIMILAR TO THE
-                # RECOMMENDED DEFAULT DESIRE OF PTR
-                'transpose_jpeg' : True,
-                'flipx_jpeg' : False,
-                'flipy_jpeg' : False,
-                'rotate180_jpeg' : False,
-                'rotate90_jpeg' : False,
-                'rotate270_jpeg' : False,
-                
+                'is_osc' : False,
                 'osc_bayer' : 'RGGB',
                 'crop_preview': False,
                 'crop_preview_ybottom': 1,
                 'crop_preview_ytop': 1,
                 'crop_preview_xleft': 1,
                 'crop_preview_xright': 1,
-                'temp_setpoint': -25,    #Verify we can go colder, this system has a chiller
-                'has_chiller': True,
-                'calib_setpoints': [-25, -25, -25, -25, -25, -25, \
-                                    -25, -25, -25, -25, -25, -25],  #  Picked by month-of-year 
+                'temp_setpoint': -25,
+                'calib_setpoints': [-25, -22.5,- 20, -17.5 ],  #  Picked by day-of-year mod len(list)
                 'day_warm': False,
                 'cooler_on': True,
                 'x_start':  0,
                 'y_start':  0,
-                'x_width':  9576,   #NB Should be set up with overscan, which this camera is!  20200315 WER
-                'y_width':  6388,
+                'x_width':  4800,   #NB Should be set up with overscan, which this camera is!  20200315 WER
+                'y_width':  3211,
                 'x_chip':  9576,   #NB Should specify the active pixel area.   20200315 WER
                 'y_chip':  6388,
                 'x_trim_offset':  8,   #  NB these four entries are guesses.
@@ -651,20 +586,21 @@ site_config = {
                 'corner_everlap': None,
                 'x_bias_line': True,
                 'y_bias_line': True,
-                'x_active': 9576,
-                'y_active': 6388,
-                'det_size': '[1:9600, 1:6422]',  # Physical chip data size as returned from driver
+                'x_active': 4784,
+                'y_active': 3194,
+                'det_size': '[1:9600, 1:6422]',  # Physical chip data size as reutrned from driver
                 'ccd_sec': '[1:9600, 1:6422]',
-                'bias_sec': '[1:22, 1:6388], [1:11, 1:3194], [1:7, 1:2129], [1:5, 1:1597]',
-                'det_sec': '[25:9600, 1:6388], [13:4800, 1:3194], [9:3200, 1:2129], [7:2400, 1:1597]',
-                'data_sec': '[25:9600, 1:6388], [13:4800, 1:3194], [9:3200, 1:2129], [7:2400, 1:1597]',
-                'trim_sec': '[1:9576, 1:6388], [1:4788, 1:3194], [1:3192, 1:2129], [1:2394, 1:1597]',
+                'bias_sec': ['[1:22, 1:6388]', '[1:11, 1:3194]', '[1:7, 1:2129]', '[1:5, 1:1597]'],
+                'det_sec': ['[25:9600, 1:6388]', '[13:4800, 1:3194]', '[9:3200, 1:2129]', '[7:2400, 1:1597]'],
+                'data_sec': ['[25:9600, 1:6388]', '[13:4800, 1:3194]', '[9:3200, 1:2129]', '[7:2400, 1:1597]'],
+                'trim_sec': ['[1:9576, 1:6388]', '[1:4788, 1:3194]', '[1:3192, 1:2129]', '[1:2394, 1:1597]'],
                 'x_pixel':  3.76,
                 'y_pixel':  3.76,
-                'pix_scale': 0.302597,    #   bin-2  2* math.degrees(math.atan(3.76/2563000))*3600
 
                 'CameraXSize' : 9600,
                 'CameraYSize' : 6422,
+                #'MaxBinX' : 2,
+                #'MaxBinY' : 2,
                 'StartX' : 1,
                 'StartY' : 1,
 
@@ -678,65 +614,52 @@ site_config = {
                 'east_offset': 0.0,
                 'rotation': 0.0,
                 'min_exposure': 0.0001,
-                'min_flat_exposure': 0.0001,
                 'max_exposure': 180.,
                 'can_subframe':  True,
                 'min_subframe': [128,128],
-                'bin_modes':  [['Optimal', 0.91], ['Fine', 0.61], ['Coarse', 1.2], ['Eng', 0.30]],     #Meaning fixed binning if list has only one entry
-                'reference_gain': 1.3,     #  NB GUess One val for each binning. Assumed digitalsumming in camera???
-                'reference_noise': 6,    #  NB Guess
-                'reference_dark': 0.2,  #  NB  Guess
-                'reference_offset': 611, #  NB Guess  ADU vaules not times in sec.
-                'fullwell_capacity': 80000,   #  NB Guess
-                'bin-desc':              ['1x1', '2x2', '3x3', '4x4' ],
-                'chan_color':            ['col', 'gry', 'gry', 'gry' ],
-                #'cycle_time':            [ 18,    13,    15,    12   ],   # NB somewhat a Guess.
-                'cycle_time':            0,   # NB somewhat a Guess.
-                #'enable_bin':            [ True, False,  False,  False],
-                #'bias_dark_bin_spec':    ['1,1', '2,2', '3,3', '4,4' ],    #Default binning for flats
-                'bias_count':    31,
-                'dark_count':    9,
-                
-                'flat_count' : 10,
-                'dark_exposure': 360,
-                #'flat_bin_spec':         ['1,1', '2,2', '3,3', '4,4' ],   #Is this necessary?
-                'flat_count':    5,   #This will take days to get through
-                #'flat_count': 5,
-                'optimal_bin': [1, 1],   #  This is the optimal bin for MRC
-                'fine_bin':    [1, 1],   #  This is the fine bin for MRC
-                'coarse_bin':  [1, 1],   #  This is the coarse bin for MRC
-                'eng_bin':     [1, 1],   #  This is the eng-only bin for MRC, not useful for users?
-                'bin_enable':  ['1 1'],  #  Always square and matched to seeing situation by owner  NB Obsolete? NO MF uses to load bias calib
-                                         #  NB NB inconsistent use of bin string   '1 1', '1x1' , etc.
-                'do_cosmics' : 'yes',
-                
+                'bin_modes':  [[1, 1, 0.303], [2, 2, 0.605],  [3, 3, 0.908], [4, 4, 1.21]],     #Meaning fixed binning if list has only one entry
+                'default_bin':  [2, 2, 0.605],
+                'maximum_bin': [1, 1, 0.303],
+                'cosmics_at_default' : 'yes',
+                'cosmics_at_maximum' : 'yes',
+                'bin_enable':  ['2 2'],  #  Always square and matched to seeing situation by owner
+                'cycle_time':  [18, 15, 15, 12],
                 'rbi_delay':  0,      #  This being zero says RBI is not available, eg. for SBIG.
                 'is_cmos':  True,
-                'is_color': True,   #NB we also have a is_osc key.
+                'is_color': False,
                 'can_set_gain':  True,
+                'ref_dark': 600,
+                'long_dark': None,   #  s.
+                'reference_gain': [1.3, 2.6, 3.9, 5.2],     #  One val for each binning. Assumed digitalsumming in camera???
+                'reference_noise': [6, 6, 6, 6],    #  NB Guess
+                'reference_dark': [.2, .8, 1.8, 3.2],  #  Guess
                 'max_linearity':  60000,   # Guess
-
+                'saturate':  65300,
                 'flat_count': 5,
-
-                'saturate':   65000 ,    #[[1, 65000], [2,262000], [3,589815], [4, 1048560]] ,   # e-.  This is a close guess, not measured, but taken from data sheet.
-                'fullwell_capacity':  80000,
-
                 'read_mode':  'Normal',
                 'readout_mode': 'Normal',
                 'readout_speed':  50,
-                'readout_seconds': 6,
+                'readout_seconds': 12,
                 'smart_stack_exposure_time': 30,
                 'square_detector': False,
                 'square_pixels': True,
-                'areas_implemented': ['Full', 'SQR', '0.5*0.5°',  '0.7x0.7°', '1x1°', '1.4x1.4°', '2x2°', '2.8x2.8°', '4x4sq°', '5.6x5.6°'],
+                'areas_implemented': ['Full', '0.5sq°',  '0.7sq°', '1x1°', '1.4sq°', '2x2°', '2.8xsq°', '4x4°', '5.6sq°'],
                 'default_area':  "Full",
                 'default_rotation': 0.0000,
-
-                #'flat_bin_spec': ['1 1', '2 2'],    # List of binnings for flats.  NB NB NB Note inconsistent use of '1 1' and '1x1' and '1,1'
-
+                'flat_bin_spec': ['1,1', '2 2'],    # List of binnings for flats
                 'has_darkslide':  True,
                 'darkslide_com':  'COM15',
                 'shutter_type': "Electronic",
+                'bin_modes':  [[1, 1, 0.303], [2, 2, 0.605],  [3, 3, 0.908], [4, 4, 1.21]],     #Meaning fixed binning if list has only one entry
+                'default_bin':  [2, 2, 0.605],
+                'maximum_bin': [1, 1, 0.303],
+                'flat_bin_spec': ['1,1','2,2', '3,3','4,4'],    #Default binning for flats
+                'darkbias_bin_spec': ['1,1','2,2', '3,3','4,4'],    #Default binning for flats
+                'bin_enable': ['1,1', '2,2', '3,3','4,4'],                
+                'pix_scale': [0.302597, 0.605194, 0.907791, 1.210388],    #   bin-2  2* math.degrees(math.atan(3.76/2563000))*3600
+                'dark_length' : 900,
+                'bias_count' : 10,
+                'dark_count' : 10,
                 'has_screen': True,
                 'screen_settings':  {
                     'screen_saturation':  157.0,
