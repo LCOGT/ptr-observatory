@@ -34,9 +34,9 @@ list here retained in user account.)
 """
 
 
-import threading
+#import threading
 import win32com.client
-import pythoncom
+#import pythoncom
 import serial
 import time, json
 import datetime
@@ -48,14 +48,14 @@ from global_yard import g_dev    #"Ditto guestion we are importing a single obje
 from astropy.time import Time
 
 from astropy import units as u
-from astropy.coordinates import SkyCoord, FK5, ICRS, FK4, Distance, \
+from astropy.coordinates import SkyCoord, FK5, ICRS,  \
                          EarthLocation, AltAz
                          #This should be removed or put in a try
 
 import ptr_utility
-from config import site_config
+#from config import site_config
 import math
-from pprint import pprint
+#from pprint import pprint
 import ephem
 from ptr_utility import plog
 
@@ -148,7 +148,7 @@ def wait_for_slew():
         plog("Motion check faulted.")
         plog(traceback.format_exc())
         if 'pywintypes.com_error' in str(e):
-            print ("Mount disconnected. Recovering.....")
+            plog ("Mount disconnected. Recovering.....")
             time.sleep(30)
             g_dev['mnt'].mount.Connected = True
             #g_dev['mnt'].home_command()
@@ -212,7 +212,7 @@ class Mount:
                                           / u.deg / u.hourangle)
             
         except:
-            print ("Failed to get the current sidereal time from the mount.")
+            plog ("Failed to get the current sidereal time from the mount.")
         self.current_icrs_ra = "Unspecified_Ra"
         self.current_icrs_dec = " Unspecified_Dec"
         self.delta_t_s = HTOSec/12   #5 minutes
@@ -294,8 +294,8 @@ class Mount:
             ].mount.sideOfPier  # 0 == Tel Looking West, is flipped.
             self.can_report_pierside = True
         except Exception as e:
-            #print (e)
-            print ("Mount cannot report pierside. Setting the code not to ask again, assuming default pointing west.")
+            #plog (e)
+            plog ("Mount cannot report pierside. Setting the code not to ask again, assuming default pointing west.")
             self.can_report_pierside = False
             self.pier_side = 0
             
@@ -308,8 +308,8 @@ class Mount:
             ].mount.DestinationSideOfPier(0,0)  # 0 == Tel Looking West, is flipped.
             self.can_report_destination_pierside = True
         except Exception as e:
-            #print (e)
-            print ("Mount cannot report destination pierside. Setting the code not to ask again.")
+            #plog (e)
+            plog ("Mount cannot report destination pierside. Setting the code not to ask again.")
             self.can_report_destination_pierside = False
             self.pier_side = 0
             #plog("This mount doesn't report sideofpier")
@@ -354,30 +354,34 @@ class Mount:
                 plog('Found mount not connected, reconnecting.')
                 try:
                     self.mount.Connected = True
-                    return
+                    if self.mount.Connected:
+                        return
                 except Exception as e:
-                    print (traceback.format_exc())
-                    print ("mount reconnection failed.")
+                    plog (traceback.format_exc())
+                    plog ("mount reconnection failed.")
                     
         except:
             plog('Found mount not connected via try: block fail, reconnecting.')
             time.sleep(5)
             try:
                 self.mount.Connected = True
-                return
+                if self.mount.Connected:
+                    return
             except Exception as e:
-                print (traceback.format_exc())
-                print ("mount reconnection failed.")          
+                plog (traceback.format_exc())
+                plog ("mount reconnection failed.")     
+                breakpoint()
             
-            print ("Trying full-scale reboot")
+            plog ("Trying full-scale reboot")
             try:
                 win32com.client.pythoncom.CoInitialize()
                 self.mount = win32com.client.Dispatch(self.driver)
                 self.mount.Connected = True
-                return
+                if self.mount.Connected:
+                    return
             except Exception as e:
-                print (traceback.format_exc())
-                print ("mount full scale reboot failed.")
+                plog (traceback.format_exc())
+                plog ("mount full scale reboot failed.")
                 breakpoint()
             
 
@@ -418,7 +422,7 @@ class Mount:
                         self.pier_side = 0   #East side so Looking West
             except:
                 self.pier_side=0
-                #print ("Mount does not report pier side.")
+                #plog ("Mount does not report pier side.")
             
             #self.current_sidereal = self.mount.SiderealTime
             # Replaced mount call above with much faster more accurate astropy calculation below
@@ -470,11 +474,11 @@ class Mount:
                 try:
                     ra_cal_offset, dec_cal_offset = self.get_mount_reference()
                 except:
-                    print ("couldn't get mount offset")
+                    plog ("couldn't get mount offset")
                     #self.reset_mount_reference()
                     ra_cal_offset=0
                     dec_cal_offset=0
-                    #print ("Mount does not report pier side")
+                    #plog ("Mount does not report pier side")
 
             jnow_ra_r = ptr_utility.reduce_ra_r(app_ra_r - ra_cal_offset*HTOR)    # NB the mnt_refs are subtracted here.  
             #                                                                      Units are correct.
@@ -490,7 +494,7 @@ class Mount:
             try:
                 ra_cal_offset, dec_cal_offset = self.get_mount_reference()
             except:
-                print ("couldn't get offset")
+                plog ("couldn't get offset")
                 ra_cal_offset=0
                 dec_cal_offset=0
 
@@ -576,7 +580,7 @@ class Mount:
                                                     / u.deg / u.hourangle)
                 
             except:
-                print ("Mount didn't accept request for sidereal time. Need to make a calculation for this.")
+                plog ("Mount didn't accept request for sidereal time. Need to make a calculation for this.")
             
             #if self.seek_commanded:
                 #plog('In Status:  ', self.prior_roll_rate, self.prior_pitch_rate)
@@ -716,7 +720,7 @@ class Mount:
         # try:
         #     ra_off, dec_off = self.get_mount_reference()
         # except:
-        #     #print ("get_quick_status offset... is zero")
+        #     #plog ("get_quick_status offset... is zero")
         #     ra_off = 0
         #     dec_off = 0
         # NB NB THis code would be safer as a dict or other explicity named structure
@@ -888,10 +892,10 @@ class Mount:
         elif action == "unpark":
             self.unpark_command(req, opt)
         elif action == 'center_on_pixels':
-            print (command)
+            plog (command)
             self.go_command(req, opt, offset=True, calibrate=False)
         elif action == 'calibrateAtFieldCenter':
-            print (command)
+            plog (command)
             #breakpoint()
             self.go_command(req, opt, calibrate=True)
         elif action == 'sky_flat_position':
@@ -1080,9 +1084,9 @@ class Mount:
                         ha = float(req['ha'])
                         dec = float(req['dec'])
                         #ra = float (ra) - self.sid_now_r
-                        #print (float (ha) - self.sid_now_r)
-                        #print (self.sid_now_r)
-                        #print (self.mount.SiderealTime)
+                        #plog (float (ha) - self.sid_now_r)
+                        #plog (self.sid_now_r)
+                        #plog (self.mount.SiderealTime)
                         #ra = ha+ self.mount.SiderealTime
                         az, alt = ptr_utility.transform_haDec_to_azAlt(ha, dec, lat=self.config['latitude'])
 
@@ -1137,7 +1141,7 @@ class Mount:
                 self.go_coord(self.last_ra, self.last_dec, self.last_tracking_rate_ra, self.last_tracking_rate_dec)
                 
         except Exception as e:
-            print ("Could not re_seek: ",e)
+            plog ("Could not re_seek: ",e)
             
         wait_for_slew()   
 
@@ -1253,7 +1257,7 @@ class Mount:
         #             wait_for_slew()
         #             return
         #         else:
-        #             print ("problem with setting tracking: ", e)
+        #             plog ("problem with setting tracking: ", e)
                 
                 
         self.move_time = time.time()
@@ -1303,7 +1307,7 @@ class Mount:
                     wait_for_slew()
                     return
                 else:
-                    print ("problem with setting tracking: ", e)
+                    plog ("problem with setting tracking: ", e)
         
         g_dev['obs'].time_since_last_slew_or_exposure = time.time()
         g_dev['obs'].last_solve_time = datetime.datetime.now() - datetime.timedelta(days=1)
@@ -1390,8 +1394,8 @@ class Mount:
             g_dev['obs'].images_since_last_solve = 10000
 
         except:
-            print (traceback.format_exc())
-            #print ("NEED TO POINT TELESCOPE TO RA AND DEC, MOUNT DOES NOT HAVE AN ALTAZ request in the driver")
+            plog (traceback.format_exc())
+            #plog ("NEED TO POINT TELESCOPE TO RA AND DEC, MOUNT DOES NOT HAVE AN ALTAZ request in the driver")
 
 
 
@@ -1473,7 +1477,7 @@ class Mount:
 #         temp_1 = self._paddle.read(21).decode()
 #         plog(len(temp_1))
 #         self._paddle.close()
-#         #print ('|' + temp[16:18] +'|')
+#         #plog ('|' + temp[16:18] +'|')
 #         button = temp_1[14]
 #         spd= temp_1[13]
 #         direc = ''
@@ -1669,7 +1673,7 @@ class Mount:
         return
     
     def move_to_azalt(self, az, alt):
-        print ("Moving to Alt " + str(alt) + " Az " + str(az))
+        plog ("Moving to Alt " + str(alt) + " Az " + str(az))
         if self.config['mount']['mount1']['has_ascom_altaz'] == True:
             wait_for_slew() 
             self.mount.SlewToAltAzAsync(az, alt)
@@ -1685,8 +1689,8 @@ class Mount:
             tempcoord=tempcoord.transform_to(frame='icrs')
             tempRA=tempcoord.ra.deg / 15
             tempDEC=tempcoord.dec.deg
-            #print (tempRA)
-            #print (tempDEC)
+            #plog (tempRA)
+            #plog (tempDEC)
             #self.site_coordinates
             wait_for_slew() 
             try:

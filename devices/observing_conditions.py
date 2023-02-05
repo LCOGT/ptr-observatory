@@ -22,10 +22,11 @@ import socket
 import time
 
 import win32com.client
-import redis
+#import redis
 
 from global_yard import g_dev
 from site_config import get_ocn_status
+from ptr_utility import plog
 
 
 def linearize_unihedron(uni_value):  # Need to be coefficients in config.
@@ -125,7 +126,7 @@ class ObservingConditions:
             if driver_3 is not None:
                 self.sky_monitor_oktoimage = win32com.client.Dispatch(driver_3)
                 self.sky_monitor_oktoimage.Connected = True
-                print("observing_conditions: sky_monitors connected = True")
+                plog("observing_conditions: sky_monitors connected = True")
             if config["observing_conditions"]["observing_conditions1"]["has_unihedron"]:
                 self.unihedron_connected = True
                 try:
@@ -137,12 +138,12 @@ class ObservingConditions:
                     ]
                     self.unihedron = win32com.client.Dispatch(driver)
                     self.unihedron.Connected = True
-                    print(
+                    plog(
                         "observing_conditions: Unihedron connected = True, on COM"
                         + str(port)
                     )
                 except:
-                    print(
+                    plog(
                         "Unihedron on Port 10 is disconnected. Observing will proceed."
                     )
                     self.unihedron_connected = False
@@ -202,7 +203,7 @@ class ObservingConditions:
                             g_dev["ocn"].status = status
                             return status
                         except:
-                            print("Using prior OCN status after 4 failures.")
+                            plog("Using prior OCN status after 4 failures.")
                             g_dev["ocn"].status = self.prior_status
                             return self.prior_status
             elif self.config["site_IPC_mechanism"] == "redis":
@@ -392,7 +393,7 @@ class ObservingConditions:
                 status["wx_ok"] = "No"
 
             g_dev["wx_ok"] = self.wx_is_ok
-            print('Wx Ok:  ', status["wx_ok"], wx_reasons)
+            plog('Wx Ok:  ', status["wx_ok"], wx_reasons)
             if self.config["site_IPC_mechanism"] == "shares":
                 weather_txt = self.config["wema_write_share_path"] + "weather.txt"
                 try:
@@ -402,7 +403,7 @@ class ObservingConditions:
                     tries = 1
                     while tries < 5:
                         # Wait 3 seconds and try writing to file again, up to 3 more times.
-                        print(
+                        plog(
                             f"Attempt {tries} to write weather status failed. Trying again."
                         )
                         time.sleep(3)
@@ -487,13 +488,13 @@ class ObservingConditions:
                 ):  # Gate the real holds to be in the Observing window.
                     self.wx_hold_count += 1
                     # We choose to let the enclosure manager handle the close.
-                    print(
+                    plog(
                         "Wx hold asserted, flap#:",
                         self.wx_hold_count,
                         self.wx_hold_tally,
                     )
                 else:
-                    print(
+                    plog(
                         "Wx Hold -- out of Observing window.",
                         self.wx_hold_count,
                         self.wx_hold_tally,
@@ -513,7 +514,7 @@ class ObservingConditions:
                             time.time() + wx_delay_time
                         )  # Keep pushing the recovery out
                         self.wx_hold_last_updated = time.time()
-                        print(
+                        plog(
                             "Wx hold released, flap#, tally#:",
                             self.wx_hold_count,
                             self.wx_hold_tally,
@@ -522,7 +523,7 @@ class ObservingConditions:
                 else:
                     # Never release the THIRD hold without some special high level intervention.
                     if not self.clamp_latch:
-                        print("Sorry, Tobor is clamping enclosure shut for the night.")
+                        plog("Sorry, Tobor is clamping enclosure shut for the night.")
                     self.clamp_latch = True
                     self.wx_clamp = True
 
@@ -594,7 +595,7 @@ class ObservingConditions:
             pass
             # self.move_relative_command(req, opt)   ???
         else:
-            print(f"Command <{action}> not recognized.")
+            plog(f"Command <{action}> not recognized.")
 
     # ###################################
     #   Observing Conditions Commands  #
