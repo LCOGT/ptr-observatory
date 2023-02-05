@@ -929,6 +929,14 @@ class Observatory:
                     g_dev['mnt'].home_command()
                     g_dev['mnt'].park_command()  
             
+            if g_dev['enc'].status['shutter_status'] == 'Closed' : # If the roof IS shut, then the telescope should be shutdown and parked. 
+                if not g_dev['mnt'].mount.AtPark:
+                    plog ("Telescope found not parked when the observatory roof is shut. Parking scope.")   
+                    self.open_and_enabled_to_observe=False
+                    self.cancel_all_activity()
+                    g_dev['mnt'].home_command()
+                    g_dev['mnt'].park_command()
+            
             # if g_dev['enc'].status['shutter_status'] == 'Open':
             #     self.config['mount']'auto_morn_sky_flat': False,
             #     if (g_dev['events']['Close and Park'] < ephem.now() < g_dev['events']['End Morn Bias Dark']):

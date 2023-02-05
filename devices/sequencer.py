@@ -1594,7 +1594,7 @@ class Sequencer:
                     g_dev['mnt'].slewToSkyFlatAsync()  
                     self.time_of_next_slew = time.time() + 120    # NB NB the flat spot moves and hence a dither.
                     
-                g_dev['obs'].update_status()
+                g_dev['obs'].update()
             
                 if g_dev["fil"].null_filterwheel == False:
                     current_filter = pop_list[0]                
@@ -1617,7 +1617,7 @@ class Sequencer:
                 self.estimated_first_flat_exposure = False
                 while (acquired_count < flat_count):# and g_dev['enc'].status['shutter_status'] in ['Open', 'open']: # NB NB NB and roof is OPEN! and (ephem_now +3/1440) < g_dev['events']['End Eve Sky Flats' ]:
                     #if g_dev['enc'].is_dome:   #Does not apply
-                    g_dev['obs'].update_status()
+                    g_dev['obs'].update()
                     if self.next_flat_observe < time.time():                
                         
                             
