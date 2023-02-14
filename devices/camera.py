@@ -487,6 +487,7 @@ class Camera:
             seq = test_sequence(self.alias)
         except:
             reset_sequence(self.alias)
+        self.t0 = time.time
             
         
     
@@ -845,15 +846,13 @@ class Camera:
         image data.
         """
         
-        
-        
         self.exposure_busy = True # This really needs to be here from the start
         # We've had multiple cases of multiple camera exposures trying to go at once
         # And it is likely because it takes a non-zero time to get to Phase II
         # So even in the setup phase the "exposure" is "busy"
         
         self.tempStartupExposureTime=time.time()
-
+    
 
         # Force a reseek //eventually dither//
         try:
@@ -944,11 +943,11 @@ class Camera:
         self.ccd_sum = str(1) + ' ' + str(1)
         bin_x = 1
         bin_y = 1
-        # try:
-        #     self.camera.NumX = int(self.camera_x_size)
-        #     self.camera.NumY = int(self.camera_y_size)
-        # except:
-        #     pass
+        try:
+            self.camera.NumX = int(self.camera_x_size)
+            self.camera.NumY = int(self.camera_y_size)
+        except:
+            pass
 
 
         readout_time = float(
@@ -2631,8 +2630,11 @@ class Camera:
                                 
                                 ## Resizing the array to an appropriate shape for the jpg and the small fits
                                 iy, ix = final_image.size
+                                print('Image size line 2633 in camera:  ', iy, ix)
+                                #self.t1s = time.time()
                                 if iy == ix:
                                     #final_image.resize((1280, 1280))
+                                    
                                     final_image.resize((900, 900))
                                 else:
                                     #final_image.resize((int(1536 * iy / ix), 1536))
@@ -2640,8 +2642,8 @@ class Camera:
                                         final_image.resize((int(900 * iy / ix), 900))
                                     else:
                                         final_image.resize((900, int(900 * iy / ix)))
+                                #print(time.time() - self.t1s)
                                 
-                                    
                                 final_image.save(
                                     paths["im_path"] + paths["jpeg_name10"]
                                 )

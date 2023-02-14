@@ -153,8 +153,37 @@ def wait_for_slew():
             g_dev['mnt'].mount.Connected = True
             #g_dev['mnt'].home_command()
         else:
-            breakpoint()
+            pass
+            #breakpoint()
     return 
+
+# def green_pos(delta=0.0
+#               ):
+#     t = 2 + ephem.now() - 44961.5 #+ delta
+    
+#     ah = 5.442609132996
+#     bh = -0.17787986219
+#     ch = 0.016334220409
+#     dh = -0.000573669925
+
+#     ad = 57.4595767676
+#     bd = -5.8314392385
+#     cd = 0.19298853928
+    
+#     ha = ah + ((dh*t + ch)*t + bh)*t #+0.03
+#     dec = ad + (cd*t + bd)*t -0.25
+
+#     delta = 1/86400
+#     t = t + delta
+#     delta = 1/86400
+#     ha2= ah + ((dh*t + ch)*t + bh)*t
+#     dec2 = ad + (cd*t + bd)*t - 0.25
+#     hdot =3600*15*(ha2 - ha)
+#     ddot =3600*(dec2 - dec)
+    
+    
+
+#     return(ha, dec, hdot, ddot)
 
 class Mount:
     '''
@@ -341,7 +370,7 @@ class Mount:
         
         self.EquatorialSystem=self.mount.EquatorialSystem
         
-        #breakpoint()
+
         plog("exiting mount _init")
 
     def check_connect(self):
@@ -368,7 +397,8 @@ class Mount:
             except Exception as e:
                 plog (traceback.format_exc())
                 plog ("mount reconnection failed.")     
-                breakpoint()
+                pass
+            #breakpoint()
             
             plog ("Trying full-scale reboot")
             try:
@@ -380,7 +410,7 @@ class Mount:
             except Exception as e:
                 plog (traceback.format_exc())
                 plog ("mount full scale reboot failed.")
-                breakpoint()
+                #breakpoint()
             
 
     def get_mount_coordinates(self):
@@ -668,7 +698,14 @@ class Mount:
         else:
             plog('Proper device_name is missing, or tel == None')
             status = {'defective':  'status'}
+        print("mount status at: ", ephem.now())
+        
+        #ra, dec, ra_dot, dec_dot = green_pos()
+ 
+        # self.ra_dot = ra_dot
+        # self.dec_dot = dec_dot
 
+        #self.go_coord(ra, dec, tracking_rate_ra=ra_dot, tracking_rate_dec=dec_dot)
         return status  #json.dumps(status)
 
     def get_quick_status(self, pre):
@@ -913,7 +950,7 @@ class Mount:
         plog("mount cmd. slewing mount, req, opt:  ", req, opt)
 
         ''' unpark the telescope mount '''  #  NB can we check if unparked and save time?
-
+        #breakpoint()
         try:
             self.object = opt['object']
         except:
@@ -1095,7 +1132,10 @@ class Mount:
             self.move_to_azalt(az, alt)
 
         elif ra_dec == True:
-            self.go_coord(ra, dec, tracking_rate_ra=tracking_rate_ra, tracking_rate_dec = tracking_rate_dec)
+            # if ra <= 0.01 and -0.01 <= dec <= 0.01:
+            #     ra, dec, tracking_rate_ra, tracking_rate_dec = green_pos()
+            # self.go_coord(ra, dec, tracking_rate_ra=0.0, tracking_rate_dec=0.0)
+            self.go_coord(ra, dec, tracking_rate_ra=0.0, tracking_rate_dec=0.0)
         self.object = opt.get("object", "")
         if self.object == "":
            # plog("Go to unamed target.")
@@ -1120,12 +1160,13 @@ class Mount:
             
         wait_for_slew()   
 
-    def go_coord(self, ra, dec, tracking_rate_ra=0, tracking_rate_dec=0, reset_solve=True):  #Note these rates need a system specification
+    def go_coord(self, ra, dec, tracking_rate_ra=0.0, tracking_rate_dec=0.0, reset_solve=True):  #Note these rates need a system specification
         '''
         Slew to the given ra/dec coordinates, supplied in ICRS
         Note no dependency on current position.
         unpark the telescope mount
         '''  #  NB can we check if unparked and save time?
+        #breakpoint()
         self.last_ra = ra
         self.last_dec = dec
         self.last_tracking_rate_ra = tracking_rate_ra
@@ -1306,8 +1347,8 @@ class Mount:
             self.prior_roll_rate = 0.0
         if self.CanSetDeclinationRate:
            self.prior_pitch_rate = -(self.dec_mech_adv - self.dec_mech)*RTOS/self.delta_t_s    #20210329 OK 1 hour from zenith.  No Appsid correction per ASCOM spec.
-           self.mount.DeclinationRate = self.prior_pitch_rate  #Neg sign makes Dec decrease
-           self.DeclinationRate = self.prior_pitch_rate
+           self.mount.DeclinationRate = 0.0 #self.prior_pitch_rate  #Neg sign makes Dec decrease
+           self.DeclinationRate = 0.0 #self.prior_pitch_rate
            #plog("Rates, refr are:  ", self.prior_roll_rate, self.prior_pitch_rate, self.refr_asec)
         else:
             self.prior_pitch_rate = 0.0
@@ -1319,10 +1360,10 @@ class Mount:
             self.mount.RightAscensionRate = 0.0 #self.prior_roll_rate
             self.RightAscensionRate = 0.0
         if self.CanSetDeclinationRate:
-            self.mount.DeclinationRate = self.prior_pitch_rate
-            self.DeclinationRate = self.prior_pitch_rate
+            self.mount.DeclinationRate = 0.0 #self.prior_pitch_rate
+            self.DeclinationRate = 0.0 #self.prior_pitch_rate
 
-        plog("Rates set:  ", self.prior_roll_rate, self.prior_pitch_rate, self.refr_adv)
+        plog("Rates set:  ", 0.0,0.0, self.refr_adv)   #  self.prior_roll_rate, self.prior_pitch_rate
         self.seek_commanded = True
         #I think to reliable establish rates, set them before the slew.
         #self.mount.Tracking = True
@@ -1716,3 +1757,4 @@ if __name__ == '__main__':
 #    m.get_quick_status(post)
 #    plog(m.get_average_status(pre, post))
     #plog(c.get_ascom_description())
+

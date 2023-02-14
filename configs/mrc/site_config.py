@@ -266,6 +266,8 @@ site_config = {
             'default_zenith_avoid': 7.0,   #degrees floating
             'west_clutch_ra_correction': 0.0,
             'west_clutch_dec_correction': 0.0,
+            'east_clutch_ra_correction': 0.0,
+            'east_clutch_dec_correction': 0.0,
             'east_flip_ra_correction': 0.0,
             'east_flip_dec_correction': 0.0,  #
             'home_after_unpark' : False,
@@ -290,6 +292,8 @@ site_config = {
 			    'elevation_offset': 0.0,    # meters above sea level
                 'home_park_altitude': 0,    #Having these settings is important for PWI4 where it can easily be messed up.
                 'home_park_azimuth': 180,
+                'home_altitude': 0,    #Having these settings is important for PWI4 where it can easily be messed up.
+                'home_azimuth': 180,
                 'fixed_screen_azimuth': 167.25,
                 'fixed_screen _altitude': 0.54,
                 'refraction_on': True,
@@ -596,6 +600,7 @@ site_config = {
                 'osc_saturation_enhance' : 2.5,
                 'osc_colour_enhance' : 1.7,
                 'osc_sharpness_enhance' : 1.5,
+                'osc_background_cut': 0.05,
                 'bin_for_focus' : True, # This setting will bin the image for focussing rather than interpolating. Good for 1x1 pixel sizes < 0.6.
                 
                 # ONLY TRANSFORM THE FITS IF YOU HAVE
@@ -652,10 +657,10 @@ site_config = {
                 'y_active': 6388,
                 'det_size': '[1:9600, 1:6422]',  # Physical chip data size as returned from driver
                 'ccd_sec': '[1:9600, 1:6422]',
-                'bias_sec': ['[1:22, 1:6388]', '[1:11, 1:3194]', '[1:7, 1:2129]', '[1:5, 1:1597]'],
-                'det_sec': ['[25:9600, 1:6388]', '[13:4800, 1:3194]', '[9:3200, 1:2129]', '[7:2400, 1:1597]'],
-                'data_sec': ['[25:9600, 1:6388]', '[13:4800, 1:3194]', '[9:3200, 1:2129]', '[7:2400, 1:1597]'],
-                'trim_sec': ['[1:9576, 1:6388]', '[1:4788, 1:3194]', '[1:3192, 1:2129]', '[1:2394, 1:1597]'],
+                'bias_sec': '[1:22, 1:6388]', #  '[1:11, 1:3194]', '[1:7, 1:2129]', '[1:5, 1:1597]'],
+                'det_sec': '[25:9600, 1:6388]', #  '[13:4800, 1:3194]', '[9:3200, 1:2129]', '[7:2400, 1:1597]'],
+                'data_sec': '[25:9600, 1:6388]' ,#  '[13:4800, 1:3194]', '[9:3200, 1:2129]', '[7:2400, 1:1597]'],
+                'trim_sec': '[1:9576, 1:6388]', #  '[1:4788, 1:3194]', '[1:3192, 1:2129]', '[1:2394, 1:1597]'],
                 'x_pixel':  3.76,
                 'y_pixel':  3.76,
                 'pix_scale': 0.302597,    #   bin-2  2* math.degrees(math.atan(3.76/2563000))*3600
