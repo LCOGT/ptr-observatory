@@ -2635,13 +2635,13 @@ class Camera:
                                 if iy == ix:
                                     #final_image.resize((1280, 1280))
                                     
-                                    final_image.resize((900, 900))
+                                    final_image=final_image.resize((900, 900))
                                 else:
                                     #final_image.resize((int(1536 * iy / ix), 1536))
                                     if self.config["camera"][g_dev['cam'].name]["settings"]["squash_on_x_axis"]:
-                                        final_image.resize((int(900 * iy / ix), 900))
+                                        final_image=final_image.resize((int(900 * iy / ix), 900))
                                     else:
-                                        final_image.resize((900, int(900 * iy / ix)))
+                                        final_image=final_image.resize((900, int(900 * iy / ix)))
                                 #print(time.time() - self.t1s)
                                 
                                 final_image.save(
