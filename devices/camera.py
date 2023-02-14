@@ -943,11 +943,11 @@ class Camera:
         self.ccd_sum = str(1) + ' ' + str(1)
         bin_x = 1
         bin_y = 1
-        try:
-            self.camera.NumX = int(self.camera_x_size)
-            self.camera.NumY = int(self.camera_y_size)
-        except:
-            pass
+        # try:
+        #     self.camera.NumX = int(self.camera_x_size)
+        #     self.camera.NumY = int(self.camera_y_size)
+        # except:
+        #     pass
 
 
         readout_time = float(
