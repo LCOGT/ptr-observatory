@@ -1587,6 +1587,8 @@ class Sequencer:
         #prior_scale = 1   #THIS will be inhereted upon completion of the prior filter
         collecting_area = self.config['telescope']['telescope1']['collecting_area']/31808.   # SAF at F4.9 is the reference
         #   and (g_dev['events']['Eve Sky Flats'] <
+        
+
 
         while len(pop_list) > 0  and ephem.now() < ending:
             
@@ -1596,7 +1598,7 @@ class Sequencer:
                     g_dev['mnt'].slewToSkyFlatAsync()  
                     self.time_of_next_slew = time.time() + 600
                     
-                g_dev['obs'].update()
+                g_dev['obs'].update_status()
             
                 if g_dev["fil"].null_filterwheel == False:
                     current_filter = pop_list[0]                
@@ -1624,7 +1626,7 @@ class Sequencer:
                 self.estimated_first_flat_exposure = False
                 while (acquired_count < flat_count):# and g_dev['enc'].status['shutter_status'] in ['Open', 'open']: # NB NB NB and roof is OPEN! and (ephem_now +3/1440) < g_dev['events']['End Eve Sky Flats' ]:
                     #if g_dev['enc'].is_dome:   #Does not apply
-                    g_dev['obs'].update()                    
+                    g_dev['obs'].update_status()                    
                     
                     if g_dev['obs'].open_and_enabled_to_observe == False:
                         plog ("Observatory closed or disabled during flat script. Cancelling out of flat acquisition loop.")
