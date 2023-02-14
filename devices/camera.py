@@ -292,10 +292,23 @@ class Camera:
             self.theskyx = False
             plog("ASCOM is connected:  ", self._connect(True))
             plog("Control is ASCOM camera driver.")
-            try:
-                self.camera.Action("EnableFullSensor", "enable")
-            except:
-                pass
+            #try:
+            #self.camera.Action("EnableFullSensor", "enable")
+            #except:
+            #    pass
+            #self.camera.SetFullFrame()
+            #self.camera.SetFullFrame
+            
+            # ASCOM does not have an EnableFullSensor Action apparently - MTF
+            
+            
+            #self.camera.NumX = int(self.camera_x_size)
+            #self.camera.NumY = int(self.camera_y_size)
+
+            
+            
+            
+            #breakpoint()
             # try:
             #     actions = self.camera.SupportedActions
             #     if "EnableFullSensor" in actions:
@@ -944,11 +957,7 @@ class Camera:
         self.ccd_sum = str(1) + ' ' + str(1)
         bin_x = 1
         bin_y = 1
-        # try:
-        #     self.camera.NumX = int(self.camera_x_size)
-        #     self.camera.NumY = int(self.camera_y_size)
-        # except:
-        #     pass
+        
 
 
         readout_time = float(
@@ -2629,17 +2638,23 @@ class Camera:
                                 if g_dev['mnt'].pier_side == 1:
                                     final_image=final_image.transpose(Image.ROTATE_180)
                                 
-                                ## Resizing the array to an appropriate shape for the jpg and the small fits
+                                #breakpoint()
+                                # Save BIG version of JPEG.
+                                final_image.save(
+                                    paths["im_path"] + paths['jpeg_name10'].replace('EX10','EX20')
+                                )
+                                
+                                ## Resizing the array to an appropriate shape for the small jpg
                                 iy, ix = final_image.size
                                 if iy == ix:
                                     #final_image.resize((1280, 1280))
-                                    final_image.resize((900, 900))
+                                    final_image=final_image.resize((900, 900))
                                 else:
                                     #final_image.resize((int(1536 * iy / ix), 1536))
                                     if self.config["camera"][g_dev['cam'].name]["settings"]["squash_on_x_axis"]:
-                                        final_image.resize((int(900 * iy / ix), 900))
+                                        final_image=final_image.resize((int(900 * iy / ix), 900))
                                     else:
-                                        final_image.resize((900, int(900 * iy / ix)))
+                                        final_image=final_image.resize((900, int(900 * iy / ix)))
                                 
                                     
                                 final_image.save(
@@ -2698,10 +2713,15 @@ class Camera:
                                 if g_dev['mnt'].pier_side == 1:
                                     final_image=final_image.transpose(Image.ROTATE_180)
                                 
-
+                                
+                                # Save BIG version of JPEG.
+                                final_image.save(
+                                    paths["im_path"] + paths['jpeg_name10'].replace('EX10','EX20')
+                                )
+                                
                                 # Resizing the array to an appropriate shape for the jpg and the small fits
                                 
-                        
+                                
                                 if iy == ix:
                                     # hdusmalldata = resize(
                                     #     hdusmalldata, (1280, 1280), preserve_range=True
@@ -2749,6 +2769,9 @@ class Camera:
                                 if not no_AWS:
                                     g_dev["cam"].enqueue_for_fastAWS(
                                         100, paths["im_path"], paths["jpeg_name10"]
+                                    )
+                                    g_dev["cam"].enqueue_for_fastAWS(
+                                        1000, paths["im_path"], paths["jpeg_name10"].replace('EX10','EX20')
                                     )
                                     g_dev["obs"].send_to_user(
                                         "A preview image of the single image has been sent to the GUI.",

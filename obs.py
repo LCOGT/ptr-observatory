@@ -1612,7 +1612,10 @@ class Observatory:
                         if g_dev['mnt'].pier_side == 1:
                             final_image=final_image.transpose(Image.ROTATE_180)
                         
-
+                        # Save BIG version of JPEG.
+                        final_image.save(
+                            paths["im_path"] + paths['jpeg_name10'].replace('EX10','EX20')
+                        )
                         # Resizing the array to an appropriate shape for the jpg and the small fits
                         
                 
@@ -1944,18 +1947,22 @@ class Observatory:
                             if g_dev['mnt'].pier_side == 1:
                                 final_image=final_image.transpose(Image.ROTATE_180)
                             
+                            # Save BIG version of JPEG.
+                            final_image.save(
+                                paths["im_path"] + paths['jpeg_name10'].replace('EX10','EX20')
+                            )
                             
                             ## Resizing the array to an appropriate shape for the jpg and the small fits
                             iy, ix = final_image.size
                             if iy == ix:
                                 #final_image.resize((1280, 1280))
-                                final_image.resize((900, 900))
+                                final_image=final_image.resize((900, 900))
                             else:
                                 #final_image.resize((int(1536 * iy / ix), 1536))
                                 if self.config["camera"][g_dev['cam'].name]["settings"]["squash_on_x_axis"]:
-                                    final_image.resize((int(900 * iy / ix), 900))
+                                    final_image=final_image.resize((int(900 * iy / ix), 900))
                                 else:
-                                    final_image.resize(900, (int(900 * iy / ix)))
+                                    final_image=final_image.resize(900, (int(900 * iy / ix)))
                             
                                 
                             final_image.save(
