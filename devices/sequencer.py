@@ -360,7 +360,10 @@ class Sequencer:
             plog("Park not executed during Park and Close" )
         try:
             if self.config['site_roof_control'] != 'no' and g_dev['enc'].mode == 'Automatic': # and enc_status['shutter_status'] in ['open', ] $ Don't check, just close!
-                g_dev['enc'].close_command( {}, {})
+                #g_dev['enc'].close_command( {}, {})
+                g_dev['obs'].send_to_user("Closing the Shutter", p_level='INFO')
+                plog("Closing the Shutter")
+                g_dev['enc'].enclosure.CloseShutter()
         except:
             plog('Dome close not executed during Park and Close.')
 
