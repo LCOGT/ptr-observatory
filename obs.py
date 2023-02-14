@@ -62,10 +62,23 @@ from ptr_utility import plog
 from scipy import stats
 from PIL import Image, ImageEnhance
 
+
+#Incorporate better request retry strategy
+from requests.adapters import HTTPAdapter, Retry
+
+reqs = requests.Session()
+
+retries = Retry(total=50,
+                backoff_factor=0.1,
+                status_forcelist=[ 500, 502, 503, 504 ])
+reqs.mount('http://', HTTPAdapter(max_retries=retries))
+reqs.mount('http://', HTTPAdapter(max_retries=retries))
+
+
+
 # The ingester should only be imported after environment variables are loaded in.
 load_dotenv(".env")
 from ocs_ingester.ingester import frame_exists, upload_file_and_ingest_to_archive
-
 
 
 def findProcessIdByName(processName):
@@ -107,7 +120,7 @@ def send_status(obsy, column, status_to_send):
         plog("Failed to create status payload. Usually not fatal:  ", e)
     
     try:
-        requests.post(uri_status, data=data)
+        reqs.post(uri_status, data=data)
     except Exception as e:
         plog("Failed to send_status. Usually not fatal:  ", e)
 
@@ -497,7 +510,7 @@ class Observatory:
                 cmd = {}
                 # Get a list of new jobs to complete (this request
                 # marks the commands as "RECEIVED")
-                unread_commands = requests.request(
+                unread_commands = reqs.request(
                     "POST", url_job, data=json.dumps(body)
                 ).json()
                 # Make sure the list is sorted in the order the jobs were issued
@@ -624,13 +637,13 @@ class Observatory:
                     if (
                         True
                     ):  # self.blocks is None: # This currently prevents pick up of calendar changes.
-                        blocks = requests.post(url_blk, body).json()
+                        blocks = reqs.post(url_blk, body).json()
                         if len(blocks) > 0:
                             self.blocks = blocks
     
                     url_proj = "https://projects.photonranch.org/dev/get-all-projects"
                     if True:
-                        all_projects = requests.post(url_proj).json()
+                        all_projects = reqs.post(url_proj).json()
                         self.projects = []
                         if len(all_projects) > 0 and len(blocks) > 0:
                             self.projects = all_projects  # NOTE creating a list with a dict entry as item 0
@@ -650,7 +663,7 @@ class Observatory:
                             "https://api.photonranch.org/api/events?site="
                             + self.site_name.upper()
                         )
-                        self.events_new = requests.get(url).json()
+                        self.events_new = reqs.get(url).json()
                 return  # This creates an infinite loop
 
             else:
@@ -1089,38 +1102,44 @@ class Observatory:
                         tempPTR=0
                         if self.env_exists == True and (not frame_exists(fileobj)):
                             #plog ("attempting ingester")
-                            try:
-                                #tt = time.time()
-                                plog ("attempting ingest to aws@  ", tt)
-                                upload_file_and_ingest_to_archive(fileobj)
-                                #plog ("did ingester")
-                                plog(f"--> To PTR ARCHIVE --> {str(filepath)}")
-                                plog('*.fz ingestion took:  ', round(time.time() - tt, 1), ' sec.')
-                                self.aws_queue.task_done()
-                                #os.remove(filepath)
-                                
-                                tempPTR=1
-                            except Exception as e:
-                                plog ("couldn't send to PTR archive for some reason")
-                                plog (e)
-                                plog ((traceback.format_exc()))
-                                tempPTR=0
+                            retryarchive=0
+                            while retryarchive < 5:
+                                try:
+                                    #tt = time.time()
+                                    plog ("attempting ingest to aws@  ", tt)
+                                    upload_file_and_ingest_to_archive(fileobj)
+                                    #plog ("did ingester")
+                                    plog(f"--> To PTR ARCHIVE --> {str(filepath)}")
+                                    plog('*.fz ingestion took:  ', round(time.time() - tt, 1), ' sec.')
+                                    self.aws_queue.task_done()
+                                    #os.remove(filepath)
+                                    
+                                    tempPTR=1
+                                except Exception as e:
+                                    plog ("couldn't send to PTR archive for some reason")
+                                    plog ("Retry " + str(retryarchive))
+                                    plog (e)
+                                    plog ((traceback.format_exc()))
+                                    time.sleep(pow(retryarchive, 2) + 1)
+                                    retryarchive=retryarchive+1
+                                    tempPTR=0
                         # If ingester fails, send to default S3 bucket.
                         if tempPTR ==0:
                             files = {"file": (filepath, fileobj)}
                             try:
                                 aws_resp = g_dev["obs"].api.authenticated_request(
                                     "POST", "/upload/", {"object_name": filename})
-                                #requests.post(aws_resp["url"], data=aws_resp["fields"], files=files)
+                                #reqs.post(aws_resp["url"], data=aws_resp["fields"], files=files)
                                 #break
 
                                 #tt = time.time()
                                 plog ("attempting aws@  ", tt)
-                                req_resp = requests.post(aws_resp["url"], data=aws_resp["fields"], files=files)
+                                req_resp = reqs.post(aws_resp["url"], data=aws_resp["fields"], files=files)
                                 plog ("did aws", req_resp)
                                 plog(f"--> To AWS --> {str(filepath)}")
                                 plog('*.fz transfer took:  ', round(time.time() - tt, 1), ' sec.')
                                 self.aws_queue.task_done()
+                                one_at_a_time = 0
                                 #os.remove(filepath)
                                 
                                 #break
@@ -1136,7 +1155,7 @@ class Observatory:
                         try:
                             aws_resp = g_dev["obs"].api.authenticated_request(
                                 "POST", "/upload/", {"object_name": filename})
-                            requests.post(aws_resp["url"], data=aws_resp["fields"], files=files)
+                            reqs.post(aws_resp["url"], data=aws_resp["fields"], files=files)
                             plog(f"--> To AWS --> {str(filepath)}")
                             self.aws_queue.task_done()
                             #os.remove(filepath)
@@ -1145,10 +1164,13 @@ class Observatory:
                         except:
                             plog ("Connection glitch for the request post, waiting a moment and trying again")
                             time.sleep(5)
+                        
+                one_at_a_time = 0
 
                 try:   
                     os.remove(filepath)
                 except:
+                    plog ("Couldn't remove " +str(filepath) + "file after transfer")
                     pass
                 
                 if (
@@ -1160,11 +1182,12 @@ class Observatory:
                     try:
                         os.remove(filepath)
                     except:
+                        plog ("Couldn't remove " +str(filepath) + "file after transfer")
                         pass
 
 
-                one_at_a_time = 0
-                #3time.sleep(0.1)
+                
+
             else:
                 time.sleep(0.5)
 
@@ -1382,7 +1405,7 @@ class Observatory:
                     files = {"file": (filepath, fileobj)}
                     while True:
                         try:
-                            requests.post(aws_resp["url"], data=aws_resp["fields"], files=files)
+                            reqs.post(aws_resp["url"], data=aws_resp["fields"], files=files)
                             break
                         except:
                             plog ("Connection glitch for the request post, waiting a moment and trying again")
@@ -1415,7 +1438,7 @@ class Observatory:
         )
 
         try:
-            requests.post(url_log, body)
+            reqs.post(url_log, body)
         #if not response.ok:
         except:
             plog("Log did not send, usually not fatal.")
