@@ -33,7 +33,7 @@ import numpy as np
 import redis  # Client, can work with Memurai
 
 import requests
-
+import urllib.request
 #import sep
 #from skimage.io import imsave
 #from skimage.transform import resize
@@ -65,20 +65,25 @@ from PIL import Image, ImageEnhance
 
 #Incorporate better request retry strategy
 from requests.adapters import HTTPAdapter, Retry
-
 reqs = requests.Session()
-
 retries = Retry(total=50,
                 backoff_factor=0.1,
                 status_forcelist=[ 500, 502, 503, 504 ])
 reqs.mount('http://', HTTPAdapter(max_retries=retries))
 reqs.mount('http://', HTTPAdapter(max_retries=retries))
 
-
-
 # The ingester should only be imported after environment variables are loaded in.
 load_dotenv(".env")
 from ocs_ingester.ingester import frame_exists, upload_file_and_ingest_to_archive
+
+
+def test_connect(host='http://google.com'):
+    try:
+        urllib.request.urlopen(host) #Python 3.x
+        return True
+    except:
+        return False
+
 
 
 def findProcessIdByName(processName):
@@ -312,6 +317,9 @@ class Observatory:
 
         # Only poll the broad safety checks (altitude and inactivity) every 5 minutes
         self.time_since_safety_checks=time.time() - 310.0
+        
+        # Keep track of how long it has been since the last live connection to the internet
+        self.time_of_last_live_net_connection = time.time()
         
         # This variable is simply.... is it open and enabled to observe!
         # This is set when the roof is open and everything is safe
@@ -1041,6 +1049,37 @@ class Observatory:
                 except:
                     plog("Camera cooler reconnect failed 2nd time.")
             
+            # Check that the site is still connected to the net.
+            if test_connect():
+                self.time_of_last_live_net_connection = time.time()
+            
+            plog ("Last live connection to Google was " + str(time.time() - self.time_of_last_live_net_connection) + " seconds ago.")
+            if (time.time() - self.time_of_last_live_net_connection) > 600:
+                plog ("Warning, last live net connection was over ten minutes ago")
+            if (time.time() - self.time_of_last_live_net_connection) > 1200:
+                plog ("Last connection was over twenty minutes ago. Running a further test or two")
+                if test_connect(host='http://dev.photonranch.org'):
+                    plog ("Connected to photonranch.org, so it must be that Google is down. Connection is live.")
+                    self.time_of_last_live_net_connection = time.time()
+                elif test_connect(host='http://aws.amazon.com'):
+                    plog ("Connected to aws.amazon.com. Can't connect to Google or photonranch.org though.")
+                    self.time_of_last_live_net_connection = time.time()
+                else:
+                    plog ("Looks like the net is down, closing up and parking the observatory")
+                    self.open_and_enabled_to_observe=False
+                    self.cancel_all_activity()
+                    if not g_dev['mnt'].mount.AtPark:  
+                        plog ("Parking scope due to inactivity")
+                        g_dev['mnt'].home_command()
+                        g_dev['mnt'].park_command()
+                        self.time_since_last_slew_or_exposure = time.time()
+                        
+                    g_dev['enc'].enclosure.CloseShutter()
+                    
+                    
+                    
+                    
+            
         
 
     def run(self):  # run is a poor name for this function.
@@ -1115,6 +1154,7 @@ class Observatory:
                                     #os.remove(filepath)
                                     
                                     tempPTR=1
+                                    retryarchive=6
                                 except Exception as e:
                                     plog ("couldn't send to PTR archive for some reason")
                                     plog ("Retry " + str(retryarchive))
@@ -1171,19 +1211,19 @@ class Observatory:
                     os.remove(filepath)
                 except:
                     plog ("Couldn't remove " +str(filepath) + "file after transfer")
-                    pass
+                    #pass
                 
-                if (
-                    filename[-3:] == "jpg"
-                    or filename[-3:] == "txt"
-                    or ".fits.fz" in filename
-                    or ".token" in filename
-                ):
-                    try:
-                        os.remove(filepath)
-                    except:
-                        plog ("Couldn't remove " +str(filepath) + "file after transfer")
-                        pass
+                # if (
+                #     filename[-3:] == "jpg"
+                #     or filename[-3:] == "txt"
+                #     or ".fits.fz" in filename
+                #     or ".token" in filename
+                # ):
+                #     try:
+                #         os.remove(filepath)
+                #     except:
+                #         plog ("Couldn't remove " +str(filepath) + "file after transfer")
+                #         pass
 
 
                 
