@@ -314,7 +314,7 @@ class Observatory:
         # Send the config to AWS. TODO This has faulted.
         self.update_config()   #This is the never-ending control loop
         
-        #breakpoint()
+
         #breakpoint()
         #req2 = {'target': 'near_tycho_star', 'area': 150}
         #opt = {}
@@ -1001,6 +1001,9 @@ class Observatory:
                     g_dev['mnt'].home_command()
                     g_dev['mnt'].park_command()
                     self.time_since_last_slew_or_exposure = time.time()
+            
+            # Check that rotator is rotating
+            g_dev['rot'].check_rotator_is_rotating()
                     
             # Check that cooler is alive
             #plog ("Cooler check")
@@ -1983,6 +1986,7 @@ class Observatory:
 
 
                     self.fast_queue.put((15, (paths["im_path"], paths["jpeg_name10"])), block=False)
+                    self.fast_queue.put((150, (paths["im_path"], paths["jpeg_name10"].replace('EX10','EX20'))), block=False)
 
                     if reprojection_failed == True:
                         g_dev["obs"].send_to_user(
