@@ -2552,7 +2552,9 @@ class Sequencer:
                 plog ("spot failed on extensive focus script")
 
             g_dev['obs'].send_to_user("Extensive focus center " + str(foc_pos) + " FWHM: " + str(spot), p_level='INFO')
-            extensive_focus.append([foc_pos, spot])
+            
+            if spot != False:
+                extensive_focus.append([foc_pos, spot])
             plog(extensive_focus)
         
         for ctr in range(3):
