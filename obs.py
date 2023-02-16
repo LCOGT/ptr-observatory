@@ -33,7 +33,7 @@ import numpy as np
 import redis  # Client, can work with Memurai
 
 import requests
-
+import urllib.request
 #import sep
 #from skimage.io import imsave
 #from skimage.transform import resize
@@ -62,9 +62,27 @@ from ptr_utility import plog
 from scipy import stats
 from PIL import Image, ImageEnhance
 
+
+#Incorporate better request retry strategy
+from requests.adapters import HTTPAdapter, Retry
+reqs = requests.Session()
+retries = Retry(total=50,
+                backoff_factor=0.1,
+                status_forcelist=[ 500, 502, 503, 504 ])
+reqs.mount('http://', HTTPAdapter(max_retries=retries))
+reqs.mount('http://', HTTPAdapter(max_retries=retries))
+
 # The ingester should only be imported after environment variables are loaded in.
 load_dotenv(".env")
 from ocs_ingester.ingester import frame_exists, upload_file_and_ingest_to_archive
+
+
+def test_connect(host='http://google.com'):
+    try:
+        urllib.request.urlopen(host) #Python 3.x
+        return True
+    except:
+        return False
 
 
 
@@ -107,7 +125,7 @@ def send_status(obsy, column, status_to_send):
         plog("Failed to create status payload. Usually not fatal:  ", e)
     
     try:
-        requests.post(uri_status, data=data)
+        reqs.post(uri_status, data=data)
     except Exception as e:
         plog("Failed to send_status. Usually not fatal:  ", e)
 
@@ -299,6 +317,9 @@ class Observatory:
 
         # Only poll the broad safety checks (altitude and inactivity) every 5 minutes
         self.time_since_safety_checks=time.time() - 310.0
+        
+        # Keep track of how long it has been since the last live connection to the internet
+        self.time_of_last_live_net_connection = time.time()
         
         # This variable is simply.... is it open and enabled to observe!
         # This is set when the roof is open and everything is safe
@@ -497,7 +518,7 @@ class Observatory:
                 cmd = {}
                 # Get a list of new jobs to complete (this request
                 # marks the commands as "RECEIVED")
-                unread_commands = requests.request(
+                unread_commands = reqs.request(
                     "POST", url_job, data=json.dumps(body)
                 ).json()
                 # Make sure the list is sorted in the order the jobs were issued
@@ -624,13 +645,13 @@ class Observatory:
                     if (
                         True
                     ):  # self.blocks is None: # This currently prevents pick up of calendar changes.
-                        blocks = requests.post(url_blk, body).json()
+                        blocks = reqs.post(url_blk, body).json()
                         if len(blocks) > 0:
                             self.blocks = blocks
     
                     url_proj = "https://projects.photonranch.org/projects/get-all-projects"
                     if True:
-                        all_projects = requests.post(url_proj).json()
+                        all_projects = reqs.post(url_proj).json()
                         self.projects = []
                         if len(all_projects) > 0 and len(blocks) > 0:
                             self.projects = all_projects  # NOTE creating a list with a dict entry as item 0
@@ -650,7 +671,7 @@ class Observatory:
                             "https://api.photonranch.org/api/events?site="
                             + self.site_name.upper()
                         )
-                        self.events_new = requests.get(url).json()
+                        self.events_new = reqs.get(url).json()
                 return  # This creates an infinite loop
 
             else:
@@ -898,7 +919,7 @@ class Observatory:
 
             roof_should_be_shut=False
             
-            if (g_dev['events']['Close and Park'] < ephem.now() < g_dev['events']['End Morn Bias Dark']):
+            if (g_dev['events']['End Morn Sky Flats'] < ephem.now() < g_dev['events']['End Morn Bias Dark']):
                 roof_should_be_shut=True
                 self.open_and_enabled_to_observe=False
             if not self.config['auto_morn_sky_flat']:
@@ -1031,6 +1052,37 @@ class Observatory:
                 except:
                     plog("Camera cooler reconnect failed 2nd time.")
             
+            # Check that the site is still connected to the net.
+            if test_connect():
+                self.time_of_last_live_net_connection = time.time()
+            
+            plog ("Last live connection to Google was " + str(time.time() - self.time_of_last_live_net_connection) + " seconds ago.")
+            if (time.time() - self.time_of_last_live_net_connection) > 600:
+                plog ("Warning, last live net connection was over ten minutes ago")
+            if (time.time() - self.time_of_last_live_net_connection) > 1200:
+                plog ("Last connection was over twenty minutes ago. Running a further test or two")
+                if test_connect(host='http://dev.photonranch.org'):
+                    plog ("Connected to photonranch.org, so it must be that Google is down. Connection is live.")
+                    self.time_of_last_live_net_connection = time.time()
+                elif test_connect(host='http://aws.amazon.com'):
+                    plog ("Connected to aws.amazon.com. Can't connect to Google or photonranch.org though.")
+                    self.time_of_last_live_net_connection = time.time()
+                else:
+                    plog ("Looks like the net is down, closing up and parking the observatory")
+                    self.open_and_enabled_to_observe=False
+                    self.cancel_all_activity()
+                    if not g_dev['mnt'].mount.AtPark:  
+                        plog ("Parking scope due to inactivity")
+                        g_dev['mnt'].home_command()
+                        g_dev['mnt'].park_command()
+                        self.time_since_last_slew_or_exposure = time.time()
+                        
+                    g_dev['enc'].enclosure.CloseShutter()
+                    
+                    
+                    
+                    
+            
         
 
     def run(self):  # run is a poor name for this function.
@@ -1091,39 +1143,49 @@ class Observatory:
                         #plog (frame_exists(fileobj))
                         tempPTR=0
                         if self.env_exists == True and (not frame_exists(fileobj)):
+
                             plog ("\nstarting ingester")
-                            try:
-                                #tt = time.time()
-                                #plog ("attempting ingest fz to aws@  ", tt)
-                                upload_file_and_ingest_to_archive(fileobj)
-                                #plog ("did ingester")
-                                plog(f"--> To PTR ARCHIVE --> {str(filepath)}")
-                                plog('*.fz ingestion took:  ', round(time.time() - tt, 1), ' sec.')
-                                self.aws_queue.task_done()
-                                #os.remove(filepath)
-                                
-                                tempPTR=1
-                            except Exception as e:
-                                plog ("couldn't send to PTR archive for some reason")
-                                plog (e)
-                                plog ((traceback.format_exc()))
-                                tempPTR=0
+                            retryarchive=0
+                            while retryarchive < 10:
+                                try:
+                                    #tt = time.time()
+                                    plog ("attempting ingest to aws@  ", tt)
+                                    upload_file_and_ingest_to_archive(fileobj)
+                                    #plog ("did ingester")
+                                    plog(f"--> To PTR ARCHIVE --> {str(filepath)}")
+                                    plog('*.fz ingestion took:  ', round(time.time() - tt, 1), ' sec.')
+                                    self.aws_queue.task_done()
+                                    #os.remove(filepath)
+                                    
+                                    tempPTR=1
+                                    retryarchive=11
+                                except Exception as e:
+                                    plog ("couldn't send to PTR archive for some reason")
+                                    plog ("Retry " + str(retryarchive))
+                                    plog (e)
+                                    plog ((traceback.format_exc()))
+                                    time.sleep(pow(retryarchive, 2) + 1)
+                                    if retryarchive < 10:
+                                        retryarchive=retryarchive+1
+                                    tempPTR=0
+
                         # If ingester fails, send to default S3 bucket.
                         if tempPTR ==0:
                             files = {"file": (filepath, fileobj)}
                             try:
                                 aws_resp = g_dev["obs"].api.authenticated_request(
                                     "POST", "/upload/", {"object_name": filename})
-                                #requests.post(aws_resp["url"], data=aws_resp["fields"], files=files)
+                                #reqs.post(aws_resp["url"], data=aws_resp["fields"], files=files)
                                 #break
 
                                 #tt = time.time()
                                 plog ("attempting aws@  ", tt)
-                                req_resp = requests.post(aws_resp["url"], data=aws_resp["fields"], files=files)
+                                req_resp = reqs.post(aws_resp["url"], data=aws_resp["fields"], files=files)
                                 plog ("did aws", req_resp)
                                 plog(f"--> To AWS --> {str(filepath)}")
                                 plog('*.fz transfer took:  ', round(time.time() - tt, 1), ' sec.')
                                 self.aws_queue.task_done()
+                                one_at_a_time = 0
                                 #os.remove(filepath)
                                 
                                 #break
@@ -1139,7 +1201,7 @@ class Observatory:
                         try:
                             aws_resp = g_dev["obs"].api.authenticated_request(
                                 "POST", "/upload/", {"object_name": filename})
-                            requests.post(aws_resp["url"], data=aws_resp["fields"], files=files)
+                            reqs.post(aws_resp["url"], data=aws_resp["fields"], files=files)
                             plog(f"--> To AWS --> {str(filepath)}")
                             self.aws_queue.task_done()
                             #os.remove(filepath)
@@ -1148,26 +1210,30 @@ class Observatory:
                         except:
                             plog ("Connection glitch for the request post, waiting a moment and trying again")
                             time.sleep(5)
+                        
+                one_at_a_time = 0
 
                 try:   
                     os.remove(filepath)
                 except:
-                    pass
+                    plog ("Couldn't remove " +str(filepath) + "file after transfer")
+                    #pass
                 
-                if (
-                    filename[-3:] == "jpg"
-                    or filename[-3:] == "txt"
-                    or ".fits.fz" in filename
-                    or ".token" in filename
-                ):
-                    try:
-                        os.remove(filepath)
-                    except:
-                        pass
+                # if (
+                #     filename[-3:] == "jpg"
+                #     or filename[-3:] == "txt"
+                #     or ".fits.fz" in filename
+                #     or ".token" in filename
+                # ):
+                #     try:
+                #         os.remove(filepath)
+                #     except:
+                #         plog ("Couldn't remove " +str(filepath) + "file after transfer")
+                #         pass
 
 
-                one_at_a_time = 0
-                #3time.sleep(0.1)
+                
+
             else:
                 time.sleep(0.5)
 
@@ -1387,11 +1453,11 @@ class Observatory:
                     files = {"file": (filepath, fileobj)}
                     #print('\nfiles;  ', files)
                     while True:
-                        try:
-                            
+                        try:                            
                             t3 =time.time()
-                            requests.post(aws_resp["url"], data=aws_resp["fields"], files=files)
+                            reqs.post(aws_resp["url"], data=aws_resp["fields"], files=files)
                             #print('\nnext... post time:  ', time.time() - t3, filepath[-8:])
+
                             break
                         except:
                             plog ("Connection glitch for the request post, waiting a moment and trying again")
@@ -1425,7 +1491,7 @@ class Observatory:
         )
 
         try:
-            requests.post(url_log, body)
+            reqs.post(url_log, body)
         #if not response.ok:
         except:
             plog("Log did not send, usually not fatal.")

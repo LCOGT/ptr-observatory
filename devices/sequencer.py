@@ -366,7 +366,10 @@ class Sequencer:
             plog("Park not executed during Park and Close" )
         try:
             if self.config['site_roof_control'] != 'no' and g_dev['enc'].mode == 'Automatic': # and enc_status['shutter_status'] in ['open', ] $ Don't check, just close!
-                g_dev['enc'].close_command( {}, {})
+                #g_dev['enc'].close_command( {}, {})
+                g_dev['obs'].send_to_user("Closing the Shutter", p_level='INFO')
+                plog("Closing the Shutter")
+                g_dev['enc'].enclosure.CloseShutter()
         except:
             plog('Dome close not executed during Park and Close.')
 
@@ -404,17 +407,18 @@ class Sequencer:
         if self.weather_report_wait_until_open==True:
             if ephem_now >  self.weather_report_wait_until_open_time:
                 if not g_dev['obs'].open_and_enabled_to_observe and self.weather_report_is_acceptable_to_observe==True:
-                    if time.time() > self.enclosure_next_open_time and self.opens_this_evening < self.config['maximum_roof_opens_per_evening']:
-                        self.enclosure_next_open_time = time.time() + 300 # Only try to open the roof every five minutes
-                        self.enc_to_skyflat_and_open(enc_status, ocn_status)
-                # If the observatory opens, set clock and auto focus and observing to now
-                if g_dev['obs'].open_and_enabled_to_observe:
-                    self.night_focus_ready=True
-                    obs_win_begin, sunZ88Op, sunZ88Cl, ephem_now = self.astro_events.getSunEvents()
-                    g_dev['events']['Clock & Auto Focus'] = ephem_now - 0.1/24
-                    g_dev['events']['Observing Begins'] = ephem_now + 0.1/24
-                    self.weather_report_wait_until_open=False
-                    self.weather_report_is_acceptable_to_observe=True
+                    if (g_dev['events']['Cool Down, Open'] < ephem.now() < g_dev['events']['Close and Park']):
+                        if time.time() > self.enclosure_next_open_time and self.opens_this_evening < self.config['maximum_roof_opens_per_evening']:
+                            self.enclosure_next_open_time = time.time() + 300 # Only try to open the roof every five minutes
+                            self.enc_to_skyflat_and_open(enc_status, ocn_status)
+                        # If the observatory opens, set clock and auto focus and observing to now
+                        if g_dev['obs'].open_and_enabled_to_observe:
+                            self.night_focus_ready=True
+                            obs_win_begin, sunZ88Op, sunZ88Cl, ephem_now = self.astro_events.getSunEvents()
+                            g_dev['events']['Clock & Auto Focus'] = ephem_now - 0.1/24
+                            g_dev['events']['Observing Begins'] = ephem_now + 0.1/24
+                            self.weather_report_wait_until_open=False
+                            self.weather_report_is_acceptable_to_observe=True
         
         # If the observatory is meant to shut during the evening
         obs_win_begin, sunZ88Op, sunZ88Cl, ephem_now = self.astro_events.getSunEvents()
@@ -1592,6 +1596,8 @@ class Sequencer:
         #prior_scale = 1   #THIS will be inhereted upon completion of the prior filter
         collecting_area = self.config['telescope']['telescope1']['collecting_area']/31808.   # SAF at F4.9 is the reference
         #   and (g_dev['events']['Eve Sky Flats'] <
+        
+
 
         while len(pop_list) > 0  and ephem.now() < ending:
             
@@ -1629,7 +1635,17 @@ class Sequencer:
                 self.estimated_first_flat_exposure = False
                 while (acquired_count < flat_count):# and g_dev['enc'].status['shutter_status'] in ['Open', 'open']: # NB NB NB and roof is OPEN! and (ephem_now +3/1440) < g_dev['events']['End Eve Sky Flats' ]:
                     #if g_dev['enc'].is_dome:   #Does not apply
-                    g_dev['obs'].update_status()
+                    g_dev['obs'].update_status()                    
+                    
+                    if g_dev['obs'].open_and_enabled_to_observe == False:
+                        plog ("Observatory closed or disabled during flat script. Cancelling out of flat acquisition loop.")
+                        return
+                    
+                    # Check that Flat time hasn't ended
+                    if ephem.now() > ending:
+                        plog ("Flat acquisition time finished. Breaking out of the flat loop.")
+                        return
+                    
                     if self.next_flat_observe < time.time():                
                         
                             
