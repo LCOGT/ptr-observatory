@@ -251,6 +251,12 @@ class Sequencer:
         script = command['required_params']['script']
         if action == "run" and script == 'focusAuto':
             self.auto_focus_script(req, opt, skip_timer_check=True)
+        if action == "run" and script == 'focusExtensive':   
+             # Autofocus
+            req2 = {'target': 'near_tycho_star', 'area': 150}
+            opt = {}
+            self.extensive_focus_script(req2, opt, throw = g_dev['foc'].throw)
+
         elif action == "autofocus": # this action is the front button on Camera, so FORCES an autofocus
             g_dev['foc'].time_of_last_focus = datetime.datetime.now() - datetime.timedelta(
                 days=1
