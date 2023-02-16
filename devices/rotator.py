@@ -71,11 +71,12 @@ class Rotator:
 
         if 359 < avgpos < 361 :
             print ("The Rotator SEEMS to be rotating.")
+            #breakpoint()
         elif not self.rotator_meant_to_be_rotating:
             print ("The Rotator is not moving, but it isn't meant to be.")
         else:
             print ("THE ROTATOR HAS PERHAPS CRASHED.")
-            # breakpoint()
+            #breakpoint()
             # listOfProcessIds = findProcessIdByName('optec')
             # for pid in listOfProcessIds:
             #     pid_num = pid['pid']

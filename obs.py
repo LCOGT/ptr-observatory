@@ -581,7 +581,7 @@ class Observatory:
                 if time.time() - self.project_call_timer > 30: 
                     self.project_call_timer = time.time()
                     plog(".")  # We print this to stay informed of process on the console.
-                    url_blk = "https://calendar.photonranch.org/dev/siteevents"
+                    url_blk = "https://calendar.photonranch.org/calendar/siteevents"
                     # UTC VERSION
                     start_aperture = str(g_dev['events']['Eve Sky Flats']).split()
                     close_aperture = str(g_dev['events']['End Morn Sky Flats']).split()
@@ -628,7 +628,7 @@ class Observatory:
                         if len(blocks) > 0:
                             self.blocks = blocks
     
-                    url_proj = "https://projects.photonranch.org/dev/get-all-projects"
+                    url_proj = "https://projects.photonranch.org/projects/get-all-projects"
                     if True:
                         all_projects = requests.post(url_proj).json()
                         self.projects = []
