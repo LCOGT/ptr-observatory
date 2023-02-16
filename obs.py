@@ -314,7 +314,7 @@ class Observatory:
         # Send the config to AWS. TODO This has faulted.
         self.update_config()   #This is the never-ending control loop
         
-        #breakpoint()
+
         #breakpoint()
         #req2 = {'target': 'near_tycho_star', 'area': 150}
         #opt = {}
@@ -581,7 +581,7 @@ class Observatory:
                 if time.time() - self.project_call_timer > 30: 
                     self.project_call_timer = time.time()
                     plog(".")  # We print this to stay informed of process on the console.
-                    url_blk = "https://calendar.photonranch.org/dev/siteevents"
+                    url_blk = "https://calendar.photonranch.org/calendar/siteevents"
                     # UTC VERSION
                     start_aperture = str(g_dev['events']['Eve Sky Flats']).split()
                     close_aperture = str(g_dev['events']['End Morn Sky Flats']).split()
@@ -628,7 +628,7 @@ class Observatory:
                         if len(blocks) > 0:
                             self.blocks = blocks
     
-                    url_proj = "https://projects.photonranch.org/dev/get-all-projects"
+                    url_proj = "https://projects.photonranch.org/projects/get-all-projects"
                     if True:
                         all_projects = requests.post(url_proj).json()
                         self.projects = []
@@ -1001,6 +1001,9 @@ class Observatory:
                     g_dev['mnt'].home_command()
                     g_dev['mnt'].park_command()
                     self.time_since_last_slew_or_exposure = time.time()
+            
+            # Check that rotator is rotating
+            g_dev['rot'].check_rotator_is_rotating()
                     
             # Check that cooler is alive
             #plog ("Cooler check")
@@ -1983,6 +1986,7 @@ class Observatory:
 
 
                     self.fast_queue.put((15, (paths["im_path"], paths["jpeg_name10"])), block=False)
+                    self.fast_queue.put((150, (paths["im_path"], paths["jpeg_name10"].replace('EX10','EX20'))), block=False)
 
                     if reprojection_failed == True:
                         g_dev["obs"].send_to_user(

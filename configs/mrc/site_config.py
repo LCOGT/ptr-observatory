@@ -139,7 +139,7 @@ site_config = {
     'pointing_calibration_on_startup': False,  #MF I am leaving this alone.
     'periodic_focus_time' : 0.5, # This is a time, in hours, over which to bypass automated focussing (e.g. at the start of a project it will not refocus if a new project starts X hours after the last focus)
     'stdev_fwhm' : 0.5, # This is the expected variation in FWHM at a given telescope/camera/site combination. This is used to check if a fwhm is within normal range or the focus has shifted
-    'focus_exposure_time': 25, # Exposure time in seconds for exposure image
+    'focus_exposure_time': 10, # Exposure time in seconds for exposure image
     'focus_trigger' : 1.0, # What FWHM increase is needed to trigger an autofocus
     'solve_nth_image' : 10, # Only solve every nth image
     'solve_timer' : 5, # Only solve every X minutes
@@ -523,27 +523,27 @@ site_config = {
                                 ['dif',     [4, 0],     0,  16.00, [2, 17], 'df'], #  1  330NB NB NB If this in series should change focus about 1mm more.
                                 ['w',       [2, 0],     0,  16.00, [2, 17], 'w '], #  2 346
                                 ['PL',      [0, 4],     0,  16.00, [2, 17], "PL"], #  3 317
-                                ['gp',      [0, 6],     0,  108.7, [2, 17], 'gp'], #  4 
-                                ['PB',      [0, 1],     0,  154.7, [2, 17], 'PB'], #  5
-                                ['rp',      [0, 7],     0,  54.6,  [2, 17], 'rp'], #  6
-                                ['PG',      [0, 2],     0,  102.4, [2, 17], 'PG'], #  7
-                                ['PR',      [0, 3],     0,  13.89, [2, 17], 'PR'], #  8
-                                ['ip',      [0, 8],     0,  47.41, [2, 17], 'ip'], #  9
-                                ['z',       [5, 0],     0,  9.95,  [2, 17], 'z' ], # 10
-                                ['O3',      [7, 0],     0,  5.35,  [2, 17], '03'], # 11
-                                ['up',      [0, 5],     0,  5.06,  [1, 17], 'up'], # 12
-                                ['N2',      [3, 0],     0,  3.0,   [2, 17], 'N2'], # 13
-                                ['CR',      [1, 0],     0,  2.83,  [2, 17], 'CR'], # 14
-                                ['S2',      [8, 0],     0,  1.64,  [2, 17], 'S2'], # 15   
-                                ['HA',      [6, 0],     0,  1.58,  [2, 17], 'HA'], # 16  
+                                ['gp',      [0, 6],     0,  10.87, [2, 17], 'gp'], #  4 
+                                ['PB',      [0, 1],     0,  15.47, [2, 17], 'PB'], #  5
+                                ['rp',      [0, 7],     0,  5.46,  [2, 17], 'rp'], #  6
+                                ['PG',      [0, 2],     0,  10.24, [2, 17], 'PG'], #  7
+                                ['PR',      [0, 3],     0,  1.389, [2, 17], 'PR'], #  8
+                                ['ip',      [0, 8],     0,  4.741, [2, 17], 'ip'], #  9
+                                ['z',       [5, 0],     0,  .995,  [2, 17], 'z' ], # 10
+                                ['O3',      [7, 0],     0,  .535,  [2, 17], '03'], # 11
+                                ['up',      [0, 5],     0,  .506,  [1, 17], 'up'], # 12
+                                ['N2',      [3, 0],     0,  .30,   [2, 17], 'N2'], # 13
+                                ['CR',      [1, 0],     0,  .283,  [2, 17], 'CR'], # 14
+                                ['S2',      [8, 0],     0,  .164,  [2, 17], 'S2'], # 15   
+                                ['HA',      [6, 0],     0,  .158,  [2, 17], 'HA'], # 16  
                                 ['focus',   [2, 0],     0,  0.0,   [2, 17], 'fo'], # 17
                                 ['dark',    [8, 5],     0,  0.0,   [2, 17], 'dk']],# 18
 
                                 #Screen = 100; QHY400 ~ 92% DQE   HDR Mode    Screen = 160 sat  20190825 measured.
-                'filter_screen_sort':  ['air','w','PL','dif', 'gp','PB','rp','PG','PR','ip','O3','N2','CR','S2','HA'],   #  9, 21],  # 5, 17], #Most to least throughput, \
+                'filter_screen_sort':  ['air','w','PL','gp','PB','rp','PG','PR','ip','O3','N2','CR','S2','HA'],   #  9, 21],  # 5, 17], #Most to least throughput, \
                                 #so screen brightens, skipping u and zs which really need sky.
 
-                'filter_sky_sort':     ['PL', 'w', 'air'] #'HA', 'S2', 'CR', 'N2', 'up', 'O3', 'z', 'ip', 'PR', 'PG', 'rp', 'PB', 'gp', 'PL', 'w', 'dif', 'air']  #Least to most throughput  \
+                'filter_sky_sort':     ['HA', 'S2', 'CR', 'N2', 'up', 'O3', 'z', 'ip', 'PR', 'PG', 'rp', 'PB', 'gp', 'PL', 'w', 'dif', 'air']  #Least to most throughput  \
 
 
             },
