@@ -9,6 +9,8 @@ import socket
 import os
 #import config
 
+import urllib
+
 from site_config import get_enc_status
 
 #from pprint import pprint
@@ -51,6 +53,16 @@ SecTOH = 1/3600.
 APPTOSID = 1.00273811906 #USNO Supplement
 MOUNTRATE = 15*APPTOSID  #15.0410717859
 KINGRATE = 15.029
+
+
+def test_connect(host='http://google.com'):
+    try:
+        urllib.request.urlopen(host) #Python 3.x
+        return True
+    except:
+        return False
+
+
 def f_to_c(f):
     return round(5*(f - 32)/9, 2)
 
@@ -846,6 +858,10 @@ class Enclosure:
         #  takes sky flats or not is determined by the scheduler or calendar.  Mounting
         #  could be parked.
 
+        if test_connect():
+            net_connected=True
+        else:
+            net_connected=False
 
        #The following Redis hold makes little sense
 
@@ -906,7 +922,7 @@ class Enclosure:
 
             #Note we left the telescope alone
 
-        elif open_cmd and self.mode == 'Manual':   #  NB NB NB Ideally Telescope parked away from Sun.                
+        elif open_cmd and self.mode == 'Manual' and net_connected:   #  NB NB NB Ideally Telescope parked away from Sun.                
             self.guarded_open()
             self.dome_opened = True
             self.dome_homed = True
@@ -930,7 +946,7 @@ class Enclosure:
             self.dome_opened = False
             self.dome_homed = True    #g_dev['events']['Cool Down, Open']  <=
         elif ((g_dev['events']['Cool Down, Open']  <= ephem_now < g_dev['events']['Observing Ends']) and \
-               g_dev['enc'].mode == 'Automatic') and not (g_dev['ocn'].wx_hold or g_dev['ocn'].clamp_latch):
+               g_dev['enc'].mode == 'Automatic') and not (g_dev['ocn'].wx_hold or g_dev['ocn'].clamp_latch) and net_connected:
             try:
                 #if self.status_string in ['Closed']:   #Fails at SRO, attriute not set. 20220806 wer
                 #****************************NB NB NB For SRO we have no control so just observe and skip all this logic
@@ -938,10 +954,12 @@ class Enclosure:
                 # Don't check the string, the string could be wrong!
                 plog("Entering Guarded open, Expect slew opposite Sun")
                 self.guarded_open()
+                self.dome_opened = True
+                self.dome_homed = True
             except Exception as e:
                 plog ("Error while opening the roof ",e)
-            self.dome_opened = True
-            self.dome_homed = True
+            
+            
             #if _redis: g_dev['redis'].set('Enc Auto Opened', True, ex= 600)   # Unused
             try:
                 if self.status_string in ['Open'] and ephem_now < g_dev['events']['End Eve Sky Flats']:
@@ -949,7 +967,7 @@ class Enclosure:
                         self.enclosure.SlewToAzimuth(az_opposite_sun)
                         plog("Slewing Opposite Sun")
                         g_dev['obs'].send_to_user("Dome slewing opposite the Solar azimuth", p_level='INFO')
-                    time.sleep(5)
+                        time.sleep(5)
             except:
                 pass
         #THIS should be the ultimate backup to force a close

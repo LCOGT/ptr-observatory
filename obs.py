@@ -1142,7 +1142,7 @@ class Observatory:
                         if self.env_exists == True and (not frame_exists(fileobj)):
                             #plog ("attempting ingester")
                             retryarchive=0
-                            while retryarchive < 5:
+                            while retryarchive < 10:
                                 try:
                                     #tt = time.time()
                                     plog ("attempting ingest to aws@  ", tt)
@@ -1154,14 +1154,15 @@ class Observatory:
                                     #os.remove(filepath)
                                     
                                     tempPTR=1
-                                    retryarchive=6
+                                    retryarchive=11
                                 except Exception as e:
                                     plog ("couldn't send to PTR archive for some reason")
                                     plog ("Retry " + str(retryarchive))
                                     plog (e)
                                     plog ((traceback.format_exc()))
                                     time.sleep(pow(retryarchive, 2) + 1)
-                                    retryarchive=retryarchive+1
+                                    if retryarchive < 10:
+                                        retryarchive=retryarchive+1
                                     tempPTR=0
                         # If ingester fails, send to default S3 bucket.
                         if tempPTR ==0:
