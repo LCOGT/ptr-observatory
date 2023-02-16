@@ -250,12 +250,18 @@ class Sequencer:
         action = command['action']
         script = command['required_params']['script']
         if action == "run" and script == 'focusAuto':
-            self.auto_focus_script(req, opt)
+            self.auto_focus_script(req, opt, skip_timer_check=True)
+        if action == "run" and script == 'focusExtensive':   
+             # Autofocus
+            req2 = {'target': 'near_tycho_star', 'area': 150}
+            opt = {}
+            self.extensive_focus_script(req2, opt, throw = g_dev['foc'].throw)
+
         elif action == "autofocus": # this action is the front button on Camera, so FORCES an autofocus
             g_dev['foc'].time_of_last_focus = datetime.datetime.now() - datetime.timedelta(
                 days=1
             )  # Initialise last focus as yesterday
-            self.auto_focus_script(req, opt)
+            self.auto_focus_script(req, opt, skip_timer_check=True)
         elif action == "run" and script == 'focusFine':
             self.coarse_focus_script(req, opt)
         elif action == "run" and script == 'genScreenFlatMasters':
@@ -396,7 +402,7 @@ class Sequencer:
         
         
         # Check for delayed opening of the observatory and act accordingly.
-        
+
         # If the observatory is simply delayed until opening, then wait until then, then attempt to start up the observatory
         if self.weather_report_wait_until_open==True:
             if ephem_now >  self.weather_report_wait_until_open_time:
@@ -1893,7 +1899,7 @@ class Sequencer:
 
 
 
-    def auto_focus_script(self, req, opt, throw=600, skip_check=False):
+    def auto_focus_script(self, req, opt, throw=600, skip_timer_check=False):
         '''
         V curve is a big move focus designed to fit two lines adjacent to the more normal focus curve.
         It finds the approximate focus, particulary for a new instrument. It requires 8 points plus
@@ -1922,7 +1928,7 @@ class Sequencer:
         plog ("Threshold time between auto focus routines (hours)")
         plog (self.config['periodic_focus_time'])
         
-        if skip_check == False:
+        if skip_timer_check == False:
             if ((datetime.datetime.now() - g_dev['foc'].time_of_last_focus)) > datetime.timedelta(hours=self.config['periodic_focus_time']):
                 plog ("Sufficient time has passed since last focus to do auto_focus")
                 
@@ -2241,17 +2247,21 @@ class Sequencer:
             except:
 
                 plog('Autofocus quadratic equation not converge. Moving back to starting focus:  ', focus_start)
-
-                g_dev['foc'].guarded_move((focus_start)*g_dev['foc'].micron_to_steps)
-                time.sleep(5)
-                self.sequencer_hold = False   #Allow comand checks.
-                self.af_guard = False
-                g_dev['mnt'].mount.SlewToCoordinatesAsync(start_ra, start_dec)   #NB NB Does this really take us back to starting point?
-                wait_for_slew()
-                self.sequencer_hold = False
-                self.guard = False
-                self.af_guard = False
-                return
+                plog  ("NORMAL FOCUS UNSUCCESSFUL, TRYING EXTENSIVE FOCUS")
+                req2 = {'target': 'near_tycho_star', 'area': 150}
+                opt = {}
+                g_dev['seq'].extensive_focus_script(req2,opt)
+                
+                # g_dev['foc'].guarded_move((focus_start)*g_dev['foc'].micron_to_steps)
+                # time.sleep(5)
+                # self.sequencer_hold = False   #Allow comand checks.
+                # self.af_guard = False
+                # g_dev['mnt'].mount.SlewToCoordinatesAsync(start_ra, start_dec)   #NB NB Does this really take us back to starting point?
+                # wait_for_slew()
+                # self.sequencer_hold = False
+                # self.guard = False
+                # self.af_guard = False
+                # return
             if min(x) <= d1 <= max(x):
                 plog ('Moving to Solved focus:  ', round(d1, 2), ' calculated:  ',  new_spot)
                 
@@ -2328,17 +2338,22 @@ class Sequencer:
             except:
 
                 plog('Autofocus quadratic equation not converge. Moving back to starting focus:  ', focus_start)
+                plog  ("NORMAL FOCUS UNSUCCESSFUL, TRYING EXTENSIVE FOCUS")
+                req2 = {'target': 'near_tycho_star', 'area': 150}
+                opt = {}
+                g_dev['seq'].extensive_focus_script(req2,opt)
 
-                g_dev['foc'].guarded_move((focus_start)*g_dev['foc'].micron_to_steps)
-                time.sleep(5)
-                self.sequencer_hold = False   #Allow comand checks.
-                self.af_guard = False
-                g_dev['mnt'].mount.SlewToCoordinatesAsync(start_ra, start_dec)   #NB NB Does this really take us back to starting point?
-                wait_for_slew()
-                self.sequencer_hold = False
-                self.guard = False
-                self.af_guard = False
-                return
+
+                # g_dev['foc'].guarded_move((focus_start)*g_dev['foc'].micron_to_steps)
+                # time.sleep(5)
+                # self.sequencer_hold = False   #Allow comand checks.
+                # self.af_guard = False
+                # g_dev['mnt'].mount.SlewToCoordinatesAsync(start_ra, start_dec)   #NB NB Does this really take us back to starting point?
+                # wait_for_slew()
+                # self.sequencer_hold = False
+                # self.guard = False
+                # self.af_guard = False
+                # return
             if min(x) <= d1 <= max(x):
                 plog ('Moving to Solved focus:  ', round(d1, 2), ' calculated:  ',  new_spot)
                 pos = int(d1*g_dev['foc'].micron_to_steps)
@@ -2372,6 +2387,13 @@ class Sequencer:
                 plog("Returning to:  ", start_ra, start_dec)
                 g_dev['mnt'].mount.SlewToCoordinatesAsync(start_ra, start_dec)   #Return to pre-focus pointing.
                 wait_for_slew()
+            else:
+                plog  ("NORMAL FOCUS UNSUCCESSFUL, TRYING EXTENSIVE FOCUS")
+                req2 = {'target': 'near_tycho_star', 'area': 150}
+                opt = {}
+                g_dev['seq'].extensive_focus_script(req2,opt)
+            
+            
             if sim:
 
                 g_dev['foc'].guarded_move((focus_start)*g_dev['foc'].micron_to_steps)
@@ -2402,8 +2424,13 @@ class Sequencer:
             self.af_guard = False
             return
         else:
-            plog('Spots are really wrong so moving back to starting focus:  ', focus_start)
-            g_dev['foc'].focuser.Move((focus_start)*g_dev['foc'].micron_to_steps)
+            #plog('Spots are really wrong so moving back to starting focus:  ', focus_start)
+            #g_dev['foc'].focuser.Move((focus_start)*g_dev['foc'].micron_to_steps)
+            plog ('DID NOT SETTLE DOWN ON A FOCUS ON NORMAL AUTOFOCUS')
+            plog ('ATTEMPTING AN EXTENSIVE FOCUS')
+            req2 = {'target': 'near_tycho_star', 'area': 150}
+            opt = {}
+            self.extensive_focus_script(req2,opt)
         plog("Returning to:  ", start_ra, start_dec)
         g_dev['mnt'].mount.SlewToCoordinatesAsync(start_ra, start_dec)   #Return to pre-focus pointing.
         wait_for_slew()
@@ -2541,7 +2568,9 @@ class Sequencer:
                 plog ("spot failed on extensive focus script")
 
             g_dev['obs'].send_to_user("Extensive focus center " + str(foc_pos) + " FWHM: " + str(spot), p_level='INFO')
-            extensive_focus.append([foc_pos, spot])
+            
+            if spot != False:
+                extensive_focus.append([foc_pos, spot])
             plog(extensive_focus)
         
         for ctr in range(3):
@@ -2612,7 +2641,7 @@ class Sequencer:
             plog(traceback.format_exc())
             breakpoint()
             
-        self.auto_focus_script(None,None)
+        self.auto_focus_script(None,None, skip_timer_check=True)
         
         plog("Returning to:  ", start_ra, start_dec)
         g_dev['mnt'].mount.SlewToCoordinatesAsync(start_ra, start_dec)   #Return to pre-focus pointing.

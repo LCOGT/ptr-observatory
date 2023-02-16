@@ -335,7 +335,7 @@ class Observatory:
         # Send the config to AWS. TODO This has faulted.
         self.update_config()   #This is the never-ending control loop
         
-        #breakpoint()
+
         #breakpoint()
         #req2 = {'target': 'near_tycho_star', 'area': 150}
         #opt = {}
@@ -602,7 +602,7 @@ class Observatory:
                 if time.time() - self.project_call_timer > 30: 
                     self.project_call_timer = time.time()
                     plog(".")  # We print this to stay informed of process on the console.
-                    url_blk = "https://calendar.photonranch.org/dev/siteevents"
+                    url_blk = "https://calendar.photonranch.org/calendar/siteevents"
                     # UTC VERSION
                     start_aperture = str(g_dev['events']['Eve Sky Flats']).split()
                     close_aperture = str(g_dev['events']['End Morn Sky Flats']).split()
@@ -649,7 +649,7 @@ class Observatory:
                         if len(blocks) > 0:
                             self.blocks = blocks
     
-                    url_proj = "https://projects.photonranch.org/dev/get-all-projects"
+                    url_proj = "https://projects.photonranch.org/projects/get-all-projects"
                     if True:
                         all_projects = reqs.post(url_proj).json()
                         self.projects = []
@@ -1022,6 +1022,9 @@ class Observatory:
                     g_dev['mnt'].home_command()
                     g_dev['mnt'].park_command()
                     self.time_since_last_slew_or_exposure = time.time()
+            
+            # Check that rotator is rotating
+            g_dev['rot'].check_rotator_is_rotating()
                     
             # Check that cooler is alive
             #plog ("Cooler check")
@@ -1140,7 +1143,8 @@ class Observatory:
                         #plog (frame_exists(fileobj))
                         tempPTR=0
                         if self.env_exists == True and (not frame_exists(fileobj)):
-                            #plog ("attempting ingester")
+
+                            plog ("\nstarting ingester")
                             retryarchive=0
                             while retryarchive < 10:
                                 try:
@@ -1164,6 +1168,7 @@ class Observatory:
                                     if retryarchive < 10:
                                         retryarchive=retryarchive+1
                                     tempPTR=0
+
                         # If ingester fails, send to default S3 bucket.
                         if tempPTR ==0:
                             files = {"file": (filepath, fileobj)}
@@ -1436,22 +1441,28 @@ class Observatory:
                 # Here we parse the file, set up and send to AWS
                 filename = pri_image[1][1]
                 filepath = pri_image[1][0] + filename  # Full path to file on disk
+                t1 = time.time()
                 aws_resp = g_dev["obs"].api.authenticated_request(
                     "POST", "/upload/", {"object_name": filename})
                 # Only ingest new large fits.fz files to the PTR archive.
-                
+                t2 = time.time()
+                #print('\naws_auth_req time:  ', t2 - t1, filename[-8:])
                 # Send all other files to S3.
-                
+
                 with open(filepath, "rb") as fileobj:
                     files = {"file": (filepath, fileobj)}
+                    #print('\nfiles;  ', files)
                     while True:
-                        try:
+                        try:                            
+                            t3 =time.time()
                             reqs.post(aws_resp["url"], data=aws_resp["fields"], files=files)
+                            #print('\nnext... post time:  ', time.time() - t3, filepath[-8:])
+
                             break
                         except:
                             plog ("Connection glitch for the request post, waiting a moment and trying again")
                             time.sleep(5)
-                    plog(f"--> To AWS --> {str(filepath)}")
+                    plog(f"\n--> To AWS --> {str(filepath)}")
 
                 # if (
                 #     filename[-3:] == "jpg"
@@ -1462,6 +1473,7 @@ class Observatory:
                 #     os.remove(filepath)
 
                 self.fast_queue.task_done()
+                #print('\nfast queue total time:  ', time.time() - t2)
                 one_at_a_time = 0
                 #time.sleep(0.1)
             else:
@@ -1676,7 +1688,10 @@ class Observatory:
                         if g_dev['mnt'].pier_side == 1:
                             final_image=final_image.transpose(Image.ROTATE_180)
                         
-
+                        # Save BIG version of JPEG.
+                        final_image.save(
+                            paths["im_path"] + paths['jpeg_name10'].replace('EX10','EX20')
+                        )
                         # Resizing the array to an appropriate shape for the jpg and the small fits
                         
                 
@@ -2008,18 +2023,22 @@ class Observatory:
                             if g_dev['mnt'].pier_side == 1:
                                 final_image=final_image.transpose(Image.ROTATE_180)
                             
+                            # Save BIG version of JPEG.
+                            final_image.save(
+                                paths["im_path"] + paths['jpeg_name10'].replace('EX10','EX20')
+                            )
                             
                             ## Resizing the array to an appropriate shape for the jpg and the small fits
                             iy, ix = final_image.size
                             if iy == ix:
                                 #final_image.resize((1280, 1280))
-                                final_image.resize((900, 900))
+                                final_image=final_image.resize((900, 900))
                             else:
                                 #final_image.resize((int(1536 * iy / ix), 1536))
                                 if self.config["camera"][g_dev['cam'].name]["settings"]["squash_on_x_axis"]:
-                                    final_image.resize((int(900 * iy / ix), 900))
+                                    final_image=final_image.resize((int(900 * iy / ix), 900))
                                 else:
-                                    final_image.resize(900, (int(900 * iy / ix)))
+                                    final_image=final_image.resize(900, (int(900 * iy / ix)))
                             
                                 
                             final_image.save(
@@ -2033,6 +2052,7 @@ class Observatory:
 
 
                     self.fast_queue.put((15, (paths["im_path"], paths["jpeg_name10"])), block=False)
+                    self.fast_queue.put((150, (paths["im_path"], paths["jpeg_name10"].replace('EX10','EX20'))), block=False)
 
                     if reprojection_failed == True:
                         g_dev["obs"].send_to_user(
