@@ -1088,10 +1088,10 @@ class Observatory:
                         #plog (frame_exists(fileobj))
                         tempPTR=0
                         if self.env_exists == True and (not frame_exists(fileobj)):
-                            #plog ("attempting ingester")
+                            plog ("\nstarting ingester")
                             try:
                                 #tt = time.time()
-                                plog ("attempting ingest to aws@  ", tt)
+                                #plog ("attempting ingest fz to aws@  ", tt)
                                 upload_file_and_ingest_to_archive(fileobj)
                                 #plog ("did ingester")
                                 plog(f"--> To PTR ARCHIVE --> {str(filepath)}")
@@ -1372,22 +1372,28 @@ class Observatory:
                 # Here we parse the file, set up and send to AWS
                 filename = pri_image[1][1]
                 filepath = pri_image[1][0] + filename  # Full path to file on disk
+                t1 = time.time()
                 aws_resp = g_dev["obs"].api.authenticated_request(
                     "POST", "/upload/", {"object_name": filename})
                 # Only ingest new large fits.fz files to the PTR archive.
-                
+                t2 = time.time()
+                #print('\naws_auth_req time:  ', t2 - t1, filename[-8:])
                 # Send all other files to S3.
-                
+
                 with open(filepath, "rb") as fileobj:
                     files = {"file": (filepath, fileobj)}
+                    #print('\nfiles;  ', files)
                     while True:
                         try:
+                            
+                            t3 =time.time()
                             requests.post(aws_resp["url"], data=aws_resp["fields"], files=files)
+                            #print('\nnext... post time:  ', time.time() - t3, filepath[-8:])
                             break
                         except:
                             plog ("Connection glitch for the request post, waiting a moment and trying again")
                             time.sleep(5)
-                    plog(f"--> To AWS --> {str(filepath)}")
+                    plog(f"\n--> To AWS --> {str(filepath)}")
 
                 # if (
                 #     filename[-3:] == "jpg"
@@ -1398,6 +1404,7 @@ class Observatory:
                 #     os.remove(filepath)
 
                 self.fast_queue.task_done()
+                #print('\nfast queue total time:  ', time.time() - t2)
                 one_at_a_time = 0
                 #time.sleep(0.1)
             else:

@@ -211,7 +211,6 @@ class Camera:
         win32com.client.pythoncom.CoInitialize()
         plog(driver, name)
         self.camera = win32com.client.Dispatch(driver)
-
         self.async_exposure_lock=False # This is needed for TheSkyx (and maybe future programs) where the 
                                        # exposure has to be called from a separate thread and then waited 
                                        # for in the main thread
@@ -659,7 +658,12 @@ class Camera:
         return self.camera.Connected
 
     def _ascom_temperature(self):
-        return self.camera.CCDTemperature
+        try: 
+            temptemp=self.camera.CCDTemperature
+        except:
+            print ("failed at getting the CCD temperature")
+            temptemp=999.9
+        return temptemp
 
     def _ascom_cooler_on(self):
         return (

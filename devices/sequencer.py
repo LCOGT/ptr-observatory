@@ -250,12 +250,12 @@ class Sequencer:
         action = command['action']
         script = command['required_params']['script']
         if action == "run" and script == 'focusAuto':
-            self.auto_focus_script(req, opt)
+            self.auto_focus_script(req, opt, skip_timer_check=True)
         elif action == "autofocus": # this action is the front button on Camera, so FORCES an autofocus
             g_dev['foc'].time_of_last_focus = datetime.datetime.now() - datetime.timedelta(
                 days=1
             )  # Initialise last focus as yesterday
-            self.auto_focus_script(req, opt)
+            self.auto_focus_script(req, opt, skip_timer_check=True)
         elif action == "run" and script == 'focusFine':
             self.coarse_focus_script(req, opt)
         elif action == "run" and script == 'genScreenFlatMasters':
@@ -393,7 +393,7 @@ class Sequencer:
         
         
         # Check for delayed opening of the observatory and act accordingly.
-        
+
         # If the observatory is simply delayed until opening, then wait until then, then attempt to start up the observatory
         if self.weather_report_wait_until_open==True:
             if ephem_now >  self.weather_report_wait_until_open_time:
@@ -1877,7 +1877,7 @@ class Sequencer:
 
 
 
-    def auto_focus_script(self, req, opt, throw=600, skip_check=False):
+    def auto_focus_script(self, req, opt, throw=600, skip_timer_check=False):
         '''
         V curve is a big move focus designed to fit two lines adjacent to the more normal focus curve.
         It finds the approximate focus, particulary for a new instrument. It requires 8 points plus
@@ -1906,7 +1906,7 @@ class Sequencer:
         plog ("Threshold time between auto focus routines (hours)")
         plog (self.config['periodic_focus_time'])
         
-        if skip_check == False:
+        if skip_timer_check == False:
             if ((datetime.datetime.now() - g_dev['foc'].time_of_last_focus)) > datetime.timedelta(hours=self.config['periodic_focus_time']):
                 plog ("Sufficient time has passed since last focus to do auto_focus")
                 
@@ -2596,7 +2596,7 @@ class Sequencer:
             plog(traceback.format_exc())
             breakpoint()
             
-        self.auto_focus_script(None,None)
+        self.auto_focus_script(None,None, skip_timer_check=True)
         
         plog("Returning to:  ", start_ra, start_dec)
         g_dev['mnt'].mount.SlewToCoordinatesAsync(start_ra, start_dec)   #Return to pre-focus pointing.

@@ -127,14 +127,14 @@ site_config = {
     'observing_check_period' : 2,    # How many minutes between weather checks
     'enclosure_check_period' : 2,    # How many minutes between enclosure checks
 
-    'auto_eve_bias_dark': False,
+    'auto_eve_bias_dark': True,
     
-    'auto_midnight_moonless_bias_dark': True,
-    'auto_eve_sky_flat': False,
+    'auto_midnight_moonless_bias_dark': False,
+    'auto_eve_sky_flat': True,
     'eve_sky_flat_sunset_offset': -40.,  #  Minutes  neg means before, + after.
     'eve_cool_down_open' : -45.0,
-    'auto_morn_sky_flat': False,
-    'auto_morn_bias_dark': False,
+    'auto_morn_sky_flat': True,
+    'auto_morn_bias_dark': True,
     're-calibrate_on_solve': True,
     'pointing_calibration_on_startup': False,  #MF I am leaving this alone.
     'periodic_focus_time' : 0.5, # This is a time, in hours, over which to bypass automated focussing (e.g. at the start of a project it will not refocus if a new project starts X hours after the last focus)
@@ -289,7 +289,9 @@ site_config = {
 			    'longitude_offset': 0.0,    #Decimal degrees, West is negative
 			    'elevation_offset': 0.0,    # meters above sea level
                 'home_park_altitude': 0,    #Having these settings is important for PWI4 where it can easily be messed up.
-                'home_park_azimuth': 180,
+                'home_park_azimuth': 180,                
+                'home_altitude': 0,    #Having these settings is important for PWI4 where it can easily be messed up.
+                'home_azimuth': 180,
                 'fixed_screen_azimuth': 167.25,
                 'fixed_screen _altitude': 0.54,
                 'refraction_on': True,
@@ -517,10 +519,10 @@ site_config = {
 
                 #'filter_list': ['PL','PR','PG','PB','HA','O3','S2', 'air','dif','w','CR','N2','up','gp','rp','ip','z', 'difup','difgp','difrp','difip','dark'], # A list of actual physical filters for the substitution function
 
-                'filter_data': [['air',     [0, 0], -1000,  357.1, [2, 17], 'ai'], #  0
-                                ['dif',     [4, 0],     0,  330.0, [2, 17], 'df'], #  1  NB NB NB If this in series should change focus about 1mm more.
-                                ['w',       [2, 0],     0,  346.2, [2, 17], 'w '], #  2
-                                ['PL',      [0, 4],     0,  317.5, [2, 17], "PL"], #  3
+                'filter_data': [['air',     [0, 0], -1000,  16.00, [2, 17], 'ai'], #  0 357
+                                ['dif',     [4, 0],     0,  16.00, [2, 17], 'df'], #  1  330NB NB NB If this in series should change focus about 1mm more.
+                                ['w',       [2, 0],     0,  16.00, [2, 17], 'w '], #  2 346
+                                ['PL',      [0, 4],     0,  16.00, [2, 17], "PL"], #  3 317
                                 ['gp',      [0, 6],     0,  108.7, [2, 17], 'gp'], #  4 
                                 ['PB',      [0, 1],     0,  154.7, [2, 17], 'PB'], #  5
                                 ['rp',      [0, 7],     0,  54.6,  [2, 17], 'rp'], #  6
@@ -541,7 +543,7 @@ site_config = {
                 'filter_screen_sort':  ['air','w','PL','dif', 'gp','PB','rp','PG','PR','ip','O3','N2','CR','S2','HA'],   #  9, 21],  # 5, 17], #Most to least throughput, \
                                 #so screen brightens, skipping u and zs which really need sky.
 
-                'filter_sky_sort':     ['HA', 'S2', 'CR', 'N2', 'up', 'O3', 'z', 'ip', 'PR', 'PG', 'rp', 'PB', 'gp', 'PL', 'w', 'dif', 'air']  #Least to most throughput  \
+                'filter_sky_sort':     ['PL', 'w', 'air'] #'HA', 'S2', 'CR', 'N2', 'up', 'O3', 'z', 'ip', 'PR', 'PG', 'rp', 'PB', 'gp', 'PL', 'w', 'dif', 'air']  #Least to most throughput  \
 
 
             },
@@ -575,12 +577,11 @@ site_config = {
             'parent': 'telescope1',
             'name': 'sq001cs',      #Important because this points to a server file structure by that name.
             'desc':  'QHY 600C Pro',
-            'driver':  "ASCOM.QHYCCD.Camera", # NB Be careful this is not QHY Camera2 or Guider  "Maxim.CCDCamera",   #'ASCOM.FLI.Kepler.Camera', "ASCOM.QHYCCD.Camera",   #
-            'detector':  'Sony IMX455 Color',
-            'manufacturer':  'QHY',
-            'use_file_mode':  False,
+            'driver':  "ASCOM.QHYCCD_CAM2.Camera", # NB Be careful this is not QHY Camera2 or Guider  "Maxim.CCDCamera",   #'ASCOM.FLI.Kepler.Camera', "ASCOM.QHYCCD.Camera",   #
+            'detector':  'Sony IMX455 Color',  #  It would be good to build out a table of chip characteristics
+            'use_file_mode':  False,   # NB we should clean out all file mode stuff.
             'file_mode_path':  'Q:/archive/sq01/maxim/',   #NB NB all file_mode Maxim stuff should go!
-
+            'manufacturer':  "QHY",
             'settings': {
                 
                 'is_osc' : True,
