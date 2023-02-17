@@ -375,10 +375,10 @@ class Camera:
             pass
         
         # NB NB Consider starting at low end of cooling and then gradually increasing it
-        plog("Cooler started @:  ", self._setpoint())
-        setpoint = float(self.config["camera"][self.name]["settings"]["temp_setpoint"])
-        self._set_setpoint(setpoint)
-        plog("Cooler setpoint is now:  ", setpoint)
+        #plog("Cooler started @:  ", self._setpoint())
+        self.setpoint = float(self.config["camera"][self.name]["settings"]["temp_setpoint"])
+        self._set_setpoint(self.setpoint)
+        plog("Cooler setpoint is now:  ", self.setpoint)
         if self.config["camera"][self.name]["settings"][
             "cooler_on"
         ]:  # NB NB why this logic, do we mean if not cooler found on, then turn it on and take the delay?
