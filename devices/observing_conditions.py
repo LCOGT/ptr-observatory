@@ -433,11 +433,11 @@ class ObservingConditions:
                     wl.write(
                         str(time.time())
                         + ", "
-                        + str(illum)
+                        + str(round(illum,4))
                         + ", "
-                        + str(mag - 20.01)
+                        + str(round(mag - 20.01, 3))
                         + ", "
-                        + str(uni_measure)
+                        + str(round(uni_measure,3))
                         + ", \n"
                     )
                     wl.close()
