@@ -44,6 +44,7 @@ import psutil
 from api_calls import API_calls
 from auto_stretch.stretch import Stretch
 import config
+
 from devices.camera import Camera
 from devices.filter_wheel import FilterWheel
 from devices.focuser import Focuser
@@ -129,12 +130,14 @@ def send_status(obsy, column, status_to_send):
     except Exception as e:
         plog("Failed to send_status. Usually not fatal:  ", e)
 
+debug_flag = None
+debug_lapse_time = None
 
 class Observatory:
     """Docstring here"""
 
     def __init__(self, name, config):
-        # This is the ayneclass through which we can make authenticated api calls.
+        # This is the main class through which we can make authenticated api calls.
         self.api = API_calls()
 
         self.command_interval = 0 # seconds between polls for new commands
@@ -144,7 +147,15 @@ class Observatory:
         self.site_name = name
         self.config = config
         self.site = config["site"]
-   
+        self.debug_flag = self.config['debug_mode']
+        if self.debug_flag:
+            self.debug_lapse_time = time.time() + self.config['debug_duration_sec']
+            g_dev['debug'] = True
+        else:
+            self.debug_lapse_time = 0.0
+            g_dev['debug'] = False
+            
+
         if self.config["wema_is_active"]:
             self.hostname = socket.gethostname()
             if self.hostname in self.config["wema_hostname"]:
@@ -463,7 +474,7 @@ class Observatory:
         )
         # Now we need to cancel possibly a pending camera cycle or a
         # script running in the sequencer.  NOTE a stop or cancel empties outgoing queue at AWS side and 
-        # only a Cancel/Stop action is sent.  But we need to same any subsequent commands.
+        # only a Cancel/Stop action is sent.  But we need to save any subsequent commands.
         #try:
         plog ("Emptying Command Queue")
         with self.cmd_queue.mutex:
@@ -488,6 +499,7 @@ class Observatory:
         #return  # Note we basically do nothing and let camera, etc settle down.
 
     def scan_requests(self, cancel_check=False):
+
         """Gets commands from AWS, and post a STOP/Cancel flag.
 
         This function will be a Thread. We limit the
@@ -497,7 +509,7 @@ class Observatory:
         existence of the timestamp of that command to the
         respective device attribute <self>.cancel_at. Then we
         enqueue the incoming command as well.
-
+sel
         When a device is status scanned, if .cancel_at is not
         None, the device takes appropriate action and sets
         cancel_at back to None.
@@ -508,7 +520,15 @@ class Observatory:
         """
 
         # This stopping mechanism allows for threads to close cleanly.
+        try:
+            if self.debug_flag and time.time() > self.debug_lapse_time:
+                self.debug_flag = False
+                plog("Debug_flag time has lapsed, so disabled. ")
+        except:
+            breakpoint()
+            pass
 
+       
         while not self.stopped:    #This variable is not used.
 
             if  True:  #not g_dev["seq"].sequencer_hold:  THis causes an infinte loope witht he above while
@@ -601,7 +621,11 @@ class Observatory:
                 # TO REMOVE UNNECESSARY CALLS FOR PROJECTS.
                 if time.time() - self.project_call_timer > 30: 
                     self.project_call_timer = time.time()
-                    plog(".")  # We print this to stay informed of process on the console.
+                    if self.debug_flag:
+                        plog("~")
+                    else:
+                        plog('.')
+                        # We print this to stay informed of process on the console.
                     url_blk = "https://calendar.photonranch.org/calendar/siteevents"
                     # UTC VERSION
                     start_aperture = str(g_dev['events']['Eve Sky Flats']).split()
@@ -867,7 +891,11 @@ class Observatory:
         # Also an area to put things to irregularly check if things are still connected, e.g. cooler
         #
         # Probably we don't want to run these checkes EVERY status update, just every 5 minutes
-        if time.time() - self.time_since_safety_checks > 300:
+        check_time = 300
+        if self.debug_flag:
+            check_time = 600
+            self.time_since_safety_checks = time.time() + check_time
+        if time.time() - self.time_since_safety_checks > check_time:
             self.time_since_safety_checks=time.time()
             
             #breakpoint()
@@ -887,7 +915,7 @@ class Observatory:
                 plog ("Software Fault Detected. Will alert the authorities!")
                 plog ("Parking Scope in the meantime")
                 self.open_and_enabled_to_observe=False
-                self.cancel_all_activity()
+                #self.cancel_all_activity()   #NB THis kills bias-dark
                 if not g_dev['mnt'].mount.AtPark:  
                     g_dev['mnt'].home_command()
                     g_dev['mnt'].park_command()
@@ -899,7 +927,7 @@ class Observatory:
                 if self.config['site_roof_control'] != 'no' and g_dev['enc'].mode == 'Automatic':
                     plog ("Detected Roof Closing. Sending another close command just in case the roof got stuck on this status (this happens!)")
                     self.open_and_enabled_to_observe=False
-                    self.cancel_all_activity()
+                    #self.cancel_all_activity()    #NB Kills bias dark
                     g_dev['enc'].enclosure.CloseShutter()
             
             if g_dev['enc'].status['shutter_status'] == 'Error':
@@ -907,7 +935,7 @@ class Observatory:
                     plog ("Detected an Error in the Roof Status. Closing up for safety.")
                     plog ("This is usually because the weather system forced the roof to shut.")
                     plog ("By closing it again, it resets the switch to closed.")
-                    self.cancel_all_activity()
+                    #self.cancel_all_activity()    #NB Kills bias dark
                     self.open_and_enabled_to_observe=False
                     g_dev['enc'].enclosure.CloseShutter()
                     #while g_dev['enc'].enclosure.ShutterStatus == 3:
@@ -940,7 +968,7 @@ class Observatory:
                     if self.config['site_roof_control'] != 'no' and g_dev['enc'].mode == 'Automatic':
                         plog ("Shutting the roof out of an abundance of caution. This may also be normal functioning")
                         
-                        self.cancel_all_activity()
+                        #self.cancel_all_activity()  #NB Kills bias dark
                         g_dev['enc'].enclosure.CloseShutter()
                         while g_dev['enc'].enclosure.ShutterStatus == 3:
                             plog ("closing")
@@ -948,20 +976,23 @@ class Observatory:
                     else:
                         plog ("This scope does not have control of the roof though.")
                 
-            
+
             if roof_should_be_shut==True and g_dev['enc'].mode == 'Automatic' : # If the roof should be shut, then the telescope should be parked. 
                 if not g_dev['mnt'].mount.AtPark:
                     plog ("Telescope found not parked when the observatory is meant to be closed. Parking scope.")   
                     self.open_and_enabled_to_observe=False
-                    self.cancel_all_activity()
+                    #self.cancel_all_activity()   #NB Kills bias dark
+
                     g_dev['mnt'].home_command()
+                    #PWI must receive a park() in order to report being parked.  Annoying problem when debugging, because I want tel to stay where it is.
                     g_dev['mnt'].park_command()  
             
             if g_dev['enc'].status['shutter_status'] == 'Closed' : # If the roof IS shut, then the telescope should be shutdown and parked. 
+
                 if not g_dev['mnt'].mount.AtPark:
                     plog ("Telescope found not parked when the observatory roof is shut. Parking scope.")   
                     self.open_and_enabled_to_observe=False
-                    self.cancel_all_activity()
+                    #self.cancel_all_activity()  #NB Kills bias dark
                     g_dev['mnt'].home_command()
                     g_dev['mnt'].park_command()  
             
@@ -985,7 +1016,8 @@ class Observatory:
             
             # Check the mount is still connected
             g_dev['mnt'].check_connect()
-            
+            #if got here, mount is connected. NB Plumb in PW startup code
+
             # Check that the mount hasn't tracked too low or an odd slew hasn't sent it pointing to the ground.
             try:
                 mount_altitude=g_dev['mnt'].mount.Altitude
@@ -993,7 +1025,7 @@ class Observatory:
                 if mount_altitude < lowest_acceptable_altitude:
                     plog ("Altitude too low! " + str(mount_altitude) + ". Parking scope for safety!")
                     if not g_dev['mnt'].mount.AtPark:
-                        self.cancel_all_activity()
+                        #self.cancel_all_activity()  #NB Kills bias dark
                         g_dev['mnt'].home_command()
                         g_dev['mnt'].park_command()  
                         # Reset mount reference because thats how it probably got pointing at the dirt in the first place!
@@ -1078,6 +1110,7 @@ class Observatory:
                         self.time_since_last_slew_or_exposure = time.time()
                         
                     g_dev['enc'].enclosure.CloseShutter()
+        #END of safety checks.
                     
                     
                     

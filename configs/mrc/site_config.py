@@ -55,7 +55,8 @@ site_name = 'mrc'    #NB These must be unique across all of PTR. Pre-pend with a
 site_config = {
     'site': str(site_name).lower(),
     'site_id': 'mrc',
-    'debug_site_mode': False,
+    'debug_mode': True,
+    'debug_duration_sec': 7200,
     'owner':  ['google-oauth2|112401903840371673242'],  # Wayne
 
     'owner_alias': ['WER', 'TELOPS'],
@@ -107,8 +108,8 @@ site_config = {
     'location_night_allsky':  None,  #  Thus ultimately should be a URL, usually Mono camera with filters.
     'location _pole_monitor': None,  #This probably gets us to some sort of image (Polaris in the North)
     'location_seeing_report': None,  # Probably a path to a jpeg or png graph.
-
-    'TZ_database_name':  'America/Los_Angeles',
+    'debug_flag': True,    #  Be careful about setting this flag True when pushing up to dev!
+    'TZ_database_name': 'America/Los_Angeles',
     'mpc_code':  'ZZ23',    #This is made up for now.
     'time_offset':  -8,     # NB these two should be derived from Python libs so change is automatic
     'timezone': 'PST',
@@ -124,15 +125,15 @@ site_config = {
     'maximum_roof_opens_per_evening' : 4,
     'site_in_automatic_default': "Automatic",   #"Manual", "Shutdown"
     'automatic_detail_default': "Enclosure is initially set to Automatic mode.",
-    'observing_check_period' : 2,    # How many minutes between weather checks
-    'enclosure_check_period' : 2,    # How many minutes between enclosure checks
+    'observing_check_period' : 5,    # How many minutes between weather checks
+    'enclosure_check_period' : 5,    # How many minutes between enclosure checks
 
     'auto_eve_bias_dark': True,
     
     'auto_midnight_moonless_bias_dark': False,
     'auto_eve_sky_flat': True,
-    'eve_sky_flat_sunset_offset': -40.,  #  Minutes  neg means before, + after.
-    'eve_cool_down_open' : -45.0,
+    'eve_sky_flat_sunset_offset': -45.,  # 40 before Minutes  neg means before, + after.
+    'eve_cool_down_open' : -50.0,
     'auto_morn_sky_flat': True,
     'auto_morn_bias_dark': True,
     're-calibrate_on_solve': True,
@@ -270,7 +271,7 @@ site_config = {
             'east_flip_dec_correction': 0.0,  #
             'home_after_unpark' : False,
             'permissive_mount_reset' : 'no', # if this is set to yes, it will reset the mount at startup and when coordinates are out significantly'home_after_unpark' : True,
-            'lowest_acceptable_altitude' : -10.0, # Below this altitude, it will automatically try to home and park the scope to recover.
+            'lowest_acceptable_altitude' : -2, # Below this altitude, it will automatically try to home and park the scope to recover.
             
             'time_inactive_until_park' : 3600.0, # How many seconds of inactivity until it will park the telescope
             'has_paddle': False,
@@ -445,12 +446,12 @@ site_config = {
             'use_focuser_temperature': True,
             #*********Guesses   7379@10 7457@20  7497 @ 25
             #'reference': 7250, #20221103    #7418,    # Nominal at 15C Primary temperature, in microns not steps. Guess
-            'reference': 5682, #20221103    #7418,    # Nominal at 15C Primary temperature, in microns not steps. Guess
-            'ref_temp':  15,      # Update when pinning reference  Larger at lower temperatures.
-            'coef_c': 11.892,    # Negative means focus moves out (larger numerically) as Primary gets colder
+            'reference': 7300, #20221103    #7418,    # Nominal at 15C Primary temperature, in microns not steps. Guess
+            'ref_temp':  10,      # Update when pinning reference  Larger at lower temperatures.
+            'coef_c': -11.859,    # Negative means focus moves out (larger numerically) as Primary gets colder
             #'coef_0': 7250,  #20221103# Nominal intercept when Primary is at 0.0 C.
-            'coef_0': 5682,  #20221103# Nominal intercept when Primary is at 0.0 C.
-            'coef_date':  '20221103',   #A Guess as to coef_c
+            'coef_0': 7413,  #20221103# Nominal intercept when Primary is at 0.0 C.
+            'coef_date':  '20230219',   #A Guess as to coef_c
             'z_compression': 0.0, #  microns per degree of zenith distance
             'z_coef_date':  '20221002',   # 'reference': 4375,    #   Guess 20210904  Nominal at 10C Primary temperature
             'use_local_temp':  True,
@@ -543,7 +544,7 @@ site_config = {
                 'filter_screen_sort':  ['air','w','PL','gp','PB','rp','PG','PR','ip','O3','N2','CR','S2','HA'],   #  9, 21],  # 5, 17], #Most to least throughput, \
                                 #so screen brightens, skipping u and zs which really need sky.
 
-                'filter_sky_sort':     ['HA', 'S2', 'CR', 'N2', 'up', 'O3', 'z', 'ip', 'PR', 'PG', 'rp', 'PB', 'gp', 'PL', 'w', 'dif', 'air']  #Least to most throughput  \
+                'filter_sky_sort':     ['HA', 'S2', 'CR', 'N2', 'O3', 'PR', 'PG', 'PB', 'w', 'air']  #Least to most throughput  \
 
 
             },
@@ -633,6 +634,7 @@ site_config = {
                                     -20, -20, -20, -20, -20, -20],  #  Picked by month-of-year 
                 'day_warm': False,
                 'cooler_on': True,
+                "cam_needs_NumXY_init": True,
                 'x_start':  0,
                 'y_start':  0,
                 'x_width':  9576,   #NB Should be set up with overscan, which this camera is!  20200315 WER
@@ -690,21 +692,20 @@ site_config = {
                 'bin-desc':              ['1x1', '2x2', '3x3', '4x4' ],
                 'chan_color':            ['col', 'gry', 'gry', 'gry' ],
                 #'cycle_time':            [ 18,    13,    15,    12   ],   # NB somewhat a Guess.
-                'cycle_time':            0,   # NB somewhat a Guess.
+                'cycle_time':            28,   # Meas 20230219  for a bias
                 #'enable_bin':            [ True, False,  False,  False],
                 #'bias_dark_bin_spec':    ['1,1', '2,2', '3,3', '4,4' ],    #Default binning for flats
-                'bias_count':    31,
-                'dark_count':    9,
-                
-                'flat_count' : 10,
+                'bias_count':    63,
+                'dark_count':    17,
+ 
                 'dark_exposure': 360,
                 #'flat_bin_spec':         ['1,1', '2,2', '3,3', '4,4' ],   #Is this necessary?
-                'flat_count':    5,   #This will take days to get through
+
                 #'flat_count': 5,
                 'optimal_bin': [1, 1],   #  This is the optimal bin for MRC
                 'fine_bin':    [1, 1],   #  This is the fine bin for MRC
-                'coarse_bin':  [1, 1],   #  This is the coarse bin for MRC
-                'eng_bin':     [1, 1],   #  This is the eng-only bin for MRC, not useful for users?
+                'coarse_bin':  [2, 2],   #  This is the coarse bin for MRC
+                'eng_bin':     [4, 4],   #  This is the eng-only bin for MRC, not useful for users?
                 'bin_enable':  ['1 1'],  #  Always square and matched to seeing situation by owner  NB Obsolete? NO MF uses to load bias calib
                                          #  NB NB inconsistent use of bin string   '1 1', '1x1' , etc.
                 'do_cosmics' : 'yes',
@@ -788,6 +789,8 @@ def get_ocn_status():
     pass
 def get_enc_status():
     pass
+
+
 if __name__ == '__main__':
     '''
     This is a simple test to send and receive via json.

@@ -58,6 +58,7 @@ import math
 #from pprint import pprint
 import ephem
 from ptr_utility import plog
+from planewave import platesolve
 
 
 DEG_SYM = '°'
@@ -179,8 +180,9 @@ class Mount:
         self.mount.Connected = True
         
         self.driver = driver
-
-        if "ASCOM.SoftwareBisque.Telescope" in config['mount']['mount1']['driver']:
+        
+        
+        if "ASCOM.SoftwareBisque.Telescope" in driver:
             self.theskyx = True
         else:
             self.theskyx = False
@@ -1403,7 +1405,8 @@ class Mount:
         if self.mount.CanPark:
             if not g_dev['mnt'].mount.AtPark:
                 plog("mount cmd: parking mount")
-                g_dev['obs'].send_to_user("Parking Mount. This can take a moment.")
+                if g_dev['obs'] is not None:  #THis gets called before obs is created
+                    g_dev['obs'].send_to_user("Parking Mount. This can take a moment.")
                 self.mount.Park()
                 wait_for_slew()
 

@@ -227,7 +227,10 @@ class Sequencer:
         self.weather_report_close_during_evening_time=ephem_now
         
         # Run a weather report on bootup so observatory can run if need be. 
-        self.run_nightly_weather_report()
+        if not g_dev['debug']:
+            self.run_nightly_weather_report()
+            
+            #Consider running this once when in debug mode
         
 
     def get_status(self):
@@ -400,7 +403,7 @@ class Sequencer:
         enc_status = g_dev['enc'].status
         events = g_dev['events']
         
-        
+
         # Check for delayed opening of the observatory and act accordingly.
 
         # If the observatory is simply delayed until opening, then wait until then, then attempt to start up the observatory
@@ -438,10 +441,10 @@ class Sequencer:
                         g_dev['mnt'].park_command() 
                     self.weather_report_close_during_evening=False
                     
-                    
-
+        #Test code           
+        #events['End Eve Bias Dark'] = (ephem_now + 30/86400)
         if self.bias_dark_latch and ((events['Eve Bias Dark'] <= ephem_now < events['End Eve Bias Dark']) and \
-             self.config['auto_eve_bias_dark'] and g_dev['enc'].mode in ['Automatic', 'Autonomous', 'Manual'] ):
+             self.config['auto_eve_bias_dark'] and g_dev['enc'].mode in ['Automatic', 'Autonomous', 'Manual'] ):   #events['End Eve Bias Dark']) and \
             self.bias_dark_latch = False
             req = {'bin1': True, 'bin2': False, 'bin3': False, 'bin4': False, 'numOfBias': 45, \
                    'numOfDark': 15, 'darkTime': 180, 'numOfDark2': 3, 'dark2Time': 360, \
@@ -450,9 +453,10 @@ class Sequencer:
             #No action needed on  the enclosure at this level
             self.park_and_close(enc_status)
             #NB The above put dome closed and telescope at Park, Which is where it should have been upon entry.
+
             self.bias_dark_script(req, opt, morn=False)
             self.bias_dark_latch = False
-            
+
             g_dev['mnt'].park_command({}, {})
 
         elif ((g_dev['events']['Cool Down, Open']  <= ephem_now < g_dev['events']['Eve Sky Flats']) and \
@@ -1170,9 +1174,9 @@ class Sequencer:
         if morn:
             ending = g_dev['events']['End Morn Bias Dark']
         else:
-            ending = g_dev['events']['End Eve Bias Dark']+0.3
+            ending = g_dev['events']['End Eve Bias Dark']
         while ephem.now() < ending :   #Do not overrun the window end
-
+  
             g_dev['mnt'].park_command({}, {}) # Get there early
 
             plog("Expose Biases and normal darks by configured binning.")
@@ -1187,8 +1191,9 @@ class Sequencer:
             cycle_time = self.config['camera']['camera_1_1']['settings']['cycle_time']
             #enable_bin= self.config['camera']['camera_1_1']['settings']['enable_bin']
             #for n_of_bias in range(bias_count):   #9*(9 +1) per cycle.
-            if ephem.now() + 120/86400 > ending:
-                break     #Terminate Bias dark phase if within 2 min of ending the phas.             
+            if ephem.now() + (dark_exp_time + cycle_time + 30)/86400 > ending:   #ephem is units of a day
+                self.bias_dark_latch = False
+                break     #Terminate Bias dark phase if within taking a dark woudl run over.             
             
             # The way we make different binnings for CMOS camera is derived from a single
             # exposure of 1x1. So if it is a cmos camera, it is just 1x1.
@@ -1252,11 +1257,13 @@ class Sequencer:
                     b_d_to_do -= 1
                     g_dev['obs'].update_status()
                     if ephem.now() + (dark_exp_time + cycle_time + 30)/86400 > ending:
+                        self.bias_dark_latch = False
                         break
                         
 
                 g_dev['obs'].update_status()
                 if ephem.now() + 30/86400 >= ending:
+                    self.bias_dark_latch = False
                     break
 
             plog(" Bias/Dark acquisition is finished normally.")
@@ -1264,7 +1271,9 @@ class Sequencer:
             self.sequencer_hold = False
             g_dev['mnt'].park_command({}, {}) # Get there early
             plog("Bias/Dark Phase has passed.")
+            self.bias_dark_latch = False
             break
+        self.bias_dark_latch = False
         return
             
     def nightly_reset_script(self):

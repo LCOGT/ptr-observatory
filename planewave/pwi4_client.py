@@ -1,5 +1,6 @@
 import time
 
+from planewave import pwi4_client
 from pwi4_client import PWI4
 
 pwi4 = PWI4()

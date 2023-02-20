@@ -466,9 +466,18 @@ class Camera:
         except:
             self.camera_x_size = self.config['camera'][self.name]['settings']['CameraXSize']
             self.camera_y_size = self.config['camera'][self.name]['settings']['CameraYSize']
+
         self.camera_start_x = self.config["camera"][self.name]["settings"]["StartX"]
         self.camera_start_y = self.config["camera"][self.name]["settings"]["StartY"]
-        self.camera_num_x = int(1)
+        if self.config["camera"][self.name]["settings"]["cam_needs_NumXY_init"]:  # WER 20230217
+            self.camera.NumX = self.camera_x_size
+            self.camera.NumY = self.camera_y_size
+            self.camera.StartX = 0
+            self.camera.StartY = 0
+            self.camera.BinX = 1
+            self.camera.BinY = 1
+            plog('Num X , y set for QHY camera.')
+        self.camera_num_x = int(1)  #NB I do not recognize this.    WER  Apprently not used.
 
 
         self.af_mode = False
@@ -875,7 +884,7 @@ class Camera:
         # Force a reseek //eventually dither//
         try:
             if (
-                g_dev["mnt"].last_seek_time < self.t0 - 180
+                g_dev["mnt"].last_seek_time < self.t0 - 180  #NB this is faulting, no se.f.t0 exists
             ):  # NB Consider upping this to 300 to 600 sec.
                 plog("re_seeking")
                 g_dev["mnt"].re_seek(
@@ -3220,13 +3229,15 @@ class Camera:
 
                     # Now that the jpeg has been sent up pronto,
                     # We turn back to getting the bigger raw, reduced and fz files dealt with
-                    self.to_slow_process(5,('fz_and_send', raw_path + raw_name00 + ".fz", hdu.data, hdu.header, frame_type))                    
+                    pass
+                    #self.to_slow_process(5,('fz_and_send', raw_path + raw_name00 + ".fz", hdu.data, hdu.header, frame_type))                    
 
         
                     # Similarly to the above. This saves the RAW file to disk
                     # it works 99.9999% of the time.
-                    if self.config['save_raw_to_disk']:
-                        self.to_slow_process(1000,('raw', raw_path + raw_name00, hdu.data, hdu.header, frame_type))
+                    pass
+                    #if self.config['save_raw_to_disk']:
+                    #   self.to_slow_process(1000,('raw', raw_path + raw_name00, hdu.data, hdu.header, frame_type))
                     
                     # Similarly to the above. This saves the REDUCED file to disk
                     # it works 99.9999% of the time.
