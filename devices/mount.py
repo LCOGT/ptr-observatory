@@ -1308,8 +1308,8 @@ class Mount:
             self.prior_roll_rate = 0.0
         if self.CanSetDeclinationRate:
            self.prior_pitch_rate = -(self.dec_mech_adv - self.dec_mech)*RTOS/self.delta_t_s    #20210329 OK 1 hour from zenith.  No Appsid correction per ASCOM spec.
-           self.mount.DeclinationRate = self.prior_pitch_rate  #Neg sign makes Dec decrease
-           self.DeclinationRate = self.prior_pitch_rate
+           self.mount.DeclinationRate = 0.0 #self.prior_pitch_rate  #Neg sign makes Dec decrease
+           self.DeclinationRate = 0.0 #self.prior_pitch_rate
            #plog("Rates, refr are:  ", self.prior_roll_rate, self.prior_pitch_rate, self.refr_asec)
         else:
             self.prior_pitch_rate = 0.0
@@ -1321,10 +1321,10 @@ class Mount:
             self.mount.RightAscensionRate = 0.0 #self.prior_roll_rate
             self.RightAscensionRate = 0.0
         if self.CanSetDeclinationRate:
-            self.mount.DeclinationRate = self.prior_pitch_rate
-            self.DeclinationRate = self.prior_pitch_rate
+            self.mount.DeclinationRate = 0.0#self.prior_pitch_rate
+            self.DeclinationRate = 0.0 #self.prior_pitch_rate
 
-        plog("Rates set:  ", self.prior_roll_rate, self.prior_pitch_rate, self.refr_adv)
+        plog("Rates set: Please ignore WER ", self.prior_roll_rate, self.prior_pitch_rate, self.refr_adv)
         self.seek_commanded = True
         #I think to reliable establish rates, set them before the slew.
         #self.mount.Tracking = True

@@ -144,7 +144,7 @@ site_config = {
     'focus_trigger' : 1.0, # What FWHM increase is needed to trigger an autofocus
     'solve_nth_image' : 10, # Only solve every nth image
     'solve_timer' : 5, # Only solve every X minutes
-    'threshold_mount_update' : 10, # only update mount when X arcseconds away
+    'threshold_mount_update' : 200, # only update mount when X arcseconds away
 
     'defaults': {
         'observing_conditions': 'observing_conditions1',
@@ -692,7 +692,7 @@ site_config = {
                 'bin-desc':              ['1x1', '2x2', '3x3', '4x4' ],
                 'chan_color':            ['col', 'gry', 'gry', 'gry' ],
                 #'cycle_time':            [ 18,    13,    15,    12   ],   # NB somewhat a Guess.
-                'cycle_time':            28,   # Meas 20230219  for a bias
+                'cycle_time':            0,   # Meas 20230219  for a bias
                 #'enable_bin':            [ True, False,  False,  False],
                 #'bias_dark_bin_spec':    ['1,1', '2,2', '3,3', '4,4' ],    #Default binning for flats
                 'bias_count':    63,

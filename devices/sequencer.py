@@ -216,8 +216,8 @@ class Sequencer:
         # allow the observatory to become active and observe. This doesn't mean that it is 
         # necessarily a GOOD night at all, just that there are patches of feasible
         # observing during the night.
-        self.nightly_weather_report_complete=False
-        self.weather_report_is_acceptable_to_observe=False
+        self.nightly_weather_report_complete = False
+        self.weather_report_is_acceptable_to_observe = False
         # If the night is patchy, the weather report can identify a later time to open
         # or to close the observatory early during the night.
         obs_win_begin, sunZ88Op, sunZ88Cl, ephem_now = self.astro_events.getSunEvents()
@@ -229,6 +229,11 @@ class Sequencer:
         # Run a weather report on bootup so observatory can run if need be. 
         if not g_dev['debug']:
             self.run_nightly_weather_report()
+        else:
+            self.nightly_weather_report_complete = True
+            self.weather_report_is_acceptable_to_observe = True
+            self.weather_report_wait_until_open=True
+            #g_dev['obs'].open_and_enabled_to_observe = True
             
             #Consider running this once when in debug mode
         
@@ -407,7 +412,7 @@ class Sequencer:
         # Check for delayed opening of the observatory and act accordingly.
 
         # If the observatory is simply delayed until opening, then wait until then, then attempt to start up the observatory
-        if self.weather_report_wait_until_open==True:
+        if self.weather_report_wait_until_open:
             if ephem_now >  self.weather_report_wait_until_open_time:
                 if not g_dev['obs'].open_and_enabled_to_observe and self.weather_report_is_acceptable_to_observe==True:
                     if (g_dev['events']['Cool Down, Open'] < ephem.now() < g_dev['events']['Close and Park']):
@@ -506,7 +511,7 @@ class Sequencer:
 
         elif self.sky_flat_latch and ((events['Eve Sky Flats'] <= ephem_now < events['End Eve Sky Flats'])  \
                and g_dev['enc'].mode in [ 'Automatic', 'Autonomous'] and not g_dev['ocn'].wx_hold and \
-               self.config['auto_eve_sky_flat'] and self.weather_report_is_acceptable_to_observe==True):
+               self.config['auto_eve_sky_flat'] and self.weather_report_is_acceptable_to_observe):
 
             if g_dev['obs'].open_and_enabled_to_observe:
                 #self.time_of_next_slew = time.time() -1
@@ -3023,7 +3028,7 @@ class Sequencer:
             if sum(hourly_fitzgerald_number) < 10:
                 plog ("This is a good observing night!")
                 self.weather_report_is_acceptable_to_observe=True
-                self.weather_report_wait_until_open=False
+                self.weather_report_wait_until_open=True
                 self.weather_report_wait_until_open_time=ephem_now
                 self.weather_report_close_during_evening=False
                 self.weather_report_close_during_evening_time=ephem_now
@@ -3037,7 +3042,7 @@ class Sequencer:
             elif sum(hourly_fitzgerald_number) < 100:
                 plog ("This is perhaps not the best night, but we will give it a shot!")
                 self.weather_report_is_acceptable_to_observe=True
-                self.weather_report_wait_until_open=False
+                self.weather_report_wait_until_open=True
                 self.weather_report_wait_until_open_time=ephem_now
                 self.weather_report_close_during_evening=False
                 self.weather_report_close_during_evening_time=ephem_now

@@ -151,9 +151,11 @@ class Observatory:
         if self.debug_flag:
             self.debug_lapse_time = time.time() + self.config['debug_duration_sec']
             g_dev['debug'] = True
+            #g_dev['obs'].open_and_enabled_to_observe = True
         else:
             self.debug_lapse_time = 0.0
             g_dev['debug'] = False
+            #g_dev['obs'].open_and_enabled_to_observe = False
             
 
         if self.config["wema_is_active"]:
@@ -339,7 +341,10 @@ class Observatory:
         # to observe.... if the roof isn't open, don't get flats!
         # Off at bootup, but that would quickly change to true after the code
         # checks the roof status etc. self.weather_report_is_acceptable_to_observe=False
-        self.open_and_enabled_to_observe=False
+        if self.debug_flag:
+            self.open_and_enabled_to_observe=True
+        else:
+            self.open_and_enabled_to_observe=False
 
         # Need to set this for the night log
         #g_dev['foc'].set_focal_ref_reset_log(self.config["focuser"]["focuser1"]["reference"])

@@ -1204,7 +1204,7 @@ class Camera:
                                 )  # NB NB WEMA must be running or this may fault.
                             except:
                                 plog(
-                                    "Failed to collect quick status on observing conditions"
+                                    "vpl"
                                 )
                             g_dev["foc"].get_quick_status(self.pre_foc)
                             try:
@@ -3186,14 +3186,14 @@ class Camera:
                                             if g_dev["mnt"].pier_side == 0:
                                                 try:
                                                     g_dev["mnt"].adjust_mount_reference(
-                                                        err_ha, err_dec
+                                                        -err_ha, -err_dec
                                                     )
                                                 except Exception as e:
                                                     plog ("Something is up in the mount reference adjustment code ", e)
                                             else:
                                                 try:
                                                     g_dev["mnt"].adjust_flip_reference(
-                                                        err_ha, err_dec
+                                                        -err_ha, -err_dec
                                                     )  # Need to verify signs
                                                 except Exception as e:
                                                     plog ("Something is up in the mount reference adjustment code ", e)
