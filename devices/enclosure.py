@@ -206,6 +206,7 @@ class Enclosure:
         self.config = config
         g_dev['enc'] = self
         self.slew_latch = False
+        self.dome_open=None # Just initialising this variable
         if self.config['site_in_automatic_default'] == "Automatic":
             self.site_in_automatic = True
             self.mode = 'Automatic'
@@ -809,7 +810,7 @@ class Enclosure:
                     if self.site_allowed_to_open_roof == True:
                         print (g_dev['enc'].status['shutter_status'] != 'Open')
                         print (self.dome_open)
-                        if g_dev['enc'].status['shutter_status'] != 'Open' or not self.dome_opened:    
+                        if g_dev['enc'].status['shutter_status'] != 'Open' or not self.dome_open:    
                             self.enclosure.OpenShutter()
                             plog("An actual shutter open command has been issued.")
                             g_dev['obs'].send_to_user("Roof/shutter is opening.", p_level='INFO')
@@ -926,7 +927,7 @@ class Enclosure:
             #Note we left the telescope alone
 
         elif open_cmd and self.mode == 'Manual' and net_connected:   #  NB NB NB Ideally Telescope parked away from Sun.                
-            if g_dev['enc'].status['shutter_status'] != 'Open' or not self.dome_opened:    
+            if g_dev['enc'].status['shutter_status'] != 'Open' or not self.dome_open:    
                 self.guarded_open()
                 self.dome_opened = True
                 self.dome_homed = True
@@ -956,8 +957,9 @@ class Enclosure:
                 #****************************NB NB NB For SRO we have no control so just observe and skip all this logic
                 
                 # Don't check the string, the string could be wrong!
-                plog("Entering Guarded open, Expect slew opposite Sun")
-                if g_dev['enc'].status['shutter_status'] != 'Open' or not self.dome_opened:
+                
+                if g_dev['enc'].status['shutter_status'] != 'Open' or not self.dome_open:
+                    plog("Entering Guarded open, Expect slew opposite Sun")
                     self.guarded_open()
                     self.dome_opened = True
                     self.dome_homed = True
