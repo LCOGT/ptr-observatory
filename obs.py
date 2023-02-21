@@ -671,12 +671,12 @@ sel
                         }
                     )
     
-                    if (
-                        True
-                    ):  # self.blocks is None: # This currently prevents pick up of calendar changes.
-                        blocks = reqs.post(url_blk, body).json()
-                        if len(blocks) > 0:
-                            self.blocks = blocks
+                    #if (
+                    #    True
+                    #):  # self.blocks is None: # This currently prevents pick up of calendar changes.
+                    blocks = reqs.post(url_blk, body).json()
+                    #if len(blocks) > 0:
+                    self.blocks = blocks
     
                     url_proj = "https://projects.photonranch.org/projects/get-all-projects"
                     if True:

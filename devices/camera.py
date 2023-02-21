@@ -862,6 +862,7 @@ class Camera:
         no_AWS=False,
         quick=False,
         solve_it=False,
+        calendar_event_id=None
     ):
         """
         This is Phase 1:  Setup the camera.
@@ -1128,7 +1129,30 @@ class Camera:
                             sskcounter=2
                             self.exposure_busy = False
                             return 'blockend'
-                        
+                    
+                    # Check that the calendar event that is running the exposure
+                    # Hasn't completed already
+                    # Check whether calendar entry is still existant.
+                    # If not, stop running block
+                    print ("LOOKING FOR CALENDAR!")
+                    if not calendar_event_id == None:
+                        g_dev['obs'].scan_requests()
+                        foundcalendar=False                    
+                        for tempblock in g_dev['obs'].blocks:
+                            print (tempblock['event_id'])
+                            if tempblock['event_id'] == calendar_event_id :
+                                print ("FOUND CALENDAR!")
+                                foundcalendar=True
+                        if foundcalendar == False:
+                            print ("could not find calendar entry, cancelling out of block.")
+                            self.exposure_busy = False
+                            plog ("And Cancelling SmartStacks.")
+                            Nsmartstack=1
+                            sskcounter=2
+                            return 'calendarend'
+                    
+                        #breakpoint()    
+                    
                     # NB Here we enter Phase 2
                     try:
                         #self.t1 = time.time()

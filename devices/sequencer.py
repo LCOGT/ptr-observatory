@@ -636,7 +636,12 @@ class Sequencer:
         
         
                             completed_block = self.execute_block(block)  #In this we need to ultimately watch for weather holds.
-                            self.append_completes(completed_block['event_id'])
+                            try:
+                                self.append_completes(completed_block['event_id'])
+                            except:
+                                plog ("block complete append didn't work")
+                                plog(traceback.format_exc())
+                                
                             #block['project_id'] in ['none', 'real_time_slot', 'real_time_block']
                             '''
                             When a scheduled block is completed it is not re-entered or the block needs to
@@ -809,6 +814,8 @@ class Sequencer:
         plog('|n|n Staring a new project!  \n')
         plog(block_specification, ' \n\n\n')
 
+        calendar_event_id=block_specification['event_id']
+
         self.block_guard = True
         # NB we assume the dome is open and already slaving.
         block = copy.deepcopy(block_specification)
@@ -837,7 +844,12 @@ class Sequencer:
         in the series.  If enhance AF is true they need to be injected
         at some point, but it does not decrement. This is still left to do
         '''
-
+        #breakpoint()
+        
+        # this variable is what we check to see if the calendar
+        # event still exists on AWS. If not, we assume it has been
+        # deleted or modified substantially.
+        calendar_event_id = block_specification['event_id']
 
         for target in block['project']['project_targets']:   #  NB NB NB Do multi-target projects make sense???
             try:
@@ -903,13 +915,14 @@ class Sequencer:
             # Necessary
             # Pointing
             # Reset Solve timers
-            plog ("Taking a quick pointing check and re_seek for new project block")
-            g_dev['obs'].last_solve_time = datetime.datetime.now()
-            g_dev['obs'].images_since_last_solve = 0
-            req = {'time': self.config['focus_exposure_time'],  'alias':  str(self.config['camera']['camera_1_1']['name']), 'image_type': 'focus'}   #  NB Should pick up filter and constats from config
-            #opt = {'area': 150, 'count': 1, 'bin': '2, 2', 'filter': 'focus'}
-            opt = {'area': 150, 'count': 1, 'bin': 1, 'filter': 'focus'}
-            result = g_dev['cam'].expose_command(req, opt, no_AWS=False, solve_it=True)
+            if not g_dev['debug']:
+                plog ("Taking a quick pointing check and re_seek for new project block")
+                g_dev['obs'].last_solve_time = datetime.datetime.now()
+                g_dev['obs'].images_since_last_solve = 0
+                req = {'time': self.config['focus_exposure_time'],  'alias':  str(self.config['camera']['camera_1_1']['name']), 'image_type': 'focus'}   #  NB Should pick up filter and constats from config
+                #opt = {'area': 150, 'count': 1, 'bin': '2, 2', 'filter': 'focus'}
+                opt = {'area': 150, 'count': 1, 'bin': 1, 'filter': 'focus'}
+                result = g_dev['cam'].expose_command(req, opt, no_AWS=False, solve_it=True)
             
             if result == 'blockend':
                 plog ("End of Block, exiting project block.")
@@ -925,6 +938,14 @@ class Sequencer:
                 self.block_guard = False
                 
                 return block_specification
+            
+            if result == 'calendarend':
+                plog ("Calendar Item containing block removed from calendar")
+                plog ("Site bailing out of running project")
+                self.block_guard = False                
+                return block_specification
+            
+            
             
             g_dev['mnt'].re_seek(dither=0)
 
@@ -979,7 +1000,8 @@ class Sequencer:
                     g_dev['obs'].send_to_user("Running an initial autofocus run.")
 
                     req2 = {'target': 'near_tycho_star', 'area': 150}
-                    self.auto_focus_script(req2, opt, throw = g_dev['foc'].throw)
+                    if not g_dev['debug']:
+                        self.auto_focus_script(req2, opt, throw = g_dev['foc'].throw)
                     just_focused = True
                     g_dev["foc"].focus_needed = False
 
@@ -988,6 +1010,21 @@ class Sequencer:
                 
                 #cycle through exposures decrementing counts    MAY want to double check left-to do but do nut remultiply by 4
                 for exposure in block['project']['exposures']:
+                    
+                    
+                    
+                    # Check whether calendar entry is still existant.
+                    # If not, stop running block
+                    g_dev['obs'].scan_requests()
+                    foundcalendar=False
+                    for tempblock in g_dev['obs'].blocks:
+                        print (tempblock['event_id'])
+                        if tempblock['event_id'] == calendar_event_id :
+                            foundcalendar=True
+                    if not foundcalendar:
+                        print ("could not find calendar entry, cancelling out of block.")
+                        self.block_guard = False
+                        return block_specification
 
                     just_focused = True
 
@@ -1132,7 +1169,7 @@ class Sequencer:
                             now_date_timeZ = datetime.datetime.now().isoformat().split('.')[0] +'Z'
                             if now_date_timeZ >= block['end'] :
                                 break
-                            result = g_dev['cam'].expose_command(req, opt, no_AWS=False, solve_it=False)
+                            result = g_dev['cam'].expose_command(req, opt, no_AWS=False, solve_it=False, calendar_event_id=calendar_event_id)
                             try:
                                 if result['stopped'] is True:
                                     g_dev['obs'].send_to_user("Project Stopped because Exposure cancelled")
