@@ -121,7 +121,7 @@ site_config = {
 
     'site_roof_control': 'no', #MTF entered this in to remove sro specific code  NB 'site_is_specifc' also deals with this
     'site_allowed_to_open_roof': 'yes',
-    
+    'check_time': 300,   #MF's original setting.
     'maximum_roof_opens_per_evening' : 4,
     'site_in_automatic_default': "Automatic",   #"Manual", "Shutdown"
     'automatic_detail_default': "Enclosure is initially set to Automatic mode.",
@@ -132,8 +132,8 @@ site_config = {
     
     'auto_midnight_moonless_bias_dark': False,
     'auto_eve_sky_flat': True,
-    'eve_sky_flat_sunset_offset': -45.,  # 40 before Minutes  neg means before, + after.
-    'eve_cool_down_open' : -50.0,
+    'eve_sky_flat_sunset_offset': -60.,  # 40 before Minutes  neg means before, + after.
+    'eve_cool_down_open' : -65.0,
     'auto_morn_sky_flat': True,
     'auto_morn_bias_dark': True,
     're-calibrate_on_solve': True,
@@ -144,7 +144,7 @@ site_config = {
     'focus_trigger' : 1.0, # What FWHM increase is needed to trigger an autofocus
     'solve_nth_image' : 10, # Only solve every nth image
     'solve_timer' : 5, # Only solve every X minutes
-    'threshold_mount_update' : 200, # only update mount when X arcseconds away
+    'threshold_mount_update' : 100, # only update mount when X arcseconds away
 
     'defaults': {
         'observing_conditions': 'observing_conditions1',
@@ -446,12 +446,12 @@ site_config = {
             'use_focuser_temperature': True,
             #*********Guesses   7379@10 7457@20  7497 @ 25
             #'reference': 7250, #20221103    #7418,    # Nominal at 15C Primary temperature, in microns not steps. Guess
-            'reference': 7300, #20221103    #7418,    # Nominal at 15C Primary temperature, in microns not steps. Guess
+            'reference': 7250, #20221103    #7418,    # Nominal at 15C Primary temperature, in microns not steps. Guess
             'ref_temp':  10,      # Update when pinning reference  Larger at lower temperatures.
-            'coef_c': -11.859,    # Negative means focus moves out (larger numerically) as Primary gets colder
+            'coef_c': -8.583,    # Negative means focus moves out (larger numerically) as Primary gets colder
             #'coef_0': 7250,  #20221103# Nominal intercept when Primary is at 0.0 C.
-            'coef_0': 7413,  #20221103# Nominal intercept when Primary is at 0.0 C.
-            'coef_date':  '20230219',   #A Guess as to coef_c
+            'coef_0': 7355,  #20221103# Nominal intercept when Primary is at 0.0 C.
+            'coef_date':  '20230220',   #A Guess as to coef_c
             'z_compression': 0.0, #  microns per degree of zenith distance
             'z_coef_date':  '20221002',   # 'reference': 4375,    #   Guess 20210904  Nominal at 10C Primary temperature
             'use_local_temp':  True,
@@ -520,25 +520,25 @@ site_config = {
 
                 #'filter_list': ['PL','PR','PG','PB','HA','O3','S2', 'air','dif','w','CR','N2','up','gp','rp','ip','z', 'difup','difgp','difrp','difip','dark'], # A list of actual physical filters for the substitution function
 
-                'filter_data': [['air',     [0, 0], -1000,  16.00, [2, 17], 'ai'], #  0 357
+                'filter_data': [['air',     [0, 0], -1000,  6.00, [2, 17], 'ai'], #  0 357
                                 ['dif',     [4, 0],     0,  16.00, [2, 17], 'df'], #  1  330NB NB NB If this in series should change focus about 1mm more.
-                                ['w',       [2, 0],     0,  16.00, [2, 17], 'w '], #  2 346
+                                ['w',       [2, 0],     0,  6, [2, 17], 'w '], #  2 346
                                 ['PL',      [0, 4],     0,  16.00, [2, 17], "PL"], #  3 317
                                 ['gp',      [0, 6],     0,  10.87, [2, 17], 'gp'], #  4 
-                                ['PB',      [0, 1],     0,  15.47, [2, 17], 'PB'], #  5
+                                ['PB',      [0, 1],     0,  2.25, [2, 17], 'PB'], #  5
                                 ['rp',      [0, 7],     0,  5.46,  [2, 17], 'rp'], #  6
-                                ['PG',      [0, 2],     0,  10.24, [2, 17], 'PG'], #  7
-                                ['PR',      [0, 3],     0,  1.389, [2, 17], 'PR'], #  8
+                                ['PG',      [0, 2],     0,  2.2, [2, 17], 'PG'], #  7
+                                ['PR',      [0, 3],     0,  0.22, [2, 17], 'PR'], #  8
                                 ['ip',      [0, 8],     0,  4.741, [2, 17], 'ip'], #  9
                                 ['z',       [5, 0],     0,  .995,  [2, 17], 'z' ], # 10
-                                ['O3',      [7, 0],     0,  .535,  [2, 17], '03'], # 11
+                                ['O3',      [7, 0],     0,  .145,  [2, 17], '03'], # 11
                                 ['up',      [0, 5],     0,  .506,  [1, 17], 'up'], # 12
-                                ['N2',      [3, 0],     0,  .30,   [2, 17], 'N2'], # 13
-                                ['CR',      [1, 0],     0,  .283,  [2, 17], 'CR'], # 14
-                                ['S2',      [8, 0],     0,  .164,  [2, 17], 'S2'], # 15   
-                                ['HA',      [6, 0],     0,  .158,  [2, 17], 'HA'], # 16  
-                                ['focus',   [2, 0],     0,  0.0,   [2, 17], 'fo'], # 17
-                                ['dark',    [8, 5],     0,  0.0,   [2, 17], 'dk']],# 18
+                                ['N2',      [3, 0],     0,  .016,  [2, 17], 'N2'], # 13
+                                ['CR',      [1, 0],     0,  .018,  [2, 17], 'CR'], # 14
+                                ['S2',      [8, 0],     0,  .012,  [2, 17], 'S2'], # 15   
+                                ['HA',      [6, 0],     0,  .012,  [2, 17], 'HA'], # 16  
+                                ['focus',   [2, 0],     0,  16.0,  [2, 17], 'fo'], # 17
+                                ['dark',    [8, 5],     0,   0.0,  [2, 17], 'dk']],# 18
 
                                 #Screen = 100; QHY400 ~ 92% DQE   HDR Mode    Screen = 160 sat  20190825 measured.
                 'filter_screen_sort':  ['air','w','PL','gp','PB','rp','PG','PR','ip','O3','N2','CR','S2','HA'],   #  9, 21],  # 5, 17], #Most to least throughput, \

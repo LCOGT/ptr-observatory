@@ -807,13 +807,16 @@ class Enclosure:
                                               or g_dev['ocn'].clamp_latch)):     # NB Is Wx ok really the right criterion???
                 try:
                     if self.site_allowed_to_open_roof == True:
-                        self.enclosure.OpenShutter()
-                        plog("An actual shutter open command has been issued.")
-                        g_dev['obs'].send_to_user("Roof/shutter is opening.", p_level='INFO')
-                        #self.redis_server.set('Shutter_is_open', True)
-                        self.dome_open = True
-                        self.dome_home = True
-                        return True
+                        print (g_dev['enc'].status['shutter_status'] != 'Open')
+                        print (self.dome_open)
+                        if g_dev['enc'].status['shutter_status'] != 'Open' or not self.dome_opened:    
+                            self.enclosure.OpenShutter()
+                            plog("An actual shutter open command has been issued.")
+                            g_dev['obs'].send_to_user("Roof/shutter is opening.", p_level='INFO')
+                            #self.redis_server.set('Shutter_is_open', True)
+                            self.dome_open = True
+                            self.dome_home = True
+                            return True
                     else:
                         plog("An open command was sent, but this site is not allowed to open the roof (site-config)")
                 except:
@@ -923,9 +926,10 @@ class Enclosure:
             #Note we left the telescope alone
 
         elif open_cmd and self.mode == 'Manual' and net_connected:   #  NB NB NB Ideally Telescope parked away from Sun.                
-            self.guarded_open()
-            self.dome_opened = True
-            self.dome_homed = True
+            if g_dev['enc'].status['shutter_status'] != 'Open' or not self.dome_opened:    
+                self.guarded_open()
+                self.dome_opened = True
+                self.dome_homed = True
 
         elif close_cmd and self.mode == 'Manual':
             try:
@@ -953,9 +957,10 @@ class Enclosure:
                 
                 # Don't check the string, the string could be wrong!
                 plog("Entering Guarded open, Expect slew opposite Sun")
-                self.guarded_open()
-                self.dome_opened = True
-                self.dome_homed = True
+                if g_dev['enc'].status['shutter_status'] != 'Open' or not self.dome_opened:
+                    self.guarded_open()
+                    self.dome_opened = True
+                    self.dome_homed = True
             except Exception as e:
                 plog ("Error while opening the roof ",e)
             

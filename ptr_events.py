@@ -518,21 +518,21 @@ class Events:
                 ('Civil Dusk         ', ephem.Date(civilDusk)),
                 ('Naut Dusk          ', ephem.Date(nauticalDusk)),
                 ('End Eve Sky Flats  ', ephem.Date(nauticalDusk - 10/1440)),
-                ('Clock & Auto Focus ', ephem.Date(nautDusk_plus_half -12/1440.)),
+                ('Clock & Auto Focus ', ephem.Date(nautDusk_plus_half -8/1440.)),
                 ('Observing Begins   ', ephem.Date(nautDusk_plus_half)),
                 ('Astro Dark         ', ephem.Date(astroDark)),
                 ('Middle of Night    ', ephem.Date(middleNight)),
                 ('End Astro Dark     ', astroEnd),
                 ('Observing Ends     ', ephem.Date(nautDawn_minus_half )),
                 ('Naut Dawn          ', nauticalDawn),
-                ('Morn Sky Flats     ', ephem.Date(nauticalDawn + 10/1440.)),
+                ('Morn Sky Flats     ', ephem.Date(nauticalDawn + 30/1440.)),
                 ('Civil Dawn         ', civilDawn),
-                ('End Morn Sky Flats ', ephem.Date(sunrise + 15/1440.)),    #SRO drving this
-                ('Ops Window Closes  ', ephem.Date(sunrise + 15/1440.)),   #Enclosure must close 5 min after sunrise
-                ('Close and Park     ', ephem.Date(sunrise + 15/1440.)),
+                ('End Morn Sky Flats ', ephem.Date(sunrise + 30/1440.)),    #SRO drving this
+                ('Ops Window Closes  ', ephem.Date(sunrise + 31/1440.)),   #Enclosure must close 5 min after sunrise
+                ('Close and Park     ', ephem.Date(sunrise + 32/1440.)),
                 ('Sun Rise           ', sunrise),
-                ('Morn Bias Dark     ', ephem.Date(sunrise + 20/1440.)),
-                ('End Morn Bias Dark ', ephem.Date(sunrise + 120/1440.)),
+                ('Morn Bias Dark     ', ephem.Date(sunrise + 34/1440.)),
+                ('End Morn Bias Dark ', ephem.Date(sunrise + 140/1440.)),
                 ('Nightly Reset      ', ephem.Date(sunrise + 180/1440.)),
                 ('End Nightly Reset  ', ephem.Date(sunrise + 200/1440.)),
                 ('Prior Moon Rise    ', last_moonrise),

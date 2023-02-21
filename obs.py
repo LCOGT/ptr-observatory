@@ -896,9 +896,9 @@ sel
         # Also an area to put things to irregularly check if things are still connected, e.g. cooler
         #
         # Probably we don't want to run these checkes EVERY status update, just every 5 minutes
-        check_time = 300
+        check_time = self.config['check_time']
         if self.debug_flag:
-            check_time = 600
+            check_time *= 4
             self.time_since_safety_checks = time.time() + check_time
         if time.time() - self.time_since_safety_checks > check_time:
             self.time_since_safety_checks=time.time()

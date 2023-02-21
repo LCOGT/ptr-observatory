@@ -410,7 +410,7 @@ class Sequencer:
         
 
         # Check for delayed opening of the observatory and act accordingly.
-
+        #breakpoint()
         # If the observatory is simply delayed until opening, then wait until then, then attempt to start up the observatory
         if self.weather_report_wait_until_open:
             if ephem_now >  self.weather_report_wait_until_open_time:

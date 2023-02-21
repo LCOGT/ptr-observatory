@@ -1204,7 +1204,7 @@ class Camera:
                                 )  # NB NB WEMA must be running or this may fault.
                             except:
                                 plog(
-                                    "vpl"
+                                    "ocn quick status failing"
                                 )
                             g_dev["foc"].get_quick_status(self.pre_foc)
                             try:
@@ -1566,7 +1566,7 @@ class Camera:
                     del self.img
 
                     
-                    #This should plog out  0,0 color pixel for an OSC camera and plot it. Yellow is larger! 
+                    #This should plot out  0,0 color pixel for an OSC camera and plot it. Yellow is larger! 
                     # self.tsp = hdu.data
                     # plog(self.tsp[0:2, 24:26])
                     # plt.imshow(self.tsp[0:2, 24:26])
@@ -2390,7 +2390,6 @@ class Camera:
                         flashbinning=1
                         
                         try:
-
                             hdusmalldata = hdusmalldata - self.biasFiles[str(flashbinning)]
                             hdusmalldata = hdusmalldata - (self.darkFiles[str(flashbinning)] * exposure_time)
                             
@@ -2469,15 +2468,16 @@ class Camera:
                                     hdugreen=(block_reduce(hdufocusdata * checkerboard ,2))
                                     
                                     # G bottom left Pixels
-                                    #list_0_1 = np.asarray([ [0,0], [1,0] ])
-                                    #checkerboard=np.tile(list_0_1, (xshape//2, yshape//2))
-                                    #checkerboard=np.array(checkerboard)
-                                    #GBLonly=(block_reduce(hdufocusdata * checkerboard ,2))                                
+                                    list_0_1 = np.asarray([ [0,0], [1,0] ])
+                                    checkerboard=np.tile(list_0_1, (xshape//2, yshape//2))
+                                    checkerboard=np.array(checkerboard)
+                                    GBLonly=(block_reduce(hdufocusdata * checkerboard ,2))                                
                                     
                                     # Sum two Gs together and half them to be vaguely on the same scale
                                     #hdugreen = np.array((GTRonly + GBLonly) / 2)
                                     #del GTRonly
                                     #del GBLonly
+
                                     del checkerboard
                                     
                                 # Interpolate to make a high resolution version for focussing
