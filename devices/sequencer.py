@@ -915,14 +915,14 @@ class Sequencer:
             # Necessary
             # Pointing
             # Reset Solve timers
-            if not g_dev['debug']:
-                plog ("Taking a quick pointing check and re_seek for new project block")
-                g_dev['obs'].last_solve_time = datetime.datetime.now()
-                g_dev['obs'].images_since_last_solve = 0
-                req = {'time': self.config['focus_exposure_time'],  'alias':  str(self.config['camera']['camera_1_1']['name']), 'image_type': 'focus'}   #  NB Should pick up filter and constats from config
-                #opt = {'area': 150, 'count': 1, 'bin': '2, 2', 'filter': 'focus'}
-                opt = {'area': 150, 'count': 1, 'bin': 1, 'filter': 'focus'}
-                result = g_dev['cam'].expose_command(req, opt, no_AWS=False, solve_it=True)
+
+            plog ("Taking a quick pointing check and re_seek for new project block")
+            g_dev['obs'].last_solve_time = datetime.datetime.now()
+            g_dev['obs'].images_since_last_solve = 0
+            req = {'time': self.config['focus_exposure_time'],  'alias':  str(self.config['camera']['camera_1_1']['name']), 'image_type': 'focus'}   #  NB Should pick up filter and constats from config
+            #opt = {'area': 150, 'count': 1, 'bin': '2, 2', 'filter': 'focus'}
+            opt = {'area': 150, 'count': 1, 'bin': 1, 'filter': 'focus'}
+            result = g_dev['cam'].expose_command(req, opt, no_AWS=False, solve_it=True)
             
             if result == 'blockend':
                 plog ("End of Block, exiting project block.")

@@ -564,7 +564,7 @@ sel
                         else:
                             self.cmd_queue.put(cmd)  # SAVE THE COMMAND FOR LATER
                             g_dev["obs"].stop_all_activity = False
-                            self.send_to_user(
+                            plog(
                                 "Queueing up a new command... Hint:  " + cmd["action"]
                             )
 
@@ -580,7 +580,7 @@ sel
                     while self.cmd_queue.qsize() > 0:                        
                         if not self.command_busy: # This is to stop multiple commands running over the top of each other.
                             self.command_busy=True
-                            self.send_to_user(
+                            plog(
                                 "Number of queued commands:  " + str(self.cmd_queue.qsize())
                             )
                             cmd = self.cmd_queue.get()

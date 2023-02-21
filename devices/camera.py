@@ -882,17 +882,17 @@ class Camera:
         self.tempStartupExposureTime=time.time()
 
 
-        # Force a reseek //eventually dither//
-        try:
-            if (
-                g_dev["mnt"].last_seek_time < self.t0 - 180  #NB this is faulting, no se.f.t0 exists
-            ):  # NB Consider upping this to 300 to 600 sec.
-                plog("re_seeking")
-                g_dev["mnt"].re_seek(
-                    0
-                )  # is a placeholder for a dither value being passed.
-        except:
-            pass
+        # # Force a reseek //eventually dither//
+        # try:
+        #     if (
+        #         g_dev["mnt"].last_seek_time < self.t0 - 180  #NB this is faulting, no se.f.t0 exists
+        #     ):  # NB Consider upping this to 300 to 600 sec.
+        #         plog("re_seeking")
+        #         g_dev["mnt"].re_seek(
+        #             0
+        #         )  # is a placeholder for a dither value being passed.
+        # except:
+        #     pass
 
 
         opt = optional_params
@@ -1338,11 +1338,11 @@ class Camera:
 
         #plog ("Smart Stack ID: " + smartstackid)
         g_dev["obs"].send_to_user(
-            "Starting Exposure: "
+            "Starting "
             + str(exposure_time)
-            + " sec.;   # of "
+            + " second exposure. Number of "
             + frame_type
-            + " frames. Remaining: "
+            + " frames remaining: "
             + str(counter),
             p_level="INFO",
         )
@@ -3113,11 +3113,9 @@ class Camera:
                         # This is all done outside the reduce queue to guarantee the pointing check is done
                         # prior to the next exposure                        
 
-                        if focus_image == True or ((Nsmartstack == sskcounter+1) and Nsmartstack > 1)\
-                                               or (g_dev['obs'].images_since_last_solve \
-                                               > g_dev['obs'].config["solve_nth_image"] \
-                                               and (datetime.datetime.now() - g_dev['obs'].last_solve_time) \
-                                               > datetime.timedelta(minutes=g_dev['obs'].config["solve_timer"])):
+                        if focus_image == True or solve_it == True or ((Nsmartstack == sskcounter+1) and Nsmartstack > 1)\
+                                                   or g_dev['obs'].images_since_last_solve > g_dev['obs'].config["solve_nth_image"] or (datetime.datetime.now() - g_dev['obs'].last_solve_time)  > datetime.timedelta(minutes=g_dev['obs'].config["solve_timer"]):
+                                                       
                             cal_name = (
                                 cal_name[:-9] + "F012" + cal_name[-7:]
                             )                            
@@ -3224,7 +3222,7 @@ class Camera:
                                             
                                             g_dev["mnt"].current_icrs_ra = solved_ra                                    
                                             g_dev["mnt"].current_icrs_dec = solved_dec
-                                            #g_dev['mnt'].re_seek(dither=0)
+                                            g_dev['mnt'].re_seek(dither=0)
                                         except:
                                             plog("This mount doesn't report pierside")
                                             plog(traceback.format_exc())
