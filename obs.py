@@ -1057,11 +1057,11 @@ class Observatory:
                     
                     elif (float(g_dev['cam']._temperature()) - g_dev['cam'].setpoint) > 15:
                         print ("Found cooler on, but warm.")
-                        print ("Keeping it slightly warm ( 15 degrees warmer ) for about 20 minutes just in case the camera overheated.")
+                        print ("Keeping it slightly warm ( 20 degrees warmer ) for about 20 minutes just in case the camera overheated.")
                         print ("Then will reset to normal.")
                         self.camera_overheat_safety_warm_on=True
                         self.camera_overheat_safety_timer=time.time()
-                        print (float(g_dev['cam'].setpoint +20.0))
+                        #print (float(g_dev['cam'].setpoint +20.0))
                         g_dev['cam']._set_setpoint(float(g_dev['cam'].setpoint +20.0))
                         g_dev['cam']._set_cooler_on() # Some cameras need to be sent this to change the temperature also.. e.g. TheSkyX
                     

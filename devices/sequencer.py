@@ -438,7 +438,10 @@ class Sequencer:
                         g_dev['mnt'].park_command() 
                     self.weather_report_close_during_evening=False
                     
-                    
+        # Check that nightly reset switch is reset at start of observing eve. 
+        if self.nightly_reset_complete == True:
+            if events['Eve Bias Dark'] <= ephem_now :
+                self.nightly_reset_complete == False
 
         if self.bias_dark_latch and ((events['Eve Bias Dark'] <= ephem_now < events['End Eve Bias Dark']) and \
              self.config['auto_eve_bias_dark'] and g_dev['enc'].mode in ['Automatic', 'Autonomous', 'Manual'] ):
