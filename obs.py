@@ -916,107 +916,110 @@ sel
             # Report on weather report status:
             plog ("Weather Report Acceptable to Open: " +  str(g_dev['seq'].weather_report_is_acceptable_to_observe))
             
-            if g_dev['enc'].status['shutter_status'] == 'Software Fault':
-                plog ("Software Fault Detected. Will alert the authorities!")
-                plog ("Parking Scope in the meantime")
-                self.open_and_enabled_to_observe=False
-                #self.cancel_all_activity()   #NB THis kills bias-dark
-                if not g_dev['mnt'].mount.AtPark:  
-                    g_dev['mnt'].home_command()
-                    g_dev['mnt'].park_command()
-                # will send a Close call out into the blue just in case it catches
-                g_dev['enc'].enclosure.CloseShutter()
-                
+            # Roof Checks only if not in Manual mode and not debug mode
+            if g_dev['enc'].mode != 'Manual' or not self.debug_flag:
             
-            if g_dev['enc'].status['shutter_status'] == 'Closing':
-                if self.config['site_roof_control'] != 'no' and g_dev['enc'].mode == 'Automatic':
-                    plog ("Detected Roof Closing. Sending another close command just in case the roof got stuck on this status (this happens!)")
+                if g_dev['enc'].status['shutter_status'] == 'Software Fault':
+                    plog ("Software Fault Detected. Will alert the authorities!")
+                    plog ("Parking Scope in the meantime")
                     self.open_and_enabled_to_observe=False
-                    #self.cancel_all_activity()    #NB Kills bias dark
-                    g_dev['enc'].enclosure.CloseShutter()
-            
-            if g_dev['enc'].status['shutter_status'] == 'Error':
-                if self.config['site_roof_control'] != 'no' and g_dev['enc'].mode == 'Automatic':
-                    plog ("Detected an Error in the Roof Status. Closing up for safety.")
-                    plog ("This is usually because the weather system forced the roof to shut.")
-                    plog ("By closing it again, it resets the switch to closed.")
-                    #self.cancel_all_activity()    #NB Kills bias dark
-                    self.open_and_enabled_to_observe=False
-                    g_dev['enc'].enclosure.CloseShutter()
-                    #while g_dev['enc'].enclosure.ShutterStatus == 3:
-                    #plog ("closing")
-                    plog ("Also Parking the Scope")    
+                    #self.cancel_all_activity()   #NB THis kills bias-dark
                     if not g_dev['mnt'].mount.AtPark:  
                         g_dev['mnt'].home_command()
-                        g_dev['mnt'].park_command()  
-
-            roof_should_be_shut=False
-            
-            if (g_dev['events']['End Morn Sky Flats'] < ephem.now() < g_dev['events']['End Morn Bias Dark']):
-                roof_should_be_shut=True
-                self.open_and_enabled_to_observe=False
-            if not self.config['auto_morn_sky_flat']:
-                if (g_dev['events']['Observing Ends'] < ephem.now() < g_dev['events']['End Morn Bias Dark']):
+                        g_dev['mnt'].park_command()
+                    # will send a Close call out into the blue just in case it catches
+                    g_dev['enc'].enclosure.CloseShutter()
+                    
+                
+                if g_dev['enc'].status['shutter_status'] == 'Closing':
+                    if self.config['site_roof_control'] != 'no' and g_dev['enc'].mode == 'Automatic':
+                        plog ("Detected Roof Closing. Sending another close command just in case the roof got stuck on this status (this happens!)")
+                        self.open_and_enabled_to_observe=False
+                        #self.cancel_all_activity()    #NB Kills bias dark
+                        g_dev['enc'].enclosure.CloseShutter()
+                
+                if g_dev['enc'].status['shutter_status'] == 'Error':
+                    if self.config['site_roof_control'] != 'no' and g_dev['enc'].mode == 'Automatic':
+                        plog ("Detected an Error in the Roof Status. Closing up for safety.")
+                        plog ("This is usually because the weather system forced the roof to shut.")
+                        plog ("By closing it again, it resets the switch to closed.")
+                        #self.cancel_all_activity()    #NB Kills bias dark
+                        self.open_and_enabled_to_observe=False
+                        g_dev['enc'].enclosure.CloseShutter()
+                        #while g_dev['enc'].enclosure.ShutterStatus == 3:
+                        #plog ("closing")
+                        plog ("Also Parking the Scope")    
+                        if not g_dev['mnt'].mount.AtPark:  
+                            g_dev['mnt'].home_command()
+                            g_dev['mnt'].park_command()  
+    
+                roof_should_be_shut=False
+                
+                if (g_dev['events']['End Morn Sky Flats'] < ephem.now() < g_dev['events']['End Morn Bias Dark']):
                     roof_should_be_shut=True
                     self.open_and_enabled_to_observe=False
-                if (g_dev['events']['Naut Dawn'] < ephem.now() < g_dev['events']['Morn Bias Dark']):
+                if not self.config['auto_morn_sky_flat']:
+                    if (g_dev['events']['Observing Ends'] < ephem.now() < g_dev['events']['End Morn Bias Dark']):
+                        roof_should_be_shut=True
+                        self.open_and_enabled_to_observe=False
+                    if (g_dev['events']['Naut Dawn'] < ephem.now() < g_dev['events']['Morn Bias Dark']):
+                        roof_should_be_shut=True 
+                        self.open_and_enabled_to_observe=False
+                if not (g_dev['events']['Cool Down, Open'] < ephem.now() < g_dev['events']['Close and Park']):
                     roof_should_be_shut=True 
                     self.open_and_enabled_to_observe=False
-            if not (g_dev['events']['Cool Down, Open'] < ephem.now() < g_dev['events']['Close and Park']):
-                roof_should_be_shut=True 
-                self.open_and_enabled_to_observe=False
-            
-            
-            if g_dev['enc'].status['shutter_status'] == 'Open':
-                if roof_should_be_shut==True :
-                    plog ("Safety check found that the roof was open outside of the normal observing period")    
-                    if self.config['site_roof_control'] != 'no' and g_dev['enc'].mode == 'Automatic':
-                        plog ("Shutting the roof out of an abundance of caution. This may also be normal functioning")
-                        
-                        #self.cancel_all_activity()  #NB Kills bias dark
-                        g_dev['enc'].enclosure.CloseShutter()
-                        while g_dev['enc'].enclosure.ShutterStatus == 3:
-                            plog ("closing")
-                            time.sleep(3)
-                    else:
-                        plog ("This scope does not have control of the roof though.")
                 
-
-            if roof_should_be_shut==True and g_dev['enc'].mode == 'Automatic' : # If the roof should be shut, then the telescope should be parked. 
-                if not g_dev['mnt'].mount.AtPark:
-                    plog ("Telescope found not parked when the observatory is meant to be closed. Parking scope.")   
-                    self.open_and_enabled_to_observe=False
-                    #self.cancel_all_activity()   #NB Kills bias dark
-
-                    g_dev['mnt'].home_command()
-                    #PWI must receive a park() in order to report being parked.  Annoying problem when debugging, because I want tel to stay where it is.
-                    g_dev['mnt'].park_command()  
-            
-            if g_dev['enc'].status['shutter_status'] == 'Closed' : # If the roof IS shut, then the telescope should be shutdown and parked. 
-
-                if not g_dev['mnt'].mount.AtPark:
-                    plog ("Telescope found not parked when the observatory roof is shut. Parking scope.")   
-                    self.open_and_enabled_to_observe=False
-                    #self.cancel_all_activity()  #NB Kills bias dark
-                    g_dev['mnt'].home_command()
-                    g_dev['mnt'].park_command()  
-            
-            # if g_dev['enc'].status['shutter_status'] == 'Open':
-            #     self.config['mount']'auto_morn_sky_flat': False,
-            #     if (g_dev['events']['Close and Park'] < ephem.now() < g_dev['events']['End Morn Bias Dark']):
-            #         plog ("Safety check found that it is in the period where the observatory should be closing up")    
-            #         plog ("Checking on the dome being closed and the telescope at park.")                    
-            #         g_dev['enc'].enclosure.CloseShutter()
-            #         while g_dev['enc'].enclosure.ShutterStatus == 3:
-            #             plog ("closing")
-            #         if not g_dev['mnt'].mount.AtPark:  
-            #             g_dev['mnt'].home_command()
-            #             g_dev['mnt'].park_command()  
-            
-            # But after all that if everything is ok, then all is ok, it is safe to observe
-            if g_dev['enc'].status['shutter_status'] == 'Open' and roof_should_be_shut==False :
-                self.open_and_enabled_to_observe=True
-            
+                
+                if g_dev['enc'].status['shutter_status'] == 'Open':
+                    if roof_should_be_shut==True :
+                        plog ("Safety check found that the roof was open outside of the normal observing period")    
+                        if self.config['site_roof_control'] != 'no' and g_dev['enc'].mode == 'Automatic':
+                            plog ("Shutting the roof out of an abundance of caution. This may also be normal functioning")
+                            
+                            #self.cancel_all_activity()  #NB Kills bias dark
+                            g_dev['enc'].enclosure.CloseShutter()
+                            while g_dev['enc'].enclosure.ShutterStatus == 3:
+                                plog ("closing")
+                                time.sleep(3)
+                        else:
+                            plog ("This scope does not have control of the roof though.")
+                    
+    
+                if roof_should_be_shut==True and g_dev['enc'].mode == 'Automatic' : # If the roof should be shut, then the telescope should be parked. 
+                    if not g_dev['mnt'].mount.AtPark:
+                        plog ("Telescope found not parked when the observatory is meant to be closed. Parking scope.")   
+                        self.open_and_enabled_to_observe=False
+                        #self.cancel_all_activity()   #NB Kills bias dark
+    
+                        g_dev['mnt'].home_command()
+                        #PWI must receive a park() in order to report being parked.  Annoying problem when debugging, because I want tel to stay where it is.
+                        g_dev['mnt'].park_command()  
+                
+                if g_dev['enc'].status['shutter_status'] == 'Closed' : # If the roof IS shut, then the telescope should be shutdown and parked. 
+    
+                    if not g_dev['mnt'].mount.AtPark:
+                        plog ("Telescope found not parked when the observatory roof is shut. Parking scope.")   
+                        self.open_and_enabled_to_observe=False
+                        #self.cancel_all_activity()  #NB Kills bias dark
+                        g_dev['mnt'].home_command()
+                        g_dev['mnt'].park_command()  
+                
+                # if g_dev['enc'].status['shutter_status'] == 'Open':
+                #     self.config['mount']'auto_morn_sky_flat': False,
+                #     if (g_dev['events']['Close and Park'] < ephem.now() < g_dev['events']['End Morn Bias Dark']):
+                #         plog ("Safety check found that it is in the period where the observatory should be closing up")    
+                #         plog ("Checking on the dome being closed and the telescope at park.")                    
+                #         g_dev['enc'].enclosure.CloseShutter()
+                #         while g_dev['enc'].enclosure.ShutterStatus == 3:
+                #             plog ("closing")
+                #         if not g_dev['mnt'].mount.AtPark:  
+                #             g_dev['mnt'].home_command()
+                #             g_dev['mnt'].park_command()  
+                
+                # But after all that if everything is ok, then all is ok, it is safe to observe
+                if g_dev['enc'].status['shutter_status'] == 'Open' and roof_should_be_shut==False :
+                    self.open_and_enabled_to_observe=True
+                
             plog ("Current Open and Enabled to Observe Status: " + str(self.open_and_enabled_to_observe))
             
             # Check the mount is still connected
