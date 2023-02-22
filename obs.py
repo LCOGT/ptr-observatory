@@ -428,7 +428,7 @@ class Observatory:
     def update_config(self):
         """Sends the config to AWS."""
 
-        uri = f"{self.name}/config/"
+        uri = f"{self.config['site']}/config/"
         self.config["events"] = g_dev["events"]
         response = g_dev["obs"].api.authenticated_request("PUT", uri, self.config)
         if 'message' in response:
