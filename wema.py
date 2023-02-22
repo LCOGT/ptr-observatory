@@ -90,6 +90,7 @@ class WxEncAgent:
 
         self.status_interval = 45
         self.name = name
+        
 
         self.site_name = name
         self.config = config
