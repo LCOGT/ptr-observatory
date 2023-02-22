@@ -1431,7 +1431,7 @@ class Sequencer:
         '''
         Send the config to aws.
         '''
-        uri = f"{self.name}/config/"
+        uri = f"{self.config['site']}/config/"
         self.config['events'] = g_dev['events']
         response = g_dev['obs'].api.authenticated_request("PUT", uri, self.config)
         if response:
