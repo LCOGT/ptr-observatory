@@ -446,8 +446,13 @@ class Sequencer:
                         g_dev['mnt'].park_command() 
                     self.weather_report_close_during_evening=False
                     
-        #Test code           
-        #events['End Eve Bias Dark'] = (ephem_now + 30/86400)
+
+        # Check that nightly reset switch is reset at start of observing eve. 
+        if self.nightly_reset_complete == True:
+            if events['Eve Bias Dark'] <= ephem_now :
+                self.nightly_reset_complete == False
+
+
         if self.bias_dark_latch and ((events['Eve Bias Dark'] <= ephem_now < events['End Eve Bias Dark']) and \
              self.config['auto_eve_bias_dark'] and g_dev['enc'].mode in ['Automatic', 'Autonomous', 'Manual'] ):   #events['End Eve Bias Dark']) and \
             self.bias_dark_latch = False
@@ -1744,14 +1749,14 @@ class Sequencer:
                         if evening and exp_time > 120:
                              #exp_time = 60    #Live with this limit.  Basically started too late
                              plog('Break because proposed evening exposure > 120 seconds:  ', exp_time)
-                             g_dev['obs'].send_to_user('Try next filter because proposed  flat exposure > 120 seconds.', p_level='INFO')
+                             #g_dev['obs'].send_to_user('Try next filter because proposed  flat exposure > 120 seconds.', p_level='INFO')
                              pop_list.pop(0)
                              acquired_count = flat_count + 1 # trigger end of loop
                              #break
                         elif morn and exp_time < min_exposure:
                              #exp_time = 60    #Live with this limit.  Basically started too late
                              plog('Break because proposed morning exposure < minimum exposure time:  ', exp_time)
-                             g_dev['obs'].send_to_user('Try next filter because proposed  flat exposure < min_exposure.', p_level='INFO')
+                             #g_dev['obs'].send_to_user('Try next filter because proposed  flat exposure < min_exposure.', p_level='INFO')
                              pop_list.pop(0)
                              #min_exposure=min_exposure = float(self.config['camera']['camera_1_1']['settings']['min_exposure'])
                              acquired_count = flat_count + 1 # trigger end of loop
@@ -1759,7 +1764,7 @@ class Sequencer:
                         elif evening and exp_time < min_exposure:   #NB it is too bright, should consider a delay here.
                          #**************THIS SHOUD BE A WHILE LOOP! WAITING FOR THE SKY TO GET DARK AND EXP TIME TO BE LONGER********************
                              plog("Too bright, wating 60 seconds. Estimated Exposure time is " + str(exp_time))
-                             g_dev['obs'].send_to_user('Delay 60 seconds to let it get darker.', p_level='INFO')
+                             #g_dev['obs'].send_to_user('Delay 60 seconds to let it get darker.', p_level='INFO')
                              self.estimated_first_flat_exposure = False
                              if time.time() >= self.time_of_next_slew:
                                 g_dev['mnt'].slewToSkyFlatAsync()  
@@ -1768,7 +1773,7 @@ class Sequencer:
                         elif morn and exp_time > 120 :   #NB it is too bright, should consider a delay here.
                           #**************THIS SHOUD BE A WHILE LOOP! WAITING FOR THE SKY TO GET DARK AND EXP TIME TO BE LONGER********************
                              plog("Too dim, wating 60 seconds. Estimated Exposure time is " + str(exp_time))
-                             g_dev['obs'].send_to_user('Delay 60 seconds to let it get lighterer.', p_level='INFO')
+                             #g_dev['obs'].send_to_user('Delay 60 seconds to let it get lighterer.', p_level='INFO')
                              self.estimated_first_flat_exposure = False
                              if time.time() >= self.time_of_next_slew:
                                 g_dev['mnt'].slewToSkyFlatAsync()  

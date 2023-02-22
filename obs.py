@@ -333,6 +333,13 @@ class Observatory:
         
         # Keep track of how long it has been since the last live connection to the internet
         self.time_of_last_live_net_connection = time.time()
+
+        # If the camera is detected as substantially (20 degrees) warmer than the setpoint
+        # during safety checks, it will keep it warmer for about 20 minutes to make sure
+        # the camera isn't overheating, then return it to its usual temperature.
+        self.camera_overheat_safety_warm_on=False
+        self.camera_overheat_safety_timer=time.time()
+        self.camera_time_initialised=time.time() # Some things you don't want to check until the camera has been cooling for a while.
         
         # This variable is simply.... is it open and enabled to observe!
         # This is set when the roof is open and everything is safe
@@ -1064,33 +1071,62 @@ sel
                     self.time_since_last_slew_or_exposure = time.time()
             
             # Check that rotator is rotating
-            g_dev['rot'].check_rotator_is_rotating()
+            if g_dev['rot'] != None:
+                g_dev['rot'].check_rotator_is_rotating()
                     
             # Check that cooler is alive
             #plog ("Cooler check")
-            probe = g_dev['cam']._cooler_on()
-            if probe == True:
+            #probe = g_dev['cam']._cooler_on()
+            if g_dev['cam']._cooler_on():
                 plog ("Cooler is still on at " + str(g_dev['cam']._temperature()))            
+           
+                # After the observatory and camera have had time to settle....
+                if (time.time() - self.camera_time_initialised) > 1200:
+                    # Check that the camera is not overheating. 
+                    if self.camera_overheat_safety_warm_on:
+                        
+                        print ( time.time() - self.camera_overheat_safety_timer)
+                        if ( time.time() - self.camera_overheat_safety_timer) > 1201:
+                            print ("Camera OverHeating Safety Warm Cycle Complete. Resetting to normal temperature.")
+                            g_dev['cam']._set_setpoint(g_dev['cam'].setpoint)                        
+                            g_dev['cam']._set_cooler_on() # Some cameras need to be sent this to change the temperature also.. e.g. TheSkyX
+                            self.camera_overheat_safety_warm_on=False
+                        else:
+                            print ("Camera Overheating Safety Warm Cycle on.")
+                    
+                    
+                    elif (float(g_dev['cam']._temperature()) - g_dev['cam'].setpoint) > 15:
+                        print ("Found cooler on, but warm.")
+                        print ("Keeping it slightly warm ( 20 degrees warmer ) for about 20 minutes just in case the camera overheated.")
+                        print ("Then will reset to normal.")
+                        self.camera_overheat_safety_warm_on=True
+                        self.camera_overheat_safety_timer=time.time()
+                        #print (float(g_dev['cam'].setpoint +20.0))
+                        g_dev['cam']._set_setpoint(float(g_dev['cam'].setpoint +20.0))
+                        g_dev['cam']._set_cooler_on() # Some cameras need to be sent this to change the temperature also.. e.g. TheSkyX
+                    
             
-            try:
-                probe = g_dev['cam']._cooler_on()
-                if not probe:
-                    g_dev['cam']._set_cooler_on()
-                    plog("Found cooler off.")
+            else:
+                try:
+                    probe = g_dev['cam']._cooler_on()
+                    if not probe:
+                        g_dev['cam']._set_cooler_on()
+                        plog("Found cooler off.")
+                        try:
+                            g_dev['cam']._connect(False)
+                            g_dev['cam']._connect(True)
+                            g_dev['cam']._set_cooler_on()
+                        except:
+                            plog("Camera cooler reconnect failed.")
+                except Exception as e:
+                    plog("\n\nCamera was not connected @ expose entry:  ", e, "\n\n")
                     try:
                         g_dev['cam']._connect(False)
                         g_dev['cam']._connect(True)
                         g_dev['cam']._set_cooler_on()
                     except:
-                        plog("Camera cooler reconnect failed.")
-            except Exception as e:
-                plog("\n\nCamera was not connected @ expose entry:  ", e, "\n\n")
-                try:
-                    g_dev['cam']._connect(False)
-                    g_dev['cam']._connect(True)
-                    g_dev['cam']._set_cooler_on()
-                except:
-                    plog("Camera cooler reconnect failed 2nd time.")
+                        plog("Camera cooler reconnect failed 2nd time.")
+            #breakpoint()
             
             # Check that the site is still connected to the net.
             if test_connect():
