@@ -323,7 +323,7 @@ class Sequencer:
             plog("Cooling down and waiting for skyflat / observing to begin")
             #breakpoint()
             if ocn_status == None:
-                if self.config['site_roof_control'] != 'no' and enc_status['shutter_status'] in ['Closed', 'closed'] and g_dev['enc'].mode == 'Automatic'\
+                    if self.config['site_roof_control'] != 'no' and enc_status['shutter_status'] in ['Closed', 'closed'] and g_dev['enc'].mode == 'Automatic'\
                     and self.config['site_allowed_to_open_roof'] == 'yes' and self.weather_report_is_acceptable_to_observe:
                     #breakpoint()
                     g_dev['enc'].open_command({}, {})
@@ -1380,7 +1380,7 @@ class Sequencer:
         '''
         Send the config to aws.
         '''
-        uri = f"{self.name}/config/"
+        uri = f"{self.config['site']}/config/"
         self.config['events'] = g_dev['events']
         response = g_dev['obs'].api.authenticated_request("PUT", uri, self.config)
         if response:
