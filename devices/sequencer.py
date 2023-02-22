@@ -334,14 +334,14 @@ class Sequencer:
                     if self.config['site_roof_control'] != 'no' and enc_status['shutter_status'] in ['Closed', 'closed'] and g_dev['enc'].mode == 'Automatic'\
                     and self.config['site_allowed_to_open_roof'] == 'yes' and self.weather_report_is_acceptable_to_observe:
                     #breakpoint()
-                    g_dev['enc'].open_command({}, {})
-                    plog("Opening dome.")
-                    time.sleep(10)
-                    while g_dev['enc'].enclosure.ShutterStatus == 2:
-                        time.sleep(5)                            
-                    if g_dev['enc'].enclosure.ShutterStatus == 0:
-                        self.opens_this_evening= self.opens_this_evening+1
-                        g_dev['obs'].open_and_enabled_to_observe = True
+                        g_dev['enc'].open_command({}, {})
+                        plog("Opening dome.")
+                        time.sleep(10)
+                        while g_dev['enc'].enclosure.ShutterStatus == 2:
+                            time.sleep(5)                            
+                        if g_dev['enc'].enclosure.ShutterStatus == 0:
+                            self.opens_this_evening= self.opens_this_evening+1
+                            g_dev['obs'].open_and_enabled_to_observe = True
             elif self.config['site_roof_control'] != 'no' and enc_status['shutter_status'] in ['Closed', 'closed'] and g_dev['enc'].mode == 'Automatic' \
                 and ocn_status['hold_duration'] <= 0.1 and self.config['site_allowed_to_open_roof'] == 'yes' and self.weather_report_is_acceptable_to_observe:   #NB
                 #breakpoint()
