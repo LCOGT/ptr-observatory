@@ -216,8 +216,8 @@ class Sequencer:
         # allow the observatory to become active and observe. This doesn't mean that it is 
         # necessarily a GOOD night at all, just that there are patches of feasible
         # observing during the night.
-        self.nightly_weather_report_complete=False
-        self.weather_report_is_acceptable_to_observe=False
+        self.nightly_weather_report_complete = False
+        self.weather_report_is_acceptable_to_observe = False
         # If the night is patchy, the weather report can identify a later time to open
         # or to close the observatory early during the night.
         obs_win_begin, sunZ88Op, sunZ88Cl, ephem_now = self.astro_events.getSunEvents()
@@ -227,7 +227,15 @@ class Sequencer:
         self.weather_report_close_during_evening_time=ephem_now
         
         # Run a weather report on bootup so observatory can run if need be. 
-        self.run_nightly_weather_report()
+        if not g_dev['debug']:
+            self.run_nightly_weather_report()
+        else:
+            self.nightly_weather_report_complete = True
+            self.weather_report_is_acceptable_to_observe = True
+            self.weather_report_wait_until_open=True
+            #g_dev['obs'].open_and_enabled_to_observe = True
+            
+            #Consider running this once when in debug mode
         
 
     def get_status(self):
@@ -323,7 +331,7 @@ class Sequencer:
             plog("Cooling down and waiting for skyflat / observing to begin")
             #breakpoint()
             if ocn_status == None:
-                if self.config['site_roof_control'] != 'no' and enc_status['shutter_status'] in ['Closed', 'closed'] and g_dev['enc'].mode == 'Automatic'\
+                    if self.config['site_roof_control'] != 'no' and enc_status['shutter_status'] in ['Closed', 'closed'] and g_dev['enc'].mode == 'Automatic'\
                     and self.config['site_allowed_to_open_roof'] == 'yes' and self.weather_report_is_acceptable_to_observe:
                     #breakpoint()
                     g_dev['enc'].open_command({}, {})
@@ -400,11 +408,11 @@ class Sequencer:
         enc_status = g_dev['enc'].status
         events = g_dev['events']
         
-        
-        # Check for delayed opening of the observatory and act accordingly.
 
+        # Check for delayed opening of the observatory and act accordingly.
+        #breakpoint()
         # If the observatory is simply delayed until opening, then wait until then, then attempt to start up the observatory
-        if self.weather_report_wait_until_open==True:
+        if self.weather_report_wait_until_open:
             if ephem_now >  self.weather_report_wait_until_open_time:
                 if not g_dev['obs'].open_and_enabled_to_observe and self.weather_report_is_acceptable_to_observe==True:
                     if (g_dev['events']['Cool Down, Open'] < ephem.now() < g_dev['events']['Close and Park']):
@@ -438,13 +446,15 @@ class Sequencer:
                         g_dev['mnt'].park_command() 
                     self.weather_report_close_during_evening=False
                     
+
         # Check that nightly reset switch is reset at start of observing eve. 
         if self.nightly_reset_complete == True:
             if events['Eve Bias Dark'] <= ephem_now :
                 self.nightly_reset_complete == False
 
+
         if self.bias_dark_latch and ((events['Eve Bias Dark'] <= ephem_now < events['End Eve Bias Dark']) and \
-             self.config['auto_eve_bias_dark'] and g_dev['enc'].mode in ['Automatic', 'Autonomous', 'Manual'] ):
+             self.config['auto_eve_bias_dark'] and g_dev['enc'].mode in ['Automatic', 'Autonomous', 'Manual'] ):   #events['End Eve Bias Dark']) and \
             self.bias_dark_latch = False
             req = {'bin1': True, 'bin2': False, 'bin3': False, 'bin4': False, 'numOfBias': 45, \
                    'numOfDark': 15, 'darkTime': 180, 'numOfDark2': 3, 'dark2Time': 360, \
@@ -453,9 +463,10 @@ class Sequencer:
             #No action needed on  the enclosure at this level
             self.park_and_close(enc_status)
             #NB The above put dome closed and telescope at Park, Which is where it should have been upon entry.
+
             self.bias_dark_script(req, opt, morn=False)
             self.bias_dark_latch = False
-            
+
             g_dev['mnt'].park_command({}, {})
 
         elif ((g_dev['events']['Cool Down, Open']  <= ephem_now < g_dev['events']['Eve Sky Flats']) and \
@@ -505,7 +516,7 @@ class Sequencer:
 
         elif self.sky_flat_latch and ((events['Eve Sky Flats'] <= ephem_now < events['End Eve Sky Flats'])  \
                and g_dev['enc'].mode in [ 'Automatic', 'Autonomous'] and not g_dev['ocn'].wx_hold and \
-               self.config['auto_eve_sky_flat'] and self.weather_report_is_acceptable_to_observe==True):
+               self.config['auto_eve_sky_flat'] and self.weather_report_is_acceptable_to_observe):
 
             if g_dev['obs'].open_and_enabled_to_observe:
                 #self.time_of_next_slew = time.time() -1
@@ -630,7 +641,12 @@ class Sequencer:
         
         
                             completed_block = self.execute_block(block)  #In this we need to ultimately watch for weather holds.
-                            self.append_completes(completed_block['event_id'])
+                            try:
+                                self.append_completes(completed_block['event_id'])
+                            except:
+                                plog ("block complete append didn't work")
+                                plog(traceback.format_exc())
+                                
                             #block['project_id'] in ['none', 'real_time_slot', 'real_time_block']
                             '''
                             When a scheduled block is completed it is not re-entered or the block needs to
@@ -803,6 +819,8 @@ class Sequencer:
         plog('|n|n Staring a new project!  \n')
         plog(block_specification, ' \n\n\n')
 
+        calendar_event_id=block_specification['event_id']
+
         self.block_guard = True
         # NB we assume the dome is open and already slaving.
         block = copy.deepcopy(block_specification)
@@ -831,7 +849,12 @@ class Sequencer:
         in the series.  If enhance AF is true they need to be injected
         at some point, but it does not decrement. This is still left to do
         '''
-
+        #breakpoint()
+        
+        # this variable is what we check to see if the calendar
+        # event still exists on AWS. If not, we assume it has been
+        # deleted or modified substantially.
+        calendar_event_id = block_specification['event_id']
 
         for target in block['project']['project_targets']:   #  NB NB NB Do multi-target projects make sense???
             try:
@@ -897,6 +920,7 @@ class Sequencer:
             # Necessary
             # Pointing
             # Reset Solve timers
+
             plog ("Taking a quick pointing check and re_seek for new project block")
             g_dev['obs'].last_solve_time = datetime.datetime.now()
             g_dev['obs'].images_since_last_solve = 0
@@ -919,6 +943,14 @@ class Sequencer:
                 self.block_guard = False
                 
                 return block_specification
+            
+            if result == 'calendarend':
+                plog ("Calendar Item containing block removed from calendar")
+                plog ("Site bailing out of running project")
+                self.block_guard = False                
+                return block_specification
+            
+            
             
             g_dev['mnt'].re_seek(dither=0)
 
@@ -973,7 +1005,8 @@ class Sequencer:
                     g_dev['obs'].send_to_user("Running an initial autofocus run.")
 
                     req2 = {'target': 'near_tycho_star', 'area': 150}
-                    self.auto_focus_script(req2, opt, throw = g_dev['foc'].throw)
+                    if not g_dev['debug']:
+                        self.auto_focus_script(req2, opt, throw = g_dev['foc'].throw)
                     just_focused = True
                     g_dev["foc"].focus_needed = False
 
@@ -982,6 +1015,21 @@ class Sequencer:
                 
                 #cycle through exposures decrementing counts    MAY want to double check left-to do but do nut remultiply by 4
                 for exposure in block['project']['exposures']:
+                    
+                    
+                    
+                    # Check whether calendar entry is still existant.
+                    # If not, stop running block
+                    g_dev['obs'].scan_requests()
+                    foundcalendar=False
+                    for tempblock in g_dev['obs'].blocks:
+                        print (tempblock['event_id'])
+                        if tempblock['event_id'] == calendar_event_id :
+                            foundcalendar=True
+                    if not foundcalendar:
+                        print ("could not find calendar entry, cancelling out of block.")
+                        self.block_guard = False
+                        return block_specification
 
                     just_focused = True
 
@@ -1126,7 +1174,7 @@ class Sequencer:
                             now_date_timeZ = datetime.datetime.now().isoformat().split('.')[0] +'Z'
                             if now_date_timeZ >= block['end'] :
                                 break
-                            result = g_dev['cam'].expose_command(req, opt, no_AWS=False, solve_it=False)
+                            result = g_dev['cam'].expose_command(req, opt, no_AWS=False, solve_it=False, calendar_event_id=calendar_event_id)
                             try:
                                 if result['stopped'] is True:
                                     g_dev['obs'].send_to_user("Project Stopped because Exposure cancelled")
@@ -1173,9 +1221,9 @@ class Sequencer:
         if morn:
             ending = g_dev['events']['End Morn Bias Dark']
         else:
-            ending = g_dev['events']['End Eve Bias Dark']+0.3
+            ending = g_dev['events']['End Eve Bias Dark']
         while ephem.now() < ending :   #Do not overrun the window end
-
+  
             g_dev['mnt'].park_command({}, {}) # Get there early
 
             plog("Expose Biases and normal darks by configured binning.")
@@ -1190,8 +1238,9 @@ class Sequencer:
             cycle_time = self.config['camera']['camera_1_1']['settings']['cycle_time']
             #enable_bin= self.config['camera']['camera_1_1']['settings']['enable_bin']
             #for n_of_bias in range(bias_count):   #9*(9 +1) per cycle.
-            if ephem.now() + 120/86400 > ending:
-                break     #Terminate Bias dark phase if within 2 min of ending the phas.             
+            if ephem.now() + (dark_exp_time + cycle_time + 30)/86400 > ending:   #ephem is units of a day
+                self.bias_dark_latch = False
+                break     #Terminate Bias dark phase if within taking a dark woudl run over.             
             
             # The way we make different binnings for CMOS camera is derived from a single
             # exposure of 1x1. So if it is a cmos camera, it is just 1x1.
@@ -1255,11 +1304,13 @@ class Sequencer:
                     b_d_to_do -= 1
                     g_dev['obs'].update_status()
                     if ephem.now() + (dark_exp_time + cycle_time + 30)/86400 > ending:
+                        self.bias_dark_latch = False
                         break
                         
 
                 g_dev['obs'].update_status()
                 if ephem.now() + 30/86400 >= ending:
+                    self.bias_dark_latch = False
                     break
 
             plog(" Bias/Dark acquisition is finished normally.")
@@ -1267,7 +1318,9 @@ class Sequencer:
             self.sequencer_hold = False
             g_dev['mnt'].park_command({}, {}) # Get there early
             plog("Bias/Dark Phase has passed.")
+            self.bias_dark_latch = False
             break
+        self.bias_dark_latch = False
         return
             
     def nightly_reset_script(self):
@@ -1383,7 +1436,7 @@ class Sequencer:
         '''
         Send the config to aws.
         '''
-        uri = f"{self.name}/config/"
+        uri = f"{self.config['site']}/config/"
         self.config['events'] = g_dev['events']
         response = g_dev['obs'].api.authenticated_request("PUT", uri, self.config)
         if response:
@@ -3017,7 +3070,7 @@ class Sequencer:
             if sum(hourly_fitzgerald_number) < 10:
                 plog ("This is a good observing night!")
                 self.weather_report_is_acceptable_to_observe=True
-                self.weather_report_wait_until_open=False
+                self.weather_report_wait_until_open=True
                 self.weather_report_wait_until_open_time=ephem_now
                 self.weather_report_close_during_evening=False
                 self.weather_report_close_during_evening_time=ephem_now
@@ -3031,7 +3084,7 @@ class Sequencer:
             elif sum(hourly_fitzgerald_number) < 100:
                 plog ("This is perhaps not the best night, but we will give it a shot!")
                 self.weather_report_is_acceptable_to_observe=True
-                self.weather_report_wait_until_open=False
+                self.weather_report_wait_until_open=True
                 self.weather_report_wait_until_open_time=ephem_now
                 self.weather_report_close_during_evening=False
                 self.weather_report_close_during_evening_time=ephem_now

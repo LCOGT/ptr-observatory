@@ -90,6 +90,7 @@ class WxEncAgent:
 
         self.status_interval = 45
         self.name = name
+        
 
         self.site_name = name
         self.config = config
@@ -220,7 +221,7 @@ class WxEncAgent:
     def update_config(self):
         """Sends the config to AWS."""
 
-        uri = f"{self.name}/config/"
+        uri = f"{self.config['site']}/config/"
         self.config["events"] = g_dev["events"]
         response = self.api.authenticated_request("PUT", uri, self.config)
         if response:

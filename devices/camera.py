@@ -466,9 +466,18 @@ class Camera:
         except:
             self.camera_x_size = self.config['camera'][self.name]['settings']['CameraXSize']
             self.camera_y_size = self.config['camera'][self.name]['settings']['CameraYSize']
+
         self.camera_start_x = self.config["camera"][self.name]["settings"]["StartX"]
         self.camera_start_y = self.config["camera"][self.name]["settings"]["StartY"]
-        self.camera_num_x = int(1)
+        if self.config["camera"][self.name]["settings"]["cam_needs_NumXY_init"]:  # WER 20230217
+            self.camera.NumX = self.camera_x_size
+            self.camera.NumY = self.camera_y_size
+            self.camera.StartX = 0
+            self.camera.StartY = 0
+            self.camera.BinX = 1
+            self.camera.BinY = 1
+            plog('Num X , y set for QHY camera.')
+        self.camera_num_x = int(1)  #NB I do not recognize this.    WER  Apprently not used.
 
 
         self.af_mode = False
@@ -853,6 +862,7 @@ class Camera:
         no_AWS=False,
         quick=False,
         solve_it=False,
+        calendar_event_id=None
     ):
         """
         This is Phase 1:  Setup the camera.
@@ -872,17 +882,17 @@ class Camera:
         self.tempStartupExposureTime=time.time()
 
 
-        # Force a reseek //eventually dither//
-        try:
-            if (
-                g_dev["mnt"].last_seek_time < self.t0 - 180
-            ):  # NB Consider upping this to 300 to 600 sec.
-                plog("re_seeking")
-                g_dev["mnt"].re_seek(
-                    0
-                )  # is a placeholder for a dither value being passed.
-        except:
-            pass
+        # # Force a reseek //eventually dither//
+        # try:
+        #     if (
+        #         g_dev["mnt"].last_seek_time < self.t0 - 180  #NB this is faulting, no se.f.t0 exists
+        #     ):  # NB Consider upping this to 300 to 600 sec.
+        #         plog("re_seeking")
+        #         g_dev["mnt"].re_seek(
+        #             0
+        #         )  # is a placeholder for a dither value being passed.
+        # except:
+        #     pass
 
 
         opt = optional_params
@@ -1119,7 +1129,30 @@ class Camera:
                             sskcounter=2
                             self.exposure_busy = False
                             return 'blockend'
-                        
+                    
+                    # Check that the calendar event that is running the exposure
+                    # Hasn't completed already
+                    # Check whether calendar entry is still existant.
+                    # If not, stop running block
+                    print ("LOOKING FOR CALENDAR!")
+                    if not calendar_event_id == None:
+                        g_dev['obs'].scan_requests()
+                        foundcalendar=False                    
+                        for tempblock in g_dev['obs'].blocks:
+                            print (tempblock['event_id'])
+                            if tempblock['event_id'] == calendar_event_id :
+                                print ("FOUND CALENDAR!")
+                                foundcalendar=True
+                        if foundcalendar == False:
+                            print ("could not find calendar entry, cancelling out of block.")
+                            self.exposure_busy = False
+                            plog ("And Cancelling SmartStacks.")
+                            Nsmartstack=1
+                            sskcounter=2
+                            return 'calendarend'
+                    
+                        #breakpoint()    
+                    
                     # NB Here we enter Phase 2
                     try:
                         #self.t1 = time.time()
@@ -1195,7 +1228,7 @@ class Camera:
                                 )  # NB NB WEMA must be running or this may fault.
                             except:
                                 plog(
-                                    "Failed to collect quick status on observing conditions"
+                                    "ocn quick status failing"
                                 )
                             g_dev["foc"].get_quick_status(self.pre_foc)
                             try:
@@ -1305,11 +1338,11 @@ class Camera:
 
         #plog ("Smart Stack ID: " + smartstackid)
         g_dev["obs"].send_to_user(
-            "Starting Exposure: "
+            "Starting "
             + str(exposure_time)
-            + " sec.;   # of "
+            + " second exposure. Number of "
             + frame_type
-            + " frames. Remaining: "
+            + " frames remaining: "
             + str(counter),
             p_level="INFO",
         )
@@ -1557,7 +1590,7 @@ class Camera:
                     del self.img
 
                     
-                    #This should plog out  0,0 color pixel for an OSC camera and plot it. Yellow is larger! 
+                    #This should plot out  0,0 color pixel for an OSC camera and plot it. Yellow is larger! 
                     # self.tsp = hdu.data
                     # plog(self.tsp[0:2, 24:26])
                     # plt.imshow(self.tsp[0:2, 24:26])
@@ -2381,7 +2414,6 @@ class Camera:
                         flashbinning=1
                         
                         try:
-
                             hdusmalldata = hdusmalldata - self.biasFiles[str(flashbinning)]
                             hdusmalldata = hdusmalldata - (self.darkFiles[str(flashbinning)] * exposure_time)
                             
@@ -2460,15 +2492,16 @@ class Camera:
                                     hdugreen=(block_reduce(hdufocusdata * checkerboard ,2))
                                     
                                     # G bottom left Pixels
-                                    #list_0_1 = np.asarray([ [0,0], [1,0] ])
-                                    #checkerboard=np.tile(list_0_1, (xshape//2, yshape//2))
-                                    #checkerboard=np.array(checkerboard)
-                                    #GBLonly=(block_reduce(hdufocusdata * checkerboard ,2))                                
+                                    list_0_1 = np.asarray([ [0,0], [1,0] ])
+                                    checkerboard=np.tile(list_0_1, (xshape//2, yshape//2))
+                                    checkerboard=np.array(checkerboard)
+                                    GBLonly=(block_reduce(hdufocusdata * checkerboard ,2))                                
                                     
                                     # Sum two Gs together and half them to be vaguely on the same scale
                                     #hdugreen = np.array((GTRonly + GBLonly) / 2)
                                     #del GTRonly
                                     #del GBLonly
+
                                     del checkerboard
                                     
                                 # Interpolate to make a high resolution version for focussing
@@ -3080,11 +3113,9 @@ class Camera:
                         # This is all done outside the reduce queue to guarantee the pointing check is done
                         # prior to the next exposure                        
 
-                        if focus_image == True or ((Nsmartstack == sskcounter+1) and Nsmartstack > 1)\
-                                               or (g_dev['obs'].images_since_last_solve \
-                                               > g_dev['obs'].config["solve_nth_image"] \
-                                               and (datetime.datetime.now() - g_dev['obs'].last_solve_time) \
-                                               > datetime.timedelta(minutes=g_dev['obs'].config["solve_timer"])):
+                        if focus_image == True or solve_it == True or ((Nsmartstack == sskcounter+1) and Nsmartstack > 1)\
+                                                   or g_dev['obs'].images_since_last_solve > g_dev['obs'].config["solve_nth_image"] or (datetime.datetime.now() - g_dev['obs'].last_solve_time)  > datetime.timedelta(minutes=g_dev['obs'].config["solve_timer"]):
+                                                       
                             cal_name = (
                                 cal_name[:-9] + "F012" + cal_name[-7:]
                             )                            
@@ -3177,21 +3208,21 @@ class Camera:
                                             if g_dev["mnt"].pier_side == 0:
                                                 try:
                                                     g_dev["mnt"].adjust_mount_reference(
-                                                        err_ha, err_dec
+                                                        -err_ha, -err_dec
                                                     )
                                                 except Exception as e:
                                                     plog ("Something is up in the mount reference adjustment code ", e)
                                             else:
                                                 try:
                                                     g_dev["mnt"].adjust_flip_reference(
-                                                        err_ha, err_dec
+                                                        -err_ha, -err_dec
                                                     )  # Need to verify signs
                                                 except Exception as e:
                                                     plog ("Something is up in the mount reference adjustment code ", e)
                                             
                                             g_dev["mnt"].current_icrs_ra = solved_ra                                    
                                             g_dev["mnt"].current_icrs_dec = solved_dec
-                                            #g_dev['mnt'].re_seek(dither=0)
+                                            g_dev['mnt'].re_seek(dither=0)
                                         except:
                                             plog("This mount doesn't report pierside")
                                             plog(traceback.format_exc())
@@ -3220,13 +3251,15 @@ class Camera:
 
                     # Now that the jpeg has been sent up pronto,
                     # We turn back to getting the bigger raw, reduced and fz files dealt with
-                    self.to_slow_process(5,('fz_and_send', raw_path + raw_name00 + ".fz", hdu.data, hdu.header, frame_type))                    
+                    pass
+                    #self.to_slow_process(5,('fz_and_send', raw_path + raw_name00 + ".fz", hdu.data, hdu.header, frame_type))                    
 
         
                     # Similarly to the above. This saves the RAW file to disk
                     # it works 99.9999% of the time.
-                    if self.config['save_raw_to_disk']:
-                        self.to_slow_process(1000,('raw', raw_path + raw_name00, hdu.data, hdu.header, frame_type))
+                    pass
+                    #if self.config['save_raw_to_disk']:
+                    #   self.to_slow_process(1000,('raw', raw_path + raw_name00, hdu.data, hdu.header, frame_type))
                     
                     # Similarly to the above. This saves the REDUCED file to disk
                     # it works 99.9999% of the time.
