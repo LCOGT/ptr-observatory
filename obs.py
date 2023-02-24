@@ -28,6 +28,11 @@ import astroalign as aa
 from astropy.io import fits
 from astropy.nddata import block_reduce
 from astropy.utils.data import check_download_cache
+from astropy.coordinates import SkyCoord, FK5, ICRS,  \
+                         EarthLocation, AltAz, get_sun, get_moon
+from astropy.time import Time
+from astropy import units as u
+
 from dotenv import load_dotenv
 import numpy as np
 import redis  # Client, can work with Memurai
@@ -911,6 +916,23 @@ sel
             self.time_since_safety_checks=time.time()
             
             #breakpoint()
+            
+            
+            # Check that the mount hasn't slewed too close to the sun
+            sun_coords=get_sun(Time.now())
+            temppointing=SkyCoord((g_dev['mnt'].current_icrs_ra)*u.hour, (g_dev['mnt'].current_icrs_dec)*u.degree, frame='icrs')           
+             
+            sun_dist = sun_coords.separation(temppointing)
+            #plog ("sun distance: " + str(sun_dist.degree))
+            if sun_dist.degree <  self.config['closest_distance_to_the_sun']:
+                g_dev['obs'].send_to_user("Found telescope pointing too close to the sun: " + str(sun_dist.degree) + " degrees.")
+                plog("Found telescope pointing too close to the sun: " + str(sun_dist.degree) + " degrees.")
+                g_dev['obs'].send_to_user("Parking scope and cancelling all activity")
+                plog("Parking scope and cancelling all activity")
+                self.cancel_all_activity()
+                if not g_dev['mnt'].mount.AtPark:
+                    g_dev['mnt'].park_command()                     
+                return
 
             # If the shutter is open, check it is meant to be.
             # This is just a brute force overriding safety check.
@@ -1060,6 +1082,8 @@ sel
                     g_dev['mnt'].mount.Connected = True
                     #g_dev['mnt'].home_command()
                 
+            
+    
     
             # If no activity for an hour, park the scope               
             if time.time() - self.time_since_last_slew_or_exposure > self.config['mount']['mount1']\
