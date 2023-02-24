@@ -49,7 +49,7 @@ from astropy.time import Time
 
 from astropy import units as u
 from astropy.coordinates import SkyCoord, FK5, ICRS,  \
-                         EarthLocation, AltAz, get_sun
+                         EarthLocation, AltAz, get_sun, get_moon
                          #This should be removed or put in a try
 
 import ptr_utility
