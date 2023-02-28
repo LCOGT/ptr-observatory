@@ -33,6 +33,7 @@ site_config = {
     'debug_site_mode': False,
     
     'debug_mode': False,
+    'debug_duration_sec': 7200,
     'owner':  ['google-oauth2|112401903840371673242'],  # WER,  Or this can be
                                                         # some aws handle.
     'owner_alias': ['WER', 'TELOPS'],

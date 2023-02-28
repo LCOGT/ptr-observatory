@@ -872,6 +872,12 @@ class Camera:
         image data.
         """
         
+        #First check, if we are not open and available to observe, then .... don't observe!
+        
+        if (g_dev['obs'].open_and_enabled_to_observe==False and g_dev['enc'].mode == 'Automatic') and (not g_dev['obs'].debug_flag) :
+            g_dev['obs'].send_to_user("Refusing exposure request as the observatory is not enabled to observe.")
+            plog("Refusing exposure request as the observatory is not enabled to observe.")
+            return
         
         
         self.exposure_busy = True # This really needs to be here from the start
