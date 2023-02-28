@@ -920,7 +920,12 @@ class Mount:
         if 'ra' in req:
             ra = float(req['ra'])
             dec = float(req['dec'])
-            temppointing=SkyCoord(ra*u.hour, dec*u.degree, frame='icrs')            
+            temppointing=SkyCoord(ra*u.hour, dec*u.degree, frame='icrs')
+            temppointingaltaz=temppointing.transform_to(AltAz(location=self.site_coordinates, obstime=Time.now()))
+            alt = temppointingaltaz.alt.degree
+            az = temppointingaltaz.az.degree
+            
+                                        
         elif 'az' in req:
             az = float(req['az'])
             alt = float(req['alt'])
@@ -963,6 +968,12 @@ class Mount:
                 plog("Refusing pointing request as it is too close to the moon: " + str(moon_dist.degree) + " degrees.")
                 return
         
+        # Third thing, check that the requested coordinates are not
+        # below a reasonable altitude
+        if alt < self.config['lowest_requestable_altitude']:
+            g_dev['obs'].send_to_user("Refusing pointing request as it is too low: " + str(alt) + " degrees.")
+            plog("Refusing pointing request as it is too low: " + str(alt) + " degrees.")
+            return
         
         
         plog("mount cmd. slewing mount, req, opt:  ", req, opt)

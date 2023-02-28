@@ -31,6 +31,10 @@ site_config = {
     'site': str(site_name.lower()),
     'site_id': 'ec2',
     'debug_site_mode': False,
+    
+    
+    
+    'debug_mode': False,
     'owner':  ['google-oauth2|112401903840371673242'],  # WER,  Or this can be
                                                         # some aws handle.
     'owner_alias': ['WER', 'TELOPS'],
@@ -86,7 +90,14 @@ site_config = {
     'site_roof_control': 'yes', #MTF entered this in to remove sro specific code.... Basically do we have control of the roof or not see line 338 sequencer.py
     'site_allowed_to_open_roof': 'yes',
     
+    
+    'check_time': 300,   #MF's original setting.
+    
     'maximum_roof_opens_per_evening' : 4,
+    
+    'closest_distance_to_the_sun': 45, # Degrees. For normal pointing requests don't go this close to the sun. 
+    'closest_distance_to_the_moon': 10, # Degrees. For normal pointing requests don't go this close to the moon. 
+    'lowest_requestable_altitude': -5, # Degrees. For normal pointing requests don't allow requests to go this low. 
     'site_in_automatic_default': "Automatic",   #  ["Manual", "Shutdown", "Automatic"]
     'automatic_detail_default': "Enclosure is initially set to Automatic mode.",
     'observing_check_period' : 5,    # How many minutes between weather checks
@@ -522,6 +533,9 @@ site_config = {
                 'calib_setpoints': [-35,-30, -25, -20, -15, -10 ],  #  Should vary with season?
                 'day_warm': False,
                 'cooler_on': True,
+                
+                
+                "cam_needs_NumXY_init": False,
                 'x_start':  0,
                 'y_start':  0,
                 'x_width':  4500,   #  NB Should be set up with overscan, which this camera is!  20200315 WER
