@@ -1372,6 +1372,7 @@ class Camera:
         quartileExposureReport = 0
         self.plog_exposure_time_counter_timer=time.time() -3.0
         
+        exposure_scan_request_timer=time.time()
         
         while True:  # This loop really needs a timeout.
             self.post_mnt = []
@@ -1384,7 +1385,16 @@ class Camera:
                 time.time() < self.completion_time or self.async_exposure_lock==True
             ):  
                 #self.t7b = time.time()
+                
+                
+                # Scan requests every 4 seconds... primarily hunting for a "Cancel/Stop"
+                if exposure_scan_request_timer - time.time() > 4:                    
+                    exposure_scan_request_timer=time.time()
+                    g_dev['obs'].scan_requests()
+                
                 remaining = round(self.completion_time - time.time(), 1)
+                
+                
                 if remaining > 0:  
                     if time.time() - self.plog_exposure_time_counter_timer > 10.0:
                         self.plog_exposure_time_counter_timer=time.time()
