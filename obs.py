@@ -357,6 +357,21 @@ class Observatory:
             self.open_and_enabled_to_observe=True
         else:
             self.open_and_enabled_to_observe=False
+            
+            
+        # On initialisation, there should be no commands heading towards the site
+        # So this command reads the commands waiting and just ... ignores them
+        # essentially wiping the command queue coming from AWS.
+        # This prevents commands from previous nights/runs suddenly running
+        # when obs.py is booted (has happened a bit!)
+        url_job = "https://jobs.photonranch.org/jobs/getnewjobs"
+        body = {"site": self.name}
+        #cmd = {}
+        # Get a list of new jobs to complete (this request
+        # marks the commands as "RECEIVED")
+        unread_commands = reqs.request(
+            "POST", url_job, data=json.dumps(body)
+        ).json()
 
         # Need to set this for the night log
         #g_dev['foc'].set_focal_ref_reset_log(self.config["focuser"]["focuser1"]["reference"])
@@ -571,7 +586,7 @@ sel
 
                     for cmd in unread_commands:
                         if cmd["action"] in ["cancel_all_commands", "stop"]:
-                            self.cancel_all_acivity() # Hi Wayne, I have to cancel all acitivity with some roof stuff
+                            self.cancel_all_activity() # Hi Wayne, I have to cancel all acitivity with some roof stuff
                             # So I've moved the cancelling to it's own function just above so it can be called from multiple locations.
                         else:
                             self.cmd_queue.put(cmd)  # SAVE THE COMMAND FOR LATER
