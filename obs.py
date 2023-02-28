@@ -727,8 +727,8 @@ sel
         """
         
         
-        
-        
+
+            
         loud = False
         if bpt:
             plog('UpdateStatus bpt was invoked.')
@@ -824,6 +824,23 @@ sel
                         result = device.get_status()
                 if result is not None:
                     status[dev_type][device_name] = result
+
+        # Check that the mount hasn't slewed too close to the sun
+        if not g_dev['mnt'].mount.Slewing:
+            sun_coords=get_sun(Time.now())
+            temppointing=SkyCoord((g_dev['mnt'].current_icrs_ra)*u.hour, (g_dev['mnt'].current_icrs_dec)*u.degree, frame='icrs')           
+             
+            sun_dist = sun_coords.separation(temppointing)
+            #plog ("sun distance: " + str(sun_dist.degree))
+            if sun_dist.degree <  self.config['closest_distance_to_the_sun']:
+                g_dev['obs'].send_to_user("Found telescope pointing too close to the sun: " + str(sun_dist.degree) + " degrees.")
+                plog("Found telescope pointing too close to the sun: " + str(sun_dist.degree) + " degrees.")
+                g_dev['obs'].send_to_user("Parking scope and cancelling all activity")
+                plog("Parking scope and cancelling all activity")
+                self.cancel_all_activity()
+                if not g_dev['mnt'].mount.AtPark:
+                    g_dev['mnt'].park_command()                     
+                return        
 
         status["timestamp"] = round((time.time() + t1) / 2.0, 3)
         status["send_heartbeat"] = False
