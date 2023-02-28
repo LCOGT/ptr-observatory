@@ -318,52 +318,58 @@ class Sequencer:
             #We slew to anti-solar Az and reissue this command every 120 seconds
         flat_spot, flat_alt = g_dev['evnt'].flat_spot_now()
 
-        try:           
-            # First unpark and move telescope away from the sun.    
-            plog("Unparking Scope and pointing it opposite the sun.")
-            if g_dev['mnt'].mount.AtParK:
-                g_dev['mnt'].unpark_command({}, {})
-            
-            g_dev['mnt'].slewToSkyFlatAsync()
-            self.time_of_next_slew = time.time() + 600 
-            #time.sleep(10)
-            plog("Open and slew Dome to azimuth opposite the Sun:  ", round(flat_spot, 1))
-            plog("Cooling down and waiting for skyflat / observing to begin")
-            #breakpoint()
-            if ocn_status == None:
-                    if self.config['site_roof_control'] != 'no' and enc_status['shutter_status'] in ['Closed', 'closed'] and g_dev['enc'].mode == 'Automatic'\
-                    and self.config['site_allowed_to_open_roof'] == 'yes' and self.weather_report_is_acceptable_to_observe:
-                    #breakpoint()
-                        g_dev['enc'].open_command({}, {})
-                        plog("Opening dome.")
-                        time.sleep(10)
-                        while g_dev['enc'].enclosure.ShutterStatus == 2:
-                            time.sleep(5)                            
-                        if g_dev['enc'].enclosure.ShutterStatus == 0:
-                            self.opens_this_evening= self.opens_this_evening+1
-                            g_dev['obs'].open_and_enabled_to_observe = True
-            elif self.config['site_roof_control'] != 'no' and enc_status['shutter_status'] in ['Closed', 'closed'] and g_dev['enc'].mode == 'Automatic' \
-                and ocn_status['hold_duration'] <= 0.1 and self.config['site_allowed_to_open_roof'] == 'yes' and self.weather_report_is_acceptable_to_observe:   #NB
+        # Only send an enclosure open command if the weather 
+        if g_dev['obs'].weather_report_is_acceptable_to_observe:
+
+            try:           
+                # First unpark and move telescope away from the sun.    
+                plog("Unparking Scope and pointing it opposite the sun.")
+                if g_dev['mnt'].mount.AtParK:
+                    g_dev['mnt'].unpark_command({}, {})
+                
+                g_dev['mnt'].slewToSkyFlatAsync()
+                self.time_of_next_slew = time.time() + 600 
+                #time.sleep(10)
+                plog("Open and slew Dome to azimuth opposite the Sun:  ", round(flat_spot, 1))
+                plog("Cooling down and waiting for skyflat / observing to begin")
                 #breakpoint()
-                g_dev['enc'].open_command({}, {})
-                plog("Opening dome.")
-                time.sleep(10)
-                while g_dev['enc'].enclosure.ShutterStatus == 2:
-                        time.sleep(5)                            
-                if g_dev['enc'].enclosure.ShutterStatus == 0:
-                    self.opens_this_evening= self.opens_this_evening+1
-                    g_dev['obs'].open_and_enabled_to_observe = True
-            try:
-                plog("Synchronising dome.")
-                g_dev['enc'].sync_mount_command({}, {})
-            except:
-                pass
-            #Prior to skyflats no dome following.
-            self.dome_homed = False
-            
-        except Exception as e:
-            plog ("Enclosure opening glitched out: ", e)
-            
+                if ocn_status == None:
+                        if self.config['site_roof_control'] != 'no' and enc_status['shutter_status'] in ['Closed', 'closed'] and g_dev['enc'].mode == 'Automatic'\
+                        and self.config['site_allowed_to_open_roof'] == 'yes' and self.weather_report_is_acceptable_to_observe:
+                        #breakpoint()
+                            g_dev['enc'].open_command({}, {})
+                            plog("Opening dome.")
+                            time.sleep(10)
+                            while g_dev['enc'].enclosure.ShutterStatus == 2:
+                                time.sleep(5)                            
+                            if g_dev['enc'].enclosure.ShutterStatus == 0:
+                                self.opens_this_evening= self.opens_this_evening+1
+                                g_dev['obs'].open_and_enabled_to_observe = True
+                elif self.config['site_roof_control'] != 'no' and enc_status['shutter_status'] in ['Closed', 'closed'] and g_dev['enc'].mode == 'Automatic' \
+                    and ocn_status['hold_duration'] <= 0.1 and self.config['site_allowed_to_open_roof'] == 'yes' and self.weather_report_is_acceptable_to_observe:   #NB
+                    #breakpoint()
+                    g_dev['enc'].open_command({}, {})
+                    plog("Opening dome.")
+                    time.sleep(10)
+                    while g_dev['enc'].enclosure.ShutterStatus == 2:
+                            time.sleep(5)                            
+                    if g_dev['enc'].enclosure.ShutterStatus == 0:
+                        self.opens_this_evening= self.opens_this_evening+1
+                        g_dev['obs'].open_and_enabled_to_observe = True
+                try:
+                    plog("Synchronising dome.")
+                    g_dev['enc'].sync_mount_command({}, {})
+                except:
+                    pass
+                #Prior to skyflats no dome following.
+                self.dome_homed = False
+                
+            except Exception as e:
+                plog ("Enclosure opening glitched out: ", e)
+        
+        else:
+            plog("An enclosure command was rejected because the weather report was not acceptable.")
+        
         return
 
     def park_and_close(self, enc_status):
@@ -1267,7 +1273,7 @@ class Sequencer:
                        'filter': 'dark'}
                   
                 result = g_dev['cam'].expose_command(req, opt, no_AWS=False, \
-                                do_sep=False, quick=False)
+                                do_sep=False, quick=False, skip_open_check=True)
                 b_d_to_do -= min_to_do
                 
 
@@ -1288,7 +1294,7 @@ class Sequencer:
                     opt = {'area': "Full", 'count': 1, 'bin': 1, \
                             'filter': 'dark'}
                     result = g_dev['cam'].expose_command(req, opt, no_AWS=False, \
-                                       do_sep=False, quick=False)
+                                       do_sep=False, quick=False, skip_open_check=True)
                     b_d_to_do -= 1
                     g_dev['obs'].update_status()
                     if ephem.now() + (dark_exp_time + cycle_time + 30)/86400 > ending:
@@ -1300,7 +1306,7 @@ class Sequencer:
                     opt = {'area': "Full", 'count': 1, 'bin': 1, \
                             'filter': 'dark'}
                     result = g_dev['cam'].expose_command(req, opt, no_AWS=False, \
-                                       do_sep=False, quick=False)
+                                       do_sep=False, quick=False, skip_open_check=True)
                     b_d_to_do -= 1
                     g_dev['obs'].update_status()
                     if ephem.now() + (dark_exp_time + cycle_time + 30)/86400 > ending:
@@ -1897,7 +1903,7 @@ class Sequencer:
         req = {'time': exp_time,  'alias': camera_name, 'image_type': 'screen flat'}
         opt = {'area': 100, 'count': dark_count, 'filter': 'dark', 'hint': 'screen dark'}  #  air has highest throughput
 
-        result = g_dev['cam'].expose_command(req, opt, no_AWS=True)
+        result = g_dev['cam'].expose_command(req, opt, no_AWS=True, skip_open_check=True)
         plog('First dark 30-sec patch, filter = "air":  ', result['patch'])
         # g_dev['scr'].screen_light_on()
 
@@ -1914,7 +1920,7 @@ class Sequencer:
             plog('Dark Screen; filter, bright:  ', filter_number, 0)
             req = {'time': float(exp_time),  'alias': camera_name, 'image_type': 'screen flat'}
             opt = {'area': 100, 'count': 1, 'filter': g_dev['fil'].filter_data[filter_number][0], 'hint': 'screen pre-filter dark'}
-            result = g_dev['cam'].expose_command(req, opt, no_AWS=True)
+            result = g_dev['cam'].expose_command(req, opt, no_AWS=True, skip_open_check=True)
             plog("Dark Screen flat, starting:  ", result['patch'], g_dev['fil'].filter_data[filter_number][0], '\n\n')
             g_dev['obs'].update_status()
             plog('Lighted Screen; filter, bright:  ', filter_number, screen_setting)
@@ -1928,7 +1934,7 @@ class Sequencer:
             g_dev['obs'].update_status()
             req = {'time': float(exp_time),  'alias': camera_name, 'image_type': 'screen flat'}
             opt = {'area': 100, 'count': flat_count, 'filter': g_dev['fil'].filter_data[filter_number][0], 'hint': 'screen filter light'}
-            result = g_dev['cam'].expose_command(req, opt, no_AWS=True)
+            result = g_dev['cam'].expose_command(req, opt, no_AWS=True, skip_open_check=True)
             # if no exposure, wait 10 sec
             plog("Lighted Screen flat:  ", result['patch'], g_dev['fil'].filter_data[filter_number][0], '\n\n')
             g_dev['obs'].update_status()
@@ -1939,7 +1945,7 @@ class Sequencer:
             plog('Dark Screen; filter, bright:  ', filter_number, 0)
             req = {'time': float(exp_time),  'alias': camera_name, 'image_type': 'screen flat'}
             opt = {'area': 100, 'count': 1, 'filter': g_dev['fil'].filter_data[filter_number][0], 'hint': 'screen post-filter dark'}
-            result = g_dev['cam'].expose_command(req, opt, no_AWS=True)
+            result = g_dev['cam'].expose_command(req, opt, no_AWS=True, skip_open_check=True)
             plog("Dark Screen flat, ending:  ",result['patch'], g_dev['fil'].filter_data[filter_number][0], '\n\n')
 
 
