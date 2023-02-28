@@ -123,20 +123,20 @@ site_config = {
     'site_allowed_to_open_roof': 'yes',
     'check_time': 300,   #MF's original setting.
     'maximum_roof_opens_per_evening' : 4,
-    'site_in_automatic_default': "Automatic",   #"Manual", "Shutdown"
-    'automatic_detail_default': "Enclosure is initially set to Automatic mode.",
+    'site_in_automatic_default': "Shutdown",   #"Manual", "Shutdown"
+    'automatic_detail_default': "Enclosure is temporarily set to Sutdown mode.",
     'observing_check_period' : 5,    # How many minutes between weather checks
     'enclosure_check_period' : 5,    # How many minutes between enclosure checks
 
     'auto_eve_bias_dark': True,
     
     'auto_midnight_moonless_bias_dark': False,
-    'auto_eve_sky_flat': True,
+    'auto_eve_sky_flat': False,
 
     'eve_sky_flat_sunset_offset': -60.,  # 40 before Minutes  neg means before, + after.
 
     'eve_cool_down_open' : -65.0,
-    'auto_morn_sky_flat': True,
+    'auto_morn_sky_flat': False,
     'auto_morn_bias_dark': True,
     're-calibrate_on_solve': True,
     'pointing_calibration_on_startup': False,  #MF I am leaving this alone.

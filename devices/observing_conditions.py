@@ -531,10 +531,11 @@ class ObservingConditions:
             if self.wx_hold:
                 self.wx_to_go = round((self.wx_hold_until_time - time.time()), 0)
                 status["hold_duration"] = self.wx_to_go
-                try:
-                    g_dev['obs'].send_to_user(wx_reasons)
-                except:
-                    pass
+                # MTF COMMENTED THIS OUT BECAUSE IT WAS SENDING A STATUS EVERY 20 SECONDS
+                #try:
+                #    g_dev['obs'].send_to_user(wx_reasons)
+                #except:
+                #    pass
             else:
                 status["hold_duration"] = 0.0
             self.status = status
