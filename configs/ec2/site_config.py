@@ -34,7 +34,7 @@ site_config = {
     
     
     
-    'debug_mode': True,
+    'debug_mode': False,
     
     'debug_duration_sec': 7200,
     'owner':  ['google-oauth2|112401903840371673242'],  # WER,  Or this can be
@@ -628,6 +628,8 @@ site_config = {
                 'bias_dark_bin_spec': ['1,1'],    #Default binning for flats
                 'bin_enable': ['1 1'],
                 'dark_length' : 900,
+                
+                'flat_count' : 10,
                 'bias_count' : 10,
                 'dark_count' : 10,
                 
