@@ -60,8 +60,7 @@ site_config = {
     'redis_ip': None,  #'127.0.0.1', None if no redis path present,
     'site_is_generic':  True,   # A simple single computer ASCOM site.
     'site_is_specific':  False,  # Indicates some special code for this site, found at end of config.
-    'home_altitude' : 70,
-    'home_azimuth' : 160,
+    
 
     'host_wema_site_name':  'ECO',  #  The umbrella header for obsys in close geographic proximity.
     'name': 'Eltham College Observatory, 0m4f6.8',
@@ -240,6 +239,8 @@ site_config = {
 			    'elevation_offset': 0.0,    # meters above sea level
                 'home_park_altitude': 0.0,
                 'home_park_azimuth': 270.,
+                'home_altitude' : 70,
+                'home_azimuth' : 160,
                 'horizon':  15.,    #  Meant to be a circular horizon. Or set to None if below is filled in.
                 'horizon_detail': {  #  Meant to be something to draw on the Skymap with a spline fit.
                      '0.1': 10,
