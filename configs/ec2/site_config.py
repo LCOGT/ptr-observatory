@@ -34,7 +34,7 @@ site_config = {
     
     
     
-    'debug_mode': False,
+    'debug_mode': True,
     
     'debug_duration_sec': 7200,
     'owner':  ['google-oauth2|112401903840371673242'],  # WER,  Or this can be
@@ -51,6 +51,8 @@ site_config = {
     'send_files_at_end_of_night' : 'no', # For low bandwidth sites, do not send up large files until the end of the night. set to 'no' to disable
     'save_raw_to_disk' : False, # For low diskspace sites (or just because they aren't needed), don't save a separate raw file to disk after conversion to fz.    
     'keep_focus_images_on_disk' : False, # To save space, the focus file can not be saved.
+    'keep_reduced_on_disk' : False, # PTR uses the reduced file for some calculations (focus, SEP, etc.). To save space, this file can be removed after usage or not saved.
+    
     
     'aux_archive_path':  None, # '//house-computer/saf_archive_2/archive/',  #  Path to auxillary backup disk.
     'wema_is_active':  False,    #True if split computers used at a site.
@@ -588,6 +590,7 @@ site_config = {
                 
                 'min_flat_exposure': 0.02,
                 'max_exposure': 3600,
+                'max_daytime_exposure': 0.0001,
                 'can_subframe':  True,
                 'min_subframe':  [128, 128],
                 'bin_modes':  [[1, 1, 1.59]], #  , [2, 2, 2.13], [3, 3, 3.21], [4, 4, 4.27]],   #Meaning no binning choice if list has only one entry, default should be first.

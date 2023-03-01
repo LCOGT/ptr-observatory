@@ -541,6 +541,7 @@ site_config = {
                 
                 'min_flat_exposure': 1.0,
                 'max_exposure': 3600,
+                'max_daytime_exposure': 0.0001,
                 'can_subframe':  True,
                 'min_subframe':  [128, 128],
                 'bin_modes':  [[1, 1, 1.07]], #  , [2, 2, 2.13], [3, 3, 3.21], [4, 4, 4.27]],   #Meaning no binning choice if list has only one entry, default should be first.

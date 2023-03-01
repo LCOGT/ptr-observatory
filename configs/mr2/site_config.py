@@ -626,6 +626,7 @@ site_config = {
                 
                 'min_flat_exposure': 1.0,
                 'max_exposure': 600.0,
+                'max_daytime_exposure': 0.0001,
                 'ref_dark': 300.0,
                 'long_dark': 600.0,
                 'can_subframe':  True,

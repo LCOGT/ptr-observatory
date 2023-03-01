@@ -689,6 +689,7 @@ site_config = {
                 'min_exposure': 0.0001,
                 'min_flat_exposure': 0.0001,
                 'max_exposure': 180.,
+                'max_daytime_exposure': 0.0001,
                 'can_subframe':  True,
                 'min_subframe': [128,128],
                 'bin_modes':  [['Optimal', 0.91], ['Fine', 0.61], ['Coarse', 1.2], ['Eng', 0.30]],     #Meaning fixed binning if list has only one entry

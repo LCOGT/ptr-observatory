@@ -863,7 +863,8 @@ class Camera:
         quick=False,
         solve_it=False,
         calendar_event_id=None,
-        skip_open_check=False
+        skip_open_check=False,
+        skip_daytime_check=False
     ):
         """
         This is Phase 1:  Setup the camera.
@@ -881,6 +882,23 @@ class Camera:
                 plog("Refusing exposure request as the observatory is not enabled to observe.")
                 return
         
+        # Need to pick up exposure time here
+        exposure_time = float(
+            required_params.get("time", 0.0001)
+        ) 
+        
+        #Third check, check it isn't daytime and institute maximum exposure time 
+        #Unless it is a command from the sequencer flat_scripts
+        if not skip_daytime_check:
+            sun_az, sun_alt = g_dev['evnt'].sun_az_alt_now()
+            if sun_alt > -5:
+                if exposure_time > float(self.config["camera"][self.name]["settings"]['max_daytime_exposure']):
+                    g_dev['obs'].send_to_user("Exposure time reduced to maximum daytime exposure time: " + str(float(self.config["camera"][self.name]["settings"]['max_daytime_exposure'])))
+                    plog("Exposure time reduced to maximum daytime exposure time: " + str(float(self.config["camera"][self.name]["settings"]['max_daytime_exposure'])))
+                    exposure_time = float(self.config["camera"][self.name]["settings"]['max_daytime_exposure'])
+            #breakpoint()
+            
+            
         
         self.exposure_busy = True # This really needs to be here from the start
         # We've had multiple cases of multiple camera exposures trying to go at once
@@ -986,10 +1004,7 @@ class Camera:
             self.config["camera"][self.name]["settings"]["cycle_time"]
         )
 
-            
-        exposure_time = float(
-            required_params.get("time", 0.0001)
-        ) 
+    
         
         self.estimated_readtime = (
             exposure_time + readout_time

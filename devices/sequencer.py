@@ -1275,7 +1275,7 @@ class Sequencer:
                        'filter': 'dark'}
                   
                 result = g_dev['cam'].expose_command(req, opt, no_AWS=False, \
-                                do_sep=False, quick=False, skip_open_check=True)
+                                do_sep=False, quick=False, skip_open_check=True,skip_daytime_check=False)
                 b_d_to_do -= min_to_do
                 
 
@@ -1299,7 +1299,7 @@ class Sequencer:
                     opt = {'area': "Full", 'count': 1, 'bin': 1, \
                             'filter': 'dark'}
                     result = g_dev['cam'].expose_command(req, opt, no_AWS=False, \
-                                       do_sep=False, quick=False, skip_open_check=True)
+                                       do_sep=False, quick=False, skip_open_check=True,skip_daytime_check=False)
                     b_d_to_do -= 1
                     g_dev['obs'].update_status()
                     if ephem.now() + (dark_exp_time + cycle_time + 30)/86400 > ending:
@@ -1311,7 +1311,7 @@ class Sequencer:
                     opt = {'area': "Full", 'count': 1, 'bin': 1, \
                             'filter': 'dark'}
                     result = g_dev['cam'].expose_command(req, opt, no_AWS=False, \
-                                       do_sep=False, quick=False, skip_open_check=True)
+                                       do_sep=False, quick=False, skip_open_check=True,skip_daytime_check=False)
                     b_d_to_do -= 1
                     g_dev['obs'].update_status()
                     if ephem.now() + (dark_exp_time + cycle_time + 30)/86400 > ending:
