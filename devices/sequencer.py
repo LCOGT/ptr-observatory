@@ -319,7 +319,7 @@ class Sequencer:
         flat_spot, flat_alt = g_dev['evnt'].flat_spot_now()
 
         # Only send an enclosure open command if the weather 
-        if g_dev['obs'].weather_report_is_acceptable_to_observe:
+        if g_dev['seq'].weather_report_is_acceptable_to_observe:
 
             try:           
                 # First unpark and move telescope away from the sun.    
