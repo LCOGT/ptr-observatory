@@ -466,10 +466,10 @@ class Sequencer:
                    'numOfDark': 15, 'darkTime': 180, 'numOfDark2': 3, 'dark2Time': 360, \
                    'hotMap': True, 'coldMap': True, 'script': 'genBiasDarkMaster', }  # NB NB All of the prior is obsolete
             opt = {}
-            #No action needed on  the enclosure at this level
-            self.park_and_close(enc_status)
-            #NB The above put dome closed and telescope at Park, Which is where it should have been upon entry.
-
+            
+            # We don't want to close the enclosure in the evening as it may be open cooling it off
+            # The bias_dark_script parks the scope anyway. 
+            
             self.bias_dark_script(req, opt, morn=False)
             self.bias_dark_latch = False
 
@@ -1266,8 +1266,30 @@ class Sequencer:
             except:
                 stride = bias_count   #Just do all of the biases first.
                 single_dark = False
+                
+            cool_down_opened_already=False
             while b_d_to_do > 0:
                 g_dev['obs'].scan_requests()
+                
+                # The biasdark script can sometimes overrun the time that the roof should open, 
+                # So a check for whether it hits cool down time in this loop is appropriate
+                obs_win_begin, sunZ88Op, sunZ88Cl, ephem_now = self.astro_events.getSunEvents()
+                if ((g_dev['events']['Cool Down, Open']  <= ephem_now < g_dev['events']['Eve Sky Flats']) and \
+                       g_dev['enc'].mode == 'Automatic') and not g_dev['ocn'].wx_hold and cool_down_opened_already == False:
+
+                    cool_down_opened_already=True
+                    self.run_nightly_weather_report()            
+
+                    #self.time_of_next_slew = time.time() -1
+                    #plog ("got here")
+                    if not g_dev['obs'].open_and_enabled_to_observe and self.weather_report_is_acceptable_to_observe==True and self.weather_report_wait_until_open==False:
+                        if time.time() > self.enclosure_next_open_time and self.opens_this_evening < self.config['maximum_roof_opens_per_evening']:
+                            self.enclosure_next_open_time = time.time() + 300 # Only try to open the roof every five minutes
+                            #self.enc_to_skyflat_and_open(enc_status, ocn_status)                           
+                            g_dev['enc'].open_command({}, {})
+                            self.night_focus_ready=True
+                
+                
                 min_to_do = min(b_d_to_do, stride)
                 plog("Expose " + str(stride) +" 1x1 bias frames.")
                 req = {'time': 0.0,  'script': 'True', 'image_type': 'bias'}
