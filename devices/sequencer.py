@@ -1267,6 +1267,7 @@ class Sequencer:
                 stride = bias_count   #Just do all of the biases first.
                 single_dark = False
             while b_d_to_do > 0:
+                g_dev['obs'].scan_requests()
                 min_to_do = min(b_d_to_do, stride)
                 plog("Expose " + str(stride) +" 1x1 bias frames.")
                 req = {'time': 0.0,  'script': 'True', 'image_type': 'bias'}
@@ -1287,6 +1288,9 @@ class Sequencer:
                 #for ctr_darks in range((dark_count[ctr_dbb])):
                 if ephem.now() + (dark_exp_time + cycle_time + 30)/86400 > ending:
                     break
+                
+                g_dev['obs'].scan_requests()
+                
                 if not single_dark:
                     
                     plog("Expose 1x1 dark of " \
@@ -1314,7 +1318,7 @@ class Sequencer:
                         self.bias_dark_latch = False
                         break
                         
-
+                g_dev['obs'].scan_requests()
                 g_dev['obs'].update_status()
                 if ephem.now() + 30/86400 >= ending:
                     self.bias_dark_latch = False
@@ -1669,7 +1673,8 @@ class Sequencer:
                 if time.time() >= self.time_of_next_slew:
                     g_dev['mnt'].slewToSkyFlatAsync()  
                     self.time_of_next_slew = time.time() + 600
-                    
+                
+                g_dev['obs'].scan_requests()
                 g_dev['obs'].update_status()
             
                 if g_dev["fil"].null_filterwheel == False:
@@ -1698,6 +1703,7 @@ class Sequencer:
                 self.estimated_first_flat_exposure = False
                 while (acquired_count < flat_count):# and g_dev['enc'].status['shutter_status'] in ['Open', 'open']: # NB NB NB and roof is OPEN! and (ephem_now +3/1440) < g_dev['events']['End Eve Sky Flats' ]:
                     #if g_dev['enc'].is_dome:   #Does not apply
+                    g_dev['obs'].scan_requests()
                     g_dev['obs'].update_status()                    
                     
                     if g_dev['obs'].open_and_enabled_to_observe == False:
@@ -1824,6 +1830,8 @@ class Sequencer:
                                 plog("*****NO result returned*****  Will need to restart Camera")  #NB NB  NB this is drastic action needed.
                                 g_dev['obs'].update_status()
                                 continue
+                            
+                            g_dev['obs'].scan_requests()
                             g_dev['obs'].update_status()
                             
                             try:
@@ -1894,10 +1902,12 @@ class Sequencer:
         g_dev['mnt'].park_command({}, {})
         #  NB:  g_dev['enc'].close
         g_dev['obs'].update_status()
+        g_dev['obs'].scan_requests()
         g_dev['scr'].set_screen_bright(0)
         g_dev['scr'].screen_dark()
         time.sleep(5)
         g_dev['obs'].update_status()
+        g_dev['obs'].scan_requests()
         #Here we need to switch off any IR or dome lighting.
         #Take a 10 s dark screen air flat to record ambient
         # Park Telescope
@@ -1910,6 +1920,7 @@ class Sequencer:
 
         for filt in g_dev['fil'].filter_screen_sort:
             #enter with screen dark
+            g_dev['obs'].scan_requests()
             filter_number = int(filt)
             plog(filter_number, g_dev['fil'].filter_data[filter_number][0])
             screen_setting = g_dev['fil'].filter_data[filter_number][4][1]
@@ -1917,6 +1928,7 @@ class Sequencer:
             g_dev['scr'].screen_dark()
             time.sleep(5)
             exp_time  = g_dev['fil'].filter_data[filter_number][4][0]
+            g_dev['obs'].scan_requests()
             g_dev['obs'].update_status()
             plog('Dark Screen; filter, bright:  ', filter_number, 0)
             req = {'time': float(exp_time),  'alias': camera_name, 'image_type': 'screen flat'}
@@ -1932,16 +1944,19 @@ class Sequencer:
             # time.sleep(10)
             # g_dev['obs'].update_status()
             # time.sleep(10)
+            g_dev['obs'].scan_requests()
             g_dev['obs'].update_status()
             req = {'time': float(exp_time),  'alias': camera_name, 'image_type': 'screen flat'}
             opt = {'area': 100, 'count': flat_count, 'filter': g_dev['fil'].filter_data[filter_number][0], 'hint': 'screen filter light'}
             result = g_dev['cam'].expose_command(req, opt, no_AWS=True, skip_open_check=True)
             # if no exposure, wait 10 sec
             plog("Lighted Screen flat:  ", result['patch'], g_dev['fil'].filter_data[filter_number][0], '\n\n')
+            g_dev['obs'].scan_requests()
             g_dev['obs'].update_status()
             g_dev['scr'].set_screen_bright(0)
             g_dev['scr'].screen_dark()
             time.sleep(5)
+            g_dev['obs'].scan_requests()
             g_dev['obs'].update_status()
             plog('Dark Screen; filter, bright:  ', filter_number, 0)
             req = {'time': float(exp_time),  'alias': camera_name, 'image_type': 'screen flat'}
@@ -2064,6 +2079,8 @@ class Sequencer:
             focus_patch_dec=above_altitude_patches[idx,1]
             focus_patch_n=above_altitude_patches[idx,2]                
             
+            g_dev['obs'].scan_requests()
+            
             try:
                 plog("Going to near focus patch of " + str(focus_patch_n) + " 9th to 12th mag stars " + str(d2d.deg) + "  degrees away.")
                 plog("RA " + str(focus_patch_ra) + " DEC " + str(focus_patch_dec) )
@@ -2081,6 +2098,8 @@ class Sequencer:
             opt = {'area': 150, 'count': 1, 'bin': 1, 'filter': 'focus'}
         foc_pos0 = focus_start
         result = {}
+        
+        
         
         try:
             #Check here for filter, guider, still moving  THIS IS A CLASSIC
@@ -2101,6 +2120,7 @@ class Sequencer:
                     st = ""
                     rot_report =1
                 time.sleep(0.2)
+                g_dev['obs'].scan_requests()
                 g_dev['obs'].update_status()
             
             
@@ -2131,7 +2151,7 @@ class Sequencer:
         retry = 0
         while retry < 3:
             if not sim:
-
+                g_dev['obs'].scan_requests()
                 result = g_dev['cam'].expose_command(req, opt, no_AWS=True, solve_it=False) ## , script = 'auto_focus_script_0')  #  This is where we start.
 
             else:
@@ -2161,6 +2181,7 @@ class Sequencer:
         g_dev['foc'].guarded_move((foc_pos0 - 1*throw)*g_dev['foc'].micron_to_steps)
         #opt['fwhm_sim'] = 4.
         if not sim:
+            g_dev['obs'].scan_requests()
             result = g_dev['cam'].expose_command(req, opt, no_AWS=True, solve_it=False) ## , script = 'auto_focus_script_1')  #  This is moving in one throw.
         else:
             result['FWHM'] = 4
@@ -2184,6 +2205,7 @@ class Sequencer:
 
         #time.sleep(10)#opt['fwhm_sim'] = 5
         if not sim:
+            g_dev['obs'].scan_requests()
             result = g_dev['cam'].expose_command(req, opt, no_AWS=True, solve_it=False) ## , script = 'auto_focus_script_2')  #  This is moving out one throw.
         else:
             result['FWHM'] = 4.5
@@ -2253,6 +2275,7 @@ class Sequencer:
                 g_dev['foc'].last_source = "auto_focus_script"
 
                 if not sim:
+                    g_dev['obs'].scan_requests()
                     result = g_dev['cam'].expose_command(req, opt, no_AWS=True, solve_it=False)  #   script = 'auto_focus_script_3')  #  This is verifying the new focus.
                 else:
                     result['FWHM'] = new_spot
@@ -2287,6 +2310,7 @@ class Sequencer:
             plog('Autofocus Moving In 2nd time.\n\n')
             g_dev['foc'].guarded_move((foc_pos0 - 2.5*throw)*g_dev['foc'].micron_to_steps)
             if not sim:
+                g_dev['obs'].scan_requests()
                 result = g_dev['cam'].expose_command(req, opt, no_AWS=True, solve_it=False) ## , script = 'auto_focus_script_1')  #  This is moving in one throw.
             else:
                 result['FWHM'] = 6
@@ -2342,6 +2366,7 @@ class Sequencer:
                 g_dev['foc'].last_source = "auto_focus_script"
 
                 if not sim:
+                    g_dev['obs'].scan_requests()
                     result = g_dev['cam'].expose_command(req, opt, no_AWS=True, solve_it=False)  #   script = 'auto_focus_script_3')  #  This is verifying the new focus.
                 else:
                     result['FWHM'] = new_spot
@@ -2378,6 +2403,7 @@ class Sequencer:
 
             g_dev['foc'].guarded_move((foc_pos0 + 2.5*throw)*g_dev['foc'].micron_to_steps)  #NB NB NB THIS IS WRONG!
             if not sim:
+                g_dev['obs'].scan_requests()
                 result = g_dev['cam'].expose_command(req, opt, no_AWS=True, solve_it=False) ## , script = 'auto_focus_script_2')  #  This is moving out one throw.
             else:
                 result['FWHM'] = 5.5
@@ -2433,6 +2459,7 @@ class Sequencer:
                 g_dev['foc'].last_source = "auto_focus_script"
 
                 if not sim:
+                    g_dev['obs'].scan_requests()
                     result = g_dev['cam'].expose_command(req, opt, no_AWS=True, solve_it=False)  #   script = 'auto_focus_script_3')  #  This is verifying the new focus.
                 else:
                     result['FWHM'] = new_spot
@@ -2618,6 +2645,7 @@ class Sequencer:
             g_dev['foc'].guarded_move((foc_pos0 - (ctr+0)*throw)*g_dev['foc'].micron_to_steps)  #Added 20220209! A bit late
             #throw = 100  # NB again, from config.  Units are microns
             if not sim:
+                g_dev['obs'].scan_requests()
                 result = g_dev['cam'].expose_command(req, opt, no_AWS=True, solve_it=False)
             else:
                 result['FWHM'] = 4
@@ -2640,6 +2668,7 @@ class Sequencer:
             g_dev['foc'].guarded_move((foc_pos0 + (ctr+1)*throw)*g_dev['foc'].micron_to_steps)  #Added 20220209! A bit late
             #throw = 100  # NB again, from config.  Units are microns
             if not sim:
+                g_dev['obs'].scan_requests()
                 result = g_dev['cam'].expose_command(req, opt, no_AWS=True, solve_it=False)
             else:
                 result['FWHM'] = 4
@@ -2830,6 +2859,7 @@ class Sequencer:
         g_dev['foc'].guarded_move((foc_pos0 - 0*throw)*g_dev['foc'].micron_to_steps)  #Added 20220209! A bit late
         #throw = 100  # NB again, from config.  Units are microns
         if not sim:
+            g_dev['obs'].scan_requests()
             result = g_dev['cam'].expose_command(req, opt, no_AWS=True, solve_it=False)
         else:
             result['FWHM'] = 4
@@ -2850,6 +2880,7 @@ class Sequencer:
         g_dev['foc'].guarded_move((foc_pos0 - 1*throw)*g_dev['foc'].micron_to_steps)
         #opt['fwhm_sim'] = 4.
         if not sim:
+            g_dev['obs'].scan_requests()
             result = g_dev['cam'].expose_command(req, opt, no_AWS=True, solve_it=False)
         else:
             result['FWHM'] = 5
@@ -2869,6 +2900,7 @@ class Sequencer:
         g_dev['foc'].guarded_move((foc_pos0 - 2*throw)*g_dev['foc'].micron_to_steps)
         #opt['fwhm_sim'] = 4.
         if not sim:
+            g_dev['obs'].scan_requests()
             result = g_dev['cam'].expose_command(req, opt, no_AWS=True, solve_it=False)
         else:
             result['FWHM'] = 6
@@ -2889,6 +2921,7 @@ class Sequencer:
         g_dev['foc'].guarded_move((foc_pos0 + 2*throw)*g_dev['foc'].micron_to_steps)
         #opt['fwhm_sim'] = 5
         if not sim:
+            g_dev['obs'].scan_requests()
             result = g_dev['cam'].expose_command(req, opt, no_AWS=True, solve_it=False)
         else:
             result['FWHM'] = 6.5
@@ -2908,6 +2941,7 @@ class Sequencer:
         g_dev['foc'].guarded_move((foc_pos0 + throw)*g_dev['foc'].micron_to_steps)
         #opt['fwhm_sim'] = 4.
         if not sim:
+            g_dev['obs'].scan_requests()
             result = g_dev['cam'].expose_command(req, opt, no_AWS=True, solve_it=False)
         else:
             result['FWHM'] = 5.75
@@ -2950,7 +2984,7 @@ class Sequencer:
                 g_dev['foc'].last_temperature = 10.0    #NB NB This should be a site monthly default.
             g_dev['foc'].last_source = "coarse_focus_script"
             if not sim:
-
+                g_dev['obs'].scan_requests()
                 result = g_dev['cam'].expose_command(req, opt, solve_it=False)
             else:
                 result['FWHM'] = new_spot
