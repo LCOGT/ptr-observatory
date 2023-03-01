@@ -888,7 +888,24 @@ class Camera:
         ) 
         
         #Third check, check it isn't daytime and institute maximum exposure time 
-        #Unless it is a command from the sequencer flat_scripts
+        #Unless it is a command from the sequencer flat_scripts or a requested calibration frame
+        
+        imtype = required_params.get("image_type", "light")
+        
+        if imtype.lower() in (            
+            "bias",
+            "dark",
+            "screen flat",
+            "sky flat",
+            "near flat",
+            "thor flat",
+            "arc flat",
+            "lamp flat",
+            "solar flat",
+        ):
+            skip_daytime_check=True
+        
+        
         if not skip_daytime_check:
             sun_az, sun_alt = g_dev['evnt'].sun_az_alt_now()
             if sun_alt > -5:
@@ -926,7 +943,7 @@ class Camera:
         self.hint = optional_params.get("hint", "")
         self.script = required_params.get("script", "None")
         
-        imtype = required_params.get("image_type", "light")
+        
         no_AWS, self.toss = True if imtype.lower() == "test image" else False, False
         quick = True if imtype.lower() == "quick" else False
         #  NBNB this is obsolete and needs rework 20221002 WER
