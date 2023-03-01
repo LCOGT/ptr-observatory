@@ -1275,7 +1275,7 @@ class Sequencer:
                        'filter': 'dark'}
                   
                 result = g_dev['cam'].expose_command(req, opt, no_AWS=False, \
-                                do_sep=False, quick=False, skip_open_check=True,skip_daytime_check=False)
+                                do_sep=False, quick=False, skip_open_check=True,skip_daytime_check=True)
                 b_d_to_do -= min_to_do
                 
 
@@ -1299,7 +1299,7 @@ class Sequencer:
                     opt = {'area': "Full", 'count': 1, 'bin': 1, \
                             'filter': 'dark'}
                     result = g_dev['cam'].expose_command(req, opt, no_AWS=False, \
-                                       do_sep=False, quick=False, skip_open_check=True,skip_daytime_check=False)
+                                       do_sep=False, quick=False, skip_open_check=True,skip_daytime_check=True)
                     b_d_to_do -= 1
                     g_dev['obs'].update_status()
                     if ephem.now() + (dark_exp_time + cycle_time + 30)/86400 > ending:
@@ -1311,7 +1311,7 @@ class Sequencer:
                     opt = {'area': "Full", 'count': 1, 'bin': 1, \
                             'filter': 'dark'}
                     result = g_dev['cam'].expose_command(req, opt, no_AWS=False, \
-                                       do_sep=False, quick=False, skip_open_check=True,skip_daytime_check=False)
+                                       do_sep=False, quick=False, skip_open_check=True,skip_daytime_check=True)
                     b_d_to_do -= 1
                     g_dev['obs'].update_status()
                     if ephem.now() + (dark_exp_time + cycle_time + 30)/86400 > ending:
@@ -1819,7 +1819,7 @@ class Sequencer:
                                 return
                             try:
                                 self.time_of_next_slew = time.time()
-                                fred = g_dev['cam'].expose_command(req, opt, no_AWS=True, do_sep = False)
+                                fred = g_dev['cam'].expose_command(req, opt, no_AWS=True, do_sep = False,skip_daytime_check=True)
             
                                 bright = fred['patch']    #  Patch should be circular and 20% of Chip area. ToDo project
                                 plog('Returned:  ', bright)
@@ -1914,7 +1914,7 @@ class Sequencer:
         req = {'time': exp_time,  'alias': camera_name, 'image_type': 'screen flat'}
         opt = {'area': 100, 'count': dark_count, 'filter': 'dark', 'hint': 'screen dark'}  #  air has highest throughput
 
-        result = g_dev['cam'].expose_command(req, opt, no_AWS=True, skip_open_check=True)
+        result = g_dev['cam'].expose_command(req, opt, no_AWS=True, skip_open_check=True,skip_daytime_check=True)
         plog('First dark 30-sec patch, filter = "air":  ', result['patch'])
         # g_dev['scr'].screen_light_on()
 
@@ -1933,7 +1933,7 @@ class Sequencer:
             plog('Dark Screen; filter, bright:  ', filter_number, 0)
             req = {'time': float(exp_time),  'alias': camera_name, 'image_type': 'screen flat'}
             opt = {'area': 100, 'count': 1, 'filter': g_dev['fil'].filter_data[filter_number][0], 'hint': 'screen pre-filter dark'}
-            result = g_dev['cam'].expose_command(req, opt, no_AWS=True, skip_open_check=True)
+            result = g_dev['cam'].expose_command(req, opt, no_AWS=True, skip_open_check=True,skip_daytime_check=True)
             plog("Dark Screen flat, starting:  ", result['patch'], g_dev['fil'].filter_data[filter_number][0], '\n\n')
             g_dev['obs'].update_status()
             plog('Lighted Screen; filter, bright:  ', filter_number, screen_setting)
@@ -1948,7 +1948,7 @@ class Sequencer:
             g_dev['obs'].update_status()
             req = {'time': float(exp_time),  'alias': camera_name, 'image_type': 'screen flat'}
             opt = {'area': 100, 'count': flat_count, 'filter': g_dev['fil'].filter_data[filter_number][0], 'hint': 'screen filter light'}
-            result = g_dev['cam'].expose_command(req, opt, no_AWS=True, skip_open_check=True)
+            result = g_dev['cam'].expose_command(req, opt, no_AWS=True, skip_open_check=True,skip_daytime_check=True)
             # if no exposure, wait 10 sec
             plog("Lighted Screen flat:  ", result['patch'], g_dev['fil'].filter_data[filter_number][0], '\n\n')
             g_dev['obs'].scan_requests()
@@ -1961,7 +1961,7 @@ class Sequencer:
             plog('Dark Screen; filter, bright:  ', filter_number, 0)
             req = {'time': float(exp_time),  'alias': camera_name, 'image_type': 'screen flat'}
             opt = {'area': 100, 'count': 1, 'filter': g_dev['fil'].filter_data[filter_number][0], 'hint': 'screen post-filter dark'}
-            result = g_dev['cam'].expose_command(req, opt, no_AWS=True, skip_open_check=True)
+            result = g_dev['cam'].expose_command(req, opt, no_AWS=True, skip_open_check=True,skip_daytime_check=True)
             plog("Dark Screen flat, ending:  ",result['patch'], g_dev['fil'].filter_data[filter_number][0], '\n\n')
 
 
