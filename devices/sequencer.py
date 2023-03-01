@@ -1032,6 +1032,7 @@ class Sequencer:
                         print (tempblock['event_id'])
                         if tempblock['event_id'] == calendar_event_id :
                             foundcalendar=True
+                            block['end']=tempblock['end']
                     if not foundcalendar:
                         print ("could not find calendar entry, cancelling out of block.")
                         self.block_guard = False
