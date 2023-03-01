@@ -3194,6 +3194,13 @@ class Camera:
                                     # Reset Solve timers
                                     g_dev['obs'].last_solve_time = datetime.datetime.now()
                                     g_dev['obs'].images_since_last_solve = 0
+                                    
+                                    
+                                    # Tell the mount where it is pointing!
+                                    g_dev['mnt'].mount.SyncToCoordinates(solved_ra, solved_dec)
+                                    # Tell the code where it is pointing!
+                                    g_dev["mnt"].current_icrs_ra = solved_ra                                    
+                                    g_dev["mnt"].current_icrs_dec = solved_dec
     
                                     # NB NB NB this needs rethinking, the incoming units are hours in HA or degrees of dec
                                     if (
@@ -3238,8 +3245,10 @@ class Camera:
                                                 except Exception as e:
                                                     plog ("Something is up in the mount reference adjustment code ", e)
                                             
-                                            g_dev["mnt"].current_icrs_ra = solved_ra                                    
-                                            g_dev["mnt"].current_icrs_dec = solved_dec
+                                            
+                                            
+                                            
+                                            
                                             g_dev['mnt'].re_seek(dither=0)
                                         except:
                                             plog("This mount doesn't report pierside")

@@ -344,6 +344,7 @@ class Mount:
         self.EquatorialSystem=self.mount.EquatorialSystem
         
         #breakpoint()
+        
         plog("exiting mount _init")
 
     def check_connect(self):
