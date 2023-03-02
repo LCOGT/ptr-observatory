@@ -55,8 +55,8 @@ site_name = 'mrc'    #NB These must be unique across all of PTR. Pre-pend with a
 site_config = {
     'site': str(site_name).lower(),
     'site_id': 'mrc',
-    'debug_mode': True,
-    'debug_duration_sec': 7200,
+    'debug_mode': False,
+    'debug_duration_sec': 3600,   #seconds
     'owner':  ['google-oauth2|112401903840371673242'],  # Wayne
 
     'owner_alias': ['WER', 'TELOPS'],
@@ -123,12 +123,12 @@ site_config = {
     'site_allowed_to_open_roof': 'yes',
     'check_time': 300,   #MF's original setting.
     'maximum_roof_opens_per_evening' : 4,
-    'site_in_automatic_default': "Shutdown",   #"Manual", "Shutdown"
-    'automatic_detail_default': "Enclosure is temporarily set to Sutdown mode.",
+    'site_in_automatic_default': "Automatic",   #"Manual", "Shutdown"
+    'automatic_detail_default': "Enclosure is initially set to Automatic mode.",
     'observing_check_period' : 5,    # How many minutes between weather checks
     'enclosure_check_period' : 5,    # How many minutes between enclosure checks
 
-    'auto_eve_bias_dark': True,
+    'auto_eve_bias_dark': False,
     
     'auto_midnight_moonless_bias_dark': False,
     'auto_eve_sky_flat': False,
@@ -137,7 +137,7 @@ site_config = {
 
     'eve_cool_down_open' : -65.0,
     'auto_morn_sky_flat': False,
-    'auto_morn_bias_dark': True,
+    'auto_morn_bias_dark': False,
     're-calibrate_on_solve': True,
     'pointing_calibration_on_startup': False,  #MF I am leaving this alone.
     'periodic_focus_time' : 0.5, # This is a time, in hours, over which to bypass automated focussing (e.g. at the start of a project it will not refocus if a new project starts X hours after the last focus)
@@ -272,6 +272,7 @@ site_config = {
             'east_flip_ra_correction': 0.0,
             'east_flip_dec_correction': 0.0,  #
             'home_after_unpark' : False,
+            'home_before_park' : False,
             'permissive_mount_reset' : 'no', # if this is set to yes, it will reset the mount at startup and when coordinates are out significantly'home_after_unpark' : True,
             'lowest_acceptable_altitude' : -2, # Below this altitude, it will automatically try to home and park the scope to recover.
             
@@ -293,8 +294,8 @@ site_config = {
 			    'elevation_offset': 0.0,    # meters above sea level
                 'home_park_altitude': 0,    #Having these settings is important for PWI4 where it can easily be messed up.
                 'home_park_azimuth': 180,                
-                'home_altitude': 0,    #Having these settings is important for PWI4 where it can easily be messed up.
-                'home_azimuth': 180,
+                'home_altitude': 60,    #Having these settings is important for PWI4 where it can easily be messed up.
+                'home_azimuth': 359,
                 'fixed_screen_azimuth': 167.25,
                 'fixed_screen _altitude': 0.54,
                 'refraction_on': True,

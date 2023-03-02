@@ -2439,7 +2439,7 @@ class Camera:
                         #      to do this.  The current bias correction is a bit too simple
                         #      but for now, this is Ok.  I will leave the trim at 1 pixel for the sides oposite
                         #      the "L". This does not show well on OSC images.  --- WER 20220225
-                        breakpoint()
+
                         
                         #First trim overscan region:
                         yw = self.config["camera"][self.name]["settings"]["y_width"]
