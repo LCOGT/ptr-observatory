@@ -61,7 +61,12 @@ site_name = 'mrc2'    #NB These must be unique across all of PTR.
 site_config = {
     'site': site_name.lower(), #TIM this may no longer be needed.
     'site_id': 'mrc2',
+    
     'debug_site_mode': False,
+    
+    'debug_mode': False,
+    'admin_owner_commands_only': False,
+    'debug_duration_sec': 7200,
     'owner':  ['google-oauth2|112401903840371673242'],  # Wayne
 
     'owner_alias': ['WER', 'TELOPS'],

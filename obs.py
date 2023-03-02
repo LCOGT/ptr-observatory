@@ -153,6 +153,7 @@ class Observatory:
         self.config = config
         self.site = config["site"]
         self.debug_flag = self.config['debug_mode']
+        self.admin_only_flag = self.config['admin_owner_commands_only']
         if self.debug_flag:
             self.debug_lapse_time = time.time() + self.config['debug_duration_sec']
             g_dev['debug'] = True
@@ -585,19 +586,26 @@ sel
                     )
 
                     for cmd in unread_commands:
-                        if cmd["action"] in ["cancel_all_commands", "stop"]:
-                            self.cancel_all_activity() # Hi Wayne, I have to cancel all acitivity with some roof stuff
-                            # So I've moved the cancelling to it's own function just above so it can be called from multiple locations.
+                        
+                        
+                        if (self.admin_only_flag and ("admin" in cmd['user_roles']) or ("owner" in cmd['user_roles'])) or (not self.admin_only_flag):
+                            
+                            if cmd["action"] in ["cancel_all_commands", "stop"]:
+                                self.cancel_all_activity() # Hi Wayne, I have to cancel all acitivity with some roof stuff
+                                # So I've moved the cancelling to it's own function just above so it can be called from multiple locations.
+                            else:
+                                self.cmd_queue.put(cmd)  # SAVE THE COMMAND FOR LATER
+                                g_dev["obs"].stop_all_activity = False
+                                plog(
+                                    "Queueing up a new command... Hint:  " + cmd["action"]
+                                )
+    
+                            if cancel_check:
+                                result={'stopped': True}
+                                return  # Note we do not process any commands.
                         else:
-                            self.cmd_queue.put(cmd)  # SAVE THE COMMAND FOR LATER
-                            g_dev["obs"].stop_all_activity = False
-                            plog(
-                                "Queueing up a new command... Hint:  " + cmd["action"]
-                            )
-
-                        if cancel_check:
-                            result={'stopped': True}
-                            return  # Note we do not process any commands.
+                            plog("Request rejected as site in admin or owner mode.")
+                            g_dev['obs'].send_to_user("Request rejected as site in admin or owner mode.")
 
                 # NEED TO WAIT UNTIL CURRENT COMMAND IS FINISHED UNTIL MOVING ONTO THE NEXT ONE!
                 # THAT IS WHAT CAUSES THE "CAMERA BUSY" ISSUE. We don't need to wait for the

@@ -27,6 +27,12 @@ site_name = 'aro'
 site_config = {
     'site': str(site_name.lower()),
     'site_id': str(site_name.lower()),   #used by PROPID keyword in fits header, can be changed here
+    
+    'debug_site_mode': False,
+    
+    'debug_mode': False,
+    'admin_owner_commands_only': False,
+    'debug_duration_sec': 7200,
     "version_date": "20220916.wer",
     'site_desc': "Apache Ridge Observatory, Santa Fe, NM, USA. 2194m",
     'airport_codes':  ['SAF', 'ABQ', 'LSN'],
