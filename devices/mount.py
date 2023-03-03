@@ -229,6 +229,7 @@ class Mount:
         self.dec_corr = 0
         self.seek_commanded = False
         self.home_after_unpark = config['mount']['mount1']['home_after_unpark']
+        self.home_before_park = config['mount']['mount1']['home_before_park']
         if abs(self.east_flip_ra_correction) > 0 or abs(self.east_flip_dec_correction) > 0:
             self.flip_correction_needed = True
             plog("Flip correction may be needed.")
@@ -1458,7 +1459,7 @@ class Mount:
                 self.mount.FindHome()
                 wait_for_slew()
         else:
-            plog("Mount is not capable of finding home. Slewing to zenith....ish")
+            plog("Mount is not capable of finding home. Slewing to home_alt and home_az")
             self.move_time = time.time()
             #self.move_to_azalt(270, 75)  #az, alt  --badly named method.  NB NB Is this a sun-safe place to park?
             home_alt = self.settings["home_altitude"]

@@ -1,5 +1,5 @@
-\
-    """"
+
+""""
 IMPORTANT TODOs:
 
 WER 20211211
@@ -994,7 +994,8 @@ sel
                     self.open_and_enabled_to_observe=False
                     #self.cancel_all_activity()   #NB THis kills bias-dark
                     if not g_dev['mnt'].mount.AtPark:  
-                        g_dev['mnt'].home_command()
+                        if g_dev['mnt'].home_before_park:
+                            g_dev['mnt'].home_command()
                         g_dev['mnt'].park_command()
                     # will send a Close call out into the blue just in case it catches
                     g_dev['enc'].enclosure.CloseShutter()
@@ -1019,7 +1020,8 @@ sel
                         #plog ("closing")
                         plog ("Also Parking the Scope")    
                         if not g_dev['mnt'].mount.AtPark:  
-                            g_dev['mnt'].home_command()
+                            if g_dev['mnt'].home_before_park:
+                                g_dev['mnt'].home_command()
                             g_dev['mnt'].park_command()  
     
                 roof_should_be_shut=False
@@ -1059,8 +1061,8 @@ sel
                         plog ("Telescope found not parked when the observatory is meant to be closed. Parking scope.")   
                         self.open_and_enabled_to_observe=False
                         #self.cancel_all_activity()   #NB Kills bias dark
-    
-                        g_dev['mnt'].home_command()
+                        if g_dev['mnt'].home_before_park:
+                            g_dev['mnt'].home_command()
                         #PWI must receive a park() in order to report being parked.  Annoying problem when debugging, because I want tel to stay where it is.
                         g_dev['mnt'].park_command()  
                 
@@ -1070,7 +1072,8 @@ sel
                         plog ("Telescope found not parked when the observatory roof is shut. Parking scope.")   
                         self.open_and_enabled_to_observe=False
                         #self.cancel_all_activity()  #NB Kills bias dark
-                        g_dev['mnt'].home_command()
+                        if g_dev['mnt'].home_before_park:
+                            g_dev['mnt'].home_command()
                         g_dev['mnt'].park_command()  
                 
                 # if g_dev['enc'].status['shutter_status'] == 'Open':
@@ -1103,7 +1106,8 @@ sel
                     plog ("Altitude too low! " + str(mount_altitude) + ". Parking scope for safety!")
                     if not g_dev['mnt'].mount.AtPark:
                         #self.cancel_all_activity()  #NB Kills bias dark
-                        g_dev['mnt'].home_command()
+                        if g_dev['mnt'].home_before_park:
+                            g_dev['mnt'].home_command()
                         g_dev['mnt'].park_command()  
                         # Reset mount reference because thats how it probably got pointing at the dirt in the first place!
                         if self.config["mount"]["mount1"]["permissive_mount_reset"] == "yes":
@@ -1130,7 +1134,8 @@ sel
                                                                                 ['time_inactive_until_park']:
                 if not g_dev['mnt'].mount.AtPark:  
                     plog ("Parking scope due to inactivity")
-                    g_dev['mnt'].home_command()
+                    if g_dev['mnt'].home_before_park:
+                        g_dev['mnt'].home_command()
                     g_dev['mnt'].park_command()
                     self.time_since_last_slew_or_exposure = time.time()
             
@@ -1213,7 +1218,8 @@ sel
                     self.cancel_all_activity()
                     if not g_dev['mnt'].mount.AtPark:  
                         plog ("Parking scope due to inactivity")
-                        g_dev['mnt'].home_command()
+                        if g_dev['mnt'].home_before_park:
+                            g_dev['mnt'].home_command()
                         g_dev['mnt'].park_command()
                         self.time_since_last_slew_or_exposure = time.time()
                         

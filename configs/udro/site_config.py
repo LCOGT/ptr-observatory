@@ -50,105 +50,84 @@ QHY600         AstroImaging Equipment
 
 #NB NB NB json is not bi-directional with tuples (), instead, use lists [], nested if tuples are needed.
 degree_symbol = "°"
-site_name = 'mrc'    #NB These must be unique across all of PTR. Pre-pend with airport code if needed: 'sba_wmdo'
+site_name = 'udro'    #NB These must be unique across all of PTR.
 
 site_config = {
-    'site': str(site_name).lower(),
-    'site_id': 'mrc',
-
-    'debug_site_mode': False,
-    
+    'site': site_name.lower(), #TIM this may no longer be needed.
+    'site_id': 'udro',
     'debug_mode': False,
-    'admin_owner_commands_only': False,
-    'debug_duration_sec': 7200,
-
+    
     'owner':  ['google-oauth2|112401903840371673242'],  # Wayne
 
     'owner_alias': ['WER', 'TELOPS'],
     'admin_aliases': ["ANS", "WER", "TELOPS", "TB", "DH", "KVH", "KC"],
 
-    'client_hostname':  'MRC-0m35',
-                    # NB NB disk D at mrc may be faster for temp storage
+    'client_hostname':  'udro-0m60',
     'client_path':  'Q:/ptr/',  # Generic place for client host to stash misc stuff
     'alt_path':  'Q:/ptr/',  # Generic place for this host to stash misc stuff
-    'plog_path':  'Q:/ptr/plogs/',  #place where night logs can be found.
-    'save_to_alt_path' : 'no',
+    'save_to_alt_path':  'no',
     'archive_path':  'Q:/ptr/',
-
     'archive_age' : -99.9, # Number of days to keep files in the local archive before deletion. Negative means never delete
     'send_files_at_end_of_night' : 'no', # For low bandwidth sites, do not send up large files until the end of the night. set to 'no' to disable
-    
-    'save_raw_to_disk' : True, # For low diskspace sites (or just because they aren't needed), don't save a separate raw file to disk after conversion to fz.
-    'keep_reduced_on_disk' : True, # PTR uses the reduced file for some calculations (focus, SEP, etc.). To save space, this file can be removed after usage or not saved.
-    'keep_focus_images_on_disk' : True, # To save space, the focus file can not be saved.
-    
-    'aux_archive_path':  None,   #NB NB we might want to put Q: here for MRC
-    'wema_is_active':  True,          # True if the split computers used at a site.  NB CHANGE THE DAMN NAME!
+    'aux_archive_path':  None,
+    'wema_is_active':  True,          # True if the split computers used at a site.
     'wema_hostname': 'MRC-WMS-ENC',   # Prefer the shorter version
     'wema_path':  'Q:/ptr/',  # '/wema_transfer/',
     'dome_on_wema':   True,
     'site_IPC_mechanism':  'redis',   # ['None', shares', 'shelves', 'redis']  Pick One
     'wema_write_share_path': 'Q:/ptr/',  # Meant to be where Wema puts status data.
-    'client_read_share_path':  'Q:/ptr/', #NB these are all very confusing names.
+    'client_read_share_path':  'Q:/ptr/',
     'client_write_share_path': 'Q:/ptr/',
     'redis_ip': '10.15.0.109',  #'127.0.0.1', None if no redis path present,
     'site_is_generic':  False,   # A simply  single computer ASCOM site.
     'site_is_specific':  False,  # Indicates some special code for this site, found at end of config.
+    'host_wema_site_name':  'mrc',  #  The umbrella header for obsys in close geographic proximity.
 
-
-    'host_wema_site_name':  'MRC',  #  The umbrella header for obsys in close geographic proximity,
-                                    #  under the control of one wema
-    'name': 'Mountain Ranch Camp Observatory 0m35f7.2',
-    'airport_code': 'SBA',
-    'location': 'Near Santa Barbara CA,  USA',
-    'telescope_description': '0m35 f7.2 Planewave CDK',
+    'name': 'Utah Desert Remote Observatory 0m6f6.5',
+    'location': 'Enterprise Utah,  USA',
+    'airport_code': 'SGU',
+    'telescope_description':  '0m61 f6.5 Planewave CDK',
+    'site_path': 'Q:/',     #Really important, this is where state and results are stored.
     'observatory_url': 'https://starz-r-us.sky/clearskies',
-    'observatory_logo': None,
     'description':  '''
                     Now is the time for all good persons
                     to get out and vote early and often lest
                     we lose charge of our democracy.
-                    ''',    #i.e, a multi-line text block supplied by the owner.  Must be careful about the contents for now.
+                    ''',    #  i.e, a multi-line text block supplied and formatted by the owner.
     'location_day_allsky':  None,  #  Thus ultimately should be a URL, probably a color camera.
     'location_night_allsky':  None,  #  Thus ultimately should be a URL, usually Mono camera with filters.
     'location _pole_monitor': None,  #This probably gets us to some sort of image (Polaris in the North)
     'location_seeing_report': None,  # Probably a path to a jpeg or png graph.
-    'debug_flag': True,    #  Be careful about setting this flag True when pushing up to dev!
-    'TZ_database_name': 'America/Los_Angeles',
+
     'mpc_code':  'ZZ23',    #This is made up for now.
-    'time_offset':  -8,     # NB these two should be derived from Python libs so change is automatic
-    'timezone': 'PST',
-    'latitude': 34.459375,     #Decimal degrees, North is Positive
-    'longitude': -119.681172,   #Decimal degrees, West is negative
-    'elevation': 317.75,    # meters above sea level
-    'reference_ambient':  10.0,  #Degrees Celsius.  Alternately 12 entries, one for every - mid month.
+    'time_offset':  -7,
+    'TZ_database_name':  'America/Denver',
+    'timezone': 'MST',
+    'latitude': 37.737001,     #Decimal degrees, North is Positive
+    'longitude': -113.691774,   #Decimal degrees, West is negative
+    'elevation': 1571,    # meters above sea level
+    'reference_ambient':  15.0,  #Degrees Celsius.  Alternately 12 entries, one for every - mid month.
     'reference_pressure':  977.83,  #mbar Alternately 12 entries, one for every - mid month.
 
     'site_roof_control': 'no', #MTF entered this in to remove sro specific code  NB 'site_is_specifc' also deals with this
     'site_allowed_to_open_roof': 'yes',
     'check_time': 300,   #MF's original setting.
     'maximum_roof_opens_per_evening' : 4,
-    
-    'closest_distance_to_the_sun': 45, # Degrees. For normal pointing requests don't go this close to the sun. 
-    
-    'closest_distance_to_the_moon': 10, # Degrees. For normal pointing requests don't go this close to the moon. 
-    
-    'lowest_requestable_altitude': -5, # Degrees. For normal pointing requests don't allow requests to go this low. 
     'site_in_automatic_default': "Automatic",   #"Manual", "Shutdown"
     'automatic_detail_default': "Enclosure is initially set to Automatic mode.",
     'observing_check_period' : 5,    # How many minutes between weather checks
     'enclosure_check_period' : 5,    # How many minutes between enclosure checks
 
-    'auto_eve_bias_dark': False,
+    'auto_eve_bias_dark': True,
     
     'auto_midnight_moonless_bias_dark': False,
-    'auto_eve_sky_flat': False,
+    'auto_eve_sky_flat': True,
 
     'eve_sky_flat_sunset_offset': -60.,  # 40 before Minutes  neg means before, + after.
 
     'eve_cool_down_open' : -65.0,
-    'auto_morn_sky_flat': False,
-    'auto_morn_bias_dark': False,
+    'auto_morn_sky_flat': True,
+    'auto_morn_bias_dark': True,
     're-calibrate_on_solve': True,
     'pointing_calibration_on_startup': False,  #MF I am leaving this alone.
     'periodic_focus_time' : 0.5, # This is a time, in hours, over which to bypass automated focussing (e.g. at the start of a project it will not refocus if a new project starts X hours after the last focus)
@@ -283,7 +262,6 @@ site_config = {
             'east_flip_ra_correction': 0.0,
             'east_flip_dec_correction': 0.0,  #
             'home_after_unpark' : False,
-            'home_before_park' : False,
             'permissive_mount_reset' : 'no', # if this is set to yes, it will reset the mount at startup and when coordinates are out significantly'home_after_unpark' : True,
             'lowest_acceptable_altitude' : -2, # Below this altitude, it will automatically try to home and park the scope to recover.
             
@@ -305,8 +283,8 @@ site_config = {
 			    'elevation_offset': 0.0,    # meters above sea level
                 'home_park_altitude': 0,    #Having these settings is important for PWI4 where it can easily be messed up.
                 'home_park_azimuth': 180,                
-                'home_altitude': 60,    #Having these settings is important for PWI4 where it can easily be messed up.
-                'home_azimuth': 359,
+                'home_altitude': 0,    #Having these settings is important for PWI4 where it can easily be messed up.
+                'home_azimuth': 180,
                 'fixed_screen_azimuth': 167.25,
                 'fixed_screen _altitude': 0.54,
                 'refraction_on': True,
@@ -638,10 +616,10 @@ site_config = {
                 
                 'osc_bayer' : 'RGGB',
                 'crop_preview': False,
-                'crop_preview_ybottom': 2,  #  2 needed if Bayer array
-                'crop_preview_ytop': 2,
-                'crop_preview_xleft': 2,
-                'crop_preview_xright': 2,
+                'crop_preview_ybottom': 1,
+                'crop_preview_ytop': 1,
+                'crop_preview_xleft': 1,
+                'crop_preview_xright': 1,
                 'temp_setpoint': -20,    #Verify we can go colder, this system has a chiller
                 'has_chiller': True,
                 'calib_setpoints': [-20, -20, -20, -20, -20, -20, \
@@ -649,7 +627,7 @@ site_config = {
                 'day_warm': False,
                 'cooler_on': True,
                 "cam_needs_NumXY_init": True,
-                'x_start':  24,
+                'x_start':  0,
                 'y_start':  0,
                 'x_width':  9576,   #NB Should be set up with overscan, which this camera is!  20200315 WER
                 'y_width':  6388,
@@ -695,7 +673,6 @@ site_config = {
                 'min_exposure': 0.0001,
                 'min_flat_exposure': 0.0001,
                 'max_exposure': 180.,
-                'max_daytime_exposure': 0.0001,
                 'can_subframe':  True,
                 'min_subframe': [128,128],
                 'bin_modes':  [['Optimal', 0.91], ['Fine', 0.61], ['Coarse', 1.2], ['Eng', 0.30]],     #Meaning fixed binning if list has only one entry
