@@ -58,7 +58,7 @@ site_config = {
 
     'debug_site_mode': False,
     
-    'debug_mode': False,
+    'debug_mode': True,
     'admin_owner_commands_only': False,
     'debug_duration_sec': 7200,
 
@@ -284,7 +284,7 @@ site_config = {
             'east_flip_dec_correction': 0.0,  #
             'home_after_unpark' : False,
             'home_before_park' : False,
-            'permissive_mount_reset' : 'no', # if this is set to yes, it will reset the mount at startup and when coordinates are out significantly'home_after_unpark' : True,
+            'permissive_mount_reset' : 'yes', # if this is set to yes, it will reset the mount at startup and when coordinates are out significantly'home_after_unpark' : True,
             'lowest_acceptable_altitude' : -2, # Below this altitude, it will automatically try to home and park the scope to recover.
             
             'time_inactive_until_park' : 3600.0, # How many seconds of inactivity until it will park the telescope
@@ -638,10 +638,14 @@ site_config = {
                 
                 'osc_bayer' : 'RGGB',
                 'crop_preview': False,
-                'crop_preview_ybottom': 2,  #  2 needed if Bayer array
-                'crop_preview_ytop': 2,
-                'crop_preview_xleft': 2,
-                'crop_preview_xright': 2,
+                # 'crop_preview_ybottom': 2,  #  2 needed if Bayer array
+                # 'crop_preview_ytop': 2,
+                # 'crop_preview_xleft': 2,
+                # 'crop_preview_xright': 2,
+                'crop_preview_ybottom': 1,  #  2 needed if Bayer array
+                'crop_preview_ytop': 1,
+                'crop_preview_xleft': 1,
+                'crop_preview_xright': 1,
                 'temp_setpoint': -20,    #Verify we can go colder, this system has a chiller
                 'has_chiller': True,
                 'calib_setpoints': [-20, -20, -20, -20, -20, -20, \
@@ -649,7 +653,8 @@ site_config = {
                 'day_warm': False,
                 'cooler_on': True,
                 "cam_needs_NumXY_init": True,
-                'x_start':  24,
+                'x_start':  0,
+                #'x_start':  24,
                 'y_start':  0,
                 'x_width':  9576,   #NB Should be set up with overscan, which this camera is!  20200315 WER
                 'y_width':  6388,
