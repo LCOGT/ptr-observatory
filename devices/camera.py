@@ -3205,7 +3205,15 @@ class Camera:
                                 cal_name[:-9] + "F012" + cal_name[-7:]
                             )                            
                             
-                            if len(sources) >= 5 and len(sources) < 1000:
+                            # Check this is not an image in a smartstack set.
+                            # No shifts in pointing are wanted in a smartstack set!
+                            image_during_smartstack=False
+                            if Nsmartstack > 1 and not (Nsmartstack == sskcounter+1):
+                                image_during_smartstack=True
+                            
+                            if len(sources) >= 5 and len(sources) < 1000 and not image_during_smartstack:
+                                
+
                                 
                                 # We only need to save the focus image immediately if there is enough sources to 
                                 #  rationalise that.  It only needs to be on the disk immediately now if platesolve 
@@ -3242,8 +3250,14 @@ class Camera:
                                         solve["ra_j2000_hours"],
                                         solve["dec_j2000_degrees"],
                                     )
-                                    target_ra = g_dev["mnt"].current_icrs_ra
-                                    target_dec = g_dev["mnt"].current_icrs_dec
+                                    
+                                    pointing_ra = g_dev['mnt'].mount.RightAscension
+                                    pointing_dec = g_dev['mnt'].mount.Declination
+                                    #icrs_ra, icrs_dec = g_dev['mnt'].get_mount_coordinates()
+                                    #target_ra = g_dev["mnt"].current_icrs_ra
+                                    #target_dec = g_dev["mnt"].current_icrs_dec
+                                    target_ra = g_dev["mnt"].last_ra
+                                    target_dec = g_dev["mnt"].last_dec
                                     solved_ra = solve["ra_j2000_hours"]
                                     solved_dec = solve["dec_j2000_degrees"]
                                     solved_arcsecperpixel = solve["arcsec_per_pixel"]
@@ -3265,10 +3279,10 @@ class Camera:
                                     
                                     # MTF - I have commented out the below just to figure out what is going on!!.
                                     
-                                    g_dev['mnt']
+                                    #g_dev['mnt']
                                     # #g_dev["mnt"].current_icrs_ra = solved_ra                                    
                                     # #g_dev["mnt"].current_icrs_dec = solved_dec.mtf_dec_offset=err_dec
-                                    g_dev['mnt'].mtf_ra_offset=err_ha
+                                    #g_dev['mnt'].mtf_ra_offset=err_ha
                                     
                                     if (
                                          abs(err_ha * 15 * 3600)
@@ -3276,8 +3290,11 @@ class Camera:
                                          or abs(err_dec * 3600)
                                          > self.config["threshold_mount_update"]
                                      ):
-                                        plog ("I ain't moving nothing!")
-                                        #g_dev['mnt'].mount.SlewToCoordinatesAsync(g_dev['mnt'].last_ra + err_ha, g_dev['mnt'].last_dec + err_dec)
+                                        plog ("I am nudging the telescope slightly!")
+                                        #breakpoint()
+                                        #g_dev['mnt'].mount.SlewToCoordinatesAsync(g_dev["mnt"].current_icrs_ra - err_ha, g_dev["mnt"].current_icrs_dec - err_dec)
+                                        g_dev['mnt'].mount.SlewToCoordinatesAsync(pointing_ra + err_ha, pointing_dec + err_dec)
+                                        wait_for_slew()
                                         #self.go_coord(self.last_ra, self.last_dec, self.last_tracking_rate_ra, self.last_tracking_rate_dec)
                                     
                                     # # Tell the mount where it is pointing!
@@ -3345,6 +3362,7 @@ class Camera:
                                     plog(
                                         "Image: did not platesolve; this is usually OK. ", e
                                     )
+                                    plog(traceback.format_exc())
                                 if not self.config['keep_focus_images_on_disk']:
                                     os.remove(cal_path + cal_name)
                             else:
@@ -3555,4 +3573,28 @@ class Camera:
     def to_slow_process(self, priority, to_slow):
         g_dev["obs"].slow_camera_queue.put((priority, to_slow), block=False)
         
-
+def wait_for_slew():    
+    
+    try:
+        if not g_dev['mnt'].mount.AtPark:
+            movement_reporting_timer=time.time()
+            while g_dev['mnt'].mount.Slewing: #or g_dev['enc'].status['dome_slewing']:   #Filter is moving??
+                #if g_dev['mnt'].mount.Slewing: plog( 'm>')
+                #if g_dev['enc'].status['dome_slewing']: st += 'd>'
+                if time.time() - movement_reporting_timer > 2.0:
+                    plog( 'm>')
+                    movement_reporting_timer=time.time()
+                #time.sleep(0.1)
+                g_dev['obs'].update_status(mount_only=True, dont_wait=True)            
+            
+    except Exception as e:
+        plog("Motion check faulted.")
+        plog(traceback.format_exc())
+        if 'pywintypes.com_error' in str(e):
+            plog ("Mount disconnected. Recovering.....")
+            time.sleep(30)
+            g_dev['mnt'].mount.Connected = True
+            #g_dev['mnt'].home_command()
+        else:
+            breakpoint()
+    return 
