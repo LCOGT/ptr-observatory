@@ -346,6 +346,11 @@ class Mount:
         
         #breakpoint()
         
+        
+        # just some back to basics coordinates to test pointing issues
+        self.mtf_dec_offset=0
+        self.mtf_ra_offset=0
+        
         plog("exiting mount _init")
 
     def check_connect(self):
@@ -1191,6 +1196,8 @@ class Mount:
 
     def re_seek(self, dither):
         
+        #breakpoint()
+        
         try:
             if dither == 0:
                 self.go_coord(self.last_ra, self.last_dec, self.last_tracking_rate_ra, self.last_tracking_rate_dec)
@@ -1315,6 +1322,7 @@ class Mount:
         self.target_az = az*RTOD
 
         wait_for_slew() 
+        #breakpoint()
         try:
             self.mount.SlewToCoordinatesAsync(self.ra_mech*RTOH, self.dec_mech*RTOD)  #Is this needed?
             wait_for_slew() 

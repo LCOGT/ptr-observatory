@@ -1377,15 +1377,15 @@ class Camera:
 
 
         #plog ("Smart Stack ID: " + smartstackid)
-        g_dev["obs"].send_to_user(
-            "Starting "
-            + str(exposure_time)
-            + " second exposure. Number of "
-            + frame_type
-            + " frames remaining: "
-            + str(counter),
-            p_level="INFO",
-        )
+        # g_dev["obs"].send_to_user(
+        #     "Starting "
+        #     + str(exposure_time)
+        #     + " second exposure. Number of "
+        #     + frame_type
+        #     + " frames remaining: "
+        #     + str(counter),
+        #     p_level="INFO",
+        # )
         # , gather_status, do_sep, no_AWS, start_x, start_y, opt['area'])
         self.status_time = time.time() + 10
         self.post_mnt = []
@@ -3233,69 +3233,89 @@ class Camera:
                                         round(err_ha * 15 * 3600, 2),
                                         round(err_dec * 3600, 2),
                                     )  # NB WER changed units 20221012
-    
+                                    #breakpoint()
                                     # Reset Solve timers
                                     g_dev['obs'].last_solve_time = datetime.datetime.now()
                                     g_dev['obs'].images_since_last_solve = 0
                                     
                                     
-                                    # Tell the mount where it is pointing!
-                                    g_dev['mnt'].mount.SyncToCoordinates(solved_ra, solved_dec)
-                                    # Tell the code where it is pointing!
-                                    g_dev["mnt"].current_icrs_ra = solved_ra                                    
-                                    g_dev["mnt"].current_icrs_dec = solved_dec
-    
-                                    # NB NB NB this needs rethinking, the incoming units are hours in HA or degrees of dec
+                                    # MTF - I have commented out the below just to figure out what is going on!!.
+                                    
+                                    g_dev['mnt']
+                                    # #g_dev["mnt"].current_icrs_ra = solved_ra                                    
+                                    # #g_dev["mnt"].current_icrs_dec = solved_dec.mtf_dec_offset=err_dec
+                                    g_dev['mnt'].mtf_ra_offset=err_ha
+                                    
                                     if (
-                                        err_ha * 15 * 3600 > 1200
-                                        or err_dec * 3600 > 1200
-                                        or err_ha * 15 * 3600 < -1200
-                                        or err_dec * 3600 < -1200
-                                    ) and self.config["mount"]["mount1"][
-                                        "permissive_mount_reset"
-                                    ] == "yes":
-                                        g_dev["mnt"].reset_mount_reference()
-                                        plog("I've  reset the mount_reference 1")
-                                        g_dev["mnt"].current_icrs_ra = solved_ra
-                                        #    "ra_j2000_hours"
-                                        #]
-                                        g_dev["mnt"].current_icrs_dec = solved_dec
-                                        #    "dec_j2000_hours"
-                                        #]
-                                        err_ha = 0
-                                        err_dec = 0
+                                         abs(err_ha * 15 * 3600)
+                                         > self.config["threshold_mount_update"]
+                                         or abs(err_dec * 3600)
+                                         > self.config["threshold_mount_update"]
+                                     ):
+                                        plog ("I ain't moving nothing!")
+                                        #g_dev['mnt'].mount.SlewToCoordinatesAsync(g_dev['mnt'].last_ra + err_ha, g_dev['mnt'].last_dec + err_dec)
+                                        #self.go_coord(self.last_ra, self.last_dec, self.last_tracking_rate_ra, self.last_tracking_rate_dec)
+                                    
+                                    # # Tell the mount where it is pointing!
+                                    # try:
+                                    #     g_dev['mnt'].mount.SyncToCoordinates(solved_ra, solved_dec)
+                                    # except:
+                                    #     pass
+                                    
+                                    # #breakpoint()
+                                    # # Tell the code where it is pointing!
     
-                                    if (
-                                        abs(err_ha * 15 * 3600)
-                                        > self.config["threshold_mount_update"]
-                                        or abs(err_dec * 3600)
-                                        > self.config["threshold_mount_update"]
-                                    ):
-                                        try:
-                                            #if g_dev["mnt"].pier_side_str == "Looking West":
-                                            if g_dev["mnt"].pier_side == 0:
-                                                try:
-                                                    g_dev["mnt"].adjust_mount_reference(
-                                                        -err_ha, -err_dec
-                                                    )
-                                                except Exception as e:
-                                                    plog ("Something is up in the mount reference adjustment code ", e)
-                                            else:
-                                                try:
-                                                    g_dev["mnt"].adjust_flip_reference(
-                                                        -err_ha, -err_dec
-                                                    )  # Need to verify signs
-                                                except Exception as e:
-                                                    plog ("Something is up in the mount reference adjustment code ", e)
+                                    # # NB NB NB this needs rethinking, the incoming units are hours in HA or degrees of dec
+                                    # if (
+                                    #     err_ha * 15 * 3600 > 1200
+                                    #     or err_dec * 3600 > 1200
+                                    #     or err_ha * 15 * 3600 < -1200
+                                    #     or err_dec * 3600 < -1200
+                                    # ) and self.config["mount"]["mount1"][
+                                    #     "permissive_mount_reset"
+                                    # ] == "yes":
+                                    #     g_dev["mnt"].reset_mount_reference()
+                                    #     plog("I've  reset the mount_reference 1")
+                                    #     g_dev["mnt"].current_icrs_ra = solved_ra
+                                    #     #    "ra_j2000_hours"
+                                    #     #]
+                                    #     g_dev["mnt"].current_icrs_dec = solved_dec
+                                    #     #    "dec_j2000_hours"
+                                    #     #]
+                                    #     err_ha = 0
+                                    #     err_dec = 0
+    
+                                    # if (
+                                    #     abs(err_ha * 15 * 3600)
+                                    #     > self.config["threshold_mount_update"]
+                                    #     or abs(err_dec * 3600)
+                                    #     > self.config["threshold_mount_update"]
+                                    # ):
+                                    #     try:
+                                    #         #if g_dev["mnt"].pier_side_str == "Looking West":
+                                    #         if g_dev["mnt"].pier_side == 0:
+                                    #             try:
+                                    #                 g_dev["mnt"].adjust_mount_reference(
+                                    #                     -err_ha, -err_dec
+                                    #                 )
+                                    #             except Exception as e:
+                                    #                 plog ("Something is up in the mount reference adjustment code ", e)
+                                    #         else:
+                                    #             try:
+                                    #                 g_dev["mnt"].adjust_flip_reference(
+                                    #                     -err_ha, -err_dec
+                                    #                 )  # Need to verify signs
+                                    #             except Exception as e:
+                                    #                 plog ("Something is up in the mount reference adjustment code ", e)
                                             
                                             
                                             
+                                        
                                             
-                                            
-                                            g_dev['mnt'].re_seek(dither=0)
-                                        except:
-                                            plog("This mount doesn't report pierside")
-                                            plog(traceback.format_exc())
+                                    #         g_dev['mnt'].re_seek(dither=0)
+                                    #     except:
+                                    #         plog("This mount doesn't report pierside")
+                                    #         plog(traceback.format_exc())
     
                                 except Exception as e:
                                     plog(
