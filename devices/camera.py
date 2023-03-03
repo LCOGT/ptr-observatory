@@ -2434,6 +2434,17 @@ class Camera:
                         # Crop unnecessary rough edges off preview images that unnecessarily skew the scaling
                         # This is particularly necessary for SRO, but I've seen many cameras where cropping
                         # Needs to happen.
+                        #  NB NB NB For the qhy chips there is a substantial L shaped overscan
+                        #      region that needs to be trimmed.  I will change the MRC config
+                        #      to do this.  The current bias correction is a bit too simple
+                        #      but for now, this is Ok.  I will leave the trim at 1 pixel for the sides oposite
+                        #      the "L". This does not show well on OSC images.  --- WER 20220225
+
+                        
+                        #First trim overscan region:
+                        yw = self.config["camera"][self.name]["settings"]["y_width"]
+                        xs = self.config["camera"][self.name]["settings"]["x_start"]
+                        hdusmalldata = hdusmalldata[xs:, :yw]   
                         if (
                             self.config["camera"][self.name]["settings"]["crop_preview"]
                             == True
