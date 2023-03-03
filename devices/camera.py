@@ -124,7 +124,7 @@ dgs = "°"
 # These should eventually be in a utility module
 def next_sequence(pCamera):
     global SEQ_Counter
-    camShelf = shelve.open(g_dev["cam"].site_path + "ptr_night_shelf/" + pCamera)
+    camShelf = shelve.open(g_dev["cam"].site_path + "ptr_night_shelf/" + pCamera + str(g_dev['obs'].name))
     sKey = "Sequence"
     try:
         seq = camShelf[sKey]  # get an 8 character string
@@ -142,7 +142,7 @@ def next_sequence(pCamera):
 
 def test_sequence(pCamera):
     global SEQ_Counter
-    camShelf = shelve.open(g_dev["cam"].site_path + "ptr_night_shelf/" + pCamera)
+    camShelf = shelve.open(g_dev["cam"].site_path + "ptr_night_shelf/" + pCamera + str(g_dev['obs'].name))
     sKey = "Sequence"
     seq = camShelf[sKey]  # get an 8 character string
     camShelf.close()
@@ -153,7 +153,7 @@ def test_sequence(pCamera):
 def reset_sequence(pCamera):
     try:
         camShelf = shelve.open(
-            g_dev["cam"].site_path + "ptr_night_shelf/" + str(pCamera)
+            g_dev["cam"].site_path + "ptr_night_shelf/" + str(pCamera) + str(g_dev['obs'].name)
         )
         seqInt = int(-1)
         seqInt += 1

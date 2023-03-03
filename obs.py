@@ -395,7 +395,7 @@ class Observatory:
 
 
     def set_last_reference(self, delta_ra, delta_dec, last_time):
-        mnt_shelf = shelve.open(self.site_path + "ptr_night_shelf/" + "last")
+        mnt_shelf = shelve.open(self.site_path + "ptr_night_shelf/" + "last" + str(self.name))
         mnt_shelf["ra_cal_offset"] = delta_ra
         mnt_shelf["dec_cal_offset"] = delta_dec
         mnt_shelf["time_offset"] = last_time
@@ -403,7 +403,7 @@ class Observatory:
         return
 
     def get_last_reference(self):
-        mnt_shelf = shelve.open(self.site_path + "ptr_night_shelf/" + "last")
+        mnt_shelf = shelve.open(self.site_path + "ptr_night_shelf/" + "last"+ str(self.name))
         delta_ra = mnt_shelf["ra_cal_offset"]
         delta_dec = mnt_shelf["dec_cal_offset"]
         last_time = mnt_shelf["time_offset"]
@@ -411,7 +411,7 @@ class Observatory:
         return delta_ra, delta_dec, last_time
 
     def reset_last_reference(self):
-        mnt_shelf = shelve.open(self.site_path + "ptr_night_shelf/" + "last")
+        mnt_shelf = shelve.open(self.site_path + "ptr_night_shelf/" + "last"+ str(self.name))
         mnt_shelf["ra_cal_offset"] = None
         mnt_shelf["dec_cal_offset"] = None
         mnt_shelf["time_offset"] = None
