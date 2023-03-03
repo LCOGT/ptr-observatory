@@ -3366,7 +3366,7 @@ class Camera:
                                 if not self.config['keep_focus_images_on_disk']:
                                     os.remove(cal_path + cal_name)
                             else:
-                                plog ("Platesolve wasn't attempted due to lack of sources (or sometimes too many!)")
+                                plog ("Platesolve wasn't attempted due to lack of sources (or sometimes too many!) or it was during a smartstack")
                                 
                                 del hdufocusdata
                               
