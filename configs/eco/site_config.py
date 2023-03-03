@@ -31,6 +31,10 @@ site_config = {
     'site': str(site_name.lower()),
     'site_id': 'eco',
     'debug_site_mode': False,
+    
+    'debug_mode': False,
+    'admin_owner_commands_only': False,
+    'debug_duration_sec': 7200,
     'owner':  ['google-oauth2|112401903840371673242'],  # WER,  Or this can be
                                                         # some aws handle.
     'owner_alias': ['WER', 'TELOPS'],
@@ -57,8 +61,7 @@ site_config = {
     'redis_ip': None,  #'127.0.0.1', None if no redis path present,
     'site_is_generic':  True,   # A simple single computer ASCOM site.
     'site_is_specific':  False,  # Indicates some special code for this site, found at end of config.
-    'home_altitude' : 70,
-    'home_azimuth' : 160,
+    
 
     'host_wema_site_name':  'ECO',  #  The umbrella header for obsys in close geographic proximity.
     'name': 'Eltham College Observatory, 0m4f6.8',
@@ -86,7 +89,13 @@ site_config = {
 
     'site_roof_control': 'yes', #MTF entered this in to remove sro specific code.... Basically do we have control of the roof or not see line 338 sequencer.py
     'site_allowed_to_open_roof': 'yes',
+    
+    'check_time': 300,   #MF's original setting.
     'maximum_roof_opens_per_evening' : 4,
+    'closest_distance_to_the_sun': 45, # Degrees. For normal pointing requests don't go this close to the sun. 
+    'closest_distance_to_the_moon': 10, # Degrees. For normal pointing requests don't go this close to the moon. 
+    
+    'lowest_requestable_altitude': -5, # Degrees. For normal pointing requests don't allow requests to go this low. 
     'site_in_automatic_default': "Automatic",   #  ["Manual", "Shutdown", "Automatic"]
     'automatic_detail_default': "Enclosure is initially set to Automatic mode.",
     'observing_check_period' : 5,    # How many minutes between weather checks
@@ -231,6 +240,8 @@ site_config = {
 			    'elevation_offset': 0.0,    # meters above sea level
                 'home_park_altitude': 0.0,
                 'home_park_azimuth': 270.,
+                'home_altitude' : 70,
+                'home_azimuth' : 160,
                 'horizon':  15.,    #  Meant to be a circular horizon. Or set to None if below is filled in.
                 'horizon_detail': {  #  Meant to be something to draw on the Skymap with a spline fit.
                      '0.1': 10,
@@ -527,6 +538,8 @@ site_config = {
                 #'calib_setpoints': [-35,-30, -25, -20, -15, -10 ],  #  Should vary with season?
                 'day_warm': False,
                 'cooler_on': True,
+                
+                "cam_needs_NumXY_init": False,
                 'x_start':  0,
                 'y_start':  0,
                 'x_width':  4096,   #  NB Should be set up with overscan, which this camera is!  20200315 WER
@@ -577,6 +590,7 @@ site_config = {
                 'min_exposure': 0.2,
                 'min_flat_exposure' : 1.0, # For certain shutters, short exposures aren't good for flats. Largely applies to ccds though.
                 'max_exposure': 3600,
+                'max_daytime_exposure': 0.0001,
                 'can_subframe':  True,
                 'min_subframe':  [128, 128],
                

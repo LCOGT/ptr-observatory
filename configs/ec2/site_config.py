@@ -30,7 +30,14 @@ site_name = 'ec2'
 site_config = {
     'site': str(site_name.lower()),
     'site_id': 'ec2',
+    
     'debug_site_mode': False,
+    
+
+    'debug_mode': False,
+    'admin_owner_commands_only': False,
+
+    'debug_duration_sec': 7200,
     'owner':  ['google-oauth2|112401903840371673242'],  # WER,  Or this can be
                                                         # some aws handle.
     'owner_alias': ['WER', 'TELOPS'],
@@ -45,6 +52,8 @@ site_config = {
     'send_files_at_end_of_night' : 'no', # For low bandwidth sites, do not send up large files until the end of the night. set to 'no' to disable
     'save_raw_to_disk' : False, # For low diskspace sites (or just because they aren't needed), don't save a separate raw file to disk after conversion to fz.    
     'keep_focus_images_on_disk' : False, # To save space, the focus file can not be saved.
+    'keep_reduced_on_disk' : False, # PTR uses the reduced file for some calculations (focus, SEP, etc.). To save space, this file can be removed after usage or not saved.
+    
     
     'aux_archive_path':  None, # '//house-computer/saf_archive_2/archive/',  #  Path to auxillary backup disk.
     'wema_is_active':  False,    #True if split computers used at a site.
@@ -86,7 +95,14 @@ site_config = {
     'site_roof_control': 'yes', #MTF entered this in to remove sro specific code.... Basically do we have control of the roof or not see line 338 sequencer.py
     'site_allowed_to_open_roof': 'yes',
     
+    
+    'check_time': 300,   #MF's original setting.
+    
     'maximum_roof_opens_per_evening' : 4,
+    
+    'closest_distance_to_the_sun': 45, # Degrees. For normal pointing requests don't go this close to the sun. 
+    'closest_distance_to_the_moon': 10, # Degrees. For normal pointing requests don't go this close to the moon. 
+    'lowest_requestable_altitude': -5, # Degrees. For normal pointing requests don't allow requests to go this low. 
     'site_in_automatic_default': "Automatic",   #  ["Manual", "Shutdown", "Automatic"]
     'automatic_detail_default': "Enclosure is initially set to Automatic mode.",
     'observing_check_period' : 5,    # How many minutes between weather checks
@@ -522,6 +538,9 @@ site_config = {
                 'calib_setpoints': [-35,-30, -25, -20, -15, -10 ],  #  Should vary with season?
                 'day_warm': False,
                 'cooler_on': True,
+                
+                
+                "cam_needs_NumXY_init": False,
                 'x_start':  0,
                 'y_start':  0,
                 'x_width':  4500,   #  NB Should be set up with overscan, which this camera is!  20200315 WER
@@ -572,6 +591,7 @@ site_config = {
                 
                 'min_flat_exposure': 0.02,
                 'max_exposure': 3600,
+                'max_daytime_exposure': 0.0001,
                 'can_subframe':  True,
                 'min_subframe':  [128, 128],
                 'bin_modes':  [[1, 1, 1.59]], #  , [2, 2, 2.13], [3, 3, 3.21], [4, 4, 4.27]],   #Meaning no binning choice if list has only one entry, default should be first.
@@ -609,6 +629,8 @@ site_config = {
                 'bias_dark_bin_spec': ['1,1'],    #Default binning for flats
                 'bin_enable': ['1 1'],
                 'dark_length' : 900,
+                
+                'flat_count' : 10,
                 'bias_count' : 10,
                 'dark_count' : 10,
                 

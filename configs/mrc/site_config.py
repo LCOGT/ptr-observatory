@@ -55,8 +55,13 @@ site_name = 'mrc'    #NB These must be unique across all of PTR. Pre-pend with a
 site_config = {
     'site': str(site_name).lower(),
     'site_id': 'mrc',
+
+    'debug_site_mode': False,
+    
     'debug_mode': False,
-    'debug_duration_sec': 3600,   #seconds
+    'admin_owner_commands_only': False,
+    'debug_duration_sec': 7200,
+
     'owner':  ['google-oauth2|112401903840371673242'],  # Wayne
 
     'owner_alias': ['WER', 'TELOPS'],
@@ -123,6 +128,12 @@ site_config = {
     'site_allowed_to_open_roof': 'yes',
     'check_time': 300,   #MF's original setting.
     'maximum_roof_opens_per_evening' : 4,
+    
+    'closest_distance_to_the_sun': 45, # Degrees. For normal pointing requests don't go this close to the sun. 
+    
+    'closest_distance_to_the_moon': 10, # Degrees. For normal pointing requests don't go this close to the moon. 
+    
+    'lowest_requestable_altitude': -5, # Degrees. For normal pointing requests don't allow requests to go this low. 
     'site_in_automatic_default': "Automatic",   #"Manual", "Shutdown"
     'automatic_detail_default': "Enclosure is initially set to Automatic mode.",
     'observing_check_period' : 5,    # How many minutes between weather checks
@@ -684,6 +695,7 @@ site_config = {
                 'min_exposure': 0.0001,
                 'min_flat_exposure': 0.0001,
                 'max_exposure': 180.,
+                'max_daytime_exposure': 0.0001,
                 'can_subframe':  True,
                 'min_subframe': [128,128],
                 'bin_modes':  [['Optimal', 0.91], ['Fine', 0.61], ['Coarse', 1.2], ['Eng', 0.30]],     #Meaning fixed binning if list has only one entry

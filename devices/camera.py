@@ -862,7 +862,9 @@ class Camera:
         no_AWS=False,
         quick=False,
         solve_it=False,
-        calendar_event_id=None
+        calendar_event_id=None,
+        skip_open_check=False,
+        skip_daytime_check=False
     ):
         """
         This is Phase 1:  Setup the camera.
@@ -872,7 +874,48 @@ class Camera:
         image data.
         """
         
+        # First check that it isn't an exposure that doesn't need a check (e.g. bias, darks etc.)
+        if not skip_open_check:
+        #Second check, if we are not open and available to observe, then .... don't observe!        
+            if (g_dev['obs'].open_and_enabled_to_observe==False and g_dev['enc'].mode == 'Automatic') and (not g_dev['obs'].debug_flag) :
+                g_dev['obs'].send_to_user("Refusing exposure request as the observatory is not enabled to observe.")
+                plog("Refusing exposure request as the observatory is not enabled to observe.")
+                return
         
+        # Need to pick up exposure time here
+        exposure_time = float(
+            required_params.get("time", 0.0001)
+        ) 
+        
+        #Third check, check it isn't daytime and institute maximum exposure time 
+        #Unless it is a command from the sequencer flat_scripts or a requested calibration frame
+        
+        imtype = required_params.get("image_type", "light")
+        
+        if imtype.lower() in (            
+            "bias",
+            "dark",
+            "screen flat",
+            "sky flat",
+            "near flat",
+            "thor flat",
+            "arc flat",
+            "lamp flat",
+            "solar flat",
+        ):
+            skip_daytime_check=True
+        
+        
+        if not skip_daytime_check:
+            sun_az, sun_alt = g_dev['evnt'].sun_az_alt_now()
+            if sun_alt > -5:
+                if exposure_time > float(self.config["camera"][self.name]["settings"]['max_daytime_exposure']):
+                    g_dev['obs'].send_to_user("Exposure time reduced to maximum daytime exposure time: " + str(float(self.config["camera"][self.name]["settings"]['max_daytime_exposure'])))
+                    plog("Exposure time reduced to maximum daytime exposure time: " + str(float(self.config["camera"][self.name]["settings"]['max_daytime_exposure'])))
+                    exposure_time = float(self.config["camera"][self.name]["settings"]['max_daytime_exposure'])
+            #breakpoint()
+            
+            
         
         self.exposure_busy = True # This really needs to be here from the start
         # We've had multiple cases of multiple camera exposures trying to go at once
@@ -900,7 +943,7 @@ class Camera:
         self.hint = optional_params.get("hint", "")
         self.script = required_params.get("script", "None")
         
-        imtype = required_params.get("image_type", "light")
+        
         no_AWS, self.toss = True if imtype.lower() == "test image" else False, False
         quick = True if imtype.lower() == "quick" else False
         #  NBNB this is obsolete and needs rework 20221002 WER
@@ -978,10 +1021,7 @@ class Camera:
             self.config["camera"][self.name]["settings"]["cycle_time"]
         )
 
-            
-        exposure_time = float(
-            required_params.get("time", 0.0001)
-        ) 
+    
         
         self.estimated_readtime = (
             exposure_time + readout_time
@@ -1364,6 +1404,7 @@ class Camera:
         quartileExposureReport = 0
         self.plog_exposure_time_counter_timer=time.time() -3.0
         
+        exposure_scan_request_timer=time.time()
         
         while True:  # This loop really needs a timeout.
             self.post_mnt = []
@@ -1376,7 +1417,16 @@ class Camera:
                 time.time() < self.completion_time or self.async_exposure_lock==True
             ):  
                 #self.t7b = time.time()
+                
+                
+                # Scan requests every 4 seconds... primarily hunting for a "Cancel/Stop"
+                if exposure_scan_request_timer - time.time() > 4:                    
+                    exposure_scan_request_timer=time.time()
+                    g_dev['obs'].scan_requests()
+                
                 remaining = round(self.completion_time - time.time(), 1)
+                
+                
                 if remaining > 0:  
                     if time.time() - self.plog_exposure_time_counter_timer > 10.0:
                         self.plog_exposure_time_counter_timer=time.time()
@@ -3187,6 +3237,13 @@ class Camera:
                                     # Reset Solve timers
                                     g_dev['obs'].last_solve_time = datetime.datetime.now()
                                     g_dev['obs'].images_since_last_solve = 0
+                                    
+                                    
+                                    # Tell the mount where it is pointing!
+                                    g_dev['mnt'].mount.SyncToCoordinates(solved_ra, solved_dec)
+                                    # Tell the code where it is pointing!
+                                    g_dev["mnt"].current_icrs_ra = solved_ra                                    
+                                    g_dev["mnt"].current_icrs_dec = solved_dec
     
                                     # NB NB NB this needs rethinking, the incoming units are hours in HA or degrees of dec
                                     if (
@@ -3231,8 +3288,10 @@ class Camera:
                                                 except Exception as e:
                                                     plog ("Something is up in the mount reference adjustment code ", e)
                                             
-                                            g_dev["mnt"].current_icrs_ra = solved_ra                                    
-                                            g_dev["mnt"].current_icrs_dec = solved_dec
+                                            
+                                            
+                                            
+                                            
                                             g_dev['mnt'].re_seek(dither=0)
                                         except:
                                             plog("This mount doesn't report pierside")

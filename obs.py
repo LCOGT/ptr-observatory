@@ -28,6 +28,11 @@ import astroalign as aa
 from astropy.io import fits
 from astropy.nddata import block_reduce
 from astropy.utils.data import check_download_cache
+from astropy.coordinates import SkyCoord, FK5, ICRS,  \
+                         EarthLocation, AltAz, get_sun, get_moon
+from astropy.time import Time
+from astropy import units as u
+
 from dotenv import load_dotenv
 import numpy as np
 import redis  # Client, can work with Memurai
@@ -148,6 +153,7 @@ class Observatory:
         self.config = config
         self.site = config["site"]
         self.debug_flag = self.config['debug_mode']
+        self.admin_only_flag = self.config['admin_owner_commands_only']
         if self.debug_flag:
             self.debug_lapse_time = time.time() + self.config['debug_duration_sec']
             g_dev['debug'] = True
@@ -352,6 +358,21 @@ class Observatory:
             self.open_and_enabled_to_observe=True
         else:
             self.open_and_enabled_to_observe=False
+            
+            
+        # On initialisation, there should be no commands heading towards the site
+        # So this command reads the commands waiting and just ... ignores them
+        # essentially wiping the command queue coming from AWS.
+        # This prevents commands from previous nights/runs suddenly running
+        # when obs.py is booted (has happened a bit!)
+        url_job = "https://jobs.photonranch.org/jobs/getnewjobs"
+        body = {"site": self.name}
+        #cmd = {}
+        # Get a list of new jobs to complete (this request
+        # marks the commands as "RECEIVED")
+        unread_commands = reqs.request(
+            "POST", url_job, data=json.dumps(body)
+        ).json()
 
         # Need to set this for the night log
         #g_dev['foc'].set_focal_ref_reset_log(self.config["focuser"]["focuser1"]["reference"])
@@ -565,19 +586,26 @@ sel
                     )
 
                     for cmd in unread_commands:
-                        if cmd["action"] in ["cancel_all_commands", "stop"]:
-                            self.cancel_all_acivity() # Hi Wayne, I have to cancel all acitivity with some roof stuff
-                            # So I've moved the cancelling to it's own function just above so it can be called from multiple locations.
+                        
+                        
+                        if (self.admin_only_flag and ("admin" in cmd['user_roles']) or ("owner" in cmd['user_roles'])) or (not self.admin_only_flag):
+                            
+                            if cmd["action"] in ["cancel_all_commands", "stop"]:
+                                self.cancel_all_activity() # Hi Wayne, I have to cancel all acitivity with some roof stuff
+                                # So I've moved the cancelling to it's own function just above so it can be called from multiple locations.
+                            else:
+                                self.cmd_queue.put(cmd)  # SAVE THE COMMAND FOR LATER
+                                g_dev["obs"].stop_all_activity = False
+                                plog(
+                                    "Queueing up a new command... Hint:  " + cmd["action"]
+                                )
+    
+                            if cancel_check:
+                                result={'stopped': True}
+                                return  # Note we do not process any commands.
                         else:
-                            self.cmd_queue.put(cmd)  # SAVE THE COMMAND FOR LATER
-                            g_dev["obs"].stop_all_activity = False
-                            plog(
-                                "Queueing up a new command... Hint:  " + cmd["action"]
-                            )
-
-                        if cancel_check:
-                            result={'stopped': True}
-                            return  # Note we do not process any commands.
+                            plog("Request rejected as site in admin or owner mode.")
+                            g_dev['obs'].send_to_user("Request rejected as site in admin or owner mode.")
 
                 # NEED TO WAIT UNTIL CURRENT COMMAND IS FINISHED UNTIL MOVING ONTO THE NEXT ONE!
                 # THAT IS WHAT CAUSES THE "CAMERA BUSY" ISSUE. We don't need to wait for the
@@ -722,8 +750,8 @@ sel
         """
         
         
-        
-        
+
+            
         loud = False
         if bpt:
             plog('UpdateStatus bpt was invoked.')
@@ -820,6 +848,23 @@ sel
                 if result is not None:
                     status[dev_type][device_name] = result
 
+        # Check that the mount hasn't slewed too close to the sun
+        if not g_dev['mnt'].mount.Slewing:
+            sun_coords=get_sun(Time.now())
+            temppointing=SkyCoord((g_dev['mnt'].current_icrs_ra)*u.hour, (g_dev['mnt'].current_icrs_dec)*u.degree, frame='icrs')           
+             
+            sun_dist = sun_coords.separation(temppointing)
+            #plog ("sun distance: " + str(sun_dist.degree))
+            if sun_dist.degree <  self.config['closest_distance_to_the_sun']:
+                g_dev['obs'].send_to_user("Found telescope pointing too close to the sun: " + str(sun_dist.degree) + " degrees.")
+                plog("Found telescope pointing too close to the sun: " + str(sun_dist.degree) + " degrees.")
+                g_dev['obs'].send_to_user("Parking scope and cancelling all activity")
+                plog("Parking scope and cancelling all activity")
+                self.cancel_all_activity()
+                if not g_dev['mnt'].mount.AtPark:
+                    g_dev['mnt'].park_command()                     
+                return        
+
         status["timestamp"] = round((time.time() + t1) / 2.0, 3)
         status["send_heartbeat"] = False
         try:
@@ -911,6 +956,23 @@ sel
             self.time_since_safety_checks=time.time()
             
             #breakpoint()
+            
+            
+            # Check that the mount hasn't slewed too close to the sun
+            sun_coords=get_sun(Time.now())
+            temppointing=SkyCoord((g_dev['mnt'].current_icrs_ra)*u.hour, (g_dev['mnt'].current_icrs_dec)*u.degree, frame='icrs')           
+             
+            sun_dist = sun_coords.separation(temppointing)
+            #plog ("sun distance: " + str(sun_dist.degree))
+            if sun_dist.degree <  self.config['closest_distance_to_the_sun']:
+                g_dev['obs'].send_to_user("Found telescope pointing too close to the sun: " + str(sun_dist.degree) + " degrees.")
+                plog("Found telescope pointing too close to the sun: " + str(sun_dist.degree) + " degrees.")
+                g_dev['obs'].send_to_user("Parking scope and cancelling all activity")
+                plog("Parking scope and cancelling all activity")
+                self.cancel_all_activity()
+                if not g_dev['mnt'].mount.AtPark:
+                    g_dev['mnt'].park_command()                     
+                return
 
             # If the shutter is open, check it is meant to be.
             # This is just a brute force overriding safety check.
@@ -1064,6 +1126,8 @@ sel
                     g_dev['mnt'].mount.Connected = True
                     #g_dev['mnt'].home_command()
                 
+            
+    
     
             # If no activity for an hour, park the scope               
             if time.time() - self.time_since_last_slew_or_exposure > self.config['mount']['mount1']\

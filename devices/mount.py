@@ -49,7 +49,7 @@ from astropy.time import Time
 
 from astropy import units as u
 from astropy.coordinates import SkyCoord, FK5, ICRS,  \
-                         EarthLocation, AltAz
+                         EarthLocation, AltAz, get_sun, get_moon
                          #This should be removed or put in a try
 
 import ptr_utility
@@ -345,6 +345,7 @@ class Mount:
         self.EquatorialSystem=self.mount.EquatorialSystem
         
         #breakpoint()
+        
         plog("exiting mount _init")
 
     def check_connect(self):
@@ -913,6 +914,77 @@ class Mount:
 
     def go_command(self, req, opt,  offset=False, calibrate=False, auto_center=False):
         ''' Slew to the given ra/dec coordinates. '''
+        
+        
+        # First thing to do is check the position of the sun and
+        # Whether this violates the pointing principle. 
+        sun_coords=get_sun(Time.now())        
+        if 'ra' in req:
+            ra = float(req['ra'])
+            dec = float(req['dec'])
+            temppointing=SkyCoord(ra*u.hour, dec*u.degree, frame='icrs')
+            temppointingaltaz=temppointing.transform_to(AltAz(location=self.site_coordinates, obstime=Time.now()))
+            alt = temppointingaltaz.alt.degree
+            az = temppointingaltaz.az.degree
+            
+                                        
+        elif 'az' in req:
+            az = float(req['az'])
+            alt = float(req['alt'])
+            temppointing = AltAz(location=self.site_coordinates, obstime=Time.now(), alt=alt*u.deg, az=az*u.deg)          
+        elif 'ha' in req:
+            ha = float(req['ha'])
+            dec = float(req['dec'])
+            az, alt = ptr_utility.transform_haDec_to_azAlt(ha, dec, lat=self.config['latitude'])
+            temppointing = AltAz(location=self.site_coordinates, obstime=Time.now(), alt=alt*u.deg, az=az*u.deg)    
+        sun_dist = sun_coords.separation(temppointing)
+        #plog ("sun distance: " + str(sun_dist.degree))
+        if sun_dist.degree <  self.config['closest_distance_to_the_sun']:
+            g_dev['obs'].send_to_user("Refusing pointing request as it is too close to the sun: " + str(sun_dist.degree) + " degrees.")
+            plog("Refusing pointing request as it is too close to the sun: " + str(sun_dist.degree) + " degrees.")
+            return
+        
+        # Second thing, check that we aren't pointing at the moon
+        # UNLESS we have actually chosen to look at the moon.
+        if self.object in ['Moon', 'moon', 'Lune', 'lune', 'Luna', 'luna',]:
+            plog("Moon Request detected")
+        else:
+            moon_coords=get_moon(Time.now())        
+            # if 'ra' in req:
+            #     ra = float(req['ra'])
+            #     dec = float(req['dec'])
+            #     temppointing=SkyCoord(ra*u.hour, dec*u.degree, frame='icrs')            
+            # elif 'az' in req:
+            #     az = float(req['az'])
+            #     alt = float(req['alt'])
+            #     temppointing = AltAz(location=self.site_coordinates, obstime=Time.now(), alt=alt*u.deg, az=az*u.deg)          
+            # elif 'ha' in req:
+            #     ha = float(req['ha'])
+            #     dec = float(req['dec'])
+            #     az, alt = ptr_utility.transform_haDec_to_azAlt(ha, dec, lat=self.config['latitude'])
+            #     temppointing = AltAz(location=self.site_coordinates, obstime=Time.now(), alt=alt*u.deg, az=az*u.deg)    
+            moon_dist = sun_coords.separation(temppointing)
+            #plog ("sun distance: " + str(sun_dist.degree))
+            if moon_dist.degree <  self.config['closest_distance_to_the_moon']:
+                g_dev['obs'].send_to_user("Refusing pointing request as it is too close to the moon: " + str(moon_dist.degree) + " degrees.")
+                plog("Refusing pointing request as it is too close to the moon: " + str(moon_dist.degree) + " degrees.")
+                return
+        
+        # Third thing, check that the requested coordinates are not
+        # below a reasonable altitude
+        if alt < self.config['lowest_requestable_altitude']:
+            g_dev['obs'].send_to_user("Refusing pointing request as it is too low: " + str(alt) + " degrees.")
+            plog("Refusing pointing request as it is too low: " + str(alt) + " degrees.")
+            return
+        
+        # Fourth thing, check that the roof is open and we are enabled to observe
+        if (g_dev['obs'].open_and_enabled_to_observe==False and g_dev['enc'].mode == 'Automatic') and (not g_dev['obs'].debug_flag):
+            g_dev['obs'].send_to_user("Refusing pointing request as the observatory is not enabled to observe.")
+            plog("Refusing pointing request as the observatory is not enabled to observe.")
+            return
+
+        
+        
         plog("mount cmd. slewing mount, req, opt:  ", req, opt)
 
         ''' unpark the telescope mount '''  #  NB can we check if unparked and save time?
@@ -929,6 +1001,11 @@ class Mount:
         except:
             clutch_ra = 0.0
             clutch_dec = 0.0
+            
+            
+
+        
+        
         if self.object in ['Moon', 'moon', 'Lune', 'lune', 'Luna', 'luna',]:
             self.obs.date = ephem.now()
             moon = ephem.Moon()
