@@ -173,7 +173,10 @@ class Observatory:
             else:
                 # This host is a client
                 self.is_wema = False  # This is a client.
-                self.site_path = config["client_path"]
+                self.site_path = config["client_path"] +'/' + self.name + '/'
+                if not os.path.exists(self.site_path):
+                    os.makedirs(self.site_path)
+                
                 g_dev["site_path"] = self.site_path
                 g_dev["wema_share_path"] = config[
                     "client_write_share_path"
@@ -411,6 +414,7 @@ class Observatory:
         return delta_ra, delta_dec, last_time
 
     def reset_last_reference(self):
+
         mnt_shelf = shelve.open(self.site_path + "ptr_night_shelf/" + "last"+ str(self.name))
         mnt_shelf["ra_cal_offset"] = None
         mnt_shelf["dec_cal_offset"] = None

@@ -394,16 +394,40 @@ class Camera:
         self.cmd_in = None
         self.t7 = None
         self.camera_message = "-"
-        self.site_path = self.config["client_path"]
-        self.archive_path = self.config["archive_path"] + "archive/"
+        #self.site_path = self.config["client_path"]
+
+        self.site_path = self.config["client_path"] +'/' + self.config['site_id'] + '/'
+        if not os.path.exists(self.site_path):
+            os.makedirs(self.site_path)
+        self.archive_path = self.config["archive_path"] +'/' + self.config['site_id'] + '/'+ "archive/"
+        if not os.path.exists(self.config["archive_path"] +'/' + self.config['site_id']):
+            os.makedirs(self.config["archive_path"] +'/' + self.config['site_id'])
+        if not os.path.exists(self.config["archive_path"] +'/' + self.config['site_id']+ '/'+ "archive/"):
+            os.makedirs(self.config["archive_path"] +'/' + self.config['site_id']+ '/'+ "archive/")
         self.camera_path = self.archive_path + self.alias + "/"
+        if not os.path.exists(self.camera_path):
+            os.makedirs(self.camera_path)
         self.alt_path = self.config[
             "alt_path"
-        ]  # NB NB this should come from config file, it is site dependent.
+        ]  +'/' + self.config['site_id']+ '/' # NB NB this should come from config file, it is site dependent.
+        if not os.path.exists(self.config[
+            "alt_path"
+        ]):
+            os.makedirs(self.config[
+            "alt_path"
+        ])
+        
+        if not os.path.exists(self.alt_path):
+            os.makedirs(self.alt_path)
         self.autosave_path = self.camera_path + "autosave/"
         self.lng_path = self.camera_path + "lng/"
         self.seq_path = self.camera_path + "seq/"
-        
+        if not os.path.exists(self.autosave_path):
+            os.makedirs(self.autosave_path)
+        if not os.path.exists(self.lng_path):
+            os.makedirs(self.lng_path)
+        if not os.path.exists(self.seq_path):
+            os.makedirs(self.seq_path)
         
         """
         TheSkyX runs on a file mode approach to images rather 
@@ -470,8 +494,8 @@ class Camera:
         self.camera_start_x = self.config["camera"][self.name]["settings"]["StartX"]
         self.camera_start_y = self.config["camera"][self.name]["settings"]["StartY"]
         if self.config["camera"][self.name]["settings"]["cam_needs_NumXY_init"]:  # WER 20230217
-            self.camera.NumX = self.camera_x_size
-            self.camera.NumY = self.camera_y_size
+            #self.camera.NumX = self.camera_x_size
+            #self.camera.NumY = self.camera_y_size
             self.camera.StartX = 0
             self.camera.StartY = 0
             self.camera.BinX = 1
