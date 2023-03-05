@@ -64,7 +64,12 @@ site_name = 'mrc2'    #NB These must be unique across all of PTR.
 site_config = {
     'site': site_name.lower(), #TIM this may no longer be needed.
     'site_id': 'mrc2',
+
     'debug_site_mode': False,
+    
+    'debug_mode': True,
+    'admin_owner_commands_only': True,
+    'debug_duration_sec': 7200,
     'owner':  ['google-oauth2|112401903840371673242'],  # Wayne
 
     'owner_alias': ['WER', 'TELOPS'],
@@ -124,7 +129,16 @@ site_config = {
     'site_roof_control': 'no', #MTF entered this in to remove sro specific code.... Basically do we have control of the roof or not see line 338 sequencer.py
     'site_allowed_to_open_roof': 'no',
     
+    'check_time': 300,   #MF's original setting.
     'maximum_roof_opens_per_evening' : 4,
+    
+    'closest_distance_to_the_sun': 45, # Degrees. For normal pointing requests don't go this close to the sun. 
+    
+    'closest_distance_to_the_moon': 10, # Degrees. For normal pointing requests don't go this close to the moon. 
+    
+    'lowest_requestable_altitude': -5, # Degrees. For normal pointing requests don't allow requests to go this low. 
+    
+
 
     'site_in_automatic_default': "Automatic",   #"Manual", "Shutdown"
     'automatic_detail_default': "Enclosure is initially set to Automatic mode.",
@@ -264,6 +278,7 @@ site_config = {
             'east_flip_ra_correction': 0.0,
             'east_flip_dec_correction': 0.0,
             'home_after_unpark' : False,
+            'home_before_park' : False,
             'permissive_mount_reset' : 'yes', # if this is set to yes, it will reset the mount at startup and when coordinates are out significantly
             'lowest_acceptable_altitude' : -5.0, # Below this altitude, it will automatically try to home and park the scope to recover.
             'time_inactive_until_park' : 3600.0, # How many seconds of inactivity until it will park the telescope
@@ -445,19 +460,19 @@ site_config = {
             'desc':  'Optec Gemini',
             'driver': 'ASCOM.OptecGemini.Focuser',
             'com_port': None,
-            'start_at_config_reference': False,
-            'use_focuser_temperature': True,
+            'start_at_config_reference': True,
+            'use_focuser_temperature': False,
             'startup_script':  None,
             'recover_script':  None,
             'shutdown_script':  None,
-            'reference':  6500,    #Nominal at 20C Primary temperature, in microns not steps.
+            'reference':  12500,    #Nominal at 20C Primary temperature, in microns not steps.
             'ref_temp':   22.5,      #Update when pinning reference  Larger at lower temperatures.
             'coef_c': -0.0,   #negative means focus moves out as Primary gets colder
-            'coef_0': 6000,  #Nominal intercept when Primary is at 0.0 C.
+            'coef_0': 12500,  #Nominal intercept when Primary is at 0.0 C.
             'coef_date':  '202004501',
             'z_compression': 0.0, #  microns per degree of zenith distance
             'z_coef_date':  '20221002',   # 'reference': 4375,    #   Guess 20210904  Nominal at 10C Primary temperature
-            'use_local_temp':  True,
+            'use_local_temp':  False,
             'minimum': 0,    #NB this needs clarifying, we are mixing steps and microns.
             'maximum': 12700,
             'throw': 400,
@@ -596,6 +611,7 @@ site_config = {
             'file_mode_path':  'Q:/000ptr_saf/archive/kf01/autosaves/',
             'settings': {
                 'is_osc' : False,
+                'squash_on_x_axis' : True,
                 'flipx_fits': False,
                 'flipy_fits': False,
                 "rotate90_fits": False,
@@ -615,7 +631,7 @@ site_config = {
                 'crop_preview_ytop': 1,
                 'crop_preview_xleft': 1,
                 'crop_preview_xright': 1,
-                'temp_setpoint': 3,
+                'temp_setpoint': -15,
                 'calib_setpoints': [ 3, 5, 7],   #A swag
                 'has_chiller':  True,
                 'chiller_ref_temp':  16,
@@ -708,6 +724,11 @@ site_config = {
                 'dark_length' : 900,
                 'bias_count' : 10,
                 'dark_count' : 10,
+                
+                #'CameraXSize' : 9600,
+                #'CameraYSize' : 6422,
+                'StartX' : 1,
+                'StartY' : 1,
 
                 
                 'flat_count' : 10,

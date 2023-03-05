@@ -2709,9 +2709,10 @@ class Sequencer:
         
         minimumFWHM = 100.0
         for focentry in extensive_focus:
-            if focentry[1] < minimumFWHM:
-                solved_pos = focentry[0]
-                minimumFWHM = focentry[1]
+            if focentry[1] != False:
+                if focentry[1] < minimumFWHM:
+                    solved_pos = focentry[0]
+                    minimumFWHM = focentry[1]
         
         plog (extensive_focus)
         plog (solved_pos)
@@ -3035,7 +3036,7 @@ class Sequencer:
 
     def append_completes(self, block_id):
         camera = self.config['camera']['camera_1_1']['name']
-        seq_shelf = shelve.open(g_dev['cam'].site_path + 'ptr_night_shelf/' + camera)
+        seq_shelf = shelve.open(g_dev['cam'].site_path + 'ptr_night_shelf/' + camera + str(g_dev['obs'].name))
         plog("block_id:  ", block_id)
         lcl_list = seq_shelf['completed_blocks']
         lcl_list.append(block_id)   #NB NB an in-line append did not work!
@@ -3046,7 +3047,7 @@ class Sequencer:
 
     def is_in_completes(self, check_block_id):
         camera = self.config['camera']['camera_1_1']['name']
-        seq_shelf = shelve.open(g_dev['cam'].site_path + 'ptr_night_shelf/' + camera)
+        seq_shelf = shelve.open(g_dev['cam'].site_path + 'ptr_night_shelf/' + camera + str(g_dev['obs'].name))
         #plog('Completes contains:  ', seq_shelf['completed_blocks'])
         if check_block_id in seq_shelf['completed_blocks']:
             seq_shelf.close()
@@ -3240,7 +3241,7 @@ class Sequencer:
     def reset_completes(self):
         try:
             camera = self.config['camera']['camera_1_1']['name']
-            seq_shelf = shelve.open(g_dev['cam'].site_path + 'ptr_night_shelf/' + str(camera))
+            seq_shelf = shelve.open(g_dev['cam'].site_path + 'ptr_night_shelf/' + str(camera) + str(g_dev['obs'].name))
             seq_shelf['completed_blocks'] = []
             seq_shelf.close()
         except:
