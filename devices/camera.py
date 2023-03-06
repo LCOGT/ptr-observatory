@@ -908,7 +908,7 @@ class Camera:
         
         # Need to pick up exposure time here
         exposure_time = float(
-            required_params.get("time", 0.0001)
+            required_params.get("time", 1.0)
         ) 
         
         #Third check, check it isn't daytime and institute maximum exposure time 
@@ -2518,6 +2518,7 @@ class Camera:
                         #First trim overscan region:
                         yw = self.config["camera"][self.name]["settings"]["y_width"]
                         xs = self.config["camera"][self.name]["settings"]["x_start"]
+
                         hdusmalldata = hdusmalldata[xs:, :yw]   
                         if (
                             self.config["camera"][self.name]["settings"]["crop_preview"]
@@ -3596,5 +3597,5 @@ def wait_for_slew():
             g_dev['mnt'].mount.Connected = True
             #g_dev['mnt'].home_command()
         else:
-            breakpoint()
+            pass #breakpoint()
     return 

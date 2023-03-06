@@ -59,7 +59,7 @@ site_config = {
 
     'debug_site_mode': False,
     
-    'debug_mode': True,
+    'debug_mode': False,
     'admin_owner_commands_only': False,
     'debug_duration_sec': 7200,
 
@@ -158,7 +158,7 @@ site_config = {
     'periodic_focus_time' : 0.5, # This is a time, in hours, over which to bypass automated focussing (e.g. at the start of a project it will not refocus if a new project starts X hours after the last focus)
     'stdev_fwhm' : 0.5, # This is the expected variation in FWHM at a given telescope/camera/site combination. This is used to check if a fwhm is within normal range or the focus has shifted
     'focus_exposure_time': 10, # Exposure time in seconds for exposure image
-    'focus_trigger' : 1.0, # What FWHM increase is needed to trigger an autofocus
+    'focus_trigger' : 0.75, # What FWHM increase is needed to trigger an autofocus
     'solve_nth_image' : 1, # Only solve every nth image
     'solve_timer' : 0.05, # Only solve every X minutes
     'threshold_mount_update' : 100, # only update mount when X arcseconds away
@@ -752,7 +752,7 @@ site_config = {
                 'smart_stack_exposure_time': 30,
                 'square_detector': False,
                 'square_pixels': True,
-                'areas_implemented': ['Full', 'SQR', '0.5*0.5°',  '0.7x0.7°', '1x1°', '1.4x1.4°', '2x2°', '2.8x2.8°', '4x4sq°', '5.6x5.6°'],
+                'areas_implemented': ['Big sq.', 'Full', 'Small sq.', '70.7%', '50%', '35%', '25%', '18%' ],   #0.5*0.5°',  '0.7x0.7°', '1x1°', '1.4x1.4°', '2x2°', '2.8x2.8°', '4x4sq°', '5.6x5.6°'],
                 'default_area':  "Full",
                 'default_rotation': 0.0000,
 
