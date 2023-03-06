@@ -338,7 +338,7 @@ class Sequencer:
                 #breakpoint()
                 if ocn_status == None:
                         if self.config['site_roof_control'] != 'no' and enc_status['shutter_status'] in ['Closed', 'closed'] and g_dev['enc'].mode == 'Automatic'\
-                        and self.config['site_allowed_to_open_roof'] == 'yes' and self.weather_report_is_acceptable_to_observe:
+                        and (self.config['site_allowed_to_open_roof'] == 'yes' or self.config['site_allowed_to_open_roof'] == True) and self.weather_report_is_acceptable_to_observe:
                         #breakpoint()
                             g_dev['enc'].open_command({}, {})
                             plog("Opening dome.")
