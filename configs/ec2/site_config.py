@@ -30,7 +30,14 @@ site_name = 'ec2'
 site_config = {
     'site': str(site_name.lower()),
     'site_id': 'ec2',
+    
     'debug_site_mode': False,
+    
+
+    'debug_mode': False,
+    'admin_owner_commands_only': False,
+
+    'debug_duration_sec': 7200,
     'owner':  ['google-oauth2|112401903840371673242'],  # WER,  Or this can be
                                                         # some aws handle.
     'owner_alias': ['WER', 'TELOPS'],
@@ -45,6 +52,8 @@ site_config = {
     'send_files_at_end_of_night' : 'no', # For low bandwidth sites, do not send up large files until the end of the night. set to 'no' to disable
     'save_raw_to_disk' : False, # For low diskspace sites (or just because they aren't needed), don't save a separate raw file to disk after conversion to fz.    
     'keep_focus_images_on_disk' : False, # To save space, the focus file can not be saved.
+    'keep_reduced_on_disk' : False, # PTR uses the reduced file for some calculations (focus, SEP, etc.). To save space, this file can be removed after usage or not saved.
+    
     
     'aux_archive_path':  None, # '//house-computer/saf_archive_2/archive/',  #  Path to auxillary backup disk.
     'wema_is_active':  False,    #True if split computers used at a site.
@@ -86,7 +95,14 @@ site_config = {
     'site_roof_control': 'yes', #MTF entered this in to remove sro specific code.... Basically do we have control of the roof or not see line 338 sequencer.py
     'site_allowed_to_open_roof': 'yes',
     
+    
+    'check_time': 300,   #MF's original setting.
+    
     'maximum_roof_opens_per_evening' : 4,
+    
+    'closest_distance_to_the_sun': 45, # Degrees. For normal pointing requests don't go this close to the sun. 
+    'closest_distance_to_the_moon': 10, # Degrees. For normal pointing requests don't go this close to the moon. 
+    'lowest_requestable_altitude': -5, # Degrees. For normal pointing requests don't allow requests to go this low. 
     'site_in_automatic_default': "Automatic",   #  ["Manual", "Shutdown", "Automatic"]
     'automatic_detail_default': "Enclosure is initially set to Automatic mode.",
     'observing_check_period' : 5,    # How many minutes between weather checks
@@ -223,6 +239,8 @@ site_config = {
             'east_flip_ra_correction':  0.0, #
             'east_flip_dec_correction': 0.0,  #  #
             'home_after_unpark' : True,
+            
+            'home_before_park' : True,
             'permissive_mount_reset' : 'yes', # if this is set to yes, it will reset the mount at startup and when coordinates are out significantly
             'lowest_acceptable_altitude' : -5.0, # Below this altitude, it will automatically try to home and park the scope to recover.
             'time_inactive_until_park' : 3600.0, # How many seconds of inactivity until it will park the telescope
@@ -467,30 +485,199 @@ site_config = {
         },
     },
 
+    # 'camera': {
+    #     'camera_1_1': {
+    #         'parent': 'telescope1',
+    #         'name': 'ec002ms',      #  Important because this points to a server file structure by that name.
+    #         'desc':  'ZWOASI071MCPro',
+    #         'service_date': '20211111',
+    #         'driver': "CCDSoft2XAdaptor.ccdsoft5Camera",  # "ASCOM.QHYCCD.Camera", ##  'ASCOM.FLI.Kepler.Camera',
+    #         'detector':  'ASI',
+    #         'manufacturer':  'On-Semi',
+    #         'use_file_mode':  False,
+    #         'file_mode_path':  'G:/000ptr_saf/archive/sq01/autosaves/',   #NB Incorrect site, etc. Not used at SRO.  Please clean up.
+            
+
+    #         'settings': {
+    #             'is_osc' : True,
+                
+    #             'squash_on_x_axis' : True,
+    #             'osc_brightness_enhance' : 1.0,
+    #             'osc_contrast_enhance' : 1.3,
+    #             'osc_saturation_enhance' : 2.0,
+    #             'osc_colour_enhance' : 1.5,
+    #             'osc_sharpness_enhance' : 1.5,
+    #             'osc_background_cut' : 25.0,
+    #             'bin_for_focus' : False, # This setting will bin the image for focussing rather than interpolating. Good for 1x1 pixel sizes < 0.6. It is also a little faster. Not good for blockier pixel scales
+                
+    #             # ONLY TRANSFORM THE FITS IF YOU HAVE
+    #             # A DATA-BASED REASON TO DO SO.....
+    #             # USUALLY TO GET A BAYER GRID ORIENTATED CORRECTLY
+    #             # ***** ONLY ONE OF THESE SHOULD BE ON! *********
+    #             'transpose_fits' : False,
+    #             'flipx_fits' : False,
+    #             'flipy_fits' : False,
+    #             'rotate180_fits' : False, # This also should be flipxy!
+    #             'rotate90_fits' : False,
+    #             'rotate270_fits' : False,
+                
+    #             # HERE YOU CAN FLIP THE IMAGE TO YOUR HEARTS DESIRE
+    #             # HOPEFULLY YOUR HEARTS DESIRE IS SIMILAR TO THE
+    #             # RECOMMENDED DEFAULT DESIRE OF PTR
+    #             'transpose_jpeg' : False,
+    #             'flipx_jpeg' : False,
+    #             'flipy_jpeg' : False,
+    #             'rotate180_jpeg' : False,
+    #             'rotate90_jpeg' : False,
+    #             'rotate270_jpeg' : False,
+    #             'osc_bayer' : 'RGGB',
+    #             'crop_preview': False,
+    #             'crop_preview_ybottom': 1,
+    #             'crop_preview_ytop': 1,
+    #             'crop_preview_xleft': 1,
+    #             'crop_preview_xright': 1,
+    #             'temp_setpoint': -5,   #Updated from -18 WER 20220914 Afternoon
+    #             'calib_setpoints': [-35,-30, -25, -20, -15, -10 ],  #  Should vary with season?
+    #             'day_warm': False,
+    #             'cooler_on': True,
+                
+                
+    #             "cam_needs_NumXY_init": False,
+    #             'x_start':  0,
+    #             'y_start':  0,
+    #             'x_width':  4500,   #  NB Should be set up with overscan, which this camera is!  20200315 WER
+    #             'y_width':  3600,
+    #             #Note please add 56 to SBIG Driver Checker 64 Update config for added overscan
+    #             'x_chip':  4556,   #  NB Should specify the active pixel area.   20200315 WER
+    #             'y_chip':  3656,
+    #             'x_trim_offset':  0,   #  NB these four entries are guesses.
+    #             'y_trim_offset':  0,
+    #             'pre_bias_available': False,  #if so need to specify as below for post_bias.
+    #             'post_bias_available': True,  #if so need to specify as below for post_bias.
+    #             'x_bias_start':  4520,
+    #             'y_bias_start': 3620,
+    #             'x_bias_end':  4556,       # Vert band self.img[-38:-18, 0]
+    #             'y_bias_send': 3643,
+    #             'corner_everlap': True,
+    #             'x_bias_line': True,
+    #             'y_bias_line': True,
+    #             'ref_dark': 60.0,
+    #             'long_dark': 600.0,
+    #             'x_active': 4500,
+    #             'y_active': 3600,
+    #             #THIS IS ALL WRONG!
+    #             'det_size': '[1:4556, 1:3656]',  # Physical chip data size as returned from driver
+    #             'ccd_sec': '[1:4556, 1:3656]',
+    #             'bias_sec': ['[1:22, 1:6388]', '[1:11, 1:3194]', '[1:7, 1:2129]', '[1:5, 1:1597]'],
+    #             'det_sec': ['[25:9600, 1:6388]', '[13:4800, 1:3194]', '[9:3200, 1:2129]', '[7:2400, 1:1597]'],
+    #             'data_sec': ['[25:9600, 1:6388]', '[13:4800, 1:3194]', '[9:3200, 1:2129]', '[7:2400, 1:1597]'],
+    #             'trim_sec': ['[1:9576, 1:6388]', '[1:4788, 1:3194]', '[1:3192, 1:2129]', '[1:2394, 1:1597]'],
+    #             'x_pixel':  6,
+    #             'y_pixel':  6,
+                
+    #             'CameraXSize' : 4096,
+    #             'CameraYSize' : 4096,
+    #             #'MaxBinX' : 2,
+    #             #'MaxBinY' : 2,
+    #             'StartX' : 1,
+    #             'StartY' : 1,
+
+    #             'x_field_deg': 1.3333,   #   round(4784*1.0481/3600, 4),
+    #             'y_field_deg': 1.0665,   #  round(3194*1.0481/3600, 4),
+    #             'overscan_x': 24,
+    #             'overscan_y': 3,
+    #             'north_offset': 0.0,    #  These three are normally 0.0 for the primary telescope
+    #             'east_offset': 0.0,     #  Not sure why these three are even here.
+    #             'rotation': 0.0,        #  Probably remove.
+    #             'min_exposure': 0.02,
+                
+    #             'min_flat_exposure': 0.02,
+    #             'max_exposure': 3600,
+    #             'max_daytime_exposure': 0.0001,
+    #             'can_subframe':  True,
+    #             'min_subframe':  [128, 128],
+    #             'bin_modes':  [[1, 1, 1.59]], #  , [2, 2, 2.13], [3, 3, 3.21], [4, 4, 4.27]],   #Meaning no binning choice if list has only one entry, default should be first.
+    #             'optimal_bin':  [1, 1, 1.59],    #  Matched to seeing situation by owner
+    #             'max_res_bin':  [1, 1, 1.59],    #  Matched to seeing situation by owner
+    #             'do_cosmics' : 'no',
+    #             'pix_scale': 1.569,
+    #             'cycle_time':  2,
+    #             'rbi_delay':  0.,      #  This being zero says RBI is not available, eg. for SBIG.
+    #             'is_cmos':  True,
+    #             'is_color':  True,
+    #             'bayer_pattern':  'RGGB',    #  'RGGB" is a valid string in camera is color.
+    #             'can_set_gain':  True,
+    #             'reference_gain': 2.0,     #  One val for each binning. SWAG!
+    #             'reference_noise': 10.0,    #  All SWAGs right now!
+
+    #             'reference_dark': [0.0, 0.0, 0.0, 0.0],     #  Might these best be pedastal values?  NO!
+    #                                 #hdu.header['RDMODE'] = (self.config['camera'][self.name]['settings']['read_mode'], 'Camera read mode')
+    #                 #hdu.header['RDOUTM'] = (self.config['camera'][self.name]['readout_mode'], 'Camera readout mode')
+    #                 #hdu.header['RDOUTSP'] = (self.config['camera'][self.name]['settings']['readout_speed'], '[FPS] Readout speed')
+    #             'read_mode':  'Normal',
+    #             'readout_mode':  'Normal',
+    #             'readout_speed': 0.4,
+    #             'readout_seconds': 2,
+    #             'smart_stack_exposure_time' : 10,
+    #             'saturate': 65000,    # e-.  This is a close guess, not measured, but taken from data sheet.
+    #             'max_linearity': 65000,
+    #             'fullwell_capacity': 65000,  #e-.   We need to sort out the units properly NB NB NB
+    #             'areas_implemented': ["Full",'4x4d', "600%", "500%", "450%", "300%", "220%", "150%", "133%", "Full", "Sqr", '71%', '50%',  '35%', '25%', '12%'],
+    #             'default_area':  "Full",
+    #             'default_rotation': 0.0000,
+    #             'has_darkslide':  False,
+    #             'darkslide_com':  None,
+    #             'flat_bin_spec': ['1,1'],    #Default binning for flats
+    #             'bias_dark_bin_spec': ['1,1'],    #Default binning for flats
+    #             'bin_enable': ['1 1'],
+    #             'dark_length' : 900,
+                
+    #             'flat_count' : 10,
+    #             'bias_count' : 10,
+    #             'dark_count' : 10,
+                
+    #             'shutter_type': "Electronic",
+    #             'has_screen': True,
+    #             'screen_settings':  {
+    #                 'screen_saturation':  157.0,   #  This reflects WMD setting and needs proper values.
+    #                 'screen_x4':  -4E-12,  #  'y = -4E-12x4 + 3E-08x3 - 9E-05x2 + 0.1285x + 8.683     20190731'
+    #                 'screen_x3':  3E-08,
+    #                 'screen_x2':  -9E-05,
+    #                 'screen_x1':  .1258,
+    #                 'screen_x0':  8.683
+    #             },
+    #         },
+    #     },
+
+    # },
+
     'camera': {
         'camera_1_1': {
             'parent': 'telescope1',
-            'name': 'ec002ms',      #  Important because this points to a server file structure by that name.
-            'desc':  'ZWOASI071MCPro',
-            'service_date': '20211111',
-            'driver': "CCDSoft2XAdaptor.ccdsoft5Camera",  # "ASCOM.QHYCCD.Camera", ##  'ASCOM.FLI.Kepler.Camera',
-            'detector':  'ASI',
-            'manufacturer':  'On-Semi',
-            'use_file_mode':  False,
-            'file_mode_path':  'G:/000ptr_saf/archive/sq01/autosaves/',   #NB Incorrect site, etc. Not used at SRO.  Please clean up.
-            
-
+            'name': 'ec002cs',      #Important because this points to a server file structure by that name.
+            'desc':  'QHY 600C Pro',
+            'driver':  "ASCOM.QHYCCD_CAM2.Camera", # NB Be careful this is not QHY Camera2 or Guider  "Maxim.CCDCamera",   #'ASCOM.FLI.Kepler.Camera', "ASCOM.QHYCCD.Camera",   #
+            'detector':  'Sony IMX455 Color',  #  It would be good to build out a table of chip characteristics
+            'use_file_mode':  False,   # NB we should clean out all file mode stuff.
+            'file_mode_path':  'Q:/archive/sq01/maxim/',   #NB NB all file_mode Maxim stuff should go!
+            'manufacturer':  "QHY",
             'settings': {
+                
                 'is_osc' : True,
                 
                 'squash_on_x_axis' : True,
+                # 'osc_brightness_enhance' : 1.0,
+                # 'osc_contrast_enhance' : 1.3,
+                # 'osc_saturation_enhance' : 2.0,
+                # 'osc_colour_enhance' : 1.5,
+                # 'osc_sharpness_enhance' : 1.5,
                 'osc_brightness_enhance' : 1.0,
-                'osc_contrast_enhance' : 1.3,
-                'osc_saturation_enhance' : 2.0,
-                'osc_colour_enhance' : 1.5,
-                'osc_sharpness_enhance' : 1.5,
+                'osc_contrast_enhance' : 1.5,
+                'osc_saturation_enhance' : 2.5,
+                'osc_colour_enhance' : 1.7,
+                'osc_sharpness_enhance' : 1.5,                
                 'osc_background_cut' : 25.0,
-                'bin_for_focus' : False, # This setting will bin the image for focussing rather than interpolating. Good for 1x1 pixel sizes < 0.6. It is also a little faster. Not good for blockier pixel scales
+                'bin_for_focus' : True, # This setting will bin the image for focussing rather than interpolating. Good for 1x1 pixel sizes < 0.6.
                 
                 # ONLY TRANSFORM THE FITS IF YOU HAVE
                 # A DATA-BASED REASON TO DO SO.....
@@ -506,116 +693,132 @@ site_config = {
                 # HERE YOU CAN FLIP THE IMAGE TO YOUR HEARTS DESIRE
                 # HOPEFULLY YOUR HEARTS DESIRE IS SIMILAR TO THE
                 # RECOMMENDED DEFAULT DESIRE OF PTR
-                'transpose_jpeg' : False,
+                'transpose_jpeg' : True,
                 'flipx_jpeg' : False,
                 'flipy_jpeg' : False,
                 'rotate180_jpeg' : False,
                 'rotate90_jpeg' : False,
                 'rotate270_jpeg' : False,
+                
                 'osc_bayer' : 'RGGB',
                 'crop_preview': False,
-                'crop_preview_ybottom': 1,
-                'crop_preview_ytop': 1,
-                'crop_preview_xleft': 1,
-                'crop_preview_xright': 1,
-                'temp_setpoint': -5,   #Updated from -18 WER 20220914 Afternoon
-                'calib_setpoints': [-35,-30, -25, -20, -15, -10 ],  #  Should vary with season?
+                'crop_preview_ybottom': 2,  #  2 needed if Bayer array
+                'crop_preview_ytop': 2,
+                'crop_preview_xleft': 2,
+                'crop_preview_xright': 2,
+                'temp_setpoint': -4,    #Verify we can go colder, this system has a chiller
+                'has_chiller': True,
+                'calib_setpoints': [-20, -20, -20, -20, -20, -20, \
+                                    -20, -20, -20, -20, -20, -20],  #  Picked by month-of-year 
                 'day_warm': False,
                 'cooler_on': True,
-                'x_start':  0,
+                "cam_needs_NumXY_init": True,
+                'x_start':  24,
                 'y_start':  0,
-                'x_width':  4500,   #  NB Should be set up with overscan, which this camera is!  20200315 WER
-                'y_width':  3600,
-                #Note please add 56 to SBIG Driver Checker 64 Update config for added overscan
-                'x_chip':  4556,   #  NB Should specify the active pixel area.   20200315 WER
-                'y_chip':  3656,
-                'x_trim_offset':  0,   #  NB these four entries are guesses.
-                'y_trim_offset':  0,
+                'x_width':  9576,   #NB Should be set up with overscan, which this camera is!  20200315 WER
+                'y_width':  6388,
+                'x_chip':  9576,   #NB Should specify the active pixel area.   20200315 WER
+                'y_chip':  6388,
+                'x_trim_offset':  8,   #  NB these four entries are guesses.
+                'y_trim_offset':  8,
                 'pre_bias_available': False,  #if so need to specify as below for post_bias.
                 'post_bias_available': True,  #if so need to specify as below for post_bias.
-                'x_bias_start':  4520,
-                'y_bias_start': 3620,
-                'x_bias_end':  4556,       # Vert band self.img[-38:-18, 0]
-                'y_bias_send': 3643,
-                'corner_everlap': True,
+                'x_bias_start':  9577,
+                'y_bias_start' : 6389,
+                'x_bias_end':  None,       # Vert band self.img[-38:-18, 0]
+                'y_bias_send': None,
+                'corner_everlap': None,
                 'x_bias_line': True,
                 'y_bias_line': True,
-                'ref_dark': 60.0,
-                'long_dark': 600.0,
-                'x_active': 4500,
-                'y_active': 3600,
-                #THIS IS ALL WRONG!
-                'det_size': '[1:4556, 1:3656]',  # Physical chip data size as returned from driver
-                'ccd_sec': '[1:4556, 1:3656]',
+                'x_active': 9576,
+                'y_active': 6388,
+                'det_size': '[1:9600, 1:6422]',  # Physical chip data size as returned from driver
+                'ccd_sec': '[1:9600, 1:6422]',
                 'bias_sec': ['[1:22, 1:6388]', '[1:11, 1:3194]', '[1:7, 1:2129]', '[1:5, 1:1597]'],
                 'det_sec': ['[25:9600, 1:6388]', '[13:4800, 1:3194]', '[9:3200, 1:2129]', '[7:2400, 1:1597]'],
                 'data_sec': ['[25:9600, 1:6388]', '[13:4800, 1:3194]', '[9:3200, 1:2129]', '[7:2400, 1:1597]'],
                 'trim_sec': ['[1:9576, 1:6388]', '[1:4788, 1:3194]', '[1:3192, 1:2129]', '[1:2394, 1:1597]'],
-                'x_pixel':  6,
-                'y_pixel':  6,
-                
-                'CameraXSize' : 4096,
-                'CameraYSize' : 4096,
-                #'MaxBinX' : 2,
-                #'MaxBinY' : 2,
+                'x_pixel':  3.76,
+                'y_pixel':  3.76,
+                'pix_scale': 0.302597,    #   bin-2  2* math.degrees(math.atan(3.76/2563000))*3600
+
+                'CameraXSize' : 9600,
+                'CameraYSize' : 6422,
                 'StartX' : 1,
                 'StartY' : 1,
 
-                'x_field_deg': 1.3333,   #   round(4784*1.0481/3600, 4),
-                'y_field_deg': 1.0665,   #  round(3194*1.0481/3600, 4),
-                'overscan_x': 24,
-                'overscan_y': 3,
-                'north_offset': 0.0,    #  These three are normally 0.0 for the primary telescope
-                'east_offset': 0.0,     #  Not sure why these three are even here.
-                'rotation': 0.0,        #  Probably remove.
-                'min_exposure': 0.02,
-                
-                'min_flat_exposure': 0.02,
-                'max_exposure': 3600,
-                'can_subframe':  True,
-                'min_subframe':  [128, 128],
-                'bin_modes':  [[1, 1, 1.59]], #  , [2, 2, 2.13], [3, 3, 3.21], [4, 4, 4.27]],   #Meaning no binning choice if list has only one entry, default should be first.
-                'optimal_bin':  [1, 1, 1.59],    #  Matched to seeing situation by owner
-                'max_res_bin':  [1, 1, 1.59],    #  Matched to seeing situation by owner
-                'do_cosmics' : 'no',
-                'pix_scale': 1.569,
-                'cycle_time':  2,
-                'rbi_delay':  0.,      #  This being zero says RBI is not available, eg. for SBIG.
-                'is_cmos':  True,
-                'is_color':  True,
-                'bayer_pattern':  'RGGB',    #  'RGGB" is a valid string in camera is color.
-                'can_set_gain':  True,
-                'reference_gain': 2.0,     #  One val for each binning. SWAG!
-                'reference_noise': 10.0,    #  All SWAGs right now!
 
-                'reference_dark': [0.0, 0.0, 0.0, 0.0],     #  Might these best be pedastal values?  NO!
-                                    #hdu.header['RDMODE'] = (self.config['camera'][self.name]['settings']['read_mode'], 'Camera read mode')
-                    #hdu.header['RDOUTM'] = (self.config['camera'][self.name]['readout_mode'], 'Camera readout mode')
-                    #hdu.header['RDOUTSP'] = (self.config['camera'][self.name]['settings']['readout_speed'], '[FPS] Readout speed')
+                'x_field_deg': 0.8042,  #  round(4784*0.605194/3600, 4),   #48 X 32 AMIN  3MIN X 0.5 DEG
+                'y_field_deg': 0.5369,  #  round(3194*0.605194/3600, 4),
+                'area_sq_deg':  0.4318, 
+                'overscan_x': 24,
+                'overscan_y': 34,
+                'north_offset': 0.0,    #  These three are normally 0.0 for the primary telescope
+                'east_offset': 0.0,
+                'rotation': 0.0,
+                'min_exposure': 0.0001,
+                'min_flat_exposure': 0.0001,
+                'max_exposure': 180.,
+                'max_daytime_exposure': 0.0001,
+                'can_subframe':  True,
+                'min_subframe': [128,128],
+                'bin_modes':  [['Optimal', 0.91], ['Fine', 0.61], ['Coarse', 1.2], ['Eng', 0.30]],     #Meaning fixed binning if list has only one entry
+                'reference_gain': 1.3,     #  NB GUess One val for each binning. Assumed digitalsumming in camera???
+                'reference_noise': 6,    #  NB Guess
+                'reference_dark': 0.2,  #  NB  Guess
+                'reference_offset': 611, #  NB Guess  ADU vaules not times in sec.
+                'fullwell_capacity': 80000,   #  NB Guess
+                'bin-desc':              ['1x1', '2x2', '3x3', '4x4' ],
+                'chan_color':            ['col', 'gry', 'gry', 'gry' ],
+                #'cycle_time':            [ 18,    13,    15,    12   ],   # NB somewhat a Guess.
+                'cycle_time':            0,   # Meas 20230219  for a bias
+                #'enable_bin':            [ True, False,  False,  False],
+                #'bias_dark_bin_spec':    ['1,1', '2,2', '3,3', '4,4' ],    #Default binning for flats
+                'bias_count':    63,
+                'dark_count':    17,
+ 
+                'dark_exposure': 360,
+                #'flat_bin_spec':         ['1,1', '2,2', '3,3', '4,4' ],   #Is this necessary?
+
+                #'flat_count': 5,
+                'optimal_bin': [1, 1],   #  This is the optimal bin for MRC
+                'fine_bin':    [1, 1],   #  This is the fine bin for MRC
+                'coarse_bin':  [2, 2],   #  This is the coarse bin for MRC
+                'eng_bin':     [4, 4],   #  This is the eng-only bin for MRC, not useful for users?
+                'bin_enable':  ['1 1'],  #  Always square and matched to seeing situation by owner  NB Obsolete? NO MF uses to load bias calib
+                                         #  NB NB inconsistent use of bin string   '1 1', '1x1' , etc.
+                'do_cosmics' : 'yes',
+                
+                'rbi_delay':  0,      #  This being zero says RBI is not available, eg. for SBIG.
+                'is_cmos':  True,
+                'is_color': True,   #NB we also have a is_osc key.
+                'can_set_gain':  True,
+                'max_linearity':  60000,   # Guess
+
+                'flat_count': 5,
+
+                'saturate':   65000 ,    #[[1, 65000], [2,262000], [3,589815], [4, 1048560]] ,   # e-.  This is a close guess, not measured, but taken from data sheet.
+                'fullwell_capacity':  80000,
+
                 'read_mode':  'Normal',
-                'readout_mode':  'Normal',
-                'readout_speed': 0.4,
-                'readout_seconds': 2,
-                'smart_stack_exposure_time' : 10,
-                'saturate': 65000,    # e-.  This is a close guess, not measured, but taken from data sheet.
-                'max_linearity': 65000,
-                'fullwell_capacity': 65000,  #e-.   We need to sort out the units properly NB NB NB
-                'areas_implemented': ["Full",'4x4d', "600%", "500%", "450%", "300%", "220%", "150%", "133%", "Full", "Sqr", '71%', '50%',  '35%', '25%', '12%'],
+                'readout_mode': 'Normal',
+                'readout_speed':  50,
+                'readout_seconds': 6,
+                'smart_stack_exposure_time': 30,
+                'square_detector': False,
+                'square_pixels': True,
+                'areas_implemented': ['Full', 'SQR', '0.5*0.5°',  '0.7x0.7°', '1x1°', '1.4x1.4°', '2x2°', '2.8x2.8°', '4x4sq°', '5.6x5.6°'],
                 'default_area':  "Full",
                 'default_rotation': 0.0000,
+
+                #'flat_bin_spec': ['1 1', '2 2'],    # List of binnings for flats.  NB NB NB Note inconsistent use of '1 1' and '1x1' and '1,1'
+
                 'has_darkslide':  False,
-                'darkslide_com':  None,
-                'flat_bin_spec': ['1,1'],    #Default binning for flats
-                'bias_dark_bin_spec': ['1,1'],    #Default binning for flats
-                'bin_enable': ['1 1'],
-                'dark_length' : 900,
-                'bias_count' : 10,
-                'dark_count' : 10,
-                
+                'darkslide_com':  'COM15',
                 'shutter_type': "Electronic",
                 'has_screen': True,
                 'screen_settings':  {
-                    'screen_saturation':  157.0,   #  This reflects WMD setting and needs proper values.
+                    'screen_saturation':  157.0,
                     'screen_x4':  -4E-12,  #  'y = -4E-12x4 + 3E-08x3 - 9E-05x2 + 0.1285x + 8.683     20190731'
                     'screen_x3':  3E-08,
                     'screen_x2':  -9E-05,
@@ -623,7 +826,9 @@ site_config = {
                     'screen_x0':  8.683
                 },
             },
+
         },
+
 
     },
 

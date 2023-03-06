@@ -49,7 +49,7 @@ from astropy.time import Time
 
 from astropy import units as u
 from astropy.coordinates import SkyCoord, FK5, ICRS,  \
-                         EarthLocation, AltAz
+                         EarthLocation, AltAz, get_sun, get_moon
                          #This should be removed or put in a try
 
 import ptr_utility
@@ -229,6 +229,7 @@ class Mount:
         self.dec_corr = 0
         self.seek_commanded = False
         self.home_after_unpark = config['mount']['mount1']['home_after_unpark']
+        self.home_before_park = config['mount']['mount1']['home_before_park']
         if abs(self.east_flip_ra_correction) > 0 or abs(self.east_flip_dec_correction) > 0:
             self.flip_correction_needed = True
             plog("Flip correction may be needed.")
@@ -344,6 +345,12 @@ class Mount:
         self.EquatorialSystem=self.mount.EquatorialSystem
         
         #breakpoint()
+        
+        
+        # just some back to basics coordinates to test pointing issues
+        self.mtf_dec_offset=0
+        self.mtf_ra_offset=0
+        
         plog("exiting mount _init")
 
     def check_connect(self):
@@ -912,6 +919,77 @@ class Mount:
 
     def go_command(self, req, opt,  offset=False, calibrate=False, auto_center=False):
         ''' Slew to the given ra/dec coordinates. '''
+        
+        
+        # First thing to do is check the position of the sun and
+        # Whether this violates the pointing principle. 
+        sun_coords=get_sun(Time.now())        
+        if 'ra' in req:
+            ra = float(req['ra'])
+            dec = float(req['dec'])
+            temppointing=SkyCoord(ra*u.hour, dec*u.degree, frame='icrs')
+            temppointingaltaz=temppointing.transform_to(AltAz(location=self.site_coordinates, obstime=Time.now()))
+            alt = temppointingaltaz.alt.degree
+            az = temppointingaltaz.az.degree
+            
+                                        
+        elif 'az' in req:
+            az = float(req['az'])
+            alt = float(req['alt'])
+            temppointing = AltAz(location=self.site_coordinates, obstime=Time.now(), alt=alt*u.deg, az=az*u.deg)          
+        elif 'ha' in req:
+            ha = float(req['ha'])
+            dec = float(req['dec'])
+            az, alt = ptr_utility.transform_haDec_to_azAlt(ha, dec, lat=self.config['latitude'])
+            temppointing = AltAz(location=self.site_coordinates, obstime=Time.now(), alt=alt*u.deg, az=az*u.deg)    
+        sun_dist = sun_coords.separation(temppointing)
+        #plog ("sun distance: " + str(sun_dist.degree))
+        if sun_dist.degree <  self.config['closest_distance_to_the_sun']:
+            g_dev['obs'].send_to_user("Refusing pointing request as it is too close to the sun: " + str(sun_dist.degree) + " degrees.")
+            plog("Refusing pointing request as it is too close to the sun: " + str(sun_dist.degree) + " degrees.")
+            return
+        
+        # Second thing, check that we aren't pointing at the moon
+        # UNLESS we have actually chosen to look at the moon.
+        if self.object in ['Moon', 'moon', 'Lune', 'lune', 'Luna', 'luna',]:
+            plog("Moon Request detected")
+        else:
+            moon_coords=get_moon(Time.now())        
+            # if 'ra' in req:
+            #     ra = float(req['ra'])
+            #     dec = float(req['dec'])
+            #     temppointing=SkyCoord(ra*u.hour, dec*u.degree, frame='icrs')            
+            # elif 'az' in req:
+            #     az = float(req['az'])
+            #     alt = float(req['alt'])
+            #     temppointing = AltAz(location=self.site_coordinates, obstime=Time.now(), alt=alt*u.deg, az=az*u.deg)          
+            # elif 'ha' in req:
+            #     ha = float(req['ha'])
+            #     dec = float(req['dec'])
+            #     az, alt = ptr_utility.transform_haDec_to_azAlt(ha, dec, lat=self.config['latitude'])
+            #     temppointing = AltAz(location=self.site_coordinates, obstime=Time.now(), alt=alt*u.deg, az=az*u.deg)    
+            moon_dist = sun_coords.separation(temppointing)
+            #plog ("sun distance: " + str(sun_dist.degree))
+            if moon_dist.degree <  self.config['closest_distance_to_the_moon']:
+                g_dev['obs'].send_to_user("Refusing pointing request as it is too close to the moon: " + str(moon_dist.degree) + " degrees.")
+                plog("Refusing pointing request as it is too close to the moon: " + str(moon_dist.degree) + " degrees.")
+                return
+        
+        # Third thing, check that the requested coordinates are not
+        # below a reasonable altitude
+        if alt < self.config['lowest_requestable_altitude']:
+            g_dev['obs'].send_to_user("Refusing pointing request as it is too low: " + str(alt) + " degrees.")
+            plog("Refusing pointing request as it is too low: " + str(alt) + " degrees.")
+            return
+        
+        # Fourth thing, check that the roof is open and we are enabled to observe
+        if (g_dev['obs'].open_and_enabled_to_observe==False and g_dev['enc'].mode == 'Automatic') and (not g_dev['obs'].debug_flag):
+            g_dev['obs'].send_to_user("Refusing pointing request as the observatory is not enabled to observe.")
+            plog("Refusing pointing request as the observatory is not enabled to observe.")
+            return
+
+        
+        
         plog("mount cmd. slewing mount, req, opt:  ", req, opt)
 
         ''' unpark the telescope mount '''  #  NB can we check if unparked and save time?
@@ -928,6 +1006,11 @@ class Mount:
         except:
             clutch_ra = 0.0
             clutch_dec = 0.0
+            
+            
+
+        
+        
         if self.object in ['Moon', 'moon', 'Lune', 'lune', 'Luna', 'luna',]:
             self.obs.date = ephem.now()
             moon = ephem.Moon()
@@ -1113,6 +1196,8 @@ class Mount:
 
     def re_seek(self, dither):
         
+        #breakpoint()
+        
         try:
             if dither == 0:
                 self.go_coord(self.last_ra, self.last_dec, self.last_tracking_rate_ra, self.last_tracking_rate_dec)
@@ -1237,6 +1322,7 @@ class Mount:
         self.target_az = az*RTOD
 
         wait_for_slew() 
+        #breakpoint()
         try:
             self.mount.SlewToCoordinatesAsync(self.ra_mech*RTOH, self.dec_mech*RTOD)  #Is this needed?
             wait_for_slew() 
@@ -1381,7 +1467,7 @@ class Mount:
                 self.mount.FindHome()
                 wait_for_slew()
         else:
-            plog("Mount is not capable of finding home. Slewing to zenith....ish")
+            plog("Mount is not capable of finding home. Slewing to home_alt and home_az")
             self.move_time = time.time()
             #self.move_to_azalt(270, 75)  #az, alt  --badly named method.  NB NB Is this a sun-safe place to park?
             home_alt = self.settings["home_altitude"]
@@ -1565,7 +1651,7 @@ class Mount:
     def  adjust_mount_reference(self, err_ha, err_dec):
         #old_ha, old_dec = self.get_mount_reference()
 
-        mnt_shelf = shelve.open(self.site_path + 'ptr_night_shelf/' + 'mount1')
+        mnt_shelf = shelve.open(self.site_path + 'ptr_night_shelf/' + 'mount1' + str(g_dev['obs'].name))
         try:
             init_ra = mnt_shelf['ra_cal_offset']
             init_dec = mnt_shelf['dec_cal_offset']     # NB NB THese need to be modulo corrected, maybe limited
@@ -1582,7 +1668,7 @@ class Mount:
 
     def  adjust_flip_reference(self, err_ha, err_dec):
         #old_ha, old_dec = self.get_mount_reference()
-        mnt_shelf = shelve.open(self.site_path + 'ptr_night_shelf/' + 'mount1')
+        mnt_shelf = shelve.open(self.site_path + 'ptr_night_shelf/' + 'mount1'+ str(g_dev['obs'].name))
         try:
             init_ra = mnt_shelf['flip_ra_cal_offset']
             init_dec = mnt_shelf['flip_dec_cal_offset']     # NB NB THese need to be modulo corrected, maybe limited
@@ -1597,14 +1683,14 @@ class Mount:
         return
 
     def set_mount_reference(self, delta_ra, delta_dec):
-        mnt_shelf = shelve.open(self.site_path + 'ptr_night_shelf/' + 'mount1')
+        mnt_shelf = shelve.open(self.site_path + 'ptr_night_shelf/' + 'mount1'+ str(g_dev['obs'].name))
         mnt_shelf['ra_cal_offset'] = delta_ra
         mnt_shelf['dec_cal_offset'] = delta_dec
         mnt_shelf.close()
         return
 
     def set_flip_reference(self, delta_ra, delta_dec):
-        mnt_shelf = shelve.open(self.site_path + 'ptr_night_shelf/' + 'mount1')
+        mnt_shelf = shelve.open(self.site_path + 'ptr_night_shelf/' + 'mount1'+ str(g_dev['obs'].name))
         mnt_shelf['flip_ra_cal_offset'] = delta_ra
         mnt_shelf['flip_dec_cal_offset'] = delta_dec
         mnt_shelf.close()
@@ -1612,14 +1698,16 @@ class Mount:
 
     def get_mount_reference(self):
 
-        mnt_shelf = shelve.open(self.site_path + 'ptr_night_shelf/' + 'mount1')
+                
+        mnt_shelf = shelve.open(self.site_path + 'ptr_night_shelf/' + 'mount1'+ str(g_dev['obs'].name))
         delta_ra = mnt_shelf['ra_cal_offset'] + self.west_clutch_ra_correction   #Note set up at initialize time.
         delta_dec = mnt_shelf['dec_cal_offset'] +  self.west_clutch_dec_correction
         mnt_shelf.close()
         return delta_ra, delta_dec
+        
 
     def get_flip_reference(self):
-        mnt_shelf = shelve.open(self.site_path + 'ptr_night_shelf/' + 'mount1')
+        mnt_shelf = shelve.open(self.site_path + 'ptr_night_shelf/' + 'mount1'+ str(g_dev['obs'].name))
         #NB NB NB The ease may best have a sign change asserted.
         delta_ra = mnt_shelf['flip_ra_cal_offset'] + self.east_flip_ra_correction
         delta_dec = mnt_shelf['flip_dec_cal_offset'] + self.east_flip_dec_correction
@@ -1627,7 +1715,7 @@ class Mount:
         return delta_ra, delta_dec
 
     def reset_mount_reference(self):
-        mnt_shelf = shelve.open(self.site_path + 'ptr_night_shelf/' + 'mount1')
+        mnt_shelf = shelve.open(self.site_path + 'ptr_night_shelf/' + 'mount1'+ str(g_dev['obs'].name))
         mnt_shelf['ra_cal_offset'] = 0.000
         mnt_shelf['dec_cal_offset'] = 0.000
         mnt_shelf['flip_ra_cal_offset'] = 0.000

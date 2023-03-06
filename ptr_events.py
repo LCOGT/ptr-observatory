@@ -350,6 +350,14 @@ class Events:
 
         return(sun_az2, sun_alt2)
 
+    def sun_az_alt_now(self):
+        '''
+        Return a tuple with the (az, alt) of the flattest part of the sky.
+        '''
+        ra, dec, sun_alt, sun_az, *other = self._sunNow()
+        #plog('Sun:  ', sun_az, sun_alt)
+        return sun_az, sun_alt
+
     def illuminationNow(self):
 
         sunRa, sunDec, sunElev, sunAz, moonRa, moonDec, moonElev, moonDia \

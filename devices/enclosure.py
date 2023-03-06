@@ -268,8 +268,8 @@ class Enclosure:
         self.last_current_az = 315.
         self.last_slewing = False
         self.prior_status = {'enclosure_mode': 'Manual'}    #Just to initialze this rarely used variable.
-        
-        if self.config['site_allowed_to_open_roof']:
+
+        if self.config['site_allowed_to_open_roof'] == True:
             self.site_allowed_to_open_roof = True
         else:
             self.site_allowed_to_open_roof = False

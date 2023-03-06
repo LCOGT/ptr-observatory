@@ -11,8 +11,15 @@ Updates 20220604 WER
 
 @author: wrosing
 '''
+#                                                                                        1         1         1       1
+#        1         2         3         4         6         7         8         9         0         1         2       2
+#234567890123456789012345678901234567890123456789012345678901234567890123456789012345678901234567890123456789012345678
 import json
+import time
 
+#  NB NB  Json is not bi-directional with tuples (), use lists [], nested if tuples as needed, instead.
+#  NB NB  My convention is if a value is naturally a float I add a decimal point even to 0.
+g_dev = None
 
 '''
 COM1
@@ -49,11 +56,7 @@ Paddle is a HID, not a COM or USB port. *
 Park 207.3, 5.285.
 '''
 
-#NB NB NB json is not bi-directional with tuples (), instead, use lists [], nested if tuples are needed.
 
-# TIM  I have tried to follow "Photon travel order"
-
-#@@@@
 
 
 site_name = 'mrc2'    #NB These must be unique across all of PTR.
@@ -61,19 +64,22 @@ site_name = 'mrc2'    #NB These must be unique across all of PTR.
 site_config = {
     'site': site_name.lower(), #TIM this may no longer be needed.
     'site_id': 'mrc2',
+
     'debug_site_mode': False,
+    
+    'debug_mode': True,
+    'admin_owner_commands_only': True,
+    'debug_duration_sec': 7200,
     'owner':  ['google-oauth2|112401903840371673242'],  # Wayne
 
     'owner_alias': ['WER', 'TELOPS'],
     'admin_aliases': ["ANS", "WER", "TELOPS", "TB", "DH", "KVH", "KC"],
 
     'client_hostname':  'mr2-0m60',
-
     'client_path':  'Q:/ptr/',  # Generic place for client host to stash misc stuff
     'alt_path':  'Q:/ptr/',  # Generic place for this host to stash misc stuff
     'save_to_alt_path':  'no',
     'archive_path':  'Q:/ptr/',
-
     'archive_age' : -99.9, # Number of days to keep files in the local archive before deletion. Negative means never delete
     'send_files_at_end_of_night' : 'no', # For low bandwidth sites, do not send up large files until the end of the night. set to 'no' to disable
     'save_raw_to_disk' : True, # For low diskspace sites (or just because they aren't needed), don't save a separate raw file to disk after conversion to fz.
@@ -92,8 +98,6 @@ site_config = {
     'redis_ip': '10.15.0.109',  #'127.0.0.1', None if no redis path present,
     'site_is_generic':  False,   # A simply  single computer ASCOM site.
     'site_is_specific':  False,  # Indicates some special code for this site, found at end of config.
-
-
     'host_wema_site_name':  'mrc',  #  The umbrella header for obsys in close geographic proximity.
 
     'name': 'Mountain Ranch Camp Observatory 0m6f6.8',
@@ -107,6 +111,10 @@ site_config = {
                     to get out and vote early and often lest
                     we lose charge of our democracy.
                     ''',    #  i.e, a multi-line text block supplied and formatted by the owner.
+    'location_day_allsky':  None,  #  Thus ultimately should be a URL, probably a color camera.
+    'location_night_allsky':  None,  #  Thus ultimately should be a URL, usually Mono camera with filters.
+    'location _pole_monitor': None,  #This probably gets us to some sort of image (Polaris in the North)
+    'location_seeing_report': None,  # Probably a path to a jpeg or png graph.
 
     'mpc_code':  'ZZ23',    #This is made up for now.
     'time_offset':  -8,
@@ -117,17 +125,26 @@ site_config = {
     'elevation': 317.75,    # meters above sea level
     'reference_ambient':  15.0,  #Degrees Celsius.  Alternately 12 entries, one for every - mid month.
     'reference_pressure':  977.83,  #mbar Alternately 12 entries, one for every - mid month.
+
     'site_roof_control': 'no', #MTF entered this in to remove sro specific code.... Basically do we have control of the roof or not see line 338 sequencer.py
     'site_allowed_to_open_roof': 'no',
     
+    'check_time': 300,   #MF's original setting.
     'maximum_roof_opens_per_evening' : 4,
+    
+    'closest_distance_to_the_sun': 45, # Degrees. For normal pointing requests don't go this close to the sun. 
+    
+    'closest_distance_to_the_moon': 10, # Degrees. For normal pointing requests don't go this close to the moon. 
+    
+    'lowest_requestable_altitude': -5, # Degrees. For normal pointing requests don't allow requests to go this low. 
+    
+
+
     'site_in_automatic_default': "Automatic",   #"Manual", "Shutdown"
-    'automatic_detail_default': "Enclosure is set to Automatic mode.",
+    'automatic_detail_default': "Enclosure is initially set to Automatic mode.",
     'observing_check_period' : 2,    # How many minutes between weather checks
     'enclosure_check_period' : 2,    # How many minutes between enclosure checks
-
     'auto_eve_bias_dark': False,
-    
     'auto_midnight_moonless_bias_dark': False,
     'auto_eve_sky_flat': False,
     'eve_sky_flat_sunset_offset': -60.,  #  Minutes  neg means before, + after.
@@ -139,6 +156,8 @@ site_config = {
     'periodic_focus_time' : 0.5, # This is a time, in hours, over which to bypass automated focussing (e.g. at the start of a project it will not refocus if a new project starts X hours after the last focus)
     'stdev_fwhm' : 1.0, # This is the expected variation in FWHM at a given telescope/camera/site combination. This is used to check if a fwhm is within normal range or the focus has shifted
     'focus_exposure_time': 15, # Exposure time in seconds for exposure image
+    
+    'focus_trigger' : 5.0, # What FWHM increase is needed to trigger an autofocus
     'solve_nth_image' : 10, # Only solve every nth image
     'solve_timer' : 5, # Only solve every X minutes
     'threshold_mount_update' : 10, # only update mount when X arcseconds away
@@ -173,6 +192,9 @@ site_config = {
         'observing_conditions',
         'enclosure',
         ],
+     'enc_types': [
+             'enclosure'
+             ],
      'short_status_devices':  [
         # 'observing_conditions',
         # 'enclosure',
@@ -186,7 +208,6 @@ site_config = {
         'camera',
         'sequencer',
         ],
-
     'observing_conditions' : {
         'observing_conditions1': {
             'parent': 'site',
@@ -215,8 +236,11 @@ site_config = {
             'has_lights':  True,
             'controlled_by':  ['mount1', 'mount2'],
             'is_dome': False,
+            'mode': 'Automatic',
+            #'cool_down': -90.0,    #  Minutes prior to sunset.
             'settings': {
                 'lights':  ['Auto', 'White', 'Red', 'IR', 'Off'],
+                
                 'roof_shutter':  ['Auto', 'Open', 'Close', 'Lock Closed', 'Unlock'],
                 },
             'eve_bias_dark_dur':  2.0,   #hours Duration, prior to next.
@@ -230,8 +254,12 @@ site_config = {
             }
         },
 
+
+
     'mount': {
         'mount1': {
+            'parent': 'enclosure1',
+            'tel_id': '0m35',
             'name': 'westpier',
             'hostIP':  '10.15.0.40',     #Can be a name if local DNS recognizes it.
             'hostname':  'westpier',
@@ -242,15 +270,21 @@ site_config = {
             'shutdown_script':  None,
             'alignment': 'Alt-Az',
             'default_zenith_avoid': 7.0,   #degrees floating
+            'has_paddle': False,      #paddle refers to something supported by the Python code, not the AP paddle.
+            'has_ascom_altaz': False,
+            'pointing_tel': 'tel1',  
+            'west_clutch_ra_correction': 0.0,
+            'west_clutch_dec_correction': 0.0, 
             'east_flip_ra_correction': 0.0,
             'east_flip_dec_correction': 0.0,
-            'west_clutch_ra_correction': 0.0,
-            'west_clutch_dec_correction': 0.0,            
+            'home_after_unpark' : False,
+            'home_before_park' : False,
             'permissive_mount_reset' : 'yes', # if this is set to yes, it will reset the mount at startup and when coordinates are out significantly
-            'lowest_acceptable_altitude' : -10.0, # Below this altitude, it will automatically try to home and park the scope to recover.
-            
+            'lowest_acceptable_altitude' : -5.0, # Below this altitude, it will automatically try to home and park the scope to recover.
             'time_inactive_until_park' : 3600.0, # How many seconds of inactivity until it will park the telescope
             'home_after_unpark' : False,
+            'home_altitude':  0.0,
+            'home_azimuth':  210.0,
             'has_paddle': False,    #or a string that permits proper configuration.
             'has_ascom_altaz': True,
             'pointing_tel': 'tel1',     #This can be changed to 'tel2' by user.  This establishes a default.
@@ -265,7 +299,7 @@ site_config = {
 
             'settings': {
  			    'latitude_offset': 0.025,     #Meters North is Positive   These *could* be slightly different than site.
- 			    'longitude_offset': 0-2.5,   #meters West is negative  #NB This could be an eval( <<site config data>>))
+ 			    'longitude_offset': 0.25,   #meters West is negative  #NB This could be an eval( <<site config data>>))
  			    'elevation_offset': 0.5,    # meters above sea level
                 'home_park_altitude': 0,   #Having this setting is important for PWI4 where it can easily be messed up.
                 'home_park_azimuth': 195.0,
@@ -351,8 +385,9 @@ site_config = {
             'f-ratio':  6.8,   #This and focal_lenght can be refined after a solve.
             'focal_length': 3962,
             'has_dew_heater':  True,
-            'screen_name': 'screen2',   #The enclosure has two screens in the WMD case, one for each mount.
-            # NB NB All the blow need some checking
+            #'screen_name': 'screen2',   #The enclosure has two screens in the WMD case, one for each mount.
+            # NB NB All the below need some checking
+            'tel_has_unihedron': False,
             'screen_name': 'screen1',
             'focuser_name':  'focuser1',
             'rotator_name':  'rotator1',
@@ -378,17 +413,7 @@ site_config = {
                 'west_flip_ca_offset': 0.0,
                 'west_flip_dec_offset': 0.0
                 },
-            'rotator_name':  'rotator1',
-            'focuser_name':  'focuser1',
-                # 'camera_name':  'camera_1_1',
-                # 'filter_wheel_name':  'filter_wheel1',
-            'has_instrument_selelector': True,
-            'selector_positions':  4,
-            'instrument names':  ['main camera', 'echelle', 'camera_2', 'low-res spect'],
-            'instrument aliases':  ['QHY600Mone', 'eShel', 'FLI 16803', 'UVEX'],
-            # 'configuration: {
-            #      "position1": {
-            #          'darkslide1',
+
             },
 
 
@@ -396,7 +421,6 @@ site_config = {
 
     'rotator': {
         'rotator1': {
-
             'parent': 'telescope1',
             'name': 'rotator',
             'desc':  'Opetc Gemini',
@@ -404,7 +428,7 @@ site_config = {
 			'com_port':  'COM9',
             'startup_script':  'None',
             'recover_script':  'None',
-            'shutdown_script':  'None' ,
+            'shutdown_script':  'None',
             'minimum': -180.,
             'maximum': 360.0,
             'step_size':  0.0001,     #Is this correct?
@@ -435,19 +459,20 @@ site_config = {
             'name': 'focuser',
             'desc':  'Optec Gemini',
             'driver': 'ASCOM.OptecGemini.Focuser',
-            'start_at_config_reference': False,
-            'use_focuser_temperature': True,
+            'com_port': None,
+            'start_at_config_reference': True,
+            'use_focuser_temperature': False,
             'startup_script':  None,
             'recover_script':  None,
             'shutdown_script':  None,
-            'reference':  6500,    #Nominal at 20C Primary temperature, in microns not steps.
+            'reference':  12500,    #Nominal at 20C Primary temperature, in microns not steps.
             'ref_temp':   22.5,      #Update when pinning reference  Larger at lower temperatures.
             'coef_c': -0.0,   #negative means focus moves out as Primary gets colder
-            'coef_0': 6000,  #Nominal intercept when Primary is at 0.0 C.
+            'coef_0': 12500,  #Nominal intercept when Primary is at 0.0 C.
             'coef_date':  '202004501',
             'z_compression': 0.0, #  microns per degree of zenith distance
             'z_coef_date':  '20221002',   # 'reference': 4375,    #   Guess 20210904  Nominal at 10C Primary temperature
-            'use_local_temp':  True,
+            'use_local_temp':  False,
             'minimum': 0,    #NB this needs clarifying, we are mixing steps and microns.
             'maximum': 12700,
             'throw': 400,
@@ -499,17 +524,20 @@ site_config = {
         "filter_wheel1": {
             "parent": "tel1",
             "alias": "Dual filter wheel",
+            'service_date': '20180101',
+            'driver': 'Maxim.CCDcamera', 
             'dual_wheel':  True,
             'ip_string': 'http://127.0.0.1',
             "desc":  'Dual Apogee custom Dual 50mm sq.',
             #"driver": ['ASCOM.Apogee.FilterWheel', 'ASCOM.Apogee2.FilterWheel'],
-            'driver': 'Maxim.CCDcamera',  #'startup_script':  None,
+            #'driver': 'Maxim.CCDcamera',  #'startup_script':  None,
+            'startup_script':  None,
             'recover_script':  None,
             'shutdown_script':  None,
             
 
             'settings': {
-                'filter_count': '24',
+                'filter_count': 24,
                 'home_filter': 1,
                 'filter_reference': 1,
                 'default_filter':  'w',
@@ -542,14 +570,14 @@ site_config = {
                 'filter_screen_sort':  ['0', '1', '2', '10', '7', '6', '18', '12', '11', '13', '8',  '3', \
                                         '14', '15', '4', '16'],   #  '9', '21'],  # '5', '17'], #Most to least throughput, \
                                 #so screen brightens, skipping u and zs which really need sky.
-                'filter_sky_sort':     ['17', '5', '9', '16', '4', '15', '14', '3',  '8', '13', '11', '12', \
-                                        '18', '6', '7', '10', '2', '1', '0']  #Least to most throughput
+                'filter_sky_sort':     ['S2', 'HA', 'N2', 'O3', 'i', 'r', 'g',\
+                                        'JV', 'JB', 'EXO', 'dif', 'w', 'air']  #Least to most throughput
 
             },
         },
     },
 
-    # A site may have many cameras registered (camera_1_11, camera_1_2, _2_3, ...) each with unique aliases -- which are assumed
+    # A site may have many cameras registered (camera_1_1, camera_1_2, _2_3, ...) each with unique aliases -- which are assumed
     # to be the name an owner has assigned and in principle that name "kb01" is labeled and found on the camera.  Between sites,
     # there can be overlap of camera names.  LCO convention is letter of cam manuf, letter of chip manuf, then 00, 01, 02, ...
     # However this code will treat the camera name/alias as a string of arbitrary length:  "saf_Neyle's favorite_camera" is
@@ -560,59 +588,84 @@ site_config = {
     #We preseve the idea camera_1 refers to the first camera on the first ota so camera_2 is first camera on OTA 2
 
 #
+
+
+
+
+
+
+
     'camera': {
-        #'cameras': ['camera_1', 'camera_1_2'],
-        #'autoguiders': ['ag_1_2', 'ag _1_4'],
         'camera_1_1': {
             'parent': 'telescope1',
-            'name': 'kf01',      #Important because this points to a server file structure by that name.
-            'desc':  'FLI Microline OnSemi 16803',
-            'driver':  'ASCOM.FLI.Camera',   #  Maxim.CCDCamera',   #"Maxim.CCDCamera",   #'ASCOM.FLI.Kepler.Camera',  #Code must work withall three
+            'name': 'sq004ms',      #Important because this points to a server file structure by that name.
+            'desc':  'QHY 600Pro Monochrome',
+            'service_date': '20230301',
+            'driver':  'ASCOM.QHYCCD.Camera',   #  Maxim.CCDCamera',   #"Maxim.CCDCamera",   #'ASCOM.FLI.Kepler.Camera',  #Code must work withall three
             'startup_script':  None,
             'recover_script':  None,
             'shutdown_script':  None,
-            'detector':  'OnSemi 162803',
-            'manufacturer':  'FLI -- Finger Lakes Instrumentation',
+            'detector':  'Sony IMX455',
+            'manufacturer':  'QHY',
             'use_file_mode':  False,
             'file_mode_path':  'Q:/000ptr_saf/archive/kf01/autosaves/',
             'settings': {
-                'is_osc' : True,
-                
+                'is_osc' : False,
+                'squash_on_x_axis' : True,
+                'flipx_fits': False,
+                'flipy_fits': False,
+                "rotate90_fits": False,
+                "rotate180_fits": False,
+                "rotate270_fits": False,
+                'do_cosmics':'no',
                 'transpose_fits' : False,
                 'transpose_jpeg' : True,
+                'flipx_jpeg' : False,
+                'flipy_jpeg' : False,
+                'rotate180_jpeg' : False,
+                'rotate90_jpeg' : False,
+                'rotate270_jpeg' : False,
                 'osc_bayer' : 'RGGB',
                 'crop_preview': False,
                 'crop_preview_ybottom': 1,
                 'crop_preview_ytop': 1,
                 'crop_preview_xleft': 1,
                 'crop_preview_xright': 1,
-                'temp_setpoint': -35,
-                'calib_setpoints': [-12.5, -10, -7.5, -5],   #A swag
+                'temp_setpoint': -15,
+                'calib_setpoints': [ 3, 5, 7],   #A swag
+                'has_chiller':  True,
+                'chiller_ref_temp':  16,
                 'day_warm': False,
                 'cooler_on': True,
-                'x_start':  0,
+                "cam_needs_NumXY_init": True,
+                'x_start':  24,
                 'y_start':  0,
-                'x_width':  4132,
-                'y_width':  4117,
-                'x_chip':   4132,
-                'y_chip':   4117,
-                'CameraXSize' : 4132,
-                'CameraYSize' : 4117,
-                #'MaxBinX' : 2,
-                #'MaxBinY' : 2,
-                'StartX' : 1,
-                'StartY' : 1,
-                'x_pixel':  9.0,
-                'y_pixel': 9.0,
-                'x_active': 4132,
-                'y_active': 4117,
+                'x_width':  9576,   #NB Should be set up with overscan, which this camera is!  20200315 WER
+                'y_width':  6388,
+                'x_chip':  9576,   #NB Should specify the active pixel area.   20200315 WER
+                'y_chip':  6388,
+                'x_trim_offset':  8,   #  NB these four entries are guesses.
+                'y_trim_offset':  8,
+                'pre_bias_available': False,  #if so need to specify as below for post_bias.
+                'post_bias_available': True,  #if so need to specify as below for post_bias.
+                'x_bias_start':  9577,
+                'y_bias_start' : 6389,
+                'x_bias_end':  None,       # Vert band self.img[-38:-18, 0]
+                'y_bias_send': None,
+                'corner_everlap': None,
+                'x_bias_line': True,
+                'y_bias_line': True,
+                'x_active': 9576,
+                'y_active': 6388,
+                'x_pixel': 3.76,
+                'y_pixel': 3.76,
                 # NB NB All these numbers are placeholds are are incorrect for the FLI camera
-                'det_size': '[1:9600, 1:6422]',  # Physical chip data size as reutrned from driver
+                'det_size': '[1:9600, 1:6422]',  # Physical chip data size as returned from driver
                 'ccd_sec': '[1:9600, 1:6422]',
-                'bias_sec': ['[1:22, 1:6388]', '[1:11, 1:3194]', '[1:7, 1:2129]', '[1:5, 1:1597]'],
-                'det_sec': ['[25:9600, 1:6388]', '[13:4800, 1:3194]', '[9:3200, 1:2129]', '[7:2400, 1:1597]'],
-                'data_sec': ['[25:9600, 1:6388]', '[13:4800, 1:3194]', '[9:3200, 1:2129]', '[7:2400, 1:1597]'],
-                'trim_sec': ['[1:9576, 1:6388]', '[1:4788, 1:3194]', '[1:3192, 1:2129]', '[1:2394, 1:1597]'],
+                'bias_sec': '[1:22, 1:6388], [1:11, 1:3194], [1:7, 1:2129], [1:5, 1:1597]',
+                'det_sec': '[25:9600, 1:6388], [13:4800, 1:3194], [9:3200, 1:2129], [7:2400, 1:1597]',
+                'data_sec': '[25:9600, 1:6388], [13:4800, 1:3194], [9:3200, 1:2129], [7:2400, 1:1597]',
+                'trim_sec': '[1:9576, 1:6388], [1:4788, 1:3194], [1:3192, 1:2129], [1:2394, 1:1597]',
                 
                 'x_field_deg': 0.5331,  # round(4096*0.468547/3600, 4),   #32_0 X 32 AMIN  3MIN X 0.5 DEG
                 'y_field_deg': 0.5331,  # round(4096*0.468547/3600, 4),
@@ -622,9 +675,12 @@ site_config = {
                 'north_offset': 0.0,
                 'east_offset': 0.0,
                 'rotation': 0.0,
-                'min_exposure': 0.25,  #Need to check this setting out
+
+                'min_exposure': 0.001,  #Need to check this setting out
+
                 
                 'min_flat_exposure': 1.0,
+
                 'max_exposure': 600.0,
                 'ref_dark': 300.0,
                 'long_dark': 600.0,
@@ -635,17 +691,17 @@ site_config = {
                 'cosmics_at_default' : 'no',
                 'cosmics_at_maximum' : 'yes',
 
-                'cycle_time':  [10, 12, 8, 6],  # 3x3 requires a 1, 1 reaout then a software bin, so slower.
+                'cycle_time': 12, # [10, 12, 8, 6],  # 3x3 requires a 1, 1 reaout then a software bin, so slower.
                 'rbi_delay':  0.,      # This being zero says RBI is not available, eg. for SBIG.
                 'is_cmos':  False,
                 'bayer_pattern':  None,    #  Need to verify R as in RGGB is pixel x=0, y=0, B is x=1, y = 1
                 'can_set_gain':  False,
-                'reference_gain': [10., 10., 10., 10.],     #  One val for each binning.
-                'reference_noise': [9, 9, 9, 9],    #  All SWAGs right now
-                'reference_dark': [0.0, 0.0, 0.0, 0.0],     #  Might these best be pedastal values?
-                'saturate':  [[1, 65000], [2,262000], [3,589815], [4, 1048560]] ,   # e-.  This is a close guess, not measured, but taken from data sheet.
+                'reference_gain':   2.5, #[10., 10., 10., 10.],     #  One val for each binning.
+                'reference_noise':  4.3, #[9, 9, 9, 9],    #  All SWAGs right now
+                'reference_dark':  2.0, #[0.0, 0.0, 0.0, 0.0],     #  Might these best be pedastal values?
+                'saturate':  65000.0, #[[1, 65000], [2,262000], [3,589815], [4, 1048560]] ,   # e-.  This is a close guess, not measured, but taken from data sheet.
                 'max_linearity':  55000.,
-                'fullwell_capacity': [85000, 85000, 85000, 85000],
+                'fullwell_capacity': 85000.0, #[85000, 85000, 85000, 85000],
                 'read_mode':  'Normal',
                 'readout_mode': 'Normal',
                 'readout_speed':  0.4,
@@ -660,7 +716,8 @@ site_config = {
                 #'cycle_time':  [18, 15, 12, 9],  # 3x3 requires a 1, 1 reaout then a software bin, so slower.
                 'has_darkslide':  False,
                 'darkslide_com':  None,
-                'shutter_type': "Electronic",
+                'shutter_type': "6-Blade",
+                "shutter_compensation_available": True,
                 'flat_bin_spec': ['1,1','2,2', '3,3','4,4'],    #Default binning for flats
                 'bias_dark_bin_spec': ['1,1','2,2', '3,3','4,4'],    #Default binning for flats
                 'bin_enable': ['1,1', '2,2', '3,3','4,4'],
@@ -668,8 +725,15 @@ site_config = {
                 'bias_count' : 10,
                 'dark_count' : 10,
                 
+                #'CameraXSize' : 9600,
+                #'CameraYSize' : 6422,
+                'StartX' : 1,
+                'StartY' : 1,
+
+                
                 'flat_count' : 10,
                 'pix_scale': [0.4685, 0.9371, 1.4055, 1.8742],    #  1.4506,  bin-2  2* math.degrees(math.atan(9/3962000))*3600
+
                 'bin_modes':  [[2, 2, 0.937], [1, 1, 0.469], [4, 4, 1.87], [4, 4, 1.40]],   # [3, 3, 1.45],Meaning no binning choice if list has only one entry, default should be first.
                 'optimal_bin':  [2, 2, 0.937],    # Matched to seeing situation by owner
                 'max_res_bin':  [1, 1, 0.469],    # Matched to seeing situation by owner
@@ -753,68 +817,7 @@ site_config = {
         # },
 
 
-        # 'camera_4': {
-        #     'parent': 'telescope1',
-        #     'name': 'zs01',      #Important because this points to a server file structure by that name.
-        #     'desc':  'ASI',
-        #     'driver':  'ASCOM.FLI.Camera',   #"Maxim.CCDCamera",   #'ASCOM.FLI.Kepler.Camera',  #Code must work withall three
-        #     'startup_script':  None,
-        #     'recover_script':  None,
-        #     'shutdown_script':  None,
-        #     'detector':  'OSemi 162803Sonyn',
-        #     'manufacturer':  'ATIK -- Zwo',
-        #     'use_file_mode':  False,
-        #     'file_mode_path':  'D:/000ptr_saf/archive/sq01/autosaves/',
-        #     'settings': {
-        #         'temp_setpoint': -20,
-        #         'cooler_on': True,
-        #         'x_start':  0,
-        #         'y_start':  0,
-        #         'x_width':  4096,
-        #         'y_width':  4096,
-        #         'x_chip':   4096,
-        #         'y_chip':   4096,
-        #         'x_pixel':  9,
-        #         'y_pixel':  9,
-        #         'overscan_x': 0,
-        #         'overscan_y': 0,
-        #         'north_offset': 0.0,
-        #         'east_offset': 0.0,
-        #         'rotation': 0.0,
-        #         'min_exposure': 0.25,  #Need to check this setting out
-        #         'max_exposure': 360.0,
-        #         'can_subframe':  True,
-        #         'min_subframe':  '16:16',
-        #         'is_cmos':  True,
-        #         'bayer_pattern':  None,    #  Need to verify R as in RGGB is pixel x=0, y=0, B is x=1, y = 1
-        #         'can_set_gain':  False,
-        #         'reference_gain': [10., 10., 10., 10.],     #  One val for each binning.
-        #         'reference_noise': [1.1, 1.1, 1.1, 1.1],    #  All SWAGs right now
-        #         'reference_dark': [0.0, 0.0, 0.0, 0.0],     #  Might these best be pedastal values?
-        #         'saturate':  55000,
-        #         'max_linearity':  55000.,
-        #         'fullwell_capacity': 85000,
-        #         'read_mode':  'Normal',
-        #         'readout_mode': 'Normal',
-        #         'readout_speed':  0.4,
-        #         'square_detector': True,
-        #         'areas_implemented': [ "Full", "Sqr", '71%', '50%',  '35%', '25%', '12%'],
-        #         'default_area':  "Full",
-        #         'bin_modes':  [[1, 1], [2, 2], [3, 3], [4, 4]],     #Meaning no binning if list has only one entry
-        #         'default_bin':  [2, 2],    #Always square and matched to seeing situation by owner
-        #         'cycle_time':  [18, 15, 12, 9],  # 3x3 requires a 1, 1 reaout then a software bin, so slower.
-        #         'has_darkslide':  False,
-        #         'has_screen': True,
-        #         'screen_settings':  {
-        #             'screen_saturation':  157.0,
-        #             'screen_x4':  -4E-12,  #'y = -4E-12x4 + 3E-08x3 - 9E-05x2 + 0.1285x + 8.683     20190731'
-        #             'screen_x3':  3E-08,
-        #             'screen_x2':  -9E-05,
-        #             'screen_x1':  .1258,
-        #             'screen_x0':  8.683
-        #         },
-        #     },
-        # },
+
 
         # 'ag_1_2': {
         #     'parent': 'telescope1',

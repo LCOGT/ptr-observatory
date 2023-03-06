@@ -124,7 +124,7 @@ dgs = "°"
 # These should eventually be in a utility module
 def next_sequence(pCamera):
     global SEQ_Counter
-    camShelf = shelve.open(g_dev["cam"].site_path + "ptr_night_shelf/" + pCamera)
+    camShelf = shelve.open(g_dev["cam"].site_path + "ptr_night_shelf/" + pCamera + str(g_dev['obs'].name))
     sKey = "Sequence"
     try:
         seq = camShelf[sKey]  # get an 8 character string
@@ -142,7 +142,7 @@ def next_sequence(pCamera):
 
 def test_sequence(pCamera):
     global SEQ_Counter
-    camShelf = shelve.open(g_dev["cam"].site_path + "ptr_night_shelf/" + pCamera)
+    camShelf = shelve.open(g_dev["cam"].site_path + "ptr_night_shelf/" + pCamera + str(g_dev['obs'].name))
     sKey = "Sequence"
     seq = camShelf[sKey]  # get an 8 character string
     camShelf.close()
@@ -153,7 +153,7 @@ def test_sequence(pCamera):
 def reset_sequence(pCamera):
     try:
         camShelf = shelve.open(
-            g_dev["cam"].site_path + "ptr_night_shelf/" + str(pCamera)
+            g_dev["cam"].site_path + "ptr_night_shelf/" + str(pCamera) + str(g_dev['obs'].name)
         )
         seqInt = int(-1)
         seqInt += 1
@@ -394,16 +394,40 @@ class Camera:
         self.cmd_in = None
         self.t7 = None
         self.camera_message = "-"
-        self.site_path = self.config["client_path"]
-        self.archive_path = self.config["archive_path"] + "archive/"
+        #self.site_path = self.config["client_path"]
+
+        self.site_path = self.config["client_path"] +'/' + self.config['site_id'] + '/'
+        if not os.path.exists(self.site_path):
+            os.makedirs(self.site_path)
+        self.archive_path = self.config["archive_path"] +'/' + self.config['site_id'] + '/'+ "archive/"
+        if not os.path.exists(self.config["archive_path"] +'/' + self.config['site_id']):
+            os.makedirs(self.config["archive_path"] +'/' + self.config['site_id'])
+        if not os.path.exists(self.config["archive_path"] +'/' + self.config['site_id']+ '/'+ "archive/"):
+            os.makedirs(self.config["archive_path"] +'/' + self.config['site_id']+ '/'+ "archive/")
         self.camera_path = self.archive_path + self.alias + "/"
+        if not os.path.exists(self.camera_path):
+            os.makedirs(self.camera_path)
         self.alt_path = self.config[
             "alt_path"
-        ]  # NB NB this should come from config file, it is site dependent.
+        ]  +'/' + self.config['site_id']+ '/' # NB NB this should come from config file, it is site dependent.
+        if not os.path.exists(self.config[
+            "alt_path"
+        ]):
+            os.makedirs(self.config[
+            "alt_path"
+        ])
+        
+        if not os.path.exists(self.alt_path):
+            os.makedirs(self.alt_path)
         self.autosave_path = self.camera_path + "autosave/"
         self.lng_path = self.camera_path + "lng/"
         self.seq_path = self.camera_path + "seq/"
-        
+        if not os.path.exists(self.autosave_path):
+            os.makedirs(self.autosave_path)
+        if not os.path.exists(self.lng_path):
+            os.makedirs(self.lng_path)
+        if not os.path.exists(self.seq_path):
+            os.makedirs(self.seq_path)
         
         """
         TheSkyX runs on a file mode approach to images rather 
@@ -470,8 +494,8 @@ class Camera:
         self.camera_start_x = self.config["camera"][self.name]["settings"]["StartX"]
         self.camera_start_y = self.config["camera"][self.name]["settings"]["StartY"]
         if self.config["camera"][self.name]["settings"]["cam_needs_NumXY_init"]:  # WER 20230217
-            self.camera.NumX = self.camera_x_size
-            self.camera.NumY = self.camera_y_size
+            #self.camera.NumX = self.camera_x_size
+            #self.camera.NumY = self.camera_y_size
             self.camera.StartX = 0
             self.camera.StartY = 0
             self.camera.BinX = 1
@@ -862,7 +886,9 @@ class Camera:
         no_AWS=False,
         quick=False,
         solve_it=False,
-        calendar_event_id=None
+        calendar_event_id=None,
+        skip_open_check=False,
+        skip_daytime_check=False
     ):
         """
         This is Phase 1:  Setup the camera.
@@ -872,7 +898,48 @@ class Camera:
         image data.
         """
         
+        # First check that it isn't an exposure that doesn't need a check (e.g. bias, darks etc.)
+        if not skip_open_check:
+        #Second check, if we are not open and available to observe, then .... don't observe!        
+            if (g_dev['obs'].open_and_enabled_to_observe==False and g_dev['enc'].mode == 'Automatic') and (not g_dev['obs'].debug_flag) :
+                g_dev['obs'].send_to_user("Refusing exposure request as the observatory is not enabled to observe.")
+                plog("Refusing exposure request as the observatory is not enabled to observe.")
+                return
         
+        # Need to pick up exposure time here
+        exposure_time = float(
+            required_params.get("time", 0.0001)
+        ) 
+        
+        #Third check, check it isn't daytime and institute maximum exposure time 
+        #Unless it is a command from the sequencer flat_scripts or a requested calibration frame
+        
+        imtype = required_params.get("image_type", "light")
+        
+        if imtype.lower() in (            
+            "bias",
+            "dark",
+            "screen flat",
+            "sky flat",
+            "near flat",
+            "thor flat",
+            "arc flat",
+            "lamp flat",
+            "solar flat",
+        ):
+            skip_daytime_check=True
+        
+        
+        if not skip_daytime_check:
+            sun_az, sun_alt = g_dev['evnt'].sun_az_alt_now()
+            if sun_alt > -5:
+                if exposure_time > float(self.config["camera"][self.name]["settings"]['max_daytime_exposure']):
+                    g_dev['obs'].send_to_user("Exposure time reduced to maximum daytime exposure time: " + str(float(self.config["camera"][self.name]["settings"]['max_daytime_exposure'])))
+                    plog("Exposure time reduced to maximum daytime exposure time: " + str(float(self.config["camera"][self.name]["settings"]['max_daytime_exposure'])))
+                    exposure_time = float(self.config["camera"][self.name]["settings"]['max_daytime_exposure'])
+            #breakpoint()
+            
+            
         
         self.exposure_busy = True # This really needs to be here from the start
         # We've had multiple cases of multiple camera exposures trying to go at once
@@ -900,7 +967,7 @@ class Camera:
         self.hint = optional_params.get("hint", "")
         self.script = required_params.get("script", "None")
         
-        imtype = required_params.get("image_type", "light")
+        
         no_AWS, self.toss = True if imtype.lower() == "test image" else False, False
         quick = True if imtype.lower() == "quick" else False
         #  NBNB this is obsolete and needs rework 20221002 WER
@@ -978,10 +1045,7 @@ class Camera:
             self.config["camera"][self.name]["settings"]["cycle_time"]
         )
 
-            
-        exposure_time = float(
-            required_params.get("time", 0.0001)
-        ) 
+    
         
         self.estimated_readtime = (
             exposure_time + readout_time
@@ -1337,15 +1401,15 @@ class Camera:
 
 
         #plog ("Smart Stack ID: " + smartstackid)
-        g_dev["obs"].send_to_user(
-            "Starting "
-            + str(exposure_time)
-            + " second exposure. Number of "
-            + frame_type
-            + " frames remaining: "
-            + str(counter),
-            p_level="INFO",
-        )
+        # g_dev["obs"].send_to_user(
+        #     "Starting "
+        #     + str(exposure_time)
+        #     + " second exposure. Number of "
+        #     + frame_type
+        #     + " frames remaining: "
+        #     + str(counter),
+        #     p_level="INFO",
+        # )
         # , gather_status, do_sep, no_AWS, start_x, start_y, opt['area'])
         self.status_time = time.time() + 10
         self.post_mnt = []
@@ -1364,6 +1428,7 @@ class Camera:
         quartileExposureReport = 0
         self.plog_exposure_time_counter_timer=time.time() -3.0
         
+        exposure_scan_request_timer=time.time()
         
         while True:  # This loop really needs a timeout.
             self.post_mnt = []
@@ -1376,7 +1441,16 @@ class Camera:
                 time.time() < self.completion_time or self.async_exposure_lock==True
             ):  
                 #self.t7b = time.time()
+                
+                
+                # Scan requests every 4 seconds... primarily hunting for a "Cancel/Stop"
+                if exposure_scan_request_timer - time.time() > 4:                    
+                    exposure_scan_request_timer=time.time()
+                    g_dev['obs'].scan_requests()
+                
                 remaining = round(self.completion_time - time.time(), 1)
+                
+                
                 if remaining > 0:  
                     if time.time() - self.plog_exposure_time_counter_timer > 10.0:
                         self.plog_exposure_time_counter_timer=time.time()
@@ -2434,6 +2508,17 @@ class Camera:
                         # Crop unnecessary rough edges off preview images that unnecessarily skew the scaling
                         # This is particularly necessary for SRO, but I've seen many cameras where cropping
                         # Needs to happen.
+                        #  NB NB NB For the qhy chips there is a substantial L shaped overscan
+                        #      region that needs to be trimmed.  I will change the MRC config
+                        #      to do this.  The current bias correction is a bit too simple
+                        #      but for now, this is Ok.  I will leave the trim at 1 pixel for the sides oposite
+                        #      the "L". This does not show well on OSC images.  --- WER 20220225
+
+                        
+                        #First trim overscan region:
+                        yw = self.config["camera"][self.name]["settings"]["y_width"]
+                        xs = self.config["camera"][self.name]["settings"]["x_start"]
+                        hdusmalldata = hdusmalldata[xs:, :yw]   
                         if (
                             self.config["camera"][self.name]["settings"]["crop_preview"]
                             == True
@@ -3120,7 +3205,15 @@ class Camera:
                                 cal_name[:-9] + "F012" + cal_name[-7:]
                             )                            
                             
-                            if len(sources) >= 5 and len(sources) < 1000:
+                            # Check this is not an image in a smartstack set.
+                            # No shifts in pointing are wanted in a smartstack set!
+                            image_during_smartstack=False
+                            if Nsmartstack > 1 and not (Nsmartstack == sskcounter+1):
+                                image_during_smartstack=True
+                            
+                            if len(sources) >= 5 and len(sources) < 1000 and not image_during_smartstack:
+                                
+
                                 
                                 # We only need to save the focus image immediately if there is enough sources to 
                                 #  rationalise that.  It only needs to be on the disk immediately now if platesolve 
@@ -3157,8 +3250,14 @@ class Camera:
                                         solve["ra_j2000_hours"],
                                         solve["dec_j2000_degrees"],
                                     )
-                                    target_ra = g_dev["mnt"].current_icrs_ra
-                                    target_dec = g_dev["mnt"].current_icrs_dec
+                                    
+                                    pointing_ra = g_dev['mnt'].mount.RightAscension
+                                    pointing_dec = g_dev['mnt'].mount.Declination
+                                    #icrs_ra, icrs_dec = g_dev['mnt'].get_mount_coordinates()
+                                    #target_ra = g_dev["mnt"].current_icrs_ra
+                                    #target_dec = g_dev["mnt"].current_icrs_dec
+                                    target_ra = g_dev["mnt"].last_ra
+                                    target_dec = g_dev["mnt"].last_dec
                                     solved_ra = solve["ra_j2000_hours"]
                                     solved_dec = solve["dec_j2000_degrees"]
                                     solved_arcsecperpixel = solve["arcsec_per_pixel"]
@@ -3172,69 +3271,102 @@ class Camera:
                                         round(err_ha * 15 * 3600, 2),
                                         round(err_dec * 3600, 2),
                                     )  # NB WER changed units 20221012
-    
+                                    #breakpoint()
                                     # Reset Solve timers
                                     g_dev['obs'].last_solve_time = datetime.datetime.now()
                                     g_dev['obs'].images_since_last_solve = 0
-    
-                                    # NB NB NB this needs rethinking, the incoming units are hours in HA or degrees of dec
+                                    
+                                    
+                                    # MTF - I have commented out the below just to figure out what is going on!!.
+                                    
+                                    #g_dev['mnt']
+                                    # #g_dev["mnt"].current_icrs_ra = solved_ra                                    
+                                    # #g_dev["mnt"].current_icrs_dec = solved_dec.mtf_dec_offset=err_dec
+                                    #g_dev['mnt'].mtf_ra_offset=err_ha
+                                    
                                     if (
-                                        err_ha * 15 * 3600 > 1200
-                                        or err_dec * 3600 > 1200
-                                        or err_ha * 15 * 3600 < -1200
-                                        or err_dec * 3600 < -1200
-                                    ) and self.config["mount"]["mount1"][
-                                        "permissive_mount_reset"
-                                    ] == "yes":
-                                        g_dev["mnt"].reset_mount_reference()
-                                        plog("I've  reset the mount_reference 1")
-                                        g_dev["mnt"].current_icrs_ra = solved_ra
-                                        #    "ra_j2000_hours"
-                                        #]
-                                        g_dev["mnt"].current_icrs_dec = solved_dec
-                                        #    "dec_j2000_hours"
-                                        #]
-                                        err_ha = 0
-                                        err_dec = 0
+                                         abs(err_ha * 15 * 3600)
+                                         > self.config["threshold_mount_update"]
+                                         or abs(err_dec * 3600)
+                                         > self.config["threshold_mount_update"]
+                                     ):
+                                        plog ("I am nudging the telescope slightly!")
+                                        #breakpoint()
+                                        #g_dev['mnt'].mount.SlewToCoordinatesAsync(g_dev["mnt"].current_icrs_ra - err_ha, g_dev["mnt"].current_icrs_dec - err_dec)
+                                        g_dev['mnt'].mount.SlewToCoordinatesAsync(pointing_ra + err_ha, pointing_dec + err_dec)
+                                        wait_for_slew()
+                                        #self.go_coord(self.last_ra, self.last_dec, self.last_tracking_rate_ra, self.last_tracking_rate_dec)
+                                    
+                                    # # Tell the mount where it is pointing!
+                                    # try:
+                                    #     g_dev['mnt'].mount.SyncToCoordinates(solved_ra, solved_dec)
+                                    # except:
+                                    #     pass
+                                    
+                                    # #breakpoint()
+                                    # # Tell the code where it is pointing!
     
-                                    if (
-                                        abs(err_ha * 15 * 3600)
-                                        > self.config["threshold_mount_update"]
-                                        or abs(err_dec * 3600)
-                                        > self.config["threshold_mount_update"]
-                                    ):
-                                        try:
-                                            #if g_dev["mnt"].pier_side_str == "Looking West":
-                                            if g_dev["mnt"].pier_side == 0:
-                                                try:
-                                                    g_dev["mnt"].adjust_mount_reference(
-                                                        -err_ha, -err_dec
-                                                    )
-                                                except Exception as e:
-                                                    plog ("Something is up in the mount reference adjustment code ", e)
-                                            else:
-                                                try:
-                                                    g_dev["mnt"].adjust_flip_reference(
-                                                        -err_ha, -err_dec
-                                                    )  # Need to verify signs
-                                                except Exception as e:
-                                                    plog ("Something is up in the mount reference adjustment code ", e)
+                                    # # NB NB NB this needs rethinking, the incoming units are hours in HA or degrees of dec
+                                    # if (
+                                    #     err_ha * 15 * 3600 > 1200
+                                    #     or err_dec * 3600 > 1200
+                                    #     or err_ha * 15 * 3600 < -1200
+                                    #     or err_dec * 3600 < -1200
+                                    # ) and self.config["mount"]["mount1"][
+                                    #     "permissive_mount_reset"
+                                    # ] == "yes":
+                                    #     g_dev["mnt"].reset_mount_reference()
+                                    #     plog("I've  reset the mount_reference 1")
+                                    #     g_dev["mnt"].current_icrs_ra = solved_ra
+                                    #     #    "ra_j2000_hours"
+                                    #     #]
+                                    #     g_dev["mnt"].current_icrs_dec = solved_dec
+                                    #     #    "dec_j2000_hours"
+                                    #     #]
+                                    #     err_ha = 0
+                                    #     err_dec = 0
+    
+                                    # if (
+                                    #     abs(err_ha * 15 * 3600)
+                                    #     > self.config["threshold_mount_update"]
+                                    #     or abs(err_dec * 3600)
+                                    #     > self.config["threshold_mount_update"]
+                                    # ):
+                                    #     try:
+                                    #         #if g_dev["mnt"].pier_side_str == "Looking West":
+                                    #         if g_dev["mnt"].pier_side == 0:
+                                    #             try:
+                                    #                 g_dev["mnt"].adjust_mount_reference(
+                                    #                     -err_ha, -err_dec
+                                    #                 )
+                                    #             except Exception as e:
+                                    #                 plog ("Something is up in the mount reference adjustment code ", e)
+                                    #         else:
+                                    #             try:
+                                    #                 g_dev["mnt"].adjust_flip_reference(
+                                    #                     -err_ha, -err_dec
+                                    #                 )  # Need to verify signs
+                                    #             except Exception as e:
+                                    #                 plog ("Something is up in the mount reference adjustment code ", e)
                                             
-                                            g_dev["mnt"].current_icrs_ra = solved_ra                                    
-                                            g_dev["mnt"].current_icrs_dec = solved_dec
-                                            g_dev['mnt'].re_seek(dither=0)
-                                        except:
-                                            plog("This mount doesn't report pierside")
-                                            plog(traceback.format_exc())
+                                            
+                                            
+                                        
+                                            
+                                    #         g_dev['mnt'].re_seek(dither=0)
+                                    #     except:
+                                    #         plog("This mount doesn't report pierside")
+                                    #         plog(traceback.format_exc())
     
                                 except Exception as e:
                                     plog(
                                         "Image: did not platesolve; this is usually OK. ", e
                                     )
+                                    plog(traceback.format_exc())
                                 if not self.config['keep_focus_images_on_disk']:
                                     os.remove(cal_path + cal_name)
                             else:
-                                plog ("Platesolve wasn't attempted due to lack of sources (or sometimes too many!)")
+                                plog ("Platesolve wasn't attempted due to lack of sources (or sometimes too many!) or it was during a smartstack")
                                 
                                 del hdufocusdata
                               
@@ -3441,4 +3573,28 @@ class Camera:
     def to_slow_process(self, priority, to_slow):
         g_dev["obs"].slow_camera_queue.put((priority, to_slow), block=False)
         
-
+def wait_for_slew():    
+    
+    try:
+        if not g_dev['mnt'].mount.AtPark:
+            movement_reporting_timer=time.time()
+            while g_dev['mnt'].mount.Slewing: #or g_dev['enc'].status['dome_slewing']:   #Filter is moving??
+                #if g_dev['mnt'].mount.Slewing: plog( 'm>')
+                #if g_dev['enc'].status['dome_slewing']: st += 'd>'
+                if time.time() - movement_reporting_timer > 2.0:
+                    plog( 'm>')
+                    movement_reporting_timer=time.time()
+                #time.sleep(0.1)
+                g_dev['obs'].update_status(mount_only=True, dont_wait=True)            
+            
+    except Exception as e:
+        plog("Motion check faulted.")
+        plog(traceback.format_exc())
+        if 'pywintypes.com_error' in str(e):
+            plog ("Mount disconnected. Recovering.....")
+            time.sleep(30)
+            g_dev['mnt'].mount.Connected = True
+            #g_dev['mnt'].home_command()
+        else:
+            breakpoint()
+    return 
