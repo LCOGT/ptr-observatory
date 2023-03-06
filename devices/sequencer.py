@@ -229,8 +229,8 @@ class Sequencer:
         
         # Run a weather report on bootup so observatory can run if need be. 
         if not g_dev['debug']:
-            self.global_wx()
-            breakpoint()
+            #self.global_wx()
+            #breakpoint()
             self.run_nightly_weather_report()
         else:
             self.nightly_weather_report_complete = True
