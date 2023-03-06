@@ -465,11 +465,11 @@ site_config = {
             'startup_script':  None,
             'recover_script':  None,
             'shutdown_script':  None,
-            'reference':  12500,    #Nominal at 20C Primary temperature, in microns not steps.
-            'ref_temp':   22.5,      #Update when pinning reference  Larger at lower temperatures.
+            'reference':  5870,    #Nominal at 20C Primary temperature, in microns not steps.
+            'ref_temp':   10,      #Update when pinning reference  Larger at lower temperatures.
             'coef_c': -0.0,   #negative means focus moves out as Primary gets colder
-            'coef_0': 12500,  #Nominal intercept when Primary is at 0.0 C.
-            'coef_date':  '202004501',
+            'coef_0': 5870,  #Nominal intercept when Primary is at 0.0 C.
+            'coef_date':  '20230305',
             'z_compression': 0.0, #  microns per degree of zenith distance
             'z_coef_date':  '20221002',   # 'reference': 4375,    #   Guess 20210904  Nominal at 10C Primary temperature
             'use_local_temp':  False,
@@ -678,11 +678,13 @@ site_config = {
 
                 'min_exposure': 0.001,  #Need to check this setting out
 
-                
-                'min_flat_exposure': 1.0,
-
+                'max_daytime_exposure': 10,
+                'min_flat_exposure': 0.0001,
+                'bias_count':    63,
+                'dark_count':    13,
+                'dark_exposure': 360,
                 'max_exposure': 600.0,
-                'ref_dark': 300.0,
+                'ref_dark': 360.0,
                 'long_dark': 600.0,
                 'can_subframe':  True,
                 'min_subframe':  [128,128],
@@ -734,7 +736,7 @@ site_config = {
                 'flat_count' : 10,
                 'pix_scale': [0.4685, 0.9371, 1.4055, 1.8742],    #  1.4506,  bin-2  2* math.degrees(math.atan(9/3962000))*3600
 
-                'bin_modes':  [[2, 2, 0.937], [1, 1, 0.469], [4, 4, 1.87], [4, 4, 1.40]],   # [3, 3, 1.45],Meaning no binning choice if list has only one entry, default should be first.
+                'bin_modes':  [[2, 2, 0.937], [1, 1, 0.469], [3, 3, 1.407], [4, 4, 1.876]],   # [3, 3, 1.45],Meaning no binning choice if list has only one entry, default should be first.
                 'optimal_bin':  [2, 2, 0.937],    # Matched to seeing situation by owner
                 'max_res_bin':  [1, 1, 0.469],    # Matched to seeing situation by owner
                 'has_screen': True,
