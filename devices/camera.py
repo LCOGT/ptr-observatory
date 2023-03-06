@@ -396,10 +396,10 @@ class Camera:
         self.camera_message = "-"
         #self.site_path = self.config["client_path"]
 
-        self.site_path = self.config["client_path"] +'/' + self.config['site_id'] + '/'
+        self.site_path = self.config["client_path"] + self.config['site_id'] + '/'
         if not os.path.exists(self.site_path):
             os.makedirs(self.site_path)
-        self.archive_path = self.config["archive_path"] +'/' + self.config['site_id'] + '/'+ "archive/"
+        self.archive_path = self.config["archive_path"] + self.config['site_id'] + '/'+ "archive/"
         if not os.path.exists(self.config["archive_path"] +'/' + self.config['site_id']):
             os.makedirs(self.config["archive_path"] +'/' + self.config['site_id'])
         if not os.path.exists(self.config["archive_path"] +'/' + self.config['site_id']+ '/'+ "archive/"):

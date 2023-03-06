@@ -229,8 +229,8 @@ class Sequencer:
         
         # Run a weather report on bootup so observatory can run if need be. 
         if not g_dev['debug']:
-            self.global_wx()
-            breakpoint()
+            #self.global_wx()
+
             self.run_nightly_weather_report()
         else:
             self.nightly_weather_report_complete = True
@@ -3294,7 +3294,7 @@ class Sequencer:
                     else:
                         cloudy_hrs += 1
             print('Clear Fraction:  ', clear_hrs*100/(clear_hrs + cloudy_hrs))        
-            breakpoint()
+            
             # # Collect relevant info for fitzgerald weather number calculation
             hourcounter=0
             # fitzgerald_weather_number_grid=[]

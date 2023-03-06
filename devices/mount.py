@@ -171,7 +171,7 @@ class Mount:
         g_dev['mnt'] = self
 
         self.site = config['site']
-        self.site_path = config['client_path']
+        self.site_path = config["client_path"] + config['site_id'] + '/'
         self.config = config
         self.device_name = name
         self.settings = settings
@@ -1715,6 +1715,8 @@ class Mount:
         return delta_ra, delta_dec
 
     def reset_mount_reference(self):
+        
+
         mnt_shelf = shelve.open(self.site_path + 'ptr_night_shelf/' + 'mount1'+ str(g_dev['obs'].name))
         mnt_shelf['ra_cal_offset'] = 0.000
         mnt_shelf['dec_cal_offset'] = 0.000
