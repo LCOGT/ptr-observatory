@@ -369,6 +369,7 @@ class Sequencer:
                 
             except Exception as e:
                 plog ("Enclosure opening glitched out: ", e)
+                plog(traceback.format_exc())
         
         else:
             plog("An enclosure command was rejected because the weather report was not acceptable.")
