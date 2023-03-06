@@ -50,7 +50,8 @@ QHY600         AstroImaging Equipment
 
 #NB NB NB json is not bi-directional with tuples (), instead, use lists [], nested if tuples are needed.
 degree_symbol = "°"
-site_name = 'mrc'    #NB These must be unique across all of PTR. Pre-pend with airport code if needed: 'sba_wmdo'
+site_name = 'mrc'
+obs_id = 'wema'    #NB These must be unique across all of PTR. Pre-pend with airport code if needed: 'sba_wmdo'
 
 site_config = {
     'site': str(site_name).lower(),
@@ -123,12 +124,12 @@ site_config = {
     'site_allowed_to_open_roof': 'yes',
     'check_time': 300,   #MF's original setting.
     'maximum_roof_opens_per_evening' : 4,
-    'site_in_automatic_default': "Shutdown",   #"Manual", "Shutdown"
-    'automatic_detail_default': "Enclosure is temporarily set to Sutdown mode.",
+    'site_in_automatic_default': "Automatic",   #"Manual", "Shutdown"
+    'automatic_detail_default': "Enclosure is set to Automatic mode.",
     'observing_check_period' : 5,    # How many minutes between weather checks
     'enclosure_check_period' : 5,    # How many minutes between enclosure checks
 
-    'auto_eve_bias_dark': True,
+    'auto_eve_bias_dark': False,
     
     'auto_midnight_moonless_bias_dark': False,
     'auto_eve_sky_flat': False,
@@ -137,7 +138,7 @@ site_config = {
 
     'eve_cool_down_open' : -65.0,
     'auto_morn_sky_flat': False,
-    'auto_morn_bias_dark': True,
+    'auto_morn_bias_dark': False,
     're-calibrate_on_solve': True,
     'pointing_calibration_on_startup': False,  #MF I am leaving this alone.
     'periodic_focus_time' : 0.5, # This is a time, in hours, over which to bypass automated focussing (e.g. at the start of a project it will not refocus if a new project starts X hours after the last focus)
@@ -787,10 +788,15 @@ site_config = {
     },
 }    #This brace closes the while configuration dictionary. Match found up top at:  site_config = {
 
-def get_ocn_status():
+def get_ocn_status():    #NB NB I think we should get rid of these two dummy methods. WER
     pass
 def get_enc_status():
     pass
+
+'''
+Here we create the basic directory structures needed for this respective 
+site, telescope and instruments.
+''' 
 
 
 if __name__ == '__main__':
