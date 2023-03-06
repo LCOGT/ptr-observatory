@@ -100,6 +100,8 @@ site_config = {
     
     'maximum_roof_opens_per_evening' : 4,
     
+    'roof_open_safety_base_time' : 15, # How many minutes to use as the default retry time to open roof. This will be progressively multiplied as a back-off function.
+    
     'closest_distance_to_the_sun': 45, # Degrees. For normal pointing requests don't go this close to the sun. 
     'closest_distance_to_the_moon': 10, # Degrees. For normal pointing requests don't go this close to the moon. 
     'lowest_requestable_altitude': -5, # Degrees. For normal pointing requests don't allow requests to go this low. 
@@ -465,7 +467,7 @@ site_config = {
             "parent": "telescope1",
             "name": "RGGB" ,  # When there is no filter wheel, the filter will be named this.
             'service_date': '20180101',
-            'flat_sky_gain' : 1148,
+            'flat_sky_gain' : 4554,
             "driver":   None,   #"LCO.dual",  #  'ASCOM.FLI.FilterWheel',
             #"driver":   "Maxim.Image",   #"LCO.dual",  #  'ASCOM.FLI.FilterWheel',
             'ip_string': None,

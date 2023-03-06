@@ -494,8 +494,11 @@ class Camera:
         self.camera_start_x = self.config["camera"][self.name]["settings"]["StartX"]
         self.camera_start_y = self.config["camera"][self.name]["settings"]["StartY"]
         if self.config["camera"][self.name]["settings"]["cam_needs_NumXY_init"]:  # WER 20230217
-            #self.camera.NumX = self.camera_x_size
-            #self.camera.NumY = self.camera_y_size
+            try:    
+                self.camera.NumX = self.camera_x_size
+                self.camera.NumY = self.camera_y_size
+            except:
+                plog ('numx initialise didnot work')
             self.camera.StartX = 0
             self.camera.StartY = 0
             self.camera.BinX = 1
