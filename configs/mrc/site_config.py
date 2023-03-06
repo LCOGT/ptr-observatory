@@ -57,9 +57,9 @@ site_config = {
     'site': str(site_name).lower(),
     'site_id': 'mrc',
 
-    'debug_site_mode': False,
+    'debug_site_mode': True,
     
-    'debug_mode': False,
+    'debug_mode': True,
     'admin_owner_commands_only': False,
     'debug_duration_sec': 7200,
 
