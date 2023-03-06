@@ -150,6 +150,8 @@ class Observatory:
 
         self.name = name  # NB NB NB Names needs a once-over.
         self.site_name = name
+
+        g_dev['name'] = name
         self.config = config
         self.site = config["site"]
         self.debug_flag = self.config['debug_mode']
