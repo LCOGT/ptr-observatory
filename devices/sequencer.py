@@ -357,7 +357,7 @@ class Sequencer:
                 plog("Attempting to open the roof.")
                 #breakpoint()
                 if ocn_status == None:
-                        if self.config['site_roof_control'] and enc_status['shutter_status'] in ['Closed', 'closed'] and g_dev['enc'].mode == 'Automatic'\
+                        if self.config['site_roof_control'] and not enc_status['shutter_status'] in ['Open', 'open','Opening', 'opening'] and g_dev['enc'].mode == 'Automatic'\
                         and (self.config['site_allowed_to_open_roof']) and self.weather_report_is_acceptable_to_observe:
                         #breakpoint()
                             #g_dev['enc'].open_roof_directly()
@@ -366,7 +366,7 @@ class Sequencer:
                     
                             
                             
-                elif self.config['site_roof_control']  and enc_status['shutter_status'] in ['Closed', 'closed'] and g_dev['enc'].mode == 'Automatic' \
+                elif self.config['site_roof_control']  and not enc_status['shutter_status'] in ['Open', 'open','Opening', 'opening'] and g_dev['enc'].mode == 'Automatic' \
                     and ocn_status['hold_duration'] <= 0.1 and self.config['site_allowed_to_open_roof'] and self.weather_report_is_acceptable_to_observe:   #NB
                     #breakpoint()
                     
@@ -374,7 +374,8 @@ class Sequencer:
                     plog("plop")            
                     
                 plog("Attempting to Open Shutter. Waiting until shutter opens")
-                time.sleep(self.config['period_of_time_to_wait_for_roof_to_open'])
+                if not g_dev['enc'].enclosure.ShutterStatus == 0:
+                    time.sleep(self.config['period_of_time_to_wait_for_roof_to_open'])
                 
                 
                 if g_dev['enc'].enclosure.ShutterStatus == 0:                    
@@ -513,7 +514,7 @@ class Sequencer:
             g_dev['mnt'].park_command({}, {})
 
         elif ((g_dev['events']['Cool Down, Open']  <= ephem_now < g_dev['events']['Close and Park']) and \
-               g_dev['enc'].mode == 'Automatic') and not g_dev['ocn'].wx_hold:
+               g_dev['enc'].mode == 'Automatic') and not g_dev['ocn'].wx_hold and not enc_status['shutter_status'] in ['Software Fault', 'Closing', 'Error']:
 
             if not self.nightly_weather_report_done:
                 self.run_nightly_weather_report()
