@@ -360,7 +360,8 @@ class Sequencer:
                         if self.config['site_roof_control'] and enc_status['shutter_status'] in ['Closed', 'closed'] and g_dev['enc'].mode == 'Automatic'\
                         and (self.config['site_allowed_to_open_roof']) and self.weather_report_is_acceptable_to_observe:
                         #breakpoint()
-                            g_dev['enc'].open_roof_directly()
+                            #g_dev['enc'].open_roof_directly()
+                            g_dev['enc'].enclosure.OpenShutter()
                     
                             
                             
@@ -368,7 +369,7 @@ class Sequencer:
                     and ocn_status['hold_duration'] <= 0.1 and self.config['site_allowed_to_open_roof'] and self.weather_report_is_acceptable_to_observe:   #NB
                     #breakpoint()
                     
-                    g_dev['enc'].open_roof_directly()
+                    g_dev['enc'].enclosure.OpenShutter()
                     
                     
                 plog("Attempting to Open Shutter. Waiting until shutter opens")
@@ -390,7 +391,8 @@ class Sequencer:
                 
                 else:
                     plog("Failed to open roof, parking telescope again and sending the close command to the roof.")
-                    g_dev['enc'].close_roof_directly()
+                    #g_dev['enc'].close_roof_directly()
+                    g_dev['enc'].enclosure.CloseShutter()
                     if not g_dev['mnt'].mount.AtParK:   ###Test comment here
                         g_dev['mnt'].park_command({}, {}) # Get there early
                     return
