@@ -360,14 +360,15 @@ class Sequencer:
                         if self.config['site_roof_control'] and enc_status['shutter_status'] in ['Closed', 'closed'] and g_dev['enc'].mode == 'Automatic'\
                         and (self.config['site_allowed_to_open_roof']) and self.weather_report_is_acceptable_to_observe:
                         #breakpoint()
-                            g_dev['enc'].open_command({}, {})
+                            g_dev['enc'].open_roof_directly()
                     
                             
                             
                 elif self.config['site_roof_control']  and enc_status['shutter_status'] in ['Closed', 'closed'] and g_dev['enc'].mode == 'Automatic' \
                     and ocn_status['hold_duration'] <= 0.1 and self.config['site_allowed_to_open_roof'] and self.weather_report_is_acceptable_to_observe:   #NB
                     #breakpoint()
-                    g_dev['enc'].open_command({}, {})
+                    
+                    g_dev['enc'].open_roof_directly()
                     
                     
                 plog("Attempting to Open Shutter. Waiting until shutter opens")
@@ -388,9 +389,11 @@ class Sequencer:
                     return
                 
                 else:
-                    plog("Failed to open roof, parking telescope again.")
+                    plog("Failed to open roof, parking telescope again and sending the close command to the roof.")
+                    g_dev['enc'].close_roof_directly()
                     if not g_dev['mnt'].mount.AtParK:   ###Test comment here
                         g_dev['mnt'].park_command({}, {}) # Get there early
+                    return
                     
                     
                 
@@ -600,17 +603,20 @@ class Sequencer:
                     blocks = g_dev['obs'].blocks
                     projects = g_dev['obs'].projects
                     debug = False
-        
-                    if self.config['site_roof_control']  and  enc_status['shutter_status'] in ['Closed', 'closed'] \
-                        and float(ocn_status['hold_duration']) <= 0.1 and self.weather_report_is_acceptable_to_observe:
-                        #breakpoint()
-                        g_dev['enc'].open_command({}, {})
-                        plog("Opening dome, will set Synchronize in 10 seconds.")
-                        time.sleep(10)
-                    try:
-                        g_dev['enc'].sync_mount_command({}, {})
-                    except: 
-                        pass
+                    
+                    
+                    # MTF COMMENTED THIS OUT AS THE ROOF CONTROL IS NOT UP TO THIS
+                    # BLOCK OF SEQUENCER COMMANDS
+                    # if self.config['site_roof_control']  and  enc_status['shutter_status'] in ['Closed', 'closed'] \
+                    #     and float(ocn_status['hold_duration']) <= 0.1 and self.weather_report_is_acceptable_to_observe:
+                    #     #breakpoint()
+                    #     g_dev['enc'].open_command({}, {})
+                    #     plog("Opening dome, will set Synchronize in 10 seconds.")
+                    #     time.sleep(10)
+                    # try:
+                    #     g_dev['enc'].sync_mount_command({}, {})
+                    # except: 
+                    #     pass
         
                     if debug:
                         plog("# of Blocks, projects:  ", len(g_dev['obs'].blocks),  len(g_dev['obs'].projects))

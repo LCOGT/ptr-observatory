@@ -756,6 +756,17 @@ class Enclosure:
     #     Enclosure Commands     #
     ##############################
 
+
+    def open_roof_directly(self, req: dict, opt: dict):
+        #if g_dev['enc'].status['shutter_status'] != 'Open' or not self.dome_open:    
+        self.enclosure.OpenShutter()
+        plog("An actual shutter open command has been issued.")
+
+    def close_roof_directly(self, req: dict, opt: dict):
+        #if g_dev['enc'].status['shutter_status'] != 'Open' or not self.dome_open:    
+        self.enclosure.CloseShutter()
+        plog("An actual shutter close command has been issued.")
+
     def open_command(self, req: dict, opt: dict):
     #     ''' open the enclosure '''
          #g_dev['redis'].set('enc_cmd', 'open', ex=1200)
