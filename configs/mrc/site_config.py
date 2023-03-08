@@ -51,28 +51,29 @@ QHY600         AstroImaging Equipment
 #NB NB NB json is not bi-directional with tuples (), instead, use lists [], nested if tuples are needed.
 degree_symbol = "°"
 site_name = 'mrc'
-obs_id = 'wema'    #NB These must be unique across all of PTR. Pre-pend with airport code if needed: 'sba_wmdo'
+obs_id = 'mrc1'    #NB These must be unique across all of PTR. Pre-pend with airport code if needed: 'sba_wmdo'
 
 site_config = {
     'site': str(site_name).lower(),
-    'site_id': 'mrc',
+    'site_id': 'mrc1',   #This reall is the SITE
+    'obs_id':  'mrc1',  #1 indicates first telescope/mount at the site
 
     'debug_site_mode': True,
     
     'debug_mode': True,
     'admin_owner_commands_only': False,
-    'debug_duration_sec': 7200,
+    'debug_duration_sec': 3600,
 
     'owner':  ['google-oauth2|112401903840371673242'],  # Wayne
 
     'owner_alias': ['WER', 'TELOPS'],
     'admin_aliases': ["ANS", "WER", "TELOPS", "TB", "DH", "KVH", "KC"],
 
-    'client_hostname':  'MRC-0m35',
+    'client_hostname':  'MRC-0m35',  #This is also the long-name  Client is confusing!
                     # NB NB disk D at mrc may be faster for temp storage
     'client_path':  'Q:/ptr/',  # Generic place for client host to stash misc stuff
     'alt_path':  'Q:/ptr/',  # Generic place for this host to stash misc stuff
-    'plog_path':  'Q:/ptr/plogs/',  #place where night logs can be found.
+    'plog_path':  'Q:/ptr/mrc1/',  #place where night logs can be found.
     'save_to_alt_path' : 'no',
     'archive_path':  'Q:/ptr/',
 

@@ -2547,6 +2547,8 @@ class Sequencer:
             opt = {}
             self.extensive_focus_script(req2,opt)
         plog("Returning to:  ", start_ra, start_dec)
+        g_dev["mnt"].last_ra = start_ra
+        g_dev["mnt"].last_dec = start_dec
         g_dev['mnt'].mount.SlewToCoordinatesAsync(start_ra, start_dec)   #Return to pre-focus pointing.
         wait_for_slew()
         if sim:

@@ -269,6 +269,7 @@ class Observatory:
         # for new sites or changed directories in configs.
         #NB NB be careful if we have a site with multiple cameras, etc,
         #some of these directores seem up a level or two. WER
+
         if not os.path.exists(g_dev["cam"].site_path + "ptr_night_shelf"):
             os.makedirs(g_dev["cam"].site_path + "ptr_night_shelf")
         if not os.path.exists(g_dev["cam"].site_path + "archive"):

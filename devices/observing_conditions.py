@@ -441,7 +441,7 @@ class ObservingConditions:
             ):  #  Once a minute.
 
                 try:
-                    wl = open("Q:/ptr/unihedron/wx_log.txt", "a")
+                    wl = open("Q:/ptr/mrc/unihedron/wx_log.txt", "a")
                     wl.write(
                         str(time.time())
                         + ", "
