@@ -1237,7 +1237,7 @@ sel
                     g_dev['enc'].enclosure.CloseShutter()
             plog ("temporary reporting: MTF")
             plog ("opens this eve: " + str(g_dev['seq'].opens_this_evening))
-            plog ("minutes until next open attempt: " + str( (g_dev['seq'].enclosure_next_open_time - time.time()) /60))
+            plog ("minutes until next open attempt ALLOWED: " + str( (g_dev['seq'].enclosure_next_open_time - time.time()) /60))
         #END of safety checks.
                     
                     
