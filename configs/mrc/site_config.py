@@ -58,9 +58,9 @@ site_config = {
     'site_id': 'mrc1',   #This reall is the SITE
     'obs_id':  'mrc1',  #1 indicates first telescope/mount at the site
 
-    'debug_site_mode': True,
+    'debug_site_mode': False,
     
-    'debug_mode': True,
+    'debug_mode': False,
     'admin_owner_commands_only': False,
     'debug_duration_sec': 3600,
 
@@ -126,8 +126,8 @@ site_config = {
     'reference_ambient':  10.0,  #Degrees Celsius.  Alternately 12 entries, one for every - mid month.
     'reference_pressure':  977.83,  #mbar Alternately 12 entries, one for every - mid month.
 
-    'site_roof_control': True, #MTF entered this in to remove sro specific code  NB 'site_is_specifc' also deals with this
-    'site_allowed_to_open_roof': True,
+    'site_roof_control': False, #MTF entered this in to remove sro specific code  NB 'site_is_specifc' also deals with this
+    'site_allowed_to_open_roof': False,
     'period_of_time_to_wait_for_roof_to_open' : 50, # seconds - needed to check if the roof ACTUALLY opens. 
     'check_time': 300,   #MF's original setting.
     'maximum_roof_opens_per_evening' : 4,
