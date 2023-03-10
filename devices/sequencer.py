@@ -517,7 +517,7 @@ class Sequencer:
                g_dev['enc'].mode == 'Automatic') and not g_dev['ocn'].wx_hold and not enc_status['shutter_status'] in ['Software Fault', 'Closing', 'Error']:
 
             #plog ("Cool Down Open Check Running")
-            if not self.nightly_weather_report_done:
+            if not self.nightly_weather_report_done and not g_dev['debug']:
 
                 self.run_nightly_weather_report()
                 self.nightly_weather_report_done=True
