@@ -269,6 +269,7 @@ class Observatory:
         # for new sites or changed directories in configs.
         #NB NB be careful if we have a site with multiple cameras, etc,
         #some of these directores seem up a level or two. WER
+
         if not os.path.exists(g_dev["cam"].site_path + "ptr_night_shelf"):
             os.makedirs(g_dev["cam"].site_path + "ptr_night_shelf")
         if not os.path.exists(g_dev["cam"].site_path + "archive"):
@@ -1781,6 +1782,22 @@ sel
                                         + smartStackFilename,
                                         storedsStack,
                                     )
+                                    
+                                    hduss=fits.PrimaryHDU()
+                                    hduss.data=storedsStack                           
+                                    #hdureduced.header=slow_process[3]
+                                    #hdureduced.header["NAXIS1"] = hdureduced.data.shape[0]
+                                    #hdureduced.header["NAXIS2"] = hdureduced.data.shape[1]
+                                    hduss.data=hduss.data.astype("float32")
+                                    try:
+                                        hduss.writeto(
+                                            g_dev["cam"].site_path
+                                            + "smartstacks/"
+                                            + smartStackFilename.replace('.npy','_' + str(sskcounter) + '_' + str(Nsmartstack) +'.fit'), overwrite=True, output_verify='silentfix'
+                                        )  # Save flash reduced file locally
+                                    except:
+                                        plog("Couldn't save smartstack fits. YOU MAY HAVE THE FITS OPEN IN A VIEWER.")
+                                    
                                     reprojection_failed=False
                                 except func_timeout.FunctionTimedOut:
                                     plog ("astroalign timed out")
@@ -2015,6 +2032,22 @@ sel
                                                 + smartStackFilename.replace(smartstackid, smartstackid + str(colstack)),
                                                 storedsStack,
                                             )
+                                            
+                                            hduss=fits.PrimaryHDU()
+                                            hduss.data=storedsStack                           
+                                            #hdureduced.header=slow_process[3]
+                                            #hdureduced.header["NAXIS1"] = hdureduced.data.shape[0]
+                                            #hdureduced.header["NAXIS2"] = hdureduced.data.shape[1]
+                                            hduss.data=hduss.data.astype("float32")
+                                            try:
+                                                hduss.writeto(
+                                                    g_dev["cam"].site_path
+                                                    + "smartstacks/"
+                                                    + smartStackFilename.replace(smartstackid, smartstackid + str(colstack)).replace('.npy','_' + str(sskcounter) + '_' + str(Nsmartstack) +'.fit'), overwrite=True, output_verify='silentfix'
+                                                )  # Save flash reduced file locally
+                                            except:
+                                                plog("Couldn't save smartstack fits. YOU MAY HAVE THE FITS OPEN IN A VIEWER.")
+                                            del hduss
                                             if colstack == 'green':
                                                 newhdugreen=np.array(storedsStack)
                                             if colstack == 'red':
