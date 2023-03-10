@@ -998,31 +998,35 @@ sel
                 if g_dev['enc'].status['shutter_status'] == 'Software Fault':
                     plog ("Software Fault Detected. Will alert the authorities!")
                     plog ("Parking Scope in the meantime")
-                    self.open_and_enabled_to_observe=False
-                    #self.cancel_all_activity()   #NB THis kills bias-dark
-                    if not g_dev['mnt'].mount.AtPark:  
-                        if g_dev['mnt'].home_before_park:
-                            g_dev['mnt'].home_command()
-                        g_dev['mnt'].park_command()
-                    # will send a Close call out into the blue just in case it catches
-                    g_dev['enc'].enclosure.CloseShutter()
+                    if self.config['site_roof_control'] and g_dev['enc'].mode == 'Automatic':
+                        self.open_and_enabled_to_observe=False
+                        #self.cancel_all_activity()   #NB THis kills bias-dark
+                        if not g_dev['mnt'].mount.AtPark:  
+                            if g_dev['mnt'].home_before_park:
+                                g_dev['mnt'].home_command()
+                            g_dev['mnt'].park_command()
+                        # will send a Close call out into the blue just in case it catches
+                        g_dev['enc'].enclosure.CloseShutter()
+                        g_dev['seq'].enclosure_next_open_time = time.time() + self.config['roof_open_safety_base_time'] * g_dev['seq'].opens_this_evening
                     
                 
                 if g_dev['enc'].status['shutter_status'] == 'Closing':
-                    if self.config['site_roof_control'] != 'no' and g_dev['enc'].mode == 'Automatic':
+                    if self.config['site_roof_control'] and g_dev['enc'].mode == 'Automatic':
                         plog ("Detected Roof Closing. Sending another close command just in case the roof got stuck on this status (this happens!)")
                         self.open_and_enabled_to_observe=False
                         #self.cancel_all_activity()    #NB Kills bias dark
                         g_dev['enc'].enclosure.CloseShutter()
+                        g_dev['seq'].enclosure_next_open_time = time.time() + self.config['roof_open_safety_base_time'] * g_dev['seq'].opens_this_evening
                 
                 if g_dev['enc'].status['shutter_status'] == 'Error':
-                    if self.config['site_roof_control'] != 'no' and g_dev['enc'].mode == 'Automatic':
+                    if self.config['site_roof_control'] and g_dev['enc'].mode == 'Automatic':
                         plog ("Detected an Error in the Roof Status. Closing up for safety.")
                         plog ("This is usually because the weather system forced the roof to shut.")
                         plog ("By closing it again, it resets the switch to closed.")
                         #self.cancel_all_activity()    #NB Kills bias dark
                         self.open_and_enabled_to_observe=False
                         g_dev['enc'].enclosure.CloseShutter()
+                        g_dev['seq'].enclosure_next_open_time = time.time() + self.config['roof_open_safety_base_time'] * g_dev['seq'].opens_this_evening
                         #while g_dev['enc'].enclosure.ShutterStatus == 3:
                         #plog ("closing")
                         plog ("Also Parking the Scope")    
@@ -1051,7 +1055,7 @@ sel
                 if g_dev['enc'].status['shutter_status'] == 'Open':
                     if roof_should_be_shut==True :
                         plog ("Safety check found that the roof was open outside of the normal observing period")    
-                        if self.config['site_roof_control'] != 'no' and g_dev['enc'].mode == 'Automatic':
+                        if self.config['site_roof_control'] and g_dev['enc'].mode == 'Automatic':
                             plog ("Shutting the roof out of an abundance of caution. This may also be normal functioning")
                             
                             #self.cancel_all_activity()  #NB Kills bias dark
@@ -1231,6 +1235,9 @@ sel
                         self.time_since_last_slew_or_exposure = time.time()
                         
                     g_dev['enc'].enclosure.CloseShutter()
+            plog ("temporary reporting: MTF")
+            plog ("opens this eve: " + str(g_dev['seq'].opens_this_evening))
+            plog ("minutes until next open attempt: " + str( (g_dev['seq'].enclosure_next_open_time - time.time()) /60))
         #END of safety checks.
                     
                     

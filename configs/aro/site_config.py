@@ -98,8 +98,9 @@ site_config = {
     'reference_ambient':  10.0,  # Degrees Celsius.  Alternately 12 entries, one for every - mid month.
     'reference_pressure':  794.0,    #mbar   A rough guess 20200315
 
-    'site_roof_control': 'yes', #MTF entered this in to remove sro specific code.... Basically do we have control of the roof or not see line 338 sequencer.py
-    'site_allowed_to_open_roof': 'yes',
+    'site_roof_control': True, #MTF entered this in to remove sro specific code.... Basically do we have control of the roof or not see line 338 sequencer.py
+    'site_allowed_to_open_roof': True,
+    'period_of_time_to_wait_for_roof_to_open' : 50, # seconds - needed to check if the roof ACTUALLY opens. 
     
     'maximum_roof_opens_per_evening' : 4,
     'site_in_automatic_default': "Manual",   # ["Manual", "Shutdown", "Automatic"]

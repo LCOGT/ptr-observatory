@@ -203,7 +203,7 @@ class Sequencer:
         # Load up focus catalogue
         self.focus_catalogue = np.genfromtxt('support_info/focusCatalogue.csv', delimiter=',')
 
-        # This variable prevents the roof being called to open every loop... currently set to 5 minutes.        
+        # This variable prevents the roof being called to open every loop...        
         self.enclosure_next_open_time = time.time()
         # This keeps a track of how many times the roof has been open this evening
         # Which is really a measure of how many times the observatory has
@@ -212,7 +212,10 @@ class Sequencer:
         self.opens_this_evening = 0
         
         self.morn_bias_done = False
-        
+        self.eve_flats_done = False
+        self.morn_flats_done = False
+        self.eve_sky_flat_latch = False
+        self.morn_sky_flat_latch = False
         # The weather report has to be at least passable at some time of the night in order to 
         # allow the observatory to become active and observe. This doesn't mean that it is 
         # necessarily a GOOD night at all, just that there are patches of feasible
@@ -226,7 +229,7 @@ class Sequencer:
         self.weather_report_wait_until_open_time=ephem_now
         self.weather_report_close_during_evening=False
         self.weather_report_close_during_evening_time=ephem_now
-        
+        self.nightly_weather_report_done=False
         # Run a weather report on bootup so observatory can run if need be. 
         if not g_dev['debug']:
             #self.global_wx()
@@ -303,7 +306,7 @@ class Sequencer:
         else:
             plog('Sequencer command:  ', command, ' not recognized.')
 
-    def enc_to_skyflat_and_open(self ,enc_status, ocn_status, no_sky=False):
+    def open_observatory(self,enc_status, ocn_status, no_sky=False):
         #ocn_status = eval(self.redis_server.get('ocn_status'))
            #NB 120 is enough time to telescope to get pointed to East
         #self.time_of_next_slew = time.time() -1  #Set up so next block executes if unparked.
@@ -320,55 +323,87 @@ class Sequencer:
         #    self.time_of_next_slew = time.time() + 600  # seconds between slews.
             #We slew to anti-solar Az and reissue this command every 120 seconds
         flat_spot, flat_alt = g_dev['evnt'].flat_spot_now()
-
+        obs_win_begin, sunZ88Op, sunZ88Cl, ephem_now = self.astro_events.getSunEvents()
+        
         # Only send an enclosure open command if the weather 
         if g_dev['seq'].weather_report_is_acceptable_to_observe:
 
-            try:           
-                # First unpark and move telescope away from the sun.    
-                plog("Unparking Scope and pointing it opposite the sun.")
+
+            
+            try: 
+                # First unpark and move telescope away from the sun or just to the home position. 
+                self.opens_this_evening= self.opens_this_evening+1
+                
+                self.enclosure_next_open_time = time.time() + (self.config['roof_open_safety_base_time']*60) * g_dev['seq'].opens_this_evening
+                plog("Unparking Scope in preparation for observatory opening.")
                 if g_dev['mnt'].mount.AtParK:
                     g_dev['mnt'].unpark_command({}, {})
                 
-                g_dev['mnt'].slewToSkyFlatAsync()
+                # If during the flat period, point it away from the sun, otherwise point the telescope at the home position                
+                if (g_dev['events']['Cool Down, Open']  <= ephem_now < g_dev['events']['End Eve Sky Flats']):
+                    plog("Unparking Scope and pointing it away from the sun.")
+                    g_dev['mnt'].slewToSkyFlatAsync()                
+                elif (g_dev['events']['Morn Sky Flats'] <= ephem_now < g_dev['events']['End Morn Sky Flats']):
+                    plog("Unparking Scope and pointing it away from the sun.")
+                    g_dev['mnt'].slewToSkyFlatAsync()
+                else:
+                    plog("Unparking Scope and pointing it to the home position.")
+                    g_dev['mnt'].home_command()
+                
+                
                 self.time_of_next_slew = time.time() + 600 
                 #time.sleep(10)
-                plog("Open and slew Dome to azimuth opposite the Sun:  ", round(flat_spot, 1))
-                plog("Cooling down and waiting for skyflat / observing to begin")
+                #plog("Open and slew Dome to azimuth opposite the Sun:  ", round(flat_spot, 1))
+                plog("Attempting to open the roof.")
                 #breakpoint()
                 if ocn_status == None:
-                        if self.config['site_roof_control'] != 'no' and enc_status['shutter_status'] in ['Closed', 'closed'] and g_dev['enc'].mode == 'Automatic'\
-                        and self.config['site_allowed_to_open_roof'] == 'yes' and self.weather_report_is_acceptable_to_observe:
+                        if self.config['site_roof_control'] and not enc_status['shutter_status'] in ['Open', 'open','Opening', 'opening'] and g_dev['enc'].mode == 'Automatic'\
+                        and (self.config['site_allowed_to_open_roof']) and self.weather_report_is_acceptable_to_observe:
                         #breakpoint()
+                            #g_dev['enc'].open_roof_directly()
                             g_dev['enc'].open_command({}, {})
-                            plog("Opening dome.")
-                            time.sleep(10)
-                            while g_dev['enc'].enclosure.ShutterStatus == 2:
-                                time.sleep(5)                            
-                            if g_dev['enc'].enclosure.ShutterStatus == 0:
-                                self.opens_this_evening= self.opens_this_evening+1
-                                g_dev['obs'].open_and_enabled_to_observe = True
-                elif self.config['site_roof_control'] != 'no' and enc_status['shutter_status'] in ['Closed', 'closed'] and g_dev['enc'].mode == 'Automatic' \
-                    and ocn_status['hold_duration'] <= 0.1 and self.config['site_allowed_to_open_roof'] == 'yes' and self.weather_report_is_acceptable_to_observe:   #NB
+                            plog("blip")
+                    
+                            
+                            
+                elif self.config['site_roof_control']  and not enc_status['shutter_status'] in ['Open', 'open','Opening', 'opening'] and g_dev['enc'].mode == 'Automatic' \
+                    and ocn_status['hold_duration'] <= 0.1 and self.config['site_allowed_to_open_roof'] and self.weather_report_is_acceptable_to_observe:   #NB
                     #breakpoint()
+                    
                     g_dev['enc'].open_command({}, {})
-                    plog("Opening dome.")
-                    time.sleep(10)
-                    while g_dev['enc'].enclosure.ShutterStatus == 2:
-                            time.sleep(5)                            
-                    if g_dev['enc'].enclosure.ShutterStatus == 0:
-                        self.opens_this_evening= self.opens_this_evening+1
-                        g_dev['obs'].open_and_enabled_to_observe = True
-                try:
-                    plog("Synchronising dome.")
-                    g_dev['enc'].sync_mount_command({}, {})
-                except:
-                    pass
-                #Prior to skyflats no dome following.
-                self.dome_homed = False
+                    plog("plop")            
+                    
+                plog("Attempting to Open Shutter. Waiting until shutter opens")
+                if not g_dev['enc'].enclosure.ShutterStatus == 0:
+                    time.sleep(self.config['period_of_time_to_wait_for_roof_to_open'])
+                
+                
+                if g_dev['enc'].enclosure.ShutterStatus == 0:                    
+                    g_dev['obs'].open_and_enabled_to_observe = True                    
+                    
+                    try:
+                        plog("Synchronising dome.")
+                        g_dev['enc'].sync_mount_command({}, {})
+                    except:
+                        pass
+                    #Prior to skyflats no dome following.
+                    self.dome_homed = False
+                    
+                    return
+                
+                else:
+                    plog("Failed to open roof, parking telescope again and sending the close command to the roof.")
+                    #g_dev['enc'].close_roof_directly()
+                    g_dev['enc'].close_command({}, {})
+                    if not g_dev['mnt'].mount.AtParK:   ###Test comment here
+                        g_dev['mnt'].park_command({}, {}) # Get there early
+                    return
+                    
+                    
                 
             except Exception as e:
                 plog ("Enclosure opening glitched out: ", e)
+                plog(traceback.format_exc())
         
         else:
             plog("An enclosure command was rejected because the weather report was not acceptable.")
@@ -382,7 +417,7 @@ class Sequencer:
         except:
             plog("Park not executed during Park and Close" )
         try:
-            if self.config['site_roof_control'] != 'no' and g_dev['enc'].mode == 'Automatic': # and enc_status['shutter_status'] in ['open', ] $ Don't check, just close!
+            if self.config['site_roof_control']  and g_dev['enc'].mode == 'Automatic': # and enc_status['shutter_status'] in ['open', ] $ Don't check, just close!
                 #g_dev['enc'].close_command( {}, {})
                 g_dev['obs'].send_to_user("Closing the Shutter", p_level='INFO')
                 plog("Closing the Shutter")
@@ -426,8 +461,8 @@ class Sequencer:
                 if not g_dev['obs'].open_and_enabled_to_observe and self.weather_report_is_acceptable_to_observe==True:
                     if (g_dev['events']['Cool Down, Open'] < ephem.now() < g_dev['events']['Close and Park']):
                         if time.time() > self.enclosure_next_open_time and self.opens_this_evening < self.config['maximum_roof_opens_per_evening']:
-                            self.enclosure_next_open_time = time.time() + 300 # Only try to open the roof every five minutes
-                            self.enc_to_skyflat_and_open(enc_status, ocn_status)
+                            #self.enclosure_next_open_time = time.time() + 300 # Only try to open the roof every five minutes
+                            self.open_observatory(enc_status, ocn_status)
                         # If the observatory opens, set clock and auto focus and observing to now
                         if g_dev['obs'].open_and_enabled_to_observe:
                             self.night_focus_ready=True
@@ -441,7 +476,7 @@ class Sequencer:
         obs_win_begin, sunZ88Op, sunZ88Cl, ephem_now = self.astro_events.getSunEvents()
         if self.weather_report_close_during_evening==True:
             if ephem_now >  self.weather_report_close_during_evening_time and ephem_now < events['Morn Bias Dark']: # Don't want scope to cancel all activity during bias/darks etc.
-                if self.config['site_roof_control'] != 'no' and g_dev['enc'].mode == 'Automatic':
+                if self.config['site_roof_control']  and g_dev['enc'].mode == 'Automatic':
                     self.weather_report_is_acceptable_to_observe=False
                     plog ("End of Observing Period due to weather. Closing up observatory.")
                     g_dev['obs'].cancel_all_activity()
@@ -478,17 +513,26 @@ class Sequencer:
 
             g_dev['mnt'].park_command({}, {})
 
-        elif ((g_dev['events']['Cool Down, Open']  <= ephem_now < g_dev['events']['Eve Sky Flats']) and \
-               g_dev['enc'].mode == 'Automatic') and not g_dev['ocn'].wx_hold:
+        elif ((g_dev['events']['Cool Down, Open']  <= ephem_now < g_dev['events']['Close and Park']) and \
+               g_dev['enc'].mode == 'Automatic') and not g_dev['ocn'].wx_hold and not enc_status['shutter_status'] in ['Software Fault', 'Closing', 'Error']:
 
-            self.run_nightly_weather_report()            
+            if not self.nightly_weather_report_done:
+                self.run_nightly_weather_report()
+                self.nightly_weather_report_done=True
 
             #self.time_of_next_slew = time.time() -1
             #plog ("got here")
+            
             if not g_dev['obs'].open_and_enabled_to_observe and self.weather_report_is_acceptable_to_observe==True and self.weather_report_wait_until_open==False:
+                #print (self.enclosure_next_open_time)
+                #print (self.enclosure_next_open_time - time.time()                       )
+                #print (self.opens_this_evening)
                 if time.time() > self.enclosure_next_open_time and self.opens_this_evening < self.config['maximum_roof_opens_per_evening']:
-                    self.enclosure_next_open_time = time.time() + 300 # Only try to open the roof every five minutes
-                    self.enc_to_skyflat_and_open(enc_status, ocn_status)
+                    
+                    #self.enclosure_next_open_time = time.time() + 300 # Only try to open the roof every five minutes maximum
+                    
+                    self.open_observatory(enc_status, ocn_status)
+                    
                     
                     
                     self.night_focus_ready=True
@@ -524,21 +568,25 @@ class Sequencer:
                 self.night_focus_ready=False
 
         elif self.sky_flat_latch and ((events['Eve Sky Flats'] <= ephem_now < events['End Eve Sky Flats'])  \
-               and g_dev['enc'].mode in [ 'Automatic', 'Autonomous'] and not g_dev['ocn'].wx_hold and \
-               self.config['auto_eve_sky_flat'] and self.weather_report_is_acceptable_to_observe):
+               and g_dev['enc'].mode in [ 'Automatic', 'Autonomous'] and not self.eve_sky_flat_latch and not g_dev['ocn'].wx_hold and \
+               self.config['auto_eve_sky_flat'] and not self.eve_flats_done and self.weather_report_is_acceptable_to_observe):
 
             if g_dev['obs'].open_and_enabled_to_observe:
                 #self.time_of_next_slew = time.time() -1
-                self.enc_to_skyflat_and_open(enc_status, ocn_status)   #Just in case a Wx hold stopped opening
+                self.eve_sky_flat_latch = True
+                self.open_observatory(enc_status, ocn_status)   #Just in case a Wx hold stopped opening
                 self.current_script = "Eve Sky Flat script starting"
                 #plog('Skipping Eve Sky Flats')
+                
                 self.sky_flat_script({}, {}, morn=False)   #Null command dictionaries
-                self.sky_flat_latch = False
+                
                 if g_dev['mnt'].mount.Tracking == False:
                     if g_dev['mnt'].mount.CanSetTracking:   
                         g_dev['mnt'].mount.Tracking = True
                     else:
                         plog("mount is not tracking but this mount doesn't support ASCOM changing tracking")
+                self.eve_sky_flat_latch = False
+                self.eve_flats_done = True
             
 
 # =============================================================================
@@ -559,17 +607,20 @@ class Sequencer:
                     blocks = g_dev['obs'].blocks
                     projects = g_dev['obs'].projects
                     debug = False
-        
-                    if self.config['site_roof_control'] != 'no' and  enc_status['shutter_status'] in ['Closed', 'closed'] \
-                        and float(ocn_status['hold_duration']) <= 0.1 and self.weather_report_is_acceptable_to_observe:
-                        #breakpoint()
-                        g_dev['enc'].open_command({}, {})
-                        plog("Opening dome, will set Synchronize in 10 seconds.")
-                        time.sleep(10)
-                    try:
-                        g_dev['enc'].sync_mount_command({}, {})
-                    except: 
-                        pass
+                    
+                    
+                    # MTF COMMENTED THIS OUT AS THE ROOF CONTROL IS NOT UP TO THIS
+                    # BLOCK OF SEQUENCER COMMANDS
+                    # if self.config['site_roof_control']  and  enc_status['shutter_status'] in ['Closed', 'closed'] \
+                    #     and float(ocn_status['hold_duration']) <= 0.1 and self.weather_report_is_acceptable_to_observe:
+                    #     #breakpoint()
+                    #     g_dev['enc'].open_command({}, {})
+                    #     plog("Opening dome, will set Synchronize in 10 seconds.")
+                    #     time.sleep(10)
+                    # try:
+                    #     g_dev['enc'].sync_mount_command({}, {})
+                    # except: 
+                    #     pass
         
                     if debug:
                         plog("# of Blocks, projects:  ", len(g_dev['obs'].blocks),  len(g_dev['obs'].projects))
@@ -698,24 +749,28 @@ class Sequencer:
                 # #System hangs on this state
                 # elif ((g_dev['events']['Observing Ends']  < ephem_now < g_dev['events']['End Morn Sky Flats']) and \
                 #        g_dev['enc'].mode == 'Automatic') and not g_dev['ocn'].wx_hold and self.config['auto_morn_sky_flat']:
-                #     self.enc_to_skyflat_and_open(enc_status, ocn_status)
+                #     self.open_observatory(enc_status, ocn_status)
             except:
                 plog(traceback.format_exc())
                 plog("Hang up in sequencer.")
         elif self.morn_sky_flat_latch and ((events['Morn Sky Flats'] <= ephem_now < events['End Morn Sky Flats'])  \
-               and g_dev['enc'].mode == 'Automatic' and not g_dev['ocn'].wx_hold and \
-               self.config['auto_morn_sky_flat']) and g_dev['obs'].open_and_enabled_to_observe and self.weather_report_is_acceptable_to_observe==True:
+               and g_dev['enc'].mode == 'Automatic' and not g_dev['ocn'].wx_hold and not self.morn_sky_flat_latch and \
+               self.config['auto_morn_sky_flat']) and not self.morn_flats_done and g_dev['obs'].open_and_enabled_to_observe and self.weather_report_is_acceptable_to_observe==True:
             #self.time_of_next_slew = time.time() -1
-            self.enc_to_skyflat_and_open(enc_status, ocn_status)   #Just in case a Wx hold stopped opening
+            self.morn_sky_flat_latch = True
+            self.open_observatory(enc_status, ocn_status)   #Just in case a Wx hold stopped opening
             self.current_script = "Morn Sky Flat script starting"
             #self.morn_sky_flat_latch = False
             #plog('Skipping Eve Sky Flats')
+            
             self.sky_flat_script({}, {}, morn=True)   #Null command dictionaries
-            self.morn_sky_flat_latch = False
+            
             #self.park_and_close(enc_status)
             
             # Park at the end of morning sky flats
             g_dev['mnt'].park_command({}, {})
+            self.morn_sky_flat_latch = False
+            self.morn_flats_done = True
             
         elif self.morn_bias_dark_latch and (events['Morn Bias Dark'] <= ephem_now < events['End Morn Bias Dark']) and \
                   self.config['auto_morn_bias_dark'] and not  self.morn_bias_done: # and g_dev['enc'].mode == 'Automatic' ):
@@ -838,7 +893,7 @@ class Sequencer:
         # #unpark, open dome etc.
         # #if not end of block
         # if not enc_status in ['open', 'Open', 'opening', 'Opening']:
-        #     self.enc_to_skyflat_and_open(enc_status, ocn_status, no_sky=True)   #Just in case a Wx hold stopped opening
+        #     self.open_observatory(enc_status, ocn_status, no_sky=True)   #Just in case a Wx hold stopped opening
         # else:
         #g_dev['enc'].sync_mount_command({}, {})
         g_dev['mnt'].unpark_command({}, {})
@@ -886,7 +941,7 @@ class Sequencer:
                 g_dev['obs'].send_to_user("Could not execute project due to poorly formatted or corrupt project", p_level='INFO')
                 continue
 
-            if self.config['site_roof_control'] != 'no' and enc_status['shutter_status'] in ['Closed', 'closed'] and ocn_status['hold_duration'] <= 0.1 and self.weather_report_is_acceptable_to_observe:   #NB  # \  NB NB 20220901 WER fix this!
+            if self.config['site_roof_control']  and enc_status['shutter_status'] in ['Closed', 'closed'] and ocn_status['hold_duration'] <= 0.1 and self.weather_report_is_acceptable_to_observe:   #NB  # \  NB NB 20220901 WER fix this!
 
                 #breakpoint()
                 g_dev['enc'].open_command({}, {})
@@ -1285,10 +1340,15 @@ class Sequencer:
 
                     #self.time_of_next_slew = time.time() -1
                     #plog ("got here")
+                    
                     if not g_dev['obs'].open_and_enabled_to_observe and self.weather_report_is_acceptable_to_observe==True and self.weather_report_wait_until_open==False:
                         if time.time() > self.enclosure_next_open_time and self.opens_this_evening < self.config['maximum_roof_opens_per_evening']:
-                            self.enclosure_next_open_time = time.time() + 300 # Only try to open the roof every five minutes
-                            #self.enc_to_skyflat_and_open(enc_status, ocn_status)                           
+                            #self.enclosure_next_open_time = time.time() + 300 # Only try to open the roof every five minutes
+                            g_dev['ocn'].status = g_dev['ocn'].get_status()
+                            g_dev['enc'].status = g_dev['enc'].get_status()
+                            ocn_status = g_dev['ocn'].status
+                            enc_status = g_dev['enc'].status
+                            self.open_observatory(enc_status, ocn_status)    
                             g_dev['enc'].open_command({}, {})
                             self.night_focus_ready=True
                 
@@ -1304,7 +1364,7 @@ class Sequencer:
                 b_d_to_do -= min_to_do
                 
 
-                g_dev['obs'].update_status()
+                g_dev['obs'].update()
                 
                 # if ephem.now() + 210/86400 > ending:   #NB NB needs to be checked out
                 #     break
@@ -1326,7 +1386,7 @@ class Sequencer:
                     result = g_dev['cam'].expose_command(req, opt, no_AWS=False, \
                                        do_sep=False, quick=False, skip_open_check=True,skip_daytime_check=True)
                     b_d_to_do -= 1
-                    g_dev['obs'].update_status()
+                    g_dev['obs'].update()
                     if ephem.now() + (dark_exp_time + cycle_time + 30)/86400 > ending:
                         break
                 else:
@@ -1338,13 +1398,13 @@ class Sequencer:
                     result = g_dev['cam'].expose_command(req, opt, no_AWS=False, \
                                        do_sep=False, quick=False, skip_open_check=True,skip_daytime_check=True)
                     b_d_to_do -= 1
-                    g_dev['obs'].update_status()
+                    g_dev['obs'].update()
                     if ephem.now() + (dark_exp_time + cycle_time + 30)/86400 > ending:
                         self.bias_dark_latch = False
                         break
                         
                 g_dev['obs'].scan_requests()
-                g_dev['obs'].update_status()
+                g_dev['obs'].update()
                 if ephem.now() + 30/86400 >= ending:
                     self.bias_dark_latch = False
                     break
@@ -1366,8 +1426,11 @@ class Sequencer:
         #g_dev['mnt'].park_command({}, {})
         self.park_and_close(enc_status = g_dev['enc'].status)
 
+        self.eve_flats_done = False
+        self.morn_flats_done = False
+        self.morn_bias_done = False
 
-        self.morn_bias_done = True
+        self.nightly_weather_report_done=False
 
         # Setting runnight for mop up scripts
         yesterday = datetime.datetime.now() - timedelta(1)
@@ -1691,7 +1754,7 @@ class Sequencer:
         
 
 
-        while len(pop_list) > 0  and ephem.now() < ending:
+        while len(pop_list) > 0  and ephem.now() < ending and g_dev['obs'].open_and_enabled_to_observe:
             
                 # This is just a very occasional slew to keep it pointing in the same general vicinity
                 
@@ -1700,7 +1763,7 @@ class Sequencer:
                     self.time_of_next_slew = time.time() + 600
                 
                 g_dev['obs'].scan_requests()
-                g_dev['obs'].update_status()
+                g_dev['obs'].update() 
             
                 if g_dev["fil"].null_filterwheel == False:
                     current_filter = pop_list[0]                
@@ -1722,14 +1785,14 @@ class Sequencer:
                 # if not g_dev['enc'].status['shutter_status'] in ['Open', 'open']:
                 #     g_dev['obs'].send_to_user("Wait for roof to be open to take skyflats. 60 sec delay loop.", p_level='INFO')
                 #     time.sleep(60)
-                #     g_dev['obs'].update_status()
+                #     g_dev['obs'].update()
                 #     continue
                 scale = 1
                 self.estimated_first_flat_exposure = False
                 while (acquired_count < flat_count):# and g_dev['enc'].status['shutter_status'] in ['Open', 'open']: # NB NB NB and roof is OPEN! and (ephem_now +3/1440) < g_dev['events']['End Eve Sky Flats' ]:
                     #if g_dev['enc'].is_dome:   #Does not apply
                     g_dev['obs'].scan_requests()
-                    g_dev['obs'].update_status()                    
+                    g_dev['obs'].update()                    
                     
                     if g_dev['obs'].open_and_enabled_to_observe == False:
                         plog ("Observatory closed or disabled during flat script. Cancelling out of flat acquisition loop.")
@@ -1853,11 +1916,11 @@ class Sequencer:
                                 plog('Failed to get a flat image: ', e)
                                 plog(traceback.format_exc())
                                 plog("*****NO result returned*****  Will need to restart Camera")  #NB NB  NB this is drastic action needed.
-                                g_dev['obs'].update_status()
+                                g_dev['obs'].update()
                                 continue
                             
                             g_dev['obs'].scan_requests()
-                            g_dev['obs'].update_status()
+                            g_dev['obs'].update()
                             
                             try:
                                 scale = target_flat / bright
@@ -1896,7 +1959,7 @@ class Sequencer:
                                 scale = 1
             
                             #obs_win_begin, sunset, sunrise, ephem_now = self.astro_events.getSunEvents()
-                            #g_dev['obs'].update_status()
+                            #g_dev['obs'].update()
                             continue
                     else:
                         time.sleep(10)
@@ -1926,12 +1989,12 @@ class Sequencer:
         if flat_count < 1: flat_count = 1
         g_dev['mnt'].park_command({}, {})
         #  NB:  g_dev['enc'].close
-        g_dev['obs'].update_status()
+        g_dev['obs'].update() 
         g_dev['obs'].scan_requests()
         g_dev['scr'].set_screen_bright(0)
         g_dev['scr'].screen_dark()
         time.sleep(5)
-        g_dev['obs'].update_status()
+        g_dev['obs'].update() 
         g_dev['obs'].scan_requests()
         #Here we need to switch off any IR or dome lighting.
         #Take a 10 s dark screen air flat to record ambient
@@ -1954,35 +2017,35 @@ class Sequencer:
             time.sleep(5)
             exp_time  = g_dev['fil'].filter_data[filter_number][4][0]
             g_dev['obs'].scan_requests()
-            g_dev['obs'].update_status()
+            g_dev['obs'].update()
             plog('Dark Screen; filter, bright:  ', filter_number, 0)
             req = {'time': float(exp_time),  'alias': camera_name, 'image_type': 'screen flat'}
             opt = {'area': 100, 'count': 1, 'filter': g_dev['fil'].filter_data[filter_number][0], 'hint': 'screen pre-filter dark'}
             result = g_dev['cam'].expose_command(req, opt, no_AWS=True, skip_open_check=True,skip_daytime_check=True)
             plog("Dark Screen flat, starting:  ", result['patch'], g_dev['fil'].filter_data[filter_number][0], '\n\n')
-            g_dev['obs'].update_status()
+            g_dev['obs'].update()
             plog('Lighted Screen; filter, bright:  ', filter_number, screen_setting)
             g_dev['scr'].set_screen_bright(int(screen_setting))
             g_dev['scr'].screen_light_on()
             time.sleep(10)
-            # g_dev['obs'].update_status()
+            # g_dev['obs'].update()
             # time.sleep(10)
-            # g_dev['obs'].update_status()
+            # g_dev['obs'].update()
             # time.sleep(10)
             g_dev['obs'].scan_requests()
-            g_dev['obs'].update_status()
+            g_dev['obs'].update()
             req = {'time': float(exp_time),  'alias': camera_name, 'image_type': 'screen flat'}
             opt = {'area': 100, 'count': flat_count, 'filter': g_dev['fil'].filter_data[filter_number][0], 'hint': 'screen filter light'}
             result = g_dev['cam'].expose_command(req, opt, no_AWS=True, skip_open_check=True,skip_daytime_check=True)
             # if no exposure, wait 10 sec
             plog("Lighted Screen flat:  ", result['patch'], g_dev['fil'].filter_data[filter_number][0], '\n\n')
             g_dev['obs'].scan_requests()
-            g_dev['obs'].update_status()
+            g_dev['obs'].update()
             g_dev['scr'].set_screen_bright(0)
             g_dev['scr'].screen_dark()
             time.sleep(5)
             g_dev['obs'].scan_requests()
-            g_dev['obs'].update_status()
+            g_dev['obs'].update()
             plog('Dark Screen; filter, bright:  ', filter_number, 0)
             req = {'time': float(exp_time),  'alias': camera_name, 'image_type': 'screen flat'}
             opt = {'area': 100, 'count': 1, 'filter': g_dev['fil'].filter_data[filter_number][0], 'hint': 'screen post-filter dark'}
@@ -1993,7 +2056,7 @@ class Sequencer:
             #breakpoint()
         g_dev['scr'].set_screen_bright(0)
         g_dev['scr'].screen_dark()
-        g_dev['obs'].update_status()
+        g_dev['obs'].update()
         g_dev['mnt'].Tracking = False   #park_command({}, {})
         plog('Sky Flat sequence completed, Telescope tracking is off.')
         self.guard = False
@@ -2146,7 +2209,7 @@ class Sequencer:
                     rot_report =1
                 time.sleep(0.2)
                 g_dev['obs'].scan_requests()
-                g_dev['obs'].update_status()
+                g_dev['obs'].update()
             
             
             # if g_dev['rot']!=None:  
@@ -2158,7 +2221,7 @@ class Sequencer:
             #             g_dev["obs"].send_to_user("Waiting for camera rotator to catch up before exposing.")
             #             rot_report =1
             #         time.sleep(0.2)
-            #         g_dev['obs'].update_status()
+            #         g_dev['obs'].update()
                 
         except:
             plog("Motion check faulted.")
@@ -2610,7 +2673,7 @@ class Sequencer:
                     st = ""
                     rot_report =1
                 time.sleep(0.2)
-                g_dev['obs'].update_status()
+                g_dev['obs'].update()
             
             
             # if g_dev['rot']!=None:  
@@ -2621,7 +2684,7 @@ class Sequencer:
             #             plog ("Waiting for Rotator to rotation")
             #             rot_report =1
             #         time.sleep(0.2)
-            #         g_dev['obs'].update_status()
+            #         g_dev['obs'].update()
                 
         except:
             plog("Motion check faulted.")
@@ -2743,7 +2806,7 @@ class Sequencer:
                     st = ""
                     rot_report =1
                 time.sleep(0.2)
-                g_dev['obs'].update_status()
+                g_dev['obs'].update()
             
             
             # if g_dev['rot']!=None:  
@@ -2754,7 +2817,7 @@ class Sequencer:
             #             plog ("Waiting for Rotator to rotation")
             #             rot_report =1
             #         time.sleep(0.2)
-            #         g_dev['obs'].update_status()
+            #         g_dev['obs'].update()
                 
         except:
             plog("Motion check faulted.")
@@ -2827,7 +2890,7 @@ class Sequencer:
                     st = ""
                     rot_report =1
                 time.sleep(0.2)
-                g_dev['obs'].update_status()
+                g_dev['obs'].update()
             
             
             if g_dev['rot']!=None:  
@@ -2838,7 +2901,7 @@ class Sequencer:
                         plog ("Waiting for Rotator to rotation")
                         rot_report =1
                     time.sleep(0.2)
-                    g_dev['obs'].update_status()
+                    g_dev['obs'].update()
                 
         except:
             plog("Motion check faulted.")

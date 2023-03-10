@@ -1505,7 +1505,12 @@ class Mount:
                 self.mount.Unpark()
                 wait_for_slew()
                 if self.home_after_unpark:
-                    self.mount.FindHome()
+                    try: 
+                        self.mount.FindHome()
+                    except:
+                        home_alt = self.settings["home_altitude"]
+                        home_az = self.settings["home_azimuth"]
+                        self.move_to_azalt(home_az, home_alt)
                     wait_for_slew()
 
     def paddle(self):

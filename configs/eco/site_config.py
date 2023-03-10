@@ -87,11 +87,13 @@ site_config = {
     'reference_ambient':  10,  #  Degrees Celsius.  Alternately 12 entries, one for every - mid month.
     'reference_pressure':  867.254,    #mbar   A rough guess 20200315
 
-    'site_roof_control': 'yes', #MTF entered this in to remove sro specific code.... Basically do we have control of the roof or not see line 338 sequencer.py
-    'site_allowed_to_open_roof': 'yes',
+    'site_roof_control': True, #MTF entered this in to remove sro specific code.... Basically do we have control of the roof or not see line 338 sequencer.py
+    'site_allowed_to_open_roof': True,
+    'period_of_time_to_wait_for_roof_to_open' : 100, # seconds - needed to check if the roof ACTUALLY opens. 
     
     'check_time': 300,   #MF's original setting.
     'maximum_roof_opens_per_evening' : 4,
+    'roof_open_safety_base_time' : 15, # How many minutes to use as the default retry time to open roof. This will be progressively multiplied as a back-off function.
     'closest_distance_to_the_sun': 45, # Degrees. For normal pointing requests don't go this close to the sun. 
     'closest_distance_to_the_moon': 10, # Degrees. For normal pointing requests don't go this close to the moon. 
     

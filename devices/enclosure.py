@@ -269,7 +269,7 @@ class Enclosure:
         self.last_slewing = False
         self.prior_status = {'enclosure_mode': 'Manual'}    #Just to initialze this rarely used variable.
 
-        if self.config['site_allowed_to_open_roof'] == True:
+        if self.config['site_allowed_to_open_roof'] == True or self.config['site_allowed_to_open_roof'] == 'yes':
             self.site_allowed_to_open_roof = True
         else:
             self.site_allowed_to_open_roof = False
@@ -756,6 +756,17 @@ class Enclosure:
     #     Enclosure Commands     #
     ##############################
 
+
+    def open_roof_directly(self, req: dict, opt: dict):
+        #if g_dev['enc'].status['shutter_status'] != 'Open' or not self.dome_open:    
+        self.enclosure.OpenShutter()
+        plog("An actual shutter open command has been issued.")
+
+    def close_roof_directly(self, req: dict, opt: dict):
+        #if g_dev['enc'].status['shutter_status'] != 'Open' or not self.dome_open:    
+        self.enclosure.CloseShutter()
+        plog("An actual shutter close command has been issued.")
+
     def open_command(self, req: dict, opt: dict):
     #     ''' open the enclosure '''
          #g_dev['redis'].set('enc_cmd', 'open', ex=1200)
@@ -820,6 +831,7 @@ class Enclosure:
                             return True
                     else:
                         plog("An open command was sent, but this site is not allowed to open the roof (site-config)")
+                        return False
                 except:
                     plog("Attempt to open roof/shutter failed at quarded_open command.")
                     g_dev['obs'].send_to_user("Roof/Shutter failed to open.", p_level='INFO')
