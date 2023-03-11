@@ -84,6 +84,12 @@ site_config = {
     'keep_reduced_on_disk' : True, # PTR uses the reduced file for some calculations (focus, SEP, etc.). To save space, this file can be removed after usage or not saved.
     'keep_focus_images_on_disk' : True, # To save space, the focus file can not be saved.
     
+    
+    # Minimum realistic seeing at the site.
+    # This allows culling of unphysical results in photometry and other things
+    # Particularly useful for focus
+    'minimum_realistic_seeing' : 1.0,
+    
     'aux_archive_path':  None,   #NB NB we might want to put Q: here for MRC
     'wema_is_active':  True,          # True if the split computers used at a site.  NB CHANGE THE DAMN NAME!
     'wema_hostname': 'MRC-WMS-ENC',   # Prefer the shorter version

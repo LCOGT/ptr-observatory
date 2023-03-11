@@ -2928,17 +2928,20 @@ class Camera:
                             sep.set_extract_pixstack(int(ix*iy -1))
                             # minarea is set as roughly how big we think a 0.7 arcsecond seeing star
                             # would be at this pixelscale and binning. Different for different cameras/telescopes.
-                            minarea=int(pow(0.7*1.5 / (pixscale*binfocus),2)* 3.14)
-                            if minarea < 5:
+                            minarea=int(pow(0.7*1.5 / (pixscale*binfocus),2)* 3.14)                            
+                            if minarea < 5: # There has to be a min minarea though!
                                 minarea=5
+                                
+                                
+                                
                             sources = sep.extract(
                                 focusimg, 2.5, err=bkg.globalrms, minarea=minarea
                             )
                             plog ("min_area: " + str(minarea))
                             sources = Table(sources)
                             sources = sources[sources['flag'] < 8]
-                            sources = sources[sources["peak"] < 0.9* image_saturation_level * pow(binfocus,2)]
-                            sources = sources[sources["cpeak"] < 0.9 * image_saturation_level* pow(binfocus,2)]
+                            sources = sources[sources["peak"] < 0.8* image_saturation_level * pow(binfocus,2)]
+                            sources = sources[sources["cpeak"] < 0.8 * image_saturation_level* pow(binfocus,2)]
                             #sources = sources[sources["peak"] > 150 * pow(binfocus,2)]
                             #sources = sources[sources["cpeak"] > 150 * pow(binfocus,2)]
                             sources = sources[sources["flux"] > 2000 ]
@@ -2956,7 +2959,7 @@ class Camera:
                             # Calculate the ellipticity (Thanks BANZAI)
                             sources['ellipticity'] = 1.0 - (sources['b'] / sources['a'])
                             
-                            sources = sources[sources['ellipticity'] < 0.05]
+                            sources = sources[sources['ellipticity'] < 0.1] # Remove things that are not circular stars
                             
                             
                             # Calculate the kron radius (Thanks BANZAI)
@@ -2986,6 +2989,10 @@ class Camera:
                             sources['FWHM'] = (sources['FWHM'] * 2) * binfocus
                             sources['x'] = (sources['x'] ) * binfocus
                             sources['y'] = (sources['y'] ) * binfocus
+                            
+                            # 
+                            
+                            
                             sources['a'] = (sources['a'] ) * binfocus
                             sources['b'] = (sources['b'] ) * binfocus
                             sources['kronrad'] = (sources['kronrad'] ) * binfocus
@@ -2995,8 +3002,8 @@ class Camera:
                             # Need to reject any stars that have FWHM that are less than a extremely
                             # perfect night as artifacts
                             sources = sources[sources['FWHM'] > (0.6 / (pixscale))]
-                            sources = sources[sources['FWHM'] != 0]
-                            
+                            sources = sources[sources['FWHM'] > (self.config['minimum_realistic_seeing'] / pixscale)]
+                            sources = sources[sources['FWHM'] != 0]                          
                             
                             
                             
@@ -3020,10 +3027,20 @@ class Camera:
                                 #breakpoint()                                
                                 #fwhmcalc=(np.array(sources['FWHM']))
                                 fwhmcalc=sources['FWHM']
-                                fwhmcalc=fwhmcalc[fwhmcalc > 1.0]
+                                #fwhmcalc=fwhmcalc[fwhmcalc > 1.0]
                                 fwhmcalc=fwhmcalc[fwhmcalc != 0] # Remove 0 entries
                                 #fwhmcalc=fwhmcalc[fwhmcalc < 75] # remove stupidly large entries
-                                fwhmcalc=fwhmcalc[fwhmcalc < np.median(fwhmcalc)+ 3* np.std(fwhmcalc)]
+                                
+                                # sigma clipping iterator to reject large variations
+                                templen=len(fwhmcalc)
+                                while True:
+                                    fwhmcalc=fwhmcalc[fwhmcalc < np.median(fwhmcalc)+ 3* np.std(fwhmcalc)]
+                                    if len(fwhmcalc) == templen:
+                                        break
+                                    else:
+                                        templen=len(fwhmcalc)
+                                    
+                                
                                 fwhmcalc=fwhmcalc[fwhmcalc > np.median(fwhmcalc)- 3* np.std(fwhmcalc)]
                                 rfp = round(np.median(fwhmcalc),3)
                                 rfr = round(np.median(fwhmcalc) * pixscale,3)
@@ -3033,20 +3050,20 @@ class Camera:
                                 #breakpoint()
                                 result["FWHM"] = rfr
                                 result["mean_focus"] = avg_foc[1]
-                                try:
-                                    valid = (
-                                        0.0 <= result["FWHM"] <= 20.0
-                                        and 100 < result["mean_focus"] < 12600
-                                    )
-                                    result["error"] = False
+                                # try:
+                                #     valid = (
+                                #         0.0 <= result["FWHM"] <= 20.0
+                                #         and 100 < result["mean_focus"] < 12600
+                                #     )
+                                #     result["error"] = False
 
-                                except:
-                                    result[
-                                        "error"
+                                # except:
+                                #     result[
+                                #         "error"
 
-                                    ] = True
-                                    result["FWHM"] = np.nan
-                                    result["mean_focus"] = np.nan
+                                #     ] = True
+                                #     result["FWHM"] = np.nan
+                                #     result["mean_focus"] = np.nan
 
 
                                 if focus_image != True :
@@ -3398,15 +3415,15 @@ class Camera:
 
                     # Now that the jpeg has been sent up pronto,
                     # We turn back to getting the bigger raw, reduced and fz files dealt with
-                    pass
-                    #self.to_slow_process(5,('fz_and_send', raw_path + raw_name00 + ".fz", hdu.data, hdu.header, frame_type))                    
+                    
+                    self.to_slow_process(5,('fz_and_send', raw_path + raw_name00 + ".fz", hdu.data, hdu.header, frame_type))                    
 
         
                     # Similarly to the above. This saves the RAW file to disk
                     # it works 99.9999% of the time.
-                    pass
-                    #if self.config['save_raw_to_disk']:
-                    #   self.to_slow_process(1000,('raw', raw_path + raw_name00, hdu.data, hdu.header, frame_type))
+                   
+                    if self.config['save_raw_to_disk']:
+                       self.to_slow_process(1000,('raw', raw_path + raw_name00, hdu.data, hdu.header, frame_type))
                     
                     # Similarly to the above. This saves the REDUCED file to disk
                     # it works 99.9999% of the time.
