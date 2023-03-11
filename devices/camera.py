@@ -1314,10 +1314,12 @@ class Camera:
                                 imtypeb = 0
                             self.t2 = time.time()
                 
-                           
+                            # Good spot to check if we need to nudge the telescope
+                            check_platesolve_and_nudge()   
+                            
                             self._expose(exposure_time, imtypeb)
                             
-                            g_dev['obs'].time_since_last_slew_or_exposure = time.time()
+                            g_dev['obs'].time_since_last_exposure = time.time()
                         else:
                             plog("Something terribly wrong, driver not recognized.!")
                             result = {}
@@ -3217,6 +3219,10 @@ class Camera:
                             os.makedirs(
                                 self.alt_path + g_dev["day"] + "/calib/", exist_ok=True)
 
+
+                        
+                        
+                        
                         # If this is a focus image, save focus image, estimate pointing, and estimate pointing
                         # We want to estimate pointing in the main thread so it has enough time to correct the
                         # pointing during focus, not when it quickly moves back to the target. Takes longer
@@ -3243,168 +3249,36 @@ class Camera:
                             if Nsmartstack > 1 and not (Nsmartstack == sskcounter+1):
                                 image_during_smartstack=True
                             
-                            if len(sources) >= 5 and len(sources) < 1000 and not image_during_smartstack:
+                            
+                            if len(sources) >= 5 and len(sources) < 1000 and not image_during_smartstack and not self.pointing_correction_requested_by_platesolve_thread and g_dev['obs'].platesolve_queue.empty():
                                 
-
                                 
-                                # We only need to save the focus image immediately if there is enough sources to 
-                                #  rationalise that.  It only needs to be on the disk immediately now if platesolve 
-                                #  is going to attempt to pick it up.  Otherwise it goes to the slow queue.
-                                # Also, too many sources and it will take an unuseful amount of time to solve
-                                # Too many sources mean a globular or a crowded field where we aren't going to be
-                                # able to solve too well easily OR it is such a wide field of view that who cares
-                                # if we are off by 10 arcseconds?
-                                hdufocus=fits.PrimaryHDU()
-                                hdufocus.data=hdufocusdata                            
-                                hdufocus.header=hdu.header
-                                hdufocus.header["NAXIS1"] = hdufocusdata.shape[0]
-                                hdufocus.header["NAXIS2"] = hdufocusdata.shape[1]
-                                hdufocus.writeto(cal_path + cal_name, overwrite=True, output_verify='silentfix')
-                                pixscale=hdufocus.header['PIXSCALE']
-                                if self.config["save_to_alt_path"] == "yes":
-                                    self.to_slow_process(1000,('raw_alt_path', self.alt_path + g_dev["day"] + "/calib/" + cal_name, hdufocus.data, hdufocus.header, \
-                                                                   frame_type))
+                                # NEED TO CHECK HERE THAT THERE ISN"T ALREADY A PLATE SOLVE IN THE THREAD!
+                                self.to_platesolve((hdufocusdata, hdu.header, cal_path, cal_name, frame_type, time.time()))
                                 
-                                try:
-                                    hdufocus.close()
-                                except:
-                                    pass
-                                del hdufocusdata
-                                del hdufocus
-                                
-                                try:
-                                    #time.sleep(1) # A simple wait to make sure file is saved
-                                    solve = platesolve.platesolve(
-                                        cal_path + cal_name, pixscale
-                                    )
-                                    plog(
-                                        "PW Solves: ",
-                                        solve["ra_j2000_hours"],
-                                        solve["dec_j2000_degrees"],
-                                    )
-                                    
-                                    pointing_ra = g_dev['mnt'].mount.RightAscension
-                                    pointing_dec = g_dev['mnt'].mount.Declination
-                                    #icrs_ra, icrs_dec = g_dev['mnt'].get_mount_coordinates()
-                                    #target_ra = g_dev["mnt"].current_icrs_ra
-                                    #target_dec = g_dev["mnt"].current_icrs_dec
-                                    target_ra = g_dev["mnt"].last_ra
-                                    target_dec = g_dev["mnt"].last_dec
-                                    solved_ra = solve["ra_j2000_hours"]
-                                    solved_dec = solve["dec_j2000_degrees"]
-                                    solved_arcsecperpixel = solve["arcsec_per_pixel"]
-                                    solved_rotangledegs = solve["rot_angle_degs"]
-                                    err_ha = target_ra - solved_ra
-                                    err_dec = target_dec - solved_dec
-                                    solved_arcsecperpixel = solve["arcsec_per_pixel"]
-                                    solved_rotangledegs = solve["rot_angle_degs"]
-                                    plog(
-                                        " coordinate error in ra, dec:  (asec) ",
-                                        round(err_ha * 15 * 3600, 2),
-                                        round(err_dec * 3600, 2),
-                                    )  # NB WER changed units 20221012
-                                    #breakpoint()
-                                    # Reset Solve timers
-                                    g_dev['obs'].last_solve_time = datetime.datetime.now()
-                                    g_dev['obs'].images_since_last_solve = 0
-                                    
-                                    
-                                    
-                                    # If we are WAY out of range, then reset the mount reference and attempt moving back there. 
-                                    if (
-                                        err_ha * 15 * 3600 > 1200
-                                        or err_dec * 3600 > 1200
-                                        or err_ha * 15 * 3600 < -1200
-                                        or err_dec * 3600 < -1200
-                                    ) and self.config["mount"]["mount1"][
-                                        "permissive_mount_reset"
-                                    ] == "yes":
-                                        g_dev["mnt"].reset_mount_reference()
-                                        plog("I've  reset the mount_reference 1")
-                                        g_dev["mnt"].current_icrs_ra = solved_ra
-                                        #    "ra_j2000_hours"
-                                        #]
-                                        g_dev["mnt"].current_icrs_dec = solved_dec
-                                        #    "dec_j2000_hours"
-                                        #]
-                                        err_ha = 0
-                                        err_dec = 0
-                                        
-                                        plog ("I am attempting to move back on target!")
-                                        g_dev['mnt'].mount.SlewToCoordinatesAsync(target_ra, target_dec)
-                                        wait_for_slew()  
-                                    
-                                    # MTF - I have commented out the below just to figure out what is going on!!.
-                                    
-                                    else:
-                                    
-                                        # If the mount has updatable RA and Dec coordinates, then sync that
-                                        # But if not, update the mount reference
-                                        try:
-                                            # If mount has Syncable coordinates
-                                            g_dev['mnt'].mount.SyncToCoordinates(solved_ra, solved_dec)
-                                            # Reset the mount reference because if the mount has 
-                                            # syncable coordinates, the mount should already be corrected
-                                            g_dev["mnt"].reset_mount_reference()
-                                        
-                                            if (
-                                                 abs(err_ha * 15 * 3600)
-                                                 > self.config["threshold_mount_update"]
-                                                 or abs(err_dec * 3600)
-                                                 > self.config["threshold_mount_update"]
-                                             ):
-                                                plog ("I am nudging the telescope slightly!")
-                                                g_dev['mnt'].mount.SlewToCoordinatesAsync(target_ra, target_dec)
-                                                wait_for_slew()                     
-                                                
-                                            
-                                        except:
-                                            # If mount doesn't have Syncable coordinates
-                                            
-            
-                                            if (
-                                                abs(err_ha * 15 * 3600)
-                                                > self.config["threshold_mount_update"]
-                                                or abs(err_dec * 3600)
-                                                > self.config["threshold_mount_update"]
-                                            ):
-                                                
-                                                plog ("I am nudging the telescope slightly!")
-                                                g_dev['mnt'].mount.SlewToCoordinatesAsync(pointing_ra + err_ha, pointing_dec + err_dec)
-                                                wait_for_slew()
-                                                
-                                                try:
-                                                    #if g_dev["mnt"].pier_side_str == "Looking West":
-                                                    if g_dev["mnt"].pier_side == 0:
-                                                        try:
-                                                            g_dev["mnt"].adjust_mount_reference(
-                                                                -err_ha, -err_dec
-                                                            )
-                                                        except Exception as e:
-                                                            plog ("Something is up in the mount reference adjustment code ", e)
-                                                    else:
-                                                        try:
-                                                            g_dev["mnt"].adjust_flip_reference(
-                                                                -err_ha, -err_dec
-                                                            )  # Need to verify signs
-                                                        except Exception as e:
-                                                            plog ("Something is up in the mount reference adjustment code ", e)                                            
-                                                    
-                                                except:
-                                                    plog("This mount doesn't report pierside")
-                                                    plog(traceback.format_exc())
-    
-                                except Exception as e:
-                                    plog(
-                                        "Image: did not platesolve; this is usually OK. ", e
-                                    )
-                                    plog(traceback.format_exc())
-                                    
-                                
-                                if not self.config['keep_focus_images_on_disk']:
-                                    os.remove(cal_path + cal_name)
                             else:
                                 plog ("Platesolve wasn't attempted due to lack of sources (or sometimes too many!) or it was during a smartstack")
+                                
+                                #Still save the file to disk if platesolve not attempted
+                                if self.config['keep_focus_images_on_disk']:
+                                    hdufocus=fits.PrimaryHDU()
+                                    hdufocus.data=hdufocusdata                            
+                                    hdufocus.header=hdu.header
+                                    hdufocus.header["NAXIS1"] = hdufocusdata.shape[0]
+                                    hdufocus.header["NAXIS2"] = hdufocusdata.shape[1]
+                                    hdufocus.writeto(cal_path + cal_name, overwrite=True, output_verify='silentfix')
+                                    pixscale=hdufocus.header['PIXSCALE']
+                                    if self.config["save_to_alt_path"] == "yes":
+                                        self.to_slow_process(1000,('raw_alt_path', self.alt_path + g_dev["day"] + "/calib/" + cal_name, hdufocus.data, hdufocus.header, \
+                                                                        frame_type))
+                                    
+                                    try:
+                                        hdufocus.close()
+                                    except:
+                                        pass
+                                    del hdufocusdata
+                                    del hdufocus
+                                    #os.remove(cal_path + cal_name)                             
                                 
                                 del hdufocusdata
                               
@@ -3521,6 +3395,12 @@ class Camera:
                             pass
                         del hdureduced  # remove file from memory now that we are doing with it
 
+
+                    # Good spot to check if we need to nudge the telescope
+                    check_platesolve_and_nudge()                 
+                    
+                
+
                     # The paths to these saved files and the pixelscale are sent to the reduce queue
                     # Currently the reduce queue platesolves the images and monitors the focus.
                     # Soon it will also smartstack
@@ -3610,6 +3490,9 @@ class Camera:
         
     def to_slow_process(self, priority, to_slow):
         g_dev["obs"].slow_camera_queue.put((priority, to_slow), block=False)
+    
+    def to_platesolve(self, to_platesolve):
+        g_dev["obs"].platesolve_queue.put( to_platesolve, block=False)
         
 def wait_for_slew():    
     
@@ -3636,3 +3519,15 @@ def wait_for_slew():
         else:
             pass #breakpoint()
     return 
+
+def check_platesolve_and_nudge():
+    
+    # This block repeats itself in various locations to try and nudge the scope
+    # If the platesolve requests such a thing.
+    if g_dev['obs'].pointing_correction_requested_by_platesolve_thread:
+        g_dev['obs'].pointing_correction_requested_by_platesolve_thread = False
+        if g_dev['obs'].pointing_correction_request_time > g_dev['obs'].time_since_last_slew: # Check it hasn't slewed since request                        
+            plog ("I am nudging the telescope slightly at the request of platesolve!")                            
+            g_dev['mnt'].mount.SlewToCoordinatesAsync(g_dev['obs'].pointing_correction_request_ra, g_dev['obs'].pointing_correction_request_dec)
+            g_dev['obs'].time_since_last_slew = time.time()
+            wait_for_slew()

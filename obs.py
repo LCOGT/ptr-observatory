@@ -62,7 +62,7 @@ from devices.selector import Selector
 from devices.screen import Screen
 from devices.sequencer import Sequencer
 from global_yard import g_dev
-#from planewave import platesolve
+from planewave import platesolve
 import ptr_events
 from ptr_utility import plog
 from scipy import stats
@@ -306,6 +306,11 @@ class Observatory:
         self.send_status_queue = queue.Queue(maxsize=0)
         self.send_status_queue_thread = threading.Thread(target=self.send_status_process, args=())
         self.send_status_queue_thread.start()
+        
+        self.platesolve_queue = queue.Queue(maxsize=0)
+        self.platesolve_queue_thread = threading.Thread(target=self.platesolve_process, args=())
+        self.platesolve_queue_thread.start()
+        
 
         # Set up command_queue for incoming jobs
         self.cmd_queue = queue.Queue(
@@ -338,7 +343,8 @@ class Observatory:
         g_dev["mnt"].reset_mount_reference()
 
         # Keep track of how long it has been since the last activity
-        self.time_since_last_slew_or_exposure = time.time()
+        self.time_since_last_exposure = time.time()
+        self.time_since_last_slew = time.time()
 
         # Only poll the broad safety checks (altitude and inactivity) every 5 minutes
         self.time_since_safety_checks=time.time() - 310.0
@@ -352,6 +358,20 @@ class Observatory:
         self.camera_overheat_safety_warm_on=False
         self.camera_overheat_safety_timer=time.time()
         self.camera_time_initialised=time.time() # Some things you don't want to check until the camera has been cooling for a while.
+        
+        # If there is a pointing correction needed, then it is REQUESTED
+        # by the platesolve thread and then the code will interject
+        # a pointing correction at an appropriate stage.
+        # But if the telescope moves in the meantime, this is cancelled.
+        # A telescope move itself should already correct for this pointing in the process of moving.
+        # This is sort of a more elaborate and time-efficient version of the previous "re-seek"
+        self.pointing_correction_requested_by_platesolve_thread = False
+        self.pointing_correction_request_time = time.time()
+        self.pointing_correction_request_ra = 0.0
+        self.pointing_correction_request_dec = 0.0
+        
+        
+        
         
         # This variable is simply.... is it open and enabled to observe!
         # This is set when the roof is open and everything is safe
@@ -1141,14 +1161,15 @@ sel
     
     
             # If no activity for an hour, park the scope               
-            if time.time() - self.time_since_last_slew_or_exposure > self.config['mount']['mount1']\
-                                                                                ['time_inactive_until_park']:
+            if time.time() - self.time_since_last_slew > self.config['mount']['mount1']\
+                                                                                ['time_inactive_until_park'] or time.time() - self.time_since_last_exposure > self.config['mount']['mount1']\
+                                                                                                                                                    ['time_inactive_until_park']:
                 if not g_dev['mnt'].mount.AtPark:  
                     plog ("Parking scope due to inactivity")
                     if g_dev['mnt'].home_before_park:
                         g_dev['mnt'].home_command()
                     g_dev['mnt'].park_command()
-                    self.time_since_last_slew_or_exposure = time.time()
+                    self.time_since_last_slew = time.time()
             
             # Check that rotator is rotating
             if g_dev['rot'] != None:
@@ -1232,7 +1253,7 @@ sel
                         if g_dev['mnt'].home_before_park:
                             g_dev['mnt'].home_command()
                         g_dev['mnt'].park_command()
-                        self.time_since_last_slew_or_exposure = time.time()
+                        self.time_since_last_slew = time.time()
                         
                     g_dev['enc'].enclosure.CloseShutter()
             plog ("temporary reporting: MTF")
@@ -1424,6 +1445,231 @@ sel
             else:
                 time.sleep(0.1)
                 
+
+    def platesolve_process(self):
+        """This is the platesolve queue that happens in a different process
+        than the main camera thread. Platesolves can take 5-10, up to 30 seconds sometimes
+        to run, so it is an overhead we can't have hanging around. This thread attempts
+        a platesolve and uses the solution and requests a telescope nudge/center
+        if the telescope has not slewed in the intervening time between beginning
+        the platesolving process and completing it.
+        
+        """
+
+        one_at_a_time = 0
+        # This stopping mechanism allows for threads to close cleanly.
+        while True:
+            if (not self.platesolve_queue.empty()) and one_at_a_time == 0:
+                
+
+                one_at_a_time = 1
+                (hdufocusdata, hduheader, cal_path, cal_name, frame_type, time_platesolve_requested) = self.platesolve_queue.get(block=False)
+                
+                # We only need to save the focus image immediately if there is enough sources to 
+                #  rationalise that.  It only needs to be on the disk immediately now if platesolve 
+                #  is going to attempt to pick it up.  Otherwise it goes to the slow queue.
+                # Also, too many sources and it will take an unuseful amount of time to solve
+                # Too many sources mean a globular or a crowded field where we aren't going to be
+                # able to solve too well easily OR it is such a wide field of view that who cares
+                # if we are off by 10 arcseconds?
+                hdufocus=fits.PrimaryHDU()
+                hdufocus.data=hdufocusdata                            
+                hdufocus.header=hduheader
+                hdufocus.header["NAXIS1"] = hdufocusdata.shape[0]
+                hdufocus.header["NAXIS2"] = hdufocusdata.shape[1]
+                hdufocus.writeto(cal_path + cal_name, overwrite=True, output_verify='silentfix')
+                pixscale=hdufocus.header['PIXSCALE']
+                if self.config["save_to_alt_path"] == "yes":
+                    self.to_slow_process(1000,('raw_alt_path', self.alt_path + g_dev["day"] + "/calib/" + cal_name, hdufocus.data, hdufocus.header, \
+                                                   frame_type))
+                
+                try:
+                    hdufocus.close()
+                except:
+                    pass
+                del hdufocusdata
+                del hdufocus
+                
+                # Test here that there has not been a slew, if there has been a slew, cancel out!
+                if self.time_since_last_slew > time_platesolve_requested:
+                    plog ("detected a slew since beginning platesolve... bailing out of platesolve.")
+                    if not self.config['keep_focus_images_on_disk']:
+                        os.remove(cal_path + cal_name)
+                    one_at_a_time = 0
+                    self.platesolve_queue.task_done()
+                    break
+                    
+                    
+                
+                
+                
+                try:
+                    #time.sleep(1) # A simple wait to make sure file is saved
+                    solve = platesolve.platesolve(
+                        cal_path + cal_name, pixscale
+                    )
+                    
+                    
+                    
+                    
+                    plog(
+                        "PW Solves: ",
+                        solve["ra_j2000_hours"],
+                        solve["dec_j2000_degrees"],
+                    )
+                    
+                    pointing_ra = g_dev['mnt'].mount.RightAscension
+                    pointing_dec = g_dev['mnt'].mount.Declination
+                    #icrs_ra, icrs_dec = g_dev['mnt'].get_mount_coordinates()
+                    #target_ra = g_dev["mnt"].current_icrs_ra
+                    #target_dec = g_dev["mnt"].current_icrs_dec
+                    target_ra = g_dev["mnt"].last_ra
+                    target_dec = g_dev["mnt"].last_dec
+                    solved_ra = solve["ra_j2000_hours"]
+                    solved_dec = solve["dec_j2000_degrees"]
+                    solved_arcsecperpixel = solve["arcsec_per_pixel"]
+                    solved_rotangledegs = solve["rot_angle_degs"]
+                    err_ha = target_ra - solved_ra
+                    err_dec = target_dec - solved_dec
+                    solved_arcsecperpixel = solve["arcsec_per_pixel"]
+                    solved_rotangledegs = solve["rot_angle_degs"]
+                    plog(
+                        " coordinate error in ra, dec:  (asec) ",
+                        round(err_ha * 15 * 3600, 2),
+                        round(err_dec * 3600, 2),
+                    )  # NB WER changed units 20221012
+                    #breakpoint()
+                    # Reset Solve timers
+                    g_dev['obs'].last_solve_time = datetime.datetime.now()
+                    g_dev['obs'].images_since_last_solve = 0
+                    
+                    # Test here that there has not been a slew, if there has been a slew, cancel out!
+                    if self.time_since_last_slew > time_platesolve_requested:
+                        plog ("detected a slew since beginning platesolve... bailing out of platesolve.")
+                        if not self.config['keep_focus_images_on_disk']:
+                            os.remove(cal_path + cal_name)
+                        one_at_a_time = 0
+                        self.platesolve_queue.task_done()
+                        break
+                    
+                    # If we are WAY out of range, then reset the mount reference and attempt moving back there. 
+                    if (
+                        err_ha * 15 * 3600 > 1200
+                        or err_dec * 3600 > 1200
+                        or err_ha * 15 * 3600 < -1200
+                        or err_dec * 3600 < -1200
+                    ) and self.config["mount"]["mount1"][
+                        "permissive_mount_reset"
+                    ] == "yes":
+                        g_dev["mnt"].reset_mount_reference()
+                        plog("I've  reset the mount_reference 1")
+                        g_dev["mnt"].current_icrs_ra = solved_ra
+                        #    "ra_j2000_hours"
+                        #]
+                        g_dev["mnt"].current_icrs_dec = solved_dec
+                        #    "dec_j2000_hours"
+                        #]
+                        err_ha = 0
+                        err_dec = 0
+                        
+                        plog ("Platesolve is requesting to move back on target!")
+                        #g_dev['mnt'].mount.SlewToCoordinatesAsync(target_ra, target_dec)
+                        
+                        
+                        self.pointing_correction_requested_by_platesolve_thread = True
+                        self.pointing_correction_request_time = time.time()
+                        self.pointing_correction_request_ra = target_ra
+                        self.pointing_correction_request_dec = target_dec
+                        
+                        #wait_for_slew()  
+                    
+
+                    else:
+                    
+                        # If the mount has updatable RA and Dec coordinates, then sync that
+                        # But if not, update the mount reference
+                        try:
+                            # If mount has Syncable coordinates
+                            g_dev['mnt'].mount.SyncToCoordinates(solved_ra, solved_dec)
+                            # Reset the mount reference because if the mount has 
+                            # syncable coordinates, the mount should already be corrected
+                            g_dev["mnt"].reset_mount_reference()
+                        
+                            if (
+                                 abs(err_ha * 15 * 3600)
+                                 > self.config["threshold_mount_update"]
+                                 or abs(err_dec * 3600)
+                                 > self.config["threshold_mount_update"]
+                             ):
+                                #plog ("I am nudging the telescope slightly!")
+                                #g_dev['mnt'].mount.SlewToCoordinatesAsync(target_ra, target_dec)
+                                #wait_for_slew()
+                                plog ("Platesolve is requesting to move back on target!")
+                                self.pointing_correction_requested_by_platesolve_thread = True
+                                self.pointing_correction_request_time = time.time()
+                                self.pointing_correction_request_ra = target_ra
+                                self.pointing_correction_request_dec = target_dec
+                                
+                            
+                        except:
+                            # If mount doesn't have Syncable coordinates
+                            
+
+                            if (
+                                abs(err_ha * 15 * 3600)
+                                > self.config["threshold_mount_update"]
+                                or abs(err_dec * 3600)
+                                > self.config["threshold_mount_update"]
+                            ):
+                                
+                                #plog ("I am nudging the telescope slightly!")
+                                #g_dev['mnt'].mount.SlewToCoordinatesAsync(pointing_ra + err_ha, pointing_dec + err_dec)
+                                #wait_for_slew()
+                                plog ("Platesolve is requesting to move back on target!")
+                                self.pointing_correction_requested_by_platesolve_thread = True
+                                self.pointing_correction_request_time = time.time()
+                                self.pointing_correction_request_ra = pointing_ra + err_ha
+                                self.pointing_correction_request_dec = pointing_dec + err_dec
+                                
+                                
+                                try:
+                                    #if g_dev["mnt"].pier_side_str == "Looking West":
+                                    if g_dev["mnt"].pier_side == 0:
+                                        try:
+                                            g_dev["mnt"].adjust_mount_reference(
+                                                -err_ha, -err_dec
+                                            )
+                                        except Exception as e:
+                                            plog ("Something is up in the mount reference adjustment code ", e)
+                                    else:
+                                        try:
+                                            g_dev["mnt"].adjust_flip_reference(
+                                                -err_ha, -err_dec
+                                            )  # Need to verify signs
+                                        except Exception as e:
+                                            plog ("Something is up in the mount reference adjustment code ", e)                                            
+                                    
+                                except:
+                                    plog("This mount doesn't report pierside")
+                                    plog(traceback.format_exc())
+
+                except Exception as e:
+                    plog(
+                        "Image: did not platesolve; this is usually OK. ", e
+                    )
+                    plog(traceback.format_exc())
+                    
+                
+                if not self.config['keep_focus_images_on_disk']:
+                    os.remove(cal_path + cal_name)
+                
+                self.platesolve_queue.task_done()
+                one_at_a_time = 0
+
+            else:
+                time.sleep(0.5)
+
+
 
     def slow_camera_process(self):
         """A place to process non-process dependant images from the camera pile
@@ -2081,9 +2327,9 @@ sel
                             yshape=newhdugreen.shape[1]                          
                             
                             # The integer mode of an image is typically the sky value, so squish anything below that
-                            bluemode=stats.mode((newhdublue.astype('int16').flatten()))[0] - 25
-                            redmode=stats.mode((newhdured.astype('int16').flatten()))[0] - 25
-                            greenmode=stats.mode((newhdugreen.astype('int16').flatten()))[0] - 25                          
+                            bluemode=stats.mode((newhdublue.astype('int16').flatten()), keepdims=True)[0] - 25
+                            redmode=stats.mode((newhdured.astype('int16').flatten()), keepdims=True)[0] - 25
+                            greenmode=stats.mode((newhdugreen.astype('int16').flatten()), keepdims=True)[0] - 25                          
                             newhdublue[newhdublue < bluemode] = bluemode
                             newhdugreen[newhdugreen < greenmode] = greenmode
                             newhdured[newhdured < redmode] =redmode

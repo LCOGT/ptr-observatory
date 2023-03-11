@@ -1364,7 +1364,7 @@ class Mount:
                 else:
                     plog ("problem with setting tracking: ", e)
         
-        g_dev['obs'].time_since_last_slew_or_exposure = time.time()
+        g_dev['obs'].time_since_last_slew = time.time()
         g_dev['obs'].last_solve_time = datetime.datetime.now() - datetime.timedelta(days=1)
         g_dev['obs'].images_since_last_solve = 10000
         wait_for_slew()    
@@ -1735,7 +1735,7 @@ class Mount:
         if self.config['mount']['mount1']['has_ascom_altaz'] == True:
             wait_for_slew() 
             self.mount.SlewToAltAzAsync(az, alt)
-            g_dev['obs'].time_since_last_slew_or_exposure = time.time()
+            g_dev['obs'].time_since_last_slew = time.time()
             g_dev['obs'].last_solve_time = datetime.datetime.now() - datetime.timedelta(days=1)
             g_dev['obs'].images_since_last_solve = 10000
             wait_for_slew()
@@ -1758,7 +1758,7 @@ class Mount:
                     self.home_command()
                     self.mount.SlewToCoordinatesAsync(tempRA, tempDEC)
             
-            g_dev['obs'].time_since_last_slew_or_exposure = time.time()
+            g_dev['obs'].time_since_last_slew = time.time()
             g_dev['obs'].last_solve_time = datetime.datetime.now() - datetime.timedelta(days=1)
             g_dev['obs'].images_since_last_solve = 10000
             wait_for_slew()
