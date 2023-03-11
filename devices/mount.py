@@ -1194,18 +1194,18 @@ class Mount:
         g_dev['obs'].images_since_last_solve = 10000
         g_dev['obs'].send_to_user("Slew Complete.")
 
-    def re_seek(self, dither):
+    # def re_seek(self, dither):
         
-        #breakpoint()
+    #     #breakpoint()
         
-        try:
-            if dither == 0:
-                self.go_coord(self.last_ra, self.last_dec, self.last_tracking_rate_ra, self.last_tracking_rate_dec)
+    #     try:
+    #         if dither == 0:
+    #             self.go_coord(self.last_ra, self.last_dec, self.last_tracking_rate_ra, self.last_tracking_rate_dec)
                 
-        except Exception as e:
-            plog ("Could not re_seek: ",e)
+    #     except Exception as e:
+    #         plog ("Could not re_seek: ",e)
             
-        wait_for_slew()   
+    #     wait_for_slew()   
 
     def go_coord(self, ra, dec, tracking_rate_ra=0, tracking_rate_dec=0, reset_solve=True):  #Note these rates need a system specification
         '''
