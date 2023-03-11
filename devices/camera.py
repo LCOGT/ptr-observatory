@@ -2632,9 +2632,9 @@ class Camera:
                                 #breakpoint()
                                 
                                 # The integer mode of an image is typically the sky value, so squish anything below that
-                                bluemode=stats.mode((hdublue.astype('int16').flatten()))[0] - 25
-                                redmode=stats.mode((hdured.astype('int16').flatten()))[0] - 25
-                                greenmode=stats.mode((hdugreen.astype('int16').flatten()))[0] - 25                          
+                                bluemode=stats.mode((hdublue.astype('int16').flatten()), keepdims=True)[0] - 25
+                                redmode=stats.mode((hdured.astype('int16').flatten()), keepdims=True)[0] - 25
+                                greenmode=stats.mode((hdugreen.astype('int16').flatten()), keepdims=True)[0] - 25                          
                                 hdublue[hdublue < bluemode] = bluemode
                                 hdugreen[hdugreen < greenmode] = greenmode
                                 hdured[hdured < redmode] =redmode
