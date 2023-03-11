@@ -127,7 +127,7 @@ site_config = {
     'focus_trigger' : 5.0, # What FWHM increase is needed to trigger an autofocus
     'solve_nth_image' : 10, # Only solve every nth image
     'solve_timer' : 5, # Only solve every X minutes
-    'threshold_mount_update' : 10, # only update mount when X arcseconds away
+    'threshold_mount_update' : 50, # only update mount when X arcseconds away
 
     'defaults': {
         'observing_conditions': 'observing_conditions1',  #  These are used as keys, may go away.
@@ -372,10 +372,10 @@ site_config = {
             #F4.9 setup
             'start_at_config_reference': True,
             'use_focuser_temperature': False,
-            'reference':13212,    #  20210313  Nominal at 10C Primary temperature
+            'reference':10000,    #  20210313  Nominal at 10C Primary temperature
             'ref_temp':  6265.0,    #  Update when pinning reference
             'coef_c': 0,   #  Negative means focus moves out as Primary gets colder
-            'coef_0': 13212,  #  Nominal intercept when Primary is at 0.0 C.
+            'coef_0': 10000,  #  Nominal intercept when Primary is at 0.0 C.
             'coef_date':  '20220914',    #This appears to be sensible result 44 points -13 to 3C'reference':  6431,    #  Nominal at 10C Primary temperature
             # #F9 setup
             # 'reference': 4375,    #   Guess 20210904  Nominal at 10C Primary temperature
@@ -387,7 +387,7 @@ site_config = {
             'maximum': 18000,   #12672 actually
             'step_size': 1,
             'backlash': 0,
-            'throw' : 750,
+            'throw' : 700,
             'unit': 'micron',
             #'unit_conversion': 9.09090909091,
             'unit_conversion': 1.0,
@@ -680,7 +680,7 @@ site_config = {
                 'osc_colour_enhance' : 1.7,
                 'osc_sharpness_enhance' : 1.5,                
                 'osc_background_cut' : 25.0,
-                'bin_for_focus' : True, # This setting will bin the image for focussing rather than interpolating. Good for 1x1 pixel sizes < 0.6.
+                'bin_for_focus' : False, # This setting will bin the image for focussing rather than interpolating. Good for 1x1 pixel sizes < 0.6.
                 
                 # ONLY TRANSFORM THE FITS IF YOU HAVE
                 # A DATA-BASED REASON TO DO SO.....
@@ -709,7 +709,7 @@ site_config = {
                 'crop_preview_ytop': 2,
                 'crop_preview_xleft': 2,
                 'crop_preview_xright': 2,
-                'temp_setpoint': -4,    #Verify we can go colder, this system has a chiller
+                'temp_setpoint': -10,    #Verify we can go colder, this system has a chiller
                 'has_chiller': True,
                 'calib_setpoints': [-20, -20, -20, -20, -20, -20, \
                                     -20, -20, -20, -20, -20, -20],  #  Picked by month-of-year 
@@ -743,7 +743,7 @@ site_config = {
                 'trim_sec': ['[1:9576, 1:6388]', '[1:4788, 1:3194]', '[1:3192, 1:2129]', '[1:2394, 1:1597]'],
                 'x_pixel':  3.76,
                 'y_pixel':  3.76,
-                'pix_scale': 0.302597,    #   bin-2  2* math.degrees(math.atan(3.76/2563000))*3600
+                'pix_scale': 1.25,    #   bin-2  2* math.degrees(math.atan(3.76/2563000))*3600
 
                 'CameraXSize' : 9600,
                 'CameraYSize' : 6422,

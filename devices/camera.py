@@ -2929,6 +2929,8 @@ class Camera:
                             # minarea is set as roughly how big we think a 0.7 arcsecond seeing star
                             # would be at this pixelscale and binning. Different for different cameras/telescopes.
                             minarea=int(pow(0.7*1.5 / (pixscale*binfocus),2)* 3.14)
+                            if minarea < 5:
+                                minarea=5
                             sources = sep.extract(
                                 focusimg, 2.5, err=bkg.globalrms, minarea=minarea
                             )
@@ -2953,7 +2955,10 @@ class Camera:
 
                             # Calculate the ellipticity (Thanks BANZAI)
                             sources['ellipticity'] = 1.0 - (sources['b'] / sources['a'])
-
+                            
+                            sources = sources[sources['ellipticity'] < 0.05]
+                            
+                            
                             # Calculate the kron radius (Thanks BANZAI)
                             kronrad, krflag = sep.kron_radius(focusimg, sources['x'], sources['y'],
                                                               sources['a'], sources['b'],
@@ -2991,6 +2996,9 @@ class Camera:
                             # perfect night as artifacts
                             sources = sources[sources['FWHM'] > (0.6 / (pixscale))]
                             sources = sources[sources['FWHM'] != 0]
+                            
+                            
+                            
                             
                             # BANZAI prune nans from table
                             nan_in_row = np.zeros(len(sources), dtype=bool)
