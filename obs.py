@@ -22,6 +22,7 @@ import threading
 import time
 import sys
 import shutil
+import sep
 #import signal
 
 import astroalign as aa
@@ -32,6 +33,7 @@ from astropy.coordinates import SkyCoord, FK5, ICRS,  \
                          EarthLocation, AltAz, get_sun, get_moon
 from astropy.time import Time
 from astropy import units as u
+from astropy.table import Table
 
 from dotenv import load_dotenv
 import numpy as np
@@ -68,6 +70,12 @@ from ptr_utility import plog
 from scipy import stats
 from PIL import Image, ImageEnhance
 
+import colour
+from colour_demosaicing import (
+    demosaicing_CFA_Bayer_bilinear,
+    demosaicing_CFA_Bayer_Malvar2004,
+    demosaicing_CFA_Bayer_Menon2007,
+    mosaicing_CFA_Bayer)
 
 #Incorporate better request retry strategy
 from requests.adapters import HTTPAdapter, Retry
@@ -310,6 +318,10 @@ class Observatory:
         self.platesolve_queue = queue.Queue(maxsize=0)
         self.platesolve_queue_thread = threading.Thread(target=self.platesolve_process, args=())
         self.platesolve_queue_thread.start()
+        
+        self.sep_queue = queue.Queue(maxsize=0)
+        self.sep_queue_thread = threading.Thread(target=self.sep_process, args=())
+        self.sep_queue_thread.start()
         
 
         # Set up command_queue for incoming jobs
@@ -1445,6 +1457,245 @@ sel
             else:
                 time.sleep(0.1)
                 
+
+    def sep_process(self):
+        """This is the platesolve queue that happens in a different process
+        than the main camera thread. Platesolves can take 5-10, up to 30 seconds sometimes
+        to run, so it is an overhead we can't have hanging around. This thread attempts
+        a platesolve and uses the solution and requests a telescope nudge/center
+        if the telescope has not slewed in the intervening time between beginning
+        the platesolving process and completing it.
+        
+        """
+
+        one_at_a_time = 0
+        # This stopping mechanism allows for threads to close cleanly.
+        while True:
+            if (not self.sep_queue.empty()) and one_at_a_time == 0:
+                one_at_a_time = 1
+                (hdufocusdata, pixscale, readnoise, avg_foc, focus_image) = self.sep_queue.get(block=False)
+                
+                # Interpolate to make a high resolution version for focussing
+                # and platesolving
+                if self.config["camera"][self.name]["settings"]['bin_for_focus']:
+                    hdufocusdata=block_reduce(hdufocusdata,2)
+                    binfocus=2
+                else:
+                    hdufocusdata=demosaicing_CFA_Bayer_bilinear(hdufocusdata, 'RGGB')[:,:,1]
+                    hdufocusdata=hdufocusdata.astype("float32")
+                    binfocus=1
+                    
+                g_dev['cam'].hdufocusdatahold = np.asarray(hdufocusdata)
+                
+                focusimg = np.array(
+                    hdufocusdata, order="C"
+                )  
+
+                try:
+                    # Some of these are liberated from BANZAI
+                    bkg = sep.Background(focusimg)
+                    
+                    g_dev['cam'].sepsky = ( np.nanmedian(bkg), "Sky background estimated by SEP" )
+                    
+                    focusimg -= bkg
+                    ix, iy = focusimg.shape
+                    border_x = int(ix * 0.05)
+                    border_y = int(iy * 0.05)
+                    sep.set_extract_pixstack(int(ix*iy -1))
+                    # minarea is set as roughly how big we think a 0.7 arcsecond seeing star
+                    # would be at this pixelscale and binning. Different for different cameras/telescopes.
+                    minarea=int(pow(0.7*1.5 / (pixscale*binfocus),2)* 3.14)                            
+                    if minarea < 5: # There has to be a min minarea though!
+                        minarea=5
+                        
+                        
+                        
+                    sources = sep.extract(
+                        focusimg, 2.5, err=bkg.globalrms, minarea=minarea
+                    )
+                    plog ("min_area: " + str(minarea))
+                    sources = Table(sources)
+                    sources = sources[sources['flag'] < 8]
+                    image_saturation_level = g_dev['cam'].config["camera"][g_dev['cam'].name]["settings"]["saturate"]
+                    sources = sources[sources["peak"] < 0.8* image_saturation_level * pow(binfocus,2)]
+                    sources = sources[sources["cpeak"] < 0.8 * image_saturation_level* pow(binfocus,2)]
+                    #sources = sources[sources["peak"] > 150 * pow(binfocus,2)]
+                    #sources = sources[sources["cpeak"] > 150 * pow(binfocus,2)]
+                    sources = sources[sources["flux"] > 2000 ]
+                    sources = sources[sources["x"] < ix - border_x]
+                    sources = sources[sources["x"] > border_x]
+                    sources = sources[sources["y"] < iy - border_y]
+                    sources = sources[sources["y"] > border_y]
+
+                    # BANZAI prune nans from table
+                    nan_in_row = np.zeros(len(sources), dtype=bool)
+                    for col in sources.colnames:
+                        nan_in_row |= np.isnan(sources[col])
+                    sources = sources[~nan_in_row]
+
+                    # Calculate the ellipticity (Thanks BANZAI)
+                    sources['ellipticity'] = 1.0 - (sources['b'] / sources['a'])
+                    
+                    sources = sources[sources['ellipticity'] < 0.1] # Remove things that are not circular stars
+                    
+                    
+                    # Calculate the kron radius (Thanks BANZAI)
+                    kronrad, krflag = sep.kron_radius(focusimg, sources['x'], sources['y'],
+                                                      sources['a'], sources['b'],
+                                                      sources['theta'], 6.0)
+                    sources['flag'] |= krflag
+                    sources['kronrad'] = kronrad
+
+                    # Calculate uncertainty of image (thanks BANZAI)
+                    uncertainty = float(readnoise * np.ones(hdufocusdata.shape, \
+                                        dtype=hdufocusdata.dtype) / readnoise)
+
+                    # Calcuate the equivilent of flux_auto (Thanks BANZAI)
+                    # This is the preferred best photometry SEP can do.
+                    flux, fluxerr, flag = sep.sum_ellipse(focusimg, sources['x'], sources['y'],
+                                                          sources['a'], sources['b'],
+                                                          np.pi / 2.0, 2.5 * kronrad,
+                                                          subpix=1, err=uncertainty)
+                    sources['flux'] = flux
+                    sources['fluxerr'] = fluxerr
+                    sources['flag'] |= flag
+                    sources['FWHM'], _ = sep.flux_radius(focusimg, sources['x'], sources['y'], sources['a'], 0.5, \
+                                                         subpix=5)
+                    # If image has been binned for focus we need to multiply some of these things by the binning
+                    # To represent the original image
+                    sources['FWHM'] = (sources['FWHM'] * 2) * binfocus
+                    sources['x'] = (sources['x'] ) * binfocus
+                    sources['y'] = (sources['y'] ) * binfocus
+                    
+                    # 
+                    
+                    
+                    sources['a'] = (sources['a'] ) * binfocus
+                    sources['b'] = (sources['b'] ) * binfocus
+                    sources['kronrad'] = (sources['kronrad'] ) * binfocus
+                    sources['peak'] = (sources['peak'] ) / pow(binfocus,2)
+                    sources['cpeak'] = (sources['cpeak'] ) / pow(binfocus,2)
+                    
+                    # Need to reject any stars that have FWHM that are less than a extremely
+                    # perfect night as artifacts
+                    sources = sources[sources['FWHM'] > (0.6 / (pixscale))]
+                    sources = sources[sources['FWHM'] > (self.config['minimum_realistic_seeing'] / pixscale)]
+                    sources = sources[sources['FWHM'] != 0]                          
+                    
+                    
+                    
+                    # BANZAI prune nans from table
+                    nan_in_row = np.zeros(len(sources), dtype=bool)
+                    for col in sources.colnames:
+                        nan_in_row |= np.isnan(sources[col])
+                    sources = sources[~nan_in_row]
+
+                    plog("No. of detections:  ", len(sources))
+
+
+                    if len(sources) < 2:
+                        plog ("not enough sources to estimate a reliable focus")
+                        g_dev['cam'].focusresult["error"]=True
+                        g_dev['cam'].focusresult = np.nan
+                        sources['FWHM'] = [np.nan] * len(sources)
+
+                    else:
+                        # Get halflight radii
+                        #breakpoint()                                
+                        #fwhmcalc=(np.array(sources['FWHM']))
+                        fwhmcalc=sources['FWHM']
+                        #fwhmcalc=fwhmcalc[fwhmcalc > 1.0]
+                        fwhmcalc=fwhmcalc[fwhmcalc != 0] # Remove 0 entries
+                        #fwhmcalc=fwhmcalc[fwhmcalc < 75] # remove stupidly large entries
+                        
+                        # sigma clipping iterator to reject large variations
+                        templen=len(fwhmcalc)
+                        while True:
+                            fwhmcalc=fwhmcalc[fwhmcalc < np.median(fwhmcalc)+ 3* np.std(fwhmcalc)]
+                            if len(fwhmcalc) == templen:
+                                break
+                            else:
+                                templen=len(fwhmcalc)
+                            
+                        
+                        fwhmcalc=fwhmcalc[fwhmcalc > np.median(fwhmcalc)- 3* np.std(fwhmcalc)]
+                        rfp = round(np.median(fwhmcalc),3)
+                        rfr = round(np.median(fwhmcalc) * pixscale,3)
+                        rfs = round(np.std(fwhmcalc) * pixscale,3)
+                        plog("This image has a FWHM of " + str(rfr) + "+/-" +str(rfs) +" arcsecs, " + str(rfp) \
+                              + " pixels.")
+                        #breakpoint()
+                        g_dev['cam'].focusresult["FWHM"] = rfr
+                        g_dev['cam'].focusresult["mean_focus"] = avg_foc
+                        
+                        
+                        g_dev['cam'].rfp = rfp
+                        g_dev['cam'].rfr = rfr
+                        g_dev['cam'].rfs = rfs
+                        g_dev['cam'].sources = sources
+                        
+                        
+                        
+                        g_dev['cam'].sep_processing=False
+                        # try:
+                        #     valid = (
+                        #         0.0 <= result["FWHM"] <= 20.0
+                        #         and 100 < result["mean_focus"] < 12600
+                        #     )
+                        #     result["error"] = False
+
+                        # except:
+                        #     result[
+                        #         "error"
+
+                        #     ] = True
+                        #     result["FWHM"] = np.nan
+                        #     result["mean_focus"] = np.nan
+
+
+                        if focus_image != True :
+                            # Focus tracker code. This keeps track of the focus and if it drifts
+                            # Then it triggers an autofocus.
+                            g_dev["foc"].focus_tracker.pop(0)
+                            g_dev["foc"].focus_tracker.append(round(rfr,3))
+                            plog("Last ten FWHM : ")
+                            plog(g_dev["foc"].focus_tracker)
+                            plog("Median last ten FWHM")
+                            plog(np.nanmedian(g_dev["foc"].focus_tracker))
+                            plog("Last solved focus FWHM")
+                            plog(g_dev["foc"].last_focus_fwhm)
+
+                            # If there hasn't been a focus yet, then it can't check it, 
+                            #so make this image the last solved focus.
+                            if g_dev["foc"].last_focus_fwhm == None:
+                                g_dev["foc"].last_focus_fwhm = rfr
+                            else:
+                                # Very dumb focus slip deteector
+                                if (
+                                    np.nanmedian(g_dev["foc"].focus_tracker)
+                                    > g_dev["foc"].last_focus_fwhm
+                                    + self.config["focus_trigger"]
+                                ):
+                                    g_dev["foc"].focus_needed = True
+                                    g_dev["obs"].send_to_user(
+                                        "Focus has drifted to "
+                                        + str(np.nanmedian(g_dev["foc"].focus_tracker))
+                                        + " from "
+                                        + str(g_dev["foc"].last_focus_fwhm)
+                                        + ". Autofocus triggered for next exposures.",
+                                        p_level="INFO",
+                                    )
+                except:
+                    plog ("something failed in SEP calculations for exposure. This could be an overexposed image")
+                    plog (traceback.format_exc())
+                    sources = [0]
+                
+                
+                
+                
+                one_at_a_time = 0
+                self.sep_queue.task_done()
+                break
 
     def platesolve_process(self):
         """This is the platesolve queue that happens in a different process
