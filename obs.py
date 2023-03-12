@@ -2827,7 +2827,7 @@ def wait_for_slew():
             g_dev['mnt'].mount.Connected = True
             #g_dev['mnt'].home_command()
         else:
-            pass #breakpoint()
+            breakpoint()
     return 
 
 if __name__ == "__main__":

@@ -838,8 +838,14 @@ class Camera:
             pass
         
         try:
-            self.camera_x_size = self.camera.CameraXSize  #unbinned values. QHY returns 2
-            self.camera_y_size = self.camera.CameraYSize  #unbinned
+            if self.qhydirect:
+                # YES! IT DOES SEEM THAT QHY HAS x and y reversed for width and height
+                self.camera_y_size = qhycam.camera_params[qhycam_id]['image_width'].value
+                self.camera_x_size = qhycam.camera_params[qhycam_id]['image_height'].value
+                self.camera_image_size = i_h * i_w
+            else:
+                self.camera_x_size = self.camera.CameraXSize  #unbinned values. QHY returns 2
+                self.camera_y_size = self.camera.CameraYSize  #unbinned
         except:
             self.camera_x_size = self.config['camera'][self.name]['settings']['CameraXSize']
             self.camera_y_size = self.config['camera'][self.name]['settings']['CameraYSize']
@@ -1100,12 +1106,13 @@ class Camera:
         return True
     
     def _qhyccd_imageavailable(self):
-        print ("QHY CHECKING FOR IMAGE AVAILABLE - NOT YET IMPLEMENTED - MTF")
+        #print ("QHY CHECKING FOR IMAGE AVAILABLE - DOESN'T SEEM TO BE IMPLEMENTED! - MTF")
+        #print ("AT THE SAME TIME THE READOUT IS SO RAPID, THIS FUNCTION IS SORTA MEANINGLESS FOR THE QHY.")
         return True
     
     def _qhyccd_connect(self, p_connect):
         #self.camera.Connected = p_connect
-        print ("I guess the QHY is connected!")
+        #print ("QHY doesn't have an obvious - IS CONNECTED - function")
         return True
     
     def _qhyccd_temperature(self):
@@ -1117,16 +1124,13 @@ class Camera:
         return temptemp
     
     def _qhyccd_cooler_on(self):
-        print ("QHY CHECKING IF COOLER IS ON - NOT YET IMPLEMENTED")
-        
+        #print ("QHY DOESN'T HAVE AN IS COOLER ON METHOD)
+        #breakpoint()
         return True
     
     def _qhyccd_set_cooler_on(self):
-        try: 
-            temptemp=qhycam.so.GetQHYCCDParam(qhycam.camera_params[qhycam_id]['handle'], qhycam.CONTROL_CURTEMP)
-        except:
-            print ("failed at getting the CCD temperature")
-            temptemp=999.9
+        temptemp=qhycam.so.SetQHYCCDParam(qhycam.camera_params[qhycam_id]['handle'], qhycam.CONTROL_CURTEMP, c_double(float(self.setpoint)))
+        #print (temptemp)         
         return True
         #self.camera.CoolerOn = True
         #return self.camera.CoolerOn
@@ -1139,14 +1143,14 @@ class Camera:
         #    plog("Camera cannot set cooling temperature.")
         #    return p_temp
 
-        temptemp=qhycam.so.SetQHYCCDParam(qhycam.camera_params[qhycam_id]['handle'], qhycam.CONTROL_CURTEMP, c_double(-10))
+        temptemp=qhycam.so.SetQHYCCDParam(qhycam.camera_params[qhycam_id]['handle'], qhycam.CONTROL_CURTEMP, c_double(float(p_temp)))
         #breakpoint()
         print (temptemp)
         return 
     
     def _qhyccd_setpoint(self):
-        temptemp=qhycam.so.SetQHYCCDParam(qhycam.camera_params[qhycam_id]['handle'], qhycam.CONTROL_CURTEMP, c_double(-10))
-        print (temptemp)
+        temptemp=qhycam.so.SetQHYCCDParam(qhycam.camera_params[qhycam_id]['handle'], qhycam.CONTROL_CURTEMP, c_double(float(p_temp)))
+        #print (temptemp)
         return 
     
     def _qhyccd_expose(self, exposure_time, imtypeb):
@@ -1169,25 +1173,38 @@ class Camera:
         image_height_byref = c_uint32()
         bits_per_pixel_byref = c_uint32()
         
+        
+        temptime=time.time()
         success = qhycam.so.GetQHYCCDSingleFrame(qhycam.camera_params[qhycam_id]['handle'],
                                               byref(image_width_byref),
                                               byref(image_height_byref),
                                               byref(bits_per_pixel_byref),
                                               byref(qhycam.camera_params[qhycam_id]['channels']),
                                               byref(qhycam.camera_params[qhycam_id]['prev_img_data']))
-        print('read  single = ' + str(success))
+        plog('QHY HARDWARE READOUT: ' + str(time.time() - temptime))
+        #print('read  single = ' + str(success))
         
         
-        i_w = qhycam.camera_params[qhycam_id]['image_width'].value
-        i_h = qhycam.camera_params[qhycam_id]['image_height'].value
-        qhycam.camera_params[qhycam_id]['prev_img'] = np.ctypeslib.as_array(qhycam.camera_params[qhycam_id]['prev_img_data'])
-        print("---------------->" + str(len(qhycam.camera_params[qhycam_id]['prev_img'])))
-        image_size = i_h * i_w
-        print("image size =     " + str(image_size))
-        print("prev_img_list sub length-->" + str(len(qhycam.camera_params[qhycam_id]['prev_img'])))
-        print("Image W=" + str(i_w) + "        H=" + str(i_h))
-        qhycam.camera_params[qhycam_id]['prev_img'] = qhycam.camera_params[qhycam_id]['prev_img'][0:image_size]
-        image = np.reshape(qhycam.camera_params[qhycam_id]['prev_img'], (i_h, i_w))
+        
+        #qhycam.camera_params[qhycam_id]['prev_img'] = np.ctypeslib.as_array(qhycam.camera_params[qhycam_id]['prev_img_data'])
+        #print("---------------->" + str(len(qhycam.camera_params[qhycam_id]['prev_img'])))
+        
+        #print("image size =     " + str(image_size))
+        #print("prev_img_list sub length-->" + str(len(qhycam.camera_params[qhycam_id]['prev_img'])))
+        #print("Image W=" + str(i_w) + "        H=" + str(i_h))
+        
+        
+        
+        #qhycam.camera_params[qhycam_id]['prev_img'] = qhycam.camera_params[qhycam_id]['prev_img'][0:image_size]
+        #image = np.reshape(qhycam.camera_params[qhycam_id]['prev_img'], (i_h, i_w))
+        
+        temptime=time.time()
+        image = np.ctypeslib.as_array(qhycam.camera_params[qhycam_id]['prev_img_data'])
+        image = np.reshape(image[0:self.camera_image_size], (self.camera_x_size, self.camera_y_size))
+        plog('SITE SOFTWARE QHY READOUT: ' + str(time.time() - temptime))
+        #image = np.reshape(qhycam.camera_params[qhycam_id]['prev_img'], (i_h, i_w))
+        
+        
         
         #print (image)
         

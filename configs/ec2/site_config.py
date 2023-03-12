@@ -691,7 +691,7 @@ site_config = {
                 # A DATA-BASED REASON TO DO SO.....
                 # USUALLY TO GET A BAYER GRID ORIENTATED CORRECTLY
                 # ***** ONLY ONE OF THESE SHOULD BE ON! *********
-                'transpose_fits' : False,
+                'transpose_fits' : True,
                 'flipx_fits' : False,
                 'flipy_fits' : False,
                 'rotate180_fits' : False, # This also should be flipxy!

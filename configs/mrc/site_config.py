@@ -604,7 +604,8 @@ site_config = {
             'parent': 'telescope1',
             'name': 'sq001cs',      #Important because this points to a server file structure by that name.
             'desc':  'QHY 600C Pro',
-            'driver':  "ASCOM.QHYCCD_CAM2.Camera", # NB Be careful this is not QHY Camera2 or Guider  "Maxim.CCDCamera",   #'ASCOM.FLI.Kepler.Camera', "ASCOM.QHYCCD.Camera",   #
+            #'driver':  "ASCOM.QHYCCD_CAM2.Camera", # NB Be careful this is not QHY Camera2 or Guider  "Maxim.CCDCamera",   #'ASCOM.FLI.Kepler.Camera', "ASCOM.QHYCCD.Camera",   #
+            'driver':  "QHYCCD_Direct_Control", # NB Be careful this is not QHY Camera2 or Guider  "Maxim.CCDCamera",   #'ASCOM.FLI.Kepler.Camera', "ASCOM.QHYCCD.Camera",   #
             'detector':  'Sony IMX455 Color',  #  It would be good to build out a table of chip characteristics
             'use_file_mode':  False,   # NB we should clean out all file mode stuff.
             'file_mode_path':  'Q:/archive/sq01/maxim/',   #NB NB all file_mode Maxim stuff should go!
@@ -631,7 +632,7 @@ site_config = {
                 # A DATA-BASED REASON TO DO SO.....
                 # USUALLY TO GET A BAYER GRID ORIENTATED CORRECTLY
                 # ***** ONLY ONE OF THESE SHOULD BE ON! *********
-                'transpose_fits' : False,
+                'transpose_fits' : True,
                 'flipx_fits' : False,
                 'flipy_fits' : False,
                 'rotate180_fits' : False, # This also should be flipxy!
