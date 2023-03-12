@@ -49,6 +49,7 @@ from devices.darkslide import Darkslide
 import ptr_utility
 from global_yard import g_dev
 from ptr_utility import plog
+from ctypes import *
 
 
 """
@@ -121,6 +122,214 @@ ROWORDER	= 'TOP-DOWN' /          Image write order, BOTTOM-UP or TOP-DOWN
 FLIPSTAT	= '        '
 """
 dgs = "°"
+
+# This class is for QHY camera control
+class Qcam:
+    LOG_LINE_NUM = 0
+    # Python constants
+    STR_BUFFER_SIZE = 32
+
+    QHYCCD_SUCCESS = 0
+    QHYCCD_ERROR = 0xFFFFFFFF
+
+    stream_single_mode = 0
+    stream_live_mode = 1
+
+    bit_depth_8 = 8
+    bit_depth_16 = 16
+
+    CONTROL_BRIGHTNESS = c_int(0)
+    CONTROL_GAIN = c_int(6)
+    CONTROL_OFFSET = c_int(7)
+    CONTROL_EXPOSURE = c_int(8)
+    CAM_GPS = c_int(36)
+    CONTROL_CURTEMP = c_int(14)
+    CONTROL_CURPWM = c_int(15)
+    CONTROL_MANULPWM = c_int(16)
+    CONTROL_CFWPORT = c_int(17)
+    CONTROL_CFWSLOTSNUM = c_int(44)
+    CONTROL_COOLER = c_int(18)
+
+    camera_params = {}
+
+    so = None
+
+    def __init__(self, dll_path):
+        
+            # if sys.maxsize > 2147483647:
+            #     print(sys.maxsize)
+            #     print('64-Bit')
+            # else:
+            #     print(sys.maxsize)
+            #     print('32-Bit')
+        self.so = windll.LoadLibrary(dll_path)
+        print('Windows')
+
+        self.so.GetQHYCCDParam.restype = c_double
+        self.so.GetQHYCCDParam.argtypes = [c_void_p, c_int]
+        self.so.IsQHYCCDControlAvailable.argtypes = [c_void_p, c_int]
+        self.so.IsQHYCCDCFWPlugged.argtypes = [c_void_p]
+
+        self.so.GetQHYCCDMemLength.restype = c_ulong
+        self.so.OpenQHYCCD.restype = c_void_p
+        self.so.CloseQHYCCD.restype = c_void_p
+        self.so.CloseQHYCCD.argtypes = [c_void_p]
+        # self.so.EnableQHYCCDMessage(c_bool(False))
+        self.so.EnableQHYCCDMessage(c_bool(True))
+        self.so.SetQHYCCDStreamMode.argtypes = [c_void_p, c_uint8]
+        self.so.InitQHYCCD.argtypes = [c_void_p]
+        self.so.ExpQHYCCDSingleFrame.argtypes = [c_void_p]
+        self.so.GetQHYCCDMemLength.argtypes = [c_void_p]
+        self.so.BeginQHYCCDLive.argtypes = [c_void_p]
+        self.so.SetQHYCCDResolution.argtypes = [c_void_p, c_uint32, c_uint32, c_uint32, c_uint32]
+        self.so.GetQHYCCDSingleFrame.argtypes = [c_void_p, c_void_p, c_void_p, c_void_p, c_void_p, c_void_p]
+        self.so.GetQHYCCDChipInfo.argtypes = [c_void_p, c_void_p, c_void_p, c_void_p, c_void_p, c_void_p, c_void_p, c_void_p]
+        self.so.GetQHYCCDLiveFrame.argtypes = [c_void_p, c_void_p, c_void_p, c_void_p, c_void_p, c_void_p]
+        self.so.SetQHYCCDParam.argtypes = [c_void_p, c_int, c_double]
+        self.so.SetQHYCCDBitsMode.argtypes = [c_void_p, c_uint32]
+
+        # self.so.GetQHYCCDNumberOfReadModes.restype = c_uint32
+        # self.so.GetQHYCCDNumberOfReadModes.argtypes = [c_void_p, c_void_p]
+        # self.so.GetQHYCCDReadModeName.argtypes = [c_void_p, c_uint32, c_char_p]
+        # self.so.GetQHYCCDReadModeName.argtypes = [c_void_p, c_uint32]
+
+        self.so.GetReadModesNumber.argtypes = [c_char_p, c_void_p]
+        self.so.GetReadModeName.argtypes = [c_char_p, c_uint32, c_char_p]
+        self.so.SetQHYCCDReadMode.argtypes = [c_void_p, c_uint32]
+
+    @staticmethod
+    def slot_index_to_param(val_slot_index):
+        val_slot_index = val_slot_index + 48
+        return val_slot_index
+
+    @staticmethod
+    def slot_value_to_index(val_slot_value):
+        if val_slot_value == 78:
+            return -1
+        return val_slot_value - 48
+
+
+@CFUNCTYPE(None, c_char_p)
+def pnp_in(cam_id):
+    #breakpoint()
+    print("cam   + %s" % cam_id.decode('utf-8'))
+    global qhycam_id
+    qhycam_id=cam_id
+    init_camera_param(cam_id)
+    qhycam.camera_params[cam_id]['connect_to_pc'] = True
+    os.makedirs(cam_id.decode('utf-8'), exist_ok=True)
+    # select read mode
+    success = qhycam.so.GetReadModesNumber(cam_id, byref(qhycam.camera_params[cam_id]['read_mode_number']))
+    if success == qhycam.QHYCCD_SUCCESS:
+        print('-  read mode - %s' % qhycam.camera_params[cam_id]['read_mode_number'].value)
+        for read_mode_item_index in range(0, qhycam.camera_params[cam_id]['read_mode_number'].value):
+            read_mode_name = create_string_buffer(qhycam.STR_BUFFER_SIZE)
+            qhycam.so.GetReadModeName(cam_id, read_mode_item_index, read_mode_name)
+            print('%s  %s %s' % (cam_id.decode('utf-8'), read_mode_item_index, read_mode_name.value))
+    else:
+        print('GetReadModesNumber false')
+        qhycam.camera_params[cam_id]['read_mode_number'] = c_uint32(0)
+
+    read_mode_count = qhycam.camera_params[cam_id]['read_mode_number'].value
+    # if read_mode_count == 0:
+    #     read_mode_count = 1
+    # for read_mode_index in range(0, read_mode_count):
+    #     test_frame(cam_id, qhycam.stream_single_mode, cam.bit_depth_16, read_mode_index)
+    #     test_frame(cam_id, qhycam.stream_live_mode, cam.bit_depth_16, read_mode_index)
+    #     test_frame(cam_id, qhycam.stream_single_mode, cam.bit_depth_8, read_mode_index)
+    #     test_frame(cam_id, qhycam.stream_live_mode, cam.bit_depth_8, read_mode_index)
+    #     qhycam.so.CloseQHYCCD(cam.camera_params[cam_id]['handle'])
+
+
+@CFUNCTYPE(None, c_char_p)
+def pnp_out(cam_id):
+    print("cam   - %s" % cam_id.decode('utf-8'))
+
+
+# MTF - THIS IS A QHY FUNCTION THAT I HAVEN"T FIGURED OUT WHETHER IT IS MISSION CRITICAL OR NOT
+def get_average_l(image):
+    im = np.array(image)
+    w, h = im.shape
+    return np.average(im.reshape(w * h))
+
+# MTF - THIS IS A QHY FUNCTION THAT I HAVEN"T FIGURED OUT WHETHER IT IS MISSION CRITICAL OR NOT
+def np_array_to_ascii(pil_image, cols, scale, more_levels):
+    global gscale1, gscale2
+    W, H = pil_image.size[0], pil_image.size[1]
+    print("input image dims: %d x %d" % (W, H))
+    w = W / cols
+    h = w / scale
+    rows = int(H / h)
+
+    print("cols: %d, rows: %d" % (cols, rows))
+    print("tile dims: %d x %d" % (w, h))
+    if cols > W or rows > H:
+        print("Image too small for specified cols!")
+        exit(0)
+
+    aimg = []
+    for j in range(rows):
+        y1 = int(j * h)
+        y2 = int((j + 1) * h)
+
+        if j == rows - 1:
+            y2 = H
+
+        aimg.append("")
+
+        for i in range(cols):
+            x1 = int(i * w)
+            x2 = int((i + 1) * w)
+
+            if i == cols - 1:
+                x2 = W
+
+            img = pil_image.crop((x1, y1, x2, y2))
+            avg = int(get_average_l(img))
+
+            if more_levels:
+                gsval = gscale1[int((avg * 69) / 255)]
+            else:
+                gsval = gscale2[int((avg * 9) / 255)]
+
+            aimg[j] += gsval
+
+    return aimg
+
+# MTF - THIS IS A QHY FUNCTION THAT I HAVEN"T FIGURED OUT WHETHER IT IS MISSION CRITICAL OR NOT
+def init_camera_param(cam_id):
+    if not qhycam.camera_params.keys().__contains__(cam_id):
+        qhycam.camera_params[cam_id] = {'connect_to_pc': False,
+                                     'connect_to_sdk': False,
+                                     'EXPOSURE': c_double(1000.0 * 1000.0),
+                                     'GAIN': c_double(54.0),
+                                     'CONTROL_BRIGHTNESS': c_int(0),
+                                     'CONTROL_GAIN': c_int(6),
+                                     'CONTROL_EXPOSURE': c_int(8),
+                                     'CONTROL_CURTEMP': c_int(14),
+                                     'CONTROL_CURPWM': c_int(15),
+                                     'CONTROL_MANULPWM': c_int(16),
+                                     'CONTROL_COOLER': c_int(18),
+                                     'chip_width': c_double(),
+                                     'chip_height': c_double(),
+                                     'image_width': c_uint32(),
+                                     'image_height': c_uint32(),
+                                     'pixel_width': c_double(),
+                                     'pixel_height': c_double(),
+                                     'bits_per_pixel': c_uint32(),
+                                     'mem_len': c_ulong(),
+                                     'stream_mode': c_uint8(0),
+                                     'channels': c_uint32(),
+                                     'read_mode_number': c_uint32(),
+                                     'read_mode_index': c_uint32(),
+                                     'read_mode_name': c_char('-'.encode('utf-8')),
+                                     'prev_img_data': c_void_p(0),
+                                     'prev_img': None,
+                                     'handle': None,
+                                     }
+
+
+
 # These should eventually be in a utility module
 def next_sequence(pCamera):
     global SEQ_Counter
@@ -210,7 +419,10 @@ class Camera:
         self.alias = config["camera"][self.name]["name"]
         win32com.client.pythoncom.CoInitialize()
         plog(driver, name)
-        self.camera = win32com.client.Dispatch(driver)
+        if not driver == "QHYCCD_Direct_Control":
+            self.camera = win32com.client.Dispatch(driver)
+        else:
+            self.camera = None
         self.async_exposure_lock=False # This is needed for TheSkyx (and maybe future programs) where the 
                                        # exposure has to be called from a separate thread and then waited 
                                        # for in the main thread
@@ -289,6 +501,7 @@ class Camera:
             self.maxim = False
             self.ascom = True
             self.theskyx = False
+            self.qhydirect = False
             plog("ASCOM is connected:  ", self._connect(True))
             plog("Control is ASCOM camera driver.")
             #try:
@@ -336,8 +549,147 @@ class Camera:
             self.maxim = False
             self.ascom = False
             self.theskyx = True
+            self.qhydirect = False
             plog("TheSkyX is connected:  ")
             self.app = win32com.client.Dispatch("CCDSoft2XAdaptor.ccdsoft5Camera")
+        
+        elif driver == "QHYCCD_Direct_Control":
+            global qhycam
+            plog("Connecting directly to QHY")
+            qhycam = Qcam(os.path.join("support_info/qhysdk/x64/qhyccd.dll"))
+    
+    
+    
+    
+            #gscale1 = "$@B%8&WM#*oahkbdpqwmZO0QLCJUYXzcvunxrjft/\\|()1{}[]?-_+~<>i!lI;:,\"^`'. "
+            #gscale2 = '@%#*+=-:. '
+            
+            qhycam.so.RegisterPnpEventIn(pnp_in)
+            qhycam.so.RegisterPnpEventOut(pnp_out)
+            plog("QHY Direct Control is connected:  ")
+            qhycam.so.InitQHYCCDResource()
+            qhycam.camera_params[qhycam_id]['handle'] = qhycam.so.OpenQHYCCD(qhycam_id)
+            if qhycam.camera_params[qhycam_id]['handle'] is None:
+                print('open camera error %s' % cam_id)
+            
+            success = qhycam.so.SetQHYCCDReadMode(qhycam.camera_params[qhycam_id]['handle'], 0) # 0 is Photographic DSO 16 Bit
+            qhycam.camera_params[qhycam_id]['stream_mode'] = c_uint8(qhycam.stream_single_mode)
+            success = qhycam.so.SetQHYCCDStreamMode(qhycam.camera_params[qhycam_id]['handle'], qhycam.camera_params[qhycam_id]['stream_mode'])
+            print('set StreamMode   =' + str(success))
+            
+            success = qhycam.so.InitQHYCCD(qhycam.camera_params[qhycam_id]['handle'])
+            print('init Camera   =' + str(success))
+            
+            
+            mode_name = create_string_buffer(qhycam.STR_BUFFER_SIZE)
+            qhycam.so.GetReadModeName(qhycam_id, 0, mode_name) # 0 is Photographic DSO 16 bit
+
+            success = qhycam.so.SetQHYCCDBitsMode(qhycam.camera_params[qhycam_id]['handle'], c_uint32(qhycam.bit_depth_16))
+
+            success = qhycam.so.GetQHYCCDChipInfo(qhycam.camera_params[qhycam_id]['handle'],
+                                               byref(qhycam.camera_params[qhycam_id]['chip_width']),
+                                               byref(qhycam.camera_params[qhycam_id]['chip_height']),
+                                               byref(qhycam.camera_params[qhycam_id]['image_width']),
+                                               byref(qhycam.camera_params[qhycam_id]['image_height']),
+                                               byref(qhycam.camera_params[qhycam_id]['pixel_width']),
+                                               byref(qhycam.camera_params[qhycam_id]['pixel_height']),
+                                               byref(qhycam.camera_params[qhycam_id]['bits_per_pixel']))
+
+            print('info.   =' + str(success))
+            
+            
+            qhycam.camera_params[qhycam_id]['mem_len'] = qhycam.so.GetQHYCCDMemLength(qhycam.camera_params[qhycam_id]['handle'])
+            i_w = qhycam.camera_params[qhycam_id]['image_width'].value
+            i_h = qhycam.camera_params[qhycam_id]['image_height'].value
+            print('c-w:     ' + str(qhycam.camera_params[qhycam_id]['chip_width'].value), end='')
+            print('    c-h: ' + str(qhycam.camera_params[qhycam_id]['chip_height'].value))
+            print('p-w:     ' + str(qhycam.camera_params[qhycam_id]['pixel_width'].value), end='')
+            print('    p-h: ' + str(qhycam.camera_params[qhycam_id]['pixel_height'].value))
+            print('i-w:     ' + str(i_w), end='')
+            print('    i-h: ' + str(i_h))
+            print('bit: ' + str(qhycam.camera_params[qhycam_id]['bits_per_pixel'].value))
+            print('mem len: ' + str(qhycam.camera_params[qhycam_id]['mem_len']))
+
+            val_temp = qhycam.so.GetQHYCCDParam(qhycam.camera_params[qhycam_id]['handle'], qhycam.CONTROL_CURTEMP)
+            val_pwm = qhycam.so.GetQHYCCDParam(qhycam.camera_params[qhycam_id]['handle'], qhycam.CONTROL_CURPWM)
+
+            # todo  c_uint8 c_uint16??
+            #if bit_depth == cam.bit_depth_16:
+            print('using c_uint16()')
+            qhycam.camera_params[qhycam_id]['prev_img_data'] = (c_uint16 * int(qhycam.camera_params[qhycam_id]['mem_len'] / 2))()
+            #else:
+            #    print('using c_uint8()')
+            #    cam.camera_params[cam_id]['prev_img_data'] = (c_uint8 * cam.camera_params[cam_id]['mem_len'])()
+
+            success = qhycam.QHYCCD_ERROR
+            
+            
+            qhycam.so.SetQHYCCDResolution(qhycam.camera_params[qhycam_id]['handle'], c_uint32(0), c_uint32(0), c_uint32(i_w),
+                                           c_uint32(i_h))
+            
+            
+            success = qhycam.so.ExpQHYCCDSingleFrame(qhycam.camera_params[qhycam_id]['handle'])
+            print('exp  single = ' + str(success))
+            
+            
+            
+            image_width_byref = c_uint32()
+            image_height_byref = c_uint32()
+            bits_per_pixel_byref = c_uint32()
+            
+            
+            
+            success = qhycam.so.SetQHYCCDParam(qhycam.camera_params[qhycam_id]['handle'], qhycam.CONTROL_EXPOSURE, c_double(20000))
+            success = qhycam.so.SetQHYCCDParam(qhycam.camera_params[qhycam_id]['handle'], qhycam.CONTROL_GAIN, c_double(30))
+            success = qhycam.so.SetQHYCCDParam(qhycam.camera_params[qhycam_id]['handle'], qhycam.CONTROL_OFFSET, c_double(40))
+            
+            
+            
+            
+            
+            success = qhycam.so.GetQHYCCDSingleFrame(qhycam.camera_params[qhycam_id]['handle'],
+                                                  byref(image_width_byref),
+                                                  byref(image_height_byref),
+                                                  byref(bits_per_pixel_byref),
+                                                  byref(qhycam.camera_params[qhycam_id]['channels']),
+                                                  byref(qhycam.camera_params[qhycam_id]['prev_img_data']))
+            print('read  single = ' + str(success))
+            
+            
+            qhycam.camera_params[qhycam_id]['prev_img'] = np.ctypeslib.as_array(qhycam.camera_params[qhycam_id]['prev_img_data'])
+            print("---------------->" + str(len(qhycam.camera_params[qhycam_id]['prev_img'])))
+            image_size = i_h * i_w
+            print("image size =     " + str(image_size))
+            print("prev_img_list sub length-->" + str(len(qhycam.camera_params[qhycam_id]['prev_img'])))
+            print("Image W=" + str(i_w) + "        H=" + str(i_h))
+            qhycam.camera_params[qhycam_id]['prev_img'] = qhycam.camera_params[qhycam_id]['prev_img'][0:image_size]
+            image = np.reshape(qhycam.camera_params[qhycam_id]['prev_img'], (i_h, i_w))
+            
+            print (image)
+            
+            
+            #breakpoint()
+            
+            self._connected = self._qhyccd_connected
+            self._connect = self._qhyccd_connect
+            self._set_setpoint = self._qhyccd_set_setpoint
+            self._setpoint = self._qhyccd_setpoint
+            self._temperature = self._qhyccd_temperature
+            self._cooler_on = self._qhyccd_cooler_on
+            self._set_cooler_on = self._qhyccd_set_cooler_on
+            self._expose = self._qhyccd_expose
+            self._stop_expose = self._qhyccd_stop_expose
+            self._imageavailable = self._qhyccd_imageavailable
+            self._getImageArray = self._qhyccd_getImageArray
+            
+            
+            self.description = "QHYDirectControl"
+            self.maxim = False
+            self.ascom = False
+            self.theskyx = False
+            self.qhydirect = True
+            
+
 
         else:
             plog("Maxim camera is initializing.")
@@ -357,6 +709,7 @@ class Camera:
             self.maxim = True
             self.ascom = False
             self.theskyx = False
+            self.qhydirect = False
             plog("Maxim is connected:  ", self._connect(True))
             self.app = win32com.client.Dispatch("Maxim.Application")
             plog(self.camera)
@@ -499,10 +852,13 @@ class Camera:
                 self.camera.NumY = self.camera_y_size
             except:
                 plog ('numx initialise didnot work')
-            self.camera.StartX = 0
-            self.camera.StartY = 0
-            self.camera.BinX = 1
-            self.camera.BinY = 1
+            try:
+                self.camera.StartX = 0
+                self.camera.StartY = 0
+                self.camera.BinX = 1
+                self.camera.BinY = 1
+            except:
+                plog ("self.camera setup didn't work... may be a QHY")
             plog('Num X , y set for QHY camera.')
         self.camera_num_x = int(1)  #NB I do not recognize this.    WER  Apprently not used.
 
@@ -738,6 +1094,111 @@ class Camera:
     def _ascom_getImageArray(self):
         return np.asarray(self.camera.ImageArray)
 
+
+    def _qhyccd_connected(self):
+        print ("MTF still has to connect QHY stuff")
+        return True
+    
+    def _qhyccd_imageavailable(self):
+        print ("QHY CHECKING FOR IMAGE AVAILABLE - NOT YET IMPLEMENTED - MTF")
+        return True
+    
+    def _qhyccd_connect(self, p_connect):
+        #self.camera.Connected = p_connect
+        print ("I guess the QHY is connected!")
+        return True
+    
+    def _qhyccd_temperature(self):
+        try: 
+            temptemp=qhycam.so.GetQHYCCDParam(qhycam.camera_params[qhycam_id]['handle'], qhycam.CONTROL_CURTEMP)
+        except:
+            print ("failed at getting the CCD temperature")
+            temptemp=999.9
+        return temptemp
+    
+    def _qhyccd_cooler_on(self):
+        print ("QHY CHECKING IF COOLER IS ON - NOT YET IMPLEMENTED")
+        
+        return True
+    
+    def _qhyccd_set_cooler_on(self):
+        try: 
+            temptemp=qhycam.so.GetQHYCCDParam(qhycam.camera_params[qhycam_id]['handle'], qhycam.CONTROL_CURTEMP)
+        except:
+            print ("failed at getting the CCD temperature")
+            temptemp=999.9
+        return True
+        #self.camera.CoolerOn = True
+        #return self.camera.CoolerOn
+    
+    def _qhyccd_set_setpoint(self, p_temp):
+        #if self.camera.CanSetCCDTemperature:
+        #    self.camera.SetCCDTemperature = float(p_temp)
+        #    return self.camera.SetCCDTemperature
+        #else:
+        #    plog("Camera cannot set cooling temperature.")
+        #    return p_temp
+
+        temptemp=qhycam.so.SetQHYCCDParam(qhycam.camera_params[qhycam_id]['handle'], qhycam.CONTROL_CURTEMP, c_double(-10))
+        #breakpoint()
+        print (temptemp)
+        return 
+    
+    def _qhyccd_setpoint(self):
+        temptemp=qhycam.so.SetQHYCCDParam(qhycam.camera_params[qhycam_id]['handle'], qhycam.CONTROL_CURTEMP, c_double(-10))
+        print (temptemp)
+        return 
+    
+    def _qhyccd_expose(self, exposure_time, imtypeb):
+        
+        success = qhycam.so.SetQHYCCDParam(qhycam.camera_params[qhycam_id]['handle'], qhycam.CONTROL_EXPOSURE, c_double(exposure_time))
+        qhycam.so.ExpQHYCCDSingleFrame(qhycam.camera_params[qhycam_id]['handle'])
+        
+        
+        
+        #self.camera.StartExposure(exposure_time, imtypeb)
+    
+    def _qhyccd_stop_expose(self):
+        success = qhycam.so.GetQHYCCDSingleFrame(qhycam.camera_params[qhycam_id]['handle'])
+        #self.camera.StopExposure()  # ASCOM also has an AbortExposure method.
+    
+    def _qhyccd_getImageArray(self):
+        
+        
+        image_width_byref = c_uint32()
+        image_height_byref = c_uint32()
+        bits_per_pixel_byref = c_uint32()
+        
+        success = qhycam.so.GetQHYCCDSingleFrame(qhycam.camera_params[qhycam_id]['handle'],
+                                              byref(image_width_byref),
+                                              byref(image_height_byref),
+                                              byref(bits_per_pixel_byref),
+                                              byref(qhycam.camera_params[qhycam_id]['channels']),
+                                              byref(qhycam.camera_params[qhycam_id]['prev_img_data']))
+        print('read  single = ' + str(success))
+        
+        
+        i_w = qhycam.camera_params[qhycam_id]['image_width'].value
+        i_h = qhycam.camera_params[qhycam_id]['image_height'].value
+        qhycam.camera_params[qhycam_id]['prev_img'] = np.ctypeslib.as_array(qhycam.camera_params[qhycam_id]['prev_img_data'])
+        print("---------------->" + str(len(qhycam.camera_params[qhycam_id]['prev_img'])))
+        image_size = i_h * i_w
+        print("image size =     " + str(image_size))
+        print("prev_img_list sub length-->" + str(len(qhycam.camera_params[qhycam_id]['prev_img'])))
+        print("Image W=" + str(i_w) + "        H=" + str(i_h))
+        qhycam.camera_params[qhycam_id]['prev_img'] = qhycam.camera_params[qhycam_id]['prev_img'][0:image_size]
+        image = np.reshape(qhycam.camera_params[qhycam_id]['prev_img'], (i_h, i_w))
+        
+        #print (image)
+        
+        
+        
+        return np.asarray(image)
+
+
+
+
+
     def create_simple_autosave(
         self,
         exp_time=0,
@@ -798,6 +1259,8 @@ class Camera:
             cam_stat = "ASCOM camera not implemented yet"  # self.camera.CameraState
         if self.theskyx:
             cam_stat = "TheSkyX camera not implemented yet"  # self.camera.CameraState
+        if self.qhydirect:
+            cam_stat = "QHYCCD camera not implemented yet"  # self.camera.CameraState
         status[
             "status"
         ] = cam_stat  # The state could be expanded to be more meaningful.
@@ -1097,7 +1560,7 @@ class Camera:
                     self.exposure_busy = False
                     return
             else:
-                plog ("No filter wheel, not selecting a filter")
+                #plog ("No filter wheel, not selecting a filter")
                 self.current_filter = self.config["filter_wheel"]["filter_wheel1"]["name"]
         except Exception as e:
             plog("Camera filter setup:  ", e)
@@ -1205,7 +1668,7 @@ class Camera:
                     # Hasn't completed already
                     # Check whether calendar entry is still existant.
                     # If not, stop running block
-                    print ("LOOKING FOR CALENDAR!")
+                    #print ("LOOKING FOR CALENDAR!")
                     if not calendar_event_id == None:
                         g_dev['obs'].scan_requests()
                         foundcalendar=False                    
@@ -1229,7 +1692,7 @@ class Camera:
                         #self.t1 = time.time()
                         self.exposure_busy = True                       
 
-                        if self.maxim or self.ascom or self.theskyx:
+                        if self.maxim or self.ascom or self.theskyx or self.qhydirect:
 
                             ldr_handle_time = None
                             ldr_handle_high_time = None  #  This is not maxim-specific
