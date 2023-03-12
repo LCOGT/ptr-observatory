@@ -805,6 +805,12 @@ sel
         while time.time() < self.time_last_status + self.status_interval:
             return  # Note we are just not sending status, too soon.
 
+
+        # Good spot to check if we need to nudge the telescope as long as we aren't exposing.
+        if not g_dev["cam"].exposure_busy:
+            check_platesolve_and_nudge()    
+
+
         #plog ("Time between status updates: " + str(time.time() - self.time_last_status))
 
         t1 = time.time()
@@ -2786,6 +2792,43 @@ sel
             else:
                 time.sleep(0.1)
 
+def check_platesolve_and_nudge():
+    
+    # This block repeats itself in various locations to try and nudge the scope
+    # If the platesolve requests such a thing.
+    if g_dev['obs'].pointing_correction_requested_by_platesolve_thread:
+        g_dev['obs'].pointing_correction_requested_by_platesolve_thread = False
+        if g_dev['obs'].pointing_correction_request_time > g_dev['obs'].time_since_last_slew: # Check it hasn't slewed since request                        
+            plog ("I am nudging the telescope slightly at the request of platesolve!")                            
+            g_dev['mnt'].mount.SlewToCoordinatesAsync(g_dev['obs'].pointing_correction_request_ra, g_dev['obs'].pointing_correction_request_dec)
+            g_dev['obs'].time_since_last_slew = time.time()
+            wait_for_slew()
+
+def wait_for_slew():    
+    
+    try:
+        if not g_dev['mnt'].mount.AtPark:
+            movement_reporting_timer=time.time()
+            while g_dev['mnt'].mount.Slewing: #or g_dev['enc'].status['dome_slewing']:   #Filter is moving??
+                #if g_dev['mnt'].mount.Slewing: plog( 'm>')
+                #if g_dev['enc'].status['dome_slewing']: st += 'd>'
+                if time.time() - movement_reporting_timer > 2.0:
+                    plog( 'm>')
+                    movement_reporting_timer=time.time()
+                #time.sleep(0.1)
+                g_dev['obs'].update_status(mount_only=True, dont_wait=True)            
+            
+    except Exception as e:
+        plog("Motion check faulted.")
+        plog(traceback.format_exc())
+        if 'pywintypes.com_error' in str(e):
+            plog ("Mount disconnected. Recovering.....")
+            time.sleep(30)
+            g_dev['mnt'].mount.Connected = True
+            #g_dev['mnt'].home_command()
+        else:
+            pass #breakpoint()
+    return 
 
 if __name__ == "__main__":
 
