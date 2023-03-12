@@ -1459,25 +1459,26 @@ sel
                 
 
     def sep_process(self):
-        """This is the platesolve queue that happens in a different process
-        than the main camera thread. Platesolves can take 5-10, up to 30 seconds sometimes
-        to run, so it is an overhead we can't have hanging around. This thread attempts
-        a platesolve and uses the solution and requests a telescope nudge/center
-        if the telescope has not slewed in the intervening time between beginning
-        the platesolving process and completing it.
-        
+        """This is the sep queue that happens in a different process
+        than the main camera thread. SEPs can take 5-10, up to 30 seconds sometimes
+        to run, so it is an overhead we can't have hanging around. This thread undertakes
+        the SEP routine while the main camera thread is processing the jpeg image.
+        The camera thread will wait for SEP to finish before moving on.         
         """
 
-        one_at_a_time = 0
+        
         # This stopping mechanism allows for threads to close cleanly.
+        one_at_a_time=0
         while True:
-            if (not self.sep_queue.empty()) and one_at_a_time == 0:
-                one_at_a_time = 1
+            if (not self.sep_queue.empty()) and one_at_a_time==0:
+                one_at_a_time=1
+                #print ("In the queue.....")
+                
                 (hdufocusdata, pixscale, readnoise, avg_foc, focus_image) = self.sep_queue.get(block=False)
                 
                 # Interpolate to make a high resolution version for focussing
                 # and platesolving
-                if self.config["camera"][self.name]["settings"]['bin_for_focus']:
+                if self.config["camera"][g_dev['cam'].name]["settings"]['bin_for_focus']:
                     hdufocusdata=block_reduce(hdufocusdata,2)
                     binfocus=2
                 else:
@@ -1513,7 +1514,7 @@ sel
                     sources = sep.extract(
                         focusimg, 2.5, err=bkg.globalrms, minarea=minarea
                     )
-                    plog ("min_area: " + str(minarea))
+                    #plog ("min_area: " + str(minarea))
                     sources = Table(sources)
                     sources = sources[sources['flag'] < 8]
                     image_saturation_level = g_dev['cam'].config["camera"][g_dev['cam'].name]["settings"]["saturate"]
@@ -1547,8 +1548,7 @@ sel
                     sources['kronrad'] = kronrad
 
                     # Calculate uncertainty of image (thanks BANZAI)
-                    uncertainty = float(readnoise * np.ones(hdufocusdata.shape, \
-                                        dtype=hdufocusdata.dtype) / readnoise)
+                    uncertainty = float(readnoise) * np.ones(hdufocusdata.shape, dtype=hdufocusdata.dtype) / float(readnoise)
 
                     # Calcuate the equivilent of flux_auto (Thanks BANZAI)
                     # This is the preferred best photometry SEP can do.
@@ -1594,10 +1594,14 @@ sel
 
 
                     if len(sources) < 2:
-                        plog ("not enough sources to estimate a reliable focus")
-                        g_dev['cam'].focusresult["error"]=True
-                        g_dev['cam'].focusresult = np.nan
+                        #plog ("not enough sources to estimate a reliable focus")
+                        g_dev['cam'].expresult["error"]=True
+                        g_dev['cam'].expresult['FWHM'] = np.nan
                         sources['FWHM'] = [np.nan] * len(sources)
+                        g_dev['cam'].rfp = np.nan
+                        g_dev['cam'].rfr = np.nan
+                        g_dev['cam'].rfs = np.nan
+                        g_dev['cam'].sources = sources
 
                     else:
                         # Get halflight radii
@@ -1625,8 +1629,8 @@ sel
                         plog("This image has a FWHM of " + str(rfr) + "+/-" +str(rfs) +" arcsecs, " + str(rfp) \
                               + " pixels.")
                         #breakpoint()
-                        g_dev['cam'].focusresult["FWHM"] = rfr
-                        g_dev['cam'].focusresult["mean_focus"] = avg_foc
+                        g_dev['cam'].expresult["FWHM"] = rfr
+                        g_dev['cam'].expresult["mean_focus"] = avg_foc
                         
                         
                         g_dev['cam'].rfp = rfp
@@ -1636,7 +1640,7 @@ sel
                         
                         
                         
-                        g_dev['cam'].sep_processing=False
+                        
                         # try:
                         #     valid = (
                         #         0.0 <= result["FWHM"] <= 20.0
@@ -1688,14 +1692,18 @@ sel
                 except:
                     plog ("something failed in SEP calculations for exposure. This could be an overexposed image")
                     plog (traceback.format_exc())
-                    sources = [0]
+                    g_dev['cam'].sources = [0]
+                    g_dev['cam'].rfp = np.nan
+                    g_dev['cam'].rfr = np.nan
+                    g_dev['cam'].rfs = np.nan
                 
                 
                 
-                
-                one_at_a_time = 0
+                g_dev['cam'].sep_processing=False
                 self.sep_queue.task_done()
-                break
+                one_at_a_time=0                
+            else:
+                time.sleep(0.1)
 
     def platesolve_process(self):
         """This is the platesolve queue that happens in a different process
@@ -1918,7 +1926,7 @@ sel
                 one_at_a_time = 0
 
             else:
-                time.sleep(0.5)
+                time.sleep(0.1)
 
 
 

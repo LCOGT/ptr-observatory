@@ -1120,7 +1120,7 @@ class Camera:
                     time.sleep(0.2)                                
                             
 
-        result = {}  #  This is a default return just in case
+        self.expresult = {}  #  This is a default return just in case
         num_retries = 0
         for seq in range(count):
             # SEQ is the outer repeat loop and takes count images; those individual exposures are wrapped in a
@@ -1129,8 +1129,8 @@ class Camera:
                 g_dev["obs"].update_status(cancel_check=False)
                 # breakpoint()
                 # if not g_dev["cam"].exposure_busy:
-                #     result = {"stopped": True}
-                #     return result
+                #     self.expself.expresult = {"stopped": True}
+                #     return self.expresult
 
             ## Vital Check : Has end of observing occured???
             ## Need to do this, SRO kept taking shots til midday without this
@@ -1177,8 +1177,8 @@ class Camera:
                 while self.retry_camera > 0:
                     if g_dev["obs"].stop_all_activity:
 
-                        if result != None and result != {}:
-                            if result["stopped"] is True:
+                        if self.expresult != None and self.expresult != {}:
+                            if self.expresult["stopped"] is True:
                                 g_dev["obs"].stop_all_activity = False
                                 plog("Camera retry loop stopped by Cancel Exposure")
                                 self.exposure_busy = False
@@ -1326,14 +1326,14 @@ class Camera:
                             g_dev['obs'].time_since_last_exposure = time.time()
                         else:
                             plog("Something terribly wrong, driver not recognized.!")
-                            result = {}
-                            result["error":True]
+                            self.expresult = {}
+                            self.expresult["error":True]
                             self.exposure_busy = False
-                            return result
+                            return self.expresult
                         #self.t9 = time.time()
                         
                         # We call below to keep this subroutine a reasonable length, Basically still in Phase 2
-                        result = self.finish_exposure(
+                        self.expresult = self.finish_exposure(
                             exposure_time,
                             frame_type,
                             count - seq,
@@ -1369,7 +1369,7 @@ class Camera:
         #  This is the loop point for the seq count loop
         #self.t11 = time.time()
         self.exposure_busy = False
-        return result
+        return self.expresult
 
     def stop_command(self, required_params, optional_params):
         """Stop the current exposure and return the camera to Idle state."""
@@ -1433,7 +1433,7 @@ class Camera:
         )
 
         self.completion_time = self.t2 + cycle_time
-        result = {"error": False}
+        self.expresult = {"error": False}
         quartileExposureReport = 0
         self.plog_exposure_time_counter_timer=time.time() -3.0
         
@@ -1548,9 +1548,9 @@ class Camera:
                 retrycounter = 0
                 while imageCollected != 1:   
                     if retrycounter == 8:
-                        result = {"error": True}
+                        self.expresult = {"error": True}
                         plog("Retried 8 times and didn't get an image, giving up.")
-                        return result
+                        return self.expresult
                     try:
                         self.img = self._getImageArray()  # As read, this is a Windows Safe Array of longs
                         imageCollected = 1
@@ -1595,9 +1595,9 @@ class Camera:
                         g_dev["obs"].send_to_user(
                             "Flat rejected, too bright.", p_level="INFO"
                         )
-                        result["error"] = True
-                        result["patch"] = bi_mean
-                        return result  # signals to flat routine image was rejected, prompt return
+                        self.expresult["error"] = True
+                        self.expresult["patch"] = bi_mean
+                        return self.expresult  # signals to flat routine image was rejected, prompt return
                     
                     elif (
                         bi_mean
@@ -1607,15 +1607,15 @@ class Camera:
                         g_dev["obs"].send_to_user(
                             "Flat rejected, too dim.", p_level="INFO"
                         )
-                        result["error"] = True
-                        result["patch"] = bi_mean
-                        return result  # signals to flat routine image was rejected, prompt return
+                        self.expresult["error"] = True
+                        self.expresult["patch"] = bi_mean
+                        return self.expresult  # signals to flat routine image was rejected, prompt return
                     else:
                         plog('Good flat value! :  ', bi_mean)
                     
                 if not g_dev["cam"].exposure_busy:
-                    result = {"stopped": True}
-                    return result
+                    self.expresult = {"stopped": True}
+                    return self.expresult
                 
 
                 counter = 0
@@ -1902,7 +1902,7 @@ class Camera:
                         ]["trim_sec"]
                         
                     except:
-                        plog ("need to fix TIMSEC etc. in site-config")
+                        #plog ("need to fix TIMSEC etc. in site-config")
                         pass
 
                     hdu.header["SATURATE"] = (
@@ -2556,8 +2556,9 @@ class Camera:
                         
                         
                         # IMMEDIATELY SEND TO SEP QUEUE
-                        self.to_sep((hdufocusdata, pixscale, float(hdu.header["RDNOISE"]), avg_foc[1], focus_image))
                         self.sep_processing=True
+                        self.to_sep((hdufocusdata, pixscale, float(hdu.header["RDNOISE"]), avg_foc[1], focus_image))
+                        #self.sep_processing=True
                         
                         
                         
@@ -2922,25 +2923,28 @@ class Camera:
 
                         
 
-                        # AT THIS STAGE WAIT FOR SEP TO COMPLETE        
-                        while True:
+                        # AT THIS STAGE WAIT FOR SEP TO COMPLETE      
+                        #print (self.sep_queue)
+                        x = 0
+                        while x == 0:
                             if g_dev['cam'].sep_processing:
-                                time.sleep(0.1)
+                                time.sleep(1)
                                 print ("waiting for SEP to complete")
+                                #breakpoint()
                             else:
-                                break
+                                x = 1
                             
                         hdu.header["SEPSKY"] = g_dev['cam'].sepsky
                         
                         
                         
 
-                        if 'rfr' in locals():
+                        #if 'rfr' in locals():
 
-                            hdu.header["FWHM"] = ( str(self.rfp), 'FWHM in pixels')
-                            hdu.header["FWHMpix"] = ( str(self.rfp), 'FWHM in pixels')
-                            hdu.header["FWHMasec"] = ( str(self.rfr), 'FWHM in arcseconds')
-                            hdu.header["FWHMstd"] = ( str(self.rfs), 'FWHM standard deviation in arcseconds')
+                        hdu.header["FWHM"] = ( str(self.rfp), 'FWHM in pixels')
+                        hdu.header["FWHMpix"] = ( str(self.rfp), 'FWHM in pixels')
+                        hdu.header["FWHMasec"] = ( str(self.rfr), 'FWHM in arcseconds')
+                        hdu.header["FWHMstd"] = ( str(self.rfs), 'FWHM standard deviation in arcseconds')
 
                         #if focus_image == False:
                         text = open(
@@ -3101,21 +3105,21 @@ class Camera:
                                                                         frame_type))
                                     
                                     try:
-                                        hdufocus.close()
+                                        g_dev['cam'].hdufocusdatahold.close()
                                     except:
                                         pass
-                                    del hdufocusdata
+                                    del g_dev['cam'].hdufocusdatahold
                                     del hdufocus
                                     #os.remove(cal_path + cal_name)                             
                                 
-                                del hdufocusdata
+                                del g_dev['cam'].hdufocusdatahold
                               
                             
                             if focus_image == True :
                                 focus_image = False
                                 plog ("Time Taken From Exposure start to finish : "  + str(time.time()\
                                        - self.tempStartupExposureTime))
-                                return result
+                                return self.expresult
 
                         #breakpointbreakpoint()
 
@@ -3245,47 +3249,52 @@ class Camera:
                     ]) and smartstackid != 'no' :
                         self.to_reduce((paths, pixscale, smartstackid, sskcounter, Nsmartstack, self.sources))
                     else:
-                        try:
-                            if not self.config['keep_reduced_on_disk']:
+                        if not self.config['keep_reduced_on_disk']:
+                            try:                                
                                 os.remove(red_path + red_name01)
                                 plog ("removed reduced file")
-                        except:
-                            plog ("couldn't remove reduced file for some reason")
+                            except:
+                                plog ("couldn't remove reduced file for some reason")
 
                     if not g_dev["cam"].exposure_busy:
-                        result = {"stopped": True}
-                        return result
-                    result["mean_focus"] = avg_foc[1]
+                        self.expresult = {"stopped": True}
+                        return self.expresult
+                    #self.expresult["mean_focus"] = avg_foc[1]
                     try:
-                        result["mean_rotation"] = avg_rot[1]
+                        self.expresult["mean_focus"] = avg_foc[1]
+                    except:
+                        pass
+
+                    try:
+                        self.expresult["mean_rotation"] = avg_rot[1]
                     except:
                         pass
                         #plog("we ain't got no rotator matey")
                     if not focus_image:
-                        result["FWHM"] = None
-                    result["half_FD"] = None
+                        self.expresult["FWHM"] = None
+                    self.expresult["half_FD"] = None
                     if self.overscan is not None:
-                        result["patch"] = bi_mean - self.overscan
+                        self.expresult["patch"] = bi_mean - self.overscan
                     else:
-                        result["patch"] = bi_mean
-                    result["calc_sky"] = 0  # avg_ocn[7]
-                    result["temperature"] = 0  # avg_foc[2]
-                    result["gain"] = 0
-                    result["filter"] = self.current_filter
-                    result["error"] == False
+                        self.expresult["patch"] = bi_mean
+                    self.expresult["calc_sky"] = 0  # avg_ocn[7]
+                    self.expresult["temperature"] = 0  # avg_foc[2]
+                    self.expresult["gain"] = 0
+                    self.expresult["filter"] = self.current_filter
+                    self.expresult["error"] == False
                     self.exposure_busy = False
 
                     plog ("Time Taken From Exposure start to finish : "  +str(time.time() - self.tempStartupExposureTime))
 
-                    return result
+                    return self.expresult
                 except Exception as e:
                     plog("Header assembly block failed: ", e)
                     plog(traceback.format_exc())
                     self.t7 = time.time()
-                    result = {"error": True}
+                    self.expresult = {"error": True}
                 self.exposure_busy = False
                 plog ("Time Taken From Exposure start to finish : "  +str(time.time() - self.tempStartupExposureTime))
-                return result
+                return self.expresult
             else:
                 #self.t7 = time.time()
                 remaining = round(self.completion_time - time.time(), 1)
@@ -3299,10 +3308,10 @@ class Camera:
                         "Camera timed out; probably is no longer connected, resetting it now.",
                         p_level="INFO",
                     )
-                    result = {"error": True}
+                    self.expresult = {"error": True}
                     self.exposure_busy = False
                     plog ("Time Taken From Exposure start to finish : "  +str(time.time() - self.tempStartupExposureTime))
-                    return result
+                    return self.expresult
             time.sleep(0.1)
 
     def enqueue_for_AWS(self, priority, im_path, name):
