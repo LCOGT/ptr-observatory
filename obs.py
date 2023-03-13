@@ -1479,8 +1479,9 @@ sel
             if (not self.sep_queue.empty()) and one_at_a_time==0:
                 one_at_a_time=1
                 #print ("In the queue.....")
+                sep_timer_begin=time.time()
                 
-                (hdufocusdata, pixscale, readnoise, avg_foc, focus_image) = self.sep_queue.get(block=False)
+                (hdufocusdata, pixscale, readnoise, avg_foc, focus_image, im_path, text_name) = self.sep_queue.get(block=False)
                 
                 # Interpolate to make a high resolution version for focussing
                 # and platesolving
@@ -1703,11 +1704,26 @@ sel
                     g_dev['cam'].rfr = np.nan
                     g_dev['cam'].rfs = np.nan
                 
+                source_delete=['thresh','npix','tnpix','xmin','xmax','ymin','ymax','x2','y2','xy','errx2',\
+                               'erry2','errxy','a','b','theta','cxx','cyy','cxy','cflux','cpeak','xcpeak','ycpeak']
+                #for sourcedel in source_delete:
+                #    breakpoint()
+                g_dev['cam'].sources.remove_columns(source_delete)
+
+                g_dev['cam'].sources.write(im_path + text_name.replace('.txt', '.sep'), format='csv', overwrite=True)
+                
+                
+                try:
+                    g_dev['cam'].enqueue_for_fastAWS(200, im_path, text_name.replace('.txt', '.sep'))
+                    #plog("Sent SEP up")
+                except:
+                    plog("Failed to send SEP up for some reason")
                 
                 
                 g_dev['cam'].sep_processing=False
                 self.sep_queue.task_done()
-                one_at_a_time=0                
+                one_at_a_time=0 
+                plog("Sep time to process: " + str(time.time() - sep_timer_begin))
             else:
                 time.sleep(0.1)
 
@@ -1728,6 +1744,7 @@ sel
                 
 
                 one_at_a_time = 1
+                psolve_timer_begin=time.time()
                 (hdufocusdata, hduheader, cal_path, cal_name, frame_type, time_platesolve_requested) = self.platesolve_queue.get(block=False)
                 
                 # We only need to save the focus image immediately if there is enough sources to 
@@ -1930,6 +1947,7 @@ sel
                 
                 self.platesolve_queue.task_done()
                 one_at_a_time = 0
+                plog("Platesolve time to process: " + str(time.time() -psolve_timer_begin ))
 
             else:
                 time.sleep(0.1)

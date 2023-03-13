@@ -730,7 +730,7 @@ site_config = {
                 # A DATA-BASED REASON TO DO SO.....
                 # USUALLY TO GET A BAYER GRID ORIENTATED CORRECTLY
                 # ***** ONLY ONE OF THESE SHOULD BE ON! *********
-                'transpose_fits' : True,
+                'transpose_fits' : False,
                 'flipx_fits' : False,
                 'flipy_fits' : False,
                 'rotate180_fits' : False, # This also should be flipxy!
@@ -762,23 +762,23 @@ site_config = {
                 "cam_needs_NumXY_init": True,
                 'x_start':  24,
                 'y_start':  0,
-                'x_width':  9576,   #NB Should be set up with overscan, which this camera is!  20200315 WER
-                'y_width':  6388,
-                'x_chip':  9576,   #NB Should specify the active pixel area.   20200315 WER
-                'y_chip':  6388,
+                'x_width':  9600,   #NB Should be set up with overscan, which this camera is!  20200315 WER
+                'y_width':  6422,
+                'x_chip':  9600,   #NB Should specify the active pixel area.   20200315 WER
+                'y_chip':  6422,
                 'x_trim_offset':  8,   #  NB these four entries are guesses.
                 'y_trim_offset':  8,
                 'pre_bias_available': False,  #if so need to specify as below for post_bias.
                 'post_bias_available': True,  #if so need to specify as below for post_bias.
-                'x_bias_start':  9577,
-                'y_bias_start' : 6389,
+                'x_bias_start':  9600,
+                'y_bias_start' : 6422,
                 'x_bias_end':  None,       # Vert band self.img[-38:-18, 0]
                 'y_bias_send': None,
                 'corner_everlap': None,
                 'x_bias_line': True,
                 'y_bias_line': True,
-                'x_active': 9576,
-                'y_active': 6388,
+                'x_active': 9600,
+                'y_active': 6422,
                 'det_size': '[1:9600, 1:6422]',  # Physical chip data size as returned from driver
                 'ccd_sec': '[1:9600, 1:6422]',
                 'bias_sec': ['[1:22, 1:6388]', '[1:11, 1:3194]', '[1:7, 1:2129]', '[1:5, 1:1597]'],
@@ -849,8 +849,8 @@ site_config = {
 
                 'read_mode':  'Normal',
                 'readout_mode': 'Normal',
-                'readout_speed':  50,
-                'readout_seconds': 6,
+                'readout_speed':  0.4,
+                'readout_seconds': 2.4,
                 'smart_stack_exposure_time': 30,
                 'square_detector': False,
                 'square_pixels': True,

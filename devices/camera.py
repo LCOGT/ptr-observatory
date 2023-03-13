@@ -2004,6 +2004,8 @@ class Camera:
 
             incoming_image_list = []
             #self.t4 = time.time()
+            
+            self.main_post_exposure_cycle_time_start = time.time()
 
             if self.async_exposure_lock == False and self._imageavailable():   #NB no more file-mode
                 try:
@@ -3006,45 +3008,47 @@ class Camera:
                         #      region that needs to be trimmed.  I will change the MRC config
                         #      to do this.  The current bias correction is a bit too simple
                         #      but for now, this is Ok.  I will leave the trim at 1 pixel for the sides oposite
-                        #      the "L". This does not show well on OSC images.  --- WER 20220225
-
+                        #      the "L". This does not show well on OSC images.  --- WER 20230225
+                        # NO, THIS IS SOMETHING TO DO IN THE JPEG FUNCTION! Not the fits function.
+                        # For remember the cardinal rule: WHATEVER COMES OUT OF THE CAMERA GOES TO BANZAI 
+                        # I, however, will make this equivalent edit to the jpeg further down - MTF 20230313
                         
                         #First trim overscan region:
-                        yw = self.config["camera"][self.name]["settings"]["y_width"]
-                        xs = self.config["camera"][self.name]["settings"]["x_start"]
+                        # yw = self.config["camera"][self.name]["settings"]["y_width"]
+                        # xs = self.config["camera"][self.name]["settings"]["x_start"]
 
-                        hdusmalldata = hdusmalldata[xs:, :yw]   
-                        if (
-                            self.config["camera"][self.name]["settings"]["crop_preview"]
-                            == True
-                        ):
-                            yb = self.config["camera"][self.name]["settings"][
-                                "crop_preview_ybottom"
-                            ]
-                            yt = self.config["camera"][self.name]["settings"][
-                                "crop_preview_ytop"
-                            ]
-                            xl = self.config["camera"][self.name]["settings"][
-                                "crop_preview_xleft"
-                            ]
-                            xr = self.config["camera"][self.name]["settings"][
-                                "crop_preview_xright"
-                            ]
-                            hdusmalldata = hdusmalldata[yb:-yt, xl:-xr]
+                        # hdusmalldata = hdusmalldata[xs:, :yw]   
+                        # if (
+                        #     self.config["camera"][self.name]["settings"]["crop_preview"]
+                        #     == True
+                        # ):
+                        #     yb = self.config["camera"][self.name]["settings"][
+                        #         "crop_preview_ybottom"
+                        #     ]
+                        #     yt = self.config["camera"][self.name]["settings"][
+                        #         "crop_preview_ytop"
+                        #     ]
+                        #     xl = self.config["camera"][self.name]["settings"][
+                        #         "crop_preview_xleft"
+                        #     ]
+                        #     xr = self.config["camera"][self.name]["settings"][
+                        #         "crop_preview_xright"
+                        #     ]
+                        #     hdusmalldata = hdusmalldata[yb:-yt, xl:-xr]
                             
 
                         # Every Image gets SEP'd and gets it's catalogue sent up pronto ahead of the big fits
                         # Focus images use it for focus, Normal images also report their focus.
-                        hdufocusdata = np.array(hdusmalldata)
+                        # hdufocusdata = np.array(hdusmalldata)
                         
                         
                         # IMMEDIATELY SEND TO SEP QUEUE
                         self.sep_processing=True
-                        self.to_sep((hdufocusdata, pixscale, float(hdu.header["RDNOISE"]), avg_foc[1], focus_image))
+                        self.to_sep((hdusmalldata, pixscale, float(hdu.header["RDNOISE"]), avg_foc[1], focus_image, im_path, text_name))
                         #self.sep_processing=True
                         
                         
-                        
+                        osc_jpeg_timer_start=time.time()
                         
                         # If this a bayer image, then we need to make an appropriate image that is monochrome
                         # That gives the best chance of finding a focus AND for pointing while maintaining resolution.
@@ -3057,34 +3061,34 @@ class Camera:
                                 if smartstackid == 'no':
                                     # Checkerboard collapse for other colours for temporary jpeg                                
                                     # Create indexes for B, G, G, R images                                
-                                    xshape=hdufocusdata.shape[0]
-                                    yshape=hdufocusdata.shape[1]
+                                    xshape=hdusmalldata.shape[0]
+                                    yshape=hdusmalldata.shape[1]
     
                                     # B pixels
                                     #list_0_1 = np.array([ [0,0], [0,1] ])
                                     list_0_1 = np.asarray([ [0,0], [0,1] ])
                                     checkerboard=np.tile(list_0_1, (xshape//2, yshape//2))
                                     #checkerboard=np.array(checkerboard)
-                                    hdublue=(block_reduce(hdufocusdata * checkerboard ,2))
+                                    hdublue=(block_reduce(hdusmalldata * checkerboard ,2))
                                     
                                     # R Pixels
                                     list_0_1 = np.asarray([ [1,0], [0,0] ])
                                     checkerboard=np.tile(list_0_1, (xshape//2, yshape//2))
                                     #checkerboard=np.array(checkerboard)
-                                    hdured=(block_reduce(hdufocusdata * checkerboard ,2))
+                                    hdured=(block_reduce(hdusmalldata * checkerboard ,2))
                                     
                                     # G top right Pixels
                                     list_0_1 = np.asarray([ [0,1], [0,0] ])
                                     checkerboard=np.tile(list_0_1, (xshape//2, yshape//2))
                                     #checkerboard=np.array(checkerboard)
                                     #GTRonly=(block_reduce(hdufocusdata * checkerboard ,2))
-                                    hdugreen=(block_reduce(hdufocusdata * checkerboard ,2))
+                                    hdugreen=(block_reduce(hdusmalldata * checkerboard ,2))
                                     
                                     # G bottom left Pixels
                                     list_0_1 = np.asarray([ [0,0], [1,0] ])
                                     checkerboard=np.tile(list_0_1, (xshape//2, yshape//2))
-                                    checkerboard=np.array(checkerboard)
-                                    GBLonly=(block_reduce(hdufocusdata * checkerboard ,2))                                
+                                    #checkerboard=np.array(checkerboard)
+                                    GBLonly=(block_reduce(hdusmalldata * checkerboard ,2))                                
                                     
                                     # Sum two Gs together and half them to be vaguely on the same scale
                                     #hdugreen = np.array((GTRonly + GBLonly) / 2)
@@ -3096,6 +3100,7 @@ class Camera:
                                 
                             else:
                                 plog ("this bayer grid not implemented yet")
+                        
                         
                         
                         # This is holding the flash reduced fits file waiting to be saved
@@ -3401,9 +3406,10 @@ class Camera:
                                 )
                        
                         
+                        plog ("OSC JPEG TIME TO COMPLETE: "+str(time.time() - osc_jpeg_timer_start))
                         
-                        
-
+                        # Report on main_post_exposure_cycle_time
+                        plog("Time taken for main post-exposure process in camera.py: " +str(time.time() - self.main_post_exposure_cycle_time_start))
                         
 
                         # AT THIS STAGE WAIT FOR SEP TO COMPLETE      
@@ -3416,7 +3422,10 @@ class Camera:
                                 #breakpoint()
                             else:
                                 x = 1
-                            
+                        
+                        
+                        post_sep_timer = time.time()
+                        
                         hdu.header["SEPSKY"] = g_dev['cam'].sepsky
                         
                         
@@ -3438,11 +3447,7 @@ class Camera:
                         self.enqueue_for_fastAWS(10, im_path, text_name)
                         
                         #if focus_image == False:
-                        try:
-                            self.enqueue_for_fastAWS(200, im_path, text_name.replace('.txt', '.sep'))
-                            #plog("Sent SEP up")
-                        except:
-                            plog("Failed to send SEP up for some reason")
+                        
 
 
                          # Set up RA and DEC headers for BANZAI
@@ -3510,13 +3515,7 @@ class Camera:
                         hdu.header["CRPIX2"] = float(hdu.header["NAXIS2"])/2
 
 
-                        source_delete=['thresh','npix','tnpix','xmin','xmax','ymin','ymax','x2','y2','xy','errx2',\
-                                       'erry2','errxy','a','b','theta','cxx','cyy','cxy','cflux','cpeak','xcpeak','ycpeak']
-                        #for sourcedel in source_delete:
-                        #    breakpoint()
-                        self.sources.remove_columns(source_delete)
-
-                        self.sources.write(im_path + text_name.replace('.txt', '.sep'), format='csv', overwrite=True)
+                        
 
 
 
@@ -3710,6 +3709,8 @@ class Camera:
                             pass
                         del hdureduced  # remove file from memory now that we are doing with it
 
+
+                    plog("Post sep save fits and such timer: " + str(time.time()-post_sep_timer))
 
                     # Good spot to check if we need to nudge the telescope
                     check_platesolve_and_nudge()                 
