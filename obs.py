@@ -1865,257 +1865,263 @@ sel
                 
                 (hdufocusdata, pixscale, readnoise, avg_foc, focus_image, im_path, text_name, hduheader) = self.sep_queue.get(block=False)
                 
-                #focdate=time.time()
-                binfocus=1
-                if self.config["camera"][g_dev['cam'].name]["settings"]["is_osc"]:
-                    if self.config["camera"][g_dev['cam'].name]["settings"]['bin_for_focus']:
-                        hdufocusdata=block_reduce(hdufocusdata,2)
-                        binfocus=2
-                    else:
-                        hdufocusdata=demosaicing_CFA_Bayer_bilinear(hdufocusdata, 'RGGB')[:,:,1]
-                        hdufocusdata=hdufocusdata.astype("float32")
-                        binfocus=1
-                #plog("focus construction time")
-                #plog(time.time() -focdate)
+                if not (g_dev['events']['Naut Dusk'] < ephem.now() < g_dev['events']['Naut Dawn']):
+                    plog ("Too bright to consider photometry!")
+                else:
                 
-                actseptime=time.time()
-                focusimg = np.array(
-                    hdufocusdata, order="C"
-                )  
-
-                try:
-                    # Some of these are liberated from BANZAI
-                    bkg = sep.Background(focusimg)
+                #focdate=time.time()
+                    binfocus=1
+                    if self.config["camera"][g_dev['cam'].name]["settings"]["is_osc"]:
+                        if self.config["camera"][g_dev['cam'].name]["settings"]['bin_for_focus']:
+                            hdufocusdata=block_reduce(hdufocusdata,2)
+                            binfocus=2
+                        else:
+                            hdufocusdata=demosaicing_CFA_Bayer_bilinear(hdufocusdata, 'RGGB')[:,:,1]
+                            hdufocusdata=hdufocusdata.astype("float32")
+                            binfocus=1
+                    #plog("focus construction time")
+                    #plog(time.time() -focdate)
                     
-                    sepsky = ( np.nanmedian(bkg), "Sky background estimated by SEP" )
-                    
-                    focusimg -= bkg
-                    ix, iy = focusimg.shape
-                    border_x = int(ix * 0.05)
-                    border_y = int(iy * 0.05)
-                    sep.set_extract_pixstack(int(ix*iy -1))
-                    # minarea is set as roughly how big we think a 0.7 arcsecond seeing star
-                    # would be at this pixelscale and binning. Different for different cameras/telescopes.
-                    minarea=int(pow(0.7*1.5 / (pixscale*binfocus),2)* 3.14)                            
-                    if minarea < 5: # There has to be a min minarea though!
-                        minarea=5
+                    actseptime=time.time()
+                    focusimg = np.array(
+                        hdufocusdata, order="C"
+                    )  
+    
+                    try:
+                        # Some of these are liberated from BANZAI
+                        bkg = sep.Background(focusimg)
+                        
+                        sepsky = ( np.nanmedian(bkg), "Sky background estimated by SEP" )
+                        
+                        focusimg -= bkg
+                        ix, iy = focusimg.shape
+                        border_x = int(ix * 0.05)
+                        border_y = int(iy * 0.05)
+                        sep.set_extract_pixstack(int(ix*iy -1))
+                        # minarea is set as roughly how big we think a 0.7 arcsecond seeing star
+                        # would be at this pixelscale and binning. Different for different cameras/telescopes.
+                        minarea=int(pow(0.7*1.5 / (pixscale*binfocus),2)* 3.14)                            
+                        if minarea < 5: # There has to be a min minarea though!
+                            minarea=5
+                            
+                            
+                        
+                        sources = sep.extract(
+                            focusimg, 3.0, err=bkg.globalrms, minarea=minarea
+                        )
+                        plog("Actual SEP time: " + str(time.time()-actseptime))
+                        
+                        #plog ("min_area: " + str(minarea))
+                        sources = Table(sources)
+                        sources = sources[sources['flag'] < 8]
+                        image_saturation_level = g_dev['cam'].config["camera"][g_dev['cam'].name]["settings"]["saturate"]
+                        sources = sources[sources["peak"] < 0.8* image_saturation_level * pow(binfocus,2)]
+                        sources = sources[sources["cpeak"] < 0.8 * image_saturation_level* pow(binfocus,2)]
+                        #sources = sources[sources["peak"] > 150 * pow(binfocus,2)]
+                        #sources = sources[sources["cpeak"] > 150 * pow(binfocus,2)]
+                        sources = sources[sources["flux"] > 2000 ]
+                        sources = sources[sources["x"] < ix - border_x]
+                        sources = sources[sources["x"] > border_x]
+                        sources = sources[sources["y"] < iy - border_y]
+                        sources = sources[sources["y"] > border_y]
+    
+                        # BANZAI prune nans from table
+                        nan_in_row = np.zeros(len(sources), dtype=bool)
+                        for col in sources.colnames:
+                            nan_in_row |= np.isnan(sources[col])
+                        sources = sources[~nan_in_row]
+    
+                        # Calculate the ellipticity (Thanks BANZAI)
+                        sources['ellipticity'] = 1.0 - (sources['b'] / sources['a'])
+                        
+                        sources = sources[sources['ellipticity'] < 0.1] # Remove things that are not circular stars
                         
                         
-                    
-                    sources = sep.extract(
-                        focusimg, 3.0, err=bkg.globalrms, minarea=minarea
-                    )
-                    plog("Actual SEP time: " + str(time.time()-actseptime))
-                    
-                    #plog ("min_area: " + str(minarea))
-                    sources = Table(sources)
-                    sources = sources[sources['flag'] < 8]
-                    image_saturation_level = g_dev['cam'].config["camera"][g_dev['cam'].name]["settings"]["saturate"]
-                    sources = sources[sources["peak"] < 0.8* image_saturation_level * pow(binfocus,2)]
-                    sources = sources[sources["cpeak"] < 0.8 * image_saturation_level* pow(binfocus,2)]
-                    #sources = sources[sources["peak"] > 150 * pow(binfocus,2)]
-                    #sources = sources[sources["cpeak"] > 150 * pow(binfocus,2)]
-                    sources = sources[sources["flux"] > 2000 ]
-                    sources = sources[sources["x"] < ix - border_x]
-                    sources = sources[sources["x"] > border_x]
-                    sources = sources[sources["y"] < iy - border_y]
-                    sources = sources[sources["y"] > border_y]
-
-                    # BANZAI prune nans from table
-                    nan_in_row = np.zeros(len(sources), dtype=bool)
-                    for col in sources.colnames:
-                        nan_in_row |= np.isnan(sources[col])
-                    sources = sources[~nan_in_row]
-
-                    # Calculate the ellipticity (Thanks BANZAI)
-                    sources['ellipticity'] = 1.0 - (sources['b'] / sources['a'])
-                    
-                    sources = sources[sources['ellipticity'] < 0.1] # Remove things that are not circular stars
-                    
-                    
-                    # Calculate the kron radius (Thanks BANZAI)
-                    kronrad, krflag = sep.kron_radius(focusimg, sources['x'], sources['y'],
-                                                      sources['a'], sources['b'],
-                                                      sources['theta'], 6.0)
-                    sources['flag'] |= krflag
-                    sources['kronrad'] = kronrad
-
-                    # Calculate uncertainty of image (thanks BANZAI)
-                    uncertainty = float(readnoise) * np.ones(hdufocusdata.shape, dtype=hdufocusdata.dtype) / float(readnoise)
-
-                    # Calcuate the equivilent of flux_auto (Thanks BANZAI)
-                    # This is the preferred best photometry SEP can do.
-                    flux, fluxerr, flag = sep.sum_ellipse(focusimg, sources['x'], sources['y'],
+                        # Calculate the kron radius (Thanks BANZAI)
+                        kronrad, krflag = sep.kron_radius(focusimg, sources['x'], sources['y'],
                                                           sources['a'], sources['b'],
-                                                          np.pi / 2.0, 2.5 * kronrad,
-                                                          subpix=1, err=uncertainty)
-                    sources['flux'] = flux
-                    sources['fluxerr'] = fluxerr
-                    sources['flag'] |= flag
-                    sources['FWHM'], _ = sep.flux_radius(focusimg, sources['x'], sources['y'], sources['a'], 0.5, \
-                                                         subpix=5)
-                    # If image has been binned for focus we need to multiply some of these things by the binning
-                    # To represent the original image
-                    sources['FWHM'] = (sources['FWHM'] * 2) * binfocus
-                    sources['x'] = (sources['x'] ) * binfocus
-                    sources['y'] = (sources['y'] ) * binfocus
-                    
-                    # 
-                    
-                    
-                    sources['a'] = (sources['a'] ) * binfocus
-                    sources['b'] = (sources['b'] ) * binfocus
-                    sources['kronrad'] = (sources['kronrad'] ) * binfocus
-                    sources['peak'] = (sources['peak'] ) / pow(binfocus,2)
-                    sources['cpeak'] = (sources['cpeak'] ) / pow(binfocus,2)
-                    
-                    # Need to reject any stars that have FWHM that are less than a extremely
-                    # perfect night as artifacts
-                    sources = sources[sources['FWHM'] > (0.6 / (pixscale))]
-                    sources = sources[sources['FWHM'] > (self.config['minimum_realistic_seeing'] / pixscale)]
-                    sources = sources[sources['FWHM'] != 0]                          
-                    
-                    
-                    
-                    # BANZAI prune nans from table
-                    nan_in_row = np.zeros(len(sources), dtype=bool)
-                    for col in sources.colnames:
-                        nan_in_row |= np.isnan(sources[col])
-                    sources = sources[~nan_in_row]
+                                                          sources['theta'], 6.0)
+                        sources['flag'] |= krflag
+                        sources['kronrad'] = kronrad
+    
+                        # Calculate uncertainty of image (thanks BANZAI)
+                        uncertainty = float(readnoise) * np.ones(hdufocusdata.shape, dtype=hdufocusdata.dtype) / float(readnoise)
+    
+                        # Calcuate the equivilent of flux_auto (Thanks BANZAI)
+                        # This is the preferred best photometry SEP can do.
+                        flux, fluxerr, flag = sep.sum_ellipse(focusimg, sources['x'], sources['y'],
+                                                              sources['a'], sources['b'],
+                                                              np.pi / 2.0, 2.5 * kronrad,
+                                                              subpix=1, err=uncertainty)
+                        sources['flux'] = flux
+                        sources['fluxerr'] = fluxerr
+                        sources['flag'] |= flag
+                        sources['FWHM'], _ = sep.flux_radius(focusimg, sources['x'], sources['y'], sources['a'], 0.5, \
+                                                             subpix=5)
+                        # If image has been binned for focus we need to multiply some of these things by the binning
+                        # To represent the original image
+                        sources['FWHM'] = (sources['FWHM'] * 2) * binfocus
+                        sources['x'] = (sources['x'] ) * binfocus
+                        sources['y'] = (sources['y'] ) * binfocus
+                        
+                        # 
+                        
+                        
+                        sources['a'] = (sources['a'] ) * binfocus
+                        sources['b'] = (sources['b'] ) * binfocus
+                        sources['kronrad'] = (sources['kronrad'] ) * binfocus
+                        sources['peak'] = (sources['peak'] ) / pow(binfocus,2)
+                        sources['cpeak'] = (sources['cpeak'] ) / pow(binfocus,2)
+                        
+                        # Need to reject any stars that have FWHM that are less than a extremely
+                        # perfect night as artifacts
+                        sources = sources[sources['FWHM'] > (0.6 / (pixscale))]
+                        sources = sources[sources['FWHM'] > (self.config['minimum_realistic_seeing'] / pixscale)]
+                        sources = sources[sources['FWHM'] != 0]                          
+                        
+                        
+                        
+                        # BANZAI prune nans from table
+                        nan_in_row = np.zeros(len(sources), dtype=bool)
+                        for col in sources.colnames:
+                            nan_in_row |= np.isnan(sources[col])
+                        sources = sources[~nan_in_row]
+    
+                        #plog("No. of detections:  ", len(sources))
+    
+    
+                        if len(sources) < 2:
+                            #plog ("not enough sources to estimate a reliable focus")
+                            g_dev['cam'].expresult["error"]=True
+                            g_dev['cam'].expresult['FWHM'] = np.nan
+                            sources['FWHM'] = [np.nan] * len(sources)
+                            rfp = np.nan
+                            rfr = np.nan
+                            rfs = np.nan
+                            sources = sources
+    
+                        else:
+                            # Get halflight radii
+                            #breakpoint()                                
+                            #fwhmcalc=(np.array(sources['FWHM']))
+                            fwhmcalc=sources['FWHM']
+                            #fwhmcalc=fwhmcalc[fwhmcalc > 1.0]
+                            fwhmcalc=fwhmcalc[fwhmcalc != 0] # Remove 0 entries
+                            #fwhmcalc=fwhmcalc[fwhmcalc < 75] # remove stupidly large entries
+                            
+                            # sigma clipping iterator to reject large variations
+                            templen=len(fwhmcalc)
+                            while True:
+                                fwhmcalc=fwhmcalc[fwhmcalc < np.median(fwhmcalc)+ 3* np.std(fwhmcalc)]
+                                if len(fwhmcalc) == templen:
+                                    break
+                                else:
+                                    templen=len(fwhmcalc)
+                                
+                            
+                            fwhmcalc=fwhmcalc[fwhmcalc > np.median(fwhmcalc)- 3* np.std(fwhmcalc)]
+                            rfp = round(np.median(fwhmcalc),3)
+                            rfr = round(np.median(fwhmcalc) * pixscale,3)
+                            rfs = round(np.std(fwhmcalc) * pixscale,3)
+                            plog("This image has a FWHM of " + str(rfr) + "+/-" +str(rfs) +" arcsecs, " + str(rfp) \
+                                  + " pixels.")
+                            #breakpoint()
+                            g_dev['cam'].expresult["FWHM"] = rfr
+                            g_dev['cam'].expresult["mean_focus"] = avg_foc
+                            
+                            
+                            # rfp = rfp
+                            # g_dev['cam'].rfr = rfr
+                            # g_dev['cam'].rfs = rfs
+                            # g_dev['cam'].sources = sources
+                            
+                            
+                            
+                            
+                            # try:
+                            #     valid = (
+                            #         0.0 <= result["FWHM"] <= 20.0
+                            #         and 100 < result["mean_focus"] < 12600
+                            #     )
+                            #     result["error"] = False
+    
+                            # except:
+                            #     result[
+                            #         "error"
+    
+                            #     ] = True
+                            #     result["FWHM"] = np.nan
+                            #     result["mean_focus"] = np.nan
+    
+    
+                            if focus_image != True :
+                                # Focus tracker code. This keeps track of the focus and if it drifts
+                                # Then it triggers an autofocus.
+                                g_dev["foc"].focus_tracker.pop(0)
+                                g_dev["foc"].focus_tracker.append(round(rfr,3))
+                                plog("Last ten FWHM : ")
+                                plog(g_dev["foc"].focus_tracker)
+                                plog("Median last ten FWHM")
+                                plog(np.nanmedian(g_dev["foc"].focus_tracker))
+                                plog("Last solved focus FWHM")
+                                plog(g_dev["foc"].last_focus_fwhm)
+    
+                                # If there hasn't been a focus yet, then it can't check it, 
+                                #so make this image the last solved focus.
+                                if g_dev["foc"].last_focus_fwhm == None:
+                                    g_dev["foc"].last_focus_fwhm = rfr
+                                else:
+                                    # Very dumb focus slip deteector
+                                    if (
+                                        np.nanmedian(g_dev["foc"].focus_tracker)
+                                        > g_dev["foc"].last_focus_fwhm
+                                        + self.config["focus_trigger"]
+                                    ):
+                                        g_dev["foc"].focus_needed = True
+                                        g_dev["obs"].send_to_user(
+                                            "Focus has drifted to "
+                                            + str(np.nanmedian(g_dev["foc"].focus_tracker))
+                                            + " from "
+                                            + str(g_dev["foc"].last_focus_fwhm)
+                                            + ". Autofocus triggered for next exposures.",
+                                            p_level="INFO",
+                                        )
+                                        
+                        source_delete=['thresh','npix','tnpix','xmin','xmax','ymin','ymax','x2','y2','xy','errx2',\
+                                       'erry2','errxy','a','b','theta','cxx','cyy','cxy','cflux','cpeak','xcpeak','ycpeak']
+                        #for sourcedel in source_delete:
+                        #    breakpoint()
+                        sources.remove_columns(source_delete)
 
-                    #plog("No. of detections:  ", len(sources))
+                        sources.write(im_path + text_name.replace('.txt', '.sep'), format='csv', overwrite=True)
+                        
+                        
+                        try:
+                            g_dev['cam'].enqueue_for_fastAWS(200, im_path, text_name.replace('.txt', '.sep'))
+                            #plog("Sent SEP up")
+                        except:
+                            plog("Failed to send SEP up for some reason")
+                        
+                        hduheader["SEPSKY"] = sepsky
+                        
+                        
+                        
 
+                        #if 'rfr' in locals():
 
-                    if len(sources) < 2:
-                        #plog ("not enough sources to estimate a reliable focus")
-                        g_dev['cam'].expresult["error"]=True
-                        g_dev['cam'].expresult['FWHM'] = np.nan
-                        sources['FWHM'] = [np.nan] * len(sources)
+                        hduheader["FWHM"] = ( str(rfp), 'FWHM in pixels')
+                        hduheader["FWHMpix"] = ( str(rfp), 'FWHM in pixels')
+                        hduheader["FWHMasec"] = ( str(rfr), 'FWHM in arcseconds')
+                        hduheader["FWHMstd"] = ( str(rfs), 'FWHM standard deviation in arcseconds')
+                    except:
+                        plog ("something failed in SEP calculations for exposure. This could be an overexposed image")
+                        plog (traceback.format_exc())
+                        sources = [0]
                         rfp = np.nan
                         rfr = np.nan
                         rfs = np.nan
-                        sources = sources
-
-                    else:
-                        # Get halflight radii
-                        #breakpoint()                                
-                        #fwhmcalc=(np.array(sources['FWHM']))
-                        fwhmcalc=sources['FWHM']
-                        #fwhmcalc=fwhmcalc[fwhmcalc > 1.0]
-                        fwhmcalc=fwhmcalc[fwhmcalc != 0] # Remove 0 entries
-                        #fwhmcalc=fwhmcalc[fwhmcalc < 75] # remove stupidly large entries
-                        
-                        # sigma clipping iterator to reject large variations
-                        templen=len(fwhmcalc)
-                        while True:
-                            fwhmcalc=fwhmcalc[fwhmcalc < np.median(fwhmcalc)+ 3* np.std(fwhmcalc)]
-                            if len(fwhmcalc) == templen:
-                                break
-                            else:
-                                templen=len(fwhmcalc)
-                            
-                        
-                        fwhmcalc=fwhmcalc[fwhmcalc > np.median(fwhmcalc)- 3* np.std(fwhmcalc)]
-                        rfp = round(np.median(fwhmcalc),3)
-                        rfr = round(np.median(fwhmcalc) * pixscale,3)
-                        rfs = round(np.std(fwhmcalc) * pixscale,3)
-                        plog("This image has a FWHM of " + str(rfr) + "+/-" +str(rfs) +" arcsecs, " + str(rfp) \
-                              + " pixels.")
-                        #breakpoint()
-                        g_dev['cam'].expresult["FWHM"] = rfr
-                        g_dev['cam'].expresult["mean_focus"] = avg_foc
-                        
-                        
-                        # rfp = rfp
-                        # g_dev['cam'].rfr = rfr
-                        # g_dev['cam'].rfs = rfs
-                        # g_dev['cam'].sources = sources
-                        
-                        
-                        
-                        
-                        # try:
-                        #     valid = (
-                        #         0.0 <= result["FWHM"] <= 20.0
-                        #         and 100 < result["mean_focus"] < 12600
-                        #     )
-                        #     result["error"] = False
-
-                        # except:
-                        #     result[
-                        #         "error"
-
-                        #     ] = True
-                        #     result["FWHM"] = np.nan
-                        #     result["mean_focus"] = np.nan
-
-
-                        if focus_image != True :
-                            # Focus tracker code. This keeps track of the focus and if it drifts
-                            # Then it triggers an autofocus.
-                            g_dev["foc"].focus_tracker.pop(0)
-                            g_dev["foc"].focus_tracker.append(round(rfr,3))
-                            plog("Last ten FWHM : ")
-                            plog(g_dev["foc"].focus_tracker)
-                            plog("Median last ten FWHM")
-                            plog(np.nanmedian(g_dev["foc"].focus_tracker))
-                            plog("Last solved focus FWHM")
-                            plog(g_dev["foc"].last_focus_fwhm)
-
-                            # If there hasn't been a focus yet, then it can't check it, 
-                            #so make this image the last solved focus.
-                            if g_dev["foc"].last_focus_fwhm == None:
-                                g_dev["foc"].last_focus_fwhm = rfr
-                            else:
-                                # Very dumb focus slip deteector
-                                if (
-                                    np.nanmedian(g_dev["foc"].focus_tracker)
-                                    > g_dev["foc"].last_focus_fwhm
-                                    + self.config["focus_trigger"]
-                                ):
-                                    g_dev["foc"].focus_needed = True
-                                    g_dev["obs"].send_to_user(
-                                        "Focus has drifted to "
-                                        + str(np.nanmedian(g_dev["foc"].focus_tracker))
-                                        + " from "
-                                        + str(g_dev["foc"].last_focus_fwhm)
-                                        + ". Autofocus triggered for next exposures.",
-                                        p_level="INFO",
-                                    )
-                except:
-                    plog ("something failed in SEP calculations for exposure. This could be an overexposed image")
-                    plog (traceback.format_exc())
-                    sources = [0]
-                    rfp = np.nan
-                    rfr = np.nan
-                    rfs = np.nan
-                
-                source_delete=['thresh','npix','tnpix','xmin','xmax','ymin','ymax','x2','y2','xy','errx2',\
-                               'erry2','errxy','a','b','theta','cxx','cyy','cxy','cflux','cpeak','xcpeak','ycpeak']
-                #for sourcedel in source_delete:
-                #    breakpoint()
-                sources.remove_columns(source_delete)
-
-                sources.write(im_path + text_name.replace('.txt', '.sep'), format='csv', overwrite=True)
                 
                 
-                try:
-                    g_dev['cam'].enqueue_for_fastAWS(200, im_path, text_name.replace('.txt', '.sep'))
-                    #plog("Sent SEP up")
-                except:
-                    plog("Failed to send SEP up for some reason")
-                
-                hduheader["SEPSKY"] = sepsky
-                
-                
-                
-
-                #if 'rfr' in locals():
-
-                hduheader["FWHM"] = ( str(rfp), 'FWHM in pixels')
-                hduheader["FWHMpix"] = ( str(rfp), 'FWHM in pixels')
-                hduheader["FWHMasec"] = ( str(rfr), 'FWHM in arcseconds')
-                hduheader["FWHMstd"] = ( str(rfs), 'FWHM standard deviation in arcseconds')
 
                 #if focus_image == False:
                 text = open(
@@ -2151,264 +2157,268 @@ sel
                 psolve_timer_begin=time.time()
                 (hdufocusdata, hduheader, cal_path, cal_name, frame_type, time_platesolve_requested, pixscale) = self.platesolve_queue.get(block=False)
                 
-                #focdate=time.time()
-                binfocus=1
-                if self.config["camera"][g_dev['cam'].name]["settings"]["is_osc"]:
-                    if self.config["camera"][g_dev['cam'].name]["settings"]['bin_for_focus']:
-                        hdufocusdata=block_reduce(hdufocusdata,2)
-                        binfocus=2
-                    else:
-                        hdufocusdata=demosaicing_CFA_Bayer_bilinear(hdufocusdata, 'RGGB')[:,:,1]
-                        hdufocusdata=hdufocusdata.astype("float32")
-                        binfocus=1
-                #plog("platesolve construction time")
-                #plog(time.time() -focdate)
-                
-                #actseptime=time.time()
-                focusimg = np.array(
-                    hdufocusdata, order="C"
-                )  
-
-                try:
-                    # Some of these are liberated from BANZAI
-                    bkg = sep.Background(focusimg)
+                # Do not bother platesolving unless it is dark enough!!
+                if not (g_dev['events']['Naut Dusk'] < ephem.now() < g_dev['events']['Naut Dawn']):
+                    plog ("Too bright to consider platesolving!")
+                else:
+                    #focdate=time.time()
+                    binfocus=1
+                    if self.config["camera"][g_dev['cam'].name]["settings"]["is_osc"]:
+                        if self.config["camera"][g_dev['cam'].name]["settings"]['bin_for_focus']:
+                            hdufocusdata=block_reduce(hdufocusdata,2)
+                            binfocus=2
+                        else:
+                            hdufocusdata=demosaicing_CFA_Bayer_bilinear(hdufocusdata, 'RGGB')[:,:,1]
+                            hdufocusdata=hdufocusdata.astype("float32")
+                            binfocus=1
+                    #plog("platesolve construction time")
+                    #plog(time.time() -focdate)
                     
-                    #sepsky = ( np.nanmedian(bkg), "Sky background estimated by SEP" )
-                    
-                    focusimg -= bkg
-                    ix, iy = focusimg.shape
-                    border_x = int(ix * 0.05)
-                    border_y = int(iy * 0.05)
-                    sep.set_extract_pixstack(int(ix*iy -1))
-                    # minarea is set as roughly how big we think a 0.7 arcsecond seeing star
-                    # would be at this pixelscale and binning. Different for different cameras/telescopes.
-                    minarea=int(pow(0.7*1.5 / (pixscale*binfocus),2)* 3.14)                            
-                    if minarea < 5: # There has to be a min minarea though!
-                        minarea=5
-                        
-                        
-                    
-                    sources = sep.extract(
-                        focusimg, 3.0, err=bkg.globalrms, minarea=minarea
-                    )
-                    #plog ("min_area: " + str(minarea))
-                    sources = Table(sources)
-                    sources = sources[sources['flag'] < 8]
-                    image_saturation_level = g_dev['cam'].config["camera"][g_dev['cam'].name]["settings"]["saturate"]
-                    sources = sources[sources["peak"] < 0.8* image_saturation_level * pow(binfocus,2)]
-                    sources = sources[sources["cpeak"] < 0.8 * image_saturation_level* pow(binfocus,2)]
-                    #sources = sources[sources["peak"] > 150 * pow(binfocus,2)]
-                    #sources = sources[sources["cpeak"] > 150 * pow(binfocus,2)]
-                    sources = sources[sources["flux"] > 2000 ]
-                    sources = sources[sources["x"] < ix - border_x]
-                    sources = sources[sources["x"] > border_x]
-                    sources = sources[sources["y"] < iy - border_y]
-                    sources = sources[sources["y"] > border_y]
-
-                    # BANZAI prune nans from table
-                    nan_in_row = np.zeros(len(sources), dtype=bool)
-                    for col in sources.colnames:
-                        nan_in_row |= np.isnan(sources[col])
-                    sources = sources[~nan_in_row]
-                    #plog("Actual Platesolve SEP time: " + str(time.time()-actseptime))
-                except:
-                    plog("Something went wrong with platesolve SEP")
-                    
-                
-                
-                # We only need to save the focus image immediately if there is enough sources to 
-                #  rationalise that.  It only needs to be on the disk immediately now if platesolve 
-                #  is going to attempt to pick it up.  Otherwise it goes to the slow queue.
-                # Also, too many sources and it will take an unuseful amount of time to solve
-                # Too many sources mean a globular or a crowded field where we aren't going to be
-                # able to solve too well easily OR it is such a wide field of view that who cares
-                # if we are off by 10 arcseconds?
-                plog ("Number of sources for Platesolve: " + str(len(sources)))
-                if len(sources) >= 15:
-                    hdufocus=fits.PrimaryHDU()
-                    hdufocus.data=hdufocusdata                            
-                    hdufocus.header=hduheader
-                    hdufocus.header["NAXIS1"] = hdufocusdata.shape[0]
-                    hdufocus.header["NAXIS2"] = hdufocusdata.shape[1]
-                    hdufocus.writeto(cal_path + 'platesolvetemp.fits', overwrite=True, output_verify='silentfix')
-                    pixscale=hdufocus.header['PIXSCALE']
-                    #if self.config["save_to_alt_path"] == "yes":
-                    #    self.to_slow_process(1000,('raw_alt_path', self.alt_path + g_dev["day"] + "/calib/" + cal_name, hdufocus.data, hdufocus.header, \
-                    #                                   frame_type))
-                    
+                    #actseptime=time.time()
+                    focusimg = np.array(
+                        hdufocusdata, order="C"
+                    )  
+    
                     try:
-                        hdufocus.close()
-                    except:
-                        pass
-                    del hdufocusdata
-                    del hdufocus
-                    
-                    # Test here that there has not been a slew, if there has been a slew, cancel out!
-                    if self.time_since_last_slew > time_platesolve_requested:
-                        plog ("detected a slew since beginning platesolve... bailing out of platesolve.")
-                        #if not self.config['keep_focus_images_on_disk']:
-                        #    os.remove(cal_path + cal_name)
-                        #one_at_a_time = 0
-                        #self.platesolve_queue.task_done()
-                        #break
-                    else:
-                    
-                        try:
-                            #time.sleep(1) # A simple wait to make sure file is saved
-                            solve = platesolve.platesolve(
-                                cal_path + 'platesolvetemp.fits', pixscale
-                            )
-                            
-                            
-                            
-                            
-                            plog(
-                                "PW Solves: ",
-                                solve["ra_j2000_hours"],
-                                solve["dec_j2000_degrees"],
-                            )
-                            
-                            pointing_ra = g_dev['mnt'].mount.RightAscension
-                            pointing_dec = g_dev['mnt'].mount.Declination
-                            #icrs_ra, icrs_dec = g_dev['mnt'].get_mount_coordinates()
-                            #target_ra = g_dev["mnt"].current_icrs_ra
-                            #target_dec = g_dev["mnt"].current_icrs_dec
-                            target_ra = g_dev["mnt"].last_ra
-                            target_dec = g_dev["mnt"].last_dec
-                            solved_ra = solve["ra_j2000_hours"]
-                            solved_dec = solve["dec_j2000_degrees"]
-                            solved_arcsecperpixel = solve["arcsec_per_pixel"]
-                            solved_rotangledegs = solve["rot_angle_degs"]
-                            err_ha = target_ra - solved_ra
-                            err_dec = target_dec - solved_dec
-                            solved_arcsecperpixel = solve["arcsec_per_pixel"]
-                            solved_rotangledegs = solve["rot_angle_degs"]
-                            plog(
-                                " coordinate error in ra, dec:  (asec) ",
-                                round(err_ha * 15 * 3600, 2),
-                                round(err_dec * 3600, 2),
-                            )  # NB WER changed units 20221012
-                            #breakpoint()
-                            # Reset Solve timers
-                            g_dev['obs'].last_solve_time = datetime.datetime.now()
-                            g_dev['obs'].images_since_last_solve = 0
-                            
-                            # Test here that there has not been a slew, if there has been a slew, cancel out!
-                            if self.time_since_last_slew > time_platesolve_requested:
-                                plog ("detected a slew since beginning platesolve... bailing out of platesolve.")
-                                #if not self.config['keep_focus_images_on_disk']:
-                                #    os.remove(cal_path + cal_name)
-                               # one_at_a_time = 0
-                                #self.platesolve_queue.task_done()
-                                #break
-                            
-                            # If we are WAY out of range, then reset the mount reference and attempt moving back there. 
-                            elif (
-                                err_ha * 15 * 3600 > 1200
-                                or err_dec * 3600 > 1200
-                                or err_ha * 15 * 3600 < -1200
-                                or err_dec * 3600 < -1200
-                            ) and self.config["mount"]["mount1"][
-                                "permissive_mount_reset"
-                            ] == "yes":
-                                g_dev["mnt"].reset_mount_reference()
-                                plog("I've  reset the mount_reference 1")
-                                g_dev["mnt"].current_icrs_ra = solved_ra
-                                #    "ra_j2000_hours"
-                                #]
-                                g_dev["mnt"].current_icrs_dec = solved_dec
-                                #    "dec_j2000_hours"
-                                #]
-                                err_ha = 0
-                                err_dec = 0
-                                
-                                plog ("Platesolve is requesting to move back on target!")
-                                #g_dev['mnt'].mount.SlewToCoordinatesAsync(target_ra, target_dec)
-                                
-                                
-                                self.pointing_correction_requested_by_platesolve_thread = True
-                                self.pointing_correction_request_time = time.time()
-                                self.pointing_correction_request_ra = target_ra
-                                self.pointing_correction_request_dec = target_dec
-                                
-                                #wait_for_slew()  
-                            
-        
-                            else:
-                            
-                                # If the mount has updatable RA and Dec coordinates, then sync that
-                                # But if not, update the mount reference
-                                try:
-                                    # If mount has Syncable coordinates
-                                    g_dev['mnt'].mount.SyncToCoordinates(solved_ra, solved_dec)
-                                    # Reset the mount reference because if the mount has 
-                                    # syncable coordinates, the mount should already be corrected
-                                    g_dev["mnt"].reset_mount_reference()
-                                
-                                    if (
-                                         abs(err_ha * 15 * 3600)
-                                         > self.config["threshold_mount_update"]
-                                         or abs(err_dec * 3600)
-                                         > self.config["threshold_mount_update"]
-                                     ):
-                                        #plog ("I am nudging the telescope slightly!")
-                                        #g_dev['mnt'].mount.SlewToCoordinatesAsync(target_ra, target_dec)
-                                        #wait_for_slew()
-                                        plog ("Platesolve is requesting to move back on target!")
-                                        self.pointing_correction_requested_by_platesolve_thread = True
-                                        self.pointing_correction_request_time = time.time()
-                                        self.pointing_correction_request_ra = target_ra
-                                        self.pointing_correction_request_dec = target_dec
-                                        
-                                    
-                                except:
-                                    # If mount doesn't have Syncable coordinates
-                                    
-        
-                                    if (
-                                        abs(err_ha * 15 * 3600)
-                                        > self.config["threshold_mount_update"]
-                                        or abs(err_dec * 3600)
-                                        > self.config["threshold_mount_update"]
-                                    ):
-                                        
-                                        #plog ("I am nudging the telescope slightly!")
-                                        #g_dev['mnt'].mount.SlewToCoordinatesAsync(pointing_ra + err_ha, pointing_dec + err_dec)
-                                        #wait_for_slew()
-                                        plog ("Platesolve is requesting to move back on target!")
-                                        self.pointing_correction_requested_by_platesolve_thread = True
-                                        self.pointing_correction_request_time = time.time()
-                                        self.pointing_correction_request_ra = pointing_ra + err_ha
-                                        self.pointing_correction_request_dec = pointing_dec + err_dec
-                                        
-                                        
-                                        try:
-                                            #if g_dev["mnt"].pier_side_str == "Looking West":
-                                            if g_dev["mnt"].pier_side == 0:
-                                                try:
-                                                    g_dev["mnt"].adjust_mount_reference(
-                                                        -err_ha, -err_dec
-                                                    )
-                                                except Exception as e:
-                                                    plog ("Something is up in the mount reference adjustment code ", e)
-                                            else:
-                                                try:
-                                                    g_dev["mnt"].adjust_flip_reference(
-                                                        -err_ha, -err_dec
-                                                    )  # Need to verify signs
-                                                except Exception as e:
-                                                    plog ("Something is up in the mount reference adjustment code ", e)                                            
-                                            
-                                        except:
-                                            plog("This mount doesn't report pierside")
-                                            plog(traceback.format_exc())
-        
-                        except Exception as e:
-                            plog(
-                                "Image: did not platesolve; this is usually OK. ", e
-                            )
-                            plog(traceback.format_exc())
+                        # Some of these are liberated from BANZAI
+                        bkg = sep.Background(focusimg)
                         
+                        #sepsky = ( np.nanmedian(bkg), "Sky background estimated by SEP" )
+                        
+                        focusimg -= bkg
+                        ix, iy = focusimg.shape
+                        border_x = int(ix * 0.05)
+                        border_y = int(iy * 0.05)
+                        sep.set_extract_pixstack(int(ix*iy -1))
+                        # minarea is set as roughly how big we think a 0.7 arcsecond seeing star
+                        # would be at this pixelscale and binning. Different for different cameras/telescopes.
+                        minarea=int(pow(0.7*1.5 / (pixscale*binfocus),2)* 3.14)                            
+                        if minarea < 5: # There has to be a min minarea though!
+                            minarea=5
+                            
+                            
+                        
+                        sources = sep.extract(
+                            focusimg, 3.0, err=bkg.globalrms, minarea=minarea
+                        )
+                        #plog ("min_area: " + str(minarea))
+                        sources = Table(sources)
+                        sources = sources[sources['flag'] < 8]
+                        image_saturation_level = g_dev['cam'].config["camera"][g_dev['cam'].name]["settings"]["saturate"]
+                        sources = sources[sources["peak"] < 0.8* image_saturation_level * pow(binfocus,2)]
+                        sources = sources[sources["cpeak"] < 0.8 * image_saturation_level* pow(binfocus,2)]
+                        #sources = sources[sources["peak"] > 150 * pow(binfocus,2)]
+                        #sources = sources[sources["cpeak"] > 150 * pow(binfocus,2)]
+                        sources = sources[sources["flux"] > 2000 ]
+                        sources = sources[sources["x"] < ix - border_x]
+                        sources = sources[sources["x"] > border_x]
+                        sources = sources[sources["y"] < iy - border_y]
+                        sources = sources[sources["y"] > border_y]
+    
+                        # BANZAI prune nans from table
+                        nan_in_row = np.zeros(len(sources), dtype=bool)
+                        for col in sources.colnames:
+                            nan_in_row |= np.isnan(sources[col])
+                        sources = sources[~nan_in_row]
+                        #plog("Actual Platesolve SEP time: " + str(time.time()-actseptime))
+                    except:
+                        plog("Something went wrong with platesolve SEP")
+                        
+                    
+                    
+                    # We only need to save the focus image immediately if there is enough sources to 
+                    #  rationalise that.  It only needs to be on the disk immediately now if platesolve 
+                    #  is going to attempt to pick it up.  Otherwise it goes to the slow queue.
+                    # Also, too many sources and it will take an unuseful amount of time to solve
+                    # Too many sources mean a globular or a crowded field where we aren't going to be
+                    # able to solve too well easily OR it is such a wide field of view that who cares
+                    # if we are off by 10 arcseconds?
+                    plog ("Number of sources for Platesolve: " + str(len(sources)))
+                    if len(sources) >= 15:
+                        hdufocus=fits.PrimaryHDU()
+                        hdufocus.data=hdufocusdata                            
+                        hdufocus.header=hduheader
+                        hdufocus.header["NAXIS1"] = hdufocusdata.shape[0]
+                        hdufocus.header["NAXIS2"] = hdufocusdata.shape[1]
+                        hdufocus.writeto(cal_path + 'platesolvetemp.fits', overwrite=True, output_verify='silentfix')
+                        pixscale=hdufocus.header['PIXSCALE']
+                        #if self.config["save_to_alt_path"] == "yes":
+                        #    self.to_slow_process(1000,('raw_alt_path', self.alt_path + g_dev["day"] + "/calib/" + cal_name, hdufocus.data, hdufocus.header, \
+                        #                                   frame_type))
+                        
+                        try:
+                            hdufocus.close()
+                        except:
+                            pass
+                        del hdufocusdata
+                        del hdufocus
+                        
+                        # Test here that there has not been a slew, if there has been a slew, cancel out!
+                        if self.time_since_last_slew > time_platesolve_requested:
+                            plog ("detected a slew since beginning platesolve... bailing out of platesolve.")
+                            #if not self.config['keep_focus_images_on_disk']:
+                            #    os.remove(cal_path + cal_name)
+                            #one_at_a_time = 0
+                            #self.platesolve_queue.task_done()
+                            #break
+                        else:
+                        
+                            try:
+                                #time.sleep(1) # A simple wait to make sure file is saved
+                                solve = platesolve.platesolve(
+                                    cal_path + 'platesolvetemp.fits', pixscale
+                                )
+                                plog("Platesolve time to process: " + str(time.time() -psolve_timer_begin ))
+                                
+                                
+                                
+                                plog(
+                                    "PW Solves: ",
+                                    solve["ra_j2000_hours"],
+                                    solve["dec_j2000_degrees"],
+                                )
+                                
+                                pointing_ra = g_dev['mnt'].mount.RightAscension
+                                pointing_dec = g_dev['mnt'].mount.Declination
+                                #icrs_ra, icrs_dec = g_dev['mnt'].get_mount_coordinates()
+                                #target_ra = g_dev["mnt"].current_icrs_ra
+                                #target_dec = g_dev["mnt"].current_icrs_dec
+                                target_ra = g_dev["mnt"].last_ra
+                                target_dec = g_dev["mnt"].last_dec
+                                solved_ra = solve["ra_j2000_hours"]
+                                solved_dec = solve["dec_j2000_degrees"]
+                                solved_arcsecperpixel = solve["arcsec_per_pixel"]
+                                solved_rotangledegs = solve["rot_angle_degs"]
+                                err_ha = target_ra - solved_ra
+                                err_dec = target_dec - solved_dec
+                                solved_arcsecperpixel = solve["arcsec_per_pixel"]
+                                solved_rotangledegs = solve["rot_angle_degs"]
+                                plog(
+                                    " coordinate error in ra, dec:  (asec) ",
+                                    round(err_ha * 15 * 3600, 2),
+                                    round(err_dec * 3600, 2),
+                                )  # NB WER changed units 20221012
+                                #breakpoint()
+                                # Reset Solve timers
+                                g_dev['obs'].last_solve_time = datetime.datetime.now()
+                                g_dev['obs'].images_since_last_solve = 0
+                                
+                                # Test here that there has not been a slew, if there has been a slew, cancel out!
+                                if self.time_since_last_slew > time_platesolve_requested:
+                                    plog ("detected a slew since beginning platesolve... bailing out of platesolve.")
+                                    #if not self.config['keep_focus_images_on_disk']:
+                                    #    os.remove(cal_path + cal_name)
+                                   # one_at_a_time = 0
+                                    #self.platesolve_queue.task_done()
+                                    #break
+                                
+                                # If we are WAY out of range, then reset the mount reference and attempt moving back there. 
+                                elif (
+                                    err_ha * 15 * 3600 > 1200
+                                    or err_dec * 3600 > 1200
+                                    or err_ha * 15 * 3600 < -1200
+                                    or err_dec * 3600 < -1200
+                                ) and self.config["mount"]["mount1"][
+                                    "permissive_mount_reset"
+                                ] == "yes":
+                                    g_dev["mnt"].reset_mount_reference()
+                                    plog("I've  reset the mount_reference 1")
+                                    g_dev["mnt"].current_icrs_ra = solved_ra
+                                    #    "ra_j2000_hours"
+                                    #]
+                                    g_dev["mnt"].current_icrs_dec = solved_dec
+                                    #    "dec_j2000_hours"
+                                    #]
+                                    err_ha = 0
+                                    err_dec = 0
+                                    
+                                    plog ("Platesolve is requesting to move back on target!")
+                                    #g_dev['mnt'].mount.SlewToCoordinatesAsync(target_ra, target_dec)
+                                    
+                                    
+                                    self.pointing_correction_requested_by_platesolve_thread = True
+                                    self.pointing_correction_request_time = time.time()
+                                    self.pointing_correction_request_ra = target_ra
+                                    self.pointing_correction_request_dec = target_dec
+                                    
+                                    #wait_for_slew()  
+                                
+            
+                                else:
+                                
+                                    # If the mount has updatable RA and Dec coordinates, then sync that
+                                    # But if not, update the mount reference
+                                    try:
+                                        # If mount has Syncable coordinates
+                                        g_dev['mnt'].mount.SyncToCoordinates(solved_ra, solved_dec)
+                                        # Reset the mount reference because if the mount has 
+                                        # syncable coordinates, the mount should already be corrected
+                                        g_dev["mnt"].reset_mount_reference()
+                                    
+                                        if (
+                                             abs(err_ha * 15 * 3600)
+                                             > self.config["threshold_mount_update"]
+                                             or abs(err_dec * 3600)
+                                             > self.config["threshold_mount_update"]
+                                         ):
+                                            #plog ("I am nudging the telescope slightly!")
+                                            #g_dev['mnt'].mount.SlewToCoordinatesAsync(target_ra, target_dec)
+                                            #wait_for_slew()
+                                            plog ("Platesolve is requesting to move back on target!")
+                                            self.pointing_correction_requested_by_platesolve_thread = True
+                                            self.pointing_correction_request_time = time.time()
+                                            self.pointing_correction_request_ra = target_ra
+                                            self.pointing_correction_request_dec = target_dec
+                                            
+                                        
+                                    except:
+                                        # If mount doesn't have Syncable coordinates
+                                        
+            
+                                        if (
+                                            abs(err_ha * 15 * 3600)
+                                            > self.config["threshold_mount_update"]
+                                            or abs(err_dec * 3600)
+                                            > self.config["threshold_mount_update"]
+                                        ):
+                                            
+                                            #plog ("I am nudging the telescope slightly!")
+                                            #g_dev['mnt'].mount.SlewToCoordinatesAsync(pointing_ra + err_ha, pointing_dec + err_dec)
+                                            #wait_for_slew()
+                                            plog ("Platesolve is requesting to move back on target!")
+                                            self.pointing_correction_requested_by_platesolve_thread = True
+                                            self.pointing_correction_request_time = time.time()
+                                            self.pointing_correction_request_ra = pointing_ra + err_ha
+                                            self.pointing_correction_request_dec = pointing_dec + err_dec
+                                            
+                                            
+                                            try:
+                                                #if g_dev["mnt"].pier_side_str == "Looking West":
+                                                if g_dev["mnt"].pier_side == 0:
+                                                    try:
+                                                        g_dev["mnt"].adjust_mount_reference(
+                                                            -err_ha, -err_dec
+                                                        )
+                                                    except Exception as e:
+                                                        plog ("Something is up in the mount reference adjustment code ", e)
+                                                else:
+                                                    try:
+                                                        g_dev["mnt"].adjust_flip_reference(
+                                                            -err_ha, -err_dec
+                                                        )  # Need to verify signs
+                                                    except Exception as e:
+                                                        plog ("Something is up in the mount reference adjustment code ", e)                                            
+                                                
+                                            except:
+                                                plog("This mount doesn't report pierside")
+                                                plog(traceback.format_exc())
+            
+                            except Exception as e:
+                                plog(
+                                    "Image: did not platesolve; this is usually OK. ", e
+                                )
+                                plog(traceback.format_exc())
+                            
                     
                 try:
                     os.remove(cal_path + 'platesolvetemp.fits')
@@ -2417,7 +2427,7 @@ sel
                 
                 self.platesolve_queue.task_done()
                 one_at_a_time = 0
-                plog("Platesolve time to process: " + str(time.time() -psolve_timer_begin ))
+                
 
             else:
                 time.sleep(0.1)
@@ -2535,6 +2545,24 @@ sel
                     del hdufocus
                 
                 if slow_process[0] == 'raw' or slow_process[0] =='raw_alt_path' or slow_process[0] == 'reduced_alt_path':
+                    
+                    
+                    # Make  sure the alt paths exist
+                    if self.config["save_to_alt_path"] == "yes":
+                        if slow_process[0] =='raw_alt_path' or slow_process[0] == 'reduced_alt_path':
+                            os.makedirs(
+                                self.alt_path + g_dev["day"], exist_ok=True
+                            )
+                            os.makedirs(
+                                self.alt_path + g_dev["day"] + "/raw/", exist_ok=True
+                            )
+                            os.makedirs(
+                                self.alt_path + g_dev["day"] + "/reduced/", exist_ok=True
+                            )
+                            os.makedirs(
+                                self.alt_path + g_dev["day"] + "/calib/", exist_ok=True)
+                    
+                    
                     saver = 0
                     saverretries = 0
                     while saver == 0 and saverretries < 10:

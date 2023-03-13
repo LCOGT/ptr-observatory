@@ -308,7 +308,8 @@ def init_camera_param(cam_id):
                                      'CONTROL_GAIN': c_int(6),
                                      'CONTROL_USBTRAFFIC': c_int(6),
                                      'CONTROL_EXPOSURE': c_int(8),
-                                     'CONTROL_CURTEMP': c_int(14),
+                                     #'CONTROL_CURTEMP': c_int(14),
+                                     'CONTROL_CURTEMP': c_double(14),
                                      'CONTROL_CURPWM': c_int(15),
                                      'CONTROL_MANULPWM': c_int(16),
                                      'CONTROL_COOLER': c_int(18),
@@ -1146,13 +1147,15 @@ class Camera:
         #    plog("Camera cannot set cooling temperature.")
         #    return p_temp
 
-        temptemp=qhycam.so.SetQHYCCDParam(qhycam.camera_params[qhycam_id]['handle'], qhycam.CONTROL_CURTEMP, c_double(float(p_temp)))
+        #temptemp=qhycam.so.SetQHYCCDParam(qhycam.camera_params[qhycam_id]['handle'], qhycam.CONTROL_CURTEMP, c_double(int(p_temp)))
+        temptemp=qhycam.so.SetQHYCCDParam(qhycam.camera_params[qhycam_id]['handle'], qhycam.CONTROL_COOLER,c_double(p_temp))
         #breakpoint()
         print (temptemp)
+        #breakpoint()
         return 
     
     def _qhyccd_setpoint(self):
-        temptemp=qhycam.so.SetQHYCCDParam(qhycam.camera_params[qhycam_id]['handle'], qhycam.CONTROL_CURTEMP, c_double(float(p_temp)))
+        temptemp=qhycam.so.SetQHYCCDParam(qhycam.camera_params[qhycam_id]['handle'], qhycam.CONTROL_CURTEMP, c_double(int(p_temp)))
         #print (temptemp)
         return 
     
@@ -1783,9 +1786,10 @@ class Camera:
                                     self.pre_ocn
                                 )  # NB NB WEMA must be running or this may fault.
                             except:
-                                plog(
-                                    "ocn quick status failing"
-                                )
+                                #plog(
+                                #    "ocn quick status failing"
+                                #)
+                                pass
                             g_dev["foc"].get_quick_status(self.pre_foc)
                             try:
                                 g_dev["rot"].get_quick_status(self.pre_rot)
@@ -2125,7 +2129,14 @@ class Camera:
                     #plog("no ocn")
 
                 try:
-                     
+                    
+                    
+                    
+                    # THIS IS THE SECTION WHERE THE ORIGINAL FITS IMAGES ARE ROTATED
+                    # OR TRANSPOSED. THESE ARE ONLY USED TO ORIENTATE THE FITS
+                    # IF THERE IS A MAJOR PROBLEM with the original orientation
+                    # If you want to change the display on the UI, use the jpeg
+                    # alterations later on.
                     if self.config["camera"][self.name]["settings"]["transpose_fits"]:
                         hdu = fits.PrimaryHDU(
                             self.img.transpose().astype('float32'))
@@ -2139,7 +2150,7 @@ class Camera:
                             np.flipud(self.img.astype('float32'))
                         )                      
                     elif self.config["camera"][self.name]["settings"]["rotate90_fits"]:
-                        hdu = fits(
+                        hdu = fits.PrimaryHDU(
                             np.rot90(self.img.astype('float32'))
                         )                      
                     elif self.config["camera"][self.name]["settings"]["rotate180_fits"]:
@@ -2930,11 +2941,11 @@ class Camera:
                         pass
 
 
-                    text = open(
-                        im_path + text_name, "w"
-                    )  # This is needed by AWS to set up database.
-                    text.write(str(hdu.header))   #This causes the Warning output. 
-                    text.close()
+                    #text = open(
+                    #    im_path + text_name, "w"
+                    #)  # This is needed by AWS to set up database.
+                    #text.write(str(hdu.header))   #This causes the Warning output. 
+                    #text.close()
 
                     paths = {
                         "im_path": im_path,
@@ -3053,6 +3064,8 @@ class Camera:
                         #self.sep_processing=True
                         
                         
+                                              
+                        
                         
                         # Send data off to process jpeg
                         self.to_mainjpeg((hdusmalldata, smartstackid, paths))
@@ -3082,46 +3095,31 @@ class Camera:
                         #if focus_image == False:
                         
 
-
-                        
-
-
-                        
-
-
-
-                        # Make  sure the alt paths exist
-                        if self.config["save_to_alt_path"] == "yes":
-                            os.makedirs(
-                                self.alt_path + g_dev["day"], exist_ok=True
-                            )
-                            os.makedirs(
-                                self.alt_path + g_dev["day"] + "/raw/", exist_ok=True
-                            )
-                            os.makedirs(
-                                self.alt_path + g_dev["day"] + "/reduced/", exist_ok=True
-                            )
-                            os.makedirs(
-                                self.alt_path + g_dev["day"] + "/calib/", exist_ok=True)
-
-
                         
                         
                         
-                        # If this is a focus image, save focus image, estimate pointing, and estimate pointing
-                        # We want to estimate pointing in the main thread so it has enough time to correct the
-                        # pointing during focus, not when it quickly moves back to the target. Takes longer
-                        # during focussing, but reduces the need for pointing nudges and bounces on
-                        # target images.
-                        #
-                        # It will also do a pointing check at the end of a smartstack
-                        #
-                        # It will also do a pointing check periodically during normal use on a timer.
-                        #
-                        # This is all done outside the reduce queue to guarantee the pointing check is done
-                        # prior to the next exposure                        
+                        # If this is a focus image, we need to wait until the SEP queue is finished and empty to pick up the latest
+                        # FWHM. 
+                        if focus_image == True:
+                            reported=0
+                            plog ("Time Taken From Exposure start to finish : "  + str(time.time()\
+                                   - self.tempStartupExposureTime))
+                            queue_clear_time = time.time()
+                            while True:
+                                if self.sep_processing==False and self.sep_queue.empty():
+                                    break
+                                else:
+                                    if reported ==0:
+                                        plog ("FOCUS: Waiting for SEP processing to complete and queue to clear")
+                                        reported=1
+                                    pass
+                            plog ("Time Taken for queue to clear post-exposure: " + str(time.time() - queue_clear_time))
+                            focus_image = False
+                            
+                            return self.expresult
+                        
 
-                        if focus_image == True or solve_it == True or ((Nsmartstack == sskcounter+1) and Nsmartstack > 1)\
+                        if solve_it == True or ((Nsmartstack == sskcounter+1) and Nsmartstack > 1)\
                                                    or g_dev['obs'].images_since_last_solve > g_dev['obs'].config["solve_nth_image"] or (datetime.datetime.now() - g_dev['obs'].last_solve_time)  > datetime.timedelta(minutes=g_dev['obs'].config["solve_timer"]):
                                                        
                             cal_name = (
@@ -3166,20 +3164,10 @@ class Camera:
                                     del hdufocus
                                     #os.remove(cal_path + cal_name)                             
                                 
-                                del g_dev['cam'].hdufocusdatahold
-                              
+                                #del g_dev['cam'].hdufocusdatahold                              
                             
-                            if focus_image == True :
-                                focus_image = False
-                                plog ("Time Taken From Exposure start to finish : "  + str(time.time()\
-                                       - self.tempStartupExposureTime))
-                                return self.expresult
-
-                        #breakpointbreakpoint()
-
-                        
-
-                    # Now that the jpeg has been sent up pronto,
+                            
+                    # Now that the jpeg, sep and platesolve has been sent up pronto,
                     # We turn back to getting the bigger raw, reduced and fz files dealt with
                     
                     self.to_slow_process(5,('fz_and_send', raw_path + raw_name00 + ".fz", hdu.data, hdu.header, frame_type, g_dev["mnt"].current_icrs_ra, g_dev["mnt"].current_icrs_dec))                    
