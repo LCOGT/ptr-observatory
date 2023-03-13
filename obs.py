@@ -1865,7 +1865,7 @@ sel
                 
                 (hdufocusdata, pixscale, readnoise, avg_foc, focus_image, im_path, text_name, hduheader) = self.sep_queue.get(block=False)
                 
-                if not (g_dev['events']['Naut Dusk'] < ephem.now() < g_dev['events']['Naut Dawn']):
+                if not (g_dev['events']['Civil Dusk'] < ephem.now() < g_dev['events']['Civil Dawn']):
                     plog ("Too bright to consider photometry!")
                 else:
                 
@@ -2120,6 +2120,8 @@ sel
                         rfp = np.nan
                         rfr = np.nan
                         rfs = np.nan
+                    
+                    plog("Sep time to process: " + str(time.time() - sep_timer_begin))
                 
                 
 
@@ -2134,7 +2136,7 @@ sel
                 g_dev['cam'].sep_processing=False
                 self.sep_queue.task_done()
                 one_at_a_time=0 
-                plog("Sep time to process: " + str(time.time() - sep_timer_begin))
+                
             else:
                 time.sleep(0.1)
 

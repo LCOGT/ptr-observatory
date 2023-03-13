@@ -1412,6 +1412,10 @@ class Camera:
         
         imtype = required_params.get("image_type", "light")
         
+        
+        skip_daytime_check=False
+        skip_calibration_check=False
+        
         if imtype.lower() in (            
             "bias",
             "dark",
@@ -1424,6 +1428,7 @@ class Camera:
             "solar flat",
         ):
             skip_daytime_check=True
+            skip_calibration_check=True
         
         
         if not skip_daytime_check:
@@ -1435,7 +1440,14 @@ class Camera:
                     exposure_time = float(self.config["camera"][self.name]["settings"]['max_daytime_exposure'])
             #breakpoint()
             
-            
+        # Need to check that we are not in the middle of flats, biases or darks
+        
+        # Fifth thing, check that the sky flat latch isn't on
+        # (I moved the scope during flats once, it wasn't optimal)
+        if g_dev['seq'].morn_sky_flat_latch  or g_dev['seq'].eve_sky_flat_latch or g_dev['seq'].sky_flat_latch:
+            g_dev['obs'].send_to_user("Refusing exposure request as the observatory is currently undertaking flats.")
+            plog("Refusing exposure request as the observatory is currently taking flats.")
+            return
         
         self.exposure_busy = True # This really needs to be here from the start
         # We've had multiple cases of multiple camera exposures trying to go at once

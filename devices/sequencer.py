@@ -509,7 +509,7 @@ class Sequencer:
             # The bias_dark_script parks the scope anyway. 
             
             self.bias_dark_script(req, opt, morn=False)
-            self.bias_dark_latch = False
+            self.bias_dark_latch = True
 
             g_dev['mnt'].park_command({}, {})
 
@@ -732,7 +732,7 @@ class Sequencer:
                 plog(traceback.format_exc())
                 plog("Hang up in sequencer.")
         
-        elif ((g_dev['events']['Cool Down, Open']  <= ephem_now < g_dev['events']['Close and Park']) and \
+        elif ((g_dev['events']['Cool Down, Open']  <= ephem_now < g_dev['events']['Observing Ends']) and \
                g_dev['enc'].mode == 'Automatic') and not g_dev['ocn'].wx_hold and not enc_status['shutter_status'] in ['Software Fault', 'Closing', 'Error']:
 
             #plog ("Cool Down Open Check Running")
