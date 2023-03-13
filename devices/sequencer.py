@@ -1339,9 +1339,10 @@ class Sequencer:
                 if ((g_dev['events']['Cool Down, Open']  <= ephem_now < g_dev['events']['Eve Sky Flats']) and \
                        g_dev['enc'].mode == 'Automatic') and not g_dev['ocn'].wx_hold and cool_down_opened_already == False:
 
-                    cool_down_opened_already=True
-                    self.run_nightly_weather_report() 
-                    self.nightly_weather_report_done=True
+                    
+                    if not self.nightly_weather_report_done and not g_dev['debug']:
+                        self.run_nightly_weather_report()
+                        self.nightly_weather_report_done=True
 
                     #self.time_of_next_slew = time.time() -1
                     #plog ("got here")
@@ -1355,7 +1356,10 @@ class Sequencer:
                             enc_status = g_dev['enc'].status
                             self.open_observatory(enc_status, ocn_status)    
                             g_dev['enc'].open_command({}, {})
-                            self.night_focus_ready=True
+                            if g_dev['enc'].enclosure.ShutterStatus == 0:                    
+                                g_dev['obs'].open_and_enabled_to_observe = True 
+                                cool_down_opened_already=True
+                                self.night_focus_ready=True
                 
                 
                 min_to_do = min(b_d_to_do, stride)
