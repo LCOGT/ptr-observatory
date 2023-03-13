@@ -185,10 +185,10 @@ class Sequencer:
         self.block_guard = False
         self.time_of_next_slew = time.time()
         #NB NB These should be set up from config once a day at Noon/Startup time
-        self.bias_dark_latch = True   #NB NB NB Should these initially be defined this way?
-        self.sky_flat_latch = True
-        self.morn_sky_flat_latch = True
-        self.morn_bias_dark_latch = True   #NB NB NB Should these initially be defined this way?
+        self.bias_dark_latch = False   #NB NB NB Should these initially be defined this way?
+        self.sky_flat_latch = False
+        self.morn_sky_flat_latch = False
+        self.morn_bias_dark_latch = False   #NB NB NB Should these initially be defined this way?
         self.night_focus_ready=True
         self.midnight_calibration_done = False
         self.nightly_reset_complete = False
@@ -216,6 +216,7 @@ class Sequencer:
         self.morn_flats_done = False
         self.eve_sky_flat_latch = False
         self.morn_sky_flat_latch = False
+        self.bias_dark_latch = False
         # The weather report has to be at least passable at some time of the night in order to 
         # allow the observatory to become active and observe. This doesn't mean that it is 
         # necessarily a GOOD night at all, just that there are patches of feasible
@@ -497,9 +498,9 @@ class Sequencer:
                 self.nightly_reset_complete == False
 
 
-        if self.bias_dark_latch and ((events['Eve Bias Dark'] <= ephem_now < events['End Eve Bias Dark']) and \
+        if not self.bias_dark_latch and ((events['Eve Bias Dark'] <= ephem_now < events['End Eve Bias Dark']) and \
              self.config['auto_eve_bias_dark'] and g_dev['enc'].mode in ['Automatic', 'Autonomous', 'Manual'] ):   #events['End Eve Bias Dark']) and \
-            self.bias_dark_latch = False
+            self.bias_dark_latch = True
             req = {'bin1': True, 'bin2': False, 'bin3': False, 'bin4': False, 'numOfBias': 45, \
                    'numOfDark': 15, 'darkTime': 180, 'numOfDark2': 3, 'dark2Time': 360, \
                    'hotMap': True, 'coldMap': True, 'script': 'genBiasDarkMaster', }  # NB NB All of the prior is obsolete
@@ -509,7 +510,7 @@ class Sequencer:
             # The bias_dark_script parks the scope anyway. 
             
             self.bias_dark_script(req, opt, morn=False)
-            self.bias_dark_latch = True
+            self.bias_dark_latch = False
 
             g_dev['mnt'].park_command({}, {})
 
@@ -545,8 +546,8 @@ class Sequencer:
                 result = g_dev['cam'].expose_command(req, opt, no_AWS=False, solve_it=True)
                 self.night_focus_ready=False
 
-        elif self.sky_flat_latch and ((events['Eve Sky Flats'] <= ephem_now < events['End Eve Sky Flats'])  \
-               and g_dev['enc'].mode in [ 'Automatic', 'Autonomous'] and not self.eve_sky_flat_latch and not g_dev['ocn'].wx_hold and \
+        elif not self.eve_sky_flat_latch and ((events['Eve Sky Flats'] <= ephem_now < events['End Eve Sky Flats'])  \
+               and g_dev['enc'].mode in [ 'Automatic', 'Autonomous'] and not g_dev['ocn'].wx_hold and \
                self.config['auto_eve_sky_flat'] and not self.eve_flats_done and self.weather_report_is_acceptable_to_observe):
 
             if g_dev['obs'].open_and_enabled_to_observe:
@@ -760,29 +761,26 @@ class Sequencer:
                     
                     self.night_focus_ready=True
         
-        elif self.morn_sky_flat_latch and ((events['Morn Sky Flats'] <= ephem_now < events['End Morn Sky Flats'])  \
-               and g_dev['enc'].mode == 'Automatic' and not g_dev['ocn'].wx_hold and not self.morn_sky_flat_latch and \
+        elif not self.morn_sky_flat_latch and ((events['Morn Sky Flats'] <= ephem_now < events['End Morn Sky Flats'])  \
+               and g_dev['enc'].mode == 'Automatic' and not g_dev['ocn'].wx_hold and \
                self.config['auto_morn_sky_flat']) and not self.morn_flats_done and g_dev['obs'].open_and_enabled_to_observe and self.weather_report_is_acceptable_to_observe==True:
             #self.time_of_next_slew = time.time() -1
             self.morn_sky_flat_latch = True
             self.open_observatory(enc_status, ocn_status)   #Just in case a Wx hold stopped opening
             self.current_script = "Morn Sky Flat script starting"
-            #self.morn_sky_flat_latch = False
-            #plog('Skipping Eve Sky Flats')
             
             self.sky_flat_script({}, {}, morn=True)   #Null command dictionaries
-            
-            #self.park_and_close(enc_status)
-            
-            # Park at the end of morning sky flats
-            g_dev['mnt'].park_command({}, {})
+                        
+            # Park and close at the end of morning sky flats
+            #g_dev['mnt'].park_command({}, {})
+            self.park_and_close(enc_status)
             self.morn_sky_flat_latch = False
             self.morn_flats_done = True
             
-        elif self.morn_bias_dark_latch and (events['Morn Bias Dark'] <= ephem_now < events['End Morn Bias Dark']) and \
+        elif not self.morn_bias_dark_latch and (events['Morn Bias Dark'] <= ephem_now < events['End Morn Bias Dark']) and \
                   self.config['auto_morn_bias_dark'] and not  self.morn_bias_done: # and g_dev['enc'].mode == 'Automatic' ):
             #breakpoint()
-            self.morn_bias_dark_latch = False
+            self.morn_bias_dark_latch = True
             req = {'bin1': True, 'bin2': False, 'bin3': False, 'bin4': False, 'numOfBias': 63, \
                     'numOfDark': 31, 'darkTime': 600, 'numOfDark2': 31, 'dark2Time': 600, \
                     'hotMap': True, 'coldMap': True, 'script': 'genBiasDarkMaster', }  #This specificatin is obsolete
@@ -793,7 +791,7 @@ class Sequencer:
             self.bias_dark_script(req, opt, morn=True)
 
             self.park_and_close(enc_status)
-            self.morn_bias_dark_latch = True
+            self.morn_bias_dark_latch = False
             self.morn_bias_done = True
             
         elif (events['Nightly Reset'] <= ephem_now < events['End Nightly Reset']): # and g_dev['enc'].mode == 'Automatic' ):
@@ -1584,10 +1582,11 @@ class Sequencer:
         self.af_guard = False
         self.block_guard = False
         self.time_of_next_slew = time.time()
-        self.bias_dark_latch = True
-        self.sky_flat_latch = True
-        self.morn_sky_flat_latch = True
-        self.morn_bias_dark_latch = True
+        self.bias_dark_latch = False
+        self.sky_flat_latch = False
+        self.eve_sky_flat_latch = False
+        self.morn_sky_flat_latch = False
+        self.morn_bias_dark_latch = False
         self.reset_completes()
 
 
