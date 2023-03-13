@@ -3198,16 +3198,16 @@ class Camera:
                     
                     # Similarly to the above. This saves the REDUCED file to disk
                     # it works 99.9999% of the time.
-                    if "hdureduceddata" in locals():
+                    if "hdusmalldata" in locals():
                         # If a CMOS camera, bin to requested binning
                         if self.is_cmos and self.bin != 1:
                             #plog ("Binning 1x1 to " + str(self.bin))
-                            hdureduceddata=(block_reduce(hdureduceddata,self.bin)) 
+                            hdusmalldata=(block_reduce(hdusmalldata,self.bin)) 
                         
                         if smartstackid == 'no':
                             if self.config['keep_reduced_on_disk']:
                                 plog ("saving reduced file anyway!")
-                                self.to_slow_process(1000,('reduced', red_path + red_name01, hdureduceddata, hdu.header, \
+                                self.to_slow_process(1000,('reduced', red_path + red_name01, hdusmalldata, hdu.header, \
                                                        frame_type, g_dev["mnt"].current_icrs_ra, g_dev["mnt"].current_icrs_dec))
                         else:                            
                             saver = 0
@@ -3215,10 +3215,10 @@ class Camera:
                             while saver == 0 and saverretries < 10:
                                 try:
                                     hdureduced=fits.PrimaryHDU()
-                                    hdureduced.data=hdureduceddata                            
+                                    hdureduced.data=hdusmalldata                            
                                     hdureduced.header=hdu.header
-                                    hdureduced.header["NAXIS1"] = hdureduceddata.shape[0]
-                                    hdureduced.header["NAXIS2"] = hdureduceddata.shape[1]
+                                    hdureduced.header["NAXIS1"] = hdusmalldata.shape[0]
+                                    hdureduced.header["NAXIS2"] = hdusmalldata.shape[1]
                                     #hdureduced.data=hdureduced.data.astype("float32")
                                     hdureduced.data=hdureduced.data.astype("float32")
                                     hdureduced.writeto(
@@ -3242,8 +3242,8 @@ class Camera:
                     if self.config["save_to_alt_path"] == "yes":
                         self.to_slow_process(1000,('raw_alt_path', self.alt_path + g_dev["day"] + "/raw/" + raw_name00, hdu.data, hdu.header, \
                                                        frame_type, g_dev["mnt"].current_icrs_ra, g_dev["mnt"].current_icrs_dec))
-                        if "hdureduced" in locals():
-                            self.to_slow_process(1000,('reduced_alt_path', self.alt_path + g_dev["day"] + "/reduced/" + red_name01, hdureduceddata, hdu.header, \
+                        if "hdusmalldata" in locals():
+                            self.to_slow_process(1000,('reduced_alt_path', self.alt_path + g_dev["day"] + "/reduced/" + red_name01, hdusmalldata, hdu.header, \
                                                                frame_type, g_dev["mnt"].current_icrs_ra, g_dev["mnt"].current_icrs_dec))
                             
                         
@@ -3279,12 +3279,12 @@ class Camera:
                         pass
                     del hdu  # remove file from memory now that we are doing with it
                     
-                    if "hdureduced" in locals():                        
+                    if "hdusmalldata" in locals():                        
                         try: 
-                            hdureduced.close()
+                            hdusmalldata.close()
                         except:
                             pass
-                        del hdureduced  # remove file from memory now that we are doing with it
+                        del hdusmalldata  # remove file from memory now that we are doing with it
 
 
                     #plog("Post sep save fits and such timer: " + str(time.time()-post_sep_timer))
@@ -3308,7 +3308,8 @@ class Camera:
                         "spectrum",
                         "auto_focus",
                     ]) and smartstackid != 'no' :
-                        self.to_reduce((paths, pixscale, smartstackid, sskcounter, Nsmartstack, self.sources))
+                        #self.to_reduce((paths, pixscale, smartstackid, sskcounter, Nsmartstack, self.sources))
+                        self.to_reduce((paths, pixscale, smartstackid, sskcounter, Nsmartstack))
                     else:
                         if not self.config['keep_reduced_on_disk']:
                             try:                                

@@ -2334,6 +2334,8 @@ class Sequencer:
             g_dev['foc'].guarded_move((focus_start)*g_dev['foc'].micron_to_steps)  #NB NB 20221002 THis unit fix shoudl be in the routine. WER
             self.sequencer_hold = False   #Allow comand checks.
             self.af_guard = False
+            g_dev["mnt"].last_ra = start_ra
+            g_dev["mnt"].last_dec = start_dec
             g_dev['mnt'].mount.SlewToCoordinatesAsync(start_ra, start_dec)  #MAKE sure same style coordinates.
             wait_for_slew()
             self.sequencer_hold = False
@@ -2393,6 +2395,8 @@ class Sequencer:
                 g_dev['obs'].send_to_user('Found best focus at:  ' +str(foc_pos4) +' measured FWHM is:  ' + str(round(spot4, 2)), p_level='INFO')
                 g_dev['foc'].af_log(foc_pos4, spot4, new_spot)
                 plog("Returning to:  ", start_ra, start_dec)
+                g_dev["mnt"].last_ra = start_ra
+                g_dev["mnt"].last_dec = start_dec
                 g_dev['mnt'].mount.SlewToCoordinatesAsync(start_ra, start_dec)   #Return to pre-focus pointing.
                 wait_for_slew()
             if sim:
@@ -2484,6 +2488,8 @@ class Sequencer:
                 g_dev['obs'].send_to_user('Found best focus at: ' + str(foc_pos4) +' measured FWHM is: ' + str(round(spot4, 2)), p_level='INFO')
                 g_dev['foc'].af_log(foc_pos4, spot4, new_spot)
                 plog("Returning to:  ", start_ra, start_dec)
+                g_dev["mnt"].last_ra = start_ra
+                g_dev["mnt"].last_dec = start_dec
                 g_dev['mnt'].mount.SlewToCoordinatesAsync(start_ra, start_dec)   #Return to pre-focus pointing.
                 wait_for_slew()
             if sim:
@@ -2577,6 +2583,8 @@ class Sequencer:
                 g_dev['obs'].send_to_user('Found best focus at: ' + str(foc_pos4) +' measured FWHM is: ' + str(round(spot4, 2)), p_level='INFO')
                 g_dev['foc'].af_log(foc_pos4, spot4, new_spot)
                 plog("Returning to:  ", start_ra, start_dec)
+                g_dev["mnt"].last_ra = start_ra
+                g_dev["mnt"].last_dec = start_dec
                 g_dev['mnt'].mount.SlewToCoordinatesAsync(start_ra, start_dec)   #Return to pre-focus pointing.
                 wait_for_slew()
             else:
@@ -2841,6 +2849,8 @@ class Sequencer:
         self.auto_focus_script(None,None, skip_timer_check=True)
         
         plog("Returning to:  ", start_ra, start_dec)
+        g_dev["mnt"].last_ra = start_ra
+        g_dev["mnt"].last_dec = start_dec
         g_dev['mnt'].mount.SlewToCoordinatesAsync(start_ra, start_dec)   #Return to pre-focus pointing.
         wait_for_slew()
         #if sim:
@@ -3107,6 +3117,8 @@ class Sequencer:
 
             g_dev['foc'].guarded_move((foc_start)*g_dev['foc'].micron_to_steps)
         plog("Returning to:  ", start_ra, start_dec)
+        g_dev["mnt"].last_ra = start_ra
+        g_dev["mnt"].last_dec = start_dec
         g_dev['mnt'].mount.SlewToCoordinatesAsync(start_ra, start_dec)   #Return to pre-focus pointing.
         wait_for_slew()
         if sim:
