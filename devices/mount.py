@@ -991,9 +991,9 @@ class Mount:
 
         # Fifth thing, check that the sky flat latch isn't on
         # (I moved the scope during flats once, it wasn't optimal)
-        if g_dev['seq'].morn_sky_flat_latch  or g_dev['seq'].eve_sky_flat_latch or g_dev['seq'].sky_flat_latch:
-            g_dev['obs'].send_to_user("Refusing pointing request as the observatory is currently undertaking flats.")
-            plog("Refusing pointing request as the observatory is currently taking flats.")
+        if g_dev['seq'].morn_sky_flat_latch  or g_dev['seq'].eve_sky_flat_latch or g_dev['seq'].sky_flat_latch or g_dev['seq'].bias_dark_latch:
+            g_dev['obs'].send_to_user("Refusing pointing request as the observatory is currently undertaking flats or calibration frames.")
+            plog("Refusing pointing request as the observatory is currently taking flats or calibration frmaes.")
             return
             
         

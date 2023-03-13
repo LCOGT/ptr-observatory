@@ -500,6 +500,7 @@ class Sequencer:
 
         if not self.bias_dark_latch and ((events['Eve Bias Dark'] <= ephem_now < events['End Eve Bias Dark']) and \
              self.config['auto_eve_bias_dark'] and g_dev['enc'].mode in ['Automatic', 'Autonomous', 'Manual'] ):   #events['End Eve Bias Dark']) and \
+            
             self.bias_dark_latch = True
             req = {'bin1': True, 'bin2': False, 'bin3': False, 'bin4': False, 'numOfBias': 45, \
                    'numOfDark': 15, 'darkTime': 180, 'numOfDark2': 3, 'dark2Time': 360, \
@@ -512,39 +513,8 @@ class Sequencer:
             self.bias_dark_script(req, opt, morn=False)
             self.bias_dark_latch = False
 
-            g_dev['mnt'].park_command({}, {})
+            g_dev['mnt'].park_command({}, {})       
 
-        
-
-        elif ((g_dev['events']['Clock & Auto Focus']  <= ephem_now < g_dev['events']['Observing Begins']) and \
-               g_dev['enc'].mode == 'Automatic') and not g_dev['ocn'].wx_hold and self.weather_report_is_acceptable_to_observe==True:
-
-            if self.night_focus_ready==True and g_dev['obs'].open_and_enabled_to_observe:
-                g_dev['obs'].send_to_user("Beginning start of night Focus and Pointing Run", p_level='INFO')
-
-                # Move to reasonable spot
-                if g_dev['mnt'].mount.Tracking == False:
-                    if g_dev['mnt'].mount.CanSetTracking:   
-                        g_dev['mnt'].mount.Tracking = True
-                    else:
-                        plog("mount is not tracking but this mount doesn't support ASCOM changing tracking")
-
-                g_dev['mnt'].move_to_azalt(70, 70)
-                g_dev['foc'].time_of_last_focus = datetime.datetime.now() - datetime.timedelta(
-                    days=1
-                )  # Initialise last focus as yesterday
-
-                # Autofocus
-                req2 = {'target': 'near_tycho_star', 'area': 150}
-                opt = {}
-                self.extensive_focus_script(req2, opt, throw = g_dev['foc'].throw)
-
-                # Pointing
-                req = {'time': self.config['focus_exposure_time'],  'alias':  str(self.config['camera']['camera_1_1']['name']), 'image_type': 'focus'}   #  NB Should pick up filter and constats from config
-                #opt = {'area': 150, 'count': 1, 'bin': '2, 2', 'filter': 'focus'}
-                opt = {'area': 150, 'count': 1, 'bin': 1, 'filter': 'focus'}
-                result = g_dev['cam'].expose_command(req, opt, no_AWS=False, solve_it=True)
-                self.night_focus_ready=False
 
         elif not self.eve_sky_flat_latch and ((events['Eve Sky Flats'] <= ephem_now < events['End Eve Sky Flats'])  \
                and g_dev['enc'].mode in [ 'Automatic', 'Autonomous'] and not g_dev['ocn'].wx_hold and \
@@ -567,6 +537,39 @@ class Sequencer:
                 self.eve_sky_flat_latch = False
                 self.eve_flats_done = True
             
+
+        elif ((g_dev['events']['Clock & Auto Focus']  <= ephem_now < g_dev['events']['Observing Begins']) and \
+               g_dev['enc'].mode == 'Automatic') and not g_dev['ocn'].wx_hold and self.weather_report_is_acceptable_to_observe==True \
+                and self.night_focus_ready==True and  g_dev['obs'].open_and_enabled_to_observe:
+
+            
+
+            #if self.night_focus_ready==True and g_dev['obs'].open_and_enabled_to_observe:
+            g_dev['obs'].send_to_user("Beginning start of night Focus and Pointing Run", p_level='INFO')
+
+            # Move to reasonable spot
+            if g_dev['mnt'].mount.Tracking == False:
+                if g_dev['mnt'].mount.CanSetTracking:   
+                    g_dev['mnt'].mount.Tracking = True
+                else:
+                    plog("mount is not tracking but this mount doesn't support ASCOM changing tracking")
+
+            g_dev['mnt'].move_to_azalt(70, 70)
+            g_dev['foc'].time_of_last_focus = datetime.datetime.now() - datetime.timedelta(
+                days=1
+            )  # Initialise last focus as yesterday
+
+            # Autofocus
+            req2 = {'target': 'near_tycho_star', 'area': 150}
+            opt = {}
+            self.extensive_focus_script(req2, opt, throw = g_dev['foc'].throw)
+
+            # Pointing
+            req = {'time': self.config['focus_exposure_time'],  'alias':  str(self.config['camera']['camera_1_1']['name']), 'image_type': 'focus'}   #  NB Should pick up filter and constats from config
+            #opt = {'area': 150, 'count': 1, 'bin': '2, 2', 'filter': 'focus'}
+            opt = {'area': 150, 'count': 1, 'bin': 1, 'filter': 'focus'}
+            result = g_dev['cam'].expose_command(req, opt, no_AWS=False, solve_it=True)
+            self.night_focus_ready=False
 
 # =============================================================================
 #         NB NB Note below often faults, should be in a try except instead of this

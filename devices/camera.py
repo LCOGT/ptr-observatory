@@ -1164,7 +1164,9 @@ class Camera:
     
     def _qhyccd_expose(self, exposure_time, imtypeb):
         
-        success = qhycam.so.SetQHYCCDParam(qhycam.camera_params[qhycam_id]['handle'], qhycam.CONTROL_EXPOSURE, c_double(exposure_time))
+        success = qhycam.so.SetQHYCCDParam(qhycam.camera_params[qhycam_id]['handle'], qhycam.CONTROL_EXPOSURE, c_double(exposure_time*1000*1000))
+        
+        #breakpoint()
         qhycam.so.ExpQHYCCDSingleFrame(qhycam.camera_params[qhycam_id]['handle'])
         
         
@@ -3121,7 +3123,7 @@ class Camera:
                                    - self.tempStartupExposureTime))
                             queue_clear_time = time.time()
                             while True:
-                                if self.sep_processing==False and self.sep_queue.empty():
+                                if self.sep_processing==False and g_dev['obs'].sep_queue.empty():
                                     break
                                 else:
                                     if reported ==0:
