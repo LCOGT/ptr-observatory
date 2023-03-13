@@ -3040,16 +3040,19 @@ class Camera:
                         # Every Image gets SEP'd and gets it's catalogue sent up pronto ahead of the big fits
                         # Focus images use it for focus, Normal images also report their focus.
                         # hdufocusdata = np.array(hdusmalldata)
+                        # Interpolate to make a high resolution version for focussing
+                        # and platesolving
                         
+                        #g_dev['cam'].hdufocusdatahold = np.asarray(hdufocusdata)
                         
                         # IMMEDIATELY SEND TO SEP QUEUE
                         self.sep_processing=True
-                        self.to_sep((hdusmalldata, pixscale, float(hdu.header["RDNOISE"]), avg_foc[1], focus_image, im_path, text_name))
+                        self.to_sep((hdusmalldata, pixscale, float(hdu.header["RDNOISE"]), avg_foc[1], focus_image, im_path, text_name, hdu.header))
                         #self.sep_processing=True
                         
                         
                         
-                        
+                        # Send data off to process jpeg
                         self.to_mainjpeg((hdusmalldata, smartstackid, paths))
                         
                         
@@ -3060,105 +3063,25 @@ class Camera:
 
                         # AT THIS STAGE WAIT FOR SEP TO COMPLETE      
                         #print (self.sep_queue)
-                        x = 0
-                        while x == 0:
-                            if g_dev['cam'].sep_processing:
-                                time.sleep(1)
-                                print ("waiting for SEP to complete")
-                                #breakpoint()
-                            else:
-                                x = 1
+                        # x = 0
+                        # while x == 0:
+                        #     if g_dev['cam'].sep_processing:
+                        #         time.sleep(1)
+                        #         print ("waiting for SEP to complete")
+                        #         #breakpoint()
+                        #     else:
+                        #         x = 1
                         
                         
                         post_sep_timer = time.time()
                         
-                        hdu.header["SEPSKY"] = g_dev['cam'].sepsky
                         
-                        
-                        
-
-                        #if 'rfr' in locals():
-
-                        hdu.header["FWHM"] = ( str(self.rfp), 'FWHM in pixels')
-                        hdu.header["FWHMpix"] = ( str(self.rfp), 'FWHM in pixels')
-                        hdu.header["FWHMasec"] = ( str(self.rfr), 'FWHM in arcseconds')
-                        hdu.header["FWHMstd"] = ( str(self.rfs), 'FWHM standard deviation in arcseconds')
-
-                        #if focus_image == False:
-                        text = open(
-                            im_path + text_name, "w"
-                        )  # This is needed by AWS to set up database.
-                        text.write(str(hdu.header))
-                        text.close()
-                        self.enqueue_for_fastAWS(10, im_path, text_name)
                         
                         #if focus_image == False:
                         
 
 
-                         # Set up RA and DEC headers for BANZAI
-                         # needs to be done AFTER text file is sent up.
-                         # Text file RA and Dec and BANZAI RA and Dec are gormatted different
-
-                        tempRAdeg = float(g_dev["mnt"].current_icrs_ra) * 15
-                        tempDECdeg = g_dev["mnt"].current_icrs_dec
-                        tempointing = SkyCoord(tempRAdeg, tempDECdeg, unit='deg')
-                        tempointing=tempointing.to_string("hmsdms").split(' ')
-
-                        hdu.header["RA"] = (
-                            tempointing[0],
-                            "[hms] Telescope right ascension",
-                        )
-                        hdu.header["DEC"] = (
-                            tempointing[1],
-                            "[dms] Telescope declination",
-                        )
-                        hdu.header["ORIGRA"] = hdu.header["RA"]
-                        hdu.header["ORIGDEC"] = hdu.header["DEC"]
-                        hdu.header["RAhrs"] = (
-                            g_dev["mnt"].current_icrs_ra,
-                            "[hrs] Telescope right ascension",
-                        )
-                        hdu.header["RA-deg"] = tempRAdeg
-                        hdu.header["DEC-deg"] = tempDECdeg
-
-                        hdu.header["TARG-CHK"] = (
-                            (g_dev["mnt"].current_icrs_ra * 15)
-                            + g_dev["mnt"].current_icrs_dec,
-                            "[deg] Sum of RA and dec",
-                        )
-                        hdu.header["CATNAME"] = (g_dev["mnt"].object, "Catalog object name")
-                        hdu.header["CAT-RA"] = (
-                            tempointing[0],
-                            "[hms] Catalog RA of object",
-                        )
-                        hdu.header["CAT-DEC"] = (
-                            tempointing[1],
-                            "[dms] Catalog Dec of object",
-                        )
-                        hdu.header["OFST-RA"] = (
-                            tempointing[0],
-                            "[hms] Catalog RA of object (for BANZAI only)",
-                        )
-                        hdu.header["OFST-DEC"] = (
-                            tempointing[1],
-                            "[dms] Catalog Dec of object",
-                        )
-
-
-                        hdu.header["TPT-RA"] = (
-                            tempointing[0],
-                            "[hms] Catalog RA of object (for BANZAI only",
-                        )
-                        hdu.header["TPT-DEC"] = (
-                            tempointing[1],
-                            "[dms] Catalog Dec of object",
-                        )
-
-                        hdu.header["CRVAL1"] = tempRAdeg
-                        hdu.header["CRVAL2"] = tempDECdeg
-                        hdu.header["CRPIX1"] = float(hdu.header["NAXIS1"])/2
-                        hdu.header["CRPIX2"] = float(hdu.header["NAXIS2"])/2
+                        
 
 
                         
@@ -3210,11 +3133,12 @@ class Camera:
                                 image_during_smartstack=True
                             
                             
-                            if len(self.sources) >= 5 and len(self.sources) < 1000 and not image_during_smartstack and not self.pointing_correction_requested_by_platesolve_thread and g_dev['obs'].platesolve_queue.empty():
+                            #if len(self.sources) >= 5 and len(self.sources) < 1000 and not image_during_smartstack and not self.pointing_correction_requested_by_platesolve_thread and g_dev['obs'].platesolve_queue.empty():
+                            if not image_during_smartstack and not g_dev['obs'].pointing_correction_requested_by_platesolve_thread and g_dev['obs'].platesolve_queue.empty():
                                 
                                 
                                 # NEED TO CHECK HERE THAT THERE ISN"T ALREADY A PLATE SOLVE IN THE THREAD!
-                                self.to_platesolve((g_dev['cam'].hdufocusdatahold, hdu.header, cal_path, cal_name, frame_type, time.time()))
+                                self.to_platesolve((hdusmalldata, hdu.header, cal_path, cal_name, frame_type, time.time()))
                                 
                             else:
                                 plog ("Platesolve wasn't attempted due to lack of sources (or sometimes too many!) or it was during a smartstack")
@@ -3222,15 +3146,15 @@ class Camera:
                                 #Still save the file to disk if platesolve not attempted
                                 if self.config['keep_focus_images_on_disk']:
                                     hdufocus=fits.PrimaryHDU()
-                                    hdufocus.data=hdufocusdata                            
+                                    hdufocus.data=g_dev['cam'].hdufocusdatahold                            
                                     hdufocus.header=hdu.header
-                                    hdufocus.header["NAXIS1"] = hdufocusdata.shape[0]
-                                    hdufocus.header["NAXIS2"] = hdufocusdata.shape[1]
+                                    hdufocus.header["NAXIS1"] = g_dev['cam'].hdufocusdatahold.shape[0]
+                                    hdufocus.header["NAXIS2"] = g_dev['cam'].hdufocusdatahold.shape[1]
                                     hdufocus.writeto(cal_path + cal_name, overwrite=True, output_verify='silentfix')
                                     pixscale=hdufocus.header['PIXSCALE']
                                     if self.config["save_to_alt_path"] == "yes":
                                         self.to_slow_process(1000,('raw_alt_path', self.alt_path + g_dev["day"] + "/calib/" + cal_name, hdufocus.data, hdufocus.header, \
-                                                                        frame_type))
+                                                                        frame_type, g_dev["mnt"].current_icrs_ra, g_dev["mnt"].current_icrs_dec))
                                     
                                     try:
                                         g_dev['cam'].hdufocusdatahold.close()
@@ -3256,14 +3180,14 @@ class Camera:
                     # Now that the jpeg has been sent up pronto,
                     # We turn back to getting the bigger raw, reduced and fz files dealt with
                     
-                    self.to_slow_process(5,('fz_and_send', raw_path + raw_name00 + ".fz", hdu.data, hdu.header, frame_type))                    
+                    self.to_slow_process(5,('fz_and_send', raw_path + raw_name00 + ".fz", hdu.data, hdu.header, frame_type, g_dev["mnt"].current_icrs_ra, g_dev["mnt"].current_icrs_dec))                    
 
         
                     # Similarly to the above. This saves the RAW file to disk
                     # it works 99.9999% of the time.
                    
                     if self.config['save_raw_to_disk']:
-                       self.to_slow_process(1000,('raw', raw_path + raw_name00, hdu.data, hdu.header, frame_type))
+                       self.to_slow_process(1000,('raw', raw_path + raw_name00, hdu.data, hdu.header, frame_type, g_dev["mnt"].current_icrs_ra, g_dev["mnt"].current_icrs_dec))
                     
                     # Similarly to the above. This saves the REDUCED file to disk
                     # it works 99.9999% of the time.
@@ -3277,7 +3201,7 @@ class Camera:
                             if self.config['keep_reduced_on_disk']:
                                 plog ("saving reduced file anyway!")
                                 self.to_slow_process(1000,('reduced', red_path + red_name01, hdureduceddata, hdu.header, \
-                                                       frame_type))
+                                                       frame_type, g_dev["mnt"].current_icrs_ra, g_dev["mnt"].current_icrs_dec))
                         else:                            
                             saver = 0
                             saverretries = 0
@@ -3310,10 +3234,10 @@ class Camera:
                     
                     if self.config["save_to_alt_path"] == "yes":
                         self.to_slow_process(1000,('raw_alt_path', self.alt_path + g_dev["day"] + "/raw/" + raw_name00, hdu.data, hdu.header, \
-                                                       frame_type))
+                                                       frame_type, g_dev["mnt"].current_icrs_ra, g_dev["mnt"].current_icrs_dec))
                         if "hdureduced" in locals():
                             self.to_slow_process(1000,('reduced_alt_path', self.alt_path + g_dev["day"] + "/reduced/" + red_name01, hdureduceddata, hdu.header, \
-                                                               frame_type))
+                                                               frame_type, g_dev["mnt"].current_icrs_ra, g_dev["mnt"].current_icrs_dec))
                             
                         
                       

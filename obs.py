@@ -1863,19 +1863,20 @@ sel
                 #print ("In the queue.....")
                 sep_timer_begin=time.time()
                 
-                (hdufocusdata, pixscale, readnoise, avg_foc, focus_image, im_path, text_name) = self.sep_queue.get(block=False)
+                (hdufocusdata, pixscale, readnoise, avg_foc, focus_image, im_path, text_name, hduheader) = self.sep_queue.get(block=False)
                 
-                # Interpolate to make a high resolution version for focussing
-                # and platesolving
-                if self.config["camera"][g_dev['cam'].name]["settings"]['bin_for_focus']:
-                    hdufocusdata=block_reduce(hdufocusdata,2)
-                    binfocus=2
-                else:
-                    hdufocusdata=demosaicing_CFA_Bayer_bilinear(hdufocusdata, 'RGGB')[:,:,1]
-                    hdufocusdata=hdufocusdata.astype("float32")
-                    binfocus=1
-                    
-                g_dev['cam'].hdufocusdatahold = np.asarray(hdufocusdata)
+                focdate=time.time()
+                binfocus=1
+                if self.config["camera"][g_dev['cam'].name]["settings"]["is_osc"]:
+                    if self.config["camera"][g_dev['cam'].name]["settings"]['bin_for_focus']:
+                        hdufocusdata=block_reduce(hdufocusdata,2)
+                        binfocus=2
+                    else:
+                        hdufocusdata=demosaicing_CFA_Bayer_bilinear(hdufocusdata, 'RGGB')[:,:,1]
+                        hdufocusdata=hdufocusdata.astype("float32")
+                        binfocus=1
+                plog("focus construction time")
+                plog(time.time() -focdate)
                 
                 focusimg = np.array(
                     hdufocusdata, order="C"
@@ -2101,6 +2102,25 @@ sel
                 except:
                     plog("Failed to send SEP up for some reason")
                 
+                hduheader["SEPSKY"] = g_dev['cam'].sepsky
+                
+                
+                
+
+                #if 'rfr' in locals():
+
+                hduheader["FWHM"] = ( str(g_dev['cam'].rfp), 'FWHM in pixels')
+                hduheader["FWHMpix"] = ( str(g_dev['cam'].rfp), 'FWHM in pixels')
+                hduheader["FWHMasec"] = ( str(g_dev['cam'].rfr), 'FWHM in arcseconds')
+                hduheader["FWHMstd"] = ( str(g_dev['cam'].rfs), 'FWHM standard deviation in arcseconds')
+
+                #if focus_image == False:
+                text = open(
+                    im_path + text_name, "w"
+                )  # This is needed by AWS to set up database.
+                text.write(str(hduheader))
+                text.close()
+                g_dev['cam'].enqueue_for_fastAWS(10, im_path, text_name)
                 
                 g_dev['cam'].sep_processing=False
                 self.sep_queue.task_done()
@@ -2128,6 +2148,19 @@ sel
                 one_at_a_time = 1
                 psolve_timer_begin=time.time()
                 (hdufocusdata, hduheader, cal_path, cal_name, frame_type, time_platesolve_requested) = self.platesolve_queue.get(block=False)
+                
+                focdate=time.time()
+                binfocus=1
+                if self.config["camera"][g_dev['cam'].name]["settings"]["is_osc"]:
+                    if self.config["camera"][g_dev['cam'].name]["settings"]['bin_for_focus']:
+                        hdufocusdata=block_reduce(hdufocusdata,2)
+                        binfocus=2
+                    else:
+                        hdufocusdata=demosaicing_CFA_Bayer_bilinear(hdufocusdata, 'RGGB')[:,:,1]
+                        hdufocusdata=hdufocusdata.astype("float32")
+                        binfocus=1
+                plog("platesolve construction time")
+                plog(time.time() -focdate)
                 
                 # We only need to save the focus image immediately if there is enough sources to 
                 #  rationalise that.  It only needs to be on the disk immediately now if platesolve 
@@ -2350,11 +2383,92 @@ sel
                 #plog (slow_process[0])
                 #plog (slow_process[1][0])
                 slow_process=slow_process[1]
+                
+                # Set up RA and DEC headers for BANZAI
+                # needs to be done AFTER text file is sent up.
+                # Text file RA and Dec and BANZAI RA and Dec are gormatted different
+
+                temphduheader=slow_process[3]
+
+                #tempRAdeg = float(g_dev["mnt"].current_icrs_ra) * 15
+                #tempDECdeg = g_dev["mnt"].current_icrs_dec
+                tempRAdeg = slow_process[5] * 15
+                tempDECdeg = slow_process[6]
+                tempointing = SkyCoord(tempRAdeg, tempDECdeg, unit='deg')
+                tempointing=tempointing.to_string("hmsdms").split(' ')
+ 
+                temphduheader["RA"] = (
+                    tempointing[0],
+                    "[hms] Telescope right ascension",
+                )
+                temphduheader["DEC"] = (
+                    tempointing[1],
+                    "[dms] Telescope declination",
+                )
+                temphduheader["ORIGRA"] = temphduheader["RA"]
+                temphduheader["ORIGDEC"] = temphduheader["DEC"]
+                temphduheader["RAhrs"] = (
+                    g_dev["mnt"].current_icrs_ra,
+                    "[hrs] Telescope right ascension",
+                )
+                temphduheader["RA-deg"] = tempRAdeg
+                temphduheader["DEC-deg"] = tempDECdeg
+ 
+                temphduheader["TARG-CHK"] = (
+                    (g_dev["mnt"].current_icrs_ra * 15)
+                    + g_dev["mnt"].current_icrs_dec,
+                    "[deg] Sum of RA and dec",
+                )
+                temphduheader["CATNAME"] = (g_dev["mnt"].object, "Catalog object name")
+                temphduheader["CAT-RA"] = (
+                    tempointing[0],
+                    "[hms] Catalog RA of object",
+                )
+                temphduheader["CAT-DEC"] = (
+                    tempointing[1],
+                    "[dms] Catalog Dec of object",
+                )
+                temphduheader["OFST-RA"] = (
+                    tempointing[0],
+                    "[hms] Catalog RA of object (for BANZAI only)",
+                )
+                temphduheader["OFST-DEC"] = (
+                    tempointing[1],
+                    "[dms] Catalog Dec of object",
+                )
+ 
+ 
+                temphduheader["TPT-RA"] = (
+                    tempointing[0],
+                    "[hms] Catalog RA of object (for BANZAI only",
+                )
+                temphduheader["TPT-DEC"] = (
+                    tempointing[1],
+                    "[dms] Catalog Dec of object",
+                )
+ 
+                temphduheader["CRVAL1"] = tempRAdeg
+                temphduheader["CRVAL2"] = tempDECdeg
+                temphduheader["CRPIX1"] = float(temphduheader["NAXIS1"])/2
+                temphduheader["CRPIX2"] = float(temphduheader["NAXIS2"])/2
+                
+                
+                
+                
+                
+                
+                
+                
+                
+                
+                
+                
+                
                 #plog ("********** slow queue : " + str(slow_process[0]) )
                 if slow_process[0] == 'focus':
                     hdufocus=fits.PrimaryHDU()
                     hdufocus.data=slow_process[2]                            
-                    hdufocus.header=slow_process[3]
+                    hdufocus.header=temphduheader
                     hdufocus.header["NAXIS1"] = hdufocus.data.shape[0]
                     hdufocus.header["NAXIS2"] = hdufocus.data.shape[1]
                     hdufocus.writeto(slow_process[1], overwrite=True, output_verify='silentfix')
@@ -2372,7 +2486,7 @@ sel
                         try:
                             hdu=fits.PrimaryHDU()
                             hdu.data=slow_process[2]                            
-                            hdu.header=slow_process[3]
+                            hdu.header=temphduheader
                             hdu.writeto(
                                 slow_process[1], overwrite=True, output_verify='silentfix'
                             )  # Save full raw file locally
@@ -2402,7 +2516,7 @@ sel
                     # The compression and a few pieces of software require float32
                     # BUT it actually compresses to the same size either way
                     hdufz = fits.CompImageHDU(
-                        np.array(slow_process[2], dtype=np.float32), slow_process[3]
+                        np.array(slow_process[2], dtype=np.float32), temphduheader
                     )
                     hdufz.verify("fix")
                     hdufz.header[
@@ -2411,6 +2525,11 @@ sel
                     hdufz.header[
                         "BSCALE"
                     ] = 1  # Make sure there is no integer scaling left over
+                    
+                    
+                    
+                    
+                    
 
                     # This routine saves the file ready for uploading to AWS
                     # It usually works perfectly 99.9999% of the time except
@@ -2457,7 +2576,7 @@ sel
                         try:
                             hdureduced=fits.PrimaryHDU()
                             hdureduced.data=slow_process[2]                            
-                            hdureduced.header=slow_process[3]
+                            hdureduced.header=temphduheader
                             hdureduced.header["NAXIS1"] = hdureduced.data.shape[0]
                             hdureduced.header["NAXIS2"] = hdureduced.data.shape[1]
                             hdureduced.data=hdureduced.data.astype("float32")
