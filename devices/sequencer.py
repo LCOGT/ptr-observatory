@@ -1371,6 +1371,12 @@ class Sequencer:
                 req = {'time': 0.0,  'script': 'True', 'image_type': 'bias'}
                 opt = {'area': "Full", 'count': min_to_do, 'bin': 1 , \
                        'filter': 'dark'}
+                    
+                    
+                # Check it is in the park position and not pointing at the sky.
+                # It can be pointing at the sky if cool down open is triggered during the biasdark process
+                g_dev['mnt'].park_command({}, {})
+                
                   
                 result = g_dev['cam'].expose_command(req, opt, no_AWS=False, \
                                 do_sep=False, quick=False, skip_open_check=True,skip_daytime_check=True)

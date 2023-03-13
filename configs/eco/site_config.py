@@ -124,7 +124,7 @@ site_config = {
     'focus_trigger' : 5.0, # What FWHM increase is needed to trigger an autofocus
     'solve_nth_image' : 10, # Only solve every nth image
     'solve_timer' : 5, # Only solve every X minutes
-    'threshold_mount_update' : 10, # only update mount when X arcseconds away
+    'threshold_mount_update' : 30, # only update mount when X arcseconds away
 
     'defaults': {
         'observing_conditions': 'observing_conditions1',  #  These are used as keys, may go away.
