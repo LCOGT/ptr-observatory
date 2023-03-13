@@ -164,7 +164,7 @@ class Qcam:
             #     print(sys.maxsize)
             #     print('32-Bit')
         self.so = windll.LoadLibrary(dll_path)
-        print('Windows')
+        #print('Windows')
 
         self.so.GetQHYCCDParam.restype = c_double
         self.so.GetQHYCCDParam.argtypes = [c_void_p, c_int]
@@ -213,7 +213,7 @@ class Qcam:
 @CFUNCTYPE(None, c_char_p)
 def pnp_in(cam_id):
     #breakpoint()
-    plog("Connecting to camera: %s" % cam_id.decode('utf-8'))
+    plog("QHY Direct connect to camera: %s" % cam_id.decode('utf-8'))
     global qhycam_id
     qhycam_id=cam_id
     init_camera_param(qhycam_id)
@@ -568,7 +568,7 @@ class Camera:
             
             qhycam.so.RegisterPnpEventIn(pnp_in)
             qhycam.so.RegisterPnpEventOut(pnp_out)
-            plog("QHY Direct Control is connected:  ")
+            #plog("QHY Direct Control is connected:  ")
             qhycam.so.InitQHYCCDResource()
             qhycam.camera_params[qhycam_id]['handle'] = qhycam.so.OpenQHYCCD(qhycam_id)
             if qhycam.camera_params[qhycam_id]['handle'] is None:
@@ -1177,14 +1177,14 @@ class Camera:
         bits_per_pixel_byref = c_uint32()
         
         
-        temptime=time.time()
+        #temptime=time.time()
         success = qhycam.so.GetQHYCCDSingleFrame(qhycam.camera_params[qhycam_id]['handle'],
                                               byref(image_width_byref),
                                               byref(image_height_byref),
                                               byref(bits_per_pixel_byref),
                                               byref(qhycam.camera_params[qhycam_id]['channels']),
                                               byref(qhycam.camera_params[qhycam_id]['prev_img_data']))
-        plog('QHY HARDWARE READOUT: ' + str(time.time() - temptime))
+        #plog('QHY HARDWARE READOUT: ' + str(time.time() - temptime))
         #print('read  single = ' + str(success))
         
         
@@ -1201,10 +1201,10 @@ class Camera:
         #qhycam.camera_params[qhycam_id]['prev_img'] = qhycam.camera_params[qhycam_id]['prev_img'][0:image_size]
         #image = np.reshape(qhycam.camera_params[qhycam_id]['prev_img'], (i_h, i_w))
         
-        temptime=time.time()
+        #temptime=time.time()
         image = np.ctypeslib.as_array(qhycam.camera_params[qhycam_id]['prev_img_data'])
         image = np.reshape(image[0:self.camera_image_size], (self.camera_x_size, self.camera_y_size))
-        plog('SITE SOFTWARE QHY READOUT: ' + str(time.time() - temptime))
+        #plog('SITE SOFTWARE QHY READOUT: ' + str(time.time() - temptime))
         #image = np.reshape(qhycam.camera_params[qhycam_id]['prev_img'], (i_h, i_w))
         
         
@@ -2005,7 +2005,7 @@ class Camera:
             incoming_image_list = []
             #self.t4 = time.time()
             
-            self.main_post_exposure_cycle_time_start = time.time()
+            #self.main_post_exposure_cycle_time_start = time.time()
 
             if self.async_exposure_lock == False and self._imageavailable():   #NB no more file-mode
                 try:
@@ -3058,7 +3058,7 @@ class Camera:
                         
                         
                         # Report on main_post_exposure_cycle_time
-                        plog("Time taken for main post-exposure process in camera.py: " +str(time.time() - self.main_post_exposure_cycle_time_start))
+                        #plog("Time taken for main post-exposure process in camera.py: " +str(time.time() - self.main_post_exposure_cycle_time_start))
                         
 
                         # AT THIS STAGE WAIT FOR SEP TO COMPLETE      
@@ -3073,7 +3073,7 @@ class Camera:
                         #         x = 1
                         
                         
-                        post_sep_timer = time.time()
+                        #post_sep_timer = time.time()
                         
                         
                         
@@ -3138,7 +3138,7 @@ class Camera:
                                 
                                 
                                 # NEED TO CHECK HERE THAT THERE ISN"T ALREADY A PLATE SOLVE IN THE THREAD!
-                                self.to_platesolve((hdusmalldata, hdu.header, cal_path, cal_name, frame_type, time.time()))
+                                self.to_platesolve((hdusmalldata, hdu.header, cal_path, cal_name, frame_type, time.time(), pixscale))
                                 
                             else:
                                 plog ("Platesolve wasn't attempted due to lack of sources (or sometimes too many!) or it was during a smartstack")
@@ -3280,7 +3280,7 @@ class Camera:
                         del hdureduced  # remove file from memory now that we are doing with it
 
 
-                    plog("Post sep save fits and such timer: " + str(time.time()-post_sep_timer))
+                    #plog("Post sep save fits and such timer: " + str(time.time()-post_sep_timer))
 
                     # Good spot to check if we need to nudge the telescope
                     check_platesolve_and_nudge()                 
@@ -3306,9 +3306,10 @@ class Camera:
                         if not self.config['keep_reduced_on_disk']:
                             try:                                
                                 os.remove(red_path + red_name01)
-                                plog ("removed reduced file")
+                                #plog ("removed reduced file")
                             except:
-                                plog ("couldn't remove reduced file for some reason")
+                                #plog ("couldn't remove reduced file for some reason")
+                                pass
 
                     if not g_dev["cam"].exposure_busy:
                         self.expresult = {"stopped": True}
