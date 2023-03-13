@@ -945,9 +945,10 @@ class Mount:
         sun_dist = sun_coords.separation(temppointing)
         #plog ("sun distance: " + str(sun_dist.degree))
         if sun_dist.degree <  self.config['closest_distance_to_the_sun']:
-            g_dev['obs'].send_to_user("Refusing pointing request as it is too close to the sun: " + str(sun_dist.degree) + " degrees.")
-            plog("Refusing pointing request as it is too close to the sun: " + str(sun_dist.degree) + " degrees.")
-            return
+            if not (g_dev['events']['Civil Dusk'] < ephem.now() < g_dev['events']['Civil Dawn']):
+                g_dev['obs'].send_to_user("Refusing pointing request as it is too close to the sun: " + str(sun_dist.degree) + " degrees.")
+                plog("Refusing pointing request as it is too close to the sun: " + str(sun_dist.degree) + " degrees.")
+                return
         
         # Second thing, check that we aren't pointing at the moon
         # UNLESS we have actually chosen to look at the moon.
@@ -988,7 +989,13 @@ class Mount:
             plog("Refusing pointing request as the observatory is not enabled to observe.")
             return
 
-        
+        # Fifth thing, check that the sky flat latch isn't on
+        # (I moved the scope during flats once, it wasn't optimal)
+        if g_dev['seq'].morn_sky_flat_latch  or g_dev['seq'].eve_sky_flat_latch or g_dev['seq'].sky_flat_latch or g_dev['seq'].bias_dark_latch:
+            g_dev['obs'].send_to_user("Refusing pointing request as the observatory is currently undertaking flats or calibration frames.")
+            plog("Refusing pointing request as the observatory is currently taking flats or calibration frmaes.")
+            return
+            
         
         plog("mount cmd. slewing mount, req, opt:  ", req, opt)
 

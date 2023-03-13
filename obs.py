@@ -337,11 +337,11 @@ class Observatory:
         # =============================================================================
         # Here we set up the reduction Queue and Thread:
         # =============================================================================
-        self.reduce_queue = queue.Queue(
+        self.smartstack_queue = queue.Queue(
             maxsize=0
         )  # Why do we want a maximum size and lose files?
-        self.reduce_queue_thread = threading.Thread(target=self.reduce_image, args=())
-        self.reduce_queue_thread.start()
+        self.smartstack_queue_thread = threading.Thread(target=self.smartstack_image, args=())
+        self.smartstack_queue_thread.start()
         self.blocks = None
         self.projects = None
         self.events_new = None
@@ -1863,9 +1863,9 @@ sel
                 #print ("In the queue.....")
                 sep_timer_begin=time.time()
                 
-                (hdufocusdata, pixscale, readnoise, avg_foc, focus_image, im_path, text_name, hduheader) = self.sep_queue.get(block=False)
+                (hdufocusdata, pixscale, readnoise, avg_foc, focus_image, im_path, text_name, hduheader, cal_path, cal_name, frame_type) = self.sep_queue.get(block=False)
                 
-                if not (g_dev['events']['Naut Dusk'] < ephem.now() < g_dev['events']['Naut Dawn']):
+                if not (g_dev['events']['Civil Dusk'] < ephem.now() < g_dev['events']['Civil Dawn']):
                     plog ("Too bright to consider photometry!")
                 else:
                 
@@ -2096,23 +2096,7 @@ sel
                         sources.write(im_path + text_name.replace('.txt', '.sep'), format='csv', overwrite=True)
                         
                         
-                        try:
-                            g_dev['cam'].enqueue_for_fastAWS(200, im_path, text_name.replace('.txt', '.sep'))
-                            #plog("Sent SEP up")
-                        except:
-                            plog("Failed to send SEP up for some reason")
-                        
-                        hduheader["SEPSKY"] = sepsky
-                        
-                        
-                        
-
-                        #if 'rfr' in locals():
-
-                        hduheader["FWHM"] = ( str(rfp), 'FWHM in pixels')
-                        hduheader["FWHMpix"] = ( str(rfp), 'FWHM in pixels')
-                        hduheader["FWHMasec"] = ( str(rfr), 'FWHM in arcseconds')
-                        hduheader["FWHMstd"] = ( str(rfs), 'FWHM standard deviation in arcseconds')
+                       
                     except:
                         plog ("something failed in SEP calculations for exposure. This could be an overexposed image")
                         plog (traceback.format_exc())
@@ -2120,8 +2104,15 @@ sel
                         rfp = np.nan
                         rfr = np.nan
                         rfs = np.nan
+                    
+                    plog("Sep time to process: " + str(time.time() - sep_timer_begin))
                 
-                
+                hduheader["SEPSKY"] = sepsky     
+                hduheader["FWHM"] = ( str(rfp), 'FWHM in pixels')
+                hduheader["FWHMpix"] = ( str(rfp), 'FWHM in pixels')
+                hduheader["FWHMasec"] = ( str(rfr), 'FWHM in arcseconds')
+                hduheader["FWHMstd"] = ( str(rfs), 'FWHM standard deviation in arcseconds')
+
 
                 #if focus_image == False:
                 text = open(
@@ -2131,10 +2122,46 @@ sel
                 text.close()
                 g_dev['cam'].enqueue_for_fastAWS(10, im_path, text_name)
                 
+                try:
+                    g_dev['cam'].enqueue_for_fastAWS(200, im_path, text_name.replace('.txt', '.sep'))
+                    #plog("Sent SEP up")
+                except:
+                    plog("Failed to send SEP up for some reason")
+                    
+                    
+
+                if self.config['keep_focus_images_on_disk']:
+                    # hdufocus=fits.PrimaryHDU()
+                    # hdufocus.data=g_dev['cam'].hdufocusdatahold                            
+                    # hdufocus.header=hdu.header
+                    # hdufocus.header["NAXIS1"] = g_dev['cam'].hdufocusdatahold.shape[0]
+                    # hdufocus.header["NAXIS2"] = g_dev['cam'].hdufocusdatahold.shape[1]
+                    # hdufocus.writeto(cal_path + cal_name, overwrite=True, output_verify='silentfix')
+                    # pixscale=hdufocus.header['PIXSCALE']                   
+
+                    
+                    
+                    g_dev['cam'].to_slow_process(1000,('focus', cal_path + cal_name, hdufocusdata, hduheader, \
+                                                    frame_type, g_dev["mnt"].current_icrs_ra, g_dev["mnt"].current_icrs_dec))
+                    
+                    if self.config["save_to_alt_path"] == "yes":
+                        g_dev['cam'].to_slow_process(1000,('raw_alt_path', self.alt_path + g_dev["day"] + "/calib/" + cal_name, hdufocusdata, hduheader, \
+                                                        frame_type, g_dev["mnt"].current_icrs_ra, g_dev["mnt"].current_icrs_dec))
+                    
+                    # try:
+                    #     g_dev['cam'].hdufocusdatahold.close()
+                    # except:
+                    #     pass
+                    # del g_dev['cam'].hdufocusdatahold
+                    # del hdufocus
+
+
+                
+                
                 g_dev['cam'].sep_processing=False
                 self.sep_queue.task_done()
                 one_at_a_time=0 
-                plog("Sep time to process: " + str(time.time() - sep_timer_begin))
+                
             else:
                 time.sleep(0.1)
 
@@ -2772,19 +2799,19 @@ sel
 
 
     # Note this is another thread!
-    def reduce_image(self):
+    def smartstack_image(self):
 
         while True:
 
-            if not self.reduce_queue.empty():
+            if not self.smartstack_queue.empty():
                 (
                     paths,
                     pixscale,
                     smartstackid,
                     sskcounter,
-                    Nsmartstack,
-                    sources,
-                ) = self.reduce_queue.get(block=False)
+                    Nsmartstack
+                    #sources,
+                ) = self.smartstack_queue.get(block=False)
 
                 if paths is None:
                     #time.sleep(0.5)
@@ -2794,45 +2821,102 @@ sel
 
                 # SmartStack Section
                 if smartstackid != "no" :
+                    sstack_timer = time.time()
+                    # if not paths["frame_type"] in [
+                    #     "bias",
+                    #     "dark",
+                    #     "flat",
+                    #     "solar",
+                    #     "lunar",
+                    #     "skyflat",
+                    #     "screen",
+                    #     "spectrum",
+                    #     "auto_focus",
+                    # ]:
+                    img = fits.open(
+                        paths["red_path"] + paths["red_name01"],
+                        ignore_missing_end=True,
+                    )
+                    imgdata=img[0].data.copy()
+                    # Pick up some header items for smartstacking later
+                    ssfilter = str(img[0].header["FILTER"])
+                    ssobject = str(img[0].header["OBJECT"])
+                    ssexptime = str(img[0].header["EXPTIME"])
+                    #ssframenumber = str(img[0].header["FRAMENUM"])
+                    img.close()
+                    del img
+                    if not self.config['keep_reduced_on_disk']:
+                        try:
+                            os.remove(paths["red_path"] + paths["red_name01"])
+                        except Exception as e:
+                            plog ("could not remove temporary reduced file: ",e)
                     
-                    if not paths["frame_type"] in [
-                        "bias",
-                        "dark",
-                        "flat",
-                        "solar",
-                        "lunar",
-                        "skyflat",
-                        "screen",
-                        "spectrum",
-                        "auto_focus",
-                    ]:
-                        img = fits.open(
-                            paths["red_path"] + paths["red_name01"],
-                            ignore_missing_end=True,
-                        )
-                        imgdata=img[0].data.copy()
-                        # Pick up some header items for smartstacking later
-                        ssfilter = str(img[0].header["FILTER"])
-                        ssobject = str(img[0].header["OBJECT"])
-                        ssexptime = str(img[0].header["EXPTIME"])
-                        ssframenumber = str(img[0].header["FRAMENUM"])
-                        img.close()
-                        del img
-                        if not self.config['keep_reduced_on_disk']:
-                            try:
-                                os.remove(paths["red_path"] + paths["red_name01"])
-                            except Exception as e:
-                                plog ("could not remove temporary reduced file: ",e)
+                    #sstackimghold=np.array(imgdata)  
+
+                    focusimg = np.array(
+                        imgdata, order="C"
+                    ) 
+                    
+                    try:
+                        # Some of these are liberated from BANZAI
+                        #breakpoint()
+                        try:
+                            bkg = sep.Background(focusimg)
+                        except:
+                            focusimg=focusimg.byteswap().newbyteorder()
+                            bkg = sep.Background(focusimg)
                         
-                        sstackimghold=np.array(imgdata)  
+                        #sepsky = ( np.nanmedian(bkg), "Sky background estimated by SEP" )
+                        
+                        focusimg -= bkg
+                        ix, iy = focusimg.shape
+                        border_x = int(ix * 0.05)
+                        border_y = int(iy * 0.05)
+                        sep.set_extract_pixstack(int(ix*iy -1))
+                        # minarea is set as roughly how big we think a 0.7 arcsecond seeing star
+                        # would be at this pixelscale and binning. Different for different cameras/telescopes.
+                        #minarea=int(pow(0.7*1.5 / (pixscale*binfocus),2)* 3.14)                            
+                        minarea=int(pow(0.7*1.5 / (pixscale),2)* 3.14)                            
+                        if minarea < 5: # There has to be a min minarea though!
+                            minarea=5
+                            
+                            
+                        
+                        sources = sep.extract(
+                            focusimg, 3.0, err=bkg.globalrms, minarea=minarea
+                        )
+                        #plog ("min_area: " + str(minarea))
+                        sources = Table(sources)
+                        sources = sources[sources['flag'] < 8]
+                        image_saturation_level = g_dev['cam'].config["camera"][g_dev['cam'].name]["settings"]["saturate"]
+                        sources = sources[sources["peak"] < 0.8* image_saturation_level]
+                        sources = sources[sources["cpeak"] < 0.8 * image_saturation_level]
+                        #sources = sources[sources["peak"] > 150 * pow(binfocus,2)]
+                        #sources = sources[sources["cpeak"] > 150 * pow(binfocus,2)]
+                        sources = sources[sources["flux"] > 2000 ]
+                        sources = sources[sources["x"] < ix - border_x]
+                        sources = sources[sources["x"] > border_x]
+                        sources = sources[sources["y"] < iy - border_y]
+                        sources = sources[sources["y"] > border_y]
+    
+                        # BANZAI prune nans from table
+                        nan_in_row = np.zeros(len(sources), dtype=bool)
+                        for col in sources.colnames:
+                            nan_in_row |= np.isnan(sources[col])
+                        sources = sources[~nan_in_row]
+                        #plog("Actual Platesolve SEP time: " + str(time.time()-actseptime))
+                    except:
+                        plog("Something went wrong with platesolve SEP")
+                        plog (traceback.format_exc())
+
 
                     plog ("Number of sources just prior to smartstacks: " + str(len(sources)))
                     if len(sources) < 5:
                         plog ("skipping stacking as there are not enough sources " + str(len(sources)) +" in this image")
 
                     # No need to open the same image twice, just using the same one as SEP.
-                    img = sstackimghold.copy()
-                    del sstackimghold
+                    #img = sstackimghold.copy()
+                    #del sstackimghold
                     smartStackFilename = (
                             str(ssobject)
                             + "_"
@@ -2849,9 +2933,9 @@ sel
                     if not self.config["camera"][g_dev['cam'].name]["settings"]["is_osc"]:
                         # Detect and swap img to the correct endianness - needed for the smartstack jpg
                         if sys.byteorder=='little':
-                            img=img.newbyteorder('little').byteswap()
+                            imgdata=imgdata.newbyteorder('little').byteswap()
                         else:
-                            img=img.newbyteorder('big').byteswap()
+                            imgdata=imgdata.newbyteorder('big').byteswap()
     
     
                         # IF SMARSTACK NPY FILE EXISTS DO STUFF, OTHERWISE THIS IMAGE IS THE START OF A SMARTSTACK
@@ -2866,13 +2950,13 @@ sel
                                     g_dev["cam"].site_path
                                     + "smartstacks/"
                                     + smartStackFilename,
-                                    img,
+                                    imgdata,
                                 )
     
                             else:
                                 plog ("Not storing first smartstack image as not enough sources")
                                 reprojection_failed=True
-                            storedsStack = img
+                            storedsStack = imgdata
                         else:
                             # Collect stored SmartStack
                             storedsStack = np.load(
@@ -2889,7 +2973,7 @@ sel
                             #plog(datetime.datetime.now())
                             if len(sources) > 5:
                                 try:
-                                    reprojectedimage, _ = func_timeout.func_timeout (60, aa.register, args=(img, storedsStack),\
+                                    reprojectedimage, _ = func_timeout.func_timeout (60, aa.register, args=(imgdata, storedsStack),\
                                                                                      kwargs={"detection_sigma":3, "min_area":9})
                                     # scalingFactor= np.nanmedian(reprojectedimage / storedsStack)
                                     # plog (" Scaling Factor : " +str(scalingFactor))
@@ -2934,7 +3018,7 @@ sel
     
     
                         if reprojection_failed == True: # If we couldn't make a stack send a jpeg of the original image.
-                            storedsStack=img
+                            storedsStack=imgdata
                         
                         
                          # Resizing the array to an appropriate shape for the jpg and the small fits
@@ -3038,26 +3122,26 @@ sel
                                 
                                 # Checkerboard collapse for other colours for temporary jpeg                            
                                 # Create indexes for B, G, G, R images                            
-                                xshape=img.shape[0]
-                                yshape=img.shape[1]
+                                xshape=imgdata.shape[0]
+                                yshape=imgdata.shape[1]
     
                                 # B pixels
                                 list_0_1 = np.array([ [0,0], [0,1] ])
                                 checkerboard=np.tile(list_0_1, (xshape//2, yshape//2))
                                 #checkerboard=np.array(checkerboard)
-                                newhdublue=(block_reduce(img * checkerboard ,2))
+                                newhdublue=(block_reduce(imgdata * checkerboard ,2))
                                 
                                 # R Pixels
                                 list_0_1 = np.array([ [1,0], [0,0] ])
                                 checkerboard=np.tile(list_0_1, (xshape//2, yshape//2))
                                 #checkerboard=np.array(checkerboard)
-                                newhdured=(block_reduce(img * checkerboard ,2))
+                                newhdured=(block_reduce(imgdata * checkerboard ,2))
                                 
                                 # G top right Pixels
                                 list_0_1 = np.array([ [0,1], [0,0] ])
                                 checkerboard=np.tile(list_0_1, (xshape//2, yshape//2))
                                 #checkerboard=np.array(checkerboard)
-                                newhdugreen=(block_reduce(img * checkerboard ,2))
+                                newhdugreen=(block_reduce(imgdata * checkerboard ,2))
                                 
                                 # G bottom left Pixels
                                 #list_0_1 = np.array([ [0,0], [1,0] ])
@@ -3379,18 +3463,19 @@ sel
                     plog(datetime.datetime.now())
 
                     try:
-                        img.close()
+                        imgdata.close()
                         # Just in case
                     except:
                         pass
-                    del img
+                    del imgdata
 
                 # WE CANNOT SOLVE FOR POINTING IN THE REDUCE THREAD! 
                 # POINTING SOLUTIONS HAVE TO HAPPEN AND COMPLETE IN BETWEEN EXPOSURES AND SLEWS
 
                 #time.sleep(0.5)
+                plog("Smartstack time taken: " + str(time.time() - sstack_timer))
                 self.img = None  # Clean up all big objects.
-                self.reduce_queue.task_done()
+                self.smartstack_queue.task_done()
             else:
                 time.sleep(0.1)
 

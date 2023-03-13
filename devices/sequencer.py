@@ -185,10 +185,10 @@ class Sequencer:
         self.block_guard = False
         self.time_of_next_slew = time.time()
         #NB NB These should be set up from config once a day at Noon/Startup time
-        self.bias_dark_latch = True   #NB NB NB Should these initially be defined this way?
-        self.sky_flat_latch = True
-        self.morn_sky_flat_latch = True
-        self.morn_bias_dark_latch = True   #NB NB NB Should these initially be defined this way?
+        self.bias_dark_latch = False   #NB NB NB Should these initially be defined this way?
+        self.sky_flat_latch = False
+        self.morn_sky_flat_latch = False
+        self.morn_bias_dark_latch = False   #NB NB NB Should these initially be defined this way?
         self.night_focus_ready=True
         self.midnight_calibration_done = False
         self.nightly_reset_complete = False
@@ -216,6 +216,7 @@ class Sequencer:
         self.morn_flats_done = False
         self.eve_sky_flat_latch = False
         self.morn_sky_flat_latch = False
+        self.bias_dark_latch = False
         # The weather report has to be at least passable at some time of the night in order to 
         # allow the observatory to become active and observe. This doesn't mean that it is 
         # necessarily a GOOD night at all, just that there are patches of feasible
@@ -497,9 +498,10 @@ class Sequencer:
                 self.nightly_reset_complete == False
 
 
-        if self.bias_dark_latch and ((events['Eve Bias Dark'] <= ephem_now < events['End Eve Bias Dark']) and \
+        if not self.bias_dark_latch and ((events['Eve Bias Dark'] <= ephem_now < events['End Eve Bias Dark']) and \
              self.config['auto_eve_bias_dark'] and g_dev['enc'].mode in ['Automatic', 'Autonomous', 'Manual'] ):   #events['End Eve Bias Dark']) and \
-            self.bias_dark_latch = False
+            
+            self.bias_dark_latch = True
             req = {'bin1': True, 'bin2': False, 'bin3': False, 'bin4': False, 'numOfBias': 45, \
                    'numOfDark': 15, 'darkTime': 180, 'numOfDark2': 3, 'dark2Time': 360, \
                    'hotMap': True, 'coldMap': True, 'script': 'genBiasDarkMaster', }  # NB NB All of the prior is obsolete
@@ -511,68 +513,11 @@ class Sequencer:
             self.bias_dark_script(req, opt, morn=False)
             self.bias_dark_latch = False
 
-            g_dev['mnt'].park_command({}, {})
+            g_dev['mnt'].park_command({}, {})       
 
-        elif ((g_dev['events']['Cool Down, Open']  <= ephem_now < g_dev['events']['Close and Park']) and \
-               g_dev['enc'].mode == 'Automatic') and not g_dev['ocn'].wx_hold and not enc_status['shutter_status'] in ['Software Fault', 'Closing', 'Error']:
 
-            #plog ("Cool Down Open Check Running")
-            if not self.nightly_weather_report_done and not g_dev['debug']:
-
-                self.run_nightly_weather_report()
-                self.nightly_weather_report_done=True
-
-            
-
-            #self.time_of_next_slew = time.time() -1
-            #plog ("got here")
-            
-            if not g_dev['obs'].open_and_enabled_to_observe and self.weather_report_is_acceptable_to_observe==True and self.weather_report_wait_until_open==False:
-                #print (self.enclosure_next_open_time)
-                #print (self.enclosure_next_open_time - time.time()                       )
-                #print (self.opens_this_evening)
-                if time.time() > self.enclosure_next_open_time and self.opens_this_evening < self.config['maximum_roof_opens_per_evening']:
-                    
-                    #self.enclosure_next_open_time = time.time() + 300 # Only try to open the roof every five minutes maximum
-                    
-                    self.open_observatory(enc_status, ocn_status)
-                    
-                    
-                    
-                    self.night_focus_ready=True
-
-        elif ((g_dev['events']['Clock & Auto Focus']  <= ephem_now < g_dev['events']['Observing Begins']) and \
-               g_dev['enc'].mode == 'Automatic') and not g_dev['ocn'].wx_hold and self.weather_report_is_acceptable_to_observe==True:
-
-            if self.night_focus_ready==True and g_dev['obs'].open_and_enabled_to_observe:
-                g_dev['obs'].send_to_user("Beginning start of night Focus and Pointing Run", p_level='INFO')
-
-                # Move to reasonable spot
-                if g_dev['mnt'].mount.Tracking == False:
-                    if g_dev['mnt'].mount.CanSetTracking:   
-                        g_dev['mnt'].mount.Tracking = True
-                    else:
-                        plog("mount is not tracking but this mount doesn't support ASCOM changing tracking")
-
-                g_dev['mnt'].move_to_azalt(70, 70)
-                g_dev['foc'].time_of_last_focus = datetime.datetime.now() - datetime.timedelta(
-                    days=1
-                )  # Initialise last focus as yesterday
-
-                # Autofocus
-                req2 = {'target': 'near_tycho_star', 'area': 150}
-                opt = {}
-                self.extensive_focus_script(req2, opt, throw = g_dev['foc'].throw)
-
-                # Pointing
-                req = {'time': self.config['focus_exposure_time'],  'alias':  str(self.config['camera']['camera_1_1']['name']), 'image_type': 'focus'}   #  NB Should pick up filter and constats from config
-                #opt = {'area': 150, 'count': 1, 'bin': '2, 2', 'filter': 'focus'}
-                opt = {'area': 150, 'count': 1, 'bin': 1, 'filter': 'focus'}
-                result = g_dev['cam'].expose_command(req, opt, no_AWS=False, solve_it=True)
-                self.night_focus_ready=False
-
-        elif self.sky_flat_latch and ((events['Eve Sky Flats'] <= ephem_now < events['End Eve Sky Flats'])  \
-               and g_dev['enc'].mode in [ 'Automatic', 'Autonomous'] and not self.eve_sky_flat_latch and not g_dev['ocn'].wx_hold and \
+        elif not self.eve_sky_flat_latch and ((events['Eve Sky Flats'] <= ephem_now < events['End Eve Sky Flats'])  \
+               and g_dev['enc'].mode in [ 'Automatic', 'Autonomous'] and not g_dev['ocn'].wx_hold and \
                self.config['auto_eve_sky_flat'] and not self.eve_flats_done and self.weather_report_is_acceptable_to_observe):
 
             if g_dev['obs'].open_and_enabled_to_observe:
@@ -592,6 +537,39 @@ class Sequencer:
                 self.eve_sky_flat_latch = False
                 self.eve_flats_done = True
             
+
+        elif ((g_dev['events']['Clock & Auto Focus']  <= ephem_now < g_dev['events']['Observing Begins']) and \
+               g_dev['enc'].mode == 'Automatic') and not g_dev['ocn'].wx_hold and self.weather_report_is_acceptable_to_observe==True \
+                and self.night_focus_ready==True and  g_dev['obs'].open_and_enabled_to_observe:
+
+            
+
+            #if self.night_focus_ready==True and g_dev['obs'].open_and_enabled_to_observe:
+            g_dev['obs'].send_to_user("Beginning start of night Focus and Pointing Run", p_level='INFO')
+
+            # Move to reasonable spot
+            if g_dev['mnt'].mount.Tracking == False:
+                if g_dev['mnt'].mount.CanSetTracking:   
+                    g_dev['mnt'].mount.Tracking = True
+                else:
+                    plog("mount is not tracking but this mount doesn't support ASCOM changing tracking")
+
+            g_dev['mnt'].move_to_azalt(70, 70)
+            g_dev['foc'].time_of_last_focus = datetime.datetime.now() - datetime.timedelta(
+                days=1
+            )  # Initialise last focus as yesterday
+
+            # Autofocus
+            req2 = {'target': 'near_tycho_star', 'area': 150}
+            opt = {}
+            self.extensive_focus_script(req2, opt, throw = g_dev['foc'].throw)
+
+            # Pointing
+            req = {'time': self.config['focus_exposure_time'],  'alias':  str(self.config['camera']['camera_1_1']['name']), 'image_type': 'focus'}   #  NB Should pick up filter and constats from config
+            #opt = {'area': 150, 'count': 1, 'bin': '2, 2', 'filter': 'focus'}
+            opt = {'area': 150, 'count': 1, 'bin': 1, 'filter': 'focus'}
+            result = g_dev['cam'].expose_command(req, opt, no_AWS=False, solve_it=True)
+            self.night_focus_ready=False
 
 # =============================================================================
 #         NB NB Note below often faults, should be in a try except instead of this
@@ -757,29 +735,55 @@ class Sequencer:
             except:
                 plog(traceback.format_exc())
                 plog("Hang up in sequencer.")
-        elif self.morn_sky_flat_latch and ((events['Morn Sky Flats'] <= ephem_now < events['End Morn Sky Flats'])  \
-               and g_dev['enc'].mode == 'Automatic' and not g_dev['ocn'].wx_hold and not self.morn_sky_flat_latch and \
+        
+        elif ((g_dev['events']['Cool Down, Open']  <= ephem_now < g_dev['events']['Observing Ends']) and \
+               g_dev['enc'].mode == 'Automatic') and not g_dev['ocn'].wx_hold and not enc_status['shutter_status'] in ['Software Fault', 'Closing', 'Error']:
+
+            #plog ("Cool Down Open Check Running")
+            if not self.nightly_weather_report_done and not g_dev['debug']:
+
+                self.run_nightly_weather_report()
+                self.nightly_weather_report_done=True
+
+            
+
+            #self.time_of_next_slew = time.time() -1
+            #plog ("got here")
+            
+            if not g_dev['obs'].open_and_enabled_to_observe and self.weather_report_is_acceptable_to_observe==True and self.weather_report_wait_until_open==False:
+                #print (self.enclosure_next_open_time)
+                #print (self.enclosure_next_open_time - time.time()                       )
+                #print (self.opens_this_evening)
+                if time.time() > self.enclosure_next_open_time and self.opens_this_evening < self.config['maximum_roof_opens_per_evening']:
+                    
+                    #self.enclosure_next_open_time = time.time() + 300 # Only try to open the roof every five minutes maximum
+                    
+                    self.open_observatory(enc_status, ocn_status)
+                    
+                    
+                    
+                    self.night_focus_ready=True
+        
+        elif not self.morn_sky_flat_latch and ((events['Morn Sky Flats'] <= ephem_now < events['End Morn Sky Flats'])  \
+               and g_dev['enc'].mode == 'Automatic' and not g_dev['ocn'].wx_hold and \
                self.config['auto_morn_sky_flat']) and not self.morn_flats_done and g_dev['obs'].open_and_enabled_to_observe and self.weather_report_is_acceptable_to_observe==True:
             #self.time_of_next_slew = time.time() -1
             self.morn_sky_flat_latch = True
             self.open_observatory(enc_status, ocn_status)   #Just in case a Wx hold stopped opening
             self.current_script = "Morn Sky Flat script starting"
-            #self.morn_sky_flat_latch = False
-            #plog('Skipping Eve Sky Flats')
             
             self.sky_flat_script({}, {}, morn=True)   #Null command dictionaries
-            
-            #self.park_and_close(enc_status)
-            
-            # Park at the end of morning sky flats
-            g_dev['mnt'].park_command({}, {})
+                        
+            # Park and close at the end of morning sky flats
+            #g_dev['mnt'].park_command({}, {})
+            self.park_and_close(enc_status)
             self.morn_sky_flat_latch = False
             self.morn_flats_done = True
             
-        elif self.morn_bias_dark_latch and (events['Morn Bias Dark'] <= ephem_now < events['End Morn Bias Dark']) and \
+        elif not self.morn_bias_dark_latch and (events['Morn Bias Dark'] <= ephem_now < events['End Morn Bias Dark']) and \
                   self.config['auto_morn_bias_dark'] and not  self.morn_bias_done: # and g_dev['enc'].mode == 'Automatic' ):
             #breakpoint()
-            self.morn_bias_dark_latch = False
+            self.morn_bias_dark_latch = True
             req = {'bin1': True, 'bin2': False, 'bin3': False, 'bin4': False, 'numOfBias': 63, \
                     'numOfDark': 31, 'darkTime': 600, 'numOfDark2': 31, 'dark2Time': 600, \
                     'hotMap': True, 'coldMap': True, 'script': 'genBiasDarkMaster', }  #This specificatin is obsolete
@@ -790,7 +794,7 @@ class Sequencer:
             self.bias_dark_script(req, opt, morn=True)
 
             self.park_and_close(enc_status)
-            self.morn_bias_dark_latch = True
+            self.morn_bias_dark_latch = False
             self.morn_bias_done = True
             
         elif (events['Nightly Reset'] <= ephem_now < events['End Nightly Reset']): # and g_dev['enc'].mode == 'Automatic' ):
@@ -1587,10 +1591,11 @@ class Sequencer:
         self.af_guard = False
         self.block_guard = False
         self.time_of_next_slew = time.time()
-        self.bias_dark_latch = True
-        self.sky_flat_latch = True
-        self.morn_sky_flat_latch = True
-        self.morn_bias_dark_latch = True
+        self.bias_dark_latch = False
+        self.sky_flat_latch = False
+        self.eve_sky_flat_latch = False
+        self.morn_sky_flat_latch = False
+        self.morn_bias_dark_latch = False
         self.reset_completes()
 
 
@@ -2335,6 +2340,8 @@ class Sequencer:
             g_dev['foc'].guarded_move((focus_start)*g_dev['foc'].micron_to_steps)  #NB NB 20221002 THis unit fix shoudl be in the routine. WER
             self.sequencer_hold = False   #Allow comand checks.
             self.af_guard = False
+            g_dev["mnt"].last_ra = start_ra
+            g_dev["mnt"].last_dec = start_dec
             g_dev['mnt'].mount.SlewToCoordinatesAsync(start_ra, start_dec)  #MAKE sure same style coordinates.
             wait_for_slew()
             self.sequencer_hold = False
@@ -2394,6 +2401,8 @@ class Sequencer:
                 g_dev['obs'].send_to_user('Found best focus at:  ' +str(foc_pos4) +' measured FWHM is:  ' + str(round(spot4, 2)), p_level='INFO')
                 g_dev['foc'].af_log(foc_pos4, spot4, new_spot)
                 plog("Returning to:  ", start_ra, start_dec)
+                g_dev["mnt"].last_ra = start_ra
+                g_dev["mnt"].last_dec = start_dec
                 g_dev['mnt'].mount.SlewToCoordinatesAsync(start_ra, start_dec)   #Return to pre-focus pointing.
                 wait_for_slew()
             if sim:
@@ -2485,6 +2494,8 @@ class Sequencer:
                 g_dev['obs'].send_to_user('Found best focus at: ' + str(foc_pos4) +' measured FWHM is: ' + str(round(spot4, 2)), p_level='INFO')
                 g_dev['foc'].af_log(foc_pos4, spot4, new_spot)
                 plog("Returning to:  ", start_ra, start_dec)
+                g_dev["mnt"].last_ra = start_ra
+                g_dev["mnt"].last_dec = start_dec
                 g_dev['mnt'].mount.SlewToCoordinatesAsync(start_ra, start_dec)   #Return to pre-focus pointing.
                 wait_for_slew()
             if sim:
@@ -2578,6 +2589,8 @@ class Sequencer:
                 g_dev['obs'].send_to_user('Found best focus at: ' + str(foc_pos4) +' measured FWHM is: ' + str(round(spot4, 2)), p_level='INFO')
                 g_dev['foc'].af_log(foc_pos4, spot4, new_spot)
                 plog("Returning to:  ", start_ra, start_dec)
+                g_dev["mnt"].last_ra = start_ra
+                g_dev["mnt"].last_dec = start_dec
                 g_dev['mnt'].mount.SlewToCoordinatesAsync(start_ra, start_dec)   #Return to pre-focus pointing.
                 wait_for_slew()
             else:
@@ -2842,6 +2855,8 @@ class Sequencer:
         self.auto_focus_script(None,None, skip_timer_check=True)
         
         plog("Returning to:  ", start_ra, start_dec)
+        g_dev["mnt"].last_ra = start_ra
+        g_dev["mnt"].last_dec = start_dec
         g_dev['mnt'].mount.SlewToCoordinatesAsync(start_ra, start_dec)   #Return to pre-focus pointing.
         wait_for_slew()
         #if sim:
@@ -3108,6 +3123,8 @@ class Sequencer:
 
             g_dev['foc'].guarded_move((foc_start)*g_dev['foc'].micron_to_steps)
         plog("Returning to:  ", start_ra, start_dec)
+        g_dev["mnt"].last_ra = start_ra
+        g_dev["mnt"].last_dec = start_dec
         g_dev['mnt'].mount.SlewToCoordinatesAsync(start_ra, start_dec)   #Return to pre-focus pointing.
         wait_for_slew()
         if sim:
