@@ -140,6 +140,7 @@ class Qcam:
 
     CONTROL_BRIGHTNESS = c_int(0)
     CONTROL_GAIN = c_int(6)
+    CONTROL_USBTRAFFIC = c_int(6)
     CONTROL_OFFSET = c_int(7)
     CONTROL_EXPOSURE = c_int(8)
     CAM_GPS = c_int(36)
@@ -305,6 +306,7 @@ def init_camera_param(cam_id):
                                      'GAIN': c_double(54.0),
                                      'CONTROL_BRIGHTNESS': c_int(0),
                                      'CONTROL_GAIN': c_int(6),
+                                     'CONTROL_USBTRAFFIC': c_int(6),
                                      'CONTROL_EXPOSURE': c_int(8),
                                      'CONTROL_CURTEMP': c_int(14),
                                      'CONTROL_CURPWM': c_int(15),
@@ -572,7 +574,8 @@ class Camera:
             if qhycam.camera_params[qhycam_id]['handle'] is None:
                 print('open camera error %s' % cam_id)
             
-            success = qhycam.so.SetQHYCCDReadMode(qhycam.camera_params[qhycam_id]['handle'], 0) # 0 is Photographic DSO 16 Bit
+            success = qhycam.so.SetQHYCCDReadMode(qhycam.camera_params[qhycam_id]['handle'], self.config["camera"][self.name]["settings"]['direct_qhy_readout_mode']) # 0 is Photographic DSO 16 Bit
+            
             qhycam.camera_params[qhycam_id]['stream_mode'] = c_uint8(qhycam.stream_single_mode)
             success = qhycam.so.SetQHYCCDStreamMode(qhycam.camera_params[qhycam_id]['handle'], qhycam.camera_params[qhycam_id]['stream_mode'])
             print('set StreamMode   =' + str(success))
@@ -640,9 +643,9 @@ class Camera:
             
             
             success = qhycam.so.SetQHYCCDParam(qhycam.camera_params[qhycam_id]['handle'], qhycam.CONTROL_EXPOSURE, c_double(20000))
-            success = qhycam.so.SetQHYCCDParam(qhycam.camera_params[qhycam_id]['handle'], qhycam.CONTROL_GAIN, c_double(30))
-            success = qhycam.so.SetQHYCCDParam(qhycam.camera_params[qhycam_id]['handle'], qhycam.CONTROL_OFFSET, c_double(40))
-            
+            success = qhycam.so.SetQHYCCDParam(qhycam.camera_params[qhycam_id]['handle'], qhycam.CONTROL_GAIN, c_double(float(self.config["camera"][self.name]["settings"]['direct_qhy_gain'])))
+            success = qhycam.so.SetQHYCCDParam(qhycam.camera_params[qhycam_id]['handle'], qhycam.CONTROL_OFFSET, c_double(float(self.config["camera"][self.name]["settings"]['direct_qhy_offset'])))
+            success = qhycam.so.SetQHYCCDParam(qhycam.camera_params[qhycam_id]['handle'], qhycam.CONTROL_USBTRAFFIC,c_double(float(self.config["camera"][self.name]["settings"]['direct_qhy_usb_speed'])))
             
             
             

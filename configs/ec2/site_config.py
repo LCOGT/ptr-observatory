@@ -665,11 +665,50 @@ site_config = {
             'desc':  'QHY 600C Pro',
             #'driver':  "ASCOM.QHYCCD_CAM2.Camera", # NB Be careful this is not QHY Camera2 or Guider  "Maxim.CCDCamera",   #'ASCOM.FLI.Kepler.Camera', "ASCOM.QHYCCD.Camera",   #
             'driver':  "QHYCCD_Direct_Control", # NB Be careful this is not QHY Camera2 or Guider  "Maxim.CCDCamera",   #'ASCOM.FLI.Kepler.Camera', "ASCOM.QHYCCD.Camera",   #
+            
+            
+            
+                
+            
+            
             'detector':  'Sony IMX455 Color',  #  It would be good to build out a table of chip characteristics
             'use_file_mode':  False,   # NB we should clean out all file mode stuff.
             'file_mode_path':  'Q:/archive/sq01/maxim/',   #NB NB all file_mode Maxim stuff should go!
             'manufacturer':  "QHY",
             'settings': {
+                
+                # For direct QHY usage we need to set the appropriate gain.
+                # This changes from site to site. "Fast" scopes like the RASA need lower gain then "slow".
+                # Sky quality is also important, the worse the sky quality, the higher tha gain needs to be
+                # Default for QHY600 is GAIN: 26, OFFSET: 60, readout mode 3. 
+                # Random tips from the internet:
+                # After the exposure, the background in the image should not be above 10% saturation of 16Bit while the brightest bits of the image should not be overexposed
+                # The offset should be set so that there is at least 300ADU for the background
+                # I guess try this out on the standard smartstack exposure time.        
+                # https://www.baader-planetarium.com/en/blog/gain-and-offset-darks-flats-and-bias-at-cooled-cmos-cameras/
+                #
+                # Also the "Readout Mode" is really important also
+                # Readout Mode #0 (Photographic DSO Mode)
+                # Readout Mode #1 (High Gain Mode)
+                # Readout Mode #2 (Extended Fullwell Mode)
+                # Readout Mode #3 (Extended Fullwell Mode-2CMS)
+                #
+                # With the powers invested in me, I have decided that readout mode 3 is the best. We can only pick one standard one
+                # and 0 is also debatably better for colour images, but 3 is way better for dynamic range....
+                # We can't swip and swap because the biases and darks and flats will change, so we are sticking with 3 until
+                # something bad happens with 3 for some reason
+                #
+                # In that sense, QHY600 NEEDS to be set at GAIN 26 and the only thing to adjust is the offset.....
+                # USB Speed is a tradeoff between speed and banding, min 0, max 60. 60 is least banding. Most of the 
+                # readout seems to be dominated by the slow driver (difference is a small fraction of a second), so I've left it at 60 - least banding.
+                'direct_qhy_readout_mode' : 3,        
+                'direct_qhy_gain' : 26,
+                'direct_qhy_offset' : 60,  
+                'direct_qhy_usb_speed' : 60,
+                
+                
+                
+                
                 
                 'is_osc' : True,
                 
