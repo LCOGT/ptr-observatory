@@ -1676,17 +1676,17 @@ sel
                         
                         # These steps flip and rotate the jpeg according to the settings in the site-config for this camera
                         if g_dev['cam'].config["camera"][g_dev['cam'].name]["settings"]["transpose_jpeg"]:
-                            final_image=final_image.transpose(Image.TRANSPOSE)
+                            final_image=final_image.transpose(Image.Transpose.TRANSPOSE)
                         if g_dev['cam'].config["camera"][g_dev['cam'].name]["settings"]['flipx_jpeg']:
-                            final_image=final_image.transpose(Image.FLIP_LEFT_RIGHT)
+                            final_image=final_image.transpose(Image.Transpose.FLIP_LEFT_RIGHT)
                         if g_dev['cam'].config["camera"][g_dev['cam'].name]["settings"]['flipy_jpeg']:
-                            final_image=final_image.transpose(Image.FLIP_TOP_BOTTOM)
+                            final_image=final_image.transpose(Image.Transpose.FLIP_TOP_BOTTOM)
                         if g_dev['cam'].config["camera"][g_dev['cam'].name]["settings"]['rotate180_jpeg']:
-                            final_image=final_image.transpose(Image.ROTATE_180)
+                            final_image=final_image.transpose(Image.Transpose.ROTATE_180)
                         if g_dev['cam'].config["camera"][g_dev['cam'].name]["settings"]['rotate90_jpeg']:
-                            final_image=final_image.transpose(Image.ROTATE_90)
+                            final_image=final_image.transpose(Image.Transpose.ROTATE_90)
                         if g_dev['cam'].config["camera"][g_dev['cam'].name]["settings"]['rotate270_jpeg']:
-                            final_image=final_image.transpose(Image.ROTATE_270)
+                            final_image=final_image.transpose(Image.Transpose.ROTATE_270)
                             
                         # Detect the pierside and if it is one way, rotate the jpeg 180 degrees
                         # to maintain the orientation. whether it is 1 or 0 that is flipped
