@@ -1436,7 +1436,7 @@ class Camera:
         # And it is likely because it takes a non-zero time to get to Phase II
         # So even in the setup phase the "exposure" is "busy"
         
-        self.tempStartupExposureTime=time.time()
+        
 
 
         # # Force a reseek //eventually dither//
@@ -1606,6 +1606,7 @@ class Camera:
         self.expresult = {}  #  This is a default return just in case
         num_retries = 0
         for seq in range(count):
+            
             # SEQ is the outer repeat loop and takes count images; those individual exposures are wrapped in a
             # retry-3-times framework with an additional timeout included in it.
             if seq > 0:
@@ -1652,6 +1653,7 @@ class Camera:
             #The variable Nsmartstacks defaults to 1 - e.g. normal functioning
             #When a smartstack is not requested.
             for sskcounter in range(int(Nsmartstack)):
+                self.tempStartupExposureTime=time.time()
                 if Nsmartstack > 1 :
                     plog ("Smartstack " + str(sskcounter+1) + " out of " + str(Nsmartstack))
                     g_dev['obs'].update_status(cancel_check=False)

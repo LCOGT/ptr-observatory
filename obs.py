@@ -2224,7 +2224,7 @@ sel
                 # able to solve too well easily OR it is such a wide field of view that who cares
                 # if we are off by 10 arcseconds?
                 plog ("Number of sources for Platesolve: " + str(len(sources)))
-                if len(sources) >= 5:
+                if len(sources) >= 15:
                     hdufocus=fits.PrimaryHDU()
                     hdufocus.data=hdufocusdata                            
                     hdufocus.header=hduheader

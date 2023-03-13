@@ -753,7 +753,7 @@ site_config = {
                 'crop_preview_ytop': 2,
                 'crop_preview_xleft': 2,
                 'crop_preview_xright': 2,
-                'temp_setpoint': -10,    #Verify we can go colder, this system has a chiller
+                'temp_setpoint': -4,    #Verify we can go colder, this system has a chiller
                 'has_chiller': True,
                 'calib_setpoints': [-20, -20, -20, -20, -20, -20, \
                                     -20, -20, -20, -20, -20, -20],  #  Picked by month-of-year 
