@@ -337,11 +337,11 @@ class Observatory:
         # =============================================================================
         # Here we set up the reduction Queue and Thread:
         # =============================================================================
-        self.reduce_queue = queue.Queue(
+        self.smartstack_queue = queue.Queue(
             maxsize=0
         )  # Why do we want a maximum size and lose files?
-        self.reduce_queue_thread = threading.Thread(target=self.reduce_image, args=())
-        self.reduce_queue_thread.start()
+        self.smartstack_queue_thread = threading.Thread(target=self.smartstack_image, args=())
+        self.smartstack_queue_thread.start()
         self.blocks = None
         self.projects = None
         self.events_new = None
@@ -1863,7 +1863,7 @@ sel
                 #print ("In the queue.....")
                 sep_timer_begin=time.time()
                 
-                (hdufocusdata, pixscale, readnoise, avg_foc, focus_image, im_path, text_name, hduheader) = self.sep_queue.get(block=False)
+                (hdufocusdata, pixscale, readnoise, avg_foc, focus_image, im_path, text_name, hduheader, cal_path, cal_name, frame_type) = self.sep_queue.get(block=False)
                 
                 if not (g_dev['events']['Civil Dusk'] < ephem.now() < g_dev['events']['Civil Dawn']):
                     plog ("Too bright to consider photometry!")
@@ -2113,6 +2113,7 @@ sel
                 hduheader["FWHMasec"] = ( str(rfr), 'FWHM in arcseconds')
                 hduheader["FWHMstd"] = ( str(rfs), 'FWHM standard deviation in arcseconds')
 
+
                 #if focus_image == False:
                 text = open(
                     im_path + text_name, "w"
@@ -2126,6 +2127,36 @@ sel
                     #plog("Sent SEP up")
                 except:
                     plog("Failed to send SEP up for some reason")
+                    
+                    
+
+                if self.config['keep_focus_images_on_disk']:
+                    # hdufocus=fits.PrimaryHDU()
+                    # hdufocus.data=g_dev['cam'].hdufocusdatahold                            
+                    # hdufocus.header=hdu.header
+                    # hdufocus.header["NAXIS1"] = g_dev['cam'].hdufocusdatahold.shape[0]
+                    # hdufocus.header["NAXIS2"] = g_dev['cam'].hdufocusdatahold.shape[1]
+                    # hdufocus.writeto(cal_path + cal_name, overwrite=True, output_verify='silentfix')
+                    # pixscale=hdufocus.header['PIXSCALE']                   
+
+                    
+                    
+                    g_dev['cam'].to_slow_process(1000,('focus', cal_path + cal_name, hdufocusdata, hduheader, \
+                                                    frame_type, g_dev["mnt"].current_icrs_ra, g_dev["mnt"].current_icrs_dec))
+                    
+                    if self.config["save_to_alt_path"] == "yes":
+                        g_dev['cam'].to_slow_process(1000,('raw_alt_path', self.alt_path + g_dev["day"] + "/calib/" + cal_name, hdufocusdata, hduheader, \
+                                                        frame_type, g_dev["mnt"].current_icrs_ra, g_dev["mnt"].current_icrs_dec))
+                    
+                    # try:
+                    #     g_dev['cam'].hdufocusdatahold.close()
+                    # except:
+                    #     pass
+                    # del g_dev['cam'].hdufocusdatahold
+                    # del hdufocus
+
+
+                
                 
                 g_dev['cam'].sep_processing=False
                 self.sep_queue.task_done()
@@ -2768,19 +2799,19 @@ sel
 
 
     # Note this is another thread!
-    def reduce_image(self):
+    def smartstack_image(self):
 
         while True:
 
-            if not self.reduce_queue.empty():
+            if not self.smartstack_queue.empty():
                 (
                     paths,
                     pixscale,
                     smartstackid,
                     sskcounter,
-                    Nsmartstack,
-                    sources,
-                ) = self.reduce_queue.get(block=False)
+                    Nsmartstack
+                    #sources,
+                ) = self.smartstack_queue.get(block=False)
 
                 if paths is None:
                     #time.sleep(0.5)
@@ -2791,36 +2822,36 @@ sel
                 # SmartStack Section
                 if smartstackid != "no" :
                     sstack_timer = time.time()
-                    if not paths["frame_type"] in [
-                        "bias",
-                        "dark",
-                        "flat",
-                        "solar",
-                        "lunar",
-                        "skyflat",
-                        "screen",
-                        "spectrum",
-                        "auto_focus",
-                    ]:
-                        img = fits.open(
-                            paths["red_path"] + paths["red_name01"],
-                            ignore_missing_end=True,
-                        )
-                        imgdata=img[0].data.copy()
-                        # Pick up some header items for smartstacking later
-                        ssfilter = str(img[0].header["FILTER"])
-                        ssobject = str(img[0].header["OBJECT"])
-                        ssexptime = str(img[0].header["EXPTIME"])
-                        #ssframenumber = str(img[0].header["FRAMENUM"])
-                        img.close()
-                        del img
-                        if not self.config['keep_reduced_on_disk']:
-                            try:
-                                os.remove(paths["red_path"] + paths["red_name01"])
-                            except Exception as e:
-                                plog ("could not remove temporary reduced file: ",e)
-                        
-                        #sstackimghold=np.array(imgdata)  
+                    # if not paths["frame_type"] in [
+                    #     "bias",
+                    #     "dark",
+                    #     "flat",
+                    #     "solar",
+                    #     "lunar",
+                    #     "skyflat",
+                    #     "screen",
+                    #     "spectrum",
+                    #     "auto_focus",
+                    # ]:
+                    img = fits.open(
+                        paths["red_path"] + paths["red_name01"],
+                        ignore_missing_end=True,
+                    )
+                    imgdata=img[0].data.copy()
+                    # Pick up some header items for smartstacking later
+                    ssfilter = str(img[0].header["FILTER"])
+                    ssobject = str(img[0].header["OBJECT"])
+                    ssexptime = str(img[0].header["EXPTIME"])
+                    #ssframenumber = str(img[0].header["FRAMENUM"])
+                    img.close()
+                    del img
+                    if not self.config['keep_reduced_on_disk']:
+                        try:
+                            os.remove(paths["red_path"] + paths["red_name01"])
+                        except Exception as e:
+                            plog ("could not remove temporary reduced file: ",e)
+                    
+                    #sstackimghold=np.array(imgdata)  
 
                     focusimg = np.array(
                         imgdata, order="C"
@@ -2828,7 +2859,12 @@ sel
                     
                     try:
                         # Some of these are liberated from BANZAI
-                        bkg = sep.Background(focusimg)
+                        #breakpoint()
+                        try:
+                            bkg = sep.Background(focusimg)
+                        except:
+                            focusimg=focusimg.byteswap().newbyteorder()
+                            bkg = sep.Background(focusimg)
                         
                         #sepsky = ( np.nanmedian(bkg), "Sky background estimated by SEP" )
                         
@@ -2871,6 +2907,7 @@ sel
                         #plog("Actual Platesolve SEP time: " + str(time.time()-actseptime))
                     except:
                         plog("Something went wrong with platesolve SEP")
+                        plog (traceback.format_exc())
 
 
                     plog ("Number of sources just prior to smartstacks: " + str(len(sources)))
@@ -3438,7 +3475,7 @@ sel
                 #time.sleep(0.5)
                 plog("Smartstack time taken: " + str(time.time() - sstack_timer))
                 self.img = None  # Clean up all big objects.
-                self.reduce_queue.task_done()
+                self.smartstack_queue.task_done()
             else:
                 time.sleep(0.1)
 

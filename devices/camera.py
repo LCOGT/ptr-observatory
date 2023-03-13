@@ -3031,6 +3031,71 @@ class Camera:
                             #plog (traceback.format_exc())
                             #breakpoint()
 
+                        # This saves the REDUCED file to disk
+                        # If this is for a smartstack, this happens immediately in the camera thread after we have a "reduced" file
+                        # So that the smartstack queue can start on it ASAP as smartstacks
+                        # are by far the longest task to undertake.
+                        # If it isn't a smartstack, it gets saved in the slow process queue.
+                        if "hdusmalldata" in locals():
+                            # If a CMOS camera, bin to requested binning
+                            if self.is_cmos and self.bin != 1:
+                                #plog ("Binning 1x1 to " + str(self.bin))
+                                hdusmalldata=(block_reduce(hdusmalldata,self.bin)) 
+                            
+                            if smartstackid == 'no':
+                                if self.config['keep_reduced_on_disk']:
+                                    #plog ("saving reduced file anyway!")
+                                    self.to_slow_process(1000,('reduced', red_path + red_name01, hdusmalldata, hdu.header, \
+                                                           frame_type, g_dev["mnt"].current_icrs_ra, g_dev["mnt"].current_icrs_dec))
+                            else:                            
+                                saver = 0
+                                saverretries = 0
+                                while saver == 0 and saverretries < 10:
+                                    try:
+                                        hdureduced=fits.PrimaryHDU()
+                                        hdureduced.data=hdusmalldata                            
+                                        hdureduced.header=hdu.header
+                                        hdureduced.header["NAXIS1"] = hdusmalldata.shape[0]
+                                        hdureduced.header["NAXIS2"] = hdusmalldata.shape[1]
+                                        #hdureduced.data=hdureduced.data.astype("float32")
+                                        hdureduced.data=hdureduced.data.astype("float32")
+                                        hdureduced.writeto(
+                                            red_path + red_name01, overwrite=True, output_verify='silentfix'
+                                        )  # Save flash reduced file locally
+                                        saver = 1
+                                    except Exception as e:
+                                        plog("Failed to write raw file: ", e)
+                                        if "requested" in e and "written" in e:
+        
+                                            plog(check_download_cache())
+                                        plog(traceback.format_exc())
+                                        time.sleep(10)
+                                        saverretries = saverretries + 1
+
+                        # This puts the file into the smartstack queue
+                        # And gets it underway ASAP.
+                        if ( not frame_type.lower() in [
+                            "bias",
+                            "dark",
+                            "flat",
+                            "solar",
+                            "lunar",
+                            "skyflat",
+                            "screen",
+                            "spectrum",
+                            "auto_focus",
+                        ]) and smartstackid != 'no' :
+                            #self.to_reduce((paths, pixscale, smartstackid, sskcounter, Nsmartstack, self.sources))
+                            self.to_smartstack((paths, pixscale, smartstackid, sskcounter, Nsmartstack))
+                        else:
+                            if not self.config['keep_reduced_on_disk']:
+                                try:                                
+                                    os.remove(red_path + red_name01)
+                                    #plog ("removed reduced file")
+                                except:
+                                    #plog ("couldn't remove reduced file for some reason")
+                                    pass
+
                         # Crop unnecessary rough edges off preview images that unnecessarily skew the scaling
                         # This is particularly necessary for SRO, but I've seen many cameras where cropping
                         # Needs to happen.
@@ -3077,7 +3142,7 @@ class Camera:
                         
                         # IMMEDIATELY SEND TO SEP QUEUE
                         self.sep_processing=True
-                        self.to_sep((hdusmalldata, pixscale, float(hdu.header["RDNOISE"]), avg_foc[1], focus_image, im_path, text_name, hdu.header))
+                        self.to_sep((hdusmalldata, pixscale, float(hdu.header["RDNOISE"]), avg_foc[1], focus_image, im_path, text_name, hdu.header, cal_path, cal_name, frame_type))
                         #self.sep_processing=True
                         
                         
@@ -3157,28 +3222,11 @@ class Camera:
                                 # NEED TO CHECK HERE THAT THERE ISN"T ALREADY A PLATE SOLVE IN THE THREAD!
                                 self.to_platesolve((hdusmalldata, hdu.header, cal_path, cal_name, frame_type, time.time(), pixscale))
                                 
-                            else:
-                                plog ("Platesolve wasn't attempted due to lack of sources (or sometimes too many!) or it was during a smartstack")
+
+                                #plog ("Platesolve wasn't attempted due to lack of sources (or sometimes too many!) or it was during a smartstack")
                                 
                                 #Still save the file to disk if platesolve not attempted
-                                if self.config['keep_focus_images_on_disk']:
-                                    hdufocus=fits.PrimaryHDU()
-                                    hdufocus.data=g_dev['cam'].hdufocusdatahold                            
-                                    hdufocus.header=hdu.header
-                                    hdufocus.header["NAXIS1"] = g_dev['cam'].hdufocusdatahold.shape[0]
-                                    hdufocus.header["NAXIS2"] = g_dev['cam'].hdufocusdatahold.shape[1]
-                                    hdufocus.writeto(cal_path + cal_name, overwrite=True, output_verify='silentfix')
-                                    pixscale=hdufocus.header['PIXSCALE']
-                                    if self.config["save_to_alt_path"] == "yes":
-                                        self.to_slow_process(1000,('raw_alt_path', self.alt_path + g_dev["day"] + "/calib/" + cal_name, hdufocus.data, hdufocus.header, \
-                                                                        frame_type, g_dev["mnt"].current_icrs_ra, g_dev["mnt"].current_icrs_dec))
-                                    
-                                    try:
-                                        g_dev['cam'].hdufocusdatahold.close()
-                                    except:
-                                        pass
-                                    del g_dev['cam'].hdufocusdatahold
-                                    del hdufocus
+                                
                                     #os.remove(cal_path + cal_name)                             
                                 
                                 #del g_dev['cam'].hdufocusdatahold                              
@@ -3196,43 +3244,7 @@ class Camera:
                     if self.config['save_raw_to_disk']:
                        self.to_slow_process(1000,('raw', raw_path + raw_name00, hdu.data, hdu.header, frame_type, g_dev["mnt"].current_icrs_ra, g_dev["mnt"].current_icrs_dec))
                     
-                    # Similarly to the above. This saves the REDUCED file to disk
-                    # it works 99.9999% of the time.
-                    if "hdusmalldata" in locals():
-                        # If a CMOS camera, bin to requested binning
-                        if self.is_cmos and self.bin != 1:
-                            #plog ("Binning 1x1 to " + str(self.bin))
-                            hdusmalldata=(block_reduce(hdusmalldata,self.bin)) 
-                        
-                        if smartstackid == 'no':
-                            if self.config['keep_reduced_on_disk']:
-                                plog ("saving reduced file anyway!")
-                                self.to_slow_process(1000,('reduced', red_path + red_name01, hdusmalldata, hdu.header, \
-                                                       frame_type, g_dev["mnt"].current_icrs_ra, g_dev["mnt"].current_icrs_dec))
-                        else:                            
-                            saver = 0
-                            saverretries = 0
-                            while saver == 0 and saverretries < 10:
-                                try:
-                                    hdureduced=fits.PrimaryHDU()
-                                    hdureduced.data=hdusmalldata                            
-                                    hdureduced.header=hdu.header
-                                    hdureduced.header["NAXIS1"] = hdusmalldata.shape[0]
-                                    hdureduced.header["NAXIS2"] = hdusmalldata.shape[1]
-                                    #hdureduced.data=hdureduced.data.astype("float32")
-                                    hdureduced.data=hdureduced.data.astype("float32")
-                                    hdureduced.writeto(
-                                        red_path + red_name01, overwrite=True, output_verify='silentfix'
-                                    )  # Save flash reduced file locally
-                                    saver = 1
-                                except Exception as e:
-                                    plog("Failed to write raw file: ", e)
-                                    if "requested" in e and "written" in e:
-    
-                                        plog(check_download_cache())
-                                    plog(traceback.format_exc())
-                                    time.sleep(10)
-                                    saverretries = saverretries + 1
+                    
                     
                     
                     
@@ -3294,30 +3306,7 @@ class Camera:
                     
                 
 
-                    # The paths to these saved files and the pixelscale are sent to the reduce queue
-                    # Currently the reduce queue platesolves the images and monitors the focus.
-                    # Soon it will also smartstack
-                    if ( not frame_type.lower() in [
-                        "bias",
-                        "dark",
-                        "flat",
-                        "solar",
-                        "lunar",
-                        "skyflat",
-                        "screen",
-                        "spectrum",
-                        "auto_focus",
-                    ]) and smartstackid != 'no' :
-                        #self.to_reduce((paths, pixscale, smartstackid, sskcounter, Nsmartstack, self.sources))
-                        self.to_reduce((paths, pixscale, smartstackid, sskcounter, Nsmartstack))
-                    else:
-                        if not self.config['keep_reduced_on_disk']:
-                            try:                                
-                                os.remove(red_path + red_name01)
-                                #plog ("removed reduced file")
-                            except:
-                                #plog ("couldn't remove reduced file for some reason")
-                                pass
+                    
 
                     if not g_dev["cam"].exposure_busy:
                         self.expresult = {"stopped": True}
@@ -3385,8 +3374,8 @@ class Camera:
         image = (im_path, name)
         g_dev["obs"].fast_queue.put((priority, image), block=False)
 
-    def to_reduce(self, to_red):
-        g_dev["obs"].reduce_queue.put(to_red, block=False)
+    def to_smartstack(self, to_red):
+        g_dev["obs"].smartstack_queue.put(to_red, block=False)
         
     def to_slow_process(self, priority, to_slow):
         g_dev["obs"].slow_camera_queue.put((priority, to_slow), block=False)
