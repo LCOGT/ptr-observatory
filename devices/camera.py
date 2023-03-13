@@ -213,25 +213,25 @@ class Qcam:
 @CFUNCTYPE(None, c_char_p)
 def pnp_in(cam_id):
     #breakpoint()
-    print("cam   + %s" % cam_id.decode('utf-8'))
+    plog("Connecting to camera: %s" % cam_id.decode('utf-8'))
     global qhycam_id
     qhycam_id=cam_id
-    init_camera_param(cam_id)
-    qhycam.camera_params[cam_id]['connect_to_pc'] = True
-    os.makedirs(cam_id.decode('utf-8'), exist_ok=True)
+    init_camera_param(qhycam_id)
+    qhycam.camera_params[qhycam_id]['connect_to_pc'] = True
+    #os.makedirs(cam_id.decode('utf-8'), exist_ok=True)
     # select read mode
-    success = qhycam.so.GetReadModesNumber(cam_id, byref(qhycam.camera_params[cam_id]['read_mode_number']))
-    if success == qhycam.QHYCCD_SUCCESS:
-        print('-  read mode - %s' % qhycam.camera_params[cam_id]['read_mode_number'].value)
-        for read_mode_item_index in range(0, qhycam.camera_params[cam_id]['read_mode_number'].value):
-            read_mode_name = create_string_buffer(qhycam.STR_BUFFER_SIZE)
-            qhycam.so.GetReadModeName(cam_id, read_mode_item_index, read_mode_name)
-            print('%s  %s %s' % (cam_id.decode('utf-8'), read_mode_item_index, read_mode_name.value))
-    else:
-        print('GetReadModesNumber false')
-        qhycam.camera_params[cam_id]['read_mode_number'] = c_uint32(0)
+    #success = qhycam.so.GetReadModesNumber(cam_id, byref(qhycam.camera_params[cam_id]['read_mode_number']))
+    # if success == qhycam.QHYCCD_SUCCESS:
+    #     print('-  read mode - %s' % qhycam.camera_params[cam_id]['read_mode_number'].value)
+    #     for read_mode_item_index in range(0, qhycam.camera_params[cam_id]['read_mode_number'].value):
+    #         read_mode_name = create_string_buffer(qhycam.STR_BUFFER_SIZE)
+    #         qhycam.so.GetReadModeName(cam_id, read_mode_item_index, read_mode_name)
+    #         print('%s  %s %s' % (cam_id.decode('utf-8'), read_mode_item_index, read_mode_name.value))
+    # else:
+    #     print('GetReadModesNumber false')
+    #     qhycam.camera_params[cam_id]['read_mode_number'] = c_uint32(self.config["camera"][self.name]["settings"]['direct_qhy_readout_mode'])
 
-    read_mode_count = qhycam.camera_params[cam_id]['read_mode_number'].value
+    # read_mode_count = qhycam.camera_params[cam_id]['read_mode_number'].value
     # if read_mode_count == 0:
     #     read_mode_count = 1
     # for read_mode_index in range(0, read_mode_count):
@@ -248,54 +248,54 @@ def pnp_out(cam_id):
 
 
 # MTF - THIS IS A QHY FUNCTION THAT I HAVEN"T FIGURED OUT WHETHER IT IS MISSION CRITICAL OR NOT
-def get_average_l(image):
-    im = np.array(image)
-    w, h = im.shape
-    return np.average(im.reshape(w * h))
+# def get_average_l(image):
+#     im = np.array(image)
+#     w, h = im.shape
+#     return np.average(im.reshape(w * h))
 
 # MTF - THIS IS A QHY FUNCTION THAT I HAVEN"T FIGURED OUT WHETHER IT IS MISSION CRITICAL OR NOT
-def np_array_to_ascii(pil_image, cols, scale, more_levels):
-    global gscale1, gscale2
-    W, H = pil_image.size[0], pil_image.size[1]
-    print("input image dims: %d x %d" % (W, H))
-    w = W / cols
-    h = w / scale
-    rows = int(H / h)
+# def np_array_to_ascii(pil_image, cols, scale, more_levels):
+#     global gscale1, gscale2
+#     W, H = pil_image.size[0], pil_image.size[1]
+#     print("input image dims: %d x %d" % (W, H))
+#     w = W / cols
+#     h = w / scale
+#     rows = int(H / h)
 
-    print("cols: %d, rows: %d" % (cols, rows))
-    print("tile dims: %d x %d" % (w, h))
-    if cols > W or rows > H:
-        print("Image too small for specified cols!")
-        exit(0)
+#     print("cols: %d, rows: %d" % (cols, rows))
+#     print("tile dims: %d x %d" % (w, h))
+#     if cols > W or rows > H:
+#         print("Image too small for specified cols!")
+#         exit(0)
 
-    aimg = []
-    for j in range(rows):
-        y1 = int(j * h)
-        y2 = int((j + 1) * h)
+#     aimg = []
+#     for j in range(rows):
+#         y1 = int(j * h)
+#         y2 = int((j + 1) * h)
 
-        if j == rows - 1:
-            y2 = H
+#         if j == rows - 1:
+#             y2 = H
 
-        aimg.append("")
+#         aimg.append("")
 
-        for i in range(cols):
-            x1 = int(i * w)
-            x2 = int((i + 1) * w)
+#         for i in range(cols):
+#             x1 = int(i * w)
+#             x2 = int((i + 1) * w)
 
-            if i == cols - 1:
-                x2 = W
+#             if i == cols - 1:
+#                 x2 = W
 
-            img = pil_image.crop((x1, y1, x2, y2))
-            avg = int(get_average_l(img))
+#             img = pil_image.crop((x1, y1, x2, y2))
+#             avg = int(get_average_l(img))
 
-            if more_levels:
-                gsval = gscale1[int((avg * 69) / 255)]
-            else:
-                gsval = gscale2[int((avg * 9) / 255)]
+#             if more_levels:
+#                 gsval = gscale1[int((avg * 69) / 255)]
+#             else:
+#                 gsval = gscale2[int((avg * 9) / 255)]
 
-            aimg[j] += gsval
+#             aimg[j] += gsval
 
-    return aimg
+#     return aimg
 
 # MTF - THIS IS A QHY FUNCTION THAT I HAVEN"T FIGURED OUT WHETHER IT IS MISSION CRITICAL OR NOT
 def init_camera_param(cam_id):
@@ -578,14 +578,14 @@ class Camera:
             
             qhycam.camera_params[qhycam_id]['stream_mode'] = c_uint8(qhycam.stream_single_mode)
             success = qhycam.so.SetQHYCCDStreamMode(qhycam.camera_params[qhycam_id]['handle'], qhycam.camera_params[qhycam_id]['stream_mode'])
-            print('set StreamMode   =' + str(success))
+            #print('set StreamMode   =' + str(success))
             
             success = qhycam.so.InitQHYCCD(qhycam.camera_params[qhycam_id]['handle'])
-            print('init Camera   =' + str(success))
+            #plog('init Camera   =' + str(success))
             
             
             mode_name = create_string_buffer(qhycam.STR_BUFFER_SIZE)
-            qhycam.so.GetReadModeName(qhycam_id, 0, mode_name) # 0 is Photographic DSO 16 bit
+            qhycam.so.GetReadModeName(qhycam_id, self.config["camera"][self.name]["settings"]['direct_qhy_readout_mode'], mode_name) # 0 is Photographic DSO 16 bit
 
             success = qhycam.so.SetQHYCCDBitsMode(qhycam.camera_params[qhycam_id]['handle'], c_uint32(qhycam.bit_depth_16))
 
@@ -598,27 +598,27 @@ class Camera:
                                                byref(qhycam.camera_params[qhycam_id]['pixel_height']),
                                                byref(qhycam.camera_params[qhycam_id]['bits_per_pixel']))
 
-            print('info.   =' + str(success))
+            #print('info.   =' + str(success))
             
             
             qhycam.camera_params[qhycam_id]['mem_len'] = qhycam.so.GetQHYCCDMemLength(qhycam.camera_params[qhycam_id]['handle'])
             i_w = qhycam.camera_params[qhycam_id]['image_width'].value
             i_h = qhycam.camera_params[qhycam_id]['image_height'].value
-            print('c-w:     ' + str(qhycam.camera_params[qhycam_id]['chip_width'].value), end='')
-            print('    c-h: ' + str(qhycam.camera_params[qhycam_id]['chip_height'].value))
-            print('p-w:     ' + str(qhycam.camera_params[qhycam_id]['pixel_width'].value), end='')
-            print('    p-h: ' + str(qhycam.camera_params[qhycam_id]['pixel_height'].value))
-            print('i-w:     ' + str(i_w), end='')
-            print('    i-h: ' + str(i_h))
-            print('bit: ' + str(qhycam.camera_params[qhycam_id]['bits_per_pixel'].value))
-            print('mem len: ' + str(qhycam.camera_params[qhycam_id]['mem_len']))
+            #print('c-w:     ' + str(qhycam.camera_params[qhycam_id]['chip_width'].value), end='')
+            #print('    c-h: ' + str(qhycam.camera_params[qhycam_id]['chip_height'].value))
+            #print('p-w:     ' + str(qhycam.camera_params[qhycam_id]['pixel_width'].value), end='')
+            #print('    p-h: ' + str(qhycam.camera_params[qhycam_id]['pixel_height'].value))
+            #print('i-w:     ' + str(i_w), end='')
+            #print('    i-h: ' + str(i_h))
+            #print('bit: ' + str(qhycam.camera_params[qhycam_id]['bits_per_pixel'].value))
+            #print('mem len: ' + str(qhycam.camera_params[qhycam_id]['mem_len']))
 
-            val_temp = qhycam.so.GetQHYCCDParam(qhycam.camera_params[qhycam_id]['handle'], qhycam.CONTROL_CURTEMP)
-            val_pwm = qhycam.so.GetQHYCCDParam(qhycam.camera_params[qhycam_id]['handle'], qhycam.CONTROL_CURPWM)
+            #val_temp = qhycam.so.GetQHYCCDParam(qhycam.camera_params[qhycam_id]['handle'], qhycam.CONTROL_CURTEMP)
+            #val_pwm = qhycam.so.GetQHYCCDParam(qhycam.camera_params[qhycam_id]['handle'], qhycam.CONTROL_CURPWM)
 
             # todo  c_uint8 c_uint16??
             #if bit_depth == cam.bit_depth_16:
-            print('using c_uint16()')
+            #print('using c_uint16()')
             qhycam.camera_params[qhycam_id]['prev_img_data'] = (c_uint16 * int(qhycam.camera_params[qhycam_id]['mem_len'] / 2))()
             #else:
             #    print('using c_uint8()')
@@ -631,8 +631,8 @@ class Camera:
                                            c_uint32(i_h))
             
             
-            success = qhycam.so.ExpQHYCCDSingleFrame(qhycam.camera_params[qhycam_id]['handle'])
-            print('exp  single = ' + str(success))
+            #success = qhycam.so.ExpQHYCCDSingleFrame(qhycam.camera_params[qhycam_id]['handle'])
+            #print('exp  single = ' + str(success))
             
             
             
@@ -650,25 +650,25 @@ class Camera:
             
             
             
-            success = qhycam.so.GetQHYCCDSingleFrame(qhycam.camera_params[qhycam_id]['handle'],
-                                                  byref(image_width_byref),
-                                                  byref(image_height_byref),
-                                                  byref(bits_per_pixel_byref),
-                                                  byref(qhycam.camera_params[qhycam_id]['channels']),
-                                                  byref(qhycam.camera_params[qhycam_id]['prev_img_data']))
-            print('read  single = ' + str(success))
+            # success = qhycam.so.GetQHYCCDSingleFrame(qhycam.camera_params[qhycam_id]['handle'],
+            #                                       byref(image_width_byref),
+            #                                       byref(image_height_byref),
+            #                                       byref(bits_per_pixel_byref),
+            #                                       byref(qhycam.camera_params[qhycam_id]['channels']),
+            #                                       byref(qhycam.camera_params[qhycam_id]['prev_img_data']))
+            # print('read  single = ' + str(success))
             
             
-            qhycam.camera_params[qhycam_id]['prev_img'] = np.ctypeslib.as_array(qhycam.camera_params[qhycam_id]['prev_img_data'])
-            print("---------------->" + str(len(qhycam.camera_params[qhycam_id]['prev_img'])))
-            image_size = i_h * i_w
-            print("image size =     " + str(image_size))
-            print("prev_img_list sub length-->" + str(len(qhycam.camera_params[qhycam_id]['prev_img'])))
-            print("Image W=" + str(i_w) + "        H=" + str(i_h))
-            qhycam.camera_params[qhycam_id]['prev_img'] = qhycam.camera_params[qhycam_id]['prev_img'][0:image_size]
-            image = np.reshape(qhycam.camera_params[qhycam_id]['prev_img'], (i_h, i_w))
+            #qhycam.camera_params[qhycam_id]['prev_img'] = np.ctypeslib.as_array(qhycam.camera_params[qhycam_id]['prev_img_data'])
+            #print("---------------->" + str(len(qhycam.camera_params[qhycam_id]['prev_img'])))
+            #image_size = i_h * i_w
+            #print("image size =     " + str(image_size))
+            #print("prev_img_list sub length-->" + str(len(qhycam.camera_params[qhycam_id]['prev_img'])))
+            #print("Image W=" + str(i_w) + "        H=" + str(i_h))
+            #qhycam.camera_params[qhycam_id]['prev_img'] = qhycam.camera_params[qhycam_id]['prev_img'][0:image_size]
+            #image = np.reshape(qhycam.camera_params[qhycam_id]['prev_img'], (i_h, i_w))
             
-            print (image)
+            #print (image)
             
             
             #breakpoint()
