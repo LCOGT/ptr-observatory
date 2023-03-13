@@ -194,7 +194,7 @@ class Observatory:
                 self.wema_path = g_dev["wema_share_path"]
         else:
             self.is_wema = False  # This is a client.
-            self.site_path = config["client_path"]
+            self.site_path = config["client_path"] + self.config['site_id'] + '/'
             g_dev["site_path"] = self.site_path
             g_dev["wema_share_path"] = self.site_path  # Just to be safe.
             self.wema_path = g_dev["wema_share_path"]
@@ -1867,6 +1867,10 @@ sel
                 
                 if not (g_dev['events']['Civil Dusk'] < ephem.now() < g_dev['events']['Civil Dawn']):
                     plog ("Too bright to consider photometry!")
+                    rfp = np.nan
+                    rfr = np.nan
+                    rfs = np.nan
+                    sepsky = np.nan
                 else:
                 
                 #focdate=time.time()
@@ -2095,6 +2099,11 @@ sel
 
                         sources.write(im_path + text_name.replace('.txt', '.sep'), format='csv', overwrite=True)
                         
+                        try:
+                            g_dev['cam'].enqueue_for_fastAWS(200, im_path, text_name.replace('.txt', '.sep'))
+                            #plog("Sent SEP up")
+                        except:
+                            plog("Failed to send SEP up for some reason")
                         
                        
                     except:
@@ -2104,14 +2113,29 @@ sel
                         rfp = np.nan
                         rfr = np.nan
                         rfs = np.nan
+                        sepsky = np.nan
                     
                     plog("Sep time to process: " + str(time.time() - sep_timer_begin))
                 
-                hduheader["SEPSKY"] = sepsky     
-                hduheader["FWHM"] = ( str(rfp), 'FWHM in pixels')
-                hduheader["FWHMpix"] = ( str(rfp), 'FWHM in pixels')
-                hduheader["FWHMasec"] = ( str(rfr), 'FWHM in arcseconds')
-                hduheader["FWHMstd"] = ( str(rfs), 'FWHM standard deviation in arcseconds')
+                if not np.isnan(sepsky):
+                    hduheader["SEPSKY"] = sepsky     
+                else:
+                    hduheader["SEPSKY"] = -9999    
+                if not np.isnan(rfp):
+                    hduheader["FWHM"] = ( str(rfp), 'FWHM in pixels')
+                    hduheader["FWHMpix"] = ( str(rfp), 'FWHM in pixels')
+                else:
+                    hduheader["FWHM"] = ( -99, 'FWHM in pixels')
+                    hduheader["FWHMpix"] = ( -99, 'FWHM in pixels')
+                
+                if not np.isnan(sepsky):
+                    hduheader["FWHMasec"] = ( str(rfr), 'FWHM in arcseconds')
+                else:
+                    hduheader["FWHMasec"] = ( -99, 'FWHM in arcseconds')
+                if not np.isnan(sepsky):
+                    hduheader["FWHMstd"] = ( str(rfs), 'FWHM standard deviation in arcseconds')
+                else:
+                    hduheader["FWHMstd"] = ( -99, 'FWHM standard deviation in arcseconds')
 
 
                 #if focus_image == False:
@@ -2122,11 +2146,7 @@ sel
                 text.close()
                 g_dev['cam'].enqueue_for_fastAWS(10, im_path, text_name)
                 
-                try:
-                    g_dev['cam'].enqueue_for_fastAWS(200, im_path, text_name.replace('.txt', '.sep'))
-                    #plog("Sent SEP up")
-                except:
-                    plog("Failed to send SEP up for some reason")
+                
                     
                     
 

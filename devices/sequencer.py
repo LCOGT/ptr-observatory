@@ -460,7 +460,7 @@ class Sequencer:
         if self.weather_report_wait_until_open:
             if ephem_now >  self.weather_report_wait_until_open_time:
                 if not g_dev['obs'].open_and_enabled_to_observe and self.weather_report_is_acceptable_to_observe==True:
-                    if (g_dev['events']['Cool Down, Open'] < ephem.now() < g_dev['events']['Close and Park']):
+                    if (g_dev['events']['Cool Down, Open'] < ephem.now() < g_dev['events']['Observing Ends']):
                         if time.time() > self.enclosure_next_open_time and self.opens_this_evening < self.config['maximum_roof_opens_per_evening']:
                             #self.enclosure_next_open_time = time.time() + 300 # Only try to open the roof every five minutes
                             self.open_observatory(enc_status, ocn_status)

@@ -2942,7 +2942,7 @@ class Camera:
 
                     #tempRAdeg = float(g_dev["mnt"].current_icrs_ra) * 15
                     #tempDECdeg = g_dev["mnt"].current_icrs_dec
-                    tempRAdeg = g_dev["mnt"].current_icrs_ra
+                    tempRAdeg = g_dev["mnt"].current_icrs_ra * 15
                     tempDECdeg = g_dev["mnt"].current_icrs_dec
                     tempointing = SkyCoord(tempRAdeg, tempDECdeg, unit='deg')
                     tempointing=tempointing.to_string("hmsdms").split(' ')
@@ -2961,7 +2961,7 @@ class Camera:
                         g_dev["mnt"].current_icrs_ra,
                         "[hrs] Telescope right ascension",
                     )
-                    hdu.header["RADEG"] = tempRAdeg
+                    hdu.header["RADEG"] = tempRAdeg 
                     hdu.header["DECDEG"] = tempDECdeg
      
                     hdu.header["TARG-CHK"] = (
