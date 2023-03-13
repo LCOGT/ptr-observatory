@@ -2482,67 +2482,7 @@ sel
 
                 temphduheader=slow_process[3]
 
-                #tempRAdeg = float(g_dev["mnt"].current_icrs_ra) * 15
-                #tempDECdeg = g_dev["mnt"].current_icrs_dec
-                tempRAdeg = slow_process[5] * 15
-                tempDECdeg = slow_process[6]
-                tempointing = SkyCoord(tempRAdeg, tempDECdeg, unit='deg')
-                tempointing=tempointing.to_string("hmsdms").split(' ')
- 
-                temphduheader["RA"] = (
-                    tempointing[0],
-                    "[hms] Telescope right ascension",
-                )
-                temphduheader["DEC"] = (
-                    tempointing[1],
-                    "[dms] Telescope declination",
-                )
-                temphduheader["ORIGRA"] = temphduheader["RA"]
-                temphduheader["ORIGDEC"] = temphduheader["DEC"]
-                temphduheader["RAhrs"] = (
-                    g_dev["mnt"].current_icrs_ra,
-                    "[hrs] Telescope right ascension",
-                )
-                temphduheader["RA-deg"] = tempRAdeg
-                temphduheader["DEC-deg"] = tempDECdeg
- 
-                temphduheader["TARG-CHK"] = (
-                    (g_dev["mnt"].current_icrs_ra * 15)
-                    + g_dev["mnt"].current_icrs_dec,
-                    "[deg] Sum of RA and dec",
-                )
-                temphduheader["CATNAME"] = (g_dev["mnt"].object, "Catalog object name")
-                temphduheader["CAT-RA"] = (
-                    tempointing[0],
-                    "[hms] Catalog RA of object",
-                )
-                temphduheader["CAT-DEC"] = (
-                    tempointing[1],
-                    "[dms] Catalog Dec of object",
-                )
-                temphduheader["OFST-RA"] = (
-                    tempointing[0],
-                    "[hms] Catalog RA of object (for BANZAI only)",
-                )
-                temphduheader["OFST-DEC"] = (
-                    tempointing[1],
-                    "[dms] Catalog Dec of object",
-                )
- 
- 
-                temphduheader["TPT-RA"] = (
-                    tempointing[0],
-                    "[hms] Catalog RA of object (for BANZAI only",
-                )
-                temphduheader["TPT-DEC"] = (
-                    tempointing[1],
-                    "[dms] Catalog Dec of object",
-                )
- 
-                temphduheader["CRVAL1"] = tempRAdeg
-                temphduheader["CRVAL2"] = tempDECdeg
-                temphduheader["CRPIX1"] = float(temphduheader["NAXIS1"])/2
-                temphduheader["CRPIX2"] = float(temphduheader["NAXIS2"])/2
+                
                 
                 
                 

@@ -2939,6 +2939,71 @@ class Camera:
                     hdu.header["FILEPATH"] = str(im_path_r) + "to_AWS/"
                     hdu.header["ORIGNAME"] = str(raw_name00 + ".fz")
 
+
+                    #tempRAdeg = float(g_dev["mnt"].current_icrs_ra) * 15
+                    #tempDECdeg = g_dev["mnt"].current_icrs_dec
+                    tempRAdeg = g_dev["mnt"].current_icrs_ra
+                    tempDECdeg = g_dev["mnt"].current_icrs_dec
+                    tempointing = SkyCoord(tempRAdeg, tempDECdeg, unit='deg')
+                    tempointing=tempointing.to_string("hmsdms").split(' ')
+     
+                    hdu.header["RA"] = (
+                        tempointing[0],
+                        "[hms] Telescope right ascension",
+                    )
+                    hdu.header["DEC"] = (
+                        tempointing[1],
+                        "[dms] Telescope declination",
+                    )
+                    hdu.header["ORIGRA"] = hdu.header["RA"]
+                    hdu.header["ORIGDEC"] = hdu.header["DEC"]
+                    hdu.header["RAhrs"] = (
+                        g_dev["mnt"].current_icrs_ra,
+                        "[hrs] Telescope right ascension",
+                    )
+                    hdu.header["RADEG"] = tempRAdeg
+                    hdu.header["DECDEG"] = tempDECdeg
+     
+                    hdu.header["TARG-CHK"] = (
+                        (g_dev["mnt"].current_icrs_ra * 15)
+                        + g_dev["mnt"].current_icrs_dec,
+                        "[deg] Sum of RA and dec",
+                    )
+                    hdu.header["CATNAME"] = (g_dev["mnt"].object, "Catalog object name")
+                    hdu.header["CAT-RA"] = (
+                        tempointing[0],
+                        "[hms] Catalog RA of object",
+                    )
+                    hdu.header["CAT-DEC"] = (
+                        tempointing[1],
+                        "[dms] Catalog Dec of object",
+                    )
+                    hdu.header["OFST-RA"] = (
+                        tempointing[0],
+                        "[hms] Catalog RA of object (for BANZAI only)",
+                    )
+                    hdu.header["OFST-DEC"] = (
+                        tempointing[1],
+                        "[dms] Catalog Dec of object",
+                    )
+     
+     
+                    hdu.header["TPT-RA"] = (
+                        tempointing[0],
+                        "[hms] Catalog RA of object (for BANZAI only",
+                    )
+                    hdu.header["TPT-DEC"] = (
+                        tempointing[1],
+                        "[dms] Catalog Dec of object",
+                    )
+     
+                    hdu.header["CRVAL1"] = tempRAdeg
+                    hdu.header["CRVAL2"] = tempDECdeg
+                    hdu.header["CRPIX1"] = float(hdu.header["NAXIS1"])/2
+                    hdu.header["CRPIX2"] = float(hdu.header["NAXIS2"])/2
+
+
+
                     try:  #  NB relocate this to Expose entry area.  Fill out except.  Might want to check on available space.
                         im_path_r = self.camera_path
                         os.makedirs(
@@ -2993,7 +3058,7 @@ class Camera:
                     # This command uploads the text file information at high priority to AWS. 
                     # No point sending if part of a smartstack
 
-
+                    
 
                     # If the file isn't a calibration frame, then undertake a flash reduction quickly
                     # To make a palatable jpg AS SOON AS POSSIBLE to send to AWS
