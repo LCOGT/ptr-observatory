@@ -1840,7 +1840,7 @@ sel
                         )
                
                 
-                plog ("Main JPEG time to complete: "+str(time.time() - osc_jpeg_timer_start))
+                    plog ("Main JPEG time to complete: "+str(time.time() - osc_jpeg_timer_start))
                 self.mainjpeg_queue.task_done()
                 #one_at_a_time=0                 
             else:
