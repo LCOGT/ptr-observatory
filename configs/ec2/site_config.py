@@ -34,7 +34,7 @@ site_config = {
     'debug_site_mode': False,
     
 
-    'debug_mode': True,
+    'debug_mode': False,
     'admin_owner_commands_only': False,
 
     'debug_duration_sec': 7200,
@@ -740,7 +740,7 @@ site_config = {
                 # HERE YOU CAN FLIP THE IMAGE TO YOUR HEARTS DESIRE
                 # HOPEFULLY YOUR HEARTS DESIRE IS SIMILAR TO THE
                 # RECOMMENDED DEFAULT DESIRE OF PTR
-                'transpose_jpeg' : True,
+                'transpose_jpeg' : False,
                 'flipx_jpeg' : False,
                 'flipy_jpeg' : False,
                 'rotate180_jpeg' : False,
