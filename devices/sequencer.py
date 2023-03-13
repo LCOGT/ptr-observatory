@@ -513,33 +513,7 @@ class Sequencer:
 
             g_dev['mnt'].park_command({}, {})
 
-        elif ((g_dev['events']['Cool Down, Open']  <= ephem_now < g_dev['events']['Close and Park']) and \
-               g_dev['enc'].mode == 'Automatic') and not g_dev['ocn'].wx_hold and not enc_status['shutter_status'] in ['Software Fault', 'Closing', 'Error']:
-
-            #plog ("Cool Down Open Check Running")
-            if not self.nightly_weather_report_done and not g_dev['debug']:
-
-                self.run_nightly_weather_report()
-                self.nightly_weather_report_done=True
-
-            
-
-            #self.time_of_next_slew = time.time() -1
-            #plog ("got here")
-            
-            if not g_dev['obs'].open_and_enabled_to_observe and self.weather_report_is_acceptable_to_observe==True and self.weather_report_wait_until_open==False:
-                #print (self.enclosure_next_open_time)
-                #print (self.enclosure_next_open_time - time.time()                       )
-                #print (self.opens_this_evening)
-                if time.time() > self.enclosure_next_open_time and self.opens_this_evening < self.config['maximum_roof_opens_per_evening']:
-                    
-                    #self.enclosure_next_open_time = time.time() + 300 # Only try to open the roof every five minutes maximum
-                    
-                    self.open_observatory(enc_status, ocn_status)
-                    
-                    
-                    
-                    self.night_focus_ready=True
+        
 
         elif ((g_dev['events']['Clock & Auto Focus']  <= ephem_now < g_dev['events']['Observing Begins']) and \
                g_dev['enc'].mode == 'Automatic') and not g_dev['ocn'].wx_hold and self.weather_report_is_acceptable_to_observe==True:
@@ -757,6 +731,35 @@ class Sequencer:
             except:
                 plog(traceback.format_exc())
                 plog("Hang up in sequencer.")
+        
+        elif ((g_dev['events']['Cool Down, Open']  <= ephem_now < g_dev['events']['Close and Park']) and \
+               g_dev['enc'].mode == 'Automatic') and not g_dev['ocn'].wx_hold and not enc_status['shutter_status'] in ['Software Fault', 'Closing', 'Error']:
+
+            #plog ("Cool Down Open Check Running")
+            if not self.nightly_weather_report_done and not g_dev['debug']:
+
+                self.run_nightly_weather_report()
+                self.nightly_weather_report_done=True
+
+            
+
+            #self.time_of_next_slew = time.time() -1
+            #plog ("got here")
+            
+            if not g_dev['obs'].open_and_enabled_to_observe and self.weather_report_is_acceptable_to_observe==True and self.weather_report_wait_until_open==False:
+                #print (self.enclosure_next_open_time)
+                #print (self.enclosure_next_open_time - time.time()                       )
+                #print (self.opens_this_evening)
+                if time.time() > self.enclosure_next_open_time and self.opens_this_evening < self.config['maximum_roof_opens_per_evening']:
+                    
+                    #self.enclosure_next_open_time = time.time() + 300 # Only try to open the roof every five minutes maximum
+                    
+                    self.open_observatory(enc_status, ocn_status)
+                    
+                    
+                    
+                    self.night_focus_ready=True
+        
         elif self.morn_sky_flat_latch and ((events['Morn Sky Flats'] <= ephem_now < events['End Morn Sky Flats'])  \
                and g_dev['enc'].mode == 'Automatic' and not g_dev['ocn'].wx_hold and not self.morn_sky_flat_latch and \
                self.config['auto_morn_sky_flat']) and not self.morn_flats_done and g_dev['obs'].open_and_enabled_to_observe and self.weather_report_is_acceptable_to_observe==True:
