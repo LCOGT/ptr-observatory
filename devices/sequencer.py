@@ -491,7 +491,7 @@ class Sequencer:
                         g_dev['mnt'].park_command() 
                     self.weather_report_close_during_evening=False
                     
-        # During normal opening period, try opening   
+        # During normal opening period, try opening the dome   
         if ((g_dev['events']['Cool Down, Open']  <= ephem_now < g_dev['events']['Observing Ends']) and \
                g_dev['enc'].mode == 'Automatic') and not g_dev['ocn'].wx_hold and not enc_status['shutter_status'] in ['Software Fault', 'Closing', 'Error']:
 
@@ -527,7 +527,7 @@ class Sequencer:
 
 
         if not self.bias_dark_latch and ((events['Eve Bias Dark'] <= ephem_now < events['End Eve Bias Dark']) and \
-             self.config['auto_eve_bias_dark'] and g_dev['enc'].mode in ['Automatic', 'Autonomous', 'Manual'] ):   #events['End Eve Bias Dark']) and \
+             self.config['auto_eve_bias_dark'] and g_dev['enc'].mode in ['Automatic', 'Autonomous', 'Manual'] and g_dev['obs'].camera_temperature_in_range_for_calibrations):   #events['End Eve Bias Dark']) and \
             
             self.bias_dark_latch = True
             req = {'bin1': True, 'bin2': False, 'bin3': False, 'bin4': False, 'numOfBias': 45, \
@@ -546,7 +546,7 @@ class Sequencer:
 
         elif not self.eve_sky_flat_latch and ((events['Eve Sky Flats'] <= ephem_now < events['End Eve Sky Flats'])  \
                and g_dev['enc'].mode in [ 'Automatic', 'Autonomous'] and not g_dev['ocn'].wx_hold and \
-               self.config['auto_eve_sky_flat'] and not self.eve_flats_done and self.weather_report_is_acceptable_to_observe):
+               self.config['auto_eve_sky_flat'] and not self.eve_flats_done and self.weather_report_is_acceptable_to_observe and g_dev['obs'].camera_temperature_in_range_for_calibrations):
 
             if g_dev['obs'].open_and_enabled_to_observe:
                 #self.time_of_next_slew = time.time() -1
@@ -768,7 +768,7 @@ class Sequencer:
         
         elif not self.morn_sky_flat_latch and ((events['Morn Sky Flats'] <= ephem_now < events['End Morn Sky Flats'])  \
                and g_dev['enc'].mode == 'Automatic' and not g_dev['ocn'].wx_hold and \
-               self.config['auto_morn_sky_flat']) and not self.morn_flats_done and g_dev['obs'].open_and_enabled_to_observe and self.weather_report_is_acceptable_to_observe==True:
+               self.config['auto_morn_sky_flat']) and not self.morn_flats_done and g_dev['obs'].camera_temperature_in_range_for_calibrations and g_dev['obs'].open_and_enabled_to_observe and self.weather_report_is_acceptable_to_observe==True:
             #self.time_of_next_slew = time.time() -1
             self.morn_sky_flat_latch = True
             self.open_observatory(enc_status, ocn_status)   #Just in case a Wx hold stopped opening
@@ -783,7 +783,7 @@ class Sequencer:
             self.morn_flats_done = True
             
         elif not self.morn_bias_dark_latch and (events['Morn Bias Dark'] <= ephem_now < events['End Morn Bias Dark']) and \
-                  self.config['auto_morn_bias_dark'] and not  self.morn_bias_done: # and g_dev['enc'].mode == 'Automatic' ):
+                  self.config['auto_morn_bias_dark'] and not  self.morn_bias_done and g_dev['obs'].camera_temperature_in_range_for_calibrations: # and g_dev['enc'].mode == 'Automatic' ):
             #breakpoint()
             self.morn_bias_dark_latch = True
             req = {'bin1': True, 'bin2': False, 'bin3': False, 'bin4': False, 'numOfBias': 63, \

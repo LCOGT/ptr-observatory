@@ -1205,11 +1205,23 @@ sel
             if g_dev['rot'] != None:
                 g_dev['rot'].check_rotator_is_rotating()
                     
+                
+                
             # Check that cooler is alive
             #plog ("Cooler check")
             #probe = g_dev['cam']._cooler_on()
             if g_dev['cam']._cooler_on():
-                plog ("Cooler is still on at " + str(g_dev['cam']._temperature()))            
+                current_camera_temperature=float(g_dev['cam']._temperature())
+                plog ("Cooler is still on at " + str(current_camera_temperature))            
+           
+                if current_camera_temperature - g_dev['cam'].setpoint > 0.2 or current_camera_temperature - g_dev['cam'].setpoint < -0.5:
+                    
+                    print (current_camera_temperature - g_dev['cam'].setpoint)
+                    
+                    self.camera_temperature_in_range_for_calibrations = False
+                    plog ("Temperature out of range to undertake calibrations")
+                else:
+                    self.camera_temperature_in_range_for_calibrations = True
            
                 # After the observatory and camera have had time to settle....
                 if (time.time() - self.camera_time_initialised) > 1200:
@@ -1226,7 +1238,7 @@ sel
                             print ("Camera Overheating Safety Warm Cycle on.")
                     
                     
-                    elif (float(g_dev['cam']._temperature()) - g_dev['cam'].setpoint) > 15:
+                    elif (float(current_camera_temperature) - g_dev['cam'].setpoint) > 15:
                         print ("Found cooler on, but warm.")
                         print ("Keeping it slightly warm ( 20 degrees warmer ) for about 20 minutes just in case the camera overheated.")
                         print ("Then will reset to normal.")
