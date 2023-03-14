@@ -205,6 +205,8 @@ class Observatory:
             self.site_is_specific = False
 
 
+        
+
 
         self.last_request = None
         self.stopped = False
@@ -416,10 +418,16 @@ class Observatory:
             "POST", url_job, data=json.dumps(body)
         ).json()
 
+        # On startup, collect orphaned fits files that may have been dropped from the queue
+        # when the site crashed
+        g_dev['seq'].collect_and_queue_neglected_fits()
+
         # Need to set this for the night log
         #g_dev['foc'].set_focal_ref_reset_log(self.config["focuser"]["focuser1"]["reference"])
         # Send the config to AWS. TODO This has faulted.
         self.update_config()   #This is the never-ending control loop
+        
+        
         
 
         #breakpoint()
@@ -1644,10 +1652,14 @@ sel
                         
                         
                         # adjust brightness
-                        brightness=ImageEnhance.Brightness(colour_img)
-                        brightness_image=brightness.enhance(g_dev['cam'].config["camera"][g_dev['cam'].name]["settings"]['osc_brightness_enhance'])
-                        del colour_img
-                        del brightness
+                        if g_dev['cam'].config["camera"][g_dev['cam'].name]["settings"]['osc_brightness_enhance'] != 1.0:
+                            brightness=ImageEnhance.Brightness(colour_img)
+                            brightness_image=brightness.enhance(g_dev['cam'].config["camera"][g_dev['cam'].name]["settings"]['osc_brightness_enhance'])
+                            del colour_img
+                            del brightness
+                        else:
+                            brightness_image=colour_img
+                            del colour_img
                         
                         # adjust contrast
                         contrast=ImageEnhance.Contrast(brightness_image)

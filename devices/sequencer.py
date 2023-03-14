@@ -1438,6 +1438,70 @@ class Sequencer:
         self.bias_dark_latch = False
         return
             
+    def collect_and_queue_neglected_fits(self):
+        # UNDERTAKING END OF NIGHT ROUTINES
+        
+        # Go through and add any remaining fz files to the aws queue .... hopefully that is enough? If not, I will make it keep going until it is sure.
+        #while True:
+            
+        plog ('Collecting orphaned fits and tokens to go up to BANZAI')
+        dir_path=self.config['client_path'] +'/' + g_dev['obs'].name + '/' + 'archive/'
+        
+        orphan_path=self.config['client_path'] +'/' + g_dev['obs'].name + '/' + 'orphans/'
+        if not os.path.exists(orphan_path):
+            os.makedirs(orphan_path)
+        
+        
+        cameras=glob(dir_path + "*/")
+        plog (cameras)
+        # Setting runnight for mop up scripts
+        
+        #breakpoint()
+        # Move all fits.fz to the orphan folder
+        for camera in cameras:
+            yesterday = datetime.datetime.now() - timedelta(1)
+            runNight=datetime.datetime.strftime(yesterday, '%Y%m%d')     
+            
+            #breakpoint()
+            nights = glob(camera + '*/')
+            
+            for obsnight in nights:
+                orphanfits=glob(obsnight + 'raw/*.fits.fz')
+                
+                for orphanfile in orphanfits:
+                    try:
+                        shutil.move(orphanfile, orphan_path)
+                    except:
+                        print ("Couldn't move orhan: " + str(orphanfile))
+                
+                
+        # Add all fits.fz members to the AWS queue
+        #breakpoint() 
+        bigfzs=glob(orphan_path + '*.fz')
+        #breakpoint()
+        bigtokens=glob(orphan_path + '*.token')
+        
+        for fzneglect in bigfzs:
+            plog ("Reattempting upload of " + str(os.path.basename(fzneglect)))
+            #breakpoint()
+            #image = (im_path, name)
+            #g_dev["obs"].aws_queue.put((priority, image), block=False)
+
+            # Enqueue into the stream but at the lowest priority ever.
+            g_dev['cam'].enqueue_for_AWS(56000000, orphan_path, fzneglect.split('orphans')[-1].replace('\\',''))
+            #g_dev['obs'].send_to_aws()
+        
+        for fzneglect in bigtokens:
+            plog ("Reattempting upload of " + str(os.path.basename(fzneglect)))
+            #breakpoint()
+            #image = (im_path, name)
+            #g_dev["obs"].aws_queue.put((priority, image), block=False)
+
+            # Enqueue into the stream but at the lowest priority ever.
+            g_dev['cam'].enqueue_for_AWS(56000000, orphan_path, fzneglect.split('orphans')[-1].replace('\\',''))
+            #g_dev['obs'].send_to_aws()
+    
+    
     def nightly_reset_script(self):
         # UNDERTAKING END OF NIGHT ROUTINES
 
@@ -1457,32 +1521,40 @@ class Sequencer:
 
         # Check the archive directory and upload any big fits that haven't been uploaded
         # wait until the queue is empty before mopping up
-
-        # Go through and add any remaining fz files to the aws queue .... hopefully that is enough? If not, I will make it keep going until it is sure.
-        #while True:
-        dir_path=self.config['client_path'] + 'archive/'
-        cameras=glob(dir_path + "*/")
-        plog (cameras)
-        for camera in cameras:
-            bigfzs=glob(camera + "/" + runNight + "/raw/*.fz")
-
-            for fzneglect in bigfzs:
-                plog ("Reattempting upload of " + str(os.path.basename(fzneglect)))
-                #breakpoint()
-                #image = (im_path, name)
-                #g_dev["obs"].aws_queue.put((priority, image), block=False)
-
-                g_dev['cam'].enqueue_for_AWS(26000000, camera + runNight + "/raw/", str(os.path.basename(fzneglect)))
-                #g_dev['obs'].send_to_aws()
+        self.collect_and_queue_neglected_fits()
+        
 
         #time.sleep(300)
         #if (g_dev['obs'].aws_queue.empty()):
         #break
 
+        
+
+
+        # At this stage, we want to empty the AWS Queue!
+        # We are about to pull all the fits.fz out from their folders
+        # And dump them in the orphans folder so we want the queue
+        # cleared to reconstitute it.
+        plog ("Emptying AWS Queue To Reconstitute it from the Orphan Directory")
+        with g_dev['obs'].aws_queue.mutex:
+            g_dev['obs'].aws_queue.queue.clear()
+
+        while (not g_dev['obs'].aws_queue.empty()):
+            plog ("Waiting for the AWS queue to complete it's last job")
+            time.sleep(1)
+              
+
+        # Before Culling, making sure we go through and harvest
+        # all the orphaned and neglected files that actually
+        # do need to get to BANZAI
+        self.collect_and_queue_neglected_fits()
+        
+        
+        
         # Sending token to AWS to inform it that all files have been uploaded
         plog ("sending end of night token to AWS")
         #g_dev['cam'].enqueue_for_AWS(jpeg_data_size, paths['im_path'], paths['jpeg_name10'])
-
+        
         isExist = os.path.exists(g_dev['cam'].site_path + 'tokens')
         if not isExist:
             os.makedirs(g_dev['cam'].site_path + 'tokens')
@@ -1492,6 +1564,7 @@ class Sequencer:
         image = (g_dev['cam'].site_path + 'tokens/', self.config['site'] + runNight + '.token')
         g_dev['obs'].aws_queue.put((30000000000, image), block=False)
         g_dev['obs'].send_to_user("End of Night Token sent to AWS.", p_level='INFO')
+        
 
         # while True:
         #     if (not g_dev['obs'].aws_queue.empty()):
@@ -1517,7 +1590,9 @@ class Sequencer:
                 deleteDirectories=[]
                 deleteTimes=[]
                 for q in range(len(directories)):
-                    if ((timenow_cull)-os.path.getmtime(directories[q])) > (self.config['archive_age'] * 24* 60 * 60) :
+                    if 'orphans' in directories[q] or 'calibmasters' in directories[q] or 'lng' in directories[q] or 'seq' in directories[q]:
+                        pass
+                    elif ((timenow_cull)-os.path.getmtime(directories[q])) > (self.config['archive_age'] * 24* 60 * 60) :
                         deleteDirectories.append(directories[q])
                         deleteTimes.append(((timenow_cull)-os.path.getmtime(directories[q])) /60/60/24/7)
                 plog ("These are the directories earmarked for  ")
