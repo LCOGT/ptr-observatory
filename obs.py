@@ -1297,7 +1297,7 @@ sel
                 # Beginning after "End Morn Bias Dark" and taking an hour to ramp
                 elif g_dev['cam'].day_warm and (g_dev['events']['End Morn Bias Dark'] < ephem.now() <  g_dev['events']['End Morn Bias Dark'] + ephem.hour):
                     plog ("In Camera Warming Ramping cycle of the day")
-                    frac_through_warming = ((g_dev['events']['End Morn Bias Dark'] + ephem.hour) - ephem.now()) / ephem.hour
+                    frac_through_warming = 1-((g_dev['events']['End Morn Bias Dark'] + ephem.hour) - ephem.now()) / ephem.hour
                     print ("Fraction through warming cycle: " + str(frac_through_warming))
                     # if frac_through_warming > 0.8:
                     #     g_dev['cam']._set_setpoint(float(g_dev['cam'].setpoint))
