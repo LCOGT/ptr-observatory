@@ -1263,14 +1263,14 @@ sel
                         print ("Camera Overheating Safety Warm Cycle on.")
                 
                 
-                elif (float(current_camera_temperature) - g_dev['cam'].current_setpoint) > 15:
+                elif (float(current_camera_temperature) - g_dev['cam'].current_setpoint) > (2* g_dev['cam'].day_warm_degrees):
                     print ("Found cooler on, but warm.")
-                    print ("Keeping it slightly warm ( 10 degrees warmer ) for about 20 minutes just in case the camera overheated.")
+                    print ("Keeping it slightly warm ( " + str(2* g_dev['cam'].day_warm_degrees) + " degrees warmer ) for about 20 minutes just in case the camera overheated.")
                     print ("Then will reset to normal.")
                     self.camera_overheat_safety_warm_on=True
                     self.camera_overheat_safety_timer=time.time()
                     #print (float(g_dev['cam'].setpoint +20.0))
-                    g_dev['cam']._set_setpoint(float(g_dev['cam'].setpoint +10.0))
+                    g_dev['cam']._set_setpoint(float(g_dev['cam'].setpoint +(2* g_dev['cam'].day_warm_degrees)))
                     g_dev['cam']._set_cooler_on() # Some cameras need to be sent this to change the temperature also.. e.g. TheSkyX
                 
                 
