@@ -733,8 +733,11 @@ class Camera:
         
         # NB NB Consider starting at low end of cooling and then gradually increasing it
         #plog("Cooler started @:  ", self._setpoint())
-        self.setpoint = float(self.config["camera"][self.name]["settings"]["temp_setpoint"])
+        self.setpoint = float(self.config["camera"][self.name]["settings"]["temp_setpoint"]) # This is the config setpoint
+        self.current_setpoint =  float(self.config["camera"][self.name]["settings"]["temp_setpoint"]) # This setpoint can change if there is camera warming during the day etc.
         self._set_setpoint(self.setpoint)
+        self.day_warm = float(self.config["camera"][self.name]["settings"]['day_warm'])
+        self.day_warm_degrees = float(self.config["camera"][self.name]["settings"]['day_warm_degrees'])
         plog("Cooler setpoint is now:  ", self.setpoint)
         if self.config["camera"][self.name]["settings"][
             "cooler_on"
@@ -960,6 +963,7 @@ class Camera:
 
     def _theskyx_set_setpoint(self, p_temp):
         self.camera.TemperatureSetpoint = float(p_temp)
+        self.current_setpoint = p_temp
         return self.camera.TemperatureSetpoint
 
     def _theskyx_setpoint(self):
@@ -1036,6 +1040,7 @@ class Camera:
 
     def _maxim_set_setpoint(self, p_temp):
         self.camera.TemperatureSetpoint = float(p_temp)
+        self.current_setpoint = p_temp
         return self.camera.TemperatureSetpoint
 
     def _maxim_setpoint(self):
@@ -1083,6 +1088,7 @@ class Camera:
     def _ascom_set_setpoint(self, p_temp):
         if self.camera.CanSetCCDTemperature:
             self.camera.SetCCDTemperature = float(p_temp)
+            self.current_setpoint = p_temp
             return self.camera.SetCCDTemperature
         else:
             plog("Camera cannot set cooling temperature.")
@@ -1136,7 +1142,7 @@ class Camera:
     def _qhyccd_set_cooler_on(self):
         #temptemp=qhycam.so.SetQHYCCDParam(qhycam.camera_params[qhycam_id]['handle'], qhycam.CONTROL_CURTEMP, c_double(float(self.setpoint)))
         #print (temptemp)       
-        temptemp=qhycam.so.SetQHYCCDParam(qhycam.camera_params[qhycam_id]['handle'], qhycam.CONTROL_COOLER,c_double(self.setpoint))
+        temptemp=qhycam.so.SetQHYCCDParam(qhycam.camera_params[qhycam_id]['handle'], qhycam.CONTROL_COOLER,c_double(self.current_setpoint))
         return True
         #self.camera.CoolerOn = True
         #return self.camera.CoolerOn
@@ -1151,16 +1157,27 @@ class Camera:
 
         #temptemp=qhycam.so.SetQHYCCDParam(qhycam.camera_params[qhycam_id]['handle'], qhycam.CONTROL_CURTEMP, c_double(int(p_temp)))
         temptemp=qhycam.so.SetQHYCCDParam(qhycam.camera_params[qhycam_id]['handle'], qhycam.CONTROL_COOLER,c_double(p_temp))
+        self.current_setpoint = p_temp
         #breakpoint()
         #print (temptemp)
         #breakpoint()
-        return 
+        return p_temp
     
     def _qhyccd_setpoint(self):
+        
+        try: 
+            temptemp=qhycam.so.GetQHYCCDParam(qhycam.camera_params[qhycam_id]['handle'], qhycam.CONTROL_CURTEMP)
+        except:
+            print ("failed at getting the CCD temperature")
+            temptemp=999.9
+        return temptemp
+        
+        
         #temptemp=qhycam.so.SetQHYCCDParam(qhycam.camera_params[qhycam_id]['handle'], qhycam.CONTROL_CURTEMP, c_double(int(p_temp)))
-        temptemp=qhycam.so.SetQHYCCDParam(qhycam.camera_params[qhycam_id]['handle'], qhycam.CONTROL_COOLER,c_double(p_temp))
+        #temptemp=qhycam.so.SetQHYCCDParam(qhycam.camera_params[qhycam_id]['handle'], qhycam.CONTROL_COOLER,c_double(p_temp))
+        #self.current_setpoint = p_temp
         #print (temptemp)
-        return 
+        #return 
     
     def _qhyccd_expose(self, exposure_time, imtypeb):
         

@@ -1216,38 +1216,12 @@ sel
            
                 if current_camera_temperature - g_dev['cam'].setpoint > 0.2 or current_camera_temperature - g_dev['cam'].setpoint < -0.5:
                     
-                    print (current_camera_temperature - g_dev['cam'].setpoint)
+                    #print (current_camera_temperature - g_dev['cam'].setpoint)
                     
                     self.camera_temperature_in_range_for_calibrations = False
                     plog ("Temperature out of range to undertake calibrations")
                 else:
                     self.camera_temperature_in_range_for_calibrations = True
-           
-                # After the observatory and camera have had time to settle....
-                if (time.time() - self.camera_time_initialised) > 1200:
-                    # Check that the camera is not overheating. 
-                    if self.camera_overheat_safety_warm_on:
-                        
-                        print ( time.time() - self.camera_overheat_safety_timer)
-                        if ( time.time() - self.camera_overheat_safety_timer) > 1201:
-                            print ("Camera OverHeating Safety Warm Cycle Complete. Resetting to normal temperature.")
-                            g_dev['cam']._set_setpoint(g_dev['cam'].setpoint)                        
-                            g_dev['cam']._set_cooler_on() # Some cameras need to be sent this to change the temperature also.. e.g. TheSkyX
-                            self.camera_overheat_safety_warm_on=False
-                        else:
-                            print ("Camera Overheating Safety Warm Cycle on.")
-                    
-                    
-                    elif (float(current_camera_temperature) - g_dev['cam'].setpoint) > 15:
-                        print ("Found cooler on, but warm.")
-                        print ("Keeping it slightly warm ( 20 degrees warmer ) for about 20 minutes just in case the camera overheated.")
-                        print ("Then will reset to normal.")
-                        self.camera_overheat_safety_warm_on=True
-                        self.camera_overheat_safety_timer=time.time()
-                        #print (float(g_dev['cam'].setpoint +20.0))
-                        g_dev['cam']._set_setpoint(float(g_dev['cam'].setpoint +20.0))
-                        g_dev['cam']._set_cooler_on() # Some cameras need to be sent this to change the temperature also.. e.g. TheSkyX
-                    
             
             else:
                 try:
@@ -1269,6 +1243,97 @@ sel
                         g_dev['cam']._set_cooler_on()
                     except:
                         plog("Camera cooler reconnect failed 2nd time.")
+           
+            
+
+            
+            # After the observatory and camera have had time to settle....
+            if (time.time() - self.camera_time_initialised) > 1200:
+                # Check that the camera is not overheating.
+                # If it isn't overheating check that it is at the correct temperature
+                if self.camera_overheat_safety_warm_on:
+                    
+                    print ( time.time() - self.camera_overheat_safety_timer)
+                    if ( time.time() - self.camera_overheat_safety_timer) > 1201:
+                        print ("Camera OverHeating Safety Warm Cycle Complete. Resetting to normal temperature.")
+                        g_dev['cam']._set_setpoint(g_dev['cam'].setpoint)                        
+                        g_dev['cam']._set_cooler_on() # Some cameras need to be sent this to change the temperature also.. e.g. TheSkyX
+                        self.camera_overheat_safety_warm_on=False
+                    else:
+                        print ("Camera Overheating Safety Warm Cycle on.")
+                
+                
+                elif (float(current_camera_temperature) - g_dev['cam'].current_setpoint) > 15:
+                    print ("Found cooler on, but warm.")
+                    print ("Keeping it slightly warm ( 10 degrees warmer ) for about 20 minutes just in case the camera overheated.")
+                    print ("Then will reset to normal.")
+                    self.camera_overheat_safety_warm_on=True
+                    self.camera_overheat_safety_timer=time.time()
+                    #print (float(g_dev['cam'].setpoint +20.0))
+                    g_dev['cam']._set_setpoint(float(g_dev['cam'].setpoint +10.0))
+                    g_dev['cam']._set_cooler_on() # Some cameras need to be sent this to change the temperature also.. e.g. TheSkyX
+                
+                
+            #breakpoint()
+            if not self.camera_overheat_safety_warm_on:
+                # Daytime temperature
+                #if g_dev['cam'].day_warm and (g_dev['events']['End Morn Bias Dark'] + ephem.hour < ephem.now() < g_dev['events']['Eve Bias Dark'] - ephem.hour):
+                
+                    
+                # Daytime... a bit tricky! Two periods... just after biases but before nightly reset OR ... just before eve bias dark
+                # As nightly reset resets the calendar
+                if g_dev['cam'].day_warm and (ephem.now() < g_dev['events']['Eve Bias Dark'] - ephem.hour) or \
+                    (g_dev['events']['End Morn Bias Dark'] + ephem.hour < ephem.now() < g_dev['events']['Nightly Reset']):
+                    plog ("In Daytime: Camera set at warmer temperature")
+                    g_dev['cam']._set_setpoint(float(g_dev['cam'].setpoint +g_dev['cam'].day_warm_degrees))
+                    g_dev['cam']._set_cooler_on() # Some cameras need to be sent this to change the temperature also.. e.g. TheSkyX
+                    plog ("Temp set to " + str(g_dev['cam'].current_setpoint))
+                    #pass
+                
+                
+                
+                
+                # Ramp heat temperature
+                # Beginning after "End Morn Bias Dark" and taking an hour to ramp
+                elif g_dev['cam'].day_warm and (g_dev['events']['End Morn Bias Dark'] < ephem.now() <  g_dev['events']['End Morn Bias Dark'] + ephem.hour):
+                    plog ("In Camera Warming Ramping cycle of the day")
+                    frac_through_warming = ((g_dev['events']['End Morn Bias Dark'] + ephem.hour) - ephem.now()) / ephem.hour
+                    print ("Fraction through warming cycle: " + str(frac_through_warming))
+                    # if frac_through_warming > 0.8:
+                    #     g_dev['cam']._set_setpoint(float(g_dev['cam'].setpoint))
+                    #     g_dev['cam']._set_cooler_on()
+                    # else:
+                    g_dev['cam']._set_setpoint(float(g_dev['cam'].setpoint + (1- frac_through_warming) * g_dev['cam'].day_warm_degrees ))
+                    g_dev['cam']._set_cooler_on()
+                    plog ("Temp set to " + str(g_dev['cam'].current_setpoint))
+                    #pass
+                
+                # Ramp cool temperature
+                # Defined as beginning an hour before "Eve Bias Dark" to ramp to the setpoint.
+                elif g_dev['cam'].day_warm and (g_dev['events']['Eve Bias Dark'] - ephem.hour < ephem.now() <  g_dev['events']['Eve Bias Dark']):
+                    plog ("In Camera Cooling Ramping cycle of the day")
+                    frac_through_warming = ((g_dev['events']['Eve Bias Dark']) - ephem.now()) / ephem.hour
+                    print ("Fraction through cooling cycle: " + str(frac_through_warming))
+                    if frac_through_warming > 0.8:
+                        g_dev['cam']._set_setpoint(float(g_dev['cam'].setpoint))
+                        g_dev['cam']._set_cooler_on()
+                    else:
+                        g_dev['cam']._set_setpoint(float(g_dev['cam'].setpoint + (1- frac_through_warming) * g_dev['cam'].day_warm_degrees ))
+                        g_dev['cam']._set_cooler_on()
+                        
+                    plog ("Temp set to " + str(g_dev['cam'].current_setpoint))
+                    #pass
+               
+                
+                # Nighttime temperature
+                elif (g_dev['events']['Eve Bias Dark'] < ephem.now() < g_dev['events']['End Morn Bias Dark'] ):
+                    g_dev['cam']._set_setpoint(float(g_dev['cam'].setpoint))
+                    g_dev['cam']._set_cooler_on()
+                    #pass
+                
+                
+        
+            
             #breakpoint()
             
             # Check that the site is still connected to the net.
@@ -2141,24 +2206,24 @@ sel
                     
                     plog("Sep time to process: " + str(time.time() - sep_timer_begin))
                 
-                if not np.isnan(sepsky):
-                    hduheader["SEPSKY"] = sepsky     
-                else:
+                try:
+                    hduheader["SEPSKY"] = str(sepsky)
+                except:
                     hduheader["SEPSKY"] = -9999    
-                if not np.isnan(rfp):
+                try:
                     hduheader["FWHM"] = ( str(rfp), 'FWHM in pixels')
                     hduheader["FWHMpix"] = ( str(rfp), 'FWHM in pixels')
-                else:
+                except:
                     hduheader["FWHM"] = ( -99, 'FWHM in pixels')
                     hduheader["FWHMpix"] = ( -99, 'FWHM in pixels')
                 
-                if not np.isnan(sepsky):
+                try:
                     hduheader["FWHMasec"] = ( str(rfr), 'FWHM in arcseconds')
-                else:
+                except:
                     hduheader["FWHMasec"] = ( -99, 'FWHM in arcseconds')
-                if not np.isnan(sepsky):
+                try:
                     hduheader["FWHMstd"] = ( str(rfs), 'FWHM standard deviation in arcseconds')
-                else:
+                except:
                     hduheader["FWHMstd"] = ( -99, 'FWHM standard deviation in arcseconds')
 
 
