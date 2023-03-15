@@ -1318,7 +1318,7 @@ sel
                         g_dev['cam']._set_setpoint(float(g_dev['cam'].setpoint))
                         g_dev['cam']._set_cooler_on()
                     else:
-                        g_dev['cam']._set_setpoint(float(g_dev['cam'].setpoint + (1- frac_through_warming) * g_dev['cam'].day_warm_degrees ))
+                        g_dev['cam']._set_setpoint(float(g_dev['cam'].setpoint + (frac_through_warming) * g_dev['cam'].day_warm_degrees ))
                         g_dev['cam']._set_cooler_on()
                         
                     plog ("Temp set to " + str(g_dev['cam'].current_setpoint))
