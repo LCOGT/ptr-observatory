@@ -50,7 +50,7 @@ import psutil
 
 from api_calls import API_calls
 from auto_stretch.stretch import Stretch
-import config
+import ptr_config
 
 from devices.camera import Camera
 from devices.filter_wheel import FilterWheel
@@ -70,12 +70,12 @@ from ptr_utility import plog
 from scipy import stats
 from PIL import Image, ImageEnhance
 
-import colour
+#import colour
 from colour_demosaicing import (
-    demosaicing_CFA_Bayer_bilinear,
-    demosaicing_CFA_Bayer_Malvar2004,
-    demosaicing_CFA_Bayer_Menon2007,
-    mosaicing_CFA_Bayer)
+    demosaicing_CFA_Bayer_bilinear)#,
+    #demosaicing_CFA_Bayer_Malvar2004,
+    #demosaicing_CFA_Bayer_Menon2007,
+    #mosaicing_CFA_Bayer)
 
 #Incorporate better request retry strategy
 from requests.adapters import HTTPAdapter, Retry
@@ -149,7 +149,7 @@ debug_lapse_time = None
 class Observatory:
     """Docstring here"""
 
-    def __init__(self, name, config):
+    def __init__(self, name, ptr_config):
         # This is the main class through which we can make authenticated api calls.
         self.api = API_calls()
 
@@ -160,8 +160,8 @@ class Observatory:
         self.site_name = name
 
         g_dev['name'] = name
-        self.config = config
-        self.site = config["site"]
+        self.config = ptr_config
+        self.site = ptr_config["site"]
         self.debug_flag = self.config['debug_mode']
         self.admin_only_flag = self.config['admin_owner_commands_only']
         if self.debug_flag:
@@ -178,23 +178,23 @@ class Observatory:
             self.hostname = socket.gethostname()
             if self.hostname in self.config["wema_hostname"]:
                 self.is_wema = True
-                g_dev["wema_share_path"] = config["wema_write_share_path"]
+                g_dev["wema_share_path"] = ptr_config["wema_write_share_path"]
                 self.wema_path = g_dev["wema_share_path"]
             else:
                 # This host is a client
                 self.is_wema = False  # This is a client.
-                self.site_path = config["client_path"] +'/' + self.name + '/'
+                self.site_path = ptr_config["client_path"] +'/' + self.name + '/'
                 if not os.path.exists(self.site_path):
                     os.makedirs(self.site_path)
                 
                 g_dev["site_path"] = self.site_path
-                g_dev["wema_share_path"] = config[
+                g_dev["wema_share_path"] = ptr_config[
                     "client_write_share_path"
                 ]  # Just to be safe.
                 self.wema_path = g_dev["wema_share_path"]
         else:
             self.is_wema = False  # This is a client.
-            self.site_path = config["client_path"] + self.config['site_id'] + '/'
+            self.site_path = ptr_config["client_path"] + self.config['site_id'] + '/'
             g_dev["site_path"] = self.site_path
             g_dev["wema_share_path"] = self.site_path  # Just to be safe.
             self.wema_path = g_dev["wema_share_path"]
@@ -213,12 +213,12 @@ class Observatory:
         self.status_count = 0
         self.stop_all_activity = False
         self.site_message = "-"
-        self.all_device_types = config["device_types"]  # May not be needed
-        self.device_types = config["device_types"]  # config['short_status_devices']
-        self.wema_types = config["wema_types"]
+        self.all_device_types = ptr_config["device_types"]  # May not be needed
+        self.device_types = ptr_config["device_types"]  # ptr_config['short_status_devices']
+        self.wema_types = ptr_config["wema_types"]
         self.enc_types = None  # config['enc_types']
         self.short_status_devices = (
-             config['short_status_devices']  # May not be needed for no wema obsy
+             ptr_config['short_status_devices']  # May not be needed for no wema obsy
         )
         self.observing_status_timer = datetime.datetime.now() - datetime.timedelta(
             days=1
@@ -245,7 +245,7 @@ class Observatory:
         self.astro_events.display_events()
 
         # Define a redis server if needed.
-        redis_ip = config["redis_ip"]
+        redis_ip = ptr_config["redis_ip"]
         if redis_ip is not None:
             self.redis_server = redis.StrictRedis(
                 host=redis_ip, port=6379, db=0, decode_responses=True
@@ -262,7 +262,7 @@ class Observatory:
         self.create_devices()
         self.loud_status = False
         g_dev["obs"] = self
-        site_str = config["site"]
+        site_str = ptr_config["site"]
         g_dev["site"]: site_str
         self.g_dev = g_dev
         # Clear out smartstacks directory
@@ -292,7 +292,7 @@ class Observatory:
             os.makedirs(g_dev["cam"].site_path + "smartstacks")
         if not os.path.exists(g_dev["cam"].site_path + "calibmasters"):  #retaining for backward compatibility
             os.makedirs(g_dev["cam"].site_path + "calibmasters")
-        camera_name = config['camera']['camera_1_1']['name']
+        camera_name = self.config['camera']['camera_1_1']['name']
         if not os.path.exists(g_dev["cam"].site_path + "archive/" + camera_name + "/calibmasters"):
             os.makedirs(g_dev["cam"].site_path + "archive/" + camera_name + "/calibmasters")
         self.last_solve_time = datetime.datetime.now() - datetime.timedelta(days=1)
@@ -3568,5 +3568,5 @@ def wait_for_slew():
 
 if __name__ == "__main__":
 
-    o = Observatory(config.site_name, config.site_config)
+    o = Observatory(ptr_config.site_name, ptr_config.site_config)
     o.run()   #This is meant to be a never ending loop.

@@ -23,7 +23,7 @@ from astropy.coordinates import SkyCoord, ICRS, EarthLocation
 from astroquery.simbad import Simbad
 import ephem
 #from ptr_events import compute_day_directory
-from config import site_config
+from ptr_config import site_config
 from global_yard import g_dev
 
 from datetime import datetime, timezone, timedelta

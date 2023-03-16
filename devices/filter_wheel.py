@@ -15,7 +15,7 @@ import requests
 import serial
 import win32com.client
 
-import config
+import ptr_config
 from global_yard import g_dev
 from ptr_utility import plog
 
