@@ -63,7 +63,8 @@ def platesolve(image_file, arcsec_per_pixel):
 
     process = Popen(
             args,
-            stdout=stdout_destination,
+            #stdout=stdout_destination,
+            stdout=None,
             stderr=PIPE
             )
 

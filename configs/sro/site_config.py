@@ -59,6 +59,11 @@ site_config = {
     'keep_reduced_on_disk' : True, # PTR uses the reduced file for some calculations (focus, SEP, etc.). To save space, this file can be removed after usage or not saved.
     'keep_focus_images_on_disk' : True, # To save space, the focus file can not be saved.
     
+    # Minimum realistic seeing at the site.
+    # This allows culling of unphysical results in photometry and other things
+    # Particularly useful for focus
+    'minimum_realistic_seeing' : 1.0,
+    
     'aux_archive_path':  None, # '//house-computer/saf_archive_2/archive/',  #  Path to auxillary backup disk.
     'wema_is_active':  False,    #True if split computers used at a site.
     'wema_hostname':  [],  #  Prefer the shorter version
@@ -493,6 +498,7 @@ site_config = {
                 'temp_setpoint': -25,   #Updated from -18 WER 20220914 Afternoon
                 'calib_setpoints': [-35,-30, -25, -20, -15, -10 ],  #  Should vary with season?
                 'day_warm': False,
+                'day_warm_degrees' : 8, # Number of degrees to warm during the daytime.
                 'cooler_on': True,
                 'x_start':  0,
                 'y_start':  0,

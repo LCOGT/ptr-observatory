@@ -60,6 +60,11 @@ site_config = {
     'keep_reduced_on_disk' : True, # PTR uses the reduced file for some calculations (focus, SEP, etc.). To save space, this file can be removed after usage or not saved.
     'keep_focus_images_on_disk' : True, # To save space, the focus file can not be saved.
     
+    # Minimum realistic seeing at the site.
+    # This allows culling of unphysical results in photometry and other things
+    # Particularly useful for focus
+    'minimum_realistic_seeing' : 1.0,
+    
     'aux_archive_path':  None,
     'wema_is_active':  True,     # True if an agent (ie a wema) is used at a site.   # Wemas are split sites -- at least two CPS's sharing the control.
     'wema_hostname':  'ARO-WEMA',
@@ -539,6 +544,7 @@ site_config = {
                 'temp_setpoint': -12.5,
                 'calib_setpoints': [-12.5, -10, -7.5, -5],  # Should vary with season? by day-of-year mod len(list)
                 'day_warm': False,
+                'day_warm_degrees' : 8, # Number of degrees to warm during the daytime.
                 'cooler_on': True,
                 'x_start':  0,
                 'y_start':  0,

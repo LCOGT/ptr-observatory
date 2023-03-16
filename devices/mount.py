@@ -945,9 +945,10 @@ class Mount:
         sun_dist = sun_coords.separation(temppointing)
         #plog ("sun distance: " + str(sun_dist.degree))
         if sun_dist.degree <  self.config['closest_distance_to_the_sun']:
-            g_dev['obs'].send_to_user("Refusing pointing request as it is too close to the sun: " + str(sun_dist.degree) + " degrees.")
-            plog("Refusing pointing request as it is too close to the sun: " + str(sun_dist.degree) + " degrees.")
-            return
+            if not (g_dev['events']['Civil Dusk'] < ephem.now() < g_dev['events']['Civil Dawn']):
+                g_dev['obs'].send_to_user("Refusing pointing request as it is too close to the sun: " + str(sun_dist.degree) + " degrees.")
+                plog("Refusing pointing request as it is too close to the sun: " + str(sun_dist.degree) + " degrees.")
+                return
         
         # Second thing, check that we aren't pointing at the moon
         # UNLESS we have actually chosen to look at the moon.
@@ -988,7 +989,13 @@ class Mount:
             plog("Refusing pointing request as the observatory is not enabled to observe.")
             return
 
-        
+        # Fifth thing, check that the sky flat latch isn't on
+        # (I moved the scope during flats once, it wasn't optimal)
+        if g_dev['seq'].morn_sky_flat_latch  or g_dev['seq'].eve_sky_flat_latch or g_dev['seq'].sky_flat_latch or g_dev['seq'].bias_dark_latch:
+            g_dev['obs'].send_to_user("Refusing pointing request as the observatory is currently undertaking flats or calibration frames.")
+            plog("Refusing pointing request as the observatory is currently taking flats or calibration frmaes.")
+            return
+            
         
         plog("mount cmd. slewing mount, req, opt:  ", req, opt)
 
@@ -1194,18 +1201,18 @@ class Mount:
         g_dev['obs'].images_since_last_solve = 10000
         g_dev['obs'].send_to_user("Slew Complete.")
 
-    def re_seek(self, dither):
+    # def re_seek(self, dither):
         
-        #breakpoint()
+    #     #breakpoint()
         
-        try:
-            if dither == 0:
-                self.go_coord(self.last_ra, self.last_dec, self.last_tracking_rate_ra, self.last_tracking_rate_dec)
+    #     try:
+    #         if dither == 0:
+    #             self.go_coord(self.last_ra, self.last_dec, self.last_tracking_rate_ra, self.last_tracking_rate_dec)
                 
-        except Exception as e:
-            plog ("Could not re_seek: ",e)
+    #     except Exception as e:
+    #         plog ("Could not re_seek: ",e)
             
-        wait_for_slew()   
+    #     wait_for_slew()   
 
     def go_coord(self, ra, dec, tracking_rate_ra=0, tracking_rate_dec=0, reset_solve=True):  #Note these rates need a system specification
         '''
@@ -1364,7 +1371,7 @@ class Mount:
                 else:
                     plog ("problem with setting tracking: ", e)
         
-        g_dev['obs'].time_since_last_slew_or_exposure = time.time()
+        g_dev['obs'].time_since_last_slew = time.time()
         g_dev['obs'].last_solve_time = datetime.datetime.now() - datetime.timedelta(days=1)
         g_dev['obs'].images_since_last_solve = 10000
         wait_for_slew()    
@@ -1735,7 +1742,7 @@ class Mount:
         if self.config['mount']['mount1']['has_ascom_altaz'] == True:
             wait_for_slew() 
             self.mount.SlewToAltAzAsync(az, alt)
-            g_dev['obs'].time_since_last_slew_or_exposure = time.time()
+            g_dev['obs'].time_since_last_slew = time.time()
             g_dev['obs'].last_solve_time = datetime.datetime.now() - datetime.timedelta(days=1)
             g_dev['obs'].images_since_last_solve = 10000
             wait_for_slew()
@@ -1758,7 +1765,7 @@ class Mount:
                     self.home_command()
                     self.mount.SlewToCoordinatesAsync(tempRA, tempDEC)
             
-            g_dev['obs'].time_since_last_slew_or_exposure = time.time()
+            g_dev['obs'].time_since_last_slew = time.time()
             g_dev['obs'].last_solve_time = datetime.datetime.now() - datetime.timedelta(days=1)
             g_dev['obs'].images_since_last_solve = 10000
             wait_for_slew()

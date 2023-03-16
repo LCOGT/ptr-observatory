@@ -51,6 +51,12 @@ site_config = {
     'keep_reduced_on_disk' : False, # PTR uses the reduced file for some calculations (focus, SEP, etc.). To save space, this file can be removed after usage or not saved.
     'keep_focus_images_on_disk' : False, # To save space, the focus file can not be saved.
     
+    
+    # Minimum realistic seeing at the site.
+    # This allows culling of unphysical results in photometry and other things
+    # Particularly useful for focus
+    'minimum_realistic_seeing' : 1.0,
+    
     'aux_archive_path':  None, # '//house-computer/saf_archive_2/archive/',  #  Path to auxillary backup disk.
     'wema_is_active':  False,    #True if split computers used at a site.
     'wema_hostname':  [],  #  Prefer the shorter version
@@ -118,7 +124,7 @@ site_config = {
     'focus_trigger' : 5.0, # What FWHM increase is needed to trigger an autofocus
     'solve_nth_image' : 10, # Only solve every nth image
     'solve_timer' : 5, # Only solve every X minutes
-    'threshold_mount_update' : 10, # only update mount when X arcseconds away
+    'threshold_mount_update' : 30, # only update mount when X arcseconds away
 
     'defaults': {
         'observing_conditions': 'observing_conditions1',  #  These are used as keys, may go away.
@@ -540,7 +546,8 @@ site_config = {
                 'crop_preview_xright': 1,
                 'temp_setpoint': -20,   
                 #'calib_setpoints': [-35,-30, -25, -20, -15, -10 ],  #  Should vary with season?
-                'day_warm': False,
+                'day_warm': True,
+                'day_warm_degrees' : 8, # Number of degrees to warm during the daytime.
                 'cooler_on': True,
                 
                 "cam_needs_NumXY_init": False,

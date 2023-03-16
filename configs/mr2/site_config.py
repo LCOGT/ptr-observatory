@@ -86,6 +86,11 @@ site_config = {
     'keep_reduced_on_disk' : True, # PTR uses the reduced file for some calculations (focus, SEP, etc.). To save space, this file can be removed after usage or not saved.
     'keep_focus_images_on_disk' : True, # To save space, the focus file can not be saved.
     
+    # Minimum realistic seeing at the site.
+    # This allows culling of unphysical results in photometry and other things
+    # Particularly useful for focus
+    'minimum_realistic_seeing' : 1.0,
+    
     'aux_archive_path':  None,
     'wema_is_active':  True,          # True if the split computers used at a site.
     'wema_hostname': 'MRC-WMS-ENC',   # Prefer the shorter version
@@ -637,6 +642,7 @@ site_config = {
                 'has_chiller':  True,
                 'chiller_ref_temp':  16,
                 'day_warm': False,
+                'day_warm_degrees' : 8, # Number of degrees to warm during the daytime.
                 'cooler_on': True,
                 "cam_needs_NumXY_init": True,
                 'x_start':  24,

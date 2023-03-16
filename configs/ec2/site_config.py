@@ -54,6 +54,10 @@ site_config = {
     'keep_focus_images_on_disk' : False, # To save space, the focus file can not be saved.
     'keep_reduced_on_disk' : False, # PTR uses the reduced file for some calculations (focus, SEP, etc.). To save space, this file can be removed after usage or not saved.
     
+    # Minimum realistic seeing at the site.
+    # This allows culling of unphysical results in photometry and other things
+    # Particularly useful for focus
+    'minimum_realistic_seeing' : 1.2,
     
     'aux_archive_path':  None, # '//house-computer/saf_archive_2/archive/',  #  Path to auxillary backup disk.
     'wema_is_active':  False,    #True if split computers used at a site.
@@ -127,7 +131,7 @@ site_config = {
     'focus_trigger' : 5.0, # What FWHM increase is needed to trigger an autofocus
     'solve_nth_image' : 10, # Only solve every nth image
     'solve_timer' : 5, # Only solve every X minutes
-    'threshold_mount_update' : 10, # only update mount when X arcseconds away
+    'threshold_mount_update' : 50, # only update mount when X arcseconds away
 
     'defaults': {
         'observing_conditions': 'observing_conditions1',  #  These are used as keys, may go away.
@@ -372,10 +376,10 @@ site_config = {
             #F4.9 setup
             'start_at_config_reference': True,
             'use_focuser_temperature': False,
-            'reference':13212,    #  20210313  Nominal at 10C Primary temperature
+            'reference':11250,    #  20210313  Nominal at 10C Primary temperature
             'ref_temp':  6265.0,    #  Update when pinning reference
             'coef_c': 0,   #  Negative means focus moves out as Primary gets colder
-            'coef_0': 13212,  #  Nominal intercept when Primary is at 0.0 C.
+            'coef_0': 11250,  #  Nominal intercept when Primary is at 0.0 C.
             'coef_date':  '20220914',    #This appears to be sensible result 44 points -13 to 3C'reference':  6431,    #  Nominal at 10C Primary temperature
             # #F9 setup
             # 'reference': 4375,    #   Guess 20210904  Nominal at 10C Primary temperature
@@ -387,7 +391,7 @@ site_config = {
             'maximum': 18000,   #12672 actually
             'step_size': 1,
             'backlash': 0,
-            'throw' : 750,
+            'throw' : 700,
             'unit': 'micron',
             #'unit_conversion': 9.09090909091,
             'unit_conversion': 1.0,
@@ -659,12 +663,52 @@ site_config = {
             'parent': 'telescope1',
             'name': 'ec002cs',      #Important because this points to a server file structure by that name.
             'desc':  'QHY 600C Pro',
-            'driver':  "ASCOM.QHYCCD_CAM2.Camera", # NB Be careful this is not QHY Camera2 or Guider  "Maxim.CCDCamera",   #'ASCOM.FLI.Kepler.Camera', "ASCOM.QHYCCD.Camera",   #
+            #'driver':  "ASCOM.QHYCCD_CAM2.Camera", # NB Be careful this is not QHY Camera2 or Guider  "Maxim.CCDCamera",   #'ASCOM.FLI.Kepler.Camera', "ASCOM.QHYCCD.Camera",   #
+            'driver':  "QHYCCD_Direct_Control", # NB Be careful this is not QHY Camera2 or Guider  "Maxim.CCDCamera",   #'ASCOM.FLI.Kepler.Camera', "ASCOM.QHYCCD.Camera",   #
+            
+            
+            
+                
+            
+            
             'detector':  'Sony IMX455 Color',  #  It would be good to build out a table of chip characteristics
             'use_file_mode':  False,   # NB we should clean out all file mode stuff.
             'file_mode_path':  'Q:/archive/sq01/maxim/',   #NB NB all file_mode Maxim stuff should go!
             'manufacturer':  "QHY",
             'settings': {
+                
+                # For direct QHY usage we need to set the appropriate gain.
+                # This changes from site to site. "Fast" scopes like the RASA need lower gain then "slow".
+                # Sky quality is also important, the worse the sky quality, the higher tha gain needs to be
+                # Default for QHY600 is GAIN: 26, OFFSET: 60, readout mode 3. 
+                # Random tips from the internet:
+                # After the exposure, the background in the image should not be above 10% saturation of 16Bit while the brightest bits of the image should not be overexposed
+                # The offset should be set so that there is at least 300ADU for the background
+                # I guess try this out on the standard smartstack exposure time.        
+                # https://www.baader-planetarium.com/en/blog/gain-and-offset-darks-flats-and-bias-at-cooled-cmos-cameras/
+                #
+                # Also the "Readout Mode" is really important also
+                # Readout Mode #0 (Photographic DSO Mode)
+                # Readout Mode #1 (High Gain Mode)
+                # Readout Mode #2 (Extended Fullwell Mode)
+                # Readout Mode #3 (Extended Fullwell Mode-2CMS)
+                #
+                # With the powers invested in me, I have decided that readout mode 3 is the best. We can only pick one standard one
+                # and 0 is also debatably better for colour images, but 3 is way better for dynamic range....
+                # We can't swip and swap because the biases and darks and flats will change, so we are sticking with 3 until
+                # something bad happens with 3 for some reason
+                #
+                # In that sense, QHY600 NEEDS to be set at GAIN 26 and the only thing to adjust is the offset.....
+                # USB Speed is a tradeoff between speed and banding, min 0, max 60. 60 is least banding. Most of the 
+                # readout seems to be dominated by the slow driver (difference is a small fraction of a second), so I've left it at 60 - least banding.
+                'direct_qhy_readout_mode' : 3,        
+                'direct_qhy_gain' : 26,
+                'direct_qhy_offset' : 60,  
+                'direct_qhy_usb_speed' : 60,
+                
+                
+                
+                
                 
                 'is_osc' : True,
                 
@@ -680,7 +724,7 @@ site_config = {
                 'osc_colour_enhance' : 1.7,
                 'osc_sharpness_enhance' : 1.5,                
                 'osc_background_cut' : 25.0,
-                'bin_for_focus' : True, # This setting will bin the image for focussing rather than interpolating. Good for 1x1 pixel sizes < 0.6.
+                'bin_for_focus' : False, # This setting will bin the image for focussing rather than interpolating. Good for 1x1 pixel sizes < 0.6.
                 
                 # ONLY TRANSFORM THE FITS IF YOU HAVE
                 # A DATA-BASED REASON TO DO SO.....
@@ -696,7 +740,7 @@ site_config = {
                 # HERE YOU CAN FLIP THE IMAGE TO YOUR HEARTS DESIRE
                 # HOPEFULLY YOUR HEARTS DESIRE IS SIMILAR TO THE
                 # RECOMMENDED DEFAULT DESIRE OF PTR
-                'transpose_jpeg' : True,
+                'transpose_jpeg' : False,
                 'flipx_jpeg' : False,
                 'flipy_jpeg' : False,
                 'rotate180_jpeg' : False,
@@ -713,28 +757,29 @@ site_config = {
                 'has_chiller': True,
                 'calib_setpoints': [-20, -20, -20, -20, -20, -20, \
                                     -20, -20, -20, -20, -20, -20],  #  Picked by month-of-year 
-                'day_warm': False,
+                'day_warm': True,
+                'day_warm_degrees' : 6, # Number of degrees to warm during the daytime.
                 'cooler_on': True,
                 "cam_needs_NumXY_init": True,
                 'x_start':  24,
                 'y_start':  0,
-                'x_width':  9576,   #NB Should be set up with overscan, which this camera is!  20200315 WER
-                'y_width':  6388,
-                'x_chip':  9576,   #NB Should specify the active pixel area.   20200315 WER
-                'y_chip':  6388,
+                'x_width':  9600,   #NB Should be set up with overscan, which this camera is!  20200315 WER
+                'y_width':  6422,
+                'x_chip':  9600,   #NB Should specify the active pixel area.   20200315 WER
+                'y_chip':  6422,
                 'x_trim_offset':  8,   #  NB these four entries are guesses.
                 'y_trim_offset':  8,
                 'pre_bias_available': False,  #if so need to specify as below for post_bias.
                 'post_bias_available': True,  #if so need to specify as below for post_bias.
-                'x_bias_start':  9577,
-                'y_bias_start' : 6389,
+                'x_bias_start':  9600,
+                'y_bias_start' : 6422,
                 'x_bias_end':  None,       # Vert band self.img[-38:-18, 0]
                 'y_bias_send': None,
                 'corner_everlap': None,
                 'x_bias_line': True,
                 'y_bias_line': True,
-                'x_active': 9576,
-                'y_active': 6388,
+                'x_active': 9600,
+                'y_active': 6422,
                 'det_size': '[1:9600, 1:6422]',  # Physical chip data size as returned from driver
                 'ccd_sec': '[1:9600, 1:6422]',
                 'bias_sec': ['[1:22, 1:6388]', '[1:11, 1:3194]', '[1:7, 1:2129]', '[1:5, 1:1597]'],
@@ -743,7 +788,7 @@ site_config = {
                 'trim_sec': ['[1:9576, 1:6388]', '[1:4788, 1:3194]', '[1:3192, 1:2129]', '[1:2394, 1:1597]'],
                 'x_pixel':  3.76,
                 'y_pixel':  3.76,
-                'pix_scale': 0.302597,    #   bin-2  2* math.degrees(math.atan(3.76/2563000))*3600
+                'pix_scale': 1.25,    #   bin-2  2* math.degrees(math.atan(3.76/2563000))*3600
 
                 'CameraXSize' : 9600,
                 'CameraYSize' : 6422,
@@ -805,8 +850,8 @@ site_config = {
 
                 'read_mode':  'Normal',
                 'readout_mode': 'Normal',
-                'readout_speed':  50,
-                'readout_seconds': 6,
+                'readout_speed':  0.4,
+                'readout_seconds': 2.4,
                 'smart_stack_exposure_time': 30,
                 'square_detector': False,
                 'square_pixels': True,
