@@ -544,6 +544,7 @@ site_config = {
                 'temp_setpoint': -12.5,
                 'calib_setpoints': [-12.5, -10, -7.5, -5],  # Should vary with season? by day-of-year mod len(list)
                 'day_warm': False,
+                'day_warm_degrees' : 8, # Number of degrees to warm during the daytime.
                 'cooler_on': True,
                 'x_start':  0,
                 'y_start':  0,

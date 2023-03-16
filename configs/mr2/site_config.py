@@ -642,6 +642,7 @@ site_config = {
                 'has_chiller':  True,
                 'chiller_ref_temp':  16,
                 'day_warm': False,
+                'day_warm_degrees' : 8, # Number of degrees to warm during the daytime.
                 'cooler_on': True,
                 "cam_needs_NumXY_init": True,
                 'x_start':  24,
