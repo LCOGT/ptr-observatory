@@ -3024,10 +3024,15 @@ class Camera:
                         "[dms] Catalog Dec of object",
                     )
      
+                    hdu.header["CTYPE1"] = 'RA---TAN'
+                    hdu.header["CTYPE2"] = 'DEC--TAN'
+                    hdu.header["CDELT1"] = pixscale / 3600
+                    hdu.header["CDELT2"] = pixscale / 3600
                     hdu.header["CRVAL1"] = tempRAdeg
                     hdu.header["CRVAL2"] = tempDECdeg
                     hdu.header["CRPIX1"] = float(hdu.header["NAXIS1"])/2
                     hdu.header["CRPIX2"] = float(hdu.header["NAXIS2"])/2
+                    
 
 
 

@@ -773,7 +773,14 @@ class Sequencer:
                self.config['auto_morn_sky_flat']) and not self.morn_flats_done and g_dev['obs'].camera_temperature_in_range_for_calibrations and g_dev['obs'].open_and_enabled_to_observe and self.weather_report_is_acceptable_to_observe==True:
             #self.time_of_next_slew = time.time() -1
             self.morn_sky_flat_latch = True
-            self.open_observatory(enc_status, ocn_status)   #Just in case a Wx hold stopped opening
+            
+            # MTF - NO! Don't open the observatory!
+            # The observatory should still be open in the morning after a night of observing
+            # If it isn't then the night must have been patchy and the roof shut
+            # We don't need to reopen on a patchy night just to get flats. 
+            #self.open_observatory(enc_status, ocn_status)   #Just in case a Wx hold stopped opening
+            
+            
             self.current_script = "Morn Sky Flat script starting"
             
             self.sky_flat_script({}, {}, morn=True)   #Null command dictionaries
