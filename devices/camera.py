@@ -2270,26 +2270,36 @@ class Camera:
                         self.config["camera"][self.name]["settings"]["readout_speed"],
                         "[FPS] Readout speed",
                     )
-                    if self.maxim:
+                    # if self.maxim:
 
-                        hdu.header["CCDSTEMP"] = (
-                            round(self.camera.TemperatureSetpoint, 3),
-                            "[C] CCD set temperature",
-                        )
-                        hdu.header["CCDATEMP"] = (
-                            round(self.camera.Temperature, 3),
-                            "[C] CCD actual temperature",
-                        )
+                    #     hdu.header["CCDSTEMP"] = (
+                    #         round(self.camera.TemperatureSetpoint, 3),
+                    #         "[C] CCD set temperature",
+                    #     )
+                    #     hdu.header["CCDATEMP"] = (
+                    #         round(self.camera.Temperature, 3),
+                    #         "[C] CCD actual temperature",
+                    #     )
 
-                    if self.ascom:
-                        hdu.header["CCDSTEMP"] = (
-                            round(self.camera.SetCCDTemperature, 3),
-                            "[C] CCD set temperature",
-                        )
-                        hdu.header["CCDATEMP"] = (
-                            round(self.camera.CCDTemperature, 3),
-                            "[C] CCD actual temperature",
-                        )
+                    # elif self.ascom:
+                    #     hdu.header["CCDSTEMP"] = (
+                    #         round(self.camera.SetCCDTemperature, 3),
+                    #         "[C] CCD set temperature",
+                    #     )
+                    #     hdu.header["CCDATEMP"] = (
+                    #         round(self.camera.CCDTemperature, 3),
+                    #         "[C] CCD actual temperature",
+                    #     )
+                    # else:
+                    tempccdtemp=float(g_dev['cam']._temperature())
+                    hdu.header["CCDSTEMP"] = (
+                        round(tempccdtemp, 3),
+                        "[C] CCD set temperature",
+                    )
+                    hdu.header["CCDATEMP"] = (
+                        round(tempccdtemp, 3),
+                        "[C] CCD actual temperature",
+                    )
                     hdu.header["COOLERON"] = self._cooler_on()
                     hdu.header["SITEID"] = (
                         self.config["site_id"].replace("-", "").replace("_", "")
