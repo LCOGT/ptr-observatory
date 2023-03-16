@@ -1710,7 +1710,7 @@ class Mount:
 
     def get_mount_reference(self):
 
-
+        #breakpoint()
         mnt_shelf = shelve.open(self.site_path + 'ptr_night_shelf/' + 'mount1'+ str(g_dev['obs'].name))
         delta_ra = mnt_shelf['ra_cal_offset'] + self.west_clutch_ra_correction   #Note set up at initialize time.
         delta_dec = mnt_shelf['dec_cal_offset'] +  self.west_clutch_dec_correction
