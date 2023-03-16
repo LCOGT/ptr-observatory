@@ -990,8 +990,11 @@ sel
             
             
             # Report on weather report status:
-            plog ("Weather Report Acceptable to Open: " +  str(g_dev['seq'].weather_report_is_acceptable_to_observe))
-            
+            try:
+                plog ("Weather Report Acceptable to Open: " +  str(g_dev['seq'].weather_report_is_acceptable_to_observe))
+            except:
+                plog ("Enc status not reporting, Wema may be OTL.")
+                
             # Roof Checks only if not in Manual mode and not debug mode
             if g_dev['enc'].mode != 'Manual' or not self.debug_flag:
             
