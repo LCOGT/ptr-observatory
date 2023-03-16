@@ -16,6 +16,7 @@ import numpy as np
 import os
 from pyowm import OWM
 from pyowm.utils import config
+#breakpoint()
 from pyowm.utils import timestamps
 from glob import glob
 import traceback
@@ -440,6 +441,7 @@ class Sequencer:
 
         Scripts must not block too long or they must provide for periodic calls to check status.
         '''
+        #self.global_wx()
 
         # NB Need a better way to get all the events.
         if g_dev['obs'].status_count < 3:
@@ -3318,7 +3320,7 @@ class Sequencer:
         # ocn_status = g_dev['ocn'].status
         # enc_status = g_dev['enc'].status
         # events = g_dev['events']
-        
+        #breakpoint()
         obs_win_begin, sunset, sunrise, ephem_now = self.astro_events.getSunEvents()
         if self.nightly_weather_report_complete==False:
             self.nightly_weather_report_complete=True
