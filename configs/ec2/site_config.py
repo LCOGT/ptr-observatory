@@ -835,18 +835,18 @@ site_config = {
                 'eng_bin':     [4, 4],   #  This is the eng-only bin for MRC, not useful for users?
                 'bin_enable':  ['1 1'],  #  Always square and matched to seeing situation by owner  NB Obsolete? NO MF uses to load bias calib
                                          #  NB NB inconsistent use of bin string   '1 1', '1x1' , etc.
-                'do_cosmics' : 'yes',
+                'do_cosmics' : 'no',
                 
                 'rbi_delay':  0,      #  This being zero says RBI is not available, eg. for SBIG.
                 'is_cmos':  True,
                 'is_color': True,   #NB we also have a is_osc key.
                 'can_set_gain':  True,
-                'max_linearity':  60000,   # Guess
+                'max_linearity':  80000,   # Guess
 
                 'flat_count': 5,
 
-                'saturate':   65000 ,    #[[1, 65000], [2,262000], [3,589815], [4, 1048560]] ,   # e-.  This is a close guess, not measured, but taken from data sheet.
-                'fullwell_capacity':  80000,
+                'saturate':   60000 ,    #[[1, 65000], [2,262000], [3,589815], [4, 1048560]] ,   # e-.  This is a close guess, not measured, but taken from data sheet.
+                'fullwell_capacity':  60000,
 
                 'read_mode':  'Normal',
                 'readout_mode': 'Normal',
