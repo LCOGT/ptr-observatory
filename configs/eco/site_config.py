@@ -638,7 +638,7 @@ site_config = {
                 #'max_res_bin':  [1, 1, 0.269],    #  Matched to seeing situation by owner
                 #'bin_modes':  [[1, 1, 0.269],[2, 2, 0.538],[3, 3, 0.807],[4, 4, 1.076]], #  , [2, 2, 2.13], [3, 3, 3.21], [4, 4, 4.27]],   #Meaning no binning choice if list has only one entry, default should be first.
                 'pix_scale': 0.637,
-                'do_cosmics' : 'yes',
+                'do_cosmics' : 'no',
                 #'dark_length' : 1,
                 'bias_count' : 64,
                 'dark_count' : 64,

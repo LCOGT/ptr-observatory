@@ -2016,12 +2016,15 @@ class Sequencer:
                                 fred = g_dev['cam'].expose_command(req, opt, no_AWS=True, do_sep = False,skip_daytime_check=True)
             
                                 bright = fred['patch']    #  Patch should be circular and 20% of Chip area. ToDo project
+                                #breakpoint()
                                 plog('Returned:  ', bright)
                                                                 
                             except Exception as e:
                                 plog('Failed to get a flat image: ', e)
                                 plog(traceback.format_exc())
                                 plog("*****NO result returned*****  Will need to restart Camera")  #NB NB  NB this is drastic action needed.
+                                
+                                #breakpoint()
                                 g_dev['obs'].update()
                                 continue
                             
@@ -2754,6 +2757,15 @@ class Sequencer:
         and runs a normal focus
         
         '''
+        
+        
+        
+        if g_dev['cam'].day_warm and (ephem.now() < g_dev['events']['End Eve Bias Dark'] - ephem.hour) or \
+            (g_dev['events']['End Morn Bias Dark'] + ephem.hour < ephem.now() < g_dev['events']['Nightly Reset']):
+            plog ("NOT DOING EXTENSIVE FOCUS -- IT IS THE DAYTIME!!")
+            return
+        
+        
         plog('AF entered with:  ', req, opt)
         self.sequencer_hold = False
         self.guard = False
@@ -2895,11 +2907,15 @@ class Sequencer:
                 if focentry[1] < minimumFWHM:
                     solved_pos = focentry[0]
                     minimumFWHM = focentry[1]
-        
-        plog (extensive_focus)
-        plog (solved_pos)
-        plog (minimumFWHM)
-        g_dev['foc'].guarded_move((solved_pos)*g_dev['foc'].micron_to_steps)
+        try:
+            plog (extensive_focus)
+            plog (solved_pos)
+            plog (minimumFWHM)
+            g_dev['foc'].guarded_move((solved_pos)*g_dev['foc'].micron_to_steps)
+            self.auto_focus_script(None,None, skip_timer_check=True)
+        except:
+            plog ("Something went wrong in the extensive focus routine")
+            plog(traceback.format_exc())
         
         try:
             #Check here for filter, guider, still moving  THIS IS A CLASSIC
@@ -2938,7 +2954,7 @@ class Sequencer:
             plog(traceback.format_exc())
             breakpoint()
             
-        self.auto_focus_script(None,None, skip_timer_check=True)
+        
         
         plog("Returning to:  ", start_ra, start_dec)
         g_dev["mnt"].last_ra = start_ra
