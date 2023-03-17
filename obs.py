@@ -1036,7 +1036,10 @@ sel
             # Opening and Shutting should be done more glamorously through the
             # sequencer, but if all else fails, this routine should save
             # the observatory from rain, wasps and acts of god.
-            plog ("Roof Status: " + str(g_dev['enc'].status['shutter_status']))
+            try:
+                plog ("Roof Status: " + str(g_dev['enc'].status['shutter_status']))
+            except:
+                plog ("Wema is probably not working.")
             
             
             # Report on weather report status:
@@ -1119,7 +1122,6 @@ sel
                         else:
                             plog ("This scope does not have control of the roof though.")
                     
-    
                 if roof_should_be_shut==True and g_dev['enc'].mode == 'Automatic' : # If the roof should be shut, then the telescope should be parked. 
                     if not g_dev['mnt'].mount.AtPark:
                         plog ("Telescope found not parked when the observatory is meant to be closed. Parking scope.")   
@@ -1366,7 +1368,7 @@ sel
                         self.time_since_last_slew = time.time()
                         
                     g_dev['enc'].enclosure.CloseShutter()
-            plog ("temporary reporting: MTF")
+            #plog ("temporary reporting: MTF")
             plog ("opens this eve: " + str(g_dev['seq'].opens_this_evening))
             plog ("minutes until next open attempt ALLOWED: " + str( (g_dev['seq'].enclosure_next_open_time - time.time()) /60))
         #END of safety checks.

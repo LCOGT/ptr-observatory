@@ -16,7 +16,7 @@ import numpy as np
 import os
 from pyowm import OWM
 from pyowm.utils import config
-#breakpoint()
+
 from pyowm.utils import timestamps
 from glob import glob
 import traceback
@@ -3291,7 +3291,7 @@ class Sequencer:
             if hourcounter > hours_until_end_of_observing:
                 pass
             else:
-                fitzgerald_weather_number_grid.append([hourly_report.humidity,hourly_report.clouds,hourly_report.wind()['speed'],hourly_report.status, hourly_report.detailed_status])
+                fitzgerald_weather_number_grid.append([hourly_report.humidity,hourly_report.clouds,hourly_report.wind()['speed'], hourly_report.status, hourly_report.detailed_status])
                 hourcounter=hourcounter + 1
         plog (fitzgerald_weather_number_grid)    
         
@@ -3325,7 +3325,7 @@ class Sequencer:
                 tempFn=tempFn+4
             elif 15 < entry[2] <= 20:
                 tempFn=tempFn+40
-            elif 15 < entry[2] :
+            elif 20 < entry[2] :
                 tempFn=tempFn+100
             hourly_fitzgerald_number.append(tempFn)
             
