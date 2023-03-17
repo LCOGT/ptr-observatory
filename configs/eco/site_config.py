@@ -96,6 +96,7 @@ site_config = {
     'site_roof_control': True, #MTF entered this in to remove sro specific code.... Basically do we have control of the roof or not see line 338 sequencer.py
     'site_allowed_to_open_roof': True,
     'period_of_time_to_wait_for_roof_to_open' : 100, # seconds - needed to check if the roof ACTUALLY opens. 
+    'only_scope_that_controls_the_roof': False, # If multiple scopes control the roof, set this to False
     
     'check_time': 300,   #MF's original setting.
     'maximum_roof_opens_per_evening' : 4,
@@ -638,7 +639,7 @@ site_config = {
                 #'max_res_bin':  [1, 1, 0.269],    #  Matched to seeing situation by owner
                 #'bin_modes':  [[1, 1, 0.269],[2, 2, 0.538],[3, 3, 0.807],[4, 4, 1.076]], #  , [2, 2, 2.13], [3, 3, 3.21], [4, 4, 4.27]],   #Meaning no binning choice if list has only one entry, default should be first.
                 'pix_scale': 0.637,
-                'do_cosmics' : 'yes',
+                'do_cosmics' : 'no',
                 #'dark_length' : 1,
                 'bias_count' : 64,
                 'dark_count' : 64,

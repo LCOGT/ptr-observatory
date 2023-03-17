@@ -1463,10 +1463,11 @@ class Camera:
         
         # Fifth thing, check that the sky flat latch isn't on
         # (I moved the scope during flats once, it wasn't optimal)
-        if g_dev['seq'].morn_sky_flat_latch  or g_dev['seq'].eve_sky_flat_latch or g_dev['seq'].sky_flat_latch:
-            g_dev['obs'].send_to_user("Refusing exposure request as the observatory is currently undertaking flats.")
-            plog("Refusing exposure request as the observatory is currently taking flats.")
-            return
+        if not skip_calibration_check:
+            if g_dev['seq'].morn_sky_flat_latch  or g_dev['seq'].eve_sky_flat_latch or g_dev['seq'].sky_flat_latch:
+                g_dev['obs'].send_to_user("Refusing exposure request as the observatory is currently undertaking flats.")
+                plog("Refusing exposure request as the observatory is currently taking flats.")
+                return
         
         self.exposure_busy = True # This really needs to be here from the start
         # We've had multiple cases of multiple camera exposures trying to go at once
@@ -2270,26 +2271,36 @@ class Camera:
                         self.config["camera"][self.name]["settings"]["readout_speed"],
                         "[FPS] Readout speed",
                     )
-                    if self.maxim:
+                    # if self.maxim:
 
-                        hdu.header["CCDSTEMP"] = (
-                            round(self.camera.TemperatureSetpoint, 3),
-                            "[C] CCD set temperature",
-                        )
-                        hdu.header["CCDATEMP"] = (
-                            round(self.camera.Temperature, 3),
-                            "[C] CCD actual temperature",
-                        )
+                    #     hdu.header["CCDSTEMP"] = (
+                    #         round(self.camera.TemperatureSetpoint, 3),
+                    #         "[C] CCD set temperature",
+                    #     )
+                    #     hdu.header["CCDATEMP"] = (
+                    #         round(self.camera.Temperature, 3),
+                    #         "[C] CCD actual temperature",
+                    #     )
 
-                    if self.ascom:
-                        hdu.header["CCDSTEMP"] = (
-                            round(self.camera.SetCCDTemperature, 3),
-                            "[C] CCD set temperature",
-                        )
-                        hdu.header["CCDATEMP"] = (
-                            round(self.camera.CCDTemperature, 3),
-                            "[C] CCD actual temperature",
-                        )
+                    # elif self.ascom:
+                    #     hdu.header["CCDSTEMP"] = (
+                    #         round(self.camera.SetCCDTemperature, 3),
+                    #         "[C] CCD set temperature",
+                    #     )
+                    #     hdu.header["CCDATEMP"] = (
+                    #         round(self.camera.CCDTemperature, 3),
+                    #         "[C] CCD actual temperature",
+                    #     )
+                    # else:
+                    tempccdtemp=float(g_dev['cam']._temperature())
+                    hdu.header["CCDSTEMP"] = (
+                        round(tempccdtemp, 3),
+                        "[C] CCD set temperature",
+                    )
+                    hdu.header["CCDATEMP"] = (
+                        round(tempccdtemp, 3),
+                        "[C] CCD actual temperature",
+                    )
                     hdu.header["COOLERON"] = self._cooler_on()
                     hdu.header["SITEID"] = (
                         self.config["site_id"].replace("-", "").replace("_", "")
@@ -3014,10 +3025,15 @@ class Camera:
                         "[dms] Catalog Dec of object",
                     )
      
+                    hdu.header["CTYPE1"] = 'RA---TAN'
+                    hdu.header["CTYPE2"] = 'DEC--TAN'
+                    hdu.header["CDELT1"] = pixscale / 3600
+                    hdu.header["CDELT2"] = pixscale / 3600
                     hdu.header["CRVAL1"] = tempRAdeg
                     hdu.header["CRVAL2"] = tempDECdeg
                     hdu.header["CRPIX1"] = float(hdu.header["NAXIS1"])/2
                     hdu.header["CRPIX2"] = float(hdu.header["NAXIS2"])/2
+                    
 
 
 

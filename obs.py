@@ -1093,7 +1093,7 @@ sel
                 if (g_dev['events']['End Morn Sky Flats'] < ephem.now() < g_dev['events']['End Morn Bias Dark']):
                     roof_should_be_shut=True
                     self.open_and_enabled_to_observe=False
-                if not self.config['auto_morn_sky_flat']:
+                if not self.config['auto_morn_sky_flat'] and self.config['only_scope_that_controls_the_roof']:
                     if (g_dev['events']['Observing Ends'] < ephem.now() < g_dev['events']['End Morn Bias Dark']):
                         roof_should_be_shut=True
                         self.open_and_enabled_to_observe=False

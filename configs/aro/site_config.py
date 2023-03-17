@@ -106,6 +106,7 @@ site_config = {
     'site_roof_control': True, #MTF entered this in to remove sro specific code.... Basically do we have control of the roof or not see line 338 sequencer.py
     'site_allowed_to_open_roof': True,
     'period_of_time_to_wait_for_roof_to_open' : 50, # seconds - needed to check if the roof ACTUALLY opens. 
+    'only_scope_that_controls_the_roof': False, # If multiple scopes control the roof, set this to False
     
     'maximum_roof_opens_per_evening' : 4,
     'site_in_automatic_default': "Manual",   # ["Manual", "Shutdown", "Automatic"]

@@ -154,7 +154,26 @@ def wait_for_slew():
             g_dev['mnt'].mount.Connected = True
             #g_dev['mnt'].home_command()
         else:
-            breakpoint()
+            print ("trying recovery routine")
+            q=0
+            while True:
+                time.sleep(10)
+                plog ("recovery attempt " + str(q+1))
+                q=q+1
+                g_dev['obs'].update_status() 
+                try:                
+                    g_dev['mnt'].mount.Connected = True
+                    
+                    break
+                except:
+                    plog("recovery didn't work")
+                    plog(traceback.format_exc())
+                    if q > 15:
+                        breakpoint()
+                        
+                    
+                
+            
     return 
 
 class Mount:
