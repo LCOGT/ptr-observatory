@@ -135,6 +135,7 @@ site_config = {
     'site_roof_control': False, #MTF entered this in to remove sro specific code  NB 'site_is_specifc' also deals with this
     'site_allowed_to_open_roof': False,
     'period_of_time_to_wait_for_roof_to_open' : 50, # seconds - needed to check if the roof ACTUALLY opens. 
+    'only_scope_that_controls_the_roof': False, # If multiple scopes control the roof, set this to False
     'check_time': 300,   #MF's original setting.
     'maximum_roof_opens_per_evening' : 4,
 
