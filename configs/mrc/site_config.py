@@ -138,7 +138,7 @@ site_config = {
     'check_time': 300,   #MF's original setting.
     'maximum_roof_opens_per_evening' : 4,
 
-    'site_in_automatic_default': "Automatic",   #"Manual", "Shutdown"
+    'site_in_automatic_default': "Shutdown",   #"Manual", "Shutdown"
     'automatic_detail_default': "Enclosure is set to Automatic mode.",
 
     
@@ -666,7 +666,7 @@ site_config = {
                 # A DATA-BASED REASON TO DO SO.....
                 # USUALLY TO GET A BAYER GRID ORIENTATED CORRECTLY
                 # ***** ONLY ONE OF THESE SHOULD BE ON! *********
-                'transpose_fits' : True,
+                'transpose_fits' : False,
                 'flipx_fits' : False,
                 'flipy_fits' : False,
                 'rotate180_fits' : False, # This also should be flipxy!
@@ -676,7 +676,7 @@ site_config = {
                 # HERE YOU CAN FLIP THE IMAGE TO YOUR HEARTS DESIRE
                 # HOPEFULLY YOUR HEARTS DESIRE IS SIMILAR TO THE
                 # RECOMMENDED DEFAULT DESIRE OF PTR
-                'transpose_jpeg' : True,
+                'transpose_jpeg' : False,
                 'flipx_jpeg' : False,
                 'flipy_jpeg' : False,
                 'rotate180_jpeg' : False,
@@ -689,10 +689,10 @@ site_config = {
                 # 'crop_preview_ytop': 2,
                 # 'crop_preview_xleft': 2,
                 # 'crop_preview_xright': 2,
-                'crop_preview_ybottom': 1,  #  2 needed if Bayer array
-                'crop_preview_ytop': 1,
-                'crop_preview_xleft': 1,
-                'crop_preview_xright': 1,
+                'crop_preview_ybottom': 2,  #  2 needed if Bayer array
+                'crop_preview_ytop': 2,
+                'crop_preview_xleft': 2,
+                'crop_preview_xright': 2,
                 'temp_setpoint': -20,    #Verify we can go colder, this system has a chiller
                 'has_chiller': True,
                 'calib_setpoints': [-20, -20, -20, -20, -20, -20, \
