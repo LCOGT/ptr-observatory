@@ -517,6 +517,15 @@ site_config = {
 
             'settings': {                
                 'is_osc' : False,
+                
+                'mono_RGB_colour_image_enabled' : True, # Can it make a mono_colour_image using RGB filters
+                'mono_RGB_colour_filters' : ['pb','v','ip'], # B, G, R filter codes for this camera if it is a monochrome camera with filters
+                'mono_Narrowband_colour_image_enabled' : True, # Can it make a mono_colour_image using Narrowband filters
+                'mono_Narrowband_colour_filters' : ['ha','o3','s2'], # ha, o3, s2 filter codes for this camera if it is a monochrome camera with filters
+                'mono_RGBplusNarrowband_colour_image_enabled' : True, # Can it make a mono_colour_image combining both RGB and Narrowband
+                
+                
+                
                 'squash_on_x_axis' : True,
                 # ONLY TRANSFORM THE FITS IF YOU HAVE
                # A DATA-BASED REASON TO DO SO.....
@@ -624,7 +633,7 @@ site_config = {
                 'readout_mode':  'Normal',
                 'readout_speed': 0.08,
                 'readout_seconds': 12.5,
-                'smart_stack_exposure_time' : 30,
+                'smart_stack_exposure_time' : 75,
                 'saturate':   65000 ,   # e-.  This is a close guess, not measured, but taken from data sheet.
                 'max_linearity': 65000,
                 'fullwell_capacity': 65000,  #e-.   We need to sort out the units properly NB NB NB
@@ -644,7 +653,7 @@ site_config = {
                 'bias_count' : 64,
                 'dark_count' : 64,
                 'flat_count' : 10,
-                'dark_exposure': 30,
+                'dark_exposure': 75,
                 'has_darkslide':  False,
                 'darkslide_com':  None,
                 'shutter_type': "Electronic",

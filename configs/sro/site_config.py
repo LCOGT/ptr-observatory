@@ -488,6 +488,13 @@ site_config = {
             'settings': {                
                 'is_osc' : False,
                 
+                'mono_RGB_colour_image_enabled' : True, # Can it make a mono_colour_image using RGB filters
+                'mono_RGB_colour_filters' : ['pb','v','ip'], # B, G, R filter codes for this camera if it is a monochrome camera with filters
+                'mono_Narrowband_colour_image_enabled' : True, # Can it make a mono_colour_image using Narrowband filters
+                'mono_Narrowband_colour_filters' : ['ha','o3','s2'], # ha, o3, s2 filter codes for this camera if it is a monochrome camera with filters
+                'mono_RGBplusNarrowband_colour_image_enabled' : True, # Can it make a mono_colour_image combining both RGB and Narrowband
+                
+                
                 'transpose_fits' : False,
                 'transpose_jpeg' : True,
                 'osc_bayer' : 'RGGB',
