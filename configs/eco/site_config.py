@@ -439,6 +439,13 @@ site_config = {
                 #'filter_count': 11,   #  This must be correct as to the number of filters
                 #'home_filter':  4,
                 'default_filter': "lum",
+                
+                'auto_color_options' : ['manual','RGB','NB','RGBHA','RGBNB'], # OPtions include 'OSC', 'manual','RGB','NB','RGBHA','RGBNB'
+                'mono_RGB_colour_filters' : ['pb','v','ip'], # B, G, R filter codes for this camera if it is a monochrome camera with filters
+                'mono_Narrowband_colour_filters' : ['ha','o3','s2'], # ha, o3, s2 filter codes for this camera if it is a monochrome camera with filters
+                
+                
+                
                 #'filter_reference': 4,   #  We choose to use W as the default filter.  Gains taken at F9, Ceravolo 300mm
                 # Columns for filter data are : ['filter', 'filter_index', 'filter_offset', 'sky_gain', 'screen_gain', 'alias']
                 'filter_data': [  
@@ -518,11 +525,6 @@ site_config = {
             'settings': {                
                 'is_osc' : False,
                 
-                'mono_RGB_colour_image_enabled' : True, # Can it make a mono_colour_image using RGB filters
-                'mono_RGB_colour_filters' : ['pb','v','ip'], # B, G, R filter codes for this camera if it is a monochrome camera with filters
-                'mono_Narrowband_colour_image_enabled' : True, # Can it make a mono_colour_image using Narrowband filters
-                'mono_Narrowband_colour_filters' : ['ha','o3','s2'], # ha, o3, s2 filter codes for this camera if it is a monochrome camera with filters
-                'mono_RGBplusNarrowband_colour_image_enabled' : True, # Can it make a mono_colour_image combining both RGB and Narrowband
                 
                 
                 
@@ -650,8 +652,8 @@ site_config = {
                 'pix_scale': 0.637,
                 'do_cosmics' : 'no',
                 #'dark_length' : 1,
-                'bias_count' : 64,
-                'dark_count' : 64,
+                'bias_count' : 10,
+                'dark_count' : 10,
                 'flat_count' : 10,
                 'dark_exposure': 75,
                 'has_darkslide':  False,

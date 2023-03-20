@@ -424,10 +424,15 @@ site_config = {
             'ip_string': None,
             "dual_wheel": False,
             'settings': {
-                'filter_count': 11,   #  This must be correct as to the number of filters
-                'home_filter':  0,
+                #'filter_count': 11,   #  This must be correct as to the number of filters
+                #'home_filter':  0,
                 'default_filter': "PL",
-                'filter_reference': 0,   #  We choose to use W as the default filter.  Gains taken at F9, Ceravolo 300mm
+                
+                'auto_color_options' : ['manual','RGB','NB','RGBHA','RGBNB'], # OPtions include 'OSC', 'manual','RGB','NB','RGBHA','RGBNB'
+                'mono_RGB_colour_filters' : ['pb','pg','pr'], # B, G, R filter codes for this camera if it is a monochrome camera with filters
+                'mono_Narrowband_colour_filters' : ['ha','o3','s2'], # ha, o3, s2 filter codes for this camera if it is a monochrome camera with filters
+                
+                #'filter_reference': 0,   #  We choose to use W as the default filter.  Gains taken at F9, Ceravolo 300mm
                 # Columns for filter data are : ['filter', 'filter_index', 'filter_offset', 'sky_gain', 'screen_gain', 'alias']
                 'filter_data': [  #NB NB NB add cwl & bw in nm.
 
@@ -488,12 +493,7 @@ site_config = {
             'settings': {                
                 'is_osc' : False,
                 
-                'mono_RGB_colour_image_enabled' : True, # Can it make a mono_colour_image using RGB filters
-                'mono_RGB_colour_filters' : ['pb','v','ip'], # B, G, R filter codes for this camera if it is a monochrome camera with filters
-                'mono_Narrowband_colour_image_enabled' : True, # Can it make a mono_colour_image using Narrowband filters
-                'mono_Narrowband_colour_filters' : ['ha','o3','s2'], # ha, o3, s2 filter codes for this camera if it is a monochrome camera with filters
-                'mono_RGBplusNarrowband_colour_image_enabled' : True, # Can it make a mono_colour_image combining both RGB and Narrowband
-                
+
                 
                 'transpose_fits' : False,
                 'transpose_jpeg' : True,

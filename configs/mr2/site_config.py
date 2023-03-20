@@ -546,10 +546,17 @@ site_config = {
             
 
             'settings': {
-                'filter_count': 24,
-                'home_filter': 1,
-                'filter_reference': 1,
+                #'filter_count': 24,
+                #'home_filter': 1,
+                #'filter_reference': 1,
                 'default_filter':  'w',
+                
+                'auto_color_options' : ['manual','RGB','NB','RGBHA','RGBNB'], # OPtions include 'OSC', 'manual','RGB','NB','RGBHA','RGBNB'
+                'mono_RGB_colour_filters' : ['jb','jv','r'], # B, G, R filter codes for this camera if it is a monochrome camera with filters
+                'mono_Narrowband_colour_filters' : ['ha','o3','s2'], # ha, o3, s2 filter codes for this camera if it is a monochrome camera with filters
+                
+                
+                
                 'filter_data': [
                                 ['air',     [0, 0], -1000, 0.01, [2, 17], 'ai'],   # 0
                                 ['Lum',     [1, 0],     0, 0.01, [2, 17], 'w '],   # 20
@@ -563,16 +570,16 @@ site_config = {
                                 ['N2',      [5, 5],     0, 0.01, [2, 17], 'S2'],   # 5
                                 ['S2',      [6, 6],     0, 0.01, [2, 17], 'N2'],   # 6
                                 ['JB',      [0, 1],     0, 0.01, [2, 17], 'B '],   # 7
-                                ['g',       [0, 2],     0, 0.01, [2, 17], 'g '],   # 8
+                                ['gp',       [0, 2],     0, 0.01, [2, 17], 'g '],   # 8
                                 ['JV',      [0, 3],     0, 0.01, [2, 17], 'V '],   # 9
-                                ['r',       [0, 4],     0, 0.01, [2, 17], 'r '],  # 10
-                                ['i',       [0, 5],     0, 0.01, [2, 17], 'i '],  # 11
+                                ['rp',       [0, 4],     0, 0.01, [2, 17], 'r '],  # 10
+                                ['ip',       [0, 5],     0, 0.01, [2, 17], 'i '],  # 11
                                 ['EXO',     [0, 6],     0, 0.01, [2, 17], 'EX'],  # 12
                                 ['dif-JB',  [2, 1],     0, 0.01, [2, 17], 'Ha'],  # 13
-                                ['dif-g',   [2, 2],     0, 0.01, [2, 17], 'dg'],  # 14
+                                ['dif-gp',   [2, 2],     0, 0.01, [2, 17], 'dg'],  # 14
                                 ['dif-JV',  [2, 3],     0, 0.01, [2, 17], 'dV'],  # 15
-                                ['dif-r',   [2, 5],     0, 0.01, [2, 17], 'dr'],  # 16
-                                ['dif-i',   [2, 6],     0, 0.01, [2, 17], 'di'],  # 17
+                                ['dif-rp',   [2, 5],     0, 0.01, [2, 17], 'dr'],  # 16
+                                ['dif-ip',   [2, 6],     0, 0.01, [2, 17], 'di'],  # 17
                                 ['dif-exo', [2, 0],     0, 0.01, [2, 17], 'dE'],  # 18
                                 ['dark',    [4, 1],     0, 0.01, [2, 17], 'dk']], # 19
                                 #Screen = 100; QHY400 ~ 92% DQE   HDR Mode    Screen = 160 sat  20190825 measured.
@@ -621,11 +628,6 @@ site_config = {
             'settings': {
                 'is_osc' : False,
                 
-                'mono_RGB_colour_image_enabled' : True, # Can it make a mono_colour_image using RGB filters
-                'mono_RGB_colour_filters' : ['pb','v','ip'], # B, G, R filter codes for this camera if it is a monochrome camera with filters
-                'mono_Narrowband_colour_image_enabled' : True, # Can it make a mono_colour_image using Narrowband filters
-                'mono_Narrowband_colour_filters' : ['ha','o3','s2'], # ha, o3, s2 filter codes for this camera if it is a monochrome camera with filters
-                'mono_RGBplusNarrowband_colour_image_enabled' : True, # Can it make a mono_colour_image combining both RGB and Narrowband
                 
                 
                 

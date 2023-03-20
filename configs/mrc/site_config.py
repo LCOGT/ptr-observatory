@@ -541,7 +541,13 @@ site_config = {
                 #'filter_count': 23,
                 #'home_filter':  2,
                 'default_filter':  'w',
-                'filter_reference': 2,
+                
+                'auto_color_options' : ['OSC'], # OPtions include 'OSC', 'manual','RGB','NB','RGBHA','RGBNB'
+                'mono_RGB_colour_filters' : ['pb','pg','pr'], # B, G, R filter codes for this camera if it is a monochrome camera with filters
+                'mono_Narrowband_colour_filters' : ['ha','o3','s2'], # ha, o3, s2 filter codes for this camera if it is a monochrome camera with filters
+                
+                
+                #'filter_reference': 2,
                 
 
 
@@ -649,12 +655,7 @@ site_config = {
                 
                 'is_osc' : True,
                 
-                'mono_RGB_colour_image_enabled' : True, # Can it make a mono_colour_image using RGB filters
-                'mono_RGB_colour_filters' : ['pb','v','ip'], # B, G, R filter codes for this camera if it is a monochrome camera with filters
-                'mono_Narrowband_colour_image_enabled' : True, # Can it make a mono_colour_image using Narrowband filters
-                'mono_Narrowband_colour_filters' : ['ha','o3','s2'], # ha, o3, s2 filter codes for this camera if it is a monochrome camera with filters
-                'mono_RGBplusNarrowband_colour_image_enabled' : True, # Can it make a mono_colour_image combining both RGB and Narrowband
-                
+
                 
                 'squash_on_x_axis' : True,
                 # 'osc_brightness_enhance' : 1.0,
