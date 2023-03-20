@@ -362,8 +362,8 @@ site_config = {
         'screen1': {
             'parent': 'telescope1',
             'name': 'screen',
-            'desc':  'Optec Alnitak 16"',
-            'driver': 'ASCOM.OptecAlnitak.CoverCalibrator',
+            'desc':  'No Screen',
+            'driver': None,
             'com_port': 'COM10',  #  This needs to be a 4 or 5 character string as in 'COM8' or 'COM22'
             'minimum': 5,   #  This is the % of light emitted when Screen is on and nominally at 0% bright.
             'saturate': 255,  #  Out of 0 - 255, this is the last value where the screen is linear with output.

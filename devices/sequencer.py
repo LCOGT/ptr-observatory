@@ -1836,7 +1836,12 @@ class Sequencer:
         if (ephem.now() < g_dev['events']['Eve Sky Flats']) or \
             (g_dev['events']['End Morn Sky Flats'] < ephem.now() < g_dev['events']['Nightly Reset']):
             plog ("NOT DOING FLATS -- IT IS THE DAYTIME!!")
-            g_dev["obs"].send_to_user("A flat script request was rejected as it is during the daytime.")            
+            g_dev["obs"].send_to_user("A sky flat script request was rejected as it is during the daytime.")            
+            return
+
+        if (g_dev['events']['Naut Dusk'] < ephem.now() < g_dev['events']['Naut Dawn']):
+            plog ("NOT DOING FLATS -- IT IS THE NIGHTIME!!")
+            g_dev["obs"].send_to_user("A sky flat script request was rejected as it too dark.")            
             return
 
         self.sky_guard = True   #20220409 I think this is obsolete or unused.
@@ -2105,6 +2110,20 @@ class Sequencer:
 
 
     def screen_flat_script(self, req, opt):
+        
+        
+        if self.config['screen']['screen1']['driver'] == None:
+            plog ("NOT DOING SCREEN FLATS - SITE HAS NO SCREEN!!")
+            g_dev["obs"].send_to_user("A screen flat script request was rejected as the site does not have a screen.")            
+            return
+        
+        if (ephem.now() < g_dev['events']['Eve Sky Flats']) or \
+            (g_dev['events']['End Morn Sky Flats'] < ephem.now() < g_dev['events']['Nightly Reset']):
+            plog ("NOT DOING SCREEN FLATS -- IT IS THE DAYTIME!!")
+            g_dev["obs"].send_to_user("A screen script request was rejected as it is during the daytime.")            
+            return
+        
+        
         if req['numFrames'] > 1:
             flat_count = req['numFrames']
         else:
