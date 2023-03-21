@@ -1303,14 +1303,16 @@ class Camera:
         #     status["busy_lock"] = True
         # else:
         #     status["busy_lock"] = False
-        if self.maxim:
-            cam_stat = "Not implemented yet"  #
-        if self.ascom:
-            cam_stat = "ASCOM camera not implemented yet"  # self.camera.CameraState
-        if self.theskyx:
-            cam_stat = "TheSkyX camera not implemented yet"  # self.camera.CameraState
-        if self.qhydirect:
-            cam_stat = "QHYCCD camera not implemented yet"  # self.camera.CameraState
+        #if self.maxim:
+        #    cam_stat = "Not implemented yet"  #
+        #if self.ascom:
+        #    cam_stat = "ASCOM camera not implemented yet"  # self.camera.CameraState
+        #if self.theskyx:
+        #    cam_stat = "TheSkyX camera not implemented yet"  # self.camera.CameraState
+        #if self.qhydirect:
+        #    breakpoint()
+        #    cam_stat = self.config['camera'][self.name]['name'] + " connected. # self.camera.CameraState
+        cam_stat = self.config['camera'][self.name]['name'] + " connected." # self.camera.CameraState
         status[
             "status"
         ] = cam_stat  # The state could be expanded to be more meaningful.
