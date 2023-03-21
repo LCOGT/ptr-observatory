@@ -203,6 +203,8 @@ site_config = {
 
             'name': 'HomeDome',
             'enc_is_specific':  False,
+            
+            'directly_connected': False, # For ECO and EC2, they connect directly to the enclosure, whereas WEMA are different.
             'hostIP':  '10.0.0.10',
             'driver': 'ASCOM.DigitalDomeWorks.Dome',  #  'ASCOMDome.Dome',  #ASCOMDome.Dome',  # ASCOM.DeviceHub.Dome',  # ASCOM.DigitalDomeWorks.Dome',  #"  ASCOMDome.Dome',
 
@@ -674,8 +676,8 @@ site_config = {
         },
     },
 }
-get_ocn_status = None   # NB these are placeholders for site specific routines for in a config file
-get_enc_status = None
+#get_ocn_status = None   # NB these are placeholders for site specific routines for in a config file
+#get_enc_status = None
 
 if __name__ == '__main__':
     j_dump = json.dumps(site_config)

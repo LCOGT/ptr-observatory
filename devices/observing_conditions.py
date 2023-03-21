@@ -25,7 +25,7 @@ import win32com.client
 #import redis
 
 from global_yard import g_dev
-from site_config import get_ocn_status
+#from site_config import get_ocn_status
 from ptr_utility import plog
 
 
@@ -103,6 +103,7 @@ class ObservingConditions:
             self.site_is_specific = True
             #  Note OCN has no associated commands.
             #  Here we monkey patch
+            from site_config import get_ocn_status
             self.get_status = get_ocn_status
             # Get current ocn status just as a test.
             self.status = self.get_status(g_dev)
@@ -547,6 +548,47 @@ class ObservingConditions:
             g_dev["ocn"].status = status
 
             return status
+
+
+    def get_noocndevice_status(self):
+
+        illum, mag = g_dev["evnt"].illuminationNow()
+
+        status = {
+            "temperature_C": 0.0,
+            "pressure_mbar": 0.0,
+            "humidity_%": 0.0,
+            "dewpoint_C": 0.0,
+            "sky_temp_C": 0.0,
+            "last_sky_update_s": 0.0,
+            "wind_m/s": 0.0,
+            "rain_rate": 0.0,
+            "solar_flux_w/m^2": None,
+            "cloud_cover_%": 0.0,
+            "calc_HSI_lux": illum,
+            "calc_sky_mpsas": 0.0,  # Provenance of 20.01 is dubious 20200504 WER
+            "open_ok": g_dev['seq'].weather_report_is_acceptable_to_observe, #self.ok_to_open,
+            "wx_hold": False,
+            "hold_duration": 0.0,
+        }
+
+        #quick=[]
+        #if self.site_is_specific:
+        #    self.status = self.get_status(g_dev)  # Get current state.
+        #else:
+        #    self.status = self.get_status()
+        
+        # NB NB NB it is safer to make this a dict rather than a positionally dependant list.
+        #quick.append(time.time())
+        #quick.append(float(0))
+        #quick.append(float(0))
+        #quick.append(float(0))
+        #quick.append(float(0))
+        #quick.append(float(0))
+        #quick.append(float(0))  # 20200329 a SWAG!
+        #quick.append(float(illum))  # Add Solar, Lunar elev and phase
+        #quick.append(float(self.meas_sky_lux))  # intended for Unihedron
+        return status
 
     def get_quick_status(self, quick):
 

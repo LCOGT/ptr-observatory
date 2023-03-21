@@ -195,6 +195,7 @@ site_config = {
         'enclosure1': {
             'parent': 'site',
             'enc_is_specific':  False,  # Indicates some special site code.
+            'directly_connected': True, # For ECO and EC2, they connect directly to the enclosure, whereas WEMA are different.
             'name': 'Dragonfly Roof',
             'hostIP':  None,
             'driver': 'Dragonfly.Dome',  #'ASCOM.DigitalDomeWorks.Dome',  #  ASCOMDome.Dome',  #  ASCOM.DeviceHub.Dome',  #  ASCOM.DigitalDomeWorks.Dome',  #"  ASCOMDome.Dome',
@@ -974,7 +975,7 @@ site_config = {
 #     #print ("no encolsure control")
 #     pass
 
-def get_ocn_status():
-    pass
-def get_enc_status():
-    pass
+#def get_ocn_status():
+#    pass
+#def get_enc_status():
+#    pass

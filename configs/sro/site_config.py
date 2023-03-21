@@ -210,6 +210,7 @@ site_config = {
         'enclosure1': {
             'parent': 'site',
             'enc_is_specific':  True,  # Indicates some special site code.
+            'directly_connected': False, # For ECO and EC2, they connect directly to the enclosure, whereas WEMA are different.
             'name': 'SRO File',
             'hostIP':  None,
             'driver': None,  #'ASCOM.DigitalDomeWorks.Dome',  #  ASCOMDome.Dome',  #  ASCOM.DeviceHub.Dome',  #  ASCOM.DigitalDomeWorks.Dome',  #"  ASCOMDome.Dome',

@@ -1477,7 +1477,7 @@ class Sequencer:
         
         
         cameras=glob(dir_path + "*/")
-        plog (cameras)
+        #plog (cameras)
         # Setting runnight for mop up scripts
         
         #breakpoint()

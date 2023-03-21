@@ -11,7 +11,7 @@ import os
 
 import urllib
 
-from site_config import get_enc_status
+#from site_config import get_enc_status
 
 #from pprint import pprint
 from ptr_utility import plog
@@ -217,7 +217,7 @@ class Enclosure:
             self.site_in_automatic = False
             self.mode = 'Shutdown'
         self.is_dome = self.config['enclosure']['enclosure1']['is_dome']
-
+        self.directly_connected = self.config['enclosure']['enclosure1']['directly_connected']
         self.time_of_next_slew = time.time()
         self.hostname = socket.gethostname()
         if self.hostname in self.config['wema_hostname']:
@@ -242,6 +242,7 @@ class Enclosure:
             self.site_is_generic = False
             #  Note OCN has no associated commands.
             #  Note monkey patch
+            from site_config import get_enc_status
             self.get_status = get_enc_status
             #self.get_status = config.get_enc_status   # NB NB Bogus line of code
             # Get current ocn status just as a test.
@@ -285,7 +286,60 @@ class Enclosure:
         
     def get_status(self) -> dict:
 
-        if not self.is_wema and self.site_has_proxy and self.dome_on_wema:
+        
+        if self.directly_connected and not self.is_dome:
+            #plog("we got a direct connect status!")
+            try:
+                shutter_status = self.enclosure.ShutterStatus
+            except:
+                plog("self.enclosure.Roof.ShutterStatus -- Faulted. ")
+                shutter_status = 5
+
+            if shutter_status == 0:
+                stat_string = "Open"
+                self.shutter_is_closed = False
+                #g_dev['redis'].set('Shutter_is_open', True)
+            elif shutter_status == 1:
+                 stat_string = "Closed"
+                 self.shutter_is_closed = True
+                 #g_dev['redis'].set('Shutter_is_open', False)
+            elif shutter_status == 2:
+                 stat_string = "Opening"
+                 self.shutter_is_closed = False
+                 #g_dev['redis'].set('Shutter_is_open', False)
+            elif shutter_status == 3:
+                 stat_string = "Closing"
+                 self.shutter_is_closed = False
+                 #g_dev['redis'].set('Shutter_is_open', False)
+            elif shutter_status == 4:
+                 #breakpoint()
+                 stat_string = "Error"
+                 self.shutter_is_closed = False
+                 #g_dev['redis'].set('Shutter_is_open', False)
+            else:
+                 stat_string = "Software Fault"
+                 self.shutter_is_closed = False
+                 #g_dev['redis'].set('Shutter_is_open', False)
+            self.status_string = stat_string
+            
+            #status = {'shutter_status': stat_string,
+            #          'enclosure_synchronized': True, #self.following, 20220103_0135 WER
+            #          'dome_azimuth': 0,
+            #          'dome_slewing': False,
+            #          'enclosure_mode': self.mode,
+            #          'enclosure_message': "No message"}, #self.state}#self.following, 20220103_0135 WER
+            
+            status = {'shutter_status': stat_string}
+            status['dome_slewing'] = False
+            status['enclosure_mode'] = str(self.mode)
+            status['dome_azimuth'] = 0
+            status['enclosure_mode'] = self.mode
+            #status['enclosure_message']: self.state
+            status['enclosure_synchronized']= True
+            
+            return status
+
+        elif not self.is_wema and self.site_has_proxy and self.dome_on_wema:
             if self.config['site_IPC_mechanism'] == 'shares':
                 try:
                     enclosure = open(g_dev['wema_share_path'] + 'enclosure.txt', 'r')
@@ -334,7 +388,7 @@ class Enclosure:
             g_dev['enc'].status = status
             return status
 
-        if self.site_is_generic or self.is_wema or not self.dome_on_wema:#  NB Should be AND?
+        elif self.site_is_generic or self.is_wema or not self.dome_on_wema:#  NB Should be AND?
             try:
                 shutter_status = self.enclosure.ShutterStatus
             except:
@@ -435,7 +489,7 @@ class Enclosure:
                 self.status = status
                 #plog("g_dev:  ", g_dev['enc'].status['dome_slewing'])
                 return status
-        if self.is_wema and self.config['site_IPC_mechanism'] == 'shares':
+        elif self.is_wema and self.config['site_IPC_mechanism'] == 'shares':
             try:
                 enclosure = open(self.config['wema_write_share_path']+'enclosure.txt', 'w')
                 enclosure.write(json.dumps(status))
@@ -628,7 +682,10 @@ class Enclosure:
                             self.enclosure.SlewToAzimuth(float(track_az))
                     except:
                         plog("Dome refused slew, probably updating, closing or opening; usually a harmless situation:  ", shutter_status)
-        self.manager(_redis=_redis)   #There be monsters here. <<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<
+        try:
+            self.manager(_redis=_redis)   #There be monsters here. <<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<
+        except:
+            pass
         self.status = status
         self.prior_status = status
         g_dev['enc'].status = status

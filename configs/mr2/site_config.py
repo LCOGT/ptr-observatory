@@ -241,6 +241,9 @@ site_config = {
             'name': 'Megawan',
             'hostIP':  '10.15.0.30',
             'driver': 'Windows_share',
+            'enc_is_specific':  False,  # Indicates some special site code.
+            'directly_connected': False, # For ECO and EC2, they connect directly to the enclosure, whereas WEMA are different.
+            
             'shutdown_script':  None,
             'has_lights':  True,
             'controlled_by':  ['mount1', 'mount2'],
@@ -996,8 +999,8 @@ site_config = {
     },
 }  #This brace closes the while configuration dictionary. Match found up top at:  site_config = {
 
-get_ocn_status = None
-get_enc_status = None
+#get_ocn_status = None
+#get_enc_status = None
 
 if __name__ == '__main__':
     '''

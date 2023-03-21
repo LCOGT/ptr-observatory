@@ -872,14 +872,27 @@ sel
                 # Get the actual device object...
                 device = devices_of_type[device_name]
                 # ...and add it to main status dict.
+                #breakpoint()
+                
+
+                
                 if (
                     "enclosure" in device_name
-                    and device_name in self.config["wema_types"]
-                    and (self.is_wema or self.site_is_specific)
-                ):
-                    if (
+                    #and device_name in self.config["wema_types"]
+                    #and (self.is_wema or self.site_is_specific)
+                ):  
+                    if self.config['enclosure']['enclosure1']['driver'] == None and not self.site_is_specific:
+                        # Even if no connection send a satus
+                        status = {'shutter_status': "No enclosure.",
+                                  'enclosure_synchronized': False, #self.following, 20220103_0135 WER
+                                  'dome_azimuth': 0,
+                                  'dome_slewing': False,
+                                  'enclosure_mode': "No Enclosure",
+                                  'enclosure_message': "No message"}, #self.state}#self.following, 20220103_0135 WER
+                    
+                    elif (
                         datetime.datetime.now() - self.enclosure_status_timer
-                    ) < datetime.timedelta(minutes=self.enclosure_check_period):
+                    ) > datetime.timedelta(minutes=self.enclosure_check_period):
                         result = None
                         send_enc = False
                     else:
@@ -888,6 +901,22 @@ sel
                         send_enc = True
 
                         result = device.get_status()
+                
+                elif ("observing_conditions" in device_name
+                      and self.config['observing_conditions']['observing_conditions1']['driver'] == None):
+                    # Here is where the weather config gets updated.
+                    if (
+                        datetime.datetime.now() - self.observing_status_timer
+                    ) > datetime.timedelta(minutes=self.observing_check_period):
+                        result = None
+                        send_ocn = False
+                    else:
+                        plog("Running weather status check.")
+                        self.observing_status_timer = datetime.datetime.now()
+                        result = device.get_noocndevice_status()
+                        send_ocn = True
+                        if self.site_is_specific:
+                            remove_enc = False
 
                 elif (
                     "observing_conditions" in device_name
@@ -897,7 +926,7 @@ sel
                     # Here is where the weather config gets updated.
                     if (
                         datetime.datetime.now() - self.observing_status_timer
-                    ) < datetime.timedelta(minutes=self.observing_check_period):
+                    ) > datetime.timedelta(minutes=self.observing_check_period):
                         result = None
                         send_ocn = False
                     else:
@@ -907,6 +936,8 @@ sel
                         send_ocn = True
                         if self.site_is_specific:
                             remove_enc = False
+                
+                    
 
                 else:
                     if  'telescope' in device_name:
@@ -1061,7 +1092,7 @@ sel
                 
             # Roof Checks only if not in Manual mode and not debug mode
             if g_dev['enc'].mode != 'Manual' or not self.debug_flag:
-            
+
                 if g_dev['enc'].status['shutter_status'] == 'Software Fault':
                     plog ("Software Fault Detected. Will alert the authorities!")
                     plog ("Parking Scope in the meantime")

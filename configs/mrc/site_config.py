@@ -245,7 +245,8 @@ site_config = {
     'enclosure': {
         'enclosure1': {
             'parent': 'site',
-            'enc_is_specific':  False,  # Indicates some special site code.
+            'enc_is_specific':  False,  # Indicates some special site code.            
+            'directly_connected': False, # For ECO and EC2, they connect directly to the enclosure, whereas WEMA are different.
             'name': 'Megawan',
             'hostIP':  '10.15.0.65',
             'driver': 'ASCOM.SkyRoofHub.Dome',    #  Not really a dome for Skyroof.
@@ -862,10 +863,10 @@ site_config = {
     },
 }    #This brace closes the while configuration dictionary. Match found up top at:  site_config = {
 
-def get_ocn_status():    #NB NB I think we should get rid of these two dummy methods. WER
-    pass
-def get_enc_status():
-    pass
+#def get_ocn_status():    #NB NB I think we should get rid of these two dummy methods. WER
+#    pass
+#def get_enc_status():
+#    pass
 
 '''
 Here we create the basic directory structures needed for this respective 
