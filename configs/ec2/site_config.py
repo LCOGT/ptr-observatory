@@ -341,7 +341,7 @@ site_config = {
             'parent': 'telescope1',
             'name': 'rotator',
             'desc':  False,
-            'driver': False,
+            'driver': None,
 			'com_port':  False,
             'minimum': -180.,
             'maximum': 360.0,

@@ -645,11 +645,22 @@ sel
                                 self.cancel_all_activity() # Hi Wayne, I have to cancel all acitivity with some roof stuff
                                 # So I've moved the cancelling to it's own function just above so it can be called from multiple locations.
                             else:
-                                self.cmd_queue.put(cmd)  # SAVE THE COMMAND FOR LATER
-                                g_dev["obs"].stop_all_activity = False
-                                plog(
-                                    "Queueing up a new command... Hint:  " + cmd["action"]
-                                )
+                                # Check here for irrelevant commands
+                                
+                                if cmd['deviceType'] == 'screen' and self.config['screen']['screen1']['driver'] == None:
+                                    plog ("Refusing command as there is no screen")
+                                    g_dev['obs'].send_to_user("Request rejected as site has no flat screen.")
+                                elif cmd['deviceType'] == 'rotator' and self.config['rotator']['rotator1']['driver'] == None:
+                                     plog ("Refusing command as there is no rotator")
+                                     g_dev['obs'].send_to_user("Request rejected as site has no rotator.")
+                                # If not irrelevant, queue the command
+                                else:                               
+                                
+                                    self.cmd_queue.put(cmd)  # SAVE THE COMMAND FOR LATER
+                                    g_dev["obs"].stop_all_activity = False
+                                    plog(
+                                        "Queueing up a new command... Hint:  " + cmd["action"]
+                                    )
     
                             if cancel_check:
                                 result={'stopped': True}
