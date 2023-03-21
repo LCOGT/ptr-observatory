@@ -1782,47 +1782,7 @@ class Camera:
                             self.pre_foc = []
                             self.pre_ocn = []
                             self.t2p1 = time.time()
-                            if frame_type in (
-                                "flat",
-                                "screenflat",
-                                "skyflat",
-                                "dark",
-                                "bias",
-                            ):
-                                g_dev["obs"].send_to_user(
-                                    "Starting "
-                                    + str(exposure_time)
-                                    + "s "
-                                    + str(frame_type)
-                                    + " calibration exposure.",
-                                    p_level="INFO",
-                                )
-                            elif frame_type in ("focus", "auto_focus"):
-                                g_dev["obs"].send_to_user(
-                                    "Starting "
-                                    + str(exposure_time)
-                                    + "s "
-                                    + str(frame_type)
-                                    + " focus exposure.",
-                                    p_level="INFO",
-                                )
-                            else:
-                                if "object_name" in opt:
-                                    g_dev["obs"].send_to_user(
-                                        "Starting "
-                                        + str(exposure_time)
-                                        + "s exposure of "
-                                        + str(opt["object_name"])
-                                        + " by user: "
-                                        + str(self.user_name),
-                                        p_level="INFO",
-                                    )
-                                else:
-                                    g_dev["obs"].send_to_user(
-                                        "Starting an unnamed frame by user: "
-                                        + str(self.user_name),
-                                        p_level="INFO",
-                                    )
+                            
                             try:
                                 g_dev["ocn"].get_quick_status(
                                     self.pre_ocn
@@ -1937,8 +1897,50 @@ class Camera:
             "to go: ",
             counter,
         )
+        #g_dev["obs"].send_to_user(            "Insert #3 of 5 exposure of object type X here"        )
+        if frame_type in (
+            "flat",
+            "screenflat",
+            "skyflat",
+            "dark",
+            "bias",
+        ):
+            g_dev["obs"].send_to_user(
+                "Starting "
+                + str(exposure_time)
+                + "s "
+                + str(frame_type)
+                + " calibration exposure.",
+                p_level="INFO",
+            )
+        elif frame_type in ("focus", "auto_focus"):
+            g_dev["obs"].send_to_user(
+                "Starting "
+                + str(exposure_time)
+                + "s "
+                + str(frame_type)
+                + " focus exposure.",
+                p_level="INFO",
+            )
+        else:
+            if "object_name" in opt:
+                g_dev["obs"].send_to_user(
+                    "Starting "
+                    + str(exposure_time)
+                    + "s exposure of "
+                    + str(opt["object_name"])
+                    + " by user: "
+                    + str(self.user_name) + '. ' + str(int(opt['count']) - int(counter) + 1) + " of " + str(opt['count']),
+                    p_level="INFO",
+                )
+            else:
+                g_dev["obs"].send_to_user(
+                    "Starting an unnamed frame by user: "
+                    + str(self.user_name),
+                    p_level="INFO",
+                )
 
-
+        breakpoint()
 
         #plog ("Smart Stack ID: " + smartstackid)
         # g_dev["obs"].send_to_user(

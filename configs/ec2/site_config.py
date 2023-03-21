@@ -34,7 +34,7 @@ site_config = {
     'debug_site_mode': False,
     
 
-    'debug_mode': False,
+    'debug_mode': True,
     'admin_owner_commands_only': False,
 
     'debug_duration_sec': 7200,
@@ -813,7 +813,7 @@ site_config = {
                 'max_daytime_exposure': 0.0001,
                 'can_subframe':  True,
                 'min_subframe': [128,128],
-                'bin_modes':  [['Optimal', 0.91], ['Fine', 0.61], ['Coarse', 1.2], ['Eng', 0.30]],     #Meaning fixed binning if list has only one entry
+                #'bin_modes':  [['Optimal', 0.91], ['Fine', 0.61], ['Coarse', 1.2], ['Eng', 0.30]],     #Meaning fixed binning if list has only one entry
                 'reference_gain': 1.3,     #  NB GUess One val for each binning. Assumed digitalsumming in camera???
                 'reference_noise': 6,    #  NB Guess
                 'reference_dark': 0.2,  #  NB  Guess
@@ -832,10 +832,10 @@ site_config = {
                 #'flat_bin_spec':         ['1,1', '2,2', '3,3', '4,4' ],   #Is this necessary?
 
                 #'flat_count': 5,
-                'optimal_bin': [1, 1],   #  This is the optimal bin for MRC
-                'fine_bin':    [1, 1],   #  This is the fine bin for MRC
-                'coarse_bin':  [2, 2],   #  This is the coarse bin for MRC
-                'eng_bin':     [4, 4],   #  This is the eng-only bin for MRC, not useful for users?
+                #'optimal_bin': [1, 1],   #  This is the optimal bin for MRC
+                #'fine_bin':    [1, 1],   #  This is the fine bin for MRC
+                #'coarse_bin':  [2, 2],   #  This is the coarse bin for MRC
+                #'eng_bin':     [4, 4],   #  This is the eng-only bin for MRC, not useful for users?
                 'bin_enable':  ['1 1'],  #  Always square and matched to seeing situation by owner  NB Obsolete? NO MF uses to load bias calib
                                          #  NB NB inconsistent use of bin string   '1 1', '1x1' , etc.
                 'do_cosmics' : 'no',

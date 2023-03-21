@@ -1967,10 +1967,10 @@ sel
                         g_dev["cam"].enqueue_for_fastAWS(
                             1000, paths["im_path"], paths["jpeg_name10"].replace('EX10','EX20')
                         )
-                        g_dev["obs"].send_to_user(
-                            "A preview image of the single image has been sent to the GUI.",
-                            p_level="INFO",
-                        )
+                        #g_dev["obs"].send_to_user(
+                        #    "A preview image of the single image has been sent to the GUI.",
+                        #    p_level="INFO",
+                        #)
                     except:
                         plog(
                             "there was an issue saving the preview jpg. Pushing on though"
@@ -2770,10 +2770,10 @@ sel
                         g_dev['cam'].enqueue_for_AWS(
                             26000000, '',slow_process[1]
                         )
-                        g_dev["obs"].send_to_user(
-                            "An image has been readout from the camera and queued for transfer to the cloud.",
-                            p_level="INFO",
-                        )
+                        #g_dev["obs"].send_to_user(
+                        #    "An image has been readout from the camera and queued for transfer to the cloud.",
+                        #    p_level="INFO",
+                        #)
                     #plog ("fz done.")
                 
                 if slow_process[0] == 'reduced':
