@@ -1898,6 +1898,12 @@ class Camera:
             counter,
         )
         #g_dev["obs"].send_to_user(            "Insert #3 of 5 exposure of object type X here"        )
+        
+        try:
+            filter_ui_info=opt['filter']
+        except:
+            filter_ui_info='filterless'
+            
         if frame_type in (
             "flat",
             "screenflat",
@@ -1927,7 +1933,7 @@ class Camera:
                 g_dev["obs"].send_to_user(
                     "Starting "
                     + str(exposure_time)
-                    + "s exposure of "
+                    + "s " + str(filter_ui_info) + " exposure of "
                     + str(opt["object_name"])
                     + " by user: "
                     + str(self.user_name) + '. ' + str(int(opt['count']) - int(counter) + 1) + " of " + str(opt['count']),
@@ -1940,7 +1946,7 @@ class Camera:
                     p_level="INFO",
                 )
 
-        breakpoint()
+        #breakpoint()
 
         #plog ("Smart Stack ID: " + smartstackid)
         # g_dev["obs"].send_to_user(
