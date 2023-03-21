@@ -556,8 +556,9 @@ site_config = {
                 
                 'auto_color_options' : ['manual','RGB','NB','RGBHA','RGBNB'], # OPtions include 'OSC', 'manual','RGB','NB','RGBHA','RGBNB'
                 'mono_RGB_colour_filters' : ['jb','jv','r'], # B, G, R filter codes for this camera if it is a monochrome camera with filters
+                'mono_RGB_relative_weights' : [1.2,1,0.8],
                 'mono_Narrowband_colour_filters' : ['ha','o3','s2'], # ha, o3, s2 filter codes for this camera if it is a monochrome camera with filters
-                
+                'mono_Narrowband_relative_weights' : [1.0,2,2.5],
                 
                 
                 'filter_data': [
