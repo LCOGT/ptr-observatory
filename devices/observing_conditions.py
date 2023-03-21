@@ -555,18 +555,18 @@ class ObservingConditions:
         illum, mag = g_dev["evnt"].illuminationNow()
 
         status = {
-            "temperature_C": 0.0,
-            "pressure_mbar": 0.0,
-            "humidity_%": 0.0,
-            "dewpoint_C": 0.0,
-            "sky_temp_C": 0.0,
-            "last_sky_update_s": 0.0,
-            "wind_m/s": 0.0,
-            "rain_rate": 0.0,
-            "solar_flux_w/m^2": None,
-            "cloud_cover_%": 0.0,
-            "calc_HSI_lux": illum,
-            "calc_sky_mpsas": 0.0,  # Provenance of 20.01 is dubious 20200504 WER
+            #"temperature_C": 0.0,
+            #"pressure_mbar": 0.0,
+            #"humidity_%": 0.0,
+            #"dewpoint_C": 0.0,
+            #"sky_temp_C": 0.0,
+            #"last_sky_update_s": 0.0,
+            #"wind_m/s": 0.0,
+            #"rain_rate": 0.0,
+            #"solar_flux_w/m^2": None,
+            #"cloud_cover_%": 0.0,
+            #"calc_HSI_lux": illum,
+            #"calc_sky_mpsas": 0.0,  # Provenance of 20.01 is dubious 20200504 WER
             "open_ok": g_dev['seq'].weather_report_is_acceptable_to_observe, #self.ok_to_open,
             "wx_hold": False,
             "hold_duration": 0.0,

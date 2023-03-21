@@ -3387,6 +3387,14 @@ class Sequencer:
         plog ("Night's total fitzgerald number")
         plog (sum(hourly_fitzgerald_number))
         
+        
+        if hourly_fitzgerald_number == []:
+            plog("Looks like there isn't enough hours left in the night!")
+            self.weather_report_is_acceptable_to_observe=False
+            self.weather_report_wait_until_open=False
+            self.weather_report_wait_until_open_time=ephem_now
+            self.weather_report_close_during_evening=False
+            self.weather_report_close_during_evening_time=ephem_now
         if sum(hourly_fitzgerald_number) < 10:
             plog ("This is a good observing night!")
             self.weather_report_is_acceptable_to_observe=True
