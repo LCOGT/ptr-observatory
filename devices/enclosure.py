@@ -330,12 +330,12 @@ class Enclosure:
             #          'enclosure_message': "No message"}, #self.state}#self.following, 20220103_0135 WER
             
             status = {'shutter_status': stat_string}
-            status['dome_slewing'] = False
+            #status['dome_slewing'] = False
             status['enclosure_mode'] = str(self.mode)
             status['dome_azimuth'] = 0
-            status['enclosure_mode'] = self.mode
+            #status['enclosure_mode'] = self.mode
             #status['enclosure_message']: self.state
-            status['enclosure_synchronized']= True
+            #status['enclosure_synchronized']= True
             
             return status
 
