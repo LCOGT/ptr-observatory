@@ -554,6 +554,11 @@ class ObservingConditions:
 
         illum, mag = g_dev["evnt"].illuminationNow()
 
+        if g_dev['seq'].weather_report_is_acceptable_to_observe:
+            openok='Yes'
+        else:
+            openok='No'
+
         status = {
             #"temperature_C": 0.0,
             #"pressure_mbar": 0.0,
@@ -567,9 +572,9 @@ class ObservingConditions:
             #"cloud_cover_%": 0.0,
             #"calc_HSI_lux": illum,
             #"calc_sky_mpsas": 0.0,  # Provenance of 20.01 is dubious 20200504 WER
-            "open_ok": g_dev['seq'].weather_report_is_acceptable_to_observe, #self.ok_to_open,
-            "wx_hold": False,
-            "hold_duration": 0.0,
+            "open_ok": openok, #self.ok_to_open,
+            "wx_hold": 'no',
+            "hold_duration": float(0.0),
         }
 
         #quick=[]
