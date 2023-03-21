@@ -881,6 +881,7 @@ sel
                     #and device_name in self.config["wema_types"]
                     #and (self.is_wema or self.site_is_specific)
                 ):  
+
                     if self.config['enclosure']['enclosure1']['driver'] == None and not self.site_is_specific:
                         # Even if no connection send a satus
                         status = {'shutter_status': "No enclosure.",
@@ -892,11 +893,11 @@ sel
                     
                     elif (
                         datetime.datetime.now() - self.enclosure_status_timer
-                    ) > datetime.timedelta(minutes=self.enclosure_check_period):
+                    ) < datetime.timedelta(minutes=self.enclosure_check_period):
                         result = None
                         send_enc = False
                     else:
-                        plog("Running enclosure status check")
+                        #plog("Running enclosure status check")
                         self.enclosure_status_timer = datetime.datetime.now()
                         send_enc = True
 
@@ -907,11 +908,11 @@ sel
                     # Here is where the weather config gets updated.
                     if (
                         datetime.datetime.now() - self.observing_status_timer
-                    ) > datetime.timedelta(minutes=self.observing_check_period):
+                    ) < datetime.timedelta(minutes=self.observing_check_period):
                         result = None
                         send_ocn = False
                     else:
-                        plog("Running weather status check.")
+                        #plog("Running weather status check.")
                         self.observing_status_timer = datetime.datetime.now()
                         result = device.get_noocndevice_status()
                         send_ocn = True
@@ -926,7 +927,7 @@ sel
                     # Here is where the weather config gets updated.
                     if (
                         datetime.datetime.now() - self.observing_status_timer
-                    ) > datetime.timedelta(minutes=self.observing_check_period):
+                    ) < datetime.timedelta(minutes=self.observing_check_period):
                         result = None
                         send_ocn = False
                     else:
