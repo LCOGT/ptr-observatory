@@ -760,7 +760,8 @@ site_config = {
                 
                 'flat_count' : 10,
                 'pix_scale': [0.4685, 0.9371, 1.4055, 1.8742],    #  1.4506,  bin-2  2* math.degrees(math.atan(9/3962000))*3600
-
+                
+                'do_cosmics' : True,
                 'bin_modes':  [[2, 2, 0.937], [1, 1, 0.469], [3, 3, 1.407], [4, 4, 1.876]],   # [3, 3, 1.45],Meaning no binning choice if list has only one entry, default should be first.
                 'optimal_bin':  [2, 2, 0.937],    # Matched to seeing situation by owner
                 'max_res_bin':  [1, 1, 0.469],    # Matched to seeing situation by owner

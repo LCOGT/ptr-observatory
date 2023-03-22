@@ -787,7 +787,7 @@ site_config = {
                 'eng_bin':     [4, 4],   #  This is the eng-only bin for MRC, not useful for users?
                 'bin_enable':  ['1 1'],  #  Always square and matched to seeing situation by owner  NB Obsolete? NO MF uses to load bias calib
                                          #  NB NB inconsistent use of bin string   '1 1', '1x1' , etc.
-                'do_cosmics' : 'yes',
+                'do_cosmics' : True,
                 
                 'rbi_delay':  0,      #  This being zero says RBI is not available, eg. for SBIG.
                 'is_cmos':  True,

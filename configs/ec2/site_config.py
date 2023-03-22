@@ -792,6 +792,7 @@ site_config = {
                 'x_pixel':  3.76,
                 'y_pixel':  3.76,
                 'pix_scale': 1.25,    #   bin-2  2* math.degrees(math.atan(3.76/2563000))*3600
+                
 
                 'CameraXSize' : 9600,
                 'CameraYSize' : 6422,
@@ -825,10 +826,10 @@ site_config = {
                 'cycle_time':            0,   # Meas 20230219  for a bias
                 #'enable_bin':            [ True, False,  False,  False],
                 #'bias_dark_bin_spec':    ['1,1', '2,2', '3,3', '4,4' ],    #Default binning for flats
-                'bias_count':    63,
-                'dark_count':    17,
+                'bias_count':    64,
+                'dark_count':    64,
  
-                'dark_exposure': 360,
+                'dark_exposure': 30,
                 #'flat_bin_spec':         ['1,1', '2,2', '3,3', '4,4' ],   #Is this necessary?
 
                 #'flat_count': 5,
@@ -838,7 +839,7 @@ site_config = {
                 #'eng_bin':     [4, 4],   #  This is the eng-only bin for MRC, not useful for users?
                 'bin_enable':  ['1 1'],  #  Always square and matched to seeing situation by owner  NB Obsolete? NO MF uses to load bias calib
                                          #  NB NB inconsistent use of bin string   '1 1', '1x1' , etc.
-                'do_cosmics' : 'no',
+                'do_cosmics' : False,
                 
                 'rbi_delay':  0,      #  This being zero says RBI is not available, eg. for SBIG.
                 'is_cmos':  True,
@@ -849,7 +850,7 @@ site_config = {
                 'flat_count': 5,
 
                 'saturate':   60000 ,    #[[1, 65000], [2,262000], [3,589815], [4, 1048560]] ,   # e-.  This is a close guess, not measured, but taken from data sheet.
-                'fullwell_capacity':  60000,
+
 
                 'read_mode':  'Normal',
                 'readout_mode': 'Normal',

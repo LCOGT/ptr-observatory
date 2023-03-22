@@ -641,6 +641,8 @@ site_config = {
                 'optimal_bin':  [2, 2, 0.575],
                 'max_res_bin':  [1, 1, 0.2876],
                 'pix_scale': [0.2876, 0.575, 0.863, 1.15],    #  1.4506,  bin-2  2* math.degrees(math.atan(9/3962000))*3600
+                
+                'do_cosmics' : True,
                 'darkslide_com':  'COM17',
                 'has_screen': True,
                 'screen_settings':  {

@@ -606,6 +606,8 @@ site_config = {
                 'flat_count' : 10,
                 'pix_scale': [1.104, 2.134, 3.201, 4.268],
                 
+                'do_cosmics' : False,
+                
                 'has_screen': True,
                 'screen_settings':  {
                     'screen_saturation':  157.0,   #  This reflects WMD setting and needs proper values.
