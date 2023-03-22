@@ -1550,8 +1550,9 @@ class Camera:
             else:
                 frame_type = "expose"
         
-        self.smartstack = required_params.get('smartstack', 'yes')
-        self.longstack = required_params.get('longstackswitch', 'no')
+        self.smartstack = required_params.get('smartstack', True)
+        self.longstack = required_params.get('longstackswitch', False)
+
     
         if self.longstack == 'no':
             LongStackID ='no'
