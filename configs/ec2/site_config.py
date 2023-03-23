@@ -830,7 +830,7 @@ site_config = {
                 'bias_count':    64,
                 'dark_count':    64,
  
-                'dark_exposure': 30,
+                'dark_exposure': 20,
                 #'flat_bin_spec':         ['1,1', '2,2', '3,3', '4,4' ],   #Is this necessary?
 
                 #'flat_count': 5,
@@ -857,7 +857,7 @@ site_config = {
                 'readout_mode': 'Normal',
                 'readout_speed':  0.4,
                 'readout_seconds': 2.4,
-                'smart_stack_exposure_time': 30,
+                'smart_stack_exposure_time': 20,
                 'square_detector': False,
                 'square_pixels': True,
                 'areas_implemented': ['Full', 'SQR', '0.5*0.5°',  '0.7x0.7°', '1x1°', '1.4x1.4°', '2x2°', '2.8x2.8°', '4x4sq°', '5.6x5.6°'],
