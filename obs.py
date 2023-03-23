@@ -175,6 +175,7 @@ class Observatory:
         if self.debug_flag:
             self.debug_lapse_time = time.time() + self.config['debug_duration_sec']
             g_dev['debug'] = True
+            self.camera_temperature_in_range_for_calibrations = True
             #g_dev['obs'].open_and_enabled_to_observe = True
         else:
             self.debug_lapse_time = 0.0
