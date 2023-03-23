@@ -54,7 +54,7 @@ class ObservingConditions:
 
         self.name = name
         self.astro_events = astro_events
-        self.site = config["site"]
+        self.obsid = config["obs_id"]
         g_dev["ocn"] = self
         self.config = config
         g_dev["ocn"] = self
@@ -87,7 +87,7 @@ class ObservingConditions:
             True  # NB NB NB His needs improving, driving from config
         )
         self.hostname = socket.gethostname()
-        self.site_is_specific = False
+        self.obsid_is_specific = False
         # =============================================================================
         #         Note site_in_automatic found in the Enclosure object.
         # =============================================================================
@@ -99,8 +99,8 @@ class ObservingConditions:
             self.site_has_proxy = True  # NB Site is proxy needs a new name.
         else:
             self.site_has_proxy = False
-        if self.config["site_is_specific"]:
-            self.site_is_specific = True
+        if self.config["obsid_is_specific"]:
+            self.obsid_is_specific = True
             #  Note OCN has no associated commands.
             #  Here we monkey patch
             from site_config import get_ocn_status
@@ -108,11 +108,11 @@ class ObservingConditions:
             # Get current ocn status just as a test.
             self.status = self.get_status(g_dev)
         
-        elif self.is_wema or self.config["site_is_specific"]:
+        elif self.is_wema or self.config["obsid_is_specific"]:
             #  This is meant to be a generic Observing_condition code
             #  instance that can be accessed by a simple site or by the WEMA,
             #  assuming the transducers are connected to the WEMA.
-            self.site_is_generic = True
+            self.obsid_is_generic = True
             win32com.client.pythoncom.CoInitialize()
             self.sky_monitor = win32com.client.Dispatch(driver)
             self.sky_monitor.connected = True  # This is not an ASCOM device.
@@ -149,9 +149,9 @@ class ObservingConditions:
                     )
                     self.unihedron_connected = False
                     # NB NB if no unihedron is installed the status code needs to not report it.
-        elif not self.config["site_is_specific"]:
-            self.site_is_generic = False
-            self.site_is_specific = True
+        elif not self.config["obsid_is_specific"]:
+            self.obsid_is_generic = False
+            self.obsid_is_specific = True
         
         self.last_wx = None
 
@@ -251,7 +251,7 @@ class ObservingConditions:
             return status
 
         if (
-            self.site_is_generic or self.is_wema
+            self.obsid_is_generic or self.is_wema
         ):  # These operations are common to a generic single computer or wema site.
             status = {}
             illum, mag = self.astro_events.illuminationNow()
@@ -578,7 +578,7 @@ class ObservingConditions:
         }
 
         #quick=[]
-        #if self.site_is_specific:
+        #if self.obsid_is_specific:
         #    self.status = self.get_status(g_dev)  # Get current state.
         #else:
         #    self.status = self.get_status()
@@ -597,7 +597,7 @@ class ObservingConditions:
 
     def get_quick_status(self, quick):
 
-        if self.site_is_specific:
+        if self.obsid_is_specific:
             self.status = self.get_status(g_dev)  # Get current state.
         else:
             self.status = self.get_status()

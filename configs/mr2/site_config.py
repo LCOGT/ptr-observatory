@@ -63,13 +63,14 @@ site_name = 'mrc'    #NB These must be unique across all of PTR.
 obs_id = 'mrc2'
 
 site_config = {
-    'site': site_name.lower(), #TIM this may no longer be needed.
-    'site_id': 'mrc2',
+    #'site': site_name.lower(), #TIM this may no longer be needed.
+    #'site_id': 'mrc2',
     'obs_id': 'mrc2',
+    'observatory_location': site_name.lower(),
 
     'debug_site_mode': False,
     
-    'debug_mode' :False,
+    'debug_mode' : True,
     'admin_owner_commands_only': True,
     'debug_duration_sec': 1800,
     'owner':  ['google-oauth2|112401903840371673242'],  # Wayne
@@ -103,8 +104,8 @@ site_config = {
     'client_read_share_path':  'Q:/ptr/',
     'client_write_share_path': 'Q:/ptr/',
     'redis_ip': '10.15.0.109',  #'127.0.0.1', None if no redis path present,
-    'site_is_generic':  False,   # A simply  single computer ASCOM site.
-    'site_is_specific':  False,  # Indicates some special code for this site, found at end of config.
+    'obsid_is_generic':  False,   # A simply  single computer ASCOM site.
+    'obsid_is_specific':  False,  # Indicates some special code for this site, found at end of config.
     'host_wema_site_name':  'mrc',  #  The umbrella header for obsys in close geographic proximity.
 
     'name': 'Mountain Ranch Camp Observatory 0m6f6.8',
@@ -133,8 +134,8 @@ site_config = {
     'reference_ambient':  15.0,  #Degrees Celsius.  Alternately 12 entries, one for every - mid month.
     'reference_pressure':  977.83,  #mbar Alternately 12 entries, one for every - mid month.
 
-    'site_roof_control': False, #MTF entered this in to remove sro specific code.... Basically do we have control of the roof or not see line 338 sequencer.py
-    'site_allowed_to_open_roof': False,
+    'obsid_roof_control': False, #MTF entered this in to remove sro specific code.... Basically do we have control of the roof or not see line 338 sequencer.py
+    'obsid_allowed_to_open_roof': False,
     'period_of_time_to_wait_for_roof_to_open' : 50, # seconds - needed to check if the roof ACTUALLY opens. 
     'only_scope_that_controls_the_roof': False, # If multiple scopes control the roof, set this to False
     
@@ -149,16 +150,16 @@ site_config = {
     
 
 
-    'site_in_automatic_default': "Automatic",   #"Manual", "Shutdown"
+    'obsid_in_automatic_default': "Automatic",   #"Manual", "Shutdown"
     'automatic_detail_default': "Enclosure is initially set to Automatic mode.",
     'observing_check_period' : 2,    # How many minutes between weather checks
     'enclosure_check_period' : 2,    # How many minutes between enclosure checks
-    'auto_eve_bias_dark': False,
+    'auto_eve_bias_dark': True,
     'auto_midnight_moonless_bias_dark': False,
-    'auto_eve_sky_flat': False,
+    'auto_eve_sky_flat': True,
     'eve_sky_flat_sunset_offset': -60.,  #  Minutes  neg means before, + after.
     'eve_cool_down_open' : -60.0,
-    'auto_morn_sky_flat': False,
+    'auto_morn_sky_flat': True,
     'auto_morn_bias_dark': True,
     're-calibrate_on_solve': True,
     'pointing_calibration_on_startup': False,
@@ -586,7 +587,7 @@ site_config = {
                                 ['dif-ip',   [2, 6],     0, 0.01, [2, 17], 'di'],  # 17
                                 ['dif-exo', [2, 0],     0, 0.01, [2, 17], 'dE'],  # 18
                                 ['dark',    [4, 1],     0, 0.01, [2, 17], 'dk']], # 19
-                                #Screen = 100; QHY400 ~ 92% DQE   HDR Mode    Screen = 160 sat  20190825 measured.
+                                #Screen = 100; yY400 ~ 92% DQE   HDR Mode    Screen = 160 sat  20190825 measured.
                 'filter_screen_sort':  ['0', '1', '2', '10', '7', '6', '18', '12', '11', '13', '8',  '3', \
                                         '14', '15', '4', '16'],   #  '9', '21'],  # '5', '17'], #Most to least throughput, \
                                 #so screen brightens, skipping u and zs which really need sky.
@@ -621,7 +622,9 @@ site_config = {
             'name': 'sq004ms',      #Important because this points to a server file structure by that name.
             'desc':  'QHY 600Pro Monochrome',
             'service_date': '20230301',
-            'driver':  'ASCOM.QHYCCD.Camera',   #  Maxim.CCDCamera',   #"Maxim.CCDCamera",   #'ASCOM.FLI.Kepler.Camera',  #Code must work withall three
+            #'driver':  'ASCOM.QHYCCD.Camera',   #  Maxim.CCDCamera',   #"Maxim.CCDCamera",   #'ASCOM.FLI.Kepler.Camera',  #Code must work withall three
+            'driver':  "QHYCCD_Direct_Control", # NB Be careful this is not QHY Camera2 or Guider  "Maxim.CCDCamera",   #'ASCOM.FLI.Kepler.Camera', "ASCOM.QHYCCD.Camera",   #
+            
             'startup_script':  None,
             'recover_script':  None,
             'shutdown_script':  None,
@@ -630,6 +633,41 @@ site_config = {
             'use_file_mode':  False,
             'file_mode_path':  'Q:/000ptr_saf/archive/kf01/autosaves/',
             'settings': {
+                
+                
+                # For direct QHY usage we need to set the appropriate gain.
+                # This changes from site to site. "Fast" scopes like the RASA need lower gain then "slow".
+                # Sky quality is also important, the worse the sky quality, the higher tha gain needs to be
+                # Default for QHY600 is GAIN: 26, OFFSET: 60, readout mode 3. 
+                # Random tips from the internet:
+                # After the exposure, the background in the image should not be above 10% saturation of 16Bit while the brightest bits of the image should not be overexposed
+                # The offset should be set so that there is at least 300ADU for the background
+                # I guess try this out on the standard smartstack exposure time.        
+                # https://www.baader-planetarium.com/en/blog/gain-and-offset-darks-flats-and-bias-at-cooled-cmos-cameras/
+                #
+                # Also the "Readout Mode" is really important also
+                # Readout Mode #0 (Photographic DSO Mode)
+                # Readout Mode #1 (High Gain Mode)
+                # Readout Mode #2 (Extended Fullwell Mode)
+                # Readout Mode #3 (Extended Fullwell Mode-2CMS)
+                #
+                # With the powers invested in me, I have decided that readout mode 3 is the best. We can only pick one standard one
+                # and 0 is also debatably better for colour images, but 3 is way better for dynamic range....
+                # We can't swip and swap because the biases and darks and flats will change, so we are sticking with 3 until
+                # something bad happens with 3 for some reason
+                #
+                # In that sense, QHY600 NEEDS to be set at GAIN 26 and the only thing to adjust is the offset.....
+                # USB Speed is a tradeoff between speed and banding, min 0, max 60. 60 is least banding. Most of the 
+                # readout seems to be dominated by the slow driver (difference is a small fraction of a second), so I've left it at 60 - least banding.
+                'direct_qhy_readout_mode' : 3,        
+                'direct_qhy_gain' : 26,
+                'direct_qhy_offset' : 60,
+                'direct_qhy_usb_speed' : 60,
+                
+                
+                
+                
+                
                 'is_osc' : False,
                 
                 
@@ -641,13 +679,14 @@ site_config = {
                 "rotate90_fits": False,
                 "rotate180_fits": False,
                 "rotate270_fits": False,
-                'do_cosmics':'no',
                 'transpose_fits' : False,
-                'transpose_jpeg' : True,
+                
+                
+                'transpose_jpeg' : False,
                 'flipx_jpeg' : False,
                 'flipy_jpeg' : False,
                 'rotate180_jpeg' : False,
-                'rotate90_jpeg' : False,
+                'rotate90_jpeg' : True,
                 'rotate270_jpeg' : False,
                 'osc_bayer' : 'RGGB',
                 'crop_preview': False,
@@ -719,7 +758,11 @@ site_config = {
                 'cosmics_at_default' : 'no',
                 'cosmics_at_maximum' : 'yes',
 
-                'cycle_time': 12, # [10, 12, 8, 6],  # 3x3 requires a 1, 1 reaout then a software bin, so slower.
+                'cycle_time': 0, # [10, 12, 8, 6],  # 3x3 requires a 1, 1 reaout then a software bin, so slower.
+                
+                
+                
+                
                 'rbi_delay':  0.,      # This being zero says RBI is not available, eg. for SBIG.
                 'is_cmos':  False,
                 'bayer_pattern':  None,    #  Need to verify R as in RGGB is pixel x=0, y=0, B is x=1, y = 1
@@ -732,8 +775,8 @@ site_config = {
                 'fullwell_capacity': 85000.0, #[85000, 85000, 85000, 85000],
                 'read_mode':  'Normal',
                 'readout_mode': 'Normal',
-                'readout_speed':  0.4,
-                'readout_seconds': 6,
+                'readout_speed':  50,
+                'readout_seconds': 0.6,
                 'square_detector': True,
                 'areas_implemented': ["600%", "300%", "220%", "150%", "Full", "Sqr", '71%', '50%',  '35%', '25%', '12%'],
                 'default_area':  "Full",
@@ -749,9 +792,7 @@ site_config = {
                 'flat_bin_spec': ['1,1','2,2', '3,3','4,4'],    #Default binning for flats
                 'bias_dark_bin_spec': ['1,1','2,2', '3,3','4,4'],    #Default binning for flats
                 'bin_enable': ['1,1', '2,2', '3,3','4,4'],
-                'dark_length' : 900,
-                'bias_count' : 10,
-                'dark_count' : 10,
+                'dark_length' : 900,                
                 
                 #'CameraXSize' : 9600,
                 #'CameraYSize' : 6422,
@@ -762,7 +803,7 @@ site_config = {
                 'flat_count' : 10,
                 'pix_scale': [0.4685, 0.9371, 1.4055, 1.8742],    #  1.4506,  bin-2  2* math.degrees(math.atan(9/3962000))*3600
                 
-                'do_cosmics' : True,
+                'do_cosmics' : False,
                 'bin_modes':  [[2, 2, 0.937], [1, 1, 0.469], [3, 3, 1.407], [4, 4, 1.876]],   # [3, 3, 1.45],Meaning no binning choice if list has only one entry, default should be first.
                 'optimal_bin':  [2, 2, 0.937],    # Matched to seeing situation by owner
                 'max_res_bin':  [1, 1, 0.469],    # Matched to seeing situation by owner

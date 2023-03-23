@@ -189,8 +189,8 @@ class Mount:
         self.astro_events = astro_events
         g_dev['mnt'] = self
 
-        self.site = config['site']
-        self.site_path = config["client_path"] + config['site_id'] + '/'
+        self.obsid = config['obs_id']
+        self.obsid_path = g_dev['obs'].obsid_path
         self.config = config
         self.device_name = name
         self.settings = settings
@@ -218,7 +218,7 @@ class Mount:
             self.site_is_proxy = True
         else:
             self.site_is_proxy = False
-        if self.site == 'MRC2':
+        if self.obsid == 'MRC2':
             self.has_paddle = config['mount']['mount2']['has_paddle']
         else:
             self.has_paddle = config['mount']['mount1']['has_paddle']
@@ -267,7 +267,7 @@ class Mount:
             #pass
 
         #self.reset_mount_reference()
-        #self.site_in_automatic = config['site_in_automatic_default']
+        #self.obsid_in_automatic = config['site_in_automatic_default']
         #self.automatic_detail = config['automatic_detail_default']
         self.move_time = 0
 
@@ -648,7 +648,7 @@ class Mount:
                 #'is_tracking': self.mount.Tracking,
                 #'is_slewing': self.mount.Slewing,
                 'message': str(self.mount_message[:54]),
-                #'site_in_automatic': self.site_in_automatic,
+                #'site_in_automatic': self.obsid_in_automatic,
                 #'automatic_detail': str(self.automatic_detail),
                 'move_time': self.move_time
             }
@@ -885,10 +885,10 @@ class Mount:
         elif action == "home":
             self.home_command(req, opt)
         elif action == "set_site_manual":
-            self.site_in_automatic = False
+            self.obsid_in_automatic = False
             self.automatic_detail = "Site & Enclosure set to Manual"
         elif action == "set_site_automatic":
-            self.site_in_automatic = True
+            self.obsid_in_automatic = True
             self.automatic_detail = "Site set to Night time Automatic"
         elif action == "tracking":
             self.tracking_command(req, opt)
@@ -1694,7 +1694,7 @@ class Mount:
     def  adjust_mount_reference(self, err_ha, err_dec):
         #old_ha, old_dec = self.get_mount_reference()
 
-        mnt_shelf = shelve.open(self.site_path + 'ptr_night_shelf/' + 'mount1' + str(g_dev['obs'].name))
+        mnt_shelf = shelve.open(self.obsid_path + 'ptr_night_shelf/' + 'mount1' + str(g_dev['obs'].name))
         try:
             init_ra = mnt_shelf['ra_cal_offset']
             init_dec = mnt_shelf['dec_cal_offset']     # NB NB THese need to be modulo corrected, maybe limited
@@ -1711,7 +1711,7 @@ class Mount:
 
     def  adjust_flip_reference(self, err_ha, err_dec):
         #old_ha, old_dec = self.get_mount_reference()
-        mnt_shelf = shelve.open(self.site_path + 'ptr_night_shelf/' + 'mount1'+ str(g_dev['obs'].name))
+        mnt_shelf = shelve.open(self.obsid_path + 'ptr_night_shelf/' + 'mount1'+ str(g_dev['obs'].name))
         try:
             init_ra = mnt_shelf['flip_ra_cal_offset']
             init_dec = mnt_shelf['flip_dec_cal_offset']     # NB NB THese need to be modulo corrected, maybe limited
@@ -1726,14 +1726,14 @@ class Mount:
         return
 
     def set_mount_reference(self, delta_ra, delta_dec):
-        mnt_shelf = shelve.open(self.site_path + 'ptr_night_shelf/' + 'mount1'+ str(g_dev['obs'].name))
+        mnt_shelf = shelve.open(self.obsid_path + 'ptr_night_shelf/' + 'mount1'+ str(g_dev['obs'].name))
         mnt_shelf['ra_cal_offset'] = delta_ra
         mnt_shelf['dec_cal_offset'] = delta_dec
         mnt_shelf.close()
         return
 
     def set_flip_reference(self, delta_ra, delta_dec):
-        mnt_shelf = shelve.open(self.site_path + 'ptr_night_shelf/' + 'mount1'+ str(g_dev['obs'].name))
+        mnt_shelf = shelve.open(self.obsid_path + 'ptr_night_shelf/' + 'mount1'+ str(g_dev['obs'].name))
         mnt_shelf['flip_ra_cal_offset'] = delta_ra
         mnt_shelf['flip_dec_cal_offset'] = delta_dec
         mnt_shelf.close()
@@ -1742,7 +1742,7 @@ class Mount:
     def get_mount_reference(self):
 
         #breakpoint()
-        mnt_shelf = shelve.open(self.site_path + 'ptr_night_shelf/' + 'mount1'+ str(g_dev['obs'].name))
+        mnt_shelf = shelve.open(self.obsid_path + 'ptr_night_shelf/' + 'mount1'+ str(g_dev['obs'].name))
         delta_ra = mnt_shelf['ra_cal_offset'] + self.west_clutch_ra_correction   #Note set up at initialize time.
         delta_dec = mnt_shelf['dec_cal_offset'] +  self.west_clutch_dec_correction
         mnt_shelf.close()
@@ -1750,7 +1750,7 @@ class Mount:
         
 
     def get_flip_reference(self):
-        mnt_shelf = shelve.open(self.site_path + 'ptr_night_shelf/' + 'mount1'+ str(g_dev['obs'].name))
+        mnt_shelf = shelve.open(self.obsid_path + 'ptr_night_shelf/' + 'mount1'+ str(g_dev['obs'].name))
         #NB NB NB The ease may best have a sign change asserted.
         delta_ra = mnt_shelf['flip_ra_cal_offset'] + self.east_flip_ra_correction
         delta_dec = mnt_shelf['flip_dec_cal_offset'] + self.east_flip_dec_correction
@@ -1760,7 +1760,7 @@ class Mount:
     def reset_mount_reference(self):
         
 
-        mnt_shelf = shelve.open(self.site_path + 'ptr_night_shelf/' + 'mount1'+ str(g_dev['obs'].name))
+        mnt_shelf = shelve.open(self.obsid_path + 'ptr_night_shelf/' + 'mount1'+ str(g_dev['obs'].name))
         mnt_shelf['ra_cal_offset'] = 0.000
         mnt_shelf['dec_cal_offset'] = 0.000
         mnt_shelf['flip_ra_cal_offset'] = 0.000

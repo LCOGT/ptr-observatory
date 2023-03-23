@@ -24,9 +24,9 @@ def probeRead(com_port):
 
 class Focuser:
     def __init__(self, driver: str, name: str, config: dict):
-        self.site = config["site"]
+        self.obsid = config["obs_id"]
         self.name = name
-        self.site_path = config["client_path"]
+        self.obsid_path = g_dev['obs'].obsid_path
         self.camera_name = config["camera"]["camera_1_1"]["name"]
         
         g_dev["foc"] = self
@@ -231,7 +231,7 @@ class Focuser:
 
         url = "https://jobs.photonranch.org/jobs/updatejobstatus"
         body = {
-            "site": self.site,
+            "site": self.obsid,
             "ulid": cmd_id,
             "secondsUntilComplete": seconds_remaining,
             "newStatus": status,
@@ -308,7 +308,7 @@ class Focuser:
         # makes more sense than a full recalcutatin of ax + b...
 
         try:
-            if self.site != "sro":
+            if self.obsid != "sro":
                 temp_delta = self.focuser.Temperature - self.last_temperature
             else:
                 try:
@@ -416,13 +416,13 @@ class Focuser:
         plog(f"focuser cmd: auto")
 
     def set_focal_ref(self, ref):
-        cam_shelf = shelve.open(self.site_path + "ptr_night_shelf/" + self.camera_name + str(g_dev['obs'].name))
+        cam_shelf = shelve.open(self.obsid_path + "ptr_night_shelf/" + self.camera_name + str(g_dev['obs'].name))
         cam_shelf["focus_ref"] = ref
         cam_shelf.close()
         return
 
     def set_focal_ref_reset_log(self, ref):
-        cam_shelf = shelve.open(self.site_path + "ptr_night_shelf/" + self.camera_name + str(g_dev['obs'].name))
+        cam_shelf = shelve.open(self.obsid_path + "ptr_night_shelf/" + self.camera_name + str(g_dev['obs'].name))
         cam_shelf["focus_ref"] = ref
         cam_shelf["af_log"] = []
         cam_shelf.close()
@@ -434,7 +434,7 @@ class Focuser:
         # Note once focus comp is in place this data
         # needs to be combined with great care.
         cam_shelf = shelve.open(
-            self.site_path + "ptr_night_shelf/" + self.camera_name + str(g_dev['obs'].name), writeback=True
+            self.obsid_path + "ptr_night_shelf/" + self.camera_name + str(g_dev['obs'].name), writeback=True
         )
         try:
             f_temp = (
@@ -465,7 +465,7 @@ class Focuser:
 
         try:
             cam_shelf = shelve.open(
-                self.site_path + "ptr_night_shelf/" + self.camera_name + str(g_dev['obs'].name), writeback=True
+                self.obsid_path + "ptr_night_shelf/" + self.camera_name + str(g_dev['obs'].name), writeback=True
             )
             for item in cam_shelf["af_log"]:
                 plog(str(item))
@@ -473,7 +473,7 @@ class Focuser:
             plog("There is no focus log on the night shelf.")
 
     def get_focal_ref(self):
-        cam_shelf = shelve.open(self.site_path + "ptr_night_shelf/" + self.camera_name + str(g_dev['obs'].name))
+        cam_shelf = shelve.open(self.obsid_path + "ptr_night_shelf/" + self.camera_name + str(g_dev['obs'].name))
         focus_ref = cam_shelf["focus_ref"]
         # NB Should we also return and use the ref temp?
         cam_shelf.close()
