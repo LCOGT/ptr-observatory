@@ -645,11 +645,22 @@ sel
                                 self.cancel_all_activity() # Hi Wayne, I have to cancel all acitivity with some roof stuff
                                 # So I've moved the cancelling to it's own function just above so it can be called from multiple locations.
                             else:
-                                self.cmd_queue.put(cmd)  # SAVE THE COMMAND FOR LATER
-                                g_dev["obs"].stop_all_activity = False
-                                plog(
-                                    "Queueing up a new command... Hint:  " + cmd["action"]
-                                )
+                                # Check here for irrelevant commands
+                                
+                                if cmd['deviceType'] == 'screen' and self.config['screen']['screen1']['driver'] == None:
+                                    plog ("Refusing command as there is no screen")
+                                    g_dev['obs'].send_to_user("Request rejected as site has no flat screen.")
+                                elif cmd['deviceType'] == 'rotator' and self.config['rotator']['rotator1']['driver'] == None:
+                                     plog ("Refusing command as there is no rotator")
+                                     g_dev['obs'].send_to_user("Request rejected as site has no rotator.")
+                                # If not irrelevant, queue the command
+                                else:                               
+                                
+                                    self.cmd_queue.put(cmd)  # SAVE THE COMMAND FOR LATER
+                                    g_dev["obs"].stop_all_activity = False
+                                    plog(
+                                        "Queueing up a new command... Hint:  " + cmd["action"]
+                                    )
     
                             if cancel_check:
                                 result={'stopped': True}
@@ -861,22 +872,52 @@ sel
                 # Get the actual device object...
                 device = devices_of_type[device_name]
                 # ...and add it to main status dict.
+                #breakpoint()
+                
+
+                
                 if (
                     "enclosure" in device_name
-                    and device_name in self.config["wema_types"]
-                    and (self.is_wema or self.site_is_specific)
-                ):
-                    if (
+                    #and device_name in self.config["wema_types"]
+                    #and (self.is_wema or self.site_is_specific)
+                ):  
+
+                    if self.config['enclosure']['enclosure1']['driver'] == None and not self.site_is_specific:
+                        # Even if no connection send a satus
+                        status = {'shutter_status': "No enclosure.",
+                                  'enclosure_synchronized': False, #self.following, 20220103_0135 WER
+                                  'dome_azimuth': 0,
+                                  'dome_slewing': False,
+                                  'enclosure_mode': "No Enclosure",
+                                  'enclosure_message': "No message"}, #self.state}#self.following, 20220103_0135 WER
+                    
+                    elif (
                         datetime.datetime.now() - self.enclosure_status_timer
                     ) < datetime.timedelta(minutes=self.enclosure_check_period):
                         result = None
                         send_enc = False
                     else:
-                        plog("Running enclosure status check")
+                        #plog("Running enclosure status check")
                         self.enclosure_status_timer = datetime.datetime.now()
                         send_enc = True
 
                         result = device.get_status()
+                
+                elif ("observing_conditions" in device_name
+                      and self.config['observing_conditions']['observing_conditions1']['driver'] == None):
+                    # Here is where the weather config gets updated.
+                    if (
+                        datetime.datetime.now() - self.observing_status_timer
+                    ) < datetime.timedelta(minutes=self.observing_check_period):
+                        result = None
+                        send_ocn = False
+                    else:
+                        #plog("Running weather status check.")
+                        self.observing_status_timer = datetime.datetime.now()
+                        result = device.get_noocndevice_status()
+                        send_ocn = True
+                        if self.site_is_specific:
+                            remove_enc = False
 
                 elif (
                     "observing_conditions" in device_name
@@ -896,6 +937,8 @@ sel
                         send_ocn = True
                         if self.site_is_specific:
                             remove_enc = False
+                
+                    
 
                 else:
                     if  'telescope' in device_name:
@@ -1050,7 +1093,7 @@ sel
                 
             # Roof Checks only if not in Manual mode and not debug mode
             if g_dev['enc'].mode != 'Manual' or not self.debug_flag:
-            
+
                 if g_dev['enc'].status['shutter_status'] == 'Software Fault':
                     plog ("Software Fault Detected. Will alert the authorities!")
                     plog ("Parking Scope in the meantime")
@@ -1924,10 +1967,10 @@ sel
                         g_dev["cam"].enqueue_for_fastAWS(
                             1000, paths["im_path"], paths["jpeg_name10"].replace('EX10','EX20')
                         )
-                        g_dev["obs"].send_to_user(
-                            "A preview image of the single image has been sent to the GUI.",
-                            p_level="INFO",
-                        )
+                        #g_dev["obs"].send_to_user(
+                        #    "A preview image of the single image has been sent to the GUI.",
+                        #    p_level="INFO",
+                        #)
                     except:
                         plog(
                             "there was an issue saving the preview jpg. Pushing on though"
@@ -2727,10 +2770,10 @@ sel
                         g_dev['cam'].enqueue_for_AWS(
                             26000000, '',slow_process[1]
                         )
-                        g_dev["obs"].send_to_user(
-                            "An image has been readout from the camera and queued for transfer to the cloud.",
-                            p_level="INFO",
-                        )
+                        #g_dev["obs"].send_to_user(
+                        #    "An image has been readout from the camera and queued for transfer to the cloud.",
+                        #    p_level="INFO",
+                        #)
                     #plog ("fz done.")
                 
                 if slow_process[0] == 'reduced':

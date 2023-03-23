@@ -241,6 +241,9 @@ site_config = {
             'name': 'Megawan',
             'hostIP':  '10.15.0.30',
             'driver': 'Windows_share',
+            'enc_is_specific':  False,  # Indicates some special site code.
+            'directly_connected': False, # For ECO and EC2, they connect directly to the enclosure, whereas WEMA are different.
+            
             'shutdown_script':  None,
             'has_lights':  True,
             'controlled_by':  ['mount1', 'mount2'],
@@ -546,10 +549,18 @@ site_config = {
             
 
             'settings': {
-                'filter_count': 24,
-                'home_filter': 1,
-                'filter_reference': 1,
+                #'filter_count': 24,
+                #'home_filter': 1,
+                #'filter_reference': 1,
                 'default_filter':  'w',
+                
+                'auto_color_options' : ['manual','RGB','NB','RGBHA','RGBNB'], # OPtions include 'OSC', 'manual','RGB','NB','RGBHA','RGBNB'
+                'mono_RGB_colour_filters' : ['jb','jv','r'], # B, G, R filter codes for this camera if it is a monochrome camera with filters
+                'mono_RGB_relative_weights' : [1.2,1,0.8],
+                'mono_Narrowband_colour_filters' : ['ha','o3','s2'], # ha, o3, s2 filter codes for this camera if it is a monochrome camera with filters
+                'mono_Narrowband_relative_weights' : [1.0,2,2.5],
+                
+                
                 'filter_data': [
                                 ['air',     [0, 0], -1000, 0.01, [2, 17], 'ai'],   # 0
                                 ['Lum',     [1, 0],     0, 0.01, [2, 17], 'w '],   # 20
@@ -563,16 +574,16 @@ site_config = {
                                 ['N2',      [5, 5],     0, 0.01, [2, 17], 'S2'],   # 5
                                 ['S2',      [6, 6],     0, 0.01, [2, 17], 'N2'],   # 6
                                 ['JB',      [0, 1],     0, 0.01, [2, 17], 'B '],   # 7
-                                ['g',       [0, 2],     0, 0.01, [2, 17], 'g '],   # 8
+                                ['gp',       [0, 2],     0, 0.01, [2, 17], 'g '],   # 8
                                 ['JV',      [0, 3],     0, 0.01, [2, 17], 'V '],   # 9
-                                ['r',       [0, 4],     0, 0.01, [2, 17], 'r '],  # 10
-                                ['i',       [0, 5],     0, 0.01, [2, 17], 'i '],  # 11
+                                ['rp',       [0, 4],     0, 0.01, [2, 17], 'r '],  # 10
+                                ['ip',       [0, 5],     0, 0.01, [2, 17], 'i '],  # 11
                                 ['EXO',     [0, 6],     0, 0.01, [2, 17], 'EX'],  # 12
                                 ['dif-JB',  [2, 1],     0, 0.01, [2, 17], 'Ha'],  # 13
-                                ['dif-g',   [2, 2],     0, 0.01, [2, 17], 'dg'],  # 14
+                                ['dif-gp',   [2, 2],     0, 0.01, [2, 17], 'dg'],  # 14
                                 ['dif-JV',  [2, 3],     0, 0.01, [2, 17], 'dV'],  # 15
-                                ['dif-r',   [2, 5],     0, 0.01, [2, 17], 'dr'],  # 16
-                                ['dif-i',   [2, 6],     0, 0.01, [2, 17], 'di'],  # 17
+                                ['dif-rp',   [2, 5],     0, 0.01, [2, 17], 'dr'],  # 16
+                                ['dif-ip',   [2, 6],     0, 0.01, [2, 17], 'di'],  # 17
                                 ['dif-exo', [2, 0],     0, 0.01, [2, 17], 'dE'],  # 18
                                 ['dark',    [4, 1],     0, 0.01, [2, 17], 'dk']], # 19
                                 #Screen = 100; QHY400 ~ 92% DQE   HDR Mode    Screen = 160 sat  20190825 measured.
@@ -620,6 +631,10 @@ site_config = {
             'file_mode_path':  'Q:/000ptr_saf/archive/kf01/autosaves/',
             'settings': {
                 'is_osc' : False,
+                
+                
+                
+                
                 'squash_on_x_axis' : True,
                 'flipx_fits': False,
                 'flipy_fits': False,
@@ -689,7 +704,8 @@ site_config = {
                 'min_exposure': 0.001,  #Need to check this setting out
 
                 'max_daytime_exposure': 10,
-                'min_flat_exposure': 0.0001,
+                'min_flat_exposure' : 3.0, # For certain shutters, short exposures aren't good for flats. Some CMOS have banding in too short an exposure. Largely applies to ccds though.
+                'max_flat_exposure' : 20.0, # Realistically there should be a maximum flat_exposure that makes sure flats are efficient and aren't collecting actual stars.
                 'bias_count':    63,
                 'dark_count':    13,
                 'dark_exposure': 360,
@@ -745,7 +761,8 @@ site_config = {
                 
                 'flat_count' : 10,
                 'pix_scale': [0.4685, 0.9371, 1.4055, 1.8742],    #  1.4506,  bin-2  2* math.degrees(math.atan(9/3962000))*3600
-
+                
+                'do_cosmics' : True,
                 'bin_modes':  [[2, 2, 0.937], [1, 1, 0.469], [3, 3, 1.407], [4, 4, 1.876]],   # [3, 3, 1.45],Meaning no binning choice if list has only one entry, default should be first.
                 'optimal_bin':  [2, 2, 0.937],    # Matched to seeing situation by owner
                 'max_res_bin':  [1, 1, 0.469],    # Matched to seeing situation by owner
@@ -985,8 +1002,8 @@ site_config = {
     },
 }  #This brace closes the while configuration dictionary. Match found up top at:  site_config = {
 
-get_ocn_status = None
-get_enc_status = None
+#get_ocn_status = None
+#get_enc_status = None
 
 if __name__ == '__main__':
     '''

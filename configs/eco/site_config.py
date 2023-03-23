@@ -107,8 +107,8 @@ site_config = {
     'lowest_requestable_altitude': -5, # Degrees. For normal pointing requests don't allow requests to go this low. 
     'site_in_automatic_default': "Automatic",   #  ["Manual", "Shutdown", "Automatic"]
     'automatic_detail_default': "Enclosure is initially set to Automatic mode.",
-    'observing_check_period' : 5,    # How many minutes between weather checks
-    'enclosure_check_period' : 5,    # How many minutes between enclosure checks
+    'observing_check_period' : 2,    # How many minutes between weather checks
+    'enclosure_check_period' : 2,    # How many minutes between enclosure checks
     'auto_eve_bias_dark': True,
     'auto_midnight_moonless_bias_dark': False,
     'auto_eve_sky_flat': True,
@@ -195,6 +195,7 @@ site_config = {
         'enclosure1': {
             'parent': 'site',
             'enc_is_specific':  False,  # Indicates some special site code.
+            'directly_connected': True, # For ECO and EC2, they connect directly to the enclosure, whereas WEMA are different.
             'name': 'Dragonfly Roof',
             'hostIP':  None,
             'driver': 'Dragonfly.Dome',  #'ASCOM.DigitalDomeWorks.Dome',  #  ASCOMDome.Dome',  #  ASCOM.DeviceHub.Dome',  #  ASCOM.DigitalDomeWorks.Dome',  #"  ASCOMDome.Dome',
@@ -348,7 +349,7 @@ site_config = {
             'parent': 'telescope1',
             'name': 'rotator',
             'desc':  False,
-            'driver': False,
+            'driver': None,
 			'com_port':  False,
             'minimum': -180.,
             'maximum': 360.0,
@@ -362,8 +363,8 @@ site_config = {
         'screen1': {
             'parent': 'telescope1',
             'name': 'screen',
-            'desc':  'Optec Alnitak 16"',
-            'driver': 'ASCOM.OptecAlnitak.CoverCalibrator',
+            'desc':  'No Screen',
+            'driver': None,
             'com_port': 'COM10',  #  This needs to be a 4 or 5 character string as in 'COM8' or 'COM22'
             'minimum': 5,   #  This is the % of light emitted when Screen is on and nominally at 0% bright.
             'saturate': 255,  #  Out of 0 - 255, this is the last value where the screen is linear with output.
@@ -439,6 +440,14 @@ site_config = {
                 #'filter_count': 11,   #  This must be correct as to the number of filters
                 #'home_filter':  4,
                 'default_filter': "lum",
+                
+                'auto_color_options' : ['manual','RGB','NB','RGBHA','RGBNB'], # OPtions include 'OSC', 'manual','RGB','NB','RGBHA','RGBNB'
+                'mono_RGB_colour_filters' : ['pb','v','ip'], # B, G, R filter codes for this camera if it is a monochrome camera with filters
+                'mono_RGB_relative_weights' : [1.2,1,0.8],
+                'mono_Narrowband_colour_filters' : ['ha','o3','s2'], # ha, o3, s2 filter codes for this camera if it is a monochrome camera with filters
+                'mono_Narrowband_relative_weights' : [1.0,2,2.5],
+                
+                
                 #'filter_reference': 4,   #  We choose to use W as the default filter.  Gains taken at F9, Ceravolo 300mm
                 # Columns for filter data are : ['filter', 'filter_index', 'filter_offset', 'sky_gain', 'screen_gain', 'alias']
                 'filter_data': [  
@@ -517,6 +526,10 @@ site_config = {
 
             'settings': {                
                 'is_osc' : False,
+                
+                
+                
+                
                 'squash_on_x_axis' : True,
                 # ONLY TRANSFORM THE FITS IF YOU HAVE
                # A DATA-BASED REASON TO DO SO.....
@@ -600,7 +613,8 @@ site_config = {
                 'east_offset': 0.0,     #  Not sure why these three are even here.
                 'rotation': 0.0,        #  Probably remove.
                 'min_exposure': 0.2,
-                'min_flat_exposure' : 1.0, # For certain shutters, short exposures aren't good for flats. Largely applies to ccds though.
+                'min_flat_exposure' : 3.0, # For certain shutters, short exposures aren't good for flats. Some CMOS have banding in too short an exposure. Largely applies to ccds though.
+                'max_flat_exposure' : 20.0, # Realistically there should be a maximum flat_exposure that makes sure flats are efficient and aren't collecting actual stars.
                 'max_exposure': 3600,
                 'max_daytime_exposure': 0.0001,
                 'can_subframe':  True,
@@ -624,7 +638,7 @@ site_config = {
                 'readout_mode':  'Normal',
                 'readout_speed': 0.08,
                 'readout_seconds': 12.5,
-                'smart_stack_exposure_time' : 30,
+                'smart_stack_exposure_time' : 75,
                 'saturate':   65000 ,   # e-.  This is a close guess, not measured, but taken from data sheet.
                 'max_linearity': 65000,
                 'fullwell_capacity': 65000,  #e-.   We need to sort out the units properly NB NB NB
@@ -639,12 +653,12 @@ site_config = {
                 #'max_res_bin':  [1, 1, 0.269],    #  Matched to seeing situation by owner
                 #'bin_modes':  [[1, 1, 0.269],[2, 2, 0.538],[3, 3, 0.807],[4, 4, 1.076]], #  , [2, 2, 2.13], [3, 3, 3.21], [4, 4, 4.27]],   #Meaning no binning choice if list has only one entry, default should be first.
                 'pix_scale': 0.637,
-                'do_cosmics' : 'no',
+                'do_cosmics' : False,
                 #'dark_length' : 1,
-                'bias_count' : 64,
-                'dark_count' : 64,
+                'bias_count' : 10,
+                'dark_count' : 10,
                 'flat_count' : 10,
-                'dark_exposure': 30,
+                'dark_exposure': 75,
                 'has_darkslide':  False,
                 'darkslide_com':  None,
                 'shutter_type': "Electronic",
@@ -963,7 +977,7 @@ site_config = {
 #     #print ("no encolsure control")
 #     pass
 
-def get_ocn_status():
-    pass
-def get_enc_status():
-    pass
+#def get_ocn_status():
+#    pass
+#def get_enc_status():
+#    pass

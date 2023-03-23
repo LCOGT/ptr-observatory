@@ -260,7 +260,7 @@ class FilterWheel:
         except:
             f_move = False
             status = {
-                "filter_name": None,
+                "filter_name": "No filter",
                 "filter_number": 0,
                 "filter_offset": 0.0,
                 "wheel_is_moving": f_move,

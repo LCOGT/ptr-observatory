@@ -201,7 +201,8 @@ site_config = {
     'enclosure': {
         'enclosure1': {
             'parent': 'site',
-            'enc_is_specific':  False,  # Indicates some special site code.
+            'enc_is_specific':  False,  # Indicates some special site code.            
+            'directly_connected': True, # For ECO and EC2, they connect directly to the enclosure, whereas WEMA are different.
             'name': 'Dragonfly Roof',
             'hostIP':  None,
             'driver': 'Dragonfly.Dome',  #'ASCOM.DigitalDomeWorks.Dome',  #  ASCOMDome.Dome',  #  ASCOM.DeviceHub.Dome',  #  ASCOM.DigitalDomeWorks.Dome',  #"  ASCOMDome.Dome',
@@ -341,7 +342,7 @@ site_config = {
             'parent': 'telescope1',
             'name': 'rotator',
             'desc':  False,
-            'driver': False,
+            'driver': None,
 			'com_port':  False,
             'minimum': -180.,
             'maximum': 360.0,
@@ -355,8 +356,8 @@ site_config = {
         'screen1': {
             'parent': 'telescope1',
             'name': 'screen',
-            'desc':  'Optec Alnitak 16"',
-            'driver': 'ASCOM.OptecAlnitak.CoverCalibrator',
+            'desc':  'No Screen',
+            'driver': None,
             'com_port': 'COM10',  #  This needs to be a 4 or 5 character string as in 'COM8' or 'COM22'
             'minimum': 5,   #  This is the % of light emitted when Screen is on and nominally at 0% bright.
             'saturate': 255,  #  Out of 0 - 255, this is the last value where the screen is linear with output.
@@ -377,10 +378,10 @@ site_config = {
             #F4.9 setup
             'start_at_config_reference': True,
             'use_focuser_temperature': False,
-            'reference':11250,    #  20210313  Nominal at 10C Primary temperature
+            'reference':9900,    #  20210313  Nominal at 10C Primary temperature
             'ref_temp':  6265.0,    #  Update when pinning reference
             'coef_c': 0,   #  Negative means focus moves out as Primary gets colder
-            'coef_0': 11250,  #  Nominal intercept when Primary is at 0.0 C.
+            'coef_0': 9900,  #  Nominal intercept when Primary is at 0.0 C.
             'coef_date':  '20220914',    #This appears to be sensible result 44 points -13 to 3C'reference':  6431,    #  Nominal at 10C Primary temperature
             # #F9 setup
             # 'reference': 4375,    #   Guess 20210904  Nominal at 10C Primary temperature
@@ -476,6 +477,7 @@ site_config = {
             'flat_sky_gain' : 4554,
             "driver":   None,   #"LCO.dual",  #  'ASCOM.FLI.FilterWheel',
             #"driver":   "Maxim.Image",   #"LCO.dual",  #  'ASCOM.FLI.FilterWheel',
+            'settings': {'auto_color_options' : ['none']}, # OPtions include 'OSC', 'manual','RGB','NB','RGBHA','RGBNB'
             'ip_string': None,
             "dual_wheel": False,
             #"default_flat_exposure" : 1.0,
@@ -790,6 +792,7 @@ site_config = {
                 'x_pixel':  3.76,
                 'y_pixel':  3.76,
                 'pix_scale': 1.25,    #   bin-2  2* math.degrees(math.atan(3.76/2563000))*3600
+                
 
                 'CameraXSize' : 9600,
                 'CameraYSize' : 6422,
@@ -806,12 +809,13 @@ site_config = {
                 'east_offset': 0.0,
                 'rotation': 0.0,
                 'min_exposure': 0.0001,
-                'min_flat_exposure': 0.0001,
+                'min_flat_exposure' : 3.0, # For certain shutters, short exposures aren't good for flats. Some CMOS have banding in too short an exposure. Largely applies to ccds though.
+                'max_flat_exposure' : 20.0, # Realistically there should be a maximum flat_exposure that makes sure flats are efficient and aren't collecting actual stars.
                 'max_exposure': 180.,
                 'max_daytime_exposure': 0.0001,
                 'can_subframe':  True,
                 'min_subframe': [128,128],
-                'bin_modes':  [['Optimal', 0.91], ['Fine', 0.61], ['Coarse', 1.2], ['Eng', 0.30]],     #Meaning fixed binning if list has only one entry
+                #'bin_modes':  [['Optimal', 0.91], ['Fine', 0.61], ['Coarse', 1.2], ['Eng', 0.30]],     #Meaning fixed binning if list has only one entry
                 'reference_gain': 1.3,     #  NB GUess One val for each binning. Assumed digitalsumming in camera???
                 'reference_noise': 6,    #  NB Guess
                 'reference_dark': 0.2,  #  NB  Guess
@@ -823,20 +827,20 @@ site_config = {
                 'cycle_time':            0,   # Meas 20230219  for a bias
                 #'enable_bin':            [ True, False,  False,  False],
                 #'bias_dark_bin_spec':    ['1,1', '2,2', '3,3', '4,4' ],    #Default binning for flats
-                'bias_count':    63,
-                'dark_count':    17,
+                'bias_count':    64,
+                'dark_count':    64,
  
-                'dark_exposure': 360,
+                'dark_exposure': 20,
                 #'flat_bin_spec':         ['1,1', '2,2', '3,3', '4,4' ],   #Is this necessary?
 
                 #'flat_count': 5,
-                'optimal_bin': [1, 1],   #  This is the optimal bin for MRC
-                'fine_bin':    [1, 1],   #  This is the fine bin for MRC
-                'coarse_bin':  [2, 2],   #  This is the coarse bin for MRC
-                'eng_bin':     [4, 4],   #  This is the eng-only bin for MRC, not useful for users?
+                #'optimal_bin': [1, 1],   #  This is the optimal bin for MRC
+                #'fine_bin':    [1, 1],   #  This is the fine bin for MRC
+                #'coarse_bin':  [2, 2],   #  This is the coarse bin for MRC
+                #'eng_bin':     [4, 4],   #  This is the eng-only bin for MRC, not useful for users?
                 'bin_enable':  ['1 1'],  #  Always square and matched to seeing situation by owner  NB Obsolete? NO MF uses to load bias calib
                                          #  NB NB inconsistent use of bin string   '1 1', '1x1' , etc.
-                'do_cosmics' : 'no',
+                'do_cosmics' : False,
                 
                 'rbi_delay':  0,      #  This being zero says RBI is not available, eg. for SBIG.
                 'is_cmos':  True,
@@ -847,13 +851,13 @@ site_config = {
                 'flat_count': 5,
 
                 'saturate':   60000 ,    #[[1, 65000], [2,262000], [3,589815], [4, 1048560]] ,   # e-.  This is a close guess, not measured, but taken from data sheet.
-                'fullwell_capacity':  60000,
+
 
                 'read_mode':  'Normal',
                 'readout_mode': 'Normal',
                 'readout_speed':  0.4,
                 'readout_seconds': 2.4,
-                'smart_stack_exposure_time': 30,
+                'smart_stack_exposure_time': 20,
                 'square_detector': False,
                 'square_pixels': True,
                 'areas_implemented': ['Full', 'SQR', '0.5*0.5°',  '0.7x0.7°', '1x1°', '1.4x1.4°', '2x2°', '2.8x2.8°', '4x4sq°', '5.6x5.6°'],

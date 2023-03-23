@@ -203,6 +203,8 @@ site_config = {
 
             'name': 'HomeDome',
             'enc_is_specific':  False,
+            
+            'directly_connected': False, # For ECO and EC2, they connect directly to the enclosure, whereas WEMA are different.
             'hostIP':  '10.0.0.10',
             'driver': 'ASCOM.DigitalDomeWorks.Dome',  #  'ASCOMDome.Dome',  #ASCOMDome.Dome',  # ASCOM.DeviceHub.Dome',  # ASCOM.DigitalDomeWorks.Dome',  #"  ASCOMDome.Dome',
 
@@ -441,10 +443,18 @@ site_config = {
             'ip_string': 'http://10.0.0.110',
             "dual_wheel": True,
             'settings': {
-                'filter_count': 43,
-                'home_filter':  1,
+                #'filter_count': 43,
+                #'home_filter':  1,
                 'default_filter': "w",
-                'filter_reference': 1,   # We choose to use W as the default filter.  Gains taken at F9, Ceravolo 300mm
+                
+                'auto_color_options' : ['manual','RGB','NB','RGBHA','RGBNB'], # OPtions include 'OSC', 'manual','RGB','NB','RGBHA','RGBNB'
+                'mono_RGB_colour_filters' : ['pb','pg','pr'], # B, G, R filter codes for this camera if it is a monochrome camera with filters
+                'mono_RGB_relative_weights' : [1.2,1,0.8],
+                'mono_Narrowband_colour_filters' : ['ha','o3','s2'], # ha, o3, s2 filter codes for this camera if it is a monochrome camera with filters
+                'mono_Narrowband_relative_weights' : [1.0,2,2.5],
+                
+                
+                #'filter_reference': 1,   # We choose to use W as the default filter.  Gains taken at F9, Ceravolo 300mm
                 # Columns for filter data are : ['filter', 'filter_index', 'filter_offset', 'sky_gain', 'screen_gain', 'alias']
                 'filter_data': [
                         ['air',  [0,  0], -800, 81.6, [2   ,  20], 'ai'],    # 0.  Gains 20211020 Clear NE sky
@@ -534,6 +544,8 @@ site_config = {
             'settings': {
                 'is_osc' : False,
                 
+
+                
                 'transpose_fits' : False,
                 'transpose_jpeg' : True,
                 'osc_bayer' : 'RGGB',
@@ -583,7 +595,8 @@ site_config = {
                 'east_offset': 0.0,     # Not sure why these three are even here.
                 'rotation': 0.0,        # Probably remove.
                 'min_exposure': 0.00001,                
-                'min_flat_exposure': 0.00001,
+                'min_flat_exposure' : 3.0, # For certain shutters, short exposures aren't good for flats. Some CMOS have banding in too short an exposure. Largely applies to ccds though.
+                'max_flat_exposure' : 20.0, # Realistically there should be a maximum flat_exposure that makes sure flats are efficient and aren't collecting actual stars.
                 'max_exposure': 360.0,
                 'max_daytime_exposure': 0.0001,
                 'can_subframe':  True,
@@ -629,6 +642,8 @@ site_config = {
                 'optimal_bin':  [2, 2, 0.575],
                 'max_res_bin':  [1, 1, 0.2876],
                 'pix_scale': [0.2876, 0.575, 0.863, 1.15],    #  1.4506,  bin-2  2* math.degrees(math.atan(9/3962000))*3600
+                
+                'do_cosmics' : True,
                 'darkslide_com':  'COM17',
                 'has_screen': True,
                 'screen_settings':  {
@@ -665,8 +680,8 @@ site_config = {
         },
     },
 }
-get_ocn_status = None   # NB these are placeholders for site specific routines for in a config file
-get_enc_status = None
+#get_ocn_status = None   # NB these are placeholders for site specific routines for in a config file
+#get_enc_status = None
 
 if __name__ == '__main__':
     j_dump = json.dumps(site_config)

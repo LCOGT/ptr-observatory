@@ -210,6 +210,7 @@ site_config = {
         'enclosure1': {
             'parent': 'site',
             'enc_is_specific':  True,  # Indicates some special site code.
+            'directly_connected': False, # For ECO and EC2, they connect directly to the enclosure, whereas WEMA are different.
             'name': 'SRO File',
             'hostIP':  None,
             'driver': None,  #'ASCOM.DigitalDomeWorks.Dome',  #  ASCOMDome.Dome',  #  ASCOM.DeviceHub.Dome',  #  ASCOM.DigitalDomeWorks.Dome',  #"  ASCOMDome.Dome',
@@ -424,10 +425,16 @@ site_config = {
             'ip_string': None,
             "dual_wheel": False,
             'settings': {
-                'filter_count': 11,   #  This must be correct as to the number of filters
-                'home_filter':  0,
+                #'filter_count': 11,   #  This must be correct as to the number of filters
+                #'home_filter':  0,
                 'default_filter': "PL",
-                'filter_reference': 0,   #  We choose to use W as the default filter.  Gains taken at F9, Ceravolo 300mm
+                
+                'auto_color_options' : ['manual','RGB','NB','RGBHA','RGBNB'], # OPtions include 'OSC', 'manual','RGB','NB','RGBHA','RGBNB'
+                'mono_RGB_colour_filters' : ['pb','pg','pr'], # B, G, R filter codes for this camera if it is a monochrome camera with filters
+                'mono_RGB_relative_weights' : [1.2,1,0.8],
+                'mono_Narrowband_colour_filters' : ['ha','o3','s2'], # ha, o3, s2 filter codes for this camera if it is a monochrome camera with filters
+                'mono_Narrowband_relative_weights' : [1.0,2,2.5],
+                #'filter_reference': 0,   #  We choose to use W as the default filter.  Gains taken at F9, Ceravolo 300mm
                 # Columns for filter data are : ['filter', 'filter_index', 'filter_offset', 'sky_gain', 'screen_gain', 'alias']
                 'filter_data': [  #NB NB NB add cwl & bw in nm.
 
@@ -487,6 +494,8 @@ site_config = {
 
             'settings': {                
                 'is_osc' : False,
+                
+
                 
                 'transpose_fits' : False,
                 'transpose_jpeg' : True,
@@ -550,7 +559,8 @@ site_config = {
                 'rotation': 0.0,        #  Probably remove.
                 'min_exposure': 0.2,
                 
-                'min_flat_exposure': 1.0,
+                'min_flat_exposure' : 3.0, # For certain shutters, short exposures aren't good for flats. Some CMOS have banding in too short an exposure. Largely applies to ccds though.
+                'max_flat_exposure' : 20.0, # Realistically there should be a maximum flat_exposure that makes sure flats are efficient and aren't collecting actual stars.
                 'max_exposure': 3600,
                 'max_daytime_exposure': 0.0001,
                 'can_subframe':  True,
@@ -596,6 +606,8 @@ site_config = {
                 
                 'flat_count' : 10,
                 'pix_scale': [1.104, 2.134, 3.201, 4.268],
+                
+                'do_cosmics' : False,
                 
                 'has_screen': True,
                 'screen_settings':  {

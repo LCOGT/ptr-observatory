@@ -904,10 +904,10 @@ class Mount:
         elif action == 'center_on_pixels':
             plog (command)
             self.go_command(req, opt, offset=True, calibrate=False)
-        elif action == 'calibrateAtFieldCenter':
-            plog (command)
-            #breakpoint()
-            self.go_command(req, opt, calibrate=True)
+        #elif action == 'calibrateAtFieldCenter':
+        #    plog (command)
+        #    #breakpoint()
+        #    self.go_command(req, opt, calibrate=True)
         elif action == 'sky_flat_position':
             self.slewToSkyFlatAsync()
         else:
@@ -1451,6 +1451,18 @@ class Mount:
         wait_for_slew()   
 
     def slewToSkyFlatAsync(self):
+        
+        if (not (g_dev['events']['Cool Down, Open'] < ephem.now() < g_dev['events']['Naut Dusk']) and \
+            not (g_dev['events']['Naut Dawn'] < ephem.now() < g_dev['events']['Close and Park'])):
+            g_dev['obs'].send_to_user("Refusing skyflat pointing request as it is outside skyflat time")
+            plog("Refusing pointing request as it is outside of skyflat pointing time.")
+            return
+        
+        if (g_dev['obs'].open_and_enabled_to_observe==False and g_dev['enc'].mode == 'Automatic') and (not g_dev['obs'].debug_flag):
+            g_dev['obs'].send_to_user("Refusing skyflat pointing request as the observatory is not enabled to observe.")
+            plog("Refusing skyflat pointing request as the observatory is not enabled to observe.")
+            return
+        
         az, alt = self.astro_events.flat_spot_now()
         self.unpark_command()        
 

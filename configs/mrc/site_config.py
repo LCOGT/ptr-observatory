@@ -245,7 +245,8 @@ site_config = {
     'enclosure': {
         'enclosure1': {
             'parent': 'site',
-            'enc_is_specific':  False,  # Indicates some special site code.
+            'enc_is_specific':  False,  # Indicates some special site code.            
+            'directly_connected': False, # For ECO and EC2, they connect directly to the enclosure, whereas WEMA are different.
             'name': 'Megawan',
             'hostIP':  '10.15.0.65',
             'driver': 'ASCOM.SkyRoofHub.Dome',    #  Not really a dome for Skyroof.
@@ -541,7 +542,14 @@ site_config = {
                 #'filter_count': 23,
                 #'home_filter':  2,
                 'default_filter':  'w',
-                'filter_reference': 2,
+                
+                'auto_color_options' : ['OSC'], # OPtions include 'OSC', 'manual','RGB','NB','RGBHA','RGBNB'
+                'mono_RGB_colour_filters' : ['pb','pg','pr'], # B, G, R filter codes for this camera if it is a monochrome camera with filters
+                'mono_RGB_relative_weights' : [1.2,1,0.8],
+                'mono_Narrowband_colour_filters' : ['ha','o3','s2'], # ha, o3, s2 filter codes for this camera if it is a monochrome camera with filters
+                'mono_Narrowband_relative_weights' : [1.0,2,2.5],
+                
+                #'filter_reference': 2,
                 
 
 
@@ -649,6 +657,8 @@ site_config = {
                 
                 'is_osc' : True,
                 
+
+                
                 'squash_on_x_axis' : True,
                 # 'osc_brightness_enhance' : 1.0,
                 # 'osc_contrast_enhance' : 1.3,
@@ -747,7 +757,8 @@ site_config = {
                 'east_offset': 0.0,
                 'rotation': 0.0,
                 'min_exposure': 0.0001,
-                'min_flat_exposure': 0.0001,
+                'min_flat_exposure' : 3.0, # For certain shutters, short exposures aren't good for flats. Some CMOS have banding in too short an exposure. Largely applies to ccds though.
+                'max_flat_exposure' : 20.0, # Realistically there should be a maximum flat_exposure that makes sure flats are efficient and aren't collecting actual stars.
                 'max_exposure': 180.,
                 'max_daytime_exposure': 0.0001,
                 'can_subframe':  True,
@@ -777,7 +788,7 @@ site_config = {
                 'eng_bin':     [4, 4],   #  This is the eng-only bin for MRC, not useful for users?
                 'bin_enable':  ['1 1'],  #  Always square and matched to seeing situation by owner  NB Obsolete? NO MF uses to load bias calib
                                          #  NB NB inconsistent use of bin string   '1 1', '1x1' , etc.
-                'do_cosmics' : 'yes',
+                'do_cosmics' : True,
                 
                 'rbi_delay':  0,      #  This being zero says RBI is not available, eg. for SBIG.
                 'is_cmos':  True,
@@ -854,10 +865,10 @@ site_config = {
     },
 }    #This brace closes the while configuration dictionary. Match found up top at:  site_config = {
 
-def get_ocn_status():    #NB NB I think we should get rid of these two dummy methods. WER
-    pass
-def get_enc_status():
-    pass
+#def get_ocn_status():    #NB NB I think we should get rid of these two dummy methods. WER
+#    pass
+#def get_enc_status():
+#    pass
 
 '''
 Here we create the basic directory structures needed for this respective 

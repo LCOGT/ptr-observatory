@@ -430,6 +430,40 @@ class Camera:
                                        # exposure has to be called from a separate thread and then waited 
                                        # for in the main thread
 
+        # Sets up paths and structures
+        self.site_path = self.config["client_path"] + self.config['site_id'] + '/'
+        if not os.path.exists(self.site_path):
+            os.makedirs(self.site_path)
+        self.archive_path = self.config["archive_path"] + self.config['site_id'] + '/'+ "archive/"
+        if not os.path.exists(self.config["archive_path"] +'/' + self.config['site_id']):
+            os.makedirs(self.config["archive_path"] +'/' + self.config['site_id'])
+        if not os.path.exists(self.config["archive_path"] +'/' + self.config['site_id']+ '/'+ "archive/"):
+            os.makedirs(self.config["archive_path"] +'/' + self.config['site_id']+ '/'+ "archive/")
+        self.camera_path = self.archive_path + self.alias + "/"
+        if not os.path.exists(self.camera_path):
+            os.makedirs(self.camera_path)
+        self.alt_path = self.config[
+            "alt_path"
+        ]  +'/' + self.config['site_id']+ '/' # NB NB this should come from config file, it is site dependent.
+        if not os.path.exists(self.config[
+            "alt_path"
+        ]):
+            os.makedirs(self.config[
+            "alt_path"
+        ])
+        
+        if not os.path.exists(self.alt_path):
+            os.makedirs(self.alt_path)
+        self.autosave_path = self.camera_path + "autosave/"
+        self.lng_path = self.camera_path + "lng/"
+        self.seq_path = self.camera_path + "seq/"
+        if not os.path.exists(self.autosave_path):
+            os.makedirs(self.autosave_path)
+        if not os.path.exists(self.lng_path):
+            os.makedirs(self.lng_path)
+        if not os.path.exists(self.seq_path):
+            os.makedirs(self.seq_path)
+
 
 
         """
@@ -447,18 +481,20 @@ class Camera:
         
         try:
             #self.biasframe = fits.open(
-            tempbiasframe = fits.open(self.config["archive_path"] +'archive/' + self.alias + "/calibmasters" \
+            tempbiasframe = fits.open(self.archive_path  + self.alias + "/calibmasters" \
                                       + "/BIAS_master_bin1.fits")
             tempbiasframe = np.array(tempbiasframe[0].data, dtype=np.float32)
             self.biasFiles.update({'1': tempbiasframe})
             del tempbiasframe
         except:
-            plog("Bias frame for Binning 1 not available")               
+            plog("Bias frame for Binning 1 not available")
+            #plog(traceback.format_exc()) 
+            #breakpoint()               
             
         
         try:
             #self.darkframe = fits.open(
-            tempdarkframe = fits.open(self.config["archive_path"] + 'archive/' + self.alias + "/calibmasters" \
+            tempdarkframe = fits.open(self.archive_path  + self.alias + "/calibmasters" \
                                       + "/DARK_master_bin1.fits")
 
             tempdarkframe = np.array(tempdarkframe[0].data, dtype=np.float32)
@@ -468,7 +504,7 @@ class Camera:
             plog("Dark frame for Binning 1 not available")  
 
         try:            
-            fileList = glob.glob(self.config["archive_path"] + 'archive/' + self.alias + "/calibmasters" \
+            fileList = glob.glob(self.archive_path + self.alias + "/calibmasters" \
                                  + "/masterFlat*_bin1.npy")
             
             for file in fileList:
@@ -756,38 +792,7 @@ class Camera:
         self.camera_message = "-"
         #self.site_path = self.config["client_path"]
 
-        self.site_path = self.config["client_path"] + self.config['site_id'] + '/'
-        if not os.path.exists(self.site_path):
-            os.makedirs(self.site_path)
-        self.archive_path = self.config["archive_path"] + self.config['site_id'] + '/'+ "archive/"
-        if not os.path.exists(self.config["archive_path"] +'/' + self.config['site_id']):
-            os.makedirs(self.config["archive_path"] +'/' + self.config['site_id'])
-        if not os.path.exists(self.config["archive_path"] +'/' + self.config['site_id']+ '/'+ "archive/"):
-            os.makedirs(self.config["archive_path"] +'/' + self.config['site_id']+ '/'+ "archive/")
-        self.camera_path = self.archive_path + self.alias + "/"
-        if not os.path.exists(self.camera_path):
-            os.makedirs(self.camera_path)
-        self.alt_path = self.config[
-            "alt_path"
-        ]  +'/' + self.config['site_id']+ '/' # NB NB this should come from config file, it is site dependent.
-        if not os.path.exists(self.config[
-            "alt_path"
-        ]):
-            os.makedirs(self.config[
-            "alt_path"
-        ])
         
-        if not os.path.exists(self.alt_path):
-            os.makedirs(self.alt_path)
-        self.autosave_path = self.camera_path + "autosave/"
-        self.lng_path = self.camera_path + "lng/"
-        self.seq_path = self.camera_path + "seq/"
-        if not os.path.exists(self.autosave_path):
-            os.makedirs(self.autosave_path)
-        if not os.path.exists(self.lng_path):
-            os.makedirs(self.lng_path)
-        if not os.path.exists(self.seq_path):
-            os.makedirs(self.seq_path)
         
         """
         TheSkyX runs on a file mode approach to images rather 
@@ -800,14 +805,14 @@ class Camera:
         ):
             
             self.camera.AutoSavePath = (
-                self.config["archive_path"]
-                + "archive/"
+                self.archive_path
+                #+ "archive/"
                 + datetime.datetime.strftime(datetime.datetime.now(), "%Y%m%d")
             )
             try:
                 os.mkdir(
-                    self.config["archive_path"]
-                    + "archive/"
+                    self.archive_path
+                    #+ "archive/"
                     + datetime.datetime.strftime(datetime.datetime.now(), "%Y%m%d")
                 )
             except:
@@ -1298,14 +1303,16 @@ class Camera:
         #     status["busy_lock"] = True
         # else:
         #     status["busy_lock"] = False
-        if self.maxim:
-            cam_stat = "Not implemented yet"  #
-        if self.ascom:
-            cam_stat = "ASCOM camera not implemented yet"  # self.camera.CameraState
-        if self.theskyx:
-            cam_stat = "TheSkyX camera not implemented yet"  # self.camera.CameraState
-        if self.qhydirect:
-            cam_stat = "QHYCCD camera not implemented yet"  # self.camera.CameraState
+        #if self.maxim:
+        #    cam_stat = "Not implemented yet"  #
+        #if self.ascom:
+        #    cam_stat = "ASCOM camera not implemented yet"  # self.camera.CameraState
+        #if self.theskyx:
+        #    cam_stat = "TheSkyX camera not implemented yet"  # self.camera.CameraState
+        #if self.qhydirect:
+        #    breakpoint()
+        #    cam_stat = self.config['camera'][self.name]['name'] + " connected. # self.camera.CameraState
+        cam_stat = self.config['camera'][self.name]['name'] + " connected." # self.camera.CameraState
         status[
             "status"
         ] = cam_stat  # The state could be expanded to be more meaningful.
@@ -1543,8 +1550,9 @@ class Camera:
             else:
                 frame_type = "expose"
         
-        self.smartstack = required_params.get('smartstack', 'yes')
-        self.longstack = required_params.get('longstackswitch', 'no')
+        self.smartstack = required_params.get('smartstack', True)
+        self.longstack = required_params.get('longstackswitch', False)
+
     
         if self.longstack == 'no':
             LongStackID ='no'
@@ -1775,47 +1783,7 @@ class Camera:
                             self.pre_foc = []
                             self.pre_ocn = []
                             self.t2p1 = time.time()
-                            if frame_type in (
-                                "flat",
-                                "screenflat",
-                                "skyflat",
-                                "dark",
-                                "bias",
-                            ):
-                                g_dev["obs"].send_to_user(
-                                    "Starting "
-                                    + str(exposure_time)
-                                    + "s "
-                                    + str(frame_type)
-                                    + " calibration exposure.",
-                                    p_level="INFO",
-                                )
-                            elif frame_type in ("focus", "auto_focus"):
-                                g_dev["obs"].send_to_user(
-                                    "Starting "
-                                    + str(exposure_time)
-                                    + "s "
-                                    + str(frame_type)
-                                    + " focus exposure.",
-                                    p_level="INFO",
-                                )
-                            else:
-                                if "object_name" in opt:
-                                    g_dev["obs"].send_to_user(
-                                        "Starting "
-                                        + str(exposure_time)
-                                        + "s exposure of "
-                                        + str(opt["object_name"])
-                                        + " by user: "
-                                        + str(self.user_name),
-                                        p_level="INFO",
-                                    )
-                                else:
-                                    g_dev["obs"].send_to_user(
-                                        "Starting an unnamed frame by user: "
-                                        + str(self.user_name),
-                                        p_level="INFO",
-                                    )
+                            
                             try:
                                 g_dev["ocn"].get_quick_status(
                                     self.pre_ocn
@@ -1930,8 +1898,56 @@ class Camera:
             "to go: ",
             counter,
         )
+        #g_dev["obs"].send_to_user(            "Insert #3 of 5 exposure of object type X here"        )
+        
+        try:
+            filter_ui_info=opt['filter']
+        except:
+            filter_ui_info='filterless'
+            
+        if frame_type in (
+            "flat",
+            "screenflat",
+            "skyflat",
+            "dark",
+            "bias",
+        ):
+            g_dev["obs"].send_to_user(
+                "Starting "
+                + str(exposure_time)
+                + "s "
+                + str(frame_type)
+                + " calibration exposure.",
+                p_level="INFO",
+            )
+        elif frame_type in ("focus", "auto_focus"):
+            g_dev["obs"].send_to_user(
+                "Starting "
+                + str(exposure_time)
+                + "s "
+                + str(frame_type)
+                + " focus exposure.",
+                p_level="INFO",
+            )
+        else:
+            if "object_name" in opt:
+                g_dev["obs"].send_to_user(
+                    "Starting "
+                    + str(exposure_time)
+                    + "s " + str(filter_ui_info) + " exposure of "
+                    + str(opt["object_name"])
+                    + " by user: "
+                    + str(self.user_name) + '. ' + str(int(opt['count']) - int(counter) + 1) + " of " + str(opt['count']),
+                    p_level="INFO",
+                )
+            else:
+                g_dev["obs"].send_to_user(
+                    "Starting an unnamed frame by user: "
+                    + str(self.user_name),
+                    p_level="INFO",
+                )
 
-
+        #breakpoint()
 
         #plog ("Smart Stack ID: " + smartstackid)
         # g_dev["obs"].send_to_user(
