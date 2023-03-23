@@ -71,7 +71,7 @@ site_config = {
     
     'debug_mode' :False,
     'admin_owner_commands_only': True,
-    'debug_duration_sec': 3600,
+    'debug_duration_sec': 1800,
     'owner':  ['google-oauth2|112401903840371673242'],  # Wayne
 
     'owner_alias': ['WER', 'TELOPS'],
@@ -655,7 +655,7 @@ site_config = {
                 'crop_preview_ytop': 1,
                 'crop_preview_xleft': 1,
                 'crop_preview_xright': 1,
-                'temp_setpoint': -15,
+                'temp_setpoint': -5,
                 'calib_setpoints': [ 3, 5, 7],   #A swag
                 'has_chiller':  True,
                 'chiller_ref_temp':  16,
