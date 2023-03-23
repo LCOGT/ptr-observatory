@@ -152,7 +152,7 @@ site_config = {
     'observing_check_period' : 5,    # How many minutes between weather checks
     'enclosure_check_period' : 5,    # How many minutes between enclosure checks
 
-    'auto_eve_bias_dark': False,
+    'auto_eve_bias_dark': True,
     
     'auto_midnight_moonless_bias_dark': False,
     'auto_eve_sky_flat': False,
@@ -161,7 +161,7 @@ site_config = {
 
     'eve_cool_down_open' : -65.0,
     'auto_morn_sky_flat': False,
-    'auto_morn_bias_dark': False,
+    'auto_morn_bias_dark': True,
     're-calibrate_on_solve': True,
     'pointing_calibration_on_startup': False,  #MF I am leaving this alone.
     'periodic_focus_time' : 0.5, # This is a time, in hours, over which to bypass automated focussing (e.g. at the start of a project it will not refocus if a new project starts X hours after the last focus)
@@ -704,7 +704,7 @@ site_config = {
                 'crop_preview_ytop': 2,
                 'crop_preview_xleft': 2,
                 'crop_preview_xright': 2,
-                'temp_setpoint': -20,    #Verify we can go colder, this system has a chiller
+                'temp_setpoint': -5,    #Verify we can go colder, this system has a chiller
                 'has_chiller': True,
                 'calib_setpoints': [-20, -20, -20, -20, -20, -20, \
                                     -20, -20, -20, -20, -20, -20],  #  Picked by month-of-year 
