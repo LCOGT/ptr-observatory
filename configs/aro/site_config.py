@@ -595,7 +595,8 @@ site_config = {
                 'east_offset': 0.0,     # Not sure why these three are even here.
                 'rotation': 0.0,        # Probably remove.
                 'min_exposure': 0.00001,                
-                'min_flat_exposure': 0.00001,
+                'min_flat_exposure' : 3.0, # For certain shutters, short exposures aren't good for flats. Some CMOS have banding in too short an exposure. Largely applies to ccds though.
+                'max_flat_exposure' : 20.0, # Realistically there should be a maximum flat_exposure that makes sure flats are efficient and aren't collecting actual stars.
                 'max_exposure': 360.0,
                 'max_daytime_exposure': 0.0001,
                 'can_subframe':  True,

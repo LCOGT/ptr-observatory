@@ -1538,7 +1538,9 @@ class Sequencer:
         self.morn_bias_done = False
 
         self.nightly_weather_report_done=False
-
+        # Set weather report to false because it is daytime anyways.
+        self.weather_report_is_acceptable_to_observe=False
+        
         # Setting runnight for mop up scripts
         yesterday = datetime.datetime.now() - timedelta(1)
         runNight=datetime.datetime.strftime(yesterday, '%Y%m%d')
@@ -1852,6 +1854,7 @@ class Sequencer:
         camera_name = str(self.config['camera']['camera_1_1']['name'])
         flat_count = self.config['camera']['camera_1_1']['settings']['flat_count']
         min_exposure = float(self.config['camera']['camera_1_1']['settings']['min_flat_exposure'])
+        max_exposure = float(self.config['camera']['camera_1_1']['settings']['max_flat_exposure'])
 
         exp_time = min_exposure # added 20220207 WER  0.2 sec for SRO
 
@@ -1978,16 +1981,16 @@ class Sequencer:
             
                         
                         # Here it makes four tests and if it doesn't match those tests, then it will attempt a flat. 
-                        if evening and exp_time > 120:
+                        if evening and exp_time > max_exposure:
                              #exp_time = 60    #Live with this limit.  Basically started too late
-                             plog('Break because proposed evening exposure > 120 seconds:  ', exp_time)
+                             plog('Break because proposed evening exposure > maximum flat exposure: ' + str(max_exposure) + ' seconds:  ', exp_time)
                              #g_dev['obs'].send_to_user('Try next filter because proposed  flat exposure > 120 seconds.', p_level='INFO')
                              pop_list.pop(0)
                              acquired_count = flat_count + 1 # trigger end of loop
                              #break
                         elif morn and exp_time < min_exposure:
                              #exp_time = 60    #Live with this limit.  Basically started too late
-                             plog('Break because proposed morning exposure < minimum exposure time:  ', exp_time)
+                             plog('Break because proposed morning exposure < minimum flat exposure time:  ', exp_time)
                              #g_dev['obs'].send_to_user('Try next filter because proposed  flat exposure < min_exposure.', p_level='INFO')
                              pop_list.pop(0)
                              #min_exposure=min_exposure = float(self.config['camera']['camera_1_1']['settings']['min_exposure'])
@@ -2002,7 +2005,7 @@ class Sequencer:
                                 g_dev['mnt'].slewToSkyFlatAsync()  
                                 self.time_of_next_slew = time.time() + 600
                              self.next_flat_observe = time.time() + 60
-                        elif morn and exp_time > 120 :   #NB it is too bright, should consider a delay here.
+                        elif morn and exp_time > max_exposure :   #NB it is too bright, should consider a delay here.
                           #**************THIS SHOUD BE A WHILE LOOP! WAITING FOR THE SKY TO GET DARK AND EXP TIME TO BE LONGER********************
                              plog("Too dim, wating 60 seconds. Estimated Exposure time is " + str(exp_time))
                              #g_dev['obs'].send_to_user('Delay 60 seconds to let it get lighterer.', p_level='INFO')
