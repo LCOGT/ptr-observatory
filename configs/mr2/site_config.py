@@ -809,7 +809,7 @@ site_config = {
                 
                 'flat_count' : 5,
                 #'pix_scale': [0.4685, 0.9371, 1.4055, 1.8742],    #  1.4506,  bin-2  2* math.degrees(math.atan(9/3962000))*3600
-                'pix_scale': 0.4685,    #  1.4506,  bin-2  2* math.degrees(math.atan(9/3962000))*3600
+                'pix_scale': 0.198,    #  1.4506,  bin-2  2* math.degrees(math.atan(9/3962000))*3600
                 
                 'do_cosmics' : False,
                 'bin_modes':  [[2, 2, 0.937], [1, 1, 0.469], [3, 3, 1.407], [4, 4, 1.876]],   # [3, 3, 1.45],Meaning no binning choice if list has only one entry, default should be first.
