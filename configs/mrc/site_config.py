@@ -139,7 +139,7 @@ site_config = {
     'check_time': 300,   #MF's original setting.
     'maximum_roof_opens_per_evening' : 4,
 
-    'site_in_automatic_default': "Shutdown",   #"Manual", "Shutdown"
+    'site_in_automatic_default': "Automatic",   #"Manual", "Shutdown"
     'automatic_detail_default': "Enclosure is set to Automatic mode.",
 
     
@@ -155,12 +155,12 @@ site_config = {
     'auto_eve_bias_dark': True,
     
     'auto_midnight_moonless_bias_dark': False,
-    'auto_eve_sky_flat': False,
+    'auto_eve_sky_flat': True,
 
     'eve_sky_flat_sunset_offset': -60.,  # 40 before Minutes  neg means before, + after.
 
     'eve_cool_down_open' : -65.0,
-    'auto_morn_sky_flat': False,
+    'auto_morn_sky_flat': True,
     'auto_morn_bias_dark': True,
     're-calibrate_on_solve': True,
     'pointing_calibration_on_startup': False,  #MF I am leaving this alone.
@@ -526,7 +526,7 @@ site_config = {
             
             # WER - if there is no filter wheel, then these two are used, otherwise they are harmless
             "name" : "RGGB",
-            'flat_sky_gain' : 1148,
+            #'flat_sky_gain' : 1148,
             #'driver' : None <------ set driver to None for no filter wheel
             
             
@@ -555,23 +555,23 @@ site_config = {
 
                 #'filter_list': ['PL','PR','PG','PB','HA','O3','S2', 'air','dif','w','CR','N2','up','gp','rp','ip','z', 'difup','difgp','difrp','difip','dark'], # A list of actual physical filters for the substitution function
 
-                'filter_data': [['air',     [0, 0], -1000,  6.00, [2, 17], 'ai'], #  0 357
+                'filter_data': [['air',     [0, 0], -1000,  20.00, [2, 17], 'ai'], #  0 357
                                 ['dif',     [4, 0],     0,  16.00, [2, 17], 'df'], #  1  330NB NB NB If this in series should change focus about 1mm more.
-                                ['w',       [2, 0],     0,  6, [2, 17], 'w '], #  2 346
+                                ['w',       [2, 0],     0,  17.468, [2, 17], 'w '], #  2 346
                                 ['PL',      [0, 4],     0,  16.00, [2, 17], "PL"], #  3 317
-                                ['gp',      [0, 6],     0,  10.87, [2, 17], 'gp'], #  4 
-                                ['PB',      [0, 1],     0,  2.25, [2, 17], 'PB'], #  5
-                                ['rp',      [0, 7],     0,  5.46,  [2, 17], 'rp'], #  6
-                                ['PG',      [0, 2],     0,  2.2, [2, 17], 'PG'], #  7
-                                ['PR',      [0, 3],     0,  0.22, [2, 17], 'PR'], #  8
+                                ['gp',      [0, 6],     0,  14.87, [2, 17], 'gp'], #  4 
+                                ['PB',      [0, 1],     0,  10.25, [2, 17], 'PB'], #  5
+                                ['rp',      [0, 7],     0,  3.853,  [2, 17], 'rp'], #  6
+                                ['PG',      [0, 2],     0,  11.048, [2, 17], 'PG'], #  7
+                                ['PR',      [0, 3],     0,  1.336, [2, 17], 'PR'], #  8
                                 ['ip',      [0, 8],     0,  4.741, [2, 17], 'ip'], #  9
-                                ['z',       [5, 0],     0,  .995,  [2, 17], 'z' ], # 10
-                                ['O3',      [7, 0],     0,  .145,  [2, 17], '03'], # 11
-                                ['up',      [0, 5],     0,  .506,  [1, 17], 'up'], # 12
-                                ['N2',      [3, 0],     0,  .016,  [2, 17], 'N2'], # 13
-                                ['CR',      [1, 0],     0,  .018,  [2, 17], 'CR'], # 14
-                                ['S2',      [8, 0],     0,  .012,  [2, 17], 'S2'], # 15   
-                                ['HA',      [6, 0],     0,  .012,  [2, 17], 'HA'], # 16  
+                                ['z',       [5, 0],     0,  2.147,  [2, 17], 'z' ], # 10
+                                ['O3',      [7, 0],     0,  1.151,  [2, 17], '03'], # 11
+                                ['up',      [0, 5],     0,  1.506,  [1, 17], 'up'], # 12
+                                ['N2',      [3, 0],     0,  0.126,  [2, 17], 'N2'], # 13
+                                ['CR',      [1, 0],     0,  0.2,  [2, 17], 'CR'], # 14
+                                ['S2',      [8, 0],     0,  0.137,  [2, 17], 'S2'], # 15   
+                                ['HA',      [6, 0],     0,  0.124,  [2, 17], 'HA'], # 16  
                                 ['focus',   [2, 0],     0,  16.0,  [2, 17], 'fo'], # 17
                                 ['dark',    [8, 5],     0,   0.0,  [2, 17], 'dk']],# 18
 
@@ -579,8 +579,10 @@ site_config = {
                 'filter_screen_sort':  ['air','w','PL','gp','PB','rp','PG','PR','ip','O3','N2','CR','S2','HA'],   #  9, 21],  # 5, 17], #Most to least throughput, \
                                 #so screen brightens, skipping u and zs which really need sky.
 
-                'filter_sky_sort':     ['HA', 'S2', 'CR', 'N2', 'O3', 'PR', 'PG', 'PB', 'w', 'air']  #Least to most throughput  \
-
+                #'filter_sky_sort':     ['HA', 'S2', 'CR', 'N2', 'O3', 'PR', 'PG', 'PB', 'w', 'air']  #Least to most throughput  \
+                # Temporary MTF filter-sky-sort to get OSC flats ... if after March 23 return to above
+                'filter_sky_sort':     [ 'S2', 'N2', 'O3', 'HA', 'z', 'PR', 'PG', 'PB', 'gp','rp','ip', 'w','PL', 'focus', 'air']  #Least to most throughput  \
+                #'filter_sky_sort':     [  'PB', 'gp','rp','ip', 'w','PL', 'focus', 'air']  #Least to most throughput  \
 
             },
         },
@@ -788,7 +790,7 @@ site_config = {
                 'eng_bin':     [4, 4],   #  This is the eng-only bin for MRC, not useful for users?
                 'bin_enable':  ['1 1'],  #  Always square and matched to seeing situation by owner  NB Obsolete? NO MF uses to load bias calib
                                          #  NB NB inconsistent use of bin string   '1 1', '1x1' , etc.
-                'do_cosmics' : True,
+                'do_cosmics' : False,
                 
                 'rbi_delay':  0,      #  This being zero says RBI is not available, eg. for SBIG.
                 'is_cmos':  True,
@@ -798,7 +800,7 @@ site_config = {
 
                 'flat_count': 5,
 
-                'saturate':   65000 ,    #[[1, 65000], [2,262000], [3,589815], [4, 1048560]] ,   # e-.  This is a close guess, not measured, but taken from data sheet.
+                'saturate':   65535 ,    #[[1, 65000], [2,262000], [3,589815], [4, 1048560]] ,   # e-.  This is a close guess, not measured, but taken from data sheet.
                 'fullwell_capacity':  80000,
 
                 'read_mode':  'Normal',
