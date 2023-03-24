@@ -14,7 +14,7 @@ Updates 20220107 20:01 WER
 '''
 import json
 
-'''
+'''                                                                                                1         1         1       1
          1         2         3         4         5         6         7         8         9         0         1         2       2
 12345678901234567890123456789012345678901234567890123456789012345678901234567890123456789012345678901234567890123456789012345678
 '''
@@ -22,20 +22,15 @@ import json
 #NB NB NB json is not bi-directional with tuples (), instead, use lists [], nested if tuples are needed.
 degree_symbol = "°"
 site_name = 'mrc'
-
 obs_id = None    #NB These must be unique across all of PTR. Pre-pend with airport code if needed: 'sba_wmdo'
-
 
 site_config = {
 
     'site': 'mrc',
     'site_id': 'mrc',
-
     'obs_id': None,   #a WEMA is not a telescope aka Observatory
     'observatory_location': site_name.lower(),  #in LCO case, an airport code such as OGG
    
-
-
 
     'debug_site_mode': False,
     
@@ -261,14 +256,15 @@ site_config = {
             'operations_end':  0.42,
         },
     },
-}  #New terminating brace 20230324 wer
+}    #New terminating brace. 20230324 WER
 
 # =============================================================================
 # Wema should never access these so I am commenting them out. Essentially this
 # is a config file for the SITE not an observatory
 # =============================================================================
 
-#        		    'latitude_offset': 0.0,     #Decimal degrees, North is Positive. These *could* be slightly different than site.
+# =============================================================================
+#  i		    'latitude_offset': 0.0,     #Decimal degrees, North is Positive. These *could* be slightly different than site.
 # 			    'longitude_offset': 0.0,    #Decimal degrees, West is negative
 # 			    'elevation_offset': 0.0,    # meters above sea level
 #                 'home_park_altitude': 0,    #Having these settings is important for PWI4 where it can easily be messed up.
@@ -335,12 +331,12 @@ site_config = {
 #                     'ECES': 0.0,
 #                     'ECEC': 0.0,
 #                 }
-
+# 
 #             },
 #         },
-
+# 
 #     },
-
+# 
 #     'telescope': {
 #         'telescope1': {
 #             'parent': 'mount1',
@@ -384,9 +380,9 @@ site_config = {
 #                 'west_flip_dec_offset': 0.0
 #                 },
 #         },
-
+# 
 #     },
-
+# 
 #     'rotator': {
 #         'rotator1': {
 #             'parent': 'telescope1',
@@ -401,9 +397,9 @@ site_config = {
 #             'unit':  'degree',
 #             'has_rotator': True   #Indicates to camera and Project to include rotation box.
 #             },
-
+# 
 #     },
-
+# 
 #     'screen': {
 #         'screen1': {
 #             'parent': 'telescope1',
@@ -415,9 +411,9 @@ site_config = {
 #             'saturate': 170,  #Out of 0.0 - 255, this is the last value where the screen is linear with output.
 #                                 #These values have a minor temperature sensitivity yet to quantify.
 #             },
-
+# 
 #     },
-
+# 
 #     'focuser': {
 #         'focuser1': {
 #             'parent': 'telescope1',
@@ -446,8 +442,8 @@ site_config = {
 #             'unit_conversion':  9.09090909091,  # Taken from Gemini at mid-range.
 #             'has_dial_indicator': False
 #             },
-
-
+# 
+# 
 #     },
 #     'selector': {
 #         'selector1': {
@@ -465,7 +461,7 @@ site_config = {
 #             'guiders':  [None], # , 'guider_1_2', None, 'guide_1_4'],
 #             'default': 0
 #             },
-
+# 
 #     },
 #     #Add CWL, BW and DQE to filter and detector specs.   HA3, HA6 for nm or BW.
 #     'filter_wheel': {
@@ -476,20 +472,17 @@ site_config = {
 #             "driver": "Maxim.CCDCamera",  #'ASCOM.FLI.FilterWheel',   #['ASCOM.FLI.FilterWheel1', 'ASCOM.FLI.FilterWheel2'],   #"Maxim",   #"Maxim.CCDCamera",  #
 #             #"driver":   'ASCOM.FLI.FilterWheel',   #  NB THIS IS THE NEW DRIVER FROM peter.oleynikov@gmail.com  Found in Kepler ASCOM section
 #             "dual_wheel": True,
-            
-            
-
+#             
+#             
 #             # WER - if there is no filter wheel, then these two are used, otherwise they are harmless
 #             "name" : "RGGB",
 #             #'flat_sky_gain' : 1148,
 #             #'driver' : None <------ set driver to None for no filter wheel
-
-            
-            
-            
-            
-            
-
+#             
+#             
+#             
+#             
+#             
 #             # "parent": "telescope1",
 #             # "alias": "CWL2",
 #             # "desc":  'PTR Custom FLI dual wheel.',
@@ -499,19 +492,19 @@ site_config = {
 #                 #'filter_count': 23,
 #                 #'home_filter':  2,
 #                 'default_filter':  'w',
-                
+#                 
 #                 'auto_color_options' : ['OSC'], # OPtions include 'OSC', 'manual','RGB','NB','RGBHA','RGBNB'
 #                 'mono_RGB_colour_filters' : ['pb','pg','pr'], # B, G, R filter codes for this camera if it is a monochrome camera with filters
 #                 'mono_RGB_relative_weights' : [1.2,1,0.8],
 #                 'mono_Narrowband_colour_filters' : ['ha','o3','s2'], # ha, o3, s2 filter codes for this camera if it is a monochrome camera with filters
 #                 'mono_Narrowband_relative_weights' : [1.0,2,2.5],
-                
+#                 
 #                 #'filter_reference': 2,
-                
-
-
+#                 
+# 
+# 
 #                 #'filter_list': ['PL','PR','PG','PB','HA','O3','S2', 'air','dif','w','CR','N2','up','gp','rp','ip','z', 'difup','difgp','difrp','difip','dark'], # A list of actual physical filters for the substitution function
-
+# 
 #                 'filter_data': [['air',     [0, 0], -1000,  20.00, [2, 17], 'ai'], #  0 357
 #                                 ['dif',     [4, 0],     0,  16.00, [2, 17], 'df'], #  1  330NB NB NB If this in series should change focus about 1mm more.
 #                                 ['w',       [2, 0],     0,  17.468, [2, 17], 'w '], #  2 346
@@ -531,22 +524,22 @@ site_config = {
 #                                 ['HA',      [6, 0],     0,  0.124,  [2, 17], 'HA'], # 16  
 #                                 ['focus',   [2, 0],     0,  16.0,  [2, 17], 'fo'], # 17
 #                                 ['dark',    [8, 5],     0,   0.0,  [2, 17], 'dk']],# 18
-
+# 
 #                                 #Screen = 100; QHY400 ~ 92% DQE   HDR Mode    Screen = 160 sat  20190825 measured.
 #                 'filter_screen_sort':  ['air','w','PL','gp','PB','rp','PG','PR','ip','O3','N2','CR','S2','HA'],   #  9, 21],  # 5, 17], #Most to least throughput, \
 #                                 #so screen brightens, skipping u and zs which really need sky.
-
+# 
 #                 #'filter_sky_sort':     ['HA', 'S2', 'CR', 'N2', 'O3', 'PR', 'PG', 'PB', 'w', 'air']  #Least to most throughput  \
 #                 # Temporary MTF filter-sky-sort to get OSC flats ... if after March 23 return to above
 #                 'filter_sky_sort':     [ 'S2', 'N2', 'O3', 'HA', 'z', 'PR', 'PG', 'PB', 'gp','rp','ip', 'w','PL', 'focus', 'air']  #Least to most throughput  \
 #                 #'filter_sky_sort':     [  'PB', 'gp','rp','ip', 'w','PL', 'focus', 'air']  #Least to most throughput  \
-
+# 
 #             },
 #         },
-
+# 
 #     },
-
-
+# 
+# 
 #     'lamp_box': {
 #         'lamp_box1': {
 #             'parent': 'camera_1',  # Parent is camera for the spectrograph
@@ -557,16 +550,16 @@ site_config = {
 #             'switches': "None"  # A string of switches/lamps the box has for the FITS header. # 'None'; "Off,Mirr,Tung,NeAr" for UVEX
 #         },
 #     },
-
-
-
+# 
+# 
+# 
 #     # A site may have many cameras registered (camera1, camera2, camera3, ...) each with unique aliases -- which are assumed
 #     # to be the name an owner has assigned and in principle that name "kb01" is labeled and found on the camera.  Between sites,
 #     # there can be overlap of camera names.  LCO convention is letter of cam manuf, letter of chip manuf, then 00, 01, 02, ...
 #     # However this code will treat the camera name/alias as a string of arbitrary length:  "saf_Neyle's favorite_camera" is
 #     # perfectly valid as an alias.
-
-
+# 
+# 
 #     'camera': {
 #         'camera_1_1': {
 #             'parent': 'telescope1',
@@ -574,17 +567,17 @@ site_config = {
 #             'desc':  'QHY 600C Pro',
 #             #'driver':  "ASCOM.QHYCCD_CAM2.Camera", # NB Be careful this is not QHY Camera2 or Guider  "Maxim.CCDCamera",   #'ASCOM.FLI.Kepler.Camera', "ASCOM.QHYCCD.Camera",   #
 #             'driver':  "QHYCCD_Direct_Control", # NB Be careful this is not QHY Camera2 or Guider  "Maxim.CCDCamera",   #'ASCOM.FLI.Kepler.Camera', "ASCOM.QHYCCD.Camera",   #
-            
-                    
-            
+#             
+#                     
+#             
 #             'detector':  'Sony IMX455 Color',  #  It would be good to build out a table of chip characteristics
 #             'use_file_mode':  False,   # NB we should clean out all file mode stuff.
 #             'file_mode_path':  'Q:/archive/sq01/maxim/',   #NB NB all file_mode Maxim stuff should go!
 #             'manufacturer':  "QHY",
 #             'settings': {
-                
-                
-                
+#                 
+#                 
+#                 
 #                 # For direct QHY usage we need to set the appropriate gain.
 #                 # This changes from site to site. "Fast" scopes like the RASA need lower gain then "slow".
 #                 # Sky quality is also important, the worse the sky quality, the higher tha gain needs to be
@@ -613,12 +606,11 @@ site_config = {
 #                 'direct_qhy_gain' : 26,
 #                 'direct_qhy_offset' : 60,
 #                 'direct_qhy_usb_speed' : 60,
-                
+#                 
 #                 'is_osc' : True,
-
-                
-
-                
+#                 
+# 
+#                 
 #                 'squash_on_x_axis' : True,
 #                 # 'osc_brightness_enhance' : 1.0,
 #                 # 'osc_contrast_enhance' : 1.3,
@@ -632,8 +624,7 @@ site_config = {
 #                 'osc_sharpness_enhance' : 1.5,                
 #                 'osc_background_cut' : 25.0,
 #                 'bin_for_focus' : True, # This setting will bin the image for focussing rather than interpolating. Good for 1x1 pixel sizes < 0.6.
-                
-
+#                 
 #                 # ONLY TRANSFORM THE FITS IF YOU HAVE
 #                 # A DATA-BASED REASON TO DO SO.....
 #                 # USUALLY TO GET A BAYER GRID ORIENTATED CORRECTLY
@@ -644,7 +635,7 @@ site_config = {
 #                 'rotate180_fits' : False, # This also should be flipxy!
 #                 'rotate90_fits' : False,
 #                 'rotate270_fits' : False,
-                
+#                 
 #                 # HERE YOU CAN FLIP THE IMAGE TO YOUR HEARTS DESIRE
 #                 # HOPEFULLY YOUR HEARTS DESIRE IS SIMILAR TO THE
 #                 # RECOMMENDED DEFAULT DESIRE OF PTR
@@ -654,7 +645,7 @@ site_config = {
 #                 'rotate180_jpeg' : False,
 #                 'rotate90_jpeg' : False,
 #                 'rotate270_jpeg' : False,
-                
+#                 
 #                 'osc_bayer' : 'RGGB',
 #                 'crop_preview': False,
 #                 # 'crop_preview_ybottom': 2,  #  2 needed if Bayer array
@@ -702,13 +693,13 @@ site_config = {
 #                 'x_pixel':  3.76,
 #                 'y_pixel':  3.76,
 #                 'pix_scale': 0.302597,    #   bin-2  2* math.degrees(math.atan(3.76/2563000))*3600
-
+# 
 #                 'CameraXSize' : 9600,
 #                 'CameraYSize' : 6422,
 #                 'StartX' : 1,
 #                 'StartY' : 1,
-
-
+# 
+# 
 #                 'x_field_deg': 0.8042,  #  round(4784*0.605194/3600, 4),   #48 X 32 AMIN  3MIN X 0.5 DEG
 #                 'y_field_deg': 0.5369,  #  round(3194*0.605194/3600, 4),
 #                 'area_sq_deg':  0.4318, 
@@ -738,10 +729,10 @@ site_config = {
 #                 #'bias_dark_bin_spec':    ['1,1', '2,2', '3,3', '4,4' ],    #Default binning for flats
 #                 'bias_count':    63,
 #                 'dark_count':    17,
- 
+#  
 #                 'dark_exposure': 360,
 #                 #'flat_bin_spec':         ['1,1', '2,2', '3,3', '4,4' ],   #Is this necessary?
-
+# 
 #                 #'flat_count': 5,
 #                 'optimal_bin': [1, 1],   #  This is the optimal bin for MRC
 #                 'fine_bin':    [1, 1],   #  This is the fine bin for MRC
@@ -750,18 +741,18 @@ site_config = {
 #                 'bin_enable':  ['1 1'],  #  Always square and matched to seeing situation by owner  NB Obsolete? NO MF uses to load bias calib
 #                                          #  NB NB inconsistent use of bin string   '1 1', '1x1' , etc.
 #                 'do_cosmics' : False,
-                
+#                 
 #                 'rbi_delay':  0,      #  This being zero says RBI is not available, eg. for SBIG.
 #                 'is_cmos':  True,
 #                 'is_color': True,   #NB we also have a is_osc key.
 #                 'can_set_gain':  True,
 #                 'max_linearity':  60000,   # Guess
-
+# 
 #                 'flat_count': 5,
-
+# 
 #                 'saturate':   65535 ,    #[[1, 65000], [2,262000], [3,589815], [4, 1048560]] ,   # e-.  This is a close guess, not measured, but taken from data sheet.
 #                 'fullwell_capacity':  80000,
-
+# 
 #                 'read_mode':  'Normal',
 #                 'readout_mode': 'Normal',
 #                 'readout_speed':  50,
@@ -772,20 +763,28 @@ site_config = {
 #                 'areas_implemented': ['Big sq.', 'Full', 'Small sq.', '70.7%', '50%', '35%', '25%', '18%' ],   #0.5*0.5°',  '0.7x0.7°', '1x1°', '1.4x1.4°', '2x2°', '2.8x2.8°', '4x4sq°', '5.6x5.6°'],
 #                 'default_area':  "Full",
 #                 'default_rotation': 0.0000,
-
+# 
 #                 #'flat_bin_spec': ['1 1', '2 2'],    # List of binnings for flats.  NB NB NB Note inconsistent use of '1 1' and '1x1' and '1,1'
-
+# 
 #                 'has_darkslide':  True,
 #                 'darkslide_com':  'COM15',
 #                 'shutter_type': "Electronic",
 #                 'has_screen': True,
 #                 'screen_settings':  {
-    
+#                     'screen_saturation':  157.0,
+#                     'screen_x4':  -4E-12,  #  'y = -4E-12x4 + 3E-08x3 - 9E-05x2 + 0.1285x + 8.683     20190731'
+#                     'screen_x3':  3E-08,
+#                     'screen_x2':  -9E-05,
+#                     'screen_x1':  .1258,
+#                     'screen_x0':  8.683
+#                 },
+#             },
+# 
 #         },
-
-
+# 
+# 
 #     },
-
+# 
 #     'sequencer': {
 #         'sequencer1': {
 #             'parent': 'site',
@@ -798,12 +797,12 @@ site_config = {
 #         },
 #     },
 #     #As aboove, need to get this sensibly suported on GUI and in fits headers.
-
-
+# 
+# 
 #     #Need to put switches here for above devices.
-
+# 
 #     #Need to build instrument selector and multi-OTA configurations.
-
+# 
 #     #AWS does not need this, but my configuration code might make use of it. VALENTINA this device will probably
 #     #alwys be custom per installation. In my case Q: points to a 40TB NAS server in the basement. WER
 #     'server': {
@@ -816,26 +815,18 @@ site_config = {
 #             'shutdown_script':  None,
 #         },
 #     },
-# }                'screen_saturation':  157.0,
-#                     'screen_x4':  -4E-12,  #  'y = -4E-12x4 + 3E-08x3 - 9E-05x2 + 0.1285x + 8.683     20190731'
-#                     'screen_x3':  3E-08,
-#                     'screen_x2':  -9E-05,
-#                     'screen_x1':  .1258,
-#                     'screen_x0':  8.683
-#                 },
-#             },
-#     #This brace closes the while configuration dictionary. Match found up top at:  site_config = {
-
-
-#def get_ocn_status():    #NB NB I think we should get rid of these two dummy methods. WER
-#    pass
-#def get_enc_status():
-#    pass
-
-'''
-Here we create the basic directory structures needed for this respective 
-site, telescope and instruments.
-''' 
+# }    #This brace closes the while configuration dictionary. Match found up top at:  site_config = {
+# 
+# #def get_ocn_status():    #NB NB I think we should get rid of these two dummy methods. WER
+# #    pass
+# #def get_enc_status():
+# #    pass
+# 
+# '''
+# Here we create the basic directory structures needed for this respective 
+# site, telescope and instruments.
+# ''' 
+# =============================================================================
 
 
 if __name__ == '__main__':
@@ -848,4 +839,4 @@ if __name__ == '__main__':
     if str(site_config)  == str(site_unjasoned):
         print('Strings matched.')
     if site_config == site_unjasoned:
-        print('Dictionaries matched.')# -*- coding: utf-8 -*-
+        print('Dictionaries matched.')
