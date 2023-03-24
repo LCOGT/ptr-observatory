@@ -365,7 +365,7 @@ class Sequencer:
                     #breakpoint()
                     if ocn_status == None:
                             if self.config['obsid_roof_control'] and not enc_status['shutter_status'] in ['Open', 'open','Opening', 'opening'] and g_dev['enc'].mode == 'Automatic'\
-                            and (self.config['site_allowed_to_open_roof']) and self.weather_report_is_acceptable_to_observe:
+                            and (self.config['obsid_allowed_to_open_roof']) and self.weather_report_is_acceptable_to_observe:
                             #breakpoint()
                                 #g_dev['enc'].open_roof_directly()
                                 g_dev['enc'].open_command({}, {})
@@ -374,7 +374,7 @@ class Sequencer:
                                 
                                 
                     elif self.config['obsid_roof_control']  and not enc_status['shutter_status'] in ['Open', 'open','Opening', 'opening'] and g_dev['enc'].mode == 'Automatic' \
-                        and ocn_status['hold_duration'] <= 0.1 and self.config['site_allowed_to_open_roof'] and self.weather_report_is_acceptable_to_observe:   #NB
+                        and ocn_status['hold_duration'] <= 0.1 and self.config['obsid_allowed_to_open_roof'] and self.weather_report_is_acceptable_to_observe:   #NB
                         #breakpoint()
                         
                         g_dev['enc'].open_command({}, {})
