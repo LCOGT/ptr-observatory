@@ -2589,7 +2589,7 @@ class Sequencer:
                 plog  ("NORMAL FOCUS UNSUCCESSFUL, TRYING EXTENSIVE FOCUS")
                 req2 = {'target': 'near_tycho_star', 'area': 150}
                 opt = {}
-                g_dev['seq'].extensive_focus_script(req2,opt)
+                g_dev['seq'].extensive_focus_script(req2,opt, no_auto_after_solve=True)
                 
                 # g_dev['foc'].guarded_move((focus_start)*g_dev['foc'].micron_to_steps)
                 # time.sleep(5)
@@ -2684,7 +2684,7 @@ class Sequencer:
                 plog  ("NORMAL FOCUS UNSUCCESSFUL, TRYING EXTENSIVE FOCUS")
                 req2 = {'target': 'near_tycho_star', 'area': 150}
                 opt = {}
-                g_dev['seq'].extensive_focus_script(req2,opt)
+                g_dev['seq'].extensive_focus_script(req2,opt, no_auto_after_solve=True)
 
 
                 # g_dev['foc'].guarded_move((focus_start)*g_dev['foc'].micron_to_steps)
@@ -2737,7 +2737,7 @@ class Sequencer:
                 plog  ("NORMAL FOCUS UNSUCCESSFUL, TRYING EXTENSIVE FOCUS")
                 req2 = {'target': 'near_tycho_star', 'area': 150}
                 opt = {}
-                g_dev['seq'].extensive_focus_script(req2,opt)
+                g_dev['seq'].extensive_focus_script(req2,opt, no_auto_after_solve=True)
             
             
             if sim:
@@ -2776,7 +2776,7 @@ class Sequencer:
             plog ('ATTEMPTING AN EXTENSIVE FOCUS')
             req2 = {'target': 'near_tycho_star', 'area': 150}
             opt = {}
-            self.extensive_focus_script(req2,opt)
+            self.extensive_focus_script(req2,opt, no_auto_after_solve=True)
         plog("Returning to:  ", start_ra, start_dec)
         g_dev["mnt"].last_ra = start_ra
         g_dev["mnt"].last_dec = start_dec
@@ -2796,7 +2796,7 @@ class Sequencer:
         return
 
 
-    def extensive_focus_script(self, req, opt, throw=700, begin_at=None):
+    def extensive_focus_script(self, req, opt, throw=700, begin_at=None, no_auto_after_solve=False):
         '''
         This is an extensive focus that covers a wide berth of central values
         and throws.
@@ -2964,7 +2964,8 @@ class Sequencer:
             plog (solved_pos)
             plog (minimumFWHM)
             g_dev['foc'].guarded_move((solved_pos)*g_dev['foc'].micron_to_steps)
-            self.auto_focus_script(None,None, skip_timer_check=True)
+            if not no_auto_after_solve:
+                self.auto_focus_script(None,None, skip_timer_check=True)
         except:
             plog ("Something went wrong in the extensive focus routine")
             plog(traceback.format_exc())
