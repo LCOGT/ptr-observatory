@@ -1506,19 +1506,22 @@ sel
                                     tempPTR=1
                                     retryarchive=11
                                 except Exception as e:
+
+                                    if self.site_name == "mrc1":
+                                        plog("ingester isn't ingesting at MRC. A known problem - MTF will fix.")
+                                        retryarchive=12
+                                        tempPTR=0
+                                    else:
                                     
-                                    plog("ingester isn't ingesting at MRC/MR2. A known problem - MTF will fix.")
-                                    retryarchive=12
-                                    tempPTR=0
-                                    
-                                    #plog ("couldn't send to PTR archive for some reason")
-                                    #plog ("Retry " + str(retryarchive))
-                                    #plog (e)
-                                    #plog ((traceback.format_exc()))
-                                    #time.sleep(pow(retryarchive, 2) + 1)
-                                    #if retryarchive < 10:
-                                    #    retryarchive=retryarchive+1
-                                    #tempPTR=0
+                                        plog ("couldn't send to PTR archive for some reason")
+                                        plog ("Retry " + str(retryarchive))
+                                        plog (e)
+                                        plog ((traceback.format_exc()))
+                                        time.sleep(pow(retryarchive, 2) + 1)
+                                        if retryarchive < 10:
+                                            retryarchive=retryarchive+1
+                                        tempPTR=0
+                                        
 
                         # If ingester fails, send to default S3 bucket.
                         if tempPTR ==0:
