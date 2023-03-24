@@ -7,7 +7,7 @@ import math as math
 import json
 import socket
 import os
-#import config
+#import ptr_config
 
 import urllib
 
@@ -269,10 +269,12 @@ class Enclosure:
         self.last_slewing = False
         self.prior_status = {'enclosure_mode': 'Manual'}    #Just to initialze this rarely used variable.
 
-        if self.config['site_allowed_to_open_roof'] == True:
+        if self.config['site_allowed_to_open_roof'] in ['yes']:
             self.site_allowed_to_open_roof = True
         else:
             self.site_allowed_to_open_roof = False
+            
+        self.guarded_roof_open_timer = time.time()
         
         if self.config['site'] == 'aro':
             plog('\n&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&& \n') 
@@ -807,17 +809,29 @@ class Enclosure:
                 (g_dev['ocn'].status['wx_ok'] in [True, 'Yes'] and not (g_dev['ocn'].wx_hold \
                                               or g_dev['ocn'].clamp_latch)):     # NB Is Wx ok really the right criterion???
                 try:
+
                     if self.site_allowed_to_open_roof == True:
-                        print (g_dev['enc'].status['shutter_status'] != 'Open')
-                        print (self.dome_open)
-                        if g_dev['enc'].status['shutter_status'] != 'Open' or not self.dome_open:    
-                            self.enclosure.OpenShutter()
-                            plog("An actual shutter open command has been issued.")
-                            g_dev['obs'].send_to_user("Roof/shutter is opening.", p_level='INFO')
-                            #self.redis_server.set('Shutter_is_open', True)
-                            self.dome_open = True
-                            self.dome_home = True
-                            return True
+                        if time.time() > self.guarded_roof_open_timer:
+                            print (g_dev['enc'].status['shutter_status'] != 'Open')
+                            print (self.dome_open)
+                            if g_dev['enc'].status['shutter_status'] != 'Open' or not self.dome_open:    
+                                self.enclosure.OpenShutter()
+                                plog("An actual shutter open command has been issued.")
+                                if self.enclosure.ShutterStatus == 0:
+                                    g_dev['obs'].send_to_user("Roof/shutter has opened.", p_level='INFO')
+                                    #self.redis_server.set('Shutter_is_open', True)
+                                    self.dome_open = True
+                                    self.dome_home = True
+                                    return True
+                                else:
+                                    plog ("A command to open the roof was sent.")
+                                    plog ("But the roof failed to open.")
+                                    plog ("We can only try once every 5 minutes.")
+                                    self.guarded_roof_open_timer = time.time() + 300
+                                    return False
+                        else:
+                            plog ("An open command was requested, but an attempt was made only recently. Still waiting to try again")
+                            
                     else:
                         plog("An open command was sent, but this site is not allowed to open the roof (site-config)")
                 except:

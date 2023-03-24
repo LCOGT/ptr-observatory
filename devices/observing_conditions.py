@@ -169,7 +169,6 @@ class ObservingConditions:
         """
         # This is purely generic code for a generic site.
         # It may be overwritten with a monkey patch found in the appropriate config.py.
-
         if not self.is_wema and self.site_has_proxy:  #  EG., this was written first for SRO. Thier                                         #  system is a proxoy for having a WEMA
             if self.config["site_IPC_mechanism"] == "shares":
                 try:
@@ -288,6 +287,7 @@ class ObservingConditions:
                 self.new_pressure = round(float(self.pressure[0]), 2)
             except:
                 self.new_pressure = round(float(self.pressure), 2)
+
             try:
                 status = {
                     "temperature_C": round(self.temperature, 2),
@@ -333,8 +333,9 @@ class ObservingConditions:
                     "hold_duration": self.wx_to_go,
                 }
             wx_reasons =[]
-            rain_limit = self.sky_monitor.RainRate <= 0.001
-            if not rain_limit:
+
+            rain_limit = self.sky_monitor.RainRate > 0
+            if  rain_limit:
                 wx_reasons.append('Rain > 0')
             humidity_limit = self.sky_monitor.Humidity < 85
             if not humidity_limit:
@@ -350,36 +351,26 @@ class ObservingConditions:
             if not dewpoint_gap:
                 wx_reasons.append('Ambient - Dewpoint < 2C')
             sky_amb_limit = (
-                -self.sky_monitor.Temperature + self.sky_monitor.SkyTemperature 
-            ) < -8.5  # NB THIS NEEDS ATTENTION, Sky alert defaults to -17
+                self.sky_monitor.SkyTemperature - self.sky_monitor.Temperature 
+            ) < -17  # NB THIS NEEDS ATTENTION, Sky alert defaults to -17
             if not sky_amb_limit:
-                wx_reasons.append('sky - amb < -8.5C')
+                wx_reasons.append('(sky - amb) > -17C')
             try:
                 cloud_cover = float(self.sky_monitor.CloudCover)
                 status['cloud_cover_%'] = round(cloud_cover, 0)
-                if cloud_cover <= 67:
-                    cloud_cover = True
-                else:
+                if cloud_cover <= 25:
                     cloud_cover = False
-                    wx_reasons.append('High Clouds')
+                else:
+                    cloud_cover = True
+                    wx_reasons.append('>25% Cloudy')
             except:
                 status['cloud_cover_%'] = "no report"
                 cloud_cover = True    #  We cannot use this signal to force a wX hold or close
             self.current_ambient = round(self.temperature, 2)
-            temp_bounds = not (self.sky_monitor.Temperature < -15) or (
-                self.sky_monitor.Temperature > 42
-            )
+            temp_bounds = 1 < self.sky_monitor.Temperature < 40
+
             if not temp_bounds:
-                wx_reasons.append('amb temp')
-
-
-            # humidity_limit = self.sky_monitor.Humidity < 85
-            # if not humidity_limit:
-            #     wx_reasons.append('High humidity')
-            # rain_limit = self.sky_monitor.RainRate <= 0.001
-            # if not rain_limit:
-            #     wx_reasons.append('Rain > 0')
-
+                wx_reasons.append('amb temp out of range')
 
             self.wx_is_ok = (
                 dewpoint_gap
@@ -387,18 +378,23 @@ class ObservingConditions:
                 and wind_limit
                 and sky_amb_limit
                 and humidity_limit
-                and rain_limit
+                and not rain_limit
+                and not cloud_cover
             )
             #  NB wx_is_ok does not include ambient light or altitude of the Sun
+            #the notion of Obs OK should bring in Sun Elevation and or ambient light.
             if self.wx_is_ok:
                 wx_str = "Yes"
                 status["wx_ok"] = "Yes"
+                plog('Wx Ok?  ', status["wx_ok"])
             else:
                 wx_str = "No"  # Ideally we add the dominant reason in priority order.
                 status["wx_ok"] = "No"
+                plog('Wx Ok?  ', status["wx_ok"], wx_reasons)
 
             g_dev["wx_ok"] = self.wx_is_ok
-            plog('Wx Ok:  ', status["wx_ok"], wx_reasons)
+
+
             if self.config["site_IPC_mechanism"] == "shares":
                 weather_txt = self.config["wema_write_share_path"] + "weather.txt"
                 try:

@@ -56,12 +56,13 @@ obs_id = 'wema'    #NB These must be unique across all of PTR. Pre-pend with air
 site_config = {
     'site': str(site_name).lower(),
     'site_id': 'mrc',
+    'obs_id': 'wema',
 
     'debug_site_mode': False,
     
-    'debug_mode': True,
+    'debug_mode': False,
     'admin_owner_commands_only': False,
-    'debug_duration_sec': 7200,
+    'debug_duration_sec': 3600,
 
     'owner':  ['google-oauth2|112401903840371673242'],  # Wayne
 
@@ -72,7 +73,7 @@ site_config = {
                     # NB NB disk D at mrc may be faster for temp storage
     'client_path':  'Q:/ptr/',  # Generic place for client host to stash misc stuff
     'alt_path':  'Q:/ptr/',  # Generic place for this host to stash misc stuff
-    'plog_path':  'Q:/ptr/plogs/',  #place where night logs can be found.
+    'plog_path':  'Q:/ptr/mrc/plog/',  #place where night logs can be found.
     'save_to_alt_path' : 'no',
     'archive_path':  'Q:/ptr/',
 
@@ -131,7 +132,7 @@ site_config = {
     'maximum_roof_opens_per_evening' : 4,
 
     'site_in_automatic_default': "Automatic",   #"Manual", "Shutdown"
-    'automatic_detail_default': "Enclosure is set to Automatic mode.",
+    'automatic_detail_default': "Site and Eclosures are Shutdown.",
 
     
     'closest_distance_to_the_sun': 45, # Degrees. For normal pointing requests don't go this close to the sun. 
