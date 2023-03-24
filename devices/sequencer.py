@@ -2535,7 +2535,7 @@ class Sequencer:
             self.guard = False
             self.af_guard = False
             return
-        if spot1 < spot2 and spot1 < spot3:
+        elif spot1 < spot2 and spot1 < spot3:
             try:
                 #Digits are to help out pdb commands!
                 a1, b1, c1, d1 = fit_quadratic(x, y)
@@ -2841,22 +2841,22 @@ class Sequencer:
 
             g_dev['foc'].last_focus_fwhm = round(spot4, 2)
             return
-        elif spot2 <= spot1 or spot3 <= spot1:
-            if spot2 <= spot3:
-                min_focus = foc_pos2
-            elif spot3 <= spot2:
-                min_focus = foc_pos3
-            else:
-                min_focus = foc_pos0
+        # elif spot2 <= spot1 or spot3 <= spot1:
+        #     if spot2 <= spot3:
+        #         min_focus = foc_pos2
+        #     elif spot3 <= spot2:
+        #         min_focus = foc_pos3
+        #     else:
+        #         min_focus = foc_pos0
 
-            ##  HERE we could add a fourth or fifth try.  The parabola cannot really invert, nor should we ever be at a wild point after the first focus is
-            ##  set up.
-            plog("It appears camera is too far out; try again with coarse_focus_script.")
-            self.coarse_focus_script(req2, opt2, throw=throw + 75, begin_at=min_focus)
-            self.sequencer_hold = False
-            self.guard = False
-            self.af_guard = False
-            return
+        #     ##  HERE we could add a fourth or fifth try.  The parabola cannot really invert, nor should we ever be at a wild point after the first focus is
+        #     ##  set up.
+        #     #plog("It appears camera is too far out; try again with coarse_focus_script.")
+        #     #self.coarse_focus_script(req2, opt2, throw=throw + 75, begin_at=min_focus)
+        #     self.sequencer_hold = False
+        #     self.guard = False
+        #     self.af_guard = False
+        #     return
         else:
             #plog('Spots are really wrong so moving back to starting focus:  ', focus_start)
             #g_dev['foc'].focuser.Move((focus_start)*g_dev['foc'].micron_to_steps)

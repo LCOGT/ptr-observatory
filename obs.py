@@ -1425,8 +1425,10 @@ sel
                         
                     g_dev['enc'].enclosure.CloseShutter()
             #plog ("temporary reporting: MTF")
-            plog ("opens this eve: " + str(g_dev['seq'].opens_this_evening))
-            plog ("minutes until next open attempt ALLOWED: " + str( (g_dev['seq'].enclosure_next_open_time - time.time()) /60))
+            if (g_dev['seq'].enclosure_next_open_time - time.time()) > 0:
+                plog ("opens this eve: " + str(g_dev['seq'].opens_this_evening))
+                
+                plog ("minutes until next open attempt ALLOWED: " + str( (g_dev['seq'].enclosure_next_open_time - time.time()) /60))
             
             #Report on when the observatory might close up if it intends to
             if g_dev['seq'].weather_report_close_during_evening==True :
