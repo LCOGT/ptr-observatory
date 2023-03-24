@@ -3314,6 +3314,7 @@ class Camera:
                             reported=0
                             plog ("Time Taken From Exposure start to finish : "  + str(time.time()\
                                    - self.tempStartupExposureTime))
+                            g_dev["obs"].send_to_user("Exposure Complete")
                             queue_clear_time = time.time()
                             while True:
                                 if self.sep_processing==False and g_dev['obs'].sep_queue.empty():
@@ -3465,6 +3466,8 @@ class Camera:
                     self.exposure_busy = False
 
                     plog ("Time Taken From Exposure start to finish : "  +str(time.time() - self.tempStartupExposureTime))
+                    
+                    g_dev["obs"].send_to_user("Exposure Complete")
 
                     return self.expresult
                 except Exception as e:
@@ -3474,6 +3477,7 @@ class Camera:
                     self.expresult = {"error": True}
                 self.exposure_busy = False
                 plog ("Time Taken From Exposure start to finish : "  +str(time.time() - self.tempStartupExposureTime))
+                g_dev["obs"].send_to_user("Exposure Complete")
                 return self.expresult
             else:
                 #self.t7 = time.time()
@@ -3491,6 +3495,7 @@ class Camera:
                     self.expresult = {"error": True}
                     self.exposure_busy = False
                     plog ("Time Taken From Exposure start to finish : "  +str(time.time() - self.tempStartupExposureTime))
+                    g_dev["obs"].send_to_user("Exposure Complete")
                     return self.expresult
             time.sleep(0.1)
 
