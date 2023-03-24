@@ -430,6 +430,9 @@ class Observatory:
         # On startup, collect orphaned fits files that may have been dropped from the queue
         # when the site crashed
         g_dev['seq'].collect_and_queue_neglected_fits()
+        
+        # Inform UI of reboot
+        self.send_to_user("Observatory code has been rebooted. Manually queued commands have been flushed.")
 
         # Need to set this for the night log
         #g_dev['foc'].set_focal_ref_reset_log(self.config["focuser"]["focuser1"]["reference"])

@@ -2232,7 +2232,7 @@ class Sequencer:
 
 
 
-    def auto_focus_script(self, req, opt, throw=600, skip_timer_check=False):
+    def auto_focus_script(self, req, opt, throw=600, skip_timer_check=False, extensive_focus=None):
         '''
         V curve is a big move focus designed to fit two lines adjacent to the more normal focus curve.
         It finds the approximate focus, particulary for a new instrument. It requires 8 points plus
@@ -2598,22 +2598,28 @@ class Sequencer:
 
             except:
 
-                plog('Autofocus quadratic equation not converge. Moving back to starting focus:  ', focus_start)
-                plog  ("NORMAL FOCUS UNSUCCESSFUL, TRYING EXTENSIVE FOCUS")
-                req2 = {'target': 'near_tycho_star', 'area': 150}
-                opt = {}
-                g_dev['seq'].extensive_focus_script(req2,opt, no_auto_after_solve=True)
-                
-                # g_dev['foc'].guarded_move((focus_start)*g_dev['foc'].micron_to_steps)
-                # time.sleep(5)
-                # self.sequencer_hold = False   #Allow comand checks.
-                # self.af_guard = False
-                # g_dev['mnt'].mount.SlewToCoordinatesAsync(start_ra, start_dec)   #NB NB Does this really take us back to starting point?
-                # wait_for_slew()
-                # self.sequencer_hold = False
-                # self.guard = False
-                # self.af_guard = False
-                # return
+                if extensive_focus != None:
+
+                    plog('Autofocus quadratic equation not converge. Moving back to starting focus:  ', focus_start)
+                    plog  ("NORMAL FOCUS UNSUCCESSFUL, TRYING EXTENSIVE FOCUS")
+                    req2 = {'target': 'near_tycho_star', 'area': 150}
+                    opt = {}
+                    g_dev['seq'].extensive_focus_script(req2,opt, no_auto_after_solve=True)
+                else:
+                    plog('Autofocus quadratic equation not converge. Moving back to extensive focus:  ', extensive_focus)
+                    g_dev['foc'].guarded_move((extensive_focus)*g_dev['foc'].micron_to_steps)
+
+                    self.sequencer_hold = False   #Allow comand checks.
+                    self.af_guard = False
+                    plog("Returning to:  ", start_ra, start_dec)
+                    g_dev["mnt"].last_ra = start_ra
+                    g_dev["mnt"].last_dec = start_dec
+                    g_dev['mnt'].mount.SlewToCoordinatesAsync(start_ra, start_dec)   #NB NB Does this really take us back to starting point?
+                    wait_for_slew()
+                    self.sequencer_hold = False
+                    self.guard = False
+                    self.af_guard = False
+                    return
             if min(x) <= d1 <= max(x):
                 plog ('Moving to Solved focus:  ', round(d1, 2), ' calculated:  ',  new_spot)
                 
@@ -2693,11 +2699,28 @@ class Sequencer:
 
             except:
 
-                plog('Autofocus quadratic equation not converge. Moving back to starting focus:  ', focus_start)
-                plog  ("NORMAL FOCUS UNSUCCESSFUL, TRYING EXTENSIVE FOCUS")
-                req2 = {'target': 'near_tycho_star', 'area': 150}
-                opt = {}
-                g_dev['seq'].extensive_focus_script(req2,opt, no_auto_after_solve=True)
+                if extensive_focus != None:
+
+                    plog('Autofocus quadratic equation not converge. Moving back to starting focus:  ', focus_start)
+                    plog  ("NORMAL FOCUS UNSUCCESSFUL, TRYING EXTENSIVE FOCUS")
+                    req2 = {'target': 'near_tycho_star', 'area': 150}
+                    opt = {}
+                    g_dev['seq'].extensive_focus_script(req2,opt, no_auto_after_solve=True)
+                else:
+                    plog('Autofocus quadratic equation not converge. Moving back to extensive focus:  ', extensive_focus)
+                    g_dev['foc'].guarded_move((extensive_focus)*g_dev['foc'].micron_to_steps)
+
+                    self.sequencer_hold = False   #Allow comand checks.
+                    self.af_guard = False
+                    plog("Returning to:  ", start_ra, start_dec)
+                    g_dev["mnt"].last_ra = start_ra
+                    g_dev["mnt"].last_dec = start_dec
+                    g_dev['mnt'].mount.SlewToCoordinatesAsync(start_ra, start_dec)   #NB NB Does this really take us back to starting point?
+                    wait_for_slew()
+                    self.sequencer_hold = False
+                    self.guard = False
+                    self.af_guard = False
+                    return
 
 
                 # g_dev['foc'].guarded_move((focus_start)*g_dev['foc'].micron_to_steps)
@@ -2747,10 +2770,28 @@ class Sequencer:
                 g_dev['mnt'].mount.SlewToCoordinatesAsync(start_ra, start_dec)   #Return to pre-focus pointing.
                 wait_for_slew()
             else:
-                plog  ("NORMAL FOCUS UNSUCCESSFUL, TRYING EXTENSIVE FOCUS")
-                req2 = {'target': 'near_tycho_star', 'area': 150}
-                opt = {}
-                g_dev['seq'].extensive_focus_script(req2,opt, no_auto_after_solve=True)
+                if extensive_focus != None:
+
+                    plog('Autofocus quadratic equation not converge. Moving back to starting focus:  ', focus_start)
+                    plog  ("NORMAL FOCUS UNSUCCESSFUL, TRYING EXTENSIVE FOCUS")
+                    req2 = {'target': 'near_tycho_star', 'area': 150}
+                    opt = {}
+                    g_dev['seq'].extensive_focus_script(req2,opt, no_auto_after_solve=True)
+                else:
+                    plog('Autofocus quadratic equation not converge. Moving back to extensive focus:  ', extensive_focus)
+                    g_dev['foc'].guarded_move((extensive_focus)*g_dev['foc'].micron_to_steps)
+
+                    self.sequencer_hold = False   #Allow comand checks.
+                    self.af_guard = False
+                    plog("Returning to:  ", start_ra, start_dec)
+                    g_dev["mnt"].last_ra = start_ra
+                    g_dev["mnt"].last_dec = start_dec
+                    g_dev['mnt'].mount.SlewToCoordinatesAsync(start_ra, start_dec)   #NB NB Does this really take us back to starting point?
+                    wait_for_slew()
+                    self.sequencer_hold = False
+                    self.guard = False
+                    self.af_guard = False
+                    return
             
             
             if sim:
@@ -2785,11 +2826,28 @@ class Sequencer:
         else:
             #plog('Spots are really wrong so moving back to starting focus:  ', focus_start)
             #g_dev['foc'].focuser.Move((focus_start)*g_dev['foc'].micron_to_steps)
-            plog ('DID NOT SETTLE DOWN ON A FOCUS ON NORMAL AUTOFOCUS')
-            plog ('ATTEMPTING AN EXTENSIVE FOCUS')
-            req2 = {'target': 'near_tycho_star', 'area': 150}
-            opt = {}
-            self.extensive_focus_script(req2,opt, no_auto_after_solve=True)
+            if extensive_focus != None:
+
+                plog('Autofocus quadratic equation not converge. Moving back to starting focus:  ', focus_start)
+                plog  ("NORMAL FOCUS UNSUCCESSFUL, TRYING EXTENSIVE FOCUS")
+                req2 = {'target': 'near_tycho_star', 'area': 150}
+                opt = {}
+                g_dev['seq'].extensive_focus_script(req2,opt, no_auto_after_solve=True)
+            else:
+                plog('Autofocus quadratic equation not converge. Moving back to extensive focus:  ', extensive_focus)
+                g_dev['foc'].guarded_move((extensive_focus)*g_dev['foc'].micron_to_steps)
+
+                self.sequencer_hold = False   #Allow comand checks.
+                self.af_guard = False
+                plog("Returning to:  ", start_ra, start_dec)
+                g_dev["mnt"].last_ra = start_ra
+                g_dev["mnt"].last_dec = start_dec
+                g_dev['mnt'].mount.SlewToCoordinatesAsync(start_ra, start_dec)   #NB NB Does this really take us back to starting point?
+                wait_for_slew()
+                self.sequencer_hold = False
+                self.guard = False
+                self.af_guard = False
+                return
         plog("Returning to:  ", start_ra, start_dec)
         g_dev["mnt"].last_ra = start_ra
         g_dev["mnt"].last_dec = start_dec
@@ -2978,7 +3036,7 @@ class Sequencer:
             plog (minimumFWHM)
             g_dev['foc'].guarded_move((solved_pos)*g_dev['foc'].micron_to_steps)
             if not no_auto_after_solve:
-                self.auto_focus_script(None,None, skip_timer_check=True)
+                self.auto_focus_script(None,None, skip_timer_check=True, extensive_focus=solved_pos)
         except:
             plog ("Something went wrong in the extensive focus routine")
             plog(traceback.format_exc())
