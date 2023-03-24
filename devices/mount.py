@@ -1450,18 +1450,24 @@ class Mount:
             g_dev['obs'].images_since_last_solve = 10000
         wait_for_slew()   
 
-    def slewToSkyFlatAsync(self):
+    def slewToSkyFlatAsync(self, skip_open_test=False):
         
-        if (not (g_dev['events']['Cool Down, Open'] < ephem.now() < g_dev['events']['Naut Dusk']) and \
-            not (g_dev['events']['Naut Dawn'] < ephem.now() < g_dev['events']['Close and Park'])):
-            g_dev['obs'].send_to_user("Refusing skyflat pointing request as it is outside skyflat time")
-            plog("Refusing pointing request as it is outside of skyflat pointing time.")
-            return
         
-        if (g_dev['obs'].open_and_enabled_to_observe==False and g_dev['enc'].mode == 'Automatic') and (not g_dev['obs'].debug_flag):
-            g_dev['obs'].send_to_user("Refusing skyflat pointing request as the observatory is not enabled to observe.")
-            plog("Refusing skyflat pointing request as the observatory is not enabled to observe.")
-            return
+        # This will only move the scope if the observatory is open
+        # UNLESS it has been sent a command from particular routines
+        # e.g. pointing the telescope in a safe location BEFORE opening the roof
+        if not skip_open_test:
+        
+            if (not (g_dev['events']['Cool Down, Open'] < ephem.now() < g_dev['events']['Naut Dusk']) and \
+                not (g_dev['events']['Naut Dawn'] < ephem.now() < g_dev['events']['Close and Park'])):
+                g_dev['obs'].send_to_user("Refusing skyflat pointing request as it is outside skyflat time")
+                plog("Refusing pointing request as it is outside of skyflat pointing time.")
+                return
+            
+            if (g_dev['obs'].open_and_enabled_to_observe==False and g_dev['enc'].mode == 'Automatic') and (not g_dev['obs'].debug_flag):
+                g_dev['obs'].send_to_user("Refusing skyflat pointing request as the observatory is not enabled to observe.")
+                plog("Refusing skyflat pointing request as the observatory is not enabled to observe.")
+                return
         
         az, alt = self.astro_events.flat_spot_now()
         self.unpark_command()        

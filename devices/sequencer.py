@@ -349,10 +349,10 @@ class Sequencer:
                     # If during the flat period, point it away from the sun, otherwise point the telescope at the home position                
                     if (g_dev['events']['Cool Down, Open']  <= ephem_now < g_dev['events']['End Eve Sky Flats']):
                         plog("Unparking Scope and pointing it away from the sun.")
-                        g_dev['mnt'].slewToSkyFlatAsync()                
+                        g_dev['mnt'].slewToSkyFlatAsync(skip_open_test=True)                
                     elif (g_dev['events']['Morn Sky Flats'] <= ephem_now < g_dev['events']['End Morn Sky Flats']):
                         plog("Unparking Scope and pointing it away from the sun.")
-                        g_dev['mnt'].slewToSkyFlatAsync()
+                        g_dev['mnt'].slewToSkyFlatAsync(skip_open_test=True)
                     else:
                         plog("Unparking Scope and pointing it to the home position.")
                         g_dev['mnt'].home_command()
