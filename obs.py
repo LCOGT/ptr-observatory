@@ -1427,12 +1427,14 @@ sel
             
             #Report on when the observatory might close up if it intends to
             if g_dev['seq'].weather_report_close_during_evening==True :
-                plog ("Time Now")
-                plog (ephem.now())
-                plog ("Time Observatory Closing up Early")
-                plog (g_dev['seq'].weather_report_close_during_evening_time)
-                plog ("Difference in time")
-                plog (ephem.now() - g_dev['seq'].weather_report_close_during_evening_time)
+                plog ("Observatory closing early in " + str( (g_dev['seq'].weather_report_close_during_evening_time - ephem.now()) * 24) + " hours due to weather.")
+                #breakpoint()
+                #plog ("Time Now")
+                #plog (ephem.now())
+                #plog ("Time Observatory Closing up Early")
+                #plog (g_dev['seq'].weather_report_close_during_evening_time)
+                #plog ("Difference in time")
+                #plog (ephem.now() - g_dev['seq'].weather_report_close_during_evening_time)
             
             
             
