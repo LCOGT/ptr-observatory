@@ -130,7 +130,7 @@ class WxEncAgent:
             g_dev["site_path"] = self.site_path
             g_dev["wema_write_share_path"] = self.site_path  # Just to be safe.
             self.wema_path = g_dev["wema_write_share_path"]
-        if self.config["site_is_specific"]:
+        if self.config["obsid_is_specific"]:
             self.site_is_specific = True
         else:
             self.site_is_specific = False
@@ -138,7 +138,7 @@ class WxEncAgent:
         self.last_request = None
         self.stopped = False
         self.site_message = "-"
-        self.site_mode = config["site_in_automatic_default"]
+        self.site_mode = config["obsid_in_automatic_default"]
         self.device_types = config["wema_types"]
         self.astro_events = ptr_events.Events(self.config)
         self.astro_events.compute_day_directory()

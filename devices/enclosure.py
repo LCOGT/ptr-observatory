@@ -207,10 +207,10 @@ class Enclosure:
         g_dev['enc'] = self
         self.slew_latch = False
         self.dome_open=None # Just initialising this variable
-        if self.config['site_in_automatic_default'] == "Automatic":
+        if self.config['obsid_in_automatic_default'] == "Automatic":
             self.site_in_automatic = True
             self.mode = 'Automatic'
-        elif self.config['site_in_automatic_default'] == "Manual":
+        elif self.config['obsid_in_automatic_default'] == "Manual":
             self.site_in_automatic = False
             self.mode = 'Manual'
         else:
@@ -237,7 +237,7 @@ class Enclosure:
             self.observing_conditions_connected = True
             self.site_is_proxy = False
             plog("observing_conditions: Simulator drivers connected True")
-        elif self.config['site_is_specific']:
+        elif self.config['obsid_is_specific']:
             self.site_is_specific = True
             self.site_is_generic = False
             #  Note OCN has no associated commands.
@@ -269,7 +269,7 @@ class Enclosure:
         self.last_slewing = False
         self.prior_status = {'enclosure_mode': 'Manual'}    #Just to initialze this rarely used variable.
 
-        if self.config['site_allowed_to_open_roof'] in ['yes']:
+        if self.config['obsid_allowed_to_open_roof'] in ['yes']:
             self.site_allowed_to_open_roof = True
         else:
             self.site_allowed_to_open_roof = False

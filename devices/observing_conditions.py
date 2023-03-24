@@ -99,7 +99,7 @@ class ObservingConditions:
             self.site_has_proxy = True  # NB Site is proxy needs a new name.
         else:
             self.site_has_proxy = False
-        if self.config["site_is_specific"]:
+        if self.config["obsid_is_specific"]:
             self.site_is_specific = True
             #  Note OCN has no associated commands.
             #  Here we monkey patch
