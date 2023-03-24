@@ -479,15 +479,34 @@ class Sequencer:
                             #self.enclosure_next_open_time = time.time() + 300 # Only try to open the roof every five minutes
                             self.cool_down_latch = True
                             self.open_observatory(enc_status, ocn_status)
+                            
+                            # If the observatory opens, set clock and auto focus and observing to now
+                            if g_dev['obs'].open_and_enabled_to_observe:
+                                self.night_focus_ready=True
+                                obs_win_begin, sunZ88Op, sunZ88Cl, ephem_now = self.astro_events.getSunEvents()
+                                #g_dev['events']['Clock & Auto Focus'] = ephem_now - 0.1/24
+                                #g_dev['events']['Observing Begins'] = ephem_now + 0.1/24
+                                self.weather_report_wait_until_open=False
+                                self.weather_report_is_acceptable_to_observe=True
+                                if (g_dev['events']['Observing Begins '] < ephem.now() < g_dev['events']['Observing Ends']):
+                                    # Move to reasonable spot
+                                    if g_dev['mnt'].mount.Tracking == False:
+                                        if g_dev['mnt'].mount.CanSetTracking:   
+                                            g_dev['mnt'].mount.Tracking = True
+                                        else:
+                                            plog("mount is not tracking but this mount doesn't support ASCOM changing tracking")
+    
+                                    g_dev['mnt'].move_to_azalt(70, 70)
+                                    g_dev['foc'].time_of_last_focus = datetime.datetime.now() - datetime.timedelta(
+                                        days=1
+                                    )  # Initialise last focus as yesterday
+    
+                                    # Autofocus
+                                    req2 = {'target': 'near_tycho_star', 'area': 150}
+                                    opt = {}
+                                    plog ("Running initial autofocus upon opening observatory")
+                                    self.extensive_focus_script(req2, opt)
                             self.cool_down_latch = False
-                        # If the observatory opens, set clock and auto focus and observing to now
-                        if g_dev['obs'].open_and_enabled_to_observe:
-                            self.night_focus_ready=True
-                            obs_win_begin, sunZ88Op, sunZ88Cl, ephem_now = self.astro_events.getSunEvents()
-                            g_dev['events']['Clock & Auto Focus'] = ephem_now - 0.1/24
-                            g_dev['events']['Observing Begins'] = ephem_now + 0.1/24
-                            self.weather_report_wait_until_open=False
-                            self.weather_report_is_acceptable_to_observe=True
         
         # If the observatory is meant to shut during the evening
         obs_win_begin, sunZ88Op, sunZ88Cl, ephem_now = self.astro_events.getSunEvents()
@@ -535,9 +554,37 @@ class Sequencer:
                     
                     self.open_observatory(enc_status, ocn_status)
                     
-                    
-                    
-                    self.night_focus_ready=True
+                    # If the observatory opens, set clock and auto focus and observing to now
+                    if g_dev['obs'].open_and_enabled_to_observe:
+                        self.night_focus_ready=False
+                        obs_win_begin, sunZ88Op, sunZ88Cl, ephem_now = self.astro_events.getSunEvents()
+                        #g_dev['events']['Clock & Auto Focus'] = ephem_now - 0.1/24
+                        #g_dev['events']['Observing Begins'] = ephem_now + 0.1/24
+                        self.weather_report_wait_until_open=False
+                        #self.weather_report_is_acceptable_to_observe=True
+                        if (g_dev['events']['Observing Begins '] < ephem.now() < g_dev['events']['Observing Ends']):
+                            # Move to reasonable spot
+                            if g_dev['mnt'].mount.Tracking == False:
+                                if g_dev['mnt'].mount.CanSetTracking:   
+                                    g_dev['mnt'].mount.Tracking = True
+                                else:
+                                    plog("mount is not tracking but this mount doesn't support ASCOM changing tracking")
+
+                            g_dev['mnt'].move_to_azalt(70, 70)
+                            g_dev['foc'].time_of_last_focus = datetime.datetime.now() - datetime.timedelta(
+                                days=1
+                            )  # Initialise last focus as yesterday
+
+                            # Autofocus
+                            req2 = {'target': 'near_tycho_star', 'area': 150}
+                            opt = {}
+                            plog ("Running initial autofocus upon opening observatory")
+                            
+                            self.extensive_focus_script(req2, opt)
+                        else:
+                            self.night_focus_ready=True
+                            
+                   
             self.cool_down_latch = False
 
         # Check that nightly reset switch is reset at start of observing eve. 
@@ -569,7 +616,6 @@ class Sequencer:
                self.config['auto_eve_sky_flat'] and g_dev['obs'].open_and_enabled_to_observe and not self.eve_flats_done and self.weather_report_is_acceptable_to_observe and g_dev['obs'].camera_temperature_in_range_for_calibrations):
 
             self.eve_sky_flat_latch = True
-            #self.open_observatory(enc_status, ocn_status)   #Just in case a Wx hold stopped opening
             self.current_script = "Eve Sky Flat script starting"
             #plog('Skipping Eve Sky Flats')
             
@@ -770,14 +816,7 @@ class Sequencer:
                                 
                                 
 
-                    
-                
-                
-                
-                # #System hangs on this state
-                # elif ((g_dev['events']['Observing Ends']  < ephem_now < g_dev['events']['End Morn Sky Flats']) and \
-                #        g_dev['enc'].mode == 'Automatic') and not g_dev['ocn'].wx_hold and self.config['auto_morn_sky_flat']:
-                #     self.open_observatory(enc_status, ocn_status)
+
             except:
                 plog(traceback.format_exc())
                 plog("Hang up in sequencer.")
@@ -790,12 +829,7 @@ class Sequencer:
             #self.time_of_next_slew = time.time() -1
             self.morn_sky_flat_latch = True
             
-            # MTF - NO! Don't open the observatory!
-            # The observatory should still be open in the morning after a night of observing
-            # If it isn't then the night must have been patchy and the roof shut
-            # We don't need to reopen on a patchy night just to get flats. 
-            #self.open_observatory(enc_status, ocn_status)   #Just in case a Wx hold stopped opening
-            
+          
             
             self.current_script = "Morn Sky Flat script starting"
             
@@ -935,10 +969,10 @@ class Sequencer:
         enc_status = g_dev['enc'].status
         # #unpark, open dome etc.
         # #if not end of block
-        # if not enc_status in ['open', 'Open', 'opening', 'Opening']:
-        #     self.open_observatory(enc_status, ocn_status, no_sky=True)   #Just in case a Wx hold stopped opening
-        # else:
-        #g_dev['enc'].sync_mount_command({}, {})
+        try:
+            g_dev['enc'].sync_mount_command({}, {})
+        except:
+            pass
         g_dev['mnt'].unpark_command({}, {})
         g_dev['mnt'].Tracking = True   # unpark_command({}, {})
         g_dev['cam'].user_name = 'tobor'
