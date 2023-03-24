@@ -1216,6 +1216,7 @@ sel
             g_dev['mnt'].check_connect()
             #if got here, mount is connected. NB Plumb in PW startup code
 
+            
             # Check that the mount hasn't tracked too low or an odd slew hasn't sent it pointing to the ground.
             try:
                 mount_altitude=g_dev['mnt'].mount.Altitude
@@ -1423,6 +1424,18 @@ sel
             #plog ("temporary reporting: MTF")
             plog ("opens this eve: " + str(g_dev['seq'].opens_this_evening))
             plog ("minutes until next open attempt ALLOWED: " + str( (g_dev['seq'].enclosure_next_open_time - time.time()) /60))
+            
+            #Report on when the observatory might close up if it intends to
+            if g_dev['seq'].weather_report_close_during_evening==True :
+                plog ("Time Now")
+                plog (ephem.now())
+                plog ("Time Observatory Closing up Early")
+                plog (g_dev['seq'].weather_report_close_during_evening_time)
+                plog ("Difference in time")
+                plog (ephem.now() - g_dev['seq'].weather_report_close_during_evening_time)
+            
+            
+            
         #END of safety checks.
                     
                     
