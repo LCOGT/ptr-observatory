@@ -22,14 +22,22 @@ g_dev = None
  # print(len(bolt))
 
 site_name = 'eco'
-
+obs_id = 'eco1'
                     #\\192.168.1.57\SRO10-Roof  r:
                     #SRO-Weather (\\192.168.1.57) w:
                     #Username: wayne_rosingPW: 29yzpe
 
 site_config = {
-    'site': str(site_name.lower()),
-    'site_id': 'eco',
+    # THESE ARE TO BE DELETED VERY SOON!
+    # THEY EXIST SOLELY SO AS TO NOT BREAK THE UI UNTIL 
+    #THINGS ARE MOVED TO OBS_ID
+    'site': 'eco1', #TIM this may no longer be needed.
+    'site_id': 'eco1',
+    ####################################################
+    'obs_id': 'eco1',
+    'observatory_location': site_name.lower(),
+    
+    
     'debug_site_mode': False,
     
     'debug_mode': False,
@@ -65,8 +73,8 @@ site_config = {
     'wema_write_share_path':  None,   # This and below provide two different ways to define
     'client_read_share_path':  None,  #     a path to a network share.
     'redis_ip': None,  #'127.0.0.1', None if no redis path present,
-    'site_is_generic':  True,   # A simple single computer ASCOM site.
-    'site_is_specific':  False,  # Indicates some special code for this site, found at end of config.
+    'obsid_is_generic':  True,   # A simple single computer ASCOM site.
+    'obsid_is_specific':  False,  # Indicates some special code for this site, found at end of config.
     
 
     'host_wema_site_name':  'ECO',  #  The umbrella header for obsys in close geographic proximity.
@@ -94,7 +102,7 @@ site_config = {
     'reference_pressure':  867.254,    #mbar   A rough guess 20200315
 
     'site_roof_control': True, #MTF entered this in to remove sro specific code.... Basically do we have control of the roof or not see line 338 sequencer.py
-    'site_allowed_to_open_roof': True,
+    'obsid_allowed_to_open_roof': True,
     'period_of_time_to_wait_for_roof_to_open' : 100, # seconds - needed to check if the roof ACTUALLY opens. 
     'only_scope_that_controls_the_roof': False, # If multiple scopes control the roof, set this to False
     
@@ -105,7 +113,7 @@ site_config = {
     'closest_distance_to_the_moon': 10, # Degrees. For normal pointing requests don't go this close to the moon. 
     
     'lowest_requestable_altitude': -5, # Degrees. For normal pointing requests don't allow requests to go this low. 
-    'site_in_automatic_default': "Automatic",   #  ["Manual", "Shutdown", "Automatic"]
+    'obsid_in_automatic_default': "Automatic",   #  ["Manual", "Shutdown", "Automatic"]
     'automatic_detail_default': "Enclosure is initially set to Automatic mode.",
     'observing_check_period' : 2,    # How many minutes between weather checks
     'enclosure_check_period' : 2,    # How many minutes between enclosure checks

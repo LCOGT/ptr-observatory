@@ -157,16 +157,25 @@ class Observatory:
         self.status_interval = 0  # NOTE THESE IMPLEMENTED AS A DELTA NOT A RATE.
 
         self.name = name  # NB NB NB Names needs a once-over.
-        self.site_name = name
+        self.obs_id = name
 
         g_dev['name'] = name
         self.config = ptr_config
-        self.site = ptr_config["site"]
+        self.observatory_location = ptr_config["observatory_location"]
         self.debug_flag = self.config['debug_mode']
         self.admin_only_flag = self.config['admin_owner_commands_only']
+        
+        
+        # Default path
+        self.obsid_path = ptr_config["client_path"] +'/' + self.name + '/'
+        if not os.path.exists(self.obsid_path):
+            os.makedirs(self.obsid_path)
+        
+            
         if self.debug_flag:
             self.debug_lapse_time = time.time() + self.config['debug_duration_sec']
             g_dev['debug'] = True
+            self.camera_temperature_in_range_for_calibrations = True
             #g_dev['obs'].open_and_enabled_to_observe = True
         else:
             self.debug_lapse_time = 0.0
@@ -183,26 +192,26 @@ class Observatory:
             else:
                 # This host is a client
                 self.is_wema = False  # This is a client.
-                self.site_path = ptr_config["client_path"] +'/' + self.name + '/'
-                if not os.path.exists(self.site_path):
-                    os.makedirs(self.site_path)
+                self.obsid_path = ptr_config["client_path"] +'/' + self.name + '/'
+                if not os.path.exists(self.obsid_path):
+                    os.makedirs(self.obsid_path)
                 
-                g_dev["site_path"] = self.site_path
+                g_dev["obsid_path"] = self.obsid_path
                 g_dev["wema_share_path"] = ptr_config[
                     "client_write_share_path"
                 ]  # Just to be safe.
                 self.wema_path = g_dev["wema_share_path"]
         else:
             self.is_wema = False  # This is a client.
-            self.site_path = ptr_config["client_path"] + self.config['site_id'] + '/'
-            g_dev["site_path"] = self.site_path
-            g_dev["wema_share_path"] = self.site_path  # Just to be safe.
+            self.obsid_path = ptr_config["client_path"] + self.config['obs_id'] + '/'
+            g_dev["obsid_path"] = self.obsid_path
+            g_dev["wema_share_path"] = self.obsid_path  # Just to be safe.
             self.wema_path = g_dev["wema_share_path"]
 
-        if self.config["site_is_specific"]:
-            self.site_is_specific = True
+        if self.config["obsid_is_specific"]:
+            self.obsid_is_specific = True
         else:
-            self.site_is_specific = False
+            self.obsid_is_specific = False
 
 
         
@@ -212,7 +221,7 @@ class Observatory:
         self.stopped = False
         self.status_count = 0
         self.stop_all_activity = False
-        self.site_message = "-"
+        self.obsid_message = "-"
         self.all_device_types = ptr_config["device_types"]  # May not be needed
         self.device_types = ptr_config["device_types"]  # ptr_config['short_status_devices']
         self.wema_types = ptr_config["wema_types"]
@@ -256,45 +265,45 @@ class Observatory:
             self.redis_wx_enabled = False
             g_dev["redis"] = None  # a placeholder.
 
-        
+        g_dev["obs"] = self
+        obsid_str = ptr_config["obs_id"]
+        g_dev["obsid"]: obsid_str
+        self.g_dev = g_dev
 
         # Use the configuration to instantiate objects for all devices.
         self.create_devices()
         self.loud_status = False
-        g_dev["obs"] = self
-        site_str = ptr_config["site"]
-        g_dev["site"]: site_str
-        self.g_dev = g_dev
+        
         # Clear out smartstacks directory
         #plog ("removing and reconstituting smartstacks directory")
         try:
-            shutil.rmtree(g_dev["cam"].site_path + "smartstacks")
+            shutil.rmtree(self.obsid_path + "smartstacks")
         except:
             plog ("problems with removing the smartstacks directory... usually a file is open elsewhere")
         time.sleep(3)
-        if not os.path.exists(g_dev["cam"].site_path + "smartstacks"):
-            os.makedirs(g_dev["cam"].site_path + "smartstacks")
+        if not os.path.exists(self.obsid_path + "smartstacks"):
+            os.makedirs(self.obsid_path + "smartstacks")
 
         # Check directory system has been constructed
         # for new sites or changed directories in configs.
         #NB NB be careful if we have a site with multiple cameras, etc,
         #some of these directores seem up a level or two. WER
 
-        if not os.path.exists(g_dev["cam"].site_path + "ptr_night_shelf"):
-            os.makedirs(g_dev["cam"].site_path + "ptr_night_shelf")
-        if not os.path.exists(g_dev["cam"].site_path + "archive"):
-            os.makedirs(g_dev["cam"].site_path + "archive")
-        if not os.path.exists(g_dev["cam"].site_path + "tokens"):
-            os.makedirs(g_dev["cam"].site_path + "tokens")
-        if not os.path.exists(g_dev["cam"].site_path + "astropycache"):
-            os.makedirs(g_dev["cam"].site_path + "astropycache")
-        if not os.path.exists(g_dev["cam"].site_path + "smartstacks"):
-            os.makedirs(g_dev["cam"].site_path + "smartstacks")
-        if not os.path.exists(g_dev["cam"].site_path + "calibmasters"):  #retaining for backward compatibility
-            os.makedirs(g_dev["cam"].site_path + "calibmasters")
+        if not os.path.exists(self.obsid_path + "ptr_night_shelf"):
+            os.makedirs(self.obsid_path + "ptr_night_shelf")
+        if not os.path.exists(self.obsid_path + "archive"):
+            os.makedirs(self.obsid_path + "archive")
+        if not os.path.exists(self.obsid_path + "tokens"):
+            os.makedirs(self.obsid_path + "tokens")
+        if not os.path.exists(self.obsid_path + "astropycache"):
+            os.makedirs(self.obsid_path + "astropycache")
+        if not os.path.exists(self.obsid_path + "smartstacks"):
+            os.makedirs(self.obsid_path + "smartstacks")
+        if not os.path.exists(self.obsid_path + "calibmasters"):  #retaining for backward compatibility
+            os.makedirs(self.obsid_path + "calibmasters")
         camera_name = self.config['camera']['camera_1_1']['name']
-        if not os.path.exists(g_dev["cam"].site_path + "archive/" + camera_name + "/calibmasters"):
-            os.makedirs(g_dev["cam"].site_path + "archive/" + camera_name + "/calibmasters")
+        if not os.path.exists(self.obsid_path + "archive/" + camera_name + "/calibmasters"):
+            os.makedirs(self.obsid_path + "archive/" + camera_name + "/calibmasters")
         self.last_solve_time = datetime.datetime.now() - datetime.timedelta(days=1)
         self.images_since_last_solve = 10000
 
@@ -445,7 +454,7 @@ class Observatory:
 
 
     def set_last_reference(self, delta_ra, delta_dec, last_time):
-        mnt_shelf = shelve.open(self.site_path + "ptr_night_shelf/" + "last" + str(self.name))
+        mnt_shelf = shelve.open(self.obsid_path + "ptr_night_shelf/" + "last" + str(self.name))
         mnt_shelf["ra_cal_offset"] = delta_ra
         mnt_shelf["dec_cal_offset"] = delta_dec
         mnt_shelf["time_offset"] = last_time
@@ -453,7 +462,7 @@ class Observatory:
         return
 
     def get_last_reference(self):
-        mnt_shelf = shelve.open(self.site_path + "ptr_night_shelf/" + "last"+ str(self.name))
+        mnt_shelf = shelve.open(self.obsid_path + "ptr_night_shelf/" + "last"+ str(self.name))
         delta_ra = mnt_shelf["ra_cal_offset"]
         delta_dec = mnt_shelf["dec_cal_offset"]
         last_time = mnt_shelf["time_offset"]
@@ -462,7 +471,7 @@ class Observatory:
 
     def reset_last_reference(self):
 
-        mnt_shelf = shelve.open(self.site_path + "ptr_night_shelf/" + "last"+ str(self.name))
+        mnt_shelf = shelve.open(self.obsid_path + "ptr_night_shelf/" + "last"+ str(self.name))
         mnt_shelf["ra_cal_offset"] = None
         mnt_shelf["dec_cal_offset"] = None
         mnt_shelf["time_offset"] = None
@@ -523,7 +532,7 @@ class Observatory:
     def update_config(self):
         """Sends the config to AWS."""
 
-        uri = f"{self.config['site']}/config/"
+        uri = f"{self.config['obs_id']}/config/"
         self.config["events"] = g_dev["events"]
         response = g_dev["obs"].api.authenticated_request("PUT", uri, self.config)
         if 'message' in response:
@@ -539,10 +548,10 @@ class Observatory:
                 plog("Config uploaded successfully.")
 
             else:
-                plog ("Response to site config upload unclear. Here is the response")
+                plog ("Response to obsid config upload unclear. Here is the response")
                 plog (response)
         else:
-            plog ("Response to site config upload unclear. Here is the response")
+            plog ("Response to obsid config upload unclear. Here is the response")
             plog (response)
 
     def cancel_all_activity(self):
@@ -795,7 +804,7 @@ sel
                     if self.events_new is None:
                         url = (
                             "https://api.photonranch.org/api/events?site="
-                            + self.site_name.upper()
+                            + self.obs_id.upper()
                         )
                         self.events_new = reqs.get(url).json()
                 return  # This creates an infinite loop
@@ -879,10 +888,10 @@ sel
                 if (
                     "enclosure" in device_name
                     #and device_name in self.config["wema_types"]
-                    #and (self.is_wema or self.site_is_specific)
+                    #and (self.is_wema or self.obsid_is_specific)
                 ):  
 
-                    if self.config['enclosure']['enclosure1']['driver'] == None and not self.site_is_specific:
+                    if self.config['enclosure']['enclosure1']['driver'] == None and not self.obsid_is_specific:
                         # Even if no connection send a satus
                         status = {'shutter_status': "No enclosure.",
                                   'enclosure_synchronized': False, #self.following, 20220103_0135 WER
@@ -916,13 +925,13 @@ sel
                         self.observing_status_timer = datetime.datetime.now()
                         result = device.get_noocndevice_status()
                         send_ocn = True
-                        if self.site_is_specific:
+                        if self.obsid_is_specific:
                             remove_enc = False
 
                 elif (
                     "observing_conditions" in device_name
                     and device_name in self.config["wema_types"]
-                    and (self.is_wema or self.site_is_specific)
+                    and (self.is_wema or self.obsid_is_specific)
                 ):
                     # Here is where the weather config gets updated.
                     if (
@@ -935,7 +944,7 @@ sel
                         self.observing_status_timer = datetime.datetime.now()
                         result = device.get_status(g_dev=g_dev)
                         send_ocn = True
-                        if self.site_is_specific:
+                        if self.obsid_is_specific:
                             remove_enc = False
                 
                     
@@ -1097,7 +1106,7 @@ sel
                 if g_dev['enc'].status['shutter_status'] == 'Software Fault':
                     plog ("Software Fault Detected. Will alert the authorities!")
                     plog ("Parking Scope in the meantime")
-                    if self.config['site_roof_control'] and g_dev['enc'].mode == 'Automatic':
+                    if self.config['obsid_roof_control'] and g_dev['enc'].mode == 'Automatic':
                         self.open_and_enabled_to_observe=False
                         #self.cancel_all_activity()   #NB THis kills bias-dark
                         if not g_dev['mnt'].mount.AtPark:  
@@ -1110,7 +1119,7 @@ sel
                     
                 
                 if g_dev['enc'].status['shutter_status'] == 'Closing':
-                    if self.config['site_roof_control'] and g_dev['enc'].mode == 'Automatic':
+                    if self.config['obsid_roof_control'] and g_dev['enc'].mode == 'Automatic':
                         plog ("Detected Roof Closing. Sending another close command just in case the roof got stuck on this status (this happens!)")
                         self.open_and_enabled_to_observe=False
                         #self.cancel_all_activity()    #NB Kills bias dark
@@ -1118,7 +1127,7 @@ sel
                         g_dev['seq'].enclosure_next_open_time = time.time() + self.config['roof_open_safety_base_time'] * g_dev['seq'].opens_this_evening
                 
                 if g_dev['enc'].status['shutter_status'] == 'Error':
-                    if self.config['site_roof_control'] and g_dev['enc'].mode == 'Automatic':
+                    if self.config['obsid_roof_control'] and g_dev['enc'].mode == 'Automatic':
                         plog ("Detected an Error in the Roof Status. Closing up for safety.")
                         plog ("This is usually because the weather system forced the roof to shut.")
                         plog ("By closing it again, it resets the switch to closed.")
@@ -1154,7 +1163,7 @@ sel
                 if g_dev['enc'].status['shutter_status'] == 'Open':
                     if roof_should_be_shut==True :
                         plog ("Safety check found that the roof was open outside of the normal observing period")    
-                        if self.config['site_roof_control'] and g_dev['enc'].mode == 'Automatic':
+                        if self.config['obsid_roof_control'] and g_dev['enc'].mode == 'Automatic':
                             plog ("Shutting the roof out of an abundance of caution. This may also be normal functioning")
                             
                             #self.cancel_all_activity()  #NB Kills bias dark
@@ -1497,7 +1506,8 @@ sel
                                     tempPTR=1
                                     retryarchive=11
                                 except Exception as e:
-                                    if self.site_name == "mrc":
+
+                                    if self.site_name == "mrc1":
                                         plog("ingester isn't ingesting at MRC. A known problem - MTF will fix.")
                                         retryarchive=12
                                         tempPTR=0
@@ -1510,6 +1520,7 @@ sel
                                         time.sleep(pow(retryarchive, 2) + 1)
                                         if retryarchive < 10:
                                             retryarchive=retryarchive+1
+                                        tempPTR=0
                                         
 
                         # If ingester fails, send to default S3 bucket.
@@ -2887,7 +2898,7 @@ sel
         url_log = "https://logs.photonranch.org/logs/newlog"
         body = json.dumps(
             {
-                "site": self.config["site"],
+                "site": self.config["obs_id"],
                 "log_message": str(p_log),
                 "log_level": str(p_level),
                 "timestamp": time.time(),
@@ -3044,13 +3055,13 @@ sel
                         # IF SMARSTACK NPY FILE EXISTS DO STUFF, OTHERWISE THIS IMAGE IS THE START OF A SMARTSTACK
                         reprojection_failed=False
                         if not os.path.exists(
-                            g_dev["cam"].site_path + "smartstacks/" + smartStackFilename
+                            self.obsid_path + "smartstacks/" + smartStackFilename
                         ):
                             if len(sources) >= 5:
                                 # Store original image
                                 plog("Storing First smartstack image")
                                 np.save(
-                                    g_dev["cam"].site_path
+                                    self.obsid_path
                                     + "smartstacks/"
                                     + smartStackFilename,
                                     imgdata,
@@ -3063,7 +3074,7 @@ sel
                         else:
                             # Collect stored SmartStack
                             storedsStack = np.load(
-                                g_dev["cam"].site_path + "smartstacks/" + smartStackFilename
+                                self.obsid_path + "smartstacks/" + smartStackFilename
                             )
                             #plog (storedsStack.dtype.byteorder)
                             # Prep new image
@@ -3084,7 +3095,7 @@ sel
                                     storedsStack = np.array((reprojectedimage + storedsStack))
                                     # Save new stack to disk
                                     np.save(
-                                        g_dev["cam"].site_path
+                                        self.obsid_path
                                         + "smartstacks/"
                                         + smartStackFilename,
                                         storedsStack,
@@ -3098,7 +3109,7 @@ sel
                                     hduss.data=hduss.data.astype("float32")
                                     try:
                                         hduss.writeto(
-                                            g_dev["cam"].site_path
+                                            self.obsid_path
                                             + "smartstacks/"
                                             + smartStackFilename.replace('.npy','_' + str(sskcounter) + '_' + str(Nsmartstack) +'.fit'), overwrite=True, output_verify='silentfix'
                                         )  # Save flash reduced file locally
@@ -3266,28 +3277,28 @@ sel
                             reprojection_failed=False
                             for colstack in ['blue','green','red']:
                                 if not os.path.exists(
-                                    g_dev["cam"].site_path + "smartstacks/" + smartStackFilename.replace(smartstackid, smartstackid + str(colstack))
+                                    self.obsid_path + "smartstacks/" + smartStackFilename.replace(smartstackid, smartstackid + str(colstack))
                                 ):
                                     if len(sources) >= 5:
                                         # Store original image
                                         plog("Storing First smartstack image")
                                         if colstack == 'blue':
                                             np.save(
-                                                g_dev["cam"].site_path
+                                                self.obsid_path
                                                 + "smartstacks/"
                                                 + smartStackFilename.replace(smartstackid, smartstackid + str(colstack)),
                                                 newhdublue,
                                             )
                                         if colstack == 'green':
                                             np.save(
-                                                g_dev["cam"].site_path
+                                                self.obsid_path
                                                 + "smartstacks/"
                                                 + smartStackFilename.replace(smartstackid, smartstackid + str(colstack)),
                                                 newhdugreen,
                                             )
                                         if colstack == 'red':
                                             np.save(
-                                                g_dev["cam"].site_path
+                                                self.obsid_path
                                                 + "smartstacks/"
                                                 + smartStackFilename.replace(smartstackid, smartstackid + str(colstack)),
                                                 newhdured,
@@ -3305,7 +3316,7 @@ sel
                                 else:
                                     # Collect stored SmartStack
                                     storedsStack = np.load(
-                                        g_dev["cam"].site_path + "smartstacks/" + smartStackFilename.replace(smartstackid, smartstackid + str(colstack))
+                                        self.obsid_path + "smartstacks/" + smartStackFilename.replace(smartstackid, smartstackid + str(colstack))
                                     )
                                     #plog (storedsStack.dtype.byteorder)
                                     # Prep new image
@@ -3334,7 +3345,7 @@ sel
                                             storedsStack = np.array((reprojectedimage + storedsStack))
                                             # Save new stack to disk
                                             np.save(
-                                                g_dev["cam"].site_path
+                                                self.obsid_path
                                                 + "smartstacks/"
                                                 + smartStackFilename.replace(smartstackid, smartstackid + str(colstack)),
                                                 storedsStack,
@@ -3348,7 +3359,7 @@ sel
                                             hduss.data=hduss.data.astype("float32")
                                             try:
                                                 hduss.writeto(
-                                                    g_dev["cam"].site_path
+                                                    self.obsid_path
                                                     + "smartstacks/"
                                                     + smartStackFilename.replace(smartstackid, smartstackid + str(colstack)).replace('.npy','_' + str(sskcounter) + '_' + str(Nsmartstack) +'.fit'), overwrite=True, output_verify='silentfix'
                                                 )  # Save flash reduced file locally
@@ -3622,5 +3633,5 @@ def wait_for_slew():
 
 if __name__ == "__main__":
 
-    o = Observatory(ptr_config.site_name, ptr_config.site_config)
+    o = Observatory(ptr_config.obs_id, ptr_config.site_config)
     o.run()   #This is meant to be a never ending loop.

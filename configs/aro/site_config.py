@@ -25,8 +25,14 @@ g_dev = None
 site_name = 'aro'
 
 site_config = {
-    'site': str(site_name.lower()),
-    'site_id': str(site_name.lower()),   #used by PROPID keyword in fits header, can be changed here
+    # THESE ARE TO BE DELETED VERY SOON!
+    # THEY EXIST SOLELY SO AS TO NOT BREAK THE UI UNTIL 
+    #THINGS ARE MOVED TO OBS_ID
+    'site': 'aro1', #TIM this may no longer be needed.
+    'site_id': 'aro1',
+    ####################################################
+    'obs_id': 'aro1',
+    'observatory_location': site_name.lower(),
     
     'debug_site_mode': False,
     
@@ -74,8 +80,8 @@ site_config = {
     'wema_write_share_path':  'C:/ptr/wema_transfer/',  # Meant to be where Wema puts status data.
     'client_write_share_path':  '//aro-wema/wema_transfer/', #Meant to be a share written to by the TCS computer
     'redis_ip': None,   # None if no redis path present, localhost if redis iself-contained
-    'site_is_generic':  False,   # A simple single computer ASCOM site.
-    'site_is_specific':  False,  #  Meaning like SRO with site specific methods to read weatehr and roof status
+    'obsid_is_generic':  False,   # A simple single computer ASCOM site.
+    'obsid_is_specific':  False,  #  Meaning like SRO with site specific methods to read weatehr and roof status
 
 #   'host_wema_site_name':  'ARO',
     'name': 'Apache Ridge Observatory 0m3f4.9/9',
@@ -104,12 +110,19 @@ site_config = {
     'reference_pressure':  794.0,    #mbar   A rough guess 20200315
 
     'site_roof_control': True, #MTF entered this in to remove sro specific code.... Basically do we have control of the roof or not see line 338 sequencer.py
-    'site_allowed_to_open_roof': True,
+    'obsid_allowed_to_open_roof': True,
     'period_of_time_to_wait_for_roof_to_open' : 50, # seconds - needed to check if the roof ACTUALLY opens. 
     'only_scope_that_controls_the_roof': False, # If multiple scopes control the roof, set this to False
     
     'maximum_roof_opens_per_evening' : 4,
-    'site_in_automatic_default': "Manual",   # ["Manual", "Shutdown", "Automatic"]
+    'roof_open_safety_base_time' : 15, # How many minutes to use as the default retry time to open roof. This will be progressively multiplied as a back-off function.
+    
+    'closest_distance_to_the_sun': 45, # Degrees. For normal pointing requests don't go this close to the sun. 
+    'closest_distance_to_the_moon': 10, # Degrees. For normal pointing requests don't go this close to the moon. 
+    'lowest_requestable_altitude': -5, # Degrees. For normal pointing requests don't allow requests to go this low. 
+    
+    
+    'obsid_in_automatic_default': "Manual",   # ["Manual", "Shutdown", "Automatic"]
     
     'automatic_detail_default': "Enclosure is initially set to Manual by ARO site_config.",
     'observing_check_period' : 2,    # How many minutes between weather checks

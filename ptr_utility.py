@@ -178,7 +178,7 @@ DAY_Directory = str(now_here.year) + str(now_here.month) + str(now_here.day)
 try:
     plog_path = site_config['plog_path']  + 'plog/' + DAY_Directory + '/'
 except KeyError:
-    plog_path = site_config['archive_path'] + '/' + site_config['site_id'] + '/' + DAY_Directory + '/'
+    plog_path = site_config['archive_path'] + '/' + site_config['obs_id'] + '/' + DAY_Directory + '/'
 
 os.makedirs(plog_path, exist_ok=True)
 print (plog_path)

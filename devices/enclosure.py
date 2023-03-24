@@ -202,19 +202,19 @@ class Enclosure:
     def __init__(self, driver: str, name: str, config: dict, astro_events):
         self.name = name
         self.astro_events = astro_events
-        self.site = config['site']
+        self.obsid = config['obs_id']
         self.config = config
         g_dev['enc'] = self
         self.slew_latch = False
         self.dome_open=None # Just initialising this variable
-        if self.config['site_in_automatic_default'] == "Automatic":
-            self.site_in_automatic = True
+        if self.config['obsid_in_automatic_default'] == "Automatic":
+            self.obsid_in_automatic = True
             self.mode = 'Automatic'
-        elif self.config['site_in_automatic_default'] == "Manual":
-            self.site_in_automatic = False
+        elif self.config['obsid_in_automatic_default'] == "Manual":
+            self.obsid_in_automatic = False
             self.mode = 'Manual'
         else:
-            self.site_in_automatic = False
+            self.obsid_in_automatic = False
             self.mode = 'Shutdown'
         self.is_dome = self.config['enclosure']['enclosure1']['is_dome']
         self.directly_connected = self.config['enclosure']['enclosure1']['directly_connected']
@@ -233,13 +233,13 @@ class Enclosure:
             self.dome_on_wema  =True
         else:
             self.dome_on_wema = False
-        if self.site in ['simulate',  'dht']:  #DEH: added just for testing purposes with ASCOM simulators.
+        if self.obsid in ['simulate',  'dht']:  #DEH: added just for testing purposes with ASCOM simulators.
             self.observing_conditions_connected = True
             self.site_is_proxy = False
             plog("observing_conditions: Simulator drivers connected True")
-        elif self.config['site_is_specific']:
-            self.site_is_specific = True
-            self.site_is_generic = False
+        elif self.config['obsid_is_specific']:
+            self.obsid_is_specific = True
+            self.obsid_is_generic = False
             #  Note OCN has no associated commands.
             #  Note monkey patch
             from site_config import get_enc_status
@@ -248,11 +248,11 @@ class Enclosure:
             # Get current ocn status just as a test.
             self.status = self.get_status(g_dev)
 
-        elif self.is_wema  or not self.dome_on_wema:   #or self.site_is_generic
+        elif self.is_wema  or not self.dome_on_wema:   #or self.obsid_is_generic
             #  This is meant to be a generic Observing_condition code
             #  instance that can be accessed by a simple site or by the WEMA,
             #  assuming the transducers are connected to the WEMA.
-            self.site_is_generic = True
+            self.obsid_is_generic = True
             win32com.client.pythoncom.CoInitialize()
 
             self.enclosure = win32com.client.Dispatch(driver)
@@ -265,17 +265,17 @@ class Enclosure:
             except:
                  plog("ASCOM enclosure NOT connected, proabably the App is not connected to telescope.")
         else:
-            self.site_is_generic = False    #NB NB Changed to False for MRC from SRA where True
+            self.obsid_is_generic = False    #NB NB Changed to False for MRC from SRA where True
         self.last_current_az = 315.
         self.last_slewing = False
         self.prior_status = {'enclosure_mode': 'Manual'}    #Just to initialze this rarely used variable.
 
-        if self.config['site_allowed_to_open_roof'] == True or self.config['site_allowed_to_open_roof'] == 'yes':
-            self.site_allowed_to_open_roof = True
+        if self.config['obsid_allowed_to_open_roof'] == True or self.config['obsid_allowed_to_open_roof'] == 'yes':
+            self.obsid_allowed_to_open_roof = True
         else:
-            self.site_allowed_to_open_roof = False
+            self.obsid_allowed_to_open_roof = False
         
-        if self.config['site'] == 'aro':
+        if self.config['obs_id'] == 'aro':
             plog('\n&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&& \n') 
             plog('      20221014  Close commands are blocked,  System defaults to manual. \n ')
             plog('&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&& \n')
@@ -388,7 +388,7 @@ class Enclosure:
             g_dev['enc'].status = status
             return status
 
-        elif self.site_is_generic or self.is_wema or not self.dome_on_wema:#  NB Should be AND?
+        elif self.obsid_is_generic or self.is_wema or not self.dome_on_wema:#  NB Should be AND?
             try:
                 shutter_status = self.enclosure.ShutterStatus
             except:
@@ -618,18 +618,18 @@ class Enclosure:
         elif redis_command in ['set_auto', 'setAuto', 'setauto']:
             if _redis: g_dev['redis'].delete('enc_cmd')
             plog("Change to Automatic.")
-            self.site_in_automatic = True
+            self.obsid_in_automatic = True
             self.mode = 'Automatic'
         elif redis_command in ['set_manual', 'setManual']:
             if _redis: g_dev['redis'].delete('enc_cmd')
             plog("Change to Manual.")
-            self.site_in_automatic = False
+            self.obsid_in_automatic = False
             self.mode = 'Manual'
         elif redis_command in ['set_shutdown', 'setShutdown']:
             if _redis: g_dev['redis'].delete('enc_cmd')
             plog("Change to Shutdown & Close")
             self.manager(close_cmd=True, open_cmd=False)
-            self.site_in_automatic = False
+            self.obsid_in_automatic = False
             self.mode = 'Shutdown'
         elif self.is_dome and redis_command == 'go_home':
             if _redis: g_dev['redis'].delete('go_home')
@@ -738,7 +738,7 @@ class Enclosure:
                 cmd_list.append('set_auto')
             if generic:
                 self.mode = 'Automatic'
-            g_dev['enc'].site_in_automatic = True
+            g_dev['enc'].obsid_in_automatic = True
             g_dev['enc'].automatic_detail =  "Night Automatic"
             plog("Site and Enclosure set to Automatic.")
         elif action == "setManual":
@@ -748,7 +748,7 @@ class Enclosure:
                 cmd_list.append('set_manual')
             if generic:
                 self.mode = 'Manual'
-            g_dev['enc'].site_in_automatic = False
+            g_dev['enc'].obsid_in_automatic = False
             g_dev['enc'].automatic_detail =  "Manual Only"
         elif action in ["setStayClosed", 'setShutdown', 'shutDown']:
             if _redis:
@@ -757,7 +757,7 @@ class Enclosure:
                 cmd_list.append('set_shutdown')
             if generic:
                 self.mode = 'Shutdown'
-            g_dev['enc'].site_in_automatic = False
+            g_dev['enc'].obsid_in_automatic = False
             g_dev['enc'].automatic_detail =  "Site Shutdown"
         elif action == "home_dome":
             if shares:
@@ -875,7 +875,7 @@ class Enclosure:
                 (g_dev['ocn'].status['wx_ok'] in [True, 'Yes'] and not (g_dev['ocn'].wx_hold \
                                               or g_dev['ocn'].clamp_latch)):     # NB Is Wx ok really the right criterion???
                 try:
-                    if self.site_allowed_to_open_roof == True:
+                    if self.obsid_allowed_to_open_roof == True:
                         print (g_dev['enc'].status['shutter_status'] != 'Open')
                         print (self.dome_open)
                         if g_dev['enc'].status['shutter_status'] != 'Open' or not self.dome_open:    
@@ -1049,7 +1049,7 @@ class Enclosure:
         #THIS should be the ultimate backup to force a close
         elif ephem_now >=  g_dev['events']['Close and Park']:  #sunrise + 45/1440:
             #WE are now outside the observing window, so Sun is up!!!
-            if self.site_in_automatic or (close_cmd and self.mode in ['Manual', 'Shutdown']):  #If Automatic just close straight away.
+            if self.obsid_in_automatic or (close_cmd and self.mode in ['Manual', 'Shutdown']):  #If Automatic just close straight away.
                 if self.is_dome and self.enclosure.CanSlave:
                     #enc_at_home = self.enclosure.AtHome
                     self.following = False
