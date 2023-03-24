@@ -364,7 +364,7 @@ class Sequencer:
                     plog("Attempting to open the roof.")
                     #breakpoint()
                     if ocn_status == None:
-                            if self.config['site_roof_control'] and not enc_status['shutter_status'] in ['Open', 'open','Opening', 'opening'] and g_dev['enc'].mode == 'Automatic'\
+                            if self.config['obsid_roof_control'] and not enc_status['shutter_status'] in ['Open', 'open','Opening', 'opening'] and g_dev['enc'].mode == 'Automatic'\
                             and (self.config['site_allowed_to_open_roof']) and self.weather_report_is_acceptable_to_observe:
                             #breakpoint()
                                 #g_dev['enc'].open_roof_directly()
@@ -373,7 +373,7 @@ class Sequencer:
                         
                                 
                                 
-                    elif self.config['site_roof_control']  and not enc_status['shutter_status'] in ['Open', 'open','Opening', 'opening'] and g_dev['enc'].mode == 'Automatic' \
+                    elif self.config['obsid_roof_control']  and not enc_status['shutter_status'] in ['Open', 'open','Opening', 'opening'] and g_dev['enc'].mode == 'Automatic' \
                         and ocn_status['hold_duration'] <= 0.1 and self.config['site_allowed_to_open_roof'] and self.weather_report_is_acceptable_to_observe:   #NB
                         #breakpoint()
                         
@@ -424,7 +424,7 @@ class Sequencer:
         except:
             plog("Park not executed during Park and Close" )
         try:
-            if self.config['site_roof_control']  and g_dev['enc'].mode == 'Automatic': # and enc_status['shutter_status'] in ['open', ] $ Don't check, just close!
+            if self.config['obsid_roof_control']  and g_dev['enc'].mode == 'Automatic': # and enc_status['shutter_status'] in ['open', ] $ Don't check, just close!
                 #g_dev['enc'].close_command( {}, {})
                 g_dev['obs'].send_to_user("Closing the Shutter", p_level='INFO')
                 plog("Closing the Shutter")
@@ -484,7 +484,7 @@ class Sequencer:
         obs_win_begin, sunZ88Op, sunZ88Cl, ephem_now = self.astro_events.getSunEvents()
         if self.weather_report_close_during_evening==True:
             if ephem_now >  self.weather_report_close_during_evening_time and ephem_now < events['Morn Bias Dark']: # Don't want scope to cancel all activity during bias/darks etc.
-                if self.config['site_roof_control']  and g_dev['enc'].mode == 'Automatic':
+                if self.config['obsid_roof_control']  and g_dev['enc'].mode == 'Automatic':
                     self.weather_report_is_acceptable_to_observe=False
                     plog ("End of Observing Period due to weather. Closing up observatory.")
                     g_dev['obs'].cancel_all_activity()
@@ -628,7 +628,7 @@ class Sequencer:
                     
                     # MTF COMMENTED THIS OUT AS THE ROOF CONTROL IS NOT UP TO THIS
                     # BLOCK OF SEQUENCER COMMANDS
-                    # if self.config['site_roof_control']  and  enc_status['shutter_status'] in ['Closed', 'closed'] \
+                    # if self.config['obsid_roof_control']  and  enc_status['shutter_status'] in ['Closed', 'closed'] \
                     #     and float(ocn_status['hold_duration']) <= 0.1 and self.weather_report_is_acceptable_to_observe:
                     #     #breakpoint()
                     #     g_dev['enc'].open_command({}, {})
@@ -973,7 +973,7 @@ class Sequencer:
                 g_dev['obs'].send_to_user("Could not execute project due to poorly formatted or corrupt project", p_level='INFO')
                 continue
 
-            if self.config['site_roof_control']  and enc_status['shutter_status'] in ['Closed', 'closed'] and ocn_status['hold_duration'] <= 0.1 and self.weather_report_is_acceptable_to_observe:   #NB  # \  NB NB 20220901 WER fix this!
+            if self.config['obsid_roof_control']  and enc_status['shutter_status'] in ['Closed', 'closed'] and ocn_status['hold_duration'] <= 0.1 and self.weather_report_is_acceptable_to_observe:   #NB  # \  NB NB 20220901 WER fix this!
 
                 #breakpoint()
                 g_dev['enc'].open_command({}, {})
