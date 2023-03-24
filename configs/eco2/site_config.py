@@ -122,7 +122,7 @@ site_config = {
     'observing_check_period' : 5,    # How many minutes between weather checks
     'enclosure_check_period' : 5,    # How many minutes between enclosure checks
     'auto_eve_bias_dark': False,
-    'auto_midnight_moonless_bias_dark': True,
+    'auto_midnight_moonless_bias_dark': False,
     'auto_eve_sky_flat': True,
 
     'eve_sky_flat_sunset_offset': -0.5,  #  Minutes  neg means before, + after.
@@ -854,7 +854,7 @@ site_config = {
                 'can_set_gain':  True,
                 'max_linearity':  80000,   # Guess
 
-                'flat_count': 5,
+                'flat_count': 64,
 
                 'saturate':   60000 ,    #[[1, 65000], [2,262000], [3,589815], [4, 1048560]] ,   # e-.  This is a close guess, not measured, but taken from data sheet.
 
