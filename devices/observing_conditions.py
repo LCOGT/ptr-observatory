@@ -25,7 +25,7 @@ import win32com.client
 #import redis
 
 from global_yard import g_dev
-from site_config import get_ocn_status
+#from site_config import get_ocn_status
 from ptr_utility import plog
 
 
@@ -54,7 +54,7 @@ class ObservingConditions:
 
         self.name = name
         self.astro_events = astro_events
-        self.site = config["site"]
+        self.obsid = config["obs_id"]
         g_dev["ocn"] = self
         self.config = config
         g_dev["ocn"] = self
@@ -87,7 +87,7 @@ class ObservingConditions:
             True  # NB NB NB His needs improving, driving from config
         )
         self.hostname = socket.gethostname()
-        self.site_is_specific = False
+        self.obsid_is_specific = False
         # =============================================================================
         #         Note site_in_automatic found in the Enclosure object.
         # =============================================================================
@@ -100,18 +100,21 @@ class ObservingConditions:
         else:
             self.site_has_proxy = False
         if self.config["obsid_is_specific"]:
-            self.site_is_specific = True
+
+            self.obsid_is_specific = True
+
             #  Note OCN has no associated commands.
             #  Here we monkey patch
+            from site_config import get_ocn_status
             self.get_status = get_ocn_status
             # Get current ocn status just as a test.
             self.status = self.get_status(g_dev)
         
-        elif self.is_wema or self.config["site_is_specific"]:
+        elif self.is_wema or self.config["obsid_is_specific"]:
             #  This is meant to be a generic Observing_condition code
             #  instance that can be accessed by a simple site or by the WEMA,
             #  assuming the transducers are connected to the WEMA.
-            self.site_is_generic = True
+            self.obsid_is_generic = True
             win32com.client.pythoncom.CoInitialize()
             self.sky_monitor = win32com.client.Dispatch(driver)
             self.sky_monitor.connected = True  # This is not an ASCOM device.
@@ -148,9 +151,9 @@ class ObservingConditions:
                     )
                     self.unihedron_connected = False
                     # NB NB if no unihedron is installed the status code needs to not report it.
-        elif not self.config["site_is_specific"]:
-            self.site_is_generic = False
-            self.site_is_specific = True
+        elif not self.config["obsid_is_specific"]:
+            self.obsid_is_generic = False
+            self.obsid_is_specific = True
         
         self.last_wx = None
 
@@ -249,7 +252,7 @@ class ObservingConditions:
             return status
 
         if (
-            self.site_is_generic or self.is_wema
+            self.obsid_is_generic or self.is_wema
         ):  # These operations are common to a generic single computer or wema site.
             status = {}
             illum, mag = self.astro_events.illuminationNow()
@@ -437,7 +440,7 @@ class ObservingConditions:
             ):  #  Once a minute.
 
                 try:
-                    wl = open("Q:/ptr/unihedron/wx_log.txt", "a")
+                    wl = open("Q:/ptr/mrc/unihedron/wx_log.txt", "a")
                     wl.write(
                         str(time.time())
                         + ", "
@@ -544,9 +547,55 @@ class ObservingConditions:
 
             return status
 
+
+    def get_noocndevice_status(self):
+
+        illum, mag = g_dev["evnt"].illuminationNow()
+
+        if g_dev['seq'].weather_report_is_acceptable_to_observe:
+            openok='Yes'
+        else:
+            openok='No'
+
+        status = {
+            #"temperature_C": 0.0,
+            #"pressure_mbar": 0.0,
+            #"humidity_%": 0.0,
+            #"dewpoint_C": 0.0,
+            #"sky_temp_C": 0.0,
+            #"last_sky_update_s": 0.0,
+            #"wind_m/s": 0.0,
+            #"rain_rate": 0.0,
+            #"solar_flux_w/m^2": None,
+            #"cloud_cover_%": 0.0,
+            #"calc_HSI_lux": illum,
+            #"calc_sky_mpsas": 0.0,  # Provenance of 20.01 is dubious 20200504 WER
+            "open_ok": openok, #self.ok_to_open,
+            "wx_hold": 'no',
+            "hold_duration": float(0.0),
+        }
+
+        #quick=[]
+        #if self.obsid_is_specific:
+        #    self.status = self.get_status(g_dev)  # Get current state.
+        #else:
+        #    self.status = self.get_status()
+        
+        # NB NB NB it is safer to make this a dict rather than a positionally dependant list.
+        #quick.append(time.time())
+        #quick.append(float(0))
+        #quick.append(float(0))
+        #quick.append(float(0))
+        #quick.append(float(0))
+        #quick.append(float(0))
+        #quick.append(float(0))  # 20200329 a SWAG!
+        #quick.append(float(illum))  # Add Solar, Lunar elev and phase
+        #quick.append(float(self.meas_sky_lux))  # intended for Unihedron
+        return status
+
     def get_quick_status(self, quick):
 
-        if self.site_is_specific:
+        if self.obsid_is_specific:
             self.status = self.get_status(g_dev)  # Get current state.
         else:
             self.status = self.get_status()

@@ -23,10 +23,16 @@ g_dev = None
 
 #THis is branch wer-mrc first entered here 20221029:21:40 on WEMA
 site_name = 'aro'
-
+obs_id = 'aro1'
 site_config = {
-    'site': str(site_name.lower()),
-    'site_id': str(site_name.lower()),   #used by PROPID keyword in fits header, can be changed here
+    # THESE ARE TO BE DELETED VERY SOON!
+    # THEY EXIST SOLELY SO AS TO NOT BREAK THE UI UNTIL 
+    #THINGS ARE MOVED TO OBS_ID
+    'site': 'aro1', #TIM this may no longer be needed.
+    'site_id': 'aro1',
+    ####################################################
+    'obs_id': 'aro1',
+    'observatory_location': site_name.lower(),
     
     'debug_site_mode': False,
     
@@ -60,6 +66,11 @@ site_config = {
     'keep_reduced_on_disk' : True, # PTR uses the reduced file for some calculations (focus, SEP, etc.). To save space, this file can be removed after usage or not saved.
     'keep_focus_images_on_disk' : True, # To save space, the focus file can not be saved.
     
+    # Minimum realistic seeing at the site.
+    # This allows culling of unphysical results in photometry and other things
+    # Particularly useful for focus
+    'minimum_realistic_seeing' : 1.0,
+    
     'aux_archive_path':  None,
     'wema_is_active':  True,     # True if an agent (ie a wema) is used at a site.   # Wemas are split sites -- at least two CPS's sharing the control.
     'wema_hostname':  'ARO-WEMA',
@@ -69,8 +80,8 @@ site_config = {
     'wema_write_share_path':  'C:/ptr/wema_transfer/',  # Meant to be where Wema puts status data.
     'client_write_share_path':  '//aro-wema/wema_transfer/', #Meant to be a share written to by the TCS computer
     'redis_ip': None,   # None if no redis path present, localhost if redis iself-contained
-    'site_is_generic':  False,   # A simple single computer ASCOM site.
-    'site_is_specific':  False,  #  Meaning like SRO with site specific methods to read weatehr and roof status
+    'obsid_is_generic':  False,   # A simple single computer ASCOM site.
+    'obsid_is_specific':  False,  #  Meaning like SRO with site specific methods to read weatehr and roof status
 
 #   'host_wema_site_name':  'ARO',
     'name': 'Apache Ridge Observatory 0m3f4.9/9',
@@ -98,11 +109,20 @@ site_config = {
     'reference_ambient':  10.0,  # Degrees Celsius.  Alternately 12 entries, one for every - mid month.
     'reference_pressure':  794.0,    #mbar   A rough guess 20200315
 
-    'site_roof_control': 'yes', #MTF entered this in to remove sro specific code.... Basically do we have control of the roof or not see line 338 sequencer.py
-    'site_allowed_to_open_roof': 'yes',
+    'obsid_roof_control': True, #MTF entered this in to remove sro specific code.... Basically do we have control of the roof or not see line 338 sequencer.py
+    'obsid_allowed_to_open_roof': True,
+    'period_of_time_to_wait_for_roof_to_open' : 50, # seconds - needed to check if the roof ACTUALLY opens. 
+    'only_scope_that_controls_the_roof': False, # If multiple scopes control the roof, set this to False
     
     'maximum_roof_opens_per_evening' : 4,
-    'site_in_automatic_default': "Manual",   # ["Manual", "Shutdown", "Automatic"]
+    'roof_open_safety_base_time' : 15, # How many minutes to use as the default retry time to open roof. This will be progressively multiplied as a back-off function.
+    
+    'closest_distance_to_the_sun': 45, # Degrees. For normal pointing requests don't go this close to the sun. 
+    'closest_distance_to_the_moon': 10, # Degrees. For normal pointing requests don't go this close to the moon. 
+    'lowest_requestable_altitude': -5, # Degrees. For normal pointing requests don't allow requests to go this low. 
+    
+    
+    'obsid_in_automatic_default': "Manual",   # ["Manual", "Shutdown", "Automatic"]
     
     'automatic_detail_default': "Enclosure is initially set to Manual by ARO site_config.",
     'observing_check_period' : 2,    # How many minutes between weather checks
@@ -196,6 +216,8 @@ site_config = {
 
             'name': 'HomeDome',
             'enc_is_specific':  False,
+            
+            'directly_connected': False, # For ECO and EC2, they connect directly to the enclosure, whereas WEMA are different.
             'hostIP':  '10.0.0.10',
             'driver': 'ASCOM.DigitalDomeWorks.Dome',  #  'ASCOMDome.Dome',  #ASCOMDome.Dome',  # ASCOM.DeviceHub.Dome',  # ASCOM.DigitalDomeWorks.Dome',  #"  ASCOMDome.Dome',
 
@@ -434,10 +456,18 @@ site_config = {
             'ip_string': 'http://10.0.0.110',
             "dual_wheel": True,
             'settings': {
-                'filter_count': 43,
-                'home_filter':  1,
+                #'filter_count': 43,
+                #'home_filter':  1,
                 'default_filter': "w",
-                'filter_reference': 1,   # We choose to use W as the default filter.  Gains taken at F9, Ceravolo 300mm
+                
+                'auto_color_options' : ['manual','RGB','NB','RGBHA','RGBNB'], # OPtions include 'OSC', 'manual','RGB','NB','RGBHA','RGBNB'
+                'mono_RGB_colour_filters' : ['pb','pg','pr'], # B, G, R filter codes for this camera if it is a monochrome camera with filters
+                'mono_RGB_relative_weights' : [1.2,1,0.8],
+                'mono_Narrowband_colour_filters' : ['ha','o3','s2'], # ha, o3, s2 filter codes for this camera if it is a monochrome camera with filters
+                'mono_Narrowband_relative_weights' : [1.0,2,2.5],
+                
+                
+                #'filter_reference': 1,   # We choose to use W as the default filter.  Gains taken at F9, Ceravolo 300mm
                 # Columns for filter data are : ['filter', 'filter_index', 'filter_offset', 'sky_gain', 'screen_gain', 'alias']
                 'filter_data': [
                         ['air',  [0,  0], -800, 81.6, [2   ,  20], 'ai'],    # 0.  Gains 20211020 Clear NE sky
@@ -527,6 +557,8 @@ site_config = {
             'settings': {
                 'is_osc' : False,
                 
+
+                
                 'transpose_fits' : False,
                 'transpose_jpeg' : True,
                 'osc_bayer' : 'RGGB',
@@ -538,6 +570,7 @@ site_config = {
                 'temp_setpoint': -12.5,
                 'calib_setpoints': [-12.5, -10, -7.5, -5],  # Should vary with season? by day-of-year mod len(list)
                 'day_warm': False,
+                'day_warm_degrees' : 8, # Number of degrees to warm during the daytime.
                 'cooler_on': True,
                 'x_start':  0,
                 'y_start':  0,
@@ -575,7 +608,8 @@ site_config = {
                 'east_offset': 0.0,     # Not sure why these three are even here.
                 'rotation': 0.0,        # Probably remove.
                 'min_exposure': 0.00001,                
-                'min_flat_exposure': 0.00001,
+                'min_flat_exposure' : 3.0, # For certain shutters, short exposures aren't good for flats. Some CMOS have banding in too short an exposure. Largely applies to ccds though.
+                'max_flat_exposure' : 20.0, # Realistically there should be a maximum flat_exposure that makes sure flats are efficient and aren't collecting actual stars.
                 'max_exposure': 360.0,
                 'max_daytime_exposure': 0.0001,
                 'can_subframe':  True,
@@ -621,6 +655,8 @@ site_config = {
                 'optimal_bin':  [2, 2, 0.575],
                 'max_res_bin':  [1, 1, 0.2876],
                 'pix_scale': [0.2876, 0.575, 0.863, 1.15],    #  1.4506,  bin-2  2* math.degrees(math.atan(9/3962000))*3600
+                
+                'do_cosmics' : True,
                 'darkslide_com':  'COM17',
                 'has_screen': True,
                 'screen_settings':  {
@@ -657,8 +693,8 @@ site_config = {
         },
     },
 }
-get_ocn_status = None   # NB these are placeholders for site specific routines for in a config file
-get_enc_status = None
+#get_ocn_status = None   # NB these are placeholders for site specific routines for in a config file
+#get_enc_status = None
 
 if __name__ == '__main__':
     j_dump = json.dumps(site_config)

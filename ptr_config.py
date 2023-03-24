@@ -52,8 +52,10 @@ if pathdone == 0:
 
     # NB May be better to split on '-' and use first part of hostname.
     host_site = socket.gethostname()[:3].lower()
-    if host_site == "saf":
-        host_site == "aro"  # NB NB THIS is a blatant hack. TODO Remove this
+
+    #if host_site == "saf":
+     #   host_site == "aro"  # NB NB THIS is a blatant hack. TODO Remove this
+
     # print(
     #     "Adding new config path: "
     #     + str(os.path.join(pathlib.Path().resolve(), "configs", host_site))

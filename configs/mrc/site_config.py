@@ -22,6 +22,7 @@ import json
 #NB NB NB json is not bi-directional with tuples (), instead, use lists [], nested if tuples are needed.
 degree_symbol = "°"
 site_name = 'mrc'
+
 obs_id = None    #NB These must be unique across all of PTR. Pre-pend with airport code if needed: 'sba_wmdo'
 
 site_config = {
@@ -31,6 +32,7 @@ site_config = {
     'obs_id': None,   #a WEMA is not a telescope aka Observatory
     'observatory_location': site_name.lower(),  #in LCO case, an airport code such as OGG
    
+
 
     'debug_site_mode': False,
     
@@ -136,13 +138,13 @@ site_config = {
     'auto_eve_bias_dark': True,
     
     'auto_midnight_moonless_bias_dark': False,
-    'auto_eve_sky_flat': False,
+    'auto_eve_sky_flat': True,
 
     'eve_sky_flat_sunset_offset': -60.,  # 40 before Minutes  neg means before, + after.
 
     'eve_cool_down_open' : -65.0,
-    'auto_morn_sky_flat': False,
-    'auto_morn_bias_dark': False,
+    'auto_morn_sky_flat': True,
+    'auto_morn_bias_dark': True,
     're-calibrate_on_solve': True,
     'pointing_calibration_on_startup': False,  #MF I am leaving this alone.
     'periodic_focus_time' : 0.5, # This is a time, in hours, over which to bypass automated focussing (e.g. at the start of a project it will not refocus if a new project starts X hours after the last focus)
@@ -473,15 +475,18 @@ site_config = {
 #             "dual_wheel": True,
             
             
+
 #             # WER - if there is no filter wheel, then these two are used, otherwise they are harmless
 #             "name" : "RGGB",
 #             #'flat_sky_gain' : 1148,
 #             #'driver' : None <------ set driver to None for no filter wheel
+
             
             
             
             
             
+
 #             # "parent": "telescope1",
 #             # "alias": "CWL2",
 #             # "desc":  'PTR Custom FLI dual wheel.',
@@ -607,6 +612,7 @@ site_config = {
 #                 'direct_qhy_usb_speed' : 60,
                 
 #                 'is_osc' : True,
+
                 
 
                 
@@ -624,6 +630,7 @@ site_config = {
 #                 'osc_background_cut' : 25.0,
 #                 'bin_for_focus' : True, # This setting will bin the image for focussing rather than interpolating. Good for 1x1 pixel sizes < 0.6.
                 
+
 #                 # ONLY TRANSFORM THE FITS IF YOU HAVE
 #                 # A DATA-BASED REASON TO DO SO.....
 #                 # USUALLY TO GET A BAYER GRID ORIENTATED CORRECTLY
@@ -816,10 +823,11 @@ site_config = {
 #             },
 #     #This brace closes the while configuration dictionary. Match found up top at:  site_config = {
 
-def get_ocn_status():    #NB NB I think we should get rid of these two dummy methods. WER
-    pass
-def get_enc_status():
-    pass
+
+#def get_ocn_status():    #NB NB I think we should get rid of these two dummy methods. WER
+#    pass
+#def get_enc_status():
+#    pass
 
 '''
 Here we create the basic directory structures needed for this respective 

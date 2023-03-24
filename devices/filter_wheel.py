@@ -15,7 +15,7 @@ import requests
 import serial
 import win32com.client
 
-import config
+import ptr_config
 from global_yard import g_dev
 from ptr_utility import plog
 
@@ -260,7 +260,7 @@ class FilterWheel:
         except:
             f_move = False
             status = {
-                "filter_name": None,
+                "filter_name": "No filter",
                 "filter_number": 0,
                 "filter_offset": 0.0,
                 "wheel_is_moving": f_move,

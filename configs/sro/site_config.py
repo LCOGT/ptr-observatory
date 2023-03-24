@@ -24,7 +24,7 @@ from global_yard import g_dev
  # print(len(bolt))
 
 site_name = 'sro'
-
+obs_id = 'sro1'
                     #\\192.168.1.57\SRO10-Roof  r:
                     #SRO-Weather (\\192.168.1.57) w:
                     #Username: wayne_rosing  PW: 29yzpe
@@ -32,8 +32,14 @@ site_name = 'sro'
 prior_status = None
 
 site_config = {
-    'site': str(site_name.lower()),
-    'site_id': 'sro',
+    # THESE ARE TO BE DELETED VERY SOON!
+    # THEY EXIST SOLELY SO AS TO NOT BREAK THE UI UNTIL 
+    #THINGS ARE MOVED TO OBS_ID
+    'site': 'sro1', #TIM this may no longer be needed.
+    'site_id': 'sro1',
+    ####################################################
+    'obs_id': 'sro1',
+    'observatory_location': site_name.lower(),
     
     'debug_site_mode': False,
     
@@ -59,6 +65,11 @@ site_config = {
     'keep_reduced_on_disk' : True, # PTR uses the reduced file for some calculations (focus, SEP, etc.). To save space, this file can be removed after usage or not saved.
     'keep_focus_images_on_disk' : True, # To save space, the focus file can not be saved.
     
+    # Minimum realistic seeing at the site.
+    # This allows culling of unphysical results in photometry and other things
+    # Particularly useful for focus
+    'minimum_realistic_seeing' : 1.0,
+    
     'aux_archive_path':  None, # '//house-computer/saf_archive_2/archive/',  #  Path to auxillary backup disk.
     'wema_is_active':  False,    #True if split computers used at a site.
     'wema_hostname':  [],  #  Prefer the shorter version
@@ -67,8 +78,8 @@ site_config = {
     'wema_write_share_path':  None,   # This and below provide two different ways to define
     'client_read_share_path':  None,  #     a path to a network share.
     'redis_ip': None,  #'127.0.0.1', None if no redis path present,
-    'site_is_generic':  False,   # A simple single computer ASCOM site.
-    'site_is_specific':  True,  # Indicates some special code for this site, found at end of config.
+    'obsid_is_generic':  False,   # A simple single computer ASCOM site.
+    'obsid_is_specific':  True,  # Indicates some special code for this site, found at end of config.
 
 
     'host_wema_site_name':  'SRO',  #  The umbrella header for obsys in close geographic proximity.
@@ -96,11 +107,22 @@ site_config = {
     'reference_ambient':  10,  #  Degrees Celsius.  Alternately 12 entries, one for every - mid month.
     'reference_pressure':  867.254,    #mbar   A rough guess 20200315
 
-    'site_roof_control': 'no', #MTF entered this in to remove sro specific code.... Basically do we have control of the roof or not see line 338 sequencer.py
-    'site_allowed_to_open_roof': 'no',
+    'obsid_roof_control': False, #MTF entered this in to remove sro specific code.... Basically do we have control of the roof or not see line 338 sequencer.py
+    'obsid_allowed_to_open_roof': False,
+    'period_of_time_to_wait_for_roof_to_open' : 50, # seconds - needed to check if the roof ACTUALLY opens. 
+    'only_scope_that_controls_the_roof': False, # If multiple scopes control the roof, set this to False
     
     'maximum_roof_opens_per_evening' : 4,
-    'site_in_automatic_default': "Automatic",   #  ["Manual", "Shutdown", "Automatic"]
+    'roof_open_safety_base_time' : 15, # How many minutes to use as the default retry time to open roof. This will be progressively multiplied as a back-off function.
+    
+    'closest_distance_to_the_sun': 45, # Degrees. For normal pointing requests don't go this close to the sun. 
+    'closest_distance_to_the_moon': 10, # Degrees. For normal pointing requests don't go this close to the moon. 
+    'lowest_requestable_altitude': -5, # Degrees. For normal pointing requests don't allow requests to go this low. 
+    
+    
+    
+    
+    'obsid_in_automatic_default': "Automatic",   #  ["Manual", "Shutdown", "Automatic"]
     'automatic_detail_default': "Enclosure is Autonmous, under Owner control.",
     'observing_check_period' : 3,    # How many minutes between weather checks
     'enclosure_check_period' : 3,    # How many minutes between enclosure checks
@@ -203,6 +225,7 @@ site_config = {
         'enclosure1': {
             'parent': 'site',
             'enc_is_specific':  True,  # Indicates some special site code.
+            'directly_connected': False, # For ECO and EC2, they connect directly to the enclosure, whereas WEMA are different.
             'name': 'SRO File',
             'hostIP':  None,
             'driver': None,  #'ASCOM.DigitalDomeWorks.Dome',  #  ASCOMDome.Dome',  #  ASCOM.DeviceHub.Dome',  #  ASCOM.DigitalDomeWorks.Dome',  #"  ASCOMDome.Dome',
@@ -417,10 +440,16 @@ site_config = {
             'ip_string': None,
             "dual_wheel": False,
             'settings': {
-                'filter_count': 11,   #  This must be correct as to the number of filters
-                'home_filter':  0,
+                #'filter_count': 11,   #  This must be correct as to the number of filters
+                #'home_filter':  0,
                 'default_filter': "PL",
-                'filter_reference': 0,   #  We choose to use W as the default filter.  Gains taken at F9, Ceravolo 300mm
+                
+                'auto_color_options' : ['manual','RGB','NB','RGBHA','RGBNB'], # OPtions include 'OSC', 'manual','RGB','NB','RGBHA','RGBNB'
+                'mono_RGB_colour_filters' : ['pb','pg','pr'], # B, G, R filter codes for this camera if it is a monochrome camera with filters
+                'mono_RGB_relative_weights' : [1.2,1,0.8],
+                'mono_Narrowband_colour_filters' : ['ha','o3','s2'], # ha, o3, s2 filter codes for this camera if it is a monochrome camera with filters
+                'mono_Narrowband_relative_weights' : [1.0,2,2.5],
+                #'filter_reference': 0,   #  We choose to use W as the default filter.  Gains taken at F9, Ceravolo 300mm
                 # Columns for filter data are : ['filter', 'filter_index', 'filter_offset', 'sky_gain', 'screen_gain', 'alias']
                 'filter_data': [  #NB NB NB add cwl & bw in nm.
 
@@ -481,6 +510,8 @@ site_config = {
             'settings': {                
                 'is_osc' : False,
                 
+
+                
                 'transpose_fits' : False,
                 'transpose_jpeg' : True,
                 'osc_bayer' : 'RGGB',
@@ -492,6 +523,7 @@ site_config = {
                 'temp_setpoint': -25,   #Updated from -18 WER 20220914 Afternoon
                 'calib_setpoints': [-35,-30, -25, -20, -15, -10 ],  #  Should vary with season?
                 'day_warm': False,
+                'day_warm_degrees' : 8, # Number of degrees to warm during the daytime.
                 'cooler_on': True,
                 'x_start':  0,
                 'y_start':  0,
@@ -542,7 +574,8 @@ site_config = {
                 'rotation': 0.0,        #  Probably remove.
                 'min_exposure': 0.2,
                 
-                'min_flat_exposure': 1.0,
+                'min_flat_exposure' : 3.0, # For certain shutters, short exposures aren't good for flats. Some CMOS have banding in too short an exposure. Largely applies to ccds though.
+                'max_flat_exposure' : 20.0, # Realistically there should be a maximum flat_exposure that makes sure flats are efficient and aren't collecting actual stars.
                 'max_exposure': 3600,
                 'max_daytime_exposure': 0.0001,
                 'can_subframe':  True,
@@ -588,6 +621,8 @@ site_config = {
                 
                 'flat_count' : 10,
                 'pix_scale': [1.104, 2.134, 3.201, 4.268],
+                
+                'do_cosmics' : False,
                 
                 'has_screen': True,
                 'screen_settings':  {

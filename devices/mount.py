@@ -154,7 +154,26 @@ def wait_for_slew():
             g_dev['mnt'].mount.Connected = True
             #g_dev['mnt'].home_command()
         else:
-            breakpoint()
+            print ("trying recovery routine")
+            q=0
+            while True:
+                time.sleep(10)
+                plog ("recovery attempt " + str(q+1))
+                q=q+1
+                g_dev['obs'].update_status() 
+                try:                
+                    g_dev['mnt'].mount.Connected = True
+                    
+                    break
+                except:
+                    plog("recovery didn't work")
+                    plog(traceback.format_exc())
+                    if q > 15:
+                        breakpoint()
+                        
+                    
+                
+            
     return 
 
 class Mount:
@@ -170,8 +189,8 @@ class Mount:
         self.astro_events = astro_events
         g_dev['mnt'] = self
 
-        self.site = config['site']
-        self.site_path = config['client_path']
+        self.obsid = config['obs_id']
+        self.obsid_path = g_dev['obs'].obsid_path
         self.config = config
         self.device_name = name
         self.settings = settings
@@ -199,7 +218,7 @@ class Mount:
             self.site_is_proxy = True
         else:
             self.site_is_proxy = False
-        if self.site == 'MRC2':
+        if self.obsid == 'MRC2':
             self.has_paddle = config['mount']['mount2']['has_paddle']
         else:
             self.has_paddle = config['mount']['mount1']['has_paddle']
@@ -248,7 +267,7 @@ class Mount:
             #pass
 
         #self.reset_mount_reference()
-        #self.site_in_automatic = config['site_in_automatic_default']
+        #self.obsid_in_automatic = config['site_in_automatic_default']
         #self.automatic_detail = config['automatic_detail_default']
         self.move_time = 0
 
@@ -629,7 +648,7 @@ class Mount:
                 #'is_tracking': self.mount.Tracking,
                 #'is_slewing': self.mount.Slewing,
                 'message': str(self.mount_message[:54]),
-                #'site_in_automatic': self.site_in_automatic,
+                #'site_in_automatic': self.obsid_in_automatic,
                 #'automatic_detail': str(self.automatic_detail),
                 'move_time': self.move_time
             }
@@ -866,10 +885,10 @@ class Mount:
         elif action == "home":
             self.home_command(req, opt)
         elif action == "set_site_manual":
-            self.site_in_automatic = False
+            self.obsid_in_automatic = False
             self.automatic_detail = "Site & Enclosure set to Manual"
         elif action == "set_site_automatic":
-            self.site_in_automatic = True
+            self.obsid_in_automatic = True
             self.automatic_detail = "Site set to Night time Automatic"
         elif action == "tracking":
             self.tracking_command(req, opt)
@@ -885,10 +904,10 @@ class Mount:
         elif action == 'center_on_pixels':
             plog (command)
             self.go_command(req, opt, offset=True, calibrate=False)
-        elif action == 'calibrateAtFieldCenter':
-            plog (command)
-            #breakpoint()
-            self.go_command(req, opt, calibrate=True)
+        #elif action == 'calibrateAtFieldCenter':
+        #    plog (command)
+        #    #breakpoint()
+        #    self.go_command(req, opt, calibrate=True)
         elif action == 'sky_flat_position':
             self.slewToSkyFlatAsync()
         else:
@@ -945,9 +964,10 @@ class Mount:
         sun_dist = sun_coords.separation(temppointing)
         #plog ("sun distance: " + str(sun_dist.degree))
         if sun_dist.degree <  self.config['closest_distance_to_the_sun']:
-            g_dev['obs'].send_to_user("Refusing pointing request as it is too close to the sun: " + str(sun_dist.degree) + " degrees.")
-            plog("Refusing pointing request as it is too close to the sun: " + str(sun_dist.degree) + " degrees.")
-            return
+            if not (g_dev['events']['Civil Dusk'] < ephem.now() < g_dev['events']['Civil Dawn']):
+                g_dev['obs'].send_to_user("Refusing pointing request as it is too close to the sun: " + str(sun_dist.degree) + " degrees.")
+                plog("Refusing pointing request as it is too close to the sun: " + str(sun_dist.degree) + " degrees.")
+                return
         
         # Second thing, check that we aren't pointing at the moon
         # UNLESS we have actually chosen to look at the moon.
@@ -988,7 +1008,13 @@ class Mount:
             plog("Refusing pointing request as the observatory is not enabled to observe.")
             return
 
-        
+        # Fifth thing, check that the sky flat latch isn't on
+        # (I moved the scope during flats once, it wasn't optimal)
+        if g_dev['seq'].morn_sky_flat_latch  or g_dev['seq'].eve_sky_flat_latch or g_dev['seq'].sky_flat_latch or g_dev['seq'].bias_dark_latch:
+            g_dev['obs'].send_to_user("Refusing pointing request as the observatory is currently undertaking flats or calibration frames.")
+            plog("Refusing pointing request as the observatory is currently taking flats or calibration frmaes.")
+            return
+            
         
         plog("mount cmd. slewing mount, req, opt:  ", req, opt)
 
@@ -1194,18 +1220,18 @@ class Mount:
         g_dev['obs'].images_since_last_solve = 10000
         g_dev['obs'].send_to_user("Slew Complete.")
 
-    def re_seek(self, dither):
+    # def re_seek(self, dither):
         
-        #breakpoint()
+    #     #breakpoint()
         
-        try:
-            if dither == 0:
-                self.go_coord(self.last_ra, self.last_dec, self.last_tracking_rate_ra, self.last_tracking_rate_dec)
+    #     try:
+    #         if dither == 0:
+    #             self.go_coord(self.last_ra, self.last_dec, self.last_tracking_rate_ra, self.last_tracking_rate_dec)
                 
-        except Exception as e:
-            plog ("Could not re_seek: ",e)
+    #     except Exception as e:
+    #         plog ("Could not re_seek: ",e)
             
-        wait_for_slew()   
+    #     wait_for_slew()   
 
     def go_coord(self, ra, dec, tracking_rate_ra=0, tracking_rate_dec=0, reset_solve=True):  #Note these rates need a system specification
         '''
@@ -1364,7 +1390,7 @@ class Mount:
                 else:
                     plog ("problem with setting tracking: ", e)
         
-        g_dev['obs'].time_since_last_slew_or_exposure = time.time()
+        g_dev['obs'].time_since_last_slew = time.time()
         g_dev['obs'].last_solve_time = datetime.datetime.now() - datetime.timedelta(days=1)
         g_dev['obs'].images_since_last_solve = 10000
         wait_for_slew()    
@@ -1424,7 +1450,25 @@ class Mount:
             g_dev['obs'].images_since_last_solve = 10000
         wait_for_slew()   
 
-    def slewToSkyFlatAsync(self):
+    def slewToSkyFlatAsync(self, skip_open_test=False):
+        
+        
+        # This will only move the scope if the observatory is open
+        # UNLESS it has been sent a command from particular routines
+        # e.g. pointing the telescope in a safe location BEFORE opening the roof
+        if not skip_open_test:
+        
+            if (not (g_dev['events']['Cool Down, Open'] < ephem.now() < g_dev['events']['Naut Dusk']) and \
+                not (g_dev['events']['Naut Dawn'] < ephem.now() < g_dev['events']['Close and Park'])):
+                g_dev['obs'].send_to_user("Refusing skyflat pointing request as it is outside skyflat time")
+                plog("Refusing pointing request as it is outside of skyflat pointing time.")
+                return
+            
+            if (g_dev['obs'].open_and_enabled_to_observe==False and g_dev['enc'].mode == 'Automatic') and (not g_dev['obs'].debug_flag):
+                g_dev['obs'].send_to_user("Refusing skyflat pointing request as the observatory is not enabled to observe.")
+                plog("Refusing skyflat pointing request as the observatory is not enabled to observe.")
+                return
+        
         az, alt = self.astro_events.flat_spot_now()
         self.unpark_command()        
 
@@ -1505,7 +1549,12 @@ class Mount:
                 self.mount.Unpark()
                 wait_for_slew()
                 if self.home_after_unpark:
-                    self.mount.FindHome()
+                    try: 
+                        self.mount.FindHome()
+                    except:
+                        home_alt = self.settings["home_altitude"]
+                        home_az = self.settings["home_azimuth"]
+                        self.move_to_azalt(home_az, home_alt)
                     wait_for_slew()
 
     def paddle(self):
@@ -1651,7 +1700,7 @@ class Mount:
     def  adjust_mount_reference(self, err_ha, err_dec):
         #old_ha, old_dec = self.get_mount_reference()
 
-        mnt_shelf = shelve.open(self.site_path + 'ptr_night_shelf/' + 'mount1' + str(g_dev['obs'].name))
+        mnt_shelf = shelve.open(self.obsid_path + 'ptr_night_shelf/' + 'mount1' + str(g_dev['obs'].name))
         try:
             init_ra = mnt_shelf['ra_cal_offset']
             init_dec = mnt_shelf['dec_cal_offset']     # NB NB THese need to be modulo corrected, maybe limited
@@ -1668,7 +1717,7 @@ class Mount:
 
     def  adjust_flip_reference(self, err_ha, err_dec):
         #old_ha, old_dec = self.get_mount_reference()
-        mnt_shelf = shelve.open(self.site_path + 'ptr_night_shelf/' + 'mount1'+ str(g_dev['obs'].name))
+        mnt_shelf = shelve.open(self.obsid_path + 'ptr_night_shelf/' + 'mount1'+ str(g_dev['obs'].name))
         try:
             init_ra = mnt_shelf['flip_ra_cal_offset']
             init_dec = mnt_shelf['flip_dec_cal_offset']     # NB NB THese need to be modulo corrected, maybe limited
@@ -1683,14 +1732,14 @@ class Mount:
         return
 
     def set_mount_reference(self, delta_ra, delta_dec):
-        mnt_shelf = shelve.open(self.site_path + 'ptr_night_shelf/' + 'mount1'+ str(g_dev['obs'].name))
+        mnt_shelf = shelve.open(self.obsid_path + 'ptr_night_shelf/' + 'mount1'+ str(g_dev['obs'].name))
         mnt_shelf['ra_cal_offset'] = delta_ra
         mnt_shelf['dec_cal_offset'] = delta_dec
         mnt_shelf.close()
         return
 
     def set_flip_reference(self, delta_ra, delta_dec):
-        mnt_shelf = shelve.open(self.site_path + 'ptr_night_shelf/' + 'mount1'+ str(g_dev['obs'].name))
+        mnt_shelf = shelve.open(self.obsid_path + 'ptr_night_shelf/' + 'mount1'+ str(g_dev['obs'].name))
         mnt_shelf['flip_ra_cal_offset'] = delta_ra
         mnt_shelf['flip_dec_cal_offset'] = delta_dec
         mnt_shelf.close()
@@ -1698,8 +1747,8 @@ class Mount:
 
     def get_mount_reference(self):
 
-                
-        mnt_shelf = shelve.open(self.site_path + 'ptr_night_shelf/' + 'mount1'+ str(g_dev['obs'].name))
+        #breakpoint()
+        mnt_shelf = shelve.open(self.obsid_path + 'ptr_night_shelf/' + 'mount1'+ str(g_dev['obs'].name))
         delta_ra = mnt_shelf['ra_cal_offset'] + self.west_clutch_ra_correction   #Note set up at initialize time.
         delta_dec = mnt_shelf['dec_cal_offset'] +  self.west_clutch_dec_correction
         mnt_shelf.close()
@@ -1707,7 +1756,7 @@ class Mount:
         
 
     def get_flip_reference(self):
-        mnt_shelf = shelve.open(self.site_path + 'ptr_night_shelf/' + 'mount1'+ str(g_dev['obs'].name))
+        mnt_shelf = shelve.open(self.obsid_path + 'ptr_night_shelf/' + 'mount1'+ str(g_dev['obs'].name))
         #NB NB NB The ease may best have a sign change asserted.
         delta_ra = mnt_shelf['flip_ra_cal_offset'] + self.east_flip_ra_correction
         delta_dec = mnt_shelf['flip_dec_cal_offset'] + self.east_flip_dec_correction
@@ -1715,7 +1764,9 @@ class Mount:
         return delta_ra, delta_dec
 
     def reset_mount_reference(self):
-        mnt_shelf = shelve.open(self.site_path + 'ptr_night_shelf/' + 'mount1'+ str(g_dev['obs'].name))
+        
+
+        mnt_shelf = shelve.open(self.obsid_path + 'ptr_night_shelf/' + 'mount1'+ str(g_dev['obs'].name))
         mnt_shelf['ra_cal_offset'] = 0.000
         mnt_shelf['dec_cal_offset'] = 0.000
         mnt_shelf['flip_ra_cal_offset'] = 0.000
@@ -1728,7 +1779,7 @@ class Mount:
         if self.config['mount']['mount1']['has_ascom_altaz'] == True:
             wait_for_slew() 
             self.mount.SlewToAltAzAsync(az, alt)
-            g_dev['obs'].time_since_last_slew_or_exposure = time.time()
+            g_dev['obs'].time_since_last_slew = time.time()
             g_dev['obs'].last_solve_time = datetime.datetime.now() - datetime.timedelta(days=1)
             g_dev['obs'].images_since_last_solve = 10000
             wait_for_slew()
@@ -1751,7 +1802,7 @@ class Mount:
                     self.home_command()
                     self.mount.SlewToCoordinatesAsync(tempRA, tempDEC)
             
-            g_dev['obs'].time_since_last_slew_or_exposure = time.time()
+            g_dev['obs'].time_since_last_slew = time.time()
             g_dev['obs'].last_solve_time = datetime.datetime.now() - datetime.timedelta(days=1)
             g_dev['obs'].images_since_last_solve = 10000
             wait_for_slew()

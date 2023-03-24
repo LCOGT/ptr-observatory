@@ -21,15 +21,21 @@ g_dev = None
  # bolt = ['u', 'g', 'r', 'i', 'zs', 'B', 'V', 'EXO', 'w', 'O3', 'Ha', 'S', 'Cr', 'NIR']
  # print(len(bolt))
 
-site_name = 'ec2'
-
+site_name = 'eco'
+obs_id = 'eco2'
                     #\\192.168.1.57\SRO10-Roof  r:
                     #SRO-Weather (\\192.168.1.57) w:
                     #Username: wayne_rosingPW: 29yzpe
 
 site_config = {
-    'site': str(site_name.lower()),
-    'site_id': 'ec2',
+    # THESE ARE TO BE DELETED VERY SOON!
+    # THEY EXIST SOLELY SO AS TO NOT BREAK THE UI UNTIL 
+    #THINGS ARE MOVED TO OBS_ID
+    'site': 'eco2', #TIM this may no longer be needed.
+    'site_id': 'eco2',
+    ####################################################
+    'obs_id': 'eco2',
+    'observatory_location': site_name.lower(),
     
     'debug_site_mode': False,
     
@@ -54,6 +60,10 @@ site_config = {
     'keep_focus_images_on_disk' : False, # To save space, the focus file can not be saved.
     'keep_reduced_on_disk' : False, # PTR uses the reduced file for some calculations (focus, SEP, etc.). To save space, this file can be removed after usage or not saved.
     
+    # Minimum realistic seeing at the site.
+    # This allows culling of unphysical results in photometry and other things
+    # Particularly useful for focus
+    'minimum_realistic_seeing' : 1.2,
     
     'aux_archive_path':  None, # '//house-computer/saf_archive_2/archive/',  #  Path to auxillary backup disk.
     'wema_is_active':  False,    #True if split computers used at a site.
@@ -63,8 +73,8 @@ site_config = {
     'wema_write_share_path':  None,   # This and below provide two different ways to define
     'client_read_share_path':  None,  #     a path to a network share.
     'redis_ip': None,  #'127.0.0.1', None if no redis path present,
-    'site_is_generic':  True,   # A simple single computer ASCOM site.
-    'site_is_specific':  False,  # Indicates some special code for this site, found at end of config.
+    'obsid_is_generic':  True,   # A simple single computer ASCOM site.
+    'obsid_is_specific':  False,  # Indicates some special code for this site, found at end of config.
     'home_altitude' : 70,
     'home_azimuth' : 160,
 
@@ -92,18 +102,22 @@ site_config = {
     'reference_ambient':  10,  #  Degrees Celsius.  Alternately 12 entries, one for every - mid month.
     'reference_pressure':  867.254,    #mbar   A rough guess 20200315
 
-    'site_roof_control': 'yes', #MTF entered this in to remove sro specific code.... Basically do we have control of the roof or not see line 338 sequencer.py
-    'site_allowed_to_open_roof': 'yes',
+    'obsid_roof_control': True, #MTF entered this in to remove sro specific code.... Basically do we have control of the roof or not see line 338 sequencer.py
+    'obsid_allowed_to_open_roof': True,
+    'period_of_time_to_wait_for_roof_to_open' : 100, # seconds - needed to check if the roof ACTUALLY opens. 
+    'only_scope_that_controls_the_roof': False, # If multiple scopes control the roof, set this to False
     
     
     'check_time': 300,   #MF's original setting.
     
     'maximum_roof_opens_per_evening' : 4,
     
+    'roof_open_safety_base_time' : 15, # How many minutes to use as the default retry time to open roof. This will be progressively multiplied as a back-off function.
+    
     'closest_distance_to_the_sun': 45, # Degrees. For normal pointing requests don't go this close to the sun. 
     'closest_distance_to_the_moon': 10, # Degrees. For normal pointing requests don't go this close to the moon. 
     'lowest_requestable_altitude': -5, # Degrees. For normal pointing requests don't allow requests to go this low. 
-    'site_in_automatic_default': "Automatic",   #  ["Manual", "Shutdown", "Automatic"]
+    'obsid_in_automatic_default': "Automatic",   #  ["Manual", "Shutdown", "Automatic"]
     'automatic_detail_default': "Enclosure is initially set to Automatic mode.",
     'observing_check_period' : 5,    # How many minutes between weather checks
     'enclosure_check_period' : 5,    # How many minutes between enclosure checks
@@ -124,7 +138,7 @@ site_config = {
     'focus_trigger' : 5.0, # What FWHM increase is needed to trigger an autofocus
     'solve_nth_image' : 10, # Only solve every nth image
     'solve_timer' : 5, # Only solve every X minutes
-    'threshold_mount_update' : 10, # only update mount when X arcseconds away
+    'threshold_mount_update' : 50, # only update mount when X arcseconds away
 
     'defaults': {
         'observing_conditions': 'observing_conditions1',  #  These are used as keys, may go away.
@@ -193,7 +207,8 @@ site_config = {
     'enclosure': {
         'enclosure1': {
             'parent': 'site',
-            'enc_is_specific':  False,  # Indicates some special site code.
+            'enc_is_specific':  False,  # Indicates some special site code.            
+            'directly_connected': True, # For ECO and EC2, they connect directly to the enclosure, whereas WEMA are different.
             'name': 'Dragonfly Roof',
             'hostIP':  None,
             'driver': 'Dragonfly.Dome',  #'ASCOM.DigitalDomeWorks.Dome',  #  ASCOMDome.Dome',  #  ASCOM.DeviceHub.Dome',  #  ASCOM.DigitalDomeWorks.Dome',  #"  ASCOMDome.Dome',
@@ -333,7 +348,7 @@ site_config = {
             'parent': 'telescope1',
             'name': 'rotator',
             'desc':  False,
-            'driver': False,
+            'driver': None,
 			'com_port':  False,
             'minimum': -180.,
             'maximum': 360.0,
@@ -347,8 +362,8 @@ site_config = {
         'screen1': {
             'parent': 'telescope1',
             'name': 'screen',
-            'desc':  'Optec Alnitak 16"',
-            'driver': 'ASCOM.OptecAlnitak.CoverCalibrator',
+            'desc':  'No Screen',
+            'driver': None,
             'com_port': 'COM10',  #  This needs to be a 4 or 5 character string as in 'COM8' or 'COM22'
             'minimum': 5,   #  This is the % of light emitted when Screen is on and nominally at 0% bright.
             'saturate': 255,  #  Out of 0 - 255, this is the last value where the screen is linear with output.
@@ -369,10 +384,10 @@ site_config = {
             #F4.9 setup
             'start_at_config_reference': True,
             'use_focuser_temperature': False,
-            'reference':13212,    #  20210313  Nominal at 10C Primary temperature
+            'reference':9900,    #  20210313  Nominal at 10C Primary temperature
             'ref_temp':  6265.0,    #  Update when pinning reference
             'coef_c': 0,   #  Negative means focus moves out as Primary gets colder
-            'coef_0': 13212,  #  Nominal intercept when Primary is at 0.0 C.
+            'coef_0': 9900,  #  Nominal intercept when Primary is at 0.0 C.
             'coef_date':  '20220914',    #This appears to be sensible result 44 points -13 to 3C'reference':  6431,    #  Nominal at 10C Primary temperature
             # #F9 setup
             # 'reference': 4375,    #   Guess 20210904  Nominal at 10C Primary temperature
@@ -384,7 +399,7 @@ site_config = {
             'maximum': 18000,   #12672 actually
             'step_size': 1,
             'backlash': 0,
-            'throw' : 750,
+            'throw' : 700,
             'unit': 'micron',
             #'unit_conversion': 9.09090909091,
             'unit_conversion': 1.0,
@@ -465,9 +480,10 @@ site_config = {
             "parent": "telescope1",
             "name": "RGGB" ,  # When there is no filter wheel, the filter will be named this.
             'service_date': '20180101',
-            'flat_sky_gain' : 1148,
+            'flat_sky_gain' : 4554,
             "driver":   None,   #"LCO.dual",  #  'ASCOM.FLI.FilterWheel',
             #"driver":   "Maxim.Image",   #"LCO.dual",  #  'ASCOM.FLI.FilterWheel',
+            'settings': {'auto_color_options' : ['none']}, # OPtions include 'OSC', 'manual','RGB','NB','RGBHA','RGBNB'
             'ip_string': None,
             "dual_wheel": False,
             #"default_flat_exposure" : 1.0,
@@ -656,12 +672,52 @@ site_config = {
             'parent': 'telescope1',
             'name': 'ec002cs',      #Important because this points to a server file structure by that name.
             'desc':  'QHY 600C Pro',
-            'driver':  "ASCOM.QHYCCD_CAM2.Camera", # NB Be careful this is not QHY Camera2 or Guider  "Maxim.CCDCamera",   #'ASCOM.FLI.Kepler.Camera', "ASCOM.QHYCCD.Camera",   #
+            #'driver':  "ASCOM.QHYCCD_CAM2.Camera", # NB Be careful this is not QHY Camera2 or Guider  "Maxim.CCDCamera",   #'ASCOM.FLI.Kepler.Camera', "ASCOM.QHYCCD.Camera",   #
+            'driver':  "QHYCCD_Direct_Control", # NB Be careful this is not QHY Camera2 or Guider  "Maxim.CCDCamera",   #'ASCOM.FLI.Kepler.Camera', "ASCOM.QHYCCD.Camera",   #
+            
+            
+            
+                
+            
+            
             'detector':  'Sony IMX455 Color',  #  It would be good to build out a table of chip characteristics
             'use_file_mode':  False,   # NB we should clean out all file mode stuff.
             'file_mode_path':  'Q:/archive/sq01/maxim/',   #NB NB all file_mode Maxim stuff should go!
             'manufacturer':  "QHY",
             'settings': {
+                
+                # For direct QHY usage we need to set the appropriate gain.
+                # This changes from site to site. "Fast" scopes like the RASA need lower gain then "slow".
+                # Sky quality is also important, the worse the sky quality, the higher tha gain needs to be
+                # Default for QHY600 is GAIN: 26, OFFSET: 60, readout mode 3. 
+                # Random tips from the internet:
+                # After the exposure, the background in the image should not be above 10% saturation of 16Bit while the brightest bits of the image should not be overexposed
+                # The offset should be set so that there is at least 300ADU for the background
+                # I guess try this out on the standard smartstack exposure time.        
+                # https://www.baader-planetarium.com/en/blog/gain-and-offset-darks-flats-and-bias-at-cooled-cmos-cameras/
+                #
+                # Also the "Readout Mode" is really important also
+                # Readout Mode #0 (Photographic DSO Mode)
+                # Readout Mode #1 (High Gain Mode)
+                # Readout Mode #2 (Extended Fullwell Mode)
+                # Readout Mode #3 (Extended Fullwell Mode-2CMS)
+                #
+                # With the powers invested in me, I have decided that readout mode 3 is the best. We can only pick one standard one
+                # and 0 is also debatably better for colour images, but 3 is way better for dynamic range....
+                # We can't swip and swap because the biases and darks and flats will change, so we are sticking with 3 until
+                # something bad happens with 3 for some reason
+                #
+                # In that sense, QHY600 NEEDS to be set at GAIN 26 and the only thing to adjust is the offset.....
+                # USB Speed is a tradeoff between speed and banding, min 0, max 60. 60 is least banding. Most of the 
+                # readout seems to be dominated by the slow driver (difference is a small fraction of a second), so I've left it at 60 - least banding.
+                'direct_qhy_readout_mode' : 3,        
+                'direct_qhy_gain' : 26,
+                'direct_qhy_offset' : 60,  
+                'direct_qhy_usb_speed' : 60,
+                
+                
+                
+                
                 
                 'is_osc' : True,
                 
@@ -677,7 +733,7 @@ site_config = {
                 'osc_colour_enhance' : 1.7,
                 'osc_sharpness_enhance' : 1.5,                
                 'osc_background_cut' : 25.0,
-                'bin_for_focus' : True, # This setting will bin the image for focussing rather than interpolating. Good for 1x1 pixel sizes < 0.6.
+                'bin_for_focus' : False, # This setting will bin the image for focussing rather than interpolating. Good for 1x1 pixel sizes < 0.6.
                 
                 # ONLY TRANSFORM THE FITS IF YOU HAVE
                 # A DATA-BASED REASON TO DO SO.....
@@ -693,7 +749,7 @@ site_config = {
                 # HERE YOU CAN FLIP THE IMAGE TO YOUR HEARTS DESIRE
                 # HOPEFULLY YOUR HEARTS DESIRE IS SIMILAR TO THE
                 # RECOMMENDED DEFAULT DESIRE OF PTR
-                'transpose_jpeg' : True,
+                'transpose_jpeg' : False,
                 'flipx_jpeg' : False,
                 'flipy_jpeg' : False,
                 'rotate180_jpeg' : False,
@@ -710,28 +766,29 @@ site_config = {
                 'has_chiller': True,
                 'calib_setpoints': [-20, -20, -20, -20, -20, -20, \
                                     -20, -20, -20, -20, -20, -20],  #  Picked by month-of-year 
-                'day_warm': False,
+                'day_warm': True,
+                'day_warm_degrees' : 6, # Number of degrees to warm during the daytime.
                 'cooler_on': True,
                 "cam_needs_NumXY_init": True,
                 'x_start':  24,
                 'y_start':  0,
-                'x_width':  9576,   #NB Should be set up with overscan, which this camera is!  20200315 WER
-                'y_width':  6388,
-                'x_chip':  9576,   #NB Should specify the active pixel area.   20200315 WER
-                'y_chip':  6388,
+                'x_width':  9600,   #NB Should be set up with overscan, which this camera is!  20200315 WER
+                'y_width':  6422,
+                'x_chip':  9600,   #NB Should specify the active pixel area.   20200315 WER
+                'y_chip':  6422,
                 'x_trim_offset':  8,   #  NB these four entries are guesses.
                 'y_trim_offset':  8,
                 'pre_bias_available': False,  #if so need to specify as below for post_bias.
                 'post_bias_available': True,  #if so need to specify as below for post_bias.
-                'x_bias_start':  9577,
-                'y_bias_start' : 6389,
+                'x_bias_start':  9600,
+                'y_bias_start' : 6422,
                 'x_bias_end':  None,       # Vert band self.img[-38:-18, 0]
                 'y_bias_send': None,
                 'corner_everlap': None,
                 'x_bias_line': True,
                 'y_bias_line': True,
-                'x_active': 9576,
-                'y_active': 6388,
+                'x_active': 9600,
+                'y_active': 6422,
                 'det_size': '[1:9600, 1:6422]',  # Physical chip data size as returned from driver
                 'ccd_sec': '[1:9600, 1:6422]',
                 'bias_sec': ['[1:22, 1:6388]', '[1:11, 1:3194]', '[1:7, 1:2129]', '[1:5, 1:1597]'],
@@ -740,7 +797,8 @@ site_config = {
                 'trim_sec': ['[1:9576, 1:6388]', '[1:4788, 1:3194]', '[1:3192, 1:2129]', '[1:2394, 1:1597]'],
                 'x_pixel':  3.76,
                 'y_pixel':  3.76,
-                'pix_scale': 0.302597,    #   bin-2  2* math.degrees(math.atan(3.76/2563000))*3600
+                'pix_scale': 1.25,    #   bin-2  2* math.degrees(math.atan(3.76/2563000))*3600
+                
 
                 'CameraXSize' : 9600,
                 'CameraYSize' : 6422,
@@ -757,12 +815,13 @@ site_config = {
                 'east_offset': 0.0,
                 'rotation': 0.0,
                 'min_exposure': 0.0001,
-                'min_flat_exposure': 0.0001,
+                'min_flat_exposure' : 3.0, # For certain shutters, short exposures aren't good for flats. Some CMOS have banding in too short an exposure. Largely applies to ccds though.
+                'max_flat_exposure' : 20.0, # Realistically there should be a maximum flat_exposure that makes sure flats are efficient and aren't collecting actual stars.
                 'max_exposure': 180.,
                 'max_daytime_exposure': 0.0001,
                 'can_subframe':  True,
                 'min_subframe': [128,128],
-                'bin_modes':  [['Optimal', 0.91], ['Fine', 0.61], ['Coarse', 1.2], ['Eng', 0.30]],     #Meaning fixed binning if list has only one entry
+                #'bin_modes':  [['Optimal', 0.91], ['Fine', 0.61], ['Coarse', 1.2], ['Eng', 0.30]],     #Meaning fixed binning if list has only one entry
                 'reference_gain': 1.3,     #  NB GUess One val for each binning. Assumed digitalsumming in camera???
                 'reference_noise': 6,    #  NB Guess
                 'reference_dark': 0.2,  #  NB  Guess
@@ -774,37 +833,37 @@ site_config = {
                 'cycle_time':            0,   # Meas 20230219  for a bias
                 #'enable_bin':            [ True, False,  False,  False],
                 #'bias_dark_bin_spec':    ['1,1', '2,2', '3,3', '4,4' ],    #Default binning for flats
-                'bias_count':    63,
-                'dark_count':    17,
+                'bias_count':    64,
+                'dark_count':    64,
  
-                'dark_exposure': 360,
+                'dark_exposure': 20,
                 #'flat_bin_spec':         ['1,1', '2,2', '3,3', '4,4' ],   #Is this necessary?
 
                 #'flat_count': 5,
-                'optimal_bin': [1, 1],   #  This is the optimal bin for MRC
-                'fine_bin':    [1, 1],   #  This is the fine bin for MRC
-                'coarse_bin':  [2, 2],   #  This is the coarse bin for MRC
-                'eng_bin':     [4, 4],   #  This is the eng-only bin for MRC, not useful for users?
+                #'optimal_bin': [1, 1],   #  This is the optimal bin for MRC
+                #'fine_bin':    [1, 1],   #  This is the fine bin for MRC
+                #'coarse_bin':  [2, 2],   #  This is the coarse bin for MRC
+                #'eng_bin':     [4, 4],   #  This is the eng-only bin for MRC, not useful for users?
                 'bin_enable':  ['1 1'],  #  Always square and matched to seeing situation by owner  NB Obsolete? NO MF uses to load bias calib
                                          #  NB NB inconsistent use of bin string   '1 1', '1x1' , etc.
-                'do_cosmics' : 'yes',
+                'do_cosmics' : False,
                 
                 'rbi_delay':  0,      #  This being zero says RBI is not available, eg. for SBIG.
                 'is_cmos':  True,
                 'is_color': True,   #NB we also have a is_osc key.
                 'can_set_gain':  True,
-                'max_linearity':  60000,   # Guess
+                'max_linearity':  80000,   # Guess
 
                 'flat_count': 5,
 
-                'saturate':   65000 ,    #[[1, 65000], [2,262000], [3,589815], [4, 1048560]] ,   # e-.  This is a close guess, not measured, but taken from data sheet.
-                'fullwell_capacity':  80000,
+                'saturate':   60000 ,    #[[1, 65000], [2,262000], [3,589815], [4, 1048560]] ,   # e-.  This is a close guess, not measured, but taken from data sheet.
+
 
                 'read_mode':  'Normal',
                 'readout_mode': 'Normal',
-                'readout_speed':  50,
-                'readout_seconds': 6,
-                'smart_stack_exposure_time': 30,
+                'readout_speed':  0.4,
+                'readout_seconds': 2.4,
+                'smart_stack_exposure_time': 20,
                 'square_detector': False,
                 'square_pixels': True,
                 'areas_implemented': ['Full', 'SQR', '0.5*0.5°',  '0.7x0.7°', '1x1°', '1.4x1.4°', '2x2°', '2.8x2.8°', '4x4sq°', '5.6x5.6°'],
