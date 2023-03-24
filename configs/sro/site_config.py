@@ -78,8 +78,8 @@ site_config = {
     'wema_write_share_path':  None,   # This and below provide two different ways to define
     'client_read_share_path':  None,  #     a path to a network share.
     'redis_ip': None,  #'127.0.0.1', None if no redis path present,
-    'site_is_generic':  False,   # A simple single computer ASCOM site.
-    'site_is_specific':  True,  # Indicates some special code for this site, found at end of config.
+    'obsid_is_generic':  False,   # A simple single computer ASCOM site.
+    'obsid_is_specific':  True,  # Indicates some special code for this site, found at end of config.
 
 
     'host_wema_site_name':  'SRO',  #  The umbrella header for obsys in close geographic proximity.
@@ -108,7 +108,7 @@ site_config = {
     'reference_pressure':  867.254,    #mbar   A rough guess 20200315
 
     'site_roof_control': False, #MTF entered this in to remove sro specific code.... Basically do we have control of the roof or not see line 338 sequencer.py
-    'site_allowed_to_open_roof': False,
+    'obsid_allowed_to_open_roof': False,
     'period_of_time_to_wait_for_roof_to_open' : 50, # seconds - needed to check if the roof ACTUALLY opens. 
     'only_scope_that_controls_the_roof': False, # If multiple scopes control the roof, set this to False
     
@@ -122,7 +122,7 @@ site_config = {
     
     
     
-    'site_in_automatic_default': "Automatic",   #  ["Manual", "Shutdown", "Automatic"]
+    'obsid_in_automatic_default': "Automatic",   #  ["Manual", "Shutdown", "Automatic"]
     'automatic_detail_default': "Enclosure is Autonmous, under Owner control.",
     'observing_check_period' : 3,    # How many minutes between weather checks
     'enclosure_check_period' : 3,    # How many minutes between enclosure checks

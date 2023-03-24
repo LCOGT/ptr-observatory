@@ -203,7 +203,7 @@ class Observatory:
                 self.wema_path = g_dev["wema_share_path"]
         else:
             self.is_wema = False  # This is a client.
-            self.obsid_path = ptr_config["client_path"] + self.config['obsid_id'] + '/'
+            self.obsid_path = ptr_config["client_path"] + self.config['obs_id'] + '/'
             g_dev["obsid_path"] = self.obsid_path
             g_dev["wema_share_path"] = self.obsid_path  # Just to be safe.
             self.wema_path = g_dev["wema_share_path"]

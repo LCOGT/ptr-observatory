@@ -80,8 +80,8 @@ site_config = {
     'wema_write_share_path':  'C:/ptr/wema_transfer/',  # Meant to be where Wema puts status data.
     'client_write_share_path':  '//aro-wema/wema_transfer/', #Meant to be a share written to by the TCS computer
     'redis_ip': None,   # None if no redis path present, localhost if redis iself-contained
-    'site_is_generic':  False,   # A simple single computer ASCOM site.
-    'site_is_specific':  False,  #  Meaning like SRO with site specific methods to read weatehr and roof status
+    'obsid_is_generic':  False,   # A simple single computer ASCOM site.
+    'obsid_is_specific':  False,  #  Meaning like SRO with site specific methods to read weatehr and roof status
 
 #   'host_wema_site_name':  'ARO',
     'name': 'Apache Ridge Observatory 0m3f4.9/9',
@@ -110,7 +110,7 @@ site_config = {
     'reference_pressure':  794.0,    #mbar   A rough guess 20200315
 
     'site_roof_control': True, #MTF entered this in to remove sro specific code.... Basically do we have control of the roof or not see line 338 sequencer.py
-    'site_allowed_to_open_roof': True,
+    'obsid_allowed_to_open_roof': True,
     'period_of_time_to_wait_for_roof_to_open' : 50, # seconds - needed to check if the roof ACTUALLY opens. 
     'only_scope_that_controls_the_roof': False, # If multiple scopes control the roof, set this to False
     
@@ -122,7 +122,7 @@ site_config = {
     'lowest_requestable_altitude': -5, # Degrees. For normal pointing requests don't allow requests to go this low. 
     
     
-    'site_in_automatic_default': "Manual",   # ["Manual", "Shutdown", "Automatic"]
+    'obsid_in_automatic_default': "Manual",   # ["Manual", "Shutdown", "Automatic"]
     
     'automatic_detail_default': "Enclosure is initially set to Manual by ARO site_config.",
     'observing_check_period' : 2,    # How many minutes between weather checks
