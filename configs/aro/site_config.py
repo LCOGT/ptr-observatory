@@ -115,6 +115,13 @@ site_config = {
     'only_scope_that_controls_the_roof': False, # If multiple scopes control the roof, set this to False
     
     'maximum_roof_opens_per_evening' : 4,
+    'roof_open_safety_base_time' : 15, # How many minutes to use as the default retry time to open roof. This will be progressively multiplied as a back-off function.
+    
+    'closest_distance_to_the_sun': 45, # Degrees. For normal pointing requests don't go this close to the sun. 
+    'closest_distance_to_the_moon': 10, # Degrees. For normal pointing requests don't go this close to the moon. 
+    'lowest_requestable_altitude': -5, # Degrees. For normal pointing requests don't allow requests to go this low. 
+    
+    
     'site_in_automatic_default': "Manual",   # ["Manual", "Shutdown", "Automatic"]
     
     'automatic_detail_default': "Enclosure is initially set to Manual by ARO site_config.",

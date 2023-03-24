@@ -1321,6 +1321,15 @@ class Sequencer:
             ending = g_dev['events']['End Eve Bias Dark']
         while ephem.now() < ending :   #Do not overrun the window end
   
+            bias_count = self.config['camera']['camera_1_1']['settings']['bias_count']
+            dark_count = self.config['camera']['camera_1_1']['settings']['dark_count']
+            dark_exp_time = self.config['camera']['camera_1_1']['settings']['dark_exposure']
+            cycle_time = self.config['camera']['camera_1_1']['settings']['cycle_time']
+            
+            if ephem.now() + (dark_exp_time + cycle_time + 30)/86400 > ending:   #ephem is units of a day
+                self.bias_dark_latch = False
+                break     #Terminate Bias dark phase if within taking a dark woudl run over.             
+            
             g_dev['mnt'].park_command({}, {}) # Get there early
 
             plog("Expose Biases and normal darks by configured binning.")
@@ -1329,15 +1338,9 @@ class Sequencer:
             #long_dark_time = self.config['camera']['camera_1_1']['settings']['long_dark']
             # NB NB Long term it would be slightly better to interleave bias and darks
             #bias_dark_bin_spec=self.config['camera']['camera_1_1']['settings']['bias_dark_bin_spec']  #Each is these is a list.
-            bias_count = self.config['camera']['camera_1_1']['settings']['bias_count']
-            dark_count = self.config['camera']['camera_1_1']['settings']['dark_count']
-            dark_exp_time = self.config['camera']['camera_1_1']['settings']['dark_exposure']
-            cycle_time = self.config['camera']['camera_1_1']['settings']['cycle_time']
             #enable_bin= self.config['camera']['camera_1_1']['settings']['enable_bin']
             #for n_of_bias in range(bias_count):   #9*(9 +1) per cycle.
-            if ephem.now() + (dark_exp_time + cycle_time + 30)/86400 > ending:   #ephem is units of a day
-                self.bias_dark_latch = False
-                break     #Terminate Bias dark phase if within taking a dark woudl run over.             
+            
             
             # The way we make different binnings for CMOS camera is derived from a single
             # exposure of 1x1. So if it is a cmos camera, it is just 1x1.
