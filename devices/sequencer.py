@@ -190,6 +190,7 @@ class Sequencer:
         self.sky_flat_latch = False
         self.morn_sky_flat_latch = False
         self.morn_bias_dark_latch = False   #NB NB NB Should these initially be defined this way?
+        self.cool_down_latch = False
         self.night_focus_ready=True
         self.midnight_calibration_done = False
         self.nightly_reset_complete = False
@@ -339,9 +340,6 @@ class Sequencer:
             
                 try: 
                     # First unpark and move telescope away from the sun or just to the home position. 
-                    self.opens_this_evening= self.opens_this_evening+1
-                    
-                    self.enclosure_next_open_time = time.time() + (self.config['roof_open_safety_base_time']*60) * g_dev['seq'].opens_this_evening
                     plog("Unparking Scope in preparation for observatory opening.")
                     if g_dev['mnt'].mount.AtParK:
                         g_dev['mnt'].unpark_command({}, {})
@@ -367,23 +365,28 @@ class Sequencer:
                             if self.config['obsid_roof_control'] and not enc_status['shutter_status'] in ['Open', 'open','Opening', 'opening'] and g_dev['enc'].mode == 'Automatic'\
                             and (self.config['obsid_allowed_to_open_roof']) and self.weather_report_is_acceptable_to_observe:
                             #breakpoint()
-                                #g_dev['enc'].open_roof_directly()
-                                g_dev['enc'].open_command({}, {})
-                                plog("blip")
+                                self.opens_this_evening= self.opens_this_evening+1                    
+                                
+                                g_dev['enc'].open_roof_directly({}, {})
+                                #g_dev['enc'].open_command({}, {})
+                                #plog("blip")
                         
                                 
                                 
                     elif self.config['obsid_roof_control']  and not enc_status['shutter_status'] in ['Open', 'open','Opening', 'opening'] and g_dev['enc'].mode == 'Automatic' \
                         and ocn_status['hold_duration'] <= 0.1 and self.config['obsid_allowed_to_open_roof'] and self.weather_report_is_acceptable_to_observe:   #NB
                         #breakpoint()
+                        self.opens_this_evening= self.opens_this_evening+1                    
                         
-                        g_dev['enc'].open_command({}, {})
-                        plog("plop")            
+                        g_dev['enc'].open_roof_directly({}, {})
+                        #g_dev['enc'].open_command({}, {})
+                        #plog("plop")            
                         
                     plog("Attempting to Open Shutter. Waiting until shutter opens")
                     if not g_dev['enc'].enclosure.ShutterStatus == 0:
                         time.sleep(self.config['period_of_time_to_wait_for_roof_to_open'])
                     
+                    self.enclosure_next_open_time = time.time() + (self.config['roof_open_safety_base_time']*60) * g_dev['seq'].opens_this_evening
                     
                     if g_dev['enc'].enclosure.ShutterStatus == 0:                    
                         g_dev['obs'].open_and_enabled_to_observe = True                    
@@ -401,7 +404,11 @@ class Sequencer:
                     else:
                         plog("Failed to open roof, parking telescope again and sending the close command to the roof.")
                         #g_dev['enc'].close_roof_directly()
-                        g_dev['enc'].close_command({}, {})
+                        plog ("opens this eve: " + str(g_dev['seq'].opens_this_evening))
+                        plog ("minutes until next open attempt ALLOWED: " + str( (g_dev['seq'].enclosure_next_open_time - time.time()) /60))
+                        g_dev['enc'].close_roof_directly({}, {})
+                        
+                        #g_dev['enc'].close_command({}, {})
                         if not g_dev['mnt'].mount.AtParK:   ###Test comment here
                             g_dev['mnt'].park_command({}, {}) # Get there early
                         return
@@ -464,13 +471,15 @@ class Sequencer:
         # Check for delayed opening of the observatory and act accordingly.
         #breakpoint()
         # If the observatory is simply delayed until opening, then wait until then, then attempt to start up the observatory
-        if self.weather_report_wait_until_open:
+        if self.weather_report_wait_until_open and not self.cool_down_latch:
             if ephem_now >  self.weather_report_wait_until_open_time:
                 if not g_dev['obs'].open_and_enabled_to_observe and self.weather_report_is_acceptable_to_observe==True:
                     if (g_dev['events']['Cool Down, Open'] < ephem.now() < g_dev['events']['Observing Ends']):
                         if time.time() > self.enclosure_next_open_time and self.opens_this_evening < self.config['maximum_roof_opens_per_evening']:
                             #self.enclosure_next_open_time = time.time() + 300 # Only try to open the roof every five minutes
+                            self.cool_down_latch = True
                             self.open_observatory(enc_status, ocn_status)
+                            self.cool_down_latch = False
                         # If the observatory opens, set clock and auto focus and observing to now
                         if g_dev['obs'].open_and_enabled_to_observe:
                             self.night_focus_ready=True
@@ -482,7 +491,7 @@ class Sequencer:
         
         # If the observatory is meant to shut during the evening
         obs_win_begin, sunZ88Op, sunZ88Cl, ephem_now = self.astro_events.getSunEvents()
-        if self.weather_report_close_during_evening==True:
+        if self.weather_report_close_during_evening==True :
             if ephem_now >  self.weather_report_close_during_evening_time and ephem_now < events['Morn Bias Dark']: # Don't want scope to cancel all activity during bias/darks etc.
                 if self.config['obsid_roof_control']  and g_dev['enc'].mode == 'Automatic':
                     self.weather_report_is_acceptable_to_observe=False
@@ -500,9 +509,12 @@ class Sequencer:
                     
         # During normal opening period, try opening the dome   
         if ((g_dev['events']['Cool Down, Open']  <= ephem_now < g_dev['events']['Observing Ends']) and \
-               g_dev['enc'].mode == 'Automatic') and not g_dev['ocn'].wx_hold and not enc_status['shutter_status'] in ['Software Fault', 'Closing', 'Error']:
+               g_dev['enc'].mode == 'Automatic') and not self.cool_down_latch and not g_dev['ocn'].wx_hold and not enc_status['shutter_status'] in ['Software Fault', 'Closing', 'Error']:
 
             #plog ("Cool Down Open Check Running")
+            
+            self.cool_down_latch = True
+            
             if not self.nightly_weather_report_done and not g_dev['debug']:
 
                 self.run_nightly_weather_report()
@@ -526,6 +538,7 @@ class Sequencer:
                     
                     
                     self.night_focus_ready=True
+            self.cool_down_latch = False
 
         # Check that nightly reset switch is reset at start of observing eve. 
         if self.nightly_reset_complete == True:
@@ -553,24 +566,22 @@ class Sequencer:
 
         elif not self.eve_sky_flat_latch and ((events['Eve Sky Flats'] <= ephem_now < events['End Eve Sky Flats'])  \
                and g_dev['enc'].mode in [ 'Automatic', 'Autonomous'] and not g_dev['ocn'].wx_hold and \
-               self.config['auto_eve_sky_flat'] and not self.eve_flats_done and self.weather_report_is_acceptable_to_observe and g_dev['obs'].camera_temperature_in_range_for_calibrations):
+               self.config['auto_eve_sky_flat'] and g_dev['obs'].open_and_enabled_to_observe and not self.eve_flats_done and self.weather_report_is_acceptable_to_observe and g_dev['obs'].camera_temperature_in_range_for_calibrations):
 
-            if g_dev['obs'].open_and_enabled_to_observe:
-                #self.time_of_next_slew = time.time() -1
-                self.eve_sky_flat_latch = True
-                self.open_observatory(enc_status, ocn_status)   #Just in case a Wx hold stopped opening
-                self.current_script = "Eve Sky Flat script starting"
-                #plog('Skipping Eve Sky Flats')
-                
-                self.sky_flat_script({}, {}, morn=False)   #Null command dictionaries
-                
-                if g_dev['mnt'].mount.Tracking == False:
-                    if g_dev['mnt'].mount.CanSetTracking:   
-                        g_dev['mnt'].mount.Tracking = True
-                    else:
-                        plog("mount is not tracking but this mount doesn't support ASCOM changing tracking")
-                self.eve_sky_flat_latch = False
-                self.eve_flats_done = True
+            self.eve_sky_flat_latch = True
+            #self.open_observatory(enc_status, ocn_status)   #Just in case a Wx hold stopped opening
+            self.current_script = "Eve Sky Flat script starting"
+            #plog('Skipping Eve Sky Flats')
+            
+            self.sky_flat_script({}, {}, morn=False)   #Null command dictionaries
+            
+            if g_dev['mnt'].mount.Tracking == False:
+                if g_dev['mnt'].mount.CanSetTracking:   
+                    g_dev['mnt'].mount.Tracking = True
+                else:
+                    plog("mount is not tracking but this mount doesn't support ASCOM changing tracking")
+            self.eve_sky_flat_latch = False
+            self.eve_flats_done = True
             
 
         elif ((g_dev['events']['Clock & Auto Focus']  <= ephem_now < g_dev['events']['Observing Begins']) and \
@@ -973,16 +984,16 @@ class Sequencer:
                 g_dev['obs'].send_to_user("Could not execute project due to poorly formatted or corrupt project", p_level='INFO')
                 continue
 
-            if self.config['obsid_roof_control']  and enc_status['shutter_status'] in ['Closed', 'closed'] and ocn_status['hold_duration'] <= 0.1 and self.weather_report_is_acceptable_to_observe:   #NB  # \  NB NB 20220901 WER fix this!
+            #if self.config['obsid_roof_control']  and enc_status['shutter_status'] in ['Closed', 'closed'] and ocn_status['hold_duration'] <= 0.1 and self.weather_report_is_acceptable_to_observe:   #NB  # \  NB NB 20220901 WER fix this!
 
                 #breakpoint()
-                g_dev['enc'].open_command({}, {})
-                plog("Opening dome, will set Synchronize in 10 seconds.")
-                time.sleep(10)
-            try:
-                g_dev['enc'].sync_mount_command({}, {})
-            except: 
-                pass
+            #    g_dev['enc'].open_command({}, {})
+            #    plog("Opening dome, will set Synchronize in 10 seconds.")
+            #    time.sleep(10)
+            #try:
+            #    g_dev['enc'].sync_mount_command({}, {})
+            #except: 
+            #    pass
 
             '''
             We be starting a block:
@@ -1378,19 +1389,21 @@ class Sequencer:
                     #self.time_of_next_slew = time.time() -1
                     #plog ("got here")
                     
-                    if not g_dev['obs'].open_and_enabled_to_observe and self.weather_report_is_acceptable_to_observe==True and self.weather_report_wait_until_open==False:
+                    if not g_dev['obs'].open_and_enabled_to_observe and self.weather_report_is_acceptable_to_observe==True and self.weather_report_wait_until_open==False and not self.cool_down_latch:
                         if time.time() > self.enclosure_next_open_time and self.opens_this_evening < self.config['maximum_roof_opens_per_evening']:
                             #self.enclosure_next_open_time = time.time() + 300 # Only try to open the roof every five minutes
+                            self.cool_down_latch = True
                             g_dev['ocn'].status = g_dev['ocn'].get_status()
                             g_dev['enc'].status = g_dev['enc'].get_status()
                             ocn_status = g_dev['ocn'].status
                             enc_status = g_dev['enc'].status
                             self.open_observatory(enc_status, ocn_status)    
-                            g_dev['enc'].open_command({}, {})
+                            
                             if g_dev['enc'].enclosure.ShutterStatus == 0:                    
                                 g_dev['obs'].open_and_enabled_to_observe = True 
                                 cool_down_opened_already=True
                                 self.night_focus_ready=True
+                            self.cool_down_latch = False
                 
                 
                 min_to_do = min(b_d_to_do, stride)
