@@ -336,7 +336,7 @@ def init_camera_param(cam_id):
 # These should eventually be in a utility module
 def next_sequence(pCamera):
     global SEQ_Counter
-    camShelf = shelve.open(g_dev["cam"].site_path + "ptr_night_shelf/" + pCamera + str(g_dev['obs'].name))
+    camShelf = shelve.open(g_dev['obs'].obsid_path + "ptr_night_shelf/" + pCamera + str(g_dev['obs'].name))
     sKey = "Sequence"
     try:
         seq = camShelf[sKey]  # get an 8 character string
@@ -354,7 +354,7 @@ def next_sequence(pCamera):
 
 def test_sequence(pCamera):
     global SEQ_Counter
-    camShelf = shelve.open(g_dev["cam"].site_path + "ptr_night_shelf/" + pCamera + str(g_dev['obs'].name))
+    camShelf = shelve.open(g_dev['obs'].obsid_path + "ptr_night_shelf/" + pCamera + str(g_dev['obs'].name))
     sKey = "Sequence"
     seq = camShelf[sKey]  # get an 8 character string
     camShelf.close()
@@ -365,7 +365,7 @@ def test_sequence(pCamera):
 def reset_sequence(pCamera):
     try:
         camShelf = shelve.open(
-            g_dev["cam"].site_path + "ptr_night_shelf/" + str(pCamera) + str(g_dev['obs'].name)
+            g_dev['obs'].obsid_path + "ptr_night_shelf/" + str(pCamera) + str(g_dev['obs'].name)
         )
         seqInt = int(-1)
         seqInt += 1
@@ -431,20 +431,21 @@ class Camera:
                                        # for in the main thread
 
         # Sets up paths and structures
-        self.site_path = self.config["client_path"] + self.config['site_id'] + '/'
-        if not os.path.exists(self.site_path):
-            os.makedirs(self.site_path)
-        self.archive_path = self.config["archive_path"] + self.config['site_id'] + '/'+ "archive/"
-        if not os.path.exists(self.config["archive_path"] +'/' + self.config['site_id']):
-            os.makedirs(self.config["archive_path"] +'/' + self.config['site_id'])
-        if not os.path.exists(self.config["archive_path"] +'/' + self.config['site_id']+ '/'+ "archive/"):
-            os.makedirs(self.config["archive_path"] +'/' + self.config['site_id']+ '/'+ "archive/")
+        
+        self.obsid_path = g_dev['obs'].obsid_path
+        if not os.path.exists(self.obsid_path):
+            os.makedirs(self.obsid_path)
+        self.archive_path = self.config["archive_path"] + self.config['obs_id'] + '/'+ "archive/"
+        if not os.path.exists(self.config["archive_path"] +'/' + self.config['obs_id']):
+            os.makedirs(self.config["archive_path"] +'/' + self.config['obs_id'])
+        if not os.path.exists(self.config["archive_path"] +'/' + self.config['obs_id']+ '/'+ "archive/"):
+            os.makedirs(self.config["archive_path"] +'/' + self.config['obs_id']+ '/'+ "archive/")
         self.camera_path = self.archive_path + self.alias + "/"
         if not os.path.exists(self.camera_path):
             os.makedirs(self.camera_path)
         self.alt_path = self.config[
             "alt_path"
-        ]  +'/' + self.config['site_id']+ '/' # NB NB this should come from config file, it is site dependent.
+        ]  +'/' + self.config['obs_id']+ '/' # NB NB this should come from config file, it is site dependent.
         if not os.path.exists(self.config[
             "alt_path"
         ]):
@@ -790,7 +791,7 @@ class Camera:
         self.cmd_in = None
         self.t7 = None
         self.camera_message = "-"
-        #self.site_path = self.config["client_path"]
+        #self.obsid_path = self.config["client_path"]
 
         
         
@@ -2318,9 +2319,22 @@ class Camera:
                         "[C] CCD actual temperature",
                     )
                     hdu.header["COOLERON"] = self._cooler_on()
-                    hdu.header["SITEID"] = (
-                        self.config["site_id"].replace("-", "").replace("_", "")
+                    hdu.header["OBSID"] = (
+                        self.config["obs_id"].replace("-", "").replace("_", "")
                     )
+                    hdu.header["SITEID"] = (
+                        self.config["observatory_location"].replace("-", "").replace("_", "")
+                    )
+                    
+                    #hdu.header["SITE"] = (
+                    #    self.config["observatory_location"].replace("-", "").replace("_", "")
+                    #)
+                    #hdu.header["SITEID"] = (
+                    #    self.config["obs_id"].replace("-", "").replace("_", "")
+                    #)
+                    #hdu.header["OBSLOCAT"] = (
+                    #    self.config["observatory_location"].replace("-", "").replace("_", "")
+                    #)
                     hdu.header["TELID"] = self.config["telescope"]["telescope1"][
                         "telescop"
                     ][:4]
@@ -2330,7 +2344,7 @@ class Camera:
                     hdu.header["PTRTEL"] = self.config["telescope"]["telescope1"][
                         "ptrtel"
                     ]
-                    hdu.header["PROPID"] = "ptr-" + self.config["site_id"] + "-001-0001"
+                    hdu.header["PROPID"] = "ptr-" + self.config["obs_id"] + "-001-0001"
                     hdu.header["BLKUID"] = (
                         "1234567890",
                         "Just a placeholder right now. WER",
@@ -2890,7 +2904,7 @@ class Camera:
                                 + str(self.current_filter)
                             )
                     cal_name = (
-                        self.config["site"]
+                        self.config["obs_id"]
                         + "-"
                         + current_camera_name
                         + "-"
@@ -2903,7 +2917,7 @@ class Camera:
                         + "00.fits"
                     )
                     raw_name00 = (
-                        self.config["site"]
+                        self.config["obs_id"]
                         + "-"
                         + current_camera_name
                         + "-"
@@ -2915,7 +2929,7 @@ class Camera:
                         + "00.fits"
                     )
                     red_name01 = (
-                        self.config["site"]
+                        self.config["obs_id"]
                         + "-"
                         + current_camera_name
                         + "-"
@@ -2943,7 +2957,7 @@ class Camera:
                             + red_name01_lcl[-9:]
                         )
                     i768sq_name = (
-                        self.config["site"]
+                        self.config["obs_id"]
                         + "-"
                         + current_camera_name
                         + "-"
@@ -2955,7 +2969,7 @@ class Camera:
                         + "10.fits"
                     )
                     jpeg_name = (
-                        self.config["site"]
+                        self.config["obs_id"]
                         + "-"
                         + current_camera_name
                         + "-"
@@ -2967,7 +2981,7 @@ class Camera:
                         + "10.jpg"
                     )
                     text_name = (
-                        self.config["site"]
+                        self.config["obs_id"]
                         + "-"
                         + current_camera_name
                         + "-"
@@ -3300,6 +3314,7 @@ class Camera:
                             reported=0
                             plog ("Time Taken From Exposure start to finish : "  + str(time.time()\
                                    - self.tempStartupExposureTime))
+                            g_dev["obs"].send_to_user("Exposure Complete")
                             queue_clear_time = time.time()
                             while True:
                                 if self.sep_processing==False and g_dev['obs'].sep_queue.empty():
@@ -3451,6 +3466,8 @@ class Camera:
                     self.exposure_busy = False
 
                     plog ("Time Taken From Exposure start to finish : "  +str(time.time() - self.tempStartupExposureTime))
+                    
+                    g_dev["obs"].send_to_user("Exposure Complete")
 
                     return self.expresult
                 except Exception as e:
@@ -3460,6 +3477,7 @@ class Camera:
                     self.expresult = {"error": True}
                 self.exposure_busy = False
                 plog ("Time Taken From Exposure start to finish : "  +str(time.time() - self.tempStartupExposureTime))
+                g_dev["obs"].send_to_user("Exposure Complete")
                 return self.expresult
             else:
                 #self.t7 = time.time()
@@ -3477,6 +3495,7 @@ class Camera:
                     self.expresult = {"error": True}
                     self.exposure_busy = False
                     plog ("Time Taken From Exposure start to finish : "  +str(time.time() - self.tempStartupExposureTime))
+                    g_dev["obs"].send_to_user("Exposure Complete")
                     return self.expresult
             time.sleep(0.1)
 

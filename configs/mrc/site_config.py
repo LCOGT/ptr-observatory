@@ -54,8 +54,16 @@ site_name = 'mrc'
 obs_id = 'mrc1'    #NB These must be unique across all of PTR. Pre-pend with airport code if needed: 'sba_wmdo'
 
 site_config = {
-    'site': str(site_name).lower(),
-    'site_id': 'mrc1',   #This reall is the SITE
+    # THESE ARE TO BE DELETED VERY SOON!
+    # THEY EXIST SOLELY SO AS TO NOT BREAK THE UI UNTIL 
+    #THINGS ARE MOVED TO OBS_ID
+    'site': 'mrc1', #TIM this may no longer be needed.
+    'site_id': 'mrc1',
+    ####################################################
+    
+    
+    
+    
     'obs_id':  'mrc1',  #1 indicates first telescope/mount at the site
 
     'debug_site_mode': False,
@@ -100,9 +108,9 @@ site_config = {
     'client_read_share_path':  'Q:/ptr/', #NB these are all very confusing names.
     'client_write_share_path': 'Q:/ptr/',
     'redis_ip': '10.15.0.109',  #'127.0.0.1', None if no redis path present,
-    'site_is_generic':  False,   # A simply  single computer ASCOM site.
-    'site_is_specific':  False,  # Indicates some special code for this site, found at end of config.
-
+    'obsid_is_generic':  False,   # A simply  single computer ASCOM site.
+    'obsid_is_specific':  False,  # Indicates some special code for this site, found at end of config.
+    
 
     'host_wema_site_name':  'MRC',  #  The umbrella header for obsys in close geographic proximity,
                                     #  under the control of one wema
@@ -132,12 +140,14 @@ site_config = {
     'reference_ambient':  10.0,  #Degrees Celsius.  Alternately 12 entries, one for every - mid month.
     'reference_pressure':  977.83,  #mbar Alternately 12 entries, one for every - mid month.
 
-    'site_roof_control': False, #MTF entered this in to remove sro specific code  NB 'site_is_specifc' also deals with this
-    'site_allowed_to_open_roof': False,
+    'obsid_roof_control': False, #MTF entered this in to remove sro specific code  NB 'site_is_specifc' also deals with this
+    'obsid_allowed_to_open_roof': False,
     'period_of_time_to_wait_for_roof_to_open' : 50, # seconds - needed to check if the roof ACTUALLY opens. 
     'only_scope_that_controls_the_roof': False, # If multiple scopes control the roof, set this to False
     'check_time': 300,   #MF's original setting.
     'maximum_roof_opens_per_evening' : 4,
+    'roof_open_safety_base_time' : 15, # How many minutes to use as the default retry time to open roof. This will be progressively multiplied as a back-off function.
+    
 
     'site_in_automatic_default': "Shutdown",   #"Manual", "Shutdown"
     'automatic_detail_default': "Enclosure is set to Automatic mode.",
