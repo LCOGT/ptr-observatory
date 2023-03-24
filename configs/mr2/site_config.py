@@ -63,8 +63,14 @@ site_name = 'mrc'    #NB These must be unique across all of PTR.
 obs_id = 'mrc2'
 
 site_config = {
-    #'site': site_name.lower(), #TIM this may no longer be needed.
-    #'site_id': 'mrc2',
+    
+    # THESE ARE TO BE DELETED VERY SOON!
+    # THEY EXIST SOLELY SO AS TO NOT BREAK THE UI UNTIL 
+    #THINGS ARE MOVED TO OBS_ID
+    'site': 'mrc2', #TIM this may no longer be needed.
+    'site_id': 'mrc2',
+    ####################################################
+    
     'obs_id': 'mrc2',
     'observatory_location': site_name.lower(),
 

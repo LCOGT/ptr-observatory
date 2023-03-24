@@ -54,8 +54,16 @@ site_name = 'mrc'
 obs_id = 'mrc1'    #NB These must be unique across all of PTR. Pre-pend with airport code if needed: 'sba_wmdo'
 
 site_config = {
-    'site': str(site_name).lower(),
-    'site_id': 'mrc1',   #This reall is the SITE
+    # THESE ARE TO BE DELETED VERY SOON!
+    # THEY EXIST SOLELY SO AS TO NOT BREAK THE UI UNTIL 
+    #THINGS ARE MOVED TO OBS_ID
+    'site': 'mrc1', #TIM this may no longer be needed.
+    'site_id': 'mrc1',
+    ####################################################
+    
+    
+    
+    
     'obs_id':  'mrc1',  #1 indicates first telescope/mount at the site
 
     'debug_site_mode': False,

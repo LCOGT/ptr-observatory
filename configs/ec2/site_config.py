@@ -21,15 +21,21 @@ g_dev = None
  # bolt = ['u', 'g', 'r', 'i', 'zs', 'B', 'V', 'EXO', 'w', 'O3', 'Ha', 'S', 'Cr', 'NIR']
  # print(len(bolt))
 
-site_name = 'ec2'
+site_name = 'eco'
 
                     #\\192.168.1.57\SRO10-Roof  r:
                     #SRO-Weather (\\192.168.1.57) w:
                     #Username: wayne_rosingPW: 29yzpe
 
 site_config = {
-    'site': str(site_name.lower()),
-    'site_id': 'ec2',
+    # THESE ARE TO BE DELETED VERY SOON!
+    # THEY EXIST SOLELY SO AS TO NOT BREAK THE UI UNTIL 
+    #THINGS ARE MOVED TO OBS_ID
+    'site': 'eco2', #TIM this may no longer be needed.
+    'site_id': 'eco2',
+    ####################################################
+    'obs_id': 'eco2',
+    'observatory_location': site_name.lower(),
     
     'debug_site_mode': False,
     

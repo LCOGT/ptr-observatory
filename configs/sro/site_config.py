@@ -32,8 +32,14 @@ site_name = 'sro'
 prior_status = None
 
 site_config = {
-    'site': str(site_name.lower()),
-    'site_id': 'sro',
+    # THESE ARE TO BE DELETED VERY SOON!
+    # THEY EXIST SOLELY SO AS TO NOT BREAK THE UI UNTIL 
+    #THINGS ARE MOVED TO OBS_ID
+    'site': 'sro1', #TIM this may no longer be needed.
+    'site_id': 'sro1',
+    ####################################################
+    'obs_id': 'sro1',
+    'observatory_location': site_name.lower(),
     
     'debug_site_mode': False,
     

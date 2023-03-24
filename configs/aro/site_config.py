@@ -25,8 +25,14 @@ g_dev = None
 site_name = 'aro'
 
 site_config = {
-    'site': str(site_name.lower()),
-    'site_id': str(site_name.lower()),   #used by PROPID keyword in fits header, can be changed here
+    # THESE ARE TO BE DELETED VERY SOON!
+    # THEY EXIST SOLELY SO AS TO NOT BREAK THE UI UNTIL 
+    #THINGS ARE MOVED TO OBS_ID
+    'site': 'aro1', #TIM this may no longer be needed.
+    'site_id': 'aro1',
+    ####################################################
+    'obs_id': 'aro1',
+    'observatory_location': site_name.lower(),
     
     'debug_site_mode': False,
     

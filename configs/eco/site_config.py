@@ -28,8 +28,16 @@ site_name = 'eco'
                     #Username: wayne_rosingPW: 29yzpe
 
 site_config = {
-    'site': str(site_name.lower()),
-    'site_id': 'eco',
+    # THESE ARE TO BE DELETED VERY SOON!
+    # THEY EXIST SOLELY SO AS TO NOT BREAK THE UI UNTIL 
+    #THINGS ARE MOVED TO OBS_ID
+    'site': 'eco1', #TIM this may no longer be needed.
+    'site_id': 'eco1',
+    ####################################################
+    'obs_id': 'eco1',
+    'observatory_location': site_name.lower(),
+    
+    
     'debug_site_mode': False,
     
     'debug_mode': False,
