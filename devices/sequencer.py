@@ -1658,13 +1658,13 @@ class Sequencer:
         plog ("sending end of night token to AWS")
         #g_dev['cam'].enqueue_for_AWS(jpeg_data_size, paths['im_path'], paths['jpeg_name10'])
         
-        isExist = os.path.exists(g_dev['cam'].site_path + 'tokens')
+        isExist = os.path.exists(g_dev['obs'].obsid_path + 'tokens')
         if not isExist:
-            os.makedirs(g_dev['cam'].site_path + 'tokens')
-        runNightToken= g_dev['cam'].site_path + 'tokens/' + self.config['site'] + runNight + '.token'
+            os.makedirs(g_dev['obs'].obsid_path + 'tokens')
+        runNightToken= g_dev['obs'].obsid_path + 'tokens/' + self.config['site'] + runNight + '.token'
         with open(runNightToken, 'w') as f:
             f.write('Night Completed')
-        image = (g_dev['cam'].site_path + 'tokens/', self.config['site'] + runNight + '.token')
+        image = (g_dev['obs'].obsid_path + 'tokens/', self.config['site'] + runNight + '.token')
         g_dev['obs'].aws_queue.put((30000000000, image), block=False)
         g_dev['obs'].send_to_user("End of Night Token sent to AWS.", p_level='INFO')
         
@@ -3430,7 +3430,7 @@ class Sequencer:
 
     def append_completes(self, block_id):
         camera = self.config['camera']['camera_1_1']['name']
-        seq_shelf = shelve.open(g_dev['cam'].site_path + 'ptr_night_shelf/' + camera + str(g_dev['obs'].name))
+        seq_shelf = shelve.open(g_dev['obs'].obsid_path + 'ptr_night_shelf/' + camera + str(g_dev['obs'].name))
         plog("block_id:  ", block_id)
         lcl_list = seq_shelf['completed_blocks']
         lcl_list.append(block_id)   #NB NB an in-line append did not work!
@@ -3441,7 +3441,7 @@ class Sequencer:
 
     def is_in_completes(self, check_block_id):
         camera = self.config['camera']['camera_1_1']['name']
-        seq_shelf = shelve.open(g_dev['cam'].site_path + 'ptr_night_shelf/' + camera + str(g_dev['obs'].name))
+        seq_shelf = shelve.open(g_dev['obs'].obsid_path + 'ptr_night_shelf/' + camera + str(g_dev['obs'].name))
         #plog('Completes contains:  ', seq_shelf['completed_blocks'])
         if check_block_id in seq_shelf['completed_blocks']:
             seq_shelf.close()
@@ -3866,7 +3866,7 @@ class Sequencer:
     def reset_completes(self):
         try:
             camera = self.config['camera']['camera_1_1']['name']
-            seq_shelf = shelve.open(g_dev['cam'].site_path + 'ptr_night_shelf/' + str(camera) + str(g_dev['obs'].name))
+            seq_shelf = shelve.open(g_dev['obs'].obsid_path + 'ptr_night_shelf/' + str(camera) + str(g_dev['obs'].name))
             seq_shelf['completed_blocks'] = []
             seq_shelf.close()
         except:
