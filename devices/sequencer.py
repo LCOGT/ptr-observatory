@@ -192,7 +192,10 @@ class Sequencer:
         self.morn_bias_dark_latch = False   #NB NB NB Should these initially be defined this way?
         self.cool_down_latch = False
         self.night_focus_ready=True
-        self.midnight_calibration_done = False
+        
+        self.nightime_bias_counter = 0
+        self.nightime_dark_counter = 0
+        
         self.nightly_reset_complete = False
         
         self.reset_completes()  # NB NB Note this is reset each time sequencer is restarted.
@@ -801,18 +804,40 @@ class Sequencer:
                     #plog("Block tested for observatility")
                 
                 
-                # Here is where observatories who do their biases at night... well.... do their biases!
-                # If it hasn't already been done tonight.
-                # if self.midnight_calibration_done == False:
-                #     if self.config['auto_midnight_moonless_bias_dark']:
-                #         # If the moon is way below the horizon
-                #         if (ephem.Moon().alt < -15):
-                #             # It is somewhere around midnight
-                #             if  (events['Middle of Night'] <= ephem_now < events['End Astro Dark']):
-                #                 plog ("It is dark and the moon isn't up! Lets do some biases")                                
-                #                 g_dev['mnt'].park_command({}, {})
-                #                 self.bias_dark_script(req, opt, morn=False)
-                #                 self.midnight_calibration_done = True
+                #Here is where observatories who do their biases at night... well.... do their biases!
+                #If it hasn't already been done tonight.
+                
+                if self.config['auto_midnight_moonless_bias_dark']:
+                    # If the moon is way below the horizon
+                    if (ephem.Moon().alt < -15):
+                        # Check no other commands or exposures are happening
+                        if g_dev['obs'].cmd_queue.empty() and not g_dev["cam"].exposure_busy:
+                            # Check it is in the dark of night
+                            if  (events['Astro Dark'] <= ephem_now < events['End Astro Dark']):
+                                # If enclosure is shut for maximum darkness
+                                if enc_status['shutter_status'] in ['Closed', 'closed']:
+                                    # Check the temperature is in range
+                                    if g_dev['obs'].camera_temperature_in_range_for_calibrations:
+                                        plog ("It is dark and the moon isn't up! Lets do some calibrations")                                
+                                        if self.nightime_bias_counter < self.config['camera']['camera_1_1']['settings']['bias_count']:
+                                            plog("Exposing 1x1 bias frame.")
+                                            req = {'time': 0.0,  'script': 'True', 'image_type': 'bias'}
+                                            opt = {'area': "Full", 'count': 1, 'bin': 1 , \
+                                                   'filter': 'dark'}
+                                            self.nightime_bias_counter = self.nightime_bias_counter + 1
+                                            g_dev['cam'].expose_command(req, opt, no_AWS=False, \
+                                                                do_sep=False, quick=False, skip_open_check=True,skip_daytime_check=True)
+                                        if self.nightime_dark_counter < self.config['camera']['camera_1_1']['settings']['dark_count']:
+                                            dark_exp_time = self.config['camera']['camera_1_1']['settings']['dark_exposure']
+                                            plog("Exposing 1x1 dark exposure:  " + str(dark_exp_time) )
+                                            req = {'time': dark_exp_time ,  'script': 'True', 'image_type': 'dark'}
+                                            opt = {'area': "Full", 'count': 1, 'bin': 1, \
+                                                    'filter': 'dark'}
+                                            self.nightime_dark_counter = self.nightime_dark_counter + 1
+                                            g_dev['cam'].expose_command(req, opt, no_AWS=False, \
+                                                               do_sep=False, quick=False, skip_open_check=True,skip_daytime_check=True)
+                                        
+                                
                                 
                                 
 
@@ -1586,6 +1611,8 @@ class Sequencer:
         self.eve_flats_done = False
         self.morn_flats_done = False
         self.morn_bias_done = False
+        self.nightime_bias_counter = 0
+        self.nightime_dark_counter = 0
 
         self.nightly_weather_report_done=False
         # Set weather report to false because it is daytime anyways.

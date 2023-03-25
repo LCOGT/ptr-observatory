@@ -1535,7 +1535,8 @@ class Camera:
         if imtype.lower() in ("bias"):
             
             exposure_time = 0.0
-            bias_dark_or_light_type_frame = 'bias'  # don't open the shutter.            
+            bias_dark_or_light_type_frame = 'bias'  # don't open the shutter.  
+            frame_type = imtype.replace(" ", "")
         
         elif imtype.lower() in ("dark", "lamp flat"):
             
