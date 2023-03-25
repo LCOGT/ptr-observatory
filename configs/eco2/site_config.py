@@ -10,13 +10,13 @@ Created on Fri Feb 07,  11:57:41 2020
 #        1         2         3         4         6         7         8         9         0         1         2       2
 #234567890123456789012345678901234567890123456789012345678901234567890123456789012345678901234567890123456789012345678
 #import json
-import time
+#import time
 #import ptr_events
 #from pprint import pprint
 
 #  NB NB  Json is not bi-directional with tuples (), use lists [], nested if tuples as needed, instead.
 #  NB NB  My convention is if a value is naturally a float I add a decimal point even to 0.
-g_dev = None
+#g_dev = None
 
  # bolt = ['u', 'g', 'r', 'i', 'zs', 'B', 'V', 'EXO', 'w', 'O3', 'Ha', 'S', 'Cr', 'NIR']
  # print(len(bolt))
@@ -480,7 +480,7 @@ site_config = {
             "parent": "telescope1",
             "name": "RGGB" ,  # When there is no filter wheel, the filter will be named this.
             'service_date': '20180101',
-            'flat_sky_gain' : 4554,
+            'flat_sky_gain' : 504,
             "driver":   None,   #"LCO.dual",  #  'ASCOM.FLI.FilterWheel',
             #"driver":   "Maxim.Image",   #"LCO.dual",  #  'ASCOM.FLI.FilterWheel',
             'settings': {'auto_color_options' : ['none']}, # OPtions include 'OSC', 'manual','RGB','NB','RGBHA','RGBNB'
@@ -816,7 +816,7 @@ site_config = {
                 'rotation': 0.0,
                 'min_exposure': 0.0001,
                 'min_flat_exposure' : 3.0, # For certain shutters, short exposures aren't good for flats. Some CMOS have banding in too short an exposure. Largely applies to ccds though.
-                'max_flat_exposure' : 20.0, # Realistically there should be a maximum flat_exposure that makes sure flats are efficient and aren't collecting actual stars.
+                'max_flat_exposure' : 120.0, # Realistically there should be a maximum flat_exposure that makes sure flats are efficient and aren't collecting actual stars.
                 'max_exposure': 180.,
                 'max_daytime_exposure': 0.0001,
                 'can_subframe':  True,
@@ -854,9 +854,9 @@ site_config = {
                 'can_set_gain':  True,
                 'max_linearity':  80000,   # Guess
 
-                'flat_count': 64,
+                'flat_count': 256,
 
-                'saturate':   60000 ,    #[[1, 65000], [2,262000], [3,589815], [4, 1048560]] ,   # e-.  This is a close guess, not measured, but taken from data sheet.
+                'saturate':   65535 ,    #[[1, 65000], [2,262000], [3,589815], [4, 1048560]] ,   # e-.  This is a close guess, not measured, but taken from data sheet.
 
 
                 'read_mode':  'Normal',
