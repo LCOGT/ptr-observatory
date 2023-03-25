@@ -666,6 +666,9 @@ sel
                                      plog ("Refusing command as there is no rotator")
                                      g_dev['obs'].send_to_user("Request rejected as site has no rotator.")
                                 # If not irrelevant, queue the command
+                                elif cmd['deviceType'] == 'enclosure' and not ("admin" in cmd['user_roles']) or ("owner" in cmd['user_roles']):
+                                    plog ("Refusing command - only admin or owners can send enclosure commands")
+                                    g_dev['obs'].send_to_user("Refusing command - only admin or owners can send enclosure commands")
                                 else:                               
                                 
                                     self.cmd_queue.put(cmd)  # SAVE THE COMMAND FOR LATER
