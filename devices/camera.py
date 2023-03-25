@@ -984,11 +984,13 @@ class Camera:
         #tempcamera.Disconnect()
         self.async_exposure_lock=False
 
-    def _theskyx_expose(self, exposure_time, imtypeb):
+    def _theskyx_expose(self, exposure_time, bias_dark_or_light_type_frame):
         self.camera.ExposureTime = exposure_time
-        plog ("imtypeb: " + str(imtypeb))
-        if imtypeb == 0:
+        #plog ("bias_dark_or_light_type_frame: " + str(bias_dark_or_light_type_frame))
+        if bias_dark_or_light_type_frame == 'dark':            
             self.camera.Frame = 3 
+        elif bias_dark_or_light_type_frame == 'bias':            
+            self.camera.Frame = 2 
         else:
             self.camera.Frame = 1
         #breakpoint()
@@ -1052,7 +1054,13 @@ class Camera:
     def _maxim_setpoint(self):
         return self.camera.TemperatureSetpoint
 
-    def _maxim_expose(self, exposure_time, imtypeb):
+    def _maxim_expose(self, exposure_time, bias_dark_or_light_type_frame):
+        
+        if bias_dark_or_light_type_frame == 'bias' or bias_dark_or_light_type_frame == 'dark':
+            imtypeb=0
+        else:
+            imtypeb=1
+        
         self.camera.Expose(exposure_time, imtypeb)
 
     def _maxim_stop_expose(self):
@@ -1107,7 +1115,13 @@ class Camera:
             plog("Camera cannot set cooling temperature: Using 10.0C")
             return 10.0
 
-    def _ascom_expose(self, exposure_time, imtypeb):
+    def _ascom_expose(self, exposure_time, bias_dark_or_light_type_frame):
+        
+        if bias_dark_or_light_type_frame == 'bias' or bias_dark_or_light_type_frame == 'dark':
+            imtypeb=0
+        else:
+            imtypeb=1
+        
         self.camera.StartExposure(exposure_time, imtypeb)
 
     def _ascom_stop_expose(self):
@@ -1185,16 +1199,11 @@ class Camera:
         #print (temptemp)
         #return 
     
-    def _qhyccd_expose(self, exposure_time, imtypeb):
+    def _qhyccd_expose(self, exposure_time, bias_dark_or_light_type_frame):
         
         success = qhycam.so.SetQHYCCDParam(qhycam.camera_params[qhycam_id]['handle'], qhycam.CONTROL_EXPOSURE, c_double(exposure_time*1000*1000))
-        
-        #breakpoint()
         qhycam.so.ExpQHYCCDSingleFrame(qhycam.camera_params[qhycam_id]['handle'])
-        
-        
-        
-        #self.camera.StartExposure(exposure_time, imtypeb)
+   
     
     def _qhyccd_stop_expose(self):
         success = qhycam.so.GetQHYCCDSingleFrame(qhycam.camera_params[qhycam_id]['handle'])
@@ -1523,28 +1532,33 @@ class Camera:
         else:
             do_sep = True
 
-        if imtype.lower() in ("bias", "dark", "lamp flat"):
-            if imtype.lower() == "bias":
-                exposure_time = 0.0
-            imtypeb = False  # don't open the shutter.
+        if imtype.lower() in ("bias"):
+            
+            exposure_time = 0.0
+            bias_dark_or_light_type_frame = 'bias'  # don't open the shutter.            
+        
+        elif imtype.lower() in ("dark", "lamp flat"):
+            
+            bias_dark_or_light_type_frame = 'dark'  # don't open the shutter.
             lamps = "turn on led+tungsten lamps here, if lampflat"
             frame_type = imtype.replace(" ", "")
+        
         elif imtype.lower() in ("near flat", "thor flat", "arc flat"):
-            imtypeb = False
+            bias_dark_or_light_type_frame = 'light'
             lamps = "turn on ThAr or NeAr lamps here"
             frame_type = "arc"
         elif imtype.lower() in ("sky flat", "screen flat", "solar flat"):
-            imtypeb = True  # open the shutter.
+            bias_dark_or_light_type_frame = 'light'  # open the shutter.
             lamps = "screen lamp or none"
             frame_type = imtype.replace(
                 " ", ""
             )  # note banzai doesn't appear to include screen or solar flat keywords.
         elif imtype.lower() == "focus":
             frame_type = "focus"
-            imtypeb = True
+            bias_dark_or_light_type_frame = 'light'
             lamps = None
         else:  # 'light', 'experimental', 'autofocus probe', 'quick', 'test image', or any other image type
-            imtypeb = True
+            bias_dark_or_light_type_frame = 'light'
             lamps = None
             if imtype.lower() in ("experimental", "autofocus probe", "auto_focus"):
                 frame_type = "experimental"
@@ -1766,18 +1780,18 @@ class Camera:
                             ldr_handle_time = None
                             ldr_handle_high_time = None  #  This is not maxim-specific
 
-                            if self.darkslide and imtypeb:
+                            if self.darkslide and bias_dark_or_light_type_frame == 'light':
                                 if self.darkslide_state != 'Open':
                                     self.darkslide_instance.openDarkslide()
                                     self.darkslide_open = True
                                     self.darkslide_state = 'Open'
-                            elif self.darkslide and not imtypeb:
+                            elif self.darkslide and (bias_dark_or_light_type_frame == 'bias' or bias_dark_or_light_type_frame == 'dark'):
                                 if self.darkslide_state != 'Closed':
                                     self.darkslide_instance.closeDarkslide()
                                     self.darkslide_open = False
                                     self.darkslide_state = 'Closed'
-                            else:
-                                pass
+                            #else:
+                            #    pass
  
                             self.pre_mnt = []
                             self.pre_rot = []
@@ -1805,16 +1819,13 @@ class Camera:
                                 self.pre_mnt
                             )  # Should do this close to the exposure
 
-                            if imtypeb:
-                                imtypeb = 1
-                            else:
-                                imtypeb = 0
+
                             self.t2 = time.time()
                 
                             # Good spot to check if we need to nudge the telescope
                             check_platesolve_and_nudge()   
                             
-                            self._expose(exposure_time, imtypeb)
+                            self._expose(exposure_time, bias_dark_or_light_type_frame)
                             
                             g_dev['obs'].time_since_last_exposure = time.time()
                         else:

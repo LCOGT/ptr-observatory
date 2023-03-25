@@ -10,13 +10,13 @@ Created on Fri Feb 07,  11:57:41 2020
 #        1         2         3         4         6         7         8         9         0         1         2       2
 #234567890123456789012345678901234567890123456789012345678901234567890123456789012345678901234567890123456789012345678
 #import json
-import time
+#import time
 #import ptr_events
 #from pprint import pprint
 
 #  NB NB  Json is not bi-directional with tuples (), use lists [], nested if tuples as needed, instead.
 #  NB NB  My convention is if a value is naturally a float I add a decimal point even to 0.
-g_dev = None
+#g_dev = None
 
  # bolt = ['u', 'g', 'r', 'i', 'zs', 'B', 'V', 'EXO', 'w', 'O3', 'Ha', 'S', 'Cr', 'NIR']
  # print(len(bolt))
@@ -40,7 +40,7 @@ site_config = {
     
     'debug_site_mode': False,
     
-    'debug_mode': False,
+    'debug_mode': True,
     'admin_owner_commands_only': False,
     'debug_duration_sec': 7200,
     'owner':  ['google-oauth2|112401903840371673242'],  # WER,  Or this can be
