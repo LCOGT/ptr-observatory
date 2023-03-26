@@ -17,12 +17,14 @@ import json
 #NB NB NB json is not bi-directional with tuples (), instead, use lists [], nested if tuples are needed.
 degree_symbol = "°"
 site_name = 'mrc'
-obs_id = ''    #NB These must be unique across all of PTR. Pre-pend with airport code if needed: 'sba_wmdo'
+obs_id = 'mrc1'    #NB These must be unique across all of PTR. Pre-pend with airport code if needed: 'sba_wmdo'
 
 site_config = {
-
-    'site': 'mrc',
-    'site_id': 'mrc',
+    # THESE ARE TO BE DELETED VERY SOON!
+    # THEY EXIST SOLELY SO AS TO NOT BREAK THE UI UNTIL 
+    #THINGS ARE MOVED TO OBS_ID
+    'site': 'mrc1',
+    'site_id': 'mrc1',
     ####################################################
     ####################################################
     'obs_id': 'mrc1',
