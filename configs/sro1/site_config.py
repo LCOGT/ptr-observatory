@@ -616,10 +616,12 @@ site_config = {
                 'bias_dark_bin_spec': ['1,1'],    #Default binning for flats
                 'bin_enable': ['1 1'],
                 'dark_length' : 900,
-                'bias_count' : 10,
-                'dark_count' : 10,
-                
-                'flat_count' : 10,
+                'number_of_bias_to_collect' : 63,
+                'number_of_dark_to_collect' : 13,
+                'number_of_flat_to_collect' : 10,
+                'number_of_bias_to_store' : 128,
+                'number_of_dark_to_store' : 128,
+                'number_of_flat_to_store' : 128,
                 'pix_scale': [1.104, 2.134, 3.201, 4.268],
                 
                 'do_cosmics' : False,

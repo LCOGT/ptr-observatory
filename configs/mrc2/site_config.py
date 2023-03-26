@@ -752,8 +752,12 @@ site_config = {
                 'max_daytime_exposure': 10,
                 'min_flat_exposure' : 3.0, # For certain shutters, short exposures aren't good for flats. Some CMOS have banding in too short an exposure. Largely applies to ccds though.
                 'max_flat_exposure' : 20.0, # Realistically there should be a maximum flat_exposure that makes sure flats are efficient and aren't collecting actual stars.
-                'bias_count':    63,
-                'dark_count':    13,
+                'number_of_bias_to_collect' : 63,
+                'number_of_dark_to_collect' : 13,
+                'number_of_flat_to_collect' : 10,
+                'number_of_bias_to_store' : 128,
+                'number_of_dark_to_store' : 128,
+                'number_of_flat_to_store' : 128,
                 'dark_exposure': 360,
                 'max_exposure': 600.0,
                 'ref_dark': 360.0,

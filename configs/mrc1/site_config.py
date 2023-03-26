@@ -750,8 +750,12 @@ site_config = {
                 'cycle_time':            0,   # Meas 20230219  for a bias
                 #'enable_bin':            [ True, False,  False,  False],
                 #'bias_dark_bin_spec':    ['1,1', '2,2', '3,3', '4,4' ],    #Default binning for flats
-                'bias_count':    63,
-                'dark_count':    17,
+                'number_of_bias_to_collect' : 63,
+                'number_of_dark_to_collect' : 17,
+                'number_of_flat_to_collect' : 10,
+                'number_of_bias_to_store' : 128,
+                'number_of_dark_to_store' : 128,
+                'number_of_flat_to_store' : 128,
  
                 'dark_exposure': 360,
                 #'flat_bin_spec':         ['1,1', '2,2', '3,3', '4,4' ],   #Is this necessary?
