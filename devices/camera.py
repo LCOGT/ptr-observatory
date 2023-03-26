@@ -2326,11 +2326,27 @@ class Camera:
                         )
                     except:
                         plog ("Full well capacity not set for this binning in the site-config")
-                    hdu.header["CMOSGAIN"] = (0, "CMOS Camera System Gain")
-                    hdu.header["CMOSOFFS"] = (10, "CMOS Camera offset")
-                    hdu.header["CAMOFFS"] = (10, "Camera offset")
-                    hdu.header["CAMGAIN"] = (0, "Camera gain")
-                    hdu.header["CAMUSBT"] = (60, "Camera USB traffic")
+                    
+                    if self.is_cmos and self.driver ==  "QHYCCD_Direct_Control":
+                        hdu.header["CMOSGAIN"] = (self.config["camera"][self.name][
+                            "settings"
+                        ]['direct_qhy_gain'], "CMOS Camera System Gain")
+                        
+                        
+                        hdu.header["CMOSOFFS"] = (self.config["camera"][self.name][
+                            "settings"
+                        ]['direct_qhy_offset'], "CMOS Camera System Offset")
+
+                        hdu.header["CAMUSBT"] = (self.config["camera"][self.name][
+                            "settings"
+                        ]['direct_qhy_usb_speed'], "Camera USB traffic")
+                        hdu.header["READMODE"] = (self.config["camera"][self.name][
+                            "settings"
+                        ]['direct_qhy_readout_mode'], "QHY Readout Mode")
+    
+                        
+
+                        
                     hdu.header["TIMESYS"] = ("UTC", "Time system used")
                     hdu.header["DATE"] = (
                         datetime.date.strftime(
@@ -2400,6 +2416,18 @@ class Camera:
                             "No Filter",
                             "An index into a DB",
                         )  # Get a number from the hardware or via Maxim.  NB NB why not cwl and BW instead, plus P
+                    
+                    # THESE ARE THE RELEVANT FITS HEADER KEYWORDS
+                    # FOR OSC MATCHING AT A LATER DATE.
+                    # THESE ARE SET TO DEFAULT VALUES FIRST AND
+                    # THINGS CHANGE LATER BEFORE BANZAI
+                    hdu.header["OSCMATCH"] = 'no'
+                    hdu.header['OSCSEP'] = 'no'
+                    
+                    
+                    
+                    
+                    
                     if g_dev["scr"] is not None and frame_type == "screenflat":
                         hdu.header["SCREEN"] = (
                             int(g_dev["scr"].bright_setting),

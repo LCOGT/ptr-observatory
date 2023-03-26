@@ -810,39 +810,7 @@ class Sequencer:
                     #plog("Block tested for observatility")
                 
                 
-                #Here is where observatories who do their biases at night... well.... do their biases!
-                #If it hasn't already been done tonight.
                 
-                if self.config['auto_midnight_moonless_bias_dark']:
-                    # If the moon is way below the horizon
-                    if (ephem.Moon().alt < -15):
-                        # Check no other commands or exposures are happening
-                        if g_dev['obs'].cmd_queue.empty() and not g_dev["cam"].exposure_busy:
-                            # Check it is in the dark of night
-                            if  (events['Astro Dark'] <= ephem_now < events['End Astro Dark']):
-                                # If enclosure is shut for maximum darkness
-                                if enc_status['shutter_status'] in ['Closed', 'closed']:
-                                    # Check the temperature is in range
-                                    if g_dev['obs'].camera_temperature_in_range_for_calibrations:
-                                        plog ("It is dark and the moon isn't up! Lets do some calibrations")                                
-                                        if self.nightime_bias_counter < self.config['camera']['camera_1_1']['settings']['number_of_bias_to_collect']:
-                                            plog("Exposing 1x1 bias frame.")
-                                            req = {'time': 0.0,  'script': 'True', 'image_type': 'bias'}
-                                            opt = {'area': "Full", 'count': 1, 'bin': 1 , \
-                                                   'filter': 'dark'}
-                                            self.nightime_bias_counter = self.nightime_bias_counter + 1
-                                            g_dev['cam'].expose_command(req, opt, no_AWS=False, \
-                                                                do_sep=False, quick=False, skip_open_check=True,skip_daytime_check=True)
-                                        if self.nightime_dark_counter < self.config['camera']['camera_1_1']['settings']['number_of_dark_to_collect']:
-                                            dark_exp_time = self.config['camera']['camera_1_1']['settings']['dark_exposure']
-                                            plog("Exposing 1x1 dark exposure:  " + str(dark_exp_time) )
-                                            req = {'time': dark_exp_time ,  'script': 'True', 'image_type': 'dark'}
-                                            opt = {'area': "Full", 'count': 1, 'bin': 1, \
-                                                    'filter': 'dark'}
-                                            self.nightime_dark_counter = self.nightime_dark_counter + 1
-                                            g_dev['cam'].expose_command(req, opt, no_AWS=False, \
-                                                               do_sep=False, quick=False, skip_open_check=True,skip_daytime_check=True)
-                                        
                                 
                                 
                                 
@@ -903,6 +871,47 @@ class Sequencer:
                 #self.park_and_close(enc_status)
             except:
                 plog("Park and close failed at end of sequencer loop.")
+                
+                
+        #Here is where observatories who do their biases at night... well.... do their biases!
+        #If it hasn't already been done tonight.
+        
+        if self.config['auto_midnight_moonless_bias_dark']:
+            # Check it is in the dark of night
+            if  (events['Astro Dark'] <= ephem_now < events['End Astro Dark']):            
+                # Check no other commands or exposures are happening
+                if g_dev['obs'].cmd_queue.empty() and not g_dev["cam"].exposure_busy:
+                    # If the moon is way below the horizon
+                    if (ephem.Moon().alt < -15):
+                        # If enclosure is shut for maximum darkness
+                        if enc_status['shutter_status'] in ['Closed', 'closed']:
+                            # Check the temperature is in range
+                            if g_dev['obs'].camera_temperature_in_range_for_calibrations:
+                                plog ("It is dark and the moon isn't up! Lets do some calibrations")                                
+                                if self.nightime_bias_counter < self.config['camera']['camera_1_1']['settings']['number_of_bias_to_collect']:
+                                    plog("Exposing 1x1 bias frame.")
+                                    req = {'time': 0.0,  'script': 'True', 'image_type': 'bias'}
+                                    opt = {'area': "Full", 'count': 1, 'bin': 1 , \
+                                           'filter': 'dark'}
+                                    self.nightime_bias_counter = self.nightime_bias_counter + 1
+                                    g_dev['cam'].expose_command(req, opt, no_AWS=False, \
+                                                        do_sep=False, quick=False, skip_open_check=True,skip_daytime_check=True)
+                                if self.nightime_dark_counter < self.config['camera']['camera_1_1']['settings']['number_of_dark_to_collect']:
+                                    dark_exp_time = self.config['camera']['camera_1_1']['settings']['dark_exposure']
+                                    plog("Exposing 1x1 dark exposure:  " + str(dark_exp_time) )
+                                    req = {'time': dark_exp_time ,  'script': 'True', 'image_type': 'dark'}
+                                    opt = {'area': "Full", 'count': 1, 'bin': 1, \
+                                            'filter': 'dark'}
+                                    self.nightime_dark_counter = self.nightime_dark_counter + 1
+                                    g_dev['cam'].expose_command(req, opt, no_AWS=False, \
+                                                       do_sep=False, quick=False, skip_open_check=True,skip_daytime_check=True)
+                                
+                
+                
+                
+                
+                
+                
         return
     def take_lrgb_stack(self, req_None, opt=None):
         return
@@ -1807,7 +1816,7 @@ class Sequencer:
         self.night_focus_ready==True
         
         # Allow midnight calibrations
-        self.midnight_calibration_done = False
+        #self.midnight_calibration_done = False
         self.nightly_reset_complete = True
         
         g_dev['mnt'].theskyx_tracking_rescues = 0

@@ -2314,7 +2314,8 @@ sel
                     plog("Sep time to process: " + str(time.time() - sep_timer_begin))
                 
                 try:
-                    hduheader["SEPSKY"] = str(sepsky)
+                    #hduheader["SEPSKY"] = str(sepsky)
+                    hduheader["SEPSKY"] = sepsky
                 except:
                     hduheader["SEPSKY"] = -9999    
                 try:
@@ -2865,48 +2866,152 @@ sel
                         "BSCALE"
                     ] = 1  # Make sure there is no integer scaling left over
                     
-                    
-                    
-                    
-                    
+                                                          
+                    if not self.config["camera"][g_dev['cam'].name]["settings"]["is_osc"]:
 
-                    # This routine saves the file ready for uploading to AWS
-                    # It usually works perfectly 99.9999% of the time except
-                    # when there is an astropy cache error. It is likely that
-                    # the cache will need to be cleared when it fails, but
-                    # I am still waiting for it to fail again (rare)
-                    saver = 0
-                    saverretries = 0
-                    while saver == 0 and saverretries < 10:
-                        try:
+                        # This routine saves the file ready for uploading to AWS
+                        # It usually works perfectly 99.9999% of the time except
+                        # when there is an astropy cache error. It is likely that
+                        # the cache will need to be cleared when it fails, but
+                        # I am still waiting for it to fail again (rare)
+                        saver = 0
+                        saverretries = 0
+                        while saver == 0 and saverretries < 10:
+                            try:
+                                hdufz.writeto(
+                                    slow_process[1], overwrite=True, output_verify='silentfix'
+                                )  # Save full fz file locally
+                                saver = 1
+                            except Exception as e:
+                                plog("Failed to write raw fz file: ", e)
+                                if "requested" in e and "written" in e:
+                                    plog(check_download_cache())
+                                plog(traceback.format_exc())
+                                time.sleep(10)
+                                saverretries = saverretries + 1
+                        
+                        try: 
+                            hdufz.close()
+                        except:
+                            pass
+                        del hdufz  # remove file from memory now that we are doing with it
+                        
+                        # Send this file up to AWS (THIS WILL BE SENT TO BANZAI INSTEAD, SO THIS IS THE INGESTER POSITION)
+                        if self.config['send_files_at_end_of_night'] == 'no':
+                            g_dev['cam'].enqueue_for_AWS(
+                                26000000, '',slow_process[1]
+                            )
+                            
+                    else: # Is an OSC
+                        if self.config["camera"][g_dev['cam'].name]["settings"]["osc_bayer"] == 'RGGB':                           
+                            
+                            # Get the original data out
+                            imgdata=np.array(slow_process[2], dtype=np.float32)
+                            
+                        
+                            
+                            # Checkerboard collapse for other colours for temporary jpeg                            
+                            # Create indexes for B, G, G, R images                            
+                            xshape=imgdata.shape[0]
+                            yshape=imgdata.shape[1]
+
+                            # B pixels
+                            list_0_1 = np.array([ [0,0], [0,1] ])
+                            checkerboard=np.tile(list_0_1, (xshape//2, yshape//2))
+                            #checkerboard=np.array(checkerboard)
+                            newhdublue=(block_reduce(imgdata * checkerboard ,2))
+                            
+                            # R Pixels
+                            list_0_1 = np.array([ [1,0], [0,0] ])
+                            checkerboard=np.tile(list_0_1, (xshape//2, yshape//2))
+                            #checkerboard=np.array(checkerboard)
+                            newhdured=(block_reduce(imgdata * checkerboard ,2))
+                            
+                            # G top right Pixels
+                            list_0_1 = np.array([ [0,1], [0,0] ])
+                            checkerboard=np.tile(list_0_1, (xshape//2, yshape//2))
+                            #checkerboard=np.array(checkerboard)
+                            GTRonly=(block_reduce(imgdata * checkerboard ,2))
+                            
+                            # G bottom left Pixels
+                            list_0_1 = np.array([ [0,0], [1,0] ])
+                            checkerboard=np.tile(list_0_1, (xshape//2, yshape//2))
+                            #checkerboard=np.array(checkerboard)
+                            GBLonly=(block_reduce(imgdata * checkerboard ,2))                                
+                            
+                            # Sum two Gs together and half them to be vaguely on the same scale
+                            #hdugreen = np.array(GTRonly + GBLonly) / 2
+                            #del GTRonly
+                            #del GBLonly
+                            del checkerboard
+                            del imgdata
+                            
+                            oscmatchcode=(datetime.datetime.now().strftime("%d%m%y%H%M%S"))
+                            
+                            hdufz.header["OSCMATCH"] = oscmatchcode
+                            hdufz.header['OSCSEP'] = 'yes'
+                            hdufz.header['NAXIS1'] = float(hdufz.header['NAXIS1'])/2
+                            hdufz.header['NAXIS2'] = float(hdufz.header['NAXIS2'])/2
+                            hdufz.header['CRPIX1'] = float(hdufz.header['CRPIX1'])/2
+                            hdufz.header['CRPIXS2'] = float(hdufz.header['CRPIX2'])/2
+                            hdufz.header['PIXSCALE'] = float(hdufz.header['PIXSCALE'])*2
+                            hdufz.header['CDELT1'] = float(hdufz.header['CDELT1'])*2
+                            hdufz.header['CDELT2'] = float(hdufz.header['CDELT2'])*2
+                            tempfilter=hdufz.header['FILTER']
+                            tempfilename=slow_process[1]
+                            
+                            # Save and send R1
+                            hdufz.header['FILTER'] = tempfilter + '_R1'
+                            
+                            hdufz.data=newhdured
                             hdufz.writeto(
-                                slow_process[1], overwrite=True, output_verify='silentfix'
+                                tempfilename.replace('-EX', 'R1-EX'), overwrite=True, output_verify='silentfix'
                             )  # Save full fz file locally
-                            saver = 1
-                        except Exception as e:
-                            plog("Failed to write raw fz file: ", e)
-                            if "requested" in e and "written" in e:
-                                plog(check_download_cache())
-                            plog(traceback.format_exc())
-                            time.sleep(10)
-                            saverretries = saverretries + 1
-                    
-                    try: 
-                        hdufz.close()
-                    except:
-                        pass
-                    del hdufz  # remove file from memory now that we are doing with it
-                    
-                    # Send this file up to AWS (THIS WILL BE SENT TO BANZAI INSTEAD, SO THIS IS THE INGESTER POSITION)
-                    if self.config['send_files_at_end_of_night'] == 'no':
-                        g_dev['cam'].enqueue_for_AWS(
-                            26000000, '',slow_process[1]
-                        )
-                        #g_dev["obs"].send_to_user(
-                        #    "An image has been readout from the camera and queued for transfer to the cloud.",
-                        #    p_level="INFO",
-                        #)
-                    #plog ("fz done.")
+                            del newhdured
+                            if self.config['send_files_at_end_of_night'] == 'no':
+                                g_dev['cam'].enqueue_for_AWS(
+                                    26000000, '',tempfilename.replace('-EX', 'R1-EX')
+                                )
+                            
+                            # Save and send G1
+                            hdufz.header['FILTER'] = tempfilter + '_G1'
+                            hdufz.data=GTRonly
+                            hdufz.writeto(
+                                tempfilename.replace('-EX', 'G1-EX'), overwrite=True, output_verify='silentfix'
+                            )  # Save full fz file locally
+                            del GTRonly
+                            if self.config['send_files_at_end_of_night'] == 'no':
+                                g_dev['cam'].enqueue_for_AWS(
+                                    26000000, '',tempfilename.replace('-EX', 'G1-EX')
+                                )
+                            
+                            # Save and send G2
+                            hdufz.header['FILTER'] = tempfilter + '_G2'
+                            hdufz.data=GBLonly
+                            hdufz.writeto(
+                                tempfilename.replace('-EX', 'G2-EX'), overwrite=True, output_verify='silentfix'
+                            )  # Save full fz file locally
+                            del GBLonly
+                            if self.config['send_files_at_end_of_night'] == 'no':
+                                g_dev['cam'].enqueue_for_AWS(
+                                    26000000, '',tempfilename.replace('-EX', 'G2-EX')
+                                )
+                                
+                            # Save and send B1
+                            hdufz.header['FILTER'] = tempfilter + '_B1'
+                            hdufz.data=newhdublue
+                            hdufz.writeto(
+                                tempfilename.replace('-EX', 'B1-EX'), overwrite=True, output_verify='silentfix'
+                            )  # Save full fz file locally
+                            del newhdublue                            
+                            if self.config['send_files_at_end_of_night'] == 'no':
+                                g_dev['cam'].enqueue_for_AWS(
+                                    26000000, '',tempfilename.replace('-EX', 'B1-EX')
+                                )
+
+                        else:
+                            plog ("this bayer grid not implemented yet")
+
                 
                 if slow_process[0] == 'reduced':
                     saver = 0
