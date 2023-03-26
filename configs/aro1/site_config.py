@@ -647,10 +647,13 @@ site_config = {
                 'bias_dark_bin_spec': ['1,1','2,2'],    #Default binning for flats
                 'bin_enable': ['1,1', '2,2'],
                 'dark_length' : 900,
-                'bias_count' : 10,
-                'dark_count' : 10,
+                'number_of_bias_to_collect' : 63,
+                'number_of_dark_to_collect' : 13,
+                'number_of_flat_to_collect' : 10,
+                'number_of_bias_to_store' : 128,
+                'number_of_dark_to_store' : 128,
+                'number_of_flat_to_store' : 128,
                 
-                'flat_count' : 10,
                 'bin_modes':  [[1, 1, 0.2876], [2, 2, 0.575], [3, 3, 0.863], [4, 4, 1.15]],   #Meaning no binning choice if list has only one entry, default should be first.
                 'optimal_bin':  [2, 2, 0.575],
                 'max_res_bin':  [1, 1, 0.2876],
