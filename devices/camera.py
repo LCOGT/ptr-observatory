@@ -409,7 +409,7 @@ class Camera:
         
         try:
             #self.biasframe = fits.open(
-            tempbiasframe = fits.open(self.archive_path  + self.alias + "/calibmasters" \
+            tempbiasframe = fits.open(self.obsid_path + "archive/" + self.alias + "/calibmasters" \
                                       + "/BIAS_master_bin1.fits")
             tempbiasframe = np.array(tempbiasframe[0].data, dtype=np.float32)
             self.biasFiles.update({'1': tempbiasframe})
@@ -422,7 +422,7 @@ class Camera:
         
         try:
             #self.darkframe = fits.open(
-            tempdarkframe = fits.open(self.archive_path  + self.alias + "/calibmasters" \
+            tempdarkframe = fits.open(self.obsid_path + "archive/" + self.alias + "/calibmasters" \
                                       + "/DARK_master_bin1.fits")
 
             tempdarkframe = np.array(tempdarkframe[0].data, dtype=np.float32)
@@ -432,7 +432,7 @@ class Camera:
             plog("Dark frame for Binning 1 not available")  
 
         try:            
-            fileList = glob.glob(self.archive_path + self.alias + "/calibmasters" \
+            fileList = glob.glob(self.obsid_path + "archive/" + self.alias + "/calibmasters" \
                                  + "/masterFlat*_bin1.npy")
             
             for file in fileList:

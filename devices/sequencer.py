@@ -6,6 +6,11 @@ from global_yard import g_dev
 from astropy.coordinates import SkyCoord, AltAz
 from astropy import units as u
 from astropy.time import Time
+from astropy.io import fits
+#from astropy.utils.data import get_pkg_data_filename
+from astropy.convolution import Gaussian2DKernel, convolve, interpolate_replace_nans
+kernel = Gaussian2DKernel(x_stddev=2,y_stddev=2)
+
 import ephem
 import build_tycho as tycho
 import shelve
@@ -14,6 +19,7 @@ import math
 import shutil
 import numpy as np
 import os
+import gc
 from pyowm import OWM
 from pyowm.utils import config
 
@@ -1818,6 +1824,250 @@ class Sequencer:
         
         # No harm in doubly checking it has parked
         g_dev['mnt'].park_command({}, {})
+        
+        # Now time to regenerate the local masters
+        
+        self.regenerate_local_masters()
+        
+        return
+        
+    def regenerate_local_masters(self):
+        
+        # NOW to get to the business of constructing the local calibrations
+              
+        
+        # Start with biases
+        # Get list of biases
+        plog (datetime.datetime.now().strftime("%H:%M:%S"))
+        plog ("Regenerating bias")
+        darkinputList=(glob(g_dev['obs'].local_dark_folder +'*.f*'))
+        inputList=(glob(g_dev['obs'].local_bias_folder +'*.f*'))
+        
+        
+        if len(inputList) == 0 or len(darkinputList) == 0:
+            plog ("Not reprocessing local masters as there are no biases or darks")
+        else:
+        
+            hdutest = fits.open(inputList[0])[0]
+            shapeImage=hdutest.shape
+            del hdutest
+            
+            # Make a temporary memmap file 
+            PLDrive = np.memmap(g_dev['obs'].local_bias_folder + 'tempfile', dtype='float32', mode= 'w+', shape = (shapeImage[0],shapeImage[1],len(inputList)))
+            # Store the biases in the memmap file
+            i=0
+            for file in inputList:
+                hdu1 = fits.open(file)[0]            
+                PLDrive[:,:,i] = np.asarray(hdu1.data,dtype=np.float32)        
+                i=i+1
+            # hold onto the header info
+            headHold=hdu1.header
+            del hdu1
+            plog ("**********************************")
+            plog ("Median Stacking each bias row individually from the Reprojections")
+            plog (datetime.datetime.now().strftime("%H:%M:%S"))
+            # Go through each pixel and calculate nanmedian. Can't do all arrays at once as it is hugely memory intensive
+            finalImage=np.zeros(shapeImage,dtype=float)
+            for xi in range(shapeImage[0]):
+                if xi % 500 == 0:
+                    print ("Up to Row" + str(xi))
+                    print (datetime.datetime.now().strftime("%H:%M:%S"))
+                #for yi in range(shape_out[1]):
+                #    
+                finalImage[xi,:]=np.nanmedian(PLDrive[xi,:,:], axis=1)
+            plog(datetime.datetime.now().strftime("%H:%M:%S"))
+            plog ("**********************************")
+            
+            
+            masterBias=np.asarray(finalImage).astype(np.float32)
+            
+            # Save this out to calibmasters
+            fits.writeto(g_dev['obs'].calib_masters_folder + 'BIAS_master_bin1.fits', masterBias , headHold, overwrite=True)
+            
+            PLDrive._mmap.close()
+            del PLDrive
+            gc.collect()
+            os.remove(g_dev['obs'].local_bias_folder  + 'tempfile')
+    
+            
+            
+            # NOW we have the master bias, we can move onto the dark frames
+            plog (datetime.datetime.now().strftime("%H:%M:%S"))
+            plog ("Regenerating dark") 
+            inputList=(glob(g_dev['obs'].local_dark_folder +'*.f*'))
+            # Generate temp memmap
+            PLDrive = np.memmap(g_dev['obs'].local_dark_folder  + 'tempfile', dtype='float32', mode= 'w+', shape = (shapeImage[0],shapeImage[1],len(inputList)))
+            # Debias dark frames and stick them in the memmap
+            i=0
+            for file in inputList:   
+                hdu1 = fits.open(file)[0]
+                darkdebias=hdu1.data-masterBias
+                if any("EXPTIME" in s for s in hdu1.header.keys()):
+                    darkdeexp=darkdebias/hdu1.header['EXPTIME']
+                else:
+                    darkdeexp=darkdebias/hdu1.header['EXPOSURE']
+                PLDrive[:,:,i] = np.asarray(darkdeexp,dtype=np.float32)
+                i=i+1
+            # Hold onto the header
+            headHold=hdu1.header
+            del hdu1
+    
+            plog ("**********************************")
+            plog ("Median Stacking each darkframe row individually from the Reprojections")
+            plog (datetime.datetime.now().strftime("%H:%M:%S"))
+            # Go through each pixel and calculate nanmedian. Can't do all arrays at once as it is hugely memory intensive
+            finalImage=np.zeros(shapeImage,dtype=float)
+            for xi in range(shapeImage[0]):
+                if xi % 500 == 0:
+                    print ("Up to Row" + str(xi))
+                    print (datetime.datetime.now().strftime("%H:%M:%S"))
+    
+                finalImage[xi,:]=np.nanmedian(PLDrive[xi,:,:], axis=1)
+            plog (datetime.datetime.now().strftime("%H:%M:%S"))
+            plog ("**********************************")
+            
+    
+    
+            masterDark=np.asarray(finalImage).astype(np.float32)
+            fits.writeto(g_dev['obs'].calib_masters_folder + 'DARK_master_bin1.fits', masterDark, headHold, overwrite=True)
+            
+            PLDrive._mmap.close()
+            del PLDrive
+            gc.collect()
+            os.remove(g_dev['obs'].local_dark_folder  + 'tempfile')
+    
+            
+            # Reload the bias and dark frames
+            g_dev['cam'].biasFiles = {}
+            g_dev['cam'].darkFiles = {}
+            
+            try:
+                #self.biasframe = fits.open(
+                #tempbiasframe = fits.open(self.archive_path  + self.alias + "/calibmasters" \
+                #                          + "/BIAS_master_bin1.fits")
+                #tempbiasframe = np.array(tempbiasframe[0].data, dtype=np.float32)
+                g_dev['cam'].biasFiles.update({'1': masterBias})
+                #del masterBias
+                #del tempbiasframe
+            except:
+                plog("Bias frame master re-upload did not work.")
+                #plog(traceback.format_exc()) 
+                #breakpoint()               
+                
+            
+            try:
+                #self.darkframe = fits.open(
+                #tempdarkframe = fits.open(self.archive_path  + self.alias + "/calibmasters" \
+                #                          + "/DARK_master_bin1.fits")
+    
+                #tempdarkframe = np.array(tempdarkframe[0].data, dtype=np.float32)
+                g_dev['cam'].darkFiles.update({'1': masterDark})
+                #del masterDark
+                #del tempdarkframe
+            except:
+                plog("Dark frame master re-upload did not work.")  
+    
+    
+            
+            # NOW that we have a master bias and a master dark, time to step through the flat frames!
+            tempfilters=glob(g_dev['obs'].local_flat_folder + "*/")
+            plog (datetime.datetime.now().strftime("%H:%M:%S"))
+            plog ("Regenerating flats")        
+            plog (tempfilters)
+            
+            if len(tempfilters) == 0:
+                plog ("there are no filter directories, so not processing flats")
+            else:
+                for filterfolder in tempfilters:    
+                    
+                    plog (datetime.datetime.now().strftime("%H:%M:%S"))
+                    filtercode=filterfolder.split('\\')[-2]
+                    plog ("Regenerating flat for " + str(filtercode))
+                    inputList=(glob(g_dev['obs'].local_flat_folder + filtercode + '/*.f*'))
+                    # Generate temp memmap
+                    if len(inputList) == 0:
+                        plog ("Not doing " + str(filtercode) + " flat. No available files in directory.")
+                    else:
+                        try:
+                            PLDrive = np.memmap(g_dev['obs'].local_flat_folder  + 'tempfile', dtype='float32', mode= 'w+', shape = (shapeImage[0],shapeImage[1],len(inputList)))
+                        except:
+                            breakpoint()
+                        # Debias dark frames and stick them in the memmap
+                        i=0
+                        for file in inputList:   
+                            hdu1 = fits.open(file)[0]
+                            flatdebiased=hdu1.data-masterBias                
+                            if any("EXPTIME" in s for s in hdu1.header.keys()):
+                            #objdedark = objdebias-(masterDark.multiply(hdu1.header['EXPTIME']))
+                                flatdebiaseddedarked = flatdebiased-(masterDark*(float(hdu1.header['EXPTIME'])))
+                            else:
+                                #objdedark = objdebias-(masterDark.multiply(hdu1.header['EXPOSURE']))
+                                flatdebiaseddedarked = flatdebiased-(masterDark*(float(hdu1.header['EXPOSURE'])))
+                            PLDrive[:,:,i] = np.asarray(flatdebiaseddedarked,dtype=np.float32)
+                            i=i+1
+                        # Hold onto the header
+                        headHold=hdu1.header
+                        del hdu1
+            
+                        plog ("**********************************")
+                        plog ("Median Stacking each " + str (filtercode) + " flat frame row individually from the Reprojections")
+                        plog (datetime.datetime.now().strftime("%H:%M:%S"))
+                        # Go through each pixel and calculate nanmedian. Can't do all arrays at once as it is hugely memory intensive
+                        finalImage=np.zeros(shapeImage,dtype=float)
+                        for xi in range(shapeImage[0]):
+                            if xi % 500 == 0:
+                                print ("Up to Row" + str(xi))
+                                print (datetime.datetime.now().strftime("%H:%M:%S"))
+            
+                            finalImage[xi,:]=np.nanmedian(PLDrive[xi,:,:], axis=1)
+                        plog (datetime.datetime.now().strftime("%H:%M:%S"))
+                        plog ("**********************************")
+                        
+                        temporaryFlat=np.asarray(finalImage).astype(np.float32)
+                        
+                        # Fix up any glitches in the flat
+                        temporaryFlat=np.asarray(temporaryFlat, dtype=np.float32)
+                        temporaryFlat[temporaryFlat < 0.1] = np.nan
+                        
+                        temporaryFlat=interpolate_replace_nans(temporaryFlat, kernel)
+                        temporaryFlat[temporaryFlat < 0.1] = 0.8
+                        temporaryFlat[np.isnan(temporaryFlat)] = 0.8
+                        
+                        np.save(g_dev['obs'].calib_masters_folder + 'masterFlat_'+ str(filtercode) + '_bin1.npy', temporaryFlat)            
+                        
+                        fits.writeto(g_dev['obs'].calib_masters_folder + 'masterFlat_'+ str(filtercode) + '_bin1.fits', temporaryFlat, headHold, overwrite=True)
+                        
+                        
+                        PLDrive._mmap.close()
+                        del PLDrive
+                        gc.collect()
+                        os.remove(g_dev['obs'].local_flat_folder  + 'tempfile')
+            
+        
+                # THEN reload them to use for the next night.
+                
+                # First delete the calibrations out of memory.
+                
+                g_dev['cam'].flatFiles = {}
+                g_dev['cam'].hotFiles = {}              
+                
+        
+                try:            
+                    fileList = glob(g_dev['obs'].calib_masters_folder \
+                                         + "/masterFlat*_bin1.npy")
+                    
+                    for file in fileList:
+                        g_dev['cam'].flatFiles.update({file.split("_")[1].replace ('.npy','') + '_bin1': file})
+        
+                except:
+                    #breakpoint()
+                    plog("Flat frame re-upload did not work")
+                
+                
+                del masterBias
+                del masterDark
+
+                plog ("Regenerated Calibration Masters and Re-loaded them into memory.")
 
         return
 

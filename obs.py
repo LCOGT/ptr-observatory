@@ -315,6 +315,7 @@ class Observatory:
         if not os.path.exists(self.obsid_path + "archive/" + camera_name + "/localcalibrations/flats"):
             os.makedirs(self.obsid_path + "archive/" + camera_name + "/localcalibrations/flats")
         
+        self.calib_masters_folder = self.obsid_path + "archive/" + camera_name + "/calibmasters" + '/'
         self.local_dark_folder = self.obsid_path + "archive/" + camera_name + "/localcalibrations/darks" + '/' 
         self.local_bias_folder = self.obsid_path + "archive/" + camera_name + "/localcalibrations/biases" + '/' 
         self.local_flat_folder = self.obsid_path + "archive/" + camera_name + "/localcalibrations/flats" + '/' 
@@ -470,6 +471,8 @@ class Observatory:
         #self.park_and_close(enc_status)
         #NB The above put dome closed and telescope at Park, Which is where it should have been upon entry.
         #g_dev['seq'].bias_dark_script(req, opt, morn=True)
+        
+        g_dev['seq'].regenerate_local_masters()
 
 
     def set_last_reference(self, delta_ra, delta_dec, last_time):
@@ -2777,7 +2780,7 @@ sel
                                     plog("removed old flat: " + str(oldest_file))
                             
                             
-                            hdu.writeto(
+                            hdu.writeto(glob.
                                 tempfilename, overwrite=True, output_verify='silentfix'
                             )  # Save full raw file locally
                             try:
