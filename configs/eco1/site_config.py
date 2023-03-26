@@ -40,7 +40,7 @@ site_config = {
     
     'debug_site_mode': False,
     
-    'debug_mode': False,
+    'debug_mode': True,
     'admin_owner_commands_only': False,
     'debug_duration_sec': 7200,
     'owner':  ['google-oauth2|112401903840371673242'],  # WER,  Or this can be
@@ -478,7 +478,7 @@ site_config = {
                         # #['LRGB',  [0,  0],     0, .221, [   0,    0], 'LRGB']],   #10.
                         
                         #['w',     [0,  0],     0, 72.7, [1.00 ,  72], 'PL'],    #0.   For sequencer autofocus  consider foc or f filter
-                        ['focus', [0,  0],     0, 148, [1.00 ,  72], 'focus'],    #0.
+                        #['focus', [0,  0],     0, 148, [1.00 ,  72], 'focus'],    #0.
                         ['lum',    [0,  0],     0, 179, [1.00 ,  72], 'PhLum'],    #1.
                         ['ip',    [1,  1],     0, 50, [1.00 , 119], 'PhRed'],    #2.
                         ['v',    [2,  2],     0, 56, [1.00 , 113], 'PhGreen'],    #3.
@@ -663,9 +663,13 @@ site_config = {
                 'pix_scale': 0.637,
                 'do_cosmics' : False,
                 #'dark_length' : 1,
-                'bias_count' : 128,
-                'dark_count' : 128,
-                'flat_count' : 10,
+                'number_of_bias_to_collect' : 128,
+                'number_of_dark_to_collect' : 128,
+                'number_of_flat_to_collect' : 10,
+                'number_of_bias_to_store' : 128,
+                'number_of_dark_to_store' : 128,
+                'number_of_flat_to_store' : 10,
+                
                 'dark_exposure': 75,
                 'has_darkslide':  False,
                 'darkslide_com':  None,

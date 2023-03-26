@@ -819,7 +819,7 @@ class Sequencer:
                                     # Check the temperature is in range
                                     if g_dev['obs'].camera_temperature_in_range_for_calibrations:
                                         plog ("It is dark and the moon isn't up! Lets do some calibrations")                                
-                                        if self.nightime_bias_counter < self.config['camera']['camera_1_1']['settings']['bias_count']:
+                                        if self.nightime_bias_counter < self.config['camera']['camera_1_1']['settings']['number_of_bias_to_collect']:
                                             plog("Exposing 1x1 bias frame.")
                                             req = {'time': 0.0,  'script': 'True', 'image_type': 'bias'}
                                             opt = {'area': "Full", 'count': 1, 'bin': 1 , \
@@ -827,7 +827,7 @@ class Sequencer:
                                             self.nightime_bias_counter = self.nightime_bias_counter + 1
                                             g_dev['cam'].expose_command(req, opt, no_AWS=False, \
                                                                 do_sep=False, quick=False, skip_open_check=True,skip_daytime_check=True)
-                                        if self.nightime_dark_counter < self.config['camera']['camera_1_1']['settings']['dark_count']:
+                                        if self.nightime_dark_counter < self.config['camera']['camera_1_1']['settings']['number_of_dark_to_collect']:
                                             dark_exp_time = self.config['camera']['camera_1_1']['settings']['dark_exposure']
                                             plog("Exposing 1x1 dark exposure:  " + str(dark_exp_time) )
                                             req = {'time': dark_exp_time ,  'script': 'True', 'image_type': 'dark'}
@@ -1391,8 +1391,8 @@ class Sequencer:
             ending = g_dev['events']['End Eve Bias Dark']
         while ephem.now() < ending :   #Do not overrun the window end
   
-            bias_count = self.config['camera']['camera_1_1']['settings']['bias_count']
-            dark_count = self.config['camera']['camera_1_1']['settings']['dark_count']
+            bias_count = self.config['camera']['camera_1_1']['settings']['number_of_bias_to_collect']
+            dark_count = self.config['camera']['camera_1_1']['settings']['number_of_dark_to_collect']
             dark_exp_time = self.config['camera']['camera_1_1']['settings']['dark_exposure']
             cycle_time = self.config['camera']['camera_1_1']['settings']['cycle_time']
             
@@ -1929,7 +1929,7 @@ class Sequencer:
         g_dev['obs'].send_to_user('Sky Flat sequence Starting, Enclosure PRESUMED Open. Telescope should be on sky flat spot.', p_level='INFO')
         evening = not morn
         camera_name = str(self.config['camera']['camera_1_1']['name'])
-        flat_count = self.config['camera']['camera_1_1']['settings']['flat_count']
+        flat_count = self.config['camera']['camera_1_1']['settings']['number_of_flat_to_collect']
         min_exposure = float(self.config['camera']['camera_1_1']['settings']['min_flat_exposure'])
         max_exposure = float(self.config['camera']['camera_1_1']['settings']['max_flat_exposure'])
 

@@ -212,90 +212,17 @@ class Qcam:
 
 @CFUNCTYPE(None, c_char_p)
 def pnp_in(cam_id):
-    #breakpoint()
+    
     plog("QHY Direct connect to camera: %s" % cam_id.decode('utf-8'))
     global qhycam_id
     qhycam_id=cam_id
     init_camera_param(qhycam_id)
-    qhycam.camera_params[qhycam_id]['connect_to_pc'] = True
-    #os.makedirs(cam_id.decode('utf-8'), exist_ok=True)
-    # select read mode
-    #success = qhycam.so.GetReadModesNumber(cam_id, byref(qhycam.camera_params[cam_id]['read_mode_number']))
-    # if success == qhycam.QHYCCD_SUCCESS:
-    #     print('-  read mode - %s' % qhycam.camera_params[cam_id]['read_mode_number'].value)
-    #     for read_mode_item_index in range(0, qhycam.camera_params[cam_id]['read_mode_number'].value):
-    #         read_mode_name = create_string_buffer(qhycam.STR_BUFFER_SIZE)
-    #         qhycam.so.GetReadModeName(cam_id, read_mode_item_index, read_mode_name)
-    #         print('%s  %s %s' % (cam_id.decode('utf-8'), read_mode_item_index, read_mode_name.value))
-    # else:
-    #     print('GetReadModesNumber false')
-    #     qhycam.camera_params[cam_id]['read_mode_number'] = c_uint32(self.config["camera"][self.name]["settings"]['direct_qhy_readout_mode'])
-
-    # read_mode_count = qhycam.camera_params[cam_id]['read_mode_number'].value
-    # if read_mode_count == 0:
-    #     read_mode_count = 1
-    # for read_mode_index in range(0, read_mode_count):
-    #     test_frame(cam_id, qhycam.stream_single_mode, cam.bit_depth_16, read_mode_index)
-    #     test_frame(cam_id, qhycam.stream_live_mode, cam.bit_depth_16, read_mode_index)
-    #     test_frame(cam_id, qhycam.stream_single_mode, cam.bit_depth_8, read_mode_index)
-    #     test_frame(cam_id, qhycam.stream_live_mode, cam.bit_depth_8, read_mode_index)
-    #     qhycam.so.CloseQHYCCD(cam.camera_params[cam_id]['handle'])
+    qhycam.camera_params[qhycam_id]['connect_to_pc'] = True   
 
 
 @CFUNCTYPE(None, c_char_p)
 def pnp_out(cam_id):
     print("cam   - %s" % cam_id.decode('utf-8'))
-
-
-# MTF - THIS IS A QHY FUNCTION THAT I HAVEN"T FIGURED OUT WHETHER IT IS MISSION CRITICAL OR NOT
-# def get_average_l(image):
-#     im = np.array(image)
-#     w, h = im.shape
-#     return np.average(im.reshape(w * h))
-
-# MTF - THIS IS A QHY FUNCTION THAT I HAVEN"T FIGURED OUT WHETHER IT IS MISSION CRITICAL OR NOT
-# def np_array_to_ascii(pil_image, cols, scale, more_levels):
-#     global gscale1, gscale2
-#     W, H = pil_image.size[0], pil_image.size[1]
-#     print("input image dims: %d x %d" % (W, H))
-#     w = W / cols
-#     h = w / scale
-#     rows = int(H / h)
-
-#     print("cols: %d, rows: %d" % (cols, rows))
-#     print("tile dims: %d x %d" % (w, h))
-#     if cols > W or rows > H:
-#         print("Image too small for specified cols!")
-#         exit(0)
-
-#     aimg = []
-#     for j in range(rows):
-#         y1 = int(j * h)
-#         y2 = int((j + 1) * h)
-
-#         if j == rows - 1:
-#             y2 = H
-
-#         aimg.append("")
-
-#         for i in range(cols):
-#             x1 = int(i * w)
-#             x2 = int((i + 1) * w)
-
-#             if i == cols - 1:
-#                 x2 = W
-
-#             img = pil_image.crop((x1, y1, x2, y2))
-#             avg = int(get_average_l(img))
-
-#             if more_levels:
-#                 gsval = gscale1[int((avg * 69) / 255)]
-#             else:
-#                 gsval = gscale2[int((avg * 9) / 255)]
-
-#             aimg[j] += gsval
-
-#     return aimg
 
 # MTF - THIS IS A QHY FUNCTION THAT I HAVEN"T FIGURED OUT WHETHER IT IS MISSION CRITICAL OR NOT
 def init_camera_param(cam_id):
@@ -1614,16 +1541,23 @@ class Camera:
 
         # Here we set up the filter, and later on possibly rotational composition.
         try:
+            #breakpoint()
             
+            
+                
             if g_dev["fil"].null_filterwheel == False:
-                requested_filter_name = str(
-                    optional_params.get(
-                        "filter",
-                        self.config["filter_wheel"]["filter_wheel1"]["settings"][
-                            "default_filter"
-                        ],
-                    )
-                )  
+                
+                if imtype in ['bias','dark']:
+                    requested_filter_name = 'dark'
+                else:
+                    requested_filter_name = str(
+                        optional_params.get(
+                            "filter",
+                            self.config["filter_wheel"]["filter_wheel1"]["settings"][
+                                "default_filter"
+                            ],
+                        )
+                    )  
                 
                 # Check if filter needs changing, if so, change.                
                 if not g_dev['fil'].filter_selected == requested_filter_name:
@@ -3379,6 +3313,15 @@ class Camera:
                     self.to_slow_process(5,('fz_and_send', raw_path + raw_name00 + ".fz", hdu.data, hdu.header, frame_type, g_dev["mnt"].current_icrs_ra, g_dev["mnt"].current_icrs_dec))                    
 
         
+                    # If the files are local calibrations, save them out to the local calibration directory
+                    if ( frame_type.lower() in [
+                        "bias",
+                        "dark",
+                        "flat",
+                        
+                        "skyflat"]):
+                        self.to_slow_process(200000000, ('localcalibration', raw_name00, hdu.data, hdu.header, frame_type, g_dev["mnt"].current_icrs_ra, g_dev["mnt"].current_icrs_dec))
+
                     # Similarly to the above. This saves the RAW file to disk
                     # it works 99.9999% of the time.
                    
