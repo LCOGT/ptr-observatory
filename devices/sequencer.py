@@ -1587,13 +1587,14 @@ class Sequencer:
                         shutil.move(orphanfile, orphan_path)
                     except:
                         print ("Couldn't move orhan: " + str(orphanfile))
-                
+        
+        breakpoint()
                 
         # Add all fits.fz members to the AWS queue
         #breakpoint() 
         bigfzs=glob(orphan_path + '*.fz')
         #breakpoint()
-        bigtokens=glob(orphan_path + '*.token')
+        
         
         for fzneglect in bigfzs:
             plog ("Reattempting upload of " + str(os.path.basename(fzneglect)))
@@ -1605,6 +1606,8 @@ class Sequencer:
             g_dev['cam'].enqueue_for_AWS(56000000, orphan_path, fzneglect.split('orphans')[-1].replace('\\',''))
             #g_dev['obs'].send_to_aws()
         
+        
+        bigtokens=glob(g_dev['obs'].obsid_path + 'tokens/*.token')
         for fzneglect in bigtokens:
             plog ("Reattempting upload of " + str(os.path.basename(fzneglect)))
             #breakpoint()
@@ -1612,7 +1615,7 @@ class Sequencer:
             #g_dev["obs"].aws_queue.put((priority, image), block=False)
 
             # Enqueue into the stream but at the lowest priority ever.
-            g_dev['cam'].enqueue_for_AWS(56000000, orphan_path, fzneglect.split('orphans')[-1].replace('\\',''))
+            g_dev['cam'].enqueue_for_AWS(56000000, '', fzneglect)
             #g_dev['obs'].send_to_aws()
     
     

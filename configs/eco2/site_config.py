@@ -40,7 +40,7 @@ site_config = {
     'debug_site_mode': False,
     
 
-    'debug_mode': True,
+    'debug_mode': False,
     'admin_owner_commands_only': False,
 
     'debug_duration_sec': 7200,
@@ -122,7 +122,7 @@ site_config = {
     'observing_check_period' : 5,    # How many minutes between weather checks
     'enclosure_check_period' : 5,    # How many minutes between enclosure checks
     'auto_eve_bias_dark': False,
-    'auto_midnight_moonless_bias_dark': False,
+    'auto_midnight_moonless_bias_dark': True,
     'auto_eve_sky_flat': True,
 
     'eve_sky_flat_sunset_offset': -0.5,  #  Minutes  neg means before, + after.
@@ -265,6 +265,8 @@ site_config = {
 			    'elevation_offset': 0.0,    # meters above sea level
                 'home_park_altitude': 0.0,
                 'home_park_azimuth': 270.,
+                'home_altitude' : 70,
+                'home_azimuth' : 160,
                 'horizon':  15.,    #  Meant to be a circular horizon. Or set to None if below is filled in.
                 'horizon_detail': {  #  Meant to be something to draw on the Skymap with a spline fit.
                      '0.1': 10,
@@ -833,12 +835,12 @@ site_config = {
                 'cycle_time':            0,   # Meas 20230219  for a bias
                 #'enable_bin':            [ True, False,  False,  False],
                 #'bias_dark_bin_spec':    ['1,1', '2,2', '3,3', '4,4' ],    #Default binning for flats
-                'number_of_bias_to_collect' : 256,
-                'number_of_dark_to_collect' : 256,
-                'number_of_flat_to_collect' : 10,
-                'number_of_bias_to_store' : 256,
-                'number_of_dark_to_store' : 256,
-                'number_of_flat_to_store' : 128,
+                'number_of_bias_to_collect' : 63,
+                'number_of_dark_to_collect' : 63,
+                'number_of_flat_to_collect' : 63,
+                'number_of_bias_to_store' : 63,
+                'number_of_dark_to_store' : 63,
+                'number_of_flat_to_store' : 63,
  
                 'dark_exposure': 20,
                 #'flat_bin_spec':         ['1,1', '2,2', '3,3', '4,4' ],   #Is this necessary?

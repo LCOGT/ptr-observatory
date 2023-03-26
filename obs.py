@@ -2735,7 +2735,9 @@ sel
                     saverretries = 0
                     while saver == 0 and saverretries < 10:
                         try:
-                            hdu=fits.PrimaryHDU()
+                            #hdu=fits.PrimaryHDU()
+                            hdu=fits.CompImageHDU()
+                        
                             hdu.data=slow_process[2]                            
                             hdu.header=temphduheader
                             
@@ -2743,7 +2745,7 @@ sel
                             # Figure out which folder to send the calibration file to
                             # and delete any old files over the maximum amount to store
                             if slow_process[4] == 'bias':
-                                tempfilename=self.local_bias_folder + slow_process[1]                                
+                                tempfilename=self.local_bias_folder + slow_process[1].replace('.fits','.fits.fz')                                
                                 max_files=self.config['camera']['camera_1_1']['settings']['number_of_bias_to_store']
                                 n_files=len(glob.glob(self.local_bias_folder +'*.f*'))
                                 while n_files > max_files:
@@ -2754,7 +2756,7 @@ sel
                                     plog("removed old bias: " + str(oldest_file))
                                     
                             elif slow_process[4] == 'dark':
-                                tempfilename=self.local_dark_folder + slow_process[1]
+                                tempfilename=self.local_dark_folder + slow_process[1].replace('.fits','.fits.fz') 
                                 max_files=self.config['camera']['camera_1_1']['settings']['number_of_dark_to_store']
                                 n_files=len(glob.glob(self.local_dark_folder +'*.f*'))
                                 while n_files > max_files:
@@ -2768,7 +2770,7 @@ sel
                                 tempfilter=temphduheader['FILTER'] 
                                 if not os.path.exists(self.local_flat_folder + tempfilter):
                                     os.makedirs(self.local_flat_folder + tempfilter)
-                                tempfilename=self.local_flat_folder + tempfilter + '/' + slow_process[1]
+                                tempfilename=self.local_flat_folder + tempfilter + '/' + slow_process[1].replace('.fits','.fits.fz') 
                                 
                                 
                                 max_files=self.config['camera']['camera_1_1']['settings']['number_of_flat_to_store']
