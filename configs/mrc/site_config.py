@@ -23,31 +23,44 @@ import json
 degree_symbol = "°"
 site_name = 'mrc'
 
-obs_id = None    #NB These must be unique across all of PTR. Pre-pend with airport code if needed: 'sba_wmdo'
+#obs_id = None    #NB These must be unique across all of PTR. Pre-pend with airport code if needed: 'sba_wmdo'
+obs_id = 'mrc'    #NB These must be unique across all of PTR. Pre-pend with airport code if needed: 'sba_wmdo'
 
+'''
+20230335 WER Just now I am seeing this in a new light. This file is the config for the wema PROCESS which may or may not run on
+a dedicated host.  It also contains information vital to mountings, like Lat, Lon and Elev....  Last the wema host may or may not
+directly connect to one or more enclosures, but it does establish policy for enclosures. '''
 
 site_config = {
 
-    'site': 'mrc',
-    'site_id': 'mrc',
+    'site': 'mrc',   #NB site and Observatory are now synomomous  as as in "siding Spring Observatory or Observatoriesshort for Obsy
+                     #Obsp is short form for observing platform aka a mount with a telescope
+    'site_id': 'mrc',  #Do not need both of these.... but currently you do! - MTF
 
-    'obs_id': None,   #a WEMA is not a telescope aka Observatory
-    'observatory_location': site_name.lower(),  #in LCO case, an airport code such as OGG
-   
-
-
-
-    'debug_site_mode': False,
+    'obs_id': 'none',   #a WEMA is not an observing platform
     
-    'debug_mode': False,
-    'admin_owner_commands_only': False,
-    'debug_duration_sec': 3600,
+    
+    'name': 'MRC-WEMA',
+    'observatory_location': 'SBA', #site_name.lower(),  #in LCO case, an airport code such as OGG, however
+                                                #it is meant to be a Location not a name.
+                                                #nearest Airport code somewhat serves this purpose and
+                                                #if listed gives us a handle to a local weather report
+    'host_wema_site_name':  'MRC',  #  The umbrella header for encl's and obsp's in close geographic proximity,
+                                    #  under the control of one wema policy
+    'observatory_name': 'Mountain Ranch Camp Observatory',  #. 0m35f7.2',   #delete last part.
+    'airport_code': 'SBA',
+    'location': 'Near Santa Barbara CA,  USA',
+     #'telescope_description': '0m35 f7.2 Planewave CDK',     #Makes little sense if there are multile Telescopes                                      
+     #So this needs to be some sort of list
+     
+    'debug_mode': False,   #What is the scope of this -- the wema or the whole site an all the nodes?
+    'debug_duration_sec': 1800,
 
     'owner':  ['google-oauth2|112401903840371673242'],  # Wayne
-
     'owner_alias': ['WER', 'TELOPS'],
     'admin_aliases': ["ANS", "WER", "TELOPS", "TB", "DH", "KVH", "KC"],
-
+    'admin_owner_commands_only': False,
+    
     'client_hostname':  'MRC-0m35',  #This is also the long-name  Client is confusing!
                     # NB NB disk D at mrc may be faster for temp storage
     'client_path':  'Q:/ptr/',  # Generic place for client host to stash misc stuff
@@ -83,15 +96,10 @@ site_config = {
     'obsid_is_specific':  False,  # Indicates some special code for this site, found at end of config.
     
 
-    'host_wema_site_name':  'MRC',  #  The umbrella header for obsys in close geographic proximity,
-                                    #  under the control of one wema
-    'name': 'Mountain Ranch Camp Observatory 0m35f7.2',
-    'airport_code': 'SBA',
-    'location': 'Near Santa Barbara CA,  USA',
-    'telescope_description': '0m35 f7.2 Planewave CDK',
+
     'observatory_url': 'https://starz-r-us.sky/clearskies',
     'observatory_logo': None,
-    'description':  '''
+    'dedication':  '''
                     Now is the time for all good persons
                     to get out and vote early and often lest
                     we lose charge of our democracy.
