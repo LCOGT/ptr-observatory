@@ -2781,7 +2781,7 @@ sel
                                     plog("removed old flat: " + str(oldest_file))
                             
                             
-                            hdu.writeto(glob.
+                            hdu.writeto(
                                 tempfilename, overwrite=True, output_verify='silentfix'
                             )  # Save full raw file locally
                             try:
