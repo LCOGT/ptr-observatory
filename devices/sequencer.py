@@ -1586,9 +1586,8 @@ class Sequencer:
                     try:
                         shutil.move(orphanfile, orphan_path)
                     except:
-                        print ("Couldn't move orhan: " + str(orphanfile))
+                        print ("Couldn't move orphan: " + str(orphanfile))
         
-        breakpoint()
                 
         # Add all fits.fz members to the AWS queue
         #breakpoint() 
