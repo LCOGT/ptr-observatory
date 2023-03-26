@@ -1936,7 +1936,7 @@ class Sequencer:
             gc.collect()
             os.remove(g_dev['obs'].local_dark_folder  + 'tempfile')
     
-            
+            plog ("Re-loading Bias and Dark masters into memory.")
             # Reload the bias and dark frames
             g_dev['cam'].biasFiles = {}
             g_dev['cam'].darkFiles = {}
@@ -2067,7 +2067,7 @@ class Sequencer:
                 del masterBias
                 del masterDark
 
-                plog ("Regenerated Calibration Masters and Re-loaded them into memory.")
+                plog ("Regenerated Flat Masters and Re-loaded them into memory.")
 
         return
 
