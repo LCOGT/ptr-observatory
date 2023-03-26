@@ -387,8 +387,8 @@ class Observatory:
         g_dev["mnt"].reset_mount_reference()
 
         # Keep track of how long it has been since the last activity
-        self.time_since_last_exposure = time.time()
-        self.time_since_last_slew = time.time()
+        self.time_of_last_exposure = time.time()
+        self.time_of_last_slew = time.time()
 
         # Only poll the broad safety checks (altitude and inactivity) every 5 minutes
         self.time_since_safety_checks=time.time() - 310.0
@@ -1274,15 +1274,15 @@ sel
     
     
             # If no activity for an hour, park the scope               
-            if time.time() - self.time_since_last_slew > self.config['mount']['mount1']\
-                                                                                ['time_inactive_until_park'] or time.time() - self.time_since_last_exposure > self.config['mount']['mount1']\
+            if time.time() - self.time_of_last_slew > self.config['mount']['mount1']\
+                                                                                ['time_inactive_until_park'] or time.time() - self.time_of_last_exposure > self.config['mount']['mount1']\
                                                                                                                                                     ['time_inactive_until_park']:
                 if not g_dev['mnt'].mount.AtPark:  
                     plog ("Parking scope due to inactivity")
                     if g_dev['mnt'].home_before_park:
                         g_dev['mnt'].home_command()
                     g_dev['mnt'].park_command()
-                    self.time_since_last_slew = time.time()
+                    self.time_of_last_slew = time.time()
             
             # Check that rotator is rotating
             if g_dev['rot'] != None:
@@ -1443,7 +1443,7 @@ sel
                         if g_dev['mnt'].home_before_park:
                             g_dev['mnt'].home_command()
                         g_dev['mnt'].park_command()
-                        self.time_since_last_slew = time.time()
+                        self.time_of_last_slew = time.time()
                         
                     g_dev['enc'].enclosure.CloseShutter()
             #plog ("temporary reporting: MTF")
@@ -2498,7 +2498,7 @@ sel
                         del hdufocus
                         
                         # Test here that there has not been a slew, if there has been a slew, cancel out!
-                        if self.time_since_last_slew > time_platesolve_requested:
+                        if self.time_of_last_slew > time_platesolve_requested:
                             plog ("detected a slew since beginning platesolve... bailing out of platesolve.")
                             #if not self.config['keep_focus_images_on_disk']:
                             #    os.remove(cal_path + cal_name)
@@ -2548,7 +2548,7 @@ sel
                                 g_dev['obs'].images_since_last_solve = 0
                                 
                                 # Test here that there has not been a slew, if there has been a slew, cancel out!
-                                if self.time_since_last_slew > time_platesolve_requested:
+                                if self.time_of_last_slew > time_platesolve_requested:
                                     plog ("detected a slew since beginning platesolve... bailing out of platesolve.")
                                     #if not self.config['keep_focus_images_on_disk']:
                                     #    os.remove(cal_path + cal_name)
@@ -3821,10 +3821,10 @@ def check_platesolve_and_nudge():
     # If the platesolve requests such a thing.
     if g_dev['obs'].pointing_correction_requested_by_platesolve_thread:
         g_dev['obs'].pointing_correction_requested_by_platesolve_thread = False
-        if g_dev['obs'].pointing_correction_request_time > g_dev['obs'].time_since_last_slew: # Check it hasn't slewed since request                        
+        if g_dev['obs'].pointing_correction_request_time > g_dev['obs'].time_of_last_slew: # Check it hasn't slewed since request                        
             plog ("I am nudging the telescope slightly at the request of platesolve!")                            
             g_dev['mnt'].mount.SlewToCoordinatesAsync(g_dev['obs'].pointing_correction_request_ra, g_dev['obs'].pointing_correction_request_dec)
-            g_dev['obs'].time_since_last_slew = time.time()
+            g_dev['obs'].time_of_last_slew = time.time()
             wait_for_slew()
 
 def wait_for_slew():    
