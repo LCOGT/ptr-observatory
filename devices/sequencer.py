@@ -884,9 +884,7 @@ class Sequencer:
                 if (time.time() - g_dev['obs'].time_of_last_exposure) > 900 and (time.time() - g_dev['obs'].time_of_last_slew) > 900:
                     # Check no other commands or exposures are happening
                     if g_dev['obs'].cmd_queue.empty() and not g_dev["cam"].exposure_busy:
-
                         # If enclosure is shut for maximum darkness
-
                         if enc_status['shutter_status'] in ['Closed', 'closed']:
                             # Check the temperature is in range
                             currentaltazframe = AltAz(location=g_dev['mnt'].site_coordinates, obstime=Time.now())
@@ -894,8 +892,6 @@ class Sequencer:
                             if (moondata.alt.deg < -15):
                                 # If the moon is way below the horizon                        
                                 if g_dev['obs'].camera_temperature_in_range_for_calibrations:
-                                     
-                                    breakpoint()
                                     if self.nightime_bias_counter < self.config['camera']['camera_1_1']['settings']['number_of_bias_to_collect']:
                                         plog ("It is dark and the moon isn't up! Lets do a bias!")  
                                         g_dev['mnt'].park_command({}, {})
@@ -907,8 +903,8 @@ class Sequencer:
                                         g_dev['cam'].expose_command(req, opt, no_AWS=False, \
                                                             do_sep=False, quick=False, skip_open_check=True,skip_daytime_check=True)
                                         # these exposures shouldn't reset these timers
-                                        g_dev['obs'].time_of_last_exposure = time.time() - 901
-                                        g_dev['obs'].time_of_last_slew = time.time() - 901
+                                        g_dev['obs'].time_of_last_exposure = time.time() - 840
+                                        g_dev['obs'].time_of_last_slew = time.time() - 840
                                     if self.nightime_dark_counter < self.config['camera']['camera_1_1']['settings']['number_of_dark_to_collect']:
                                         plog ("It is dark and the moon isn't up! Lets do a dark!")  
                                         g_dev['mnt'].park_command({}, {})
@@ -921,8 +917,8 @@ class Sequencer:
                                         g_dev['cam'].expose_command(req, opt, no_AWS=False, \
                                                            do_sep=False, quick=False, skip_open_check=True,skip_daytime_check=True)
                                         # these exposures shouldn't reset these timers
-                                        g_dev['obs'].time_of_last_exposure = time.time() - 901
-                                        g_dev['obs'].time_of_last_slew = time.time() - 901
+                                        g_dev['obs'].time_of_last_exposure = time.time() - 840
+                                        g_dev['obs'].time_of_last_slew = time.time() - 840
                                     
                     
                 
