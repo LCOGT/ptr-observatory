@@ -894,8 +894,10 @@ class Sequencer:
                             if (moondata.alt.deg < -15):
                                 # If the moon is way below the horizon                        
                                 if g_dev['obs'].camera_temperature_in_range_for_calibrations:
-                                    plog ("It is dark and the moon isn't up! Lets do some calibrations")                                
+                                     
+                                    breakpoint()
                                     if self.nightime_bias_counter < self.config['camera']['camera_1_1']['settings']['number_of_bias_to_collect']:
+                                        plog ("It is dark and the moon isn't up! Lets do a bias!")  
                                         g_dev['mnt'].park_command({}, {})
                                         plog("Exposing 1x1 bias frame.")
                                         req = {'time': 0.0,  'script': 'True', 'image_type': 'bias'}
@@ -908,6 +910,7 @@ class Sequencer:
                                         g_dev['obs'].time_of_last_exposure = time.time() - 901
                                         g_dev['obs'].time_of_last_slew = time.time() - 901
                                     if self.nightime_dark_counter < self.config['camera']['camera_1_1']['settings']['number_of_dark_to_collect']:
+                                        plog ("It is dark and the moon isn't up! Lets do a dark!")  
                                         g_dev['mnt'].park_command({}, {})
                                         dark_exp_time = self.config['camera']['camera_1_1']['settings']['dark_exposure']
                                         plog("Exposing 1x1 dark exposure:  " + str(dark_exp_time) )
