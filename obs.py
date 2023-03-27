@@ -1556,13 +1556,14 @@ sel
                                 except Exception as e:
                                   
                                     
-                                    plog ("couldn't send to PTR archive for some reason")
-                                    plog ("Retry " + str(retryarchive))
-                                    plog (e)
-                                    plog ((traceback.format_exc()))
-                                    time.sleep(pow(retryarchive, 2) + 1)
-                                    if retryarchive < 10:
-                                        retryarchive=retryarchive+1
+                                    plog ("couldn't send to PTR archive for some reason - MTF to fix")
+                                    retryarchive= 15
+                                    # plog ("Retry " + str(retryarchive))
+                                    # plog (e)
+                                    # plog ((traceback.format_exc()))
+                                    # time.sleep(pow(retryarchive, 2) + 1)
+                                    # if retryarchive < 10:
+                                    #     retryarchive=retryarchive+1
                                     tempPTR=0
                                         
 
