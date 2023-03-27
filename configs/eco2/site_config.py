@@ -42,7 +42,7 @@ site_config = {
     'debug_site_mode': False,
     
 
-    'debug_mode': True,
+    'debug_mode': False,
     'admin_owner_commands_only': False,
 
     'debug_duration_sec': 7200,
@@ -846,10 +846,10 @@ site_config = {
 
                 'number_of_bias_to_collect' : 63,
                 'number_of_dark_to_collect' : 63,
-                'number_of_flat_to_collect' : 63,
-                'number_of_bias_to_store' : 63,
-                'number_of_dark_to_store' : 63,
-                'number_of_flat_to_store' : 63,
+                'number_of_flat_to_collect' : 128,
+                'number_of_bias_to_store' : 128,
+                'number_of_dark_to_store' : 128,
+                'number_of_flat_to_store' : 128,
 
  
                 'dark_exposure': 20,

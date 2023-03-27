@@ -85,7 +85,7 @@ retries = Retry(total=50,
                 backoff_factor=0.1,
                 status_forcelist=[ 500, 502, 503, 504 ])
 reqs.mount('http://', HTTPAdapter(max_retries=retries))
-reqs.mount('http://', HTTPAdapter(max_retries=retries))
+reqs.mount('https://', HTTPAdapter(max_retries=retries))
 
 # The ingester should only be imported after environment variables are loaded in.
 load_dotenv(".env")
@@ -472,7 +472,7 @@ class Observatory:
         #NB The above put dome closed and telescope at Park, Which is where it should have been upon entry.
         #g_dev['seq'].bias_dark_script(req, opt, morn=True)
         
-        g_dev['seq'].regenerate_local_masters()
+        #g_dev['seq'].regenerate_local_masters()
 
 
     def set_last_reference(self, delta_ra, delta_dec, last_time):
