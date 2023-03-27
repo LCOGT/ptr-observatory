@@ -1603,11 +1603,13 @@ sel
                         
                 one_at_a_time = 0
 
-                try:   
-                    os.remove(filepath)
-                except:
-                    plog ("Couldn't remove " +str(filepath) + "file after transfer")
-                    #pass
+                # Don't remove local calibrations after uploading but remove the others
+                if ('calibmasters' not in filepath) and ('calibmasters' not in fileobj):
+                    try:   
+                        os.remove(filepath)
+                    except:
+                        plog ("Couldn't remove " +str(filepath) + "file after transfer")
+                        #pass
                 
                 # if (
                 #     filename[-3:] == "jpg"
