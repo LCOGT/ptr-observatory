@@ -1873,16 +1873,16 @@ class Sequencer:
             plog ("Not reprocessing local masters as there are no biases or darks")
         else:
         
-            hdutest = fits.open(inputList[0])[0]
+            hdutest = fits.open(inputList[0])[1]
             shapeImage=hdutest.shape
             del hdutest
-            
+
             # Make a temporary memmap file 
             PLDrive = np.memmap(g_dev['obs'].local_bias_folder + 'tempfile', dtype='float32', mode= 'w+', shape = (shapeImage[0],shapeImage[1],len(inputList)))
             # Store the biases in the memmap file
             i=0
             for file in inputList:
-                hdu1 = fits.open(file)[0]            
+                hdu1 = fits.open(file)[1]            
                 PLDrive[:,:,i] = np.asarray(hdu1.data,dtype=np.float32)        
                 i=i+1
             # hold onto the header info
@@ -1907,7 +1907,12 @@ class Sequencer:
             masterBias=np.asarray(finalImage).astype(np.float32)
             
             # Save this out to calibmasters
-            fits.writeto(g_dev['obs'].calib_masters_folder + 'BIAS_master_bin1.fits', masterBias , headHold, overwrite=True)
+            g_dev['obs'].obs_id
+            g_dev['cam'].alias
+            tempfrontcalib=g_dev['obs'].obs_id + '_' + g_dev['cam'].alias +'_'
+            #print (tempfrontcalib)
+            
+            fits.writeto(g_dev['obs'].calib_masters_folder + tempfrontcalib + 'BIAS_master_bin1.fits', masterBias , headHold, overwrite=True)
             
             PLDrive._mmap.close()
             del PLDrive
@@ -1925,8 +1930,12 @@ class Sequencer:
             # Debias dark frames and stick them in the memmap
             i=0
             for file in inputList:   
-                hdu1 = fits.open(file)[0]
+                hdu1 = fits.open(file)[1]
+                #hdu1data= hdu1[0].data
+                #hdu1header= hdu1.header
+                #breakpoint()
                 darkdebias=hdu1.data-masterBias
+                
                 if any("EXPTIME" in s for s in hdu1.header.keys()):
                     darkdeexp=darkdebias/hdu1.header['EXPTIME']
                 else:
@@ -1954,7 +1963,7 @@ class Sequencer:
     
     
             masterDark=np.asarray(finalImage).astype(np.float32)
-            fits.writeto(g_dev['obs'].calib_masters_folder + 'DARK_master_bin1.fits', masterDark, headHold, overwrite=True)
+            fits.writeto(g_dev['obs'].calib_masters_folder + tempfrontcalib + 'DARK_master_bin1.fits', masterDark, headHold, overwrite=True)
             
             PLDrive._mmap.close()
             del PLDrive
@@ -2020,7 +2029,7 @@ class Sequencer:
                         # Debias dark frames and stick them in the memmap
                         i=0
                         for file in inputList:   
-                            hdu1 = fits.open(file)[0]
+                            hdu1 = fits.open(file)[1]
                             flatdebiased=hdu1.data-masterBias                
                             if any("EXPTIME" in s for s in hdu1.header.keys()):
                             #objdedark = objdebias-(masterDark.multiply(hdu1.header['EXPTIME']))
@@ -2060,7 +2069,7 @@ class Sequencer:
                         
                         np.save(g_dev['obs'].calib_masters_folder + 'masterFlat_'+ str(filtercode) + '_bin1.npy', temporaryFlat)            
                         
-                        fits.writeto(g_dev['obs'].calib_masters_folder + 'masterFlat_'+ str(filtercode) + '_bin1.fits', temporaryFlat, headHold, overwrite=True)
+                        fits.writeto(g_dev['obs'].calib_masters_folder + tempfrontcalib + 'masterFlat_'+ str(filtercode) + '_bin1.fits', temporaryFlat, headHold, overwrite=True)
                         
                         
                         PLDrive._mmap.close()

@@ -14,7 +14,7 @@ import time
 import traceback
 import ephem
 
-#from astropy.io import fits, ascii
+from astropy.io import fits, ascii
 from astropy.time import Time
 from astropy.utils.data import check_download_cache
 from astropy.coordinates import SkyCoord
@@ -406,11 +406,16 @@ class Camera:
         self.flatFiles = {}
         self.hotFiles = {}
 
+        g_dev['obs'].obs_id
+        g_dev['cam'].alias
+        tempfrontcalib=g_dev['obs'].obs_id + '_' + g_dev['cam'].alias +'_'
+        #print (tempfrontcalib)
+
         
         try:
             #self.biasframe = fits.open(
             tempbiasframe = fits.open(self.obsid_path + "archive/" + self.alias + "/calibmasters" \
-                                      + "/BIAS_master_bin1.fits")
+                                      + "/" + tempfrontcalib + "/BIAS_master_bin1.fits")
             tempbiasframe = np.array(tempbiasframe[0].data, dtype=np.float32)
             self.biasFiles.update({'1': tempbiasframe})
             del tempbiasframe
@@ -423,7 +428,7 @@ class Camera:
         try:
             #self.darkframe = fits.open(
             tempdarkframe = fits.open(self.obsid_path + "archive/" + self.alias + "/calibmasters" \
-                                      + "/DARK_master_bin1.fits")
+                                      + "/" + tempfrontcalib +  "/DARK_master_bin1.fits")
 
             tempdarkframe = np.array(tempdarkframe[0].data, dtype=np.float32)
             self.darkFiles.update({'1': tempdarkframe})
@@ -2045,6 +2050,7 @@ class Camera:
                         imageCollected = 1
                     except Exception as e:
                         plog(e)
+                        plog (traceback.format_exc())
                         if "Image Not Available" in str(e):
                             plog("Still waiting for file to arrive: ", e)
                         time.sleep(3)

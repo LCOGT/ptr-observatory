@@ -472,7 +472,7 @@ class Observatory:
         #NB The above put dome closed and telescope at Park, Which is where it should have been upon entry.
         #g_dev['seq'].bias_dark_script(req, opt, morn=True)
         
-        #g_dev['seq'].regenerate_local_masters()
+        g_dev['seq'].regenerate_local_masters()
 
 
     def set_last_reference(self, delta_ra, delta_dec, last_time):
@@ -2730,10 +2730,10 @@ sel
                     while saver == 0 and saverretries < 10:
                         try:
                             #hdu=fits.PrimaryHDU()
-                            hdu=fits.CompImageHDU()
+                            #hdu=fits.CompImageHDU()
                         
-                            hdu.data=slow_process[2]                            
-                            hdu.header=temphduheader
+                            #hdu.data=slow_process[2]                            
+                            #hdu.header=temphduheader
                             
                             
                             # Figure out which folder to send the calibration file to
@@ -2774,17 +2774,37 @@ sel
                                     n_files=len(list_of_files)
                                     oldest_file=min(list_of_files, key=os.path.getctime)
                                     os.remove(oldest_file)
-                                    plog("removed old flat: " + str(oldest_file))
+                                    plog("removed old flat: " + str(oldest_file))                                                      
                             
-                            
-                            hdu.writeto(
+                            hdufz = fits.CompImageHDU(
+                                np.array(slow_process[2] , dtype=np.float32), temphduheader
+                            )
+                            hdufz.verify("fix")
+                            hdufz.header[
+                                "BZERO"
+                            ] = 0  # Make sure there is no integer scaling left over
+                            hdufz.header[
+                                "BSCALE"
+                            ] = 1  # Make sure there is no integer scaling left over
+                            hdufz.writeto(
                                 tempfilename, overwrite=True, output_verify='silentfix'
-                            )  # Save full raw file locally
+                            )
+                            
+                            #hdu.writeto(
+                            #    tempfilename, overwrite=True, output_verify='silentfix'
+                            #)  # Save full raw file locally
+                            
                             try:
-                                hdu.close()
+                                hdufz.close()
                             except:
                                 pass                    
-                            del hdu
+                            del hdufz
+                            
+                            #try:
+                            #    hdu.close()
+                            #except:
+                            #    pass                    
+                            #del hdu
                             saver = 1
                             
                         except Exception as e:
