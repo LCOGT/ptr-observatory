@@ -10,13 +10,13 @@ Created on Fri Feb 07,  11:57:41 2020
 #        1         2         3         4         6         7         8         9         0         1         2       2
 #234567890123456789012345678901234567890123456789012345678901234567890123456789012345678901234567890123456789012345678
 #import json
-import time
+#import time
 #import ptr_events
 #from pprint import pprint
 
 #  NB NB  Json is not bi-directional with tuples (), use lists [], nested if tuples as needed, instead.
 #  NB NB  My convention is if a value is naturally a float I add a decimal point even to 0.
-g_dev = None
+#g_dev = None
 
  # bolt = ['u', 'g', 'r', 'i', 'zs', 'B', 'V', 'EXO', 'w', 'O3', 'Ha', 'S', 'Cr', 'NIR']
  # print(len(bolt))
@@ -117,13 +117,13 @@ site_config = {
     'automatic_detail_default': "Enclosure is initially set to Automatic mode.",
     'observing_check_period' : 2,    # How many minutes between weather checks
     'enclosure_check_period' : 2,    # How many minutes between enclosure checks
-    'auto_eve_bias_dark': True,
-    'auto_midnight_moonless_bias_dark': False,
+    'auto_eve_bias_dark': False,
+    'auto_midnight_moonless_bias_dark': True,
     'auto_eve_sky_flat': True,
     'eve_sky_flat_sunset_offset': -60.5,  #  Minutes  neg means before, + after.
     'eve_cool_down_open' : -105.0,
     'auto_morn_sky_flat': False,
-    'auto_morn_bias_dark': True,
+    'auto_morn_bias_dark': False,
     're-calibrate_on_solve': True,
     'pointing_calibration_on_startup': False,
     'periodic_focus_time' : 0.5, # This is a time, in hours, over which to bypass automated focussing (e.g. at the start of a project it will not refocus if a new project starts X hours after the last focus)
@@ -478,7 +478,7 @@ site_config = {
                         # #['LRGB',  [0,  0],     0, .221, [   0,    0], 'LRGB']],   #10.
                         
                         #['w',     [0,  0],     0, 72.7, [1.00 ,  72], 'PL'],    #0.   For sequencer autofocus  consider foc or f filter
-                        ['focus', [0,  0],     0, 148, [1.00 ,  72], 'focus'],    #0.
+                        #['focus', [0,  0],     0, 148, [1.00 ,  72], 'focus'],    #0.
                         ['lum',    [0,  0],     0, 179, [1.00 ,  72], 'PhLum'],    #1.
                         ['ip',    [1,  1],     0, 50, [1.00 , 119], 'PhRed'],    #2.
                         ['v',    [2,  2],     0, 56, [1.00 , 113], 'PhGreen'],    #3.
@@ -663,9 +663,13 @@ site_config = {
                 'pix_scale': 0.637,
                 'do_cosmics' : False,
                 #'dark_length' : 1,
-                'bias_count' : 10,
-                'dark_count' : 10,
-                'flat_count' : 10,
+                'number_of_bias_to_collect' : 63,
+                'number_of_dark_to_collect' : 63,
+                'number_of_flat_to_collect' : 10,
+                'number_of_bias_to_store' : 63,
+                'number_of_dark_to_store' : 63,
+                'number_of_flat_to_store' : 63,
+                
                 'dark_exposure': 75,
                 'has_darkslide':  False,
                 'darkslide_com':  None,

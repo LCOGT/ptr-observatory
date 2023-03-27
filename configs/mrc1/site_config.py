@@ -17,12 +17,14 @@ import json
 #NB NB NB json is not bi-directional with tuples (), instead, use lists [], nested if tuples are needed.
 degree_symbol = "°"
 site_name = 'mrc'
-obs_id = ''    #NB These must be unique across all of PTR. Pre-pend with airport code if needed: 'sba_wmdo'
+obs_id = 'mrc1'    #NB These must be unique across all of PTR. Pre-pend with airport code if needed: 'sba_wmdo'
 
 site_config = {
-
-    'site': 'mrc',
-    'site_id': 'mrc',
+    # THESE ARE TO BE DELETED VERY SOON!
+    # THEY EXIST SOLELY SO AS TO NOT BREAK THE UI UNTIL 
+    #THINGS ARE MOVED TO OBS_ID
+    'site': 'mrc1',
+    'site_id': 'mrc1',
     ####################################################
     ####################################################
     'obs_id': 'mrc1',
@@ -750,8 +752,12 @@ site_config = {
                 'cycle_time':            0,   # Meas 20230219  for a bias
                 #'enable_bin':            [ True, False,  False,  False],
                 #'bias_dark_bin_spec':    ['1,1', '2,2', '3,3', '4,4' ],    #Default binning for flats
-                'bias_count':    63,
-                'dark_count':    17,
+                'number_of_bias_to_collect' : 63,
+                'number_of_dark_to_collect' : 17,
+                'number_of_flat_to_collect' : 10,
+                'number_of_bias_to_store' : 128,
+                'number_of_dark_to_store' : 128,
+                'number_of_flat_to_store' : 128,
  
                 'dark_exposure': 360,
                 #'flat_bin_spec':         ['1,1', '2,2', '3,3', '4,4' ],   #Is this necessary?

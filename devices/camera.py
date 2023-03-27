@@ -212,90 +212,17 @@ class Qcam:
 
 @CFUNCTYPE(None, c_char_p)
 def pnp_in(cam_id):
-    #breakpoint()
+    
     plog("QHY Direct connect to camera: %s" % cam_id.decode('utf-8'))
     global qhycam_id
     qhycam_id=cam_id
     init_camera_param(qhycam_id)
-    qhycam.camera_params[qhycam_id]['connect_to_pc'] = True
-    #os.makedirs(cam_id.decode('utf-8'), exist_ok=True)
-    # select read mode
-    #success = qhycam.so.GetReadModesNumber(cam_id, byref(qhycam.camera_params[cam_id]['read_mode_number']))
-    # if success == qhycam.QHYCCD_SUCCESS:
-    #     print('-  read mode - %s' % qhycam.camera_params[cam_id]['read_mode_number'].value)
-    #     for read_mode_item_index in range(0, qhycam.camera_params[cam_id]['read_mode_number'].value):
-    #         read_mode_name = create_string_buffer(qhycam.STR_BUFFER_SIZE)
-    #         qhycam.so.GetReadModeName(cam_id, read_mode_item_index, read_mode_name)
-    #         print('%s  %s %s' % (cam_id.decode('utf-8'), read_mode_item_index, read_mode_name.value))
-    # else:
-    #     print('GetReadModesNumber false')
-    #     qhycam.camera_params[cam_id]['read_mode_number'] = c_uint32(self.config["camera"][self.name]["settings"]['direct_qhy_readout_mode'])
-
-    # read_mode_count = qhycam.camera_params[cam_id]['read_mode_number'].value
-    # if read_mode_count == 0:
-    #     read_mode_count = 1
-    # for read_mode_index in range(0, read_mode_count):
-    #     test_frame(cam_id, qhycam.stream_single_mode, cam.bit_depth_16, read_mode_index)
-    #     test_frame(cam_id, qhycam.stream_live_mode, cam.bit_depth_16, read_mode_index)
-    #     test_frame(cam_id, qhycam.stream_single_mode, cam.bit_depth_8, read_mode_index)
-    #     test_frame(cam_id, qhycam.stream_live_mode, cam.bit_depth_8, read_mode_index)
-    #     qhycam.so.CloseQHYCCD(cam.camera_params[cam_id]['handle'])
+    qhycam.camera_params[qhycam_id]['connect_to_pc'] = True   
 
 
 @CFUNCTYPE(None, c_char_p)
 def pnp_out(cam_id):
     print("cam   - %s" % cam_id.decode('utf-8'))
-
-
-# MTF - THIS IS A QHY FUNCTION THAT I HAVEN"T FIGURED OUT WHETHER IT IS MISSION CRITICAL OR NOT
-# def get_average_l(image):
-#     im = np.array(image)
-#     w, h = im.shape
-#     return np.average(im.reshape(w * h))
-
-# MTF - THIS IS A QHY FUNCTION THAT I HAVEN"T FIGURED OUT WHETHER IT IS MISSION CRITICAL OR NOT
-# def np_array_to_ascii(pil_image, cols, scale, more_levels):
-#     global gscale1, gscale2
-#     W, H = pil_image.size[0], pil_image.size[1]
-#     print("input image dims: %d x %d" % (W, H))
-#     w = W / cols
-#     h = w / scale
-#     rows = int(H / h)
-
-#     print("cols: %d, rows: %d" % (cols, rows))
-#     print("tile dims: %d x %d" % (w, h))
-#     if cols > W or rows > H:
-#         print("Image too small for specified cols!")
-#         exit(0)
-
-#     aimg = []
-#     for j in range(rows):
-#         y1 = int(j * h)
-#         y2 = int((j + 1) * h)
-
-#         if j == rows - 1:
-#             y2 = H
-
-#         aimg.append("")
-
-#         for i in range(cols):
-#             x1 = int(i * w)
-#             x2 = int((i + 1) * w)
-
-#             if i == cols - 1:
-#                 x2 = W
-
-#             img = pil_image.crop((x1, y1, x2, y2))
-#             avg = int(get_average_l(img))
-
-#             if more_levels:
-#                 gsval = gscale1[int((avg * 69) / 255)]
-#             else:
-#                 gsval = gscale2[int((avg * 9) / 255)]
-
-#             aimg[j] += gsval
-
-#     return aimg
 
 # MTF - THIS IS A QHY FUNCTION THAT I HAVEN"T FIGURED OUT WHETHER IT IS MISSION CRITICAL OR NOT
 def init_camera_param(cam_id):
@@ -482,7 +409,7 @@ class Camera:
         
         try:
             #self.biasframe = fits.open(
-            tempbiasframe = fits.open(self.archive_path  + self.alias + "/calibmasters" \
+            tempbiasframe = fits.open(self.obsid_path + "archive/" + self.alias + "/calibmasters" \
                                       + "/BIAS_master_bin1.fits")
             tempbiasframe = np.array(tempbiasframe[0].data, dtype=np.float32)
             self.biasFiles.update({'1': tempbiasframe})
@@ -495,7 +422,7 @@ class Camera:
         
         try:
             #self.darkframe = fits.open(
-            tempdarkframe = fits.open(self.archive_path  + self.alias + "/calibmasters" \
+            tempdarkframe = fits.open(self.obsid_path + "archive/" + self.alias + "/calibmasters" \
                                       + "/DARK_master_bin1.fits")
 
             tempdarkframe = np.array(tempdarkframe[0].data, dtype=np.float32)
@@ -505,7 +432,7 @@ class Camera:
             plog("Dark frame for Binning 1 not available")  
 
         try:            
-            fileList = glob.glob(self.archive_path + self.alias + "/calibmasters" \
+            fileList = glob.glob(self.obsid_path + "archive/" + self.alias + "/calibmasters" \
                                  + "/masterFlat*_bin1.npy")
             
             for file in fileList:
@@ -984,11 +911,13 @@ class Camera:
         #tempcamera.Disconnect()
         self.async_exposure_lock=False
 
-    def _theskyx_expose(self, exposure_time, imtypeb):
+    def _theskyx_expose(self, exposure_time, bias_dark_or_light_type_frame):
         self.camera.ExposureTime = exposure_time
-        plog ("imtypeb: " + str(imtypeb))
-        if imtypeb == 0:
+        #plog ("bias_dark_or_light_type_frame: " + str(bias_dark_or_light_type_frame))
+        if bias_dark_or_light_type_frame == 'dark':            
             self.camera.Frame = 3 
+        elif bias_dark_or_light_type_frame == 'bias':            
+            self.camera.Frame = 2 
         else:
             self.camera.Frame = 1
         #breakpoint()
@@ -1052,7 +981,13 @@ class Camera:
     def _maxim_setpoint(self):
         return self.camera.TemperatureSetpoint
 
-    def _maxim_expose(self, exposure_time, imtypeb):
+    def _maxim_expose(self, exposure_time, bias_dark_or_light_type_frame):
+        
+        if bias_dark_or_light_type_frame == 'bias' or bias_dark_or_light_type_frame == 'dark':
+            imtypeb=0
+        else:
+            imtypeb=1
+        
         self.camera.Expose(exposure_time, imtypeb)
 
     def _maxim_stop_expose(self):
@@ -1107,7 +1042,13 @@ class Camera:
             plog("Camera cannot set cooling temperature: Using 10.0C")
             return 10.0
 
-    def _ascom_expose(self, exposure_time, imtypeb):
+    def _ascom_expose(self, exposure_time, bias_dark_or_light_type_frame):
+        
+        if bias_dark_or_light_type_frame == 'bias' or bias_dark_or_light_type_frame == 'dark':
+            imtypeb=0
+        else:
+            imtypeb=1
+        
         self.camera.StartExposure(exposure_time, imtypeb)
 
     def _ascom_stop_expose(self):
@@ -1185,16 +1126,11 @@ class Camera:
         #print (temptemp)
         #return 
     
-    def _qhyccd_expose(self, exposure_time, imtypeb):
+    def _qhyccd_expose(self, exposure_time, bias_dark_or_light_type_frame):
         
         success = qhycam.so.SetQHYCCDParam(qhycam.camera_params[qhycam_id]['handle'], qhycam.CONTROL_EXPOSURE, c_double(exposure_time*1000*1000))
-        
-        #breakpoint()
         qhycam.so.ExpQHYCCDSingleFrame(qhycam.camera_params[qhycam_id]['handle'])
-        
-        
-        
-        #self.camera.StartExposure(exposure_time, imtypeb)
+   
     
     def _qhyccd_stop_expose(self):
         success = qhycam.so.GetQHYCCDSingleFrame(qhycam.camera_params[qhycam_id]['handle'])
@@ -1523,28 +1459,34 @@ class Camera:
         else:
             do_sep = True
 
-        if imtype.lower() in ("bias", "dark", "lamp flat"):
-            if imtype.lower() == "bias":
-                exposure_time = 0.0
-            imtypeb = False  # don't open the shutter.
+        if imtype.lower() in ("bias"):
+            
+            exposure_time = 0.0
+            bias_dark_or_light_type_frame = 'bias'  # don't open the shutter.  
+            frame_type = imtype.replace(" ", "")
+        
+        elif imtype.lower() in ("dark", "lamp flat"):
+            
+            bias_dark_or_light_type_frame = 'dark'  # don't open the shutter.
             lamps = "turn on led+tungsten lamps here, if lampflat"
             frame_type = imtype.replace(" ", "")
+        
         elif imtype.lower() in ("near flat", "thor flat", "arc flat"):
-            imtypeb = False
+            bias_dark_or_light_type_frame = 'light'
             lamps = "turn on ThAr or NeAr lamps here"
             frame_type = "arc"
         elif imtype.lower() in ("sky flat", "screen flat", "solar flat"):
-            imtypeb = True  # open the shutter.
+            bias_dark_or_light_type_frame = 'light'  # open the shutter.
             lamps = "screen lamp or none"
             frame_type = imtype.replace(
                 " ", ""
             )  # note banzai doesn't appear to include screen or solar flat keywords.
         elif imtype.lower() == "focus":
             frame_type = "focus"
-            imtypeb = True
+            bias_dark_or_light_type_frame = 'light'
             lamps = None
         else:  # 'light', 'experimental', 'autofocus probe', 'quick', 'test image', or any other image type
-            imtypeb = True
+            bias_dark_or_light_type_frame = 'light'
             lamps = None
             if imtype.lower() in ("experimental", "autofocus probe", "auto_focus"):
                 frame_type = "experimental"
@@ -1599,16 +1541,23 @@ class Camera:
 
         # Here we set up the filter, and later on possibly rotational composition.
         try:
+            #breakpoint()
             
+            
+                
             if g_dev["fil"].null_filterwheel == False:
-                requested_filter_name = str(
-                    optional_params.get(
-                        "filter",
-                        self.config["filter_wheel"]["filter_wheel1"]["settings"][
-                            "default_filter"
-                        ],
-                    )
-                )  
+                
+                if imtype in ['bias','dark']:
+                    requested_filter_name = 'dark'
+                else:
+                    requested_filter_name = str(
+                        optional_params.get(
+                            "filter",
+                            self.config["filter_wheel"]["filter_wheel1"]["settings"][
+                                "default_filter"
+                            ],
+                        )
+                    )  
                 
                 # Check if filter needs changing, if so, change.                
                 if not g_dev['fil'].filter_selected == requested_filter_name:
@@ -1766,18 +1715,18 @@ class Camera:
                             ldr_handle_time = None
                             ldr_handle_high_time = None  #  This is not maxim-specific
 
-                            if self.darkslide and imtypeb:
+                            if self.darkslide and bias_dark_or_light_type_frame == 'light':
                                 if self.darkslide_state != 'Open':
                                     self.darkslide_instance.openDarkslide()
                                     self.darkslide_open = True
                                     self.darkslide_state = 'Open'
-                            elif self.darkslide and not imtypeb:
+                            elif self.darkslide and (bias_dark_or_light_type_frame == 'bias' or bias_dark_or_light_type_frame == 'dark'):
                                 if self.darkslide_state != 'Closed':
                                     self.darkslide_instance.closeDarkslide()
                                     self.darkslide_open = False
                                     self.darkslide_state = 'Closed'
-                            else:
-                                pass
+                            #else:
+                            #    pass
  
                             self.pre_mnt = []
                             self.pre_rot = []
@@ -1805,16 +1754,13 @@ class Camera:
                                 self.pre_mnt
                             )  # Should do this close to the exposure
 
-                            if imtypeb:
-                                imtypeb = 1
-                            else:
-                                imtypeb = 0
+
                             self.t2 = time.time()
                 
                             # Good spot to check if we need to nudge the telescope
                             check_platesolve_and_nudge()   
                             
-                            self._expose(exposure_time, imtypeb)
+                            self._expose(exposure_time, bias_dark_or_light_type_frame)
                             
                             g_dev['obs'].time_since_last_exposure = time.time()
                         else:
@@ -2380,11 +2326,27 @@ class Camera:
                         )
                     except:
                         plog ("Full well capacity not set for this binning in the site-config")
-                    hdu.header["CMOSGAIN"] = (0, "CMOS Camera System Gain")
-                    hdu.header["CMOSOFFS"] = (10, "CMOS Camera offset")
-                    hdu.header["CAMOFFS"] = (10, "Camera offset")
-                    hdu.header["CAMGAIN"] = (0, "Camera gain")
-                    hdu.header["CAMUSBT"] = (60, "Camera USB traffic")
+                    
+                    if self.is_cmos and self.driver ==  "QHYCCD_Direct_Control":
+                        hdu.header["CMOSGAIN"] = (self.config["camera"][self.name][
+                            "settings"
+                        ]['direct_qhy_gain'], "CMOS Camera System Gain")
+                        
+                        
+                        hdu.header["CMOSOFFS"] = (self.config["camera"][self.name][
+                            "settings"
+                        ]['direct_qhy_offset'], "CMOS Camera System Offset")
+
+                        hdu.header["CAMUSBT"] = (self.config["camera"][self.name][
+                            "settings"
+                        ]['direct_qhy_usb_speed'], "Camera USB traffic")
+                        hdu.header["READMODE"] = (self.config["camera"][self.name][
+                            "settings"
+                        ]['direct_qhy_readout_mode'], "QHY Readout Mode")
+    
+                        
+
+                        
                     hdu.header["TIMESYS"] = ("UTC", "Time system used")
                     hdu.header["DATE"] = (
                         datetime.date.strftime(
@@ -2454,6 +2416,18 @@ class Camera:
                             "No Filter",
                             "An index into a DB",
                         )  # Get a number from the hardware or via Maxim.  NB NB why not cwl and BW instead, plus P
+                    
+                    # THESE ARE THE RELEVANT FITS HEADER KEYWORDS
+                    # FOR OSC MATCHING AT A LATER DATE.
+                    # THESE ARE SET TO DEFAULT VALUES FIRST AND
+                    # THINGS CHANGE LATER BEFORE BANZAI
+                    hdu.header["OSCMATCH"] = 'no'
+                    hdu.header['OSCSEP'] = 'no'
+                    
+                    
+                    
+                    
+                    
                     if g_dev["scr"] is not None and frame_type == "screenflat":
                         hdu.header["SCREEN"] = (
                             int(g_dev["scr"].bright_setting),
@@ -3367,6 +3341,15 @@ class Camera:
                     self.to_slow_process(5,('fz_and_send', raw_path + raw_name00 + ".fz", hdu.data, hdu.header, frame_type, g_dev["mnt"].current_icrs_ra, g_dev["mnt"].current_icrs_dec))                    
 
         
+                    # If the files are local calibrations, save them out to the local calibration directory
+                    if ( frame_type.lower() in [
+                        "bias",
+                        "dark",
+                        "flat",
+                        
+                        "skyflat"]):
+                        self.to_slow_process(200000000, ('localcalibration', raw_name00, hdu.data, hdu.header, frame_type, g_dev["mnt"].current_icrs_ra, g_dev["mnt"].current_icrs_dec))
+
                     # Similarly to the above. This saves the RAW file to disk
                     # it works 99.9999% of the time.
                    
