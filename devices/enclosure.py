@@ -294,7 +294,6 @@ class Enclosure:
         
     def get_status(self) -> dict:
 
-        
         if self.directly_connected and not self.is_dome:
             #plog("we got a direct connect status!")
             try:
@@ -445,7 +444,7 @@ class Enclosure:
             status['enclosure_mode'] = self.mode
             #status['enclosure_message']: self.state
             status['enclosure_synchronized']= True
-            #g_dev['redis'].set('enc_status', status, ex=3600)  #This is occasionally used by mouning.
+            g_dev['redis'].set('enc_status', status, ex=3600)  #This is occasionally used by mouning.
 
             if self.is_dome:
 

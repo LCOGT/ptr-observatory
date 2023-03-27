@@ -424,9 +424,12 @@ class ObservingConditions:
                         status['meas_sky_mpsas'] = eval(g_dev['redis'].get('unihedron1'))[0]
                 except:
                     pass
-                g_dev["redis"].set(
-                    "wx_state", status
-                )  # This needs to become generalized IP
+                try:
+                    g_dev["redis"].set(
+                        "wx_state", status
+                    )  # This needs to become generalized IP
+                except Exception as e:
+                    plog ("could not set redis state", e)
 
             # Only write when around dark, put in CSV format, used to calibrate Unihedron.
             sunZ88Op, sunZ88Cl, sunrise, ephemNow = g_dev[
