@@ -400,11 +400,15 @@ class Sequencer:
                         
                         plog("Attempting to Open Shutter. Waiting until shutter opens")
                         if not g_dev['enc'].enclosure.ShutterStatus == 0:
+                        #if not enc_status['shutter_status']
                             time.sleep(self.config['period_of_time_to_wait_for_roof_to_open'])
                         
                         self.enclosure_next_open_time = time.time() + (self.config['roof_open_safety_base_time']*60) * g_dev['seq'].opens_this_evening
                     
-                    if g_dev['enc'].enclosure.ShutterStatus == 0:                    
+                    
+                    # check status for enclosure
+                    g_dev['obs'].update_status()
+                    if enc_status['shutter_status'] in ['Open', 'open','Opening', 'opening']:                   
                         g_dev['obs'].open_and_enabled_to_observe = True                    
                         
                         try:
@@ -422,7 +426,8 @@ class Sequencer:
                         #g_dev['enc'].close_roof_directly()
                         plog ("opens this eve: " + str(g_dev['seq'].opens_this_evening))
                         plog ("minutes until next open attempt ALLOWED: " + str( (g_dev['seq'].enclosure_next_open_time - time.time()) /60))
-                        g_dev['enc'].close_roof_directly({}, {})
+                        if self.config['obsid_roof_control']:
+                            g_dev['enc'].close_roof_directly({}, {})
                         
                         #g_dev['enc'].close_command({}, {})
                         if not g_dev['mnt'].mount.AtParK:   ###Test comment here
