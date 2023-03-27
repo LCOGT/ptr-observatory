@@ -374,11 +374,17 @@ class Sequencer:
                             if self.config['obsid_roof_control'] and not enc_status['shutter_status'] in ['Open', 'open','Opening', 'opening'] and g_dev['enc'].mode == 'Automatic'\
                             and (self.config['obsid_allowed_to_open_roof']) and self.weather_report_is_acceptable_to_observe:
                             #breakpoint()
+                                plog("Attempting to Open Shutter. Waiting until shutter opens")
                                 self.opens_this_evening= self.opens_this_evening+1                    
                                 
                                 g_dev['enc'].open_roof_directly({}, {})
                                 #g_dev['enc'].open_command({}, {})
                                 #plog("blip")
+                                if not g_dev['enc'].enclosure.ShutterStatus == 0:
+                                    time.sleep(self.config['period_of_time_to_wait_for_roof_to_open'])
+                                
+                                self.enclosure_next_open_time = time.time() + (self.config['roof_open_safety_base_time']*60) * g_dev['seq'].opens_this_evening
+                    
                         
                                 
                                 
@@ -387,15 +393,16 @@ class Sequencer:
                         #breakpoint()
                         self.opens_this_evening= self.opens_this_evening+1                    
                         
+                        plog("Attempting to Open Shutter. Waiting until shutter opens")
                         g_dev['enc'].open_roof_directly({}, {})
                         #g_dev['enc'].open_command({}, {})
                         #plog("plop")            
                         
-                    plog("Attempting to Open Shutter. Waiting until shutter opens")
-                    if not g_dev['enc'].enclosure.ShutterStatus == 0:
-                        time.sleep(self.config['period_of_time_to_wait_for_roof_to_open'])
-                    
-                    self.enclosure_next_open_time = time.time() + (self.config['roof_open_safety_base_time']*60) * g_dev['seq'].opens_this_evening
+                        plog("Attempting to Open Shutter. Waiting until shutter opens")
+                        if not g_dev['enc'].enclosure.ShutterStatus == 0:
+                            time.sleep(self.config['period_of_time_to_wait_for_roof_to_open'])
+                        
+                        self.enclosure_next_open_time = time.time() + (self.config['roof_open_safety_base_time']*60) * g_dev['seq'].opens_this_evening
                     
                     if g_dev['enc'].enclosure.ShutterStatus == 0:                    
                         g_dev['obs'].open_and_enabled_to_observe = True                    
@@ -411,7 +418,7 @@ class Sequencer:
                         return
                     
                     else:
-                        plog("Failed to open roof, parking telescope again and sending the close command to the roof.")
+                        plog("Failed to open roof/WEMA hasn't opened roof', parking telescope again and sending the close command to the roof.")
                         #g_dev['enc'].close_roof_directly()
                         plog ("opens this eve: " + str(g_dev['seq'].opens_this_evening))
                         plog ("minutes until next open attempt ALLOWED: " + str( (g_dev['seq'].enclosure_next_open_time - time.time()) /60))
