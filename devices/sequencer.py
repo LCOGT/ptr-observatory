@@ -884,7 +884,9 @@ class Sequencer:
                 if (time.time() - g_dev['obs'].time_of_last_exposure) > 900 and (time.time() - g_dev['obs'].time_of_last_slew) > 900:
                     # Check no other commands or exposures are happening
                     if g_dev['obs'].cmd_queue.empty() and not g_dev["cam"].exposure_busy:
+
                         # If enclosure is shut for maximum darkness
+
                         if enc_status['shutter_status'] in ['Closed', 'closed']:
                             # Check the temperature is in range
                             currentaltazframe = AltAz(location=g_dev['mnt'].site_coordinates, obstime=Time.now())
@@ -1723,7 +1725,7 @@ class Sequencer:
                 deleteDirectories=[]
                 deleteTimes=[]
                 for q in range(len(directories)):
-                    if 'orphans' in directories[q] or 'calibmasters' in directories[q] or 'lng' in directories[q] or 'seq' in directories[q]:
+                    if 'localcalibrations' in directories[q] or 'orphans' in directories[q] or 'calibmasters' in directories[q] or 'lng' in directories[q] or 'seq' in directories[q]:
                         pass
                     elif ((timenow_cull)-os.path.getmtime(directories[q])) > (self.config['archive_age'] * 24* 60 * 60) :
                         deleteDirectories.append(directories[q])
