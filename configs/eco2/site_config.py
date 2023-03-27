@@ -844,8 +844,8 @@ site_config = {
                 #'enable_bin':            [ True, False,  False,  False],
                 #'bias_dark_bin_spec':    ['1,1', '2,2', '3,3', '4,4' ],    #Default binning for flats
 
-                'number_of_bias_to_collect' : 63,
-                'number_of_dark_to_collect' : 63,
+                'number_of_bias_to_collect' : 128,
+                'number_of_dark_to_collect' : 128,
                 'number_of_flat_to_collect' : 128,
                 'number_of_bias_to_store' : 128,
                 'number_of_dark_to_store' : 128,
