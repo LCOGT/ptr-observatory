@@ -273,7 +273,7 @@ class Enclosure:
         self.last_current_az = 315.
         self.last_slewing = False
         self.prior_status = {'enclosure_mode': 'Manual'}    #Just to initialze this rarely used variable.
-
+        self.status = None    #Initialise this to cut down on faults.
 
         self.guarded_roof_open_timer = time.time()
 
@@ -294,7 +294,7 @@ class Enclosure:
         
     def get_status(self) -> dict:
 
-        
+
         if self.directly_connected and not self.is_dome:
             #plog("we got a direct connect status!")
             try:

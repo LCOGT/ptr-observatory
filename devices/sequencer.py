@@ -476,7 +476,7 @@ class Sequencer:
         enc_status = g_dev['enc'].status
         events = g_dev['events']
         
-
+        
         # Check for delayed opening of the observatory and act accordingly.
         #breakpoint()
         # If the observatory is simply delayed until opening, then wait until then, then attempt to start up the observatory
@@ -1596,7 +1596,7 @@ class Sequencer:
         
         
         for fzneglect in bigfzs:
-            plog ("Reattempting upload of " + str(os.path.basename(fzneglect)))
+            #plog ("Reattempting upload of " + str(os.path.basename(fzneglect)))
             #breakpoint()
             #image = (im_path, name)
             #g_dev["obs"].aws_queue.put((priority, image), block=False)

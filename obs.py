@@ -1127,49 +1127,51 @@ sel
                 
             # Roof Checks only if not in Manual mode and not debug mode
             if g_dev['enc'].mode != 'Manual' or not self.debug_flag:
-
-                if g_dev['enc'].status['shutter_status'] == 'Software Fault':
-                    plog ("Software Fault Detected. Will alert the authorities!")
-                    plog ("Parking Scope in the meantime")
-                    if self.config['obsid_roof_control'] and g_dev['enc'].mode == 'Automatic':
-                        self.open_and_enabled_to_observe=False
-                        #self.cancel_all_activity()   #NB THis kills bias-dark
-                        if not g_dev['mnt'].mount.AtPark:  
-                            if g_dev['mnt'].home_before_park:
-                                g_dev['mnt'].home_command()
-                            g_dev['mnt'].park_command()
-                        # will send a Close call out into the blue just in case it catches
-                        g_dev['enc'].enclosure.CloseShutter()
-                        g_dev['seq'].enclosure_next_open_time = time.time() + self.config['roof_open_safety_base_time'] * g_dev['seq'].opens_this_evening
+                if g_dev['enc'].status is not None:
+                    if g_dev['enc'].status['shutter_status'] == 'Software Fault':
+                        plog ("Software Fault Detected. Will alert the authorities!")
+                        plog ("Parking Scope in the meantime")
+                        if self.config['obsid_roof_control'] and g_dev['enc'].mode == 'Automatic':
+                            self.open_and_enabled_to_observe=False
+                            #self.cancel_all_activity()   #NB THis kills bias-dark
+                            if not g_dev['mnt'].mount.AtPark:  
+                                if g_dev['mnt'].home_before_park:
+                                    g_dev['mnt'].home_command()
+                                g_dev['mnt'].park_command()
+                            # will send a Close call out into the blue just in case it catches
+                            g_dev['enc'].enclosure.CloseShutter()
+                            g_dev['seq'].enclosure_next_open_time = time.time() + self.config['roof_open_safety_base_time'] * g_dev['seq'].opens_this_evening
+                        
                     
-                
-                if g_dev['enc'].status['shutter_status'] == 'Closing':
-                    if self.config['obsid_roof_control'] and g_dev['enc'].mode == 'Automatic':
-                        plog ("Detected Roof Closing. Sending another close command just in case the roof got stuck on this status (this happens!)")
-                        self.open_and_enabled_to_observe=False
-                        #self.cancel_all_activity()    #NB Kills bias dark
-                        g_dev['enc'].enclosure.CloseShutter()
-                        g_dev['seq'].enclosure_next_open_time = time.time() + self.config['roof_open_safety_base_time'] * g_dev['seq'].opens_this_evening
-                
-                if g_dev['enc'].status['shutter_status'] == 'Error':
-                    if self.config['obsid_roof_control'] and g_dev['enc'].mode == 'Automatic':
-                        plog ("Detected an Error in the Roof Status. Closing up for safety.")
-                        plog ("This is usually because the weather system forced the roof to shut.")
-                        plog ("By closing it again, it resets the switch to closed.")
-                        #self.cancel_all_activity()    #NB Kills bias dark
-                        self.open_and_enabled_to_observe=False
-                        g_dev['enc'].enclosure.CloseShutter()
-                        g_dev['seq'].enclosure_next_open_time = time.time() + self.config['roof_open_safety_base_time'] * g_dev['seq'].opens_this_evening
-                        #while g_dev['enc'].enclosure.ShutterStatus == 3:
-                        #plog ("closing")
-                        plog ("Also Parking the Scope")    
-                        if not g_dev['mnt'].mount.AtPark:  
-                            if g_dev['mnt'].home_before_park:
-                                g_dev['mnt'].home_command()
-                            g_dev['mnt'].park_command()  
-    
-                roof_should_be_shut=False
-                
+                    if g_dev['enc'].status['shutter_status'] == 'Closing':
+                        if self.config['obsid_roof_control'] and g_dev['enc'].mode == 'Automatic':
+                            plog ("Detected Roof Closing. Sending another close command just in case the roof got stuck on this status (this happens!)")
+                            self.open_and_enabled_to_observe=False
+                            #self.cancel_all_activity()    #NB Kills bias dark
+                            g_dev['enc'].enclosure.CloseShutter()
+                            g_dev['seq'].enclosure_next_open_time = time.time() + self.config['roof_open_safety_base_time'] * g_dev['seq'].opens_this_evening
+                    
+                    if g_dev['enc'].status['shutter_status'] == 'Error':
+                        if self.config['obsid_roof_control'] and g_dev['enc'].mode == 'Automatic':
+                            plog ("Detected an Error in the Roof Status. Closing up for safety.")
+                            plog ("This is usually because the weather system forced the roof to shut.")
+                            plog ("By closing it again, it resets the switch to closed.")
+                            #self.cancel_all_activity()    #NB Kills bias dark
+                            self.open_and_enabled_to_observe=False
+                            g_dev['enc'].enclosure.CloseShutter()
+                            g_dev['seq'].enclosure_next_open_time = time.time() + self.config['roof_open_safety_base_time'] * g_dev['seq'].opens_this_evening
+                            #while g_dev['enc'].enclosure.ShutterStatus == 3:
+                            #plog ("closing")
+                            plog ("Also Parking the Scope")    
+                            if not g_dev['mnt'].mount.AtPark:  
+                                if g_dev['mnt'].home_before_park:
+                                    g_dev['mnt'].home_command()
+                                g_dev['mnt'].park_command()  
+        
+                    roof_should_be_shut=False
+                else:
+                    plog("Shutter status probably not reporting correctly. WEMA down?")
+                    
                 if (g_dev['events']['End Morn Sky Flats'] < ephem.now() < g_dev['events']['End Morn Bias Dark']):
                     roof_should_be_shut=True
                     self.open_and_enabled_to_observe=False
@@ -1185,19 +1187,22 @@ sel
                     self.open_and_enabled_to_observe=False
                 
                 
-                if g_dev['enc'].status['shutter_status'] == 'Open':
-                    if roof_should_be_shut==True :
-                        plog ("Safety check found that the roof was open outside of the normal observing period")    
-                        if self.config['obsid_roof_control'] and g_dev['enc'].mode == 'Automatic':
-                            plog ("Shutting the roof out of an abundance of caution. This may also be normal functioning")
-                            
-                            #self.cancel_all_activity()  #NB Kills bias dark
-                            g_dev['enc'].enclosure.CloseShutter()
-                            while g_dev['enc'].enclosure.ShutterStatus == 3:
-                                plog ("closing")
-                                time.sleep(3)
-                        else:
-                            plog ("This scope does not have control of the roof though.")
+                try:
+                    if g_dev['enc'].status['shutter_status'] == 'Open':
+                        if roof_should_be_shut==True :
+                            plog ("Safety check found that the roof was open outside of the normal observing period")    
+                            if self.config['obsid_roof_control'] and g_dev['enc'].mode == 'Automatic':
+                                plog ("Shutting the roof out of an abundance of caution. This may also be normal functioning")
+                                
+                                #self.cancel_all_activity()  #NB Kills bias dark
+                                g_dev['enc'].enclosure.CloseShutter()
+                                while g_dev['enc'].enclosure.ShutterStatus == 3:
+                                    plog ("closing")
+                                    time.sleep(3)
+                            else:
+                                plog ("This scope does not have control of the roof though.")
+                except:
+                    plog('Line 1192 Shutter status faulted.')
                     
                 if roof_should_be_shut==True and g_dev['enc'].mode == 'Automatic' : # If the roof should be shut, then the telescope should be parked. 
                     if not g_dev['mnt'].mount.AtPark:
@@ -1208,33 +1213,34 @@ sel
                             g_dev['mnt'].home_command()
                         #PWI must receive a park() in order to report being parked.  Annoying problem when debugging, because I want tel to stay where it is.
                         g_dev['mnt'].park_command()  
-                
-                if g_dev['enc'].status['shutter_status'] == 'Closed' : # If the roof IS shut, then the telescope should be shutdown and parked. 
-    
-                    if not g_dev['mnt'].mount.AtPark:
-                        plog ("Telescope found not parked when the observatory roof is shut. Parking scope.")   
-                        self.open_and_enabled_to_observe=False
-                        #self.cancel_all_activity()  #NB Kills bias dark
-                        if g_dev['mnt'].home_before_park:
-                            g_dev['mnt'].home_command()
-                        g_dev['mnt'].park_command()  
-                
-                # if g_dev['enc'].status['shutter_status'] == 'Open':
-                #     self.config['mount']'auto_morn_sky_flat': False,
-                #     if (g_dev['events']['Close and Park'] < ephem.now() < g_dev['events']['End Morn Bias Dark']):
-                #         plog ("Safety check found that it is in the period where the observatory should be closing up")    
-                #         plog ("Checking on the dome being closed and the telescope at park.")                    
-                #         g_dev['enc'].enclosure.CloseShutter()
-                #         while g_dev['enc'].enclosure.ShutterStatus == 3:
-                #             plog ("closing")
-                #         if not g_dev['mnt'].mount.AtPark:  
-                #             g_dev['mnt'].home_command()
-                #             g_dev['mnt'].park_command()  
-                
-                # But after all that if everything is ok, then all is ok, it is safe to observe
-                if g_dev['enc'].status['shutter_status'] == 'Open' and roof_should_be_shut==False :
-                    self.open_and_enabled_to_observe=True
-                
+                if g_dev['enc'].status['shutter_status'] is not None:
+                    if g_dev['enc'].status['shutter_status'] == 'Closed' : # If the roof IS shut, then the telescope should be shutdown and parked. 
+        
+                        if not g_dev['mnt'].mount.AtPark:
+                            plog ("Telescope found not parked when the observatory roof is shut. Parking scope.")   
+                            self.open_and_enabled_to_observe=False
+                            #self.cancel_all_activity()  #NB Kills bias dark
+                            if g_dev['mnt'].home_before_park:
+                                g_dev['mnt'].home_command()
+                            g_dev['mnt'].park_command()  
+                    
+                    # if g_dev['enc'].status['shutter_status'] == 'Open':
+                    #     self.config['mount']'auto_morn_sky_flat': False,
+                    #     if (g_dev['events']['Close and Park'] < ephem.now() < g_dev['events']['End Morn Bias Dark']):
+                    #         plog ("Safety check found that it is in the period where the observatory should be closing up")    
+                    #         plog ("Checking on the dome being closed and the telescope at park.")                    
+                    #         g_dev['enc'].enclosure.CloseShutter()
+                    #         while g_dev['enc'].enclosure.ShutterStatus == 3:
+                    #             plog ("closing")
+                    #         if not g_dev['mnt'].mount.AtPark:  
+                    #             g_dev['mnt'].home_command()
+                    #             g_dev['mnt'].park_command()  
+                    
+                    # But after all that if everything is ok, then all is ok, it is safe to observe
+                    if g_dev['enc'].status['shutter_status'] == 'Open' and roof_should_be_shut==False :
+                        self.open_and_enabled_to_observe=True
+                else:
+                    plog('Shutter status not reporting correctly')
             plog ("Current Open and Enabled to Observe Status: " + str(self.open_and_enabled_to_observe))
             
             # Check the mount is still connected
@@ -1297,7 +1303,7 @@ sel
                 current_camera_temperature=float(g_dev['cam']._temperature())
                 plog ("Cooler is still on at " + str(current_camera_temperature))            
            
-                if current_camera_temperature - g_dev['cam'].setpoint > 0.2 or current_camera_temperature - g_dev['cam'].setpoint < -0.5:
+                if current_camera_temperature - g_dev['cam'].setpoint > 1.5 or current_camera_temperature - g_dev['cam'].setpoint < -1.5:
                     
                     #print (current_camera_temperature - g_dev['cam'].setpoint)
                     
@@ -1532,37 +1538,32 @@ sel
                         tempPTR=0
                         if self.env_exists == True and (not frame_exists(fileobj)):
 
-                            plog ("\nstarting ingester")
+                            #plog ("\nstarting ingester")
                             retryarchive=0
                             while retryarchive < 10:
                                 try:
                                     #tt = time.time()
-                                    plog ("attempting ingest to aws@  ", tt)
+                                    #plog ("attempting ingest to aws@  ", tt)
                                     upload_file_and_ingest_to_archive(fileobj)
                                     #plog ("did ingester")
                                     plog(f"--> To PTR ARCHIVE --> {str(filepath)}")
-                                    plog('*.fz ingestion took:  ', round(time.time() - tt, 1), ' sec.')
+                                    #plog('*.fz ingestion took:  ', round(time.time() - tt, 1), ' sec.')
                                     self.aws_queue.task_done()
                                     #os.remove(filepath)
                                     
                                     tempPTR=1
                                     retryarchive=11
                                 except Exception as e:
-
-                                    if self.site_name == "mrc1":
-                                        plog("ingester isn't ingesting at MRC. A known problem - MTF will fix.")
-                                        retryarchive=12
-                                        tempPTR=0
-                                    else:
+                                  
                                     
-                                        plog ("couldn't send to PTR archive for some reason")
-                                        plog ("Retry " + str(retryarchive))
-                                        plog (e)
-                                        plog ((traceback.format_exc()))
-                                        time.sleep(pow(retryarchive, 2) + 1)
-                                        if retryarchive < 10:
-                                            retryarchive=retryarchive+1
-                                        tempPTR=0
+                                    plog ("couldn't send to PTR archive for some reason")
+                                    plog ("Retry " + str(retryarchive))
+                                    plog (e)
+                                    plog ((traceback.format_exc()))
+                                    time.sleep(pow(retryarchive, 2) + 1)
+                                    if retryarchive < 10:
+                                        retryarchive=retryarchive+1
+                                    tempPTR=0
                                         
 
                         # If ingester fails, send to default S3 bucket.
@@ -2955,7 +2956,7 @@ sel
                             hdufz.header['NAXIS1'] = float(hdufz.header['NAXIS1'])/2
                             hdufz.header['NAXIS2'] = float(hdufz.header['NAXIS2'])/2
                             hdufz.header['CRPIX1'] = float(hdufz.header['CRPIX1'])/2
-                            hdufz.header['CRPIXS2'] = float(hdufz.header['CRPIX2'])/2
+                            hdufz.header['CRPIX2'] = float(hdufz.header['CRPIX2'])/2
                             hdufz.header['PIXSCALE'] = float(hdufz.header['PIXSCALE'])*2
                             hdufz.header['CDELT1'] = float(hdufz.header['CDELT1'])*2
                             hdufz.header['CDELT2'] = float(hdufz.header['CDELT2'])*2

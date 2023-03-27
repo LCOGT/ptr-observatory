@@ -16,7 +16,7 @@ import json
 
 #NB NB NB json is not bi-directional with tuples (), instead, use lists [], nested if tuples are needed.
 degree_symbol = "°"
-site_name = 'mrc'
+site_name = 'mrc1'
 obs_id = 'mrc1'    #NB These must be unique across all of PTR. Pre-pend with airport code if needed: 'sba_wmdo'
 
 site_config = {
@@ -114,8 +114,8 @@ site_config = {
     'roof_open_safety_base_time' : 15, # How many minutes to use as the default retry time to open roof. This will be progressively multiplied as a back-off function.
     
 
-    'obsid_in_automatic_default': "Shutdown",   #"Manual", "Shutdown"
-    'automatic_detail_default': "Enclosure is set to Shutdown mode.",
+    'obsid_in_automatic_default': "Automatic",   #"Manual", "Shutdown"
+    'automatic_detail_default': "Enclosure is set to Automatic mode.",
 
     
     'closest_distance_to_the_sun': 45, # Degrees. For normal pointing requests don't go this close to the sun. 
@@ -130,13 +130,13 @@ site_config = {
     'auto_eve_bias_dark': True,
     
     'auto_midnight_moonless_bias_dark': False,
-    'auto_eve_sky_flat': False,
+    'auto_eve_sky_flat': True,
 
-    'eve_sky_flat_sunset_offset': -60.,  # 40 before Minutes  neg means before, + after.
+    'eve_sky_flat_sunset_offset': -45.,  # 40 before Minutes  neg means before, + after.
 
-    'eve_cool_down_open' : -65.0,
-    'auto_morn_sky_flat': False,
-    'auto_morn_bias_dark': False,
+    'eve_cool_down_open' : -50.0,
+    'auto_morn_sky_flat': True,
+    'auto_morn_bias_dark': True,
     're-calibrate_on_solve': True,
     'pointing_calibration_on_startup': False,  #MF I am leaving this alone.
     'periodic_focus_time' : 0.5, # This is a time, in hours, over which to bypass automated focussing (e.g. at the start of a project it will not refocus if a new project starts X hours after the last focus)
@@ -754,12 +754,12 @@ site_config = {
                 #'bias_dark_bin_spec':    ['1,1', '2,2', '3,3', '4,4' ],    #Default binning for flats
                 'number_of_bias_to_collect' : 63,
                 'number_of_dark_to_collect' : 17,
-                'number_of_flat_to_collect' : 10,
+                'number_of_flat_to_collect' : 5,
                 'number_of_bias_to_store' : 128,
                 'number_of_dark_to_store' : 128,
                 'number_of_flat_to_store' : 128,
  
-                'dark_exposure': 360,
+                'dark_exposure': 180,
                 #'flat_bin_spec':         ['1,1', '2,2', '3,3', '4,4' ],   #Is this necessary?
 
                 #'flat_count': 5,
