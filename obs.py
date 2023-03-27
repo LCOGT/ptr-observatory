@@ -472,7 +472,7 @@ class Observatory:
         #NB The above put dome closed and telescope at Park, Which is where it should have been upon entry.
         #g_dev['seq'].bias_dark_script(req, opt, morn=True)
         
-        #g_dev['seq'].regenerate_local_masters()
+        g_dev['seq'].regenerate_local_masters()
 
 
     def set_last_reference(self, delta_ra, delta_dec, last_time):
@@ -1604,7 +1604,8 @@ sel
                 one_at_a_time = 0
 
                 # Don't remove local calibrations after uploading but remove the others
-                if ('calibmasters' not in filepath) and ('calibmasters' not in fileobj):
+                print (filepath)
+                if ('calibmasters' not in filepath):
                     try:   
                         os.remove(filepath)
                     except:
