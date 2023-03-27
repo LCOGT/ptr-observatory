@@ -176,11 +176,20 @@ if int(now_here.hour) < int_sunrise_hour:
 DAY_Directory = str(now_here.year) + str(now_here.month) + str(now_here.day)
 
 try:
-
+    if not os.path.exists(site_config['plog_path']  + 'plog/'):
+        os.makedirs(site_config['plog_path']  + 'plog/')
     plog_path = site_config['plog_path']  + 'plog/' + DAY_Directory + '/'
 
 except KeyError:
-    plog_path = site_config['archive_path'] + '/' + site_config['obs_id'] + '/' + DAY_Directory + '/'
+    try:
+        #plog_path = site_config['archive_path'] + '/' + site_config['obs_id'] + '/' + DAY_Directory + '/'
+        if not g_dev['obs'].obsid_path  + 'plog/':
+            os.makedirs(g_dev['obs'].obsid_path + 'plog/')
+        plog_path = g_dev['obs'].obsid_path + 'plog/' + DAY_Directory + '/'
+    except:
+        if not site_config['archive_path'] + '/' + site_config['obs_id'] + '/'  + 'plog/':
+            os.makedirs(site_config['archive_path'] + '/' + site_config['obs_id'] + '/' + 'plog/')
+        plog_path = site_config['archive_path'] + '/' + site_config['obs_id'] + '/' + 'plog/' + DAY_Directory + '/'
 
 os.makedirs(plog_path, exist_ok=True)
 

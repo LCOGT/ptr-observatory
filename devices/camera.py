@@ -5,48 +5,48 @@ Created on Tue Apr 20 22:19:25 2021
 
 """
 
-import copy
+#import copy
 import datetime
 import os
-import math
+#import math
 import shelve
 import time
 import traceback
 import ephem
 
-from astropy.io import fits, ascii
+#from astropy.io import fits, ascii
 from astropy.time import Time
 from astropy.utils.data import check_download_cache
 from astropy.coordinates import SkyCoord
-from astropy.table import Table
+#from astropy.table import Table
 from astropy.nddata import block_reduce
 import glob
 import numpy as np
 import matplotlib.pyplot as plt   # Please do not remove this import.
-import sep
-from skimage.io import imsave
-from skimage.transform import resize
-from auto_stretch.stretch import Stretch
+#import sep
+#from skimage.io import imsave
+#from skimage.transform import resize
+#from auto_stretch.stretch import Stretch
 import win32com.client
-from planewave import platesolve
+#from planewave import platesolve
 
-from scipy import stats
+#from scipy import stats
 
-import colour
-import queue
+#import colour
+#import queue
 import threading
 
     
-from colour_demosaicing import (
-    demosaicing_CFA_Bayer_bilinear,
-    demosaicing_CFA_Bayer_Malvar2004,
-    demosaicing_CFA_Bayer_Menon2007,
-    mosaicing_CFA_Bayer)
+#from colour_demosaicing import (
+#    demosaicing_CFA_Bayer_bilinear,
+#    demosaicing_CFA_Bayer_Malvar2004,
+#    demosaicing_CFA_Bayer_Menon2007,
+#    mosaicing_CFA_Bayer)
 
-from PIL import Image , ImageEnhance
+#from PIL import Image , ImageEnhance
 
 from devices.darkslide import Darkslide
-import ptr_utility
+#import ptr_utility
 from global_yard import g_dev
 from ptr_utility import plog
 from ctypes import *
