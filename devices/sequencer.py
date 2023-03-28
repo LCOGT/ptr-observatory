@@ -536,8 +536,13 @@ class Sequencer:
                     self.weather_report_close_during_evening=False
                     
         # During normal opening period, try opening the dome   
+        if self.weather_report_close_during_evening and ephem_now >  self.weather_report_close_during_evening_time:
+            closed_early = True
+        else:
+            closed_early = False
+        
         if ((g_dev['events']['Cool Down, Open']  <= ephem_now < g_dev['events']['Observing Ends']) and \
-               g_dev['enc'].mode == 'Automatic') and not self.cool_down_latch and (self.weather_report_close_during_evening and not ephem_now >  self.weather_report_close_during_evening_time) and not g_dev['ocn'].wx_hold and not enc_status['shutter_status'] in ['Software Fault', 'Closing', 'Error']:
+               g_dev['enc'].mode == 'Automatic') and not closed_early and not self.cool_down_latch  and not g_dev['ocn'].wx_hold and not enc_status['shutter_status'] in ['Software Fault', 'Closing', 'Error']:
 
             #plog ("Cool Down Open Check Running")
             
