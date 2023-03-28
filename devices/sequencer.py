@@ -482,12 +482,27 @@ class Sequencer:
         # If the observatory is simply delayed until opening, then wait until then, then attempt to start up the observatory
         if self.weather_report_wait_until_open and not self.cool_down_latch:
             if ephem_now >  self.weather_report_wait_until_open_time:
+                
+                self.weather_report_wait_until_open == False
+                # Things may have changed! So re-checking the weather and such
+                
+                # Reopening config and resetting all the things.
+                # This is necessary just in case a previous weather report was done today
+                # That can sometimes change the timing. 
+                self.astro_events.compute_day_directory()
+                self.astro_events.calculate_events(endofnightoverride='yes')
+                #self.astro_events.display_events()
+                g_dev['obs'].astro_events = self.astro_events
+                # Run nightly weather report
+                self.run_nightly_weather_report()
+                
+                
                 if not g_dev['obs'].open_and_enabled_to_observe and self.weather_report_is_acceptable_to_observe==True:
                     if (g_dev['events']['Cool Down, Open'] < ephem.now() < g_dev['events']['Observing Ends']):
                         if time.time() > self.enclosure_next_open_time and self.opens_this_evening < self.config['maximum_roof_opens_per_evening']:
                             #self.enclosure_next_open_time = time.time() + 300 # Only try to open the roof every five minutes
                             self.cool_down_latch = True
-                            self.weather_report_is_acceptable_to_observe=True
+                            #self.weather_report_is_acceptable_to_observe=True
                             self.open_observatory(enc_status, ocn_status)
                             
                             # If the observatory opens, set clock and auto focus and observing to now
