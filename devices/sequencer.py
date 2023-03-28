@@ -240,7 +240,7 @@ class Sequencer:
         self.weather_report_wait_until_open=False
         self.weather_report_wait_until_open_time=ephem_now
         self.weather_report_close_during_evening=False
-        self.weather_report_close_during_evening_time=ephem_now
+        self.weather_report_close_during_evening_time=ephem_now + 86400
         self.nightly_weather_report_done=False
         # Run a weather report on bootup so observatory can run if need be. 
         if not g_dev['debug']:
@@ -537,7 +537,7 @@ class Sequencer:
                     
         # During normal opening period, try opening the dome   
         if ((g_dev['events']['Cool Down, Open']  <= ephem_now < g_dev['events']['Observing Ends']) and \
-               g_dev['enc'].mode == 'Automatic') and not self.cool_down_latch and not ephem_now >  self.weather_report_close_during_evening_time and not g_dev['ocn'].wx_hold and not enc_status['shutter_status'] in ['Software Fault', 'Closing', 'Error']:
+               g_dev['enc'].mode == 'Automatic') and not self.cool_down_latch and (self.weather_report_close_during_evening and not ephem_now >  self.weather_report_close_during_evening_time) and not g_dev['ocn'].wx_hold and not enc_status['shutter_status'] in ['Software Fault', 'Closing', 'Error']:
 
             #plog ("Cool Down Open Check Running")
             
@@ -1805,6 +1805,7 @@ class Sequencer:
         self.eve_sky_flat_latch = False
         self.morn_sky_flat_latch = False
         self.morn_bias_dark_latch = False
+        self.cool_down_latch = False
         self.reset_completes()
 
 
@@ -1845,7 +1846,7 @@ class Sequencer:
         self.weather_report_wait_until_open=False
         self.weather_report_wait_until_open_time=ephem_now
         self.weather_report_close_during_evening=False
-        self.weather_report_close_during_evening_time=ephem_now
+        self.weather_report_close_during_evening_time=ephem_now + 86400
         
         # No harm in doubly checking it has parked
         g_dev['mnt'].park_command({}, {})
