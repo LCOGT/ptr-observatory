@@ -217,14 +217,14 @@ site_config = {
                                                                         #First Entry is always default condition.
                 'roof_shutter':  ['Auto', 'Open', 'Close', 'Lock Closed', 'Unlock'],
             },
-            'eve_bias_dark_dur':  2.0,   #  hours Duration, prior to next.
-            'eve_screen_flat_dur': 1.0,   #  hours Duration, prior to next.
-            'operations_begin':  -1.0,   #  - hours from Sunset
-            'eve_cooldown_offset': -.99,   #  - hours beforeSunset
-            'eve_sky_flat_offset':  0.5,   #  - hours beforeSunset
-            'morn_sky_flat_offset':  0.4,   #  + hours after Sunrise
-            'morning_close_offset':  0.41,   #  + hours after Sunrise
-            'operations_end':  0.42,
+            #'eve_bias_dark_dur':  2.0,   #  hours Duration, prior to next.
+            #'eve_screen_flat_dur': 1.0,   #  hours Duration, prior to next.
+            #'operations_begin':  -1.0,   #  - hours from Sunset
+            #'eve_cooldown_offset': -.99,   #  - hours beforeSunset
+            #'eve_sky_flat_offset':  0.5,   #  - hours beforeSunset
+            #'morn_sky_flat_offset':  0.4,   #  + hours after Sunrise
+            #'morning_close_offset':  0.41,   #  + hours after Sunrise
+            #'operations_end':  0.42,
         },
     },
 
