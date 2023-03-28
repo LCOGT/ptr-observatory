@@ -252,6 +252,7 @@ class Observatory:
         self.astro_events = ptr_events.Events(self.config)
         self.astro_events.compute_day_directory()
 
+        self.astro_events.calculate_events()
         self.astro_events.display_events()
 
         # Define a redis server if needed.

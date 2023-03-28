@@ -487,10 +487,12 @@ class Sequencer:
                         if time.time() > self.enclosure_next_open_time and self.opens_this_evening < self.config['maximum_roof_opens_per_evening']:
                             #self.enclosure_next_open_time = time.time() + 300 # Only try to open the roof every five minutes
                             self.cool_down_latch = True
+                            self.weather_report_is_acceptable_to_observe=True
                             self.open_observatory(enc_status, ocn_status)
                             
                             # If the observatory opens, set clock and auto focus and observing to now
                             if g_dev['obs'].open_and_enabled_to_observe:
+                                self.weather_report_is_acceptable_to_observe=False
                                 self.night_focus_ready=True
                                 obs_win_begin, sunZ88Op, sunZ88Cl, ephem_now = self.astro_events.getSunEvents()
                                 #g_dev['events']['Clock & Auto Focus'] = ephem_now - 0.1/24
@@ -523,7 +525,7 @@ class Sequencer:
             if ephem_now >  self.weather_report_close_during_evening_time and ephem_now < events['Morn Bias Dark']: # Don't want scope to cancel all activity during bias/darks etc.
                 if self.config['obsid_roof_control']  and g_dev['enc'].mode == 'Automatic':
                     self.weather_report_is_acceptable_to_observe=False
-                    plog ("End of Observing Period due to weather. Closing up observatory.")
+                    plog ("End of Observing Period due to weather. Closing up observatory early.")
                     g_dev['obs'].cancel_all_activity()
                     g_dev['obs'].open_and_enabled_to_observe=False
                     g_dev['enc'].enclosure.CloseShutter()
@@ -533,16 +535,10 @@ class Sequencer:
                     if not g_dev['mnt'].mount.AtPark:  
                         g_dev['mnt'].home_command()
                         g_dev['mnt'].park_command() 
-                    self.weather_report_close_during_evening=False
-                    
-        # During normal opening period, try opening the dome   
-        if self.weather_report_close_during_evening and ephem_now >  self.weather_report_close_during_evening_time:
-            closed_early = True
-        else:
-            closed_early = False
+                    self.weather_report_close_during_evening=False                    
         
         if ((g_dev['events']['Cool Down, Open']  <= ephem_now < g_dev['events']['Observing Ends']) and \
-               g_dev['enc'].mode == 'Automatic') and not closed_early and not self.cool_down_latch  and not g_dev['ocn'].wx_hold and not enc_status['shutter_status'] in ['Software Fault', 'Closing', 'Error']:
+               g_dev['enc'].mode == 'Automatic') and not self.cool_down_latch  and not g_dev['ocn'].wx_hold and not enc_status['shutter_status'] in ['Software Fault', 'Closing', 'Error']:
 
             #plog ("Cool Down Open Check Running")
             
@@ -554,7 +550,8 @@ class Sequencer:
                 # This is necessary just in case a previous weather report was done today
                 # That can sometimes change the timing. 
                 self.astro_events.compute_day_directory()
-                self.astro_events.display_events(endofnightoverride='yes')
+                self.astro_events.calculate_events(endofnightoverride='yes')
+                #self.astro_events.display_events()
                 g_dev['obs'].astro_events = self.astro_events
                 # Run nightly weather report
                 self.run_nightly_weather_report()
@@ -1767,7 +1764,8 @@ class Sequencer:
 
         # Reopening config and resetting all the things.
         self.astro_events.compute_day_directory()
-        self.astro_events.display_events(endofnightoverride='yes')
+        self.astro_events.calculate_events(endofnightoverride='yes')
+        self.astro_events.display_events()
         g_dev['obs'].astro_events = self.astro_events
 
 
@@ -1838,6 +1836,7 @@ class Sequencer:
 
         # Reopening config and resetting all the things.
         self.astro_events.compute_day_directory()
+        self.astro_events.calculate_events()
         self.astro_events.display_events()
         g_dev['obs'].astro_events = self.astro_events
 
