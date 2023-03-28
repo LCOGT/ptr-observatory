@@ -550,6 +550,13 @@ class Sequencer:
             
             if not self.nightly_weather_report_done and not g_dev['debug']:
 
+                # Reopening config and resetting all the things.
+                # This is necessary just in case a previous weather report was done today
+                # That can sometimes change the timing. 
+                self.astro_events.compute_day_directory()
+                self.astro_events.display_events(endofnightoverride='yes')
+                g_dev['obs'].astro_events = self.astro_events
+                # Run nightly weather report
                 self.run_nightly_weather_report()
                 self.nightly_weather_report_done=True
 
