@@ -3841,7 +3841,7 @@ class Sequencer:
             self.weather_report_wait_until_open_time=ephem_now
             self.weather_report_close_during_evening=False
             self.weather_report_close_during_evening_time=ephem_now
-        elif sum(hourly_fitzgerald_number) > 1000:
+        elif sum(hourly_fitzgerald_number) > 1500:
             plog ("This is a horrible observing night!")
             self.weather_report_is_acceptable_to_observe=False
             self.weather_report_wait_until_open=False
