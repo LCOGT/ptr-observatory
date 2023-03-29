@@ -414,8 +414,9 @@ class Camera:
         
         try:
             #self.biasframe = fits.open(
+
             tempbiasframe = fits.open(self.obsid_path + "archive/" + self.alias + "/calibmasters" \
-                                      + "/" + tempfrontcalib + "/BIAS_master_bin1.fits")
+                                      + "/" + tempfrontcalib + "BIAS_master_bin1.fits")
             tempbiasframe = np.array(tempbiasframe[0].data, dtype=np.float32)
             self.biasFiles.update({'1': tempbiasframe})
             del tempbiasframe
@@ -428,7 +429,7 @@ class Camera:
         try:
             #self.darkframe = fits.open(
             tempdarkframe = fits.open(self.obsid_path + "archive/" + self.alias + "/calibmasters" \
-                                      + "/" + tempfrontcalib +  "/DARK_master_bin1.fits")
+                                      + "/" + tempfrontcalib +  "DARK_master_bin1.fits")
 
             tempdarkframe = np.array(tempdarkframe[0].data, dtype=np.float32)
             self.darkFiles.update({'1': tempdarkframe})
@@ -438,7 +439,7 @@ class Camera:
 
         try:            
             fileList = glob.glob(self.obsid_path + "archive/" + self.alias + "/calibmasters" \
-                                 + "/masterFlat*_bin1.npy")
+                                 + "/ " + tempfrontcalib + "masterFlat*_bin1.npy")
             
             for file in fileList:
                 self.flatFiles.update({file.split("_")[1].replace ('.npy','') + '_bin1': file})
