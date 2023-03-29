@@ -1767,12 +1767,12 @@ class Sequencer:
         # Clear out smartstacks directory
         plog ("removing and reconstituting smartstacks directory")
         try:
-            shutil.rmtree(g_dev["cam"].site_path + "smartstacks")
+            shutil.rmtree(g_dev['obs'].obsid_path + "smartstacks")
         except:
             plog ("problems with removing the smartstacks directory... usually a file is open elsewhere")
         time.sleep(20)
-        if not os.path.exists(g_dev["cam"].site_path + "smartstacks"):
-            os.makedirs(g_dev["cam"].site_path + "smartstacks")
+        if not os.path.exists(g_dev['obs'].obsid_path + "smartstacks"):
+            os.makedirs(g_dev['obs'].obsid_path + "smartstacks")
 
 
 
@@ -1796,9 +1796,9 @@ class Sequencer:
 
         # If you are using TheSkyX, then update the autosave path
         if self.config['camera']['camera_1_1']['driver'] == "CCDSoft2XAdaptor.ccdsoft5Camera":
-            g_dev['cam'].camera.AutoSavePath = self.config['archive_path'] +'archive/' + datetime.datetime.strftime(datetime.datetime.now(), '%Y%m%d')
+            g_dev['cam'].camera.AutoSavePath = g_dev['obs'].obsid_path +'archive/' + datetime.datetime.strftime(datetime.datetime.now(), '%Y%m%d')
             try:
-                os.mkdir(self.config['archive_path'] +'archive/' + datetime.datetime.strftime(datetime.datetime.now(), '%Y%m%d'))
+                os.mkdir(g_dev['obs'].obsid_path +'archive/' + datetime.datetime.strftime(datetime.datetime.now(), '%Y%m%d'))
             except:
                 plog ("Couldn't make autosave directory")
 
@@ -3862,7 +3862,7 @@ class Sequencer:
             self.weather_report_wait_until_open_time=ephem_now
             self.weather_report_close_during_evening=False
             self.weather_report_close_during_evening_time=ephem_now
-        elif sum(hourly_fitzgerald_number) > 1500:
+        elif sum(hourly_fitzgerald_number) > 1000:
             plog ("This is a horrible observing night!")
             self.weather_report_is_acceptable_to_observe=False
             self.weather_report_wait_until_open=False
