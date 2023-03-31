@@ -1940,10 +1940,10 @@ class Sequencer:
                 plog ("Time Taken to put in memmap: " + str(timetaken))
                 
                 
-                starttime=datetime.datetime.now() 
-                PLDrive.flush()
-                timetaken=datetime.datetime.now() -starttime
-                plog ("Time Taken to flush memmap: " + str(timetaken))
+                #starttime=datetime.datetime.now() 
+                #PLDrive.flush()
+                #timetaken=datetime.datetime.now() -starttime
+                #plog ("Time Taken to flush memmap: " + str(timetaken))
                 i=i+1
                 
             # hold onto the header info            
@@ -2040,10 +2040,10 @@ class Sequencer:
                 plog ("Time Taken to put in memmap: " + str(timetaken))
                 
                 
-                starttime=datetime.datetime.now() 
-                PLDrive.flush()
-                timetaken=datetime.datetime.now() -starttime
-                plog ("Time Taken to flush memmap: " + str(timetaken))
+                #starttime=datetime.datetime.now() 
+                #PLDrive.flush()
+                #timetaken=datetime.datetime.now() -starttime
+                #plog ("Time Taken to flush memmap: " + str(timetaken))
                 
                 i=i+1
             # Hold onto the header
@@ -2161,10 +2161,10 @@ class Sequencer:
                             plog ("Time Taken to put in memmap: " + str(timetaken))
                             
                             
-                            starttime=datetime.datetime.now() 
-                            PLDrive.flush()
-                            timetaken=datetime.datetime.now() -starttime
-                            plog ("Time Taken to flush memmap: " + str(timetaken))
+                            #starttime=datetime.datetime.now() 
+                            #PLDrive.flush()
+                            #timetaken=datetime.datetime.now() -starttime
+                            #plog ("Time Taken to flush memmap: " + str(timetaken))
                             
                             
                             i=i+1
