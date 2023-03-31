@@ -1902,6 +1902,7 @@ class Sequencer:
         
             hdutest = fits.open(inputList[0])[1]
             shapeImage=hdutest.shape
+            headHold=hdutest.header            
             del hdutest
 
             # Make a temporary memmap file 
@@ -1909,12 +1910,32 @@ class Sequencer:
             # Store the biases in the memmap file
             i=0
             for file in inputList:
-                hdu1 = fits.open(file)[1]            
-                PLDrive[:,:,i] = np.asarray(hdu1.data,dtype=np.float32)        
+                plog (datetime.datetime.now().strftime("%H:%M:%S"))
+                
+                
+                starttime=datetime.datetime.now() 
+                plog("Storing in a memmap array: " + str(file))
+                
+                #hdu1data = np.array(fits.open(file, memmap=True)[1].data, dtype=np.float32)
+                
+                hdu1data = fits.open(file, memmap=True)[1].data
+                timetaken=datetime.datetime.now() -starttime
+                plog ("Time Taken to load array: " + str(timetaken))
+                                
+                starttime=datetime.datetime.now() 
+                PLDrive[:,:,i] = hdu1data    
+                del hdu1data
+                timetaken=datetime.datetime.now() -starttime
+                plog ("Time Taken to put in memmap: " + str(timetaken))
+                
+                
+                starttime=datetime.datetime.now() 
+                PLDrive.flush()
+                timetaken=datetime.datetime.now() -starttime
+                plog ("Time Taken to flush memmap: " + str(timetaken))
                 i=i+1
-            # hold onto the header info
-            headHold=hdu1.header
-            del hdu1
+                
+            # hold onto the header info            
             plog ("**********************************")
             plog ("Median Stacking each bias row individually from the Reprojections")
             plog (datetime.datetime.now().strftime("%H:%M:%S"))
@@ -1932,7 +1953,7 @@ class Sequencer:
             
             
             masterBias=np.asarray(finalImage).astype(np.float32)
-            
+            breakpoint()
             # Save this out to calibmasters
             g_dev['obs'].obs_id
             g_dev['cam'].alias
@@ -1958,21 +1979,51 @@ class Sequencer:
             # Debias dark frames and stick them in the memmap
             i=0
             for file in inputList:   
-                hdu1 = fits.open(file)[1]
+                
+                
+                plog (datetime.datetime.now().strftime("%H:%M:%S"))
+                
+                
+                starttime=datetime.datetime.now() 
+                plog("Storing dark in a memmap array: " + str(file))
+                
+                
+                
+                hdu1 = fits.open(file, memmap=True)[1]
+                hdu1data = hdu1.data
+                if any("EXPTIME" in s for s in hdu1.header.keys()):
+                    hdu1exp=hdu1.header['EXPTIME']
+                else:
+                    hdu1exp=hdu1.header['EXPOSURE']
+                del hdu1               
                 #hdu1data= hdu1[0].data
                 #hdu1header= hdu1.header
                 #breakpoint()
-                darkdebias=hdu1.data-masterBias
-                
-                if any("EXPTIME" in s for s in hdu1.header.keys()):
-                    darkdeexp=darkdebias/hdu1.header['EXPTIME']
-                else:
-                    darkdeexp=darkdebias/hdu1.header['EXPOSURE']
+                darkdeexp=(hdu1data-masterBias)/hdu1exp
+                del hdu1data
+                timetaken=datetime.datetime.now() -starttime
+                plog ("Time Taken to load array and debias and divide dark: " + str(timetaken))
+                    
+                #if any("EXPTIME" in s for s in hdu1.header.keys()):
+                #    darkdeexp=darkdebias/hdu1.header['EXPTIME']
+                #else:
+                #    darkdeexp=darkdebias/hdu1.header['EXPOSURE']
+                starttime=datetime.datetime.now() 
                 PLDrive[:,:,i] = np.asarray(darkdeexp,dtype=np.float32)
+                del darkdeexp
+                timetaken=datetime.datetime.now() -starttime
+                plog ("Time Taken to put in memmap: " + str(timetaken))
+                
+                
+                starttime=datetime.datetime.now() 
+                PLDrive.flush()
+                timetaken=datetime.datetime.now() -starttime
+                plog ("Time Taken to flush memmap: " + str(timetaken))
+                
                 i=i+1
             # Hold onto the header
-            headHold=hdu1.header
-            del hdu1
+            #headHold=hdu1.header
+            #del hdu1
     
             plog ("**********************************")
             plog ("Median Stacking each darkframe row individually from the Reprojections")
@@ -2001,36 +2052,7 @@ class Sequencer:
             gc.collect()
             os.remove(g_dev['obs'].local_dark_folder  + 'tempfile')
     
-            plog ("Re-loading Bias and Dark masters into memory.")
-            # Reload the bias and dark frames
-            g_dev['cam'].biasFiles = {}
-            g_dev['cam'].darkFiles = {}
             
-            try:
-                #self.biasframe = fits.open(
-                #tempbiasframe = fits.open(self.archive_path  + self.alias + "/calibmasters" \
-                #                          + "/BIAS_master_bin1.fits")
-                #tempbiasframe = np.array(tempbiasframe[0].data, dtype=np.float32)
-                g_dev['cam'].biasFiles.update({'1': masterBias})
-                #del masterBias
-                #del tempbiasframe
-            except:
-                plog("Bias frame master re-upload did not work.")
-                #plog(traceback.format_exc()) 
-                #breakpoint()               
-                
-            
-            try:
-                #self.darkframe = fits.open(
-                #tempdarkframe = fits.open(self.archive_path  + self.alias + "/calibmasters" \
-                #                          + "/DARK_master_bin1.fits")
-    
-                #tempdarkframe = np.array(tempdarkframe[0].data, dtype=np.float32)
-                g_dev['cam'].darkFiles.update({'1': masterDark})
-                #del masterDark
-                #del tempdarkframe
-            except:
-                plog("Dark frame master re-upload did not work.")  
     
     
             
@@ -2057,22 +2079,72 @@ class Sequencer:
                             PLDrive = np.memmap(g_dev['obs'].local_flat_folder  + 'tempfile', dtype='float32', mode= 'w+', shape = (shapeImage[0],shapeImage[1],len(inputList)))
                         except:
                             breakpoint()
-                        # Debias dark frames and stick them in the memmap
+                            
+                            
+                        
+                            
+                            
+                        # Debias and dedark flat frames and stick them in the memmap
                         i=0
                         for file in inputList:   
-                            hdu1 = fits.open(file)[1]
-                            flatdebiased=hdu1.data-masterBias                
+                            
+                            
+                            
+                            plog (datetime.datetime.now().strftime("%H:%M:%S"))
+                            
+                            
+                            starttime=datetime.datetime.now() 
+                            plog("Storing flat in a memmap array: " + str(file))
+                            
+                            
+                            
+                            hdu1 = fits.open(file, memmap=True)[1]
+                            hdu1data = hdu1.data                            
                             if any("EXPTIME" in s for s in hdu1.header.keys()):
-                            #objdedark = objdebias-(masterDark.multiply(hdu1.header['EXPTIME']))
-                                flatdebiaseddedarked = flatdebiased-(masterDark*(float(hdu1.header['EXPTIME'])))
+                                hdu1exp=hdu1.header['EXPTIME']
                             else:
+                                hdu1exp=hdu1.header['EXPOSURE']
+                            del hdu1               
+                            
+                            flatdebiaseddedarked=(hdu1data-masterBias)-(masterDark*hdu1exp) 
+                            del hdu1data
+                            #hdu1data= hdu1[0].data
+                            #hdu1header= hdu1.header
+                            #breakpoint()
+                            #darkdeexp=(hdu1data-masterBias)/hdu1exp
+                            timetaken=datetime.datetime.now() -starttime
+                            plog ("Time Taken to load array and debias and dedark flat: " + str(timetaken))
+                            
+                            
+                            
+                            #hdu1 = fits.open(file)[1]
+                                           
+                            #if any("EXPTIME" in s for s in hdu1.header.keys()):
+                            #objdedark = objdebias-(masterDark.multiply(hdu1.header['EXPTIME']))
+                            #    flatdebiaseddedarked = flatdebiased-(masterDark*(float(hdu1.header['EXPTIME'])))
+                            #else:
                                 #objdedark = objdebias-(masterDark.multiply(hdu1.header['EXPOSURE']))
-                                flatdebiaseddedarked = flatdebiased-(masterDark*(float(hdu1.header['EXPOSURE'])))
-                            PLDrive[:,:,i] = np.asarray(flatdebiaseddedarked,dtype=np.float32)
+                            #    flatdebiaseddedarked = flatdebiased-(masterDark*(float(hdu1.header['EXPOSURE'])))
+                            
+                            
+                            starttime=datetime.datetime.now() 
+                            #PLDrive[:,:,i] = np.asarray(flatdebiaseddedarked,dtype=np.float32)
+                            PLDrive[:,:,i] = flatdebiaseddedarked
+                            del flatdebiaseddedarked
+                            timetaken=datetime.datetime.now() -starttime
+                            plog ("Time Taken to put in memmap: " + str(timetaken))
+                            
+                            
+                            starttime=datetime.datetime.now() 
+                            PLDrive.flush()
+                            timetaken=datetime.datetime.now() -starttime
+                            plog ("Time Taken to flush memmap: " + str(timetaken))
+                            
+                            
                             i=i+1
                         # Hold onto the header
-                        headHold=hdu1.header
-                        del hdu1
+                        #headHold=hdu1.header
+                        #del hdu1
             
                         plog ("**********************************")
                         plog ("Median Stacking each " + str (filtercode) + " flat frame row individually from the Reprojections")
@@ -2089,9 +2161,9 @@ class Sequencer:
                         plog ("**********************************")
                         
                         temporaryFlat=np.asarray(finalImage).astype(np.float32)
-                        
+                        del finalImage
                         # Fix up any glitches in the flat
-                        temporaryFlat=np.asarray(temporaryFlat, dtype=np.float32)
+                        #temporaryFlat=np.asarray(temporaryFlat, dtype=np.float32)
                         temporaryFlat[temporaryFlat < 0.1] = np.nan
                         
                         temporaryFlat=interpolate_replace_nans(temporaryFlat, kernel)
@@ -2133,6 +2205,40 @@ class Sequencer:
                 del masterDark
 
                 plog ("Regenerated Flat Masters and Re-loaded them into memory.")
+
+            plog ("Re-loading Bias and Dark masters into memory.")
+            # Reload the bias and dark frames
+            g_dev['cam'].biasFiles = {}
+            g_dev['cam'].darkFiles = {}
+            
+            try:
+                #self.biasframe = fits.open(
+                #tempbiasframe = fits.open(self.archive_path  + self.alias + "/calibmasters" \
+                #                          + "/BIAS_master_bin1.fits")
+                #tempbiasframe = np.array(tempbiasframe[0].data, dtype=np.float32)
+                g_dev['cam'].biasFiles.update({'1': masterBias})
+                #del masterBias
+                #del tempbiasframe
+            except:
+                plog("Bias frame master re-upload did not work.")
+                #plog(traceback.format_exc()) 
+                #breakpoint()               
+                
+            
+            try:
+                #self.darkframe = fits.open(
+                #tempdarkframe = fits.open(self.archive_path  + self.alias + "/calibmasters" \
+                #                          + "/DARK_master_bin1.fits")
+    
+                #tempdarkframe = np.array(tempdarkframe[0].data, dtype=np.float32)
+                g_dev['cam'].darkFiles.update({'1': masterDark})
+                #del masterDark
+                #del tempdarkframe
+            except:
+                plog("Dark frame master re-upload did not work.")  
+            
+            del masterBias
+            del masterDark
 
         return
 
