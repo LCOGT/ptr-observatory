@@ -465,7 +465,7 @@ class Observatory:
         #opt = {}
         #g_dev['seq'].extensive_focus_script(req2,opt)
         #req = {'bin1': True, 'bin2': False, 'bin3': False, 'bin4': False, 'numOfBias': 63, \
-        #        'numOfDark': 31, 'darkTime': 600, 'numOfDark2': 31, 'dark2Time': 600, \
+        #        'numOfDark': 31, 'darkTime': 75, 'numOfDark2': 31, 'dark2Time': 75, \
         #        'hotMap': True, 'coldMap': True, 'script': 'genBiasDarkMaster', }  #This specificatin is obsolete
         #opt = {}
         #No action needed on  the enclosure at this level
@@ -473,7 +473,7 @@ class Observatory:
         #NB The above put dome closed and telescope at Park, Which is where it should have been upon entry.
         #g_dev['seq'].bias_dark_script(req, opt, morn=True)
         
-        g_dev['seq'].regenerate_local_masters()
+        #g_dev['seq'].regenerate_local_masters()
 
 
     def set_last_reference(self, delta_ra, delta_dec, last_time):
@@ -2743,22 +2743,24 @@ sel
                             # Figure out which folder to send the calibration file to
                             # and delete any old files over the maximum amount to store
                             if slow_process[4] == 'bias':
-                                tempfilename=self.local_bias_folder + slow_process[1].replace('.fits','.fits.fz')                                
+                                #tempfilename=self.local_bias_folder + slow_process[1].replace('.fits','.fits.fz')                                
+                                tempfilename=self.local_bias_folder + slow_process[1].replace('.fits','.npy')                                
                                 max_files=self.config['camera']['camera_1_1']['settings']['number_of_bias_to_store']
-                                n_files=len(glob.glob(self.local_bias_folder +'*.f*'))
+                                n_files=len(glob.glob(self.local_bias_folder +'*.n*'))
                                 while n_files > max_files:
-                                    list_of_files=glob.glob(self.local_bias_folder +'*.f*')
+                                    list_of_files=glob.glob(self.local_bias_folder +'*.n*')
                                     n_files=len(list_of_files)
                                     oldest_file=min(list_of_files, key=os.path.getctime)
                                     os.remove(oldest_file)
                                     plog("removed old bias: " + str(oldest_file))
                                     
                             elif slow_process[4] == 'dark':
-                                tempfilename=self.local_dark_folder + slow_process[1].replace('.fits','.fits.fz') 
+                                tempexposure=temphduheader['EXPTIME'] 
+                                tempfilename=self.local_dark_folder + slow_process[1].replace('.fits','_' + str(tempexposure) +'_.npy') 
                                 max_files=self.config['camera']['camera_1_1']['settings']['number_of_dark_to_store']
-                                n_files=len(glob.glob(self.local_dark_folder +'*.f*'))
+                                n_files=len(glob.glob(self.local_dark_folder +'*.n*'))
                                 while n_files > max_files:
-                                    list_of_files=glob.glob(self.local_dark_folder +'*.f*')
+                                    list_of_files=glob.glob(self.local_dark_folder +'*.n*')
                                     n_files=len(list_of_files)
                                     oldest_file=min(list_of_files, key=os.path.getctime)
                                     os.remove(oldest_file)
@@ -2766,43 +2768,53 @@ sel
                                 
                             elif slow_process[4] == 'flat':
                                 tempfilter=temphduheader['FILTER'] 
+                                tempexposure=temphduheader['EXPTIME'] 
                                 if not os.path.exists(self.local_flat_folder + tempfilter):
                                     os.makedirs(self.local_flat_folder + tempfilter)
-                                tempfilename=self.local_flat_folder + tempfilter + '/' + slow_process[1].replace('.fits','.fits.fz') 
+                                tempfilename=self.local_flat_folder + tempfilter + '/' + slow_process[1].replace('.fits','_' + str(tempexposure) +'_.npy') 
                                 
                                 
                                 max_files=self.config['camera']['camera_1_1']['settings']['number_of_flat_to_store']
-                                n_files=len(glob.glob(self.local_flat_folder + tempfilter + '/'+ '*.f*'))
+                                n_files=len(glob.glob(self.local_flat_folder + tempfilter + '/'+ '*.n*'))
                                 while n_files > max_files:
-                                    list_of_files=glob.glob(self.local_flat_folder + tempfilter + '/'+ '*.f*')
+                                    list_of_files=glob.glob(self.local_flat_folder + tempfilter + '/'+ '*.n*')
                                     n_files=len(list_of_files)
                                     oldest_file=min(list_of_files, key=os.path.getctime)
                                     os.remove(oldest_file)
                                     plog("removed old flat: " + str(oldest_file))                                                      
                             
-                            hdufz = fits.CompImageHDU(
-                                np.array(slow_process[2] , dtype=np.float32), temphduheader
+                            
+                            # Save the file as an uncompressed numpy binary
+                            
+                            np.save(
+                                tempfilename,
+                                np.array(slow_process[2] , dtype=np.float32)
                             )
-                            hdufz.verify("fix")
-                            hdufz.header[
-                                "BZERO"
-                            ] = 0  # Make sure there is no integer scaling left over
-                            hdufz.header[
-                                "BSCALE"
-                            ] = 1  # Make sure there is no integer scaling left over
-                            hdufz.writeto(
-                                tempfilename, overwrite=True, output_verify='silentfix'
-                            )
+                            
+                            
+                            #hdufz = fits.CompImageHDU(
+                            #    np.array(slow_process[2] , dtype=np.float32), temphduheader
+                            #)
+                            #hdufz.verify("fix")
+                            #hdufz.header[
+                            #    "BZERO"
+                            #] = 0  # Make sure there is no integer scaling left over
+                            #hdufz.header[
+                            #    "BSCALE"
+                            #] = 1  # Make sure there is no integer scaling left over
+                            #hdufz.writeto(
+                            #    tempfilename, overwrite=True, output_verify='silentfix'
+                            #)
                             
                             #hdu.writeto(
                             #    tempfilename, overwrite=True, output_verify='silentfix'
                             #)  # Save full raw file locally
                             
-                            try:
-                                hdufz.close()
-                            except:
-                                pass                    
-                            del hdufz
+                            #try:
+                            #    hdufz.close()
+                            #except:
+                            #    pass                    
+                            #del hdufz
                             
                             #try:
                             #    hdu.close()
