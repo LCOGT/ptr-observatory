@@ -1899,10 +1899,17 @@ class Sequencer:
         if len(inputList) == 0 or len(darkinputList) == 0:
             plog ("Not reprocessing local masters as there are no biases or darks")
         else:
-        
+            # Clear held bias and darks to save memory and garbage collect.
+            del g_dev['cam'].biasFiles
+            del g_dev['cam'].darkFiles
+            g_dev['cam'].biasFiles = {}
+            g_dev['cam'].darkFiles = {}
+            gc.collect()
+            
+            
             hdutest = fits.open(inputList[0])[1]
             shapeImage=hdutest.shape
-            headHold=hdutest.header            
+            headHold=hdutest.header 
             del hdutest
 
             # Make a temporary memmap file 
@@ -1911,6 +1918,7 @@ class Sequencer:
             i=0
             for file in inputList:
                 plog (datetime.datetime.now().strftime("%H:%M:%S"))
+
                 
                 
                 starttime=datetime.datetime.now() 
@@ -1936,6 +1944,17 @@ class Sequencer:
                 i=i+1
                 
             # hold onto the header info            
+                #plog ("Inputting bias: " + str(file) + " into memmap.")
+                #hdu1 = fits.open(file)[1]            
+                #PLDrive[:,:,i] = np.asarray(hdu1.data,dtype=np.float32)        
+                #i=i+1
+                #headHold=hdu1.header
+                #hdu1.close()
+                #del hdu1
+            # hold onto the header info
+            #headHold=hdu1.header
+            #del hdu1
+
             plog ("**********************************")
             plog ("Median Stacking each bias row individually from the Reprojections")
             plog (datetime.datetime.now().strftime("%H:%M:%S"))
