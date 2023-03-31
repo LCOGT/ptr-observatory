@@ -1983,7 +1983,7 @@ class Sequencer:
             #print (tempfrontcalib)
             
             fits.writeto(g_dev['obs'].calib_masters_folder + tempfrontcalib + 'BIAS_master_bin1.fits', masterBias,  overwrite=True)
-            g_dev['cam'].enqueue_for_AWS(780000000, '',g_dev['obs'].calib_masters_folder + tempfrontcalib + 'BIAS_master_bin1.fits')
+            g_dev['cam'].enqueue_for_AWS(50, '',g_dev['obs'].calib_masters_folder + tempfrontcalib + 'BIAS_master_bin1.fits')
             
             PLDrive._mmap.close()
             del PLDrive
@@ -2069,7 +2069,7 @@ class Sequencer:
             masterDark=np.asarray(finalImage).astype(np.float32)
             fits.writeto(g_dev['obs'].calib_masters_folder + tempfrontcalib + 'DARK_master_bin1.fits', masterDark,  overwrite=True)
             
-            g_dev['cam'].enqueue_for_AWS(780000000, '',g_dev['obs'].calib_masters_folder + tempfrontcalib + 'DARK_master_bin1.fits')
+            g_dev['cam'].enqueue_for_AWS(50, '',g_dev['obs'].calib_masters_folder + tempfrontcalib + 'DARK_master_bin1.fits')
             
             
             PLDrive._mmap.close()
@@ -2199,7 +2199,7 @@ class Sequencer:
                         np.save(g_dev['obs'].calib_masters_folder + 'masterFlat_'+ str(filtercode) + '_bin1.npy', temporaryFlat)            
                         
                         fits.writeto(g_dev['obs'].calib_masters_folder + tempfrontcalib + 'masterFlat_'+ str(filtercode) + '_bin1.fits', temporaryFlat, overwrite=True)
-                        g_dev['cam'].enqueue_for_AWS(780000000, '',g_dev['obs'].calib_masters_folder + tempfrontcalib + 'masterFlat_'+ str(filtercode) + '_bin1.fits')
+                        g_dev['cam'].enqueue_for_AWS(50, '',g_dev['obs'].calib_masters_folder + tempfrontcalib + 'masterFlat_'+ str(filtercode) + '_bin1.fits')
                         
                         PLDrive._mmap.close()
                         del PLDrive

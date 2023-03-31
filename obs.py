@@ -473,7 +473,7 @@ class Observatory:
         #NB The above put dome closed and telescope at Park, Which is where it should have been upon entry.
         #g_dev['seq'].bias_dark_script(req, opt, morn=True)
         
-        g_dev['seq'].regenerate_local_masters()
+        #g_dev['seq'].regenerate_local_masters()
 
 
     def set_last_reference(self, delta_ra, delta_dec, last_time):
