@@ -3,7 +3,7 @@ import datetime
 from datetime import timedelta
 import copy
 from global_yard import g_dev
-from astropy.coordinates import SkyCoord, AltAz
+from astropy.coordinates import SkyCoord, AltAz, get_moon
 from astropy import units as u
 from astropy.time import Time
 from astropy.io import fits
@@ -240,7 +240,7 @@ class Sequencer:
         self.weather_report_wait_until_open=False
         self.weather_report_wait_until_open_time=ephem_now
         self.weather_report_close_during_evening=False
-        self.weather_report_close_during_evening_time=ephem_now
+        self.weather_report_close_during_evening_time=ephem_now + 86400
         self.nightly_weather_report_done=False
         # Run a weather report on bootup so observatory can run if need be. 
         if not g_dev['debug']:
@@ -482,15 +482,32 @@ class Sequencer:
         # If the observatory is simply delayed until opening, then wait until then, then attempt to start up the observatory
         if self.weather_report_wait_until_open and not self.cool_down_latch:
             if ephem_now >  self.weather_report_wait_until_open_time:
+                
+                self.weather_report_wait_until_open == False
+                # Things may have changed! So re-checking the weather and such
+                
+                # Reopening config and resetting all the things.
+                # This is necessary just in case a previous weather report was done today
+                # That can sometimes change the timing. 
+                self.astro_events.compute_day_directory()
+                self.astro_events.calculate_events(endofnightoverride='yes')
+                #self.astro_events.display_events()
+                g_dev['obs'].astro_events = self.astro_events
+                # Run nightly weather report
+                self.run_nightly_weather_report()
+                
+                
                 if not g_dev['obs'].open_and_enabled_to_observe and self.weather_report_is_acceptable_to_observe==True:
                     if (g_dev['events']['Cool Down, Open'] < ephem.now() < g_dev['events']['Observing Ends']):
                         if time.time() > self.enclosure_next_open_time and self.opens_this_evening < self.config['maximum_roof_opens_per_evening']:
                             #self.enclosure_next_open_time = time.time() + 300 # Only try to open the roof every five minutes
                             self.cool_down_latch = True
+                            #self.weather_report_is_acceptable_to_observe=True
                             self.open_observatory(enc_status, ocn_status)
                             
                             # If the observatory opens, set clock and auto focus and observing to now
                             if g_dev['obs'].open_and_enabled_to_observe:
+                                self.weather_report_is_acceptable_to_observe=False
                                 self.night_focus_ready=True
                                 obs_win_begin, sunZ88Op, sunZ88Cl, ephem_now = self.astro_events.getSunEvents()
                                 #g_dev['events']['Clock & Auto Focus'] = ephem_now - 0.1/24
@@ -523,7 +540,7 @@ class Sequencer:
             if ephem_now >  self.weather_report_close_during_evening_time and ephem_now < events['Morn Bias Dark']: # Don't want scope to cancel all activity during bias/darks etc.
                 if self.config['obsid_roof_control']  and g_dev['enc'].mode == 'Automatic':
                     self.weather_report_is_acceptable_to_observe=False
-                    plog ("End of Observing Period due to weather. Closing up observatory.")
+                    plog ("End of Observing Period due to weather. Closing up observatory early.")
                     g_dev['obs'].cancel_all_activity()
                     g_dev['obs'].open_and_enabled_to_observe=False
                     g_dev['enc'].enclosure.CloseShutter()
@@ -533,11 +550,10 @@ class Sequencer:
                     if not g_dev['mnt'].mount.AtPark:  
                         g_dev['mnt'].home_command()
                         g_dev['mnt'].park_command() 
-                    self.weather_report_close_during_evening=False
-                    
-        # During normal opening period, try opening the dome   
+                    self.weather_report_close_during_evening=False                    
+        
         if ((g_dev['events']['Cool Down, Open']  <= ephem_now < g_dev['events']['Observing Ends']) and \
-               g_dev['enc'].mode == 'Automatic') and not self.cool_down_latch and not ephem_now >  self.weather_report_close_during_evening_time and not g_dev['ocn'].wx_hold and not enc_status['shutter_status'] in ['Software Fault', 'Closing', 'Error']:
+               g_dev['enc'].mode == 'Automatic') and not self.cool_down_latch  and not g_dev['ocn'].wx_hold and not enc_status['shutter_status'] in ['Software Fault', 'Closing', 'Error']:
 
             #plog ("Cool Down Open Check Running")
             
@@ -545,6 +561,14 @@ class Sequencer:
             
             if not self.nightly_weather_report_done and not g_dev['debug']:
 
+                # Reopening config and resetting all the things.
+                # This is necessary just in case a previous weather report was done today
+                # That can sometimes change the timing. 
+                self.astro_events.compute_day_directory()
+                self.astro_events.calculate_events(endofnightoverride='yes')
+                #self.astro_events.display_events()
+                g_dev['obs'].astro_events = self.astro_events
+                # Run nightly weather report
                 self.run_nightly_weather_report()
                 self.nightly_weather_report_done=True
 
@@ -875,38 +899,52 @@ class Sequencer:
                 
         #Here is where observatories who do their biases at night... well.... do their biases!
         #If it hasn't already been done tonight.
+
         
         if self.config['auto_midnight_moonless_bias_dark']:
             # Check it is in the dark of night
-            if  (events['Astro Dark'] <= ephem_now < events['End Astro Dark']):            
-                # Check no other commands or exposures are happening
-                if g_dev['obs'].cmd_queue.empty() and not g_dev["cam"].exposure_busy:
-                    # If the moon is way below the horizon
-                    if (ephem.Moon().alt < -15):
+            if  (events['Astro Dark'] <= ephem_now < events['End Astro Dark']):     
+                # Check that there isn't any activity indicating someone using it...
+                if (time.time() - g_dev['obs'].time_of_last_exposure) > 900 and (time.time() - g_dev['obs'].time_of_last_slew) > 900:
+                    # Check no other commands or exposures are happening
+                    if g_dev['obs'].cmd_queue.empty() and not g_dev["cam"].exposure_busy:
                         # If enclosure is shut for maximum darkness
                         if enc_status['shutter_status'] in ['Closed', 'closed']:
                             # Check the temperature is in range
-                            if g_dev['obs'].camera_temperature_in_range_for_calibrations:
-                                plog ("It is dark and the moon isn't up! Lets do some calibrations")                                
-                                if self.nightime_bias_counter < self.config['camera']['camera_1_1']['settings']['number_of_bias_to_collect']:
-                                    plog("Exposing 1x1 bias frame.")
-                                    req = {'time': 0.0,  'script': 'True', 'image_type': 'bias'}
-                                    opt = {'area': "Full", 'count': 1, 'bin': 1 , \
-                                           'filter': 'dark'}
-                                    self.nightime_bias_counter = self.nightime_bias_counter + 1
-                                    g_dev['cam'].expose_command(req, opt, no_AWS=False, \
-                                                        do_sep=False, quick=False, skip_open_check=True,skip_daytime_check=True)
-                                if self.nightime_dark_counter < self.config['camera']['camera_1_1']['settings']['number_of_dark_to_collect']:
-                                    dark_exp_time = self.config['camera']['camera_1_1']['settings']['dark_exposure']
-                                    plog("Exposing 1x1 dark exposure:  " + str(dark_exp_time) )
-                                    req = {'time': dark_exp_time ,  'script': 'True', 'image_type': 'dark'}
-                                    opt = {'area': "Full", 'count': 1, 'bin': 1, \
-                                            'filter': 'dark'}
-                                    self.nightime_dark_counter = self.nightime_dark_counter + 1
-                                    g_dev['cam'].expose_command(req, opt, no_AWS=False, \
-                                                       do_sep=False, quick=False, skip_open_check=True,skip_daytime_check=True)
-                                
-                
+                            currentaltazframe = AltAz(location=g_dev['mnt'].site_coordinates, obstime=Time.now())
+                            moondata=get_moon(Time.now()).transform_to(currentaltazframe)                        
+                            if (moondata.alt.deg < -15):
+                                # If the moon is way below the horizon                        
+                                if g_dev['obs'].camera_temperature_in_range_for_calibrations:
+                                    if self.nightime_bias_counter < self.config['camera']['camera_1_1']['settings']['number_of_bias_to_collect']:
+                                        plog ("It is dark and the moon isn't up! Lets do a bias!")  
+                                        g_dev['mnt'].park_command({}, {})
+                                        plog("Exposing 1x1 bias frame.")
+                                        req = {'time': 0.0,  'script': 'True', 'image_type': 'bias'}
+                                        opt = {'area': "Full", 'count': 1, 'bin': 1 , \
+                                               'filter': 'dark'}
+                                        self.nightime_bias_counter = self.nightime_bias_counter + 1
+                                        g_dev['cam'].expose_command(req, opt, no_AWS=False, \
+                                                            do_sep=False, quick=False, skip_open_check=True,skip_daytime_check=True)
+                                        # these exposures shouldn't reset these timers
+                                        g_dev['obs'].time_of_last_exposure = time.time() - 840
+                                        g_dev['obs'].time_of_last_slew = time.time() - 840
+                                    if self.nightime_dark_counter < self.config['camera']['camera_1_1']['settings']['number_of_dark_to_collect']:
+                                        plog ("It is dark and the moon isn't up! Lets do a dark!")  
+                                        g_dev['mnt'].park_command({}, {})
+                                        dark_exp_time = self.config['camera']['camera_1_1']['settings']['dark_exposure']
+                                        plog("Exposing 1x1 dark exposure:  " + str(dark_exp_time) )
+                                        req = {'time': dark_exp_time ,  'script': 'True', 'image_type': 'dark'}
+                                        opt = {'area': "Full", 'count': 1, 'bin': 1, \
+                                                'filter': 'dark'}
+                                        self.nightime_dark_counter = self.nightime_dark_counter + 1
+                                        g_dev['cam'].expose_command(req, opt, no_AWS=False, \
+                                                           do_sep=False, quick=False, skip_open_check=True,skip_daytime_check=True)
+                                        # these exposures shouldn't reset these timers
+                                        g_dev['obs'].time_of_last_exposure = time.time() - 840
+                                        g_dev['obs'].time_of_last_slew = time.time() - 840
+                                    
+                    
                 
                 
                 
@@ -1710,7 +1748,7 @@ class Sequencer:
                 deleteDirectories=[]
                 deleteTimes=[]
                 for q in range(len(directories)):
-                    if 'orphans' in directories[q] or 'calibmasters' in directories[q] or 'lng' in directories[q] or 'seq' in directories[q]:
+                    if 'localcalibrations' in directories[q] or 'orphans' in directories[q] or 'calibmasters' in directories[q] or 'lng' in directories[q] or 'seq' in directories[q]:
                         pass
                     elif ((timenow_cull)-os.path.getmtime(directories[q])) > (self.config['archive_age'] * 24* 60 * 60) :
                         deleteDirectories.append(directories[q])
@@ -1729,19 +1767,20 @@ class Sequencer:
         # Clear out smartstacks directory
         plog ("removing and reconstituting smartstacks directory")
         try:
-            shutil.rmtree(g_dev["cam"].site_path + "smartstacks")
+            shutil.rmtree(g_dev['obs'].obsid_path + "smartstacks")
         except:
             plog ("problems with removing the smartstacks directory... usually a file is open elsewhere")
         time.sleep(20)
-        if not os.path.exists(g_dev["cam"].site_path + "smartstacks"):
-            os.makedirs(g_dev["cam"].site_path + "smartstacks")
+        if not os.path.exists(g_dev['obs'].obsid_path + "smartstacks"):
+            os.makedirs(g_dev['obs'].obsid_path + "smartstacks")
 
 
 
 
         # Reopening config and resetting all the things.
         self.astro_events.compute_day_directory()
-        self.astro_events.display_events(endofnightoverride='yes')
+        self.astro_events.calculate_events(endofnightoverride='yes')
+        self.astro_events.display_events()
         g_dev['obs'].astro_events = self.astro_events
 
 
@@ -1757,9 +1796,9 @@ class Sequencer:
 
         # If you are using TheSkyX, then update the autosave path
         if self.config['camera']['camera_1_1']['driver'] == "CCDSoft2XAdaptor.ccdsoft5Camera":
-            g_dev['cam'].camera.AutoSavePath = self.config['archive_path'] +'archive/' + datetime.datetime.strftime(datetime.datetime.now(), '%Y%m%d')
+            g_dev['cam'].camera.AutoSavePath = g_dev['obs'].obsid_path +'archive/' + datetime.datetime.strftime(datetime.datetime.now(), '%Y%m%d')
             try:
-                os.mkdir(self.config['archive_path'] +'archive/' + datetime.datetime.strftime(datetime.datetime.now(), '%Y%m%d'))
+                os.mkdir(g_dev['obs'].obsid_path +'archive/' + datetime.datetime.strftime(datetime.datetime.now(), '%Y%m%d'))
             except:
                 plog ("Couldn't make autosave directory")
 
@@ -1791,6 +1830,7 @@ class Sequencer:
         self.eve_sky_flat_latch = False
         self.morn_sky_flat_latch = False
         self.morn_bias_dark_latch = False
+        self.cool_down_latch = False
         self.reset_completes()
 
 
@@ -1811,6 +1851,7 @@ class Sequencer:
 
         # Reopening config and resetting all the things.
         self.astro_events.compute_day_directory()
+        self.astro_events.calculate_events()
         self.astro_events.display_events()
         g_dev['obs'].astro_events = self.astro_events
 
@@ -1831,7 +1872,7 @@ class Sequencer:
         self.weather_report_wait_until_open=False
         self.weather_report_wait_until_open_time=ephem_now
         self.weather_report_close_during_evening=False
-        self.weather_report_close_during_evening_time=ephem_now
+        self.weather_report_close_during_evening_time=ephem_now + 86400
         
         # No harm in doubly checking it has parked
         g_dev['mnt'].park_command({}, {})
@@ -1851,29 +1892,72 @@ class Sequencer:
         # Get list of biases
         plog (datetime.datetime.now().strftime("%H:%M:%S"))
         plog ("Regenerating bias")
-        darkinputList=(glob(g_dev['obs'].local_dark_folder +'*.f*'))
-        inputList=(glob(g_dev['obs'].local_bias_folder +'*.f*'))
+        darkinputList=(glob(g_dev['obs'].local_dark_folder +'*.n*'))
+        inputList=(glob(g_dev['obs'].local_bias_folder +'*.n*'))
         
         
         if len(inputList) == 0 or len(darkinputList) == 0:
             plog ("Not reprocessing local masters as there are no biases or darks")
         else:
-        
-            hdutest = fits.open(inputList[0])[0]
-            shapeImage=hdutest.shape
-            del hdutest
+            # Clear held bias and darks to save memory and garbage collect.
+            del g_dev['cam'].biasFiles
+            del g_dev['cam'].darkFiles
+            g_dev['cam'].biasFiles = {}
+            g_dev['cam'].darkFiles = {}
+            gc.collect()
             
+            
+            #hdutest = fits.open(inputList[0])[1]
+            hdutest=np.load(inputList[0], mmap_mode='r')
+            #breakpoint()
+            shapeImage=hdutest.shape
+            #headHold=hdutest.header 
+            del hdutest
+
             # Make a temporary memmap file 
             PLDrive = np.memmap(g_dev['obs'].local_bias_folder + 'tempfile', dtype='float32', mode= 'w+', shape = (shapeImage[0],shapeImage[1],len(inputList)))
             # Store the biases in the memmap file
             i=0
             for file in inputList:
-                hdu1 = fits.open(file)[0]            
-                PLDrive[:,:,i] = np.asarray(hdu1.data,dtype=np.float32)        
+                plog (datetime.datetime.now().strftime("%H:%M:%S"))
+
+                
+                
+                starttime=datetime.datetime.now() 
+                plog("Storing in a memmap array: " + str(file))
+                
+                #hdu1data = np.array(fits.open(file, memmap=True)[1].data, dtype=np.float32)
+                
+                #hdu1data = fits.open(file, memmap=True)[1].data
+                hdu1data = np.load(file, mmap_mode='r')
+                timetaken=datetime.datetime.now() -starttime
+                plog ("Time Taken to load array: " + str(timetaken))
+                                
+                starttime=datetime.datetime.now() 
+                PLDrive[:,:,i] = hdu1data    
+                del hdu1data
+                timetaken=datetime.datetime.now() -starttime
+                plog ("Time Taken to put in memmap: " + str(timetaken))
+                
+                
+                #starttime=datetime.datetime.now() 
+                #PLDrive.flush()
+                #timetaken=datetime.datetime.now() -starttime
+                #plog ("Time Taken to flush memmap: " + str(timetaken))
                 i=i+1
+                
+            # hold onto the header info            
+                #plog ("Inputting bias: " + str(file) + " into memmap.")
+                #hdu1 = fits.open(file)[1]            
+                #PLDrive[:,:,i] = np.asarray(hdu1.data,dtype=np.float32)        
+                #i=i+1
+                #headHold=hdu1.header
+                #hdu1.close()
+                #del hdu1
             # hold onto the header info
-            headHold=hdu1.header
-            del hdu1
+            #headHold=hdu1.header
+            #del hdu1
+
             plog ("**********************************")
             plog ("Median Stacking each bias row individually from the Reprojections")
             plog (datetime.datetime.now().strftime("%H:%M:%S"))
@@ -1891,9 +1975,15 @@ class Sequencer:
             
             
             masterBias=np.asarray(finalImage).astype(np.float32)
-            
+            #breakpoint()
             # Save this out to calibmasters
-            fits.writeto(g_dev['obs'].calib_masters_folder + 'BIAS_master_bin1.fits', masterBias , headHold, overwrite=True)
+            #g_dev['obs'].obs_id
+            #g_dev['cam'].alias
+            tempfrontcalib=g_dev['obs'].obs_id + '_' + g_dev['cam'].alias +'_'
+            #print (tempfrontcalib)
+            
+            fits.writeto(g_dev['obs'].calib_masters_folder + tempfrontcalib + 'BIAS_master_bin1.fits', masterBias,  overwrite=True)
+            g_dev['cam'].enqueue_for_AWS(50, '',g_dev['obs'].calib_masters_folder + tempfrontcalib + 'BIAS_master_bin1.fits')
             
             PLDrive._mmap.close()
             del PLDrive
@@ -1905,23 +1995,60 @@ class Sequencer:
             # NOW we have the master bias, we can move onto the dark frames
             plog (datetime.datetime.now().strftime("%H:%M:%S"))
             plog ("Regenerating dark") 
-            inputList=(glob(g_dev['obs'].local_dark_folder +'*.f*'))
+            inputList=(glob(g_dev['obs'].local_dark_folder +'*.n*'))
             # Generate temp memmap
             PLDrive = np.memmap(g_dev['obs'].local_dark_folder  + 'tempfile', dtype='float32', mode= 'w+', shape = (shapeImage[0],shapeImage[1],len(inputList)))
             # Debias dark frames and stick them in the memmap
             i=0
             for file in inputList:   
-                hdu1 = fits.open(file)[0]
-                darkdebias=hdu1.data-masterBias
-                if any("EXPTIME" in s for s in hdu1.header.keys()):
-                    darkdeexp=darkdebias/hdu1.header['EXPTIME']
-                else:
-                    darkdeexp=darkdebias/hdu1.header['EXPOSURE']
+                
+                
+                plog (datetime.datetime.now().strftime("%H:%M:%S"))
+                
+                
+                starttime=datetime.datetime.now() 
+                plog("Storing dark in a memmap array: " + str(file))
+                
+                
+                
+                #hdu1 = fits.open(file, memmap=True)[1]
+                hdu1data = np.load(file, mmap_mode='r')
+                #hdu1data = hdu1.
+                #breakpoint()
+                hdu1exp=float(file.split('_')[-2])
+                #if any("EXPTIME" in s for s in hdu1.header.keys()):
+                #    hdu1exp=hdu1.header['EXPTIME']
+                #else:
+                #    hdu1exp=hdu1.header['EXPOSURE']
+                #del hdu1               
+                #hdu1data= hdu1[0].data
+                #hdu1header= hdu1.header
+                #breakpoint()
+                darkdeexp=(hdu1data-masterBias)/hdu1exp
+                del hdu1data
+                timetaken=datetime.datetime.now() -starttime
+                plog ("Time Taken to load array and debias and divide dark: " + str(timetaken))
+                    
+                #if any("EXPTIME" in s for s in hdu1.header.keys()):
+                #    darkdeexp=darkdebias/hdu1.header['EXPTIME']
+                #else:
+                #    darkdeexp=darkdebias/hdu1.header['EXPOSURE']
+                starttime=datetime.datetime.now() 
                 PLDrive[:,:,i] = np.asarray(darkdeexp,dtype=np.float32)
+                del darkdeexp
+                timetaken=datetime.datetime.now() -starttime
+                plog ("Time Taken to put in memmap: " + str(timetaken))
+                
+                
+                #starttime=datetime.datetime.now() 
+                #PLDrive.flush()
+                #timetaken=datetime.datetime.now() -starttime
+                #plog ("Time Taken to flush memmap: " + str(timetaken))
+                
                 i=i+1
             # Hold onto the header
-            headHold=hdu1.header
-            del hdu1
+            #headHold=hdu1.header
+            #del hdu1
     
             plog ("**********************************")
             plog ("Median Stacking each darkframe row individually from the Reprojections")
@@ -1940,43 +2067,17 @@ class Sequencer:
     
     
             masterDark=np.asarray(finalImage).astype(np.float32)
-            fits.writeto(g_dev['obs'].calib_masters_folder + 'DARK_master_bin1.fits', masterDark, headHold, overwrite=True)
+            fits.writeto(g_dev['obs'].calib_masters_folder + tempfrontcalib + 'DARK_master_bin1.fits', masterDark,  overwrite=True)
+            
+            g_dev['cam'].enqueue_for_AWS(50, '',g_dev['obs'].calib_masters_folder + tempfrontcalib + 'DARK_master_bin1.fits')
+            
             
             PLDrive._mmap.close()
             del PLDrive
             gc.collect()
             os.remove(g_dev['obs'].local_dark_folder  + 'tempfile')
     
-            plog ("Re-loading Bias and Dark masters into memory.")
-            # Reload the bias and dark frames
-            g_dev['cam'].biasFiles = {}
-            g_dev['cam'].darkFiles = {}
             
-            try:
-                #self.biasframe = fits.open(
-                #tempbiasframe = fits.open(self.archive_path  + self.alias + "/calibmasters" \
-                #                          + "/BIAS_master_bin1.fits")
-                #tempbiasframe = np.array(tempbiasframe[0].data, dtype=np.float32)
-                g_dev['cam'].biasFiles.update({'1': masterBias})
-                #del masterBias
-                #del tempbiasframe
-            except:
-                plog("Bias frame master re-upload did not work.")
-                #plog(traceback.format_exc()) 
-                #breakpoint()               
-                
-            
-            try:
-                #self.darkframe = fits.open(
-                #tempdarkframe = fits.open(self.archive_path  + self.alias + "/calibmasters" \
-                #                          + "/DARK_master_bin1.fits")
-    
-                #tempdarkframe = np.array(tempdarkframe[0].data, dtype=np.float32)
-                g_dev['cam'].darkFiles.update({'1': masterDark})
-                #del masterDark
-                #del tempdarkframe
-            except:
-                plog("Dark frame master re-upload did not work.")  
     
     
             
@@ -1994,7 +2095,7 @@ class Sequencer:
                     plog (datetime.datetime.now().strftime("%H:%M:%S"))
                     filtercode=filterfolder.split('\\')[-2]
                     plog ("Regenerating flat for " + str(filtercode))
-                    inputList=(glob(g_dev['obs'].local_flat_folder + filtercode + '/*.f*'))
+                    inputList=(glob(g_dev['obs'].local_flat_folder + filtercode + '/*.n*'))
                     # Generate temp memmap
                     if len(inputList) == 0:
                         plog ("Not doing " + str(filtercode) + " flat. No available files in directory.")
@@ -2003,22 +2104,73 @@ class Sequencer:
                             PLDrive = np.memmap(g_dev['obs'].local_flat_folder  + 'tempfile', dtype='float32', mode= 'w+', shape = (shapeImage[0],shapeImage[1],len(inputList)))
                         except:
                             breakpoint()
-                        # Debias dark frames and stick them in the memmap
+                            
+                            
+                        
+                            
+                            
+                        # Debias and dedark flat frames and stick them in the memmap
                         i=0
                         for file in inputList:   
-                            hdu1 = fits.open(file)[0]
-                            flatdebiased=hdu1.data-masterBias                
-                            if any("EXPTIME" in s for s in hdu1.header.keys()):
+                            
+                            
+                            
+                            plog (datetime.datetime.now().strftime("%H:%M:%S"))
+                            
+                            
+                            starttime=datetime.datetime.now() 
+                            plog("Storing flat in a memmap array: " + str(file))
+                            
+                            
+                            hdu1data = np.load(file, mmap_mode='r')                            
+                            #hdu1 = fits.open(file, memmap=True)[1]
+                            #hdu1data = hdu1.data       
+                            hdu1exp=float(file.split('_')[-2])
+                            #if any("EXPTIME" in s for s in hdu1.header.keys()):
+                            #    hdu1exp=hdu1.header['EXPTIME']
+                            #else:
+                            #    hdu1exp=hdu1.header['EXPOSURE']
+                            #del hdu1               
+                            
+                            flatdebiaseddedarked=(hdu1data-masterBias)-(masterDark*hdu1exp) 
+                            del hdu1data
+                            #hdu1data= hdu1[0].data
+                            #hdu1header= hdu1.header
+                            #breakpoint()
+                            #darkdeexp=(hdu1data-masterBias)/hdu1exp
+                            timetaken=datetime.datetime.now() -starttime
+                            plog ("Time Taken to load array and debias and dedark flat: " + str(timetaken))
+                            
+                            
+                            
+                            #hdu1 = fits.open(file)[1]
+                                           
+                            #if any("EXPTIME" in s for s in hdu1.header.keys()):
                             #objdedark = objdebias-(masterDark.multiply(hdu1.header['EXPTIME']))
-                                flatdebiaseddedarked = flatdebiased-(masterDark*(float(hdu1.header['EXPTIME'])))
-                            else:
+                            #    flatdebiaseddedarked = flatdebiased-(masterDark*(float(hdu1.header['EXPTIME'])))
+                            #else:
                                 #objdedark = objdebias-(masterDark.multiply(hdu1.header['EXPOSURE']))
-                                flatdebiaseddedarked = flatdebiased-(masterDark*(float(hdu1.header['EXPOSURE'])))
-                            PLDrive[:,:,i] = np.asarray(flatdebiaseddedarked,dtype=np.float32)
+                            #    flatdebiaseddedarked = flatdebiased-(masterDark*(float(hdu1.header['EXPOSURE'])))
+                            
+                            
+                            starttime=datetime.datetime.now() 
+                            #PLDrive[:,:,i] = np.asarray(flatdebiaseddedarked,dtype=np.float32)
+                            PLDrive[:,:,i] = flatdebiaseddedarked
+                            del flatdebiaseddedarked
+                            timetaken=datetime.datetime.now() -starttime
+                            plog ("Time Taken to put in memmap: " + str(timetaken))
+                            
+                            
+                            #starttime=datetime.datetime.now() 
+                            #PLDrive.flush()
+                            #timetaken=datetime.datetime.now() -starttime
+                            #plog ("Time Taken to flush memmap: " + str(timetaken))
+                            
+                            
                             i=i+1
                         # Hold onto the header
-                        headHold=hdu1.header
-                        del hdu1
+                        #headHold=hdu1.header
+                        #del hdu1
             
                         plog ("**********************************")
                         plog ("Median Stacking each " + str (filtercode) + " flat frame row individually from the Reprojections")
@@ -2035,9 +2187,9 @@ class Sequencer:
                         plog ("**********************************")
                         
                         temporaryFlat=np.asarray(finalImage).astype(np.float32)
-                        
+                        del finalImage
                         # Fix up any glitches in the flat
-                        temporaryFlat=np.asarray(temporaryFlat, dtype=np.float32)
+                        #temporaryFlat=np.asarray(temporaryFlat, dtype=np.float32)
                         temporaryFlat[temporaryFlat < 0.1] = np.nan
                         
                         temporaryFlat=interpolate_replace_nans(temporaryFlat, kernel)
@@ -2046,8 +2198,8 @@ class Sequencer:
                         
                         np.save(g_dev['obs'].calib_masters_folder + 'masterFlat_'+ str(filtercode) + '_bin1.npy', temporaryFlat)            
                         
-                        fits.writeto(g_dev['obs'].calib_masters_folder + 'masterFlat_'+ str(filtercode) + '_bin1.fits', temporaryFlat, headHold, overwrite=True)
-                        
+                        fits.writeto(g_dev['obs'].calib_masters_folder + tempfrontcalib + 'masterFlat_'+ str(filtercode) + '_bin1.fits', temporaryFlat, overwrite=True)
+                        g_dev['cam'].enqueue_for_AWS(50, '',g_dev['obs'].calib_masters_folder + tempfrontcalib + 'masterFlat_'+ str(filtercode) + '_bin1.fits')
                         
                         PLDrive._mmap.close()
                         del PLDrive
@@ -2079,6 +2231,40 @@ class Sequencer:
                 del masterDark
 
                 plog ("Regenerated Flat Masters and Re-loaded them into memory.")
+
+            plog ("Re-loading Bias and Dark masters into memory.")
+            # Reload the bias and dark frames
+            g_dev['cam'].biasFiles = {}
+            g_dev['cam'].darkFiles = {}
+            
+            try:
+                #self.biasframe = fits.open(
+                #tempbiasframe = fits.open(self.archive_path  + self.alias + "/calibmasters" \
+                #                          + "/BIAS_master_bin1.fits")
+                #tempbiasframe = np.array(tempbiasframe[0].data, dtype=np.float32)
+                g_dev['cam'].biasFiles.update({'1': masterBias})
+                #del masterBias
+                #del tempbiasframe
+            except:
+                plog("Bias frame master re-upload did not work.")
+                #plog(traceback.format_exc()) 
+                #breakpoint()               
+                
+            
+            try:
+                #self.darkframe = fits.open(
+                #tempdarkframe = fits.open(self.archive_path  + self.alias + "/calibmasters" \
+                #                          + "/DARK_master_bin1.fits")
+    
+                #tempdarkframe = np.array(tempdarkframe[0].data, dtype=np.float32)
+                g_dev['cam'].darkFiles.update({'1': masterDark})
+                #del masterDark
+                #del tempdarkframe
+            except:
+                plog("Dark frame master re-upload did not work.")  
+            
+            del masterBias
+            del masterDark
 
         return
 

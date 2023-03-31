@@ -85,7 +85,7 @@ retries = Retry(total=50,
                 backoff_factor=0.1,
                 status_forcelist=[ 500, 502, 503, 504 ])
 reqs.mount('http://', HTTPAdapter(max_retries=retries))
-reqs.mount('http://', HTTPAdapter(max_retries=retries))
+#reqs.mount('https://', HTTPAdapter(max_retries=retries))
 
 # The ingester should only be imported after environment variables are loaded in.
 load_dotenv(".env")
@@ -252,6 +252,7 @@ class Observatory:
         self.astro_events = ptr_events.Events(self.config)
         self.astro_events.compute_day_directory()
 
+        self.astro_events.calculate_events()
         self.astro_events.display_events()
 
         # Define a redis server if needed.
@@ -387,8 +388,8 @@ class Observatory:
         g_dev["mnt"].reset_mount_reference()
 
         # Keep track of how long it has been since the last activity
-        self.time_since_last_exposure = time.time()
-        self.time_since_last_slew = time.time()
+        self.time_of_last_exposure = time.time()
+        self.time_of_last_slew = time.time()
 
         # Only poll the broad safety checks (altitude and inactivity) every 5 minutes
         self.time_since_safety_checks=time.time() - 310.0
@@ -464,7 +465,7 @@ class Observatory:
         #opt = {}
         #g_dev['seq'].extensive_focus_script(req2,opt)
         #req = {'bin1': True, 'bin2': False, 'bin3': False, 'bin4': False, 'numOfBias': 63, \
-        #        'numOfDark': 31, 'darkTime': 600, 'numOfDark2': 31, 'dark2Time': 600, \
+        #        'numOfDark': 31, 'darkTime': 75, 'numOfDark2': 31, 'dark2Time': 75, \
         #        'hotMap': True, 'coldMap': True, 'script': 'genBiasDarkMaster', }  #This specificatin is obsolete
         #opt = {}
         #No action needed on  the enclosure at this level
@@ -1274,15 +1275,15 @@ sel
     
     
             # If no activity for an hour, park the scope               
-            if time.time() - self.time_since_last_slew > self.config['mount']['mount1']\
-                                                                                ['time_inactive_until_park'] or time.time() - self.time_since_last_exposure > self.config['mount']['mount1']\
+            if time.time() - self.time_of_last_slew > self.config['mount']['mount1']\
+                                                                                ['time_inactive_until_park'] or time.time() - self.time_of_last_exposure > self.config['mount']['mount1']\
                                                                                                                                                     ['time_inactive_until_park']:
                 if not g_dev['mnt'].mount.AtPark:  
                     plog ("Parking scope due to inactivity")
                     if g_dev['mnt'].home_before_park:
                         g_dev['mnt'].home_command()
                     g_dev['mnt'].park_command()
-                    self.time_since_last_slew = time.time()
+                    self.time_of_last_slew = time.time()
             
             # Check that rotator is rotating
             if g_dev['rot'] != None:
@@ -1443,7 +1444,7 @@ sel
                         if g_dev['mnt'].home_before_park:
                             g_dev['mnt'].home_command()
                         g_dev['mnt'].park_command()
-                        self.time_since_last_slew = time.time()
+                        self.time_of_last_slew = time.time()
                         
                     g_dev['enc'].enclosure.CloseShutter()
             #plog ("temporary reporting: MTF")
@@ -1548,21 +1549,15 @@ sel
                                     tempPTR=1
                                     retryarchive=11
                                 except Exception as e:
-
-                                    if self.site_name == "mrc1":
-                                        plog("ingester isn't ingesting at MRC. A known problem - MTF will fix.")
-                                        retryarchive=12
-                                        tempPTR=0
-                                    else:
                                     
-                                        plog ("couldn't send to PTR archive for some reason")
-                                        plog ("Retry " + str(retryarchive))
-                                        plog (e)
-                                        plog ((traceback.format_exc()))
-                                        time.sleep(pow(retryarchive, 2) + 1)
-                                        if retryarchive < 10:
-                                            retryarchive=retryarchive+1
-                                        tempPTR=0
+                                    plog ("couldn't send to PTR archive for some reason")
+                                    plog ("Retry " + str(retryarchive))
+                                    plog (e)
+                                    plog ((traceback.format_exc()))
+                                    time.sleep(pow(retryarchive, 2) + 1)
+                                    if retryarchive < 10:
+                                        retryarchive=retryarchive+1
+                                    tempPTR=0
                                         
 
                         # If ingester fails, send to default S3 bucket.
@@ -1609,11 +1604,14 @@ sel
                         
                 one_at_a_time = 0
 
-                try:   
-                    os.remove(filepath)
-                except:
-                    plog ("Couldn't remove " +str(filepath) + "file after transfer")
-                    #pass
+                # Don't remove local calibrations after uploading but remove the others
+                print (filepath)
+                if ('calibmasters' not in filepath):
+                    try:   
+                        os.remove(filepath)
+                    except:
+                        plog ("Couldn't remove " +str(filepath) + "file after transfer")
+                        #pass
                 
                 # if (
                 #     filename[-3:] == "jpg"
@@ -2498,7 +2496,7 @@ sel
                         del hdufocus
                         
                         # Test here that there has not been a slew, if there has been a slew, cancel out!
-                        if self.time_since_last_slew > time_platesolve_requested:
+                        if self.time_of_last_slew > time_platesolve_requested:
                             plog ("detected a slew since beginning platesolve... bailing out of platesolve.")
                             #if not self.config['keep_focus_images_on_disk']:
                             #    os.remove(cal_path + cal_name)
@@ -2548,7 +2546,7 @@ sel
                                 g_dev['obs'].images_since_last_solve = 0
                                 
                                 # Test here that there has not been a slew, if there has been a slew, cancel out!
-                                if self.time_since_last_slew > time_platesolve_requested:
+                                if self.time_of_last_slew > time_platesolve_requested:
                                     plog ("detected a slew since beginning platesolve... bailing out of platesolve.")
                                     #if not self.config['keep_focus_images_on_disk']:
                                     #    os.remove(cal_path + cal_name)
@@ -2736,31 +2734,33 @@ sel
                     while saver == 0 and saverretries < 10:
                         try:
                             #hdu=fits.PrimaryHDU()
-                            hdu=fits.CompImageHDU()
+                            #hdu=fits.CompImageHDU()
                         
-                            hdu.data=slow_process[2]                            
-                            hdu.header=temphduheader
+                            #hdu.data=slow_process[2]                            
+                            #hdu.header=temphduheader
                             
                             
                             # Figure out which folder to send the calibration file to
                             # and delete any old files over the maximum amount to store
                             if slow_process[4] == 'bias':
-                                tempfilename=self.local_bias_folder + slow_process[1].replace('.fits','.fits.fz')                                
+                                #tempfilename=self.local_bias_folder + slow_process[1].replace('.fits','.fits.fz')                                
+                                tempfilename=self.local_bias_folder + slow_process[1].replace('.fits','.npy')                                
                                 max_files=self.config['camera']['camera_1_1']['settings']['number_of_bias_to_store']
-                                n_files=len(glob.glob(self.local_bias_folder +'*.f*'))
+                                n_files=len(glob.glob(self.local_bias_folder +'*.n*'))
                                 while n_files > max_files:
-                                    list_of_files=glob.glob(self.local_bias_folder +'*.f*')
+                                    list_of_files=glob.glob(self.local_bias_folder +'*.n*')
                                     n_files=len(list_of_files)
                                     oldest_file=min(list_of_files, key=os.path.getctime)
                                     os.remove(oldest_file)
                                     plog("removed old bias: " + str(oldest_file))
                                     
                             elif slow_process[4] == 'dark':
-                                tempfilename=self.local_dark_folder + slow_process[1].replace('.fits','.fits.fz') 
+                                tempexposure=temphduheader['EXPTIME'] 
+                                tempfilename=self.local_dark_folder + slow_process[1].replace('.fits','_' + str(tempexposure) +'_.npy') 
                                 max_files=self.config['camera']['camera_1_1']['settings']['number_of_dark_to_store']
-                                n_files=len(glob.glob(self.local_dark_folder +'*.f*'))
+                                n_files=len(glob.glob(self.local_dark_folder +'*.n*'))
                                 while n_files > max_files:
-                                    list_of_files=glob.glob(self.local_dark_folder +'*.f*')
+                                    list_of_files=glob.glob(self.local_dark_folder +'*.n*')
                                     n_files=len(list_of_files)
                                     oldest_file=min(list_of_files, key=os.path.getctime)
                                     os.remove(oldest_file)
@@ -2768,29 +2768,59 @@ sel
                                 
                             elif slow_process[4] == 'flat':
                                 tempfilter=temphduheader['FILTER'] 
+                                tempexposure=temphduheader['EXPTIME'] 
                                 if not os.path.exists(self.local_flat_folder + tempfilter):
                                     os.makedirs(self.local_flat_folder + tempfilter)
-                                tempfilename=self.local_flat_folder + tempfilter + '/' + slow_process[1].replace('.fits','.fits.fz') 
+                                tempfilename=self.local_flat_folder + tempfilter + '/' + slow_process[1].replace('.fits','_' + str(tempexposure) +'_.npy') 
                                 
                                 
                                 max_files=self.config['camera']['camera_1_1']['settings']['number_of_flat_to_store']
-                                n_files=len(glob.glob(self.local_flat_folder + tempfilter + '/'+ '*.f*'))
+                                n_files=len(glob.glob(self.local_flat_folder + tempfilter + '/'+ '*.n*'))
                                 while n_files > max_files:
-                                    list_of_files=glob.glob(self.local_flat_folder + tempfilter + '/'+ '*.f*')
+                                    list_of_files=glob.glob(self.local_flat_folder + tempfilter + '/'+ '*.n*')
                                     n_files=len(list_of_files)
                                     oldest_file=min(list_of_files, key=os.path.getctime)
                                     os.remove(oldest_file)
-                                    plog("removed old flat: " + str(oldest_file))
+                                    plog("removed old flat: " + str(oldest_file))                                                      
                             
                             
-                            hdu.writeto(
-                                tempfilename, overwrite=True, output_verify='silentfix'
-                            )  # Save full raw file locally
-                            try:
-                                hdu.close()
-                            except:
-                                pass                    
-                            del hdu
+                            # Save the file as an uncompressed numpy binary
+                            
+                            np.save(
+                                tempfilename,
+                                np.array(slow_process[2] , dtype=np.float32)
+                            )
+                            
+                            
+                            #hdufz = fits.CompImageHDU(
+                            #    np.array(slow_process[2] , dtype=np.float32), temphduheader
+                            #)
+                            #hdufz.verify("fix")
+                            #hdufz.header[
+                            #    "BZERO"
+                            #] = 0  # Make sure there is no integer scaling left over
+                            #hdufz.header[
+                            #    "BSCALE"
+                            #] = 1  # Make sure there is no integer scaling left over
+                            #hdufz.writeto(
+                            #    tempfilename, overwrite=True, output_verify='silentfix'
+                            #)
+                            
+                            #hdu.writeto(
+                            #    tempfilename, overwrite=True, output_verify='silentfix'
+                            #)  # Save full raw file locally
+                            
+                            #try:
+                            #    hdufz.close()
+                            #except:
+                            #    pass                    
+                            #del hdufz
+                            
+                            #try:
+                            #    hdu.close()
+                            #except:
+                            #    pass                    
+                            #del hdu
                             saver = 1
                             
                         except Exception as e:
@@ -3821,10 +3851,10 @@ def check_platesolve_and_nudge():
     # If the platesolve requests such a thing.
     if g_dev['obs'].pointing_correction_requested_by_platesolve_thread:
         g_dev['obs'].pointing_correction_requested_by_platesolve_thread = False
-        if g_dev['obs'].pointing_correction_request_time > g_dev['obs'].time_since_last_slew: # Check it hasn't slewed since request                        
+        if g_dev['obs'].pointing_correction_request_time > g_dev['obs'].time_of_last_slew: # Check it hasn't slewed since request                        
             plog ("I am nudging the telescope slightly at the request of platesolve!")                            
             g_dev['mnt'].mount.SlewToCoordinatesAsync(g_dev['obs'].pointing_correction_request_ra, g_dev['obs'].pointing_correction_request_dec)
-            g_dev['obs'].time_since_last_slew = time.time()
+            g_dev['obs'].time_of_last_slew = time.time()
             wait_for_slew()
 
 def wait_for_slew():    

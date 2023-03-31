@@ -128,7 +128,7 @@ site_config = {
     'auto_eve_sky_flat': True,
 
     'eve_sky_flat_sunset_offset': -0.5,  #  Minutes  neg means before, + after.
-    'eve_cool_down_open' : -105.0,
+    'eve_cool_down_open' : -80.0,
     'auto_morn_sky_flat': False,
     'auto_morn_bias_dark': False,
     're-calibrate_on_solve': True,
@@ -224,14 +224,14 @@ site_config = {
                                                                         #First Entry is always default condition.
                 'roof_shutter':  ['Auto', 'Open', 'Close', 'Lock Closed', 'Unlock'],
             },
-            'eve_bias_dark_dur':  2.0,   #  hours Duration, prior to next.
-            'eve_screen_flat_dur': 1.0,   #  hours Duration, prior to next.
-            'operations_begin':  -1.0,   #  - hours from Sunset
-            'eve_cooldown_offset': -.99,   #  - hours beforeSunset
-            'eve_sky_flat_offset':  0.5,   #  - hours beforeSunset
-            'morn_sky_flat_offset':  0.4,   #  + hours after Sunrise
-            'morning_close_offset':  0.41,   #  + hours after Sunrise
-            'operations_end':  0.42,
+            #'eve_bias_dark_dur':  2.0,   #  hours Duration, prior to next.
+            #'eve_screen_flat_dur': 1.0,   #  hours Duration, prior to next.
+            #'operations_begin':  -1.0,   #  - hours from Sunset
+            #'eve_cooldown_offset': -.99,   #  - hours beforeSunset
+            #'eve_sky_flat_offset':  0.5,   #  - hours beforeSunset
+            #'morn_sky_flat_offset':  0.4,   #  + hours after Sunrise
+            #'morning_close_offset':  0.41,   #  + hours after Sunrise
+            #'operations_end':  0.42,
         },
     },
 
@@ -259,7 +259,7 @@ site_config = {
             
             'home_before_park' : True,
             'permissive_mount_reset' : 'yes', # if this is set to yes, it will reset the mount at startup and when coordinates are out significantly
-            'lowest_acceptable_altitude' : -5.0, # Below this altitude, it will automatically try to home and park the scope to recover.
+            'lowest_acceptable_altitude' : -7.0, # Below this altitude, it will automatically try to home and park the scope to recover.
             'time_inactive_until_park' : 3600.0, # How many seconds of inactivity until it will park the telescope
             'settings': {
 			    'latitude_offset': 0.0,     #Decimal degrees, North is Positive   These *could* be slightly different than site.
@@ -844,12 +844,12 @@ site_config = {
                 #'enable_bin':            [ True, False,  False,  False],
                 #'bias_dark_bin_spec':    ['1,1', '2,2', '3,3', '4,4' ],    #Default binning for flats
 
-                'number_of_bias_to_collect' : 63,
-                'number_of_dark_to_collect' : 63,
-                'number_of_flat_to_collect' : 63,
-                'number_of_bias_to_store' : 63,
-                'number_of_dark_to_store' : 63,
-                'number_of_flat_to_store' : 63,
+                'number_of_bias_to_collect' : 32,
+                'number_of_dark_to_collect' : 32,
+                'number_of_flat_to_collect' : 32,
+                'number_of_bias_to_store' : 32,
+                'number_of_dark_to_store' : 32,
+                'number_of_flat_to_store' : 32,
 
  
                 'dark_exposure': 20,

@@ -5,10 +5,10 @@ Created on Tue Apr 20 22:19:25 2021
 
 """
 
-import copy
+#import copy
 import datetime
 import os
-import math
+#import math
 import shelve
 import time
 import traceback
@@ -18,35 +18,35 @@ from astropy.io import fits, ascii
 from astropy.time import Time
 from astropy.utils.data import check_download_cache
 from astropy.coordinates import SkyCoord
-from astropy.table import Table
+#from astropy.table import Table
 from astropy.nddata import block_reduce
 import glob
 import numpy as np
 import matplotlib.pyplot as plt   # Please do not remove this import.
-import sep
-from skimage.io import imsave
-from skimage.transform import resize
-from auto_stretch.stretch import Stretch
+#import sep
+#from skimage.io import imsave
+#from skimage.transform import resize
+#from auto_stretch.stretch import Stretch
 import win32com.client
-from planewave import platesolve
+#from planewave import platesolve
 
-from scipy import stats
+#from scipy import stats
 
-import colour
-import queue
+#import colour
+#import queue
 import threading
 
     
-from colour_demosaicing import (
-    demosaicing_CFA_Bayer_bilinear,
-    demosaicing_CFA_Bayer_Malvar2004,
-    demosaicing_CFA_Bayer_Menon2007,
-    mosaicing_CFA_Bayer)
+#from colour_demosaicing import (
+#    demosaicing_CFA_Bayer_bilinear,
+#    demosaicing_CFA_Bayer_Malvar2004,
+#    demosaicing_CFA_Bayer_Menon2007,
+#    mosaicing_CFA_Bayer)
 
-from PIL import Image , ImageEnhance
+#from PIL import Image , ImageEnhance
 
 from devices.darkslide import Darkslide
-import ptr_utility
+#import ptr_utility
 from global_yard import g_dev
 from ptr_utility import plog
 from ctypes import *
@@ -406,11 +406,17 @@ class Camera:
         self.flatFiles = {}
         self.hotFiles = {}
 
+        g_dev['obs'].obs_id
+        g_dev['cam'].alias
+        tempfrontcalib=g_dev['obs'].obs_id + '_' + g_dev['cam'].alias +'_'
+        #print (tempfrontcalib)
+
         
         try:
             #self.biasframe = fits.open(
+
             tempbiasframe = fits.open(self.obsid_path + "archive/" + self.alias + "/calibmasters" \
-                                      + "/BIAS_master_bin1.fits")
+                                      + "/" + tempfrontcalib + "BIAS_master_bin1.fits")
             tempbiasframe = np.array(tempbiasframe[0].data, dtype=np.float32)
             self.biasFiles.update({'1': tempbiasframe})
             del tempbiasframe
@@ -423,7 +429,7 @@ class Camera:
         try:
             #self.darkframe = fits.open(
             tempdarkframe = fits.open(self.obsid_path + "archive/" + self.alias + "/calibmasters" \
-                                      + "/DARK_master_bin1.fits")
+                                      + "/" + tempfrontcalib +  "DARK_master_bin1.fits")
 
             tempdarkframe = np.array(tempdarkframe[0].data, dtype=np.float32)
             self.darkFiles.update({'1': tempdarkframe})
@@ -433,7 +439,7 @@ class Camera:
 
         try:            
             fileList = glob.glob(self.obsid_path + "archive/" + self.alias + "/calibmasters" \
-                                 + "/masterFlat*_bin1.npy")
+                                 + "/ " + tempfrontcalib + "masterFlat*_bin1.npy")
             
             for file in fileList:
                 self.flatFiles.update({file.split("_")[1].replace ('.npy','') + '_bin1': file})
@@ -1762,7 +1768,7 @@ class Camera:
                             
                             self._expose(exposure_time, bias_dark_or_light_type_frame)
                             
-                            g_dev['obs'].time_since_last_exposure = time.time()
+                            g_dev['obs'].time_of_last_exposure = time.time()
                         else:
                             plog("Something terribly wrong, driver not recognized.!")
                             self.expresult = {}
@@ -2045,6 +2051,7 @@ class Camera:
                         imageCollected = 1
                     except Exception as e:
                         plog(e)
+                        plog (traceback.format_exc())
                         if "Image Not Available" in str(e):
                             plog("Still waiting for file to arrive: ", e)
                         time.sleep(3)
@@ -3537,8 +3544,8 @@ def check_platesolve_and_nudge():
     # If the platesolve requests such a thing.
     if g_dev['obs'].pointing_correction_requested_by_platesolve_thread:
         g_dev['obs'].pointing_correction_requested_by_platesolve_thread = False
-        if g_dev['obs'].pointing_correction_request_time > g_dev['obs'].time_since_last_slew: # Check it hasn't slewed since request                        
+        if g_dev['obs'].pointing_correction_request_time > g_dev['obs'].time_of_last_slew: # Check it hasn't slewed since request                        
             plog ("I am nudging the telescope slightly at the request of platesolve!")                            
             g_dev['mnt'].mount.SlewToCoordinatesAsync(g_dev['obs'].pointing_correction_request_ra, g_dev['obs'].pointing_correction_request_dec)
-            g_dev['obs'].time_since_last_slew = time.time()
+            g_dev['obs'].time_of_last_slew = time.time()
             wait_for_slew()
