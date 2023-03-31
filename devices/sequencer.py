@@ -1892,8 +1892,8 @@ class Sequencer:
         # Get list of biases
         plog (datetime.datetime.now().strftime("%H:%M:%S"))
         plog ("Regenerating bias")
-        darkinputList=(glob(g_dev['obs'].local_dark_folder +'*.f*'))
-        inputList=(glob(g_dev['obs'].local_bias_folder +'*.f*'))
+        darkinputList=(glob(g_dev['obs'].local_dark_folder +'*.n*'))
+        inputList=(glob(g_dev['obs'].local_bias_folder +'*.n*'))
         
         
         if len(inputList) == 0 or len(darkinputList) == 0:
@@ -1907,9 +1907,11 @@ class Sequencer:
             gc.collect()
             
             
-            hdutest = fits.open(inputList[0])[1]
+            #hdutest = fits.open(inputList[0])[1]
+            hdutest=np.load(inputList[0], mmap_mode='r')
+            #breakpoint()
             shapeImage=hdutest.shape
-            headHold=hdutest.header 
+            #headHold=hdutest.header 
             del hdutest
 
             # Make a temporary memmap file 
@@ -1926,7 +1928,8 @@ class Sequencer:
                 
                 #hdu1data = np.array(fits.open(file, memmap=True)[1].data, dtype=np.float32)
                 
-                hdu1data = fits.open(file, memmap=True)[1].data
+                #hdu1data = fits.open(file, memmap=True)[1].data
+                hdu1data = np.load(file, mmap_mode='r')
                 timetaken=datetime.datetime.now() -starttime
                 plog ("Time Taken to load array: " + str(timetaken))
                                 
@@ -1972,14 +1975,14 @@ class Sequencer:
             
             
             masterBias=np.asarray(finalImage).astype(np.float32)
-            breakpoint()
+            #breakpoint()
             # Save this out to calibmasters
-            g_dev['obs'].obs_id
-            g_dev['cam'].alias
+            #g_dev['obs'].obs_id
+            #g_dev['cam'].alias
             tempfrontcalib=g_dev['obs'].obs_id + '_' + g_dev['cam'].alias +'_'
             #print (tempfrontcalib)
             
-            fits.writeto(g_dev['obs'].calib_masters_folder + tempfrontcalib + 'BIAS_master_bin1.fits', masterBias , headHold, overwrite=True)
+            fits.writeto(g_dev['obs'].calib_masters_folder + tempfrontcalib + 'BIAS_master_bin1.fits', masterBias,  overwrite=True)
             g_dev['cam'].enqueue_for_AWS(780000000, '',g_dev['obs'].calib_masters_folder + tempfrontcalib + 'BIAS_master_bin1.fits')
             
             PLDrive._mmap.close()
@@ -1992,7 +1995,7 @@ class Sequencer:
             # NOW we have the master bias, we can move onto the dark frames
             plog (datetime.datetime.now().strftime("%H:%M:%S"))
             plog ("Regenerating dark") 
-            inputList=(glob(g_dev['obs'].local_dark_folder +'*.f*'))
+            inputList=(glob(g_dev['obs'].local_dark_folder +'*.n*'))
             # Generate temp memmap
             PLDrive = np.memmap(g_dev['obs'].local_dark_folder  + 'tempfile', dtype='float32', mode= 'w+', shape = (shapeImage[0],shapeImage[1],len(inputList)))
             # Debias dark frames and stick them in the memmap
@@ -2008,13 +2011,16 @@ class Sequencer:
                 
                 
                 
-                hdu1 = fits.open(file, memmap=True)[1]
-                hdu1data = hdu1.data
-                if any("EXPTIME" in s for s in hdu1.header.keys()):
-                    hdu1exp=hdu1.header['EXPTIME']
-                else:
-                    hdu1exp=hdu1.header['EXPOSURE']
-                del hdu1               
+                #hdu1 = fits.open(file, memmap=True)[1]
+                hdu1data = np.load(file, mmap_mode='r')
+                #hdu1data = hdu1.
+                #breakpoint()
+                hdu1exp=float(file.split('_')[-2])
+                #if any("EXPTIME" in s for s in hdu1.header.keys()):
+                #    hdu1exp=hdu1.header['EXPTIME']
+                #else:
+                #    hdu1exp=hdu1.header['EXPOSURE']
+                #del hdu1               
                 #hdu1data= hdu1[0].data
                 #hdu1header= hdu1.header
                 #breakpoint()
@@ -2061,7 +2067,7 @@ class Sequencer:
     
     
             masterDark=np.asarray(finalImage).astype(np.float32)
-            fits.writeto(g_dev['obs'].calib_masters_folder + tempfrontcalib + 'DARK_master_bin1.fits', masterDark, headHold, overwrite=True)
+            fits.writeto(g_dev['obs'].calib_masters_folder + tempfrontcalib + 'DARK_master_bin1.fits', masterDark,  overwrite=True)
             
             g_dev['cam'].enqueue_for_AWS(780000000, '',g_dev['obs'].calib_masters_folder + tempfrontcalib + 'DARK_master_bin1.fits')
             
@@ -2089,7 +2095,7 @@ class Sequencer:
                     plog (datetime.datetime.now().strftime("%H:%M:%S"))
                     filtercode=filterfolder.split('\\')[-2]
                     plog ("Regenerating flat for " + str(filtercode))
-                    inputList=(glob(g_dev['obs'].local_flat_folder + filtercode + '/*.f*'))
+                    inputList=(glob(g_dev['obs'].local_flat_folder + filtercode + '/*.n*'))
                     # Generate temp memmap
                     if len(inputList) == 0:
                         plog ("Not doing " + str(filtercode) + " flat. No available files in directory.")
@@ -2116,14 +2122,15 @@ class Sequencer:
                             plog("Storing flat in a memmap array: " + str(file))
                             
                             
-                            
-                            hdu1 = fits.open(file, memmap=True)[1]
-                            hdu1data = hdu1.data                            
-                            if any("EXPTIME" in s for s in hdu1.header.keys()):
-                                hdu1exp=hdu1.header['EXPTIME']
-                            else:
-                                hdu1exp=hdu1.header['EXPOSURE']
-                            del hdu1               
+                            hdu1data = np.load(file, mmap_mode='r')                            
+                            #hdu1 = fits.open(file, memmap=True)[1]
+                            #hdu1data = hdu1.data       
+                            hdu1exp=float(file.split('_')[-2])
+                            #if any("EXPTIME" in s for s in hdu1.header.keys()):
+                            #    hdu1exp=hdu1.header['EXPTIME']
+                            #else:
+                            #    hdu1exp=hdu1.header['EXPOSURE']
+                            #del hdu1               
                             
                             flatdebiaseddedarked=(hdu1data-masterBias)-(masterDark*hdu1exp) 
                             del hdu1data
@@ -2191,7 +2198,7 @@ class Sequencer:
                         
                         np.save(g_dev['obs'].calib_masters_folder + 'masterFlat_'+ str(filtercode) + '_bin1.npy', temporaryFlat)            
                         
-                        fits.writeto(g_dev['obs'].calib_masters_folder + tempfrontcalib + 'masterFlat_'+ str(filtercode) + '_bin1.fits', temporaryFlat, headHold, overwrite=True)
+                        fits.writeto(g_dev['obs'].calib_masters_folder + tempfrontcalib + 'masterFlat_'+ str(filtercode) + '_bin1.fits', temporaryFlat, overwrite=True)
                         g_dev['cam'].enqueue_for_AWS(780000000, '',g_dev['obs'].calib_masters_folder + tempfrontcalib + 'masterFlat_'+ str(filtercode) + '_bin1.fits')
                         
                         PLDrive._mmap.close()
