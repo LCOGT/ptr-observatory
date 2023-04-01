@@ -2244,8 +2244,8 @@ class Sequencer:
                     plog("Flat frame re-upload did not work")
                 
                 
-                del masterBias
-                del masterDark
+                #del masterBias
+                #del masterDark
 
                 plog ("Regenerated Flat Masters and Re-loaded them into memory.")
 
@@ -2280,8 +2280,14 @@ class Sequencer:
             except:
                 plog("Dark frame master re-upload did not work.")  
             
-            del masterBias
-            del masterDark
+            try:
+                del masterBias
+            except:
+                pass
+            try:
+                del masterDark
+            except:
+                pass
 
         return
 
