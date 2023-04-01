@@ -1621,7 +1621,7 @@ class Camera:
             ## Vital Check : Has end of observing occured???
             ## Need to do this, SRO kept taking shots til midday without this
             if imtype.lower() in ["light"] or imtype.lower() in ["expose"]:
-                if g_dev['events']['Observing Ends'] < ephem.Date(ephem.now()+ (exposure_time *ephem.second)):
+                if g_dev['events']['Observing Ends'] < ephem.Date(ephem.now()+ (exposure_time *ephem.second)) and not g_dev['obs'].debug_flag:
                     plog ("Sorry, exposures are outside of night time.")
                     self.exposure_busy = False
                     break
