@@ -983,6 +983,13 @@ sel
                 if result is not None:
                     status[dev_type][device_name] = result
 
+        # If the roof is open, then it is open and enabled to observe
+        try:
+            if g_dev['enc'].status['shutter_status'] == 'Open':
+                self.open_and_enabled_to_observe=True
+        except:
+            pass
+
         # Check that the mount hasn't slewed too close to the sun
         if not g_dev['mnt'].mount.Slewing:
             sun_coords=get_sun(Time.now())
@@ -2066,17 +2073,45 @@ sel
                     rfs = np.nan
                     sepsky = np.nan
                 else:
-                
-                #focdate=time.time()
+                    
+                    
+                    if frame_type == 'focus':
+                        focus_crop_width=self.config["camera"][g_dev['cam'].name]["settings"]['focus_image_crop_width']
+                        focus_crop_height=self.config["camera"][g_dev['cam'].name]["settings"]['focus_image_crop_height']
+                        #breakpoint()
+                        
+                        fx, fy = hdufocusdata.shape
+                        
+                        crop_width = (fx * focus_crop_width) / 2
+                        crop_height = (fy * focus_crop_height) / 2
+                        
+                        # Make sure it is an even number for OSCs
+                        if (crop_width % 2) != 0:
+                            crop_width=crop_width+1
+                        if (crop_height % 2) != 0:
+                            crop_height=crop_height+1
+                        
+                        crop_width=int(crop_width)
+                        crop_height=int(crop_height)
+                        #breakpoint()
+                        hdufocusdata=hdufocusdata[crop_width:-crop_width,crop_height:-crop_height]
+                        plog ("Focus image cropped to " + str(hdufocusdata.shape))
+                        
+                        
+                        
+                    
+                    #focdate=time.time()
                     binfocus=1
                     if self.config["camera"][g_dev['cam'].name]["settings"]["is_osc"]:
-                        if self.config["camera"][g_dev['cam'].name]["settings"]['bin_for_focus']:
-                            hdufocusdata=block_reduce(hdufocusdata,2)
-                            binfocus=2
-                        else:
+                        if frame_type == 'focus' and not self.config["camera"][g_dev['cam'].name]["settings"]['bin_for_focus']: 
                             hdufocusdata=demosaicing_CFA_Bayer_bilinear(hdufocusdata, 'RGGB')[:,:,1]
                             hdufocusdata=hdufocusdata.astype("float32")
                             binfocus=1
+                        else: 
+                            hdufocusdata=block_reduce(hdufocusdata,2)
+                            binfocus=2
+                            
+                                
                     #plog("focus construction time")
                     #plog(time.time() -focdate)
                     
@@ -2400,13 +2435,37 @@ sel
                 (hdufocusdata, hduheader, cal_path, cal_name, frame_type, time_platesolve_requested, pixscale) = self.platesolve_queue.get(block=False)
                 
                 # Do not bother platesolving unless it is dark enough!!
-                if not (g_dev['events']['Naut Dusk'] < ephem.now() < g_dev['events']['Naut Dawn']):
+                if not (g_dev['events']['Civil Dusk'] < ephem.now() < g_dev['events']['Civil Dawn']):
                     plog ("Too bright to consider platesolving!")
                 else:
                     #focdate=time.time()
+                    
+                    # Crop the image for platesolving
+                    platesolve_crop_width=self.config["camera"][g_dev['cam'].name]["settings"]['platesolve_image_crop_width']
+                    platesolve_crop_height=self.config["camera"][g_dev['cam'].name]["settings"]['platesolve_image_crop_height']
+                    #breakpoint()
+                    
+                    fx, fy = hdufocusdata.shape
+                    
+                    crop_width = (fx * platesolve_crop_width) / 2
+                    crop_height = (fy * platesolve_crop_height) / 2
+                    
+                    # Make sure it is an even number for OSCs
+                    if (crop_width % 2) != 0:
+                        crop_width=crop_width+1
+                    if (crop_height % 2) != 0:
+                        crop_height=crop_height+1
+                        
+                    crop_width=int(crop_width)
+                    crop_height=int(crop_height)
+                    hdufocusdata=hdufocusdata[crop_width:-crop_width,crop_height:-crop_height]
+                    plog ("Platesolve image cropped to " + str(hdufocusdata.shape))
+                    
+                    
+                    
                     binfocus=1
                     if self.config["camera"][g_dev['cam'].name]["settings"]["is_osc"]:
-                        if self.config["camera"][g_dev['cam'].name]["settings"]['bin_for_focus']:
+                        if self.config["camera"][g_dev['cam'].name]["settings"]['bin_for_platesolve']:
                             hdufocusdata=block_reduce(hdufocusdata,2)
                             binfocus=2
                         else:

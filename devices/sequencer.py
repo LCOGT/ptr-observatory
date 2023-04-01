@@ -625,6 +625,21 @@ class Sequencer:
         if self.nightly_reset_complete == True:
             if events['Eve Bias Dark'] <= ephem_now :
                 self.nightly_reset_complete == False
+                
+        # If in post-close and park era of the night, check those two things have happened!       
+        if (events['Close And Park'] <= ephem_now < events['End Morn Bias Dark'])  \
+               and g_dev['enc'].mode == 'Automatic':
+            
+            if not g_dev['mnt'].mount.AtPark:  
+                plog ("Found telescope unparked after Close and Park, parking the scope")
+                g_dev['mnt'].home_command()
+                g_dev['mnt'].park_command()
+            
+            if g_dev['enc'].status['shutter_status'] in ['Open', 'open']:
+                plog ("Found shutter open after Close and Park, shutting up the shutter")
+                self.park_and_close(enc_status)
+            
+            
 
 
         if not self.bias_dark_latch and ((events['Eve Bias Dark'] <= ephem_now < events['End Eve Bias Dark']) and \
@@ -859,11 +874,12 @@ class Sequencer:
             
             self.sky_flat_script({}, {}, morn=True)   #Null command dictionaries
                         
-            # Park and close at the end of morning sky flats
-            #g_dev['mnt'].park_command({}, {})
-            self.park_and_close(enc_status)
+            
             self.morn_sky_flat_latch = False
             self.morn_flats_done = True
+            
+        
+                   
             
         elif not self.morn_bias_dark_latch and (events['Morn Bias Dark'] <= ephem_now < events['End Morn Bias Dark']) and \
                   self.config['auto_morn_bias_dark'] and not  self.morn_bias_done and g_dev['obs'].camera_temperature_in_range_for_calibrations: # and g_dev['enc'].mode == 'Automatic' ):
@@ -2630,9 +2646,11 @@ class Sequencer:
 
         if morn: 
             self.morn_sky_flat_latch = False
-            self.park_and_close(enc_status = g_dev['enc'].status)
+            #self.park_and_close(enc_status = g_dev['enc'].status)            
         else:
             self.eve_sky_flat_latch = False
+            
+                       
             
         plog('\nSky flat complete, or too early. Telescope Tracking is off.\n')
         g_dev['mnt'].park_command({}, {}) # You actually always want it to park, TheSkyX can't stop the telescope tracking, so park is safer... it is before focus anyway.
@@ -3113,8 +3131,8 @@ class Sequencer:
 
                     plog('Autofocus quadratic equation not converge. Moving back to starting focus:  ', focus_start)
                     plog  ("NORMAL FOCUS UNSUCCESSFUL, TRYING EXTENSIVE FOCUS")
-                    req2 = {'target': 'near_tycho_star', 'area': 150}
-                    opt = {}
+                    req2 = {'target': 'near_tycho_star', 'area': 150, 'image_type': 'focus'}
+                    opt = {'filter': 'focus'}
                     g_dev['seq'].extensive_focus_script(req2,opt, no_auto_after_solve=True)
                 else:
                     plog('Autofocus quadratic equation not converge. Moving back to extensive focus:  ', extensive_focus)
@@ -3480,11 +3498,11 @@ class Sequencer:
             
             #g_dev['mnt'].go_coord(focus_star[0][1][1], focus_star[0][1][0])
             g_dev['mnt'].go_coord(focus_patch_ra, focus_patch_dec)
-            req = {'time': self.config['focus_exposure_time'],  'alias':  str(self.config['camera']['camera_1_1']['name']), 'image_type': 'auto_focus'}   #  NB Should pick up filter and constats from config
+            req = {'time': self.config['focus_exposure_time'],  'alias':  str(self.config['camera']['camera_1_1']['name']), 'image_type': 'focus'}   #  NB Should pick up filter and constats from config
             opt = {'area': 100, 'count': 1, 'filter': 'focus'}
         else:
             pass   #Just take time image where currently pointed.
-            req = {'time': self.config['focus_exposure_time'],  'alias':  str(self.config['camera']['camera_1_1']['name']), 'image_type': 'auto_focus'}   #  NB Should pick up filter and constats from config
+            req = {'time': self.config['focus_exposure_time'],  'alias':  str(self.config['camera']['camera_1_1']['name']), 'image_type': 'focus'}   #  NB Should pick up filter and constats from config
             opt = {'area': 100, 'count': 1, 'filter': 'focus'}
         foc_pos0 = foc_start
         result = {}

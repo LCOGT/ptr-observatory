@@ -42,7 +42,7 @@ site_config = {
     'debug_site_mode': False,
     
 
-    'debug_mode': False,
+    'debug_mode': True,
     'admin_owner_commands_only': False,
 
     'debug_duration_sec': 7200,
@@ -124,12 +124,12 @@ site_config = {
     'observing_check_period' : 5,    # How many minutes between weather checks
     'enclosure_check_period' : 5,    # How many minutes between enclosure checks
     'auto_eve_bias_dark': False,
-    'auto_midnight_moonless_bias_dark': True,
+    'auto_midnight_moonless_bias_dark': False,
     'auto_eve_sky_flat': True,
 
     'eve_sky_flat_sunset_offset': -0.5,  #  Minutes  neg means before, + after.
     'eve_cool_down_open' : -80.0,
-    'auto_morn_sky_flat': False,
+    'auto_morn_sky_flat': True,
     'auto_morn_bias_dark': False,
     're-calibrate_on_solve': True,
     'pointing_calibration_on_startup': False,
@@ -390,10 +390,10 @@ site_config = {
             #F4.9 setup
             'start_at_config_reference': True,
             'use_focuser_temperature': False,
-            'reference':9900,    #  20210313  Nominal at 10C Primary temperature
+            'reference':12000,    #  20210313  Nominal at 10C Primary temperature
             'ref_temp':  6265.0,    #  Update when pinning reference
             'coef_c': 0,   #  Negative means focus moves out as Primary gets colder
-            'coef_0': 9900,  #  Nominal intercept when Primary is at 0.0 C.
+            'coef_0': 12000,  #  Nominal intercept when Primary is at 0.0 C.
             'coef_date':  '20220914',    #This appears to be sensible result 44 points -13 to 3C'reference':  6431,    #  Nominal at 10C Primary temperature
             # #F9 setup
             # 'reference': 4375,    #   Guess 20210904  Nominal at 10C Primary temperature
@@ -742,6 +742,7 @@ site_config = {
                 'osc_sharpness_enhance' : 1.5,                
                 'osc_background_cut' : 25.0,
                 'bin_for_focus' : False, # This setting will bin the image for focussing rather than interpolating. Good for 1x1 pixel sizes < 0.6.
+                'bin_for_platesolve' : True, # This setting will bin the image for platesolving rather than interpolating.
                 
                 # ONLY TRANSFORM THE FITS IF YOU HAVE
                 # A DATA-BASED REASON TO DO SO.....
@@ -763,6 +764,14 @@ site_config = {
                 'rotate180_jpeg' : False,
                 'rotate90_jpeg' : False,
                 'rotate270_jpeg' : False,
+                
+                # For large fields of view, crop the images down to solve faster. 
+                'focus_image_crop_width': 0.4, # For excessive fields of view, to speed things up crop the image to a fraction of the full width    
+                'focus_image_crop_height': 0.4, # For excessive fields of view, to speed things up crop the image to a fraction of the full height
+                'platesolve_image_crop_width': 1.0, # For excessive fields of view, to speed things up crop the image to a fraction of the full width    
+                'platesolve_image_crop_height': 1.0, # For excessive fields of view, to speed things up crop the image to a fraction of the full height
+                'sep_image_crop_width': 1.0, # For excessive fields of view, to speed things up crop the image to a fraction of the full width    
+                'sep_image_crop_height': 1.0, # For excessive fields of view, to speed things up crop the image to a fraction of the full width    
                 
                 'osc_bayer' : 'RGGB',
                 'crop_preview': False,
@@ -823,7 +832,7 @@ site_config = {
                 'east_offset': 0.0,
                 'rotation': 0.0,
                 'min_exposure': 0.0001,
-                'min_flat_exposure' : 3.0, # For certain shutters, short exposures aren't good for flats. Some CMOS have banding in too short an exposure. Largely applies to ccds though.
+                'min_flat_exposure' : 0.00001, # For certain shutters, short exposures aren't good for flats. Some CMOS have banding in too short an exposure. Largely applies to ccds though.
 
                 'max_flat_exposure' : 120.0, # Realistically there should be a maximum flat_exposure that makes sure flats are efficient and aren't collecting actual stars.
 
