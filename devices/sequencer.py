@@ -2151,12 +2151,15 @@ class Sequencer:
                             
                             flatdebiaseddedarked=(hdu1data-masterBias)-(masterDark*hdu1exp) 
                             del hdu1data
+                            # Normalising flat file
+                            flatdebiaseddedarked = flatdebiaseddedarked/np.nanmedian(flatdebiaseddedarked)
+                            
                             #hdu1data= hdu1[0].data
                             #hdu1header= hdu1.header
                             #breakpoint()
                             #darkdeexp=(hdu1data-masterBias)/hdu1exp
                             timetaken=datetime.datetime.now() -starttime
-                            plog ("Time Taken to load array and debias and dedark flat: " + str(timetaken))
+                            plog ("Time Taken to load array and debias and dedark and normalise flat: " + str(timetaken))
                             
                             
                             
