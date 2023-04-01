@@ -483,6 +483,7 @@ class Sequencer:
         if self.weather_report_wait_until_open and not self.cool_down_latch:
             if ephem_now >  self.weather_report_wait_until_open_time:
                 
+                self.cool_down_latch=True
                 self.weather_report_wait_until_open == False
                 # Things may have changed! So re-checking the weather and such
                 
@@ -532,7 +533,7 @@ class Sequencer:
                                     opt = {}
                                     plog ("Running initial autofocus upon opening observatory")
                                     self.extensive_focus_script(req2, opt)
-                            self.cool_down_latch = False
+                self.cool_down_latch = False
         
         # If the observatory is meant to shut during the evening
         obs_win_begin, sunZ88Op, sunZ88Cl, ephem_now = self.astro_events.getSunEvents()
@@ -2417,6 +2418,8 @@ class Sequencer:
                 # This is just a very occasional slew to keep it pointing in the same general vicinity
                 
                 if time.time() >= self.time_of_next_slew:
+                    if g_dev['mnt'].mount.AtParK:
+                        g_dev['mnt'].unpark_command({}, {})
                     g_dev['mnt'].slewToSkyFlatAsync()  
                     self.time_of_next_slew = time.time() + 600
                 

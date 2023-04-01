@@ -1087,7 +1087,7 @@ sel
         if self.debug_flag:
             check_time *= 4
             self.time_since_safety_checks = time.time() + check_time
-        if time.time() - self.time_since_safety_checks > check_time:
+        if time.time() - self.time_since_safety_checks > check_time and not self.debug_flag:
             self.time_since_safety_checks=time.time()
             
             #breakpoint()
@@ -2766,7 +2766,7 @@ sel
                                     os.remove(oldest_file)
                                     plog("removed old dark: " + str(oldest_file))
                                 
-                            elif slow_process[4] == 'flat':
+                            elif slow_process[4] == 'flat' or slow_process[4] == 'skyflat' or slow_process[4] == 'screenflat':
                                 tempfilter=temphduheader['FILTER'] 
                                 tempexposure=temphduheader['EXPTIME'] 
                                 if not os.path.exists(self.local_flat_folder + tempfilter):

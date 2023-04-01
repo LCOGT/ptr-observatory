@@ -40,7 +40,7 @@ site_config = {
     
     'debug_site_mode': False,
     
-    'debug_mode': False,
+    'debug_mode': True,
     'admin_owner_commands_only': False,
     'debug_duration_sec': 7200,
     'owner':  ['google-oauth2|112401903840371673242'],  # WER,  Or this can be
@@ -93,7 +93,7 @@ site_config = {
 
     'TZ_database_name':  'Australia/Melbourne',
     'mpc_code':  'ZZ23',    #  This is made up for now.
-    'time_offset':  10,   #  These two keys may be obsolete given the new TZ stuff
+    'time_offset':  11,   #  These two keys may be obsolete given the new TZ stuff
     'timezone': 'AEST',      #  This was meant to be coloquial Time zone abbreviation, alternate for "TX_data..."
     'latitude': -37.70097222,     #  Decimal degrees, North is Positive
     'longitude': 145.1918056,   #  Decimal degrees, West is negative
@@ -122,7 +122,7 @@ site_config = {
     'auto_eve_sky_flat': True,
     'eve_sky_flat_sunset_offset': -50.5,  #  Minutes  neg means before, + after.
     'eve_cool_down_open' : -80.0,
-    'auto_morn_sky_flat': False,
+    'auto_morn_sky_flat': True,
     'auto_morn_bias_dark': False,
     're-calibrate_on_solve': True,
     'pointing_calibration_on_startup': False,
