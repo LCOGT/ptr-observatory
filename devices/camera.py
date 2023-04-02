@@ -2071,7 +2071,7 @@ class Camera:
                 if frame_type in ["bias", "dark"] or frame_type[-4:] == ['flat']:
                     plog("Median of full-image area bias, dark or flat:  ", np.median(self.img))
 
-                pedastal = 0
+                #pedestal = 0
                 self.overscan = 0
 
                
@@ -2824,19 +2824,19 @@ class Camera:
                     hdu.header["LONGSTK"] = longstackid # Is this a member of a longer stack - to be replaced by 
                                                         #   longstack code soon
 
-                    if pedastal is not None:
-                        hdu.header["PEDESTAL"] = (
-                            -pedastal,
-                            "adu, add this for zero based image.",
-                        )
-                        hdu.header["PATCH"] = (
-                            bi_mean - pedastal
-                        )  # A crude value for the central exposure - pedastal
-                    else:
-                        hdu.header["PEDESTAL"] = (0.0, "Dummy value for a raw image")
-                        hdu.header[
-                            "PATCH"
-                        ] = bi_mean  # A crude value for the central exposure
+                    # if pedestal is not None:
+                    #     hdu.header["PEDESTAL"] = (
+                    #         -pedastal,
+                    #         "adu, add this for zero based image.",
+                    #     )
+                    #     hdu.header["PATCH"] = (
+                    #         bi_mean - pedastal
+                    #     )  # A crude value for the central exposure - pedastal
+                    # else:
+                    hdu.header["PEDESTAL"] = (0.0, "This value has been added to the data")
+                    hdu.header[
+                        "PATCH"
+                    ] = bi_mean  # A crude value for the central exposure
                     hdu.header["ERRORVAL"] = 0
                     hdu.header["IMGAREA"] = opt["area"]
                     hdu.header[
@@ -3161,6 +3161,11 @@ class Camera:
                             plog(traceback.format_exc()) 
                             #plog (traceback.format_exc())
                             #breakpoint()
+                        
+                        
+                        # Add a pedestal to the data
+                        hdusmalldata=hdusmalldata+200.0
+                        #hdu.header["PEDESTAL"] = (200, "Pedestal added by PTR")
 
                         # This saves the REDUCED file to disk
                         # If this is for a smartstack, this happens immediately in the camera thread after we have a "reduced" file
