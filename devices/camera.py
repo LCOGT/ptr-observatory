@@ -438,11 +438,18 @@ class Camera:
             plog("Dark frame for Binning 1 not available")  
 
         try:            
-            fileList = glob.glob(self.obsid_path + "archive/" + self.alias + "/calibmasters" \
-                                 + "/ " + tempfrontcalib + "masterFlat*_bin1.npy")
             
+            
+            fileList = glob.glob(self.obsid_path + "archive/" + self.alias + "/calibmasters/masterFlat*_bin1.npy")
+            #breakpoint()
             for file in fileList:
-                self.flatFiles.update({file.split("_")[1].replace ('.npy','') + '_bin1': file})
+                if self.config['camera'][self.name]['settings']['hold_flats_in_memory']:
+                    tempflatframe=np.load(file)
+                    #breakpoint()
+                    self.flatFiles.update({file.split('_')[-2]: np.array(tempflatframe)})
+                    del tempflatframe
+                else:
+                    self.flatFiles.update({file.split("_")[1].replace ('.npy','') + '_bin1': file})
             # To supress occasional flatfield div errors
             np.seterr(divide="ignore")
         except:
@@ -3131,12 +3138,27 @@ class Camera:
                             
                         # Quick flat flat frame
                         try:
-                            tempFlatFrame = np.load(self.flatFiles[str(self.current_filter + "_bin" + str(flashbinning))])
+                            if self.config['camera'][self.name]['settings']['hold_flats_in_memory']:
+                                #tempflatframe=np.load(file)
+                                #breakpoint()
+                                #self.flatFiles.update({file.split('_')[-2]: tempflatframe})
+                                #del tempflatframe
+                                
+                                hdusmalldata = np.divide(hdusmalldata, self.flatFiles[self.current_filter])
+                                
+                            else:
+                                #self.flatFiles.update({file.split("_")[1].replace ('.npy','') + '_bin1': file})
+                                hdusmalldata = np.divide(hdusmalldata, np.load(self.flatFiles[str(self.current_filter + "_bin" + str(flashbinning))]))
+                            
+                            
+                            
+                            #tempFlatFrame = np.load(self.flatFiles[str(self.current_filter + "_bin" + str(flashbinning))])
 
-                            hdusmalldata = np.divide(hdusmalldata, tempFlatFrame)
-                            del tempFlatFrame
+                            #hdusmalldata = np.divide(hdusmalldata, tempFlatFrame)
+                            #del tempFlatFrame
                         except Exception as e:
                             plog("flatting light frame failed", e)
+                            plog(traceback.format_exc()) 
                             #plog (traceback.format_exc())
                             #breakpoint()
 

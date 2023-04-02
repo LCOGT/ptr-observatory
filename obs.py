@@ -1894,7 +1894,7 @@ sel
                         # is sorta arbitrary... you'd use the site-config settings above to 
                         # set it appropriately and leave this alone.
                         if g_dev['mnt'].pier_side == 1:
-                            final_image=final_image.transpose(Image.ROTATE_180)
+                            final_image=final_image.transpose(Image.Transpose.ROTATE_180)
                         
                         #breakpoint()
                         # Save BIG version of JPEG.
@@ -2094,8 +2094,9 @@ sel
                         crop_width=int(crop_width)
                         crop_height=int(crop_height)
                         #breakpoint()
-                        hdufocusdata=hdufocusdata[crop_width:-crop_width,crop_height:-crop_height]
-                        plog ("Focus image cropped to " + str(hdufocusdata.shape))
+                        if crop_width > 0 or crop_height > 0:
+                            hdufocusdata=hdufocusdata[crop_width:-crop_width,crop_height:-crop_height]
+                            plog ("Focus image cropped to " + str(hdufocusdata.shape))
                         
                         
                         

@@ -106,6 +106,8 @@ site_config = {
     'period_of_time_to_wait_for_roof_to_open' : 100, # seconds - needed to check if the roof ACTUALLY opens. 
     'only_scope_that_controls_the_roof': False, # If multiple scopes control the roof, set this to False
     
+
+    
     'check_time': 300,   #MF's original setting.
     'maximum_roof_opens_per_evening' : 4,
     'roof_open_safety_base_time' : 15, # How many minutes to use as the default retry time to open roof. This will be progressively multiplied as a back-off function.
@@ -528,6 +530,10 @@ site_config = {
             'desc':  'SBIG16803',
             'service_date': '20211111',
             'driver': "CCDSoft2XAdaptor.ccdsoft5Camera",  # "ASCOM.QHYCCD.Camera", ##  'ASCOM.FLI.Kepler.Camera',
+            
+            'hold_flats_in_memory': True, # If there is sufficient memory ... OR .... not many flats, it is faster to keep the flats in memory.
+
+            
             'detector':  'KAF16803',
             'manufacturer':  'On-Semi',
             'use_file_mode':  False,

@@ -42,7 +42,7 @@ site_config = {
     'debug_site_mode': False,
     
 
-    'debug_mode': False,
+    'debug_mode': True,
     'admin_owner_commands_only': False,
 
     'debug_duration_sec': 7200,
@@ -685,7 +685,6 @@ site_config = {
             
             
             
-                
             
             
             'detector':  'Sony IMX455 Color',  #  It would be good to build out a table of chip characteristics
@@ -693,6 +692,10 @@ site_config = {
             'file_mode_path':  'Q:/archive/sq01/maxim/',   #NB NB all file_mode Maxim stuff should go!
             'manufacturer':  "QHY",
             'settings': {
+                
+                'hold_flats_in_memory': True, # If there is sufficient memory ... OR .... not many flats, it is faster to keep the flats in memory.
+
+                
                 
                 # For direct QHY usage we need to set the appropriate gain.
                 # This changes from site to site. "Fast" scopes like the RASA need lower gain then "slow".
@@ -835,6 +838,7 @@ site_config = {
                 'min_flat_exposure' : 3.0, # For certain shutters, short exposures aren't good for flats. Some CMOS have banding in too short an exposure. Largely applies to ccds though.
 
                 'max_flat_exposure' : 20.0, # Realistically there should be a maximum flat_exposure that makes sure flats are efficient and aren't collecting actual stars.
+
 
                 'max_exposure': 180.,
                 'max_daytime_exposure': 0.0001,
