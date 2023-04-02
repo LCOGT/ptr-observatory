@@ -274,7 +274,10 @@ class Sequencer:
         g_dev['cam'].user_id = command['user_id']
         g_dev['cam'].user_name = command['user_name']
         action = command['action']
-        script = command['required_params']['script']
+        try:
+            script = command['required_params']['script']
+        except:
+            script = None
         if action == "run" and script == 'focusAuto':
             self.auto_focus_script(req, opt, skip_timer_check=True)
         if action == "run" and script == 'focusExtensive':   
