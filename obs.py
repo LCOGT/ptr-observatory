@@ -1194,6 +1194,7 @@ sel
                     roof_should_be_shut=True 
                     self.open_and_enabled_to_observe=False
                 
+
                 
                 if g_dev['enc'].status['shutter_status'] == 'Open':
                     if roof_should_be_shut==True :
@@ -2070,6 +2071,7 @@ sel
                 
                 if not (g_dev['events']['Civil Dusk'] < ephem.now() < g_dev['events']['Civil Dawn']):
                     plog ("Too bright to consider photometry!")
+                    breakpoint()
                     rfp = np.nan
                     rfr = np.nan
                     rfs = np.nan

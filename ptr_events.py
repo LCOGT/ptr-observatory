@@ -539,11 +539,13 @@ class Events:
                 ('Moon Transit       ', ephem.Date(self.next_moontransit)),
                 ('Moon Set           ', ephem.Date(self.next_moonset))]
 
+        
+
         self.evnt_sort = self._sortTuple(self.evnt)
         day_dir = self.compute_day_directory()
 
         self.timezone = "  " + self.config['timezone'] + ": "
-        self.offset = self.config['time_offset']
+        #self.offset = self.config['time_offset']
         
         event_dict = {}
         for item in self.evnt_sort:
@@ -568,6 +570,6 @@ class Events:
 
         
         for self.evnt in self.evnt_sort:
-            plog(self.evnt[0], 'UTC: ', self.evnt[1], self.timezone, ephem.Date(self.evnt[1] + float(self.offset)/24.))    # NB Additon of local times would be handy here.
-
+            #plog(self.evnt[0], 'UTC: ', self.evnt[1], self.timezone, ephem.Date(self.evnt[1] + float(self.offset)/24.))    # NB Additon of local times would be handy here.
+            plog(self.evnt[0], 'UTC: ', self.evnt[1], self.timezone)    # NB Additon of local times would be handy here.
         

@@ -491,7 +491,7 @@ class Sequencer:
                 # This is necessary just in case a previous weather report was done today
                 # That can sometimes change the timing. 
                 self.astro_events.compute_day_directory()
-                self.astro_events.calculate_events(endofnightoverride='yes')
+                self.astro_events.calculate_events()
                 #self.astro_events.display_events()
                 g_dev['obs'].astro_events = self.astro_events
                 # Run nightly weather report
@@ -566,7 +566,7 @@ class Sequencer:
                 # This is necessary just in case a previous weather report was done today
                 # That can sometimes change the timing. 
                 self.astro_events.compute_day_directory()
-                self.astro_events.calculate_events(endofnightoverride='yes')
+                self.astro_events.calculate_events()
                 #self.astro_events.display_events()
                 g_dev['obs'].astro_events = self.astro_events
                 # Run nightly weather report
