@@ -3143,7 +3143,7 @@ class Sequencer:
 
             except:
 
-                if extensive_focus != None:
+                if extensive_focus == None:
 
                     plog('Autofocus quadratic equation not converge. Moving back to starting focus:  ', focus_start)
                     plog  ("NORMAL FOCUS UNSUCCESSFUL, TRYING EXTENSIVE FOCUS")
@@ -3244,7 +3244,7 @@ class Sequencer:
 
             except:
 
-                if extensive_focus != None:
+                if extensive_focus == None :
 
                     plog('Autofocus quadratic equation not converge. Moving back to starting focus:  ', focus_start)
                     plog  ("NORMAL FOCUS UNSUCCESSFUL, TRYING EXTENSIVE FOCUS")
@@ -3315,7 +3315,7 @@ class Sequencer:
                 g_dev['mnt'].mount.SlewToCoordinatesAsync(start_ra, start_dec)   #Return to pre-focus pointing.
                 wait_for_slew()
             else:
-                if extensive_focus != None:
+                if extensive_focus == None:
 
                     plog('Autofocus quadratic equation not converge. Moving back to starting focus:  ', focus_start)
                     plog  ("NORMAL FOCUS UNSUCCESSFUL, TRYING EXTENSIVE FOCUS")
@@ -3371,7 +3371,7 @@ class Sequencer:
         else:
             #plog('Spots are really wrong so moving back to starting focus:  ', focus_start)
             #g_dev['foc'].focuser.Move((focus_start)*g_dev['foc'].micron_to_steps)
-            if extensive_focus != None:
+            if extensive_focus == None:
 
                 plog('Autofocus quadratic equation not converge. Moving back to starting focus:  ', focus_start)
                 plog  ("NORMAL FOCUS UNSUCCESSFUL, TRYING EXTENSIVE FOCUS")
