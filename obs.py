@@ -458,11 +458,12 @@ class Observatory:
         self.update_config()   #This is the never-ending control loop
         
         
-        
+        #g_dev['obs'].open_and_enabled_to_observe=True
 
         #breakpoint()
         #req2 = {'target': 'near_tycho_star', 'area': 150}
         #opt = {}
+        #g_dev['seq'].sky_flat_script({}, {}, morn=True)
         #g_dev['seq'].extensive_focus_script(req2,opt)
         #req = {'bin1': True, 'bin2': False, 'bin3': False, 'bin4': False, 'numOfBias': 63, \
         #        'numOfDark': 31, 'darkTime': 75, 'numOfDark2': 31, 'dark2Time': 75, \

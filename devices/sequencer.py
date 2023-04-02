@@ -293,9 +293,9 @@ class Sequencer:
             self.auto_focus_script(req, opt, skip_timer_check=True)
         elif action == "run" and script == 'focusFine':
             self.coarse_focus_script(req, opt)
-        elif action == "run" and script == 'genScreenFlatMasters':
+        elif action == "run" and script == 'collectScreenFlats':
             self.screen_flat_script(req, opt)
-        elif action == "run" and script == 'genSkyFlatMasters':
+        elif action == "run" and script == 'collectSkyFlats':
             self.sky_flat_script(req, opt)
         elif action == "run" and script in ['32TargetPointingRun', 'pointingRun', 'makeModel']:
             if req['gridType'] == 'sweep':
@@ -304,13 +304,13 @@ class Sequencer:
                 self.cross_pointing_run(req, opt)
             else:
                 self.sky_grid_pointing_run(req, opt)
-        elif action == "run" and script in ("genBiasDarkMaster", "genBiasDarkMasters"):
+        elif action == "run" and script in ("collectBiasAndDarks"):
             self.bias_dark_script(req, opt, morn=True)
         elif action == "run" and script == 'takeLRGBStack':
             self.take_lrgb_stack(req, opt)
         elif action == "run" and script == "takeO3HaS2N2Stack":
             self.take_lrgb_stack(req, opt)
-        elif action.lower() in ["stop", "cancel"]:
+        elif action.lower() in ["stop", "cancel"] or ( action == "run" and script == "stopScript"):
             self.stop_command(req, opt)
         elif action == "home":
             self.home_command(req, opt)
@@ -870,6 +870,7 @@ class Sequencer:
         elif not self.morn_sky_flat_latch and ((events['Morn Sky Flats'] <= ephem_now < events['End Morn Sky Flats'])  \
                and g_dev['enc'].mode == 'Automatic' and not g_dev['ocn'].wx_hold and \
                self.config['auto_morn_sky_flat']) and not self.morn_flats_done and g_dev['obs'].camera_temperature_in_range_for_calibrations and g_dev['obs'].open_and_enabled_to_observe and self.weather_report_is_acceptable_to_observe==True:
+                   #self.config['auto_morn_sky_flat']) and not self.morn_flats_done and g_dev['obs'].open_and_enabled_to_observe :
             #self.time_of_next_slew = time.time() -1
             self.morn_sky_flat_latch = True
             
