@@ -3404,10 +3404,15 @@ sel
                             # img= img - backgroundLevel
                             # Reproject new image onto footplog of old image.
                             #plog(datetime.datetime.now())
+                            
+                            minarea=int(pow(0.7*1.5 / (pixscale),2)* 3.14)                            
+                            if minarea < 5: # There has to be a min minarea though!
+                                minarea=5
+                            
                             if len(sources) > 5:
                                 try:
                                     reprojectedimage, _ = func_timeout.func_timeout (60, aa.register, args=(imgdata, storedsStack),\
-                                                                                     kwargs={"detection_sigma":3, "min_area":9})
+                                                                                     kwargs={"detection_sigma":5, "min_area":minarea})
                                     # scalingFactor= np.nanmedian(reprojectedimage / storedsStack)
                                     # plog (" Scaling Factor : " +str(scalingFactor))
                                     # reprojectedimage=(scalingFactor) * reprojectedimage # Insert a scaling factor
@@ -3476,24 +3481,24 @@ sel
                         final_image = Image.fromarray(stretched_data_uint8)
                         # These steps flip and rotate the jpeg according to the settings in the site-config for this camera
                         if self.config["camera"][g_dev['cam'].name]["settings"]["transpose_jpeg"]:
-                            final_image=final_image.transpose(Image.TRANSPOSE)
+                            final_image=final_image.transpose(Image.Transpose.TRANSPOSE)
                         if self.config["camera"][g_dev['cam'].name]["settings"]['flipx_jpeg']:
-                            final_image=final_image.transpose(Image.FLIP_LEFT_RIGHT)
+                            final_image=final_image.transpose(Image.Transpose.FLIP_LEFT_RIGHT)
                         if self.config["camera"][g_dev['cam'].name]["settings"]['flipy_jpeg']:
-                            final_image=final_image.transpose(Image.FLIP_TOP_BOTTOM)
+                            final_image=final_image.transpose(Image.Transpose.FLIP_TOP_BOTTOM)
                         if self.config["camera"][g_dev['cam'].name]["settings"]['rotate180_jpeg']:
-                            final_image=final_image.transpose(Image.ROTATE_180)
+                            final_image=final_image.transpose(Image.Transpose.ROTATE_180)
                         if self.config["camera"][g_dev['cam'].name]["settings"]['rotate90_jpeg']:
-                            final_image=final_image.transpose(Image.ROTATE_90)
+                            final_image=final_image.transpose(Image.Transpose.ROTATE_90)
                         if self.config["camera"][g_dev['cam'].name]["settings"]['rotate270_jpeg']:
-                            final_image=final_image.transpose(Image.ROTATE_270)
+                            final_image=final_image.transpose(Image.Transpose.ROTATE_270)
                             
                         # Detect the pierside and if it is one way, rotate the jpeg 180 degrees
                         # to maintain the orientation. whether it is 1 or 0 that is flipped
                         # is sorta arbitrary... you'd use the site-config settings above to 
                         # set it appropriately and leave this alone.
                         if g_dev['mnt'].pier_side == 1:
-                            final_image=final_image.transpose(Image.ROTATE_180)
+                            final_image=final_image.transpose(Image.Transpose.ROTATE_180)
                         
                         # Save BIG version of JPEG.
                         final_image.save(
@@ -3646,18 +3651,23 @@ sel
                                     # img= img - backgroundLevel
                                     # Reproject new image onto footplog of old image.
                                     #plog(datetime.datetime.now())
+                                    
+                                    minarea=int(pow(0.7*1.5 / (pixscale),2)* 3.14)                            
+                                    if minarea < 5: # There has to be a min minarea though!
+                                        minarea=5
+                                    
                                     if len(sources) > 5:
                                         try:
                                             if colstack == 'red':
                                                 reprojectedimage, _ = func_timeout.func_timeout (60, aa.register, args=(newhdured, storedsStack),\
-                                                                                                 kwargs={"detection_sigma":3, "min_area":9})
+                                                                                                 kwargs={"detection_sigma":5, "min_area":minarea})
                                                 
                                             if colstack == 'blue':
                                                 reprojectedimage, _ = func_timeout.func_timeout (60, aa.register, args=(newhdublue, storedsStack),\
-                                                                                                 kwargs={"detection_sigma":3, "min_area":9})
+                                                                                                 kwargs={"detection_sigma":5, "min_area":minarea})
                                             if colstack == 'green':
                                                 reprojectedimage, _ = func_timeout.func_timeout (60, aa.register, args=(newhdugreen, storedsStack),\
-                                                                                                 kwargs={"detection_sigma":3, "min_area":9})
+                                                                                                 kwargs={"detection_sigma":5, "min_area":minarea})
                                                 # scalingFactor= np.nanmedian(reprojectedimage / storedsStack)
                                             # plog (" Scaling Factor : " +str(scalingFactor))
                                             # reprojectedimage=(scalingFactor) * reprojectedimage # Insert a scaling factor
