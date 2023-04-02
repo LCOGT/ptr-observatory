@@ -3426,6 +3426,8 @@ class Sequencer:
         
         if (ephem.now() < g_dev['events']['End Eve Bias Dark'] ) or \
             (g_dev['events']['End Morn Bias Dark']  < ephem.now() < g_dev['events']['Nightly Reset']):
+                
+
             plog ("NOT DOING EXTENSIVE FOCUS -- IT IS THE DAYTIME!!")
             g_dev["obs"].send_to_user("An extensive focus was rejected as it is during the daytime.")
             return
