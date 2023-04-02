@@ -3244,7 +3244,9 @@ class Sequencer:
 
             except:
 
+
                 if extensive_focus == None:
+
 
                     plog('Autofocus quadratic equation not converge. Moving back to starting focus:  ', focus_start)
                     plog  ("NORMAL FOCUS UNSUCCESSFUL, TRYING EXTENSIVE FOCUS")
