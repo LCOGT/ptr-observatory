@@ -2071,7 +2071,7 @@ sel
                 
                 if not (g_dev['events']['Civil Dusk'] < ephem.now() < g_dev['events']['Civil Dawn']):
                     plog ("Too bright to consider photometry!")
-                    breakpoint()
+
                     rfp = np.nan
                     rfr = np.nan
                     rfs = np.nan
@@ -2086,8 +2086,8 @@ sel
                         
                         fx, fy = hdufocusdata.shape
                         
-                        crop_width = (fx * (1-focus_crop_width)) / 2
-                        crop_height = (fy * (1-focus_crop_height)) / 2
+                        crop_width = (fx * focus_crop_width) / 2
+                        crop_height = (fy * focus_crop_height) / 2
                         
                         # Make sure it is an even number for OSCs
                         if (crop_width % 2) != 0:
@@ -2098,6 +2098,8 @@ sel
                         crop_width=int(crop_width)
                         crop_height=int(crop_height)
                         #breakpoint()
+                        
+                        
                         if crop_width > 0 or crop_height > 0:
                             hdufocusdata=hdufocusdata[crop_width:-crop_width,crop_height:-crop_height]
                             plog ("Focus image cropped to " + str(hdufocusdata.shape))
