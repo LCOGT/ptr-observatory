@@ -505,7 +505,7 @@ class Sequencer:
                     if (g_dev['events']['Cool Down, Open'] < ephem.now() < g_dev['events']['Observing Ends']):
                         if time.time() > self.enclosure_next_open_time and self.opens_this_evening < self.config['maximum_roof_opens_per_evening']:
                             #self.enclosure_next_open_time = time.time() + 300 # Only try to open the roof every five minutes
-                            self.cool_down_latch = True
+                            
                             #self.weather_report_is_acceptable_to_observe=True
                             self.open_observatory(enc_status, ocn_status)
                             
@@ -3143,7 +3143,7 @@ class Sequencer:
 
             except:
 
-                if extensive_focus != None:
+                if extensive_focus == None:
 
                     plog('Autofocus quadratic equation not converge. Moving back to starting focus:  ', focus_start)
                     plog  ("NORMAL FOCUS UNSUCCESSFUL, TRYING EXTENSIVE FOCUS")
@@ -3244,7 +3244,7 @@ class Sequencer:
 
             except:
 
-                if extensive_focus != None:
+                if extensive_focus == None:
 
                     plog('Autofocus quadratic equation not converge. Moving back to starting focus:  ', focus_start)
                     plog  ("NORMAL FOCUS UNSUCCESSFUL, TRYING EXTENSIVE FOCUS")
@@ -3315,7 +3315,7 @@ class Sequencer:
                 g_dev['mnt'].mount.SlewToCoordinatesAsync(start_ra, start_dec)   #Return to pre-focus pointing.
                 wait_for_slew()
             else:
-                if extensive_focus != None:
+                if extensive_focus == None:
 
                     plog('Autofocus quadratic equation not converge. Moving back to starting focus:  ', focus_start)
                     plog  ("NORMAL FOCUS UNSUCCESSFUL, TRYING EXTENSIVE FOCUS")
@@ -3371,7 +3371,7 @@ class Sequencer:
         else:
             #plog('Spots are really wrong so moving back to starting focus:  ', focus_start)
             #g_dev['foc'].focuser.Move((focus_start)*g_dev['foc'].micron_to_steps)
-            if extensive_focus != None:
+            if extensive_focus == None:
 
                 plog('Autofocus quadratic equation not converge. Moving back to starting focus:  ', focus_start)
                 plog  ("NORMAL FOCUS UNSUCCESSFUL, TRYING EXTENSIVE FOCUS")
@@ -3583,7 +3583,7 @@ class Sequencer:
             plog (minimumFWHM)
             g_dev['foc'].guarded_move((solved_pos)*g_dev['foc'].micron_to_steps)
             if not no_auto_after_solve:
-                self.auto_focus_script(None,None, skip_timer_check=True, extensive_focus=solved_pos)
+                self.auto_focus_script(None,None, skip_timer_check=True, extensive_focus=solved_pos) 
         except:
             plog ("Something went wrong in the extensive focus routine")
             plog(traceback.format_exc())
