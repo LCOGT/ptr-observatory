@@ -676,13 +676,21 @@ site_config = {
                 'rotate270_jpeg' : False,
                 
                 
-               # For large fields of view, crop the images down to solve faster. 
+               # For large fields of view, crop the images down to solve faster.                 
+               # Realistically the "focus fields" have a size of 0.2 degrees, so anything larger than 0.5 degrees is unnecesary
+               # Probably also similar for platesolving.
+               # for either pointing or platesolving even on more modest size fields of view. 
+               # These were originally inspired by the RASA+QHY which is 3.3 degrees on a side and regularly detects
+               # tens of thousands of sources, but any crop will speed things up. Don't use SEP crop unless 
+               # you clearly need to. 
                'focus_image_crop_width': 0.0, # For excessive fields of view, to speed things up crop the image to a fraction of the full width    
                'focus_image_crop_height': 0.0, # For excessive fields of view, to speed things up crop the image to a fraction of the full height
-               'platesolve_image_crop_width': 0.0, # For excessive fields of view, to speed things up crop the image to a fraction of the full width    
-               'platesolve_image_crop_height': 0.0, # For excessive fields of view, to speed things up crop the image to a fraction of the full height
-               'sep_image_crop_width': 0.0, # For excessive fields of view, to speed things up crop the image to a fraction of the full width    
-               'sep_image_crop_height': 0.0, # For excessive fields of view, to speed things up crop the image to a fraction of the full width    
+               # PLATESOLVE CROPS HAVE TO BE EQUAL! OTHERWISE THE PLATE CENTRE IS NOT THE POINTING CENTRE                
+               'platesolve_image_crop': 0.0, # Platesolve crops have to be symmetrical 
+               # Really, the SEP image should not be cropped unless your field of view and number of sources
+               # Are taking chunks out of the processing time. 
+               'sep_image_crop_width': 0.0, # For excessive fields of view, to speed things up crop the processed image area to a fraction of the full width    
+               'sep_image_crop_height': 0.0, # For excessive fields of view, to speed things up crop the processed image area to a fraction of the full width    
                
                
                 

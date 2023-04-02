@@ -2070,7 +2070,7 @@ sel
                 
                 (hdufocusdata, pixscale, readnoise, avg_foc, focus_image, im_path, text_name, hduheader, cal_path, cal_name, frame_type) = self.sep_queue.get(block=False)
                 
-                if not (g_dev['events']['Civil Dusk'] < ephem.now() < g_dev['events']['Civil Dawn']):
+                if not (g_dev['events']['Civil Dusk'] < ephem.now() < g_dev['events']['Civil Dawn']) :
                     plog ("Too bright to consider photometry!")
 
                     rfp = np.nan
@@ -2449,14 +2449,13 @@ sel
                     #focdate=time.time()
                     
                     # Crop the image for platesolving
-                    platesolve_crop_width=self.config["camera"][g_dev['cam'].name]["settings"]['platesolve_image_crop_width']
-                    platesolve_crop_height=self.config["camera"][g_dev['cam'].name]["settings"]['platesolve_image_crop_height']
+                    platesolve_crop=self.config["camera"][g_dev['cam'].name]["settings"]['platesolve_image_crop']
                     #breakpoint()
                     
                     fx, fy = hdufocusdata.shape
                     
-                    crop_width = (fx * platesolve_crop_width) / 2
-                    crop_height = (fy * platesolve_crop_height) / 2
+                    crop_width = (fx * platesolve_crop) / 2
+                    crop_height = (fy * platesolve_crop) / 2
                     
                     # Make sure it is an even number for OSCs
                     if (crop_width % 2) != 0:
