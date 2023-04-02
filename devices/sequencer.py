@@ -501,6 +501,7 @@ class Sequencer:
                 self.run_nightly_weather_report()
                 
                 
+                
                 if not g_dev['obs'].open_and_enabled_to_observe and self.weather_report_is_acceptable_to_observe==True:
                     if (g_dev['events']['Cool Down, Open'] < ephem.now() < g_dev['events']['Observing Ends']):
                         if time.time() > self.enclosure_next_open_time and self.opens_this_evening < self.config['maximum_roof_opens_per_evening']:
@@ -4045,7 +4046,7 @@ class Sequencer:
         elif sum(hourly_fitzgerald_number) < 100:
             plog ("This is perhaps not the best night, but we will give it a shot!")
             self.weather_report_is_acceptable_to_observe=True
-            self.weather_report_wait_until_open=True
+            self.weather_report_wait_until_open=False
             self.weather_report_wait_until_open_time=ephem_now
             self.weather_report_close_during_evening=False
             self.weather_report_close_during_evening_time=ephem_now
