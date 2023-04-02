@@ -42,7 +42,7 @@ site_config = {
     'debug_site_mode': False,
     
 
-    'debug_mode': True,
+    'debug_mode': False,
     'admin_owner_commands_only': False,
 
     'debug_duration_sec': 7200,
@@ -96,7 +96,7 @@ site_config = {
 
     'TZ_database_name':  'Australia/Melbourne',
     'mpc_code':  'ZZ23',    #  This is made up for now.
-    'time_offset':  11,   #  These two keys may be obsolete given the new TZ stuff
+    #'time_offset':  11,   #  These two keys may be obsolete given the new TZ stuff
     'timezone': 'AEST',      #  This was meant to be coloquial Time zone abbreviation, alternate for "TX_data..."
     'latitude': -37.70097222,     #  Decimal degrees, North is Positive
     'longitude': 145.1918056,   #  Decimal degrees, West is negative
@@ -138,7 +138,7 @@ site_config = {
     'focus_exposure_time': 10, # Exposure time in seconds for exposure image
 
     'focus_trigger' : 5.0, # What FWHM increase is needed to trigger an autofocus
-    'solve_nth_image' : 10, # Only solve every nth image
+    'solve_nth_image' : 1, # Only solve every nth image
     'solve_timer' : 5, # Only solve every X minutes
     'threshold_mount_update' : 50, # only update mount when X arcseconds away
 
@@ -685,7 +685,6 @@ site_config = {
             
             
             
-                
             
             
             'detector':  'Sony IMX455 Color',  #  It would be good to build out a table of chip characteristics
@@ -693,6 +692,10 @@ site_config = {
             'file_mode_path':  'Q:/archive/sq01/maxim/',   #NB NB all file_mode Maxim stuff should go!
             'manufacturer':  "QHY",
             'settings': {
+                
+                'hold_flats_in_memory': True, # If there is sufficient memory ... OR .... not many flats, it is faster to keep the flats in memory.
+
+                
                 
                 # For direct QHY usage we need to set the appropriate gain.
                 # This changes from site to site. "Fast" scopes like the RASA need lower gain then "slow".
@@ -766,12 +769,12 @@ site_config = {
                 'rotate270_jpeg' : False,
                 
                 # For large fields of view, crop the images down to solve faster. 
-                'focus_image_crop_width': 0.4, # For excessive fields of view, to speed things up crop the image to a fraction of the full width    
+                'focus_image_crop_width': 0.6, # For excessive fields of view, to speed things up crop the image to a fraction of the full width    
                 'focus_image_crop_height': 0.4, # For excessive fields of view, to speed things up crop the image to a fraction of the full height
-                'platesolve_image_crop_width': 1.0, # For excessive fields of view, to speed things up crop the image to a fraction of the full width    
-                'platesolve_image_crop_height': 1.0, # For excessive fields of view, to speed things up crop the image to a fraction of the full height
-                'sep_image_crop_width': 1.0, # For excessive fields of view, to speed things up crop the image to a fraction of the full width    
-                'sep_image_crop_height': 1.0, # For excessive fields of view, to speed things up crop the image to a fraction of the full width    
+                'platesolve_image_crop_width': 0.6, # For excessive fields of view, to speed things up crop the image to a fraction of the full width    
+                'platesolve_image_crop_height': 0.4, # For excessive fields of view, to speed things up crop the image to a fraction of the full height
+                'sep_image_crop_width': 0.0, # For excessive fields of view, to speed things up crop the image to a fraction of the full width    
+                'sep_image_crop_height': 0.0, # For excessive fields of view, to speed things up crop the image to a fraction of the full width    
                 
                 'osc_bayer' : 'RGGB',
                 'crop_preview': False,
@@ -832,9 +835,10 @@ site_config = {
                 'east_offset': 0.0,
                 'rotation': 0.0,
                 'min_exposure': 0.0001,
-                'min_flat_exposure' : 0.00001, # For certain shutters, short exposures aren't good for flats. Some CMOS have banding in too short an exposure. Largely applies to ccds though.
+                'min_flat_exposure' : 3.0, # For certain shutters, short exposures aren't good for flats. Some CMOS have banding in too short an exposure. Largely applies to ccds though.
 
-                'max_flat_exposure' : 120.0, # Realistically there should be a maximum flat_exposure that makes sure flats are efficient and aren't collecting actual stars.
+                'max_flat_exposure' : 20.0, # Realistically there should be a maximum flat_exposure that makes sure flats are efficient and aren't collecting actual stars.
+
 
                 'max_exposure': 180.,
                 'max_daytime_exposure': 0.0001,

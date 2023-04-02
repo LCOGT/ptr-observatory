@@ -274,7 +274,10 @@ class Sequencer:
         g_dev['cam'].user_id = command['user_id']
         g_dev['cam'].user_name = command['user_name']
         action = command['action']
-        script = command['required_params']['script']
+        try:
+            script = command['required_params']['script']
+        except:
+            script = None
         if action == "run" and script == 'focusAuto':
             self.auto_focus_script(req, opt, skip_timer_check=True)
         if action == "run" and script == 'focusExtensive':   
@@ -290,9 +293,9 @@ class Sequencer:
             self.auto_focus_script(req, opt, skip_timer_check=True)
         elif action == "run" and script == 'focusFine':
             self.coarse_focus_script(req, opt)
-        elif action == "run" and script == 'genScreenFlatMasters':
+        elif action == "run" and script == 'collectScreenFlats':
             self.screen_flat_script(req, opt)
-        elif action == "run" and script == 'genSkyFlatMasters':
+        elif action == "run" and script == 'collectSkyFlats':
             self.sky_flat_script(req, opt)
         elif action == "run" and script in ['32TargetPointingRun', 'pointingRun', 'makeModel']:
             if req['gridType'] == 'sweep':
@@ -301,13 +304,13 @@ class Sequencer:
                 self.cross_pointing_run(req, opt)
             else:
                 self.sky_grid_pointing_run(req, opt)
-        elif action == "run" and script in ("genBiasDarkMaster", "genBiasDarkMasters"):
+        elif action == "run" and script in ("collectBiasAndDarks"):
             self.bias_dark_script(req, opt, morn=True)
         elif action == "run" and script == 'takeLRGBStack':
             self.take_lrgb_stack(req, opt)
         elif action == "run" and script == "takeO3HaS2N2Stack":
             self.take_lrgb_stack(req, opt)
-        elif action.lower() in ["stop", "cancel"]:
+        elif action.lower() in ["stop", "cancel"] or ( action == "run" and script == "stopScript"):
             self.stop_command(req, opt)
         elif action == "home":
             self.home_command(req, opt)
@@ -491,18 +494,19 @@ class Sequencer:
                 # This is necessary just in case a previous weather report was done today
                 # That can sometimes change the timing. 
                 self.astro_events.compute_day_directory()
-                self.astro_events.calculate_events(endofnightoverride='yes')
+                self.astro_events.calculate_events()
                 #self.astro_events.display_events()
                 g_dev['obs'].astro_events = self.astro_events
                 # Run nightly weather report
                 self.run_nightly_weather_report()
                 
                 
+                
                 if not g_dev['obs'].open_and_enabled_to_observe and self.weather_report_is_acceptable_to_observe==True:
                     if (g_dev['events']['Cool Down, Open'] < ephem.now() < g_dev['events']['Observing Ends']):
                         if time.time() > self.enclosure_next_open_time and self.opens_this_evening < self.config['maximum_roof_opens_per_evening']:
                             #self.enclosure_next_open_time = time.time() + 300 # Only try to open the roof every five minutes
-                            self.cool_down_latch = True
+                            
                             #self.weather_report_is_acceptable_to_observe=True
                             self.open_observatory(enc_status, ocn_status)
                             
@@ -566,7 +570,7 @@ class Sequencer:
                 # This is necessary just in case a previous weather report was done today
                 # That can sometimes change the timing. 
                 self.astro_events.compute_day_directory()
-                self.astro_events.calculate_events(endofnightoverride='yes')
+                self.astro_events.calculate_events()
                 #self.astro_events.display_events()
                 g_dev['obs'].astro_events = self.astro_events
                 # Run nightly weather report
@@ -681,10 +685,10 @@ class Sequencer:
 
         elif ((g_dev['events']['Clock & Auto Focus']  <= ephem_now < g_dev['events']['Observing Begins']) and \
                g_dev['enc'].mode == 'Automatic') and not g_dev['ocn'].wx_hold and self.weather_report_is_acceptable_to_observe==True \
-                and self.night_focus_ready==True and  g_dev['obs'].open_and_enabled_to_observe:
+                and self.night_focus_ready==True and  g_dev['obs'].open_and_enabled_to_observe and not self.clock_focus_latch:
 
             
-
+            self.clock_focus_latch = True
             #if self.night_focus_ready==True and g_dev['obs'].open_and_enabled_to_observe:
             g_dev['obs'].send_to_user("Beginning start of night Focus and Pointing Run", p_level='INFO')
 
@@ -711,6 +715,7 @@ class Sequencer:
             opt = {'area': 150, 'count': 1, 'bin': 1, 'filter': 'focus'}
             result = g_dev['cam'].expose_command(req, opt, no_AWS=False, solve_it=True)
             self.night_focus_ready=False
+            self.clock_focus_latch = False
 
 # =============================================================================
 #         NB NB Note below often faults, should be in a try except instead of this
@@ -865,6 +870,7 @@ class Sequencer:
         elif not self.morn_sky_flat_latch and ((events['Morn Sky Flats'] <= ephem_now < events['End Morn Sky Flats'])  \
                and g_dev['enc'].mode == 'Automatic' and not g_dev['ocn'].wx_hold and \
                self.config['auto_morn_sky_flat']) and not self.morn_flats_done and g_dev['obs'].camera_temperature_in_range_for_calibrations and g_dev['obs'].open_and_enabled_to_observe and self.weather_report_is_acceptable_to_observe==True:
+                   #self.config['auto_morn_sky_flat']) and not self.morn_flats_done and g_dev['obs'].open_and_enabled_to_observe :
             #self.time_of_next_slew = time.time() -1
             self.morn_sky_flat_latch = True
             
@@ -1847,7 +1853,10 @@ class Sequencer:
         self.eve_sky_flat_latch = False
         self.morn_sky_flat_latch = False
         self.morn_bias_dark_latch = False
+        self.clock_focus_latch = False
         self.cool_down_latch = False
+        self.clock_focus_latch = False
+        
         self.reset_completes()
 
 
@@ -3136,7 +3145,7 @@ class Sequencer:
 
             except:
 
-                if extensive_focus != None:
+                if extensive_focus == None:
 
                     plog('Autofocus quadratic equation not converge. Moving back to starting focus:  ', focus_start)
                     plog  ("NORMAL FOCUS UNSUCCESSFUL, TRYING EXTENSIVE FOCUS")
@@ -3237,7 +3246,9 @@ class Sequencer:
 
             except:
 
-                if extensive_focus != None:
+
+                if extensive_focus == None:
+
 
                     plog('Autofocus quadratic equation not converge. Moving back to starting focus:  ', focus_start)
                     plog  ("NORMAL FOCUS UNSUCCESSFUL, TRYING EXTENSIVE FOCUS")
@@ -3308,7 +3319,7 @@ class Sequencer:
                 g_dev['mnt'].mount.SlewToCoordinatesAsync(start_ra, start_dec)   #Return to pre-focus pointing.
                 wait_for_slew()
             else:
-                if extensive_focus != None:
+                if extensive_focus == None:
 
                     plog('Autofocus quadratic equation not converge. Moving back to starting focus:  ', focus_start)
                     plog  ("NORMAL FOCUS UNSUCCESSFUL, TRYING EXTENSIVE FOCUS")
@@ -3364,7 +3375,7 @@ class Sequencer:
         else:
             #plog('Spots are really wrong so moving back to starting focus:  ', focus_start)
             #g_dev['foc'].focuser.Move((focus_start)*g_dev['foc'].micron_to_steps)
-            if extensive_focus != None:
+            if extensive_focus == None:
 
                 plog('Autofocus quadratic equation not converge. Moving back to starting focus:  ', focus_start)
                 plog  ("NORMAL FOCUS UNSUCCESSFUL, TRYING EXTENSIVE FOCUS")
@@ -3422,6 +3433,8 @@ class Sequencer:
         
         if (ephem.now() < g_dev['events']['End Eve Bias Dark'] ) or \
             (g_dev['events']['End Morn Bias Dark']  < ephem.now() < g_dev['events']['Nightly Reset']):
+                
+
             plog ("NOT DOING EXTENSIVE FOCUS -- IT IS THE DAYTIME!!")
             g_dev["obs"].send_to_user("An extensive focus was rejected as it is during the daytime.")
             return
@@ -3574,7 +3587,7 @@ class Sequencer:
             plog (minimumFWHM)
             g_dev['foc'].guarded_move((solved_pos)*g_dev['foc'].micron_to_steps)
             if not no_auto_after_solve:
-                self.auto_focus_script(None,None, skip_timer_check=True, extensive_focus=solved_pos)
+                self.auto_focus_script(None,None, skip_timer_check=True, extensive_focus=solved_pos) 
         except:
             plog ("Something went wrong in the extensive focus routine")
             plog(traceback.format_exc())
@@ -4020,7 +4033,7 @@ class Sequencer:
         elif sum(hourly_fitzgerald_number) < 10:
             plog ("This is a good observing night!")
             self.weather_report_is_acceptable_to_observe=True
-            self.weather_report_wait_until_open=True
+            self.weather_report_wait_until_open=False
             self.weather_report_wait_until_open_time=ephem_now
             self.weather_report_close_during_evening=False
             self.weather_report_close_during_evening_time=ephem_now
@@ -4034,7 +4047,7 @@ class Sequencer:
         elif sum(hourly_fitzgerald_number) < 100:
             plog ("This is perhaps not the best night, but we will give it a shot!")
             self.weather_report_is_acceptable_to_observe=True
-            self.weather_report_wait_until_open=True
+            self.weather_report_wait_until_open=False
             self.weather_report_wait_until_open_time=ephem_now
             self.weather_report_close_during_evening=False
             self.weather_report_close_during_evening_time=ephem_now

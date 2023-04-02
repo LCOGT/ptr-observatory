@@ -519,31 +519,33 @@ class Events:
                 ('Observing Begins   ', ephem.Date(self.nautDusk_plus_half)),
                 ('Astro Dark         ', ephem.Date(self.astroDark)),
                 ('Middle of Night    ', ephem.Date(self.middleNight)),
-                ('End Astro Dark     ', self.astroEnd),
+                ('End Astro Dark     ', ephem.Date(self.astroEnd)),
                 ('Observing Ends     ', ephem.Date(self.nautDawn_minus_half )),
-                ('Naut Dawn          ', self.nauticalDawn),
+                ('Naut Dawn          ', ephem.Date(self.nauticalDawn)),
                 ('Morn Sky Flats     ', ephem.Date(self.nauticalDawn + 30/1440.)),
-                ('Civil Dawn         ', self.civilDawn),
+                ('Civil Dawn         ', ephem.Date(self.civilDawn)),
                 ('End Morn Sky Flats ', ephem.Date(self.sunrise + 30/1440.)),    #SRO drving this
                 ('Ops Window Closes  ', ephem.Date(self.sunrise + 31/1440.)),   #Enclosure must close 5 min after sunrise
                 ('Close and Park     ', ephem.Date(self.sunrise + 32/1440.)),
-                ('Sun Rise           ', self.sunrise),
+                ('Sun Rise           ', ephem.Date(self.sunrise)),
                 ('Morn Bias Dark     ', ephem.Date(self.sunrise + 34/1440.)),
                 ('End Morn Bias Dark ', ephem.Date(self.sunrise + 140/1440.)),
                 ('Nightly Reset      ', ephem.Date(self.sunrise + 180/1440.)),
                 ('End Nightly Reset  ', ephem.Date(self.sunrise + 200/1440.)),
-                ('Prior Moon Rise    ', self.last_moonrise),
-                ('Prior Moon Transit ', self.last_moontransit),
-                ('Prior Moon Set     ', self.last_moonset),
-                ('Moon Rise          ', self. next_moonrise),
-                ('Moon Transit       ', self.next_moontransit),
-                ('Moon Set           ', self.next_moonset)]
+                ('Prior Moon Rise    ', ephem.Date(self.last_moonrise)),
+                ('Prior Moon Transit ', ephem.Date(self.last_moontransit)),
+                ('Prior Moon Set     ', ephem.Date(self.last_moonset)),
+                ('Moon Rise          ', ephem.Date(self.next_moonrise)),
+                ('Moon Transit       ', ephem.Date(self.next_moontransit)),
+                ('Moon Set           ', ephem.Date(self.next_moonset))]
+
+        
 
         self.evnt_sort = self._sortTuple(self.evnt)
         day_dir = self.compute_day_directory()
 
         self.timezone = "  " + self.config['timezone'] + ": "
-        self.offset = self.config['time_offset']
+        #self.offset = self.config['time_offset']
         
         event_dict = {}
         for item in self.evnt_sort:
@@ -568,6 +570,6 @@ class Events:
 
         
         for self.evnt in self.evnt_sort:
-            plog(self.evnt[0], 'UTC: ', self.evnt[1], self.timezone, ephem.Date(self.evnt[1] + float(self.offset)/24.))    # NB Additon of local times would be handy here.
-
+            #plog(self.evnt[0], 'UTC: ', self.evnt[1], self.timezone, ephem.Date(self.evnt[1] + float(self.offset)/24.))    # NB Additon of local times would be handy here.
+            plog(self.evnt[0], 'UTC: ', self.evnt[1], self.timezone)    # NB Additon of local times would be handy here.
         

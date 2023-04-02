@@ -144,6 +144,8 @@ site_config = {
     'period_of_time_to_wait_for_roof_to_open' : 50, # seconds - needed to check if the roof ACTUALLY opens. 
     'only_scope_that_controls_the_roof': False, # If multiple scopes control the roof, set this to False
     
+    
+    
     'check_time': 300,   #MF's original setting.
     'maximum_roof_opens_per_evening' : 4,
     'roof_open_safety_base_time' : 15, # How many minutes to use as the default retry time to open roof. This will be progressively multiplied as a back-off function.
@@ -632,6 +634,9 @@ site_config = {
             #'driver':  'ASCOM.QHYCCD.Camera',   #  Maxim.CCDCamera',   #"Maxim.CCDCamera",   #'ASCOM.FLI.Kepler.Camera',  #Code must work withall three
             'driver':  "QHYCCD_Direct_Control", # NB Be careful this is not QHY Camera2 or Guider  "Maxim.CCDCamera",   #'ASCOM.FLI.Kepler.Camera', "ASCOM.QHYCCD.Camera",   #
             
+           
+
+            
             'startup_script':  None,
             'recover_script':  None,
             'shutdown_script':  None,
@@ -641,7 +646,8 @@ site_config = {
             'file_mode_path':  'Q:/000ptr_saf/archive/kf01/autosaves/',
             'settings': {
                 
-                
+                'hold_flats_in_memory': False, # If there is sufficient memory ... OR .... not many flats, it is faster to keep the flats in memory.
+
                 # For direct QHY usage we need to set the appropriate gain.
                 # This changes from site to site. "Fast" scopes like the RASA need lower gain then "slow".
                 # Sky quality is also important, the worse the sky quality, the higher tha gain needs to be
@@ -695,6 +701,19 @@ site_config = {
                 'rotate180_jpeg' : False,
                 'rotate90_jpeg' : True,
                 'rotate270_jpeg' : False,
+                
+                
+                
+               # For large fields of view, crop the images down to solve faster. 
+               'focus_image_crop_width': 0.0, # For excessive fields of view, to speed things up crop the image to a fraction of the full width    
+               'focus_image_crop_height': 0.0, # For excessive fields of view, to speed things up crop the image to a fraction of the full height
+               'platesolve_image_crop_width': 0.0, # For excessive fields of view, to speed things up crop the image to a fraction of the full width    
+               'platesolve_image_crop_height': 0.0, # For excessive fields of view, to speed things up crop the image to a fraction of the full height
+               'sep_image_crop_width': 0.0, # For excessive fields of view, to speed things up crop the image to a fraction of the full width    
+               'sep_image_crop_height': 0.0, # For excessive fields of view, to speed things up crop the image to a fraction of the full width    
+               
+               
+                
                 'osc_bayer' : 'RGGB',
                 'crop_preview': False,
                 'crop_preview_ybottom': 1,

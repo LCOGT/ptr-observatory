@@ -438,11 +438,18 @@ class Camera:
             plog("Dark frame for Binning 1 not available")  
 
         try:            
-            fileList = glob.glob(self.obsid_path + "archive/" + self.alias + "/calibmasters" \
-                                 + "/ " + tempfrontcalib + "masterFlat*_bin1.npy")
             
+            
+            fileList = glob.glob(self.obsid_path + "archive/" + self.alias + "/calibmasters/masterFlat*_bin1.npy")
+            #breakpoint()
             for file in fileList:
-                self.flatFiles.update({file.split("_")[1].replace ('.npy','') + '_bin1': file})
+                if self.config['camera'][self.name]['settings']['hold_flats_in_memory']:
+                    tempflatframe=np.load(file)
+                    #breakpoint()
+                    self.flatFiles.update({file.split('_')[-2]: np.array(tempflatframe)})
+                    del tempflatframe
+                else:
+                    self.flatFiles.update({file.split("_")[1].replace ('.npy','') + '_bin1': file})
             # To supress occasional flatfield div errors
             np.seterr(divide="ignore")
         except:
@@ -2064,7 +2071,7 @@ class Camera:
                 if frame_type in ["bias", "dark"] or frame_type[-4:] == ['flat']:
                     plog("Median of full-image area bias, dark or flat:  ", np.median(self.img))
 
-                pedastal = 0
+                #pedestal = 0
                 self.overscan = 0
 
                
@@ -2817,19 +2824,19 @@ class Camera:
                     hdu.header["LONGSTK"] = longstackid # Is this a member of a longer stack - to be replaced by 
                                                         #   longstack code soon
 
-                    if pedastal is not None:
-                        hdu.header["PEDESTAL"] = (
-                            -pedastal,
-                            "adu, add this for zero based image.",
-                        )
-                        hdu.header["PATCH"] = (
-                            bi_mean - pedastal
-                        )  # A crude value for the central exposure - pedastal
-                    else:
-                        hdu.header["PEDESTAL"] = (0.0, "Dummy value for a raw image")
-                        hdu.header[
-                            "PATCH"
-                        ] = bi_mean  # A crude value for the central exposure
+                    # if pedestal is not None:
+                    #     hdu.header["PEDESTAL"] = (
+                    #         -pedastal,
+                    #         "adu, add this for zero based image.",
+                    #     )
+                    #     hdu.header["PATCH"] = (
+                    #         bi_mean - pedastal
+                    #     )  # A crude value for the central exposure - pedastal
+                    # else:
+                    hdu.header["PEDESTAL"] = (0.0, "This value has been added to the data")
+                    hdu.header[
+                        "PATCH"
+                    ] = bi_mean  # A crude value for the central exposure
                     hdu.header["ERRORVAL"] = 0
                     hdu.header["IMGAREA"] = opt["area"]
                     hdu.header[
@@ -3131,14 +3138,34 @@ class Camera:
                             
                         # Quick flat flat frame
                         try:
-                            tempFlatFrame = np.load(self.flatFiles[str(self.current_filter + "_bin" + str(flashbinning))])
+                            if self.config['camera'][self.name]['settings']['hold_flats_in_memory']:
+                                #tempflatframe=np.load(file)
+                                #breakpoint()
+                                #self.flatFiles.update({file.split('_')[-2]: tempflatframe})
+                                #del tempflatframe
+                                
+                                hdusmalldata = np.divide(hdusmalldata, self.flatFiles[self.current_filter])
+                                
+                            else:
+                                #self.flatFiles.update({file.split("_")[1].replace ('.npy','') + '_bin1': file})
+                                hdusmalldata = np.divide(hdusmalldata, np.load(self.flatFiles[str(self.current_filter + "_bin" + str(flashbinning))]))
+                            
+                            
+                            
+                            #tempFlatFrame = np.load(self.flatFiles[str(self.current_filter + "_bin" + str(flashbinning))])
 
-                            hdusmalldata = np.divide(hdusmalldata, tempFlatFrame)
-                            del tempFlatFrame
+                            #hdusmalldata = np.divide(hdusmalldata, tempFlatFrame)
+                            #del tempFlatFrame
                         except Exception as e:
                             plog("flatting light frame failed", e)
+                            plog(traceback.format_exc()) 
                             #plog (traceback.format_exc())
                             #breakpoint()
+                        
+                        
+                        # Add a pedestal to the data
+                        hdusmalldata=hdusmalldata+200.0
+                        #hdu.header["PEDESTAL"] = (200, "Pedestal added by PTR")
 
                         # This saves the REDUCED file to disk
                         # If this is for a smartstack, this happens immediately in the camera thread after we have a "reduced" file

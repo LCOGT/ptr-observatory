@@ -458,11 +458,12 @@ class Observatory:
         self.update_config()   #This is the never-ending control loop
         
         
-        
+        #g_dev['obs'].open_and_enabled_to_observe=True
 
         #breakpoint()
         #req2 = {'target': 'near_tycho_star', 'area': 150}
         #opt = {}
+        #g_dev['seq'].sky_flat_script({}, {}, morn=True)
         #g_dev['seq'].extensive_focus_script(req2,opt)
         #req = {'bin1': True, 'bin2': False, 'bin3': False, 'bin4': False, 'numOfBias': 63, \
         #        'numOfDark': 31, 'darkTime': 75, 'numOfDark2': 31, 'dark2Time': 75, \
@@ -1178,6 +1179,8 @@ sel
     
                 roof_should_be_shut=False
                 
+                
+                #breakpoint()
                 if (g_dev['events']['End Morn Sky Flats'] < ephem.now() < g_dev['events']['End Morn Bias Dark']):
                     roof_should_be_shut=True
                     self.open_and_enabled_to_observe=False
@@ -1192,6 +1195,7 @@ sel
                     roof_should_be_shut=True 
                     self.open_and_enabled_to_observe=False
                 
+
                 
                 if g_dev['enc'].status['shutter_status'] == 'Open':
                     if roof_should_be_shut==True :
@@ -1894,7 +1898,7 @@ sel
                         # is sorta arbitrary... you'd use the site-config settings above to 
                         # set it appropriately and leave this alone.
                         if g_dev['mnt'].pier_side == 1:
-                            final_image=final_image.transpose(Image.ROTATE_180)
+                            final_image=final_image.transpose(Image.Transpose.ROTATE_180)
                         
                         #breakpoint()
                         # Save BIG version of JPEG.
@@ -2068,6 +2072,7 @@ sel
                 
                 if not (g_dev['events']['Civil Dusk'] < ephem.now() < g_dev['events']['Civil Dawn']):
                     plog ("Too bright to consider photometry!")
+
                     rfp = np.nan
                     rfr = np.nan
                     rfs = np.nan
@@ -2094,8 +2099,11 @@ sel
                         crop_width=int(crop_width)
                         crop_height=int(crop_height)
                         #breakpoint()
-                        hdufocusdata=hdufocusdata[crop_width:-crop_width,crop_height:-crop_height]
-                        plog ("Focus image cropped to " + str(hdufocusdata.shape))
+                        
+                        
+                        if crop_width > 0 or crop_height > 0:
+                            hdufocusdata=hdufocusdata[crop_width:-crop_width,crop_height:-crop_height]
+                            plog ("Focus image cropped to " + str(hdufocusdata.shape))
                         
                         
                         
@@ -2458,7 +2466,10 @@ sel
                         
                     crop_width=int(crop_width)
                     crop_height=int(crop_height)
-                    hdufocusdata=hdufocusdata[crop_width:-crop_width,crop_height:-crop_height]
+                    
+                    #breakpoint()
+                    if crop_width > 0 or crop_height > 0:
+                        hdufocusdata=hdufocusdata[crop_width:-crop_width,crop_height:-crop_height]
                     plog ("Platesolve image cropped to " + str(hdufocusdata.shape))
                     
                     
@@ -3396,10 +3407,15 @@ sel
                             # img= img - backgroundLevel
                             # Reproject new image onto footplog of old image.
                             #plog(datetime.datetime.now())
+                            
+                            minarea=int(pow(0.7*1.5 / (pixscale),2)* 3.14)                            
+                            if minarea < 5: # There has to be a min minarea though!
+                                minarea=5
+                            
                             if len(sources) > 5:
                                 try:
                                     reprojectedimage, _ = func_timeout.func_timeout (60, aa.register, args=(imgdata, storedsStack),\
-                                                                                     kwargs={"detection_sigma":3, "min_area":9})
+                                                                                     kwargs={"detection_sigma":5, "min_area":minarea})
                                     # scalingFactor= np.nanmedian(reprojectedimage / storedsStack)
                                     # plog (" Scaling Factor : " +str(scalingFactor))
                                     # reprojectedimage=(scalingFactor) * reprojectedimage # Insert a scaling factor
@@ -3468,24 +3484,24 @@ sel
                         final_image = Image.fromarray(stretched_data_uint8)
                         # These steps flip and rotate the jpeg according to the settings in the site-config for this camera
                         if self.config["camera"][g_dev['cam'].name]["settings"]["transpose_jpeg"]:
-                            final_image=final_image.transpose(Image.TRANSPOSE)
+                            final_image=final_image.transpose(Image.Transpose.TRANSPOSE)
                         if self.config["camera"][g_dev['cam'].name]["settings"]['flipx_jpeg']:
-                            final_image=final_image.transpose(Image.FLIP_LEFT_RIGHT)
+                            final_image=final_image.transpose(Image.Transpose.FLIP_LEFT_RIGHT)
                         if self.config["camera"][g_dev['cam'].name]["settings"]['flipy_jpeg']:
-                            final_image=final_image.transpose(Image.FLIP_TOP_BOTTOM)
+                            final_image=final_image.transpose(Image.Transpose.FLIP_TOP_BOTTOM)
                         if self.config["camera"][g_dev['cam'].name]["settings"]['rotate180_jpeg']:
-                            final_image=final_image.transpose(Image.ROTATE_180)
+                            final_image=final_image.transpose(Image.Transpose.ROTATE_180)
                         if self.config["camera"][g_dev['cam'].name]["settings"]['rotate90_jpeg']:
-                            final_image=final_image.transpose(Image.ROTATE_90)
+                            final_image=final_image.transpose(Image.Transpose.ROTATE_90)
                         if self.config["camera"][g_dev['cam'].name]["settings"]['rotate270_jpeg']:
-                            final_image=final_image.transpose(Image.ROTATE_270)
+                            final_image=final_image.transpose(Image.Transpose.ROTATE_270)
                             
                         # Detect the pierside and if it is one way, rotate the jpeg 180 degrees
                         # to maintain the orientation. whether it is 1 or 0 that is flipped
                         # is sorta arbitrary... you'd use the site-config settings above to 
                         # set it appropriately and leave this alone.
                         if g_dev['mnt'].pier_side == 1:
-                            final_image=final_image.transpose(Image.ROTATE_180)
+                            final_image=final_image.transpose(Image.Transpose.ROTATE_180)
                         
                         # Save BIG version of JPEG.
                         final_image.save(
@@ -3638,18 +3654,23 @@ sel
                                     # img= img - backgroundLevel
                                     # Reproject new image onto footplog of old image.
                                     #plog(datetime.datetime.now())
+                                    
+                                    minarea=int(pow(0.7*1.5 / (pixscale),2)* 3.14)                            
+                                    if minarea < 5: # There has to be a min minarea though!
+                                        minarea=5
+                                    
                                     if len(sources) > 5:
                                         try:
                                             if colstack == 'red':
                                                 reprojectedimage, _ = func_timeout.func_timeout (60, aa.register, args=(newhdured, storedsStack),\
-                                                                                                 kwargs={"detection_sigma":3, "min_area":9})
+                                                                                                 kwargs={"detection_sigma":5, "min_area":minarea})
                                                 
                                             if colstack == 'blue':
                                                 reprojectedimage, _ = func_timeout.func_timeout (60, aa.register, args=(newhdublue, storedsStack),\
-                                                                                                 kwargs={"detection_sigma":3, "min_area":9})
+                                                                                                 kwargs={"detection_sigma":5, "min_area":minarea})
                                             if colstack == 'green':
                                                 reprojectedimage, _ = func_timeout.func_timeout (60, aa.register, args=(newhdugreen, storedsStack),\
-                                                                                                 kwargs={"detection_sigma":3, "min_area":9})
+                                                                                                 kwargs={"detection_sigma":5, "min_area":minarea})
                                                 # scalingFactor= np.nanmedian(reprojectedimage / storedsStack)
                                             # plog (" Scaling Factor : " +str(scalingFactor))
                                             # reprojectedimage=(scalingFactor) * reprojectedimage # Insert a scaling factor

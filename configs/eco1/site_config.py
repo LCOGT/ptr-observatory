@@ -40,7 +40,7 @@ site_config = {
     
     'debug_site_mode': False,
     
-    'debug_mode': True,
+    'debug_mode': False,
     'admin_owner_commands_only': False,
     'debug_duration_sec': 7200,
     'owner':  ['google-oauth2|112401903840371673242'],  # WER,  Or this can be
@@ -93,7 +93,7 @@ site_config = {
 
     'TZ_database_name':  'Australia/Melbourne',
     'mpc_code':  'ZZ23',    #  This is made up for now.
-    'time_offset':  11,   #  These two keys may be obsolete given the new TZ stuff
+    #'time_offset':  11,   #  These two keys may be obsolete given the new TZ stuff
     'timezone': 'AEST',      #  This was meant to be coloquial Time zone abbreviation, alternate for "TX_data..."
     'latitude': -37.70097222,     #  Decimal degrees, North is Positive
     'longitude': 145.1918056,   #  Decimal degrees, West is negative
@@ -105,6 +105,8 @@ site_config = {
     'obsid_allowed_to_open_roof': True,
     'period_of_time_to_wait_for_roof_to_open' : 100, # seconds - needed to check if the roof ACTUALLY opens. 
     'only_scope_that_controls_the_roof': False, # If multiple scopes control the roof, set this to False
+    
+
     
     'check_time': 300,   #MF's original setting.
     'maximum_roof_opens_per_evening' : 4,
@@ -132,7 +134,7 @@ site_config = {
     
 
     'focus_trigger' : 5.0, # What FWHM increase is needed to trigger an autofocus
-    'solve_nth_image' : 10, # Only solve every nth image
+    'solve_nth_image' : 1, # Only solve every nth image
     'solve_timer' : 5, # Only solve every X minutes
     'threshold_mount_update' : 30, # only update mount when X arcseconds away
 
@@ -481,14 +483,14 @@ site_config = {
                         #['w',     [0,  0],     0, 72.7, [1.00 ,  72], 'PL'],    #0.   For sequencer autofocus  consider foc or f filter
                         #['focus', [0,  0],     0, 148, [1.00 ,  72], 'focus'],    #0.
                         ['lum',    [0,  0],     0, 179, [1.00 ,  72], 'PhLum'],    #1.
-                        ['ip',    [1,  1],     0, 50, [1.00 , 119], 'PhRed'],    #2.
-                        ['v',    [2,  2],     0, 56, [1.00 , 113], 'PhGreen'],    #3.
-                        ['pb',    [3,  3],     0, 55, [0.80 ,  97], 'PhBlue'],    #4.
-                        ['ha',    [4,  4],     0, 6.39, [0.80 ,  97], 'PhBlue'],    #4.
+                        ['ip',    [1,  1],     0, 30, [1.00 , 119], 'PhRed'],    #2.
+                        ['v',    [2,  2],     0, 30, [1.00 , 113], 'PhGreen'],    #3.
+                        ['pb',    [3,  3],     0, 30, [0.80 ,  97], 'PhBlue'],    #4.
+                        ['ha',    [4,  4],     0, 2.512, [0.80 ,  97], 'PhBlue'],    #4.
                         #['PR',    [1,  1],     0, 170, [1.00 , 119], 'PhBlue'],    #2.
                         #['PG',    [2,  2],     0, 220, [1.00 , 113], 'PhGreen'],    #3.
                         #['PB',    [3,  3],     0, 300, [0.80 ,  97], 'PhRed'],    #4.
-                        ['s2',    [5,  5],     0, 2.728, [5.00 , 200], 'Halpha'],    #5.
+                        ['s2',    [5,  5],     0, 4.728, [5.00 , 200], 'Halpha'],    #5.
                         ['o3',    [6,  6],     0, 3.52, [4.00 , 200], 'OIII']],    #6.
                         #['s2',    [7,  7],     0, 58.239, [10.0,  200], 'SII']],    #7.
                         #['air',   [7,  7], -1000, 100., [1.00,   70], 'air'],    #8.
@@ -499,7 +501,7 @@ site_config = {
                 'filter_screen_sort':  ['s2','o3','ha','pb','pg','pr','lum'],   #  don't use narrow yet,  8, 10, 9], useless to try.
 
 
-                'filter_sky_sort': ['s2','o3','ha','pb','v','ip','lum']    #No diffuser based filters
+                'filter_sky_sort': ['ha','o3','s2','pb','v','ip','lum']    #No diffuser based filters
                 #'filter_sky_sort': [7, 19, 2, 13, 18, 5, 15,\
                 #                    12, 4, 11, 16, 10, 9, 17, 3, 14, 1, 0]    #basically no diffuser based filters
                 #[32, 8, 22, 21, 20, 23, 31, 6, 7, 19, 27, 2, 37, 13, 18, 30, 5, 15, 36, 12,\
@@ -528,6 +530,8 @@ site_config = {
             'desc':  'SBIG16803',
             'service_date': '20211111',
             'driver': "CCDSoft2XAdaptor.ccdsoft5Camera",  # "ASCOM.QHYCCD.Camera", ##  'ASCOM.FLI.Kepler.Camera',
+            
+            
             'detector':  'KAF16803',
             'manufacturer':  'On-Semi',
             'use_file_mode':  False,
@@ -538,6 +542,8 @@ site_config = {
                 
                 
                 
+                'hold_flats_in_memory': True, # If there is sufficient memory ... OR .... not many flats, it is faster to keep the flats in memory.
+
                 
                 'squash_on_x_axis' : True,
                 # ONLY TRANSFORM THE FITS IF YOU HAVE
@@ -560,6 +566,15 @@ site_config = {
                'rotate180_jpeg' : False,
                'rotate90_jpeg' : True,
                'rotate270_jpeg' : False,
+               
+               # For large fields of view, crop the images down to solve faster. 
+               'focus_image_crop_width': 0.0, # For excessive fields of view, to speed things up crop the image to a fraction of the full width    
+               'focus_image_crop_height': 0.0, # For excessive fields of view, to speed things up crop the image to a fraction of the full height
+               'platesolve_image_crop_width': 0.0, # For excessive fields of view, to speed things up crop the image to a fraction of the full width    
+               'platesolve_image_crop_height': 0.0, # For excessive fields of view, to speed things up crop the image to a fraction of the full height
+               'sep_image_crop_width': 0.0, # For excessive fields of view, to speed things up crop the image to a fraction of the full width    
+               'sep_image_crop_height': 0.0, # For excessive fields of view, to speed things up crop the image to a fraction of the full width    
+               
                
                 'osc_bayer' : 'RGGB',
                 'crop_preview': False,
@@ -666,7 +681,7 @@ site_config = {
                 #'dark_length' : 1,
                 'number_of_bias_to_collect' : 10,
                 'number_of_dark_to_collect' : 10,
-                'number_of_flat_to_collect' : 10,
+                'number_of_flat_to_collect' : 4,
                 'number_of_bias_to_store' : 128,
                 'number_of_dark_to_store' : 128,
                 'number_of_flat_to_store' : 63,
