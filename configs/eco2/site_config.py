@@ -42,7 +42,7 @@ site_config = {
     'debug_site_mode': False,
     
 
-    'debug_mode': True,
+    'debug_mode': False,
     'admin_owner_commands_only': False,
 
     'debug_duration_sec': 7200,
@@ -766,12 +766,12 @@ site_config = {
                 'rotate270_jpeg' : False,
                 
                 # For large fields of view, crop the images down to solve faster. 
-                'focus_image_crop_width': 0.4, # For excessive fields of view, to speed things up crop the image to a fraction of the full width    
+                'focus_image_crop_width': 0.6, # For excessive fields of view, to speed things up crop the image to a fraction of the full width    
                 'focus_image_crop_height': 0.4, # For excessive fields of view, to speed things up crop the image to a fraction of the full height
-                'platesolve_image_crop_width': 1.0, # For excessive fields of view, to speed things up crop the image to a fraction of the full width    
-                'platesolve_image_crop_height': 1.0, # For excessive fields of view, to speed things up crop the image to a fraction of the full height
-                'sep_image_crop_width': 1.0, # For excessive fields of view, to speed things up crop the image to a fraction of the full width    
-                'sep_image_crop_height': 1.0, # For excessive fields of view, to speed things up crop the image to a fraction of the full width    
+                'platesolve_image_crop_width': 0.6, # For excessive fields of view, to speed things up crop the image to a fraction of the full width    
+                'platesolve_image_crop_height': 0.4, # For excessive fields of view, to speed things up crop the image to a fraction of the full height
+                'sep_image_crop_width': 0.0, # For excessive fields of view, to speed things up crop the image to a fraction of the full width    
+                'sep_image_crop_height': 0.0, # For excessive fields of view, to speed things up crop the image to a fraction of the full width    
                 
                 'osc_bayer' : 'RGGB',
                 'crop_preview': False,
@@ -832,9 +832,9 @@ site_config = {
                 'east_offset': 0.0,
                 'rotation': 0.0,
                 'min_exposure': 0.0001,
-                'min_flat_exposure' : 0.00001, # For certain shutters, short exposures aren't good for flats. Some CMOS have banding in too short an exposure. Largely applies to ccds though.
+                'min_flat_exposure' : 3.0, # For certain shutters, short exposures aren't good for flats. Some CMOS have banding in too short an exposure. Largely applies to ccds though.
 
-                'max_flat_exposure' : 120.0, # Realistically there should be a maximum flat_exposure that makes sure flats are efficient and aren't collecting actual stars.
+                'max_flat_exposure' : 20.0, # Realistically there should be a maximum flat_exposure that makes sure flats are efficient and aren't collecting actual stars.
 
                 'max_exposure': 180.,
                 'max_daytime_exposure': 0.0001,

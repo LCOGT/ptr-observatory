@@ -671,6 +671,17 @@ site_config = {
                 'rotate90_jpeg' : False,
                 'rotate270_jpeg' : False,
                 
+                
+               # For large fields of view, crop the images down to solve faster. 
+               'focus_image_crop_width': 0.0, # For excessive fields of view, to speed things up crop the image to a fraction of the full width    
+               'focus_image_crop_height': 0.0, # For excessive fields of view, to speed things up crop the image to a fraction of the full height
+               'platesolve_image_crop_width': 0.0, # For excessive fields of view, to speed things up crop the image to a fraction of the full width    
+               'platesolve_image_crop_height': 0.0, # For excessive fields of view, to speed things up crop the image to a fraction of the full height
+               'sep_image_crop_width': 0.0, # For excessive fields of view, to speed things up crop the image to a fraction of the full width    
+               'sep_image_crop_height': 0.0, # For excessive fields of view, to speed things up crop the image to a fraction of the full width    
+               
+               
+                
                 'osc_bayer' : 'RGGB',
                 'crop_preview': False,
                 # 'crop_preview_ybottom': 2,  #  2 needed if Bayer array
