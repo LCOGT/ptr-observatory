@@ -681,10 +681,10 @@ class Sequencer:
 
         elif ((g_dev['events']['Clock & Auto Focus']  <= ephem_now < g_dev['events']['Observing Begins']) and \
                g_dev['enc'].mode == 'Automatic') and not g_dev['ocn'].wx_hold and self.weather_report_is_acceptable_to_observe==True \
-                and self.night_focus_ready==True and  g_dev['obs'].open_and_enabled_to_observe:
+                and self.night_focus_ready==True and  g_dev['obs'].open_and_enabled_to_observe and not self.clock_focus_latch:
 
             
-
+            self.clock_focus_latch = True
             #if self.night_focus_ready==True and g_dev['obs'].open_and_enabled_to_observe:
             g_dev['obs'].send_to_user("Beginning start of night Focus and Pointing Run", p_level='INFO')
 
@@ -711,6 +711,7 @@ class Sequencer:
             opt = {'area': 150, 'count': 1, 'bin': 1, 'filter': 'focus'}
             result = g_dev['cam'].expose_command(req, opt, no_AWS=False, solve_it=True)
             self.night_focus_ready=False
+            self.clock_focus_latch = False
 
 # =============================================================================
 #         NB NB Note below often faults, should be in a try except instead of this
@@ -1847,7 +1848,10 @@ class Sequencer:
         self.eve_sky_flat_latch = False
         self.morn_sky_flat_latch = False
         self.morn_bias_dark_latch = False
+        self.clock_focus_latch = False
         self.cool_down_latch = False
+        self.clock_focus_latch = False
+        
         self.reset_completes()
 
 
