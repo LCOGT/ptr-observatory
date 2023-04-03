@@ -2582,7 +2582,7 @@ class Sequencer:
                              #break
                         elif evening and exp_time < min_exposure:   #NB it is too bright, should consider a delay here.
                          #**************THIS SHOUD BE A WHILE LOOP! WAITING FOR THE SKY TO GET DARK AND EXP TIME TO BE LONGER********************
-                             plog("Too bright, wating 60 seconds. Estimated Exposure time is " + str(exp_time))
+                             plog("Too bright, waiting 60 seconds. Estimated Exposure time is " + str(exp_time))
                              #g_dev['obs'].send_to_user('Delay 60 seconds to let it get darker.', p_level='INFO')
                              self.estimated_first_flat_exposure = False
                              if time.time() >= self.time_of_next_slew:
@@ -2591,7 +2591,7 @@ class Sequencer:
                              self.next_flat_observe = time.time() + 60
                         elif morn and exp_time > max_exposure :   #NB it is too bright, should consider a delay here.
                           #**************THIS SHOUD BE A WHILE LOOP! WAITING FOR THE SKY TO GET DARK AND EXP TIME TO BE LONGER********************
-                             plog("Too dim, wating 60 seconds. Estimated Exposure time is " + str(exp_time))
+                             plog("Too dim, waiting 60 seconds. Estimated Exposure time is " + str(exp_time))
                              #g_dev['obs'].send_to_user('Delay 60 seconds to let it get lighterer.', p_level='INFO')
                              self.estimated_first_flat_exposure = False
                              if time.time() >= self.time_of_next_slew:
@@ -2602,6 +2602,13 @@ class Sequencer:
                              exp_time = min_exposure
                         else:
                             exp_time = round(exp_time, 5)
+                            
+                            # If scope has gone to bed due to inactivity, wake it up!
+                            if g_dev['mnt'].mount.AtParK:
+                                g_dev['mnt'].unpark_command({}, {})
+                                g_dev['mnt'].slewToSkyFlatAsync()  
+                                self.time_of_next_slew = time.time() + 600
+                            
                             # prior_scale = prior_scale*scale  #Only update prior scale when changing filters
                             plog("Sky flat estimated exposure time: " + str(exp_time) + ", Scale:  " +str(scale))               
                                             
