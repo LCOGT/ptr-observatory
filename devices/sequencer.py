@@ -1929,11 +1929,13 @@ class Sequencer:
         if len(inputList) == 0 or len(darkinputList) == 0:
             plog ("Not reprocessing local masters as there are no biases or darks")
         else:
-            # Clear held bias and darks to save memory and garbage collect.
+            # Clear held bias and darks and flats to save memory and garbage collect.
             del g_dev['cam'].biasFiles
             del g_dev['cam'].darkFiles
             g_dev['cam'].biasFiles = {}
             g_dev['cam'].darkFiles = {}
+            g_dev['cam'].flatFiles = {}
+            g_dev['cam'].hotFiles = {} 
             gc.collect()
             
             
@@ -2139,6 +2141,10 @@ class Sequencer:
             if len(tempfilters) == 0:
                 plog ("there are no filter directories, so not processing flats")
             else:
+                
+                
+                
+                
                 for filterfolder in tempfilters:    
                     
                     plog (datetime.datetime.now().strftime("%H:%M:%S"))
@@ -2271,17 +2277,33 @@ class Sequencer:
                 g_dev['cam'].hotFiles = {}              
                 
         
-                try:            
-                    fileList = glob(g_dev['obs'].calib_masters_folder \
-                                         + "/masterFlat*_bin1.npy")
+                # try:            
+                #     fileList = glob(g_dev['obs'].calib_masters_folder \
+                #                          + "/masterFlat*_bin1.npy")
                     
-                    for file in fileList:
-                        g_dev['cam'].flatFiles.update({file.split("_")[1].replace ('.npy','') + '_bin1': file})
+                #     for file in fileList:
+                #         g_dev['cam'].flatFiles.update({file.split("_")[1].replace ('.npy','') + '_bin1': file})
         
-                except:
-                    #breakpoint()
-                    plog("Flat frame re-upload did not work")
+                # except:
+                #     #breakpoint()
+                #     plog("Flat frame re-upload did not work")
                 
+                try:           
+                  
+                    fileList = glob.glob(g_dev['obs'].calib_masters_folder + '/masterFlat*_bin1.npy')
+                    #breakpoint()
+                    for file in fileList:
+                        if self.config['camera'][self.name]['settings']['hold_flats_in_memory']:
+                            tempflatframe=np.load(file)
+                            #breakpoint()
+                            self.flatFiles.update({file.split('_')[-2]: np.array(tempflatframe)})
+                            del tempflatframe
+                        else:
+                            self.flatFiles.update({file.split("_")[1].replace ('.npy','') + '_bin1': file})
+                    # To supress occasional flatfield div errors
+                    np.seterr(divide="ignore")
+                except:
+                    plog("Flat frames not loaded or available")
                 
                 #del masterBias
                 #del masterDark
