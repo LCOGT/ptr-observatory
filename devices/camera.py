@@ -3257,7 +3257,7 @@ class Camera:
                             "auto_focus",
                         ]) and smartstackid != 'no' :
                             #self.to_reduce((paths, pixscale, smartstackid, sskcounter, Nsmartstack, self.sources))
-                            self.to_smartstack((paths, pixscale, smartstackid, sskcounter, Nsmartstack))
+                            self.to_smartstack((paths, pixscale, smartstackid, sskcounter, Nsmartstack, g_dev['mnt'].pier_side))
                         else:
                             if not self.config['keep_reduced_on_disk']:
                                 try:                                
@@ -3321,7 +3321,7 @@ class Camera:
                         
                         
                         # Send data off to process jpeg
-                        self.to_mainjpeg((hdusmalldata, smartstackid, paths))
+                        self.to_mainjpeg((hdusmalldata, smartstackid, paths, g_dev['mnt'].pier_side))
                         
                         
                         

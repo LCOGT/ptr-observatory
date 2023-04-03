@@ -1702,7 +1702,7 @@ sel
             if (not self.mainjpeg_queue.empty()) : #and one_at_a_time==0
                 #one_at_a_time=1
                 osc_jpeg_timer_start=time.time()
-                (hdusmalldata, smartstackid, paths) = self.mainjpeg_queue.get(block=False)
+                (hdusmalldata, smartstackid, paths, pier_side) = self.mainjpeg_queue.get(block=False)
                 
                 # If this a bayer image, then we need to make an appropriate image that is monochrome
                 # That gives the best chance of finding a focus AND for pointing while maintaining resolution.
@@ -1916,7 +1916,7 @@ sel
                         # to maintain the orientation. whether it is 1 or 0 that is flipped
                         # is sorta arbitrary... you'd use the site-config settings above to 
                         # set it appropriately and leave this alone.
-                        if g_dev['mnt'].pier_side == 1:
+                        if pier_side == 1:
                             final_image=final_image.transpose(Image.Transpose.ROTATE_180)
                         
                         #breakpoint()
@@ -1991,7 +1991,7 @@ sel
                         # to maintain the orientation. whether it is 1 or 0 that is flipped
                         # is sorta arbitrary... you'd use the site-config settings above to 
                         # set it appropriately and leave this alone.
-                        if g_dev['mnt'].pier_side == 1:
+                        if pier_side == 1:
                             final_image=final_image.transpose(Image.ROTATE_180)
                         
                         
@@ -3303,7 +3303,7 @@ sel
                     pixscale,
                     smartstackid,
                     sskcounter,
-                    Nsmartstack
+                    Nsmartstack, pier_side
                     #sources,
                 ) = self.smartstack_queue.get(block=False)
 
@@ -3558,7 +3558,7 @@ sel
                         # to maintain the orientation. whether it is 1 or 0 that is flipped
                         # is sorta arbitrary... you'd use the site-config settings above to 
                         # set it appropriately and leave this alone.
-                        if g_dev['mnt'].pier_side == 1:
+                        if pier_side == 1:
                             final_image=final_image.transpose(Image.Transpose.ROTATE_180)
                         
                         # Save BIG version of JPEG.
@@ -3914,7 +3914,7 @@ sel
                             # to maintain the orientation. whether it is 1 or 0 that is flipped
                             # is sorta arbitrary... you'd use the site-config settings above to 
                             # set it appropriately and leave this alone.
-                            if g_dev['mnt'].pier_side == 1:
+                            if pier_side == 1:
                                 final_image=final_image.transpose(Image.ROTATE_180)
                             
                             # Save BIG version of JPEG.
