@@ -1306,7 +1306,8 @@ sel
                     if g_dev['mnt'].home_before_park:
                         g_dev['mnt'].home_command()
                     g_dev['mnt'].park_command()
-                    self.time_of_last_slew = time.time()
+                self.time_of_last_slew = time.time()
+                self.time_of_last_exposure = time.time()    
             
             # Check that rotator is rotating
             if g_dev['rot'] != None:
