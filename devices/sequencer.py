@@ -3168,12 +3168,13 @@ class Sequencer:
             y = [spot4, spot2, spot1, spot3]
             plog('X, Y:  ', x, y, 'Desire center to be smallest.')
             g_dev['obs'].send_to_user('X, Y:  '+ str(x) + " " + str(y)+ ' Desire center to be smallest.', p_level='INFO')
-            try:
+            if foc_pos4 != False and foc_pos2 != False and foc_pos1 != False and foc_pos3 != False:
                 #Digits are to help out pdb commands!
                 a1, b1, c1, d1 = fit_quadratic(x, y)
                 new_spot = round(a1*d1*d1 + b1*d1 + c1, 2)
-
-            except:
+                focus_worked=True
+            else:
+                focus_worked=False            
 
                 if extensive_focus == None:
 
@@ -3182,6 +3183,12 @@ class Sequencer:
                     req2 = {'target': 'near_tycho_star', 'area': 150, 'image_type': 'focus'}
                     opt = {'filter': 'focus'}
                     g_dev['seq'].extensive_focus_script(req2,opt, no_auto_after_solve=True)
+                    plog("Returning to:  ", start_ra, start_dec)
+                    g_dev["mnt"].last_ra = start_ra
+                    g_dev["mnt"].last_dec = start_dec
+                    g_dev['mnt'].mount.SlewToCoordinatesAsync(start_ra, start_dec)   #Return to pre-focus pointing.
+                    wait_for_slew()
+                    return
                 else:
                     plog('Autofocus quadratic equation not converge. Moving back to extensive focus:  ', extensive_focus)
                     g_dev['foc'].guarded_move((extensive_focus)*g_dev['foc'].micron_to_steps)
@@ -3285,6 +3292,12 @@ class Sequencer:
                     req2 = {'target': 'near_tycho_star', 'area': 150}
                     opt = {}
                     g_dev['seq'].extensive_focus_script(req2,opt, no_auto_after_solve=True)
+                    plog("Returning to:  ", start_ra, start_dec)
+                    g_dev["mnt"].last_ra = start_ra
+                    g_dev["mnt"].last_dec = start_dec
+                    g_dev['mnt'].mount.SlewToCoordinatesAsync(start_ra, start_dec)   #Return to pre-focus pointing.
+                    wait_for_slew()
+                    return
                 else:
                     plog('Autofocus quadratic equation not converge. Moving back to extensive focus:  ', extensive_focus)
                     g_dev['foc'].guarded_move((extensive_focus)*g_dev['foc'].micron_to_steps)
@@ -3356,6 +3369,12 @@ class Sequencer:
                     req2 = {'target': 'near_tycho_star', 'area': 150}
                     opt = {}
                     g_dev['seq'].extensive_focus_script(req2,opt, no_auto_after_solve=True)
+                    plog("Returning to:  ", start_ra, start_dec)
+                    g_dev["mnt"].last_ra = start_ra
+                    g_dev["mnt"].last_dec = start_dec
+                    g_dev['mnt'].mount.SlewToCoordinatesAsync(start_ra, start_dec)   #Return to pre-focus pointing.
+                    wait_for_slew()
+                    return
                 else:
                     plog('Autofocus quadratic equation not converge. Moving back to extensive focus:  ', extensive_focus)
                     g_dev['foc'].guarded_move((extensive_focus)*g_dev['foc'].micron_to_steps)
@@ -3412,6 +3431,12 @@ class Sequencer:
                 req2 = {'target': 'near_tycho_star', 'area': 150}
                 opt = {}
                 g_dev['seq'].extensive_focus_script(req2,opt, no_auto_after_solve=True)
+                plog("Returning to:  ", start_ra, start_dec)
+                g_dev["mnt"].last_ra = start_ra
+                g_dev["mnt"].last_dec = start_dec
+                g_dev['mnt'].mount.SlewToCoordinatesAsync(start_ra, start_dec)   #Return to pre-focus pointing.
+                wait_for_slew()
+                return
             else:
                 plog('Autofocus quadratic equation not converge. Moving back to extensive focus:  ', extensive_focus)
                 g_dev['foc'].guarded_move((extensive_focus)*g_dev['foc'].micron_to_steps)
@@ -3550,8 +3575,45 @@ class Sequencer:
             
             #g_dev['mnt'].go_coord(focus_star[0][1][1], focus_star[0][1][0])
             g_dev['mnt'].go_coord(focus_patch_ra, focus_patch_dec)
+            req = {'time': self.config['focus_exposure_time'],  'alias':  str(self.config['camera']['camera_1_1']['name']), 'image_type': 'light'}   #  NB Should pick up filter and constats from config
+            opt = {'area': 100, 'count': 1, 'filter': 'focus'}
+            
+            
+            # Make sure platesolve queue is clear
+            reported=0
+            while True:
+                #if g_dev['obs'].platesolve_is_processing ==False and g_dev['obs'].platesolve_queue.empty():
+                if g_dev['obs'].platesolve_is_processing ==False and g_dev['obs'].platesolve_queue.empty():
+                    break
+                else:
+                    if reported ==0:
+                        plog ("PLATESOLVE: Waiting for platesolve processing to complete and queue to clear")
+                        reported=1
+                    pass
+            
+            # Take a pointing shot to reposition
+            result = g_dev['cam'].expose_command(req, opt, no_AWS=True, solve_it=True)
+            
+            # Wait for platesolve
+            queue_clear_time = time.time()
+            reported=0
+            while True:
+                if g_dev['obs'].platesolve_is_processing ==False and g_dev['obs'].platesolve_queue.empty():
+                    break
+                else:
+                    if reported ==0:
+                        plog ("PLATESOLVE: Waiting for platesolve processing to complete and queue to clear")
+                        reported=1
+                    pass
+            plog ("Time Taken for queue to clear post-exposure: " + str(time.time() - queue_clear_time))
+            
+            # Nudge if needed.
+            g_dev['obs'].check_platesolve_and_nudge()
+            
             req = {'time': self.config['focus_exposure_time'],  'alias':  str(self.config['camera']['camera_1_1']['name']), 'image_type': 'focus'}   #  NB Should pick up filter and constats from config
             opt = {'area': 100, 'count': 1, 'filter': 'focus'}
+            
+            
         else:
             pass   #Just take time image where currently pointed.
             req = {'time': self.config['focus_exposure_time'],  'alias':  str(self.config['camera']['camera_1_1']['name']), 'image_type': 'focus'}   #  NB Should pick up filter and constats from config
@@ -3572,11 +3634,13 @@ class Sequencer:
                 result['mean_focus'] = g_dev['foc'].focuser.Position*g_dev['foc'].steps_to_micron
             try:
                 spot = result['FWHM']
-                foc_pos = result['mean_focus']
+                #foc_pos = result['mean_focus']
+                foc_pos = (foc_pos0 - (ctr+0)*throw)*g_dev['foc'].micron_to_steps
             except:
                 spot = False
                 foc_pos = False
                 plog ("spot failed on extensive focus script")
+                plog(traceback.format_exc())
 
             g_dev['obs'].send_to_user("Extensive focus center " + str(foc_pos) + " FWHM: " + str(spot), p_level='INFO')
             
@@ -3595,11 +3659,13 @@ class Sequencer:
                 result['mean_focus'] = g_dev['foc'].focuser.Position*g_dev['foc'].steps_to_micron
             try:
                 spot = result['FWHM']
-                foc_pos = result['mean_focus']
+                #foc_pos = result['mean_focus']
+                foc_pos = (foc_pos0 + (ctr+1)*throw)*g_dev['foc'].micron_to_steps
             except:
                 spot = False
                 foc_pos = False
                 plog ("spot failed on extensive focus script")
+                plog(traceback.format_exc())
 
             g_dev['obs'].send_to_user("Extensive focus center " + str(foc_pos) + " FWHM: " + str(spot), p_level='INFO')
             extensive_focus.append([foc_pos, spot])

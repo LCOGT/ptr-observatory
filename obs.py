@@ -36,6 +36,10 @@ from astropy.time import Time
 from astropy import units as u
 from astropy.table import Table
 
+# For fast photutils source detection
+from astropy.stats import sigma_clipped_stats
+from photutils.detection import DAOStarFinder
+
 from dotenv import load_dotenv
 import numpy as np
 import redis  # Client, can work with Memurai
@@ -2244,6 +2248,8 @@ sel
                         #plog("No. of detections:  ", len(sources))
     
     
+                        
+    
                         if len(sources) < 2:
                             #plog ("not enough sources to estimate a reliable focus")
                             g_dev['cam'].expresult["error"]=True
@@ -2500,55 +2506,81 @@ sel
                     #plog(time.time() -focdate)
                     
                     #actseptime=time.time()
-                    focusimg = np.array(
-                        hdufocusdata, order="C"
-                    )  
+                    # focusimg = np.array(
+                    #     hdufocusdata, order="C"
+                    # )  
     
-                    try:
-                        # Some of these are liberated from BANZAI
-                        bkg = sep.Background(focusimg)
+                    # try:
+                    #     # Some of these are liberated from BANZAI
+                    #     bkg = sep.Background(focusimg)
                         
-                        #sepsky = ( np.nanmedian(bkg), "Sky background estimated by SEP" )
+                    #     #sepsky = ( np.nanmedian(bkg), "Sky background estimated by SEP" )
                         
-                        focusimg -= bkg
-                        ix, iy = focusimg.shape
-                        border_x = int(ix * 0.05)
-                        border_y = int(iy * 0.05)
-                        sep.set_extract_pixstack(int(ix*iy -1))
-                        # minarea is set as roughly how big we think a 0.7 arcsecond seeing star
-                        # would be at this pixelscale and binning. Different for different cameras/telescopes.
-                        minarea=int(pow(0.7*1.5 / (pixscale*binfocus),2)* 3.14)                            
-                        if minarea < 5: # There has to be a min minarea though!
-                            minarea=5
+                    #     focusimg -= bkg
+                    #     ix, iy = focusimg.shape
+                    #     border_x = int(ix * 0.05)
+                    #     border_y = int(iy * 0.05)
+                    #     sep.set_extract_pixstack(int(ix*iy -1))
+                    #     # minarea is set as roughly how big we think a 0.7 arcsecond seeing star
+                    #     # would be at this pixelscale and binning. Different for different cameras/telescopes.
+                    #     minarea=int(pow(0.7*1.5 / (pixscale*binfocus),2)* 3.14)                            
+                    #     if minarea < 5: # There has to be a min minarea though!
+                    #         minarea=5
                             
                             
                         
-                        sources = sep.extract(
-                            focusimg, 3.0, err=bkg.globalrms, minarea=minarea
-                        )
-                        #plog ("min_area: " + str(minarea))
-                        sources = Table(sources)
-                        sources = sources[sources['flag'] < 8]
-                        image_saturation_level = g_dev['cam'].config["camera"][g_dev['cam'].name]["settings"]["saturate"]
-                        sources = sources[sources["peak"] < 0.8* image_saturation_level * pow(binfocus,2)]
-                        sources = sources[sources["cpeak"] < 0.8 * image_saturation_level* pow(binfocus,2)]
-                        #sources = sources[sources["peak"] > 150 * pow(binfocus,2)]
-                        #sources = sources[sources["cpeak"] > 150 * pow(binfocus,2)]
-                        sources = sources[sources["flux"] > 2000 ]
-                        sources = sources[sources["x"] < ix - border_x]
-                        sources = sources[sources["x"] > border_x]
-                        sources = sources[sources["y"] < iy - border_y]
-                        sources = sources[sources["y"] > border_y]
+                    #     sources = sep.extract(
+                    #         focusimg, 3.0, err=bkg.globalrms, minarea=minarea
+                    #     )
+                    #     #plog ("min_area: " + str(minarea))
+                    #     sources = Table(sources)
+                    #     sources = sources[sources['flag'] < 8]
+                    #     image_saturation_level = g_dev['cam'].config["camera"][g_dev['cam'].name]["settings"]["saturate"]
+                    #     sources = sources[sources["peak"] < 0.8* image_saturation_level * pow(binfocus,2)]
+                    #     sources = sources[sources["cpeak"] < 0.8 * image_saturation_level* pow(binfocus,2)]
+                    #     #sources = sources[sources["peak"] > 150 * pow(binfocus,2)]
+                    #     #sources = sources[sources["cpeak"] > 150 * pow(binfocus,2)]
+                    #     sources = sources[sources["flux"] > 2000 ]
+                    #     sources = sources[sources["x"] < ix - border_x]
+                    #     sources = sources[sources["x"] > border_x]
+                    #     sources = sources[sources["y"] < iy - border_y]
+                    #     sources = sources[sources["y"] > border_y]
     
-                        # BANZAI prune nans from table
-                        nan_in_row = np.zeros(len(sources), dtype=bool)
-                        for col in sources.colnames:
-                            nan_in_row |= np.isnan(sources[col])
-                        sources = sources[~nan_in_row]
-                        #plog("Actual Platesolve SEP time: " + str(time.time()-actseptime))
-                    except:
-                        plog("Something went wrong with platesolve SEP")
+                    #     # BANZAI prune nans from table
+                    #     nan_in_row = np.zeros(len(sources), dtype=bool)
+                    #     for col in sources.colnames:
+                    #         nan_in_row |= np.isnan(sources[col])
+                    #     sources = sources[~nan_in_row]
+                    #     #plog("Actual Platesolve SEP time: " + str(time.time()-actseptime))
+                    # except:
+                    #     plog("Something went wrong with platesolve SEP")
                         
+                    
+                    
+                    # Fast checking of the NUMBER of sources
+                    # No reason to run a computationally intensive
+                    # SEP routine for that, just photutils will do.
+                    psource_timer_begin=time.time()
+                    plog ("quick image stats from photutils")
+                    tempmean, tempmedian, tempstd = sigma_clipped_stats(hdufocusdata, sigma=3.0)  
+                    plog((tempmean, tempmedian, tempstd))
+                    #daofind = DAOStarFinder(fwhm=(2.2 / pixscale), threshold=5.*tempstd)  #estimate fwhm in pixels by reasonable focus level.
+                    
+                    if g_dev['foc'].last_focus_fwhm == None:
+                        tempfwhm=2.2/(pixscale*binfocus)
+                    else:
+                        tempfwhm=g_dev['foc'].last_focus_fwhm/(pixscale*binfocus)
+                    daofind = DAOStarFinder(fwhm=tempfwhm , threshold=5.*tempstd) 
+                    
+                    
+                    plog ("Used fwhm is " + str(tempfwhm) + " pixels")
+                    sources = daofind(hdufocusdata - tempmedian) 
+                    plog (sources)
+                    plog("Photutils time to process: " + str(time.time() -psource_timer_begin ))
+                    
+                    
+                    
+                    
                     
                     
                     # We only need to save the focus image immediately if there is enough sources to 
@@ -2559,6 +2591,7 @@ sel
                     # able to solve too well easily OR it is such a wide field of view that who cares
                     # if we are off by 10 arcseconds?
                     plog ("Number of sources for Platesolve: " + str(len(sources)))
+                    
                     if len(sources) >= 15:
                         hdufocus=fits.PrimaryHDU()
                         hdufocus.data=hdufocusdata                            
@@ -2602,7 +2635,7 @@ sel
                                     solve["ra_j2000_hours"],
                                     solve["dec_j2000_degrees"],
                                 )
-                                
+                                #breakpoint()
                                 pointing_ra = g_dev['mnt'].mount.RightAscension
                                 pointing_dec = g_dev['mnt'].mount.Declination
                                 #icrs_ra, icrs_dec = g_dev['mnt'].get_mount_coordinates()
@@ -2737,7 +2770,7 @@ sel
                                             except:
                                                 plog("This mount doesn't report pierside")
                                                 plog(traceback.format_exc())
-            
+                                self.platesolve_is_processing = False
                             except Exception as e:
                                 plog(
                                     "Image: did not platesolve; this is usually OK. ", e
@@ -2750,8 +2783,9 @@ sel
                 except:
                     pass 
                 
-                self.platesolve_queue.task_done()
                 self.platesolve_is_processing = False
+                self.platesolve_queue.task_done()
+                
                 one_at_a_time = 0
                 
 

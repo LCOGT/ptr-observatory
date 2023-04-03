@@ -1481,6 +1481,7 @@ class Mount:
         self.move_time = time.time()
         try:
             self.move_to_azalt(az, alt)
+            g_dev['obs'].time_of_last_slew = time.time()
             # On successful movement of telescope reset the solving timer
             g_dev['obs'].last_solve_time = datetime.datetime.now() - datetime.timedelta(days=1)
             g_dev['obs'].images_since_last_solve = 10000
