@@ -483,10 +483,10 @@ site_config = {
                         #['w',     [0,  0],     0, 72.7, [1.00 ,  72], 'PL'],    #0.   For sequencer autofocus  consider foc or f filter
                         #['focus', [0,  0],     0, 148, [1.00 ,  72], 'focus'],    #0.
                         ['lum',    [0,  0],     0, 179, [1.00 ,  72], 'PhLum'],    #1.
-                        ['ip',    [1,  1],     0, 30, [1.00 , 119], 'PhRed'],    #2.
-                        ['v',    [2,  2],     0, 30, [1.00 , 113], 'PhGreen'],    #3.
-                        ['pb',    [3,  3],     0, 30, [0.80 ,  97], 'PhBlue'],    #4.
-                        ['ha',    [4,  4],     0, 2.512, [0.80 ,  97], 'PhBlue'],    #4.
+                        ['ip',    [1,  1],     0, 50, [1.00 , 119], 'PhRed'],    #2.
+                        ['v',    [2,  2],     0, 16, [1.00 , 113], 'PhGreen'],    #3.
+                        ['pb',    [3,  3],     0, 25, [0.80 ,  97], 'PhBlue'],    #4.
+                        ['ha',    [4,  4],     0, 2.634, [0.80 ,  97], 'PhBlue'],    #4.
                         #['PR',    [1,  1],     0, 170, [1.00 , 119], 'PhBlue'],    #2.
                         #['PG',    [2,  2],     0, 220, [1.00 , 113], 'PhGreen'],    #3.
                         #['PB',    [3,  3],     0, 300, [0.80 ,  97], 'PhRed'],    #4.
@@ -501,7 +501,8 @@ site_config = {
                 'filter_screen_sort':  ['s2','o3','ha','pb','pg','pr','lum'],   #  don't use narrow yet,  8, 10, 9], useless to try.
 
 
-                'filter_sky_sort': ['ha','o3','s2','pb','v','ip','lum']    #No diffuser based filters
+                #'filter_sky_sort': ['ha','o3','s2','pb','v','ip','lum']    #No diffuser based filters
+                'filter_sky_sort': ['ha','o3','s2','v','pb','ip','lum']    #No diffuser based filters
                 #'filter_sky_sort': [7, 19, 2, 13, 18, 5, 15,\
                 #                    12, 4, 11, 16, 10, 9, 17, 3, 14, 1, 0]    #basically no diffuser based filters
                 #[32, 8, 22, 21, 20, 23, 31, 6, 7, 19, 27, 2, 37, 13, 18, 30, 5, 15, 36, 12,\
@@ -658,7 +659,7 @@ site_config = {
                 'rotation': 0.0,        #  Probably remove.
                 'min_exposure': 0.2,
                 'min_flat_exposure' : 3.0, # For certain shutters, short exposures aren't good for flats. Some CMOS have banding in too short an exposure. Largely applies to ccds though.
-                'max_flat_exposure' : 120.0, # Realistically there should be a maximum flat_exposure that makes sure flats are efficient and aren't collecting actual stars.
+                'max_flat_exposure' : 45.0, # Realistically there should be a maximum flat_exposure that makes sure flats are efficient and aren't collecting actual stars.
                 'max_exposure': 3600,
                 'max_daytime_exposure': 0.0001,
                 'can_subframe':  True,
