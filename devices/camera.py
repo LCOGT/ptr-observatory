@@ -3143,7 +3143,6 @@ class Camera:
                                 #breakpoint()
                                 #self.flatFiles.update({file.split('_')[-2]: tempflatframe})
                                 #del tempflatframe
-                                
                                 hdusmalldata = np.divide(hdusmalldata, self.flatFiles[self.current_filter])
                                 
                             else:
