@@ -228,6 +228,11 @@ class Sequencer:
         self.eve_sky_flat_latch = False
         self.morn_sky_flat_latch = False
         self.bias_dark_latch = False
+        
+        
+        self.stop_script_called=False
+        self.stop_script_called_time=time.time()
+        
         # The weather report has to be at least passable at some time of the night in order to 
         # allow the observatory to become active and observe. This doesn't mean that it is 
         # necessarily a GOOD night at all, just that there are patches of feasible
@@ -280,13 +285,16 @@ class Sequencer:
             script = None
         if action == "run" and script == 'focusAuto':
             self.auto_focus_script(req, opt, skip_timer_check=True)
-        if action == "run" and script == 'focusExtensive':   
+        elif action == "run" and script == 'focusExtensive':   
              # Autofocus
             req2 = {'target': 'near_tycho_star', 'area': 150}
             opt = {}
             self.extensive_focus_script(req2, opt, throw = g_dev['foc'].throw)
-
+        elif action == "fixpointingscript":
+            g_dev["obs"].send_to_user("Running a couple of auto-centering exposures.")
+            self.centering_exposure()
         elif action == "autofocus": # this action is the front button on Camera, so FORCES an autofocus
+            g_dev["obs"].send_to_user("Starting up the autofocus procedure.")
             g_dev['foc'].time_of_last_focus = datetime.datetime.now() - datetime.timedelta(
                 days=1
             )  # Initialise last focus as yesterday
@@ -311,8 +319,20 @@ class Sequencer:
         elif action == "run" and script == "takeO3HaS2N2Stack":
             self.take_lrgb_stack(req, opt)
         elif action.lower() in ["stop", "cancel"] or ( action == "run" and script == "stopScript"):
-            self.stop_command(req, opt)
+            #self.stop_command(req, opt)
+            #A stop script command flags to the running scripts that it is time to stop 
+            #activity and return. This period runs for about 30 seconds.
+            g_dev["obs"].send_to_user("A Stop Script has been called. Cancelling out of running scripts over 30 seconds.")
+            self.stop_script_called=True
+            self.stop_script_called_time=time.time()
+            # Cancel out of all running exposures. 
+            g_dev['obs'].cancel_all_activity()
+            
+            
+            
+            
         elif action == "home":
+            g_dev["obs"].send_to_user("Sending the mount to home.")
             self.home_command(req, opt)
         elif action == 'run' and script == 'findFieldCenter':
             g_dev['mnt'].go_command(req, opt, calibrate=True, auto_center=True)
@@ -714,6 +734,7 @@ class Sequencer:
             #opt = {'area': 150, 'count': 1, 'bin': '2, 2', 'filter': 'focus'}
             opt = {'area': 150, 'count': 1, 'bin': 1, 'filter': 'focus'}
             result = g_dev['cam'].expose_command(req, opt, no_AWS=False, solve_it=True)
+            
             self.night_focus_ready=False
             self.clock_focus_latch = False
 
@@ -1561,6 +1582,9 @@ class Sequencer:
                                 do_sep=False, quick=False, skip_open_check=True,skip_daytime_check=True)
                 b_d_to_do -= min_to_do
                 
+                if self.stop_script_called:
+                    g_dev["obs"].send_to_user("Cancelling out of calibration script as stop script has been called.")  
+                    return
 
                 g_dev['obs'].update()
                 
@@ -1583,6 +1607,9 @@ class Sequencer:
                             'filter': 'dark'}
                     result = g_dev['cam'].expose_command(req, opt, no_AWS=False, \
                                        do_sep=False, quick=False, skip_open_check=True,skip_daytime_check=True)
+                    if self.stop_script_called:
+                        g_dev["obs"].send_to_user("Cancelling out of calibration script as stop script has been called.")  
+                        return
                     b_d_to_do -= 1
                     g_dev['obs'].update()
                     if ephem.now() + (dark_exp_time + cycle_time + 30)/86400 > ending:
@@ -1595,6 +1622,9 @@ class Sequencer:
                             'filter': 'dark'}
                     result = g_dev['cam'].expose_command(req, opt, no_AWS=False, \
                                        do_sep=False, quick=False, skip_open_check=True,skip_daytime_check=True)
+                    if self.stop_script_called:
+                        g_dev["obs"].send_to_user("Cancelling out of calibration script as stop script has been called.")  
+                        return
                     b_d_to_do -= 1
                     g_dev['obs'].update()
                     if ephem.now() + (dark_exp_time + cycle_time + 30)/86400 > ending:
@@ -2589,6 +2619,9 @@ class Sequencer:
                         else:
                             exp_time = scale * exp_time
             
+                        if self.stop_script_called:
+                            g_dev["obs"].send_to_user("Cancelling out of calibration script as stop script has been called.")  
+                            return
                         
                         # Here it makes four tests and if it doesn't match those tests, then it will attempt a flat. 
                         if evening and exp_time > max_exposure:
@@ -2635,6 +2668,10 @@ class Sequencer:
                                 g_dev['mnt'].slewToSkyFlatAsync()  
                                 self.time_of_next_slew = time.time() + 600
                             
+                            if self.stop_script_called:
+                                g_dev["obs"].send_to_user("Cancelling out of calibration script as stop script has been called.")  
+                                return
+                            
                             # prior_scale = prior_scale*scale  #Only update prior scale when changing filters
                             plog("Sky flat estimated exposure time: " + str(exp_time) + ", Scale:  " +str(scale))               
                                             
@@ -2659,6 +2696,9 @@ class Sequencer:
                             try:
                                 self.time_of_next_slew = time.time()
                                 fred = g_dev['cam'].expose_command(req, opt, no_AWS=True, do_sep = False,skip_daytime_check=True)
+                                if self.stop_script_called:
+                                    g_dev["obs"].send_to_user("Cancelling out of calibration script as stop script has been called.")  
+                                    return
             
                                 bright = fred['patch']    #  Patch should be circular and 20% of Chip area. ToDo project
                                 #breakpoint()
@@ -2685,6 +2725,9 @@ class Sequencer:
                             # We only want to move after a successful set of independant binning flats
                             # If we move before we calculate exposure, we are wasting time slewing. 
                             g_dev['mnt'].slewToSkyFlatAsync()
+                            if self.stop_script_called:
+                                g_dev["obs"].send_to_user("Cancelling out of calibration script as stop script has been called.")  
+                                return
                             
                             
             
@@ -2773,6 +2816,9 @@ class Sequencer:
         opt = {'area': 100, 'count': dark_count, 'filter': 'dark', 'hint': 'screen dark'}  #  air has highest throughput
 
         result = g_dev['cam'].expose_command(req, opt, no_AWS=True, skip_open_check=True,skip_daytime_check=True)
+        if self.stop_script_called:
+            g_dev["obs"].send_to_user("Cancelling out of calibration script as stop script has been called.")  
+            return
         plog('First dark 30-sec patch, filter = "air":  ', result['patch'])
         # g_dev['scr'].screen_light_on()
 
@@ -2792,6 +2838,9 @@ class Sequencer:
             req = {'time': float(exp_time),  'alias': camera_name, 'image_type': 'screen flat'}
             opt = {'area': 100, 'count': 1, 'filter': g_dev['fil'].filter_data[filter_number][0], 'hint': 'screen pre-filter dark'}
             result = g_dev['cam'].expose_command(req, opt, no_AWS=True, skip_open_check=True,skip_daytime_check=True)
+            if self.stop_script_called:
+                g_dev["obs"].send_to_user("Cancelling out of calibration script as stop script has been called.")  
+                return
             plog("Dark Screen flat, starting:  ", result['patch'], g_dev['fil'].filter_data[filter_number][0], '\n\n')
             g_dev['obs'].update()
             plog('Lighted Screen; filter, bright:  ', filter_number, screen_setting)
@@ -2807,6 +2856,9 @@ class Sequencer:
             req = {'time': float(exp_time),  'alias': camera_name, 'image_type': 'screen flat'}
             opt = {'area': 100, 'count': flat_count, 'filter': g_dev['fil'].filter_data[filter_number][0], 'hint': 'screen filter light'}
             result = g_dev['cam'].expose_command(req, opt, no_AWS=True, skip_open_check=True,skip_daytime_check=True)
+            if self.stop_script_called:
+                g_dev["obs"].send_to_user("Cancelling out of calibration script as stop script has been called.")  
+                return
             # if no exposure, wait 10 sec
             plog("Lighted Screen flat:  ", result['patch'], g_dev['fil'].filter_data[filter_number][0], '\n\n')
             g_dev['obs'].scan_requests()
@@ -2820,6 +2872,9 @@ class Sequencer:
             req = {'time': float(exp_time),  'alias': camera_name, 'image_type': 'screen flat'}
             opt = {'area': 100, 'count': 1, 'filter': g_dev['fil'].filter_data[filter_number][0], 'hint': 'screen post-filter dark'}
             result = g_dev['cam'].expose_command(req, opt, no_AWS=True, skip_open_check=True,skip_daytime_check=True)
+            if self.stop_script_called:
+                g_dev["obs"].send_to_user("Cancelling out of calibration script as stop script has been called.")  
+                return
             plog("Dark Screen flat, ending:  ",result['patch'], g_dev['fil'].filter_data[filter_number][0], '\n\n')
 
 
@@ -2866,6 +2921,11 @@ class Sequencer:
         plog ("Time since last focus")
         plog (datetime.datetime.now() - g_dev['foc'].time_of_last_focus)
 
+
+        if self.stop_script_called:
+            g_dev["obs"].send_to_user("Cancelling out of autofocus script as stop script has been called.")  
+            return
+            
 
         plog ("Threshold time between auto focus routines (hours)")
         plog (self.config['periodic_focus_time'])
@@ -2948,7 +3008,7 @@ class Sequencer:
             focus_patch_n=above_altitude_patches[idx,2]                
             
             g_dev['obs'].scan_requests()
-            
+            g_dev['obs'].send_to_user("Slewing to a focus field", p_level='INFO')
             try:
                 plog("Going to near focus patch of " + str(focus_patch_n) + " 9th to 12th mag stars " + str(d2d.deg) + "  degrees away.")
                 plog("RA " + str(focus_patch_ra) + " DEC " + str(focus_patch_dec) )
@@ -2967,8 +3027,13 @@ class Sequencer:
         foc_pos0 = focus_start
         result = {}
         
-        g_dev['obs'].send_to_user("Slewing to a focus field", p_level='INFO')
-        g_dev['mnt'].go_coord(focus_patch_ra, focus_patch_dec)            
+        
+        if self.stop_script_called:
+            g_dev["obs"].send_to_user("Cancelling out of autofocus script as stop script has been called.")  
+            return
+        
+        
+        #g_dev['mnt'].go_coord(focus_patch_ra, focus_patch_dec)            
         g_dev['foc'].guarded_move((focus_start)*g_dev['foc'].micron_to_steps)
         
         g_dev['obs'].send_to_user("Running a quick platesolve to center the focus field", p_level='INFO')
@@ -2976,6 +3041,11 @@ class Sequencer:
         self.centering_exposure()
         
         g_dev['obs'].send_to_user("Focus Field Centered", p_level='INFO')
+        
+        
+        if self.stop_script_called:
+            g_dev["obs"].send_to_user("Cancelling out of autofocus script as stop script has been called.")  
+            return
         
         try:
             #Check here for filter, guider, still moving  THIS IS A CLASSIC
@@ -3029,6 +3099,9 @@ class Sequencer:
             if not sim:
                 g_dev['obs'].scan_requests()
                 result = g_dev['cam'].expose_command(req, opt, no_AWS=True, solve_it=False) ## , script = 'auto_focus_script_0')  #  This is where we start.
+                if self.stop_script_called:
+                    g_dev["obs"].send_to_user("Cancelling out of autofocus script as stop script has been called.")  
+                    return
 
             else:
 
@@ -3059,6 +3132,9 @@ class Sequencer:
         if not sim:
             g_dev['obs'].scan_requests()
             result = g_dev['cam'].expose_command(req, opt, no_AWS=True, solve_it=False) ## , script = 'auto_focus_script_1')  #  This is moving in one throw.
+            if self.stop_script_called:
+                g_dev["obs"].send_to_user("Cancelling out of autofocus script as stop script has been called.")  
+                return
         else:
             result['FWHM'] = 4
             result['mean_focus'] = g_dev['foc'].focuser.Position*g_dev['foc'].steps_to_micron
@@ -3083,6 +3159,9 @@ class Sequencer:
         if not sim:
             g_dev['obs'].scan_requests()
             result = g_dev['cam'].expose_command(req, opt, no_AWS=True, solve_it=False) ## , script = 'auto_focus_script_2')  #  This is moving out one throw.
+            if self.stop_script_called:
+                g_dev["obs"].send_to_user("Cancelling out of autofocus script as stop script has been called.")  
+                return
         else:
             result['FWHM'] = 4.5
             result['mean_focus'] = g_dev['foc'].focuser.Position*g_dev['foc'].steps_to_micron
@@ -3155,6 +3234,9 @@ class Sequencer:
                 if not sim:
                     g_dev['obs'].scan_requests()
                     result = g_dev['cam'].expose_command(req, opt, no_AWS=True, solve_it=False)  #   script = 'auto_focus_script_3')  #  This is verifying the new focus.
+                    if self.stop_script_called:
+                        g_dev["obs"].send_to_user("Cancelling out of autofocus script as stop script has been called.")  
+                        return
                 else:
                     result['FWHM'] = new_spot
                     result['mean_focus'] = g_dev['foc'].focuser.Position*g_dev['foc'].steps_to_micron
@@ -3192,6 +3274,9 @@ class Sequencer:
             if not sim:
                 g_dev['obs'].scan_requests()
                 result = g_dev['cam'].expose_command(req, opt, no_AWS=True, solve_it=False) ## , script = 'auto_focus_script_1')  #  This is moving in one throw.
+                if self.stop_script_called:
+                    g_dev["obs"].send_to_user("Cancelling out of autofocus script as stop script has been called.")  
+                    return
             else:
                 result['FWHM'] = 6
                 result['mean_focus'] = g_dev['foc'].focuser.Position*g_dev['foc'].steps_to_micron
@@ -3261,6 +3346,9 @@ class Sequencer:
                 if not sim:
                     g_dev['obs'].scan_requests()
                     result = g_dev['cam'].expose_command(req, opt, no_AWS=True, solve_it=False)  #   script = 'auto_focus_script_3')  #  This is verifying the new focus.
+                    if self.stop_script_called:
+                        g_dev["obs"].send_to_user("Cancelling out of autofocus script as stop script has been called.")  
+                        return
                 else:
                     result['FWHM'] = new_spot
                     result['mean_focus'] = g_dev['foc'].focuser.Position*g_dev['foc'].steps_to_micron
@@ -3300,6 +3388,9 @@ class Sequencer:
             if not sim:
                 g_dev['obs'].scan_requests()
                 result = g_dev['cam'].expose_command(req, opt, no_AWS=True, solve_it=False) ## , script = 'auto_focus_script_2')  #  This is moving out one throw.
+                if self.stop_script_called:
+                    g_dev["obs"].send_to_user("Cancelling out of autofocus script as stop script has been called.")  
+                    return
             else:
                 result['FWHM'] = 5.5
                 result['mean_focus'] = g_dev['foc'].focuser.Position*g_dev['foc'].steps_to_micron
@@ -3381,6 +3472,9 @@ class Sequencer:
                 if not sim:
                     g_dev['obs'].scan_requests()
                     result = g_dev['cam'].expose_command(req, opt, no_AWS=True, solve_it=False)  #   script = 'auto_focus_script_3')  #  This is verifying the new focus.
+                    if self.stop_script_called:
+                        g_dev["obs"].send_to_user("Cancelling out of autofocus script as stop script has been called.")  
+                        return
                 else:
                     result['FWHM'] = new_spot
                     result['mean_focus'] = g_dev['foc'].focuser.Position*g_dev['foc'].steps_to_micron
@@ -3617,11 +3711,21 @@ class Sequencer:
             g_dev['mnt'].go_coord(focus_patch_ra, focus_patch_dec)            
             g_dev['foc'].guarded_move((foc_start)*g_dev['foc'].micron_to_steps)
             
+            
+            if self.stop_script_called:
+                g_dev["obs"].send_to_user("Cancelling out of autofocus script as stop script has been called.")  
+                return
+            
             g_dev['obs'].send_to_user("Running a quick platesolve to center the focus field", p_level='INFO')
             
             self.centering_exposure()
             
             g_dev['obs'].send_to_user("Focus Field Centered", p_level='INFO')
+            
+            if self.stop_script_called:
+                g_dev["obs"].send_to_user("Cancelling out of autofocus script as stop script has been called.")  
+                return
+            
             
         else:
             pass   #Just take time image where currently pointed.
@@ -3640,6 +3744,9 @@ class Sequencer:
                 req = {'time': self.config['focus_exposure_time'],  'alias':  str(self.config['camera']['camera_1_1']['name']), 'image_type': 'focus'}   #  NB Should pick up filter and constats from config
                 opt = {'area': 100, 'count': 1, 'filter': 'focus'}
                 result = g_dev['cam'].expose_command(req, opt, no_AWS=True, solve_it=False)
+                if self.stop_script_called:
+                    g_dev["obs"].send_to_user("Cancelling out of autofocus script as stop script has been called.")  
+                    return
             else:
                 result['FWHM'] = 4
                 result['mean_focus'] = g_dev['foc'].focuser.Position*g_dev['foc'].steps_to_micron
@@ -3648,9 +3755,12 @@ class Sequencer:
                 #foc_pos = result['mean_focus']
                 foc_pos = (foc_pos0 - (ctr+0)*throw)*g_dev['foc'].micron_to_steps
                 if np.isnan(result['FWHM']):
-                    req = {'time': 3*float(self.config['focus_exposure_time']),  'alias':  str(self.config['camera']['camera_1_1']['name']), 'image_type': 'focus'}   #  NB Should pick up filter and constats from config
+                    req = {'time': 2*float(self.config['focus_exposure_time']),  'alias':  str(self.config['camera']['camera_1_1']['name']), 'image_type': 'focus'}   #  NB Should pick up filter and constats from config
                     opt = {'area': 100, 'count': 1, 'filter': 'focus'}
                     result = g_dev['cam'].expose_command(req, opt, no_AWS=True, solve_it=False)
+                    if self.stop_script_called:
+                        g_dev["obs"].send_to_user("Cancelling out of autofocus script as stop script has been called.")  
+                        return
                     spot = result['FWHM']
                     if np.isnan(result['FWHM']):
                         spot = False
@@ -3677,6 +3787,9 @@ class Sequencer:
                 req = {'time': self.config['focus_exposure_time'],  'alias':  str(self.config['camera']['camera_1_1']['name']), 'image_type': 'focus'}   #  NB Should pick up filter and constats from config
                 opt = {'area': 100, 'count': 1, 'filter': 'focus'}
                 result = g_dev['cam'].expose_command(req, opt, no_AWS=True, solve_it=False)
+                if self.stop_script_called:
+                    g_dev["obs"].send_to_user("Cancelling out of autofocus script as stop script has been called.")  
+                    return
             else:
                 result['FWHM'] = 4
                 result['mean_focus'] = g_dev['foc'].focuser.Position*g_dev['foc'].steps_to_micron
@@ -3688,6 +3801,9 @@ class Sequencer:
                     req = {'time': 3*float(self.config['focus_exposure_time']),  'alias':  str(self.config['camera']['camera_1_1']['name']), 'image_type': 'focus'}   #  NB Should pick up filter and constats from config
                     opt = {'area': 100, 'count': 1, 'filter': 'focus'}
                     result = g_dev['cam'].expose_command(req, opt, no_AWS=True, solve_it=False)
+                    if self.stop_script_called:
+                        g_dev["obs"].send_to_user("Cancelling out of autofocus script as stop script has been called.")  
+                        return
                     spot = result['FWHM']
                     if np.isnan(result['FWHM']):
                         spot = False
@@ -3894,6 +4010,9 @@ class Sequencer:
         if not sim:
             g_dev['obs'].scan_requests()
             result = g_dev['cam'].expose_command(req, opt, no_AWS=True, solve_it=False)
+            if self.stop_script_called:
+                g_dev["obs"].send_to_user("Cancelling out of autofocus script as stop script has been called.")  
+                return
         else:
             result['FWHM'] = 4
             result['mean_focus'] = g_dev['foc'].focuser.Position*g_dev['foc'].steps_to_micron
@@ -3915,6 +4034,9 @@ class Sequencer:
         if not sim:
             g_dev['obs'].scan_requests()
             result = g_dev['cam'].expose_command(req, opt, no_AWS=True, solve_it=False)
+            if self.stop_script_called:
+                g_dev["obs"].send_to_user("Cancelling out of autofocus script as stop script has been called.")  
+                return
         else:
             result['FWHM'] = 5
             result['mean_focus'] = g_dev['foc'].focuser.Position*g_dev['foc'].steps_to_micron
@@ -3935,6 +4057,9 @@ class Sequencer:
         if not sim:
             g_dev['obs'].scan_requests()
             result = g_dev['cam'].expose_command(req, opt, no_AWS=True, solve_it=False)
+            if self.stop_script_called:
+                g_dev["obs"].send_to_user("Cancelling out of autofocus script as stop script has been called.")  
+                return
         else:
             result['FWHM'] = 6
             result['mean_focus'] = g_dev['foc'].focuser.Position*g_dev['foc'].steps_to_micron
@@ -3956,6 +4081,9 @@ class Sequencer:
         if not sim:
             g_dev['obs'].scan_requests()
             result = g_dev['cam'].expose_command(req, opt, no_AWS=True, solve_it=False)
+            if self.stop_script_called:
+                g_dev["obs"].send_to_user("Cancelling out of autofocus script as stop script has been called.")  
+                return
         else:
             result['FWHM'] = 6.5
             result['mean_focus'] = g_dev['foc'].focuser.Position*g_dev['foc'].steps_to_micron
@@ -3976,6 +4104,9 @@ class Sequencer:
         if not sim:
             g_dev['obs'].scan_requests()
             result = g_dev['cam'].expose_command(req, opt, no_AWS=True, solve_it=False)
+            if self.stop_script_called:
+                g_dev["obs"].send_to_user("Cancelling out of autofocus script as stop script has been called.")  
+                return
         else:
             result['FWHM'] = 5.75
             result['mean_focus'] = g_dev['foc'].focuser.Position*g_dev['foc'].steps_to_micron
@@ -4019,6 +4150,9 @@ class Sequencer:
             if not sim:
                 g_dev['obs'].scan_requests()
                 result = g_dev['cam'].expose_command(req, opt, solve_it=False)
+                if self.stop_script_called:
+                    g_dev["obs"].send_to_user("Cancelling out of autofocus script as stop script has been called.")  
+                    return
             else:
                 result['FWHM'] = new_spot
                 result['mean_focus'] = g_dev['foc'].focuser.Position*g_dev['foc'].steps_to_micron
@@ -4483,7 +4617,7 @@ class Sequencer:
 
     def centering_exposure(self):
 
-        req = {'time': self.config['focus_exposure_time'],  'alias':  str(self.config['camera']['camera_1_1']['name']), 'image_type': 'light'}   #  NB Should pick up filter and constats from config
+        req = {'time': self.config['pointing_exposure_time'],  'alias':  str(self.config['camera']['camera_1_1']['name']), 'image_type': 'light'}   #  NB Should pick up filter and constats from config
         opt = {'area': 100, 'count': 1, 'filter': 'focus'}
         
         
@@ -4498,6 +4632,9 @@ class Sequencer:
                 if reported ==0:
                     plog ("PLATESOLVE: Waiting for platesolve processing to complete and queue to clear")
                     reported=1
+                if self.stop_script_called:
+                    g_dev["obs"].send_to_user("Cancelling out of autofocus script as stop script has been called.")  
+                    return
                 pass
         
         # Take a pointing shot to reposition
@@ -4514,11 +4651,27 @@ class Sequencer:
                 if reported ==0:
                     plog ("PLATESOLVE: Waiting for platesolve processing to complete and queue to clear")
                     reported=1
+                if self.stop_script_called:
+                    g_dev["obs"].send_to_user("Cancelling out of autofocus script as stop script has been called.")  
+                    return
                 pass
         plog ("Time Taken for queue to clear post-exposure: " + str(time.time() - queue_clear_time))
         
         # Nudge if needed.
         g_dev['obs'].check_platesolve_and_nudge()
+        
+        if self.stop_script_called:
+            g_dev["obs"].send_to_user("Cancelling out of autofocus script as stop script has been called.")  
+            return
+        
+        # Taking a confirming shot. 
+        req = {'time': self.config['pointing_exposure_time'],  'alias':  str(self.config['camera']['camera_1_1']['name']), 'image_type': 'light'}   #  NB Should pick up filter and constats from config
+        opt = {'area': 100, 'count': 1, 'filter': 'focus'}
+        result = g_dev['cam'].expose_command(req, opt, no_AWS=True, solve_it=True)
+        
+        if self.stop_script_called:
+            g_dev["obs"].send_to_user("Cancelling out of autofocus script as stop script has been called.")  
+            return
         
         return result
 

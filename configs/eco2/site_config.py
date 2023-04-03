@@ -135,7 +135,8 @@ site_config = {
     'pointing_calibration_on_startup': False,
     'periodic_focus_time' : 0.5, # This is a time, in hours, over which to bypass automated focussing (e.g. at the start of a project it will not refocus if a new project starts X hours after the last focus)
     'stdev_fwhm' : 0.5, # This is the expected variation in FWHM at a given telescope/camera/site combination. This is used to check if a fwhm is within normal range or the focus has shifted
-    'focus_exposure_time': 10, # Exposure time in seconds for exposure image
+    'pointing_exposure_time': 20, # Exposure time in seconds for exposure image
+    'focus_exposure_time': 30, # Exposure time in seconds for exposure image
 
     'focus_trigger' : 5.0, # What FWHM increase is needed to trigger an autofocus
     'solve_nth_image' : 1, # Only solve every nth image
@@ -783,8 +784,8 @@ site_config = {
                 # These were originally inspired by the RASA+QHY which is 3.3 degrees on a side and regularly detects
                 # tens of thousands of sources, but any crop will speed things up. Don't use SEP crop unless 
                 # you clearly need to. 
-                'focus_image_crop_width': 0.5, # For excessive fields of view, to speed things up crop the image to a fraction of the full width    
-                'focus_image_crop_height': 0.4, # For excessive fields of view, to speed things up crop the image to a fraction of the full height
+                'focus_image_crop_width': 0.75, # For excessive fields of view, to speed things up crop the image to a fraction of the full width    
+                'focus_image_crop_height': 0.75, # For excessive fields of view, to speed things up crop the image to a fraction of the full height
                 # PLATESOLVE CROPS HAVE TO BE EQUAL! OTHERWISE THE PLATE CENTRE IS NOT THE POINTING CENTRE                
                 'platesolve_image_crop': 0.75, # Platesolve crops have to be symmetrical 
                 # Really, the SEP image should not be cropped unless your field of view and number of sources
