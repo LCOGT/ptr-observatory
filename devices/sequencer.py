@@ -3578,6 +3578,8 @@ class Sequencer:
             req = {'time': self.config['focus_exposure_time'],  'alias':  str(self.config['camera']['camera_1_1']['name']), 'image_type': 'light'}   #  NB Should pick up filter and constats from config
             opt = {'area': 100, 'count': 1, 'filter': 'focus'}
             
+            # Setting at reference focus
+            g_dev['foc'].guarded_move((foc_start - (ctr+0)*throw)*g_dev['foc'].micron_to_steps)
             
             # Make sure platesolve queue is clear
             reported=0
@@ -3599,6 +3601,7 @@ class Sequencer:
             reported=0
             while True:
                 if g_dev['obs'].platesolve_is_processing ==False and g_dev['obs'].platesolve_queue.empty():
+                    plog ("we are free from platesolving!")
                     break
                 else:
                     if reported ==0:

@@ -3357,7 +3357,8 @@ class Camera:
                                 
                                 
                                 # NEED TO CHECK HERE THAT THERE ISN"T ALREADY A PLATE SOLVE IN THE THREAD!
-                                self.to_platesolve((hdusmalldata, hdu.header, cal_path, cal_name, frame_type, time.time(), pixscale))
+                                plog ("just about to jam it in the platesovle")
+                                self.to_platesolve((hdusmalldata, hdu.header, cal_path, cal_name, frame_type, time.time(), pixscale, g_dev['mnt'].mount.RightAscension,g_dev['mnt'].mount.Declination))
                                 
 
                                 #plog ("Platesolve wasn't attempted due to lack of sources (or sometimes too many!) or it was during a smartstack")

@@ -875,7 +875,7 @@ sel
 
         # Good spot to check if we need to nudge the telescope as long as we aren't exposing.
         if not g_dev["cam"].exposure_busy:
-            check_platesolve_and_nudge()    
+            self.check_platesolve_and_nudge()    
 
 
         #plog ("Time between status updates: " + str(time.time() - self.time_last_status))
@@ -2460,7 +2460,7 @@ sel
                 one_at_a_time = 1
                 self.platesolve_is_processing = True
                 psolve_timer_begin=time.time()
-                (hdufocusdata, hduheader, cal_path, cal_name, frame_type, time_platesolve_requested, pixscale) = self.platesolve_queue.get(block=False)
+                (hdufocusdata, hduheader, cal_path, cal_name, frame_type, time_platesolve_requested, pixscale, pointing_ra, pointing_dec) = self.platesolve_queue.get(block=False)
                 
                 # Do not bother platesolving unless it is dark enough!!
                 if not (g_dev['events']['Civil Dusk'] < ephem.now() < g_dev['events']['Civil Dawn']):
@@ -2506,77 +2506,77 @@ sel
                     #plog(time.time() -focdate)
                     
                     #actseptime=time.time()
-                    # focusimg = np.array(
-                    #     hdufocusdata, order="C"
-                    # )  
+                    focusimg = np.array(
+                        hdufocusdata, order="C"
+                    )  
     
-                    # try:
-                    #     # Some of these are liberated from BANZAI
-                    #     bkg = sep.Background(focusimg)
+                    try:
+                        # Some of these are liberated from BANZAI
+                        bkg = sep.Background(focusimg)
                         
-                    #     #sepsky = ( np.nanmedian(bkg), "Sky background estimated by SEP" )
+                        #sepsky = ( np.nanmedian(bkg), "Sky background estimated by SEP" )
                         
-                    #     focusimg -= bkg
-                    #     ix, iy = focusimg.shape
-                    #     border_x = int(ix * 0.05)
-                    #     border_y = int(iy * 0.05)
-                    #     sep.set_extract_pixstack(int(ix*iy -1))
-                    #     # minarea is set as roughly how big we think a 0.7 arcsecond seeing star
-                    #     # would be at this pixelscale and binning. Different for different cameras/telescopes.
-                    #     minarea=int(pow(0.7*1.5 / (pixscale*binfocus),2)* 3.14)                            
-                    #     if minarea < 5: # There has to be a min minarea though!
-                    #         minarea=5
+                        focusimg -= bkg
+                        ix, iy = focusimg.shape
+                        border_x = int(ix * 0.05)
+                        border_y = int(iy * 0.05)
+                        sep.set_extract_pixstack(int(ix*iy -1))
+                        # minarea is set as roughly how big we think a 0.7 arcsecond seeing star
+                        # would be at this pixelscale and binning. Different for different cameras/telescopes.
+                        minarea=int(pow(0.7*1.5 / (pixscale*binfocus),2)* 3.14)                            
+                        if minarea < 5: # There has to be a min minarea though!
+                            minarea=5
                             
                             
                         
-                    #     sources = sep.extract(
-                    #         focusimg, 3.0, err=bkg.globalrms, minarea=minarea
-                    #     )
-                    #     #plog ("min_area: " + str(minarea))
-                    #     sources = Table(sources)
-                    #     sources = sources[sources['flag'] < 8]
-                    #     image_saturation_level = g_dev['cam'].config["camera"][g_dev['cam'].name]["settings"]["saturate"]
-                    #     sources = sources[sources["peak"] < 0.8* image_saturation_level * pow(binfocus,2)]
-                    #     sources = sources[sources["cpeak"] < 0.8 * image_saturation_level* pow(binfocus,2)]
-                    #     #sources = sources[sources["peak"] > 150 * pow(binfocus,2)]
-                    #     #sources = sources[sources["cpeak"] > 150 * pow(binfocus,2)]
-                    #     sources = sources[sources["flux"] > 2000 ]
-                    #     sources = sources[sources["x"] < ix - border_x]
-                    #     sources = sources[sources["x"] > border_x]
-                    #     sources = sources[sources["y"] < iy - border_y]
-                    #     sources = sources[sources["y"] > border_y]
+                        sources = sep.extract(
+                            focusimg, 3.0, err=bkg.globalrms, minarea=minarea
+                        )
+                        #plog ("min_area: " + str(minarea))
+                        sources = Table(sources)
+                        sources = sources[sources['flag'] < 8]
+                        image_saturation_level = g_dev['cam'].config["camera"][g_dev['cam'].name]["settings"]["saturate"]
+                        sources = sources[sources["peak"] < 0.8* image_saturation_level * pow(binfocus,2)]
+                        sources = sources[sources["cpeak"] < 0.8 * image_saturation_level* pow(binfocus,2)]
+                        #sources = sources[sources["peak"] > 150 * pow(binfocus,2)]
+                        #sources = sources[sources["cpeak"] > 150 * pow(binfocus,2)]
+                        sources = sources[sources["flux"] > 2000 ]
+                        sources = sources[sources["x"] < ix - border_x]
+                        sources = sources[sources["x"] > border_x]
+                        sources = sources[sources["y"] < iy - border_y]
+                        sources = sources[sources["y"] > border_y]
     
-                    #     # BANZAI prune nans from table
-                    #     nan_in_row = np.zeros(len(sources), dtype=bool)
-                    #     for col in sources.colnames:
-                    #         nan_in_row |= np.isnan(sources[col])
-                    #     sources = sources[~nan_in_row]
-                    #     #plog("Actual Platesolve SEP time: " + str(time.time()-actseptime))
-                    # except:
-                    #     plog("Something went wrong with platesolve SEP")
+                        # BANZAI prune nans from table
+                        nan_in_row = np.zeros(len(sources), dtype=bool)
+                        for col in sources.colnames:
+                            nan_in_row |= np.isnan(sources[col])
+                        sources = sources[~nan_in_row]
+                        #plog("Actual Platesolve SEP time: " + str(time.time()-actseptime))
+                    except:
+                        plog("Something went wrong with platesolve SEP")
                         
                     
                     
-                    # Fast checking of the NUMBER of sources
-                    # No reason to run a computationally intensive
-                    # SEP routine for that, just photutils will do.
-                    psource_timer_begin=time.time()
-                    plog ("quick image stats from photutils")
-                    tempmean, tempmedian, tempstd = sigma_clipped_stats(hdufocusdata, sigma=3.0)  
-                    plog((tempmean, tempmedian, tempstd))
-                    #daofind = DAOStarFinder(fwhm=(2.2 / pixscale), threshold=5.*tempstd)  #estimate fwhm in pixels by reasonable focus level.
+                    # # Fast checking of the NUMBER of sources
+                    # # No reason to run a computationally intensive
+                    # # SEP routine for that, just photutils will do.
+                    # psource_timer_begin=time.time()
+                    # plog ("quick image stats from photutils")
+                    # tempmean, tempmedian, tempstd = sigma_clipped_stats(hdufocusdata, sigma=3.0)  
+                    # plog((tempmean, tempmedian, tempstd))
+                    # #daofind = DAOStarFinder(fwhm=(2.2 / pixscale), threshold=5.*tempstd)  #estimate fwhm in pixels by reasonable focus level.
                     
-                    if g_dev['foc'].last_focus_fwhm == None:
-                        tempfwhm=2.2/(pixscale*binfocus)
-                    else:
-                        tempfwhm=g_dev['foc'].last_focus_fwhm/(pixscale*binfocus)
-                    daofind = DAOStarFinder(fwhm=tempfwhm , threshold=5.*tempstd) 
+                    # if g_dev['foc'].last_focus_fwhm == None:
+                    #     tempfwhm=2.2/(pixscale*binfocus)
+                    # else:
+                    #     tempfwhm=g_dev['foc'].last_focus_fwhm/(pixscale*binfocus)
+                    # daofind = DAOStarFinder(fwhm=tempfwhm , threshold=5.*tempstd) 
                     
                     
-                    plog ("Used fwhm is " + str(tempfwhm) + " pixels")
-                    sources = daofind(hdufocusdata - tempmedian) 
-                    plog (sources)
-                    plog("Photutils time to process: " + str(time.time() -psource_timer_begin ))
+                    # plog ("Used fwhm is " + str(tempfwhm) + " pixels")
+                    # sources = daofind(hdufocusdata - tempmedian) 
+                    # plog (sources)
+                    # plog("Photutils time to process: " + str(time.time() -psource_timer_begin ))
                     
                     
                     
@@ -2636,8 +2636,8 @@ sel
                                     solve["dec_j2000_degrees"],
                                 )
                                 #breakpoint()
-                                pointing_ra = g_dev['mnt'].mount.RightAscension
-                                pointing_dec = g_dev['mnt'].mount.Declination
+                                #pointing_ra = g_dev['mnt'].mount.RightAscension
+                                #pointing_dec = g_dev['mnt'].mount.Declination
                                 #icrs_ra, icrs_dec = g_dev['mnt'].get_mount_coordinates()
                                 #target_ra = g_dev["mnt"].current_icrs_ra
                                 #target_dec = g_dev["mnt"].current_icrs_dec
@@ -2706,70 +2706,70 @@ sel
                                 
                                     # If the mount has updatable RA and Dec coordinates, then sync that
                                     # But if not, update the mount reference
-                                    try:
-                                        # If mount has Syncable coordinates
-                                        g_dev['mnt'].mount.SyncToCoordinates(solved_ra, solved_dec)
-                                        # Reset the mount reference because if the mount has 
-                                        # syncable coordinates, the mount should already be corrected
-                                        g_dev["mnt"].reset_mount_reference()
+                                    # try:
+                                    #     # If mount has Syncable coordinates
+                                    #     g_dev['mnt'].mount.SyncToCoordinates(solved_ra, solved_dec)
+                                    #     # Reset the mount reference because if the mount has 
+                                    #     # syncable coordinates, the mount should already be corrected
+                                    #     g_dev["mnt"].reset_mount_reference()
                                     
-                                        if (
-                                             abs(err_ha * 15 * 3600)
-                                             > self.config["threshold_mount_update"]
-                                             or abs(err_dec * 3600)
-                                             > self.config["threshold_mount_update"]
-                                         ):
-                                            #plog ("I am nudging the telescope slightly!")
-                                            #g_dev['mnt'].mount.SlewToCoordinatesAsync(target_ra, target_dec)
-                                            #wait_for_slew()
-                                            plog ("Platesolve is requesting to move back on target!")
-                                            self.pointing_correction_requested_by_platesolve_thread = True
-                                            self.pointing_correction_request_time = time.time()
-                                            self.pointing_correction_request_ra = target_ra
-                                            self.pointing_correction_request_dec = target_dec
+                                    #     if (
+                                    #          abs(err_ha * 15 * 3600)
+                                    #          > self.config["threshold_mount_update"]
+                                    #          or abs(err_dec * 3600)
+                                    #          > self.config["threshold_mount_update"]
+                                    #      ):
+                                    #         #plog ("I am nudging the telescope slightly!")
+                                    #         #g_dev['mnt'].mount.SlewToCoordinatesAsync(target_ra, target_dec)
+                                    #         #wait_for_slew()
+                                    #         plog ("Platesolve is requesting to move back on target!")
+                                    #         self.pointing_correction_requested_by_platesolve_thread = True
+                                    #         self.pointing_correction_request_time = time.time()
+                                    #         self.pointing_correction_request_ra = target_ra
+                                    #         self.pointing_correction_request_dec = target_dec
                                             
                                         
-                                    except:
-                                        # If mount doesn't have Syncable coordinates
+                                    # except:
+                                    # If mount doesn't have Syncable coordinates
+                                    
+        
+                                    if (
+                                        abs(err_ha * 15 * 3600)
+                                        > self.config["threshold_mount_update"]
+                                        or abs(err_dec * 3600)
+                                        > self.config["threshold_mount_update"]
+                                    ):
                                         
-            
-                                        if (
-                                            abs(err_ha * 15 * 3600)
-                                            > self.config["threshold_mount_update"]
-                                            or abs(err_dec * 3600)
-                                            > self.config["threshold_mount_update"]
-                                        ):
+                                        #plog ("I am nudging the telescope slightly!")
+                                        #g_dev['mnt'].mount.SlewToCoordinatesAsync(pointing_ra + err_ha, pointing_dec + err_dec)
+                                        #wait_for_slew()
+                                        plog ("Platesolve is requesting to move back on target!")
+                                        self.pointing_correction_requested_by_platesolve_thread = True
+                                        self.pointing_correction_request_time = time.time()
+                                        self.pointing_correction_request_ra = pointing_ra + err_ha
+                                        self.pointing_correction_request_dec = pointing_dec + err_dec
+                                        
+                                        
+                                        try:
+                                            #if g_dev["mnt"].pier_side_str == "Looking West":
+                                            if g_dev["mnt"].pier_side == 0:
+                                                try:
+                                                    g_dev["mnt"].adjust_mount_reference(
+                                                        -err_ha, -err_dec
+                                                    )
+                                                except Exception as e:
+                                                    plog ("Something is up in the mount reference adjustment code ", e)
+                                            else:
+                                                try:
+                                                    g_dev["mnt"].adjust_flip_reference(
+                                                        -err_ha, -err_dec
+                                                    )  # Need to verify signs
+                                                except Exception as e:
+                                                    plog ("Something is up in the mount reference adjustment code ", e)                                            
                                             
-                                            #plog ("I am nudging the telescope slightly!")
-                                            #g_dev['mnt'].mount.SlewToCoordinatesAsync(pointing_ra + err_ha, pointing_dec + err_dec)
-                                            #wait_for_slew()
-                                            plog ("Platesolve is requesting to move back on target!")
-                                            self.pointing_correction_requested_by_platesolve_thread = True
-                                            self.pointing_correction_request_time = time.time()
-                                            self.pointing_correction_request_ra = pointing_ra + err_ha
-                                            self.pointing_correction_request_dec = pointing_dec + err_dec
-                                            
-                                            
-                                            try:
-                                                #if g_dev["mnt"].pier_side_str == "Looking West":
-                                                if g_dev["mnt"].pier_side == 0:
-                                                    try:
-                                                        g_dev["mnt"].adjust_mount_reference(
-                                                            -err_ha, -err_dec
-                                                        )
-                                                    except Exception as e:
-                                                        plog ("Something is up in the mount reference adjustment code ", e)
-                                                else:
-                                                    try:
-                                                        g_dev["mnt"].adjust_flip_reference(
-                                                            -err_ha, -err_dec
-                                                        )  # Need to verify signs
-                                                    except Exception as e:
-                                                        plog ("Something is up in the mount reference adjustment code ", e)                                            
-                                                
-                                            except:
-                                                plog("This mount doesn't report pierside")
-                                                plog(traceback.format_exc())
+                                        except:
+                                            plog("This mount doesn't report pierside")
+                                            plog(traceback.format_exc())
                                 self.platesolve_is_processing = False
                             except Exception as e:
                                 plog(
@@ -3973,17 +3973,17 @@ sel
             else:
                 time.sleep(0.1)
 
-def check_platesolve_and_nudge():
-    
-    # This block repeats itself in various locations to try and nudge the scope
-    # If the platesolve requests such a thing.
-    if g_dev['obs'].pointing_correction_requested_by_platesolve_thread:
-        g_dev['obs'].pointing_correction_requested_by_platesolve_thread = False
-        if g_dev['obs'].pointing_correction_request_time > g_dev['obs'].time_of_last_slew: # Check it hasn't slewed since request                        
-            plog ("I am nudging the telescope slightly at the request of platesolve!")                            
-            g_dev['mnt'].mount.SlewToCoordinatesAsync(g_dev['obs'].pointing_correction_request_ra, g_dev['obs'].pointing_correction_request_dec)
-            g_dev['obs'].time_of_last_slew = time.time()
-            wait_for_slew()
+    def check_platesolve_and_nudge(self):
+        
+        # This block repeats itself in various locations to try and nudge the scope
+        # If the platesolve requests such a thing.
+        if g_dev['obs'].pointing_correction_requested_by_platesolve_thread:
+            g_dev['obs'].pointing_correction_requested_by_platesolve_thread = False
+            if g_dev['obs'].pointing_correction_request_time > g_dev['obs'].time_of_last_slew: # Check it hasn't slewed since request                        
+                plog ("I am nudging the telescope slightly at the request of platesolve!")                            
+                g_dev['mnt'].mount.SlewToCoordinatesAsync(g_dev['obs'].pointing_correction_request_ra, g_dev['obs'].pointing_correction_request_dec)
+                g_dev['obs'].time_of_last_slew = time.time()
+                wait_for_slew()
 
 def wait_for_slew():    
     
