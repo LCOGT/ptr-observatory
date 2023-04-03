@@ -1675,7 +1675,7 @@ class Sequencer:
             #g_dev["obs"].aws_queue.put((priority, image), block=False)
 
             # Enqueue into the stream but at the lowest priority ever.
-            g_dev['cam'].enqueue_for_AWS(56000000, '', fzneglect)
+            g_dev['cam'].enqueue_for_AWS(56000000, g_dev['obs'].obsid_path + 'tokens/', fzneglect.split('tokens')[-1].replace('\\',''))
             #g_dev['obs'].send_to_aws()
     
     
@@ -2009,7 +2009,22 @@ class Sequencer:
             #print (tempfrontcalib)
             
             fits.writeto(g_dev['obs'].calib_masters_folder + tempfrontcalib + 'BIAS_master_bin1.fits', masterBias,  overwrite=True)
-            g_dev['cam'].enqueue_for_AWS(50, '',g_dev['obs'].calib_masters_folder + tempfrontcalib + 'BIAS_master_bin1.fits')
+            
+            
+            #with open(filepath, "rb") as fileobj:
+            #filepath=g_dev['obs'].calib_masters_folder + tempfrontcalib + 'BIAS_master_bin1.fits'
+            #filename= tempfrontcalib + 'BIAS_master_bin1.fits'
+            #with open(filepath, "rb") as fileobj:
+            #    files = {"file": (filepath, fileobj)}
+            #    
+            #    aws_resp = g_dev["obs"].api.authenticated_request("POST", "/upload/", {"object_name": filename})
+            #    g_dev["obs"].reqs.post(aws_resp["url"], data=aws_resp["fields"], files=files)
+            
+
+            #g_dev['cam'].enqueue_for_AWS(50, '',g_dev['obs'].calib_masters_folder + tempfrontcalib + 'BIAS_master_bin1.fits')
+            filepathaws=g_dev['obs'].calib_masters_folder
+            filenameaws=tempfrontcalib + 'BIAS_master_bin1.fits'
+            g_dev['cam'].enqueue_for_AWS(50, filepathaws,filenameaws)
             
             PLDrive._mmap.close()
             del PLDrive
@@ -2095,7 +2110,11 @@ class Sequencer:
             masterDark=np.asarray(finalImage).astype(np.float32)
             fits.writeto(g_dev['obs'].calib_masters_folder + tempfrontcalib + 'DARK_master_bin1.fits', masterDark,  overwrite=True)
             
-            g_dev['cam'].enqueue_for_AWS(50, '',g_dev['obs'].calib_masters_folder + tempfrontcalib + 'DARK_master_bin1.fits')
+            filepathaws=g_dev['obs'].calib_masters_folder
+            filenameaws=tempfrontcalib + 'DARK_master_bin1.fits'
+            g_dev['cam'].enqueue_for_AWS(50, filepathaws,filenameaws)
+            
+            #g_dev['cam'].enqueue_for_AWS(50, '',g_dev['obs'].calib_masters_folder + tempfrontcalib + 'DARK_master_bin1.fits')
             
             
             PLDrive._mmap.close()
@@ -2126,10 +2145,9 @@ class Sequencer:
                     if len(inputList) == 0:
                         plog ("Not doing " + str(filtercode) + " flat. No available files in directory.")
                     else:
-                        try:
-                            PLDrive = np.memmap(g_dev['obs'].local_flat_folder  + 'tempfile', dtype='float32', mode= 'w+', shape = (shapeImage[0],shapeImage[1],len(inputList)))
-                        except:
-                            breakpoint()
+
+                        PLDrive = np.memmap(g_dev['obs'].local_flat_folder  + 'tempfile', dtype='float32', mode= 'w+', shape = (shapeImage[0],shapeImage[1],len(inputList)))
+
                             
                             
                         
@@ -2228,7 +2246,12 @@ class Sequencer:
                         np.save(g_dev['obs'].calib_masters_folder + 'masterFlat_'+ str(filtercode) + '_bin1.npy', temporaryFlat)            
                         
                         fits.writeto(g_dev['obs'].calib_masters_folder + tempfrontcalib + 'masterFlat_'+ str(filtercode) + '_bin1.fits', temporaryFlat, overwrite=True)
-                        g_dev['cam'].enqueue_for_AWS(50, '',g_dev['obs'].calib_masters_folder + tempfrontcalib + 'masterFlat_'+ str(filtercode) + '_bin1.fits')
+                        
+                        filepathaws=g_dev['obs'].calib_masters_folder
+                        filenameaws=tempfrontcalib + 'masterFlat_'+ str(filtercode) + '_bin1.fits'
+                        g_dev['cam'].enqueue_for_AWS(50, filepathaws,filenameaws)
+                        
+                        #g_dev['cam'].enqueue_for_AWS(50, '',g_dev['obs'].calib_masters_folder + tempfrontcalib + 'masterFlat_'+ str(filtercode) + '_bin1.fits')
                         
                         PLDrive._mmap.close()
                         del PLDrive

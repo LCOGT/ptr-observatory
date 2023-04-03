@@ -75,7 +75,7 @@ from PIL import Image, ImageEnhance
 from colour_demosaicing import (
     #demosaicing_CFA_Bayer_bilinear)#,
     #demosaicing_CFA_Bayer_Malvar2004,
-    demosaicing_CFA_Bayer_Menon2007,
+    demosaicing_CFA_Bayer_Menon2007)
     #mosaicing_CFA_Bayer)
 
 #Incorporate better request retry strategy
@@ -1608,6 +1608,7 @@ sel
                             aws_resp = g_dev["obs"].api.authenticated_request(
                                 "POST", "/upload/", {"object_name": filename})
                             reqs.post(aws_resp["url"], data=aws_resp["fields"], files=files)
+                            #plog(resullll)
                             plog(f"--> To AWS --> {str(filepath)}")
                             self.aws_queue.task_done()
                             #os.remove(filepath)
