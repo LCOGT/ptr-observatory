@@ -749,7 +749,9 @@ site_config = {
                 # If the pixel scale is well-sampled (e.g. 0.6 arcsec per RGGB pixel or 0.3 arcsec per individual debayer pixel)
                 # Then binning is probably fine for all three. For understampled pixel scales - which are likely with OSCs
                 # then binning for focus is recommended. SEP and Platesolve can generally always be binned.                
+                'interpolate_for_focus': False,
                 'bin_for_focus' : False, # This setting will bin the image for focussing rather than interpolating. Good for 1x1 pixel sizes < 0.6.
+                'interpolate_for_sep' : False,
                 'bin_for_sep' : True, # This setting will bin the image for SEP photometry rather than interpolating.
                 'bin_for_platesolve' : True, # This setting will bin the image for platesolving rather than interpolating.
                 
@@ -781,8 +783,8 @@ site_config = {
                 # These were originally inspired by the RASA+QHY which is 3.3 degrees on a side and regularly detects
                 # tens of thousands of sources, but any crop will speed things up. Don't use SEP crop unless 
                 # you clearly need to. 
-                'focus_image_crop_width': 0.75, # For excessive fields of view, to speed things up crop the image to a fraction of the full width    
-                'focus_image_crop_height': 0.8, # For excessive fields of view, to speed things up crop the image to a fraction of the full height
+                'focus_image_crop_width': 0.5, # For excessive fields of view, to speed things up crop the image to a fraction of the full width    
+                'focus_image_crop_height': 0.4, # For excessive fields of view, to speed things up crop the image to a fraction of the full height
                 # PLATESOLVE CROPS HAVE TO BE EQUAL! OTHERWISE THE PLATE CENTRE IS NOT THE POINTING CENTRE                
                 'platesolve_image_crop': 0.75, # Platesolve crops have to be symmetrical 
                 # Really, the SEP image should not be cropped unless your field of view and number of sources

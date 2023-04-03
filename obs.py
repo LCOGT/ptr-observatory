@@ -2123,14 +2123,14 @@ sel
                         if frame_type == 'focus' and self.config["camera"][g_dev['cam'].name]["settings"]['bin_for_focus']: 
                             hdufocusdata=block_reduce(hdufocusdata,2)
                             binfocus=2
-                        elif frame_type == 'focus':
+                        elif frame_type == 'focus' and self.config["camera"][g_dev['cam'].name]["settings"]['interpolate_for_focus']:
                             hdufocusdata=demosaicing_CFA_Bayer_Menon2007(hdufocusdata, 'RGGB')[:,:,1]
                             hdufocusdata=hdufocusdata.astype("float32")
                             binfocus=1
                         elif self.config["camera"][g_dev['cam'].name]["settings"]['bin_for_sep']:
                             hdufocusdata=block_reduce(hdufocusdata,2)
                             binfocus=2
-                        else: 
+                        elif self.config["camera"][g_dev['cam'].name]["settings"]['interpolate_for_sep']: 
                             hdufocusdata=demosaicing_CFA_Bayer_Menon2007(hdufocusdata, 'RGGB')[:,:,1]
                             hdufocusdata=hdufocusdata.astype("float32")
                             binfocus=1

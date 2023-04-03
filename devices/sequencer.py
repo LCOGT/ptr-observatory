@@ -1155,6 +1155,8 @@ class Sequencer:
                 g_dev['mnt'].get_mount_coordinates()
             except:
                 pass
+            
+            
             g_dev['mnt'].go_coord(dest_ra, dest_dec)
             
             # Quick pointing check and re_seek at the start of each project block
@@ -1164,12 +1166,14 @@ class Sequencer:
             # Reset Solve timers
 
             plog ("Taking a quick pointing check and re_seek for new project block")
-            g_dev['obs'].last_solve_time = datetime.datetime.now()
-            g_dev['obs'].images_since_last_solve = 0
-            req = {'time': self.config['focus_exposure_time'],  'alias':  str(self.config['camera']['camera_1_1']['name']), 'image_type': 'focus'}   #  NB Should pick up filter and constats from config
+            #g_dev['obs'].last_solve_time = datetime.datetime.now()
+            ##g_dev['obs'].images_since_last_solve = 0
+            #req = {'time': self.config['focus_exposure_time'],  'alias':  str(self.config['camera']['camera_1_1']['name']), 'image_type': 'focus'}   #  NB Should pick up filter and constats from config
             #opt = {'area': 150, 'count': 1, 'bin': '2, 2', 'filter': 'focus'}
-            opt = {'area': 150, 'count': 1, 'bin': 1, 'filter': 'focus'}
-            result = g_dev['cam'].expose_command(req, opt, no_AWS=False, solve_it=True)
+            #opt = {'area': 150, 'count': 1, 'bin': 1, 'filter': 'focus'}
+            #g_dev['cam'].expose_command(req, opt, no_AWS=False, solve_it=True)
+            
+            result = self.centering_exposure()
             
             if result == 'blockend':
                 plog ("End of Block, exiting project block.")
@@ -2852,6 +2856,10 @@ class Sequencer:
                 plog ("too soon since last autofacus")
                 return
         
+        
+        
+        
+        
         g_dev['foc'].time_of_last_focus = datetime.datetime.now()
         
         # Reset focus tracker
@@ -2937,7 +2945,15 @@ class Sequencer:
         foc_pos0 = focus_start
         result = {}
         
+        g_dev['obs'].send_to_user("Slewing to a focus field", p_level='INFO')
+        g_dev['mnt'].go_coord(focus_patch_ra, focus_patch_dec)            
+        g_dev['foc'].guarded_move((focus_start)*g_dev['foc'].micron_to_steps)
         
+        g_dev['obs'].send_to_user("Running a quick platesolve to center the focus field", p_level='INFO')
+        
+        self.centering_exposure()
+        
+        g_dev['obs'].send_to_user("Focus Field Centered", p_level='INFO')
         
         try:
             #Check here for filter, guider, still moving  THIS IS A CLASSIC
@@ -3574,48 +3590,16 @@ class Sequencer:
             
             
             #g_dev['mnt'].go_coord(focus_star[0][1][1], focus_star[0][1][0])
-            g_dev['mnt'].go_coord(focus_patch_ra, focus_patch_dec)
-            req = {'time': self.config['focus_exposure_time'],  'alias':  str(self.config['camera']['camera_1_1']['name']), 'image_type': 'light'}   #  NB Should pick up filter and constats from config
-            opt = {'area': 100, 'count': 1, 'filter': 'focus'}
             
-            # Setting at reference focus
-            g_dev['foc'].guarded_move((foc_start - (ctr+0)*throw)*g_dev['foc'].micron_to_steps)
+            g_dev['obs'].send_to_user("Slewing to a focus field", p_level='INFO')
+            g_dev['mnt'].go_coord(focus_patch_ra, focus_patch_dec)            
+            g_dev['foc'].guarded_move((foc_start)*g_dev['foc'].micron_to_steps)
             
-            # Make sure platesolve queue is clear
-            reported=0
-            while True:
-                #if g_dev['obs'].platesolve_is_processing ==False and g_dev['obs'].platesolve_queue.empty():
-                if g_dev['obs'].platesolve_is_processing ==False and g_dev['obs'].platesolve_queue.empty():
-                    break
-                else:
-                    if reported ==0:
-                        plog ("PLATESOLVE: Waiting for platesolve processing to complete and queue to clear")
-                        reported=1
-                    pass
+            g_dev['obs'].send_to_user("Running a quick platesolve to center the focus field", p_level='INFO')
             
-            # Take a pointing shot to reposition
-            result = g_dev['cam'].expose_command(req, opt, no_AWS=True, solve_it=True)
+            self.centering_exposure()
             
-            # Wait for platesolve
-            queue_clear_time = time.time()
-            reported=0
-            while True:
-                if g_dev['obs'].platesolve_is_processing ==False and g_dev['obs'].platesolve_queue.empty():
-                    plog ("we are free from platesolving!")
-                    break
-                else:
-                    if reported ==0:
-                        plog ("PLATESOLVE: Waiting for platesolve processing to complete and queue to clear")
-                        reported=1
-                    pass
-            plog ("Time Taken for queue to clear post-exposure: " + str(time.time() - queue_clear_time))
-            
-            # Nudge if needed.
-            g_dev['obs'].check_platesolve_and_nudge()
-            
-            req = {'time': self.config['focus_exposure_time'],  'alias':  str(self.config['camera']['camera_1_1']['name']), 'image_type': 'focus'}   #  NB Should pick up filter and constats from config
-            opt = {'area': 100, 'count': 1, 'filter': 'focus'}
-            
+            g_dev['obs'].send_to_user("Focus Field Centered", p_level='INFO')
             
         else:
             pass   #Just take time image where currently pointed.
@@ -3631,6 +3615,8 @@ class Sequencer:
             #throw = 100  # NB again, from config.  Units are microns
             if not sim:
                 g_dev['obs'].scan_requests()
+                req = {'time': self.config['focus_exposure_time'],  'alias':  str(self.config['camera']['camera_1_1']['name']), 'image_type': 'focus'}   #  NB Should pick up filter and constats from config
+                opt = {'area': 100, 'count': 1, 'filter': 'focus'}
                 result = g_dev['cam'].expose_command(req, opt, no_AWS=True, solve_it=False)
             else:
                 result['FWHM'] = 4
@@ -3639,6 +3625,16 @@ class Sequencer:
                 spot = result['FWHM']
                 #foc_pos = result['mean_focus']
                 foc_pos = (foc_pos0 - (ctr+0)*throw)*g_dev['foc'].micron_to_steps
+                if np.isnan(result['FWHM']):
+                    req = {'time': 3*float(self.config['focus_exposure_time']),  'alias':  str(self.config['camera']['camera_1_1']['name']), 'image_type': 'focus'}   #  NB Should pick up filter and constats from config
+                    opt = {'area': 100, 'count': 1, 'filter': 'focus'}
+                    result = g_dev['cam'].expose_command(req, opt, no_AWS=True, solve_it=False)
+                    spot = result['FWHM']
+                    if np.isnan(result['FWHM']):
+                        spot = False
+                        foc_pos = False
+                        plog ("spot failed on extensive focus script")
+                        
             except:
                 spot = False
                 foc_pos = False
@@ -3656,6 +3652,8 @@ class Sequencer:
             #throw = 100  # NB again, from config.  Units are microns
             if not sim:
                 g_dev['obs'].scan_requests()
+                req = {'time': self.config['focus_exposure_time'],  'alias':  str(self.config['camera']['camera_1_1']['name']), 'image_type': 'focus'}   #  NB Should pick up filter and constats from config
+                opt = {'area': 100, 'count': 1, 'filter': 'focus'}
                 result = g_dev['cam'].expose_command(req, opt, no_AWS=True, solve_it=False)
             else:
                 result['FWHM'] = 4
@@ -3664,6 +3662,15 @@ class Sequencer:
                 spot = result['FWHM']
                 #foc_pos = result['mean_focus']
                 foc_pos = (foc_pos0 + (ctr+1)*throw)*g_dev['foc'].micron_to_steps
+                if np.isnan(result['FWHM']):
+                    req = {'time': 3*float(self.config['focus_exposure_time']),  'alias':  str(self.config['camera']['camera_1_1']['name']), 'image_type': 'focus'}   #  NB Should pick up filter and constats from config
+                    opt = {'area': 100, 'count': 1, 'filter': 'focus'}
+                    result = g_dev['cam'].expose_command(req, opt, no_AWS=True, solve_it=False)
+                    spot = result['FWHM']
+                    if np.isnan(result['FWHM']):
+                        spot = False
+                        foc_pos = False
+                        plog ("spot failed on extensive focus script")
             except:
                 spot = False
                 foc_pos = False
@@ -4451,6 +4458,48 @@ class Sequencer:
         # However, if the observatory is under manual control, leave this switch on.
         if g_dev['enc'].mode == 'Manual':
             self.weather_report_is_acceptable_to_observe=True
+
+    def centering_exposure(self):
+
+        req = {'time': self.config['focus_exposure_time'],  'alias':  str(self.config['camera']['camera_1_1']['name']), 'image_type': 'light'}   #  NB Should pick up filter and constats from config
+        opt = {'area': 100, 'count': 1, 'filter': 'focus'}
+        
+        
+        
+        # Make sure platesolve queue is clear
+        reported=0
+        while True:
+            #if g_dev['obs'].platesolve_is_processing ==False and g_dev['obs'].platesolve_queue.empty():
+            if g_dev['obs'].platesolve_is_processing ==False and g_dev['obs'].platesolve_queue.empty():
+                break
+            else:
+                if reported ==0:
+                    plog ("PLATESOLVE: Waiting for platesolve processing to complete and queue to clear")
+                    reported=1
+                pass
+        
+        # Take a pointing shot to reposition
+        result = g_dev['cam'].expose_command(req, opt, no_AWS=True, solve_it=True)
+        
+        # Wait for platesolve
+        queue_clear_time = time.time()
+        reported=0
+        while True:
+            if g_dev['obs'].platesolve_is_processing ==False and g_dev['obs'].platesolve_queue.empty():
+                #plog ("we are free from platesolving!")
+                break
+            else:
+                if reported ==0:
+                    plog ("PLATESOLVE: Waiting for platesolve processing to complete and queue to clear")
+                    reported=1
+                pass
+        plog ("Time Taken for queue to clear post-exposure: " + str(time.time() - queue_clear_time))
+        
+        # Nudge if needed.
+        g_dev['obs'].check_platesolve_and_nudge()
+        
+        return result
+
 
     def reset_completes(self):
         try:
