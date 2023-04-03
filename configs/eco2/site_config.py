@@ -42,7 +42,7 @@ site_config = {
     'debug_site_mode': False,
     
 
-    'debug_mode': True,
+    'debug_mode': False,
     'admin_owner_commands_only': False,
 
     'debug_duration_sec': 7200,
@@ -744,7 +744,13 @@ site_config = {
                 'osc_colour_enhance' : 1.7,
                 'osc_sharpness_enhance' : 1.5,                
                 'osc_background_cut' : 25.0,
+                
+                # These options set whether an OSC gets binned or interpolated for different functions
+                # If the pixel scale is well-sampled (e.g. 0.6 arcsec per RGGB pixel or 0.3 arcsec per individual debayer pixel)
+                # Then binning is probably fine for all three. For understampled pixel scales - which are likely with OSCs
+                # then binning for focus is recommended. SEP and Platesolve can generally always be binned.                
                 'bin_for_focus' : False, # This setting will bin the image for focussing rather than interpolating. Good for 1x1 pixel sizes < 0.6.
+                'bin_for_sep' : True, # This setting will bin the image for SEP photometry rather than interpolating.
                 'bin_for_platesolve' : True, # This setting will bin the image for platesolving rather than interpolating.
                 
                 # ONLY TRANSFORM THE FITS IF YOU HAVE
@@ -781,8 +787,8 @@ site_config = {
                 'platesolve_image_crop': 0.75, # Platesolve crops have to be symmetrical 
                 # Really, the SEP image should not be cropped unless your field of view and number of sources
                 # Are taking chunks out of the processing time. 
-                'sep_image_crop_width': 0.0, # For excessive fields of view, to speed things up crop the processed image area to a fraction of the full width    
-                'sep_image_crop_height': 0.0, # For excessive fields of view, to speed things up crop the processed image area to a fraction of the full width    
+                'sep_image_crop_width': 0.1, # For excessive fields of view, to speed things up crop the processed image area to a fraction of the full width    
+                'sep_image_crop_height': 0.1, # For excessive fields of view, to speed things up crop the processed image area to a fraction of the full width    
                 
                 'osc_bayer' : 'RGGB',
                 'crop_preview': False,

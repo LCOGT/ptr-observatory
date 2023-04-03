@@ -73,9 +73,9 @@ from PIL import Image, ImageEnhance
 
 #import colour
 from colour_demosaicing import (
-    demosaicing_CFA_Bayer_bilinear)#,
+    #demosaicing_CFA_Bayer_bilinear)#,
     #demosaicing_CFA_Bayer_Malvar2004,
-    #demosaicing_CFA_Bayer_Menon2007,
+    demosaicing_CFA_Bayer_Menon2007,
     #mosaicing_CFA_Bayer)
 
 #Incorporate better request retry strategy
@@ -326,6 +326,10 @@ class Observatory:
         self.images_since_last_solve = 10000
 
         self.time_last_status = time.time() - 3
+        
+        
+        self.platesolve_is_processing = False
+        
         # Build the to-AWS Try again, reboot, verify dome nad tel and start a thread.
 
         self.aws_queue = queue.PriorityQueue(maxsize=0)
@@ -2111,13 +2115,21 @@ sel
                     #focdate=time.time()
                     binfocus=1
                     if self.config["camera"][g_dev['cam'].name]["settings"]["is_osc"]:
-                        if frame_type == 'focus' and not self.config["camera"][g_dev['cam'].name]["settings"]['bin_for_focus']: 
-                            hdufocusdata=demosaicing_CFA_Bayer_bilinear(hdufocusdata, 'RGGB')[:,:,1]
-                            hdufocusdata=hdufocusdata.astype("float32")
-                            binfocus=1
-                        else: 
+                        if frame_type == 'focus' and self.config["camera"][g_dev['cam'].name]["settings"]['bin_for_focus']: 
                             hdufocusdata=block_reduce(hdufocusdata,2)
                             binfocus=2
+                        elif frame_type == 'focus':
+                            hdufocusdata=demosaicing_CFA_Bayer_Menon2007(hdufocusdata, 'RGGB')[:,:,1]
+                            hdufocusdata=hdufocusdata.astype("float32")
+                            binfocus=1
+                        elif self.config["camera"][g_dev['cam'].name]["settings"]['bin_for_sep']:
+                            hdufocusdata=block_reduce(hdufocusdata,2)
+                            binfocus=2
+                        else: 
+                            hdufocusdata=demosaicing_CFA_Bayer_Menon2007(hdufocusdata, 'RGGB')[:,:,1]
+                            hdufocusdata=hdufocusdata.astype("float32")
+                            binfocus=1
+                            
                             
                                 
                     #plog("focus construction time")
@@ -2439,6 +2451,7 @@ sel
             if (not self.platesolve_queue.empty()) and one_at_a_time == 0:
                 
                 one_at_a_time = 1
+                self.platesolve_is_processing = True
                 psolve_timer_begin=time.time()
                 (hdufocusdata, hduheader, cal_path, cal_name, frame_type, time_platesolve_requested, pixscale) = self.platesolve_queue.get(block=False)
                 
@@ -2479,7 +2492,7 @@ sel
                             hdufocusdata=block_reduce(hdufocusdata,2)
                             binfocus=2
                         else:
-                            hdufocusdata=demosaicing_CFA_Bayer_bilinear(hdufocusdata, 'RGGB')[:,:,1]
+                            hdufocusdata=demosaicing_CFA_Bayer_Menon2007(hdufocusdata, 'RGGB')[:,:,1]
                             hdufocusdata=hdufocusdata.astype("float32")
                             binfocus=1
                     #plog("platesolve construction time")
@@ -2737,6 +2750,7 @@ sel
                     pass 
                 
                 self.platesolve_queue.task_done()
+                self.platesolve_is_processing = False
                 one_at_a_time = 0
                 
 

@@ -546,6 +546,18 @@ site_config = {
 
                 
                 'squash_on_x_axis' : True,
+                
+                
+                
+                # These options set whether an OSC gets binned or interpolated for different functions
+                # If the pixel scale is well-sampled (e.g. 0.6 arcsec per RGGB pixel or 0.3 arcsec per individual debayer pixel)
+                # Then binning is probably fine for all three. For understampled pixel scales - which are likely with OSCs
+                # then binning for focus is recommended. SEP and Platesolve can generally always be binned.                
+                'bin_for_focus' : False, # This setting will bin the image for focussing rather than interpolating. Good for 1x1 pixel sizes < 0.6.
+                'bin_for_sep' : True, # This setting will bin the image for SEP photometry rather than interpolating.
+                'bin_for_platesolve' : True, # This setting will bin the image for platesolving rather than interpolating.
+                
+                
                 # ONLY TRANSFORM THE FITS IF YOU HAVE
                # A DATA-BASED REASON TO DO SO.....
                # USUALLY TO GET A BAYER GRID ORIENTATED CORRECTLY
@@ -646,7 +658,7 @@ site_config = {
                 'rotation': 0.0,        #  Probably remove.
                 'min_exposure': 0.2,
                 'min_flat_exposure' : 3.0, # For certain shutters, short exposures aren't good for flats. Some CMOS have banding in too short an exposure. Largely applies to ccds though.
-                'max_flat_exposure' : 20.0, # Realistically there should be a maximum flat_exposure that makes sure flats are efficient and aren't collecting actual stars.
+                'max_flat_exposure' : 120.0, # Realistically there should be a maximum flat_exposure that makes sure flats are efficient and aren't collecting actual stars.
                 'max_exposure': 3600,
                 'max_daytime_exposure': 0.0001,
                 'can_subframe':  True,
