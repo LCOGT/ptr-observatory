@@ -370,7 +370,7 @@ class Observatory:
             maxsize=0
         )  # Note this is not a thread but a FIFO buffer
         self.stop_all_activity = False  # This is used to stop the camera or sequencer
-
+        self.exposure_halted_indicator =False
         # =============================================================================
         # Here we set up the reduction Queue and Thread:
         # =============================================================================
@@ -614,6 +614,10 @@ class Observatory:
         except Exception as e:
             plog("Camera is not busy.", e)
             self.exposure_busy = False
+        
+        g_dev["obs"].exposure_halted_indicator = True
+        
+        
         #except:
         #    plog("Camera stop faulted.")
         #self.exposure_busy = False

@@ -14,6 +14,8 @@ import time
 import traceback
 import ephem
 
+import json
+
 from astropy.io import fits, ascii
 from astropy.time import Time
 from astropy.utils.data import check_download_cache
@@ -35,6 +37,16 @@ import win32com.client
 #import colour
 #import queue
 import threading
+
+
+import requests
+#Incorporate better request retry strategy
+from requests.adapters import HTTPAdapter, Retry
+reqs = requests.Session()
+retries = Retry(total=50,
+                backoff_factor=0.1,
+                status_forcelist=[ 500, 502, 503, 504 ])
+reqs.mount('http://', HTTPAdapter(max_retries=retries))
 
     
 #from colour_demosaicing import (
@@ -188,6 +200,9 @@ class Qcam:
         self.so.GetQHYCCDLiveFrame.argtypes = [c_void_p, c_void_p, c_void_p, c_void_p, c_void_p, c_void_p]
         self.so.SetQHYCCDParam.argtypes = [c_void_p, c_int, c_double]
         self.so.SetQHYCCDBitsMode.argtypes = [c_void_p, c_uint32]
+
+        #self.so.CancelQHYCCDExposingAndReadout.restype = c_int64
+        self.so.CancelQHYCCDExposingAndReadout.argtypes = [c_int64]
 
         # self.so.GetQHYCCDNumberOfReadModes.restype = c_uint32
         # self.so.GetQHYCCDNumberOfReadModes.argtypes = [c_void_p, c_void_p]
@@ -1146,7 +1161,12 @@ class Camera:
    
     
     def _qhyccd_stop_expose(self):
-        success = qhycam.so.GetQHYCCDSingleFrame(qhycam.camera_params[qhycam_id]['handle'])
+        try:
+            #success = 
+            qhycam.so.CancelQHYCCDExposingAndReadout(qhycam.camera_params[qhycam_id]['handle'])
+        except:
+            plog(traceback.format_exc()) 
+            print (success)
         #self.camera.StopExposure()  # ASCOM also has an AbortExposure method.
     
     def _qhyccd_getImageArray(self):
@@ -1938,7 +1958,7 @@ class Camera:
         self.plog_exposure_time_counter_timer=time.time() -3.0
         
         exposure_scan_request_timer=time.time()
-        
+        g_dev["obs"].exposure_halted_indicator =False
         while True:  # This loop really needs a timeout.
             self.post_mnt = []
             self.post_rot = []
@@ -1953,10 +1973,20 @@ class Camera:
                 
                 
                 # Scan requests every 4 seconds... primarily hunting for a "Cancel/Stop"
-                if exposure_scan_request_timer - time.time() > 4:                    
+                if time.time() - exposure_scan_request_timer > 4:                    
                     exposure_scan_request_timer=time.time()
+                    
+                    
                     g_dev['obs'].scan_requests()
-                
+                    
+                    if g_dev["obs"].exposure_halted_indicator:
+                        self.expresult["error"] = True
+                        self.expresult["stopped"] = True
+                        #self.expresult["patch"] = bi_mean
+                        g_dev["obs"].exposure_halted_indicator =False
+                        return self.expresult
+
+                    
                 remaining = round(self.completion_time - time.time(), 1)
                 
                 
@@ -1967,6 +1997,11 @@ class Camera:
                             '||  ' + str(round(remaining, 1)) + "sec.",
                             str(round(100 * remaining / cycle_time, 1)) + "%",
                         )  #|| used to flag this line in plog().
+                        
+                        # Here scan for requests
+                        
+                        
+                        
                     if (
                         quartileExposureReport == 0
                     ):  # Silly daft but workable exposure time reporting by MTF
@@ -2016,6 +2051,7 @@ class Camera:
                         )
                         if (exposure_time > 120):
                             g_dev["obs"].update_status(cancel_check=False)
+
 
                 continue
 
