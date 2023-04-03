@@ -648,7 +648,9 @@ site_config = {
                 # If the pixel scale is well-sampled (e.g. 0.6 arcsec per RGGB pixel or 0.3 arcsec per individual debayer pixel)
                 # Then binning is probably fine for all three. For understampled pixel scales - which are likely with OSCs
                 # then binning for focus is recommended. SEP and Platesolve can generally always be binned.                
+                'interpolate_for_focus': False,
                 'bin_for_focus' : True, # This setting will bin the image for focussing rather than interpolating. Good for 1x1 pixel sizes < 0.6.
+                'interpolate_for_sep' : False,
                 'bin_for_sep' : True, # This setting will bin the image for SEP photometry rather than interpolating.
                 'bin_for_platesolve' : True, # This setting will bin the image for platesolving rather than interpolating.
                 
