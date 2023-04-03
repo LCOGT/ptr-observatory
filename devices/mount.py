@@ -1805,8 +1805,10 @@ class Mount:
                 self.mount.SlewToCoordinatesAsync(tempRA, tempDEC)
             except Exception as e:
                 if ('Object reference not set to an instance of an object.' in str(e)):                       
-                    self.home_command()
+                    #self.home_command()
+                    self.unpark_command()
                     self.mount.SlewToCoordinatesAsync(tempRA, tempDEC)
+                    plog (traceback.format_exc())
             
             g_dev['obs'].time_since_last_slew = time.time()
             g_dev['obs'].last_solve_time = datetime.datetime.now() - datetime.timedelta(days=1)

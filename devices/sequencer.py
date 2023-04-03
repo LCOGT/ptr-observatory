@@ -326,14 +326,15 @@ class Sequencer:
             self.stop_script_called=True
             self.stop_script_called_time=time.time()
             # Cancel out of all running exposures. 
-            g_dev['obs'].cancel_all_activity()
-            
+            g_dev['obs'].cancel_all_activity()          
             
             
             
         elif action == "home":
             g_dev["obs"].send_to_user("Sending the mount to home.")
-            self.home_command(req, opt)
+
+            g_dev['mnt'].home_command()
+
         elif action == 'run' and script == 'findFieldCenter':
             g_dev['mnt'].go_command(req, opt, calibrate=True, auto_center=True)
         elif action == 'run' and script == 'calibrateAtFieldCenter':
