@@ -1318,7 +1318,7 @@ sel
     
             # If no activity for an hour, park the scope               
             if time.time() - self.time_of_last_slew > self.config['mount']['mount1']\
-                                                                                ['time_inactive_until_park'] or time.time() - self.time_of_last_exposure > self.config['mount']['mount1']\
+                                                                                ['time_inactive_until_park'] and time.time() - self.time_of_last_exposure > self.config['mount']['mount1']\
                                                                                                                                                     ['time_inactive_until_park']:
                 if not g_dev['mnt'].mount.AtPark:  
                     plog ("Parking scope due to inactivity")
