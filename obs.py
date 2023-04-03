@@ -684,11 +684,23 @@ sel
                     for cmd in unread_commands:
                         
                         
-                        if (self.admin_only_flag and ("admin" in cmd['user_roles']) or ("owner" in cmd['user_roles'])) or (not self.admin_only_flag):
+                        if not (self.admin_only_flag and (("admin" in cmd['user_roles']) or ("owner" in cmd['user_roles']) or (not self.admin_only_flag))):
                             
-                            if cmd["action"] in ["cancel_all_commands", "stop"]:
-                                self.cancel_all_activity() # Hi Wayne, I have to cancel all acitivity with some roof stuff
+                            #breakpoint()
+                            
+                            if cmd["action"] in ["cancel_all_commands", "stop"] or cmd["action"].lower() in ["stop", "cancel"] or ( cmd["action"]  == "run" and cmd["required_params"]["script"]  == "stopScript"):
+                                #self.cancel_all_activity() # Hi Wayne, I have to cancel all acitivity with some roof stuff
                                 # So I've moved the cancelling to it's own function just above so it can be called from multiple locations.
+                                
+                            #elif cmd["action"].lower() in ["stop", "cancel"] or ( cmd["action"]  == "run" and cmd["script"]  == "stopScript"):
+                                #self.stop_command(req, opt)
+                                #A stop script command flags to the running scripts that it is time to stop 
+                                #activity and return. This period runs for about 30 seconds.
+                                g_dev["obs"].send_to_user("A Cancel/Stop has been called. Cancelling out of running scripts over 30 seconds.")
+                                g_dev['seq'].stop_script_called=True
+                                g_dev['seq'].stop_script_called_time=time.time()
+                                # Cancel out of all running exposures. 
+                                g_dev['obs'].cancel_all_activity()
                             else:
                                 # Check here for irrelevant commands
                                 
@@ -876,6 +888,13 @@ sel
         while time.time() < self.time_last_status + self.status_interval:
             return  # Note we are just not sending status, too soon.
 
+
+
+        # Keep an eye on the stop-script time
+        if g_dev['seq'].stop_script_called and ((time.time() - g_dev['seq'].stop_script_called_time) > 35):
+            g_dev["obs"].send_to_user("Stop Script Complete.")
+            g_dev['seq'].stop_script_called=False
+            g_dev['seq'].stop_script_called_time=time.time()
 
         # Good spot to check if we need to nudge the telescope as long as we aren't exposing.
         if not g_dev["cam"].exposure_busy:
