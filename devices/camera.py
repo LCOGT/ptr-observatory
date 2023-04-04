@@ -2368,6 +2368,9 @@ class Camera:
                         "[e-/pixel] Read noise",
                     )
                     hdu.header["CMOSCAM"] = (self.is_cmos, "Is CMOS camera")
+                    hdu.header["OSCCAM"] = (self.config["camera"][self.name]["settings"]['is_osc'], "Is OSC camera")
+                    hdu.header["OSCMONO"] = (False, "If OSC, is this a mono image or a bayer colour image.")
+                    
                     try:
                         hdu.header["FULLWELL"] = (
                             self.config["camera"][self.name]["settings"][
