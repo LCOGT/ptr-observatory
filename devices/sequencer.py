@@ -2495,9 +2495,9 @@ class Sequencer:
             return
 
         self.sky_guard = True   #20220409 I think this is obsolete or unused.
-        plog('Sky Flat sequence Starting, Enclosure PRESUMED Open. Telescope should be on sky flat spot.')
+        plog('Sky Flat sequence Starting.')
         self.next_flat_observe = time.time()
-        g_dev['obs'].send_to_user('Sky Flat sequence Starting, Enclosure PRESUMED Open. Telescope should be on sky flat spot.', p_level='INFO')
+        g_dev['obs'].send_to_user('Sky Flat sequence Starting.', p_level='INFO')
         evening = not morn
         camera_name = str(self.config['camera']['camera_1_1']['name'])
         flat_count = self.config['camera']['camera_1_1']['settings']['number_of_flat_to_collect']
