@@ -1223,7 +1223,7 @@ class Sequencer:
             
             
             
-            g_dev['mnt'].re_seek(dither=0)
+            #g_dev['mnt'].re_seek(dither=0)
 
             plog("CAUTION:  rotator may block")
             pa = float(block_specification['project']['project_constraints']['position_angle'])
