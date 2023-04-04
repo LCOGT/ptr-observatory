@@ -122,7 +122,7 @@ site_config = {
     'auto_eve_bias_dark': False,
     'auto_midnight_moonless_bias_dark': True,
     'auto_eve_sky_flat': True,
-    'eve_sky_flat_sunset_offset': -50.5,  #  Minutes  neg means before, + after.
+    'eve_sky_flat_sunset_offset': -20.5,  #  Minutes  neg means before, + after.
     'eve_cool_down_open' : -80.0,
     'auto_morn_sky_flat': True,
     'auto_morn_bias_dark': False,
@@ -704,7 +704,7 @@ site_config = {
                 #'dark_length' : 1,
                 'number_of_bias_to_collect' : 10,
                 'number_of_dark_to_collect' : 10,
-                'number_of_flat_to_collect' : 4,
+                'number_of_flat_to_collect' : 10,
                 'number_of_bias_to_store' : 128,
                 'number_of_dark_to_store' : 128,
                 'number_of_flat_to_store' : 63,
