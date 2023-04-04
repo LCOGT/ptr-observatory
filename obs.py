@@ -73,11 +73,11 @@ from planewave import platesolve
 import ptr_events
 from ptr_utility import plog
 from scipy import stats
-from PIL import Image, ImageEnhance
+from PIL import Image, ImageEnhance, ImageFont, ImageDraw 
 
 #import colour
 from colour_demosaicing import (
-    #demosaicing_CFA_Bayer_bilinear)#,
+    demosaicing_CFA_Bayer_bilinear,#)#,
     #demosaicing_CFA_Bayer_Malvar2004,
     demosaicing_CFA_Bayer_Menon2007)
     #mosaicing_CFA_Bayer)
@@ -2132,7 +2132,7 @@ sel
                 #print ("In the queue.....")
                 sep_timer_begin=time.time()
                 
-                (hdufocusdata, pixscale, readnoise, avg_foc, focus_image, im_path, text_name, hduheader, cal_path, cal_name, frame_type) = self.sep_queue.get(block=False)
+                (hdufocusdata, pixscale, readnoise, avg_foc, focus_image, im_path, text_name, hduheader, cal_path, cal_name, frame_type, focus_position) = self.sep_queue.get(block=False)
                 
                 if not (g_dev['events']['Civil Dusk'] < ephem.now() < g_dev['events']['Civil Dawn']) :
                     plog ("Too bright to consider photometry!")
@@ -2179,18 +2179,100 @@ sel
                             hdufocusdata=block_reduce(hdufocusdata,2)
                             binfocus=2
                         elif frame_type == 'focus' and self.config["camera"][g_dev['cam'].name]["settings"]['interpolate_for_focus']:
-                            hdufocusdata=demosaicing_CFA_Bayer_Menon2007(hdufocusdata, 'RGGB')[:,:,1]
+                            hdufocusdata=demosaicing_CFA_Bayer_bilinear(hdufocusdata, 'RGGB')[:,:,1]
                             hdufocusdata=hdufocusdata.astype("float32")
                             binfocus=1
                         elif self.config["camera"][g_dev['cam'].name]["settings"]['bin_for_sep']:
                             hdufocusdata=block_reduce(hdufocusdata,2)
                             binfocus=2
                         elif self.config["camera"][g_dev['cam'].name]["settings"]['interpolate_for_sep']: 
-                            hdufocusdata=demosaicing_CFA_Bayer_Menon2007(hdufocusdata, 'RGGB')[:,:,1]
+                            hdufocusdata=demosaicing_CFA_Bayer_bilinear(hdufocusdata, 'RGGB')[:,:,1]
                             hdufocusdata=hdufocusdata.astype("float32")
                             binfocus=1
                             
+                    # If it is a focus image then it will get sent in a different manner to the UI for a jpeg
+                    if frame_type == 'focus':
+                    
+                        hdusmalldata = np.array(hdufocusdata)
+                        
+    
+                        fx, fy = hdusmalldata.shape
+                        
+                        crop_width = (fx - 500) / 2
+                        crop_height = (fy - 500) / 2
+                        
+                        # Make sure it is an even number for OSCs
+                        if (crop_width % 2) != 0:
+                            crop_width=crop_width+1
+                        if (crop_height % 2) != 0:
+                            crop_height=crop_height+1
+                        
+                        crop_width=int(crop_width)
+                        crop_height=int(crop_height)
+                        #breakpoint()
+                        
+                        
+                        if crop_width > 0 or crop_height > 0:
+                            hdusmalldata=hdusmalldata[crop_width:-crop_width,crop_height:-crop_height]
+                        
+                        
+                        hdusmalldata = hdusmalldata - np.min(hdusmalldata)
+    
+                        stretched_data_float = Stretch().stretch(hdusmalldata+1000)
+                        stretched_256 = 255 * stretched_data_float
+                        hot = np.where(stretched_256 > 255)
+                        cold = np.where(stretched_256 < 0)
+                        stretched_256[hot] = 255
+                        stretched_256[cold] = 0
+                        stretched_data_uint8 = stretched_256.astype("uint8")
+                        hot = np.where(stretched_data_uint8 > 255)
+                        cold = np.where(stretched_data_uint8 < 0)
+                        stretched_data_uint8[hot] = 255
+                        stretched_data_uint8[cold] = 0
+                        
+                        iy, ix = stretched_data_uint8.shape
+                        #stretched_data_uint8 = Image.fromarray(stretched_data_uint8)
+                        final_image = Image.fromarray(stretched_data_uint8)
+                        # These steps flip and rotate the jpeg according to the settings in the site-config for this camera
+                        # if self.config["camera"][g_dev['cam'].name]["settings"]["transpose_jpeg"]:
+                        #     final_image=final_image.transpose(Image.TRANSPOSE)
+                        # if self.config["camera"][g_dev['cam'].name]["settings"]['flipx_jpeg']:
+                        #     final_image=final_image.transpose(Image.FLIP_LEFT_RIGHT)
+                        # if self.config["camera"][g_dev['cam'].name]["settings"]['flipy_jpeg']:
+                        #     final_image=final_image.transpose(Image.FLIP_TOP_BOTTOM)
+                        # if self.config["camera"][g_dev['cam'].name]["settings"]['rotate180_jpeg']:
+                        #     final_image=final_image.transpose(Image.ROTATE_180)
+                        # if self.config["camera"][g_dev['cam'].name]["settings"]['rotate90_jpeg']:
+                        #     final_image=final_image.transpose(Image.ROTATE_90)
+                        # if self.config["camera"][g_dev['cam'].name]["settings"]['rotate270_jpeg']:
+                        #     final_image=final_image.transpose(Image.ROTATE_270)
                             
+                        
+                        
+                            #plog ("Focus image cropped to " + str(hdufocusdata.shape))
+                        
+                        
+                        #
+                        #stretched_data_uint8=stretched_data_uint8.transpose(Image.TRANSPOSE) # Not sure why it transposes on array creation ... but it does!
+                        draw=ImageDraw.Draw(final_image)
+                        #breakpoint()
+                        #font=ImageFont.truetype("C:\Windows\Fonts\sans-serif.ttf", 16)
+                        
+                        draw.text((0, 0),str(focus_position),(255))
+                        
+                        #draw.text((0, 0),str(focus_position),(255,255,255),font=font)
+                        
+                        final_image.save(im_path + text_name.replace('EX00.txt','EX10.jpg'))
+                        
+                        
+                        
+                        g_dev["cam"].enqueue_for_fastAWS(100, im_path, text_name.replace('EX00.txt','EX10.jpg'))
+                    
+                    
+                    
+                    
+                    
+                    
                                 
                     #plog("focus construction time")
                     #plog(time.time() -focdate)
@@ -2554,7 +2636,7 @@ sel
                             hdufocusdata=block_reduce(hdufocusdata,2)
                             binfocus=2
                         else:
-                            hdufocusdata=demosaicing_CFA_Bayer_Menon2007(hdufocusdata, 'RGGB')[:,:,1]
+                            hdufocusdata=demosaicing_CFA_Bayer_bilinear(hdufocusdata, 'RGGB')[:,:,1]
                             hdufocusdata=hdufocusdata.astype("float32")
                             binfocus=1
                     #plog("platesolve construction time")

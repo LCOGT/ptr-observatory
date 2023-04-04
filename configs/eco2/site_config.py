@@ -59,7 +59,7 @@ site_config = {
     'archive_age' : 2.0, # Number of days to keep files in the local archive before deletion. Negative means never delete
     'send_files_at_end_of_night' : 'no', # For low bandwidth sites, do not send up large files until the end of the night. set to 'no' to disable
     'save_raw_to_disk' : False, # For low diskspace sites (or just because they aren't needed), don't save a separate raw file to disk after conversion to fz.    
-    'keep_focus_images_on_disk' : False, # To save space, the focus file can not be saved.
+    'keep_focus_images_on_disk' : True, # To save space, the focus file can not be saved.
     'keep_reduced_on_disk' : False, # PTR uses the reduced file for some calculations (focus, SEP, etc.). To save space, this file can be removed after usage or not saved.
     
     # Minimum realistic seeing at the site.
@@ -391,10 +391,10 @@ site_config = {
             #F4.9 setup
             'start_at_config_reference': True,
             'use_focuser_temperature': False,
-            'reference':9000,    #  20210313  Nominal at 10C Primary temperature
-            'ref_temp':  9000.0,    #  Update when pinning reference
+            'reference':11000,    #  20210313  Nominal at 10C Primary temperature
+            'ref_temp':  11000.0,    #  Update when pinning reference
             'coef_c': 0,   #  Negative means focus moves out as Primary gets colder
-            'coef_0': 9000,  #  Nominal intercept when Primary is at 0.0 C.
+            'coef_0': 11000,  #  Nominal intercept when Primary is at 0.0 C.
             'coef_date':  '20220914',    #This appears to be sensible result 44 points -13 to 3C'reference':  6431,    #  Nominal at 10C Primary temperature
             # #F9 setup
             # 'reference': 4375,    #   Guess 20210904  Nominal at 10C Primary temperature
@@ -750,7 +750,7 @@ site_config = {
                 # If the pixel scale is well-sampled (e.g. 0.6 arcsec per RGGB pixel or 0.3 arcsec per individual debayer pixel)
                 # Then binning is probably fine for all three. For understampled pixel scales - which are likely with OSCs
                 # then binning for focus is recommended. SEP and Platesolve can generally always be binned.                
-                'interpolate_for_focus': False,
+                'interpolate_for_focus': True,
                 'bin_for_focus' : False, # This setting will bin the image for focussing rather than interpolating. Good for 1x1 pixel sizes < 0.6.
                 'interpolate_for_sep' : False,
                 'bin_for_sep' : True, # This setting will bin the image for SEP photometry rather than interpolating.
@@ -784,8 +784,8 @@ site_config = {
                 # These were originally inspired by the RASA+QHY which is 3.3 degrees on a side and regularly detects
                 # tens of thousands of sources, but any crop will speed things up. Don't use SEP crop unless 
                 # you clearly need to. 
-                'focus_image_crop_width': 0.75, # For excessive fields of view, to speed things up crop the image to a fraction of the full width    
-                'focus_image_crop_height': 0.75, # For excessive fields of view, to speed things up crop the image to a fraction of the full height
+                'focus_image_crop_width': 0.5, # For excessive fields of view, to speed things up crop the image to a fraction of the full width    
+                'focus_image_crop_height': 0.5, # For excessive fields of view, to speed things up crop the image to a fraction of the full height
                 # PLATESOLVE CROPS HAVE TO BE EQUAL! OTHERWISE THE PLATE CENTRE IS NOT THE POINTING CENTRE                
                 'platesolve_image_crop': 0.75, # Platesolve crops have to be symmetrical 
                 # Really, the SEP image should not be cropped unless your field of view and number of sources

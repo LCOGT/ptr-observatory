@@ -1793,6 +1793,7 @@ class Camera:
                             # Good spot to check if we need to nudge the telescope
                             check_platesolve_and_nudge()   
                             g_dev['obs'].time_of_last_exposure = time.time()
+                            g_dev['obs'].update()
                             self._expose(exposure_time, bias_dark_or_light_type_frame)
                             
                             
@@ -1999,7 +2000,7 @@ class Camera:
                         )  #|| used to flag this line in plog().
                         
                         # Here scan for requests
-                        
+                        g_dev['obs'].update()
                         
                         
                     if (
@@ -2049,8 +2050,8 @@ class Camera:
                             + " sec.",
                             p_level="INFO",
                         )
-                        if (exposure_time > 120):
-                            g_dev["obs"].update_status(cancel_check=False)
+                        #if (exposure_time > 120):
+                        #    g_dev["obs"].update_status(cancel_check=False)
 
 
                 continue
@@ -3313,7 +3314,7 @@ class Camera:
                         
                         # IMMEDIATELY SEND TO SEP QUEUE
                         self.sep_processing=True
-                        self.to_sep((hdusmalldata, pixscale, float(hdu.header["RDNOISE"]), avg_foc[1], focus_image, im_path, text_name, hdu.header, cal_path, cal_name, frame_type))
+                        self.to_sep((hdusmalldata, pixscale, float(hdu.header["RDNOISE"]), avg_foc[1], focus_image, im_path, text_name, hdu.header, cal_path, cal_name, frame_type, g_dev['foc'].focuser.Position*g_dev['foc'].steps_to_micron))
                         #self.sep_processing=True
                         
                         
@@ -3321,7 +3322,9 @@ class Camera:
                         
                         
                         # Send data off to process jpeg
-                        self.to_mainjpeg((hdusmalldata, smartstackid, paths, g_dev['mnt'].pier_side))
+                        # This is for a non-focus jpeg
+                        if focus_image == False:
+                            self.to_mainjpeg((hdusmalldata, smartstackid, paths, g_dev['mnt'].pier_side))
                         
                         
                         
