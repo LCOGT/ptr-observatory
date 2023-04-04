@@ -756,13 +756,14 @@ site_config = {
                 'x_pixel':  3.76,
                 'y_pixel':  3.76,
                 'pix_scale': 0.302597,    #   bin-2  2* math.degrees(math.atan(3.76/2563000))*3600
-                # The drizzle_factor is by how much to divide the pixel_scale
+                # The drizzle_value is by the new pixelscale
                 # for the new resolution when stacking in the EVA pipeline
                 # Realistically you want a resolution of about 0.5 arcseconds per pixel
                 # Unless you are at a very poor quality site.
-                # e.g. for a 1.25 pixel scale, you would set a 2.5 drizzle factor. 
-                # Whole-ish numbers are better - 1, 1.25, 1.5, 2, 3, 2.5 etc.
-                'drizzle_factor_for_later_stacking': 1.0,
+                # If you have a higher resolution pixelscale it will use that instead.
+                # Generally leave this at 0.5 - the optimal value for ground based
+                # observatories.... unless you have a large field of view.                
+                'drizzle_value_for_later_stacking': 0.5,
 
                 'CameraXSize' : 9600,
                 'CameraYSize' : 6422,

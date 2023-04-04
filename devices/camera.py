@@ -2830,24 +2830,24 @@ class Camera:
                         #plog("have to not have ocn header items when no ocn")
                         pass
 
-                    try:
-                        hdu.header["PIXSCALE"] = (
-                            self.config["camera"][self.name]["settings"]["pix_scale"],
-                            "[arcsec/pixel] Nominal pixel scale on sky",
-                        )
-                        pixscale = float(hdu.header["PIXSCALE"])
-                    except:
-                        # There really needs to be a pixelscale in the header and the variable, even if it is wrong!
-                        plog ("pixel scale not set in the site-config for this binning")
-                        #
-                        hdu.header["PIXSCALE"] = (
-                            0.6
-                            ,
-                            "[arcsec/pixel] Nominal pixel scale on sky",
-                        )
-                        pixscale = float(0.6)
+                    #try:
+                    hdu.header["PIXSCALE"] = (
+                        self.config["camera"][self.name]["settings"]["pix_scale"],
+                        "[arcsec/pixel] Nominal pixel scale on sky",
+                    )
+                    pixscale = float(hdu.header["PIXSCALE"])
+                    # except:
+                    #     # There really needs to be a pixelscale in the header and the variable, even if it is wrong!
+                    #     plog ("pixel scale not set in the site-config for this binning")
+                    #     #
+                    #     hdu.header["PIXSCALE"] = (
+                    #         0.6
+                    #         ,
+                    #         "[arcsec/pixel] Nominal pixel scale on sky",
+                    #     )
+                    #     pixscale = float(0.6)
                     
-                    hdu.header["DRIZFACT"] = (self.config["camera"][self.name]["settings"]['drizzle_factor_for_later_stacking'], 'Factor to increase resolution when drizzling')
+                    hdu.header["DRZPIXSC"] = (self.config["camera"][self.name]["settings"]['drizzle_value_for_later_stacking'], 'Target pixel scale for drizzling')
                     
                         
                         

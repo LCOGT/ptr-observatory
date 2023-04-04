@@ -850,13 +850,14 @@ site_config = {
                 'flat_count' : 5,
                 #'pix_scale': [0.4685, 0.9371, 1.4055, 1.8742],    #  1.4506,  bin-2  2* math.degrees(math.atan(9/3962000))*3600
                 'pix_scale': 0.198,    #  1.4506,  bin-2  2* math.degrees(math.atan(9/3962000))*3600
-                # The drizzle_factor is by how much to divide the pixel_scale
+                # The drizzle_value is by the new pixelscale
                 # for the new resolution when stacking in the EVA pipeline
                 # Realistically you want a resolution of about 0.5 arcseconds per pixel
                 # Unless you are at a very poor quality site.
-                # e.g. for a 1.25 pixel scale, you would set a 2.5 drizzle factor. 
-                # Whole-ish numbers are better - 1, 1.25, 1.5, 2, 3, 2.5 etc.
-                'drizzle_factor_for_later_stacking': 1.0,
+                # If you have a higher resolution pixelscale it will use that instead.
+                # Generally leave this at 0.5 - the optimal value for ground based
+                # observatories.... unless you have a large field of view.                
+                'drizzle_value_for_later_stacking': 0.5,
                 
                 'do_cosmics' : False,
                 'bin_modes':  [[2, 2, 0.937], [1, 1, 0.469], [3, 3, 1.407], [4, 4, 1.876]],   # [3, 3, 1.45],Meaning no binning choice if list has only one entry, default should be first.
