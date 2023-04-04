@@ -4316,9 +4316,35 @@ class Sequencer:
 
         plog("Appraising quality of evening from Open Weather Map.")
         owm = OWM('d5c3eae1b48bf7df3f240b8474af3ed0')
-        mgr = owm.weather_manager()            
-        one_call = mgr.one_call(lat=self.config["latitude"], lon=self.config["longitude"])
-   
+        mgr = owm.weather_manager() 
+        try:           
+            one_call = mgr.one_call(lat=self.config["latitude"], lon=self.config["longitude"])
+            ownsuccess=True
+        except:
+            plog ("call to OWM failed. Starting a retry schedule.")
+            plog(traceback.format_exc())
+            owncounter=0
+            while owncounter <5:
+                time.sleep(10)
+                try:
+                    one_call = mgr.one_call(lat=self.config["latitude"], lon=self.config["longitude"])
+                    owncounter=6
+                    ownsuccess=True
+                except:                   
+                    plog ("try "+ str(owncounter+1) + " for owm failed")
+                    owncounter=owncounter+1
+                    plog(traceback.format_exc())
+                    ownsuccess=False
+        
+        if ownsuccess==False:
+            plog("Failed to get a weather report. setting weather report safety to False")
+            self.weather_report_is_acceptable_to_observe=False
+            self.weather_report_wait_until_open=False
+            self.weather_report_wait_until_open_time=ephem_now
+            self.weather_report_close_during_evening=False
+            self.weather_report_close_during_evening_time=ephem_now
+            return
+        
         # Collect relevant info for fitzgerald weather number calculation
         hourcounter=0
         fitzgerald_weather_number_grid=[]
