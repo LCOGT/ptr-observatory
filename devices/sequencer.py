@@ -1590,6 +1590,7 @@ class Sequencer:
                 if self.stop_script_called:
                     g_dev["obs"].send_to_user("Cancelling out of calibration script as stop script has been called.")  
                     return
+                
 
                 g_dev['obs'].update()
                 
@@ -2627,6 +2628,9 @@ class Sequencer:
                         if self.stop_script_called:
                             g_dev["obs"].send_to_user("Cancelling out of calibration script as stop script has been called.")  
                             return
+                        if not g_dev['obs'].open_and_enabled_to_observe:
+                            g_dev["obs"].send_to_user("Cancelling out of activity as no longer open and enabled to observe.")  
+                            return
                         
                         # Here it makes four tests and if it doesn't match those tests, then it will attempt a flat. 
                         if evening and exp_time > max_exposure:
@@ -2676,6 +2680,9 @@ class Sequencer:
                             if self.stop_script_called:
                                 g_dev["obs"].send_to_user("Cancelling out of calibration script as stop script has been called.")  
                                 return
+                            if not g_dev['obs'].open_and_enabled_to_observe:
+                                g_dev["obs"].send_to_user("Cancelling out of activity as no longer open and enabled to observe.")  
+                                return
                             
                             # prior_scale = prior_scale*scale  #Only update prior scale when changing filters
                             plog("Sky flat estimated exposure time: " + str(exp_time) + ", Scale:  " +str(scale))               
@@ -2703,6 +2710,9 @@ class Sequencer:
                                 fred = g_dev['cam'].expose_command(req, opt, no_AWS=True, do_sep = False,skip_daytime_check=True)
                                 if self.stop_script_called:
                                     g_dev["obs"].send_to_user("Cancelling out of calibration script as stop script has been called.")  
+                                    return
+                                if not g_dev['obs'].open_and_enabled_to_observe:
+                                    g_dev["obs"].send_to_user("Cancelling out of activity as no longer open and enabled to observe.")  
                                     return
             
                                 bright = fred['patch']    #  Patch should be circular and 20% of Chip area. ToDo project
@@ -2732,6 +2742,9 @@ class Sequencer:
                             g_dev['mnt'].slewToSkyFlatAsync()
                             if self.stop_script_called:
                                 g_dev["obs"].send_to_user("Cancelling out of calibration script as stop script has been called.")  
+                                return
+                            if not g_dev['obs'].open_and_enabled_to_observe:
+                                g_dev["obs"].send_to_user("Cancelling out of activity as no longer open and enabled to observe.")  
                                 return
                             
                             
@@ -2930,6 +2943,9 @@ class Sequencer:
         if self.stop_script_called:
             g_dev["obs"].send_to_user("Cancelling out of autofocus script as stop script has been called.")  
             return
+        if not g_dev['obs'].open_and_enabled_to_observe:
+            g_dev["obs"].send_to_user("Cancelling out of activity as no longer open and enabled to observe.")  
+            return
             
 
         plog ("Threshold time between auto focus routines (hours)")
@@ -3036,6 +3052,9 @@ class Sequencer:
         if self.stop_script_called:
             g_dev["obs"].send_to_user("Cancelling out of autofocus script as stop script has been called.")  
             return
+        if not g_dev['obs'].open_and_enabled_to_observe:
+            g_dev["obs"].send_to_user("Cancelling out of activity as no longer open and enabled to observe.")  
+            return
         
         
         #g_dev['mnt'].go_coord(focus_patch_ra, focus_patch_dec)            
@@ -3053,6 +3072,9 @@ class Sequencer:
         
         if self.stop_script_called:
             g_dev["obs"].send_to_user("Cancelling out of autofocus script as stop script has been called.")  
+            return
+        if not g_dev['obs'].open_and_enabled_to_observe:
+            g_dev["obs"].send_to_user("Cancelling out of activity as no longer open and enabled to observe.")  
             return
         
         try:
@@ -3110,6 +3132,9 @@ class Sequencer:
                 if self.stop_script_called:
                     g_dev["obs"].send_to_user("Cancelling out of autofocus script as stop script has been called.")  
                     return
+                if not g_dev['obs'].open_and_enabled_to_observe:
+                    g_dev["obs"].send_to_user("Cancelling out of activity as no longer open and enabled to observe.")  
+                    return
 
             else:
 
@@ -3143,6 +3168,9 @@ class Sequencer:
             if self.stop_script_called:
                 g_dev["obs"].send_to_user("Cancelling out of autofocus script as stop script has been called.")  
                 return
+            if not g_dev['obs'].open_and_enabled_to_observe:
+                g_dev["obs"].send_to_user("Cancelling out of activity as no longer open and enabled to observe.")  
+                return
         else:
             result['FWHM'] = 4
             result['mean_focus'] = g_dev['foc'].focuser.Position*g_dev['foc'].steps_to_micron
@@ -3169,6 +3197,9 @@ class Sequencer:
             result = g_dev['cam'].expose_command(req, opt, no_AWS=True, solve_it=False) ## , script = 'auto_focus_script_2')  #  This is moving out one throw.
             if self.stop_script_called:
                 g_dev["obs"].send_to_user("Cancelling out of autofocus script as stop script has been called.")  
+                return
+            if not g_dev['obs'].open_and_enabled_to_observe:
+                g_dev["obs"].send_to_user("Cancelling out of activity as no longer open and enabled to observe.")  
                 return
         else:
             result['FWHM'] = 4.5
@@ -3245,6 +3276,9 @@ class Sequencer:
                     if self.stop_script_called:
                         g_dev["obs"].send_to_user("Cancelling out of autofocus script as stop script has been called.")  
                         return
+                    if not g_dev['obs'].open_and_enabled_to_observe:
+                        g_dev["obs"].send_to_user("Cancelling out of activity as no longer open and enabled to observe.")  
+                        return
                 else:
                     result['FWHM'] = new_spot
                     result['mean_focus'] = g_dev['foc'].focuser.Position*g_dev['foc'].steps_to_micron
@@ -3284,6 +3318,9 @@ class Sequencer:
                 result = g_dev['cam'].expose_command(req, opt, no_AWS=True, solve_it=False) ## , script = 'auto_focus_script_1')  #  This is moving in one throw.
                 if self.stop_script_called:
                     g_dev["obs"].send_to_user("Cancelling out of autofocus script as stop script has been called.")  
+                    return
+                if not g_dev['obs'].open_and_enabled_to_observe:
+                    g_dev["obs"].send_to_user("Cancelling out of activity as no longer open and enabled to observe.")  
                     return
             else:
                 result['FWHM'] = 6
@@ -3357,6 +3394,9 @@ class Sequencer:
                     if self.stop_script_called:
                         g_dev["obs"].send_to_user("Cancelling out of autofocus script as stop script has been called.")  
                         return
+                    if not g_dev['obs'].open_and_enabled_to_observe:
+                        g_dev["obs"].send_to_user("Cancelling out of activity as no longer open and enabled to observe.")  
+                        return
                 else:
                     result['FWHM'] = new_spot
                     result['mean_focus'] = g_dev['foc'].focuser.Position*g_dev['foc'].steps_to_micron
@@ -3398,6 +3438,9 @@ class Sequencer:
                 result = g_dev['cam'].expose_command(req, opt, no_AWS=True, solve_it=False) ## , script = 'auto_focus_script_2')  #  This is moving out one throw.
                 if self.stop_script_called:
                     g_dev["obs"].send_to_user("Cancelling out of autofocus script as stop script has been called.")  
+                    return
+                if not g_dev['obs'].open_and_enabled_to_observe:
+                    g_dev["obs"].send_to_user("Cancelling out of activity as no longer open and enabled to observe.")  
                     return
             else:
                 result['FWHM'] = 5.5
@@ -3482,6 +3525,9 @@ class Sequencer:
                     result = g_dev['cam'].expose_command(req, opt, no_AWS=True, solve_it=False)  #   script = 'auto_focus_script_3')  #  This is verifying the new focus.
                     if self.stop_script_called:
                         g_dev["obs"].send_to_user("Cancelling out of autofocus script as stop script has been called.")  
+                        return
+                    if not g_dev['obs'].open_and_enabled_to_observe:
+                        g_dev["obs"].send_to_user("Cancelling out of activity as no longer open and enabled to observe.")  
                         return
                 else:
                     result['FWHM'] = new_spot
@@ -3723,6 +3769,9 @@ class Sequencer:
             if self.stop_script_called:
                 g_dev["obs"].send_to_user("Cancelling out of autofocus script as stop script has been called.")  
                 return
+            if not g_dev['obs'].open_and_enabled_to_observe:
+                g_dev["obs"].send_to_user("Cancelling out of activity as no longer open and enabled to observe.")  
+                return
             
             # If no auto_focus has been done, centre the focus field.
             if no_auto_after_solve == False:            
@@ -3734,6 +3783,9 @@ class Sequencer:
             
             if self.stop_script_called:
                 g_dev["obs"].send_to_user("Cancelling out of autofocus script as stop script has been called.")  
+                return
+            if not g_dev['obs'].open_and_enabled_to_observe:
+                g_dev["obs"].send_to_user("Cancelling out of activity as no longer open and enabled to observe.")  
                 return
             
             
@@ -3757,6 +3809,9 @@ class Sequencer:
                 if self.stop_script_called:
                     g_dev["obs"].send_to_user("Cancelling out of autofocus script as stop script has been called.")  
                     return
+                if not g_dev['obs'].open_and_enabled_to_observe:
+                    g_dev["obs"].send_to_user("Cancelling out of activity as no longer open and enabled to observe.")  
+                    return
             else:
                 result['FWHM'] = 4
                 result['mean_focus'] = g_dev['foc'].focuser.Position*g_dev['foc'].steps_to_micron
@@ -3770,6 +3825,9 @@ class Sequencer:
                     result = g_dev['cam'].expose_command(req, opt, no_AWS=True, solve_it=False)
                     if self.stop_script_called:
                         g_dev["obs"].send_to_user("Cancelling out of autofocus script as stop script has been called.")  
+                        return
+                    if not g_dev['obs'].open_and_enabled_to_observe:
+                        g_dev["obs"].send_to_user("Cancelling out of activity as no longer open and enabled to observe.")  
                         return
                     spot = result['FWHM']
                     if np.isnan(result['FWHM']):
@@ -3800,6 +3858,9 @@ class Sequencer:
                 if self.stop_script_called:
                     g_dev["obs"].send_to_user("Cancelling out of autofocus script as stop script has been called.")  
                     return
+                if not g_dev['obs'].open_and_enabled_to_observe:
+                    g_dev["obs"].send_to_user("Cancelling out of activity as no longer open and enabled to observe.")  
+                    return
             else:
                 result['FWHM'] = 4
                 result['mean_focus'] = g_dev['foc'].focuser.Position*g_dev['foc'].steps_to_micron
@@ -3813,6 +3874,9 @@ class Sequencer:
                     result = g_dev['cam'].expose_command(req, opt, no_AWS=True, solve_it=False)
                     if self.stop_script_called:
                         g_dev["obs"].send_to_user("Cancelling out of autofocus script as stop script has been called.")  
+                        return
+                    if not g_dev['obs'].open_and_enabled_to_observe:
+                        g_dev["obs"].send_to_user("Cancelling out of activity as no longer open and enabled to observe.")  
                         return
                     spot = result['FWHM']
                     if np.isnan(result['FWHM']):
@@ -4023,6 +4087,9 @@ class Sequencer:
             if self.stop_script_called:
                 g_dev["obs"].send_to_user("Cancelling out of autofocus script as stop script has been called.")  
                 return
+            if not g_dev['obs'].open_and_enabled_to_observe:
+                g_dev["obs"].send_to_user("Cancelling out of activity as no longer open and enabled to observe.")  
+                return
         else:
             result['FWHM'] = 4
             result['mean_focus'] = g_dev['foc'].focuser.Position*g_dev['foc'].steps_to_micron
@@ -4047,6 +4114,9 @@ class Sequencer:
             if self.stop_script_called:
                 g_dev["obs"].send_to_user("Cancelling out of autofocus script as stop script has been called.")  
                 return
+            if not g_dev['obs'].open_and_enabled_to_observe:
+                g_dev["obs"].send_to_user("Cancelling out of activity as no longer open and enabled to observe.")  
+                return
         else:
             result['FWHM'] = 5
             result['mean_focus'] = g_dev['foc'].focuser.Position*g_dev['foc'].steps_to_micron
@@ -4069,6 +4139,9 @@ class Sequencer:
             result = g_dev['cam'].expose_command(req, opt, no_AWS=True, solve_it=False)
             if self.stop_script_called:
                 g_dev["obs"].send_to_user("Cancelling out of autofocus script as stop script has been called.")  
+                return
+            if not g_dev['obs'].open_and_enabled_to_observe:
+                g_dev["obs"].send_to_user("Cancelling out of activity as no longer open and enabled to observe.")  
                 return
         else:
             result['FWHM'] = 6
@@ -4094,6 +4167,9 @@ class Sequencer:
             if self.stop_script_called:
                 g_dev["obs"].send_to_user("Cancelling out of autofocus script as stop script has been called.")  
                 return
+            if not g_dev['obs'].open_and_enabled_to_observe:
+                g_dev["obs"].send_to_user("Cancelling out of activity as no longer open and enabled to observe.")  
+                return
         else:
             result['FWHM'] = 6.5
             result['mean_focus'] = g_dev['foc'].focuser.Position*g_dev['foc'].steps_to_micron
@@ -4116,6 +4192,9 @@ class Sequencer:
             result = g_dev['cam'].expose_command(req, opt, no_AWS=True, solve_it=False)
             if self.stop_script_called:
                 g_dev["obs"].send_to_user("Cancelling out of autofocus script as stop script has been called.")  
+                return
+            if not g_dev['obs'].open_and_enabled_to_observe:
+                g_dev["obs"].send_to_user("Cancelling out of activity as no longer open and enabled to observe.")  
                 return
         else:
             result['FWHM'] = 5.75
@@ -4162,6 +4241,9 @@ class Sequencer:
                 result = g_dev['cam'].expose_command(req, opt, solve_it=False)
                 if self.stop_script_called:
                     g_dev["obs"].send_to_user("Cancelling out of autofocus script as stop script has been called.")  
+                    return
+                if not g_dev['obs'].open_and_enabled_to_observe:
+                    g_dev["obs"].send_to_user("Cancelling out of activity as no longer open and enabled to observe.")  
                     return
             else:
                 result['FWHM'] = new_spot
@@ -4645,6 +4727,9 @@ class Sequencer:
                 if self.stop_script_called:
                     g_dev["obs"].send_to_user("Cancelling out of autofocus script as stop script has been called.")  
                     return
+                if not g_dev['obs'].open_and_enabled_to_observe:
+                    g_dev["obs"].send_to_user("Cancelling out of activity as no longer open and enabled to observe.")  
+                    return
                 pass
         
         # Take a pointing shot to reposition
@@ -4664,6 +4749,9 @@ class Sequencer:
                 if self.stop_script_called:
                     g_dev["obs"].send_to_user("Cancelling out of autofocus script as stop script has been called.")  
                     return
+                if not g_dev['obs'].open_and_enabled_to_observe:
+                    g_dev["obs"].send_to_user("Cancelling out of activity as no longer open and enabled to observe.")  
+                    return
                 pass
         plog ("Time Taken for queue to clear post-exposure: " + str(time.time() - queue_clear_time))
         
@@ -4673,6 +4761,9 @@ class Sequencer:
         if self.stop_script_called:
             g_dev["obs"].send_to_user("Cancelling out of autofocus script as stop script has been called.")  
             return
+        if not g_dev['obs'].open_and_enabled_to_observe:
+            g_dev["obs"].send_to_user("Cancelling out of activity as no longer open and enabled to observe.")  
+            return
         
         # Taking a confirming shot. 
         req = {'time': self.config['pointing_exposure_time'],  'alias':  str(self.config['camera']['camera_1_1']['name']), 'image_type': 'light'}   #  NB Should pick up filter and constats from config
@@ -4681,6 +4772,9 @@ class Sequencer:
         
         if self.stop_script_called:
             g_dev["obs"].send_to_user("Cancelling out of autofocus script as stop script has been called.")  
+            return
+        if not g_dev['obs'].open_and_enabled_to_observe:
+            g_dev["obs"].send_to_user("Cancelling out of activity as no longer open and enabled to observe.")  
             return
         
         return result
