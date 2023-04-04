@@ -869,7 +869,7 @@ class Sequencer:
         
         elif not self.morn_sky_flat_latch and ((events['Morn Sky Flats'] <= ephem_now < events['End Morn Sky Flats'])  \
                and g_dev['enc'].mode == 'Automatic' and not g_dev['ocn'].wx_hold and \
-               self.config['auto_morn_sky_flat']) and not self.morn_flats_done and g_dev['obs'].camera_temperature_in_range_for_calibrations and g_dev['obs'].open_and_enabled_to_observe and self.weather_report_is_acceptable_to_observe==True:
+               self.config['auto_morn_sky_flat']) and not self.morn_flats_done and g_dev['obs'].camera_temperature_in_range_for_calibrations and g_dev['obs'].open_and_enabled_to_observe:
                    #self.config['auto_morn_sky_flat']) and not self.morn_flats_done and g_dev['obs'].open_and_enabled_to_observe :
             #self.time_of_next_slew = time.time() -1
             self.morn_sky_flat_latch = True
