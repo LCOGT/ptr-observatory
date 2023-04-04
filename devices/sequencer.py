@@ -1294,12 +1294,13 @@ class Sequencer:
                     g_dev['obs'].scan_requests()
                     foundcalendar=False
                     for tempblock in g_dev['obs'].blocks:
-                        print (tempblock['event_id'])
+                        plog (tempblock['event_id'])
                         if tempblock['event_id'] == calendar_event_id :
                             foundcalendar=True
                             block['end']=tempblock['end']
                     if not foundcalendar:
-                        print ("could not find calendar entry, cancelling out of block.")
+                        plog ("could not find calendar entry, cancelling out of block.")
+                        g_dev["obs"].send_to_user("Calendar block removed. Stopping project run.")   
                         self.block_guard = False
                         return block_specification
 
@@ -3040,11 +3041,14 @@ class Sequencer:
         #g_dev['mnt'].go_coord(focus_patch_ra, focus_patch_dec)            
         g_dev['foc'].guarded_move((focus_start)*g_dev['foc'].micron_to_steps)
         
-        g_dev['obs'].send_to_user("Running a quick platesolve to center the focus field", p_level='INFO')
         
-        self.centering_exposure()
-        
-        g_dev['obs'].send_to_user("Focus Field Centered", p_level='INFO')
+        # If no extensive_focus has been done, centre the focus field.
+        if extensive_focus == None:
+            g_dev['obs'].send_to_user("Running a quick platesolve to center the focus field", p_level='INFO')
+            
+            self.centering_exposure()
+            
+            g_dev['obs'].send_to_user("Focus Field Centered", p_level='INFO')
         
         
         if self.stop_script_called:
@@ -3720,11 +3724,13 @@ class Sequencer:
                 g_dev["obs"].send_to_user("Cancelling out of autofocus script as stop script has been called.")  
                 return
             
-            g_dev['obs'].send_to_user("Running a quick platesolve to center the focus field", p_level='INFO')
-            
-            self.centering_exposure()
-            
-            g_dev['obs'].send_to_user("Focus Field Centered", p_level='INFO')
+            # If no auto_focus has been done, centre the focus field.
+            if no_auto_after_solve == False:            
+                g_dev['obs'].send_to_user("Running a quick platesolve to center the focus field", p_level='INFO')
+                
+                self.centering_exposure()
+                
+                g_dev['obs'].send_to_user("Focus Field Centered", p_level='INFO')
             
             if self.stop_script_called:
                 g_dev["obs"].send_to_user("Cancelling out of autofocus script as stop script has been called.")  
