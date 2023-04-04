@@ -678,8 +678,15 @@ sel
                                 self.cancel_all_activity() # Hi Wayne, I have to cancel all acitivity with some roof stuff
                                 # So I've moved the cancelling to it's own function just above so it can be called from multiple locations.
                             else:
-                                action=cmd['action']
-                                script=cmd['required_params']['script']
+                                try:
+                                    action=cmd['action']
+                                except:
+                                    action=None
+                                    
+                                try:
+                                    script=cmd['required_params']['script']
+                                except:
+                                    script=None
                                     
                                 # Check here for admin/owner only functions
                                 if action == "run" and script == 'collectScreenFlats' and not (("admin" in cmd['user_roles']) or ("owner" in cmd['user_roles'])):

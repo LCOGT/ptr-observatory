@@ -684,7 +684,7 @@ class Sequencer:
             
 
         elif ((g_dev['events']['Clock & Auto Focus']  <= ephem_now < g_dev['events']['Observing Begins']) and \
-               g_dev['enc'].mode == 'Automatic') and not g_dev['ocn'].wx_hold and self.weather_report_is_acceptable_to_observe==True \
+               g_dev['enc'].mode == 'Automatic') and not g_dev['ocn'].wx_hold  \
                 and self.night_focus_ready==True and  g_dev['obs'].open_and_enabled_to_observe and not self.clock_focus_latch:
 
             
@@ -725,7 +725,7 @@ class Sequencer:
         elif (events['Observing Begins'] <= ephem_now \
                                    < events['Observing Ends']) and not g_dev['ocn'].wx_hold \
                                    and  g_dev['obs'].blocks is not None and g_dev['obs'].projects \
-                                   is not None and g_dev['obs'].open_and_enabled_to_observe and self.weather_report_is_acceptable_to_observe==True:
+                                   is not None and g_dev['obs'].open_and_enabled_to_observe:
             try:
                 
                
