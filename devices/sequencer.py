@@ -228,6 +228,7 @@ class Sequencer:
         self.eve_sky_flat_latch = False
         self.morn_sky_flat_latch = False
         self.bias_dark_latch = False
+        self.clock_focus_latch=False
         # The weather report has to be at least passable at some time of the night in order to 
         # allow the observatory to become active and observe. This doesn't mean that it is 
         # necessarily a GOOD night at all, just that there are patches of feasible
