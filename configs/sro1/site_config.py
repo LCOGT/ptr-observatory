@@ -650,8 +650,14 @@ site_config = {
                 'number_of_bias_to_store' : 128,
                 'number_of_dark_to_store' : 128,
                 'number_of_flat_to_store' : 128,
-                'pix_scale': [1.104, 2.134, 3.201, 4.268],
-                
+                'pix_scale': 1.104,
+                # The drizzle_factor is by how much to divide the pixel_scale
+                # for the new resolution when stacking in the EVA pipeline
+                # Realistically you want a resolution of about 0.5 arcseconds per pixel
+                # Unless you are at a very poor quality site.
+                # e.g. for a 1.25 pixel scale, you would set a 2.5 drizzle factor. 
+                # Whole-ish numbers are better - 1, 1.25, 1.5, 2, 3, 2.5 etc.
+                'drizzle_factor_for_later_stacking': 2.5,
                 'do_cosmics' : False,
                 
                 'has_screen': True,

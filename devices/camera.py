@@ -2846,6 +2846,10 @@ class Camera:
                             "[arcsec/pixel] Nominal pixel scale on sky",
                         )
                         pixscale = float(0.6)
+                    
+                    hdu.header["DRIZFACT"] = (self.config["camera"][self.name]["settings"]['drizzle_factor_for_later_stacking'], 'Factor to increase resolution when drizzling')
+                    
+                        
                         
                     hdu.header["REQNUM"] = ("00000001", "Request number")
                     hdu.header["ISMASTER"] = (False, "Is master image")

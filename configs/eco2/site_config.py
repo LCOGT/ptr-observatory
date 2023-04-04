@@ -832,9 +832,17 @@ site_config = {
                 'det_sec': ['[25:9600, 1:6388]', '[13:4800, 1:3194]', '[9:3200, 1:2129]', '[7:2400, 1:1597]'],
                 'data_sec': ['[25:9600, 1:6388]', '[13:4800, 1:3194]', '[9:3200, 1:2129]', '[7:2400, 1:1597]'],
                 'trim_sec': ['[1:9576, 1:6388]', '[1:4788, 1:3194]', '[1:3192, 1:2129]', '[1:2394, 1:1597]'],
-                'x_pixel':  3.76,
-                'y_pixel':  3.76,
-                'pix_scale': 1.25,    #   bin-2  2* math.degrees(math.atan(3.76/2563000))*3600
+                'x_pixel':  3.76, # microns
+                'y_pixel':  3.76, # microns
+                'pix_scale': 1.25,    #   arcseconds per pixel
+                
+                # The drizzle_factor is by how much to divide the pixel_scale
+                # for the new resolution when stacking in the EVA pipeline
+                # Realistically you want a resolution of about 0.5 arcseconds per pixel
+                # Unless you are at a very poor quality site.
+                # e.g. for a 1.25 pixel scale, you would set a 2.5 drizzle factor. 
+                # Whole-ish numbers are better - 1, 1.25, 1.5, 2, 3, 2.5 etc.
+                'drizzle_factor_for_later_stacking': 2.5,
                 
 
                 'CameraXSize' : 9600,

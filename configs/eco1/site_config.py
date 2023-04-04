@@ -701,6 +701,14 @@ site_config = {
                 #'max_res_bin':  [1, 1, 0.269],    #  Matched to seeing situation by owner
                 #'bin_modes':  [[1, 1, 0.269],[2, 2, 0.538],[3, 3, 0.807],[4, 4, 1.076]], #  , [2, 2, 2.13], [3, 3, 3.21], [4, 4, 4.27]],   #Meaning no binning choice if list has only one entry, default should be first.
                 'pix_scale': 0.637,
+                # The drizzle_factor is by how much to divide the pixel_scale
+                # for the new resolution when stacking in the EVA pipeline
+                # Realistically you want a resolution of about 0.5 arcseconds per pixel
+                # Unless you are at a very poor quality site.
+                # e.g. for a 1.25 pixel scale, you would set a 2.5 drizzle factor.                
+                'drizzle_factor_for_later_stacking': 1.5,
+                
+                
                 'do_cosmics' : False,
                 #'dark_length' : 1,
                 'number_of_bias_to_collect' : 10,
