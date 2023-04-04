@@ -1772,10 +1772,10 @@ class Camera:
                 
                             # Good spot to check if we need to nudge the telescope
                             check_platesolve_and_nudge()   
-                            
+                            g_dev['obs'].time_of_last_exposure = time.time()
                             self._expose(exposure_time, bias_dark_or_light_type_frame)
                             
-                            g_dev['obs'].time_of_last_exposure = time.time()
+                            
                         else:
                             plog("Something terribly wrong, driver not recognized.!")
                             self.expresult = {}
