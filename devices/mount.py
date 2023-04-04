@@ -1025,7 +1025,7 @@ class Mount:
         except:
             self.object = 'unspecified'    #NB could possibly augment with "Near --blah--"
         self.unpark_command()  
-        g_dev['obs'].send_to_user("Slewing Telescope.")
+        #g_dev['obs'].send_to_user("Slewing Telescope.")
         try:
             clutch_ra = g_dev['mnt']['mount1']['east_clutch_ra_correction']
             clutch_dec = g_dev['mnt']['mount1']['east_clutch_dec_correction']
@@ -1200,25 +1200,30 @@ class Mount:
 #         ra, dec = ra_dec_fix_h(ra + delta_ra, dec + delta_dec)   #Plus compensates for measured offset
 # =============================================================================
         self.move_time = time.time()
+        
+        self.object = opt.get("object", "")
+        if self.object == "":
+           # plog("Go to unamed target.")
+            g_dev['obs'].send_to_user("Slewing telescope to un-named target!  ",  p_level="INFO")
+        else:
+            #plog("Going to:  ", self.object)   #NB Needs cleaning up.
+            g_dev['obs'].send_to_user("Slewing telescope to:  " + str( self.object),  p_level="INFO")
+        
         if object_is_moon:
             self.go_coord(ra1, dec1, tracking_rate_ra=dra_moon, tracking_rate_dec = ddec_moon)
         elif alt_az == True:
             self.move_to_azalt(az, alt)
-
+            g_dev['obs'].send_to_user("Slew Complete.")
         elif ra_dec == True:
             self.go_coord(ra, dec, tracking_rate_ra=tracking_rate_ra, tracking_rate_dec = tracking_rate_dec)
-        self.object = opt.get("object", "")
-        if self.object == "":
-           # plog("Go to unamed target.")
-            g_dev['obs'].send_to_user("Going to un-named target!  ",  p_level="INFO")
-        else:
-            #plog("Going to:  ", self.object)   #NB Needs cleaning up.
-            g_dev['obs'].send_to_user("Going to:  " + str( self.object),  p_level="INFO")
+            g_dev['obs'].send_to_user("Slew Complete.")
+            
+        
 
         # On successful movement of telescope reset the solving timer
         g_dev['obs'].last_solve_time = datetime.datetime.now() - datetime.timedelta(days=1)
         g_dev['obs'].images_since_last_solve = 10000
-        g_dev['obs'].send_to_user("Slew Complete.")
+        
 
     # def re_seek(self, dither):
         
@@ -1481,6 +1486,7 @@ class Mount:
         self.move_time = time.time()
         try:
             self.move_to_azalt(az, alt)
+            g_dev['obs'].time_of_last_slew = time.time()
             # On successful movement of telescope reset the solving timer
             g_dev['obs'].last_solve_time = datetime.datetime.now() - datetime.timedelta(days=1)
             g_dev['obs'].images_since_last_solve = 10000
@@ -1799,8 +1805,10 @@ class Mount:
                 self.mount.SlewToCoordinatesAsync(tempRA, tempDEC)
             except Exception as e:
                 if ('Object reference not set to an instance of an object.' in str(e)):                       
-                    self.home_command()
+                    #self.home_command()
+                    self.unpark_command()
                     self.mount.SlewToCoordinatesAsync(tempRA, tempDEC)
+                    plog (traceback.format_exc())
             
             g_dev['obs'].time_since_last_slew = time.time()
             g_dev['obs'].last_solve_time = datetime.datetime.now() - datetime.timedelta(days=1)
