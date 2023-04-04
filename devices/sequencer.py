@@ -852,7 +852,7 @@ class Sequencer:
                                 plog ("Skipping a block that contains an empty project")
                                 return
         
-        
+                            g_dev['obs'].update()
                             completed_block = self.execute_block(block)  #In this we need to ultimately watch for weather holds.
                             try:
                                 self.append_completes(completed_block['event_id'])
@@ -1082,6 +1082,7 @@ class Sequencer:
             g_dev["obs"].send_to_user("A project block was rejected as it is during the daytime.")            
             return
         
+        g_dev['obs'].update()
         
         plog('|n|n Staring a new project!  \n')
         plog(block_specification, ' \n\n\n')
@@ -1126,6 +1127,7 @@ class Sequencer:
         for target in block['project']['project_targets']:   #  NB NB NB Do multi-target projects make sense???
             try:
                 #breakpoint()
+                g_dev['obs'].update()
                 dest_ra = float(target['ra']) - \
                     float(block_specification['project']['project_constraints']['ra_offset'])/15.
 
@@ -1222,7 +1224,7 @@ class Sequencer:
                 return block_specification
             
             
-            
+            g_dev['obs'].update()
             #g_dev['mnt'].re_seek(dither=0)
 
             plog("CAUTION:  rotator may block")
@@ -1447,7 +1449,9 @@ class Sequencer:
                             now_date_timeZ = datetime.datetime.now().isoformat().split('.')[0] +'Z'
                             if now_date_timeZ >= block['end'] :
                                 break
+                            g_dev['obs'].update()
                             result = g_dev['cam'].expose_command(req, opt, no_AWS=False, solve_it=False, calendar_event_id=calendar_event_id)
+                            g_dev['obs'].update()
                             try:
                                 if result['stopped'] is True:
                                     g_dev['obs'].send_to_user("Project Stopped because Exposure cancelled")

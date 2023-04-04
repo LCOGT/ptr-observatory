@@ -1793,6 +1793,7 @@ class Camera:
                             # Good spot to check if we need to nudge the telescope
                             check_platesolve_and_nudge()   
                             g_dev['obs'].time_of_last_exposure = time.time()
+                            g_dev['obs'].update()
                             self._expose(exposure_time, bias_dark_or_light_type_frame)
                             
                             
@@ -1999,7 +2000,7 @@ class Camera:
                         )  #|| used to flag this line in plog().
                         
                         # Here scan for requests
-                        
+                        g_dev['obs'].update()
                         
                         
                     if (
@@ -2049,8 +2050,8 @@ class Camera:
                             + " sec.",
                             p_level="INFO",
                         )
-                        if (exposure_time > 120):
-                            g_dev["obs"].update_status(cancel_check=False)
+                        #if (exposure_time > 120):
+                        #    g_dev["obs"].update_status(cancel_check=False)
 
 
                 continue
