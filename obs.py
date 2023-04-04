@@ -678,9 +678,27 @@ sel
                                 self.cancel_all_activity() # Hi Wayne, I have to cancel all acitivity with some roof stuff
                                 # So I've moved the cancelling to it's own function just above so it can be called from multiple locations.
                             else:
+                                action=cmd['action']
+                                script=cmd['required_params']['script']
+                                    
+                                # Check here for admin/owner only functions
+                                if action == "run" and script == 'collectScreenFlats' and not (("admin" in cmd['user_roles']) or ("owner" in cmd['user_roles'])):
+                                    plog ("Request rejected as flats can only be commanded by admin user.")
+                                    g_dev['obs'].send_to_user("Request rejected as flats can only be commanded by admin user.")
+                                elif action == "run" and script == 'collectSkyFlats' and not (("admin" in cmd['user_roles']) or ("owner" in cmd['user_roles'])):
+                                    plog ("Request rejected as flats can only be commanded by admin user.")
+                                    g_dev['obs'].send_to_user("Request rejected as flats can only be commanded by admin user.")
+                                        
+                                elif action == "run" and script in ['32TargetPointingRun', 'pointingRun', 'makeModel'] and not (("admin" in cmd['user_roles']) or ("owner" in cmd['user_roles'])):
+                                    plog ("Request rejected as pointing runs can only be commanded by admin user.")
+                                    g_dev['obs'].send_to_user("Request rejected as pointing runs can only be commanded by admin user.")
+                                elif action == "run" and script in ("collectBiasesAndDarks") and not (("admin" in cmd['user_roles']) or ("owner" in cmd['user_roles'])):
+                                    plog ("Request rejected as bias and darks can only be commanded by admin user.")
+                                    g_dev['obs'].send_to_user("Request rejected as bias and darks can only be commanded by admin user.")
+                                
                                 # Check here for irrelevant commands
                                 
-                                if cmd['deviceType'] == 'screen' and self.config['screen']['screen1']['driver'] == None:
+                                elif cmd['deviceType'] == 'screen' and self.config['screen']['screen1']['driver'] == None:
                                     plog ("Refusing command as there is no screen")
                                     g_dev['obs'].send_to_user("Request rejected as site has no flat screen.")
                                 elif cmd['deviceType'] == 'rotator' and self.config['rotator']['rotator1']['driver'] == None:

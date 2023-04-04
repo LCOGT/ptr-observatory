@@ -304,7 +304,7 @@ class Sequencer:
                 self.cross_pointing_run(req, opt)
             else:
                 self.sky_grid_pointing_run(req, opt)
-        elif action == "run" and script in ("collectBiasAndDarks"):
+        elif action == "run" and script in ("collectBiasesAndDarks"):
             self.bias_dark_script(req, opt, morn=True)
         elif action == "run" and script == 'takeLRGBStack':
             self.take_lrgb_stack(req, opt)
