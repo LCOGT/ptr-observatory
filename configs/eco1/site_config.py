@@ -40,7 +40,7 @@ site_config = {
     
     'debug_site_mode': False,
     
-    'debug_mode': False,
+    'debug_mode': True,
     'admin_owner_commands_only': False,
     'debug_duration_sec': 7200,
     'owner':  ['google-oauth2|112401903840371673242'],  # WER,  Or this can be
@@ -502,12 +502,10 @@ site_config = {
                 'filter_screen_sort':  ['s2','o3','ha','pb','pg','pr','lum'],   #  don't use narrow yet,  8, 10, 9], useless to try.
 
 
-                #'filter_sky_sort': ['ha','o3','s2','pb','v','ip','lum']    #No diffuser based filters
-                'filter_sky_sort': ['ha','o3','s2','v','pb','ip','lum']    #No diffuser based filters
-                #'filter_sky_sort': [7, 19, 2, 13, 18, 5, 15,\
-                #                    12, 4, 11, 16, 10, 9, 17, 3, 14, 1, 0]    #basically no diffuser based filters
-                #[32, 8, 22, 21, 20, 23, 31, 6, 7, 19, 27, 2, 37, 13, 18, 30, 5, 15, 36, 12,\
-                 #                   29, 4, 35, 34, 11, 16, 10, 33, 9, 17, 28, 3, 26, 14, 1, 0]
+                
+                #'filter_sky_sort': ['ha','o3','s2','v','pb','ip','lum']    #No diffuser based filters
+                'filter_sky_sort': ['v','ip','lum','pb']    #No diffuser based filters
+                
 
 
             },
@@ -716,7 +714,7 @@ site_config = {
                 #'dark_length' : 1,
                 'number_of_bias_to_collect' : 10,
                 'number_of_dark_to_collect' : 10,
-                'number_of_flat_to_collect' : 4,
+                'number_of_flat_to_collect' : 10,
                 'number_of_bias_to_store' : 128,
                 'number_of_dark_to_store' : 128,
                 'number_of_flat_to_store' : 63,
