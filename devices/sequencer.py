@@ -334,6 +334,12 @@ class Sequencer:
         #if time.time() >= self.time_of_next_slew:
         #    self.time_of_next_slew = time.time() + 600  # seconds between slews.
             #We slew to anti-solar Az and reissue this command every 120 seconds
+        
+        if not self.config['obsid_roof_control']:
+            plog("A request to open observatory was made even though this platform has no roof control. Returning.")
+            return
+        
+        
         flat_spot, flat_alt = g_dev['evnt'].flat_spot_now()
         obs_win_begin, sunZ88Op, sunZ88Cl, ephem_now = self.astro_events.getSunEvents()
         
@@ -560,8 +566,8 @@ class Sequencer:
                 if time.time() > self.enclosure_next_open_time and self.opens_this_evening < self.config['maximum_roof_opens_per_evening']:
                     
                     #self.enclosure_next_open_time = time.time() + 300 # Only try to open the roof every five minutes maximum
-                    
-                    self.open_observatory(enc_status, ocn_status)
+                    if self.config['obsid_roof_control']:
+                        self.open_observatory(enc_status, ocn_status)
                     
                     # If the observatory opens, set clock and auto focus and observing to now
                     if g_dev['obs'].open_and_enabled_to_observe:
@@ -1463,7 +1469,7 @@ class Sequencer:
                     #self.time_of_next_slew = time.time() -1
                     #plog ("got here")
                     
-                    if not g_dev['obs'].open_and_enabled_to_observe and self.weather_report_is_acceptable_to_observe==True and self.weather_report_wait_until_open==False and not self.cool_down_latch:
+                    if self.config['obsid_roof_control'] and not g_dev['obs'].open_and_enabled_to_observe and self.weather_report_is_acceptable_to_observe==True and self.weather_report_wait_until_open==False and not self.cool_down_latch:
                         if time.time() > self.enclosure_next_open_time and self.opens_this_evening < self.config['maximum_roof_opens_per_evening']:
                             #self.enclosure_next_open_time = time.time() + 300 # Only try to open the roof every five minutes
                             self.cool_down_latch = True

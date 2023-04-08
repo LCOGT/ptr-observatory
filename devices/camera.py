@@ -1278,6 +1278,7 @@ class Camera:
         if self.user_name != self.last_user_name:
             self.last_user_name = self.user_name
         if action == "expose" and not self.exposure_busy:
+            
             self.expose_command(req, opt, do_sep=True, quick=False)
             self.exposure_busy = False  # Hangup needs to be guarded with a timeout.
             self.active_script = None
@@ -1346,8 +1347,8 @@ class Camera:
         quick=False,
         solve_it=False,
         calendar_event_id=None,
-        skip_open_check=False,
-        skip_daytime_check=False
+        skip_open_check=True,
+        skip_daytime_check=True
     ):
         """
         This is Phase 1:  Setup the camera.
