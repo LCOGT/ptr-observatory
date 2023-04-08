@@ -223,6 +223,8 @@ class Sequencer:
         self.opens_this_evening = 0
         
         self.morn_bias_done = False
+        self.eve_bias_done = False
+        self.eve_bias_done = False
         self.eve_flats_done = False
         self.morn_flats_done = False
         self.eve_sky_flat_latch = False
@@ -249,7 +251,7 @@ class Sequencer:
         self.weather_report_wait_until_open_time=ephem_now
         self.weather_report_close_during_evening=False
         self.weather_report_close_during_evening_time=ephem_now + 86400
-        self.nightly_weather_report_done=False
+        self.nightly_weather_report_complete=False
         # Run a weather report on bootup so observatory can run if need be. 
         if not g_dev['debug']:
             #self.global_wx()
@@ -579,32 +581,33 @@ class Sequencer:
                     if not g_dev['mnt'].mount.AtPark:  
                         g_dev['mnt'].home_command()
                         g_dev['mnt'].park_command() 
-                    self.weather_report_close_during_evening=False                    
+                    self.weather_report_close_during_evening=False 
+                    
+                    
+                    
+        # Do nightly weather report at cool down open 
+        if (g_dev['events']['Cool Down, Open']  <= ephem_now < g_dev['events']['Observing Ends']) and not self.nightly_weather_report_complete and not g_dev['debug']:
+
+            # Reopening config and resetting all the things.
+            # This is necessary just in case a previous weather report was done today
+            # That can sometimes change the timing. 
+            self.astro_events.compute_day_directory()
+            self.astro_events.calculate_events()
+            #self.astro_events.display_events()
+            g_dev['obs'].astro_events = self.astro_events
+            # Run nightly weather report
+            self.run_nightly_weather_report()
+            self.nightly_weather_report_complete=True
+            
+            # Also make sure nightly reset is switched to go off
+            self.nightly_reset_complete = False
+            # As well as nightly focus routine.
+            self.night_focus_ready=True
         
         if ((g_dev['events']['Cool Down, Open']  <= ephem_now < g_dev['events']['Observing Ends']) and \
                g_dev['enc'].mode == 'Automatic') and not self.cool_down_latch  and not g_dev['ocn'].wx_hold and not enc_status['shutter_status'] in ['Software Fault', 'Closing', 'Error']:
 
-            #plog ("Cool Down Open Check Running")
-            
             self.cool_down_latch = True
-            
-            if not self.nightly_weather_report_done and not g_dev['debug']:
-
-                # Reopening config and resetting all the things.
-                # This is necessary just in case a previous weather report was done today
-                # That can sometimes change the timing. 
-                self.astro_events.compute_day_directory()
-                self.astro_events.calculate_events()
-                #self.astro_events.display_events()
-                g_dev['obs'].astro_events = self.astro_events
-                # Run nightly weather report
-                self.run_nightly_weather_report()
-                self.nightly_weather_report_done=True
-
-            
-
-            #self.time_of_next_slew = time.time() -1
-            #plog ("got here")
             
             if not g_dev['obs'].open_and_enabled_to_observe and self.weather_report_is_acceptable_to_observe==True and self.weather_report_wait_until_open==False:
                 #print (self.enclosure_next_open_time)
@@ -650,9 +653,9 @@ class Sequencer:
             self.cool_down_latch = False
 
         # Check that nightly reset switch is reset at start of observing eve. 
-        if self.nightly_reset_complete == True:
-            if events['Eve Bias Dark'] <= ephem_now :
-                self.nightly_reset_complete == False
+        #if self.nightly_reset_complete == True:
+        #    if events['Eve Bias Dark'] <= ephem_now :
+        #        self.nightly_reset_complete == False
                 
         # If in post-close and park era of the night, check those two things have happened!       
         if (events['Close and Park'] <= ephem_now < events['End Morn Bias Dark'])  \
@@ -671,7 +674,7 @@ class Sequencer:
 
 
         if not self.bias_dark_latch and ((events['Eve Bias Dark'] <= ephem_now < events['End Eve Bias Dark']) and \
-             self.config['auto_eve_bias_dark'] and g_dev['enc'].mode in ['Automatic', 'Autonomous', 'Manual'] and g_dev['obs'].camera_temperature_in_range_for_calibrations):   #events['End Eve Bias Dark']) and \
+             self.config['auto_eve_bias_dark'] and not  self.eve_bias_done and g_dev['enc'].mode in ['Automatic', 'Autonomous', 'Manual'] and g_dev['obs'].camera_temperature_in_range_for_calibrations):   #events['End Eve Bias Dark']) and \
             
             self.bias_dark_latch = True
             req = {'bin1': True, 'bin2': False, 'bin3': False, 'bin4': False, 'numOfBias': 45, \
@@ -683,9 +686,12 @@ class Sequencer:
             # The bias_dark_script parks the scope anyway. 
             
             self.bias_dark_script(req, opt, morn=False)
+            self.eve_bias_done = True
             self.bias_dark_latch = False
+            
+            
 
-            g_dev['mnt'].park_command({}, {})       
+            #g_dev['mnt'].park_command({}, {})       
 
 
         elif not self.eve_sky_flat_latch and ((events['Eve Sky Flats'] <= ephem_now < events['End Eve Sky Flats'])  \
@@ -1551,9 +1557,9 @@ class Sequencer:
                        g_dev['enc'].mode == 'Automatic') and not g_dev['ocn'].wx_hold and cool_down_opened_already == False:
 
                     
-                    if not self.nightly_weather_report_done and not g_dev['debug']:
+                    if not self.nightly_weather_report_complete and not g_dev['debug']:
                         self.run_nightly_weather_report()
-                        self.nightly_weather_report_done=True
+                        self.nightly_weather_report_complete=True
 
                     #self.time_of_next_slew = time.time() -1
                     #plog ("got here")
@@ -1733,10 +1739,11 @@ class Sequencer:
         self.eve_flats_done = False
         self.morn_flats_done = False
         self.morn_bias_done = False
+        self.eve_bias_done = False
         self.nightime_bias_counter = 0
         self.nightime_dark_counter = 0
 
-        self.nightly_weather_report_done=False
+        self.nightly_weather_report_complete=False
         # Set weather report to false because it is daytime anyways.
         self.weather_report_is_acceptable_to_observe=False
         
@@ -1901,7 +1908,24 @@ class Sequencer:
         self.cool_down_latch = False
         self.clock_focus_latch = False
         
+        self.morn_bias_done = False
+        self.eve_bias_done = False
+        self.eve_flats_done = False
+        self.morn_flats_done = False
+        
+        
+        
         self.reset_completes()
+
+        # Allow early night focus
+        self.night_focus_ready==True
+        
+        self.nightime_bias_counter = 0
+        self.nightime_dark_counter = 0
+        
+
+
+
 
 
         # Reset focus tracker
@@ -1925,8 +1949,7 @@ class Sequencer:
         self.astro_events.display_events()
         g_dev['obs'].astro_events = self.astro_events
 
-        # Allow early night focus
-        self.night_focus_ready==True
+        
         
         # Allow midnight calibrations
         #self.midnight_calibration_done = False
@@ -1943,6 +1966,10 @@ class Sequencer:
         self.weather_report_wait_until_open_time=ephem_now
         self.weather_report_close_during_evening=False
         self.weather_report_close_during_evening_time=ephem_now + 86400
+        self.nightly_weather_report_complete=False
+        
+        self.stop_script_called=False
+        self.stop_script_called_time=time.time()
         
         # No harm in doubly checking it has parked
         g_dev['mnt'].park_command({}, {})
