@@ -128,7 +128,6 @@ for pid in listOfProcessIds:
 
 def send_status(obsy, column, status_to_send):
     """Sends an update to the status endpoint."""
-
     uri_status = f"https://status.photonranch.org/status/{obsy}/status/"
     # None of the strings can be empty. Otherwise this put faults.
     payload = {"statusType": str(column), "status": status_to_send}
@@ -556,6 +555,7 @@ class Observatory:
 
         uri = f"{self.config['obs_id']}/config/"
         self.config["events"] = g_dev["events"]
+
         response = g_dev["obs"].api.authenticated_request("PUT", uri, self.config)
         if 'message' in response:
             if response['message'] == "Missing Authentication Token":
@@ -1170,7 +1170,7 @@ sel
         
                     roof_should_be_shut=False
                 else:
-                    plog("Shutter status probably not reporting correctly. WEMA down?")
+                    plog("Enclosure roof status probably not reporting correctly. WEMA down?")
                     
                 if (g_dev['events']['End Morn Sky Flats'] < ephem.now() < g_dev['events']['End Morn Bias Dark']):
                     roof_should_be_shut=True
