@@ -5,48 +5,60 @@ Created on Tue Apr 20 22:19:25 2021
 
 """
 
-import copy
+#import copy
 import datetime
 import os
-import math
+#import math
 import shelve
 import time
 import traceback
 import ephem
 
+import json
+
 from astropy.io import fits, ascii
 from astropy.time import Time
 from astropy.utils.data import check_download_cache
 from astropy.coordinates import SkyCoord
-from astropy.table import Table
+#from astropy.table import Table
 from astropy.nddata import block_reduce
 import glob
 import numpy as np
 import matplotlib.pyplot as plt   # Please do not remove this import.
-import sep
-from skimage.io import imsave
-from skimage.transform import resize
-from auto_stretch.stretch import Stretch
+#import sep
+#from skimage.io import imsave
+#from skimage.transform import resize
+#from auto_stretch.stretch import Stretch
 import win32com.client
-from planewave import platesolve
+#from planewave import platesolve
 
-from scipy import stats
+#from scipy import stats
 
-import colour
-import queue
+#import colour
+#import queue
 import threading
 
-    
-from colour_demosaicing import (
-    demosaicing_CFA_Bayer_bilinear,
-    demosaicing_CFA_Bayer_Malvar2004,
-    demosaicing_CFA_Bayer_Menon2007,
-    mosaicing_CFA_Bayer)
 
-from PIL import Image , ImageEnhance
+import requests
+#Incorporate better request retry strategy
+from requests.adapters import HTTPAdapter, Retry
+reqs = requests.Session()
+retries = Retry(total=50,
+                backoff_factor=0.1,
+                status_forcelist=[ 500, 502, 503, 504 ])
+reqs.mount('http://', HTTPAdapter(max_retries=retries))
+
+    
+#from colour_demosaicing import (
+#    demosaicing_CFA_Bayer_bilinear,
+#    demosaicing_CFA_Bayer_Malvar2004,
+#    demosaicing_CFA_Bayer_Menon2007,
+#    mosaicing_CFA_Bayer)
+
+#from PIL import Image , ImageEnhance
 
 from devices.darkslide import Darkslide
-import ptr_utility
+#import ptr_utility
 from global_yard import g_dev
 from ptr_utility import plog
 from ctypes import *
@@ -188,6 +200,9 @@ class Qcam:
         self.so.GetQHYCCDLiveFrame.argtypes = [c_void_p, c_void_p, c_void_p, c_void_p, c_void_p, c_void_p]
         self.so.SetQHYCCDParam.argtypes = [c_void_p, c_int, c_double]
         self.so.SetQHYCCDBitsMode.argtypes = [c_void_p, c_uint32]
+
+        #self.so.CancelQHYCCDExposingAndReadout.restype = c_int64
+        self.so.CancelQHYCCDExposingAndReadout.argtypes = [c_int64]
 
         # self.so.GetQHYCCDNumberOfReadModes.restype = c_uint32
         # self.so.GetQHYCCDNumberOfReadModes.argtypes = [c_void_p, c_void_p]
@@ -406,11 +421,17 @@ class Camera:
         self.flatFiles = {}
         self.hotFiles = {}
 
+        g_dev['obs'].obs_id
+        g_dev['cam'].alias
+        tempfrontcalib=g_dev['obs'].obs_id + '_' + g_dev['cam'].alias +'_'
+        #print (tempfrontcalib)
+
         
         try:
             #self.biasframe = fits.open(
+
             tempbiasframe = fits.open(self.obsid_path + "archive/" + self.alias + "/calibmasters" \
-                                      + "/BIAS_master_bin1.fits")
+                                      + "/" + tempfrontcalib + "BIAS_master_bin1.fits")
             tempbiasframe = np.array(tempbiasframe[0].data, dtype=np.float32)
             self.biasFiles.update({'1': tempbiasframe})
             del tempbiasframe
@@ -423,7 +444,7 @@ class Camera:
         try:
             #self.darkframe = fits.open(
             tempdarkframe = fits.open(self.obsid_path + "archive/" + self.alias + "/calibmasters" \
-                                      + "/DARK_master_bin1.fits")
+                                      + "/" + tempfrontcalib +  "DARK_master_bin1.fits")
 
             tempdarkframe = np.array(tempdarkframe[0].data, dtype=np.float32)
             self.darkFiles.update({'1': tempdarkframe})
@@ -432,11 +453,18 @@ class Camera:
             plog("Dark frame for Binning 1 not available")  
 
         try:            
-            fileList = glob.glob(self.obsid_path + "archive/" + self.alias + "/calibmasters" \
-                                 + "/masterFlat*_bin1.npy")
             
+            
+            fileList = glob.glob(self.obsid_path + "archive/" + self.alias + "/calibmasters/masterFlat*_bin1.npy")
+            #breakpoint()
             for file in fileList:
-                self.flatFiles.update({file.split("_")[1].replace ('.npy','') + '_bin1': file})
+                if self.config['camera'][self.name]['settings']['hold_flats_in_memory']:
+                    tempflatframe=np.load(file)
+                    #breakpoint()
+                    self.flatFiles.update({file.split('_')[-2]: np.array(tempflatframe)})
+                    del tempflatframe
+                else:
+                    self.flatFiles.update({file.split("_")[1].replace ('.npy','') + '_bin1': file})
             # To supress occasional flatfield div errors
             np.seterr(divide="ignore")
         except:
@@ -1133,7 +1161,12 @@ class Camera:
    
     
     def _qhyccd_stop_expose(self):
-        success = qhycam.so.GetQHYCCDSingleFrame(qhycam.camera_params[qhycam_id]['handle'])
+        try:
+            #success = 
+            qhycam.so.CancelQHYCCDExposingAndReadout(qhycam.camera_params[qhycam_id]['handle'])
+        except:
+            plog(traceback.format_exc()) 
+            print (success)
         #self.camera.StopExposure()  # ASCOM also has an AbortExposure method.
     
     def _qhyccd_getImageArray(self):
@@ -1615,7 +1648,7 @@ class Camera:
             ## Vital Check : Has end of observing occured???
             ## Need to do this, SRO kept taking shots til midday without this
             if imtype.lower() in ["light"] or imtype.lower() in ["expose"]:
-                if g_dev['events']['Observing Ends'] < ephem.Date(ephem.now()+ (exposure_time *ephem.second)):
+                if g_dev['events']['Observing Ends'] < ephem.Date(ephem.now()+ (exposure_time *ephem.second)) and not g_dev['obs'].debug_flag:
                     plog ("Sorry, exposures are outside of night time.")
                     self.exposure_busy = False
                     break
@@ -1759,10 +1792,11 @@ class Camera:
                 
                             # Good spot to check if we need to nudge the telescope
                             check_platesolve_and_nudge()   
-                            
+                            g_dev['obs'].time_of_last_exposure = time.time()
+                            g_dev['obs'].update()
                             self._expose(exposure_time, bias_dark_or_light_type_frame)
                             
-                            g_dev['obs'].time_since_last_exposure = time.time()
+                            
                         else:
                             plog("Something terribly wrong, driver not recognized.!")
                             self.expresult = {}
@@ -1925,7 +1959,7 @@ class Camera:
         self.plog_exposure_time_counter_timer=time.time() -3.0
         
         exposure_scan_request_timer=time.time()
-        
+        g_dev["obs"].exposure_halted_indicator =False
         while True:  # This loop really needs a timeout.
             self.post_mnt = []
             self.post_rot = []
@@ -1940,10 +1974,20 @@ class Camera:
                 
                 
                 # Scan requests every 4 seconds... primarily hunting for a "Cancel/Stop"
-                if exposure_scan_request_timer - time.time() > 4:                    
+                if time.time() - exposure_scan_request_timer > 4:                    
                     exposure_scan_request_timer=time.time()
+                    
+                    
                     g_dev['obs'].scan_requests()
-                
+                    
+                    if g_dev["obs"].exposure_halted_indicator:
+                        self.expresult["error"] = True
+                        self.expresult["stopped"] = True
+                        #self.expresult["patch"] = bi_mean
+                        g_dev["obs"].exposure_halted_indicator =False
+                        return self.expresult
+
+                    
                 remaining = round(self.completion_time - time.time(), 1)
                 
                 
@@ -1954,6 +1998,11 @@ class Camera:
                             '||  ' + str(round(remaining, 1)) + "sec.",
                             str(round(100 * remaining / cycle_time, 1)) + "%",
                         )  #|| used to flag this line in plog().
+                        
+                        # Here scan for requests
+                        g_dev['obs'].update()
+                        
+                        
                     if (
                         quartileExposureReport == 0
                     ):  # Silly daft but workable exposure time reporting by MTF
@@ -2001,8 +2050,9 @@ class Camera:
                             + " sec.",
                             p_level="INFO",
                         )
-                        if (exposure_time > 120):
-                            g_dev["obs"].update_status(cancel_check=False)
+                        #if (exposure_time > 120):
+                        #    g_dev["obs"].update_status(cancel_check=False)
+
 
                 continue
 
@@ -2045,6 +2095,7 @@ class Camera:
                         imageCollected = 1
                     except Exception as e:
                         plog(e)
+                        plog (traceback.format_exc())
                         if "Image Not Available" in str(e):
                             plog("Still waiting for file to arrive: ", e)
                         time.sleep(3)
@@ -2057,7 +2108,7 @@ class Camera:
                 if frame_type in ["bias", "dark"] or frame_type[-4:] == ['flat']:
                     plog("Median of full-image area bias, dark or flat:  ", np.median(self.img))
 
-                pedastal = 0
+                #pedestal = 0
                 self.overscan = 0
 
                
@@ -2810,19 +2861,19 @@ class Camera:
                     hdu.header["LONGSTK"] = longstackid # Is this a member of a longer stack - to be replaced by 
                                                         #   longstack code soon
 
-                    if pedastal is not None:
-                        hdu.header["PEDESTAL"] = (
-                            -pedastal,
-                            "adu, add this for zero based image.",
-                        )
-                        hdu.header["PATCH"] = (
-                            bi_mean - pedastal
-                        )  # A crude value for the central exposure - pedastal
-                    else:
-                        hdu.header["PEDESTAL"] = (0.0, "Dummy value for a raw image")
-                        hdu.header[
-                            "PATCH"
-                        ] = bi_mean  # A crude value for the central exposure
+                    # if pedestal is not None:
+                    #     hdu.header["PEDESTAL"] = (
+                    #         -pedastal,
+                    #         "adu, add this for zero based image.",
+                    #     )
+                    #     hdu.header["PATCH"] = (
+                    #         bi_mean - pedastal
+                    #     )  # A crude value for the central exposure - pedastal
+                    # else:
+                    hdu.header["PEDESTAL"] = (0.0, "This value has been added to the data")
+                    hdu.header[
+                        "PATCH"
+                    ] = bi_mean  # A crude value for the central exposure
                     hdu.header["ERRORVAL"] = 0
                     hdu.header["IMGAREA"] = opt["area"]
                     hdu.header[
@@ -3124,14 +3175,33 @@ class Camera:
                             
                         # Quick flat flat frame
                         try:
-                            tempFlatFrame = np.load(self.flatFiles[str(self.current_filter + "_bin" + str(flashbinning))])
+                            if self.config['camera'][self.name]['settings']['hold_flats_in_memory']:
+                                #tempflatframe=np.load(file)
+                                #breakpoint()
+                                #self.flatFiles.update({file.split('_')[-2]: tempflatframe})
+                                #del tempflatframe
+                                hdusmalldata = np.divide(hdusmalldata, self.flatFiles[self.current_filter])
+                                
+                            else:
+                                #self.flatFiles.update({file.split("_")[1].replace ('.npy','') + '_bin1': file})
+                                hdusmalldata = np.divide(hdusmalldata, np.load(self.flatFiles[str(self.current_filter + "_bin" + str(flashbinning))]))
+                            
+                            
+                            
+                            #tempFlatFrame = np.load(self.flatFiles[str(self.current_filter + "_bin" + str(flashbinning))])
 
-                            hdusmalldata = np.divide(hdusmalldata, tempFlatFrame)
-                            del tempFlatFrame
+                            #hdusmalldata = np.divide(hdusmalldata, tempFlatFrame)
+                            #del tempFlatFrame
                         except Exception as e:
                             plog("flatting light frame failed", e)
+                            plog(traceback.format_exc()) 
                             #plog (traceback.format_exc())
                             #breakpoint()
+                        
+                        
+                        # Add a pedestal to the data
+                        hdusmalldata=hdusmalldata+200.0
+                        #hdu.header["PEDESTAL"] = (200, "Pedestal added by PTR")
 
                         # This saves the REDUCED file to disk
                         # If this is for a smartstack, this happens immediately in the camera thread after we have a "reduced" file
@@ -3188,7 +3258,7 @@ class Camera:
                             "auto_focus",
                         ]) and smartstackid != 'no' :
                             #self.to_reduce((paths, pixscale, smartstackid, sskcounter, Nsmartstack, self.sources))
-                            self.to_smartstack((paths, pixscale, smartstackid, sskcounter, Nsmartstack))
+                            self.to_smartstack((paths, pixscale, smartstackid, sskcounter, Nsmartstack, g_dev['mnt'].pier_side))
                         else:
                             if not self.config['keep_reduced_on_disk']:
                                 try:                                
@@ -3244,7 +3314,7 @@ class Camera:
                         
                         # IMMEDIATELY SEND TO SEP QUEUE
                         self.sep_processing=True
-                        self.to_sep((hdusmalldata, pixscale, float(hdu.header["RDNOISE"]), avg_foc[1], focus_image, im_path, text_name, hdu.header, cal_path, cal_name, frame_type))
+                        self.to_sep((hdusmalldata, pixscale, float(hdu.header["RDNOISE"]), avg_foc[1], focus_image, im_path, text_name, hdu.header, cal_path, cal_name, frame_type, g_dev['foc'].focuser.Position*g_dev['foc'].steps_to_micron))
                         #self.sep_processing=True
                         
                         
@@ -3252,7 +3322,9 @@ class Camera:
                         
                         
                         # Send data off to process jpeg
-                        self.to_mainjpeg((hdusmalldata, smartstackid, paths))
+                        # This is for a non-focus jpeg
+                        if focus_image == False:
+                            self.to_mainjpeg((hdusmalldata, smartstackid, paths, g_dev['mnt'].pier_side))
                         
                         
                         
@@ -3319,11 +3391,12 @@ class Camera:
                             
                             
                             #if len(self.sources) >= 5 and len(self.sources) < 1000 and not image_during_smartstack and not self.pointing_correction_requested_by_platesolve_thread and g_dev['obs'].platesolve_queue.empty():
-                            if not image_during_smartstack and not g_dev['obs'].pointing_correction_requested_by_platesolve_thread and g_dev['obs'].platesolve_queue.empty():
+                            if not image_during_smartstack and not g_dev['obs'].pointing_correction_requested_by_platesolve_thread and g_dev['obs'].platesolve_queue.empty() and not g_dev['obs'].platesolve_is_processing:
                                 
                                 
                                 # NEED TO CHECK HERE THAT THERE ISN"T ALREADY A PLATE SOLVE IN THE THREAD!
-                                self.to_platesolve((hdusmalldata, hdu.header, cal_path, cal_name, frame_type, time.time(), pixscale))
+                                plog ("just about to jam it in the platesovle")
+                                self.to_platesolve((hdusmalldata, hdu.header, cal_path, cal_name, frame_type, time.time(), pixscale, g_dev['mnt'].mount.RightAscension,g_dev['mnt'].mount.Declination))
                                 
 
                                 #plog ("Platesolve wasn't attempted due to lack of sources (or sometimes too many!) or it was during a smartstack")
@@ -3537,8 +3610,8 @@ def check_platesolve_and_nudge():
     # If the platesolve requests such a thing.
     if g_dev['obs'].pointing_correction_requested_by_platesolve_thread:
         g_dev['obs'].pointing_correction_requested_by_platesolve_thread = False
-        if g_dev['obs'].pointing_correction_request_time > g_dev['obs'].time_since_last_slew: # Check it hasn't slewed since request                        
+        if g_dev['obs'].pointing_correction_request_time > g_dev['obs'].time_of_last_slew: # Check it hasn't slewed since request                        
             plog ("I am nudging the telescope slightly at the request of platesolve!")                            
             g_dev['mnt'].mount.SlewToCoordinatesAsync(g_dev['obs'].pointing_correction_request_ra, g_dev['obs'].pointing_correction_request_dec)
-            g_dev['obs'].time_since_last_slew = time.time()
+            g_dev['obs'].time_of_last_slew = time.time()
             wait_for_slew()

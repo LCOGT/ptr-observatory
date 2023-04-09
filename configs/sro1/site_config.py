@@ -151,6 +151,7 @@ site_config = {
     'periodic_focus_time' : 0.5, # This is a time, in hours, over which to bypass automated focussing (e.g. at the start of a project it will not refocus if a new project starts X hours after the last focus)
     'stdev_fwhm' : 0.5, # This is the expected variation in FWHM at a given telescope/camera/site combination. This is used to check if a fwhm is within normal range or the focus has shifted
     'focus_exposure_time': 15, # Exposure time in seconds for exposure image
+    'pointing_exposure_time': 20, # Exposure time in seconds for exposure image
     'focus_trigger' : 0.5, # What FWHM increase is needed to trigger an autofocus
     'solve_nth_image' : 6, # Only solve every nth image
     'solve_timer' : 3, # Only solve every X minutes
@@ -510,7 +511,34 @@ site_config = {
             'settings': {                
                 'is_osc' : False,
                 
-
+                # These options set whether an OSC gets binned or interpolated for different functions
+                # If the pixel scale is well-sampled (e.g. 0.6 arcsec per RGGB pixel or 0.3 arcsec per individual debayer pixel)
+                # Then binning is probably fine for all three. For understampled pixel scales - which are likely with OSCs
+                # then binning for focus is recommended. SEP and Platesolve can generally always be binned.                
+                'interpolate_for_focus': False,
+                'bin_for_focus' : True, # This setting will bin the image for focussing rather than interpolating. Good for 1x1 pixel sizes < 0.6.
+                'interpolate_for_sep' : False,
+                'bin_for_sep' : True, # This setting will bin the image for SEP photometry rather than interpolating.
+                'bin_for_platesolve' : True, # This setting will bin the image for platesolving rather than interpolating.
+                
+                
+                # For large fields of view, crop the images down to solve faster.                 
+                # Realistically the "focus fields" have a size of 0.2 degrees, so anything larger than 0.5 degrees is unnecesary
+                # Probably also similar for platesolving.
+                # for either pointing or platesolving even on more modest size fields of view. 
+                # These were originally inspired by the RASA+QHY which is 3.3 degrees on a side and regularly detects
+                # tens of thousands of sources, but any crop will speed things up. Don't use SEP crop unless 
+                # you clearly need to. 
+                'focus_image_crop_width': 0.75, # For excessive fields of view, to speed things up crop the image to a fraction of the full width    
+                'focus_image_crop_height': 0.75, # For excessive fields of view, to speed things up crop the image to a fraction of the full height
+                # PLATESOLVE CROPS HAVE TO BE EQUAL! OTHERWISE THE PLATE CENTRE IS NOT THE POINTING CENTRE                
+                'platesolve_image_crop': 0.75, # Platesolve crops have to be symmetrical 
+                # Really, the SEP image should not be cropped unless your field of view and number of sources
+                # Are taking chunks out of the processing time. 
+                'sep_image_crop_width': 0.1, # For excessive fields of view, to speed things up crop the processed image area to a fraction of the full width    
+                'sep_image_crop_height': 0.1, # For excessive fields of view, to speed things up crop the processed image area to a fraction of the full width    
+                
+                
                 
                 'transpose_fits' : False,
                 'transpose_jpeg' : True,
