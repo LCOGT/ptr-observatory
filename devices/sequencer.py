@@ -1909,7 +1909,7 @@ class Sequencer:
 
         # Now time to regenerate the local masters
 
-        self.regenerate_local_masters()
+        # self.regenerate_local_masters()
 
         return
 
@@ -4716,33 +4716,9 @@ class Sequencer:
         except:
             plog('Found an empty shelf.  Reset_(block)completes for:  ', camera)
         return
-from pprint import pprint
-from ptr_utility import plog
-import traceback
-from glob import glob
-from pyowm.utils import timestamps
-from pyowm.utils import config
-from pyowm import OWM
-import gc
-import os
-import numpy as np
-import shutil
-import math
-import redis
-import shelve
-import build_tycho as tycho
-import ephem
-import time
-import datetime
-from datetime import timedelta
-import copy
-from global_yard import g_dev
-from astropy.coordinates import SkyCoord, AltAz, get_moon
-from astropy import units as u
-from astropy.time import Time
-from astropy.io import fits
+
+
 #from astropy.utils.data import get_pkg_data_filename
-from astropy.convolution import Gaussian2DKernel, convolve, interpolate_replace_nans
 kernel = Gaussian2DKernel(x_stddev=2, y_stddev=2)
 
 
@@ -6355,6 +6331,7 @@ class Sequencer:
         # while True:
 
         plog('Collecting orphaned fits and tokens to go up to BANZAI')
+        # breakpoint()
         dir_path = self.config['client_path'] + '/' + g_dev['obs'].name + '/' + 'archive/'
 
         orphan_path = self.config['client_path'] + '/' + g_dev['obs'].name + '/' + 'orphans/'
@@ -6634,7 +6611,6 @@ class Sequencer:
     def regenerate_local_masters(self):
 
         # NOW to get to the business of constructing the local calibrations
-        breakpoint()
 
         # Start with biases
         # Get list of biases
