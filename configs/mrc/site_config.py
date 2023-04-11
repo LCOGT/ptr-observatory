@@ -29,7 +29,7 @@ obs_id = None    #NB These must be unique across all of PTR. Pre-pend with airpo
 site_config = {
 
     'site': 'mrc',
-    'site_id': 'mrc',
+    'site_id': 'mrc2',
 
     'obs_id': None,   #a WEMA is not a telescope aka Observatory
     'observatory_location': site_name.lower(),  #in LCO case, an airport code such as OGG
@@ -37,11 +37,11 @@ site_config = {
 
 
 
-    'debug_site_mode': False,
+    'debug_site_mode': True,
     
-    'debug_mode': False,
+    'debug_mode': True,
     'admin_owner_commands_only': False,
-    'debug_duration_sec': 3600,
+    'debug_duration_sec': 1800,
 
     'owner':  ['google-oauth2|112401903840371673242'],  # Wayne
 
@@ -103,8 +103,8 @@ site_config = {
     'debug_flag': True,    #  Be careful about setting this flag True when pushing up to dev!
     'TZ_database_name': 'America/Los_Angeles',
     'mpc_code':  'ZZ23',    #This is made up for now.
-    'time_offset':  -8,     # NB these two should be derived from Python libs so change is automatic
-    'timezone': 'PST',
+    'time_offset':  -7,     # NB these two should be derived from Python libs so change is automatic
+    'timezone': 'PdT',
     'latitude': 34.459375,     #Decimal degrees, North is Positive
     'longitude': -119.681172,   #Decimal degrees, West is negative
     'elevation': 317.75,    # meters above sea level
@@ -121,8 +121,8 @@ site_config = {
     'roof_open_safety_base_time' : 15, # How many minutes to use as the default retry time to open roof. This will be progressively multiplied as a back-off function.
     
 
-    'obsid_in_automatic_default': "Shutdown",   #"Manual", "Shutdown"
-    'automatic_detail_default': "Enclosure is set to Shutdown mode.",
+    'obsid_in_automatic_default': "Automatic",   #"Manual", "Shutdown"
+    'automatic_detail_default': "Enclosure is set to Automatic mode.",
 
 # =============================================================================
 # At somepoint here some of this might better be associated with the Telescope not the site -- or 
@@ -141,13 +141,13 @@ site_config = {
     'auto_eve_bias_dark': True,
     
     'auto_midnight_moonless_bias_dark': False,
-    'auto_eve_sky_flat': False,
+    'auto_eve_sky_flat': True,
 
     'eve_sky_flat_sunset_offset': -60.,  # 40 before Minutes  neg means before, + after.
 
     'eve_cool_down_open' : -65.0,
-    'auto_morn_sky_flat': False,
-    'auto_morn_bias_dark': False,
+    'auto_morn_sky_flat': True,
+    'auto_morn_bias_dark': True,
     're-calibrate_on_solve': True,
     'pointing_calibration_on_startup': False,  #MF I am leaving this alone.
     'periodic_focus_time' : 0.5, # This is a time, in hours, over which to bypass automated focussing (e.g. at the start of a project it will not refocus if a new project starts X hours after the last focus)

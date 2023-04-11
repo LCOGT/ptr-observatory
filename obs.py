@@ -36,6 +36,7 @@ from astropy.coordinates import SkyCoord, FK5, ICRS,  \
 from astropy.time import Time
 from astropy import units as u
 from astropy.table import Table
+from astropy.stats import median_absolute_deviation
 
 # For fast photutils source detection
 from astropy.stats import sigma_clipped_stats
@@ -43,6 +44,7 @@ from photutils.detection import DAOStarFinder
 
 from dotenv import load_dotenv
 import numpy as np
+import numpy.ma as ma
 import redis  # Client, can work with Memurai
 
 import requests
@@ -468,6 +470,14 @@ class Observatory:
         # self.park_and_close(enc_status)
         # NB The above put dome closed and telescope at Park, Which is where it should have been upon entry.
         #g_dev['seq'].bias_dark_script(req, opt, morn=True)
+
+        
+        
+        # Pointing
+        req = {'time': self.config['focus_exposure_time'],  'alias':  str(self.config['camera']['camera_1_1']['name']), 'image_type': 'focus'}   #  NB Should pick up filter and constats from config
+        #opt = {'area': 150, 'count': 1, 'bin': '2, 2', 'filter': 'focus'}
+        opt = {'area': 150, 'count': 1, 'bin': 1, 'filter': 'focus'}
+        result = g_dev['cam'].expose_command(req, opt, no_AWS=False, solve_it=True)
 
         # g_dev['seq'].regenerate_local_masters()
 
@@ -1362,11 +1372,14 @@ sel
             #plog ("Cooler check")
             #probe = g_dev['cam']._cooler_on()
             if g_dev['cam']._cooler_on():
+
                 current_camera_temperature = float(g_dev['cam']._temperature())
                 plog("Cooler is still on at " + str(current_camera_temperature))
 
                 if current_camera_temperature - g_dev['cam'].setpoint > 1.5 or current_camera_temperature - g_dev['cam'].setpoint < -1.5:
 
+
+                
                     #print (current_camera_temperature - g_dev['cam'].setpoint)
 
                     self.camera_temperature_in_range_for_calibrations = False
@@ -2086,9 +2099,7 @@ sel
     def sep_process(self):
         """This is the sep queue that happens in a different process
         than the main camera thread. SEPs can take 5-10, up to 30 seconds sometimes
-        to run, so it is an overhead we can't have hanging around. This thread undertakes
-        the SEP routine while the main camera thread is processing the jpeg image.
-        The camera thread will wait for SEP to finish before moving on.         
+        to run, so it is an overhead we can't have hanging around.       
         """
 
         # This stopping mechanism allows for threads to close cleanly.
@@ -2097,13 +2108,82 @@ sel
             if (not self.sep_queue.empty()) and one_at_a_time == 0:
                 one_at_a_time = 1
                 #print ("In the queue.....")
-                sep_timer_begin = time.time()
 
-                (hdufocusdata, pixscale, readnoise, avg_foc, focus_image, im_path, text_name, hduheader,
-                 cal_path, cal_name, frame_type, focus_position) = self.sep_queue.get(block=False)
+                sep_timer_begin=time.time()
+                
+                (hdufocusdata, pixscale, readnoise, avg_foc, focus_image, im_path, text_name, hduheader, cal_path, cal_name, frame_type, focus_position) = self.sep_queue.get(block=False)
+                
+                
+                # Background clip the focus image
+                ## Estimate Method 1: This routine tests the number of pixels to the negative side of the distribution until it hits 0 three pixels in a row. This (+3) becomes the lower threshold.
+                imageMode = (float(stats.mode(hdufocusdata.flatten(), nan_policy='omit', keepdims=False)[0]))
+                
+                breaker=1
+                counter=0
+                zerocount=0
+                while (breaker != 0):
+                    counter=counter+1
+                    currentValue= np.count_nonzero(hdufocusdata == imageMode-counter)
+            
+                    if (currentValue < 20):
+                        zerocount=zerocount+1
+                    else:
+                        zerocount=0
+                    if (zerocount == 3):
+                        zeroValue=(imageMode-counter)+3
+                        breaker =0
+                        
+                masker = ma.masked_less(hdufocusdata, (zeroValue))
+                hdufocusdata= masker.filled(np.nan)
+                #print ("Minimum Value in Array")
+                #print (zeroValue)
+    
+                # Report number of nans in array
+                #print ("Number of nan pixels in image array: " + str(numpy.count_nonzero(numpy.isnan(imagedata))))
+                
+                
+                # Background clipped
+                hduheader["IMGMIN"] = ( np.nanmin(hdufocusdata), "Minimum Value of Image Array" )
+                hduheader["IMGMAX"] = ( np.nanmax(hdufocusdata), "Maximum Value of Image Array" )
+                hduheader["IMGMEAN"] = ( np.nanmean(hdufocusdata), "Mean Value of Image Array" )
+                hduheader["IMGMED"] = ( np.nanmedian(hdufocusdata), "Median Value of Image Array" )
+                
+                hduheader["IMGMODE"] = ( imageMode, "Mode Value of Image Array" )
+                hduheader["IMGSTDEV"] = ( np.nanstd(hdufocusdata), "Median Value of Image Array" )
+                hduheader["IMGMAD"] = ( median_absolute_deviation(hdufocusdata, ignore_nan=True), "Median Absolute Deviation of Image Array" )
+                
+                
+                
+                # Get out raw histogram construction data
+                # Get a flattened array with all nans removed
+                int_array_flattened=np.rint(hdufocusdata.flatten())
+                flat_no_nan_array=(int_array_flattened[~np.isnan(int_array_flattened)])
+                del int_array_flattened
+                # Collect unique values and counts
+                unique,counts=np.unique(flat_no_nan_array, return_counts=True)
+                del flat_no_nan_array
+                histogramdata=np.column_stack([unique,counts]).astype(np.int32)
+                np.savetxt(
+                    im_path + text_name.replace('.txt', '.his'),
+                    histogramdata, delimiter=','
+                )
+                
+                
+                try:
+                    g_dev['cam'].enqueue_for_fastAWS(180, im_path, text_name.replace('.txt', '.his'))
+                    #plog("Sent SEP up")
+                except:
+                    plog("Failed to send HIS up for some reason")
+                
+                
+                
+                
+                
+                
+                
+                if not (g_dev['events']['Civil Dusk'] < ephem.now() < g_dev['events']['Civil Dawn']) :
+                    plog ("Too bright to consider photometry!")
 
-                if not (g_dev['events']['Civil Dusk'] < ephem.now() < g_dev['events']['Civil Dawn']):
-                    plog("Too bright to consider photometry!")
 
                     rfp = np.nan
                     rfr = np.nan
@@ -2140,20 +2220,24 @@ sel
                     # focdate=time.time()
                     binfocus = 1
                     if self.config["camera"][g_dev['cam'].name]["settings"]["is_osc"]:
-                        if frame_type == 'focus' and self.config["camera"][g_dev['cam'].name]["settings"]['bin_for_focus']:
-                            hdufocusdata = block_reduce(hdufocusdata, 2)
-                            binfocus = 2
-                        elif frame_type == 'focus' and self.config["camera"][g_dev['cam'].name]["settings"]['interpolate_for_focus']:
-                            hdufocusdata = demosaicing_CFA_Bayer_bilinear(hdufocusdata, 'RGGB')[:, :, 1]
-                            hdufocusdata = hdufocusdata.astype("float32")
-                            binfocus = 1
-                        elif self.config["camera"][g_dev['cam'].name]["settings"]['bin_for_sep']:
-                            hdufocusdata = block_reduce(hdufocusdata, 2)
-                            binfocus = 2
-                        elif self.config["camera"][g_dev['cam'].name]["settings"]['interpolate_for_sep']:
-                            hdufocusdata = demosaicing_CFA_Bayer_bilinear(hdufocusdata, 'RGGB')[:, :, 1]
-                            hdufocusdata = hdufocusdata.astype("float32")
-                            binfocus = 1
+
+                        if frame_type == 'focus' and self.config["camera"][g_dev['cam'].name]["settings"]['interpolate_for_focus']:
+                            hdufocusdata=demosaicing_CFA_Bayer_Menon2007(hdufocusdata, 'RGGB')[:,:,1]
+                            hdufocusdata=hdufocusdata.astype("float32")
+                            binfocus=1
+                        if frame_type == 'focus' and self.config["camera"][g_dev['cam'].name]["settings"]['bin_for_focus']: 
+                            hdufocusdata=block_reduce(hdufocusdata,2)
+                            binfocus=2
+                        
+                        
+                        if frame_type != 'focus' and self.config["camera"][g_dev['cam'].name]["settings"]['interpolate_for_sep']: 
+                            hdufocusdata=demosaicing_CFA_Bayer_Menon2007(hdufocusdata, 'RGGB')[:,:,1]
+                            hdufocusdata=hdufocusdata.astype("float32")
+                            binfocus=1
+                        if frame_type != 'focus' and self.config["camera"][g_dev['cam'].name]["settings"]['bin_for_sep']:
+                            hdufocusdata=block_reduce(hdufocusdata,2)
+                            binfocus=2
+                            
 
                     # If it is a focus image then it will get sent in a different manner to the UI for a jpeg
                     if frame_type == 'focus':
@@ -2435,6 +2519,43 @@ sel
                         except:
                             plog("Failed to send SEP up for some reason")
 
+                            
+                        
+                        # Identify the brightest star in the image set
+                        
+                        # Make a cutout around this star - 10 times rfp
+                        
+                        brightest_array = None
+                        
+                        # Send this array up
+                        
+                        
+                        
+                        
+                        # Identify the brightest non-saturated star in the image set
+                        
+                        # Make a cutout around this star - 10 times rfp
+                        
+                        unsaturated_array = None
+                        
+                        # Send this array up
+                        #import json
+                        data = {'brightest': brightest_array, 'unsaturated': unsaturated_array}
+                        # To write to a file:
+                        with open(im_path + text_name.replace('.txt', '.rad'), "w") as f:
+                            json.dump(data, f)
+                        
+                        
+                        try:
+                            g_dev['cam'].enqueue_for_fastAWS(2000, im_path, text_name.replace('.txt', '.rad'))
+                            #plog("Sent SEP up")
+                        except:
+                            plog("Failed to send RAD up for some reason")
+                        
+                        # To print out the JSON string (which you could then hardcode into the JS)
+                        #json.dumps(data)
+                        
+
                     except:
                         plog("something failed in SEP calculations for exposure. This could be an overexposed image")
                         plog(traceback.format_exc())
@@ -2445,6 +2566,11 @@ sel
                         sepsky = np.nan
 
                     plog("Sep time to process: " + str(time.time() - sep_timer_begin))
+
+                
+                
+                # Value-added header items for the UI 
+                
 
                 try:
                     #hduheader["SEPSKY"] = str(sepsky)
@@ -2465,7 +2591,16 @@ sel
                 try:
                     hduheader["FWHMstd"] = (str(rfs), 'FWHM standard deviation in arcseconds')
                 except:
-                    hduheader["FWHMstd"] = (-99, 'FWHM standard deviation in arcseconds')
+
+                    hduheader["FWHMstd"] = ( -99, 'FWHM standard deviation in arcseconds')
+
+                try:
+                    hduheader["NSTARS"] = ( len(sources), 'Number of star-like sources in image')
+                except:
+                    hduheader["NSTARS"] = ( -99, 'Number of star-like sources in image')
+                
+
+
 
                 # if focus_image == False:
                 text = open(
@@ -2561,9 +2696,11 @@ sel
                             hdufocusdata = block_reduce(hdufocusdata, 2)
                             binfocus = 2
                         else:
-                            hdufocusdata = demosaicing_CFA_Bayer_bilinear(hdufocusdata, 'RGGB')[:, :, 1]
-                            hdufocusdata = hdufocusdata.astype("float32")
-                            binfocus = 1
+
+                            hdufocusdata=demosaicing_CFA_Bayer_Menon2007(hdufocusdata, 'RGGB')[:,:,1]
+                            hdufocusdata=hdufocusdata.astype("float32")
+                            binfocus=1
+
                     #plog("platesolve construction time")
                     #plog(time.time() -focdate)
 
