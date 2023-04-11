@@ -1035,7 +1035,7 @@ sel
 
             sun_dist = sun_coords.separation(temppointing)
             #plog ("sun distance: " + str(sun_dist.degree))
-            if sun_dist.degree < self.config['closest_distance_to_the_sun']:
+            if sun_dist.degree < self.config['closest_distance_to_the_sun'] and not g_dev['mnt'].mount.AtPark:
                 g_dev['obs'].send_to_user("Found telescope pointing too close to the sun: " +
                                           str(sun_dist.degree) + " degrees.")
                 plog("Found telescope pointing too close to the sun: " + str(sun_dist.degree) + " degrees.")
@@ -1142,7 +1142,7 @@ sel
 
             sun_dist = sun_coords.separation(temppointing)
             #plog ("sun distance: " + str(sun_dist.degree))
-            if sun_dist.degree < self.config['closest_distance_to_the_sun']:
+            if sun_dist.degree < self.config['closest_distance_to_the_sun'] and not g_dev['mnt'].mount.AtPark:
                 g_dev['obs'].send_to_user("Found telescope pointing too close to the sun: " +
                                           str(sun_dist.degree) + " degrees.")
                 plog("Found telescope pointing too close to the sun: " + str(sun_dist.degree) + " degrees.")
