@@ -30,43 +30,26 @@ from ptr_utility import plog
 from pprint import pprint
 '''
 Autofocus NOTE 20200122
-
 As a general rule the focus is stable(temp).  So when code (re)starts, compute and go to that point(filter).
-
 Nautical or astronomical dark, and time of last focus > 2 hours or delta-temp > ?1C, then schedule an
 autofocus.  Presumably system is near the bottom of the focus parabola, but it may not be.
-
 Pick a ~7mag focus star at an Alt of about 60 degrees, generally in the South.  Later on we can start
 chosing and logging a range of altitudes so we can develop adj_focus(temp, alt, flip_side).
-
 Take central image, move in 1x and expose, move out 2x then in 1x and expose, solve the equation and
 then finish with a check exposure.
-
 Now there are cases if for some reason telescope is not near the focus:  first the minimum is at one end
 of a linear series.  From that series and the image diameters we can imply where the focus is, subject to
 seeing induced errors.  If either case occurs, go to the projected point and try again.
-
 A second case is the focus is WAY off, and or pointing.  Make appropriate adjustments and try again.
-
 The third case is we have a minimum.  Inspection of the FWHM may imply seeing is poor.  In that case
 double the exposure and possibly do a 5-point fit rather than a 3-point.
-
 Note at the last exposure it is reasonable to do a minor recalibrate of the pointing.
-
 Once we have fully automatic observing it might make sense to do a more full range test of the focus mechanism
 and or visit more altitudes and temeperatures.
-
-
-
 1) Implement mag 7 star selection including getting that star at center of rotation.
-
 2) Implement using Sep to reliably find that star.
-
 3) change use of site config file.
-
 4) use common settings for sep
-
-
 '''
 
 def wait_for_slew():    
@@ -492,10 +475,8 @@ class Sequencer:
         '''
         This is called by the update loop.   Call from local status probe was removed
         #on 20211026 WER
-
         This is where scripts are automagically started.  Be careful what you put in here if it is
         going to open the dome or move the telescope at unexpected times.
-
         Scripts must not block too long or they must provide for periodic calls to check status.
         '''
         #self.global_wx()
@@ -1031,63 +1012,46 @@ class Sequencer:
 
     def clock_the_system(self, other_side=False):
         '''
-
         This routine carefully starts up the telescope and verifies the telescope is
         properly reporting correct coordiates and the dome is correctly positioning.
         Once a star field is returned, the system solves and synchs the telescope and
         dome if necessary.  Next a detailed autofocus is performed on a Tycho star of
         known mag and position.  The final reading from the autofocus is used for one
         last clocking.
-
         other_side = True causes the telescope to then flip and repeat the process.
         From differences in the solutions, flip_shift offsets can be calculated.
-
         If this routine does not solve, the night is potentially lost so an alert
         messagge should be sent to the owner and telops, the enclosure closed and
         left in manual, the telescope parked and instruments are put to bed.
-
         This routing is designed to begin when the altitude of the Sun is -9 degrees.
         The target azimuth will change so the Moon is always 15 or more degrees away.
-
         If called in the Morning and the routing fails, the system is still put to
         bed but a less urgent message is sent to the owner and telops.
-
         Returns
         -------
         None.
-
         '''
 
         '''
         if dome is closed: simulate
         if not simulate, check sun is down
                          check dome is open
-
         go to 90 az 60 alt then near tycho star
         Image and look for stars (or load simulated frames)
-
         If stars not present:
             slew dome right-left increasing to find stars
         if +/- 90 az change in dome does not work then
         things are very wrong -- close down and email list.
-
         if stars present, then autofocus with wide tolerance
         if after 5 tries no luck -- close down and email list.
-
         if good autofocus then last frame is the check frame.
-
         Try to astrometrically solve it.  if it solves, synch the
         telescope.  Wait for dome to get in position and
-
         Take second image, solve and synch again.
-
         If tel motion > 1 amin, do one last time.
-
         Look at dome Az -- is dome following the telescope?
         Report if necessary
-
         return control.
-
         '''
 
     def execute_block(self, block_specification):
@@ -1129,7 +1093,6 @@ class Sequencer:
         t = 0
         '''
         # to do is Targets*Mosaic*(sum of filters * count)
-
         Assume for now we only have one target and no mosaic factor.
         The the first thing to do is figure out how many exposures
         in the series.  If enhance AF is true they need to be injected
@@ -1185,16 +1148,12 @@ class Sequencer:
             the aimpoint at Alt ~30-35  Take an exposure, try to solve
             an possibly synch.  But be above any horizon
             effects.
-
             THen autofocus, then finally go to the object
             whihc could be below Alt of 30.
             all of aboe for first of night then at start of a block
             do the square target check, then AF, then block, depending
             on AF more Frequently setting.
-
             Consider a target check and even synch after a flip.
-
-
             '''
             try:
                 g_dev['mnt'].get_mount_coordinates()
@@ -2436,7 +2395,6 @@ class Sequencer:
 
     def sky_flat_script(self, req, opt, morn=False):
         """
-
         If entered, put up a guard.
         if open conditions are acceptable then take a dark image of a dark screen, just for
         reference.
@@ -2451,7 +2409,6 @@ class Sequencer:
         Non photometric shutters need longer exposure times.
         Note with alt-az mount we could get very near the zenith zone.
         Note we want Moon at least 30 degrees away
-
         20220821  New try at this code
         Set up parameters for the site, camera, etc.
         set up 'end-time'.  Calling into this happens elesewhere at the prescribed start time
@@ -2466,7 +2423,6 @@ class Sequencer:
             possibly here if not on flat spot or roof not open:
                 time.sleep(10)
                 continue the loop
-
                 (Note if SRO roof opens late we are likely behinf the 8-ball and we waste time
                  on the Narrow Band filters.)
             calculate exposure (for S2 filter if Night, PL filter if morning.)
@@ -2478,7 +2434,6 @@ class Sequencer:
                 pop tht tilter
                 flat count = 3
                 continue the loop
-
             Here I think we need another loop that gets the number of flats or pops
             the filter and then continues the above loop.
             Tries = 6   #basically prevent a spin on one filter from eating up the window.
@@ -2490,7 +2445,6 @@ class Sequencer:
                 here is if Patch is >> 65,000 we only scale exposure by about half. So it makes
                 some sense to cut it down more so we converge faster.  (Scaling up seems to work
                 on the first pass.)
-
                 if patch is say 30000 <= patch <= 35000, accept the exposure as a valid flat:
                     flatcount -= 1
                     tried =- 1
@@ -2498,7 +2452,6 @@ class Sequencer:
                 elif outside that range
                     tried =- 1
                     scale = prior_scale*target_flat/patch as adjusted by the above paragraph.
-
                         Next step is a bit subtle.  if the loop is going to fail because with the flat_count
                         or tries are exceeded we need to set up prior_scale.  The theory is if the session worked
                         perfect we end with an effective scale on 1.  But the sky fades very fast so to do this
@@ -2506,20 +2459,15 @@ class Sequencer:
                         So the assumption is is the scale for the s2 filter to expose correctly is 0.9 then
                         the S2 signal is "bright".  So we put that factor into prior scale so when we move to HA
                         the system will bias the first HA exposure assuming it will be bright for that band as well.
-
                         What I have seen so far is there is variation night to night is the sky transmission in the
                         red bands. Add that to the fast chages is skybrighness after SRO opens and ... challenging.
-
                         Note in old code I try recomputing the "gain".  Ideally a better way to do this would be to
                         create a persisten gain list of say the last 7 successful nights per filter of course and then
                         seed the above more accurately.
-
                         Now once we get rid of CCD cameras this becomes a bit easier since min exposure can be 0.0001 sec.
                         But readout time then starts to dominate.  All fine you say but if we have a full wheel of filters
                         then haveing only 35 or so minutes is still limiting.
-
                         I am going to push this to Git right now so MFitz can comment. Then i will get back to the pseudo code.
-
         """
         
         
@@ -2961,7 +2909,6 @@ class Sequencer:
         Fine focus consists of five points plus a verify.
         Optionally individual images can be multiples of one to average out seeing.
         NBNBNB This code needs to go to known stars to be moe relaible and permit subframes
-
         Result format:
                         result['mean_focus'] = avg_foc[1]
                         result['mean_rotation'] = avg_rot[1]
@@ -4565,7 +4512,6 @@ class Sequencer:
         '''
         THIS ROUTINE IS A COMPLETE HACK -- BEWARE.
  
-
         '''
         # g_dev['ocn'].status = g_dev['ocn'].get_status()
         # g_dev['enc'].status = g_dev['enc'].get_status()
