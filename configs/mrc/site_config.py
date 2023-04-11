@@ -103,8 +103,8 @@ site_config = {
     'debug_flag': True,    #  Be careful about setting this flag True when pushing up to dev!
     'TZ_database_name': 'America/Los_Angeles',
     'mpc_code':  'ZZ23',    #This is made up for now.
-    'time_offset':  -8,     # NB these two should be derived from Python libs so change is automatic
-    'timezone': 'PST',
+    'time_offset':  -7,     # NB these two should be derived from Python libs so change is automatic
+    'timezone': 'PdT',
     'latitude': 34.459375,     #Decimal degrees, North is Positive
     'longitude': -119.681172,   #Decimal degrees, West is negative
     'elevation': 317.75,    # meters above sea level

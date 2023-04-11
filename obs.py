@@ -1297,7 +1297,7 @@ sel
                 current_camera_temperature=float(g_dev['cam']._temperature())
                 plog ("Cooler is still on at " + str(current_camera_temperature))            
            
-                if current_camera_temperature - g_dev['cam'].setpoint > 0.2 or current_camera_temperature - g_dev['cam'].setpoint < -0.5:
+                if current_camera_temperature - g_dev['cam'].setpoint > 0.4 or current_camera_temperature - g_dev['cam'].setpoint < -0.5:
                     
                     #print (current_camera_temperature - g_dev['cam'].setpoint)
                     
