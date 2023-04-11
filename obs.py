@@ -39,8 +39,8 @@ from astropy.table import Table
 from astropy.stats import median_absolute_deviation
 
 # For fast photutils source detection
-from astropy.stats import sigma_clipped_stats
-from photutils.detection import DAOStarFinder
+#from astropy.stats import sigma_clipped_stats
+#from photutils.detection import DAOStarFinder
 
 from dotenv import load_dotenv
 import numpy as np
