@@ -650,8 +650,15 @@ site_config = {
                 'number_of_bias_to_store' : 128,
                 'number_of_dark_to_store' : 128,
                 'number_of_flat_to_store' : 128,
-                'pix_scale': [1.104, 2.134, 3.201, 4.268],
-                
+                'pix_scale': 1.104,
+                # The drizzle_value is by the new pixelscale
+                # for the new resolution when stacking in the EVA pipeline
+                # Realistically you want a resolution of about 0.5 arcseconds per pixel
+                # Unless you are at a very poor quality site.
+                # If you have a higher resolution pixelscale it will use that instead.
+                # Generally leave this at 0.5 - the optimal value for ground based
+                # observatories.... unless you have a large field of view.                
+                'drizzle_value_for_later_stacking': 0.5,
                 'do_cosmics' : False,
                 
                 'has_screen': True,

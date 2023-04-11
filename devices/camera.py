@@ -2368,6 +2368,9 @@ class Camera:
                         "[e-/pixel] Read noise",
                     )
                     hdu.header["CMOSCAM"] = (self.is_cmos, "Is CMOS camera")
+                    hdu.header["OSCCAM"] = (self.config["camera"][self.name]["settings"]['is_osc'], "Is OSC camera")
+                    hdu.header["OSCMONO"] = (False, "If OSC, is this a mono image or a bayer colour image.")
+                    
                     try:
                         hdu.header["FULLWELL"] = (
                             self.config["camera"][self.name]["settings"][
@@ -2830,22 +2833,26 @@ class Camera:
                         #plog("have to not have ocn header items when no ocn")
                         pass
 
-                    try:
-                        hdu.header["PIXSCALE"] = (
-                            self.config["camera"][self.name]["settings"]["pix_scale"],
-                            "[arcsec/pixel] Nominal pixel scale on sky",
-                        )
-                        pixscale = float(hdu.header["PIXSCALE"])
-                    except:
-                        # There really needs to be a pixelscale in the header and the variable, even if it is wrong!
-                        plog ("pixel scale not set in the site-config for this binning")
-                        #
-                        hdu.header["PIXSCALE"] = (
-                            0.6
-                            ,
-                            "[arcsec/pixel] Nominal pixel scale on sky",
-                        )
-                        pixscale = float(0.6)
+                    #try:
+                    hdu.header["PIXSCALE"] = (
+                        self.config["camera"][self.name]["settings"]["pix_scale"],
+                        "[arcsec/pixel] Nominal pixel scale on sky",
+                    )
+                    pixscale = float(hdu.header["PIXSCALE"])
+                    # except:
+                    #     # There really needs to be a pixelscale in the header and the variable, even if it is wrong!
+                    #     plog ("pixel scale not set in the site-config for this binning")
+                    #     #
+                    #     hdu.header["PIXSCALE"] = (
+                    #         0.6
+                    #         ,
+                    #         "[arcsec/pixel] Nominal pixel scale on sky",
+                    #     )
+                    #     pixscale = float(0.6)
+                    
+                    hdu.header["DRZPIXSC"] = (self.config["camera"][self.name]["settings"]['drizzle_value_for_later_stacking'], 'Target pixel scale for drizzling')
+                    
+                        
                         
                     hdu.header["REQNUM"] = ("00000001", "Request number")
                     hdu.header["ISMASTER"] = (False, "Is master image")
@@ -3199,7 +3206,12 @@ class Camera:
                             #breakpoint()
                         
                         
-                        # Add a pedestal to the data
+                        # IMMEDIATELY SEND TO SEP QUEUE
+                        self.sep_processing=True
+                        self.to_sep((hdusmalldata, pixscale, float(hdu.header["RDNOISE"]), avg_foc[1], focus_image, im_path, text_name, hdu.header, cal_path, cal_name, frame_type, g_dev['foc'].focuser.Position*g_dev['foc'].steps_to_micron))
+                        
+                        
+                        # Add a pedestal to the reduced data
                         hdusmalldata=hdusmalldata+200.0
                         #hdu.header["PEDESTAL"] = (200, "Pedestal added by PTR")
 
@@ -3311,14 +3323,6 @@ class Camera:
                         # and platesolving
                         
                         #g_dev['cam'].hdufocusdatahold = np.asarray(hdufocusdata)
-                        
-                        # IMMEDIATELY SEND TO SEP QUEUE
-                        self.sep_processing=True
-                        self.to_sep((hdusmalldata, pixscale, float(hdu.header["RDNOISE"]), avg_foc[1], focus_image, im_path, text_name, hdu.header, cal_path, cal_name, frame_type, g_dev['foc'].focuser.Position*g_dev['foc'].steps_to_micron))
-                        #self.sep_processing=True
-                        
-                        
-                                              
                         
                         
                         # Send data off to process jpeg
