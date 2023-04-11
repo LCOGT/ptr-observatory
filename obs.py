@@ -474,10 +474,10 @@ class Observatory:
         
         
         # Pointing
-        req = {'time': self.config['focus_exposure_time'],  'alias':  str(self.config['camera']['camera_1_1']['name']), 'image_type': 'focus'}   #  NB Should pick up filter and constats from config
+        #req = {'time': self.config['focus_exposure_time'],  'alias':  str(self.config['camera']['camera_1_1']['name']), 'image_type': 'focus'}   #  NB Should pick up filter and constats from config
         #opt = {'area': 150, 'count': 1, 'bin': '2, 2', 'filter': 'focus'}
-        opt = {'area': 150, 'count': 1, 'bin': 1, 'filter': 'focus'}
-        result = g_dev['cam'].expose_command(req, opt, no_AWS=False, solve_it=True)
+        #opt = {'area': 150, 'count': 1, 'bin': 1, 'filter': 'focus'}
+        #result = g_dev['cam'].expose_command(req, opt, no_AWS=False, solve_it=True)
 
         # g_dev['seq'].regenerate_local_masters()
 
