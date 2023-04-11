@@ -109,6 +109,8 @@ site_config = {
     'obsid_allowed_to_open_roof': False,
     'period_of_time_to_wait_for_roof_to_open' : 50, # seconds - needed to check if the roof ACTUALLY opens. 
     'only_scope_that_controls_the_roof': False, # If multiple scopes control the roof, set this to False
+    
+
     'check_time': 300,   #MF's original setting.
     'maximum_roof_opens_per_evening' : 4,
     'roof_open_safety_base_time' : 15, # How many minutes to use as the default retry time to open roof. This will be progressively multiplied as a back-off function.
@@ -142,6 +144,7 @@ site_config = {
     'periodic_focus_time' : 0.5, # This is a time, in hours, over which to bypass automated focussing (e.g. at the start of a project it will not refocus if a new project starts X hours after the last focus)
     'stdev_fwhm' : 0.5, # This is the expected variation in FWHM at a given telescope/camera/site combination. This is used to check if a fwhm is within normal range or the focus has shifted
     'focus_exposure_time': 10, # Exposure time in seconds for exposure image
+    'pointing_exposure_time': 20, # Exposure time in seconds for exposure image
     'focus_trigger' : 0.75, # What FWHM increase is needed to trigger an autofocus
     'solve_nth_image' : 1, # Only solve every nth image
     'solve_timer' : 0.05, # Only solve every X minutes
@@ -593,7 +596,7 @@ site_config = {
             #'driver':  "ASCOM.QHYCCD_CAM2.Camera", # NB Be careful this is not QHY Camera2 or Guider  "Maxim.CCDCamera",   #'ASCOM.FLI.Kepler.Camera', "ASCOM.QHYCCD.Camera",   #
             'driver':  "QHYCCD_Direct_Control", # NB Be careful this is not QHY Camera2 or Guider  "Maxim.CCDCamera",   #'ASCOM.FLI.Kepler.Camera', "ASCOM.QHYCCD.Camera",   #
             
-                    
+            
             
             'detector':  'Sony IMX455 Color',  #  It would be good to build out a table of chip characteristics
             'use_file_mode':  False,   # NB we should clean out all file mode stuff.
@@ -601,7 +604,9 @@ site_config = {
             'manufacturer':  "QHY",
             'settings': {
                 
-                
+                'hold_flats_in_memory': False, # If there is sufficient memory ... OR .... not many flats, it is faster to keep the flats in memory.
+
+
                 
                 # For direct QHY usage we need to set the appropriate gain.
                 # This changes from site to site. "Fast" scopes like the RASA need lower gain then "slow".
@@ -637,6 +642,20 @@ site_config = {
 
                 
                 'squash_on_x_axis' : True,
+                
+                
+                
+                # These options set whether an OSC gets binned or interpolated for different functions
+                # If the pixel scale is well-sampled (e.g. 0.6 arcsec per RGGB pixel or 0.3 arcsec per individual debayer pixel)
+                # Then binning is probably fine for all three. For understampled pixel scales - which are likely with OSCs
+                # then binning for focus is recommended. SEP and Platesolve can generally always be binned.                
+                'interpolate_for_focus': False,
+                'bin_for_focus' : True, # This setting will bin the image for focussing rather than interpolating. Good for 1x1 pixel sizes < 0.6.
+                'interpolate_for_sep' : False,
+                'bin_for_sep' : True, # This setting will bin the image for SEP photometry rather than interpolating.
+                'bin_for_platesolve' : True, # This setting will bin the image for platesolving rather than interpolating.
+                
+                
                 # 'osc_brightness_enhance' : 1.0,
                 # 'osc_contrast_enhance' : 1.3,
                 # 'osc_saturation_enhance' : 2.0,
@@ -670,6 +689,25 @@ site_config = {
                 'rotate180_jpeg' : False,
                 'rotate90_jpeg' : False,
                 'rotate270_jpeg' : False,
+                
+                
+               # For large fields of view, crop the images down to solve faster.                 
+               # Realistically the "focus fields" have a size of 0.2 degrees, so anything larger than 0.5 degrees is unnecesary
+               # Probably also similar for platesolving.
+               # for either pointing or platesolving even on more modest size fields of view. 
+               # These were originally inspired by the RASA+QHY which is 3.3 degrees on a side and regularly detects
+               # tens of thousands of sources, but any crop will speed things up. Don't use SEP crop unless 
+               # you clearly need to. 
+               'focus_image_crop_width': 0.0, # For excessive fields of view, to speed things up crop the image to a fraction of the full width    
+               'focus_image_crop_height': 0.0, # For excessive fields of view, to speed things up crop the image to a fraction of the full height
+               # PLATESOLVE CROPS HAVE TO BE EQUAL! OTHERWISE THE PLATE CENTRE IS NOT THE POINTING CENTRE                
+               'platesolve_image_crop': 0.0, # Platesolve crops have to be symmetrical 
+               # Really, the SEP image should not be cropped unless your field of view and number of sources
+               # Are taking chunks out of the processing time. 
+               'sep_image_crop_width': 0.0, # For excessive fields of view, to speed things up crop the processed image area to a fraction of the full width    
+               'sep_image_crop_height': 0.0, # For excessive fields of view, to speed things up crop the processed image area to a fraction of the full width    
+               
+               
                 
                 'osc_bayer' : 'RGGB',
                 'crop_preview': False,
@@ -718,6 +756,14 @@ site_config = {
                 'x_pixel':  3.76,
                 'y_pixel':  3.76,
                 'pix_scale': 0.302597,    #   bin-2  2* math.degrees(math.atan(3.76/2563000))*3600
+                # The drizzle_value is by the new pixelscale
+                # for the new resolution when stacking in the EVA pipeline
+                # Realistically you want a resolution of about 0.5 arcseconds per pixel
+                # Unless you are at a very poor quality site.
+                # If you have a higher resolution pixelscale it will use that instead.
+                # Generally leave this at 0.5 - the optimal value for ground based
+                # observatories.... unless you have a large field of view.                
+                'drizzle_value_for_later_stacking': 0.5,
 
                 'CameraXSize' : 9600,
                 'CameraYSize' : 6422,

@@ -40,7 +40,7 @@ site_config = {
     
     'debug_site_mode': False,
     
-    'debug_mode': False,
+    'debug_mode': True,
     'admin_owner_commands_only': False,
     'debug_duration_sec': 7200,
     'owner':  ['google-oauth2|112401903840371673242'],  # WER,  Or this can be
@@ -93,7 +93,7 @@ site_config = {
 
     'TZ_database_name':  'Australia/Melbourne',
     'mpc_code':  'ZZ23',    #  This is made up for now.
-    'time_offset':  10,   #  These two keys may be obsolete given the new TZ stuff
+    #'time_offset':  11,   #  These two keys may be obsolete given the new TZ stuff
     'timezone': 'AEST',      #  This was meant to be coloquial Time zone abbreviation, alternate for "TX_data..."
     'latitude': -37.70097222,     #  Decimal degrees, North is Positive
     'longitude': 145.1918056,   #  Decimal degrees, West is negative
@@ -105,6 +105,8 @@ site_config = {
     'obsid_allowed_to_open_roof': True,
     'period_of_time_to_wait_for_roof_to_open' : 100, # seconds - needed to check if the roof ACTUALLY opens. 
     'only_scope_that_controls_the_roof': False, # If multiple scopes control the roof, set this to False
+    
+
     
     'check_time': 300,   #MF's original setting.
     'maximum_roof_opens_per_evening' : 4,
@@ -120,18 +122,20 @@ site_config = {
     'auto_eve_bias_dark': False,
     'auto_midnight_moonless_bias_dark': True,
     'auto_eve_sky_flat': True,
-    'eve_sky_flat_sunset_offset': -60.5,  #  Minutes  neg means before, + after.
-    'eve_cool_down_open' : -105.0,
-    'auto_morn_sky_flat': False,
+    'eve_sky_flat_sunset_offset': -20.5,  #  Minutes  neg means before, + after.
+    'eve_cool_down_open' : -80.0,
+    'auto_morn_sky_flat': True,
     'auto_morn_bias_dark': False,
     're-calibrate_on_solve': True,
     'pointing_calibration_on_startup': False,
     'periodic_focus_time' : 0.5, # This is a time, in hours, over which to bypass automated focussing (e.g. at the start of a project it will not refocus if a new project starts X hours after the last focus)
     'stdev_fwhm' : 0.5, # This is the expected variation in FWHM at a given telescope/camera/site combination. This is used to check if a fwhm is within normal range or the focus has shifted
     'focus_exposure_time': 10, # Exposure time in seconds for exposure image
+    'pointing_exposure_time': 20, # Exposure time in seconds for exposure image
+    
 
     'focus_trigger' : 5.0, # What FWHM increase is needed to trigger an autofocus
-    'solve_nth_image' : 10, # Only solve every nth image
+    'solve_nth_image' : 1, # Only solve every nth image
     'solve_timer' : 5, # Only solve every X minutes
     'threshold_mount_update' : 30, # only update mount when X arcseconds away
 
@@ -217,14 +221,14 @@ site_config = {
                                                                         #First Entry is always default condition.
                 'roof_shutter':  ['Auto', 'Open', 'Close', 'Lock Closed', 'Unlock'],
             },
-            'eve_bias_dark_dur':  2.0,   #  hours Duration, prior to next.
-            'eve_screen_flat_dur': 1.0,   #  hours Duration, prior to next.
-            'operations_begin':  -1.0,   #  - hours from Sunset
-            'eve_cooldown_offset': -.99,   #  - hours beforeSunset
-            'eve_sky_flat_offset':  0.5,   #  - hours beforeSunset
-            'morn_sky_flat_offset':  0.4,   #  + hours after Sunrise
-            'morning_close_offset':  0.41,   #  + hours after Sunrise
-            'operations_end':  0.42,
+            #'eve_bias_dark_dur':  2.0,   #  hours Duration, prior to next.
+            #'eve_screen_flat_dur': 1.0,   #  hours Duration, prior to next.
+            #'operations_begin':  -1.0,   #  - hours from Sunset
+            #'eve_cooldown_offset': -.99,   #  - hours beforeSunset
+            #'eve_sky_flat_offset':  0.5,   #  - hours beforeSunset
+            #'morn_sky_flat_offset':  0.4,   #  + hours after Sunrise
+            #'morning_close_offset':  0.41,   #  + hours after Sunrise
+            #'operations_end':  0.42,
         },
     },
 
@@ -481,13 +485,13 @@ site_config = {
                         #['focus', [0,  0],     0, 148, [1.00 ,  72], 'focus'],    #0.
                         ['lum',    [0,  0],     0, 179, [1.00 ,  72], 'PhLum'],    #1.
                         ['ip',    [1,  1],     0, 50, [1.00 , 119], 'PhRed'],    #2.
-                        ['v',    [2,  2],     0, 56, [1.00 , 113], 'PhGreen'],    #3.
-                        ['pb',    [3,  3],     0, 55, [0.80 ,  97], 'PhBlue'],    #4.
-                        ['ha',    [4,  4],     0, 6.39, [0.80 ,  97], 'PhBlue'],    #4.
+                        ['v',    [2,  2],     0, 16, [1.00 , 113], 'PhGreen'],    #3.
+                        ['pb',    [3,  3],     0, 25, [0.80 ,  97], 'PhBlue'],    #4.
+                        ['ha',    [4,  4],     0, 2.634, [0.80 ,  97], 'PhBlue'],    #4.
                         #['PR',    [1,  1],     0, 170, [1.00 , 119], 'PhBlue'],    #2.
                         #['PG',    [2,  2],     0, 220, [1.00 , 113], 'PhGreen'],    #3.
                         #['PB',    [3,  3],     0, 300, [0.80 ,  97], 'PhRed'],    #4.
-                        ['s2',    [5,  5],     0, 2.728, [5.00 , 200], 'Halpha'],    #5.
+                        ['s2',    [5,  5],     0, 4.728, [5.00 , 200], 'Halpha'],    #5.
                         ['o3',    [6,  6],     0, 3.52, [4.00 , 200], 'OIII']],    #6.
                         #['s2',    [7,  7],     0, 58.239, [10.0,  200], 'SII']],    #7.
                         #['air',   [7,  7], -1000, 100., [1.00,   70], 'air'],    #8.
@@ -498,11 +502,10 @@ site_config = {
                 'filter_screen_sort':  ['s2','o3','ha','pb','pg','pr','lum'],   #  don't use narrow yet,  8, 10, 9], useless to try.
 
 
-                'filter_sky_sort': ['s2','o3','ha','pb','v','ip','lum']    #No diffuser based filters
-                #'filter_sky_sort': [7, 19, 2, 13, 18, 5, 15,\
-                #                    12, 4, 11, 16, 10, 9, 17, 3, 14, 1, 0]    #basically no diffuser based filters
-                #[32, 8, 22, 21, 20, 23, 31, 6, 7, 19, 27, 2, 37, 13, 18, 30, 5, 15, 36, 12,\
-                 #                   29, 4, 35, 34, 11, 16, 10, 33, 9, 17, 28, 3, 26, 14, 1, 0]
+                
+                #'filter_sky_sort': ['ha','o3','s2','v','pb','ip','lum']    #No diffuser based filters
+                'filter_sky_sort': ['v','ip','lum','pb']    #No diffuser based filters
+                
 
 
             },
@@ -527,6 +530,8 @@ site_config = {
             'desc':  'SBIG16803',
             'service_date': '20211111',
             'driver': "CCDSoft2XAdaptor.ccdsoft5Camera",  # "ASCOM.QHYCCD.Camera", ##  'ASCOM.FLI.Kepler.Camera',
+            
+            
             'detector':  'KAF16803',
             'manufacturer':  'On-Semi',
             'use_file_mode':  False,
@@ -537,8 +542,24 @@ site_config = {
                 
                 
                 
+                'hold_flats_in_memory': True, # If there is sufficient memory ... OR .... not many flats, it is faster to keep the flats in memory.
+
                 
                 'squash_on_x_axis' : True,
+                
+                
+                
+                # These options set whether an OSC gets binned or interpolated for different functions
+                # If the pixel scale is well-sampled (e.g. 0.6 arcsec per RGGB pixel or 0.3 arcsec per individual debayer pixel)
+                # Then binning is probably fine for all three. For understampled pixel scales - which are likely with OSCs
+                # then binning for focus is recommended. SEP and Platesolve can generally always be binned.                
+                'interpolate_for_focus': False,
+                'bin_for_focus' : False, # This setting will bin the image for focussing rather than interpolating. Good for 1x1 pixel sizes < 0.6.
+                'interpolate_for_sep' : False,
+                'bin_for_sep' : True, # This setting will bin the image for SEP photometry rather than interpolating.
+                'bin_for_platesolve' : True, # This setting will bin the image for platesolving rather than interpolating.
+                
+                
                 # ONLY TRANSFORM THE FITS IF YOU HAVE
                # A DATA-BASED REASON TO DO SO.....
                # USUALLY TO GET A BAYER GRID ORIENTATED CORRECTLY
@@ -559,6 +580,23 @@ site_config = {
                'rotate180_jpeg' : False,
                'rotate90_jpeg' : True,
                'rotate270_jpeg' : False,
+               
+               # For large fields of view, crop the images down to solve faster.                 
+               # Realistically the "focus fields" have a size of 0.2 degrees, so anything larger than 0.5 degrees is unnecesary
+               # Probably also similar for platesolving.
+               # for either pointing or platesolving even on more modest size fields of view. 
+               # These were originally inspired by the RASA+QHY which is 3.3 degrees on a side and regularly detects
+               # tens of thousands of sources, but any crop will speed things up. Don't use SEP crop unless 
+               # you clearly need to. 
+               'focus_image_crop_width': 0.0, # For excessive fields of view, to speed things up crop the image to a fraction of the full width    
+               'focus_image_crop_height': 0.0, # For excessive fields of view, to speed things up crop the image to a fraction of the full height
+               # PLATESOLVE CROPS HAVE TO BE EQUAL! OTHERWISE THE PLATE CENTRE IS NOT THE POINTING CENTRE                
+               'platesolve_image_crop': 0.0, # Platesolve crops have to be symmetrical 
+               # Really, the SEP image should not be cropped unless your field of view and number of sources
+               # Are taking chunks out of the processing time. 
+               'sep_image_crop_width': 0.0, # For excessive fields of view, to speed things up crop the processed image area to a fraction of the full width    
+               'sep_image_crop_height': 0.0, # For excessive fields of view, to speed things up crop the processed image area to a fraction of the full width    
+               
                
                 'osc_bayer' : 'RGGB',
                 'crop_preview': False,
@@ -622,7 +660,7 @@ site_config = {
                 'rotation': 0.0,        #  Probably remove.
                 'min_exposure': 0.2,
                 'min_flat_exposure' : 3.0, # For certain shutters, short exposures aren't good for flats. Some CMOS have banding in too short an exposure. Largely applies to ccds though.
-                'max_flat_exposure' : 20.0, # Realistically there should be a maximum flat_exposure that makes sure flats are efficient and aren't collecting actual stars.
+                'max_flat_exposure' : 45.0, # Realistically there should be a maximum flat_exposure that makes sure flats are efficient and aren't collecting actual stars.
                 'max_exposure': 3600,
                 'max_daytime_exposure': 0.0001,
                 'can_subframe':  True,
@@ -661,13 +699,24 @@ site_config = {
                 #'max_res_bin':  [1, 1, 0.269],    #  Matched to seeing situation by owner
                 #'bin_modes':  [[1, 1, 0.269],[2, 2, 0.538],[3, 3, 0.807],[4, 4, 1.076]], #  , [2, 2, 2.13], [3, 3, 3.21], [4, 4, 4.27]],   #Meaning no binning choice if list has only one entry, default should be first.
                 'pix_scale': 0.637,
+                
+                # The drizzle_value is by the new pixelscale
+                # for the new resolution when stacking in the EVA pipeline
+                # Realistically you want a resolution of about 0.5 arcseconds per pixel
+                # Unless you are at a very poor quality site.
+                # If you have a higher resolution pixelscale it will use that instead.
+                # Generally leave this at 0.5 - the optimal value for ground based
+                # observatories.... unless you have a large field of view.                
+                'drizzle_value_for_later_stacking': 0.5,
+                
+                
                 'do_cosmics' : False,
                 #'dark_length' : 1,
-                'number_of_bias_to_collect' : 63,
-                'number_of_dark_to_collect' : 63,
+                'number_of_bias_to_collect' : 10,
+                'number_of_dark_to_collect' : 10,
                 'number_of_flat_to_collect' : 10,
-                'number_of_bias_to_store' : 63,
-                'number_of_dark_to_store' : 63,
+                'number_of_bias_to_store' : 128,
+                'number_of_dark_to_store' : 128,
                 'number_of_flat_to_store' : 63,
                 
                 'dark_exposure': 75,

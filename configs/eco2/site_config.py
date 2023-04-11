@@ -96,7 +96,7 @@ site_config = {
 
     'TZ_database_name':  'Australia/Melbourne',
     'mpc_code':  'ZZ23',    #  This is made up for now.
-    'time_offset':  10,   #  These two keys may be obsolete given the new TZ stuff
+    #'time_offset':  11,   #  These two keys may be obsolete given the new TZ stuff
     'timezone': 'AEST',      #  This was meant to be coloquial Time zone abbreviation, alternate for "TX_data..."
     'latitude': -37.70097222,     #  Decimal degrees, North is Positive
     'longitude': 145.1918056,   #  Decimal degrees, West is negative
@@ -124,21 +124,22 @@ site_config = {
     'observing_check_period' : 5,    # How many minutes between weather checks
     'enclosure_check_period' : 5,    # How many minutes between enclosure checks
     'auto_eve_bias_dark': False,
-    'auto_midnight_moonless_bias_dark': True,
+    'auto_midnight_moonless_bias_dark': False,
     'auto_eve_sky_flat': True,
 
     'eve_sky_flat_sunset_offset': -0.5,  #  Minutes  neg means before, + after.
-    'eve_cool_down_open' : -105.0,
-    'auto_morn_sky_flat': False,
+    'eve_cool_down_open' : -80.0,
+    'auto_morn_sky_flat': True,
     'auto_morn_bias_dark': False,
     're-calibrate_on_solve': True,
     'pointing_calibration_on_startup': False,
     'periodic_focus_time' : 0.5, # This is a time, in hours, over which to bypass automated focussing (e.g. at the start of a project it will not refocus if a new project starts X hours after the last focus)
     'stdev_fwhm' : 0.5, # This is the expected variation in FWHM at a given telescope/camera/site combination. This is used to check if a fwhm is within normal range or the focus has shifted
-    'focus_exposure_time': 10, # Exposure time in seconds for exposure image
+    'pointing_exposure_time': 20, # Exposure time in seconds for exposure image
+    'focus_exposure_time': 30, # Exposure time in seconds for exposure image
 
     'focus_trigger' : 5.0, # What FWHM increase is needed to trigger an autofocus
-    'solve_nth_image' : 10, # Only solve every nth image
+    'solve_nth_image' : 1, # Only solve every nth image
     'solve_timer' : 5, # Only solve every X minutes
     'threshold_mount_update' : 50, # only update mount when X arcseconds away
 
@@ -224,14 +225,14 @@ site_config = {
                                                                         #First Entry is always default condition.
                 'roof_shutter':  ['Auto', 'Open', 'Close', 'Lock Closed', 'Unlock'],
             },
-            'eve_bias_dark_dur':  2.0,   #  hours Duration, prior to next.
-            'eve_screen_flat_dur': 1.0,   #  hours Duration, prior to next.
-            'operations_begin':  -1.0,   #  - hours from Sunset
-            'eve_cooldown_offset': -.99,   #  - hours beforeSunset
-            'eve_sky_flat_offset':  0.5,   #  - hours beforeSunset
-            'morn_sky_flat_offset':  0.4,   #  + hours after Sunrise
-            'morning_close_offset':  0.41,   #  + hours after Sunrise
-            'operations_end':  0.42,
+            #'eve_bias_dark_dur':  2.0,   #  hours Duration, prior to next.
+            #'eve_screen_flat_dur': 1.0,   #  hours Duration, prior to next.
+            #'operations_begin':  -1.0,   #  - hours from Sunset
+            #'eve_cooldown_offset': -.99,   #  - hours beforeSunset
+            #'eve_sky_flat_offset':  0.5,   #  - hours beforeSunset
+            #'morn_sky_flat_offset':  0.4,   #  + hours after Sunrise
+            #'morning_close_offset':  0.41,   #  + hours after Sunrise
+            #'operations_end':  0.42,
         },
     },
 
@@ -259,7 +260,7 @@ site_config = {
             
             'home_before_park' : True,
             'permissive_mount_reset' : 'yes', # if this is set to yes, it will reset the mount at startup and when coordinates are out significantly
-            'lowest_acceptable_altitude' : -5.0, # Below this altitude, it will automatically try to home and park the scope to recover.
+            'lowest_acceptable_altitude' : -7.0, # Below this altitude, it will automatically try to home and park the scope to recover.
             'time_inactive_until_park' : 3600.0, # How many seconds of inactivity until it will park the telescope
             'settings': {
 			    'latitude_offset': 0.0,     #Decimal degrees, North is Positive   These *could* be slightly different than site.
@@ -390,10 +391,10 @@ site_config = {
             #F4.9 setup
             'start_at_config_reference': True,
             'use_focuser_temperature': False,
-            'reference':9900,    #  20210313  Nominal at 10C Primary temperature
-            'ref_temp':  6265.0,    #  Update when pinning reference
+            'reference':11000,    #  20210313  Nominal at 10C Primary temperature
+            'ref_temp':  11000.0,    #  Update when pinning reference
             'coef_c': 0,   #  Negative means focus moves out as Primary gets colder
-            'coef_0': 9900,  #  Nominal intercept when Primary is at 0.0 C.
+            'coef_0': 11000,  #  Nominal intercept when Primary is at 0.0 C.
             'coef_date':  '20220914',    #This appears to be sensible result 44 points -13 to 3C'reference':  6431,    #  Nominal at 10C Primary temperature
             # #F9 setup
             # 'reference': 4375,    #   Guess 20210904  Nominal at 10C Primary temperature
@@ -685,7 +686,6 @@ site_config = {
             
             
             
-                
             
             
             'detector':  'Sony IMX455 Color',  #  It would be good to build out a table of chip characteristics
@@ -693,6 +693,10 @@ site_config = {
             'file_mode_path':  'Q:/archive/sq01/maxim/',   #NB NB all file_mode Maxim stuff should go!
             'manufacturer':  "QHY",
             'settings': {
+                
+                'hold_flats_in_memory': True, # If there is sufficient memory ... OR .... not many flats, it is faster to keep the flats in memory.
+
+                
                 
                 # For direct QHY usage we need to set the appropriate gain.
                 # This changes from site to site. "Fast" scopes like the RASA need lower gain then "slow".
@@ -741,7 +745,16 @@ site_config = {
                 'osc_colour_enhance' : 1.7,
                 'osc_sharpness_enhance' : 1.5,                
                 'osc_background_cut' : 25.0,
+                
+                # These options set whether an OSC gets binned or interpolated for different functions
+                # If the pixel scale is well-sampled (e.g. 0.6 arcsec per RGGB pixel or 0.3 arcsec per individual debayer pixel)
+                # Then binning is probably fine for all three. For understampled pixel scales - which are likely with OSCs
+                # then binning for focus is recommended. SEP and Platesolve can generally always be binned.                
+                'interpolate_for_focus': True,
                 'bin_for_focus' : False, # This setting will bin the image for focussing rather than interpolating. Good for 1x1 pixel sizes < 0.6.
+                'interpolate_for_sep' : False,
+                'bin_for_sep' : True, # This setting will bin the image for SEP photometry rather than interpolating.
+                'bin_for_platesolve' : True, # This setting will bin the image for platesolving rather than interpolating.
                 
                 # ONLY TRANSFORM THE FITS IF YOU HAVE
                 # A DATA-BASED REASON TO DO SO.....
@@ -763,6 +776,22 @@ site_config = {
                 'rotate180_jpeg' : False,
                 'rotate90_jpeg' : False,
                 'rotate270_jpeg' : False,
+                
+                # For large fields of view, crop the images down to solve faster.                 
+                # Realistically the "focus fields" have a size of 0.2 degrees, so anything larger than 0.5 degrees is unnecesary
+                # Probably also similar for platesolving.
+                # for either pointing or platesolving even on more modest size fields of view. 
+                # These were originally inspired by the RASA+QHY which is 3.3 degrees on a side and regularly detects
+                # tens of thousands of sources, but any crop will speed things up. Don't use SEP crop unless 
+                # you clearly need to. 
+                'focus_image_crop_width': 0.5, # For excessive fields of view, to speed things up crop the image to a fraction of the full width    
+                'focus_image_crop_height': 0.5, # For excessive fields of view, to speed things up crop the image to a fraction of the full height
+                # PLATESOLVE CROPS HAVE TO BE EQUAL! OTHERWISE THE PLATE CENTRE IS NOT THE POINTING CENTRE                
+                'platesolve_image_crop': 0.75, # Platesolve crops have to be symmetrical 
+                # Really, the SEP image should not be cropped unless your field of view and number of sources
+                # Are taking chunks out of the processing time. 
+                'sep_image_crop_width': 0.1, # For excessive fields of view, to speed things up crop the processed image area to a fraction of the full width    
+                'sep_image_crop_height': 0.1, # For excessive fields of view, to speed things up crop the processed image area to a fraction of the full width    
                 
                 'osc_bayer' : 'RGGB',
                 'crop_preview': False,
@@ -803,9 +832,18 @@ site_config = {
                 'det_sec': ['[25:9600, 1:6388]', '[13:4800, 1:3194]', '[9:3200, 1:2129]', '[7:2400, 1:1597]'],
                 'data_sec': ['[25:9600, 1:6388]', '[13:4800, 1:3194]', '[9:3200, 1:2129]', '[7:2400, 1:1597]'],
                 'trim_sec': ['[1:9576, 1:6388]', '[1:4788, 1:3194]', '[1:3192, 1:2129]', '[1:2394, 1:1597]'],
-                'x_pixel':  3.76,
-                'y_pixel':  3.76,
-                'pix_scale': 1.25,    #   bin-2  2* math.degrees(math.atan(3.76/2563000))*3600
+                'x_pixel':  3.76, # microns
+                'y_pixel':  3.76, # microns
+                'pix_scale': 1.25,    #   arcseconds per pixel
+                
+                # The drizzle_value is by the new pixelscale
+                # for the new resolution when stacking in the EVA pipeline
+                # Realistically you want a resolution of about 0.5 arcseconds per pixel
+                # Unless you are at a very poor quality site.
+                # If you have a higher resolution pixelscale it will use that instead.
+                # Generally leave this at 0.5 - the optimal value for ground based
+                # observatories.... unless you have a large field of view.                
+                'drizzle_value_for_later_stacking': 0.5,
                 
 
                 'CameraXSize' : 9600,
@@ -825,7 +863,8 @@ site_config = {
                 'min_exposure': 0.0001,
                 'min_flat_exposure' : 3.0, # For certain shutters, short exposures aren't good for flats. Some CMOS have banding in too short an exposure. Largely applies to ccds though.
 
-                'max_flat_exposure' : 120.0, # Realistically there should be a maximum flat_exposure that makes sure flats are efficient and aren't collecting actual stars.
+                'max_flat_exposure' : 20.0, # Realistically there should be a maximum flat_exposure that makes sure flats are efficient and aren't collecting actual stars.
+
 
                 'max_exposure': 180.,
                 'max_daytime_exposure': 0.0001,
@@ -844,12 +883,12 @@ site_config = {
                 #'enable_bin':            [ True, False,  False,  False],
                 #'bias_dark_bin_spec':    ['1,1', '2,2', '3,3', '4,4' ],    #Default binning for flats
 
-                'number_of_bias_to_collect' : 63,
-                'number_of_dark_to_collect' : 63,
-                'number_of_flat_to_collect' : 63,
-                'number_of_bias_to_store' : 63,
-                'number_of_dark_to_store' : 63,
-                'number_of_flat_to_store' : 63,
+                'number_of_bias_to_collect' : 32,
+                'number_of_dark_to_collect' : 32,
+                'number_of_flat_to_collect' : 10,
+                'number_of_bias_to_store' : 32,
+                'number_of_dark_to_store' : 32,
+                'number_of_flat_to_store' : 32,
 
  
                 'dark_exposure': 20,
