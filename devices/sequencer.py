@@ -363,6 +363,12 @@ class Sequencer:
         #if time.time() >= self.time_of_next_slew:
         #    self.time_of_next_slew = time.time() + 600  # seconds between slews.
             #We slew to anti-solar Az and reissue this command every 120 seconds
+        
+        if not self.config['obsid_roof_control']:
+            #plog("A request to open observatory was made even though this platform has no roof control. Returning.")
+            return
+        
+        
         flat_spot, flat_alt = g_dev['evnt'].flat_spot_now()
         obs_win_begin, sunZ88Op, sunZ88Cl, ephem_now = self.astro_events.getSunEvents()
         
@@ -507,7 +513,7 @@ class Sequencer:
         
 
         # Check for delayed opening of the observatory and act accordingly.
-        #breakpoint()
+
         # If the observatory is simply delayed until opening, then wait until then, then attempt to start up the observatory
         if self.weather_report_wait_until_open and not self.cool_down_latch:
             if ephem_now >  self.weather_report_wait_until_open_time:
@@ -616,8 +622,8 @@ class Sequencer:
                 if time.time() > self.enclosure_next_open_time and self.opens_this_evening < self.config['maximum_roof_opens_per_evening']:
                     
                     #self.enclosure_next_open_time = time.time() + 300 # Only try to open the roof every five minutes maximum
-                    
-                    self.open_observatory(enc_status, ocn_status)
+                    if self.config['obsid_roof_control']:
+                        self.open_observatory(enc_status, ocn_status)
                     
                     # If the observatory opens, set clock and auto focus and observing to now
                     if g_dev['obs'].open_and_enabled_to_observe:
@@ -696,6 +702,7 @@ class Sequencer:
 
         elif not self.eve_sky_flat_latch and ((events['Eve Sky Flats'] <= ephem_now < events['End Eve Sky Flats'])  \
                and g_dev['enc'].mode in [ 'Automatic', 'Autonomous'] and not g_dev['ocn'].wx_hold and \
+
                self.config['auto_eve_sky_flat'] and g_dev['obs'].open_and_enabled_to_observe and not self.eve_flats_done and g_dev['obs'].camera_temperature_in_range_for_calibrations):
 
             self.eve_sky_flat_latch = True
@@ -715,6 +722,7 @@ class Sequencer:
 
         elif ((g_dev['events']['Clock & Auto Focus']  <= ephem_now < g_dev['events']['Observing Begins']) and \
                g_dev['enc'].mode == 'Automatic') and not g_dev['ocn'].wx_hold  \
+
                 and self.night_focus_ready==True and  g_dev['obs'].open_and_enabled_to_observe and not self.clock_focus_latch:
 
             
@@ -756,7 +764,9 @@ class Sequencer:
         elif (events['Observing Begins'] <= ephem_now \
                                    < events['Observing Ends']) and not g_dev['ocn'].wx_hold \
                                    and  g_dev['obs'].blocks is not None and g_dev['obs'].projects \
+
                                    is not None and g_dev['obs'].open_and_enabled_to_observe:
+
             try:
                 
                
@@ -901,7 +911,9 @@ class Sequencer:
         elif not self.morn_sky_flat_latch and ((events['Morn Sky Flats'] <= ephem_now < events['End Morn Sky Flats'])  \
                and g_dev['enc'].mode == 'Automatic' and not g_dev['ocn'].wx_hold and \
                self.config['auto_morn_sky_flat']) and not self.morn_flats_done and g_dev['obs'].camera_temperature_in_range_for_calibrations and g_dev['obs'].open_and_enabled_to_observe:
+
                    #self.config['auto_morn_sky_flat']) and not self.morn_flats_done and g_dev['obs'].open_and_enabled_to_observe :
+
             #self.time_of_next_slew = time.time() -1
             self.morn_sky_flat_latch = True
             
@@ -1229,9 +1241,10 @@ class Sequencer:
                 self.block_guard = False                
                 return block_specification
             
+
             
             g_dev['obs'].update()
-            #g_dev['mnt'].re_seek(dither=0)
+
 
             plog("CAUTION:  rotator may block")
             pa = float(block_specification['project']['project_constraints']['position_angle'])
@@ -1564,7 +1577,7 @@ class Sequencer:
                     #self.time_of_next_slew = time.time() -1
                     #plog ("got here")
                     
-                    if not g_dev['obs'].open_and_enabled_to_observe and self.weather_report_is_acceptable_to_observe==True and self.weather_report_wait_until_open==False and not self.cool_down_latch:
+                    if self.config['obsid_roof_control'] and not g_dev['obs'].open_and_enabled_to_observe and self.weather_report_is_acceptable_to_observe==True and self.weather_report_wait_until_open==False and not self.cool_down_latch:
                         if time.time() > self.enclosure_next_open_time and self.opens_this_evening < self.config['maximum_roof_opens_per_evening']:
                             #self.enclosure_next_open_time = time.time() + 300 # Only try to open the roof every five minutes
                             self.cool_down_latch = True
