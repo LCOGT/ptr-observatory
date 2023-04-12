@@ -10,7 +10,7 @@ is in the Gemini.
 
 Abstract away Redis, Memurai, and local shares for IPC.
 """
-from ocs_ingester.ingester import frame_exists, upload_file_and_ingest_to_archive
+
 import ephem
 import datetime
 import json
@@ -96,7 +96,7 @@ reqs.mount('http://', HTTPAdapter(max_retries=retries))
 
 # The ingester should only be imported after environment variables are loaded in.
 load_dotenv(".env")
-
+from ocs_ingester.ingester import frame_exists, upload_file_and_ingest_to_archive
 
 def test_connect(host='http://google.com'):
     try:
@@ -479,7 +479,7 @@ class Observatory:
         #opt = {'area': 150, 'count': 1, 'bin': 1, 'filter': 'focus'}
         #result = g_dev['cam'].expose_command(req, opt, no_AWS=False, solve_it=True)
 
-        # g_dev['seq'].regenerate_local_masters()
+        #g_dev['seq'].regenerate_local_masters()
 
     def set_last_reference(self, delta_ra, delta_dec, last_time):
         mnt_shelf = shelve.open(self.obsid_path + "ptr_night_shelf/" + "last" + str(self.name))
@@ -2246,8 +2246,11 @@ sel
 
                         fx, fy = hdusmalldata.shape
 
-                        crop_width = (fx - 500) / 2
-                        crop_height = (fy - 500) / 2
+                        focus_jpeg_size=self.config["camera"][g_dev['cam'].name]["settings"]['focus_jpeg_size']
+                        crop_width = (fx - focus_jpeg_size) / 2
+                        crop_height = (fy - focus_jpeg_size) / 2
+
+       
 
                         # Make sure it is an even number for OSCs
                         if (crop_width % 2) != 0:
