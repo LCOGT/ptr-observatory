@@ -76,7 +76,7 @@ site_config = {
     'debug_site_mode': False,
     
     'debug_mode' : False,
-    'admin_owner_commands_only': True,
+    'admin_owner_commands_only': False,
     'debug_duration_sec': 1800,
     'owner':  ['google-oauth2|112401903840371673242'],  # Wayne
 
@@ -691,9 +691,12 @@ site_config = {
                 # then binning for focus is recommended. SEP and Platesolve can generally always be binned.                
                 'interpolate_for_focus': False,
                 'bin_for_focus' : True, # This setting will bin the image for focussing rather than interpolating. Good for 1x1 pixel sizes < 0.6.
+                'focus_bin_value' : 4,
                 'interpolate_for_sep' : False,
                 'bin_for_sep' : True, # This setting will bin the image for SEP photometry rather than interpolating.
                 'bin_for_platesolve' : True, # This setting will bin the image for platesolving rather than interpolating.
+                'platesolve_bin_value' : 4,
+                
                 
                 'squash_on_x_axis' : True,
                 'flipx_fits': False,

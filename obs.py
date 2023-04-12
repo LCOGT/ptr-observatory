@@ -471,7 +471,7 @@ class Observatory:
         # NB The above put dome closed and telescope at Park, Which is where it should have been upon entry.
         #g_dev['seq'].bias_dark_script(req, opt, morn=True)
 
-        
+         
         
         # Pointing
         #req = {'time': self.config['focus_exposure_time'],  'alias':  str(self.config['camera']['camera_1_1']['name']), 'image_type': 'focus'}   #  NB Should pick up filter and constats from config
@@ -2113,67 +2113,67 @@ sel
                 
                 (hdufocusdata, pixscale, readnoise, avg_foc, focus_image, im_path, text_name, hduheader, cal_path, cal_name, frame_type, focus_position) = self.sep_queue.get(block=False)
                 
+                #breakpoint()
+                # # Background clip the focus image
+                # ## Estimate Method 1: This routine tests the number of pixels to the negative side of the distribution until it hits 0 three pixels in a row. This (+3) becomes the lower threshold.
+                # imageMode = (float(stats.mode(hdufocusdata.flatten(), nan_policy='omit', keepdims=False)[0]))
                 
-                # Background clip the focus image
-                ## Estimate Method 1: This routine tests the number of pixels to the negative side of the distribution until it hits 0 three pixels in a row. This (+3) becomes the lower threshold.
-                imageMode = (float(stats.mode(hdufocusdata.flatten(), nan_policy='omit', keepdims=False)[0]))
-                
-                breaker=1
-                counter=0
-                zerocount=0
-                while (breaker != 0):
-                    counter=counter+1
-                    currentValue= np.count_nonzero(hdufocusdata == imageMode-counter)
+                # breaker=1
+                # counter=0
+                # zerocount=0
+                # while (breaker != 0):
+                #     counter=counter+1
+                #     currentValue= np.count_nonzero(hdufocusdata == imageMode-counter)
             
-                    if (currentValue < 20):
-                        zerocount=zerocount+1
-                    else:
-                        zerocount=0
-                    if (zerocount == 3):
-                        zeroValue=(imageMode-counter)+3
-                        breaker =0
+                #     if (currentValue < 20):
+                #         zerocount=zerocount+1
+                #     else:
+                #         zerocount=0
+                #     if (zerocount == 3):
+                #         zeroValue=(imageMode-counter)+3
+                #         breaker =0
                         
-                masker = ma.masked_less(hdufocusdata, (zeroValue))
-                hdufocusdata= masker.filled(np.nan)
-                #print ("Minimum Value in Array")
-                #print (zeroValue)
+                # masker = ma.masked_less(hdufocusdata, (zeroValue))
+                # hdufocusdata= masker.filled(np.nan)
+                # #print ("Minimum Value in Array")
+                # #print (zeroValue)
     
-                # Report number of nans in array
-                #print ("Number of nan pixels in image array: " + str(numpy.count_nonzero(numpy.isnan(imagedata))))
+                # # Report number of nans in array
+                # #print ("Number of nan pixels in image array: " + str(numpy.count_nonzero(numpy.isnan(imagedata))))
                 
                 
-                # Background clipped
-                hduheader["IMGMIN"] = ( np.nanmin(hdufocusdata), "Minimum Value of Image Array" )
-                hduheader["IMGMAX"] = ( np.nanmax(hdufocusdata), "Maximum Value of Image Array" )
-                hduheader["IMGMEAN"] = ( np.nanmean(hdufocusdata), "Mean Value of Image Array" )
-                hduheader["IMGMED"] = ( np.nanmedian(hdufocusdata), "Median Value of Image Array" )
+                # # Background clipped
+                # hduheader["IMGMIN"] = ( np.nanmin(hdufocusdata), "Minimum Value of Image Array" )
+                # hduheader["IMGMAX"] = ( np.nanmax(hdufocusdata), "Maximum Value of Image Array" )
+                # hduheader["IMGMEAN"] = ( np.nanmean(hdufocusdata), "Mean Value of Image Array" )
+                # hduheader["IMGMED"] = ( np.nanmedian(hdufocusdata), "Median Value of Image Array" )
                 
-                hduheader["IMGMODE"] = ( imageMode, "Mode Value of Image Array" )
-                hduheader["IMGSTDEV"] = ( np.nanstd(hdufocusdata), "Median Value of Image Array" )
-                hduheader["IMGMAD"] = ( median_absolute_deviation(hdufocusdata, ignore_nan=True), "Median Absolute Deviation of Image Array" )
-                
-                
-                
-                # Get out raw histogram construction data
-                # Get a flattened array with all nans removed
-                int_array_flattened=np.rint(hdufocusdata.flatten())
-                flat_no_nan_array=(int_array_flattened[~np.isnan(int_array_flattened)])
-                del int_array_flattened
-                # Collect unique values and counts
-                unique,counts=np.unique(flat_no_nan_array, return_counts=True)
-                del flat_no_nan_array
-                histogramdata=np.column_stack([unique,counts]).astype(np.int32)
-                np.savetxt(
-                    im_path + text_name.replace('.txt', '.his'),
-                    histogramdata, delimiter=','
-                )
+                # hduheader["IMGMODE"] = ( imageMode, "Mode Value of Image Array" )
+                # hduheader["IMGSTDEV"] = ( np.nanstd(hdufocusdata), "Median Value of Image Array" )
+                # hduheader["IMGMAD"] = ( median_absolute_deviation(hdufocusdata, ignore_nan=True), "Median Absolute Deviation of Image Array" )
                 
                 
-                try:
-                    g_dev['cam'].enqueue_for_fastAWS(180, im_path, text_name.replace('.txt', '.his'))
-                    #plog("Sent SEP up")
-                except:
-                    plog("Failed to send HIS up for some reason")
+                
+                # # Get out raw histogram construction data
+                # # Get a flattened array with all nans removed
+                # int_array_flattened=np.rint(hdufocusdata.flatten())
+                # flat_no_nan_array=(int_array_flattened[~np.isnan(int_array_flattened)])
+                # del int_array_flattened
+                # # Collect unique values and counts
+                # unique,counts=np.unique(flat_no_nan_array, return_counts=True)
+                # del flat_no_nan_array
+                # histogramdata=np.column_stack([unique,counts]).astype(np.int32)
+                # np.savetxt(
+                #     im_path + text_name.replace('.txt', '.his'),
+                #     histogramdata, delimiter=','
+                # )
+                
+                
+                # try:
+                #     g_dev['cam'].enqueue_for_fastAWS(180, im_path, text_name.replace('.txt', '.his'))
+                #     #plog("Sent SEP up")
+                # except:
+                #     plog("Failed to send HIS up for some reason")
                 
                 
                 
@@ -2226,8 +2226,9 @@ sel
                             hdufocusdata=hdufocusdata.astype("float32")
                             binfocus=1
                         if frame_type == 'focus' and self.config["camera"][g_dev['cam'].name]["settings"]['bin_for_focus']: 
-                            hdufocusdata=block_reduce(hdufocusdata,2)
-                            binfocus=2
+                            focus_bin_factor=self.config["camera"][g_dev['cam'].name]["settings"]['focus_bin_value']
+                            hdufocusdata=block_reduce(hdufocusdata,focus_bin_factor)
+                            binfocus=focus_bin_factor
                         
                         
                         if frame_type != 'focus' and self.config["camera"][g_dev['cam'].name]["settings"]['interpolate_for_sep']: 
@@ -2334,11 +2335,12 @@ sel
                         # minarea is set as roughly how big we think a 0.7 arcsecond seeing star
                         # would be at this pixelscale and binning. Different for different cameras/telescopes.
                         minarea = int(pow(0.7*1.5 / (pixscale*binfocus), 2) * 3.14)
-                        if minarea < 5:  # There has to be a min minarea though!
-                            minarea = 5
+                        if minarea < 15:  # There has to be a min minarea though!
+                            minarea = 15
 
+                        sep.set_sub_object_limit(10000)
                         sources = sep.extract(
-                            focusimg, 3.0, err=bkg.globalrms, minarea=minarea
+                            focusimg, 7.0, err=bkg.globalrms, minarea=minarea
                         )
                         plog("Actual SEP time: " + str(time.time()-actseptime))
 
@@ -2524,36 +2526,36 @@ sel
 
                             
                         
-                        # Identify the brightest star in the image set
+                        # # Identify the brightest star in the image set
                         
-                        # Make a cutout around this star - 10 times rfp
+                        # # Make a cutout around this star - 10 times rfp
                         
-                        brightest_array = None
+                        # brightest_array = None
                         
-                        # Send this array up
-                        
-                        
+                        # # Send this array up
                         
                         
-                        # Identify the brightest non-saturated star in the image set
-                        
-                        # Make a cutout around this star - 10 times rfp
-                        
-                        unsaturated_array = None
-                        
-                        # Send this array up
-                        #import json
-                        data = {'brightest': brightest_array, 'unsaturated': unsaturated_array}
-                        # To write to a file:
-                        with open(im_path + text_name.replace('.txt', '.rad'), "w") as f:
-                            json.dump(data, f)
                         
                         
-                        try:
-                            g_dev['cam'].enqueue_for_fastAWS(2000, im_path, text_name.replace('.txt', '.rad'))
-                            #plog("Sent SEP up")
-                        except:
-                            plog("Failed to send RAD up for some reason")
+                        # # Identify the brightest non-saturated star in the image set
+                        
+                        # # Make a cutout around this star - 10 times rfp
+                        
+                        # unsaturated_array = None
+                        
+                        # # Send this array up
+                        # #import json
+                        # data = {'brightest': brightest_array, 'unsaturated': unsaturated_array}
+                        # # To write to a file:
+                        # with open(im_path + text_name.replace('.txt', '.rad'), "w") as f:
+                        #     json.dump(data, f)
+                        
+                        
+                        # try:
+                        #     g_dev['cam'].enqueue_for_fastAWS(2000, im_path, text_name.replace('.txt', '.rad'))
+                        #     #plog("Sent SEP up")
+                        # except:
+                        #     plog("Failed to send RAD up for some reason")
                         
                         # To print out the JSON string (which you could then hardcode into the JS)
                         #json.dumps(data)
@@ -2694,15 +2696,20 @@ sel
                     plog("Platesolve image cropped to " + str(hdufocusdata.shape))
 
                     binfocus = 1
-                    if self.config["camera"][g_dev['cam'].name]["settings"]["is_osc"]:
-                        if self.config["camera"][g_dev['cam'].name]["settings"]['bin_for_platesolve']:
-                            hdufocusdata = block_reduce(hdufocusdata, 2)
-                            binfocus = 2
-                        else:
-
-                            hdufocusdata=demosaicing_CFA_Bayer_Menon2007(hdufocusdata, 'RGGB')[:,:,1]
-                            hdufocusdata=hdufocusdata.astype("float32")
-                            binfocus=1
+                    #if self.config["camera"][g_dev['cam'].name]["settings"]["is_osc"]:
+                    if self.config["camera"][g_dev['cam'].name]["settings"]['bin_for_platesolve']:
+                        #hdufocusdata = block_reduce(hdufocusdata, 2)
+                        #binfocus = 2
+                        
+                        
+                        platesolve_bin_factor=self.config["camera"][g_dev['cam'].name]["settings"]['platesolve_bin_value']
+                        hdufocusdata=block_reduce(hdufocusdata,platesolve_bin_factor)
+                        binfocus=platesolve_bin_factor
+                    #else:
+                    
+                        #hdufocusdata=demosaicing_CFA_Bayer_Menon2007(hdufocusdata, 'RGGB')[:,:,1]
+                        #hdufocusdata=hdufocusdata.astype("float32")
+                        #binfocus=1
 
                     #plog("platesolve construction time")
                     #plog(time.time() -focdate)
@@ -2726,11 +2733,11 @@ sel
                         # minarea is set as roughly how big we think a 0.7 arcsecond seeing star
                         # would be at this pixelscale and binning. Different for different cameras/telescopes.
                         minarea = int(pow(0.7*1.5 / (pixscale*binfocus), 2) * 3.14)
-                        if minarea < 5:  # There has to be a min minarea though!
-                            minarea = 5
+                        if minarea < 10:  # There has to be a min minarea though!
+                            minarea = 10
 
                         sources = sep.extract(
-                            focusimg, 3.0, err=bkg.globalrms, minarea=minarea
+                            focusimg, 5.0, err=bkg.globalrms, minarea=minarea
                         )
                         #plog ("min_area: " + str(minarea))
                         sources = Table(sources)
@@ -3509,11 +3516,11 @@ sel
                         # would be at this pixelscale and binning. Different for different cameras/telescopes.
                         #minarea=int(pow(0.7*1.5 / (pixscale*binfocus),2)* 3.14)
                         minarea = int(pow(0.7*1.5 / (pixscale), 2) * 3.14)
-                        if minarea < 5:  # There has to be a min minarea though!
-                            minarea = 5
+                        if minarea < 10:  # There has to be a min minarea though!
+                            minarea = 10
 
                         sources = sep.extract(
-                            focusimg, 3.0, err=bkg.globalrms, minarea=minarea
+                            focusimg, 5.0, err=bkg.globalrms, minarea=minarea
                         )
                         #plog ("min_area: " + str(minarea))
                         sources = Table(sources)
@@ -3600,8 +3607,8 @@ sel
                             # plog(datetime.datetime.now())
 
                             minarea = int(pow(0.7*1.5 / (pixscale), 2) * 3.14)
-                            if minarea < 5:  # There has to be a min minarea though!
-                                minarea = 5
+                            if minarea < 10:  # There has to be a min minarea though!
+                                minarea = 10
 
                             if len(sources) > 5:
                                 try:
@@ -3840,8 +3847,8 @@ sel
                                     # plog(datetime.datetime.now())
 
                                     minarea = int(pow(0.7*1.5 / (pixscale), 2) * 3.14)
-                                    if minarea < 5:  # There has to be a min minarea though!
-                                        minarea = 5
+                                    if minarea < 10:  # There has to be a min minarea though!
+                                        minarea = 10
 
                                     if len(sources) > 5:
                                         try:
