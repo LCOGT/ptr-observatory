@@ -1963,8 +1963,8 @@ class Sequencer:
         inputList=(glob(g_dev['obs'].local_bias_folder +'*.n*'))
         
         
-        if len(inputList) == 0 or len(darkinputList) == 0:
-            plog ("Not reprocessing local masters as there are no biases or darks")
+        if len(inputList) == 0 or len(darkinputList) == 0 or len(inputList) == 1 or len(darkinputList) == 1:
+            plog ("Not reprocessing local masters as there are not enough biases or darks")
         else:
             # Clear held bias and darks and flats to save memory and garbage collect.
             del g_dev['cam'].biasFiles
@@ -2189,8 +2189,8 @@ class Sequencer:
                     plog ("Regenerating flat for " + str(filtercode))
                     inputList=(glob(g_dev['obs'].local_flat_folder + filtercode + '/*.n*'))
                     # Generate temp memmap
-                    if len(inputList) == 0:
-                        plog ("Not doing " + str(filtercode) + " flat. No available files in directory.")
+                    if len(inputList) == 0 or len(inputList) == 1:
+                        plog ("Not doing " + str(filtercode) + " flat. Not enough available files in directory.")
                     else:
 
                         PLDrive = np.memmap(g_dev['obs'].local_flat_folder  + 'tempfile', dtype='float32', mode= 'w+', shape = (shapeImage[0],shapeImage[1],len(inputList)))
