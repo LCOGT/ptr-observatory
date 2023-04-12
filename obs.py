@@ -161,6 +161,8 @@ class Observatory:
         # This is the main class through which we can make authenticated api calls.
         self.api = API_calls()
 
+
+
         self.command_interval = 0  # seconds between polls for new commands
         self.status_interval = 0  # NOTE THESE IMPLEMENTED AS A DELTA NOT A RATE.
 
