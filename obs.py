@@ -10,7 +10,7 @@ is in the Gemini.
 
 Abstract away Redis, Memurai, and local shares for IPC.
 """
-from ocs_ingester.ingester import frame_exists, upload_file_and_ingest_to_archive
+
 import ephem
 import datetime
 import json
@@ -96,7 +96,7 @@ reqs.mount('http://', HTTPAdapter(max_retries=retries))
 
 # The ingester should only be imported after environment variables are loaded in.
 load_dotenv(".env")
-
+from ocs_ingester.ingester import frame_exists, upload_file_and_ingest_to_archive
 
 def test_connect(host='http://google.com'):
     try:
