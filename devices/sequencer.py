@@ -3789,6 +3789,7 @@ class Sequencer:
         extensive_focus=[]
         for ctr in range(4):
             g_dev['foc'].guarded_move((foc_pos0 - (ctr+0)*throw)*g_dev['foc'].micron_to_steps)  #Added 20220209! A bit late
+            #g_dev['foc'].guarded_move((foc_pos0 - (ctr+0)*throw))  #Added 20220209! A bit late
             #throw = 100  # NB again, from config.  Units are microns
             if not sim:
                 g_dev['obs'].scan_requests()
@@ -3807,7 +3808,8 @@ class Sequencer:
             try:
                 spot = result['FWHM']
                 #foc_pos = result['mean_focus']
-                foc_pos = (foc_pos0 - (ctr+0)*throw)*g_dev['foc'].micron_to_steps
+                #foc_pos = (foc_pos0 - (ctr+0)*throw)*g_dev['foc'].micron_to_steps
+                foc_pos = (foc_pos0 - (ctr+0)*throw)
                 if np.isnan(result['FWHM']):
                     req = {'time': 2*float(self.config['focus_exposure_time']),  'alias':  str(self.config['camera']['camera_1_1']['name']), 'image_type': 'focus'}   #  NB Should pick up filter and constats from config
                     opt = {'area': 100, 'count': 1, 'filter': 'focus'}
@@ -3838,6 +3840,7 @@ class Sequencer:
         
         for ctr in range(3):
             g_dev['foc'].guarded_move((foc_pos0 + (ctr+1)*throw)*g_dev['foc'].micron_to_steps)  #Added 20220209! A bit late
+            #g_dev['foc'].guarded_move((foc_pos0 + (ctr+1)*throw))  #Added 20220209! A bit late
             #throw = 100  # NB again, from config.  Units are microns
             if not sim:
                 g_dev['obs'].scan_requests()
@@ -3856,7 +3859,8 @@ class Sequencer:
             try:
                 spot = result['FWHM']
                 #foc_pos = result['mean_focus']
-                foc_pos = (foc_pos0 + (ctr+1)*throw)*g_dev['foc'].micron_to_steps
+                #foc_pos = (foc_pos0 + (ctr+1)*throw)*g_dev['foc'].micron_to_steps
+                foc_pos = (foc_pos0 + (ctr+1)*throw)
                 if np.isnan(result['FWHM']):
                     req = {'time': 3*float(self.config['focus_exposure_time']),  'alias':  str(self.config['camera']['camera_1_1']['name']), 'image_type': 'focus'}   #  NB Should pick up filter and constats from config
                     opt = {'area': 100, 'count': 1, 'filter': 'focus'}

@@ -3207,10 +3207,7 @@ class Camera:
                             #breakpoint()
                         
                         
-                        # IMMEDIATELY SEND TO SEP QUEUE
-                        self.sep_processing=True
-                        self.to_sep((hdusmalldata, pixscale, float(hdu.header["RDNOISE"]), avg_foc[1], focus_image, im_path, text_name, hdu.header, cal_path, cal_name, frame_type, g_dev['foc'].focuser.Position*g_dev['foc'].steps_to_micron))
-                        
+                       
                         
                         # Add a pedestal to the reduced data
                         hdusmalldata=hdusmalldata+200.0
@@ -3324,6 +3321,11 @@ class Camera:
                         # and platesolving
                         
                         #g_dev['cam'].hdufocusdatahold = np.asarray(hdufocusdata)
+                        
+                        
+                        # IMMEDIATELY SEND TO SEP QUEUE
+                        self.sep_processing=True
+                        self.to_sep((hdusmalldata, pixscale, float(hdu.header["RDNOISE"]), avg_foc[1], focus_image, im_path, text_name, hdu.header, cal_path, cal_name, frame_type, g_dev['foc'].focuser.Position*g_dev['foc'].steps_to_micron))
                         
                         
                         # Send data off to process jpeg

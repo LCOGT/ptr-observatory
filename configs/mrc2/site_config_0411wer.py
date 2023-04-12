@@ -76,7 +76,7 @@ site_config = {
     'debug_site_mode': False,
     
     'debug_mode' : False,
-    'admin_owner_commands_only': False,
+    'admin_owner_commands_only': True,
     'debug_duration_sec': 1800,
     'owner':  ['google-oauth2|112401903840371673242'],  # Wayne
 
@@ -691,12 +691,9 @@ site_config = {
                 # then binning for focus is recommended. SEP and Platesolve can generally always be binned.                
                 'interpolate_for_focus': False,
                 'bin_for_focus' : True, # This setting will bin the image for focussing rather than interpolating. Good for 1x1 pixel sizes < 0.6.
-                'focus_bin_value' : 4,
                 'interpolate_for_sep' : False,
                 'bin_for_sep' : True, # This setting will bin the image for SEP photometry rather than interpolating.
                 'bin_for_platesolve' : True, # This setting will bin the image for platesolving rather than interpolating.
-                'platesolve_bin_value' : 4,
-                
                 
                 'squash_on_x_axis' : True,
                 'flipx_fits': False,
@@ -725,8 +722,6 @@ site_config = {
                # you clearly need to. 
                'focus_image_crop_width': 0.0, # For excessive fields of view, to speed things up crop the image to a fraction of the full width    
                'focus_image_crop_height': 0.0, # For excessive fields of view, to speed things up crop the image to a fraction of the full height
-               'focus_jpeg_size': 1500, # How many pixels square to crop the focus image for the UI Jpeg
-               
                # PLATESOLVE CROPS HAVE TO BE EQUAL! OTHERWISE THE PLATE CENTRE IS NOT THE POINTING CENTRE                
                'platesolve_image_crop': 0.0, # Platesolve crops have to be symmetrical 
                # Really, the SEP image should not be cropped unless your field of view and number of sources
