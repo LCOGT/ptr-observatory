@@ -1799,6 +1799,8 @@ sel
                     else:
                         plog("this bayer grid not implemented yet")
 
+                
+
                 # This is holding the flash reduced fits file waiting to be saved
                 # AFTER the jpeg has been sent up to AWS.
                 #hdureduceddata = np.array(hdusmalldata)
@@ -1957,6 +1959,25 @@ sel
                         if pier_side == 1:
                             final_image = final_image.transpose(Image.Transpose.ROTATE_180)
 
+
+                        # if (
+                        #     self.config["camera"][self.name]["settings"]["crop_preview"]
+                        #     == True
+                        # ):
+                        #     yb = self.config["camera"][self.name]["settings"][
+                        #         "crop_preview_ybottom"
+                        #     ]
+                        #     yt = self.config["camera"][self.name]["settings"][
+                        #         "crop_preview_ytop"
+                        #     ]
+                        #     xl = self.config["camera"][self.name]["settings"][
+                        #         "crop_preview_xleft"
+                        #     ]
+                        #     xr = self.config["camera"][self.name]["settings"][
+                        #         "crop_preview_xright"
+                        #     ]
+                        #     hdusmalldata = hdusmalldata[yb:-yt, xl:-xr]
+
                         # breakpoint()
                         # Save BIG version of JPEG.
                         final_image.save(
@@ -1965,6 +1986,26 @@ sel
 
                         # Resizing the array to an appropriate shape for the small jpg
                         iy, ix = final_image.size
+                        if (
+                            self.config["camera"][self.name]["settings"]["crop_preview"]
+                            == True
+                        ):
+                            yb = self.config["camera"][self.name]["settings"][
+                                "crop_preview_ybottom"
+                            ]
+                            yt = self.config["camera"][self.name]["settings"][
+                                "crop_preview_ytop"
+                            ]
+                            xl = self.config["camera"][self.name]["settings"][
+                                "crop_preview_xleft"
+                            ]
+                            xr = self.config["camera"][self.name]["settings"][
+                                "crop_preview_xright"
+                            ]
+                            #hdusmalldata = hdusmalldata[yb:-yt, xl:-xr]
+                            final_image=final_image.crop((xl,yt,xr,yb))
+                            iy, ix = final_image.size
+                        
                         if iy == ix:
                             #final_image.resize((1280, 1280))
                             final_image = final_image.resize((900, 900))
@@ -4087,6 +4128,26 @@ sel
 
                             # Resizing the array to an appropriate shape for the jpg and the small fits
                             iy, ix = final_image.size
+                            if (
+                                self.config["camera"][self.name]["settings"]["crop_preview"]
+                                == True
+                            ):
+                                yb = self.config["camera"][self.name]["settings"][
+                                    "crop_preview_ybottom"
+                                ]
+                                yt = self.config["camera"][self.name]["settings"][
+                                    "crop_preview_ytop"
+                                ]
+                                xl = self.config["camera"][self.name]["settings"][
+                                    "crop_preview_xleft"
+                                ]
+                                xr = self.config["camera"][self.name]["settings"][
+                                    "crop_preview_xright"
+                                ]
+                                #hdusmalldata = hdusmalldata[yb:-yt, xl:-xr]
+                                final_image=final_image.crop((xl,yt,xr,yb))
+                                iy, ix = final_image.size
+                                
                             if iy == ix:
                                 #final_image.resize((1280, 1280))
                                 final_image = final_image.resize((900, 900))
