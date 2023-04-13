@@ -2239,8 +2239,9 @@ sel
                             hdufocusdata=hdufocusdata.astype("float32")
                             binfocus=1
                         if frame_type != 'focus' and self.config["camera"][g_dev['cam'].name]["settings"]['bin_for_sep']:
-                            hdufocusdata=block_reduce(hdufocusdata,2)
-                            binfocus=2
+                            sep_bin_factor=self.config["camera"][g_dev['cam'].name]["settings"]['sep_bin_value']
+                            hdufocusdata=block_reduce(hdufocusdata,sep_bin_factor)
+                            binfocus=sep_bin_factor
                             
 
                     # If it is a focus image then it will get sent in a different manner to the UI for a jpeg
@@ -2707,18 +2708,9 @@ sel
                     binfocus = 1
                     #if self.config["camera"][g_dev['cam'].name]["settings"]["is_osc"]:
                     if self.config["camera"][g_dev['cam'].name]["settings"]['bin_for_platesolve']:
-                        #hdufocusdata = block_reduce(hdufocusdata, 2)
-                        #binfocus = 2
-                        
-                        
                         platesolve_bin_factor=self.config["camera"][g_dev['cam'].name]["settings"]['platesolve_bin_value']
                         hdufocusdata=block_reduce(hdufocusdata,platesolve_bin_factor)
-                        binfocus=platesolve_bin_factor
-                    #else:
-                    
-                        #hdufocusdata=demosaicing_CFA_Bayer_Menon2007(hdufocusdata, 'RGGB')[:,:,1]
-                        #hdufocusdata=hdufocusdata.astype("float32")
-                        #binfocus=1
+                        binfocus=platesolve_bin_factor                    
 
                     #plog("platesolve construction time")
                     #plog(time.time() -focdate)
