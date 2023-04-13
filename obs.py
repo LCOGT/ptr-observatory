@@ -2396,6 +2396,16 @@ sel
                         uncertainty = float(readnoise) * np.ones(focusimg.shape,
                                                                  dtype=focusimg.dtype) / float(readnoise)
 
+
+                        # DONUT IMAGE DETECTOR.
+                        plog ("The Fitzgerald Magical Donut detector")
+                        
+                        xdonut=np.median(pow(pow(sources['x'] - sources['xpeak'],2),0.5))*pixscale*binfocus
+                        ydonut=np.median(pow(pow(sources['y'] - sources['ypeak'],2),0.5))*pixscale*binfocus
+                        plog('x ' + str(xdonut))
+                        plog('y ' + str(ydonut))                        
+                        #breakpoint()
+
                         # Calcuate the equivilent of flux_auto (Thanks BANZAI)
                         # This is the preferred best photometry SEP can do.
                         try:
@@ -2405,7 +2415,7 @@ sel
                                                               subpix=1, err=uncertainty)
                         except:
                             plog(traceback.format_exc())
-                            breakpoint()
+                            
                         sources['flux'] = flux
                         sources['fluxerr'] = fluxerr
                         sources['flag'] |= flag
@@ -2425,6 +2435,9 @@ sel
                         sources['peak'] = (sources['peak']) / pow(binfocus, 2)
                         sources['cpeak'] = (sources['cpeak']) / pow(binfocus, 2)
 
+
+
+
                         # Need to reject any stars that have FWHM that are less than a extremely
                         # perfect night as artifacts
                         sources = sources[sources['FWHM'] > (0.6 / (pixscale))]
@@ -2439,10 +2452,11 @@ sel
 
                         #plog("No. of detections:  ", len(sources))
 
-                        if len(sources) < 2:
+                        if len(sources) < 10 or len(sources) == np.nan or str(len(sources)) =='nan' or xdonut > 2.0 or ydonut > 2.0:
                             #plog ("not enough sources to estimate a reliable focus")
                             g_dev['cam'].expresult["error"] = True
                             g_dev['cam'].expresult['FWHM'] = np.nan
+                            g_dev['cam'].expresult['No_of_sources'] = np.nan
                             sources['FWHM'] = [np.nan] * len(sources)
                             rfp = np.nan
                             rfr = np.nan
@@ -2476,6 +2490,7 @@ sel
                             # breakpoint()
                             g_dev['cam'].expresult["FWHM"] = rfr
                             g_dev['cam'].expresult["mean_focus"] = avg_foc
+                            g_dev['cam'].expresult['No_of_sources'] = len(sources)
 
                             # rfp = rfp
                             # g_dev['cam'].rfr = rfr
