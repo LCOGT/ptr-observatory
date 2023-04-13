@@ -24,6 +24,7 @@ import time
 import sys
 import shutil
 import sep
+sep.set_sub_object_limit(16384)
 #import signal
 import glob
 
@@ -2336,9 +2337,15 @@ sel
                         sep.set_extract_pixstack(int(ix*iy - 1))
                         # minarea is set as roughly how big we think a 0.7 arcsecond seeing star
                         # would be at this pixelscale and binning. Different for different cameras/telescopes.
-                        minarea = int(pow(0.7*1.5 / (pixscale*binfocus), 2) * 3.14)
-                        if minarea < 15:  # There has to be a min minarea though!
-                            minarea = 15
+                        #minarea = int(pow(0.7*1.5 / (pixscale*binfocus), 2) * 3.14)
+                        
+                        
+                        #This minarea is totally fudgetastically emprical comparing a 0.138 pixelscale QHY Mono
+                        # to a 1.25/2.15 QHY OSC. Seems to work, so thats good enough.
+                        # Makes the minarea small enough for blocky pixels, makes it large enough for oversampling
+                        minarea= -9.2421 * pixscale + 16.553
+                        if minarea < 5:  # There has to be a min minarea though!
+                            minarea = 5
 
                         sep.set_sub_object_limit(10000)
                         sources = sep.extract(
@@ -2732,14 +2739,15 @@ sel
                         border_x = int(ix * 0.05)
                         border_y = int(iy * 0.05)
                         sep.set_extract_pixstack(int(ix*iy - 1))
-                        # minarea is set as roughly how big we think a 0.7 arcsecond seeing star
-                        # would be at this pixelscale and binning. Different for different cameras/telescopes.
-                        minarea = int(pow(0.7*1.5 / (pixscale*binfocus), 2) * 3.14)
-                        if minarea < 10:  # There has to be a min minarea though!
-                            minarea = 10
+                        #This minarea is totally fudgetastically emprical comparing a 0.138 pixelscale QHY Mono
+                        # to a 1.25/2.15 QHY OSC. Seems to work, so thats good enough.
+                        # Makes the minarea small enough for blocky pixels, makes it large enough for oversampling
+                        minarea= -9.2421 * pixscale + 16.553
+                        if minarea < 5:  # There has to be a min minarea though!
+                            minarea = 5
 
                         sources = sep.extract(
-                            focusimg, 5.0, err=bkg.globalrms, minarea=minarea
+                            focusimg, 7.0, err=bkg.globalrms, minarea=minarea
                         )
                         #plog ("min_area: " + str(minarea))
                         sources = Table(sources)
@@ -3517,12 +3525,15 @@ sel
                         # minarea is set as roughly how big we think a 0.7 arcsecond seeing star
                         # would be at this pixelscale and binning. Different for different cameras/telescopes.
                         #minarea=int(pow(0.7*1.5 / (pixscale*binfocus),2)* 3.14)
-                        minarea = int(pow(0.7*1.5 / (pixscale), 2) * 3.14)
-                        if minarea < 10:  # There has to be a min minarea though!
-                            minarea = 10
+                        #This minarea is totally fudgetastically emprical comparing a 0.138 pixelscale QHY Mono
+                        # to a 1.25/2.15 QHY OSC. Seems to work, so thats good enough.
+                        # Makes the minarea small enough for blocky pixels, makes it large enough for oversampling
+                        minarea= -9.2421 * pixscale + 16.553
+                        if minarea < 5:  # There has to be a min minarea though!
+                            minarea = 5
 
                         sources = sep.extract(
-                            focusimg, 5.0, err=bkg.globalrms, minarea=minarea
+                            focusimg, 7.0, err=bkg.globalrms, minarea=minarea
                         )
                         #plog ("min_area: " + str(minarea))
                         sources = Table(sources)
@@ -3608,10 +3619,13 @@ sel
                             # Reproject new image onto footplog of old image.
                             # plog(datetime.datetime.now())
 
-                            minarea = int(pow(0.7*1.5 / (pixscale), 2) * 3.14)
-                            if minarea < 10:  # There has to be a min minarea though!
-                                minarea = 10
-
+                            #This minarea is totally fudgetastically emprical comparing a 0.138 pixelscale QHY Mono
+                            # to a 1.25/2.15 QHY OSC. Seems to work, so thats good enough.
+                            # Makes the minarea small enough for blocky pixels, makes it large enough for oversampling
+                            minarea= -9.2421 * pixscale + 16.553
+                            if minarea < 5:  # There has to be a min minarea though!
+                                minarea = 5
+                                
                             if len(sources) > 5:
                                 try:
                                     reprojectedimage, _ = func_timeout.func_timeout(60, aa.register, args=(imgdata, storedsStack),
@@ -3848,9 +3862,12 @@ sel
                                     # Reproject new image onto footplog of old image.
                                     # plog(datetime.datetime.now())
 
-                                    minarea = int(pow(0.7*1.5 / (pixscale), 2) * 3.14)
-                                    if minarea < 10:  # There has to be a min minarea though!
-                                        minarea = 10
+                                    #This minarea is totally fudgetastically emprical comparing a 0.138 pixelscale QHY Mono
+                                    # to a 1.25/2.15 QHY OSC. Seems to work, so thats good enough.
+                                    # Makes the minarea small enough for blocky pixels, makes it large enough for oversampling
+                                    minarea= -9.2421 * pixscale + 16.553
+                                    if minarea < 5:  # There has to be a min minarea though!
+                                        minarea = 5
 
                                     if len(sources) > 5:
                                         try:
