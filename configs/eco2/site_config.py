@@ -789,6 +789,8 @@ site_config = {
                 # you clearly need to. 
                 'focus_image_crop_width': 0.5, # For excessive fields of view, to speed things up crop the image to a fraction of the full width    
                 'focus_image_crop_height': 0.5, # For excessive fields of view, to speed things up crop the image to a fraction of the full height
+                                
+               'focus_jpeg_size': 500, # How many pixels square to crop the focus image for the UI Jpeg
                 # PLATESOLVE CROPS HAVE TO BE EQUAL! OTHERWISE THE PLATE CENTRE IS NOT THE POINTING CENTRE                
                 'platesolve_image_crop': 0.75, # Platesolve crops have to be symmetrical 
                 # Really, the SEP image should not be cropped unless your field of view and number of sources

@@ -1031,23 +1031,26 @@ sel
             pass
 
         # Check that the mount hasn't slewed too close to the sun
-        if not g_dev['mnt'].mount.Slewing:
-            sun_coords = get_sun(Time.now())
-            temppointing = SkyCoord((g_dev['mnt'].current_icrs_ra)*u.hour,
-                                    (g_dev['mnt'].current_icrs_dec)*u.degree, frame='icrs')
-
-            sun_dist = sun_coords.separation(temppointing)
-            #plog ("sun distance: " + str(sun_dist.degree))
-            if sun_dist.degree < self.config['closest_distance_to_the_sun'] and not g_dev['mnt'].mount.AtPark:
-                g_dev['obs'].send_to_user("Found telescope pointing too close to the sun: " +
-                                          str(sun_dist.degree) + " degrees.")
-                plog("Found telescope pointing too close to the sun: " + str(sun_dist.degree) + " degrees.")
-                g_dev['obs'].send_to_user("Parking scope and cancelling all activity")
-                plog("Parking scope and cancelling all activity")
-                self.cancel_all_activity()
-                if not g_dev['mnt'].mount.AtPark:
-                    g_dev['mnt'].park_command()
-                return
+        try:
+            if not g_dev['mnt'].mount.Slewing:
+                sun_coords = get_sun(Time.now())
+                temppointing = SkyCoord((g_dev['mnt'].current_icrs_ra)*u.hour,
+                                        (g_dev['mnt'].current_icrs_dec)*u.degree, frame='icrs')
+    
+                sun_dist = sun_coords.separation(temppointing)
+                #plog ("sun distance: " + str(sun_dist.degree))
+                if sun_dist.degree < self.config['closest_distance_to_the_sun'] and not g_dev['mnt'].mount.AtPark:
+                    g_dev['obs'].send_to_user("Found telescope pointing too close to the sun: " +
+                                              str(sun_dist.degree) + " degrees.")
+                    plog("Found telescope pointing too close to the sun: " + str(sun_dist.degree) + " degrees.")
+                    g_dev['obs'].send_to_user("Parking scope and cancelling all activity")
+                    plog("Parking scope and cancelling all activity")
+                    self.cancel_all_activity()
+                    if not g_dev['mnt'].mount.AtPark:
+                        g_dev['mnt'].park_command()
+                    return
+        except:
+            plog ("Sun check didn't work for some reason")
 
         status["timestamp"] = round((time.time() + t1) / 2.0, 3)
         status["send_heartbeat"] = False
@@ -2137,7 +2140,7 @@ sel
                         breaker =0
                         
                 masker = ma.masked_less(hdufocusdata, (zeroValue))
-                hdufocusdata= masker.filled(np.nan)
+                hdufocusdata= masker.filled(imageMode)
                 #print ("Minimum Value in Array")
                 #print (zeroValue)
     
@@ -2348,9 +2351,9 @@ sel
                         if minarea < 5:  # There has to be a min minarea though!
                             minarea = 5
 
-                        sep.set_sub_object_limit(10000)
+                        #sep.set_sub_object_limit(10000)
                         sources = sep.extract(
-                            focusimg, 7.0, err=bkg.globalrms, minarea=minarea
+                            focusimg, 5.0, err=bkg.globalrms, minarea=minarea
                         )
                         plog("Actual SEP time: " + str(time.time()-actseptime))
 
@@ -2387,15 +2390,22 @@ sel
                         sources['kronrad'] = kronrad
 
                         # Calculate uncertainty of image (thanks BANZAI)
-                        uncertainty = float(readnoise) * np.ones(hdufocusdata.shape,
-                                                                 dtype=hdufocusdata.dtype) / float(readnoise)
+                        #uncertainty = float(readnoise) * np.ones(hdufocusdata.shape,
+                        #                                         dtype=hdufocusdata.dtype) / float(readnoise)
+
+                        uncertainty = float(readnoise) * np.ones(focusimg.shape,
+                                                                 dtype=focusimg.dtype) / float(readnoise)
 
                         # Calcuate the equivilent of flux_auto (Thanks BANZAI)
                         # This is the preferred best photometry SEP can do.
-                        flux, fluxerr, flag = sep.sum_ellipse(focusimg, sources['x'], sources['y'],
+                        try:
+                            flux, fluxerr, flag = sep.sum_ellipse(focusimg, sources['x'], sources['y'],
                                                               sources['a'], sources['b'],
                                                               np.pi / 2.0, 2.5 * kronrad,
                                                               subpix=1, err=uncertainty)
+                        except:
+                            plog(traceback.format_exc())
+                            breakpoint()
                         sources['flux'] = flux
                         sources['fluxerr'] = fluxerr
                         sources['flag'] |= flag
@@ -2739,7 +2749,7 @@ sel
                             minarea = 5
 
                         sources = sep.extract(
-                            focusimg, 7.0, err=bkg.globalrms, minarea=minarea
+                            focusimg, 5.0, err=bkg.globalrms, minarea=minarea
                         )
                         #plog ("min_area: " + str(minarea))
                         sources = Table(sources)
@@ -3525,7 +3535,7 @@ sel
                             minarea = 5
 
                         sources = sep.extract(
-                            focusimg, 7.0, err=bkg.globalrms, minarea=minarea
+                            focusimg, 5.0, err=bkg.globalrms, minarea=minarea
                         )
                         #plog ("min_area: " + str(minarea))
                         sources = Table(sources)

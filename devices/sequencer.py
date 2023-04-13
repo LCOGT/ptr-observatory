@@ -2529,6 +2529,7 @@ class Sequencer:
                 if time.time() >= self.time_of_next_slew:
                     if g_dev['mnt'].mount.AtParK:
                         g_dev['mnt'].unpark_command({}, {})
+                        
                     g_dev['mnt'].slewToSkyFlatAsync()  
                     self.time_of_next_slew = time.time() + 600
                 
