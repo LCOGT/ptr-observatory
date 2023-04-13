@@ -2452,7 +2452,7 @@ sel
 
                         #plog("No. of detections:  ", len(sources))
 
-                        if len(sources) < 10 or len(sources) == np.nan or str(len(sources)) =='nan' or xdonut > 2.0 or ydonut > 2.0:
+                        if len(sources) < 10 or len(sources) == np.nan or str(len(sources)) =='nan' or xdonut > 2.0 or ydonut > 2.0 or np.isnan(xdonut) or np.isnan(ydonut):
                             #plog ("not enough sources to estimate a reliable focus")
                             g_dev['cam'].expresult["error"] = True
                             g_dev['cam'].expresult['FWHM'] = np.nan
