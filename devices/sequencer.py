@@ -1962,7 +1962,7 @@ class Sequencer:
         darkinputList=(glob(g_dev['obs'].local_dark_folder +'*.n*'))
         inputList=(glob(g_dev['obs'].local_bias_folder +'*.n*'))
 # =============================================================================
-        inputList = inputList[-19:] # WER used for speed testing
+        #inputList = inputList[-19:] # WER used for speed testing
 # =============================================================================
         
         
@@ -2085,7 +2085,7 @@ class Sequencer:
             plog ("Regenerating dark") 
             inputList=(glob(g_dev['obs'].local_dark_folder +'*.n*'))
 # =============================================================================
-            inputList = inputList[-19:]  # Speed improvement WER 
+            #inputList = inputList[-19:]  # Speed improvement WER 
 # =============================================================================           
             PLDrive = np.memmap(g_dev['obs'].local_dark_folder  + 'tempfile', dtype='float32', mode= 'w+', shape = (shapeImage[0],shapeImage[1],len(inputList)))
             # Debias dark frames and stick them in the memmap
@@ -2333,7 +2333,7 @@ class Sequencer:
                 
                 try:           
                   
-                    fileList = glob.glob(g_dev['obs'].calib_masters_folder + '/masterFlat*_bin1.npy')
+                    fileList = glob(g_dev['obs'].calib_masters_folder + '/masterFlat*_bin1.npy')
                     #breakpoint()
                     for file in fileList:
                         if self.config['camera'][self.name]['settings']['hold_flats_in_memory']:
@@ -2346,7 +2346,9 @@ class Sequencer:
                     # To supress occasional flatfield div errors
                     np.seterr(divide="ignore")
                 except:
+                    plog(traceback.format_exc()) 
                     plog("Flat frames not loaded or available")
+                    #breakpoint()
                 
                 #del masterBias
                 #del masterDark
@@ -2691,7 +2693,7 @@ class Sequencer:
             
                             if g_dev["fil"].null_filterwheel == False:
                                 opt = { 'count': 1, 'bin':  1, 'area': 150, 'filter': g_dev['fil'].filter_data[filt_pointer][0]}   #nb nb nb BIN CHNAGED FROM 2,2 ON 20220618 wer
-                                plog("using:  ", g_dev['fil'].filter_data[filt_pointer][0])
+                                #plog("using:  ", g_dev['fil'].filter_data[filt_pointer][0])
                             else:
                                 opt = { 'count': 1, 'bin':  1, 'area': 150}   
                             
