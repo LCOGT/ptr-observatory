@@ -360,7 +360,7 @@ class Events:
         Return a tuple with the (az, alt) of the flattest part of the sky.
         '''
         ra, dec, sun_alt, sun_az, *other = self._sunNow()
-        plog('Sun:  ', sun_az, sun_alt)
+        #plog('Sun:  ', sun_az, sun_alt)
         sun_az2 = sun_az - 180.  # Opposite az of the Sun
         if sun_az2 < 0:
             sun_az2 += 360.
