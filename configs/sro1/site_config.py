@@ -539,9 +539,38 @@ site_config = {
                 'sep_image_crop_height': 0.1, # For excessive fields of view, to speed things up crop the processed image area to a fraction of the full width    
                 
                 
-                
+                # What number of pixels to crop around the edges of a REDUCED image
+                # This is primarily to get rid of overscan areas and also all images
+                # Do tend to be a bit dodgy around the edges, so perhaps a standard
+                # value of 30 is good. Increase this if your camera has particularly bad
+                # edges.
+                'reduced_image_edge_crop': 30,
+                # ONLY TRANSFORM THE FITS IF YOU HAVE
+                # A DATA-BASED REASON TO DO SO.....
+                # USUALLY TO GET A BAYER GRID ORIENTATED CORRECTLY
+                # ***** ONLY ONE OF THESE SHOULD BE ON! *********
                 'transpose_fits' : False,
-                'transpose_jpeg' : True,
+                'flipx_fits' : False,
+                'flipy_fits' : False,
+                'rotate180_fits' : False, # This also should be flipxy!
+                'rotate90_fits' : False,
+                'rotate270_fits' : False,
+                # What number of pixels to crop around the edges of a REDUCED image
+                # This is primarily to get rid of overscan areas and also all images
+                # Do tend to be a bit dodgy around the edges, so perhaps a standard
+                # value of 30 is good. Increase this if your camera has particularly bad
+                # edges.
+                'reduced_image_edge_crop': 30,
+                
+                # HERE YOU CAN FLIP THE IMAGE TO YOUR HEARTS DESIRE
+                # HOPEFULLY YOUR HEARTS DESIRE IS SIMILAR TO THE
+                # RECOMMENDED DEFAULT DESIRE OF PTR
+                'transpose_jpeg' : False,
+                'flipx_jpeg' : False,
+                'flipy_jpeg' : False,
+                'rotate180_jpeg' : False,
+                'rotate90_jpeg' : False,
+                'rotate270_jpeg' : False,
                 'osc_bayer' : 'RGGB',
                 'crop_preview': True,
                 'crop_preview_ybottom': 1,  #### IMPORTANT: CROPS NEED TO BE SYMMETRICAL FOR POINTING SOLVES TO WORK.

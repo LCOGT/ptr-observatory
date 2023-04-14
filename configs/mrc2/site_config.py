@@ -700,7 +700,7 @@ site_config = {
                 'platesolve_bin_value' : 2,
                 
                 
-                'squash_on_x_axis' : False,
+                
                 'flipx_fits': False,
                 'flipy_fits': False,
                 "rotate90_fits": False,
@@ -708,7 +708,7 @@ site_config = {
                 "rotate270_fits": False,
                 'transpose_fits' : False,
                 
-                
+                'squash_on_x_axis' : False,
                 'transpose_jpeg' : False,
                 'flipx_jpeg' : False,
                 'flipy_jpeg' : False,
@@ -716,7 +716,12 @@ site_config = {
                 'rotate90_jpeg' : False,
                 'rotate270_jpeg' : False,
                 
-                
+                # What number of pixels to crop around the edges of a REDUCED image
+                # This is primarily to get rid of overscan areas and also all images
+                # Do tend to be a bit dodgy around the edges, so perhaps a standard
+                # value of 30 is good. Increase this if your camera has particularly bad
+                # edges.
+                'reduced_image_edge_crop': 30,
                 
                # For large fields of view, crop the images down to solve faster.                 
                # Realistically the "focus fields" have a size of 0.2 degrees, so anything larger than 0.5 degrees is unnecesary
@@ -857,7 +862,7 @@ site_config = {
                 'flat_count' : 5,
                 #'pix_scale': [0.4685, 0.9371, 1.4055, 1.8742],    #  1.4506,  bin-2  2* math.degrees(math.atan(9/3962000))*3600
                 '1x1_pix_scale': 0.198,    #  This is the 1x1 binning pixelscale
-                'native_bin': 2, # Needs to be simple, it will recalculate things on the 1x1 binning pixscale above.
+               
                 # The drizzle_value is by the new pixelscale
                 # for the new resolution when stacking in the EVA pipeline
                 # Realistically you want a resolution of about 0.5 arcseconds per pixel
@@ -869,11 +874,11 @@ site_config = {
                 
                 'do_cosmics' : False,
                 'bin_modes':  [[1, 1, 0.198], [2, 2, 0.396], [3, 3, 0.594], [4, 4, 0.792]],  
-                #'native_bin': [2, 2 , 0.396], 
-                
-                'fine_bin':  [2, 2, 0.396],
-                'optimal_bin': [3,3 , 0.594], 
-                'coarse_bin': [4, 4, 0.792],
+
+                'native_bin': 2, # Needs to be simple, it will recalculate things on the 1x1 binning pixscale above.
+                'fine_res':  [2, 2, 0.396],
+                'optimal_res': [3,3 , 0.594], 
+                'coarse_res': [4, 4, 0.792],
                 'has_screen': True,
                 'screen_settings':  {
                     'screen_saturation':  157.0,

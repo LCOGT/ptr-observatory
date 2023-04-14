@@ -3212,8 +3212,7 @@ class Camera:
                         
                        
                         
-                        # Add a pedestal to the reduced data
-                        hdusmalldata=hdusmalldata+2000.0
+                        
                         #hdu.header["PEDESTAL"] = (200, "Pedestal added by PTR")
 
                         # This saves the REDUCED file to disk
@@ -3222,11 +3221,24 @@ class Camera:
                         # are by far the longest task to undertake.
                         # If it isn't a smartstack, it gets saved in the slow process queue.
                         if "hdusmalldata" in locals():
+                            
+                            # Set up reduced header
+                            hdusmallheader=hdu.header
+                            
+                            #From the reduced data, crop around the edges of the
+                            #raw 1x1 image to get rid of overscan and crusty edge bits
+                            edge_crop=self.config["camera"][self.name]["settings"]['reduced_image_edge_crop']
+                            hdusmalldata=hdusmalldata[edge_crop:-edge_crop,edge_crop:-edge_crop]
+                            
+                            hdusmallheader['NAXIS1']=float(hdu.header['NAXIS1']) - (edge_crop * 2)
+                            hdusmallheader['NAXIS2']=float(hdu.header['NAXIS2']) - (edge_crop * 2)
+                            hdusmallheader['CRPIX1']=float(hdu.header['CRPIX1']) - (edge_crop * 2)
+                            hdusmallheader['CRPIX2']=float(hdu.header['CRPIX2']) - (edge_crop * 2)
+                            
                             # bin to native binning
                             if self.native_bin != 1:
                                 #plog ("Binning 1x1 to " + str(self.bin))
-                                hdusmalldata=(block_reduce(hdusmalldata,self.native_bin)) 
-                                hdusmallheader=hdu.header
+                                hdusmalldata=(block_reduce(hdusmalldata,self.native_bin))                                 
                                 hdusmallheader['XBINING']=self.native_bin
                                 hdusmallheader['YBINING']=self.native_bin
                                 hdusmallheader['PIXSCALE']=float(hdu.header['PIXSCALE']) * self.native_bin
@@ -3245,8 +3257,14 @@ class Camera:
                                 hdusmallheader['SATURATE']=float(hdu.header['SATURATE']) * pow( self.native_bin,2)
                                 hdusmallheader['FULLWELL']=float(hdu.header['FULLWELL']) * pow( self.native_bin,2)
                                 hdusmallheader['MAXLIN']=float(hdu.header['MAXLIN']) * pow( self.native_bin,2)
-                            else:
-                                hdusmallheader=hdu.header
+
+                            
+                            # Add a pedestal to the reduced data
+                            # This is important for a variety of reasons
+                            # Some functions don't work with arrays with negative values
+                            # 2000 SHOULD be enough.
+                            hdusmalldata=hdusmalldata+2000.0
+                            hdusmallheader['PEDESTAL']=2000
                             
                             
                             if smartstackid == 'no':
