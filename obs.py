@@ -1368,8 +1368,11 @@ sel
 
             # Check that rotator is rotating
             if g_dev['rot'] != None:
-                g_dev['rot'].check_rotator_is_rotating()
-
+                try:
+                    g_dev['rot'].check_rotator_is_rotating() 
+                except:
+                    plog("occasionally rotator skips a beat when homing.")
+                
             # Check that cooler is alive
             #plog ("Cooler check")
             #probe = g_dev['cam']._cooler_on()

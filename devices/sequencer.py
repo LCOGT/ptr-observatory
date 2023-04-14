@@ -1961,6 +1961,9 @@ class Sequencer:
         plog ("Regenerating bias")
         darkinputList=(glob(g_dev['obs'].local_dark_folder +'*.n*'))
         inputList=(glob(g_dev['obs'].local_bias_folder +'*.n*'))
+# =============================================================================
+        inputList = inputList[-19:] # WER used for speed testing
+# =============================================================================
         
         
         if len(inputList) == 0 or len(darkinputList) == 0 or len(inputList) == 1 or len(darkinputList) == 1:
@@ -1983,7 +1986,8 @@ class Sequencer:
             #headHold=hdutest.header 
             del hdutest
 
-            # Make a temporary memmap file 
+            # Make a temporary memmap file
+
             PLDrive = np.memmap(g_dev['obs'].local_bias_folder + 'tempfile', dtype='float32', mode= 'w+', shape = (shapeImage[0],shapeImage[1],len(inputList)))
             # Store the biases in the memmap file
             i=0
@@ -2080,7 +2084,9 @@ class Sequencer:
             plog (datetime.datetime.now().strftime("%H:%M:%S"))
             plog ("Regenerating dark") 
             inputList=(glob(g_dev['obs'].local_dark_folder +'*.n*'))
-            # Generate temp memmap
+# =============================================================================
+            inputList = inputList[-19:]  # Speed improvement WER 
+# =============================================================================           
             PLDrive = np.memmap(g_dev['obs'].local_dark_folder  + 'tempfile', dtype='float32', mode= 'w+', shape = (shapeImage[0],shapeImage[1],len(inputList)))
             # Debias dark frames and stick them in the memmap
             i=0
