@@ -420,8 +420,8 @@ class FilterWheel:
                     filt_pointer = match
                     filter_identified = 1
                     break
-
-        plog("Filter name is:  ", self.filter_data[match][0])
+        else:
+            plog("Filter name is:  ", self.filter_data[match][0])
 
         try:
             g_dev["obs"].send_to_user("Filter set to:  " + str(self.filter_data[match][0]))
@@ -606,7 +606,7 @@ class FilterWheel:
         for sub in priority_order:
             if sub.lower() in available_filters:
                 plog(
-                    f"Found substitute {str(sub)} matching requested {str(requested_filter)}"
+                    f"Found substitute {str(sub)} filter matching requested {str(requested_filter)}"
                 )
                 return str(sub).lower()
         # NB I suggest we pick the default (w) filter instead of skipping. WER

@@ -38,6 +38,9 @@ import win32com.client
 #import queue
 import threading
 
+from astropy.utils.exceptions import AstropyUserWarning
+import warnings
+warnings.simplefilter('ignore', category=AstropyUserWarning)
 
 import requests
 #Incorporate better request retry strategy
