@@ -2903,7 +2903,7 @@ sel
                                 solve = platesolve.platesolve(
                                     cal_path + 'platesolvetemp.fits', pixscale
                                 )
-                                plog("Platesolve time to process: " + str(time.time() - psolve_timer_begin))
+                                #plog("Platesolve time to process: " + str(time.time() - psolve_timer_begin))
 
                                 plog(
                                     "PW Solves: ",
