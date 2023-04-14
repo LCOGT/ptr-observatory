@@ -482,7 +482,7 @@ class Observatory:
         #opt = {'area': 150, 'count': 1, 'bin': 1, 'filter': 'focus'}
         #result = g_dev['cam'].expose_command(req, opt, no_AWS=False, solve_it=True)
 
-        g_dev['seq'].regenerate_local_masters()
+        #g_dev['seq'].regenerate_local_masters()
 
     def set_last_reference(self, delta_ra, delta_dec, last_time):
         mnt_shelf = shelve.open(self.obsid_path + "ptr_night_shelf/" + "last" + str(self.name))
@@ -2696,6 +2696,7 @@ sel
                 text = open(
                     im_path + text_name, "w"
                 )  # This is needed by AWS to set up database.
+                #breakpoint()
                 text.write(str(hduheader))
                 text.close()
                 g_dev['cam'].enqueue_for_fastAWS(10, im_path, text_name)

@@ -3029,8 +3029,8 @@ class Sequencer:
             g_dev['obs'].scan_requests()
             g_dev['obs'].send_to_user("Slewing to a focus field", p_level='INFO')
             try:
-                plog("Going to near focus patch of " + str(focus_patch_n) + " 9th to 12th mag stars " + str(d2d.deg) + "  degrees away.")
-                plog("RA " + str(focus_patch_ra) + " DEC " + str(focus_patch_dec) )
+                plog("\nGoing to near focus patch of " + str(int(focus_patch_n)) + " 9th to 12th mag stars " + str(d2d.deg[0]) + "  degrees away.\n")
+                #plog("RA " + str(focus_patch_ra) + " DEC " + str(focus_patch_dec) )
                 g_dev['mnt'].go_coord(focus_patch_ra, focus_patch_dec)
             except Exception as e:
                 plog ("Issues pointing to a focus patch. Focussing at the current pointing." , e)
@@ -3861,7 +3861,8 @@ class Sequencer:
             
             if spot != False:
                 extensive_focus.append([foc_pos, spot, lsources])
-            plog(extensive_focus)
+                
+            plog("Extensive focus so far (pos, fwhm, sources): "+ str(extensive_focus))
         
         for ctr in range(3):
             g_dev['foc'].guarded_move((foc_pos0 + (ctr+1)*throw)*g_dev['foc'].micron_to_steps)  #Added 20220209! A bit late

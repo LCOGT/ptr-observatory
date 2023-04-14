@@ -2214,8 +2214,8 @@ def transform_observed_to_mount_r(pRoll, pPitch, pPierSide, loud=False, enable=F
             raCorr = reduce_ha_h(corrRoll - pRoll) * 15 * 3600
             decCorr = reduce_dec_d(corrPitch - pPitch) * 3600
             # 20210328  Note this may not work at Pole.
-            if enable:
-                print("Corrections in asec:  ", raCorr, decCorr)
+            #if enable:
+            #    print("Corrections in asec:  ", raCorr, decCorr)
             return (corrRoll * HTOR, corrPitch * DTOR)
         elif ALTAZ:
             if loud:
