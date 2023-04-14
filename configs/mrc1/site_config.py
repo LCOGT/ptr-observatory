@@ -667,6 +667,7 @@ site_config = {
                 'focus_bin_value' : 2,
                 'interpolate_for_sep': False,
                 'bin_for_sep': True,  # This setting will bin the image for SEP photometry rather than interpolating.
+                'sep_bin_value' : 2,
                 # This setting will bin the image for platesolving rather than interpolating.
                 'bin_for_platesolve': True,
                 'platesolve_bin_value' : 2,

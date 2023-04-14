@@ -2535,6 +2535,7 @@ class Sequencer:
                 if time.time() >= self.time_of_next_slew:
                     if g_dev['mnt'].mount.AtParK:
                         g_dev['mnt'].unpark_command({}, {})
+                        
                     g_dev['mnt'].slewToSkyFlatAsync()  
                     self.time_of_next_slew = time.time() + 600
                 
@@ -3813,24 +3814,28 @@ class Sequencer:
                 result['mean_focus'] = g_dev['foc'].focuser.Position*g_dev['foc'].steps_to_micron
             try:
                 spot = result['FWHM']
+                lsources = result['No_of_sources']
+                if np.isnan(lsources):
+                    spot=False
+                
                 #foc_pos = result['mean_focus']
                 #foc_pos = (foc_pos0 - (ctr+0)*throw)*g_dev['foc'].micron_to_steps
                 foc_pos = (foc_pos0 - (ctr+0)*throw)
-                if np.isnan(result['FWHM']):
-                    req = {'time': 2*float(self.config['focus_exposure_time']),  'alias':  str(self.config['camera']['camera_1_1']['name']), 'image_type': 'focus'}   #  NB Should pick up filter and constats from config
-                    opt = {'area': 100, 'count': 1, 'filter': 'focus'}
-                    result = g_dev['cam'].expose_command(req, opt, no_AWS=True, solve_it=False)
-                    if self.stop_script_called:
-                        g_dev["obs"].send_to_user("Cancelling out of autofocus script as stop script has been called.")  
-                        return
-                    if not g_dev['obs'].open_and_enabled_to_observe:
-                        g_dev["obs"].send_to_user("Cancelling out of activity as no longer open and enabled to observe.")  
-                        return
-                    spot = result['FWHM']
-                    if np.isnan(result['FWHM']):
-                        spot = False
-                        foc_pos = False
-                        plog ("spot failed on extensive focus script")
+                # if np.isnan(result['FWHM']):
+                #     req = {'time': 2*float(self.config['focus_exposure_time']),  'alias':  str(self.config['camera']['camera_1_1']['name']), 'image_type': 'focus'}   #  NB Should pick up filter and constats from config
+                #     opt = {'area': 100, 'count': 1, 'filter': 'focus'}
+                #     result = g_dev['cam'].expose_command(req, opt, no_AWS=True, solve_it=False)
+                #     if self.stop_script_called:
+                #         g_dev["obs"].send_to_user("Cancelling out of autofocus script as stop script has been called.")  
+                #         return
+                #     if not g_dev['obs'].open_and_enabled_to_observe:
+                #         g_dev["obs"].send_to_user("Cancelling out of activity as no longer open and enabled to observe.")  
+                #         return
+                #     spot = result['FWHM']
+                #     if np.isnan(result['FWHM']) or np.isnan(lsources):
+                #         spot = False
+                #         foc_pos = False
+                #         plog ("spot failed on extensive focus script")
                         
             except:
                 spot = False
@@ -3841,7 +3846,7 @@ class Sequencer:
             g_dev['obs'].send_to_user("Extensive focus center " + str(foc_pos) + " FWHM: " + str(spot), p_level='INFO')
             
             if spot != False:
-                extensive_focus.append([foc_pos, spot])
+                extensive_focus.append([foc_pos, spot, lsources])
             plog(extensive_focus)
         
         for ctr in range(3):
@@ -3864,24 +3869,27 @@ class Sequencer:
                 result['mean_focus'] = g_dev['foc'].focuser.Position*g_dev['foc'].steps_to_micron
             try:
                 spot = result['FWHM']
+                lsources = result['No_of_sources']
+                if np.isnan(lsources):
+                    spot=False
                 #foc_pos = result['mean_focus']
                 #foc_pos = (foc_pos0 + (ctr+1)*throw)*g_dev['foc'].micron_to_steps
                 foc_pos = (foc_pos0 + (ctr+1)*throw)
-                if np.isnan(result['FWHM']):
-                    req = {'time': 3*float(self.config['focus_exposure_time']),  'alias':  str(self.config['camera']['camera_1_1']['name']), 'image_type': 'focus'}   #  NB Should pick up filter and constats from config
-                    opt = {'area': 100, 'count': 1, 'filter': 'focus'}
-                    result = g_dev['cam'].expose_command(req, opt, no_AWS=True, solve_it=False)
-                    if self.stop_script_called:
-                        g_dev["obs"].send_to_user("Cancelling out of autofocus script as stop script has been called.")  
-                        return
-                    if not g_dev['obs'].open_and_enabled_to_observe:
-                        g_dev["obs"].send_to_user("Cancelling out of activity as no longer open and enabled to observe.")  
-                        return
-                    spot = result['FWHM']
-                    if np.isnan(result['FWHM']):
-                        spot = False
-                        foc_pos = False
-                        plog ("spot failed on extensive focus script")
+                # if np.isnan(result['FWHM']):
+                #     req = {'time': 3*float(self.config['focus_exposure_time']),  'alias':  str(self.config['camera']['camera_1_1']['name']), 'image_type': 'focus'}   #  NB Should pick up filter and constats from config
+                #     opt = {'area': 100, 'count': 1, 'filter': 'focus'}
+                #     result = g_dev['cam'].expose_command(req, opt, no_AWS=True, solve_it=False)
+                #     if self.stop_script_called:
+                #         g_dev["obs"].send_to_user("Cancelling out of autofocus script as stop script has been called.")  
+                #         return
+                #     if not g_dev['obs'].open_and_enabled_to_observe:
+                #         g_dev["obs"].send_to_user("Cancelling out of activity as no longer open and enabled to observe.")  
+                #         return
+                #     spot = result['FWHM']
+                #     if np.isnan(result['FWHM'])  or np.isnan(lsources):
+                #         spot = False
+                #         foc_pos = False
+                #         plog ("spot failed on extensive focus script")
             except:
                 spot = False
                 foc_pos = False
@@ -3889,7 +3897,7 @@ class Sequencer:
                 plog(traceback.format_exc())
 
             g_dev['obs'].send_to_user("Extensive focus center " + str(foc_pos) + " FWHM: " + str(spot), p_level='INFO')
-            extensive_focus.append([foc_pos, spot])
+            extensive_focus.append([foc_pos, spot, lsources])
             plog(extensive_focus)
         
         minimumFWHM = 100.0
