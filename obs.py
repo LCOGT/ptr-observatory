@@ -2447,7 +2447,7 @@ sel
                         
                         xdonut=np.median(pow(pow(sources['x'] - sources['xpeak'],2),0.5))*pixscale*binfocus
                         ydonut=np.median(pow(pow(sources['y'] - sources['ypeak'],2),0.5))*pixscale*binfocus
-                        if xdonut > 2.0 or ydonut > 2.0 or np.isnan(xdonut) or np.isnan(ydonut):
+                        if xdonut > 3.0 or ydonut > 3.0 or np.isnan(xdonut) or np.isnan(ydonut):
                             plog ("Possible donut image detected.")    
                             plog('x ' + str(xdonut))
                             plog('y ' + str(ydonut))                        
@@ -2501,7 +2501,7 @@ sel
 
                             
 
-                        if (len(sources) < 2) or ( frame_type == 'focus' and (len(sources) < 10 or len(sources) == np.nan or str(len(sources)) =='nan' or xdonut > 2.0 or ydonut > 2.0 or np.isnan(xdonut) or np.isnan(ydonut))):
+                        if (len(sources) < 2) or ( frame_type == 'focus' and (len(sources) < 10 or len(sources) == np.nan or str(len(sources)) =='nan' or xdonut > 3.0 or ydonut > 3.0 or np.isnan(xdonut) or np.isnan(ydonut))):
                             #plog ("not enough sources to estimate a reliable focus")
                             plog ("Did not find an acceptable FWHM for this image.")    
                             g_dev['cam'].expresult["error"] = True
