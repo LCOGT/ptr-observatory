@@ -2336,13 +2336,13 @@ class Sequencer:
                     fileList = glob(g_dev['obs'].calib_masters_folder + '/masterFlat*_bin1.npy')
                     #breakpoint()
                     for file in fileList:
-                        if self.config['camera'][self.name]['settings']['hold_flats_in_memory']:
+                        if self.config['camera'][g_dev['cam'].name]['settings']['hold_flats_in_memory']:
                             tempflatframe=np.load(file)
                             #breakpoint()
-                            self.flatFiles.update({file.split('_')[-2]: np.array(tempflatframe)})
+                            g_dev['cam'].flatFiles.update({file.split('_')[-2]: np.array(tempflatframe)})
                             del tempflatframe
                         else:
-                            self.flatFiles.update({file.split("_")[1].replace ('.npy','') + '_bin1': file})
+                            g_dev['cam'].flatFiles.update({file.split("_")[1].replace ('.npy','') + '_bin1': file})
                     # To supress occasional flatfield div errors
                     np.seterr(divide="ignore")
                 except:
