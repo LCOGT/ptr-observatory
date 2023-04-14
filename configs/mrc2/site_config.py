@@ -405,7 +405,7 @@ site_config = {
             'collecting_area':  128039.0,
             'obscuration':  47,
             'aperture': 610,
-            'f-ratio':  6.8,   #This and focal_lenght can be refined after a solve.
+            'f-ratio':  6.8,   #This and focal_length can be refined after a solve.
             'focal_length': 3962,
             'has_dew_heater':  True,
             #'screen_name': 'screen2',   #The enclosure has two screens in the WMD case, one for each mount.
@@ -573,23 +573,23 @@ site_config = {
                 
                 
                 'filter_data': [
-                                ['air',     [0, 0], -1000, 20,    [2, 17], 'ai'],   # 0
+                                ['air',     [0, 0], -1000, 62,    [2, 17], 'ai'],   # 0
                                 ['Lum',     [1, 0],     0, 0.5,   [2, 17], 'w '],   # 20
                                 ['Red',     [0, 4],     0, 0.5,   [2, 17], 'r '],  # 21                                ['JV (Grn)',      [0, 3],     0, 1 [2, 17], 'V '],   # 9
                                 ['Green',   [0, 3],     0, 0.5,   [2, 17], 'V '],   # 22
                                 ['Blue',    [0, 1],     0, 0.5,   [2, 17], 'B '],   # 23
                                 ['w',       [1, 0],     0, 17.5,  [2, 17], 'w '],   # 1
-                                ['dif',     [2, 0],     0, 16,    [2, 17], 'df'],   # 2
-                                ['O3',      [3, 0],     0, 1.15,  [2, 17], 'O3'],   # 3
-                                ['HA',      [4, 0],     0, 0.124, [2, 17], 'HA'],   # 4
-                                ['N2',      [5, 5],     0, 0.126, [2, 17], 'S2'],   # 5
-                                ['S2',      [6, 6],     0, 0.137, [2, 17], 'N2'],   # 6
+                                ['dif',     [2, 0],     0, 34,    [2, 17], 'df'],   # 2
+                                ['O3',      [3, 0],     0, 16.07,  [2, 17], 'O3'],   # 3
+                                ['HA',      [4, 0],     0, 11.53, [2, 17], 'HA'],   # 4
+                                ['N2',      [5, 5],     0, 0.023, [2, 17], 'S2'],   # 5
+                                ['S2',      [6, 6],     0, 0.326, [2, 17], 'N2'],   # 6
                                 ['JB',      [0, 1],     0, 10.25, [2, 17], 'B '],   # 7
-                                ['gp',      [0, 2],     0, 14.87, [2, 17], 'g '],   # 8
-                                ['JV',      [0, 3],     0, 11.1,  [2, 17], 'V '],   # 9
-                                ['rp',      [0, 4],     0, 3.85,  [2, 17], 'r '],  # 10
-                                ['ip',      [0, 5],     0, 4.71,  [2, 17], 'i '],  # 11
-                                ['EXO',     [0, 6],     0, 12,    [2, 17], 'EX'],  # 12
+                                ['gp',      [0, 2],     0, 50.9, [2, 17], 'g '],   # 8
+                                ['JV',      [0, 3],     0, .788,  [2, 17], 'V '],   # 9
+                                ['rp',      [0, 4],     0, .22,  [2, 17], 'r '],  # 10
+                                ['ip',      [0, 5],     0, .238,  [2, 17], 'i '],  # 11
+                                ['EXO',     [0, 6],     0, .417,    [2, 17], 'EX'],  # 12
                                 ['dif-JB',  [2, 1],     0, 0.5, [2, 17], 'Ha'],  # 13
                                 ['dif-gp',  [2, 2],     0, 0.5, [2, 17], 'dg'],  # 14
                                 ['dif-JV',  [2, 3],     0, 0.5, [2, 17], 'dV'],  # 15
@@ -854,7 +854,7 @@ site_config = {
                 
                 'flat_count' : 5,
                 #'pix_scale': [0.4685, 0.9371, 1.4055, 1.8742],    #  1.4506,  bin-2  2* math.degrees(math.atan(9/3962000))*3600
-                'pix_scale': 0.198,    #  1.4506,  bin-2  2* math.degrees(math.atan(9/3962000))*3600
+                'pix_scale': 0.396,    #  1.4506,  bin-2  2* math.degrees(math.atan(9/3962000))*3600
                 # The drizzle_value is by the new pixelscale
                 # for the new resolution when stacking in the EVA pipeline
                 # Realistically you want a resolution of about 0.5 arcseconds per pixel
@@ -865,9 +865,11 @@ site_config = {
                 'drizzle_value_for_later_stacking': 0.5,
                 
                 'do_cosmics' : False,
-                'bin_modes':  [[2, 2, 0.396], [1, 1, 0.198], [3, 3, 0.594], [4, 4, 0.792]],   # [3, 3, 1.45],Meaning no binning choice if list has only one entry, default should be first.
-                'optimal_bin':  [3,3 , 0.594],    # Matched to seeing situation by owner
-                'max_res_bin':  [1, 1, 0.198],    # Matched to seeing situation by owner
+                'bin_modes':  [[1, 1, 0.198], [2, 2, 0.396], [3, 3, 0.594], [4, 4, 0.792]],  
+                'native_bin': [2,23 , 0.396], 
+                'fine_bin':  [2, 2, 0.396],
+                'optimal_bin': [3,3 , 0.594], 
+                'coarse_bin': [4, 4, 0.792],
                 'has_screen': True,
                 'screen_settings':  {
                     'screen_saturation':  157.0,
