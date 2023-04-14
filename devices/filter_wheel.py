@@ -407,9 +407,9 @@ class FilterWheel:
 
         # If filter was not identified, find a substitute filter
         if filter_identified == 0:
-            plog(
-                f"Requested filter: {str(filter_name)} does not exist on this filter wheel."
-            )
+            #plog(
+            #    f"Requested filter: {str(filter_name)} does not exist on this filter wheel."
+            #)
             filter_name = str(self.substitute_filter(filter_name)).lower()
             if filter_name == "none":
                 return "none"
@@ -536,7 +536,7 @@ class FilterWheel:
         Skips the requested exposure if no substitute filter can be found.
         """
 
-        plog(f"Finding substitute for {requested_filter}...")
+        #plog(f"Finding substitute for {requested_filter}...")
 
         
         
@@ -556,10 +556,10 @@ class FilterWheel:
         
         
         available_filters = list(map(lambda x: x.lower(), filter_names))
-        plog(
-            f"Available Filters: {str(available_filters)} \
-                \nRequested Filter: {str(requested_filter)}"
-        )
+        #plog(
+        #    f"Available Filters: {str(available_filters)} \
+        #        \nRequested Filter: {str(requested_filter)}"
+        #)
         #  NB NB NB note any filter string when lower cased needs to be unique. j - Johnson,
         #  c = Cousins, p or ' implies Sloane, S is for stromgren.  Some of the mappings
         #  below may not be optimal. WER
