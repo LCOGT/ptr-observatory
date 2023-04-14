@@ -1624,7 +1624,7 @@ sel
                                     #plog ("attempting ingest to aws@  ", tt)
                                     upload_file_and_ingest_to_archive(fileobj)
                                     #plog ("did ingester")
-                                    plog(f"--> To PTR ARCHIVE --> {str(filepath)}")
+                                    #plog(f"--> To PTR ARCHIVE --> {str(filepath)}")
                                     #plog('*.fz ingestion took:  ', round(time.time() - tt, 1), ' sec.')
                                     self.aws_queue.task_done()
                                     # os.remove(filepath)
@@ -1676,7 +1676,7 @@ sel
                                 "POST", "/upload/", {"object_name": filename})
                             reqs.post(aws_resp["url"], data=aws_resp["fields"], files=files)
                             # plog(resullll)
-                            plog(f"--> To AWS --> {str(filepath)}")
+                            #plog(f"--> To AWS --> {str(filepath)}")
                             self.aws_queue.task_done()
                             # os.remove(filepath)
 
@@ -1688,7 +1688,7 @@ sel
                 one_at_a_time = 0
 
                 # Don't remove local calibrations after uploading but remove the others
-                print(filepath)
+                #print(filepath)
                 if ('calibmasters' not in filepath):
                     try:
                         os.remove(filepath)
