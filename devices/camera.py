@@ -3367,7 +3367,9 @@ class Camera:
                             reported=0
                             #plog ("Time Taken From Exposure start to finish : "  + str(time.time()\
                             #       - self.tempStartupExposureTime))
+
                             plog ("Exposure Complete")
+
                             g_dev["obs"].send_to_user("Exposure Complete")
                             queue_clear_time = time.time()
                             while True:
@@ -3529,8 +3531,8 @@ class Camera:
                     self.expresult["error"] == False
                     self.exposure_busy = False
 
-                    plog ("Time Taken From Exposure start to finish : "  +str(time.time() - self.tempStartupExposureTime))
-                    
+                    #plog ("Time Taken From Exposure start to finish : "  +str(time.time() - self.tempStartupExposureTime))
+                    plog("Exposure Complete")
                     g_dev["obs"].send_to_user("Exposure Complete")
 
                     return self.expresult
@@ -3540,7 +3542,8 @@ class Camera:
                     self.t7 = time.time()
                     self.expresult = {"error": True}
                 self.exposure_busy = False
-                plog ("Time Taken From Exposure start to finish : "  +str(time.time() - self.tempStartupExposureTime))
+                #plog ("Time Taken From Exposure start to finish : "  +str(time.time() - self.tempStartupExposureTime))
+                plog("Exposure Complete")
                 g_dev["obs"].send_to_user("Exposure Complete")
                 return self.expresult
             else:
@@ -3558,7 +3561,8 @@ class Camera:
                     )
                     self.expresult = {"error": True}
                     self.exposure_busy = False
-                    plog ("Time Taken From Exposure start to finish : "  +str(time.time() - self.tempStartupExposureTime))
+                    #plog ("Time Taken From Exposure start to finish : "  +str(time.time() - self.tempStartupExposureTime))
+                    plog ("Exposure Complete")
                     g_dev["obs"].send_to_user("Exposure Complete")
                     return self.expresult
             time.sleep(0.1)
