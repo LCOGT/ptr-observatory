@@ -690,14 +690,14 @@ site_config = {
                 # Then binning is probably fine for all three. For understampled pixel scales - which are likely with OSCs
                 # then binning for focus is recommended. SEP and Platesolve can generally always be binned.                
                 'interpolate_for_focus': False,
-                'bin_for_focus' : True, # This setting will bin the image for focussing rather than interpolating. Good for 1x1 pixel sizes < 0.6.
-                'focus_bin_value' : 3,
+                'bin_for_focus' : False, # This setting will bin the image for focussing rather than interpolating. Good for 1x1 pixel sizes < 0.6.
+                'focus_bin_value' : 1,
                 'interpolate_for_sep' : False,
-                'bin_for_sep' : True, # This setting will bin the image for SEP photometry rather than interpolating.
+                'bin_for_sep' : False, # This setting will bin the image for SEP photometry rather than interpolating.
                 
-                'sep_bin_value' : 3,
+                'sep_bin_value' : 1,
                 'bin_for_platesolve' : True, # This setting will bin the image for platesolving rather than interpolating.
-                'platesolve_bin_value' : 3,
+                'platesolve_bin_value' : 2,
                 
                 
                 'squash_on_x_axis' : False,
@@ -856,7 +856,8 @@ site_config = {
                 
                 'flat_count' : 5,
                 #'pix_scale': [0.4685, 0.9371, 1.4055, 1.8742],    #  1.4506,  bin-2  2* math.degrees(math.atan(9/3962000))*3600
-                'pix_scale': 0.396,    #  1.4506,  bin-2  2* math.degrees(math.atan(9/3962000))*3600
+                '1x1_pix_scale': 0.198,    #  This is the 1x1 binning pixelscale
+                'native_bin': 2, # Needs to be simple, it will recalculate things on the 1x1 binning pixscale above.
                 # The drizzle_value is by the new pixelscale
                 # for the new resolution when stacking in the EVA pipeline
                 # Realistically you want a resolution of about 0.5 arcseconds per pixel
@@ -868,7 +869,8 @@ site_config = {
                 
                 'do_cosmics' : False,
                 'bin_modes':  [[1, 1, 0.198], [2, 2, 0.396], [3, 3, 0.594], [4, 4, 0.792]],  
-                'native_bin': [2,23 , 0.396], 
+                #'native_bin': [2, 2 , 0.396], 
+                
                 'fine_bin':  [2, 2, 0.396],
                 'optimal_bin': [3,3 , 0.594], 
                 'coarse_bin': [4, 4, 0.792],

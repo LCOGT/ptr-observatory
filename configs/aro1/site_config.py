@@ -687,7 +687,10 @@ site_config = {
                 'bin_modes':  [[1, 1, 0.2876], [2, 2, 0.575], [3, 3, 0.863], [4, 4, 1.15]],   #Meaning no binning choice if list has only one entry, default should be first.
                 'optimal_bin':  [2, 2, 0.575],
                 'max_res_bin':  [1, 1, 0.2876],
-                'pix_scale': 0.2876,    #  1.4506,  bin-2  2* math.degrees(math.atan(9/3962000))*3600
+                #'pix_scale': 0.2876,    #  1.4506,  bin-2  2* math.degrees(math.atan(9/3962000))*3600
+                '1x1_pix_scale': 0.2876,    #  This is the 1x1 binning pixelscale
+                'native_bin': 2, # Needs to be simple, it will recalculate things on the 1x1 binning pixscale above.
+                
                 # The drizzle_value is by the new pixelscale
                 # for the new resolution when stacking in the EVA pipeline
                 # Realistically you want a resolution of about 0.5 arcseconds per pixel

@@ -703,7 +703,9 @@ site_config = {
                 #'optimal_bin':  [2, 2, 0.538],    #  Matched to seeing situation by owner
                 #'max_res_bin':  [1, 1, 0.269],    #  Matched to seeing situation by owner
                 #'bin_modes':  [[1, 1, 0.269],[2, 2, 0.538],[3, 3, 0.807],[4, 4, 1.076]], #  , [2, 2, 2.13], [3, 3, 3.21], [4, 4, 4.27]],   #Meaning no binning choice if list has only one entry, default should be first.
-                'pix_scale': 0.637,
+                #'pix_scale': 0.637,
+                '1x1_pix_scale': 0.637,    #  This is the 1x1 binning pixelscale
+                'native_bin': 1, # Needs to be simple, it will recalculate things on the 1x1 binning pixscale above.
                 
                 # The drizzle_value is by the new pixelscale
                 # for the new resolution when stacking in the EVA pipeline

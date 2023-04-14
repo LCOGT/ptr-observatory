@@ -650,7 +650,10 @@ site_config = {
                 'number_of_bias_to_store' : 128,
                 'number_of_dark_to_store' : 128,
                 'number_of_flat_to_store' : 128,
-                'pix_scale': 1.104,
+
+                '1x1_pix_scale': 1.104,    #  This is the 1x1 binning pixelscale
+                'native_bin': 1, # Needs to be simple, it will recalculate things on the 1x1 binning pixscale above.
+                
                 # The drizzle_value is by the new pixelscale
                 # for the new resolution when stacking in the EVA pipeline
                 # Realistically you want a resolution of about 0.5 arcseconds per pixel

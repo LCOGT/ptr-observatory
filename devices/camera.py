@@ -1550,10 +1550,10 @@ class Camera:
 
         bin_x = 1               
         bin_y = 1  # NB This needs fixing someday!
-        self.bin = 1
+        self.native_bin = self.config["camera"][self.name]["settings"]["native_bin"]
         self.ccd_sum = str(1) + ' ' + str(1)
-        bin_x = 1
-        bin_y = 1
+        #bin_x = 1
+        #bin_y = 1
         
 
 
@@ -2233,8 +2233,8 @@ class Camera:
                     # It is faster to store the current binning than keeping on asking ASCOM throughout this
                     #tempBinningCodeX=self.camera.BinX
                     #tempBinningCodeY=self.camera.BinY
-                    tempBinningCodeX=self.bin
-                    tempBinningCodeY=self.bin
+                    #tempBinningCodeX=self.bin
+                    #tempBinningCodeY=self.bin
 
 
                     # assign the keyword values and comment of the keyword as a tuple to write both to header.
@@ -2249,20 +2249,20 @@ class Camera:
                         "[um] Size of unbinned pixel, in Y",
                     )
                     hdu.header["XPIXSZ"] = (
-                        round(float(hdu.header["CCDXPIXE"] * tempBinningCodeX), 3),
+                        round(float(hdu.header["CCDXPIXE"]), 3),
                         "[um] Size of binned pixel",
                     )
                     hdu.header["YPIXSZ"] = (
-                        round(float(hdu.header["CCDYPIXE"] * tempBinningCodeY), 3),
+                        round(float(hdu.header["CCDYPIXE"]), 3),
                         "[um] Size of binned pixel",
                     )
                     try:
                         hdu.header["XBINING"] = (
-                            tempBinningCodeX,
+                            1,
                             "Pixel binning in x direction",
                         )
                         hdu.header["YBINING"] = (
-                            tempBinningCodeY,
+                            1,
                             "Pixel binning in y direction",
                         )
                     except:
@@ -2839,7 +2839,7 @@ class Camera:
 
                     #try:
                     hdu.header["PIXSCALE"] = (
-                        self.config["camera"][self.name]["settings"]["pix_scale"],
+                        float(self.config["camera"][self.name]["settings"]["1x1_pix_scale"]),
                         "[arcsec/pixel] Nominal pixel scale on sky",
                     )
                     pixscale = float(hdu.header["PIXSCALE"])
@@ -2923,7 +2923,7 @@ class Camera:
                         if opt["area"] == 150:
                             f_ext += "f"
                         if frame_type[0:4] in ("bias", "dark"):
-                            f_ext += frame_type[0] + "_" + str(tempBinningCodeX)
+                            f_ext += frame_type[0] + "_" + str(1)
                         if frame_type in (
                             "lampflat",
                             "skyflat",
@@ -2935,7 +2935,7 @@ class Camera:
                             f_ext += (
                                 frame_type[:2]
                                 + "_"
-                                + str(tempBinningCodeX)
+                                + str(1)
                                 + "_"
                                 + str(self.current_filter)
                             )
@@ -3222,15 +3222,37 @@ class Camera:
                         # are by far the longest task to undertake.
                         # If it isn't a smartstack, it gets saved in the slow process queue.
                         if "hdusmalldata" in locals():
-                            # If a CMOS camera, bin to requested binning
-                            if self.is_cmos and self.bin != 1:
+                            # bin to native binning
+                            if self.native_bin != 1:
                                 #plog ("Binning 1x1 to " + str(self.bin))
-                                hdusmalldata=(block_reduce(hdusmalldata,self.bin)) 
+                                hdusmalldata=(block_reduce(hdusmalldata,self.native_bin)) 
+                                hdusmallheader=hdu.header
+                                hdusmallheader['XBINING']=self.native_bin
+                                hdusmallheader['YBINING']=self.native_bin
+                                hdusmallheader['PIXSCALE']=float(hdu.header['PIXSCALE']) * self.native_bin
+                                pixscale=float(hdu.header['PIXSCALE'])
+                                hdusmallheader['NAXIS1']=float(hdu.header['NAXIS1']) / self.native_bin
+                                hdusmallheader['NAXIS2']=float(hdu.header['NAXIS2']) / self.native_bin
+                                hdusmallheader['CRPIX1']=float(hdu.header['CRPIX1']) / self.native_bin
+                                hdusmallheader['CRPIX2']=float(hdu.header['CRPIX2']) / self.native_bin
+                                hdusmallheader['CDELT1']=float(hdu.header['CDELT1']) * self.native_bin
+                                hdusmallheader['CDELT2']=float(hdu.header['CDELT2']) * self.native_bin
+                                hdusmallheader['CCDXPIXE']=float(hdu.header['CCDXPIXE']) * self.native_bin
+                                hdusmallheader['CCDYPIXE']=float(hdu.header['CCDYPIXE']) * self.native_bin
+                                hdusmallheader['XPIXSZ']=float(hdu.header['XPIXSZ']) * self.native_bin
+                                hdusmallheader['YPIXSZ']=float(hdu.header['YPIXSZ']) * self.native_bin
+                                
+                                hdusmallheader['SATURATE']=float(hdu.header['SATURATE']) * pow( self.native_bin,2)
+                                hdusmallheader['FULLWELL']=float(hdu.header['FULLWELL']) * pow( self.native_bin,2)
+                                hdusmallheader['MAXLIN']=float(hdu.header['MAXLIN']) * pow( self.native_bin,2)
+                            else:
+                                hdusmallheader=hdu.header
+                            
                             
                             if smartstackid == 'no':
                                 if self.config['keep_reduced_on_disk']:
                                     #plog ("saving reduced file anyway!")
-                                    self.to_slow_process(1000,('reduced', red_path + red_name01, hdusmalldata, hdu.header, \
+                                    self.to_slow_process(1000,('reduced', red_path + red_name01, hdusmalldata, hdusmallheader, \
                                                            frame_type, g_dev["mnt"].current_icrs_ra, g_dev["mnt"].current_icrs_dec))
                             else:                            
                                 saver = 0
@@ -3239,7 +3261,7 @@ class Camera:
                                     try:
                                         hdureduced=fits.PrimaryHDU()
                                         hdureduced.data=hdusmalldata                            
-                                        hdureduced.header=hdu.header
+                                        hdureduced.header=hdusmallheader
                                         hdureduced.header["NAXIS1"] = hdusmalldata.shape[0]
                                         hdureduced.header["NAXIS2"] = hdusmalldata.shape[1]
                                         #hdureduced.data=hdureduced.data.astype("float32")
@@ -3328,7 +3350,7 @@ class Camera:
                         
                         # IMMEDIATELY SEND TO SEP QUEUE
                         self.sep_processing=True
-                        self.to_sep((hdusmalldata, pixscale, float(hdu.header["RDNOISE"]), avg_foc[1], focus_image, im_path, text_name, hdu.header, cal_path, cal_name, frame_type, g_dev['foc'].focuser.Position*g_dev['foc'].steps_to_micron))
+                        self.to_sep((hdusmalldata, pixscale, float(hdu.header["RDNOISE"]), avg_foc[1], focus_image, im_path, text_name, hdusmallheader, cal_path, cal_name, frame_type, g_dev['foc'].focuser.Position*g_dev['foc'].steps_to_micron))
                         
                         
                         # Send data off to process jpeg
@@ -3409,7 +3431,7 @@ class Camera:
                                 
                                 # NEED TO CHECK HERE THAT THERE ISN"T ALREADY A PLATE SOLVE IN THE THREAD!
                                 #plog ("just about to jam it in the platesovle")
-                                self.to_platesolve((hdusmalldata, hdu.header, cal_path, cal_name, frame_type, time.time(), pixscale, g_dev['mnt'].mount.RightAscension,g_dev['mnt'].mount.Declination))
+                                self.to_platesolve((hdusmalldata, hdusmallheader, cal_path, cal_name, frame_type, time.time(), pixscale, g_dev['mnt'].mount.RightAscension,g_dev['mnt'].mount.Declination))
                                 
 
                                 #plog ("Platesolve wasn't attempted due to lack of sources (or sometimes too many!) or it was during a smartstack")
@@ -3453,7 +3475,7 @@ class Camera:
                         self.to_slow_process(1000,('raw_alt_path', self.alt_path + g_dev["day"] + "/raw/" + raw_name00, hdu.data, hdu.header, \
                                                        frame_type, g_dev["mnt"].current_icrs_ra, g_dev["mnt"].current_icrs_dec))
                         if "hdusmalldata" in locals():
-                            self.to_slow_process(1000,('reduced_alt_path', self.alt_path + g_dev["day"] + "/reduced/" + red_name01, hdusmalldata, hdu.header, \
+                            self.to_slow_process(1000,('reduced_alt_path', self.alt_path + g_dev["day"] + "/reduced/" + red_name01, hdusmalldata, hdusmallheader, \
                                                                frame_type, g_dev["mnt"].current_icrs_ra, g_dev["mnt"].current_icrs_dec))
                             
                         
