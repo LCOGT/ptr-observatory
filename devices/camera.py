@@ -3380,7 +3380,7 @@ class Camera:
                                         plog ("FOCUS: Waiting for SEP processing to complete and queue to clear")
                                         reported=1
                                     pass
-                            plog ("Time Taken for queue to clear post-exposure: " + str(time.time() - queue_clear_time))
+                            #plog ("Time Taken for queue to clear post-exposure: " + str(time.time() - queue_clear_time))
                             focus_image = False
                             
                             return self.expresult

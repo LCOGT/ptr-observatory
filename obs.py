@@ -2696,6 +2696,7 @@ sel
                 text = open(
                     im_path + text_name, "w"
                 )  # This is needed by AWS to set up database.
+                #breakpoint()
                 text.write(str(hduheader))
                 text.close()
                 g_dev['cam'].enqueue_for_fastAWS(10, im_path, text_name)
