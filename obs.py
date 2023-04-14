@@ -1757,48 +1757,54 @@ sel
                 # That gives the best chance of finding a focus AND for pointing while maintaining resolution.
                 # This is best done by taking the two "real" g pixels and interpolating in-between
                 # binfocus=1
+                
                 if g_dev['cam'].config["camera"][g_dev['cam'].name]["settings"]["is_osc"]:
                     #plog ("interpolating bayer grid for focusing purposes.")
                     if g_dev['cam'].config["camera"][g_dev['cam'].name]["settings"]["osc_bayer"] == 'RGGB':
                         # Only separate colours if needed for colour jpeg
                         if smartstackid == 'no':
-                            # Checkerboard collapse for other colours for temporary jpeg
-                            # Create indexes for B, G, G, R images
-                            xshape = hdusmalldata.shape[0]
-                            yshape = hdusmalldata.shape[1]
+                            # # Checkerboard collapse for other colours for temporary jpeg
+                            # # Create indexes for B, G, G, R images
+                            # xshape = hdusmalldata.shape[0]
+                            # yshape = hdusmalldata.shape[1]
 
-                            # B pixels
-                            #list_0_1 = np.array([ [0,0], [0,1] ])
-                            list_0_1 = np.asarray([[0, 0], [0, 1]])
-                            checkerboard = np.tile(list_0_1, (xshape//2, yshape//2))
-                            # checkerboard=np.array(checkerboard)
-                            hdublue = (block_reduce(hdusmalldata * checkerboard, 2))
+                            # # B pixels
+                            # #list_0_1 = np.array([ [0,0], [0,1] ])
+                            # list_0_1 = np.asarray([[0, 0], [0, 1]])
+                            # checkerboard = np.tile(list_0_1, (xshape//2, yshape//2))
+                            # # checkerboard=np.array(checkerboard)
+                            # hdublue = (block_reduce(hdusmalldata * checkerboard, 2))
 
-                            # R Pixels
-                            list_0_1 = np.asarray([[1, 0], [0, 0]])
-                            checkerboard = np.tile(list_0_1, (xshape//2, yshape//2))
-                            # checkerboard=np.array(checkerboard)
-                            hdured = (block_reduce(hdusmalldata * checkerboard, 2))
+                            # # R Pixels
+                            # list_0_1 = np.asarray([[1, 0], [0, 0]])
+                            # checkerboard = np.tile(list_0_1, (xshape//2, yshape//2))
+                            # # checkerboard=np.array(checkerboard)
+                            # hdured = (block_reduce(hdusmalldata * checkerboard, 2))
 
-                            # G top right Pixels
-                            list_0_1 = np.asarray([[0, 1], [0, 0]])
-                            checkerboard = np.tile(list_0_1, (xshape//2, yshape//2))
-                            # checkerboard=np.array(checkerboard)
-                            #GTRonly=(block_reduce(hdufocusdata * checkerboard ,2))
-                            hdugreen = (block_reduce(hdusmalldata * checkerboard, 2))
+                            # # G top right Pixels
+                            # list_0_1 = np.asarray([[0, 1], [0, 0]])
+                            # checkerboard = np.tile(list_0_1, (xshape//2, yshape//2))
+                            # # checkerboard=np.array(checkerboard)
+                            # #GTRonly=(block_reduce(hdufocusdata * checkerboard ,2))
+                            # hdugreen = (block_reduce(hdusmalldata * checkerboard, 2))
 
-                            # G bottom left Pixels
-                            #list_0_1 = np.asarray([ [0,0], [1,0] ])
-                            #checkerboard=np.tile(list_0_1, (xshape//2, yshape//2))
-                            # checkerboard=np.array(checkerboard)
-                            #GBLonly=(block_reduce(hdusmalldata * checkerboard ,2))
+                            # # G bottom left Pixels
+                            # #list_0_1 = np.asarray([ [0,0], [1,0] ])
+                            # #checkerboard=np.tile(list_0_1, (xshape//2, yshape//2))
+                            # # checkerboard=np.array(checkerboard)
+                            # #GBLonly=(block_reduce(hdusmalldata * checkerboard ,2))
 
-                            # Sum two Gs together and half them to be vaguely on the same scale
-                            #hdugreen = np.array((GTRonly + GBLonly) / 2)
-                            #del GTRonly
-                            #del GBLonly
+                            # # Sum two Gs together and half them to be vaguely on the same scale
+                            # #hdugreen = np.array((GTRonly + GBLonly) / 2)
+                            # #del GTRonly
+                            # #del GBLonly
 
-                            del checkerboard
+                            # del checkerboard
+                            
+                            hdured = hdusmalldata[::2, ::2]
+                            hdugreen = hdusmalldata[::2, 1::2]
+                            #g2 = hdusmalldata[1::2, ::2]
+                            hdublue = hdusmalldata[1::2, 1::2]
 
                     else:
                         plog("this bayer grid not implemented yet")
@@ -1903,6 +1909,8 @@ sel
                         del green_stretched_data_float
                         colour_img = Image.fromarray(rgbArray, mode="RGB")
 
+
+                        osc_timer=time.time()
                         # adjust brightness
                         if g_dev['cam'].config["camera"][g_dev['cam'].name]["settings"]['osc_brightness_enhance'] != 1.0:
                             brightness = ImageEnhance.Brightness(colour_img)
@@ -1941,6 +1949,8 @@ sel
                             g_dev['cam'].config["camera"][g_dev['cam'].name]["settings"]['osc_sharpness_enhance'])
                         del satur_image
                         del sharpness
+
+                        plog ("osc timer: " + str(time.time() - osc_timer))
 
                         # These steps flip and rotate the jpeg according to the settings in the site-config for this camera
                         if g_dev['cam'].config["camera"][g_dev['cam'].name]["settings"]["transpose_jpeg"]:
@@ -3293,43 +3303,51 @@ sel
                         if self.config["camera"][g_dev['cam'].name]["settings"]["osc_bayer"] == 'RGGB':
 
                             # Get the original data out
-                            imgdata = np.array(slow_process[2], dtype=np.float32)
+                            #imgdata = np.array(slow_process[2], dtype=np.float32)
 
-                            # Checkerboard collapse for other colours for temporary jpeg
-                            # Create indexes for B, G, G, R images
-                            xshape = imgdata.shape[0]
-                            yshape = imgdata.shape[1]
+                            # # Checkerboard collapse for other colours for temporary jpeg
+                            # # Create indexes for B, G, G, R images
+                            # xshape = imgdata.shape[0]
+                            # yshape = imgdata.shape[1]
 
-                            # B pixels
-                            list_0_1 = np.array([[0, 0], [0, 1]])
-                            checkerboard = np.tile(list_0_1, (xshape//2, yshape//2))
-                            # checkerboard=np.array(checkerboard)
-                            newhdublue = (block_reduce(imgdata * checkerboard, 2))
+                            # # B pixels
+                            # list_0_1 = np.array([[0, 0], [0, 1]])
+                            # checkerboard = np.tile(list_0_1, (xshape//2, yshape//2))
+                            # # checkerboard=np.array(checkerboard)
+                            # newhdublue = (block_reduce(imgdata * checkerboard, 2))
 
-                            # R Pixels
-                            list_0_1 = np.array([[1, 0], [0, 0]])
-                            checkerboard = np.tile(list_0_1, (xshape//2, yshape//2))
-                            # checkerboard=np.array(checkerboard)
-                            newhdured = (block_reduce(imgdata * checkerboard, 2))
+                            # # R Pixels
+                            # list_0_1 = np.array([[1, 0], [0, 0]])
+                            # checkerboard = np.tile(list_0_1, (xshape//2, yshape//2))
+                            # # checkerboard=np.array(checkerboard)
+                            # newhdured = (block_reduce(imgdata * checkerboard, 2))
 
-                            # G top right Pixels
-                            list_0_1 = np.array([[0, 1], [0, 0]])
-                            checkerboard = np.tile(list_0_1, (xshape//2, yshape//2))
-                            # checkerboard=np.array(checkerboard)
-                            GTRonly = (block_reduce(imgdata * checkerboard, 2))
+                            # # G top right Pixels
+                            # list_0_1 = np.array([[0, 1], [0, 0]])
+                            # checkerboard = np.tile(list_0_1, (xshape//2, yshape//2))
+                            # # checkerboard=np.array(checkerboard)
+                            # GTRonly = (block_reduce(imgdata * checkerboard, 2))
 
-                            # G bottom left Pixels
-                            list_0_1 = np.array([[0, 0], [1, 0]])
-                            checkerboard = np.tile(list_0_1, (xshape//2, yshape//2))
-                            # checkerboard=np.array(checkerboard)
-                            GBLonly = (block_reduce(imgdata * checkerboard, 2))
+                            # # G bottom left Pixels
+                            # list_0_1 = np.array([[0, 0], [1, 0]])
+                            # checkerboard = np.tile(list_0_1, (xshape//2, yshape//2))
+                            # # checkerboard=np.array(checkerboard)
+                            # GBLonly = (block_reduce(imgdata * checkerboard, 2))
 
-                            # Sum two Gs together and half them to be vaguely on the same scale
-                            #hdugreen = np.array(GTRonly + GBLonly) / 2
-                            #del GTRonly
-                            #del GBLonly
-                            del checkerboard
-                            del imgdata
+                            # # Sum two Gs together and half them to be vaguely on the same scale
+                            # #hdugreen = np.array(GTRonly + GBLonly) / 2
+                            # #del GTRonly
+                            # #del GBLonly
+                            # del checkerboard
+                            
+                            
+                            
+                            newhdured = slow_process[2][::2, ::2]
+                            GTRonly = slow_process[2][::2, 1::2]
+                            GBLonly = slow_process[2][1::2, ::2]
+                            newhdublue = slow_process[2][1::2, 1::2]
+                            
+                            #del imgdata
 
                             oscmatchcode = (datetime.datetime.now().strftime("%d%m%y%H%M%S"))
 
@@ -3829,40 +3847,47 @@ sel
 
                             if self.config["camera"][g_dev['cam'].name]["settings"]["osc_bayer"] == 'RGGB':
 
-                                # Checkerboard collapse for other colours for temporary jpeg
-                                # Create indexes for B, G, G, R images
-                                xshape = imgdata.shape[0]
-                                yshape = imgdata.shape[1]
+                                # # Checkerboard collapse for other colours for temporary jpeg
+                                # # Create indexes for B, G, G, R images
+                                # xshape = imgdata.shape[0]
+                                # yshape = imgdata.shape[1]
 
-                                # B pixels
-                                list_0_1 = np.array([[0, 0], [0, 1]])
-                                checkerboard = np.tile(list_0_1, (xshape//2, yshape//2))
-                                # checkerboard=np.array(checkerboard)
-                                newhdublue = (block_reduce(imgdata * checkerboard, 2))
+                                # # B pixels
+                                # list_0_1 = np.array([[0, 0], [0, 1]])
+                                # checkerboard = np.tile(list_0_1, (xshape//2, yshape//2))
+                                # # checkerboard=np.array(checkerboard)
+                                # newhdublue = (block_reduce(imgdata * checkerboard, 2))
 
-                                # R Pixels
-                                list_0_1 = np.array([[1, 0], [0, 0]])
-                                checkerboard = np.tile(list_0_1, (xshape//2, yshape//2))
-                                # checkerboard=np.array(checkerboard)
-                                newhdured = (block_reduce(imgdata * checkerboard, 2))
+                                # # R Pixels
+                                # list_0_1 = np.array([[1, 0], [0, 0]])
+                                # checkerboard = np.tile(list_0_1, (xshape//2, yshape//2))
+                                # # checkerboard=np.array(checkerboard)
+                                # newhdured = (block_reduce(imgdata * checkerboard, 2))
 
-                                # G top right Pixels
-                                list_0_1 = np.array([[0, 1], [0, 0]])
-                                checkerboard = np.tile(list_0_1, (xshape//2, yshape//2))
-                                # checkerboard=np.array(checkerboard)
-                                newhdugreen = (block_reduce(imgdata * checkerboard, 2))
+                                # # G top right Pixels
+                                # list_0_1 = np.array([[0, 1], [0, 0]])
+                                # checkerboard = np.tile(list_0_1, (xshape//2, yshape//2))
+                                # # checkerboard=np.array(checkerboard)
+                                # newhdugreen = (block_reduce(imgdata * checkerboard, 2))
 
-                                # G bottom left Pixels
-                                #list_0_1 = np.array([ [0,0], [1,0] ])
-                                #checkerboard=np.tile(list_0_1, (xshape//2, yshape//2))
-                                # checkerboard=np.array(checkerboard)
-                                #GBLonly=(block_reduce(storedsStack * checkerboard ,2))
+                                # # G bottom left Pixels
+                                # #list_0_1 = np.array([ [0,0], [1,0] ])
+                                # #checkerboard=np.tile(list_0_1, (xshape//2, yshape//2))
+                                # # checkerboard=np.array(checkerboard)
+                                # #GBLonly=(block_reduce(storedsStack * checkerboard ,2))
 
-                                # Sum two Gs together and half them to be vaguely on the same scale
-                                #hdugreen = np.array(GTRonly + GBLonly) / 2
-                                #del GTRonly
-                                #del GBLonly
-                                del checkerboard
+                                # # Sum two Gs together and half them to be vaguely on the same scale
+                                # #hdugreen = np.array(GTRonly + GBLonly) / 2
+                                # #del GTRonly
+                                # #del GBLonly
+                                # del checkerboard
+                                
+                                
+                                newhdured = imgdata[::2, ::2]
+                                newhdugreen = imgdata[::2, 1::2]
+                                #g2 = hdusmalldata[1::2, ::2]
+                                newhdublue = imgdata[1::2, 1::2]
+                                
 
                             else:
                                 plog("this bayer grid not implemented yet")
