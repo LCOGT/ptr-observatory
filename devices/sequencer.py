@@ -3287,7 +3287,7 @@ class Sequencer:
                     spot4 = False
                     foc_pos4 = False
                     plog ("spot4 failed ")
-                plog('\nFound best focus at:  ', foc_pos4,' measured is:  ',  round(spot4, 2), '\n')
+                plog('\nFound best focus at:  ', foc_pos4,' measured FWHM is:  ',  round(spot4, 2), '\n')
                 g_dev['obs'].send_to_user('Found best focus at:  ' +str(foc_pos4) +' measured FWHM is:  ' + str(round(spot4, 2)), p_level='INFO')
                 g_dev['foc'].af_log(foc_pos4, spot4, new_spot)
                 plog("Returning to RA:  " +str(start_ra) + " Dec: " + str(start_dec))
@@ -3408,7 +3408,7 @@ class Sequencer:
                     spot4 = False
                     foc_pos4 = False
                     plog ("spot4 failed ")
-                plog('\nFound best focus at:  ', foc_pos4,' measured is:  ',  round(spot4, 2), '\n')
+                plog('\nFound best focus position at:  ', foc_pos4,' measured FWHM is:  ',  round(spot4, 2), '\n')
                 g_dev['obs'].send_to_user('Found best focus at: ' + str(foc_pos4) +' measured FWHM is: ' + str(round(spot4, 2)), p_level='INFO')
                 g_dev['foc'].af_log(foc_pos4, spot4, new_spot)
                 plog("Returning to RA:  " +str(start_ra) + " Dec: " + str(start_dec))
@@ -3543,7 +3543,7 @@ class Sequencer:
                     spot4 = False
                     foc_pos4 = False
                     plog ("spot4 failed ")
-                plog('\nFound best focus at:  ', foc_pos4,' measured is:  ',  round(spot4, 2), '\n')
+                plog('\nFound best focus position at:  ', foc_pos4,' measured FWHM is:  ',  round(spot4, 2), '\n')
                 g_dev['obs'].send_to_user('Found best focus at: ' + str(foc_pos4) +' measured FWHM is: ' + str(round(spot4, 2)), p_level='INFO')
                 g_dev['foc'].af_log(foc_pos4, spot4, new_spot)
                 plog("Returning to RA:  " +str(start_ra) + " Dec: " + str(start_dec))
@@ -4273,8 +4273,8 @@ class Sequencer:
             try:
                 spot6 = result['FWHM']
                 foc_pos4 = result['mean_focus']
-                plog('\n\n\nFound best focus at:  ', foc_pos4,' measured is:  ',  round(spot6, 2), '\n\n\n')
-                g_dev['obs'].send_to_user("Found best focus at: " +str(foc_pos4) + ' measured FWHM is: ' + str(round(spot6, 2)), p_level='INFO')
+                plog('\n\n\nFound best focus position at:  ', foc_pos4,' measured FWHM is:  ',  round(spot6, 2), '\n\n\n')
+                g_dev['obs'].send_to_user("Found best focus position at: " +str(foc_pos4) + ' measured FWHM is: ' + str(round(spot6, 2)), p_level='INFO')
             except:
                 plog('Known bug, Verifcation did not work. Returing to target using solved focus.')
         else:
