@@ -3479,7 +3479,7 @@ sel
 
                             break
                         except:
-                            plog("Connection glitch for the request post, waiting a moment and trying again")
+                            plog("Non-fatal connection glitch for a file posted.")
                             time.sleep(5)
                     plog(f"\n--> To AWS --> {str(filepath)}")
 
