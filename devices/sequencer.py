@@ -3290,7 +3290,8 @@ class Sequencer:
                 plog('\nFound best focus at:  ', foc_pos4,' measured is:  ',  round(spot4, 2), '\n')
                 g_dev['obs'].send_to_user('Found best focus at:  ' +str(foc_pos4) +' measured FWHM is:  ' + str(round(spot4, 2)), p_level='INFO')
                 g_dev['foc'].af_log(foc_pos4, spot4, new_spot)
-                plog("Returning to:  ", start_ra, start_dec)
+                plog("Returning to RA:  " +str(start_ra) + " Dec: " + str(start_dec))
+                g_dev["obs"].send_to_user("Returning to RA:  " +str(start_ra) + " Dec: " + str(start_dec))
                 g_dev["mnt"].last_ra = start_ra
                 g_dev["mnt"].last_dec = start_dec
                 g_dev['mnt'].mount.SlewToCoordinatesAsync(start_ra, start_dec)   #Return to pre-focus pointing.
@@ -3349,7 +3350,8 @@ class Sequencer:
                     req2 = {'target': 'near_tycho_star', 'area': 150, 'image_type': 'focus'}
                     opt = {'filter': 'focus'}
                     g_dev['seq'].extensive_focus_script(req2,opt, no_auto_after_solve=True)
-                    plog("Returning to:  ", start_ra, start_dec)
+                    plog("Returning to RA:  " +str(start_ra) + " Dec: " + str(start_dec))
+                    g_dev["obs"].send_to_user("Returning to RA:  " +str(start_ra) + " Dec: " + str(start_dec))
                     g_dev["mnt"].last_ra = start_ra
                     g_dev["mnt"].last_dec = start_dec
                     g_dev['mnt'].mount.SlewToCoordinatesAsync(start_ra, start_dec)   #Return to pre-focus pointing.
@@ -3361,7 +3363,8 @@ class Sequencer:
 
                     self.sequencer_hold = False   #Allow comand checks.
                     self.af_guard = False
-                    plog("Returning to:  ", start_ra, start_dec)
+                    plog("Returning to RA:  " +str(start_ra) + " Dec: " + str(start_dec))
+                    g_dev["obs"].send_to_user("Returning to RA:  " +str(start_ra) + " Dec: " + str(start_dec))
                     g_dev["mnt"].last_ra = start_ra
                     g_dev["mnt"].last_dec = start_dec
                     g_dev['mnt'].mount.SlewToCoordinatesAsync(start_ra, start_dec)   #NB NB Does this really take us back to starting point?
@@ -3408,7 +3411,8 @@ class Sequencer:
                 plog('\nFound best focus at:  ', foc_pos4,' measured is:  ',  round(spot4, 2), '\n')
                 g_dev['obs'].send_to_user('Found best focus at: ' + str(foc_pos4) +' measured FWHM is: ' + str(round(spot4, 2)), p_level='INFO')
                 g_dev['foc'].af_log(foc_pos4, spot4, new_spot)
-                plog("Returning to:  ", start_ra, start_dec)
+                plog("Returning to RA:  " +str(start_ra) + " Dec: " + str(start_dec))
+                g_dev["obs"].send_to_user("Returning to RA:  " +str(start_ra) + " Dec: " + str(start_dec))
                 g_dev["mnt"].last_ra = start_ra
                 g_dev["mnt"].last_dec = start_dec
                 g_dev['mnt'].mount.SlewToCoordinatesAsync(start_ra, start_dec)   #Return to pre-focus pointing.
@@ -3470,7 +3474,8 @@ class Sequencer:
                     req2 = {'target': 'near_tycho_star', 'area': 150}
                     opt = {}
                     g_dev['seq'].extensive_focus_script(req2,opt, no_auto_after_solve=True)
-                    plog("Returning to:  ", start_ra, start_dec)
+                    plog("Returning to RA:  " +str(start_ra) + " Dec: " + str(start_dec))
+                    g_dev["obs"].send_to_user("Returning to RA:  " +str(start_ra) + " Dec: " + str(start_dec))
                     g_dev["mnt"].last_ra = start_ra
                     g_dev["mnt"].last_dec = start_dec
                     g_dev['mnt'].mount.SlewToCoordinatesAsync(start_ra, start_dec)   #Return to pre-focus pointing.
@@ -3482,7 +3487,8 @@ class Sequencer:
 
                     self.sequencer_hold = False   #Allow comand checks.
                     self.af_guard = False
-                    plog("Returning to:  ", start_ra, start_dec)
+                    plog("Returning to RA:  " +str(start_ra) + " Dec: " + str(start_dec))
+                    g_dev["obs"].send_to_user("Returning to RA:  " +str(start_ra) + " Dec: " + str(start_dec))
                     g_dev["mnt"].last_ra = start_ra
                     g_dev["mnt"].last_dec = start_dec
                     g_dev['mnt'].mount.SlewToCoordinatesAsync(start_ra, start_dec)   #NB NB Does this really take us back to starting point?
@@ -3540,7 +3546,8 @@ class Sequencer:
                 plog('\nFound best focus at:  ', foc_pos4,' measured is:  ',  round(spot4, 2), '\n')
                 g_dev['obs'].send_to_user('Found best focus at: ' + str(foc_pos4) +' measured FWHM is: ' + str(round(spot4, 2)), p_level='INFO')
                 g_dev['foc'].af_log(foc_pos4, spot4, new_spot)
-                plog("Returning to:  ", start_ra, start_dec)
+                plog("Returning to RA:  " +str(start_ra) + " Dec: " + str(start_dec))
+                g_dev["obs"].send_to_user("Returning to RA:  " +str(start_ra) + " Dec: " + str(start_dec))
                 g_dev["mnt"].last_ra = start_ra
                 g_dev["mnt"].last_dec = start_dec
                 g_dev['mnt'].mount.SlewToCoordinatesAsync(start_ra, start_dec)   #Return to pre-focus pointing.
@@ -3553,7 +3560,8 @@ class Sequencer:
                     req2 = {'target': 'near_tycho_star', 'area': 150}
                     opt = {}
                     g_dev['seq'].extensive_focus_script(req2,opt, no_auto_after_solve=True)
-                    plog("Returning to:  ", start_ra, start_dec)
+                    plog("Returning to RA:  " +str(start_ra) + " Dec: " + str(start_dec))
+                    g_dev["obs"].send_to_user("Returning to RA:  " +str(start_ra) + " Dec: " + str(start_dec))
                     g_dev["mnt"].last_ra = start_ra
                     g_dev["mnt"].last_dec = start_dec
                     g_dev['mnt'].mount.SlewToCoordinatesAsync(start_ra, start_dec)   #Return to pre-focus pointing.
@@ -3565,7 +3573,8 @@ class Sequencer:
 
                     self.sequencer_hold = False   #Allow comand checks.
                     self.af_guard = False
-                    plog("Returning to:  ", start_ra, start_dec)
+                    plog("Returning to RA:  " +str(start_ra) + " Dec: " + str(start_dec))
+                    g_dev["obs"].send_to_user("Returning to RA:  " +str(start_ra) + " Dec: " + str(start_dec))
                     g_dev["mnt"].last_ra = start_ra
                     g_dev["mnt"].last_dec = start_dec
                     g_dev['mnt'].mount.SlewToCoordinatesAsync(start_ra, start_dec)   #NB NB Does this really take us back to starting point?
@@ -3615,7 +3624,8 @@ class Sequencer:
                 req2 = {'target': 'near_tycho_star', 'area': 150}
                 opt = {}
                 g_dev['seq'].extensive_focus_script(req2,opt, no_auto_after_solve=True)
-                plog("Returning to:  ", start_ra, start_dec)
+                plog("Returning to RA:  " +str(start_ra) + " Dec: " + str(start_dec))
+                g_dev["obs"].send_to_user("Returning to RA:  " +str(start_ra) + " Dec: " + str(start_dec))
                 g_dev["mnt"].last_ra = start_ra
                 g_dev["mnt"].last_dec = start_dec
                 g_dev['mnt'].mount.SlewToCoordinatesAsync(start_ra, start_dec)   #Return to pre-focus pointing.
@@ -3627,7 +3637,8 @@ class Sequencer:
 
                 self.sequencer_hold = False   #Allow comand checks.
                 self.af_guard = False
-                plog("Returning to:  ", start_ra, start_dec)
+                plog("Returning to RA:  " +str(start_ra) + " Dec: " + str(start_dec))
+                g_dev["obs"].send_to_user("Returning to RA:  " +str(start_ra) + " Dec: " + str(start_dec))
                 g_dev["mnt"].last_ra = start_ra
                 g_dev["mnt"].last_dec = start_dec
                 g_dev['mnt'].mount.SlewToCoordinatesAsync(start_ra, start_dec)   #NB NB Does this really take us back to starting point?
@@ -3636,7 +3647,8 @@ class Sequencer:
                 self.guard = False
                 self.af_guard = False
                 return
-        plog("Returning to:  ", start_ra, start_dec)
+        plog("Returning to RA:  " +str(start_ra) + " Dec: " + str(start_dec))
+        g_dev["obs"].send_to_user("Returning to RA:  " +str(start_ra) + " Dec: " + str(start_dec))
         g_dev["mnt"].last_ra = start_ra
         g_dev["mnt"].last_dec = start_dec
         g_dev['mnt'].mount.SlewToCoordinatesAsync(start_ra, start_dec)   #Return to pre-focus pointing.
@@ -3958,7 +3970,8 @@ class Sequencer:
             
         
         
-        plog("Returning to:  ", start_ra, start_dec)
+        plog("Returning to RA:  " +str(start_ra) + " Dec: " + str(start_dec))
+        g_dev["obs"].send_to_user("Returning to RA:  " +str(start_ra) + " Dec: " + str(start_dec))
         g_dev["mnt"].last_ra = start_ra
         g_dev["mnt"].last_dec = start_dec
         g_dev['mnt'].mount.SlewToCoordinatesAsync(start_ra, start_dec)   #Return to pre-focus pointing.
@@ -4269,7 +4282,8 @@ class Sequencer:
             g_dev['obs'].send_to_user('Coarse_focus did not converge. Moving back to starting focus:  ' + str(foc_pos0), p_level='INFO')
 
             g_dev['foc'].guarded_move((foc_start)*g_dev['foc'].micron_to_steps)
-        plog("Returning to:  ", start_ra, start_dec)
+        plog("Returning to RA:  " +str(start_ra) + " Dec: " + str(start_dec))
+        g_dev["obs"].send_to_user("Returning to RA:  " +str(start_ra) + " Dec: " + str(start_dec))
         g_dev["mnt"].last_ra = start_ra
         g_dev["mnt"].last_dec = start_dec
         g_dev['mnt'].mount.SlewToCoordinatesAsync(start_ra, start_dec)   #Return to pre-focus pointing.
