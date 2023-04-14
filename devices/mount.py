@@ -1469,7 +1469,7 @@ class Mount:
             self.mount.DeclinationRate = 0.0#self.prior_pitch_rate
             self.DeclinationRate = 0.0 #self.prior_pitch_rate
 
-        plog("Rates set: Please ignore WER ", self.prior_roll_rate, self.prior_pitch_rate, self.refr_adv)
+        #plog("Rates set: Please ignore WER ", self.prior_roll_rate, self.prior_pitch_rate, self.refr_adv)
         self.seek_commanded = True
         #I think to reliable establish rates, set them before the slew.
         #self.mount.Tracking = True

@@ -667,11 +667,11 @@ sel
                 if len(unread_commands) > 0:
                     unread_commands.sort(key=lambda x: x["timestamp_ms"])
                     # Process each job one at a time
-                    plog(
-                        "# of incomming commands:  ",
-                        len(unread_commands),
-                        unread_commands,
-                    )
+                    #plog(
+                    #    "# of incoming commands:  ",
+                    #    len(unread_commands),
+                    #    unread_commands,
+                    #)
 
                     for cmd in unread_commands:
 
@@ -1327,7 +1327,7 @@ sel
                         self.open_and_enabled_to_observe = True
                 else:
                     plog('Shutter status not reporting correctly')
-            plog("Current Open and Enabled to Observe Status: " + str(self.open_and_enabled_to_observe))
+            #plog("Current Open and Enabled to Observe Status: " + str(self.open_and_enabled_to_observe))
 
             # Check the mount is still connected
             g_dev['mnt'].check_connect()
@@ -1384,7 +1384,7 @@ sel
             if g_dev['cam']._cooler_on():
 
                 current_camera_temperature = float(g_dev['cam']._temperature())
-                plog("Cooler is still on at " + str(current_camera_temperature))
+                #plog("Cooler is still on at " + str(current_camera_temperature))
 
                 if current_camera_temperature - g_dev['cam'].setpoint > 1.5 or current_camera_temperature - g_dev['cam'].setpoint < -1.5:
 
@@ -1652,11 +1652,11 @@ sel
                                 # break
 
                                 #tt = time.time()
-                                plog("attempting aws@  ", tt)
+                               # plog("attempting aws@  ", tt)
                                 req_resp = reqs.post(aws_resp["url"], data=aws_resp["fields"], files=files)
-                                plog("did aws", req_resp)
-                                plog(f"--> To AWS --> {str(filepath)}")
-                                plog('*.fz transfer took:  ', round(time.time() - tt, 1), ' sec.')
+                                #plog("did aws", req_resp)
+                               # plog(f"--> To AWS --> {str(filepath)}")
+                                #plog('*.fz transfer took:  ', round(time.time() - tt, 1), ' sec.')
                                 self.aws_queue.task_done()
                                 one_at_a_time = 0
                                 # os.remove(filepath)
@@ -1991,19 +1991,19 @@ sel
                         # Resizing the array to an appropriate shape for the small jpg
                         iy, ix = final_image.size
                         if (
-                            self.config["camera"][self.name]["settings"]["crop_preview"]
+                            self.config["camera"][g_dev['cam'].name]["settings"]["crop_preview"]
                             == True
                         ):
-                            yb = self.config["camera"][self.name]["settings"][
+                            yb = self.config["camera"][g_dev['cam'].name]["settings"][
                                 "crop_preview_ybottom"
                             ]
-                            yt = self.config["camera"][self.name]["settings"][
+                            yt = self.config["camera"][g_dev['cam'].name]["settings"][
                                 "crop_preview_ytop"
                             ]
-                            xl = self.config["camera"][self.name]["settings"][
+                            xl = self.config["camera"][g_dev['cam'].name]["settings"][
                                 "crop_preview_xleft"
                             ]
-                            xr = self.config["camera"][self.name]["settings"][
+                            xr = self.config["camera"][g_dev['cam'].name]["settings"][
                                 "crop_preview_xright"
                             ]
                             #hdusmalldata = hdusmalldata[yb:-yt, xl:-xr]
@@ -2266,7 +2266,7 @@ sel
 
                         if crop_width > 0 or crop_height > 0:
                             hdufocusdata = hdufocusdata[crop_width:-crop_width, crop_height:-crop_height]
-                            plog("Focus image cropped to " + str(hdufocusdata.shape))
+                            #plog("Focus image cropped to " + str(hdufocusdata.shape))
 
                     # focdate=time.time()
                     binfocus = 1
@@ -2778,7 +2778,7 @@ sel
                     # breakpoint()
                     if crop_width > 0 or crop_height > 0:
                         hdufocusdata = hdufocusdata[crop_width:-crop_width, crop_height:-crop_height]
-                    plog("Platesolve image cropped to " + str(hdufocusdata.shape))
+                    #plog("Platesolve image cropped to " + str(hdufocusdata.shape))
 
                     binfocus = 1
                     #if self.config["camera"][g_dev['cam'].name]["settings"]["is_osc"]:
@@ -3481,7 +3481,7 @@ sel
                         except:
                             plog("Non-fatal connection glitch for a file posted.")
                             time.sleep(5)
-                    plog(f"\n--> To AWS --> {str(filepath)}")
+                    #plog(f"\n--> To AWS --> {str(filepath)}")
 
                 # if (
                 #     filename[-3:] == "jpg"
@@ -4138,19 +4138,19 @@ sel
                             # Resizing the array to an appropriate shape for the jpg and the small fits
                             iy, ix = final_image.size
                             if (
-                                self.config["camera"][self.name]["settings"]["crop_preview"]
+                                self.config["camera"][g_dev['cam'].name]["settings"]["crop_preview"]
                                 == True
                             ):
-                                yb = self.config["camera"][self.name]["settings"][
+                                yb = self.config["camera"][g_dev['cam'].name]["settings"][
                                     "crop_preview_ybottom"
                                 ]
-                                yt = self.config["camera"][self.name]["settings"][
+                                yt = self.config["camera"][g_dev['cam'].name]["settings"][
                                     "crop_preview_ytop"
                                 ]
-                                xl = self.config["camera"][self.name]["settings"][
+                                xl = self.config["camera"][g_dev['cam'].name]["settings"][
                                     "crop_preview_xleft"
                                 ]
-                                xr = self.config["camera"][self.name]["settings"][
+                                xr = self.config["camera"][g_dev['cam'].name]["settings"][
                                     "crop_preview_xright"
                                 ]
                                 #hdusmalldata = hdusmalldata[yb:-yt, xl:-xr]

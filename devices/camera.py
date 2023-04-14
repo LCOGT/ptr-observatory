@@ -3365,8 +3365,9 @@ class Camera:
                         # FWHM. 
                         if focus_image == True:
                             reported=0
-                            plog ("Time Taken From Exposure start to finish : "  + str(time.time()\
-                                   - self.tempStartupExposureTime))
+                            #plog ("Time Taken From Exposure start to finish : "  + str(time.time()\
+                            #       - self.tempStartupExposureTime))
+                            plog ("Exposure Complete")
                             g_dev["obs"].send_to_user("Exposure Complete")
                             queue_clear_time = time.time()
                             while True:
