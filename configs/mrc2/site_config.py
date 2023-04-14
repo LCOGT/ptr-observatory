@@ -75,7 +75,7 @@ site_config = {
 
     'debug_site_mode': False,
     
-    'debug_mode' : False,
+    'debug_mode' : True,
     'admin_owner_commands_only': False,
     'debug_duration_sec': 1800,
     'owner':  ['google-oauth2|112401903840371673242'],  # Wayne
@@ -700,7 +700,7 @@ site_config = {
                 'platesolve_bin_value' : 3,
                 
                 
-                'squash_on_x_axis' : True,
+                'squash_on_x_axis' : False,
                 'flipx_fits': False,
                 'flipy_fits': False,
                 "rotate90_fits": False,
@@ -713,7 +713,7 @@ site_config = {
                 'flipx_jpeg' : False,
                 'flipy_jpeg' : False,
                 'rotate180_jpeg' : False,
-                'rotate90_jpeg' : True,
+                'rotate90_jpeg' : False,
                 'rotate270_jpeg' : False,
                 
                 
@@ -739,11 +739,11 @@ site_config = {
                
                 
                 'osc_bayer' : 'RGGB',
-                'crop_preview': False,
-                'crop_preview_ybottom': 1,
-                'crop_preview_ytop': 1,
-                'crop_preview_xleft': 1,
-                'crop_preview_xright': 1,
+                'crop_preview': True,
+                'crop_preview_ybottom': 20,
+                'crop_preview_ytop': 20,
+                'crop_preview_xleft': 20,
+                'crop_preview_xright': 20,
                 'temp_setpoint': -5,
                 'calib_setpoints': [ 3, 5, 7],   #A swag
                 'has_chiller':  True,

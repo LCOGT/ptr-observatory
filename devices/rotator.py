@@ -55,7 +55,7 @@ class Rotator:
         pos3=g_dev['rot'].rotator.Position
         time.sleep(0.05)
         
-        plog("Rotator positions (Temporary reporting - MTF)")
+        #plog("Rotator positions (Temporary reporting - MTF)")
         if pos1 < 180:
             pos1=pos1+360
         if pos2 < 180:
@@ -63,11 +63,11 @@ class Rotator:
         if pos3 < 180:
             pos3=pos3+360
             
-        plog([pos1,pos2,pos3])
+        #plog([pos1,pos2,pos3])
         
         avgpos=((pos1)+(pos2)+(pos3))/3
         
-        plog("Average rotator position: " + str(avgpos))
+        #plog("Average rotator position: " + str(avgpos))
 
         if 359 < avgpos < 361 :
             print ("The Rotator SEEMS to be rotating.")
