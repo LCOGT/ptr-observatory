@@ -1830,14 +1830,14 @@ sel
                         #plog (np.median(hdured))
 
                         # breakpoint()
-
+                        osc_timer=time.time()
                         # The integer mode of an image is typically the sky value, so squish anything below that
-                        bluemode = stats.mode((hdublue.astype('int16').flatten()), keepdims=True)[0] - 25
-                        redmode = stats.mode((hdured.astype('int16').flatten()), keepdims=True)[0] - 25
-                        greenmode = stats.mode((hdugreen.astype('int16').flatten()), keepdims=True)[0] - 25
-                        hdublue[hdublue < bluemode] = bluemode
-                        hdugreen[hdugreen < greenmode] = greenmode
-                        hdured[hdured < redmode] = redmode
+                        #bluemode = stats.mode((hdublue.astype('int16').flatten()), keepdims=True)[0] - 25
+                        #redmode = stats.mode((hdured.astype('int16').flatten()), keepdims=True)[0] - 25
+                        #greenmode = stats.mode((hdugreen.astype('int16').flatten()), keepdims=True)[0] - 25
+                        #hdublue[hdublue < bluemode] = bluemode
+                        #hdugreen[hdugreen < greenmode] = greenmode
+                        #hdured[hdured < redmode] = redmode
 
                         # Then bring the background level up a little from there
                         # blueperc=np.nanpercentile(hdublue,0.75)
@@ -1899,7 +1899,9 @@ sel
                         #red_stretched_data_float = np.maximum(0,np.minimum(255,red_stretched_data_float*a+b)).astype(np.uint8)
                         del hdured
 
-                        rgbArray = np.zeros((xshape, yshape, 3), 'uint8')
+                       
+
+                        rgbArray = np.empty((xshape, yshape, 3), 'uint8')
                         rgbArray[..., 0] = red_stretched_data_float  # *256
                         rgbArray[..., 1] = green_stretched_data_float  # *256
                         rgbArray[..., 2] = blue_stretched_data_float  # *256
@@ -1909,8 +1911,8 @@ sel
                         del green_stretched_data_float
                         colour_img = Image.fromarray(rgbArray, mode="RGB")
 
-
-                        osc_timer=time.time()
+                        
+                        
                         # adjust brightness
                         if g_dev['cam'].config["camera"][g_dev['cam'].name]["settings"]['osc_brightness_enhance'] != 1.0:
                             brightness = ImageEnhance.Brightness(colour_img)
@@ -1950,7 +1952,7 @@ sel
                         del satur_image
                         del sharpness
 
-                        plog ("osc timer: " + str(time.time() - osc_timer))
+                        
 
                         # These steps flip and rotate the jpeg according to the settings in the site-config for this camera
                         if g_dev['cam'].config["camera"][g_dev['cam'].name]["settings"]["transpose_jpeg"]:
