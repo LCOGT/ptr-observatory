@@ -3220,7 +3220,8 @@ class Sequencer:
 
         if spot1 is None or spot2 is None or spot3 is None or spot1 == False or spot2 == False or spot3 == False:  #New additon to stop crash when no spots
             plog("No stars detected. Returning to original focus setting and pointing.")
-
+            g_dev['obs'].send_to_user("No stars detected. Returning to original focus setting and pointing.")
+            
             g_dev['foc'].guarded_move((focus_start)*g_dev['foc'].micron_to_steps)  #NB NB 20221002 THis unit fix shoudl be in the routine. WER
             self.sequencer_hold = False   #Allow comand checks.
             self.af_guard = False
@@ -3347,6 +3348,8 @@ class Sequencer:
 
                     plog('Autofocus quadratic equation not converge. Moving back to starting focus:  ', focus_start)
                     plog  ("NORMAL FOCUS UNSUCCESSFUL, TRYING EXTENSIVE FOCUS")
+                    g_dev['obs'].send_to_user('V-curve focus failed, trying extensive focus routine')
+                    
                     req2 = {'target': 'near_tycho_star', 'area': 150, 'image_type': 'focus'}
                     opt = {'filter': 'focus'}
                     g_dev['seq'].extensive_focus_script(req2,opt, no_auto_after_solve=True)
@@ -3359,6 +3362,8 @@ class Sequencer:
                     return
                 else:
                     plog('Autofocus quadratic equation not converge. Moving back to extensive focus:  ', extensive_focus)
+                    g_dev['obs'].send_to_user('V-curve focus failed, Moving back to extensive focus: ', extensive_focus)
+                    
                     g_dev['foc'].guarded_move((extensive_focus)*g_dev['foc'].micron_to_steps)
 
                     self.sequencer_hold = False   #Allow comand checks.
@@ -3471,6 +3476,8 @@ class Sequencer:
 
                     plog('Autofocus quadratic equation not converge. Moving back to starting focus:  ', focus_start)
                     plog  ("NORMAL FOCUS UNSUCCESSFUL, TRYING EXTENSIVE FOCUS")
+                    g_dev['obs'].send_to_user('V-curve focus failed, trying extensive focus')
+                    
                     req2 = {'target': 'near_tycho_star', 'area': 150}
                     opt = {}
                     g_dev['seq'].extensive_focus_script(req2,opt, no_auto_after_solve=True)
@@ -3484,7 +3491,8 @@ class Sequencer:
                 else:
                     plog('Autofocus quadratic equation not converge. Moving back to extensive focus:  ', extensive_focus)
                     g_dev['foc'].guarded_move((extensive_focus)*g_dev['foc'].micron_to_steps)
-
+                    g_dev['obs'].send_to_user('V-curve focus failed, Moving back to extensive focus:', extensive_focus)
+                    
                     self.sequencer_hold = False   #Allow comand checks.
                     self.af_guard = False
                     plog("Returning to RA:  " +str(start_ra) + " Dec: " + str(start_dec))
@@ -3557,6 +3565,8 @@ class Sequencer:
 
                     plog('Autofocus quadratic equation not converge. Moving back to starting focus:  ', focus_start)
                     plog  ("NORMAL FOCUS UNSUCCESSFUL, TRYING EXTENSIVE FOCUS")
+                    g_dev['obs'].send_to_user('V-curve focus failed, trying extensive focus')
+                    
                     req2 = {'target': 'near_tycho_star', 'area': 150}
                     opt = {}
                     g_dev['seq'].extensive_focus_script(req2,opt, no_auto_after_solve=True)
@@ -3570,7 +3580,8 @@ class Sequencer:
                 else:
                     plog('Autofocus quadratic equation not converge. Moving back to extensive focus:  ', extensive_focus)
                     g_dev['foc'].guarded_move((extensive_focus)*g_dev['foc'].micron_to_steps)
-
+                    g_dev['obs'].send_to_user('V-curve focus failed, Moving back to extensive focus: ', extensive_focus)
+                    
                     self.sequencer_hold = False   #Allow comand checks.
                     self.af_guard = False
                     plog("Returning to RA:  " +str(start_ra) + " Dec: " + str(start_dec))
@@ -3621,6 +3632,8 @@ class Sequencer:
 
                 plog('Autofocus quadratic equation not converge. Moving back to starting focus:  ', focus_start)
                 plog  ("NORMAL FOCUS UNSUCCESSFUL, TRYING EXTENSIVE FOCUS")
+                g_dev['obs'].send_to_user('V-curve focus failed, trying extensive focus')
+                
                 req2 = {'target': 'near_tycho_star', 'area': 150}
                 opt = {}
                 g_dev['seq'].extensive_focus_script(req2,opt, no_auto_after_solve=True)
@@ -3634,7 +3647,8 @@ class Sequencer:
             else:
                 plog('Autofocus quadratic equation not converge. Moving back to extensive focus:  ', extensive_focus)
                 g_dev['foc'].guarded_move((extensive_focus)*g_dev['foc'].micron_to_steps)
-
+                g_dev['obs'].send_to_user('V-curve focus failed, moving back to extensive focus: ', extensive_focus)
+                
                 self.sequencer_hold = False   #Allow comand checks.
                 self.af_guard = False
                 plog("Returning to RA:  " +str(start_ra) + " Dec: " + str(start_dec))
@@ -4281,7 +4295,8 @@ class Sequencer:
         else:
             plog('Coarse_focus did not converge. Moving back to starting focus:  ', foc_pos0)
             g_dev['obs'].send_to_user('Coarse_focus did not converge. Moving back to starting focus:  ' + str(foc_pos0), p_level='INFO')
-
+            g_dev['obs'].send_to_user('Coarse focus failed, moving back to starting focus')
+            
             g_dev['foc'].guarded_move((foc_start)*g_dev['foc'].micron_to_steps)
         plog("Returning to RA:  " +str(start_ra) + " Dec: " + str(start_dec))
         g_dev["obs"].send_to_user("Returning to RA:  " +str(start_ra) + " Dec: " + str(start_dec))
