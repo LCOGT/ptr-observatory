@@ -667,11 +667,11 @@ sel
                 if len(unread_commands) > 0:
                     unread_commands.sort(key=lambda x: x["timestamp_ms"])
                     # Process each job one at a time
-                    plog(
-                        "# of incomming commands:  ",
-                        len(unread_commands),
-                        unread_commands,
-                    )
+                    #plog(
+                    #    "# of incoming commands:  ",
+                    #    len(unread_commands),
+                    #    unread_commands,
+                    #)
 
                     for cmd in unread_commands:
 
@@ -740,9 +740,9 @@ sel
 
                                     self.cmd_queue.put(cmd)  # SAVE THE COMMAND FOR LATER
                                     g_dev["obs"].stop_all_activity = False
-                                    plog(
-                                        "Queueing up a new command... Hint:  " + cmd["action"]
-                                    )
+                                    #plog(
+                                    #    "Queueing up a new command... Hint:  " + cmd["action"]
+                                    #)
 
                             if cancel_check:
                                 result = {'stopped': True}
@@ -759,9 +759,9 @@ sel
                     while self.cmd_queue.qsize() > 0:
                         if not self.command_busy:  # This is to stop multiple commands running over the top of each other.
                             self.command_busy = True
-                            plog(
-                                "Number of queued commands:  " + str(self.cmd_queue.qsize())
-                            )
+                            #plog(
+                            #    "Number of queued commands:  " + str(self.cmd_queue.qsize())
+                            #)
                             cmd = self.cmd_queue.get()
                             # This code is redundant
                             if self.config["selector"]["selector1"]["driver"] is None:
@@ -1327,7 +1327,7 @@ sel
                         self.open_and_enabled_to_observe = True
                 else:
                     plog('Shutter status not reporting correctly')
-            plog("Current Open and Enabled to Observe Status: " + str(self.open_and_enabled_to_observe))
+            #plog("Current Open and Enabled to Observe Status: " + str(self.open_and_enabled_to_observe))
 
             # Check the mount is still connected
             g_dev['mnt'].check_connect()
@@ -1384,7 +1384,7 @@ sel
             if g_dev['cam']._cooler_on():
 
                 current_camera_temperature = float(g_dev['cam']._temperature())
-                plog("Cooler is still on at " + str(current_camera_temperature))
+                #plog("Cooler is still on at " + str(current_camera_temperature))
 
                 if current_camera_temperature - g_dev['cam'].setpoint > 1.5 or current_camera_temperature - g_dev['cam'].setpoint < -1.5:
 
@@ -1652,11 +1652,11 @@ sel
                                 # break
 
                                 #tt = time.time()
-                                plog("attempting aws@  ", tt)
+                               # plog("attempting aws@  ", tt)
                                 req_resp = reqs.post(aws_resp["url"], data=aws_resp["fields"], files=files)
-                                plog("did aws", req_resp)
-                                plog(f"--> To AWS --> {str(filepath)}")
-                                plog('*.fz transfer took:  ', round(time.time() - tt, 1), ' sec.')
+                                #plog("did aws", req_resp)
+                               # plog(f"--> To AWS --> {str(filepath)}")
+                                #plog('*.fz transfer took:  ', round(time.time() - tt, 1), ' sec.')
                                 self.aws_queue.task_done()
                                 one_at_a_time = 0
                                 # os.remove(filepath)
@@ -1991,19 +1991,19 @@ sel
                         # Resizing the array to an appropriate shape for the small jpg
                         iy, ix = final_image.size
                         if (
-                            self.config["camera"][self.name]["settings"]["crop_preview"]
+                            self.config["camera"][g_dev['cam'].name]["settings"]["crop_preview"]
                             == True
                         ):
-                            yb = self.config["camera"][self.name]["settings"][
+                            yb = self.config["camera"][g_dev['cam'].name]["settings"][
                                 "crop_preview_ybottom"
                             ]
-                            yt = self.config["camera"][self.name]["settings"][
+                            yt = self.config["camera"][g_dev['cam'].name]["settings"][
                                 "crop_preview_ytop"
                             ]
-                            xl = self.config["camera"][self.name]["settings"][
+                            xl = self.config["camera"][g_dev['cam'].name]["settings"][
                                 "crop_preview_xleft"
                             ]
-                            xr = self.config["camera"][self.name]["settings"][
+                            xr = self.config["camera"][g_dev['cam'].name]["settings"][
                                 "crop_preview_xright"
                             ]
                             #hdusmalldata = hdusmalldata[yb:-yt, xl:-xr]
@@ -2141,7 +2141,7 @@ sel
                             "there was an issue saving the preview jpg. Pushing on though"
                         )
 
-                    plog("Main JPEG time to complete: "+str(time.time() - osc_jpeg_timer_start))
+                    plog("JPEG constructed and sent: " +str(time.time() - osc_jpeg_timer_start)+ "s")
                 self.mainjpeg_queue.task_done()
                 # one_at_a_time=0
             else:
@@ -2266,7 +2266,7 @@ sel
 
                         if crop_width > 0 or crop_height > 0:
                             hdufocusdata = hdufocusdata[crop_width:-crop_width, crop_height:-crop_height]
-                            plog("Focus image cropped to " + str(hdufocusdata.shape))
+                            #plog("Focus image cropped to " + str(hdufocusdata.shape))
 
                     # focdate=time.time()
                     binfocus = 1
@@ -2567,11 +2567,11 @@ sel
                                 # Then it triggers an autofocus.
                                 g_dev["foc"].focus_tracker.pop(0)
                                 g_dev["foc"].focus_tracker.append(round(rfr, 3))
-                                plog("Last ten FWHM: " + str(g_dev["foc"].focus_tracker) + " Median: " + str(np.nanmedian(g_dev["foc"].focus_tracker)))
+                                plog("Last ten FWHM: " + str(g_dev["foc"].focus_tracker) + " Median: " + str(np.nanmedian(g_dev["foc"].focus_tracker)) + " Last Solved: " + "Last solved focus FWHM: " + str(g_dev["foc"].last_focus_fwhm))
                                 #plog()
                                 #plog("Median last ten FWHM")
                                 #plog(np.nanmedian(g_dev["foc"].focus_tracker))
-                                plog("Last solved focus FWHM: " + str(g_dev["foc"].last_focus_fwhm))
+                                #plog("Last solved focus FWHM: " + str(g_dev["foc"].last_focus_fwhm))
                                 #plog(g_dev["foc"].last_focus_fwhm)
 
                                 # If there hasn't been a focus yet, then it can't check it,
@@ -2778,7 +2778,7 @@ sel
                     # breakpoint()
                     if crop_width > 0 or crop_height > 0:
                         hdufocusdata = hdufocusdata[crop_width:-crop_width, crop_height:-crop_height]
-                    plog("Platesolve image cropped to " + str(hdufocusdata.shape))
+                    #plog("Platesolve image cropped to " + str(hdufocusdata.shape))
 
                     binfocus = 1
                     #if self.config["camera"][g_dev['cam'].name]["settings"]["is_osc"]:
@@ -2925,11 +2925,8 @@ sel
                                 err_dec = target_dec - solved_dec
                                 solved_arcsecperpixel = solve["arcsec_per_pixel"]
                                 solved_rotangledegs = solve["rot_angle_degs"]
-                                plog(
-                                    " coordinate error in ra, dec:  (asec) ",
-                                    round(err_ha * 15 * 3600, 2),
-                                    round(err_dec * 3600, 2),
-                                )  # NB WER changed units 20221012
+                                plog("Deviation from plate solution in ra: " + str(round(err_ha * 15 * 3600, 2)) + " & dec: " + str (round(err_dec * 3600, 2)) + " asec")
+
                                 # breakpoint()
                                 # Reset Solve timers
                                 g_dev['obs'].last_solve_time = datetime.datetime.now()
@@ -3013,7 +3010,7 @@ sel
                                         #plog ("I am nudging the telescope slightly!")
                                         #g_dev['mnt'].mount.SlewToCoordinatesAsync(pointing_ra + err_ha, pointing_dec + err_dec)
                                         # wait_for_slew()
-                                        plog("Platesolve is requesting to move back on target!")
+                                        #plog("Platesolve is requesting to move back on target!")
                                         self.pointing_correction_requested_by_platesolve_thread = True
                                         self.pointing_correction_request_time = time.time()
                                         self.pointing_correction_request_ra = pointing_ra + err_ha
@@ -3481,7 +3478,7 @@ sel
                         except:
                             plog("Non-fatal connection glitch for a file posted.")
                             time.sleep(5)
-                    plog(f"\n--> To AWS --> {str(filepath)}")
+                    #plog(f"\n--> To AWS --> {str(filepath)}")
 
                 # if (
                 #     filename[-3:] == "jpg"
@@ -4138,19 +4135,19 @@ sel
                             # Resizing the array to an appropriate shape for the jpg and the small fits
                             iy, ix = final_image.size
                             if (
-                                self.config["camera"][self.name]["settings"]["crop_preview"]
+                                self.config["camera"][g_dev['cam'].name]["settings"]["crop_preview"]
                                 == True
                             ):
-                                yb = self.config["camera"][self.name]["settings"][
+                                yb = self.config["camera"][g_dev['cam'].name]["settings"][
                                     "crop_preview_ybottom"
                                 ]
-                                yt = self.config["camera"][self.name]["settings"][
+                                yt = self.config["camera"][g_dev['cam'].name]["settings"][
                                     "crop_preview_ytop"
                                 ]
-                                xl = self.config["camera"][self.name]["settings"][
+                                xl = self.config["camera"][g_dev['cam'].name]["settings"][
                                     "crop_preview_xleft"
                                 ]
-                                xr = self.config["camera"][self.name]["settings"][
+                                xr = self.config["camera"][g_dev['cam'].name]["settings"][
                                     "crop_preview_xright"
                                 ]
                                 #hdusmalldata = hdusmalldata[yb:-yt, xl:-xr]
@@ -4218,7 +4215,8 @@ sel
         if g_dev['obs'].pointing_correction_requested_by_platesolve_thread:
             g_dev['obs'].pointing_correction_requested_by_platesolve_thread = False
             if g_dev['obs'].pointing_correction_request_time > g_dev['obs'].time_of_last_slew:  # Check it hasn't slewed since request
-                plog("I am nudging the telescope slightly at the request of platesolve!")
+                plog("Re-centering Telescope Slightly.")
+                self.send_to_user("Re-centering Telescope Slightly.")
                 g_dev['mnt'].mount.SlewToCoordinatesAsync(
                     g_dev['obs'].pointing_correction_request_ra, g_dev['obs'].pointing_correction_request_dec)
                 g_dev['obs'].time_of_last_slew = time.time()
