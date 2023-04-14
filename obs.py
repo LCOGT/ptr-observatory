@@ -740,9 +740,9 @@ sel
 
                                     self.cmd_queue.put(cmd)  # SAVE THE COMMAND FOR LATER
                                     g_dev["obs"].stop_all_activity = False
-                                    plog(
-                                        "Queueing up a new command... Hint:  " + cmd["action"]
-                                    )
+                                    #plog(
+                                    #    "Queueing up a new command... Hint:  " + cmd["action"]
+                                    #)
 
                             if cancel_check:
                                 result = {'stopped': True}
@@ -759,9 +759,9 @@ sel
                     while self.cmd_queue.qsize() > 0:
                         if not self.command_busy:  # This is to stop multiple commands running over the top of each other.
                             self.command_busy = True
-                            plog(
-                                "Number of queued commands:  " + str(self.cmd_queue.qsize())
-                            )
+                            #plog(
+                            #    "Number of queued commands:  " + str(self.cmd_queue.qsize())
+                            #)
                             cmd = self.cmd_queue.get()
                             # This code is redundant
                             if self.config["selector"]["selector1"]["driver"] is None:
@@ -2141,7 +2141,7 @@ sel
                             "there was an issue saving the preview jpg. Pushing on though"
                         )
 
-                    plog("Main JPEG time to complete: "+str(time.time() - osc_jpeg_timer_start))
+                    plog("JPEG constructed and sent: " +str(time.time() - osc_jpeg_timer_start)+ "s")
                 self.mainjpeg_queue.task_done()
                 # one_at_a_time=0
             else:
@@ -2567,11 +2567,11 @@ sel
                                 # Then it triggers an autofocus.
                                 g_dev["foc"].focus_tracker.pop(0)
                                 g_dev["foc"].focus_tracker.append(round(rfr, 3))
-                                plog("Last ten FWHM: " + str(g_dev["foc"].focus_tracker) + " Median: " + str(np.nanmedian(g_dev["foc"].focus_tracker)))
+                                plog("Last ten FWHM: " + str(g_dev["foc"].focus_tracker) + " Median: " + str(np.nanmedian(g_dev["foc"].focus_tracker)) + " Last Solved: " + "Last solved focus FWHM: " + str(g_dev["foc"].last_focus_fwhm))
                                 #plog()
                                 #plog("Median last ten FWHM")
                                 #plog(np.nanmedian(g_dev["foc"].focus_tracker))
-                                plog("Last solved focus FWHM: " + str(g_dev["foc"].last_focus_fwhm))
+                                #plog("Last solved focus FWHM: " + str(g_dev["foc"].last_focus_fwhm))
                                 #plog(g_dev["foc"].last_focus_fwhm)
 
                                 # If there hasn't been a focus yet, then it can't check it,
@@ -2925,11 +2925,8 @@ sel
                                 err_dec = target_dec - solved_dec
                                 solved_arcsecperpixel = solve["arcsec_per_pixel"]
                                 solved_rotangledegs = solve["rot_angle_degs"]
-                                plog(
-                                    " coordinate error in ra, dec:  (asec) ",
-                                    round(err_ha * 15 * 3600, 2),
-                                    round(err_dec * 3600, 2),
-                                )  # NB WER changed units 20221012
+                                plog("Deviation from plate solution in ra: " + str(round(err_ha * 15 * 3600, 2)) + " & dec: " + str (round(err_dec * 3600, 2)) + " asec")
+
                                 # breakpoint()
                                 # Reset Solve timers
                                 g_dev['obs'].last_solve_time = datetime.datetime.now()
@@ -3013,7 +3010,7 @@ sel
                                         #plog ("I am nudging the telescope slightly!")
                                         #g_dev['mnt'].mount.SlewToCoordinatesAsync(pointing_ra + err_ha, pointing_dec + err_dec)
                                         # wait_for_slew()
-                                        plog("Platesolve is requesting to move back on target!")
+                                        #plog("Platesolve is requesting to move back on target!")
                                         self.pointing_correction_requested_by_platesolve_thread = True
                                         self.pointing_correction_request_time = time.time()
                                         self.pointing_correction_request_ra = pointing_ra + err_ha
@@ -4218,7 +4215,8 @@ sel
         if g_dev['obs'].pointing_correction_requested_by_platesolve_thread:
             g_dev['obs'].pointing_correction_requested_by_platesolve_thread = False
             if g_dev['obs'].pointing_correction_request_time > g_dev['obs'].time_of_last_slew:  # Check it hasn't slewed since request
-                plog("I am nudging the telescope slightly at the request of platesolve!")
+                plog("Re-centering Telescope Slightly.")
+                self.send_to_user("Re-centering Telescope Slightly.")
                 g_dev['mnt'].mount.SlewToCoordinatesAsync(
                     g_dev['obs'].pointing_correction_request_ra, g_dev['obs'].pointing_correction_request_dec)
                 g_dev['obs'].time_of_last_slew = time.time()

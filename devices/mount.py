@@ -1758,10 +1758,10 @@ class Mount:
         except:
             init_ra = 0.0
             init_dec =0.0
-        plog("initial:  ", init_ra, init_dec)
+        #plog("initial:  ", init_ra, init_dec)
         mnt_shelf['flip_ra_cal_offset'] = init_ra + err_ha    #NB NB NB maybe best to reverse signs here??
         mnt_shelf['flip_dec_cal_offset'] = init_dec + err_dec
-        plog("final:  ", mnt_shelf['flip_ra_cal_offset'], mnt_shelf['flip_dec_cal_offset'])
+        #plog("final:  ", mnt_shelf['flip_ra_cal_offset'], mnt_shelf['flip_dec_cal_offset'])
         mnt_shelf.close()
         return
 

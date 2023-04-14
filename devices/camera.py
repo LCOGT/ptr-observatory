@@ -3623,7 +3623,8 @@ def check_platesolve_and_nudge():
     if g_dev['obs'].pointing_correction_requested_by_platesolve_thread:
         g_dev['obs'].pointing_correction_requested_by_platesolve_thread = False
         if g_dev['obs'].pointing_correction_request_time > g_dev['obs'].time_of_last_slew: # Check it hasn't slewed since request                        
-            plog ("I am nudging the telescope slightly at the request of platesolve!")                            
+            plog("Re-centering Telescope Slightly.")
+            g_dev['obs'].send_to_user("Re-centering Telescope Slightly.")                           
             g_dev['mnt'].mount.SlewToCoordinatesAsync(g_dev['obs'].pointing_correction_request_ra, g_dev['obs'].pointing_correction_request_dec)
             g_dev['obs'].time_of_last_slew = time.time()
             wait_for_slew()
