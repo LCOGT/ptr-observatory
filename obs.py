@@ -2400,7 +2400,7 @@ sel
                         sources = sep.extract(
                             focusimg, 5.0, err=bkg.globalrms, minarea=minarea
                         )
-                        plog("Actual SEP time: " + str(time.time()-actseptime))
+                        #plog("Actual SEP time: " + str(time.time()-actseptime))
 
                         #plog ("min_area: " + str(minarea))
                         sources = Table(sources)
@@ -2535,7 +2535,7 @@ sel
                             rfp = round(np.median(fwhmcalc), 3)
                             rfr = round(np.median(fwhmcalc) * pixscale, 3)
                             rfs = round(np.std(fwhmcalc) * pixscale, 3)
-                            plog("This image has a FWHM of " + str(rfr) + "+/-" + str(rfs) + " arcsecs, " + str(rfp)
+                            plog("\nImage FWHM:  " + str(rfr) + "+/-" + str(rfs) + " arcsecs, " + str(rfp)
                                  + " pixels.")
                             # breakpoint()
                             g_dev['cam'].expresult["FWHM"] = rfr
@@ -2567,12 +2567,12 @@ sel
                                 # Then it triggers an autofocus.
                                 g_dev["foc"].focus_tracker.pop(0)
                                 g_dev["foc"].focus_tracker.append(round(rfr, 3))
-                                plog("Last ten FWHM : ")
-                                plog(g_dev["foc"].focus_tracker)
-                                plog("Median last ten FWHM")
-                                plog(np.nanmedian(g_dev["foc"].focus_tracker))
-                                plog("Last solved focus FWHM")
-                                plog(g_dev["foc"].last_focus_fwhm)
+                                plog("Last ten FWHM: " + str(g_dev["foc"].focus_tracker) + " Median: " + str(np.nanmedian(g_dev["foc"].focus_tracker)))
+                                #plog()
+                                #plog("Median last ten FWHM")
+                                #plog(np.nanmedian(g_dev["foc"].focus_tracker))
+                                plog("Last solved focus FWHM: " + str(g_dev["foc"].last_focus_fwhm))
+                                #plog(g_dev["foc"].last_focus_fwhm)
 
                                 # If there hasn't been a focus yet, then it can't check it,
                                 # so make this image the last solved focus.
@@ -2655,7 +2655,7 @@ sel
                         rfs = np.nan
                         sepsky = np.nan
 
-                    plog("Sep time to process: " + str(time.time() - sep_timer_begin))
+                    #plog("Sep time to process: " + str(time.time() - sep_timer_begin))
 
                 
                 
@@ -3602,7 +3602,7 @@ sel
                         sources = sep.extract(
                             focusimg, 5.0, err=bkg.globalrms, minarea=minarea
                         )
-                        #plog ("min_area: " + str(minarea))
+                        #plog ("min_area: " + str(minarea))\
                         sources = Table(sources)
                         sources = sources[sources['flag'] < 8]
                         image_saturation_level = g_dev['cam'].config["camera"][g_dev['cam'].name]["settings"]["saturate"]
