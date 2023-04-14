@@ -2598,7 +2598,7 @@ class Sequencer:
                         except:
                             sky_lux = None
         
-                        plog ("sky lux " + str(sky_lux))
+                        #plog ("sky lux " + str(sky_lux))
         
                         # MF SHIFTING EXPOSURE TIME CALCULATOR EQUATION TO BE MORE GENERAL FOR ALL TELESCOPES
                         # This bit here estimates the initial exposure time for a telescope given the skylux
@@ -2649,7 +2649,7 @@ class Sequencer:
                              #break
                         elif evening and exp_time < min_exposure:   #NB it is too bright, should consider a delay here.
                          #**************THIS SHOUD BE A WHILE LOOP! WAITING FOR THE SKY TO GET DARK AND EXP TIME TO BE LONGER********************
-                             plog("Too bright, waiting 60 seconds. Estimated Exposure time is " + str(exp_time))
+                             plog("Too bright for current filter, waiting 60s. Est. Exptime: " + str(exp_time))
                              #g_dev['obs'].send_to_user('Delay 60 seconds to let it get darker.', p_level='INFO')
                              self.estimated_first_flat_exposure = False
                              if time.time() >= self.time_of_next_slew:
@@ -2658,7 +2658,7 @@ class Sequencer:
                              self.next_flat_observe = time.time() + 60
                         elif morn and exp_time > max_exposure :   #NB it is too bright, should consider a delay here.
                           #**************THIS SHOUD BE A WHILE LOOP! WAITING FOR THE SKY TO GET DARK AND EXP TIME TO BE LONGER********************
-                             plog("Too dim, waiting 60 seconds. Estimated Exposure time is " + str(exp_time))
+                             plog("Too dim for current filter, waiting 60s Est. Exptime:  " + str(exp_time))
                              #g_dev['obs'].send_to_user('Delay 60 seconds to let it get lighterer.', p_level='INFO')
                              self.estimated_first_flat_exposure = False
                              if time.time() >= self.time_of_next_slew:
@@ -2684,7 +2684,7 @@ class Sequencer:
                                 return
                             
                             # prior_scale = prior_scale*scale  #Only update prior scale when changing filters
-                            plog("Sky flat estimated exposure time: " + str(exp_time) + ", Scale:  " +str(scale))               
+                            #plog("Sky flat estimated exposure time: " + str(exp_time) + ", Scale:  " +str(scale))               
                                             
                             req = {'time': float(exp_time),  'alias': camera_name, 'image_type': 'sky flat', 'script': 'On'}
                             
@@ -2716,7 +2716,7 @@ class Sequencer:
             
                                 bright = fred['patch']    #  Patch should be circular and 20% of Chip area. ToDo project
                                 #breakpoint()
-                                plog('Returned:  ', bright)
+                                #plog('Returned:  ', bright)
                                                                 
                             except Exception as e:
                                 plog('Failed to get a flat image: ', e)
@@ -2732,7 +2732,7 @@ class Sequencer:
                             
                             try:
                                 scale = target_flat / bright
-                                plog("New scale is:  ", scale)
+                                #plog("New scale is:  ", scale)
                             except:
                                 scale = 1.0
                                 
@@ -2750,25 +2750,25 @@ class Sequencer:
             
                             if g_dev["fil"].null_filterwheel == False:
                                 if sky_lux != None:
-                                    plog('\n\n', "Patch/Bright:  ", bright, g_dev['fil'].filter_data[filt_pointer][0], \
-                                          'New Gain value: ', round(bright/(sky_lux*collecting_area*exp_time), 3), '\n\n')
+                                    #plog('\n\n', "Patch/Bright:  ", bright, g_dev['fil'].filter_data[filt_pointer][0], \
+                                    plog(g_dev['fil'].filter_data[filt_pointer][0],' New Gain value: ', round(bright/(sky_lux*collecting_area*exp_time), 3), '\n\n')
                                 else:
-                                    plog('\n\n', "Patch/Bright:  ", bright, g_dev['fil'].filter_data[filt_pointer][0], \
-                                          'New Gain value: ', round(bright/(collecting_area*exp_time), 3), '\n\n')
+                                    #plog('\n\n', "Patch/Bright:  ", bright, g_dev['fil'].filter_data[filt_pointer][0], \
+                                    plog(g_dev['fil'].filter_data[filt_pointer][0],' New Gain value: ', round(bright/(collecting_area*exp_time), 3), '\n\n')
                             else:
                                 if sky_lux != None:
-                                    plog('\n\n', "Patch/Bright:  ", bright, \
+                                    #plog('\n\n', "Patch/Bright:  ", bright, \
             
-                                         'New Gain value: ', round(bright/(sky_lux*collecting_area*exp_time), 3), '\n\n')
+                                    plog('New Gain value: ', round(bright/(sky_lux*collecting_area*exp_time), 3), '\n\n')
                                 else:
-                                    plog('\n\n', "Patch/Bright:  ", bright,  \
-                                          'New Gain value: ', round(bright/(collecting_area*exp_time), 3), '\n\n')
+                                    #plog('\n\n', "Patch/Bright:  ", bright,  \
+                                    plog('New Gain value: ', round(bright/(collecting_area*exp_time), 3), '\n\n')
             
 
                             acquired_count += 1
                             if acquired_count == flat_count:
                                 pop_list.pop(0)
-                                plog("SCALE USED *************************:  ", scale)
+                                #plog("SCALE USED *************************:  ", scale)
                                 #prior_scale = scale     #Here is where we pre-scale the next filter. TEMPORARILLY TAKE THIS OUT
                                 scale = 1
             

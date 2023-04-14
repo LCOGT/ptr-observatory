@@ -1469,7 +1469,7 @@ class Camera:
 
 
         opt = optional_params
-        plog ("optional params :", opt)
+        #plog ("optional params :", opt)
         self.hint = optional_params.get("hint", "")
         self.script = required_params.get("script", "None")
         
@@ -1875,10 +1875,10 @@ class Camera:
         bin_x=1
     ):
         plog(
-            "Finish exposure Entered:  " + str(exposure_time) + "sec.;   # of ",
-            frame_type,
-            "to go: ",
-            counter,
+            "Exposure Started:  " + str(exposure_time) + "s ",
+            frame_type#,
+            #"to go: ",
+            #counter,
         )
         #g_dev["obs"].send_to_user(            "Insert #3 of 5 exposure of object type X here"        )
         
@@ -2104,7 +2104,7 @@ class Camera:
                 self.t4p5 = time.time()
 
                 
-                plog("READOUT READOUT READOUT:  ", round(self.t4p5-self.t4p4, 1))
+                #plog("READOUT READOUT READOUT:  ", round(self.t4p5-self.t4p4, 1))
 
                 if frame_type in ["bias", "dark"] or frame_type[-4:] == ['flat']:
                     plog("Median of full-image area bias, dark or flat:  ", np.median(self.img))

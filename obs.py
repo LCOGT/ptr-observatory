@@ -1164,16 +1164,17 @@ sel
             # Opening and Shutting should be done more glamorously through the
             # sequencer, but if all else fails, this routine should save
             # the observatory from rain, wasps and acts of god.
-            try:
-                plog("Roof Status: " + str(g_dev['enc'].status['shutter_status']))
-            except:
-                plog("Wema is probably not working.")
+            
+            #try:
+            #    plog("Roof Status: " + str(g_dev['enc'].status['shutter_status']))
+            #except:
+            #    plog("Wema is probably not working.")
 
             # Report on weather report status:
-            try:
-                plog("Weather Report Acceptable to Open: " + str(g_dev['seq'].weather_report_is_acceptable_to_observe))
-            except:
-                plog("Enc status not reporting, Wema may be OTL.")
+            #try:
+            #    plog("Weather Report Acceptable to Open: " + str(g_dev['seq'].weather_report_is_acceptable_to_observe))
+            #except:
+            #    plog("Enc status not reporting, Wema may be OTL.")
 
             # Roof Checks only if not in Manual mode and not debug mode
             if g_dev['enc'].mode != 'Manual' or not self.debug_flag:
@@ -1392,7 +1393,7 @@ sel
                     #print (current_camera_temperature - g_dev['cam'].setpoint)
 
                     self.camera_temperature_in_range_for_calibrations = False
-                    plog("Temperature out of range to undertake calibrations")
+                    #plog("Temperature out of range to undertake calibrations")
                 else:
                     self.camera_temperature_in_range_for_calibrations = True
 
@@ -1423,7 +1424,7 @@ sel
                 # If it isn't overheating check that it is at the correct temperature
                 if self.camera_overheat_safety_warm_on:
 
-                    print(time.time() - self.camera_overheat_safety_timer)
+                    plog(time.time() - self.camera_overheat_safety_timer)
                     if (time.time() - self.camera_overheat_safety_timer) > 1201:
                         print("Camera OverHeating Safety Warm Cycle Complete. Resetting to normal temperature.")
                         g_dev['cam']._set_setpoint(g_dev['cam'].setpoint)
@@ -1434,10 +1435,10 @@ sel
                         print("Camera Overheating Safety Warm Cycle on.")
 
                 elif (float(current_camera_temperature) - g_dev['cam'].current_setpoint) > (2 * g_dev['cam'].day_warm_degrees):
-                    print("Found cooler on, but warm.")
-                    print("Keeping it slightly warm ( " + str(2 * g_dev['cam'].day_warm_degrees) +
+                    plog("Found cooler on, but warm.")
+                    plog("Keeping it slightly warm ( " + str(2 * g_dev['cam'].day_warm_degrees) +
                           " degrees warmer ) for about 20 minutes just in case the camera overheated.")
-                    print("Then will reset to normal.")
+                    plog("Then will reset to normal.")
                     self.camera_overheat_safety_warm_on = True
                     self.camera_overheat_safety_timer = time.time()
                     #print (float(g_dev['cam'].setpoint +20.0))
@@ -1507,8 +1508,8 @@ sel
             if test_connect():
                 self.time_of_last_live_net_connection = time.time()
 
-            plog("Last live connection to Google was " + str(time.time() -
-                                                             self.time_of_last_live_net_connection) + " seconds ago.")
+            #plog("Last live connection to Google was " + str(time.time() -
+            #                                                 self.time_of_last_live_net_connection) + " seconds ago.")
             if (time.time() - self.time_of_last_live_net_connection) > 600:
                 plog("Warning, last live net connection was over ten minutes ago")
             if (time.time() - self.time_of_last_live_net_connection) > 1200:
@@ -1539,13 +1540,13 @@ sel
                      str((g_dev['seq'].enclosure_next_open_time - time.time()) / 60))
 
             # Report on when the observatory might close up if it intends to
-            if g_dev['seq'].weather_report_close_during_evening == True:
-                plog("Observatory closing early in " +
-                     str((g_dev['seq'].weather_report_close_during_evening_time - ephem.now()) * 24) + " hours due to weather.")
+            #if g_dev['seq'].weather_report_close_during_evening == True:
+            #    plog("Observatory closing early in " +
+            #         str((g_dev['seq'].weather_report_close_during_evening_time - ephem.now()) * 24) + " hours due to weather.")
 
-            if g_dev['seq'].weather_report_wait_until_open == True:
-                plog("Observatory opening in " +
-                     str((g_dev['seq'].weather_report_wait_until_open_time - ephem.now()) * 24) + " hours due to poor weather.")
+            #if g_dev['seq'].weather_report_wait_until_open == True:
+            #    plog("Observatory opening in " +
+            #         str((g_dev['seq'].weather_report_wait_until_open_time - ephem.now()) * 24) + " hours due to poor weather.")
 
                 # breakpoint()
                 #plog ("Time Now")
@@ -1623,7 +1624,7 @@ sel
                                     #plog ("attempting ingest to aws@  ", tt)
                                     upload_file_and_ingest_to_archive(fileobj)
                                     #plog ("did ingester")
-                                    plog(f"--> To PTR ARCHIVE --> {str(filepath)}")
+                                    #plog(f"--> To PTR ARCHIVE --> {str(filepath)}")
                                     #plog('*.fz ingestion took:  ', round(time.time() - tt, 1), ' sec.')
                                     self.aws_queue.task_done()
                                     # os.remove(filepath)
@@ -1675,7 +1676,7 @@ sel
                                 "POST", "/upload/", {"object_name": filename})
                             reqs.post(aws_resp["url"], data=aws_resp["fields"], files=files)
                             # plog(resullll)
-                            plog(f"--> To AWS --> {str(filepath)}")
+                            #plog(f"--> To AWS --> {str(filepath)}")
                             self.aws_queue.task_done()
                             # os.remove(filepath)
 
@@ -1687,7 +1688,7 @@ sel
                 one_at_a_time = 0
 
                 # Don't remove local calibrations after uploading but remove the others
-                print(filepath)
+                #print(filepath)
                 if ('calibmasters' not in filepath):
                     try:
                         os.remove(filepath)
@@ -2399,7 +2400,7 @@ sel
                         sources = sep.extract(
                             focusimg, 5.0, err=bkg.globalrms, minarea=minarea
                         )
-                        plog("Actual SEP time: " + str(time.time()-actseptime))
+                        #plog("Actual SEP time: " + str(time.time()-actseptime))
 
                         #plog ("min_area: " + str(minarea))
                         sources = Table(sources)
@@ -2534,7 +2535,7 @@ sel
                             rfp = round(np.median(fwhmcalc), 3)
                             rfr = round(np.median(fwhmcalc) * pixscale, 3)
                             rfs = round(np.std(fwhmcalc) * pixscale, 3)
-                            plog("This image has a FWHM of " + str(rfr) + "+/-" + str(rfs) + " arcsecs, " + str(rfp)
+                            plog("\nImage FWHM:  " + str(rfr) + "+/-" + str(rfs) + " arcsecs, " + str(rfp)
                                  + " pixels.")
                             # breakpoint()
                             g_dev['cam'].expresult["FWHM"] = rfr
@@ -2566,12 +2567,12 @@ sel
                                 # Then it triggers an autofocus.
                                 g_dev["foc"].focus_tracker.pop(0)
                                 g_dev["foc"].focus_tracker.append(round(rfr, 3))
-                                plog("Last ten FWHM : ")
-                                plog(g_dev["foc"].focus_tracker)
-                                plog("Median last ten FWHM")
-                                plog(np.nanmedian(g_dev["foc"].focus_tracker))
-                                plog("Last solved focus FWHM")
-                                plog(g_dev["foc"].last_focus_fwhm)
+                                plog("Last ten FWHM: " + str(g_dev["foc"].focus_tracker) + " Median: " + str(np.nanmedian(g_dev["foc"].focus_tracker)))
+                                #plog()
+                                #plog("Median last ten FWHM")
+                                #plog(np.nanmedian(g_dev["foc"].focus_tracker))
+                                plog("Last solved focus FWHM: " + str(g_dev["foc"].last_focus_fwhm))
+                                #plog(g_dev["foc"].last_focus_fwhm)
 
                                 # If there hasn't been a focus yet, then it can't check it,
                                 # so make this image the last solved focus.
@@ -2654,7 +2655,7 @@ sel
                         rfs = np.nan
                         sepsky = np.nan
 
-                    plog("Sep time to process: " + str(time.time() - sep_timer_begin))
+                    #plog("Sep time to process: " + str(time.time() - sep_timer_begin))
 
                 
                 
@@ -3478,7 +3479,7 @@ sel
 
                             break
                         except:
-                            plog("Connection glitch for the request post, waiting a moment and trying again")
+                            plog("Non-fatal connection glitch for a file posted.")
                             time.sleep(5)
                     plog(f"\n--> To AWS --> {str(filepath)}")
 
@@ -3601,7 +3602,7 @@ sel
                         sources = sep.extract(
                             focusimg, 5.0, err=bkg.globalrms, minarea=minarea
                         )
-                        #plog ("min_area: " + str(minarea))
+                        #plog ("min_area: " + str(minarea))\
                         sources = Table(sources)
                         sources = sources[sources['flag'] < 8]
                         image_saturation_level = g_dev['cam'].config["camera"][g_dev['cam'].name]["settings"]["saturate"]
