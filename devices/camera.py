@@ -2156,6 +2156,7 @@ class Camera:
                         return self.expresult  # signals to flat routine image was rejected, prompt return
                     else:
                         plog('Good flat value! :  ', bi_mean)
+                        g_dev["obs"].send_to_user('Good flat value! :  ', bi_mean)
                     
                 if not g_dev["cam"].exposure_busy:
                     self.expresult = {"stopped": True}

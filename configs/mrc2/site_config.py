@@ -75,7 +75,7 @@ site_config = {
 
     'debug_site_mode': False,
     
-    'debug_mode' : True,
+    'debug_mode' : False,
     'admin_owner_commands_only': False,
     'debug_duration_sec': 1800,
     'owner':  ['google-oauth2|112401903840371673242'],  # Wayne
