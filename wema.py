@@ -96,9 +96,9 @@ class WxEncAgent:
         self.config = config
         g_dev["obs"] = self
         self.site_name= site_name
-        self.debug_flag = self.config['site_debug_flag']
+        self.debug_flag = self.config['debug_site_mode']
         if self.debug_flag:
-            self.debug_lapse_time = time.time() + self.config['site_debug_duration_sec']
+            self.debug_lapse_time = time.time() + self.config['debug_duration_sec']
             g_dev['debug'] = True
             #g_dev['obs'].open_and_enabled_to_observe = True
         else:
@@ -121,7 +121,7 @@ class WxEncAgent:
             g_dev["wema_write_share_path"] = self.site_path  # Just to be safe.
             self.wema_path = g_dev["wema_write_share_path"]
 
-        if self.config["site_has_specific_code"]:
+        if self.config["site_is_specific"]:
             self.site_is_specific = True
             #Fill out the specificity here
         else:
@@ -141,9 +141,9 @@ class WxEncAgent:
         self.wema_pid = os.getpid()
         print("WEMA_PID:  ", self.wema_pid)
 
-        if config["site_redis_ip"] is not None:
+        if config["redis_ip"] is not None:
             self.redis_server = redis.StrictRedis(
-                host=config["site_redis_ip"], port=6379, db=0, decode_responses=True
+                host=config["redis_ip"], port=6379, db=0, decode_responses=True
             )
             self.redis_wx_enabled = True
             # Enable wide easy access to this object with redis.

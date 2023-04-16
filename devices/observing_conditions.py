@@ -81,8 +81,8 @@ class ObservingConditions:
         self.prior_status = None
         self.prior_status_2 = None
         self.wmd_fail_counter = 0
-        self.temperature = self.config["site_reference_ambient"]  # Index needs
-        self.pressure = self.config["site_reference_pressure"]  # to be months.
+        self.temperature = self.config["reference_ambient"]  # Index needs
+        self.pressure = self.config["reference_pressure"]  # to be months.
         self.unihedron_connected = (
             True  # NB NB NB His needs improving, driving from config
         )
@@ -96,7 +96,7 @@ class ObservingConditions:
         else:
             self.is_wema = False
 
-        if self.config["site_has_specific_code"]:
+        if self.config["site_is_specific"]:
 
             self.obsid_is_specific = True
 
