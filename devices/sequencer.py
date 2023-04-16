@@ -2709,13 +2709,17 @@ class Sequencer:
                             try:
                                 self.time_of_next_slew = time.time()
                                 fred = g_dev['cam'].expose_command(req, opt, no_AWS=True, do_sep = False,skip_daytime_check=True)
-                                if self.stop_script_called:
-                                    g_dev["obs"].send_to_user("Cancelling out of calibration script as stop script has been called.")  
-                                    return
-                                if not g_dev['obs'].open_and_enabled_to_observe:
-                                    g_dev["obs"].send_to_user("Cancelling out of activity as no longer open and enabled to observe.")  
-                                    return
-            
+                                
+                                
+                                try:
+                                    if self.stop_script_called:
+                                        g_dev["obs"].send_to_user("Cancelling out of calibration script as stop script has been called.")  
+                                        return
+                                    if not g_dev['obs'].open_and_enabled_to_observe:
+                                        g_dev["obs"].send_to_user("Cancelling out of activity as no longer open and enabled to observe.")  
+                                        return
+                                except Exception as e:
+                                    plog ('something funny in stop_script still',e)
                                 bright = fred['patch']    #  Patch should be circular and 20% of Chip area. ToDo project
                                 #breakpoint()
                                 #plog('Returned:  ', bright)
@@ -2723,7 +2727,7 @@ class Sequencer:
                             except Exception as e:
                                 plog('Failed to get a flat image: ', e)
                                 plog(traceback.format_exc())
-                                plog("*****NO result returned*****  Will need to restart Camera")  #NB NB  NB this is drastic action needed.
+                                #plog("*****NO result returned*****  Will need to restart Camera")  #NB NB  NB this is drastic action needed.
                                 
                                 #breakpoint()
                                 g_dev['obs'].update()
