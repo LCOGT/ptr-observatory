@@ -19,9 +19,10 @@ import json
 from astropy.io import fits, ascii
 from astropy.time import Time
 from astropy.utils.data import check_download_cache
-from astropy.coordinates import SkyCoord
+from astropy.coordinates import SkyCoord, AltAz
 #from astropy.table import Table
 from astropy.nddata import block_reduce
+from astropy import units as u
 import numpy.ma as ma
 import glob
 import numpy as np
@@ -34,7 +35,7 @@ import win32com.client
 #from planewave import platesolve
 
 from scipy import stats
-
+import math
 #import colour
 #import queue
 import threading
@@ -1632,7 +1633,8 @@ class Camera:
             plog("Camera filter setup:  ", e)
             plog(traceback.format_exc())      
 
-        this_exposure_filter = self.current.filter
+        this_exposure_filter = self.current_filter
+        exposure_filter_offset = g_dev['fil'].filter_offset
 
         self.len_x = self.camera_x_size // bin_x
         self.len_y = self.camera_y_size // bin_y  # Unit is binned pixels.
@@ -1814,6 +1816,37 @@ class Camera:
                             check_platesolve_and_nudge()   
                             g_dev['obs'].time_of_last_exposure = time.time()
                             g_dev['obs'].update()
+                            start_time_of_observation=time.time()
+                            ra_at_time_of_exposure = g_dev["mnt"].current_icrs_ra
+                            dec_at_time_of_exposure = g_dev["mnt"].current_icrs_dec
+                            observer_user_name = self.user_name
+                            observer_user_id = self.user_id
+                            
+                            # Calculate current airmass now
+                            try:
+                                rd = SkyCoord(ra=ra_at_time_of_exposure*u.hour, dec=dec_at_time_of_exposure*u.deg)            
+                            except:
+                                icrs_ra, icrs_dec = g_dev['mnt'].get_mount_coordinates()
+                                rd = SkyCoord(ra=icrs_ra*u.hour, dec=icrs_dec*u.deg)
+                            aa = AltAz (location=g_dev['mnt'].site_coordinates, obstime=Time.now())
+                            rd = rd.transform_to(aa)
+                            alt = float(rd.alt/u.deg)
+                            az = float(rd.az/u.deg)
+                            zen = round((90 - alt), 3)
+                            if zen > 90:
+                                zen = 90.0
+                            if zen < 0.1:    #This can blow up when zen <=0!
+                                new_z = 0.1
+                            else:
+                                new_z = zen
+                            sec_z = 1/math.cos(math.radians(new_z))
+                            airmass = abs(round(sec_z - 0.0018167*(sec_z - 1) - 0.002875*((sec_z - 1)**2) - 0.0008083*((sec_z - 1)**3),3))
+                            if airmass > 10: airmass = 10
+                            airmass = round(airmass, 4)
+                            
+                            airmass_of_observation = airmass
+                            azimuth_of_observation = az
+                            altitude_of_observation = alt
                             self._expose(exposure_time, bias_dark_or_light_type_frame)
                             
                             
@@ -1846,7 +1879,16 @@ class Camera:
                             sskcounter=sskcounter,
                             Nsmartstack=Nsmartstack,
                             bin_x=bin_x,
-                            this_exposure_filter=this_exposure_filter
+                            this_exposure_filter=this_exposure_filter,
+                            start_time_of_observation=start_time_of_observation,
+                            exposure_filter_offset=exposure_filter_offset,
+                            ra_at_time_of_exposure=ra_at_time_of_exposure,
+                            dec_at_time_of_exposure=dec_at_time_of_exposure,
+                            observer_user_name=observer_user_name,
+                            observer_user_id=observer_user_id,
+                            airmass_of_observation=airmass_of_observation,
+                            azimuth_of_observation = azimuth_of_observation,
+                            altitude_of_observation = altitude_of_observation,
                         )  # NB all these parameters are crazy!
                         self.exposure_busy = False
                         #self.t10 = time.time()
@@ -1893,7 +1935,17 @@ class Camera:
         sskcounter=0,
         Nsmartstack=1,
         bin_x=1,
-        this_exposure_filter=None
+        this_exposure_filter=None,
+        start_time_of_observation=None,
+        exposure_filter_offset=None,
+        ra_at_time_of_exposure=None,
+        dec_at_time_of_exposure=None,
+        observer_user_name=None,
+        observer_user_id=None,
+        airmass_of_observation=None,
+        azimuth_of_observation=None,
+        altitude_of_observation=None
+        
     ):
         plog(
             "Exposure Started:  " + str(exposure_time) + "s ",
@@ -2427,15 +2479,10 @@ class Camera:
 
                         
                     hdu.header["TIMESYS"] = ("UTC", "Time system used")
-                    hdu.header["DATE"] = (
-                        datetime.date.strftime(
-                            datetime.datetime.utcfromtimestamp(self.t2), "%Y-%m-%d"
-                        ),
-                        "Date FITS file was written",
-                    )
+                    
                     hdu.header["DATE-OBS"] = (
                         datetime.datetime.isoformat(
-                            datetime.datetime.utcfromtimestamp(self.t2)
+                            datetime.datetime.utcfromtimestamp(start_time_of_observation)
                         ),
                         "Start date and time of observation",
                     )
@@ -2444,7 +2491,7 @@ class Camera:
                         "Date at start of observing night",
                     )
                     hdu.header["MJD-OBS"] = (
-                        Time(self.t2, format="unix").mjd,
+                        Time(start_time_of_observation, format="unix").mjd,
                         "[UTC days] Modified Julian Date start date/time",
                     )  # NB NB NB Needs to be fixed, mid-exposure dates as well.
                     yesterday = datetime.datetime.now() - datetime.timedelta(1)
@@ -2452,7 +2499,7 @@ class Camera:
                         yesterday, "%Y-%m-%dT%H:%M:%S.%fZ"
                     )  # IF THIS DOESN"T WORK, subtract the extra datetime ...
                     hdu.header["JD-START"] = (
-                        Time(self.t2, format="unix").jd,
+                        Time(start_time_of_observation, format="unix").jd,
                         "[UTC days] Julian Date at start of exposure",
                     )
                     hdu.header["OBSTYPE"] = (
@@ -2467,9 +2514,9 @@ class Camera:
                         "[s] Requested exposure length",
                     )  # This is the exposure in seconds specified by the user
                     hdu.header["BUNIT"] = "adu"
-                    hdu.header["DATE-OBS"] = datetime.datetime.isoformat(
-                        datetime.datetime.utcfromtimestamp(self.t2)
-                    )
+                    # hdu.header["DATE-OBS"] = datetime.datetime.isoformat(
+                    #     datetime.datetime.utcfromtimestamp(self.t2)
+                    # )
                     hdu.header[
                         "EXPTIME"
                     ] = exposure_time  # This is the exposure in seconds specified by the user
@@ -2482,7 +2529,7 @@ class Camera:
                     )  # NB this should read from the wheel!
                     if g_dev["fil"].null_filterwheel == False:
                         try:
-                            hdu.header["FILTEROF"] = (self.current_offset, "Filter offset")
+                            hdu.header["FILTEROF"] = (exposure_filter_offset, "Filter offset")
                         except:
                             pass # sometimes the offset isn't set on the first filter of the eve
                         hdu.header["FILTRNUM"] = (
@@ -2490,7 +2537,7 @@ class Camera:
                            "An index into a DB",
                            ) 
                     else:
-                        hdu.header["FILTEROF"] = ("No Filter", "Filer offset")
+                        hdu.header["FILTEROF"] = ("No Filter", "Filter offset")
                         hdu.header["FILTRNUM"] = (
                             "No Filter",
                             "An index into a DB",
@@ -2630,8 +2677,8 @@ class Camera:
                         hdu.header["OBJSPECF"] = "no"
 
 
-                    tempRAdeg = float(g_dev["mnt"].current_icrs_ra) * 15
-                    tempDECdeg = g_dev["mnt"].current_icrs_dec
+                    tempRAdeg = float(ra_at_time_of_exposure) * 15
+                    tempDECdeg = dec_at_time_of_exposure
 
 
 
@@ -2649,15 +2696,15 @@ class Camera:
                     hdu.header["ORIGRA"] = hdu.header["RA"]
                     hdu.header["ORIGDEC"] = hdu.header["DEC"]
                     hdu.header["RAhrs"] = (
-                        g_dev["mnt"].current_icrs_ra,
+                        ra_at_time_of_exposure,
                         "[hrs] Telescope right ascension",
                     )
                     hdu.header["RA-hms"] = tempointing[0]
                     hdu.header["DEC-dms"] = tempointing[1]
 
                     hdu.header["TARG-CHK"] = (
-                        (g_dev["mnt"].current_icrs_ra * 15)
-                        + g_dev["mnt"].current_icrs_dec,
+                        (ra_at_time_of_exposure * 15)
+                        + dec_at_time_of_exposure,
                         "[deg] Sum of RA and dec",
                     )
                     hdu.header["CATNAME"] = (g_dev["mnt"].object, "Catalog object name")
@@ -2670,8 +2717,8 @@ class Camera:
                         "[dms] Catalog Dec of object",
                     )
 
-                    hdu.header["TARGRA"] = float(g_dev["mnt"].current_icrs_ra) * 15
-                    hdu.header["TARGDEC"] = g_dev["mnt"].current_icrs_dec
+                    hdu.header["TARGRA"] = float(ra_at_time_of_exposure) * 15
+                    hdu.header["TARGDEC"] = dec_at_time_of_exposure
                     try:
                         hdu.header["SID-TIME"] = (
                             self.pre_mnt[3],
@@ -2687,7 +2734,7 @@ class Camera:
 
                     try:
                         hdu.header["OBSERVER"] = (
-                            self.user_name,
+                            observer_user_name,
                             "Observer name",
                         )
                     except:
@@ -2754,19 +2801,20 @@ class Camera:
                         "[] Mount tracking dec rate",
                     )
                     hdu.header["AZIMUTH "] = (
-                        avg_mnt["azimuth"],
+                        azimuth_of_observation,
                         "[deg] Azimuth axis positions",
                     )
                     hdu.header["ALTITUDE"] = (
-                        avg_mnt["altitude"],
+                        altitude_of_observation,
                         "[deg] Altitude axis position",
                     )
-                    hdu.header["ZENITH"] = (avg_mnt["zenith_distance"], "[deg] Zenith")
+                    hdu.header["ZENITH"] = (90 - altitude_of_observation, "[deg] Zenith")
                     hdu.header["AIRMASS"] = (
-                        avg_mnt["airmass"],
+                        #avg_mnt["airmass"],
+                        airmass_of_observation,
                         "Effective mean airmass",
                     )
-                    g_dev["airmass"] = float(avg_mnt["airmass"])
+                    g_dev["airmass"] = float(airmass_of_observation)
                     hdu.header["REFRACT"] = (
                         round(g_dev["mnt"].refraction_rev, 3),
                         "asec",
@@ -2915,9 +2963,9 @@ class Camera:
                     )  # This makes little sense to fix...  NB ALL NEEDS TO COME FROM CONFIG!!
                     hdu.header["YORGSUBF"] = self.camera_start_y
                     try:
-                        hdu.header["USERNAME"] = self.user_name
+                        hdu.header["USERNAME"] = observer_user_name
                         hdu.header["USERID"] = (
-                            str(self.user_id).replace("-", "").replace("|", "")
+                            str(observer_user_id).replace("-", "").replace("|", "")
                         )
                     except:
 
@@ -2958,7 +3006,7 @@ class Camera:
                                 + "_"
                                 + str(1)
                                 + "_"
-                                + str(self.current_filter)
+                                + str(this_exposure_filter)
                             )
                     cal_name = (
                         self.config["obs_id"]
@@ -3000,7 +3048,7 @@ class Camera:
                     red_name01_lcl = (
                         red_name01[:-9]
                         + pier_string
-                        + self.current_filter
+                        + this_exposure_filter
                         + "-"
                         + red_name01[-9:]
                     )
@@ -3057,8 +3105,8 @@ class Camera:
 
                     #tempRAdeg = float(g_dev["mnt"].current_icrs_ra) * 15
                     #tempDECdeg = g_dev["mnt"].current_icrs_dec
-                    tempRAdeg = g_dev["mnt"].current_icrs_ra * 15
-                    tempDECdeg = g_dev["mnt"].current_icrs_dec
+                    tempRAdeg = ra_at_time_of_exposure * 15
+                    tempDECdeg = dec_at_time_of_exposure
                     tempointing = SkyCoord(tempRAdeg, tempDECdeg, unit='deg')
                     tempointing=tempointing.to_string("hmsdms").split(' ')
      
@@ -3073,15 +3121,15 @@ class Camera:
                     hdu.header["ORIGRA"] = hdu.header["RA"]
                     hdu.header["ORIGDEC"] = hdu.header["DEC"]
                     hdu.header["RAhrs"] = (
-                        g_dev["mnt"].current_icrs_ra,
+                        ra_at_time_of_exposure,
                         "[hrs] Telescope right ascension",
                     )
                     hdu.header["RADEG"] = tempRAdeg 
                     hdu.header["DECDEG"] = tempDECdeg
      
                     hdu.header["TARG-CHK"] = (
-                        (g_dev["mnt"].current_icrs_ra * 15)
-                        + g_dev["mnt"].current_icrs_dec,
+                        (ra_at_time_of_exposure * 15)
+                        + dec_at_time_of_exposure,
                         "[deg] Sum of RA and dec",
                     )
                     hdu.header["CATNAME"] = (g_dev["mnt"].object, "Catalog object name")

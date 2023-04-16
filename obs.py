@@ -3109,6 +3109,12 @@ sel
                     hdufocus.header = temphduheader
                     hdufocus.header["NAXIS1"] = hdufocus.data.shape[0]
                     hdufocus.header["NAXIS2"] = hdufocus.data.shape[1]
+                    hdufocus.header["DATE"] = (
+                        datetime.date.strftime(
+                            datetime.datetime.utcfromtimestamp(time.time()), "%Y-%m-%d"
+                        ),
+                        "Date FITS file was written",
+                    )
                     hdufocus.writeto(slow_process[1], overwrite=True, output_verify='silentfix')
 
                     try:
@@ -3243,6 +3249,12 @@ sel
                             hdu = fits.PrimaryHDU()
                             hdu.data = slow_process[2]
                             hdu.header = temphduheader
+                            hdu.header["DATE"] = (
+                                datetime.date.strftime(
+                                    datetime.datetime.utcfromtimestamp(time.time()), "%Y-%m-%d"
+                                ),
+                                "Date FITS file was written",
+                            )
                             hdu.writeto(
                                 slow_process[1], overwrite=True, output_verify='silentfix'
                             )  # Save full raw file locally
@@ -3277,6 +3289,13 @@ sel
                     hdufz.header[
                         "BSCALE"
                     ] = 1  # Make sure there is no integer scaling left over
+
+                    hdufz.header["DATE"] = (
+                        datetime.date.strftime(
+                            datetime.datetime.utcfromtimestamp(time.time()), "%Y-%m-%d"
+                        ),
+                        "Date FITS file was written",
+                    )
 
                     if not self.config["camera"][g_dev['cam'].name]["settings"]["is_osc"]:
 
@@ -3439,6 +3458,12 @@ sel
                             hdureduced.header = temphduheader
                             hdureduced.header["NAXIS1"] = hdureduced.data.shape[0]
                             hdureduced.header["NAXIS2"] = hdureduced.data.shape[1]
+                            hdureduced.header["DATE"] = (
+                                datetime.date.strftime(
+                                    datetime.datetime.utcfromtimestamp(time.time()), "%Y-%m-%d"
+                                ),
+                                "Date FITS file was written",
+                            )
                             hdureduced.data = hdureduced.data.astype("float32")
                             hdureduced.writeto(
                                 slow_process[1], overwrite=True, output_verify='silentfix'
