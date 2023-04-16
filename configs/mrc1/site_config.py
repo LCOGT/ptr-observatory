@@ -132,16 +132,16 @@ site_config = {
     'observing_check_period': 5,    # How many minutes between weather checks
     'enclosure_check_period': 5,    # How many minutes between enclosure checks
 
-    'auto_eve_bias_dark': True,
+    'auto_eve_bias_dark': False,
 
-    'auto_midnight_moonless_bias_dark': False,
+    'auto_midnight_moonless_bias_dark': True,
     'auto_eve_sky_flat': True,
 
     'eve_sky_flat_sunset_offset': -45.,  # 40 before Minutes  neg means before, + after.
 
     'eve_cool_down_open': -50.0,
     'auto_morn_sky_flat': True,
-    'auto_morn_bias_dark': True,
+    'auto_morn_bias_dark': False,
     're-calibrate_on_solve': True,
     'pointing_calibration_on_startup': False,  # MF I am leaving this alone.
     # This is a time, in hours, over which to bypass automated focussing (e.g. at the start of a project it will not refocus if a new project starts X hours after the last focus)

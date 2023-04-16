@@ -504,7 +504,7 @@ site_config = {
 
                 
                 #'filter_sky_sort': ['ha','o3','s2','v','pb','ip','lum']    #No diffuser based filters
-                'filter_sky_sort': ['v','ip','lum','pb']    #No diffuser based filters
+                'filter_sky_sort': ['ha','o3','s2','v','pb','ip','lum']    #No diffuser based filters
                 
 
 
