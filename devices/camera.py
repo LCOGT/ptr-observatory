@@ -1924,7 +1924,7 @@ class Camera:
                 + str(exposure_time)
                 + "s "
                 + str(frame_type)
-                + " focus exposure.",
+                + "  exposure.",
                 p_level="INFO",
             )
         else:

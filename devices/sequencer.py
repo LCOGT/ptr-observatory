@@ -2054,25 +2054,16 @@ class Sequencer:
             #g_dev['cam'].alias
             tempfrontcalib=g_dev['obs'].obs_id + '_' + g_dev['cam'].alias +'_'
             #print (tempfrontcalib)
-            
-            fits.writeto(g_dev['obs'].calib_masters_folder + tempfrontcalib + 'BIAS_master_bin1.fits', masterBias,  overwrite=True)
-            
-            
-            #with open(filepath, "rb") as fileobj:
-            #filepath=g_dev['obs'].calib_masters_folder + tempfrontcalib + 'BIAS_master_bin1.fits'
-            #filename= tempfrontcalib + 'BIAS_master_bin1.fits'
-            #with open(filepath, "rb") as fileobj:
-            #    files = {"file": (filepath, fileobj)}
-            #    
-            #    aws_resp = g_dev["obs"].api.authenticated_request("POST", "/upload/", {"object_name": filename})
-            #    g_dev["obs"].reqs.post(aws_resp["url"], data=aws_resp["fields"], files=files)
-            
-
-            #g_dev['cam'].enqueue_for_AWS(50, '',g_dev['obs'].calib_masters_folder + tempfrontcalib + 'BIAS_master_bin1.fits')
-            filepathaws=g_dev['obs'].calib_masters_folder
-            filenameaws=tempfrontcalib + 'BIAS_master_bin1.fits'
-            g_dev['cam'].enqueue_for_AWS(50, filepathaws,filenameaws)
-            
+            try:
+                fits.writeto(g_dev['obs'].calib_masters_folder + tempfrontcalib + 'BIAS_master_bin1.fits', masterBias,  overwrite=True)
+                
+                
+                filepathaws=g_dev['obs'].calib_masters_folder
+                filenameaws=tempfrontcalib + 'BIAS_master_bin1.fits'
+                g_dev['cam'].enqueue_for_AWS(50, filepathaws,filenameaws)
+            except Exception as e:
+                plog ("Could not save bias frame: ",e)
+                
             PLDrive._mmap.close()
             del PLDrive
             gc.collect()
@@ -2157,11 +2148,14 @@ class Sequencer:
     
     
             masterDark=np.asarray(finalImage).astype(np.float32)
-            fits.writeto(g_dev['obs'].calib_masters_folder + tempfrontcalib + 'DARK_master_bin1.fits', masterDark,  overwrite=True)
-            
-            filepathaws=g_dev['obs'].calib_masters_folder
-            filenameaws=tempfrontcalib + 'DARK_master_bin1.fits'
-            g_dev['cam'].enqueue_for_AWS(50, filepathaws,filenameaws)
+            try:
+                fits.writeto(g_dev['obs'].calib_masters_folder + tempfrontcalib + 'DARK_master_bin1.fits', masterDark,  overwrite=True)
+                
+                filepathaws=g_dev['obs'].calib_masters_folder
+                filenameaws=tempfrontcalib + 'DARK_master_bin1.fits'
+                g_dev['cam'].enqueue_for_AWS(50, filepathaws,filenameaws)
+            except Exception as e:
+                plog ("Could not save dark frame: ",e)
             
             #g_dev['cam'].enqueue_for_AWS(50, '',g_dev['obs'].calib_masters_folder + tempfrontcalib + 'DARK_master_bin1.fits')
             
@@ -2295,15 +2289,16 @@ class Sequencer:
                         temporaryFlat=interpolate_replace_nans(temporaryFlat, kernel)
                         temporaryFlat[temporaryFlat < 0.1] = 0.8
                         temporaryFlat[np.isnan(temporaryFlat)] = 0.8
-                        
-                        np.save(g_dev['obs'].calib_masters_folder + 'masterFlat_'+ str(filtercode) + '_bin1.npy', temporaryFlat)            
-                        
-                        fits.writeto(g_dev['obs'].calib_masters_folder + tempfrontcalib + 'masterFlat_'+ str(filtercode) + '_bin1.fits', temporaryFlat, overwrite=True)
-                        
-                        filepathaws=g_dev['obs'].calib_masters_folder
-                        filenameaws=tempfrontcalib + 'masterFlat_'+ str(filtercode) + '_bin1.fits'
-                        g_dev['cam'].enqueue_for_AWS(50, filepathaws,filenameaws)
-                        
+                        try:
+                            np.save(g_dev['obs'].calib_masters_folder + 'masterFlat_'+ str(filtercode) + '_bin1.npy', temporaryFlat)            
+                            
+                            fits.writeto(g_dev['obs'].calib_masters_folder + tempfrontcalib + 'masterFlat_'+ str(filtercode) + '_bin1.fits', temporaryFlat, overwrite=True)
+                            
+                            filepathaws=g_dev['obs'].calib_masters_folder
+                            filenameaws=tempfrontcalib + 'masterFlat_'+ str(filtercode) + '_bin1.fits'
+                            g_dev['cam'].enqueue_for_AWS(50, filepathaws,filenameaws)
+                        except Exception as e:
+                            plog ("Could not save flat frame: ",e)
                         #g_dev['cam'].enqueue_for_AWS(50, '',g_dev['obs'].calib_masters_folder + tempfrontcalib + 'masterFlat_'+ str(filtercode) + '_bin1.fits')
                         
                         PLDrive._mmap.close()

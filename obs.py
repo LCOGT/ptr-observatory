@@ -1833,7 +1833,7 @@ sel
                         #plog (np.median(hdured))
 
                         # breakpoint()
-                        osc_timer=time.time()
+                        
                         # The integer mode of an image is typically the sky value, so squish anything below that
                         #bluemode = stats.mode((hdublue.astype('int16').flatten()), keepdims=True)[0] - 25
                         #redmode = stats.mode((hdured.astype('int16').flatten()), keepdims=True)[0] - 25
