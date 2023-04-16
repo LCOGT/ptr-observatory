@@ -819,7 +819,7 @@ site_config = {
                 'min_flat_exposure': 0.0001,
                 # Realistically there should be a maximum flat_exposure that makes sure flats are efficient and aren't collecting actual stars.
                 'max_flat_exposure': 20.0,
-                'max_exposure': 180.,
+                'max_exposure': 360.,
                 'max_daytime_exposure': 0.0001,  # NB why this?
                 'can_subframe':  True,
                 'min_subframe': [128, 128],
