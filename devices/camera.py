@@ -915,7 +915,7 @@ class Camera:
         return self.camera.LinkEnabled
 
     def _theskyx_temperature(self):
-        return self.camera.Temperature
+        return self.camera.Temperature, 999.9, 999.9
 
     def _theskyx_cooler_power(self):
         return self.camera.CoolerPower
@@ -993,7 +993,7 @@ class Camera:
         return self.camera.LinkEnabled
 
     def _maxim_temperature(self):
-        return self.camera.Temperature
+        return self.camera.Temperature, 999.9, 999.9
 
     def _maxim_cooler_power(self):
         return self.camera.CoolerPower
@@ -1056,7 +1056,7 @@ class Camera:
         except:
             print ("failed at getting the CCD temperature")
             temptemp=999.9
-        return temptemp
+        return temptemp, 999.9, 999.9
 
     def _ascom_cooler_on(self):
         return (
@@ -2325,7 +2325,7 @@ class Camera:
                     #         "[C] CCD actual temperature",
                     #     )
                     # else:
-                    tempccdtemp,ccd_humidity, ccd_pressure = (g_dev['cam']._temperature())
+                    tempccdtemp, ccd_humidity, ccd_pressure = (g_dev['cam']._temperature())
                     hdu.header["CCDSTEMP"] = (
                         round(self.setpoint, 2),     #WER fixed.
                         "[C] CCD set temperature",
