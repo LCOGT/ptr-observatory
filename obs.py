@@ -99,6 +99,8 @@ reqs.mount('http://', HTTPAdapter(max_retries=retries))
 load_dotenv(".env")
 from ocs_ingester.ingester import frame_exists, upload_file_and_ingest_to_archive
 
+import ocs_ingester.exceptions
+
 def test_connect(host='http://google.com'):
     try:
         urllib.request.urlopen(host)  # Python 3.x
@@ -1634,6 +1636,10 @@ sel
 
                                     tempPTR = 1
                                     retryarchive = 11
+                                except ocs_ingester.exceptions.DoNotRetryError:
+                                    plog ("Couldn't upload to PTR archive")
+                                    plog ("Caught filespecification error properly")
+                                    plog((traceback.format_exc()))
                                 except Exception as e:
 
                                     plog("couldn't send to PTR archive for some reason")
