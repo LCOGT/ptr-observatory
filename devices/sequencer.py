@@ -3216,8 +3216,8 @@ class Sequencer:
         
 
         if spot1 is None or spot2 is None or spot3 is None or spot1 == False or spot2 == False or spot3 == False:  #New additon to stop crash when no spots
-            plog("No stars detected. Returning to original focus setting and pointing.")
-            g_dev['obs'].send_to_user("No stars detected. Returning to original focus setting and pointing.")
+            plog("Autofocus was not successful. Returning to original focus setting and pointing.")
+            g_dev['obs'].send_to_user("Autofocus was not successful. Returning to original focus setting and pointing.")
             
             g_dev['foc'].guarded_move((focus_start)*g_dev['foc'].micron_to_steps)  #NB NB 20221002 THis unit fix shoudl be in the routine. WER
             self.sequencer_hold = False   #Allow comand checks.

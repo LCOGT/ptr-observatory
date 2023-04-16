@@ -22,6 +22,7 @@ from astropy.utils.data import check_download_cache
 from astropy.coordinates import SkyCoord
 #from astropy.table import Table
 from astropy.nddata import block_reduce
+import numpy.ma as ma
 import glob
 import numpy as np
 import matplotlib.pyplot as plt   # Please do not remove this import.
@@ -32,7 +33,7 @@ import matplotlib.pyplot as plt   # Please do not remove this import.
 import win32com.client
 #from planewave import platesolve
 
-#from scipy import stats
+from scipy import stats
 
 #import colour
 #import queue
@@ -3273,15 +3274,16 @@ class Camera:
                                 hdusmallheader['SATURATE']=float(hdu.header['SATURATE']) * pow( self.native_bin,2)
                                 hdusmallheader['FULLWELL']=float(hdu.header['FULLWELL']) * pow( self.native_bin,2)
                                 hdusmallheader['MAXLIN']=float(hdu.header['MAXLIN']) * pow( self.native_bin,2)
-
+                           
                             
+
                             # Add a pedestal to the reduced data
                             # This is important for a variety of reasons
                             # Some functions don't work with arrays with negative values
                             # 2000 SHOULD be enough.
                             hdusmalldata=hdusmalldata+2000.0
                             hdusmallheader['PEDESTAL']=2000
-                            
+                            #breakpoint()
                             
                             if smartstackid == 'no':
                                 if self.config['keep_reduced_on_disk']:

@@ -2178,9 +2178,8 @@ sel
                 sep_timer_begin=time.time()
                 
                 (hdufocusdata, pixscale, readnoise, avg_foc, focus_image, im_path, text_name, hduheader, cal_path, cal_name, frame_type, focus_position) = self.sep_queue.get(block=False)
-                
-                #breakpoint()
-                # Background clip the focus image
+                howlongdoesthistake=time.time()
+                # Background clip the reduced image
                 ## Estimate Method 1: This routine tests the number of pixels to the negative side of the distribution until it hits 0 three pixels in a row. This (+3) becomes the lower threshold.
                 imageMode = (float(stats.mode(hdufocusdata.flatten(), nan_policy='omit', keepdims=False)[0]))
                 
@@ -2203,9 +2202,10 @@ sel
                 hdufocusdata= masker.filled(imageMode)
                 #print ("Minimum Value in Array")
                 #print (zeroValue)
-    
+                plog( time.time() - howlongdoesthistake)
                 # Report number of nans in array
                 #print ("Number of nan pixels in image array: " + str(numpy.count_nonzero(numpy.isnan(imagedata))))
+                
                 
                 
                 # Background clipped
