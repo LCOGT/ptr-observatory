@@ -127,11 +127,11 @@ site_config = {
     'observing_check_period' : 3,    # How many minutes between weather checks
     'enclosure_check_period' : 3,    # How many minutes between enclosure checks
 
-    'auto_eve_bias_dark': True,    
-    'auto_midnight_moonless_bias_dark': False,
+    'auto_eve_bias_dark': False,    
+    'auto_midnight_moonless_bias_dark': True,
     'auto_eve_sky_flat': True,
     'auto_morn_sky_flat': True,
-    'auto_morn_bias_dark': True,
+    'auto_morn_bias_dark': False,
     #Event related constants.
     'eve_bias_dark_dur':  2.0,   #  hours Duration, prior to next.
     'eve_screen_flat_dur': 0.0,   #  hours Duration, prior to next.

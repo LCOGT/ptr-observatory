@@ -1632,6 +1632,8 @@ class Camera:
             plog("Camera filter setup:  ", e)
             plog(traceback.format_exc())      
 
+        this_exposure_filter = self.current.filter
+
         self.len_x = self.camera_x_size // bin_x
         self.len_y = self.camera_y_size // bin_y  # Unit is binned pixels.
         self.len_xs = 0  # THIS IS A HACK, indicating no overscan.
@@ -1843,7 +1845,8 @@ class Camera:
                             longstackid=LongStackID,
                             sskcounter=sskcounter,
                             Nsmartstack=Nsmartstack,
-                            bin_x=bin_x
+                            bin_x=bin_x,
+                            this_exposure_filter=this_exposure_filter
                         )  # NB all these parameters are crazy!
                         self.exposure_busy = False
                         #self.t10 = time.time()
@@ -1889,7 +1892,8 @@ class Camera:
         longstackid='no',
         sskcounter=0,
         Nsmartstack=1,
-        bin_x=1
+        bin_x=1,
+        this_exposure_filter=None
     ):
         plog(
             "Exposure Started:  " + str(exposure_time) + "s ",
@@ -2473,7 +2477,7 @@ class Camera:
                         "EXPOSURE"
                     ] = exposure_time  # Ideally this needs to be calculated from actual times
                     hdu.header["FILTER"] = (
-                        self.current_filter,
+                        this_exposure_filter,
                         "Filter type",
                     )  # NB this should read from the wheel!
                     if g_dev["fil"].null_filterwheel == False:

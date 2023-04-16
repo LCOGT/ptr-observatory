@@ -468,7 +468,7 @@ class Observatory:
         #opt = {}
         #g_dev['seq'].sky_flat_script({}, {}, morn=True)
         # g_dev['seq'].extensive_focus_script(req2,opt)
-        # req = {'bin1': True, 'bin2': False, 'bin3': False, 'bin4': False, 'numOfBias': 63, \
+        #req = {'bin1': True, 'bin2': False, 'bin3': False, 'bin4': False, 'numOfBias': 63, \
         #        'numOfDark': 31, 'darkTime': 75, 'numOfDark2': 31, 'dark2Time': 75, \
         #        'hotMap': True, 'coldMap': True, 'script': 'genBiasDarkMaster', }  #This specificatin is obsolete
         #opt = {}

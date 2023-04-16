@@ -129,11 +129,11 @@ site_config = {
     'enclosure_check_period' : 2,    # How many minutes between enclosure checks
     'auto_eve_bias_dark': False,
     
-    'auto_midnight_moonless_bias_dark': False,
-    'auto_eve_sky_flat': False,
+    'auto_midnight_moonless_bias_dark': True,
+    'auto_eve_sky_flat': True,
     'eve_sky_flat_sunset_offset': -60.0,  # Minutes  neg means before, + after.
     'eve_cool_down_open' : -60.0,
-    'auto_morn_sky_flat': False,
+    'auto_morn_sky_flat': True,
     'auto_morn_bias_dark': False,
     're-calibrate_on_solve': True,
     'pointing_calibration_on_startup': False,
