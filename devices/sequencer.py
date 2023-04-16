@@ -1962,7 +1962,7 @@ class Sequencer:
         darkinputList=(glob(g_dev['obs'].local_dark_folder +'*.n*'))
         inputList=(glob(g_dev['obs'].local_bias_folder +'*.n*'))
 # =============================================================================
-        #inputList = inputList[-19:] # WER used for speed testing
+        inputList = inputList[-19:] # WER used for speed testing
 # =============================================================================
         
         
@@ -2085,7 +2085,7 @@ class Sequencer:
             plog ("Regenerating dark") 
             inputList=(glob(g_dev['obs'].local_dark_folder +'*.n*'))
 # =============================================================================
-            #inputList = inputList[-19:]  # Speed improvement WER 
+            inputList = inputList[-19:]  # Speed improvement WER 
 # =============================================================================           
             PLDrive = np.memmap(g_dev['obs'].local_dark_folder  + 'tempfile', dtype='float32', mode= 'w+', shape = (shapeImage[0],shapeImage[1],len(inputList)))
             # Debias dark frames and stick them in the memmap
