@@ -2178,17 +2178,18 @@ sel
                 sep_timer_begin=time.time()
                 
                 (hdufocusdata, pixscale, readnoise, avg_foc, focus_image, im_path, text_name, hduheader, cal_path, cal_name, frame_type, focus_position) = self.sep_queue.get(block=False)
-                howlongdoesthistake=time.time()
+                #howlongdoesthistake=time.time()
                 # Background clip the reduced image
                 ## Estimate Method 1: This routine tests the number of pixels to the negative side of the distribution until it hits 0 three pixels in a row. This (+3) becomes the lower threshold.
-                imageMode = (float(stats.mode(hdufocusdata.flatten(), nan_policy='omit', keepdims=False)[0]))
+                threshcutimage=np.rint(hdufocusdata)
+                imageMode = (float(stats.mode(threshcutimage.flatten(), nan_policy='omit', keepdims=False)[0]))
                 
                 breaker=1
                 counter=0
                 zerocount=0
                 while (breaker != 0):
                     counter=counter+1
-                    currentValue= np.count_nonzero(hdufocusdata == imageMode-counter)
+                    currentValue= np.count_nonzero(threshcutimage == imageMode-counter)
             
                     if (currentValue < 20):
                         zerocount=zerocount+1
@@ -2197,12 +2198,12 @@ sel
                     if (zerocount == 3):
                         zeroValue=(imageMode-counter)+3
                         breaker =0
-                        
+                del threshcutimage
                 masker = ma.masked_less(hdufocusdata, (zeroValue))
                 hdufocusdata= masker.filled(imageMode)
                 #print ("Minimum Value in Array")
                 #print (zeroValue)
-                plog( time.time() - howlongdoesthistake)
+                #plog( time.time() - howlongdoesthistake)
                 # Report number of nans in array
                 #print ("Number of nan pixels in image array: " + str(numpy.count_nonzero(numpy.isnan(imagedata))))
                 
@@ -2582,7 +2583,7 @@ sel
                                 # Then it triggers an autofocus.
                                 g_dev["foc"].focus_tracker.pop(0)
                                 g_dev["foc"].focus_tracker.append(round(rfr, 3))
-                                plog("Last ten FWHM: " + str(g_dev["foc"].focus_tracker) + " Median: " + str(np.nanmedian(g_dev["foc"].focus_tracker)) + " Last Solved: " + "Last solved focus FWHM: " + str(g_dev["foc"].last_focus_fwhm))
+                                plog("Last ten FWHM: " + str(g_dev["foc"].focus_tracker) + " Median: " + str(np.nanmedian(g_dev["foc"].focus_tracker)) + " Last Solved: " + str(g_dev["foc"].last_focus_fwhm))
                                 #plog()
                                 #plog("Median last ten FWHM")
                                 #plog(np.nanmedian(g_dev["foc"].focus_tracker))
