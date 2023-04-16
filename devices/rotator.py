@@ -70,7 +70,7 @@ class Rotator:
         #plog("Average rotator position: " + str(avgpos))
 
         if 359 < avgpos < 361 :
-            print ("The Rotator SEEMS to be rotating.")
+            print ("The Rotator is indicating telescope is parked")
             #breakpoint()
         elif not self.rotator_meant_to_be_rotating:
             print ("The Rotator is not moving, but it isn't meant to be.")

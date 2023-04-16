@@ -113,7 +113,7 @@ site_config = {
     'obsid_is_specific':  False,  # Indicates some special code for this site, found at end of config.
     'host_wema_site_name':  'mrc',  #  The umbrella header for obsys in close geographic proximity.
 
-    'name': 'Mountain Ranch Camp Observatory 0m6f6.8',
+    'name': 'Mountain Ranch Camp Observatory  0m61 f6.8',
     'location': 'Santa Barbara, California,  USA',
     'airport_code': 'SBA',
     'telescope_description':  '0m61 f6.8 Planewave CDK',
@@ -133,8 +133,8 @@ site_config = {
     'time_offset':  -7,
     'TZ_database_name':  'America/Los_Angeles',
     'timezone': 'PDT',
-    'latitude': 34.34595969,     #Decimal degrees, North is Positive
-    'longitude': -119.6811323955,   #Decimal degrees, West is negative
+    'latitude':    34.459376,     #Decimal degrees, North is Positive
+    'longitude': -119.681163,    #Decimal degrees, West is negative
     'elevation': 317.75,    # meters above sea level
     'reference_ambient':  15.0,  #Degrees Celsius.  Alternately 12 entries, one for every - mid month.
     'reference_pressure':  977.83,  #mbar Alternately 12 entries, one for every - mid month.
@@ -402,7 +402,7 @@ site_config = {
             'startup_script':  None,
             'recover_script':  None,
             'shutdown_script':  None,
-            'collecting_area':  128039.0,
+            'collecting_area':  154891,
             'obscuration':  47,
             'aperture': 610,
             'f-ratio':  6.8,   #This and focal_length can be refined after a solve.
@@ -582,8 +582,8 @@ site_config = {
                                 ['dif',     [2, 0],     0, 34,    [2, 17], 'df'],   # 2
                                 ['O3',      [3, 0],     0, 16.07,  [2, 17], 'O3'],   # 3
                                 ['HA',      [4, 0],     0, 11.53, [2, 17], 'HA'],   # 4
-                                ['N2',      [5, 5],     0, 0.023, [2, 17], 'S2'],   # 5
-                                ['S2',      [6, 6],     0, 0.326, [2, 17], 'N2'],   # 6
+                                ['N2',      [5, 0],     0, 0.023, [2, 17], 'S2'],   # 5
+                                ['S2',      [6, 0],     0, 0.326, [2, 17], 'N2'],   # 6
                                 ['JB',      [0, 1],     0, 10.25, [2, 17], 'B '],   # 7
                                 ['gp',      [0, 2],     0, 50.9, [2, 17], 'g '],   # 8
                                 ['JV',      [0, 3],     0, .788,  [2, 17], 'V '],   # 9
@@ -796,8 +796,7 @@ site_config = {
                 'rotation': 0.0,
 
                 'min_exposure': 0.005,  #Need to check this setting out
-
-                'max_daytime_exposure': 10,
+                'max_daytime_exposure': 60,
                 'min_flat_exposure' : 0.005, # For certain leaf shutters, short exposures aren't good for flats. Some CMOS have banding in too short an exposure. Largely applies to ccds though.
                 'max_flat_exposure' : 20.0, # Realistically there should be a maximum flat_exposure that makes sure flats are efficient and aren't collecting actual stars.
                 'number_of_bias_to_collect' : 63,

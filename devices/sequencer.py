@@ -1488,7 +1488,7 @@ class Sequencer:
             
             g_dev['mnt'].park_command({}, {}) # Get there early
 
-            plog("Expose Biases and normal darks by configured binning.")
+            #plog("Expose Biases and normal darks by configured binning.")
 
             #short_dark_time = self.config['camera']['camera_1_1']['settings']['ref_dark']
             #long_dark_time = self.config['camera']['camera_1_1']['settings']['long_dark']
@@ -2786,7 +2786,9 @@ class Sequencer:
             
                        
             
-        plog('\nSky flat complete, or too early. Telescope Tracking is off.\n')
+        plog('\nSky flat sequence complete.\n')
+        g_dev["obs"].send_to_user("Sky flat collection complete.")            
+        
         g_dev['mnt'].park_command({}, {}) # You actually always want it to park, TheSkyX can't stop the telescope tracking, so park is safer... it is before focus anyway.
         self.sky_guard = False
 
@@ -3945,6 +3947,10 @@ class Sequencer:
         except:
             plog ("Something went wrong in the extensive focus routine")
             plog(traceback.format_exc())
+            plog ("Moving back to the starting focus")
+            g_dev['obs'].send_to_user("Extensive focus attempt failed. Returning to initial focus.")
+            g_dev['foc'].guarded_move((foc_start)*g_dev['foc'].micron_to_steps)
+            
         
         try:
             #Check here for filter, guider, still moving  THIS IS A CLASSIC
@@ -4352,7 +4358,9 @@ class Sequencer:
         plog("Appraising quality of evening from Open Weather Map.")
         owm = OWM('d5c3eae1b48bf7df3f240b8474af3ed0')
         mgr = owm.weather_manager() 
-        try:           
+        try:
+            #34.459375 -119.681172
+            plog('Wx at:  ', self.config["latitude"], self.config["longitude"])
             one_call = mgr.one_call(lat=self.config["latitude"], lon=self.config["longitude"])
             ownsuccess=True
         except:

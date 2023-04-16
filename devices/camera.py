@@ -159,7 +159,9 @@ class Qcam:
     CONTROL_OFFSET = c_int(7)
     CONTROL_EXPOSURE = c_int(8)
     CAM_GPS = c_int(36)
-    CONTROL_CURTEMP = c_int(14)
+    CAM_HUMIDITY = c_int(62)    #WER added these two new attributes.
+    CAM_PRESSURE = c_int(63)
+    CONTROL_CURTEMP = c_int(14)  #(14)
     CONTROL_CURPWM = c_int(15)
     CONTROL_MANULPWM = c_int(16)
     CONTROL_CFWPORT = c_int(17)
@@ -738,7 +740,9 @@ class Camera:
             "cooler_on"
         ]:  # NB NB why this logic, do we mean if not cooler found on, then turn it on and take the delay?
             self._set_cooler_on()
-        plog("Cooler Cooling beginning @:  ", self._temperature())
+        temp, humid, pressure =self._temperature()
+        plog("Cooling beginning @:  ", temp)
+        plog("Humidity and pressure:  ", humid, pressure)
         #time.sleep(5)
         if self.maxim == True:
             plog("TEC  % load:  ", self._maxim_cooler_power())
@@ -780,7 +784,8 @@ class Camera:
         """
         Actually not sure if this is useful anymore if there are no differences 
         between ccds and cmoses? This may just be used for the fits header
-        at the end of the day.
+        at the end of the day.  Yes I just want to inform the user downstream and or
+        trigger Telegraph noise correction -- all TBD. WER
         """                
         if self.config["camera"][self.name]["settings"]["is_cmos"] == True:
             self.is_cmos = True
@@ -792,11 +797,13 @@ class Camera:
         # NB We are reading from the actual camera or setting as the case may be. For initial setup,
         # we pull from config for some of the various settings.
         # NB NB There is a differenc between normal cameras and the QHY when it is set to Bin2.
-        try:
-            self.camera.BinX = 1
-            self.camera.BinY = 1
-        except:
-            plog("Problem setting up 1x1 binning at startup.")
+        if self.camera is not None:
+            try:
+
+                self.camera.BinX = 1
+                self.camera.BinY = 1
+            except:
+                plog("Problem setting up 1x1 binning at startup.")
             
         try:
             self.overscan_x = int(
@@ -807,13 +814,14 @@ class Camera:
             )
         except:
             pass
-        
+
         try:
             if self.qhydirect:
                 # YES! IT DOES SEEM THAT QHY HAS x and y reversed for width and height
                 self.camera_y_size = qhycam.camera_params[qhycam_id]['image_width'].value
                 self.camera_x_size = qhycam.camera_params[qhycam_id]['image_height'].value
                 self.camera_image_size = i_h * i_w
+                plog('Num X, Y are now set for QHY camera.')
             else:
                 self.camera_x_size = self.camera.CameraXSize  #unbinned values. QHY returns 2
                 self.camera_y_size = self.camera.CameraYSize  #unbinned
@@ -823,12 +831,12 @@ class Camera:
 
         self.camera_start_x = self.config["camera"][self.name]["settings"]["StartX"]
         self.camera_start_y = self.config["camera"][self.name]["settings"]["StartY"]
-        if self.config["camera"][self.name]["settings"]["cam_needs_NumXY_init"]:  # WER 20230217
+        if self.config["camera"][self.name]["settings"]["cam_needs_NumXY_init"] and self.camera is not None:  # WER 20230217
             try:    
                 self.camera.NumX = self.camera_x_size
                 self.camera.NumY = self.camera_y_size
             except:
-                plog ('numx initialise didnot work')
+                plog ('num x,y initialise did not work')
             try:
                 self.camera.StartX = 0
                 self.camera.StartY = 0
@@ -836,7 +844,8 @@ class Camera:
                 self.camera.BinY = 1
             except:
                 plog ("self.camera setup didn't work... may be a QHY")
-            plog('Num X , y set for QHY camera.')
+
+            
         self.camera_num_x = int(1)  #NB I do not recognize this.    WER  Apprently not used.
 
 
@@ -1105,11 +1114,14 @@ class Camera:
     
     def _qhyccd_temperature(self):
         try: 
+
             temptemp=qhycam.so.GetQHYCCDParam(qhycam.camera_params[qhycam_id]['handle'], qhycam.CONTROL_CURTEMP)
+            humidity = qhycam.so.GetQHYCCDParam(qhycam.camera_params[qhycam_id]['handle'], qhycam.CAM_HUMIDITY)
+            pressure = qhycam.so.GetQHYCCDParam(qhycam.camera_params[qhycam_id]['handle'], qhycam.CAM_PRESSURE)
         except:
-            print ("failed at getting the CCD temperature")
+            print ("failed at getting the CCD temperature, humidity or pressure.")
             temptemp=999.9
-        return temptemp
+        return temptemp, humidity, pressure
     
     def _qhyccd_cooler_on(self):
         #print ("QHY DOESN'T HAVE AN IS COOLER ON METHOD)
@@ -1623,12 +1635,13 @@ class Camera:
         self.len_y = self.camera_y_size // bin_y  # Unit is binned pixels.
         self.len_xs = 0  # THIS IS A HACK, indicating no overscan.
         
-         # Always check rotator just before exposure
+         # Always check rotator just before exposure  The Rot jitters wehn parked so
+         # this give rot moving report during bia darks
         rot_report=0
         if g_dev['rot']!=None:                
-            while g_dev['rot'].rotator.IsMoving:                    
-                #if g_dev['rot'].rotator.IsMoving:                                         
-                    if rot_report == 0:
+            while g_dev['rot'].rotator.IsMoving:    #This signal fibrulates!                
+                #if g_dev['rot'].rotator.IsMoving:                                       
+                    if rot_report == 0 and imtype not in ['bias', 'dark']:
                         plog("Waiting for camera rotator to catch up. ")
                         g_dev["obs"].send_to_user("Waiting for camera rotator to catch up before exposing.")
                                     
@@ -2156,7 +2169,7 @@ class Camera:
                         return self.expresult  # signals to flat routine image was rejected, prompt return
                     else:
                         plog('Good flat value! :  ', bi_mean)
-                        g_dev["obs"].send_to_user('Good flat value! :  ', bi_mean)
+                        g_dev["obs"].send_to_user('Good flat value! :  ' +str(bi_mean))
                     
                 if not g_dev["cam"].exposure_busy:
                     self.expresult = {"stopped": True}
@@ -2311,16 +2324,18 @@ class Camera:
                     #         "[C] CCD actual temperature",
                     #     )
                     # else:
-                    tempccdtemp=float(g_dev['cam']._temperature())
+                    tempccdtemp,ccd_humidity, ccd_pressure = (g_dev['cam']._temperature())
                     hdu.header["CCDSTEMP"] = (
-                        round(tempccdtemp, 3),
+                        round(self.setpoint, 2),     #WER fixed.
                         "[C] CCD set temperature",
                     )
+                    hdu.header["COOLERON"] = self._cooler_on()
                     hdu.header["CCDATEMP"] = (
-                        round(tempccdtemp, 3),
+                        round(tempccdtemp, 2),
                         "[C] CCD actual temperature",
                     )
-                    hdu.header["COOLERON"] = self._cooler_on()
+                    hdu.header["CCDHUMID"] = round(ccd_humidity, 1)
+                    hdu.header["CCDPRESS"] = round(ccd_pressure, 1)
                     hdu.header["OBSID"] = (
                         self.config["obs_id"].replace("-", "").replace("_", "")
                     )
