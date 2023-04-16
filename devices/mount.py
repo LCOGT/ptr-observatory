@@ -277,7 +277,7 @@ class Mount:
         try:
             ra1, dec1 = self.get_mount_reference()
             ra2, dec2 = self.get_flip_reference()
-            plog("Mount references clutch, flip (Look East):  ", ra1, dec1, ra2, dec2 )
+            plog("Mount references & flip (Look East):  ", ra1, dec1, ra2, dec2 )
         except:
             plog("No mount ref found.")
             pass
@@ -373,7 +373,7 @@ class Mount:
         self.mtf_dec_offset=0
         self.mtf_ra_offset=0
         
-        plog("exiting mount _init")
+        #plog("exiting mount _init")
 
     def check_connect(self):
         try:

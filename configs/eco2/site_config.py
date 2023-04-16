@@ -769,6 +769,12 @@ site_config = {
                 'rotate180_fits' : False, # This also should be flipxy!
                 'rotate90_fits' : False,
                 'rotate270_fits' : False,
+                # What number of pixels to crop around the edges of a REDUCED image
+                # This is primarily to get rid of overscan areas and also all images
+                # Do tend to be a bit dodgy around the edges, so perhaps a standard
+                # value of 30 is good. Increase this if your camera has particularly bad
+                # edges.
+                'reduced_image_edge_crop': 30,
                 
                 # HERE YOU CAN FLIP THE IMAGE TO YOUR HEARTS DESIRE
                 # HOPEFULLY YOUR HEARTS DESIRE IS SIMILAR TO THE

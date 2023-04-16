@@ -224,6 +224,7 @@ class Observatory:
         self.last_request = None
         self.stopped = False
         self.status_count = 0
+        self.first_pass= True
         self.stop_all_activity = False
         self.obsid_message = "-"
         self.all_device_types = ptr_config["device_types"]  # May not be needed
@@ -1225,35 +1226,36 @@ sel
                     roof_should_be_shut = False
                 else:
                     plog("Enclosure roof status probably not reporting correctly. WEMA down?")
-
-                if g_dev['enc'].status['shutter_status'] == 'Closing':
-                    if self.config['obsid_roof_control'] and g_dev['enc'].mode == 'Automatic':
-                        plog(
-                            "Detected Roof Closing. Sending another close command just in case the roof got stuck on this status (this happens!)")
-                        self.open_and_enabled_to_observe = False
-                        # self.cancel_all_activity()    #NB Kills bias dark
-                        g_dev['enc'].enclosure.CloseShutter()
-                        g_dev['seq'].enclosure_next_open_time = time.time(
-                        ) + self.config['roof_open_safety_base_time'] * g_dev['seq'].opens_this_evening
-
-                if g_dev['enc'].status['shutter_status'] == 'Error':
-                    if self.config['obsid_roof_control'] and g_dev['enc'].mode == 'Automatic':
-                        plog("Detected an Error in the Roof Status. Closing up for safety.")
-                        plog("This is usually because the weather system forced the roof to shut.")
-                        plog("By closing it again, it resets the switch to closed.")
-                        # self.cancel_all_activity()    #NB Kills bias dark
-                        self.open_and_enabled_to_observe = False
-                        g_dev['enc'].enclosure.CloseShutter()
-                        g_dev['seq'].enclosure_next_open_time = time.time(
-                        ) + self.config['roof_open_safety_base_time'] * g_dev['seq'].opens_this_evening
-                        # while g_dev['enc'].enclosure.ShutterStatus == 3:
-                        #plog ("closing")
-                        plog("Also Parking the Scope")
-                        if not g_dev['mnt'].mount.AtPark:
-                            if g_dev['mnt'].home_before_park:
-                                g_dev['mnt'].home_command()
-                            g_dev['mnt'].park_command()
-
+                try:
+                    if g_dev['enc'].status['shutter_status'] == 'Closing':
+                        if self.config['obsid_roof_control'] and g_dev['enc'].mode == 'Automatic':
+                            plog(
+                                "Detected Roof Closing. Sending another close command just in case the roof got stuck on this status (this happens!)")
+                            self.open_and_enabled_to_observe = False
+                            # self.cancel_all_activity()    #NB Kills bias dark
+                            g_dev['enc'].enclosure.CloseShutter()
+                            g_dev['seq'].enclosure_next_open_time = time.time(
+                            ) + self.config['roof_open_safety_base_time'] * g_dev['seq'].opens_this_evening
+    
+                    if g_dev['enc'].status['shutter_status'] == 'Error':
+                        if self.config['obsid_roof_control'] and g_dev['enc'].mode == 'Automatic':
+                            plog("Detected an Error in the Roof Status. Closing up for safety.")
+                            plog("This is usually because the weather system forced the roof to shut.")
+                            plog("By closing it again, it resets the switch to closed.")
+                            # self.cancel_all_activity()    #NB Kills bias dark
+                            self.open_and_enabled_to_observe = False
+                            g_dev['enc'].enclosure.CloseShutter()
+                            g_dev['seq'].enclosure_next_open_time = time.time(
+                            ) + self.config['roof_open_safety_base_time'] * g_dev['seq'].opens_this_evening
+                            # while g_dev['enc'].enclosure.ShutterStatus == 3:
+                            #plog ("closing")
+                            plog("Also Parking the Scope")
+                            if not g_dev['mnt'].mount.AtPark:
+                                if g_dev['mnt'].home_before_park:
+                                    g_dev['mnt'].home_command()
+                                g_dev['mnt'].park_command()
+                except:
+                    plog("shutter status enclosure tests did not work. Usually shutter status is None")
                 roof_should_be_shut = False
 
                 # breakpoint()
@@ -1286,12 +1288,12 @@ sel
                             else:
                                 plog("This scope does not have control of the roof though.")
                 except:
-                    plog('Line 1192 Shutter status faulted.')
+                    plog('Line 1192 Roof shutter status faulted.')
 
                 # If the roof should be shut, then the telescope should be parked.
                 if roof_should_be_shut == True and g_dev['enc'].mode == 'Automatic':
                     if not g_dev['mnt'].mount.AtPark:
-                        plog("Telescope found not parked when the observatory is meant to be closed. Parking scope.")
+                        plog('Parking telescope.')
                         self.open_and_enabled_to_observe = False
                         # self.cancel_all_activity()   #NB Kills bias dark
                         if g_dev['mnt'].home_before_park:
@@ -1383,7 +1385,8 @@ sel
             #probe = g_dev['cam']._cooler_on()
             if g_dev['cam']._cooler_on():
 
-                current_camera_temperature = float(g_dev['cam']._temperature())
+                current_camera_temperature, cur_humidity, cur_pressure = (g_dev['cam']._temperature())
+                current_camera_temperature = float(current_camera_temperature)   # NB NB Probably redundantWER
                 #plog("Cooler is still on at " + str(current_camera_temperature))
 
                 if current_camera_temperature - g_dev['cam'].setpoint > 1.5 or current_camera_temperature - g_dev['cam'].setpoint < -1.5:
@@ -3129,7 +3132,7 @@ sel
                                     n_files = len(list_of_files)
                                     oldest_file = min(list_of_files, key=os.path.getctime)
                                     os.remove(oldest_file)
-                                    plog("removed old bias: " + str(oldest_file))
+                                    plog("removed old bias. ")# + str(oldest_file))
 
                             elif slow_process[4] == 'dark':
                                 tempexposure = temphduheader['EXPTIME']
@@ -3142,7 +3145,7 @@ sel
                                     n_files = len(list_of_files)
                                     oldest_file = min(list_of_files, key=os.path.getctime)
                                     os.remove(oldest_file)
-                                    plog("removed old dark: " + str(oldest_file))
+                                    plog("removed old dark. ")# + str(oldest_file))
 
                             elif slow_process[4] == 'flat' or slow_process[4] == 'skyflat' or slow_process[4] == 'screenflat':
                                 tempfilter = temphduheader['FILTER']
@@ -3159,7 +3162,7 @@ sel
                                     n_files = len(list_of_files)
                                     oldest_file = min(list_of_files, key=os.path.getctime)
                                     os.remove(oldest_file)
-                                    plog("removed old flat: " + str(oldest_file))
+                                    plog("removed old flat. ") # + str(oldest_file))
 
                             # Save the file as an uncompressed numpy binary
 

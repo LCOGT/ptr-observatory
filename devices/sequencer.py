@@ -1488,7 +1488,7 @@ class Sequencer:
             
             g_dev['mnt'].park_command({}, {}) # Get there early
 
-            plog("Expose Biases and normal darks by configured binning.")
+            #plog("Expose Biases and normal darks by configured binning.")
 
             #short_dark_time = self.config['camera']['camera_1_1']['settings']['ref_dark']
             #long_dark_time = self.config['camera']['camera_1_1']['settings']['long_dark']
@@ -1962,7 +1962,7 @@ class Sequencer:
         darkinputList=(glob(g_dev['obs'].local_dark_folder +'*.n*'))
         inputList=(glob(g_dev['obs'].local_bias_folder +'*.n*'))
 # =============================================================================
-        #inputList = inputList[-19:] # WER used for speed testing
+        inputList = inputList[-19:] # WER used for speed testing
 # =============================================================================
         
         
@@ -2085,7 +2085,7 @@ class Sequencer:
             plog ("Regenerating dark") 
             inputList=(glob(g_dev['obs'].local_dark_folder +'*.n*'))
 # =============================================================================
-            #inputList = inputList[-19:]  # Speed improvement WER 
+            inputList = inputList[-19:]  # Speed improvement WER 
 # =============================================================================           
             PLDrive = np.memmap(g_dev['obs'].local_dark_folder  + 'tempfile', dtype='float32', mode= 'w+', shape = (shapeImage[0],shapeImage[1],len(inputList)))
             # Debias dark frames and stick them in the memmap
@@ -2786,7 +2786,9 @@ class Sequencer:
             
                        
             
-        plog('\nSky flat complete, or too early. Telescope Tracking is off.\n')
+        plog('\nSky flat sequence complete.\n')
+        g_dev["obs"].send_to_user("Sky flat collection complete.")            
+        
         g_dev['mnt'].park_command({}, {}) # You actually always want it to park, TheSkyX can't stop the telescope tracking, so park is safer... it is before focus anyway.
         self.sky_guard = False
 
@@ -3220,7 +3222,8 @@ class Sequencer:
 
         if spot1 is None or spot2 is None or spot3 is None or spot1 == False or spot2 == False or spot3 == False:  #New additon to stop crash when no spots
             plog("No stars detected. Returning to original focus setting and pointing.")
-
+            g_dev['obs'].send_to_user("No stars detected. Returning to original focus setting and pointing.")
+            
             g_dev['foc'].guarded_move((focus_start)*g_dev['foc'].micron_to_steps)  #NB NB 20221002 THis unit fix shoudl be in the routine. WER
             self.sequencer_hold = False   #Allow comand checks.
             self.af_guard = False
@@ -3347,6 +3350,8 @@ class Sequencer:
 
                     plog('Autofocus quadratic equation not converge. Moving back to starting focus:  ', focus_start)
                     plog  ("NORMAL FOCUS UNSUCCESSFUL, TRYING EXTENSIVE FOCUS")
+                    g_dev['obs'].send_to_user('V-curve focus failed, trying extensive focus routine')
+                    
                     req2 = {'target': 'near_tycho_star', 'area': 150, 'image_type': 'focus'}
                     opt = {'filter': 'focus'}
                     g_dev['seq'].extensive_focus_script(req2,opt, no_auto_after_solve=True)
@@ -3359,6 +3364,8 @@ class Sequencer:
                     return
                 else:
                     plog('Autofocus quadratic equation not converge. Moving back to extensive focus:  ', extensive_focus)
+                    g_dev['obs'].send_to_user('V-curve focus failed, Moving back to extensive focus: ', extensive_focus)
+                    
                     g_dev['foc'].guarded_move((extensive_focus)*g_dev['foc'].micron_to_steps)
 
                     self.sequencer_hold = False   #Allow comand checks.
@@ -3471,6 +3478,8 @@ class Sequencer:
 
                     plog('Autofocus quadratic equation not converge. Moving back to starting focus:  ', focus_start)
                     plog  ("NORMAL FOCUS UNSUCCESSFUL, TRYING EXTENSIVE FOCUS")
+                    g_dev['obs'].send_to_user('V-curve focus failed, trying extensive focus')
+                    
                     req2 = {'target': 'near_tycho_star', 'area': 150}
                     opt = {}
                     g_dev['seq'].extensive_focus_script(req2,opt, no_auto_after_solve=True)
@@ -3484,7 +3493,8 @@ class Sequencer:
                 else:
                     plog('Autofocus quadratic equation not converge. Moving back to extensive focus:  ', extensive_focus)
                     g_dev['foc'].guarded_move((extensive_focus)*g_dev['foc'].micron_to_steps)
-
+                    g_dev['obs'].send_to_user('V-curve focus failed, Moving back to extensive focus:', extensive_focus)
+                    
                     self.sequencer_hold = False   #Allow comand checks.
                     self.af_guard = False
                     plog("Returning to RA:  " +str(start_ra) + " Dec: " + str(start_dec))
@@ -3557,6 +3567,8 @@ class Sequencer:
 
                     plog('Autofocus quadratic equation not converge. Moving back to starting focus:  ', focus_start)
                     plog  ("NORMAL FOCUS UNSUCCESSFUL, TRYING EXTENSIVE FOCUS")
+                    g_dev['obs'].send_to_user('V-curve focus failed, trying extensive focus')
+                    
                     req2 = {'target': 'near_tycho_star', 'area': 150}
                     opt = {}
                     g_dev['seq'].extensive_focus_script(req2,opt, no_auto_after_solve=True)
@@ -3570,7 +3582,8 @@ class Sequencer:
                 else:
                     plog('Autofocus quadratic equation not converge. Moving back to extensive focus:  ', extensive_focus)
                     g_dev['foc'].guarded_move((extensive_focus)*g_dev['foc'].micron_to_steps)
-
+                    g_dev['obs'].send_to_user('V-curve focus failed, Moving back to extensive focus: ', extensive_focus)
+                    
                     self.sequencer_hold = False   #Allow comand checks.
                     self.af_guard = False
                     plog("Returning to RA:  " +str(start_ra) + " Dec: " + str(start_dec))
@@ -3621,6 +3634,8 @@ class Sequencer:
 
                 plog('Autofocus quadratic equation not converge. Moving back to starting focus:  ', focus_start)
                 plog  ("NORMAL FOCUS UNSUCCESSFUL, TRYING EXTENSIVE FOCUS")
+                g_dev['obs'].send_to_user('V-curve focus failed, trying extensive focus')
+                
                 req2 = {'target': 'near_tycho_star', 'area': 150}
                 opt = {}
                 g_dev['seq'].extensive_focus_script(req2,opt, no_auto_after_solve=True)
@@ -3634,7 +3649,8 @@ class Sequencer:
             else:
                 plog('Autofocus quadratic equation not converge. Moving back to extensive focus:  ', extensive_focus)
                 g_dev['foc'].guarded_move((extensive_focus)*g_dev['foc'].micron_to_steps)
-
+                g_dev['obs'].send_to_user('V-curve focus failed, moving back to extensive focus: ', extensive_focus)
+                
                 self.sequencer_hold = False   #Allow comand checks.
                 self.af_guard = False
                 plog("Returning to RA:  " +str(start_ra) + " Dec: " + str(start_dec))
@@ -3931,6 +3947,10 @@ class Sequencer:
         except:
             plog ("Something went wrong in the extensive focus routine")
             plog(traceback.format_exc())
+            plog ("Moving back to the starting focus")
+            g_dev['obs'].send_to_user("Extensive focus attempt failed. Returning to initial focus.")
+            g_dev['foc'].guarded_move((foc_start)*g_dev['foc'].micron_to_steps)
+            
         
         try:
             #Check here for filter, guider, still moving  THIS IS A CLASSIC
@@ -4281,7 +4301,8 @@ class Sequencer:
         else:
             plog('Coarse_focus did not converge. Moving back to starting focus:  ', foc_pos0)
             g_dev['obs'].send_to_user('Coarse_focus did not converge. Moving back to starting focus:  ' + str(foc_pos0), p_level='INFO')
-
+            g_dev['obs'].send_to_user('Coarse focus failed, moving back to starting focus')
+            
             g_dev['foc'].guarded_move((foc_start)*g_dev['foc'].micron_to_steps)
         plog("Returning to RA:  " +str(start_ra) + " Dec: " + str(start_dec))
         g_dev["obs"].send_to_user("Returning to RA:  " +str(start_ra) + " Dec: " + str(start_dec))
@@ -4337,7 +4358,9 @@ class Sequencer:
         plog("Appraising quality of evening from Open Weather Map.")
         owm = OWM('d5c3eae1b48bf7df3f240b8474af3ed0')
         mgr = owm.weather_manager() 
-        try:           
+        try:
+            #34.459375 -119.681172
+            plog('Wx at:  ', self.config["latitude"], self.config["longitude"])
             one_call = mgr.one_call(lat=self.config["latitude"], lon=self.config["longitude"])
             ownsuccess=True
         except:

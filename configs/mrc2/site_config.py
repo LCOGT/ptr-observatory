@@ -75,7 +75,7 @@ site_config = {
 
     'debug_site_mode': False,
     
-    'debug_mode' : True,
+    'debug_mode' : False,
     'admin_owner_commands_only': False,
     'debug_duration_sec': 1800,
     'owner':  ['google-oauth2|112401903840371673242'],  # Wayne
@@ -113,7 +113,7 @@ site_config = {
     'obsid_is_specific':  False,  # Indicates some special code for this site, found at end of config.
     'host_wema_site_name':  'mrc',  #  The umbrella header for obsys in close geographic proximity.
 
-    'name': 'Mountain Ranch Camp Observatory 0m6f6.8',
+    'name': 'Mountain Ranch Camp Observatory  0m61 f6.8',
     'location': 'Santa Barbara, California,  USA',
     'airport_code': 'SBA',
     'telescope_description':  '0m61 f6.8 Planewave CDK',
@@ -133,8 +133,8 @@ site_config = {
     'time_offset':  -7,
     'TZ_database_name':  'America/Los_Angeles',
     'timezone': 'PDT',
-    'latitude': 34.34595969,     #Decimal degrees, North is Positive
-    'longitude': -119.6811323955,   #Decimal degrees, West is negative
+    'latitude':    34.459376,     #Decimal degrees, North is Positive
+    'longitude': -119.681163,    #Decimal degrees, West is negative
     'elevation': 317.75,    # meters above sea level
     'reference_ambient':  15.0,  #Degrees Celsius.  Alternately 12 entries, one for every - mid month.
     'reference_pressure':  977.83,  #mbar Alternately 12 entries, one for every - mid month.
@@ -402,7 +402,7 @@ site_config = {
             'startup_script':  None,
             'recover_script':  None,
             'shutdown_script':  None,
-            'collecting_area':  128039.0,
+            'collecting_area':  154891,
             'obscuration':  47,
             'aperture': 610,
             'f-ratio':  6.8,   #This and focal_length can be refined after a solve.
@@ -582,8 +582,8 @@ site_config = {
                                 ['dif',     [2, 0],     0, 34,    [2, 17], 'df'],   # 2
                                 ['O3',      [3, 0],     0, 16.07,  [2, 17], 'O3'],   # 3
                                 ['HA',      [4, 0],     0, 11.53, [2, 17], 'HA'],   # 4
-                                ['N2',      [5, 5],     0, 0.023, [2, 17], 'S2'],   # 5
-                                ['S2',      [6, 6],     0, 0.326, [2, 17], 'N2'],   # 6
+                                ['N2',      [5, 0],     0, 0.023, [2, 17], 'S2'],   # 5
+                                ['S2',      [6, 0],     0, 0.326, [2, 17], 'N2'],   # 6
                                 ['JB',      [0, 1],     0, 10.25, [2, 17], 'B '],   # 7
                                 ['gp',      [0, 2],     0, 50.9, [2, 17], 'g '],   # 8
                                 ['JV',      [0, 3],     0, .788,  [2, 17], 'V '],   # 9
@@ -700,7 +700,7 @@ site_config = {
                 'platesolve_bin_value' : 2,
                 
                 
-                'squash_on_x_axis' : False,
+                
                 'flipx_fits': False,
                 'flipy_fits': False,
                 "rotate90_fits": False,
@@ -708,7 +708,7 @@ site_config = {
                 "rotate270_fits": False,
                 'transpose_fits' : False,
                 
-                
+                'squash_on_x_axis' : False,
                 'transpose_jpeg' : False,
                 'flipx_jpeg' : False,
                 'flipy_jpeg' : False,
@@ -716,7 +716,12 @@ site_config = {
                 'rotate90_jpeg' : False,
                 'rotate270_jpeg' : False,
                 
-                
+                # What number of pixels to crop around the edges of a REDUCED image
+                # This is primarily to get rid of overscan areas and also all images
+                # Do tend to be a bit dodgy around the edges, so perhaps a standard
+                # value of 30 is good. Increase this if your camera has particularly bad
+                # edges.
+                'reduced_image_edge_crop': 30,
                 
                # For large fields of view, crop the images down to solve faster.                 
                # Realistically the "focus fields" have a size of 0.2 degrees, so anything larger than 0.5 degrees is unnecesary
@@ -791,8 +796,7 @@ site_config = {
                 'rotation': 0.0,
 
                 'min_exposure': 0.005,  #Need to check this setting out
-
-                'max_daytime_exposure': 10,
+                'max_daytime_exposure': 60,
                 'min_flat_exposure' : 0.005, # For certain leaf shutters, short exposures aren't good for flats. Some CMOS have banding in too short an exposure. Largely applies to ccds though.
                 'max_flat_exposure' : 20.0, # Realistically there should be a maximum flat_exposure that makes sure flats are efficient and aren't collecting actual stars.
                 'number_of_bias_to_collect' : 63,
@@ -857,7 +861,7 @@ site_config = {
                 'flat_count' : 5,
                 #'pix_scale': [0.4685, 0.9371, 1.4055, 1.8742],    #  1.4506,  bin-2  2* math.degrees(math.atan(9/3962000))*3600
                 '1x1_pix_scale': 0.198,    #  This is the 1x1 binning pixelscale
-                'native_bin': 2, # Needs to be simple, it will recalculate things on the 1x1 binning pixscale above.
+               
                 # The drizzle_value is by the new pixelscale
                 # for the new resolution when stacking in the EVA pipeline
                 # Realistically you want a resolution of about 0.5 arcseconds per pixel
@@ -869,11 +873,11 @@ site_config = {
                 
                 'do_cosmics' : False,
                 'bin_modes':  [[1, 1, 0.198], [2, 2, 0.396], [3, 3, 0.594], [4, 4, 0.792]],  
-                #'native_bin': [2, 2 , 0.396], 
-                
-                'fine_bin':  [2, 2, 0.396],
-                'optimal_bin': [3,3 , 0.594], 
-                'coarse_bin': [4, 4, 0.792],
+
+                'native_bin': 2, # Needs to be simple, it will recalculate things on the 1x1 binning pixscale above.
+                'fine_res':  [2, 2, 0.396],
+                'optimal_res': [3,3 , 0.594], 
+                'coarse_res': [4, 4, 0.792],
                 'has_screen': True,
                 'screen_settings':  {
                     'screen_saturation':  157.0,
