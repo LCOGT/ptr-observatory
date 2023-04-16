@@ -22,6 +22,7 @@ class Stretch:
         n = data.size
         median_deviation = lambda x: abs(x - median)
         avg_dev = np.sum( median_deviation(data) / n )
+        
         return avg_dev
 
 
