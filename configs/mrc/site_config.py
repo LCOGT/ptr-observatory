@@ -17,23 +17,18 @@ DEGREE_SYMBOL = "°"
 
 site_config = {
 
-    'site': 'mrc',
+    'site': 'mrc2',
 
     'site_id': 'mrc2',
 
-    'obs_id': None,   #a WEMA is not a telescope aka Observatory
-    'observatory_location': "Ssnta Fe, NM, USA.",  #in LCO case, an airport code such as OGG
-   
-
-
-
+    'obs_id': 'mrc2',   #a WEMA is not a telescope aka Observatory
+    'observatory_location': "Santa Fe, NM, USA.",  #in LCO case, an airport code such as OGG
     'debug_site_mode': True,
-    
     'debug_mode': True,
     'admin_owner_commands_only': False,
     'debug_duration_sec': 1800,
-
-
+ 
+    'admin_owner_commands_only': False,
     'owner':  ['google-oauth2|112401903840371673242'],  # Wayne
     'owner_alias': ['WER', 'TELOPS'],
     'admin_aliases': ["ANS", "WER", "TELOPS", "TB", "DH", "KVH", "KC"],
@@ -49,16 +44,20 @@ site_config = {
     'alt_path':  'Q:/ptr/',  # Generic place for this host to stash misc stuff
     'plog_path':  'Q:/ptr/mrc1/',  #place where night logs can be found.
     'save_to_alt_path' : 'no',
-    'archive_age' : -99.9, # Number of days to keep files in the local archive before deletion. Negative means never delete
+    'archive_age': -99.9,  # Number of days to keep files in the local archive before deletion. Negative means never delete
+
 
     'aux_archive_path':  None,   #NB NB we might want to put Q: here for MRC
-    #'wema_is_active':  True,    #OBSOLETE      # True if the split computers used at a site.  NB CHANGE THE DAMN NAME!
-    'wema_hostname': 'MRC-WEMA',   # Prefer the shorter version
+    'wema_is_active':  True,    #OBSOLETE      # True if the split computers used at a site.  NB CHANGE THE DAMN NAME!
+    'wema_hostname': 'MRC-WMS-ENC',   # Prefer the shorter version
     'wema_path':  'Q:/ptr/',  # '/wema_transfer/',
+    'dome_on_wema': True,
     'site_has_proxy':  True,
     'site_is_specific': False,
-    'dome_on_wema': True,
+
     'site_IPC_mechanism': 'redis',
+    'obsid_is_generic':  False,   # A simply  single computer ASCOM site.
+    'obsid_is_specific':  False, 
     'wema_write_share_path': 'Q:/ptr/',  # Meant to be where Wema puts status data.
     'client_read_share_path':  'Q:/ptr/', #NB these are all very confusing names.
     'client_write_share_path': 'Q:/ptr/',

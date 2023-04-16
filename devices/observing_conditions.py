@@ -93,9 +93,10 @@ class ObservingConditions:
         # =============================================================================
         if self.hostname in self.config["wema_hostname"]:
             self.is_wema = True
+            self.site_has_proxy = True  
         else:
             self.is_wema = False
-
+        self.site_has_proxy  =self.config['site_has_proxy']
         if self.config["site_is_specific"]:
 
             self.obsid_is_specific = True
@@ -107,7 +108,7 @@ class ObservingConditions:
             # Get current ocn status just as a test.
             self.status = self.get_status(g_dev)
         
-        elif self.is_wema or self.config["site_has_specific_code"]:
+        elif self.is_wema or self.config["site_is_specific"]:
             #  This is meant to be a generic Observing_condition code
             #  instance that can be accessed by a simple site or by the WEMA,
             #  assuming the transducers are connected to the WEMA.
