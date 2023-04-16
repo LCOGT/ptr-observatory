@@ -54,7 +54,7 @@ class ObservingConditions:
 
         self.name = name
         self.astro_events = astro_events
-        self.obsid = config["obs_id"]
+        self.obsid = config["site"]
         g_dev["ocn"] = self
         self.config = config
         g_dev["ocn"] = self
@@ -81,8 +81,8 @@ class ObservingConditions:
         self.prior_status = None
         self.prior_status_2 = None
         self.wmd_fail_counter = 0
-        self.temperature = self.config["reference_ambient"]  # Index needs
-        self.pressure = self.config["reference_pressure"]  # to be months.
+        self.temperature = self.config["site_reference_ambient"]  # Index needs
+        self.pressure = self.config["site_reference_pressure"]  # to be months.
         self.unihedron_connected = (
             True  # NB NB NB His needs improving, driving from config
         )
@@ -95,11 +95,8 @@ class ObservingConditions:
             self.is_wema = True
         else:
             self.is_wema = False
-        if self.config["wema_is_active"]:
-            self.site_has_proxy = True  # NB Site is proxy needs a new name.
-        else:
-            self.site_has_proxy = False
-        if self.config["obsid_is_specific"]:
+
+        if self.config["site_has_specific_code"]:
 
             self.obsid_is_specific = True
 
@@ -110,7 +107,7 @@ class ObservingConditions:
             # Get current ocn status just as a test.
             self.status = self.get_status(g_dev)
         
-        elif self.is_wema or self.config["obsid_is_specific"]:
+        elif self.is_wema or self.config["site_has_specific_code"]:
             #  This is meant to be a generic Observing_condition code
             #  instance that can be accessed by a simple site or by the WEMA,
             #  assuming the transducers are connected to the WEMA.
@@ -130,7 +127,7 @@ class ObservingConditions:
                 self.sky_monitor_oktoimage = win32com.client.Dispatch(driver_3)
                 self.sky_monitor_oktoimage.Connected = True
                 plog("observing_conditions: sky_monitors connected = True")
-            if config["observing_conditions"]["observing_conditions1"]["has_unihedron"]:
+            if config["observing_conditions"]["observing_conditions1"]["ocn_has_unihedron"]:
                 self.unihedron_connected = True
                 try:
                     driver = config["observing_conditions"]["observing_conditions1"][
@@ -172,6 +169,7 @@ class ObservingConditions:
         """
         # This is purely generic code for a generic site.
         # It may be overwritten with a monkey patch found in the appropriate config.py.
+
         if not self.is_wema and self.site_has_proxy:  #  EG., this was written first for SRO. Thier                                         #  system is a proxoy for having a WEMA
             if self.config["site_IPC_mechanism"] == "shares":
                 try:
@@ -337,31 +335,34 @@ class ObservingConditions:
                 }
             wx_reasons =[]
 
+# =============================================================================
+#             Made some local changes for testing  Prior preceeded with ##
+# =============================================================================
             rain_limit = self.sky_monitor.RainRate > 0
             if  rain_limit:
                 wx_reasons.append('Rain > 0')
-            humidity_limit = self.sky_monitor.Humidity < 85
+            humidity_limit = self.sky_monitor.Humidity < 85 ##77
             if not humidity_limit:
-                wx_reasons.append('Humidity >= 85%')
+                wx_reasons.append('Humidity >= 77%')
             wind_limit = (
                 self.sky_monitor.WindSpeed < 25
             )  # sky_monitor reports km/h, Clarity may report in MPH
             if not wind_limit:
                 wx_reasons.append('Wind > 25 km/h')
             dewpoint_gap = (
-                not (self.sky_monitor.Temperature - self.sky_monitor.DewPoint) < 2
+                not (self.sky_monitor.Temperature - self.sky_monitor.DewPoint) < 2###3
             )
             if not dewpoint_gap:
-                wx_reasons.append('Ambient - Dewpoint < 2C')
+                wx_reasons.append('Ambient - Dewpoint < 3C')
             sky_amb_limit = (
                 self.sky_monitor.SkyTemperature - self.sky_monitor.Temperature 
-            ) < -17  # NB THIS NEEDS ATTENTION, Sky alert defaults to -17
+            ) < -10##-17  # NB THIS NEEDS ATTENTION, Sky alert defaults to -17
             if not sky_amb_limit:
                 wx_reasons.append('(sky - amb) > -17C')
             try:
                 cloud_cover = float(self.sky_monitor.CloudCover)
                 status['cloud_cover_%'] = round(cloud_cover, 0)
-                if cloud_cover <= 25:
+                if cloud_cover <= 50: ##25:
                     cloud_cover = False
                 else:
                     cloud_cover = True
@@ -424,6 +425,7 @@ class ObservingConditions:
                         status['meas_sky_mpsas'] = eval(g_dev['redis'].get('unihedron1'))[0]
                 except:
                     pass
+
                 g_dev["redis"].set(
                     "wx_state", status
                 )  # This needs to become generalized IP

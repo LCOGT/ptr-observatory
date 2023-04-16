@@ -464,8 +464,7 @@ class WxEncAgent:
             try: 
                 plog("Appraising quality of evening from Open Weather Map.")
                 owm = OWM('d5c3eae1b48bf7df3f240b8474af3ed0')
-                mgr = owm.weather_manager()
-                plog('Wx  at:   ',  self.config["site_latitude"], self.config["site_longitude"])
+                mgr = owm.weather_manager()            
                 one_call = mgr.one_call(lat=self.config["site_latitude"], lon=self.config["site_longitude"])
                 self.nightly_weather_report_complete=True
                 

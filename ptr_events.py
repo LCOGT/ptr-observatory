@@ -51,11 +51,19 @@ class Events:
     def __init__(self, config: dict):
         self.config = config
         g_dev['evnt'] = self
+<<<<<<< Updated upstream
         self.siteLatitude = round(float(self.config['latitude']), 8)  # 34 20 34.569   #34 + (20 + 34.549/60.)/60.
         self.siteLongitude = round(float(self.config['longitude']), 8)  # -(119 + (40 + 52.061/60.)/60.) 119 40 52.061 W
         self.siteElevation = round(float(self.config['elevation']), 3)
         self.siteRefTemp = round(float(self.config['reference_ambient']), 2)  # These should be a monthly average data.
         self.siteRefPress = round(float(self.config['reference_pressure']), 2)
+=======
+        self.siteLatitude = round(float(self.config['site_latitude']), 8)
+        self.siteLongitude = round(float(self.config['site_longitude']), 8) 
+        self.siteElevation =  round(float(self.config['site_elevation']), 3)
+        self.siteRefTemp =  round(float(self.config['site_reference_ambient']), 2)       #These should be a monthly average data.
+        self.siteRefPress =  round(float(self.config['site_reference_pressure']), 2)
+>>>>>>> Stashed changes
         self.flat_offset = self.config['eve_sky_flat_sunset_offset']    # -35 min for SRO
 
     ###############################
@@ -564,9 +572,15 @@ class Events:
         self.evnt_sort = self._sortTuple(self.evnt)
         day_dir = self.compute_day_directory()
 
+<<<<<<< Updated upstream
         self.timezone = "  " + self.config['timezone'] + ": "
         self.offset = self.config['time_offset']
 
+=======
+        self.timezone = "  " + self.config['site_timezone'] + ": "
+        self.offset = self.config['site_time_offset']
+        
+>>>>>>> Stashed changes
         event_dict = {}
         for item in self.evnt_sort:
             event_dict[item[0].strip()] = item[1]
@@ -574,7 +588,13 @@ class Events:
         event_dict['day_directory'] = str(day_dir)
         g_dev['events'] = event_dict
 
+<<<<<<< Updated upstream
     def display_events(self, endofnightoverride='no'):
+=======
+
+
+    def display_events(self, endofnightoverride='no'): 
+>>>>>>> Stashed changes
 
         plog('Events module reporting for duty. \n')
         plog('Ephem date     :    ', dayNow)
@@ -587,6 +607,10 @@ class Events:
         plog('Moon phase %   :    ', round(self.mid_moon_phase, 1), '%\n')
         plog("Key events for the evening, presented by the Solar System: \n")
 
+<<<<<<< Updated upstream
+=======
+
+>>>>>>> Stashed changes
         for self.evnt in self.evnt_sort:
             plog(self.evnt[0], 'UTC: ', self.evnt[1], self.timezone, ephem.Date(self.evnt[1] + float(self.offset)/24.))
             # plog(self.evnt[0], 'UTC: ', self.evnt[1], self.timezone)    # NB Additon of local times would be handy here.
