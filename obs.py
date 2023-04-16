@@ -99,6 +99,8 @@ reqs.mount('http://', HTTPAdapter(max_retries=retries))
 load_dotenv(".env")
 from ocs_ingester.ingester import frame_exists, upload_file_and_ingest_to_archive
 
+import ocs_ingester.exceptions
+
 def test_connect(host='http://google.com'):
     try:
         urllib.request.urlopen(host)  # Python 3.x
@@ -466,7 +468,7 @@ class Observatory:
         #opt = {}
         #g_dev['seq'].sky_flat_script({}, {}, morn=True)
         # g_dev['seq'].extensive_focus_script(req2,opt)
-        # req = {'bin1': True, 'bin2': False, 'bin3': False, 'bin4': False, 'numOfBias': 63, \
+        #req = {'bin1': True, 'bin2': False, 'bin3': False, 'bin4': False, 'numOfBias': 63, \
         #        'numOfDark': 31, 'darkTime': 75, 'numOfDark2': 31, 'dark2Time': 75, \
         #        'hotMap': True, 'coldMap': True, 'script': 'genBiasDarkMaster', }  #This specificatin is obsolete
         #opt = {}
@@ -1634,6 +1636,12 @@ sel
 
                                     tempPTR = 1
                                     retryarchive = 11
+                                except ocs_ingester.exceptions.DoNotRetryError:
+                                    plog ("Couldn't upload to PTR archive")
+                                    plog ("Caught filespecification error properly")
+                                    plog((traceback.format_exc()))
+                                    retryarchive = 11
+                                    tempPTR =0
                                 except Exception as e:
 
                                     plog("couldn't send to PTR archive for some reason")
