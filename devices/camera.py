@@ -1634,7 +1634,10 @@ class Camera:
             plog(traceback.format_exc())      
 
         this_exposure_filter = self.current_filter
-        exposure_filter_offset = g_dev['fil'].filter_offset
+        if g_dev["fil"].null_filterwheel == False:
+            exposure_filter_offset = g_dev['fil'].filter_offset
+        else:
+            exposure_filter_offset = 0
 
         self.len_x = self.camera_x_size // bin_x
         self.len_y = self.camera_y_size // bin_y  # Unit is binned pixels.

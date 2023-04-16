@@ -3359,7 +3359,7 @@ class Sequencer:
                     return
                 else:
                     plog('Autofocus quadratic equation not converge. Moving back to extensive focus:  ', extensive_focus)
-                    g_dev['obs'].send_to_user('V-curve focus failed, Moving back to extensive focus: ', extensive_focus)
+                    g_dev['obs'].send_to_user('V-curve focus failed, Moving back to extensive focus: ' + str(extensive_focus))
                     
                     g_dev['foc'].guarded_move((extensive_focus)*g_dev['foc'].micron_to_steps)
 
@@ -3927,8 +3927,13 @@ class Sequencer:
             plog(extensive_focus)
         
         minimumFWHM = 100.0
+        #breakpoint()
+        # Find the maximum number of sources detected
+        maxsources=max(np.asarray(extensive_focus)[:,2])
+        
         for focentry in extensive_focus:
-            if focentry[1] != False:
+            # Has to have detected a FWHM as well as have a lot of sources
+            if focentry[1] != False and focentry[2] > 0.2 * maxsources:
                 if focentry[1] < minimumFWHM:
                     solved_pos = focentry[0]
                     minimumFWHM = focentry[1]
