@@ -2189,26 +2189,26 @@ sel
                 #howlongdoesthistake=time.time()
                 # Background clip the reduced image
                 ## Estimate Method 1: This routine tests the number of pixels to the negative side of the distribution until it hits 0 three pixels in a row. This (+3) becomes the lower threshold.
-                threshcutimage=np.rint(hdufocusdata)
-                imageMode = (float(stats.mode(threshcutimage.flatten(), nan_policy='omit', keepdims=False)[0]))
+                #threshcutimage=np.rint(hdufocusdata)
+                #imageMode = (float(stats.mode(threshcutimage.flatten(), nan_policy='omit', keepdims=False)[0]))
                 
-                breaker=1
-                counter=0
-                zerocount=0
-                while (breaker != 0):
-                    counter=counter+1
-                    currentValue= np.count_nonzero(threshcutimage == imageMode-counter)
+                # breaker=1
+                # counter=0
+                # zerocount=0
+                # while (breaker != 0):
+                #     counter=counter+1
+                #     currentValue= np.count_nonzero(threshcutimage == imageMode-counter)
             
-                    if (currentValue < 20):
-                        zerocount=zerocount+1
-                    else:
-                        zerocount=0
-                    if (zerocount == 3):
-                        zeroValue=(imageMode-counter)+3
-                        breaker =0
-                del threshcutimage
-                masker = ma.masked_less(hdufocusdata, (zeroValue))
-                hdufocusdata= masker.filled(imageMode)
+                #     if (currentValue < 20):
+                #         zerocount=zerocount+1
+                #     else:
+                #         zerocount=0
+                #     if (zerocount == 3):
+                #         zeroValue=(imageMode-counter)+3
+                #         breaker =0
+                # del threshcutimage
+                # masker = ma.masked_less(hdufocusdata, (zeroValue))
+                # hdufocusdata= masker.filled(imageMode)
                 #print ("Minimum Value in Array")
                 #print (zeroValue)
                 #plog( time.time() - howlongdoesthistake)
@@ -2216,14 +2216,14 @@ sel
                 #print ("Number of nan pixels in image array: " + str(numpy.count_nonzero(numpy.isnan(imagedata))))
                 
                 
-                
+
                 # Background clipped
                 hduheader["IMGMIN"] = ( np.nanmin(hdufocusdata), "Minimum Value of Image Array" )
                 hduheader["IMGMAX"] = ( np.nanmax(hdufocusdata), "Maximum Value of Image Array" )
                 hduheader["IMGMEAN"] = ( np.nanmean(hdufocusdata), "Mean Value of Image Array" )
                 hduheader["IMGMED"] = ( np.nanmedian(hdufocusdata), "Median Value of Image Array" )
                 
-                hduheader["IMGMODE"] = ( imageMode, "Mode Value of Image Array" )
+                
                 hduheader["IMGSTDEV"] = ( np.nanstd(hdufocusdata), "Median Value of Image Array" )
                 hduheader["IMGMAD"] = ( median_absolute_deviation(hdufocusdata, ignore_nan=True), "Median Absolute Deviation of Image Array" )
                 
@@ -2231,18 +2231,47 @@ sel
                 
                 # Get out raw histogram construction data
                 # Get a flattened array with all nans removed
-                int_array_flattened=np.rint(hdufocusdata.flatten())
-                flat_no_nan_array=(int_array_flattened[~np.isnan(int_array_flattened)])
-                del int_array_flattened
+                #int_array_flattened=np.rint(hdufocusdata.flatten())
+                int_array_flattened=hdufocusdata.astype(int).ravel()
+                
+                #flat_no_nan_array=(int_array_flattened[~np.isnan(int_array_flattened)])
+                #del int_array_flattened
+                unique,counts=np.unique(int_array_flattened[~np.isnan(int_array_flattened)], return_counts=True)
+                m=counts.argmax()
+                imageMode=unique[m]
+
+                
+                
+                #imageMode = (float(stats.mode(flat_no_nan_array, nan_policy='omit', keepdims=False)[0]))
+                hduheader["IMGMODE"] = ( imageMode, "Mode Value of Image Array" )
+                
                 # Collect unique values and counts
-                unique,counts=np.unique(flat_no_nan_array, return_counts=True)
-                del flat_no_nan_array
+                #del flat_no_nan_array
                 histogramdata=np.column_stack([unique,counts]).astype(np.int32)
+                
+                #Do some fiddle faddling to figure out the value that goes to zero less 
+                zeroValueArray=histogramdata[histogramdata[:,0] < imageMode]
+                breaker=1
+                counter=0
+                zerocount=0
+                while (breaker != 0):
+                    counter=counter+1
+                    #currentValue= np.count_nonzero(threshcutimage == imageMode-counter)
+                    if not (imageMode-counter) in zeroValueArray[:,0]:
+                    
+                        zeroValue=(imageMode-counter)
+                        breaker =0
+                #del threshcutimage
+                #masker = ma.masked_less(hdufocusdata, (zeroValue))
+                #hdufocusdata= masker.filled(imageMode)
+                hdufocusdata[hdufocusdata < zeroValue] = imageMode
+                histogramdata=histogramdata[histogramdata[:,0] > zeroValue]
+                
                 np.savetxt(
                     im_path + text_name.replace('.txt', '.his'),
                     histogramdata, delimiter=','
                 )
-                
+
                 
                 try:
                     g_dev['cam'].enqueue_for_fastAWS(180, im_path, text_name.replace('.txt', '.his'))
