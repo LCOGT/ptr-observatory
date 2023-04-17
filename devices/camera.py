@@ -1824,6 +1824,7 @@ class Camera:
                             ra_at_time_of_exposure = g_dev["mnt"].current_icrs_ra
                             dec_at_time_of_exposure = g_dev["mnt"].current_icrs_dec
                             observer_user_name = self.user_name
+
                             try:
                                 self.user_id = command["user_id"]
                                 if self.user_id != self.last_user_id:
@@ -1831,6 +1832,7 @@ class Camera:
                                 observer_user_id= self.user_id
                             except:
                                 observer_user_id= 'Tobor'
+
                             # Calculate current airmass now
                             try:
                                 rd = SkyCoord(ra=ra_at_time_of_exposure*u.hour, dec=dec_at_time_of_exposure*u.deg)            
