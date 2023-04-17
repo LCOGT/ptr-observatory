@@ -51,13 +51,11 @@ class Events:
     def __init__(self, config: dict):
         self.config = config
         g_dev['evnt'] = self
-
         self.siteLatitude = round(float(self.config['latitude']), 8)  # 34 20 34.569   #34 + (20 + 34.549/60.)/60.
         self.siteLongitude = round(float(self.config['longitude']), 8)  # -(119 + (40 + 52.061/60.)/60.) 119 40 52.061 W
         self.siteElevation = round(float(self.config['elevation']), 3)
         self.siteRefTemp = round(float(self.config['reference_ambient']), 2)  # These should be a monthly average data.
         self.siteRefPress = round(float(self.config['reference_pressure']), 2)
-
         self.flat_offset = self.config['eve_sky_flat_sunset_offset']    # -35 min for SRO
 
     ###############################
@@ -566,10 +564,8 @@ class Events:
         self.evnt_sort = self._sortTuple(self.evnt)
         day_dir = self.compute_day_directory()
 
-
         self.timezone = "  " + self.config['timezone'] + ": "
         self.offset = self.config['time_offset']
-        
 
         event_dict = {}
         for item in self.evnt_sort:
@@ -578,11 +574,7 @@ class Events:
         event_dict['day_directory'] = str(day_dir)
         g_dev['events'] = event_dict
 
-
-
-
-    def display_events(self, endofnightoverride='no'): 
-
+    def display_events(self, endofnightoverride='no'):
 
         plog('Events module reporting for duty. \n')
         plog('Ephem date     :    ', dayNow)
@@ -594,7 +586,6 @@ class Events:
         plog('Moon Ra; Dec   :    ', round(self.mid_moon_ra, 2), ";  ", round(self.mid_moon_dec, 1))
         plog('Moon phase %   :    ', round(self.mid_moon_phase, 1), '%\n')
         plog("Key events for the evening, presented by the Solar System: \n")
-
 
         for self.evnt in self.evnt_sort:
             plog(self.evnt[0], 'UTC: ', self.evnt[1], self.timezone, ephem.Date(self.evnt[1] + float(self.offset)/24.))

@@ -67,7 +67,6 @@ def send_status(obsy, column, status_to_send):
     uri_status = f"https://status.photonranch.org/status/{obsy}/status/"
     # NB None of the strings can be empty. Otherwise this put faults.
     payload = {"statusType": str(column), "status": status_to_send}
-    #print(obsy, column, payload)
     data = json.dumps(payload)
     try:
         response = requests.post(uri_status, data=data)
@@ -84,19 +83,24 @@ def send_status(obsy, column, status_to_send):
 class WxEncAgent:
     """A class for weather enclosure functionality."""
 
-    def __init__(self, site_name, config):
+    def __init__(self, name, config):
 
         self.api = API_calls()
 
         # Not relevent for SAF... No commands to Wx are sent by AWS.
-        self.command_check_interval = 30
-        self.status_send_interval = 30
+        self.command_interval = 20
 
-  
+        self.status_interval = 45
+        self.name = name
+
+        self.site_name = name
         self.config = config
         g_dev["obs"] = self
-        self.site_name= site_name
-        self.debug_flag = self.config['debug_site_mode']
+        # TODO: Work through site vs mnt/tel and sub-site distinction.
+
+        self.site = config["site"]
+        self.debug_flag = self.config['debug_mode']
+        self.admin_only_flag = self.config['admin_owner_commands_only']
         if self.debug_flag:
             self.debug_lapse_time = time.time() + self.config['debug_duration_sec']
             g_dev['debug'] = True
@@ -105,37 +109,39 @@ class WxEncAgent:
             self.debug_lapse_time = 0.0
             g_dev['debug'] = False
             #g_dev['obs'].open_and_enabled_to_observe = False
-        self.admin_only_flag = self.config['admin_owner_commands_only']
 
-        self.hostname = self.hostname = socket.gethostname()
-        if self.hostname in self.config["wema_hostname"]:
-            self.is_wema = True
-            g_dev["wema_write_share_path"] = config["wema_write_share_path"]
-            self.wema_path = g_dev["wema_write_share_path"]
-            self.site_path = self.wema_path
+        if self.config["wema_is_active"]:
+            self.hostname = self.hostname = socket.gethostname()
+            if self.hostname in self.config["wema_hostname"]:
+                self.is_wema = True
+                g_dev["wema_write_share_path"] = config["wema_write_share_path"]
+                self.wema_path = g_dev["wema_write_share_path"]
+                self.site_path = self.wema_path
+            else:
+                # This host is a client
+                self.is_wema = False  # This is a client.
+                self.site_path = config["client_write_share_path"]
+                g_dev["site_path"] = self.site_path
+                g_dev["wema_write_share_path"] = self.site_path  # Just to be safe.
+                self.wema_path = g_dev["wema_write_share_path"]
         else:
-            # This host is a client
             self.is_wema = False  # This is a client.
             self.site_path = config["client_write_share_path"]
             g_dev["site_path"] = self.site_path
             g_dev["wema_write_share_path"] = self.site_path  # Just to be safe.
             self.wema_path = g_dev["wema_write_share_path"]
-
-        if self.config["site_is_specific"]:
+        if self.config["obsid_is_specific"]:
             self.site_is_specific = True
-            #Fill out the specificity here
         else:
             self.site_is_specific = False
 
         self.last_request = None
         self.stopped = False
         self.site_message = "-"
-        self.site_mode = config["site_in_automatic_default"]
+        self.site_mode = config["obsid_in_automatic_default"]
         self.device_types = config["wema_types"]
-
         self.astro_events = ptr_events.Events(self.config)
         self.astro_events.compute_day_directory()
-        self.astro_events.calculate_events()
         self.astro_events.display_events()
 
         self.wema_pid = os.getpid()
@@ -298,7 +304,7 @@ class WxEncAgent:
         """
 
         loud = False
-        while time.time() < self.time_last_status + self.status_send_interval:
+        while time.time() < self.time_last_status + self.status_interval:
             return
         t1 = time.time()
         status = {}
@@ -325,9 +331,7 @@ class WxEncAgent:
         except:
             pass
 
-        obsy = self.site_name
-        if self.site_name == "mrc":   #NB  This does not scale, Wema config should have a list of sub-sites.
-                obsy = 'mrc1'        #  or have AWS pick up status from the wema only.
+        obsy = self.name
         if ocn_status is not None:
             lane = "weather"
             #send_status(obsy, lane, ocn_status)  # Do not remove this send for SAF!
@@ -345,7 +349,7 @@ class WxEncAgent:
                         try:
                             send_status(obsy, lane, ocn_status)
                         except:
-                            plog("Three Tries to send Wx status for MRC1 failed.")
+                            plog("Three Tries to send Wx status for MRC failed.")
         if enc_status is not None:
             lane = "enclosure"
             #send_status(obsy, lane, enc_status)
@@ -361,8 +365,8 @@ class WxEncAgent:
                     try:
                         send_status(obsy, lane, enc_status)
                     except:
-                        plog("Three Tries to send Enc status for MRC1 failed.")
-            if self.site_name == "mrc":   #NB  This does not scale, Wema config should has a list of sub-sites.
+                        plog("Three Tries to send Enc status for MRC2 failed.")
+            if self.name == "mrc":   #NB  This does not scale, Wema config should has a list of sub-sites.
                 obsy = 'mrc2'        #  or have AWS pick up status from the wema only.
             if ocn_status is not None:
                 lane = "weather"
@@ -464,9 +468,8 @@ class WxEncAgent:
             try: 
                 plog("Appraising quality of evening from Open Weather Map.")
                 owm = OWM('d5c3eae1b48bf7df3f240b8474af3ed0')
-                mgr = owm.weather_manager()
-                plog('Wx  at:   ',  self.config["site_latitude"], self.config["site_longitude"])
-                one_call = mgr.one_call(lat=self.config["site_latitude"], lon=self.config["site_longitude"])
+                mgr = owm.weather_manager()            
+                one_call = mgr.one_call(lat=self.config["latitude"], lon=self.config["longitude"])
                 self.nightly_weather_report_complete=True
                 
                 # Collect relevant info for fitzgerald weather number calculation
@@ -630,9 +633,9 @@ class WxEncAgent:
         
 
         # However, if the observatory is under manual control, leave this switch on.
-        if g_dev['enc'].site_mode == 'Manual':
+        if g_dev['enc'].mode == 'Manual':
             self.weather_report_is_acceptable_to_observe=True
         
 if __name__ == "__main__":
-    wema = WxEncAgent(ptr_config.site_config['site'], ptr_config.site_config)
+    wema = WxEncAgent(ptr_config.site_name, ptr_config.site_config)
     wema.run()
