@@ -29,18 +29,18 @@ site_config = {
     ####################################################
     'obs_id': 'mrc1',
     'observatory_location': "SBA",  # Nearest major airport
-    'debug_site_mode': True,
+    'debug_site_mode': False,
 
-    'debug_mode': True,
+    'debug_mode': False,
     'admin_owner_commands_only': False,
-    'debug_duration_sec': 20000,
+    'debug_duration_sec': 1800,
 
     'owner':  ['google-oauth2|112401903840371673242'],  # Wayne
 
     'owner_alias': ['WER', 'TELOPS'],
     'admin_aliases': ["ANS", "WER", "TELOPS", "TB", "DH", "KVH", "KC"],
 
-    'client_hostname':  'MRC-0m35',  # This is also the long-name  Client is confusing!
+    'client_hostname':  'mrc-0m35',  # This is also the long-name  Client is confusing!
     # NB NB disk D at mrc may be faster for temp storage
     'client_path':  'Q:/ptr/',  # Generic place for client host to stash misc stuff
     'alt_path':  'Q:/ptr/',  # Generic place for this host to stash misc stuff
@@ -66,7 +66,7 @@ site_config = {
 
     'aux_archive_path':  None,  # NB NB we might want to put Q: here for MRC
     'wema_is_active':  True,          # True if the split computers used at a site.  NB CHANGE THE DAMN NAME!
-    'wema_hostname': 'MRC-WMS-ENC',   # Prefer the shorter version
+    'wema_hostname': 'MRC-WEMA',   # Prefer the shorter version
     'wema_path':  'Q:/ptr/',  # '/wema_transfer/',
     'dome_on_wema':   True,
     'site_IPC_mechanism':  'redis',   # ['None', shares', 'shelves', 'redis']  Pick One
@@ -78,12 +78,13 @@ site_config = {
     'obsid_is_specific':  False,  # Indicates some special code for this site, found at end of config.
 
 
-    'host_wema_site_name':  'MRC',  # The umbrella header for obsys in close geographic proximity,
+    'host_wema_site_name':  'mrc',  # The umbrella header for obsys in close geographic proximity,
                                     #  under the control of one wema
-    'name': 'Mountain Ranch Camp Observatory 0m35f7.2',
+    'name': 'Mountain Ranch Camp Observatory 0m35 f7.2',
     'airport_code': 'SBA',
     'location': 'Near Santa Barbara CA,  USA',
     'telescope_description': '0m35 f7.2 Planewave CDK',
+    'site_path': 'Q:/',
     'observatory_url': 'https://starz-r-us.sky/clearskies',
     'observatory_logo': None,
     'description':  '''

@@ -957,7 +957,7 @@ sel
                 # breakpoint()
 
                 if (
-                    "enclosure" in device_name
+                   "enclosure" in device_name
                     # and device_name in self.config["wema_types"]
                     # and (self.is_wema or self.obsid_is_specific)
                 ):
