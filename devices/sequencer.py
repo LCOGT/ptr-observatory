@@ -2547,14 +2547,17 @@ class Sequencer:
                 g_dev['obs'].update() 
             
                 if g_dev["fil"].null_filterwheel == False:
-                    current_filter = pop_list[0]                
+                    current_filter = pop_list[0]
+                    plog("Beginning flat run for filter: " + str(current_filter))
+                    g_dev['obs'].send_to_user("Beginning flat run for filter: " + str(current_filter))
+                    
                     #g_dev['fil'].set_number_command(current_filter)  #  20220825  NB NB NB Change this to using a list of filter names.
-                    try:
-                        _, filt_pointer = g_dev['fil'].set_name_command({"filter": current_filter}, {})  #  20220825  NB NB NB Chan
-                    except Exception as e:
-                        plog('Failed to change filter in flat script: ', e)
-                        plog("I think this happens if it can't find a substitute filter.... but need to check that! - MTF")
-                        plog(traceback.format_exc())
+                    #try:
+                    #    _, filt_pointer = g_dev['fil'].set_name_command({"filter": current_filter}, {})  #  20220825  NB NB NB Chan
+                    #except Exception as e:
+                    #    plog('Failed to change filter in flat script: ', e)
+                    #    plog("I think this happens if it can't find a substitute filter.... but need to check that! - MTF")
+                    #    plog(traceback.format_exc())
                     # filter number for skylux colle
                 
                 acquired_count = 0
@@ -2709,13 +2712,17 @@ class Sequencer:
                             try:
                                 self.time_of_next_slew = time.time()
                                 fred = g_dev['cam'].expose_command(req, opt, no_AWS=True, do_sep = False,skip_daytime_check=True)
-                                if self.stop_script_called:
-                                    g_dev["obs"].send_to_user("Cancelling out of calibration script as stop script has been called.")  
-                                    return
-                                if not g_dev['obs'].open_and_enabled_to_observe:
-                                    g_dev["obs"].send_to_user("Cancelling out of activity as no longer open and enabled to observe.")  
-                                    return
-            
+                                
+                                
+                                try:
+                                    if self.stop_script_called:
+                                        g_dev["obs"].send_to_user("Cancelling out of calibration script as stop script has been called.")  
+                                        return
+                                    if not g_dev['obs'].open_and_enabled_to_observe:
+                                        g_dev["obs"].send_to_user("Cancelling out of activity as no longer open and enabled to observe.")  
+                                        return
+                                except Exception as e:
+                                    plog ('something funny in stop_script still',e)
                                 bright = fred['patch']    #  Patch should be circular and 20% of Chip area. ToDo project
                                 #breakpoint()
                                 #plog('Returned:  ', bright)
@@ -2723,7 +2730,7 @@ class Sequencer:
                             except Exception as e:
                                 plog('Failed to get a flat image: ', e)
                                 plog(traceback.format_exc())
-                                plog("*****NO result returned*****  Will need to restart Camera")  #NB NB  NB this is drastic action needed.
+                                #plog("*****NO result returned*****  Will need to restart Camera")  #NB NB  NB this is drastic action needed.
                                 
                                 #breakpoint()
                                 g_dev['obs'].update()
