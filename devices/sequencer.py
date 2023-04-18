@@ -1786,8 +1786,8 @@ class Sequencer:
         # Culling the archive
         #FORTNIGHT=60*60*24*7*2
         if self.config['archive_age'] > 0 :
-            plog (self.config['client_path'] + 'archive/')
-            dir_path=self.config['client_path'] + 'archive/'
+            plog (g_dev['obs'].obsid_path + 'archive/')
+            dir_path=g_dev['obs'].obsid_path + 'archive/'
             #cameras=[d for d in os.listdir(dir_path) if os.path.isdir(d)]
             cameras=glob(dir_path + "*/")
             plog (cameras)
