@@ -34,6 +34,7 @@ ocs-ingester
 Pillow==9.2.0
 pycparser==2.21
 pycryptodome
+pyowm
 pyparsing==3.0.9
 python-dateutil==2.8.2
 python-dotenv==0.21.0

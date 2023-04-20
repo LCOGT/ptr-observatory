@@ -1,5 +1,4 @@
-\
-    """"
+"""
 IMPORTANT TODOs:
 
 WER 20211211
@@ -368,6 +367,7 @@ class Observatory:
                 elif dev_type == "enclosure":
                     device = Enclosure(driver, name, self.config, self.astro_events)
                 elif dev_type == "mount":
+
                     device = Mount(
                         driver, name, settings, self.config, self.astro_events, tel=True
                     )  # NB this needs to be straightened out.

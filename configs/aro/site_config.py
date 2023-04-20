@@ -290,7 +290,7 @@ site_config = {
             #'telescop': 'cvagr-0m30-f9-f4p9-001',
             'ptrtel': 'cvagr-0m30-f9-f4p9-001',
             'driver': None,                     # Essentially this device is informational.  It is mostly about the optics.
-            'collecting_area': 31808,
+            'collecting_area': 31808,   #This is correct as of 20230420 WER
             'obscuration':  0.55,  # Informatinal, already included in collecting_area.
             'aperture': 30,
             'focal_length': 1470,  # 1470,   #2697,   # Converted to F9, measured 20200905  11.1C
@@ -429,10 +429,13 @@ site_config = {
             "dual_wheel": True,
             'settings': {
                 'filter_count': 43,
+                "filter_type": "50mm_sq.",
+                "filter_manuf": "Astrodon",
                 'home_filter':  1,
                 'default_filter': "w",
                 'filter_reference': 1,   # We choose to use W as the default filter.  Gains taken at F9, Ceravolo 300mm
                 # Columns for filter data are : ['filter', 'filter_index', 'filter_offset', 'sky_gain', 'screen_gain', 'alias']
+                #NB NB Note to WER please add cwl, bw and 'shape'
                 'filter_data': [
                         ['air',  [0,  0], -800, 81.6, [2   ,  20], 'ai'],    # 0.  Gains 20211020 Clear NE sky
                         ['focus',[7,  0],    0, 72.8, [360 , 170], 'w '],    # 1.
@@ -465,18 +468,18 @@ site_config = {
                         ['CR',   [0,  5],    0, .556, [360 , 170], 'Rc'],    #28.
                         ['dark', [5,  6],    0, 0.20, [360 , 170], 'dk'],    #29.
                         ['dif',  [0,  1],    0, 75.0, [360 , 170], 'df'],    #30. #NONE OF THESE OR BELOW have accurate gains.
-                        ['difw',   [7,  1],  0, 72.6, [0.65,  20], 'dw'],    #31.
-                        ['difup',  [1,  1],  0, 10.5, [0.65,  20], 'du'],    #31.
-                        ['difgp',  [2,  1],  0, 234,  [0.65,  20], 'dg'],    #33.
-                        ['difrp',  [3,  1],  0, 70.0, [0.65,  20], 'dr'],    #34.
-                        ['difip',  [4,  1],  0, 150., [0.65,  20], 'di'],    #35.
-                        ['difz',   [5,  1],  0, 0.73, [0.65,  20], 'ds'],    #35.
-                        ['dify',   [6,  1],  0, 0.15, [0.65,  20], 'dY'],    #37.
-                        ['difEXO', [8,  1],  0, 161., [0.65,  20], 'dx'],    #38.
-                        ['difJB',  [9,  1],  0, 42.5, [0.65,  20], 'dB'],    #39.
-                        ['difJV',  [10, 1],  0, 33.0, [0.65,  20], 'dV'],    #40.
-                        ['difRc',  [11, 1],  0, 22.2, [0.65,  20], 'dR'],    #41.
-                        ['difIc',  [12, 1],  0, 10. , [0.65,  20], 'dI']],   #42.
+                        ['difw', [7,  1],    0, 72.6, [0.65,  20], 'dw'],    #31.
+                        ['difup',[1,  1],    0, 10.5, [0.65,  20], 'du'],    #31.
+                        ['difgp',[2,  1],    0, 234,  [0.65,  20], 'dg'],    #33.
+                        ['difrp',[3,  1],    0, 70.0, [0.65,  20], 'dr'],    #34.
+                        ['difip',[4,  1],    0, 150., [0.65,  20], 'di'],    #35.
+                        ['difz', [5,  1],    0, 0.73, [0.65,  20], 'ds'],    #35.
+                        ['dify', [6,  1],    0, 0.15, [0.65,  20], 'dY'],    #37.
+                        ['difEXO',[8, 1],    0, 161., [0.65,  20], 'dx'],    #38.
+                        ['difJB',[9,  1],    0, 42.5, [0.65,  20], 'dB'],    #39.
+                        ['difJV',[10, 1],    0, 33.0, [0.65,  20], 'dV'],    #40.
+                        ['difRc',[11, 1],    0, 22.2, [0.65,  20], 'dR'],    #41.
+                        ['difIc',[12, 1],    0, 10. , [0.65,  20], 'dI']],   #42.
 
                 'filter_screen_sort':  [12, 0, 11, 2, 3, 5, 4, 1, 6],   # don't use narrow yet,  8, 10, 9], useless to try.
 
