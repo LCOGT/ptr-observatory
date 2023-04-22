@@ -418,15 +418,9 @@ class FilterWheel:
             except:
                 plog("Filter RPC error, Maxim not responding. Reset Maxim needed.")
         elif self.theskyx:
-            #breakpoint()
-            #plog ("Before Filter")            
-            #plog (self.filter.FilterIndexZeroBased)
-            #plog ("Requesto Filter")
-            #plog (self.filter_data[match][1][0])
+            
             self.filter.FilterIndexZeroBased = self.filter_data[match][1][0]
-            #plog ("After Filter")
-            #plog (self.filter.FilterIndexZeroBased)
-            #breakpoint()
+            
         else:
             try:
                 while self.filter_front.Position == -1:
@@ -443,19 +437,8 @@ class FilterWheel:
     def home_command(self, opt: dict):
         """Sets the filter to the home position."""
 
-        # NB TODO this is setting to default not Home.
-
-        #while self.filter_back.Position == -1:
-        #    time.sleep(0.1)
-        #self.filter_back.Position = 2
-        #while self.filter_back.Position == -1:
-        #    time.sleep(0.1)
-            
+           
         self.set_name_command({"filter": self.config["filter_wheel1"]["settings"]['default_filter']}, {})
-        
-        #self.filter_selected = "w"
-        #self.filter_reference = 2
-        #self.filter_offset = int(self.filter_data[2][2])
 
 
     def substitute_filter(self, requested_filter: str):
@@ -466,30 +449,16 @@ class FilterWheel:
         Skips the requested exposure if no substitute filter can be found.
         """
 
-        #plog(f"Finding substitute for {requested_filter}...")
-
-        
-        
-        #breakpoint()
-        #filter_names=[]
-        #for ctr in range(len(self.config["filter_wheel1"]["settings"]['filter_data'])):
-        #    filter_names.append((self.config["filter_wheel1"]["settings"]['filter_data'][ctr][0]))
         
         # Seriously dumb way to do this..... but quick!
         # Construct available filter list
         filter_names=[]
         for ctr in range(len(self.config["filter_wheel1"]["settings"]['filter_data'])):
-            #plog (self.config["filter_wheel1"]["settings"]['filter_data'][ctr][0])
             filter_names.append(self.config["filter_wheel1"]["settings"]['filter_data'][ctr][0])
         
-        
-        
-        
         available_filters = list(map(lambda x: x.lower(), filter_names))
-        #plog(
-        #    f"Available Filters: {str(available_filters)} \
-        #        \nRequested Filter: {str(requested_filter)}"
-        #)
+
+
         #  NB NB NB note any filter string when lower cased needs to be unique. j - Johnson,
         #  c = Cousins, p or ' implies Sloane, S is for stromgren.  Some of the mappings
         #  below may not be optimal. WER
