@@ -1613,7 +1613,7 @@ class Camera:
                 
                 # Check if filter needs changing, if so, change.                
                 if not g_dev['fil'].filter_selected == requested_filter_name:
-                    self.current_filter = g_dev["fil"].set_name_command(
+                    self.current_filter, filt_pointer, filter_offset = g_dev["fil"].set_name_command(
                         {"filter": requested_filter_name}, {}
                     )
                     
@@ -1636,7 +1636,7 @@ class Camera:
 
         this_exposure_filter = self.current_filter
         if g_dev["fil"].null_filterwheel == False:
-            exposure_filter_offset = g_dev['fil'].filter_offset
+            exposure_filter_offset = filter_offset
         else:
             exposure_filter_offset = 0
 

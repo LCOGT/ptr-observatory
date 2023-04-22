@@ -7,3 +7,5 @@ pip install astroalign
 pip install redis
 pip install requests
 pip install ocs_ingester
+pip install astroquery
+pip install ephem
