@@ -1745,7 +1745,6 @@ class Camera:
                     # Hasn't completed already
                     # Check whether calendar entry is still existant.
                     # If not, stop running block
-                    #print ("LOOKING FOR CALENDAR!")
                     if not calendar_event_id == None:
                         g_dev['obs'].scan_requests()
                         foundcalendar=False                    
@@ -1761,8 +1760,6 @@ class Camera:
                             Nsmartstack=1
                             sskcounter=2
                             return 'calendarend'
-                    
-                        #breakpoint()    
                     
                     # NB Here we enter Phase 2
                     try:
@@ -1813,25 +1810,24 @@ class Camera:
                                 self.pre_mnt
                             )  # Should do this close to the exposure
 
-
-                            self.t2 = time.time()
                 
                             # Good spot to check if we need to nudge the telescope
                             check_platesolve_and_nudge()   
                             g_dev['obs'].time_of_last_exposure = time.time()
                             g_dev['obs'].update()
-                            start_time_of_observation=time.time()
+                            
                             ra_at_time_of_exposure = g_dev["mnt"].current_icrs_ra
                             dec_at_time_of_exposure = g_dev["mnt"].current_icrs_dec
                             observer_user_name = self.user_name
 
                             try:
-                                self.user_id = command["user_id"]
+                                self.user_id = required_params["user_id"]
                                 if self.user_id != self.last_user_id:
                                     self.last_user_id = self.user_id
                                 observer_user_id= self.user_id
                             except:
                                 observer_user_id= 'Tobor'
+                                plog("Failed user_id")
 
                             # Calculate current airmass now
                             try:
@@ -1842,7 +1838,7 @@ class Camera:
                             aa = AltAz (location=g_dev['mnt'].site_coordinates, obstime=Time.now())
                             rd = rd.transform_to(aa)
                             alt = float(rd.alt/u.deg)
-                            az = float(rd.az/u.deg)
+                            az = float(rd.az/u.deg) 
                             zen = round((90 - alt), 3)
                             if zen > 90:
                                 zen = 90.0
@@ -1858,6 +1854,7 @@ class Camera:
                             airmass_of_observation = airmass
                             azimuth_of_observation = az
                             altitude_of_observation = alt
+                            start_time_of_observation=time.time()
                             self._expose(exposure_time, bias_dark_or_light_type_frame)
                             
                             
