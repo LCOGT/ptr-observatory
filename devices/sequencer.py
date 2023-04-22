@@ -2552,12 +2552,16 @@ class Sequencer:
                     g_dev['obs'].send_to_user("Beginning flat run for filter: " + str(current_filter))
                     
                     #g_dev['fil'].set_number_command(current_filter)  #  20220825  NB NB NB Change this to using a list of filter names.
-                    try:
-                        _, filt_pointer = g_dev['fil'].set_name_command({"filter": current_filter}, {})  #  20220825  NB NB NB Chan
-                    except Exception as e:
-                        plog('Failed to change filter in flat script: ', e)
-                        plog("I think this happens if it can't find a substitute filter.... but need to check that! - MTF")
-                        plog(traceback.format_exc())
+                    
+                    filter_gain = g_dev['fil'].return_filter_gain({"filter": current_filter}, {})  #  20220825  NB NB NB Chan
+                
+                    
+                    # try:
+                    #     _, filt_pointer = g_dev['fil'].set_name_command({"filter": current_filter}, {})  #  20220825  NB NB NB Chan
+                    # except Exception as e:
+                    #     plog('Failed to change filter in flat script: ', e)
+                    #     plog("I think this happens if it can't find a substitute filter.... but need to check that! - MTF")
+                    #     plog(traceback.format_exc())
                     #filter number for skylux colle
                 
                 acquired_count = 0
@@ -2612,8 +2616,8 @@ class Sequencer:
                             self.estimated_first_flat_exposure = True
                             if sky_lux != None:
                                 if g_dev["fil"].null_filterwheel == False:                                    
-                                    exp_time = target_flat/(collecting_area*sky_lux*float(g_dev['fil'].filter_data[filt_pointer][3]))  #g_dev['ocn'].calc_HSI_lux)  #meas_sky_lux)
-                                    plog('Exposure time:  ', exp_time, scale, sky_lux, float(g_dev['fil'].filter_data[filt_pointer][3]))
+                                    exp_time = target_flat/(collecting_area*sky_lux*float(filter_gain))  #g_dev['ocn'].calc_HSI_lux)  #meas_sky_lux)
+                                    plog('Exposure time:  ', exp_time, scale, sky_lux, float(filter_gain))
                                 else:
                                     #exp_time = scale*min_exposure
                                     exp_time = target_flat/(collecting_area*sky_lux*self.config['filter_wheel']['filter_wheel1']['flat_sky_gain'])  #g_dev['ocn'].calc_HSI_lux)  #meas_sky_lux)
@@ -2697,7 +2701,7 @@ class Sequencer:
                             # FIRST, lets get the highest resolution flat
             
                             if g_dev["fil"].null_filterwheel == False:
-                                opt = { 'count': 1, 'bin':  1, 'area': 150, 'filter': g_dev['fil'].filter_data[filt_pointer][0]}   #nb nb nb BIN CHNAGED FROM 2,2 ON 20220618 wer
+                                opt = { 'count': 1, 'bin':  1, 'area': 150, 'filter': current_filter}   #nb nb nb BIN CHNAGED FROM 2,2 ON 20220618 wer
                                 #plog("using:  ", g_dev['fil'].filter_data[filt_pointer][0])
                             else:
                                 opt = { 'count': 1, 'bin':  1, 'area': 150}   
@@ -2760,10 +2764,10 @@ class Sequencer:
                             if g_dev["fil"].null_filterwheel == False:
                                 if sky_lux != None:
                                     #plog('\n\n', "Patch/Bright:  ", bright, g_dev['fil'].filter_data[filt_pointer][0], \
-                                    plog(g_dev['fil'].filter_data[filt_pointer][0],' New Gain value: ', round(bright/(sky_lux*collecting_area*exp_time), 3), '\n\n')
+                                    plog(current_filter,' New Gain value: ', round(bright/(sky_lux*collecting_area*exp_time), 3), '\n\n')
                                 else:
                                     #plog('\n\n', "Patch/Bright:  ", bright, g_dev['fil'].filter_data[filt_pointer][0], \
-                                    plog(g_dev['fil'].filter_data[filt_pointer][0],' New Gain value: ', round(bright/(collecting_area*exp_time), 3), '\n\n')
+                                    plog(current_filter,' New Gain value: ', round(bright/(collecting_area*exp_time), 3), '\n\n')
                             else:
                                 if sky_lux != None:
                                     #plog('\n\n', "Patch/Bright:  ", bright, \

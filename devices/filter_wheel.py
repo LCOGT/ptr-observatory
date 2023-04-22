@@ -289,102 +289,32 @@ class FilterWheel:
     #        Filter Commands      #
     ###############################
 
-    # def set_number_command(self, filter_number):
-    #     """Sets the filter position by numeric filter position index."""
 
-    #     filter_selections = self.filter_data[int(filter_number)][1]
-    #     self.filter_number = filter_number
-    #     self.filter_selected = self.filter_data[filter_number][0]
+    def return_filter_gain(self, req: dict, opt: dict):
+        """Returns the filter gain given a filter name."""      
 
-    #     if self.dual and self.custom:
-    #         r0 = self.r0
-    #         r1 = self.r1
-    #         r0["filterwheel"]["position"] = filter_selections[0]
-    #         r1["filterwheel"]["position"] = filter_selections[1]
-    #         r0_pr = requests.put(self.ip + "/filterwheel/0/position", json=r0)
-    #         r1_pr = requests.put(self.ip + "/filterwheel/1/position", json=r1)
-    #         if str(r0_pr) == str(r1_pr) == "<Response [200]>":
-    #             plog("Set up filter configuration;  ", filter_selections)
+        try:
+            filter_name = str(req["filter"]).lower()
+        except:
+            filter_name = str(req["filter_name"]).lower()
 
-    #     elif self.dual and not self.custom:  # Dual FLI
-    #         # NB the order of the filter_selected [1] may be incorrect
-    #         try:
-    #             while self.filter_front.Position == -1:
-    #                 time.sleep(0.1)
-    #             self.filter_front.Position = self.filter_selected[1]
-    #         except:
-    #             pass
-    #         try:
-    #             while self.filter_back.Position == -1:
-    #                 time.sleep(0.1)
-    #             self.filter_back.Position = self.filter_selected[0]
-    #         except:
-    #             pass
-    #         self.filter_offset = float(self.filter_data[filter_number][2])
-    #     elif self.maxim:
-    #         g_dev["cam"].camera.Filter = filter_selections[0]
-    #         #time.sleep(0.1)
-    #         g_dev["cam"].camera.GuiderFilter = filter_selections[1]
-    #     elif self.theskyx:
-    #         breakpoint()
-    #         plog ("Before Filter")            
-    #         plog (self.filter.FilterIndexZeroBased)
-    #         plog ("Requesto Filter")
-    #         plog (self.filter_number)
-    #         self.filter.FilterIndexZeroBased = self.filter_number - 1
-    #         plog ("After Filter")
-    #         plog (self.filter.FilterIndexZeroBased)
-    #         #breakpoint()
+        filter_identified = 0
 
-    # def set_position_command(self, req: dict, opt: dict):
-    #     """Sets the filter position by param string filter position index."""
+        for match in range(           
+            len(self.filter_data)
+        ):  
 
-    #     # NBNBNB This routine may not be correct. TODO: verify this works.
-    #     filter_selections = self.filter_data[int(req["filter_num"])][1]
+            if filter_name in str(self.filter_data[match][0]).lower():
+                filt_pointer = match                
+                filter_identified = 1
+                break
 
-    #     if self.dual and self.custom:
-    #         r0 = self.r0
-    #         r1 = self.r1
-    #         r0["filterwheel"]["position"] = filter_selections[0]
-    #         r1["filterwheel"]["position"] = filter_selections[1]
-    #         r0_pr = requests.put(self.ip + "/filterwheel/0/position", json=r0)
-    #         r1_pr = requests.put(self.ip + "/filterwheel/1/position", json=r1)
-    #         if str(r0_pr) == str(r1_pr) == "<Response [200]>":
-    #             plog("Set up filter configuration;  ", filter_selections)
 
-    #     elif self.dual and not self.custom:
-    #         try:
-    #             while self.filter_front.Position == -1:
-    #                 time.sleep(0.1)
-    #             self.filter_front.Position = filter_selections[1]
-    #             #time.sleep(0.2)
-    #         except:
-    #             pass
-    #         try:
-    #             while self.filter_back.Position == -1:
-    #                 time.sleep(0.1)
-    #             self.filter_back.Position = filter_selections[0]
-    #             #time.sleep(0.2)
-    #         except:
-    #             pass
-    #         self.filter_offset = float(self.filter_data[filter_selections][2])
-    #     elif self.maxim:
-    #         g_dev["cam"].camera.Filter = filter_selections[0]
-    #         #time.sleep(0.2)
-    #         g_dev["cam"].camera.GuiderFilter = filter_selections[1]
-    #     elif self.theskyx:
-    #         #TSXSend("ccdsoftCamera.TemperatureSetPoint = -10")
-    #         #TSXSend("ccdsoftCamera.RegulateTemperature = true")
-    #         # self.filter.FilterIndexZeroBased <---- plogs number of current filter
-    #         breakpoint()
-    #         plog ("Before Filter")            
-    #         plog (self.filter.FilterIndexZeroBased)
-    #         plog ("Requesto Filter")
-    #         plog (self.filter_number)
-    #         self.filter.FilterIndexZeroBased = self.filter_number - 1
-    #         plog ("After Filter")
-    #         plog (self.filter.FilterIndexZeroBased)
-    #         #breakpoint()
+        filter_gain = float(self.filter_data[filt_pointer][3])
+
+        return filter_gain
+
+
 
     def set_name_command(self, req: dict, opt: dict):
         """Sets the filter position by filter name."""      
