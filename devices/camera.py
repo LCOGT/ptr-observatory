@@ -507,30 +507,7 @@ class Camera:
             self.qhydirect = False
             plog("ASCOM is connected:  ", self._connect(True))
             plog("Control is ASCOM camera driver.")
-            #try:
-            #self.camera.Action("EnableFullSensor", "enable")
-            #except:
-            #    pass
-            #self.camera.SetFullFrame()
-            #self.camera.SetFullFrame
-            
-            # ASCOM does not have an EnableFullSensor Action apparently - MTF
-            
-            
-            #self.camera.NumX = int(self.camera_x_size)
-            #self.camera.NumY = int(self.camera_y_size)
 
-            
-            
-            
-            #breakpoint()
-            # try:
-            #     actions = self.camera.SupportedActions
-            #     if "EnableFullSensor" in actions:
-            #         self.camera.Action("EnableFullSensor", "enable")
-            #         plog("Chip size expanded to 4132 x 4117")
-            # except:
-            #     plog("Chip size not expanded.")
         elif driver == "CCDSoft2XAdaptor.ccdsoft5Camera":
             plog("Connecting to TheSkyX")
             self._connected = self._theskyx_connected
@@ -560,16 +537,9 @@ class Camera:
             global qhycam
             plog("Connecting directly to QHY")
             qhycam = Qcam(os.path.join("support_info/qhysdk/x64/qhyccd.dll"))
-    
-    
-    
-    
-            #gscale1 = "$@B%8&WM#*oahkbdpqwmZO0QLCJUYXzcvunxrjft/\\|()1{}[]?-_+~<>i!lI;:,\"^`'. "
-            #gscale2 = '@%#*+=-:. '
             
             qhycam.so.RegisterPnpEventIn(pnp_in)
             qhycam.so.RegisterPnpEventOut(pnp_out)
-            #plog("QHY Direct Control is connected:  ")
             qhycam.so.InitQHYCCDResource()
             qhycam.camera_params[qhycam_id]['handle'] = qhycam.so.OpenQHYCCD(qhycam_id)
             if qhycam.camera_params[qhycam_id]['handle'] is None:
@@ -579,10 +549,8 @@ class Camera:
             
             qhycam.camera_params[qhycam_id]['stream_mode'] = c_uint8(qhycam.stream_single_mode)
             success = qhycam.so.SetQHYCCDStreamMode(qhycam.camera_params[qhycam_id]['handle'], qhycam.camera_params[qhycam_id]['stream_mode'])
-            #print('set StreamMode   =' + str(success))
-            
+           
             success = qhycam.so.InitQHYCCD(qhycam.camera_params[qhycam_id]['handle'])
-            #plog('init Camera   =' + str(success))
             
             
             mode_name = create_string_buffer(qhycam.STR_BUFFER_SIZE)
@@ -598,82 +566,26 @@ class Camera:
                                                byref(qhycam.camera_params[qhycam_id]['pixel_width']),
                                                byref(qhycam.camera_params[qhycam_id]['pixel_height']),
                                                byref(qhycam.camera_params[qhycam_id]['bits_per_pixel']))
-
-            #print('info.   =' + str(success))
-            
-            
+           
             qhycam.camera_params[qhycam_id]['mem_len'] = qhycam.so.GetQHYCCDMemLength(qhycam.camera_params[qhycam_id]['handle'])
             i_w = qhycam.camera_params[qhycam_id]['image_width'].value
             i_h = qhycam.camera_params[qhycam_id]['image_height'].value
-            #print('c-w:     ' + str(qhycam.camera_params[qhycam_id]['chip_width'].value), end='')
-            #print('    c-h: ' + str(qhycam.camera_params[qhycam_id]['chip_height'].value))
-            #print('p-w:     ' + str(qhycam.camera_params[qhycam_id]['pixel_width'].value), end='')
-            #print('    p-h: ' + str(qhycam.camera_params[qhycam_id]['pixel_height'].value))
-            #print('i-w:     ' + str(i_w), end='')
-            #print('    i-h: ' + str(i_h))
-            #print('bit: ' + str(qhycam.camera_params[qhycam_id]['bits_per_pixel'].value))
-            #print('mem len: ' + str(qhycam.camera_params[qhycam_id]['mem_len']))
-
-            #val_temp = qhycam.so.GetQHYCCDParam(qhycam.camera_params[qhycam_id]['handle'], qhycam.CONTROL_CURTEMP)
-            #val_pwm = qhycam.so.GetQHYCCDParam(qhycam.camera_params[qhycam_id]['handle'], qhycam.CONTROL_CURPWM)
-
-            # todo  c_uint8 c_uint16??
-            #if bit_depth == cam.bit_depth_16:
-            #print('using c_uint16()')
+            
             qhycam.camera_params[qhycam_id]['prev_img_data'] = (c_uint16 * int(qhycam.camera_params[qhycam_id]['mem_len'] / 2))()
-            #else:
-            #    print('using c_uint8()')
-            #    cam.camera_params[cam_id]['prev_img_data'] = (c_uint8 * cam.camera_params[cam_id]['mem_len'])()
-
+           
             success = qhycam.QHYCCD_ERROR
-            
-            
+                        
             qhycam.so.SetQHYCCDResolution(qhycam.camera_params[qhycam_id]['handle'], c_uint32(0), c_uint32(0), c_uint32(i_w),
-                                           c_uint32(i_h))
-            
-            
-            #success = qhycam.so.ExpQHYCCDSingleFrame(qhycam.camera_params[qhycam_id]['handle'])
-            #print('exp  single = ' + str(success))
-            
-            
-            
+                                           c_uint32(i_h))      
             image_width_byref = c_uint32()
             image_height_byref = c_uint32()
             bits_per_pixel_byref = c_uint32()
-            
-            
             
             success = qhycam.so.SetQHYCCDParam(qhycam.camera_params[qhycam_id]['handle'], qhycam.CONTROL_EXPOSURE, c_double(20000))
             success = qhycam.so.SetQHYCCDParam(qhycam.camera_params[qhycam_id]['handle'], qhycam.CONTROL_GAIN, c_double(float(self.config["camera"][self.name]["settings"]['direct_qhy_gain'])))
             success = qhycam.so.SetQHYCCDParam(qhycam.camera_params[qhycam_id]['handle'], qhycam.CONTROL_OFFSET, c_double(float(self.config["camera"][self.name]["settings"]['direct_qhy_offset'])))
             success = qhycam.so.SetQHYCCDParam(qhycam.camera_params[qhycam_id]['handle'], qhycam.CONTROL_USBTRAFFIC,c_double(float(self.config["camera"][self.name]["settings"]['direct_qhy_usb_speed'])))
-            
-            
-            
-            
-            # success = qhycam.so.GetQHYCCDSingleFrame(qhycam.camera_params[qhycam_id]['handle'],
-            #                                       byref(image_width_byref),
-            #                                       byref(image_height_byref),
-            #                                       byref(bits_per_pixel_byref),
-            #                                       byref(qhycam.camera_params[qhycam_id]['channels']),
-            #                                       byref(qhycam.camera_params[qhycam_id]['prev_img_data']))
-            # print('read  single = ' + str(success))
-            
-            
-            #qhycam.camera_params[qhycam_id]['prev_img'] = np.ctypeslib.as_array(qhycam.camera_params[qhycam_id]['prev_img_data'])
-            #print("---------------->" + str(len(qhycam.camera_params[qhycam_id]['prev_img'])))
-            #image_size = i_h * i_w
-            #print("image size =     " + str(image_size))
-            #print("prev_img_list sub length-->" + str(len(qhycam.camera_params[qhycam_id]['prev_img'])))
-            #print("Image W=" + str(i_w) + "        H=" + str(i_h))
-            #qhycam.camera_params[qhycam_id]['prev_img'] = qhycam.camera_params[qhycam_id]['prev_img'][0:image_size]
-            #image = np.reshape(qhycam.camera_params[qhycam_id]['prev_img'], (i_h, i_w))
-            
-            #print (image)
-            
-            
-            #breakpoint()
-            
+                        
             self._connected = self._qhyccd_connected
             self._connect = self._qhyccd_connect
             self._set_setpoint = self._qhyccd_set_setpoint
@@ -686,15 +598,12 @@ class Camera:
             self._imageavailable = self._qhyccd_imageavailable
             self._getImageArray = self._qhyccd_getImageArray
             
-            
             self.description = "QHYDirectControl"
             self.maxim = False
             self.ascom = False
             self.theskyx = False
             self.qhydirect = True
             
-
-
         else:
             plog("Maxim camera is initializing.")
             self._connected = self._maxim_connected
@@ -746,7 +655,7 @@ class Camera:
         temp, humid, pressure =self._temperature()
         plog("Cooling beginning @:  ", temp)
         plog("Humidity and pressure:  ", humid, pressure)
-        #time.sleep(5)
+
         if self.maxim == True:
             plog("TEC  % load:  ", self._maxim_cooler_power())
         self.current_filter = (
@@ -756,7 +665,6 @@ class Camera:
         self.cmd_in = None
         self.t7 = None
         self.camera_message = "-"
-        #self.obsid_path = self.config["client_path"]
 
         
         
@@ -878,7 +786,6 @@ class Camera:
         # A flag to tell the camera main queue
         # whether the separate sep thread has completed yet
         self.sep_processing=False
-
         
         try:
             seq = test_sequence(self.alias)
@@ -886,9 +793,6 @@ class Camera:
             reset_sequence(self.alias)
             
         
-    
-
-
     # Patchable methods   NB These could be default ASCOM
     def _connected(self):
         plog("This is un-patched _connected method")
@@ -903,11 +807,6 @@ class Camera:
         return
 
     # The patches. Note these are essentially getter-setter/property constructs.
-
-    # def _theskyx_set_setpoint(self, p_temp):
-    #     plog("NOT SURE HOW TO SET TEMP POINT IN THE SKY YET")
-    #     self.camera.TemperatureSetPoint = float(p_temp)
-    #     return self.camera.TemperatureSetPoint
 
     def _theskyx_connected(self):
         return self.camera.LinkEnabled
@@ -926,16 +825,13 @@ class Camera:
         return self.camera.HeatSinkTemperature
 
     def _theskyx_cooler_on(self):
-        #plog("I am not sure what this function is asking for")
-        return self.camera.RegulateTemperature  # NB NB NB This would be a good place to put a warming protector
+        return self.camera.RegulateTemperature  
 
     def _theskyx_set_cooler_on(self):
-        self.camera.RegulateTemperature = True
-        #plog("3s wait for cooler to start up.")
-        #time.sleep(3)
+        self.camera.RegulateTemperature = True        
         return (
             self.camera.RegulateTemperature
-        )  # NB NB NB This would be a good place to put a warming protector
+        )  
 
     def _theskyx_set_setpoint(self, p_temp):
         self.camera.TemperatureSetpoint = float(p_temp)
@@ -951,26 +847,18 @@ class Camera:
         tempcamera.Connect()
         tempcamera.TakeImage()
         tempcamera.ShutDownTemperatureRegulationOnDisconnect = False
-        #tempcamera.Disconnect()
         self.async_exposure_lock=False
 
     def _theskyx_expose(self, exposure_time, bias_dark_or_light_type_frame):
         self.camera.ExposureTime = exposure_time
-        #plog ("bias_dark_or_light_type_frame: " + str(bias_dark_or_light_type_frame))
         if bias_dark_or_light_type_frame == 'dark':            
             self.camera.Frame = 3 
         elif bias_dark_or_light_type_frame == 'bias':            
             self.camera.Frame = 2 
         else:
-            self.camera.Frame = 1
-        #breakpoint()
-        #self.async_camera_exposure_queue.put('expose_please', block=False)
+            self.camera.Frame = 1        
         thread=threading.Thread(target=self.theskyx_async_expose)
         thread.start()
-        #breakpoint()
-        #self.camera.TakeImage()
-    
-
 
     def _theskyx_stop_expose(self):
         self.camera.AbortExposure()
@@ -1006,15 +894,13 @@ class Camera:
     def _maxim_cooler_on(self):
         return (
             self.camera.CoolerOn
-        )  # NB NB NB This would be a good place to put a warming protector
+        ) 
 
     def _maxim_set_cooler_on(self):
         self.camera.CoolerOn = True
-        #plog("3s wait for cooler to start up.")
-        #time.sleep(3)
         return (
             self.camera.CoolerOn
-        )  # NB NB NB This would be a good place to put a warming protector
+        )  
 
     def _maxim_set_setpoint(self, p_temp):
         self.camera.TemperatureSetpoint = float(p_temp)
@@ -1024,13 +910,11 @@ class Camera:
     def _maxim_setpoint(self):
         return self.camera.TemperatureSetpoint
 
-    def _maxim_expose(self, exposure_time, bias_dark_or_light_type_frame):
-        
+    def _maxim_expose(self, exposure_time, bias_dark_or_light_type_frame):        
         if bias_dark_or_light_type_frame == 'bias' or bias_dark_or_light_type_frame == 'dark':
             imtypeb=0
         else:
-            imtypeb=1
-        
+            imtypeb=1        
         self.camera.Expose(exposure_time, imtypeb)
 
     def _maxim_stop_expose(self):
@@ -1132,109 +1016,52 @@ class Camera:
         #temptemp=qhycam.so.SetQHYCCDParam(qhycam.camera_params[qhycam_id]['handle'], qhycam.CONTROL_COOLER,c_double(self.setpoint))
         return True
     
-    def _qhyccd_set_cooler_on(self):
-        #temptemp=qhycam.so.SetQHYCCDParam(qhycam.camera_params[qhycam_id]['handle'], qhycam.CONTROL_CURTEMP, c_double(float(self.setpoint)))
-        #print (temptemp)       
+    def _qhyccd_set_cooler_on(self):     
         temptemp=qhycam.so.SetQHYCCDParam(qhycam.camera_params[qhycam_id]['handle'], qhycam.CONTROL_COOLER,c_double(self.current_setpoint))
         return True
-        #self.camera.CoolerOn = True
-        #return self.camera.CoolerOn
-    
-    def _qhyccd_set_setpoint(self, p_temp):
-        #if self.camera.CanSetCCDTemperature:
-        #    self.camera.SetCCDTemperature = float(p_temp)
-        #    return self.camera.SetCCDTemperature
-        #else:
-        #    plog("Camera cannot set cooling temperature.")
-        #    return p_temp
 
-        #temptemp=qhycam.so.SetQHYCCDParam(qhycam.camera_params[qhycam_id]['handle'], qhycam.CONTROL_CURTEMP, c_double(int(p_temp)))
+    
+    def _qhyccd_set_setpoint(self, p_temp):        
         temptemp=qhycam.so.SetQHYCCDParam(qhycam.camera_params[qhycam_id]['handle'], qhycam.CONTROL_COOLER,c_double(p_temp))
-        self.current_setpoint = p_temp
-        #breakpoint()
-        #print (temptemp)
-        #breakpoint()
+        self.current_setpoint = p_temp        
         return p_temp
     
-    def _qhyccd_setpoint(self):
-        
+    def _qhyccd_setpoint(self):        
         try: 
             temptemp=qhycam.so.GetQHYCCDParam(qhycam.camera_params[qhycam_id]['handle'], qhycam.CONTROL_CURTEMP)
         except:
             print ("failed at getting the CCD temperature")
             temptemp=999.9
         return temptemp
-        
-        
-        #temptemp=qhycam.so.SetQHYCCDParam(qhycam.camera_params[qhycam_id]['handle'], qhycam.CONTROL_CURTEMP, c_double(int(p_temp)))
-        #temptemp=qhycam.so.SetQHYCCDParam(qhycam.camera_params[qhycam_id]['handle'], qhycam.CONTROL_COOLER,c_double(p_temp))
-        #self.current_setpoint = p_temp
-        #print (temptemp)
-        #return 
     
     def _qhyccd_expose(self, exposure_time, bias_dark_or_light_type_frame):
         
         success = qhycam.so.SetQHYCCDParam(qhycam.camera_params[qhycam_id]['handle'], qhycam.CONTROL_EXPOSURE, c_double(exposure_time*1000*1000))
         qhycam.so.ExpQHYCCDSingleFrame(qhycam.camera_params[qhycam_id]['handle'])
-   
-    
+       
     def _qhyccd_stop_expose(self):
         try:
-            #success = 
             qhycam.so.CancelQHYCCDExposingAndReadout(qhycam.camera_params[qhycam_id]['handle'])
         except:
             plog(traceback.format_exc()) 
             print (success)
-        #self.camera.StopExposure()  # ASCOM also has an AbortExposure method.
-    
+       
     def _qhyccd_getImageArray(self):
-        
-        
         image_width_byref = c_uint32()
         image_height_byref = c_uint32()
         bits_per_pixel_byref = c_uint32()
-        
-        
-        #temptime=time.time()
+
         success = qhycam.so.GetQHYCCDSingleFrame(qhycam.camera_params[qhycam_id]['handle'],
                                               byref(image_width_byref),
                                               byref(image_height_byref),
                                               byref(bits_per_pixel_byref),
                                               byref(qhycam.camera_params[qhycam_id]['channels']),
                                               byref(qhycam.camera_params[qhycam_id]['prev_img_data']))
-        #plog('QHY HARDWARE READOUT: ' + str(time.time() - temptime))
-        #print('read  single = ' + str(success))
         
-        
-        
-        #qhycam.camera_params[qhycam_id]['prev_img'] = np.ctypeslib.as_array(qhycam.camera_params[qhycam_id]['prev_img_data'])
-        #print("---------------->" + str(len(qhycam.camera_params[qhycam_id]['prev_img'])))
-        
-        #print("image size =     " + str(image_size))
-        #print("prev_img_list sub length-->" + str(len(qhycam.camera_params[qhycam_id]['prev_img'])))
-        #print("Image W=" + str(i_w) + "        H=" + str(i_h))
-        
-        
-        
-        #qhycam.camera_params[qhycam_id]['prev_img'] = qhycam.camera_params[qhycam_id]['prev_img'][0:image_size]
-        #image = np.reshape(qhycam.camera_params[qhycam_id]['prev_img'], (i_h, i_w))
-        
-        #temptime=time.time()
         image = np.ctypeslib.as_array(qhycam.camera_params[qhycam_id]['prev_img_data'])
         image = np.reshape(image[0:self.camera_image_size], (self.camera_x_size, self.camera_y_size))
-        #plog('SITE SOFTWARE QHY READOUT: ' + str(time.time() - temptime))
-        #image = np.reshape(qhycam.camera_params[qhycam_id]['prev_img'], (i_h, i_w))
-        
-        
-        
-        #print (image)
-        
-        
         
         return np.asarray(image)
-
-
-
 
 
     def create_simple_autosave(
@@ -1473,28 +1300,10 @@ class Camera:
         # We've had multiple cases of multiple camera exposures trying to go at once
         # And it is likely because it takes a non-zero time to get to Phase II
         # So even in the setup phase the "exposure" is "busy"
-        
-        
-
-
-        # # Force a reseek //eventually dither//
-        # try:
-        #     if (
-        #         g_dev["mnt"].last_seek_time < self.t0 - 180  #NB this is faulting, no se.f.t0 exists
-        #     ):  # NB Consider upping this to 300 to 600 sec.
-        #         plog("re_seeking")
-        #         g_dev["mnt"].re_seek(
-        #             0
-        #         )  # is a placeholder for a dither value being passed.
-        # except:
-        #     pass
-
 
         opt = optional_params
-        #plog ("optional params :", opt)
         self.hint = optional_params.get("hint", "")
-        self.script = required_params.get("script", "None")
-        
+        self.script = required_params.get("script", "None")        
         
         no_AWS, self.toss = True if imtype.lower() == "test image" else False, False
         quick = True if imtype.lower() == "quick" else False
@@ -1560,33 +1369,20 @@ class Camera:
         else:
             LongStackID = required_params['longstackname']
 
-
         self.blockend = required_params.get('block_end', "None")
-
-
         self.pane = optional_params.get("pane", None)
-
 
         bin_x = 1               
         bin_y = 1  # NB This needs fixing someday!
         self.native_bin = self.config["camera"][self.name]["settings"]["native_bin"]
         self.ccd_sum = str(1) + ' ' + str(1)
-        #bin_x = 1
-        #bin_y = 1
-        
-
 
         readout_time = float(
             self.config["camera"][self.name]["settings"]["cycle_time"]
         )
-
-    
-        
         self.estimated_readtime = (
             exposure_time + readout_time
         )  
-
-
         count = int(
             optional_params.get("count", 1)
         )  
@@ -1597,10 +1393,6 @@ class Camera:
 
         # Here we set up the filter, and later on possibly rotational composition.
         try:
-            #breakpoint()
-            
-            
-                
             if g_dev["fil"].null_filterwheel == False:
                 
                 if imtype in ['bias','dark']:
@@ -1813,7 +1605,6 @@ class Camera:
                             g_dev["mnt"].get_rapid_exposure_status(
                                 self.pre_mnt
                             )  # Should do this close to the exposure
-
                 
                             # Good spot to check if we need to nudge the telescope
                             check_platesolve_and_nudge()   
@@ -1823,9 +1614,6 @@ class Camera:
                             ra_at_time_of_exposure = g_dev["mnt"].current_icrs_ra
                             dec_at_time_of_exposure = g_dev["mnt"].current_icrs_dec
                             observer_user_name = user_name
-                            
-
-                            #breakpoint()
 
                             try:
                                 self.user_id = user_id
@@ -1871,7 +1659,6 @@ class Camera:
                             self.expresult["error":True]
                             self.exposure_busy = False
                             return self.expresult
-                        #self.t9 = time.time()
                         
                         # We call below to keep this subroutine a reasonable length, Basically still in Phase 2
                         self.expresult = self.finish_exposure(
@@ -1906,8 +1693,6 @@ class Camera:
                             altitude_of_observation = altitude_of_observation,
                         )  # NB all these parameters are crazy!
                         self.exposure_busy = False
-                        #self.t10 = time.time()
-
                         self.retry_camera = 0
                         break
                     except Exception as e:
@@ -1918,7 +1703,6 @@ class Camera:
                         self.exposure_busy = False
                         continue
         #  This is the loop point for the seq count loop
-        #self.t11 = time.time()
         self.exposure_busy = False
         return self.expresult
 
@@ -1964,11 +1748,8 @@ class Camera:
     ):
         plog(
             "Exposure Started:  " + str(exposure_time) + "s ",
-            frame_type#,
-            #"to go: ",
-            #counter,
+            frame_type
         )
-        #g_dev["obs"].send_to_user(            "Insert #3 of 5 exposure of object type X here"        )
         
         try:
             filter_ui_info=opt['filter']
@@ -2017,19 +1798,6 @@ class Camera:
                     p_level="INFO",
                 )
 
-        #breakpoint()
-
-        #plog ("Smart Stack ID: " + smartstackid)
-        # g_dev["obs"].send_to_user(
-        #     "Starting "
-        #     + str(exposure_time)
-        #     + " second exposure. Number of "
-        #     + frame_type
-        #     + " frames remaining: "
-        #     + str(counter),
-        #     p_level="INFO",
-        # )
-        # , gather_status, do_sep, no_AWS, start_x, start_y, opt['area'])
         self.status_time = time.time() + 10
         self.post_mnt = []
         self.post_rot = []
@@ -2416,10 +2184,7 @@ class Camera:
                         ]['direct_qhy_readout_mode'], "QHY Readout Mode")
     
                         
-
-                        
-                    hdu.header["TIMESYS"] = ("UTC", "Time system used")
-                    
+                    hdu.header["TIMESYS"] = ("UTC", "Time system used")                    
                     hdu.header["DATE-OBS"] = (
                         datetime.datetime.isoformat(
                             datetime.datetime.utcfromtimestamp(start_time_of_observation)
@@ -3044,13 +2809,9 @@ class Camera:
                         "[dms] Catalog Dec of object",
                     )
                     
-                    
-                    
                     hdu.header["RA-hms"] = tempointing[0]
                     hdu.header["DEC-dms"] = tempointing[1]
-
                     
-                        
                     hdu.header["CTYPE1"] = 'RA---TAN'
                     hdu.header["CTYPE2"] = 'DEC--TAN'
                     hdu.header["CDELT1"] = pixscale / 3600
@@ -3058,8 +2819,7 @@ class Camera:
                     hdu.header["CRVAL1"] = tempRAdeg
                     hdu.header["CRVAL2"] = tempDECdeg
                     hdu.header["CRPIX1"] = float(hdu.header["NAXIS1"])/2
-                    hdu.header["CRPIX2"] = float(hdu.header["NAXIS2"])/2
-                    
+                    hdu.header["CRPIX2"] = float(hdu.header["NAXIS2"])/2                    
 
                     try:  #  NB relocate this to Expose entry area.  Fill out except.  Might want to check on available space.
                         im_path_r = self.camera_path
@@ -3078,7 +2838,6 @@ class Camera:
 
                     except:
                         pass
-
 
                     paths = {
                         "im_path": im_path,
@@ -3105,8 +2864,6 @@ class Camera:
                         focus_image = True
                     else:
                         focus_image = False
-
-                                       
 
                     # If the file isn't a calibration frame, then undertake a flash reduction quickly
                     # To make a palatable jpg AS SOON AS POSSIBLE to send to AWS
@@ -3169,7 +2926,6 @@ class Camera:
                             
                             # bin to native binning
                             if self.native_bin != 1:
-                                #plog ("Binning 1x1 to " + str(self.bin))
                                 hdusmalldata=(block_reduce(hdusmalldata,self.native_bin))                                 
                                 hdusmallheader['XBINING']=self.native_bin
                                 hdusmallheader['YBINING']=self.native_bin
