@@ -1329,8 +1329,8 @@ class Camera:
         if self.user_name != self.last_user_name:
             self.last_user_name = self.user_name
         if action == "expose" and not self.exposure_busy:
-            
-            self.expose_command(req, opt, do_sep=True, quick=False)
+
+            self.expose_command(req, opt, user_id=command['user_id'], user_name=command['user_name'], user_roles=command['user_roles'], do_sep=True, quick=False)
             self.exposure_busy = False  # Hangup needs to be guarded with a timeout.
             self.active_script = None
 
@@ -1341,7 +1341,8 @@ class Camera:
                     time.sleep(0.5)
                 else:
                     break
-            self.expose_command(req, opt, do_sep=True, quick=False)
+
+            self.expose_command(req, opt, user_id=command['user_id'], user_name=command['user_name'], user_roles=command['user_roles'], do_sep=True, quick=False)
             self.exposure_busy = False  # Hangup needs to be guarded with a timeout.
             self.active_script = None
 
@@ -1392,6 +1393,9 @@ class Camera:
         self,
         required_params,
         optional_params,
+        user_id='None',
+        user_name='None',
+        user_roles='None',
         gather_status=True,
         do_sep=True,
         no_AWS=False,
@@ -1635,8 +1639,8 @@ class Camera:
             plog(traceback.format_exc())      
 
         this_exposure_filter = self.current_filter
-        if g_dev["fil"].null_filterwheel == False:
-            exposure_filter_offset = filter_offset
+        if g_dev["fil"].null_filterwheel == False:            
+            exposure_filter_offset = self.current_offset
         else:
             exposure_filter_offset = 0
 
@@ -1818,10 +1822,13 @@ class Camera:
                             
                             ra_at_time_of_exposure = g_dev["mnt"].current_icrs_ra
                             dec_at_time_of_exposure = g_dev["mnt"].current_icrs_dec
-                            observer_user_name = self.user_name
+                            observer_user_name = user_name
+                            
+
+                            #breakpoint()
 
                             try:
-                                self.user_id = required_params["user_id"]
+                                self.user_id = user_id
                                 if self.user_id != self.last_user_id:
                                     self.last_user_id = self.user_id
                                 observer_user_id= self.user_id
