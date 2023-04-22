@@ -28,28 +28,8 @@ from glob import glob
 import traceback
 from ptr_utility import plog
 from pprint import pprint
+
 '''
-Autofocus NOTE 20200122
-As a general rule the focus is stable(temp).  So when code (re)starts, compute and go to that point(filter).
-Nautical or astronomical dark, and time of last focus > 2 hours or delta-temp > ?1C, then schedule an
-autofocus.  Presumably system is near the bottom of the focus parabola, but it may not be.
-Pick a ~7mag focus star at an Alt of about 60 degrees, generally in the South.  Later on we can start
-chosing and logging a range of altitudes so we can develop adj_focus(temp, alt, flip_side).
-Take central image, move in 1x and expose, move out 2x then in 1x and expose, solve the equation and
-then finish with a check exposure.
-Now there are cases if for some reason telescope is not near the focus:  first the minimum is at one end
-of a linear series.  From that series and the image diameters we can imply where the focus is, subject to
-seeing induced errors.  If either case occurs, go to the projected point and try again.
-A second case is the focus is WAY off, and or pointing.  Make appropriate adjustments and try again.
-The third case is we have a minimum.  Inspection of the FWHM may imply seeing is poor.  In that case
-double the exposure and possibly do a 5-point fit rather than a 3-point.
-Note at the last exposure it is reasonable to do a minor recalibrate of the pointing.
-Once we have fully automatic observing it might make sense to do a more full range test of the focus mechanism
-and or visit more altitudes and temeperatures.
-1) Implement mag 7 star selection including getting that star at center of rotation.
-2) Implement using Sep to reliably find that star.
-3) change use of site config file.
-4) use common settings for sep
 '''
 
 def wait_for_slew():    
@@ -77,8 +57,6 @@ def wait_for_slew():
         else:
             breakpoint()
     return 
-
-
 
 def fit_quadratic(x, y):
     #From Meeus, works fine.
@@ -216,8 +194,6 @@ class Sequencer:
 
         self.clock_focus_latch=False
 
-        
-        
         self.stop_script_called=False
         self.stop_script_called_time=time.time()
 
@@ -316,11 +292,8 @@ class Sequencer:
             # Cancel out of all running exposures. 
             g_dev['obs'].cancel_all_activity()          
             
-            
-            
         elif action == "home":
             g_dev["obs"].send_to_user("Sending the mount to home.")
-
             g_dev['mnt'].home_command()
 
         elif action == 'run' and script == 'findFieldCenter':
@@ -331,21 +304,6 @@ class Sequencer:
             plog('Sequencer command:  ', command, ' not recognized.')
 
     def open_observatory(self,enc_status, ocn_status, no_sky=False):
-        #ocn_status = eval(self.redis_server.get('ocn_status'))
-           #NB 120 is enough time to telescope to get pointed to East
-        #self.time_of_next_slew = time.time() -1  #Set up so next block executes if unparked.
-        # if g_dev['mnt'].mount.AtParK:
-        #     g_dev['mnt'].unpark_command({}, {}) # Get there early
-        #     #time.sleep(3)
-        #     self.time_of_next_slew = time.time() + 600   #NB 120 is enough time to telescope to get pointed to East
-        #     if not no_sky:
-        #         g_dev['mnt'].slewToSkyFlatAsync()
-        #         #This should run once. Next time this phase is entered in > 120 seconds we
-        #     #flat_spot, flat_alt = g_dev['evnt'].flat_spot_now()
-
-        #if time.time() >= self.time_of_next_slew:
-        #    self.time_of_next_slew = time.time() + 600  # seconds between slews.
-            #We slew to anti-solar Az and reissue this command every 120 seconds
         
         if not self.config['obsid_roof_control']:
             #plog("A request to open observatory was made even though this platform has no roof control. Returning.")
@@ -495,11 +453,9 @@ class Sequencer:
         
         # Do this in case of WEMA faults.... they can crash these sequencer 
         # things when it looks for shutter_status
-        
         if enc_status == None:
             enc_status = {'shutter_status': 'Unknown'}
         
-
         # Check for delayed opening of the observatory and act accordingly.
 
         # If the observatory is simply delayed until opening, then wait until then, then attempt to start up the observatory
@@ -2552,12 +2508,16 @@ class Sequencer:
                     g_dev['obs'].send_to_user("Beginning flat run for filter: " + str(current_filter))
                     
                     #g_dev['fil'].set_number_command(current_filter)  #  20220825  NB NB NB Change this to using a list of filter names.
-                    try:
-                        _, filt_pointer = g_dev['fil'].set_name_command({"filter": current_filter}, {})  #  20220825  NB NB NB Chan
-                    except Exception as e:
-                        plog('Failed to change filter in flat script: ', e)
-                        plog("I think this happens if it can't find a substitute filter.... but need to check that! - MTF")
-                        plog(traceback.format_exc())
+                    
+                    filter_gain = g_dev['fil'].return_filter_gain({"filter": current_filter}, {})  #  20220825  NB NB NB Chan
+                
+                    
+                    # try:
+                    #     _, filt_pointer = g_dev['fil'].set_name_command({"filter": current_filter}, {})  #  20220825  NB NB NB Chan
+                    # except Exception as e:
+                    #     plog('Failed to change filter in flat script: ', e)
+                    #     plog("I think this happens if it can't find a substitute filter.... but need to check that! - MTF")
+                    #     plog(traceback.format_exc())
                     #filter number for skylux colle
                 
                 acquired_count = 0
@@ -2612,8 +2572,8 @@ class Sequencer:
                             self.estimated_first_flat_exposure = True
                             if sky_lux != None:
                                 if g_dev["fil"].null_filterwheel == False:                                    
-                                    exp_time = target_flat/(collecting_area*sky_lux*float(g_dev['fil'].filter_data[filt_pointer][3]))  #g_dev['ocn'].calc_HSI_lux)  #meas_sky_lux)
-                                    plog('Exposure time:  ', exp_time, scale, sky_lux, float(g_dev['fil'].filter_data[filt_pointer][3]))
+                                    exp_time = target_flat/(collecting_area*sky_lux*float(filter_gain))  #g_dev['ocn'].calc_HSI_lux)  #meas_sky_lux)
+                                    plog('Exposure time:  ', exp_time, scale, sky_lux, float(filter_gain))
                                 else:
                                     #exp_time = scale*min_exposure
                                     exp_time = target_flat/(collecting_area*sky_lux*self.config['filter_wheel']['filter_wheel1']['flat_sky_gain'])  #g_dev['ocn'].calc_HSI_lux)  #meas_sky_lux)
@@ -2697,7 +2657,7 @@ class Sequencer:
                             # FIRST, lets get the highest resolution flat
             
                             if g_dev["fil"].null_filterwheel == False:
-                                opt = { 'count': 1, 'bin':  1, 'area': 150, 'filter': g_dev['fil'].filter_data[filt_pointer][0]}   #nb nb nb BIN CHNAGED FROM 2,2 ON 20220618 wer
+                                opt = { 'count': 1, 'bin':  1, 'area': 150, 'filter': current_filter}   #nb nb nb BIN CHNAGED FROM 2,2 ON 20220618 wer
                                 #plog("using:  ", g_dev['fil'].filter_data[filt_pointer][0])
                             else:
                                 opt = { 'count': 1, 'bin':  1, 'area': 150}   
@@ -2760,10 +2720,10 @@ class Sequencer:
                             if g_dev["fil"].null_filterwheel == False:
                                 if sky_lux != None:
                                     #plog('\n\n', "Patch/Bright:  ", bright, g_dev['fil'].filter_data[filt_pointer][0], \
-                                    plog(g_dev['fil'].filter_data[filt_pointer][0],' New Gain value: ', round(bright/(sky_lux*collecting_area*exp_time), 3), '\n\n')
+                                    plog(current_filter,' New Gain value: ', round(bright/(sky_lux*collecting_area*exp_time), 3), '\n\n')
                                 else:
                                     #plog('\n\n', "Patch/Bright:  ", bright, g_dev['fil'].filter_data[filt_pointer][0], \
-                                    plog(g_dev['fil'].filter_data[filt_pointer][0],' New Gain value: ', round(bright/(collecting_area*exp_time), 3), '\n\n')
+                                    plog(current_filter,' New Gain value: ', round(bright/(collecting_area*exp_time), 3), '\n\n')
                             else:
                                 if sky_lux != None:
                                     #plog('\n\n', "Patch/Bright:  ", bright, \
