@@ -121,13 +121,13 @@ class Stretch:
 
         # Selectors for pixels that lie below or above the shadows clipping point
         #below = data < c0
-        #above = data >= c0
+        above = data >= c0
 
         # Clip everything below the shadows clipping point
         data[data < c0] = 0
         #googtime=time.time()
         # For the rest of the pixels: apply the midtones transfer function
-        data[data >= c0] = self._mtf(m, (data[data >= c0] - c0)/(1 - c0))
+        data[above] = self._mtf(m, (data[above] - c0)/(1 - c0))
         #print ("time: " + str(time.time()-googtime))
         return data
 

@@ -1923,7 +1923,7 @@ sel
                         colour_img = Image.fromarray(rgbArray, mode="RGB")
 
                         
-                        
+                        #googtime=time.time()
                         # adjust brightness
                         if g_dev['cam'].config["camera"][g_dev['cam'].name]["settings"]['osc_brightness_enhance'] != 1.0:
                             brightness = ImageEnhance.Brightness(colour_img)
@@ -1962,7 +1962,7 @@ sel
                             g_dev['cam'].config["camera"][g_dev['cam'].name]["settings"]['osc_sharpness_enhance'])
                         del satur_image
                         del sharpness
-
+                        #plog ("time: " + str(time.time()-googtime))
                         
 
                         # These steps flip and rotate the jpeg according to the settings in the site-config for this camera
