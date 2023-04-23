@@ -2455,6 +2455,7 @@ sel
                     
                     #DONUT IMAGE DETECTOR.
                     #plog ("The Fitzgerald Magical Donut detector")
+                    binfocus=1
                     if frame_type == 'focus' and self.config["camera"][g_dev['cam'].name]["settings"]['bin_for_focus']: 
                         binfocus=self.config["camera"][g_dev['cam'].name]["settings"]['focus_bin_factor']
                     
