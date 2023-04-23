@@ -3598,13 +3598,15 @@ sel
                     if not self.config["camera"][g_dev['cam'].name]["settings"]["is_osc"]:
                         
                         
-                        while not os.path.exists(paths["img_path"] + paths["text_name"].replace('.fits','.sep')):
+                        while not os.path.exists(paths["img_path"] + paths["text_name"].replace('.txt','.sep')):
                             plog ("waiting for single frame SEP file to be finished")
                             time.sleep(2)
                         
                         
                         plog("Now to figure out how to get sep into a csv.")
-                        breakpoint()
+                        
+                        sources = Table.read(paths["img_path"] + paths["text_name"].replace('.txt', '.sep'), format='csv')
+                        #breakpoint()
                         
                         
                         plog("Number of sources just prior to smartstacks: " + str(len(sources)))
@@ -3625,13 +3627,17 @@ sel
                         ):
                             if len(sources) >= 5:
                                 # Store original image
-                                plog("Storing First smartstack image")
+                                plog("Storing First smartstack image and catalogue file")
                                 np.save(
                                     self.obsid_path
                                     + "smartstacks/"
                                     + smartStackFilename,
                                     imgdata,
                                 )
+                                sources.write(self.obsid_path
+                                + "smartstacks/"
+                                + smartStackFilename.replace('.npy','.sep'), format='csv', overwrite=True)
+                                
 
                             else:
                                 plog("Not storing first smartstack image as not enough sources")
@@ -3642,6 +3648,13 @@ sel
                             storedsStack = np.load(
                                 self.obsid_path + "smartstacks/" + smartStackFilename
                             )
+                            # Collect stored SEP for first smartstack image
+                            ref_sources = Table.read(self.obsid_path
+                            + "smartstacks/"
+                            + smartStackFilename.replace('.npy','.sep'), format='csv')
+                            
+                            
+                            
                             #plog (storedsStack.dtype.byteorder)
                             # Prep new image
                             plog("Pasting Next smartstack image")
@@ -3661,8 +3674,23 @@ sel
                                 
                             if len(sources) > 5:
                                 try:
-                                    reprojectedimage, _ = func_timeout.func_timeout(60, aa.register, args=(imgdata, storedsStack),
-                                                                                    kwargs={"detection_sigma": 5, "min_area": minarea})
+                                    
+                                                                        
+                                    #source_delete = ['thresh', 'npix', 'tnpix', 'xmin', 'xmax', 'ymin', 'ymax', 'x2', 'y2', 'xy', 'errx2',
+                                    #                 'erry2', 'errxy', 'a', 'b', 'theta', 'cxx', 'cyy', 'cxy', 'cflux', 'cpeak', 'xcpeak', 'ycpeak']
+                                    #sources.remove_columns(source_delete)
+                                    
+                                    breakpoint()
+                                    
+                                    transf, (source_list, target_list) = aa.find_transform(sources, ref_sources)
+                                    
+                                    reprojectedimage= aa.apply_transform(transf, imgdata, storedsStack)
+                                    #reprojectedimage, _ = func_timeout.func_timeout(60, aa.register, args=(imgdata, storedsStack),
+                                    #                                                kwargs={"detection_sigma": 5, "min_area": minarea})
+                                    
+                                    
+                                    
+                                    
                                     # scalingFactor= np.nanmedian(reprojectedimage / storedsStack)
                                     # plog (" Scaling Factor : " +str(scalingFactor))
                                     # reprojectedimage=(scalingFactor) * reprojectedimage # Insert a scaling factor
