@@ -3736,20 +3736,20 @@ sel
                                         storedsStack,
                                     )
 
-                                    hduss = fits.PrimaryHDU()
-                                    hduss.data = storedsStack
+                                    #hduss = fits.PrimaryHDU()
+                                    #hduss.data = storedsStack
                                     # hdureduced.header=slow_process[3]
                                     #hdureduced.header["NAXIS1"] = hdureduced.data.shape[0]
                                     #hdureduced.header["NAXIS2"] = hdureduced.data.shape[1]
-                                    hduss.data = hduss.data.astype("float32")
-                                    try:
-                                        hduss.writeto(
-                                            self.obsid_path
-                                            + "smartstacks/"
-                                            + smartStackFilename.replace('.npy', '_' + str(sskcounter) + '_' + str(Nsmartstack) + '.fit'), overwrite=True, output_verify='silentfix'
-                                        )  # Save flash reduced file locally
-                                    except:
-                                        plog("Couldn't save smartstack fits. YOU MAY HAVE THE FITS OPEN IN A VIEWER.")
+                                    ##hduss.data = hduss.data.astype("float32")
+                                    #try:
+                                    #     hduss.writeto(
+                                    #        self.obsid_path
+                                    #        + "smartstacks/"
+                                    #        + smartStackFilename.replace('.npy', '_' + str(sskcounter) + '_' + str(Nsmartstack) + '.fit'), overwrite=True, output_verify='silentfix'
+                                    #    )  # Save flash reduced file locally
+                                    #except:
+                                    #    plog("Couldn't save smartstack fits. YOU MAY HAVE THE FITS OPEN IN A VIEWER.")
 
                                     reprojection_failed = False
                                 except func_timeout.FunctionTimedOut:
