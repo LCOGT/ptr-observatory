@@ -1386,7 +1386,7 @@ sel
                     # Some cameras need to be sent this to change the temperature also.. e.g. TheSkyX
                     g_dev['cam']._set_cooler_on()
 
-           if not self.camera_overheat_safety_warm_on:                
+            if not self.camera_overheat_safety_warm_on:                
                 # Daytime... a bit tricky! Two periods... just after biases but before nightly reset OR ... just before eve bias dark
                 # As nightly reset resets the calendar
                 if g_dev['cam'].day_warm and (ephem.now() < g_dev['events']['Eve Bias Dark'] - ephem.hour) or \
