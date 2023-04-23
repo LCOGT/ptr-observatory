@@ -2632,7 +2632,12 @@ sel
                      pixscale, pointing_ra, pointing_dec, platesolve_crop, bin_for_platesolve, platesolve_bin_factor, g_dev['cam'].config["camera"][g_dev['cam'].name]["settings"]["saturate"]], platesolve_subprocess.stdin)
                                                                                                                                  
                     pickle.dump([hdufocusdata, hduheader, cal_path, cal_name, frame_type, time_platesolve_requested, 
+<<<<<<< Updated upstream
                                  pixscale, pointing_ra, pointing_dec, platesolve_crop, bin_for_platesolve, platesolve_bin_factor, g_dev['cam'].config["camera"][g_dev['cam'].name]["settings"]["saturate"]], open('subprocesses/testplatesolvepickle','wb'))   
+=======
+                     pixscale, pointing_ra, pointing_dec, platesolve_crop, bin_for_platesolve, platesolve_bin_factor, g_dev['cam'].config["camera"][g_dev['cam'].name]["settings"]["saturate"]], open('subprocesses/testplatesolvepickle','wb'))                                                                                                             
+                    
+>>>>>>> Stashed changes
                     del hdufocusdata
                     #plog ("pickling time: " + str(time.time()-pickletime))
                         

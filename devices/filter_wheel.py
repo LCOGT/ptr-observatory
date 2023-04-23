@@ -472,7 +472,7 @@ class FilterWheel:
         filter_groups = [
             (["U", "JU", "up"], ["up", "U", "JU"]),  # U broadband
             (["Blue", "B", "JB", "PB"], ["JB", "PB"]),  # B broadband
-            (["Green", "JV", "PG"], ["JV", "PG"]),  # G broadband
+            (["Green", "JV", "PG"], ["JV", "PG", "V"]),  # G broadband
             (["Red", "R", "r", "PR", "Rc", "rp"], ["rp", "Rc", "PR"]),  # R broadband
             (["i", "Ic", "ip"], ["ip", "Ic"]),  # infrared broadband
             (["z", "zs", "zp"], ["zp", "zs", "z"]),  # NB z broadband  z and zs are different.  Y?  WER
@@ -511,7 +511,7 @@ class FilterWheel:
         # NB I suggest we pick the default (w) filter instead of skipping. WER
         
         plog("No substitute filter found, skipping exposure.")
-        return "none"
+        return "none", None, None
 
 
 if __name__ == "__main__":

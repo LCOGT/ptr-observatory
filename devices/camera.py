@@ -1409,18 +1409,23 @@ class Camera:
                 
                 # Check if filter needs changing, if so, change.                
                 if not g_dev['fil'].filter_selected == requested_filter_name:
-                    self.current_filter, filt_pointer, filter_offset = g_dev["fil"].set_name_command(
-                        {"filter": requested_filter_name}, {}
-                    )
-                    
-                    self.current_offset = g_dev[
-                        "fil"
-                    ].filter_offset  # TEMP   NBNBNB This needs fixing
+                    try:
+                        self.current_filter, filt_pointer, filter_offset = g_dev["fil"].set_name_command(
+                            {"filter": requested_filter_name}, {}
+                        )
+                        
+                        self.current_offset = g_dev[
+                            "fil"
+                        ].filter_offset  # TEMP   NBNBNB This needs fixing
+                    except:
+                        plog ("Failed to change filter! Cancelling exposure.")
+                        return 
                     
                 self.current_filter = g_dev['fil'].filter_selected
                 
                 if self.current_filter == "none":
                     plog("skipping exposure as no adequate filter match found")
+                    g_dev["obs"].send_to_user("Skipping Exposure as no adequate filter found for requested observation")
                     self.exposure_busy = False
                     return
             else:
