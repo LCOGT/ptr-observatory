@@ -58,7 +58,7 @@ import math
 #from pprint import pprint
 import ephem
 from ptr_utility import plog
-from planewave import platesolve
+#from planewave import platesolve
 
 
 DEG_SYM = '°'

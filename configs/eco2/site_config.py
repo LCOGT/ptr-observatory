@@ -127,7 +127,7 @@ site_config = {
     'auto_midnight_moonless_bias_dark': False,
     'auto_eve_sky_flat': True,
 
-    'eve_sky_flat_sunset_offset': -0.5,  #  Minutes  neg means before, + after.
+    'eve_sky_flat_sunset_offset': +20.0,  #  Minutes  neg means before, + after.
     'eve_cool_down_open' : -80.0,
     'auto_morn_sky_flat': True,
     'auto_morn_bias_dark': False,
@@ -488,7 +488,7 @@ site_config = {
             "name": "RGGB" ,  # When there is no filter wheel, the filter will be named this.
             'service_date': '20180101',
 
-            'flat_sky_gain' : 504,
+            'flat_sky_gain' : 900,
 
             "driver":   None,   #"LCO.dual",  #  'ASCOM.FLI.FilterWheel',
             #"driver":   "Maxim.Image",   #"LCO.dual",  #  'ASCOM.FLI.FilterWheel',
