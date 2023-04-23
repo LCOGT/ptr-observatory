@@ -2631,7 +2631,8 @@ sel
                     pickle.dump([hdufocusdata, hduheader, cal_path, cal_name, frame_type, time_platesolve_requested, 
                      pixscale, pointing_ra, pointing_dec, platesolve_crop, bin_for_platesolve, platesolve_bin_factor, g_dev['cam'].config["camera"][g_dev['cam'].name]["settings"]["saturate"]], platesolve_subprocess.stdin)
                                                                                                                                  
-                                                                                                                                 
+                    #pickle.dump([hdufocusdata, hduheader, cal_path, cal_name, frame_type, time_platesolve_requested, 
+                    # pixscale, pointing_ra, pointing_dec, platesolve_crop, bin_for_platesolve, platesolve_bin_factor, g_dev['cam'].config["camera"][g_dev['cam'].name]["settings"]["saturate"]], open('testplatesolvepickle','wb'))                                                                                                             
                     
                     del hdufocusdata
                     #plog ("pickling time: " + str(time.time()-pickletime))
@@ -2793,7 +2794,11 @@ sel
 
 
                     solve= pickle.load(open(cal_path + 'platesolve.pickle', 'rb'))                    
-
+                    try:
+                        os.remove(cal_path + 'platesolve.pickle')
+                    except:
+                        plog ("Could not remove platesolve pickle. ")
+                        
                     plog("Planewave results: " + str(solve))
 
                     #breakpoint()

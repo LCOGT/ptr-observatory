@@ -15,7 +15,12 @@ from astropy.io import fits
 from planewave import platesolve
 import os
 
+
+
+
 input_psolve_info=pickle.load(sys.stdin.buffer)
+#input_psolve_info=pickle.load(open('testplatesolvepickle','rb'))
+
 
 hdufocusdata=input_psolve_info[0]
 hduheader=input_psolve_info[1]
@@ -185,6 +190,7 @@ if len(sources) >= 15:
     
     pickle.dump(solve, open(cal_path + 'platesolve.pickle', 'wb'))
     
+    #breakpoint()
     #     #plog("Platesolve time to process: " + str(time.time() - psolve_timer_begin))
 
     #     plog(
