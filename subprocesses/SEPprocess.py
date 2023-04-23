@@ -307,9 +307,9 @@ else:
         sources['ellipticity'] = 1.0 - (sources['b'] / sources['a'])
 
         if frame_type == 'focus':
-            sources = sources[sources['ellipticity'] < 0.3]  # Remove things that are not circular stars
+            sources = sources[sources['ellipticity'] < 0.4]  # Remove things that are not circular stars
         else:
-            sources = sources[sources['ellipticity'] < 0.5]  # Remove things that are not circular stars
+            sources = sources[sources['ellipticity'] < 0.6]  # Remove things that are not circular stars
 
         # Calculate the kron radius (Thanks BANZAI)
         kronrad, krflag = sep.kron_radius(focusimg, sources['x'], sources['y'],

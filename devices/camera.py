@@ -1790,6 +1790,15 @@ class Camera:
                 + "  exposure.",
                 p_level="INFO",
             )
+        elif frame_type in ("pointing"):
+            g_dev["obs"].send_to_user(
+                "Starting "
+                + str(exposure_time)
+                + "s "
+                + str(frame_type)
+                + "  exposure.",
+                p_level="INFO",
+            )
         else:
             if "object_name" in opt:
                 g_dev["obs"].send_to_user(
@@ -1801,6 +1810,7 @@ class Camera:
                     + str(observer_user_name) + '. ' + str(int(opt['count']) - int(counter) + 1) + " of " + str(opt['count']),
                     p_level="INFO",
                 )
+            
             else:
                 g_dev["obs"].send_to_user(
                     "Starting an unnamed frame by user: "

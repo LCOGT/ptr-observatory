@@ -4781,6 +4781,10 @@ class Sequencer:
                     return
                 pass
         
+        g_dev["obs"].send_to_user(
+            "Taking a pointing calibration exposure",
+            p_level="INFO",
+        )
         # Take a pointing shot to reposition
         result = g_dev['cam'].expose_command(req, opt, user_id='Tobor', user_name='Tobor', user_roles='system', no_AWS=True, solve_it=True)
         
@@ -4813,6 +4817,11 @@ class Sequencer:
         if not g_dev['obs'].open_and_enabled_to_observe:
             g_dev["obs"].send_to_user("Cancelling out of activity as no longer open and enabled to observe.")  
             return
+        
+        g_dev["obs"].send_to_user(
+            "Taking a pointing confirmation exposure",
+            p_level="INFO",
+        )
         
         # Taking a confirming shot. 
         req = {'time': self.config['pointing_exposure_time'],  'alias':  str(self.config['camera']['camera_1_1']['name']), 'image_type': 'light'}   #  NB Should pick up filter and constats from config
