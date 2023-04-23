@@ -76,17 +76,17 @@ from devices.selector import Selector
 from devices.screen import Screen
 from devices.sequencer import Sequencer
 from global_yard import g_dev
-from planewave import platesolve
+#from planewave import platesolve
 import ptr_events
 from ptr_utility import plog
 from scipy import stats
-from PIL import Image, ImageEnhance, ImageFont, ImageDraw
+from PIL import Image, ImageEnhance#, ImageFont, ImageDraw
 
 #import colour
-from colour_demosaicing import (
-    demosaicing_CFA_Bayer_bilinear,  # )#,
+#from colour_demosaicing import (
+#    demosaicing_CFA_Bayer_bilinear,  # )#,
     # demosaicing_CFA_Bayer_Malvar2004,
-    demosaicing_CFA_Bayer_Menon2007)
+#    demosaicing_CFA_Bayer_Menon2007)
 # mosaicing_CFA_Bayer)
 
 # Incorporate better request retry strategy
@@ -2456,10 +2456,10 @@ sel
                     #DONUT IMAGE DETECTOR.
                     #plog ("The Fitzgerald Magical Donut detector")
                     if frame_type == 'focus' and self.config["camera"][g_dev['cam'].name]["settings"]['bin_for_focus']: 
-                        binfocus=self.config["camera"][g_dev['cam'].name]["settings"]['focus_bin_factor']
+                        binfocus=self.config["camera"][g_dev['cam'].name]["settings"]['focus_bin_value']
                     
                     if frame_type != 'focus' and self.config["camera"][g_dev['cam'].name]["settings"]['bin_for_sep']:                    
-                        binfocus=self.config["camera"][g_dev['cam'].name]["settings"]['sep_bin_factor']
+                        binfocus=self.config["camera"][g_dev['cam'].name]["settings"]['sep_bin_value']
                         
                     xdonut=np.median(pow(pow(sources['x'] - sources['xpeak'],2),0.5))*pixscale*binfocus
                     ydonut=np.median(pow(pow(sources['y'] - sources['ypeak'],2),0.5))*pixscale*binfocus
@@ -2793,138 +2793,145 @@ sel
 
                     solve= pickle.load(open(cal_path + 'platesolve.pickle', 'rb'))                    
 
-                    plog(
-                        "PW Solves: ",
-                        solve["ra_j2000_hours"],
-                        solve["dec_j2000_degrees"],
-                    )
-                    # breakpoint()
-                    #pointing_ra = g_dev['mnt'].mount.RightAscension
-                    #pointing_dec = g_dev['mnt'].mount.Declination
-                    #icrs_ra, icrs_dec = g_dev['mnt'].get_mount_coordinates()
-                    #target_ra = g_dev["mnt"].current_icrs_ra
-                    #target_dec = g_dev["mnt"].current_icrs_dec
-                    target_ra = g_dev["mnt"].last_ra
-                    target_dec = g_dev["mnt"].last_dec
-                    solved_ra = solve["ra_j2000_hours"]
-                    solved_dec = solve["dec_j2000_degrees"]
-                    solved_arcsecperpixel = solve["arcsec_per_pixel"]
-                    solved_rotangledegs = solve["rot_angle_degs"]
-                    err_ha = target_ra - solved_ra
-                    err_dec = target_dec - solved_dec
-                    solved_arcsecperpixel = solve["arcsec_per_pixel"]
-                    solved_rotangledegs = solve["rot_angle_degs"]
-                    plog("Deviation from plate solution in ra: " + str(round(err_ha * 15 * 3600, 2)) + " & dec: " + str (round(err_dec * 3600, 2)) + " asec")
+                    plog("Planewave results: " + str(solve))
 
-                    # breakpoint()
-                    # Reset Solve timers
-                    g_dev['obs'].last_solve_time = datetime.datetime.now()
-                    g_dev['obs'].images_since_last_solve = 0
+                    #breakpoint()
 
-                    # Test here that there has not been a slew, if there has been a slew, cancel out!
-                    if self.time_of_last_slew > time_platesolve_requested:
-                        plog("detected a slew since beginning platesolve... bailing out of platesolve.")
-                        # if not self.config['keep_focus_images_on_disk']:
-                        #    os.remove(cal_path + cal_name)
-                        # one_at_a_time = 0
-                        # self.platesolve_queue.task_done()
-                        # break
-
-                    # If we are WAY out of range, then reset the mount reference and attempt moving back there.
-                    elif (
-                        err_ha * 15 * 3600 > 1200
-                        or err_dec * 3600 > 1200
-                        or err_ha * 15 * 3600 < -1200
-                        or err_dec * 3600 < -1200
-                    ) and self.config["mount"]["mount1"][
-                        "permissive_mount_reset"
-                    ] == "yes":
-                        g_dev["mnt"].reset_mount_reference()
-                        plog("I've  reset the mount_reference 1")
-                        g_dev["mnt"].current_icrs_ra = solved_ra
-                        #    "ra_j2000_hours"
-                        # ]
-                        g_dev["mnt"].current_icrs_dec = solved_dec
-                        #    "dec_j2000_hours"
-                        # ]
-                        err_ha = 0
-                        err_dec = 0
-
-                        plog("Platesolve is requesting to move back on target!")
-                        #g_dev['mnt'].mount.SlewToCoordinatesAsync(target_ra, target_dec)
-
-                        self.pointing_correction_requested_by_platesolve_thread = True
-                        self.pointing_correction_request_time = time.time()
-                        self.pointing_correction_request_ra = target_ra
-                        self.pointing_correction_request_dec = target_dec
-
-                        # wait_for_slew()
-
+                    if solve == 'error':
+                        plog ("Planewave solve came back as error")
                     else:
-
-                        # If the mount has updatable RA and Dec coordinates, then sync that
-                        # But if not, update the mount reference
-                        # try:
-                        #     # If mount has Syncable coordinates
-                        #     g_dev['mnt'].mount.SyncToCoordinates(solved_ra, solved_dec)
-                        #     # Reset the mount reference because if the mount has
-                        #     # syncable coordinates, the mount should already be corrected
-                        #     g_dev["mnt"].reset_mount_reference()
-
-                        #     if (
-                        #          abs(err_ha * 15 * 3600)
-                        #          > self.config["threshold_mount_update"]
-                        #          or abs(err_dec * 3600)
-                        #          > self.config["threshold_mount_update"]
-                        #      ):
-                        #         #plog ("I am nudging the telescope slightly!")
-                        #         #g_dev['mnt'].mount.SlewToCoordinatesAsync(target_ra, target_dec)
-                        #         #wait_for_slew()
-                        #         plog ("Platesolve is requesting to move back on target!")
-                        #         self.pointing_correction_requested_by_platesolve_thread = True
-                        #         self.pointing_correction_request_time = time.time()
-                        #         self.pointing_correction_request_ra = target_ra
-                        #         self.pointing_correction_request_dec = target_dec
-
-                        # except:
-                        # If mount doesn't have Syncable coordinates
-
-                        if (
-                            abs(err_ha * 15 * 3600)
-                            > self.config["threshold_mount_update"]
-                            or abs(err_dec * 3600)
-                            > self.config["threshold_mount_update"]
-                        ):
-
-                            #plog ("I am nudging the telescope slightly!")
-                            #g_dev['mnt'].mount.SlewToCoordinatesAsync(pointing_ra + err_ha, pointing_dec + err_dec)
-                            # wait_for_slew()
-                            #plog("Platesolve is requesting to move back on target!")
+                        plog(
+                            "PW Solves: ",
+                            solve["ra_j2000_hours"],
+                            solve["dec_j2000_degrees"],
+                        )
+                        # breakpoint()
+                        #pointing_ra = g_dev['mnt'].mount.RightAscension
+                        #pointing_dec = g_dev['mnt'].mount.Declination
+                        #icrs_ra, icrs_dec = g_dev['mnt'].get_mount_coordinates()
+                        #target_ra = g_dev["mnt"].current_icrs_ra
+                        #target_dec = g_dev["mnt"].current_icrs_dec
+                        target_ra = g_dev["mnt"].last_ra
+                        target_dec = g_dev["mnt"].last_dec
+                        solved_ra = solve["ra_j2000_hours"]
+                        solved_dec = solve["dec_j2000_degrees"]
+                        solved_arcsecperpixel = solve["arcsec_per_pixel"]
+                        solved_rotangledegs = solve["rot_angle_degs"]
+                        err_ha = target_ra - solved_ra
+                        err_dec = target_dec - solved_dec
+                        solved_arcsecperpixel = solve["arcsec_per_pixel"]
+                        solved_rotangledegs = solve["rot_angle_degs"]
+                        plog("Deviation from plate solution in ra: " + str(round(err_ha * 15 * 3600, 2)) + " & dec: " + str (round(err_dec * 3600, 2)) + " asec")
+    
+                        # breakpoint()
+                        # Reset Solve timers
+                        g_dev['obs'].last_solve_time = datetime.datetime.now()
+                        g_dev['obs'].images_since_last_solve = 0
+    
+                        # Test here that there has not been a slew, if there has been a slew, cancel out!
+                        if self.time_of_last_slew > time_platesolve_requested:
+                            plog("detected a slew since beginning platesolve... bailing out of platesolve.")
+                            # if not self.config['keep_focus_images_on_disk']:
+                            #    os.remove(cal_path + cal_name)
+                            # one_at_a_time = 0
+                            # self.platesolve_queue.task_done()
+                            # break
+    
+                        # If we are WAY out of range, then reset the mount reference and attempt moving back there.
+                        elif (
+                            err_ha * 15 * 3600 > 1200
+                            or err_dec * 3600 > 1200
+                            or err_ha * 15 * 3600 < -1200
+                            or err_dec * 3600 < -1200
+                        ) and self.config["mount"]["mount1"][
+                            "permissive_mount_reset"
+                        ] == "yes":
+                            g_dev["mnt"].reset_mount_reference()
+                            plog("I've  reset the mount_reference 1")
+                            g_dev["mnt"].current_icrs_ra = solved_ra
+                            #    "ra_j2000_hours"
+                            # ]
+                            g_dev["mnt"].current_icrs_dec = solved_dec
+                            #    "dec_j2000_hours"
+                            # ]
+                            err_ha = 0
+                            err_dec = 0
+    
+                            plog("Platesolve is requesting to move back on target!")
+                            #g_dev['mnt'].mount.SlewToCoordinatesAsync(target_ra, target_dec)
+    
                             self.pointing_correction_requested_by_platesolve_thread = True
                             self.pointing_correction_request_time = time.time()
-                            self.pointing_correction_request_ra = pointing_ra + err_ha
-                            self.pointing_correction_request_dec = pointing_dec + err_dec
-
-                            try:
-                                # if g_dev["mnt"].pier_side_str == "Looking West":
-                                if g_dev["mnt"].pier_side == 0:
-                                    try:
-                                        g_dev["mnt"].adjust_mount_reference(
-                                            -err_ha, -err_dec
-                                        )
-                                    except Exception as e:
-                                        plog("Something is up in the mount reference adjustment code ", e)
-                                else:
-                                    try:
-                                        g_dev["mnt"].adjust_flip_reference(
-                                            -err_ha, -err_dec
-                                        )  # Need to verify signs
-                                    except Exception as e:
-                                        plog("Something is up in the mount reference adjustment code ", e)
-
-                            except:
-                                plog("This mount doesn't report pierside")
-                                plog(traceback.format_exc())
+                            self.pointing_correction_request_ra = target_ra
+                            self.pointing_correction_request_dec = target_dec
+    
+                            # wait_for_slew()
+    
+                        else:
+    
+                            # If the mount has updatable RA and Dec coordinates, then sync that
+                            # But if not, update the mount reference
+                            # try:
+                            #     # If mount has Syncable coordinates
+                            #     g_dev['mnt'].mount.SyncToCoordinates(solved_ra, solved_dec)
+                            #     # Reset the mount reference because if the mount has
+                            #     # syncable coordinates, the mount should already be corrected
+                            #     g_dev["mnt"].reset_mount_reference()
+    
+                            #     if (
+                            #          abs(err_ha * 15 * 3600)
+                            #          > self.config["threshold_mount_update"]
+                            #          or abs(err_dec * 3600)
+                            #          > self.config["threshold_mount_update"]
+                            #      ):
+                            #         #plog ("I am nudging the telescope slightly!")
+                            #         #g_dev['mnt'].mount.SlewToCoordinatesAsync(target_ra, target_dec)
+                            #         #wait_for_slew()
+                            #         plog ("Platesolve is requesting to move back on target!")
+                            #         self.pointing_correction_requested_by_platesolve_thread = True
+                            #         self.pointing_correction_request_time = time.time()
+                            #         self.pointing_correction_request_ra = target_ra
+                            #         self.pointing_correction_request_dec = target_dec
+    
+                            # except:
+                            # If mount doesn't have Syncable coordinates
+    
+                            if (
+                                abs(err_ha * 15 * 3600)
+                                > self.config["threshold_mount_update"]
+                                or abs(err_dec * 3600)
+                                > self.config["threshold_mount_update"]
+                            ):
+    
+                                #plog ("I am nudging the telescope slightly!")
+                                #g_dev['mnt'].mount.SlewToCoordinatesAsync(pointing_ra + err_ha, pointing_dec + err_dec)
+                                # wait_for_slew()
+                                #plog("Platesolve is requesting to move back on target!")
+                                self.pointing_correction_requested_by_platesolve_thread = True
+                                self.pointing_correction_request_time = time.time()
+                                self.pointing_correction_request_ra = pointing_ra + err_ha
+                                self.pointing_correction_request_dec = pointing_dec + err_dec
+    
+                                try:
+                                    # if g_dev["mnt"].pier_side_str == "Looking West":
+                                    if g_dev["mnt"].pier_side == 0:
+                                        try:
+                                            g_dev["mnt"].adjust_mount_reference(
+                                                -err_ha, -err_dec
+                                            )
+                                        except Exception as e:
+                                            plog("Something is up in the mount reference adjustment code ", e)
+                                    else:
+                                        try:
+                                            g_dev["mnt"].adjust_flip_reference(
+                                                -err_ha, -err_dec
+                                            )  # Need to verify signs
+                                        except Exception as e:
+                                            plog("Something is up in the mount reference adjustment code ", e)
+    
+                                except:
+                                    plog("This mount doesn't report pierside")
+                                    plog(traceback.format_exc())
                     self.platesolve_is_processing = False
                 #except Exception as e:
                 #    plog(
