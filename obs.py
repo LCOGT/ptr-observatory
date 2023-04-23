@@ -28,6 +28,9 @@ sep.set_sub_object_limit(16384)
 #import signal
 import glob
 
+#import multiprocessing
+import subprocess
+import pickle
 import astroalign as aa
 from astropy.io import fits
 from astropy.nddata import block_reduce
@@ -58,7 +61,7 @@ import traceback
 import psutil
 
 from api_calls import API_calls
-from auto_stretch.stretch import Stretch
+from subprocesses.auto_stretch.stretch import Stretch
 import ptr_config
 
 from devices.camera import Camera
@@ -73,17 +76,22 @@ from devices.selector import Selector
 from devices.screen import Screen
 from devices.sequencer import Sequencer
 from global_yard import g_dev
-from planewave import platesolve
+#from planewave import platesolve
 import ptr_events
 from ptr_utility import plog
 from scipy import stats
-from PIL import Image, ImageEnhance, ImageFont, ImageDraw
+from PIL import Image, ImageEnhance#, ImageFont, ImageDraw
+
+
+from astropy.utils.exceptions import AstropyUserWarning
+import warnings
+warnings.simplefilter('ignore', category=AstropyUserWarning)
 
 #import colour
-from colour_demosaicing import (
-    demosaicing_CFA_Bayer_bilinear,  # )#,
+#from colour_demosaicing import (
+#    demosaicing_CFA_Bayer_bilinear,  # )#,
     # demosaicing_CFA_Bayer_Malvar2004,
-    demosaicing_CFA_Bayer_Menon2007)
+#    demosaicing_CFA_Bayer_Menon2007)
 # mosaicing_CFA_Bayer)
 
 # Incorporate better request retry strategy
@@ -361,8 +369,11 @@ class Observatory:
         self.sep_queue_thread.start()
 
         self.mainjpeg_queue = queue.Queue(maxsize=0)
+        #self.mainjpeg_queue = multiprocessing.Queue(maxsize=0)
         self.mainjpeg_queue_thread = threading.Thread(target=self.mainjpeg_process, args=())
+        #self.mainjpeg_queue_thread = multiprocessing.Process(target=self.mainjpeg_process, args=())
         self.mainjpeg_queue_thread.start()
+        #self.mainjpeg_queue_thread.join()
 
         # Set up command_queue for incoming jobs
         self.cmd_queue = queue.Queue(
@@ -1762,386 +1773,80 @@ sel
             if (not self.mainjpeg_queue.empty()):  # and one_at_a_time==0
                 # one_at_a_time=1
                 osc_jpeg_timer_start = time.time()
+                
+                
+                pickletime=time.time()
                 (hdusmalldata, smartstackid, paths, pier_side) = self.mainjpeg_queue.get(block=False)
+                is_osc = g_dev['cam'].config["camera"][g_dev['cam'].name]["settings"]["is_osc"]
+                osc_bayer= g_dev['cam'].config["camera"][g_dev['cam'].name]["settings"]["osc_bayer"]
+                if is_osc:
+                    osc_background_cut=self.config["camera"][g_dev['cam'].name]["settings"]['osc_background_cut']
+                    osc_brightness_enhance= g_dev['cam'].config["camera"][g_dev['cam'].name]["settings"]['osc_brightness_enhance']
+                    osc_contrast_enhance=g_dev['cam'].config["camera"][g_dev['cam'].name]["settings"]['osc_contrast_enhance']                
+                    osc_colour_enhance=g_dev['cam'].config["camera"][g_dev['cam'].name]["settings"]['osc_colour_enhance']                
+                    osc_saturation_enhance=g_dev['cam'].config["camera"][g_dev['cam'].name]["settings"]['osc_saturation_enhance']                
+                    osc_sharpness_enhance=g_dev['cam'].config["camera"][g_dev['cam'].name]["settings"]['osc_sharpness_enhance']                
+                else:
+                    osc_background_cut=0
+                    osc_brightness_enhance= 0
+                    osc_contrast_enhance=0
+                    osc_colour_enhance=0
+                    osc_saturation_enhance=0
+                    osc_sharpness_enhance=0
+                # These steps flip and rotate the jpeg according to the settings in the site-config for this camera
+                transpose_jpeg= g_dev['cam'].config["camera"][g_dev['cam'].name]["settings"]["transpose_jpeg"]                
+                flipx_jpeg= g_dev['cam'].config["camera"][g_dev['cam'].name]["settings"]['flipx_jpeg']                
+                flipy_jpeg= g_dev['cam'].config["camera"][g_dev['cam'].name]["settings"]['flipy_jpeg']                
+                rotate180_jpeg= g_dev['cam'].config["camera"][g_dev['cam'].name]["settings"]['rotate180_jpeg']                
+                rotate90_jpeg = g_dev['cam'].config["camera"][g_dev['cam'].name]["settings"]['rotate90_jpeg']                
+                rotate270_jpeg= g_dev['cam'].config["camera"][g_dev['cam'].name]["settings"]['rotate270_jpeg']
+                crop_preview=self.config["camera"][g_dev['cam'].name]["settings"]["crop_preview"]
+                yb = self.config["camera"][g_dev['cam'].name]["settings"][
+                     "crop_preview_ybottom"
+                 ]
+                yt = self.config["camera"][g_dev['cam'].name]["settings"][
+                     "crop_preview_ytop"
+                 ]
+                xl = self.config["camera"][g_dev['cam'].name]["settings"][
+                     "crop_preview_xleft"
+                 ]
+                xr = self.config["camera"][g_dev['cam'].name]["settings"][
+                     "crop_preview_xright"
+                 ]
+                squash_on_x_axis=self.config["camera"][g_dev['cam'].name]["settings"]["squash_on_x_axis"]
 
-                # If this a bayer image, then we need to make an appropriate image that is monochrome
-                # That gives the best chance of finding a focus AND for pointing while maintaining resolution.
-                # This is best done by taking the two "real" g pixels and interpolating in-between
-                # binfocus=1
+
+
+                #[hdusmalldata, smartstackid, paths, pier_side, is_osc, osc_bayer, osc_background_cut,osc_brightness_enhance, osc_contrast_enhance,\
+                #     osc_colour_enhance, osc_saturation_enhance, osc_sharpness_enhance, transpose_jpeg, flipx_jpeg, flipy_jpeg, rotate180_jpeg,rotate90_jpeg, \
+                #         rotate270_jpeg, crop_preview, yb, yt, xl, xr, squash_on_x_axis]
                 
-                if g_dev['cam'].config["camera"][g_dev['cam'].name]["settings"]["is_osc"]:
-                    #plog ("interpolating bayer grid for focusing purposes.")
-                    if g_dev['cam'].config["camera"][g_dev['cam'].name]["settings"]["osc_bayer"] == 'RGGB':
-                        # Only separate colours if needed for colour jpeg
-                        if smartstackid == 'no':
-                            # # Checkerboard collapse for other colours for temporary jpeg
-                            # # Create indexes for B, G, G, R images
-                            # xshape = hdusmalldata.shape[0]
-                            # yshape = hdusmalldata.shape[1]
-
-                            # # B pixels
-                            # #list_0_1 = np.array([ [0,0], [0,1] ])
-                            # list_0_1 = np.asarray([[0, 0], [0, 1]])
-                            # checkerboard = np.tile(list_0_1, (xshape//2, yshape//2))
-                            # # checkerboard=np.array(checkerboard)
-                            # hdublue = (block_reduce(hdusmalldata * checkerboard, 2))
-
-                            # # R Pixels
-                            # list_0_1 = np.asarray([[1, 0], [0, 0]])
-                            # checkerboard = np.tile(list_0_1, (xshape//2, yshape//2))
-                            # # checkerboard=np.array(checkerboard)
-                            # hdured = (block_reduce(hdusmalldata * checkerboard, 2))
-
-                            # # G top right Pixels
-                            # list_0_1 = np.asarray([[0, 1], [0, 0]])
-                            # checkerboard = np.tile(list_0_1, (xshape//2, yshape//2))
-                            # # checkerboard=np.array(checkerboard)
-                            # #GTRonly=(block_reduce(hdufocusdata * checkerboard ,2))
-                            # hdugreen = (block_reduce(hdusmalldata * checkerboard, 2))
-
-                            # # G bottom left Pixels
-                            # #list_0_1 = np.asarray([ [0,0], [1,0] ])
-                            # #checkerboard=np.tile(list_0_1, (xshape//2, yshape//2))
-                            # # checkerboard=np.array(checkerboard)
-                            # #GBLonly=(block_reduce(hdusmalldata * checkerboard ,2))
-
-                            # # Sum two Gs together and half them to be vaguely on the same scale
-                            # #hdugreen = np.array((GTRonly + GBLonly) / 2)
-                            # #del GTRonly
-                            # #del GBLonly
-
-                            # del checkerboard
-                            
-                            hdured = hdusmalldata[::2, ::2]
-                            hdugreen = hdusmalldata[::2, 1::2]
-                            #g2 = hdusmalldata[1::2, ::2]
-                            hdublue = hdusmalldata[1::2, 1::2]
-
-                    else:
-                        plog("this bayer grid not implemented yet")
-
+                #pickletime=time.time()
                 
-
-                # This is holding the flash reduced fits file waiting to be saved
-                # AFTER the jpeg has been sent up to AWS.
-                #hdureduceddata = np.array(hdusmalldata)
-
-                # Code to stretch the image to fit into the 256 levels of grey for a jpeg
-                # But only if it isn't a smartstack, if so wait for the reduce queue
-                if smartstackid == 'no':
-
-                    if g_dev['cam'].config["camera"][g_dev['cam'].name]["settings"]["is_osc"]:
-                        xshape = hdugreen.shape[0]
-                        yshape = hdugreen.shape[1]
-
-                        # histogram matching
-
-                        #plog (np.median(hdublue))
-                        #plog (np.median(hdugreen))
-                        #plog (np.median(hdured))
-
-                        # breakpoint()
-                        
-                        # The integer mode of an image is typically the sky value, so squish anything below that
-                        #bluemode = stats.mode((hdublue.astype('int16').flatten()), keepdims=True)[0] - 25
-                        #redmode = stats.mode((hdured.astype('int16').flatten()), keepdims=True)[0] - 25
-                        #greenmode = stats.mode((hdugreen.astype('int16').flatten()), keepdims=True)[0] - 25
-                        #hdublue[hdublue < bluemode] = bluemode
-                        #hdugreen[hdugreen < greenmode] = greenmode
-                        #hdured[hdured < redmode] = redmode
-
-                        # Then bring the background level up a little from there
-                        # blueperc=np.nanpercentile(hdublue,0.75)
-                        # greenperc=np.nanpercentile(hdugreen,0.75)
-                        # redperc=np.nanpercentile(hdured,0.75)
-                        # hdublue[hdublue < blueperc] = blueperc
-                        # hdugreen[hdugreen < greenperc] = greenperc
-                        # hdured[hdured < redperc] = redperc
-
-                        #hdublue = hdublue * (np.median(hdugreen) / np.median(hdublue))
-                        #hdured = hdured * (np.median(hdugreen) / np.median(hdured))
-
-                        blue_stretched_data_float = Stretch().stretch(hdublue)*256
-                        ceil = np.percentile(blue_stretched_data_float, 100)  # 5% of pixels will be white
-                        # 5% of pixels will be black
-                        floor = np.percentile(blue_stretched_data_float,
-                                              self.config["camera"][g_dev['cam'].name]["settings"]['osc_background_cut'])
-                        #a = 255/(ceil-floor)
-                        #b = floor*255/(floor-ceil)
-                        blue_stretched_data_float[blue_stretched_data_float < floor] = floor
-                        blue_stretched_data_float = blue_stretched_data_float-floor
-                        blue_stretched_data_float = blue_stretched_data_float * (255/np.max(blue_stretched_data_float))
-
-                        #blue_stretched_data_float = np.maximum(0,np.minimum(255,blue_stretched_data_float*a+b)).astype(np.uint8)
-                        #blue_stretched_data_float[blue_stretched_data_float < floor] = floor
-                        del hdublue
-
-                        green_stretched_data_float = Stretch().stretch(hdugreen)*256
-                        ceil = np.percentile(green_stretched_data_float, 100)  # 5% of pixels will be white
-                        # 5% of pixels will be black
-                        floor = np.percentile(green_stretched_data_float,
-                                              self.config["camera"][g_dev['cam'].name]["settings"]['osc_background_cut'])
-                        #a = 255/(ceil-floor)
-                        green_stretched_data_float[green_stretched_data_float < floor] = floor
-                        green_stretched_data_float = green_stretched_data_float-floor
-                        green_stretched_data_float = green_stretched_data_float * \
-                            (255/np.max(green_stretched_data_float))
-
-                        #b = floor*255/(floor-ceil)
-
-                        #green_stretched_data_float[green_stretched_data_float < floor] = floor
-                        #green_stretched_data_float = np.maximum(0,np.minimum(255,green_stretched_data_float*a+b)).astype(np.uint8)
-                        del hdugreen
-
-                        red_stretched_data_float = Stretch().stretch(hdured)*256
-                        ceil = np.percentile(red_stretched_data_float, 100)  # 5% of pixels will be white
-                        # 5% of pixels will be black
-                        floor = np.percentile(red_stretched_data_float,
-                                              self.config["camera"][g_dev['cam'].name]["settings"]['osc_background_cut'])
-                        #a = 255/(ceil-floor)
-                        #b = floor*255/(floor-ceil)
-                        # breakpoint()
-
-                        red_stretched_data_float[red_stretched_data_float < floor] = floor
-                        red_stretched_data_float = red_stretched_data_float-floor
-                        red_stretched_data_float = red_stretched_data_float * (255/np.max(red_stretched_data_float))
-
-                        #red_stretched_data_float[red_stretched_data_float < floor] = floor
-                        #red_stretched_data_float = np.maximum(0,np.minimum(255,red_stretched_data_float*a+b)).astype(np.uint8)
-                        del hdured
-
-                       
-
-                        rgbArray = np.empty((xshape, yshape, 3), 'uint8')
-                        rgbArray[..., 0] = red_stretched_data_float  # *256
-                        rgbArray[..., 1] = green_stretched_data_float  # *256
-                        rgbArray[..., 2] = blue_stretched_data_float  # *256
-
-                        del red_stretched_data_float
-                        del blue_stretched_data_float
-                        del green_stretched_data_float
-                        colour_img = Image.fromarray(rgbArray, mode="RGB")
-
-                        
-                        #googtime=time.time()
-                        # adjust brightness
-                        if g_dev['cam'].config["camera"][g_dev['cam'].name]["settings"]['osc_brightness_enhance'] != 1.0:
-                            brightness = ImageEnhance.Brightness(colour_img)
-                            brightness_image = brightness.enhance(
-                                g_dev['cam'].config["camera"][g_dev['cam'].name]["settings"]['osc_brightness_enhance'])
-                            del colour_img
-                            del brightness
-                        else:
-                            brightness_image = colour_img
-                            del colour_img
-
-                        # adjust contrast
-                        contrast = ImageEnhance.Contrast(brightness_image)
-                        contrast_image = contrast.enhance(
-                            g_dev['cam'].config["camera"][g_dev['cam'].name]["settings"]['osc_contrast_enhance'])
-                        del brightness_image
-                        del contrast
-
-                        # adjust colour
-                        colouradj = ImageEnhance.Color(contrast_image)
-                        colour_image = colouradj.enhance(
-                            g_dev['cam'].config["camera"][g_dev['cam'].name]["settings"]['osc_colour_enhance'])
-                        del contrast_image
-                        del colouradj
-
-                        # adjust saturation
-                        satur = ImageEnhance.Color(colour_image)
-                        satur_image = satur.enhance(g_dev['cam'].config["camera"]
-                                                    [g_dev['cam'].name]["settings"]['osc_saturation_enhance'])
-                        del colour_image
-                        del satur
-
-                        # adjust sharpness
-                        sharpness = ImageEnhance.Sharpness(satur_image)
-                        final_image = sharpness.enhance(
-                            g_dev['cam'].config["camera"][g_dev['cam'].name]["settings"]['osc_sharpness_enhance'])
-                        del satur_image
-                        del sharpness
-                        #plog ("time: " + str(time.time()-googtime))
-                        
-
-                        # These steps flip and rotate the jpeg according to the settings in the site-config for this camera
-                        if g_dev['cam'].config["camera"][g_dev['cam'].name]["settings"]["transpose_jpeg"]:
-                            final_image = final_image.transpose(Image.Transpose.TRANSPOSE)
-                        if g_dev['cam'].config["camera"][g_dev['cam'].name]["settings"]['flipx_jpeg']:
-                            final_image = final_image.transpose(Image.Transpose.FLIP_LEFT_RIGHT)
-                        if g_dev['cam'].config["camera"][g_dev['cam'].name]["settings"]['flipy_jpeg']:
-                            final_image = final_image.transpose(Image.Transpose.FLIP_TOP_BOTTOM)
-                        if g_dev['cam'].config["camera"][g_dev['cam'].name]["settings"]['rotate180_jpeg']:
-                            final_image = final_image.transpose(Image.Transpose.ROTATE_180)
-                        if g_dev['cam'].config["camera"][g_dev['cam'].name]["settings"]['rotate90_jpeg']:
-                            final_image = final_image.transpose(Image.Transpose.ROTATE_90)
-                        if g_dev['cam'].config["camera"][g_dev['cam'].name]["settings"]['rotate270_jpeg']:
-                            final_image = final_image.transpose(Image.Transpose.ROTATE_270)
-
-                        # Detect the pierside and if it is one way, rotate the jpeg 180 degrees
-                        # to maintain the orientation. whether it is 1 or 0 that is flipped
-                        # is sorta arbitrary... you'd use the site-config settings above to
-                        # set it appropriately and leave this alone.
-                        if pier_side == 1:
-                            final_image = final_image.transpose(Image.Transpose.ROTATE_180)
-
-
-                        # if (
-                        #     self.config["camera"][self.name]["settings"]["crop_preview"]
-                        #     == True
-                        # ):
-                        #     yb = self.config["camera"][self.name]["settings"][
-                        #         "crop_preview_ybottom"
-                        #     ]
-                        #     yt = self.config["camera"][self.name]["settings"][
-                        #         "crop_preview_ytop"
-                        #     ]
-                        #     xl = self.config["camera"][self.name]["settings"][
-                        #         "crop_preview_xleft"
-                        #     ]
-                        #     xr = self.config["camera"][self.name]["settings"][
-                        #         "crop_preview_xright"
-                        #     ]
-                        #     hdusmalldata = hdusmalldata[yb:-yt, xl:-xr]
-
-                        # breakpoint()
-                        # Save BIG version of JPEG.
-                        final_image.save(
-                            paths["im_path"] + paths['jpeg_name10'].replace('EX10', 'EX20')
-                        )
-
-                        # Resizing the array to an appropriate shape for the small jpg
-                        iy, ix = final_image.size
-                        if (
-                            self.config["camera"][g_dev['cam'].name]["settings"]["crop_preview"]
-                            == True
-                        ):
-                            yb = self.config["camera"][g_dev['cam'].name]["settings"][
-                                "crop_preview_ybottom"
-                            ]
-                            yt = self.config["camera"][g_dev['cam'].name]["settings"][
-                                "crop_preview_ytop"
-                            ]
-                            xl = self.config["camera"][g_dev['cam'].name]["settings"][
-                                "crop_preview_xleft"
-                            ]
-                            xr = self.config["camera"][g_dev['cam'].name]["settings"][
-                                "crop_preview_xright"
-                            ]
-                            #hdusmalldata = hdusmalldata[yb:-yt, xl:-xr]
-                            final_image=final_image.crop((xl,yt,xr,yb))
-                            iy, ix = final_image.size
-                        
-                        if iy == ix:
-                            #final_image.resize((1280, 1280))
-                            final_image = final_image.resize((900, 900))
-                        else:
-                            #final_image.resize((int(1536 * iy / ix), 1536))
-                            if self.config["camera"][g_dev['cam'].name]["settings"]["squash_on_x_axis"]:
-                                final_image = final_image.resize((int(900 * iy / ix), 900))
-                            else:
-                                final_image = final_image.resize((900, int(900 * iy / ix)))
-
-                        final_image.save(
-                            paths["im_path"] + paths["jpeg_name10"]
-                        )
-                        del final_image
-
-                    else:
-                        # Making cosmetic adjustments to the image array ready for jpg stretching
-                        # breakpoint()
-
-                        #hdusmalldata = np.asarray(hdusmalldata)
-
-                        # breakpoint()
-                        # hdusmalldata[
-                        #     hdusmalldata
-                        #     > image_saturation_level
-                        # ] = image_saturation_level
-                        # #hdusmalldata[hdusmalldata < -100] = -100
-                        hdusmalldata = hdusmalldata - np.min(hdusmalldata)
-
-                        stretched_data_float = Stretch().stretch(hdusmalldata+1000)
-                        stretched_256 = 255 * stretched_data_float
-                        hot = np.where(stretched_256 > 255)
-                        cold = np.where(stretched_256 < 0)
-                        stretched_256[hot] = 255
-                        stretched_256[cold] = 0
-                        stretched_data_uint8 = stretched_256.astype("uint8")
-                        hot = np.where(stretched_data_uint8 > 255)
-                        cold = np.where(stretched_data_uint8 < 0)
-                        stretched_data_uint8[hot] = 255
-                        stretched_data_uint8[cold] = 0
-
-                        iy, ix = stretched_data_uint8.shape
-                        #stretched_data_uint8 = Image.fromarray(stretched_data_uint8)
-                        final_image = Image.fromarray(stretched_data_uint8)
-                        # These steps flip and rotate the jpeg according to the settings in the site-config for this camera
-                        if self.config["camera"][g_dev['cam'].name]["settings"]["transpose_jpeg"]:
-                            final_image = final_image.transpose(Image.TRANSPOSE)
-                        if self.config["camera"][g_dev['cam'].name]["settings"]['flipx_jpeg']:
-                            final_image = final_image.transpose(Image.FLIP_LEFT_RIGHT)
-                        if self.config["camera"][g_dev['cam'].name]["settings"]['flipy_jpeg']:
-                            final_image = final_image.transpose(Image.FLIP_TOP_BOTTOM)
-                        if self.config["camera"][g_dev['cam'].name]["settings"]['rotate180_jpeg']:
-                            final_image = final_image.transpose(Image.ROTATE_180)
-                        if self.config["camera"][g_dev['cam'].name]["settings"]['rotate90_jpeg']:
-                            final_image = final_image.transpose(Image.ROTATE_90)
-                        if self.config["camera"][g_dev['cam'].name]["settings"]['rotate270_jpeg']:
-                            final_image = final_image.transpose(Image.ROTATE_270)
-
-                        # Detect the pierside and if it is one way, rotate the jpeg 180 degrees
-                        # to maintain the orientation. whether it is 1 or 0 that is flipped
-                        # is sorta arbitrary... you'd use the site-config settings above to
-                        # set it appropriately and leave this alone.
-                        if pier_side == 1:
-                            final_image = final_image.transpose(Image.ROTATE_180)
-
-                        # Save BIG version of JPEG.
-                        final_image.save(
-                            paths["im_path"] + paths['jpeg_name10'].replace('EX10', 'EX20')
-                        )
-
-                        # Resizing the array to an appropriate shape for the jpg and the small fits
-
-                        if iy == ix:
-                            # hdusmalldata = resize(
-                            #     hdusmalldata, (1280, 1280), preserve_range=True
-                            # )
-                            final_image = final_image.resize(
-                                (900, 900)
-                            )
-                        else:
-                            # stretched_data_uint8 = resize(
-                            #     stretched_data_uint8,
-                            #     (int(1536 * iy / ix), 1536),
-                            #     preserve_range=True,
-                            # )
-                            # stretched_data_uint8 = resize(
-                            #     stretched_data_uint8,
-                            #     (int(900 * iy / ix), 900),
-                            #     preserve_range=True,
-                            # )
-                            if self.config["camera"][g_dev['cam'].name]["settings"]["squash_on_x_axis"]:
-                                final_image = final_image.resize(
-
-                                    (int(900 * iy / ix), 900)
-
-                                )
-                            else:
-                                final_image = final_image.resize(
-
-                                    (900, int(900 * iy / ix))
-
-                                )
-                        # stretched_data_uint8=stretched_data_uint8.transpose(Image.TRANSPOSE) # Not sure why it transposes on array creation ... but it does!
-                        final_image.save(
-                            paths["im_path"] + paths["jpeg_name10"]
-                        )
-                        del final_image
-
+                jpeg_subprocess=subprocess.Popen(['python','subprocesses/mainjpeg.py'],stdin=subprocess.PIPE,stdout=subprocess.PIPE,bufsize=0)
+                              
+                
+                
+                pickle.dump([hdusmalldata, smartstackid, paths, pier_side, is_osc, osc_bayer, osc_background_cut,osc_brightness_enhance, osc_contrast_enhance,\
+                     osc_colour_enhance, osc_saturation_enhance, osc_sharpness_enhance, transpose_jpeg, flipx_jpeg, flipy_jpeg, rotate180_jpeg,rotate90_jpeg, \
+                         rotate270_jpeg, crop_preview, yb, yt, xl, xr, squash_on_x_axis], jpeg_subprocess.stdin)
+                
+                #pickle.dump([hdusmalldata, smartstackid, paths, pier_side, is_osc, osc_bayer, osc_background_cut,osc_brightness_enhance, osc_contrast_enhance,\
+                #    osc_colour_enhance, osc_saturation_enhance, osc_sharpness_enhance, transpose_jpeg, flipx_jpeg, flipy_jpeg, rotate180_jpeg,rotate90_jpeg, \
+                #        rotate270_jpeg, crop_preview, yb, yt, xl, xr, squash_on_x_axis], open('testjpegpickle','wb'))
+                    
+                    
                 del hdusmalldata
+                #plog ("pickling time: " + str(time.time()-pickletime))
+                    
+                # Essentially wait until the subprocess is complete
+                jpeg_subprocess.communicate()
+                    
+                #plog ("jpeg pickle time" + str(time.time()-pickletime))
+                    
+                
+                    
+                
 
                 # Try saving the jpeg to disk and quickly send up to AWS to present for the user
                 # GUI
@@ -2159,12 +1864,13 @@ sel
                         #    "A preview image of the single image has been sent to the GUI.",
                         #    p_level="INFO",
                         # )
+                        plog("JPEG constructed and sent: " +str(time.time() - osc_jpeg_timer_start)+ "s")
                     except:
                         plog(
                             "there was an issue saving the preview jpg. Pushing on though"
                         )
-
-                    plog("JPEG constructed and sent: " +str(time.time() - osc_jpeg_timer_start)+ "s")
+                        
+                    
                 self.mainjpeg_queue.task_done()
                 # one_at_a_time=0
             else:
@@ -2186,92 +1892,681 @@ sel
                 sep_timer_begin=time.time()
                 
                 (hdufocusdata, pixscale, readnoise, avg_foc, focus_image, im_path, text_name, hduheader, cal_path, cal_name, frame_type, focus_position) = self.sep_queue.get(block=False)
-                #howlongdoesthistake=time.time()
-                # Background clip the reduced image
-                ## Estimate Method 1: This routine tests the number of pixels to the negative side of the distribution until it hits 0 three pixels in a row. This (+3) becomes the lower threshold.
-                #threshcutimage=np.rint(hdufocusdata)
-                #imageMode = (float(stats.mode(threshcutimage.flatten(), nan_policy='omit', keepdims=False)[0]))
+
+                if not (g_dev['events']['Civil Dusk'] < ephem.now() < g_dev['events']['Civil Dawn']) :
+                    plog ("Too bright to consider photometry!")
+
+                is_osc= self.config["camera"][g_dev['cam'].name]["settings"]["is_osc"]
+                interpolate_for_focus= self.config["camera"][g_dev['cam'].name]["settings"]['interpolate_for_focus']
+                bin_for_focus= self.config["camera"][g_dev['cam'].name]["settings"]['bin_for_focus']
+                focus_bin_value= self.config["camera"][g_dev['cam'].name]["settings"]['focus_bin_value']
+                interpolate_for_sep=self.config["camera"][g_dev['cam'].name]["settings"]['interpolate_for_sep']
+                bin_for_sep= self.config["camera"][g_dev['cam'].name]["settings"]['bin_for_sep']
+                sep_bin_value= self.config["camera"][g_dev['cam'].name]["settings"]['sep_bin_value']
+                focus_jpeg_size= self.config["camera"][g_dev['cam'].name]["settings"]['focus_jpeg_size']
+                saturate=g_dev['cam'].config["camera"][g_dev['cam'].name]["settings"]["saturate"]
+                minimum_realistic_seeing=self.config['minimum_realistic_seeing']
+                sep_subprocess=subprocess.Popen(['python','subprocesses/SEPprocess.py'],stdin=subprocess.PIPE,stdout=subprocess.PIPE,bufsize=0)
+                              
                 
+                
+                pickle.dump([hdufocusdata, pixscale, readnoise, avg_foc, focus_image, im_path, text_name, hduheader, cal_path, cal_name, frame_type, focus_position, g_dev['events'],ephem.now(),self.config["camera"][g_dev['cam']
+                                                         .name]["settings"]['focus_image_crop_width'], self.config["camera"][g_dev['cam']
+                                                                                                   .name]["settings"]['focus_image_crop_height'], is_osc,interpolate_for_focus,bin_for_focus,focus_bin_value,interpolate_for_sep,bin_for_sep,sep_bin_value,focus_jpeg_size,saturate,minimum_realistic_seeing
+                                                                                                                                                                           ], sep_subprocess.stdin)
+                                                                                                                             
+                                                                                                                             
+                #pickle.dump([hdufocusdata, pixscale, readnoise, avg_foc, focus_image, im_path, text_name, hduheader, cal_path, cal_name, frame_type, focus_position, g_dev['events'],ephem.now(),self.config["camera"][g_dev['cam']
+                #                                         .name]["settings"]['focus_image_crop_width'], self.config["camera"][g_dev['cam']
+                #                                                                                   .name]["settings"]['focus_image_crop_height'], is_osc,interpolate_for_focus,bin_for_focus,focus_bin_value,interpolate_for_sep,bin_for_sep,sep_bin_value,focus_jpeg_size,saturate,minimum_realistic_seeing
+                 #                                                                                                                                                          ], open('subprocesses/testSEPpickle','wb'))
+                                                                                                                             
+                                                                                                                                           
+                                                                                                                             
+                
+                del hdufocusdata
+                #plog ("pickling time: " + str(time.time()-pickletime))
+                    
+                # Essentially wait until the subprocess is complete
+                sep_subprocess.communicate()
+
+
+                # # Background clipped
+                # hduheader["IMGMIN"] = ( np.nanmin(hdufocusdata), "Minimum Value of Image Array" )
+                # hduheader["IMGMAX"] = ( np.nanmax(hdufocusdata), "Maximum Value of Image Array" )
+                # hduheader["IMGMEAN"] = ( np.nanmean(hdufocusdata), "Mean Value of Image Array" )
+                # hduheader["IMGMED"] = ( np.nanmedian(hdufocusdata), "Median Value of Image Array" )
+                
+                
+                # hduheader["IMGSTDEV"] = ( np.nanstd(hdufocusdata), "Median Value of Image Array" )
+                # hduheader["IMGMAD"] = ( median_absolute_deviation(hdufocusdata, ignore_nan=True), "Median Absolute Deviation of Image Array" )
+                
+                
+                
+                # # Get out raw histogram construction data
+                # # Get a flattened array with all nans removed
+                # #int_array_flattened=np.rint(hdufocusdata.flatten())
+                # int_array_flattened=hdufocusdata.astype(int).ravel()
+                
+                # #flat_no_nan_array=(int_array_flattened[~np.isnan(int_array_flattened)])
+                # #del int_array_flattened
+                # unique,counts=np.unique(int_array_flattened[~np.isnan(int_array_flattened)], return_counts=True)
+                # m=counts.argmax()
+                # imageMode=unique[m]
+
+                
+                
+                # #imageMode = (float(stats.mode(flat_no_nan_array, nan_policy='omit', keepdims=False)[0]))
+                # hduheader["IMGMODE"] = ( imageMode, "Mode Value of Image Array" )
+                
+                # # Collect unique values and counts
+                # #del flat_no_nan_array
+                # histogramdata=np.column_stack([unique,counts]).astype(np.int32)
+                
+                # #Do some fiddle faddling to figure out the value that goes to zero less 
+                # zeroValueArray=histogramdata[histogramdata[:,0] < imageMode]
                 # breaker=1
                 # counter=0
-                # zerocount=0
+                # #zerocount=0
                 # while (breaker != 0):
                 #     counter=counter+1
-                #     currentValue= np.count_nonzero(threshcutimage == imageMode-counter)
-            
-                #     if (currentValue < 20):
-                #         zerocount=zerocount+1
-                #     else:
-                #         zerocount=0
-                #     if (zerocount == 3):
-                #         zeroValue=(imageMode-counter)+3
-                #         breaker =0
-                # del threshcutimage
-                # masker = ma.masked_less(hdufocusdata, (zeroValue))
-                # hdufocusdata= masker.filled(imageMode)
-                #print ("Minimum Value in Array")
-                #print (zeroValue)
-                #plog( time.time() - howlongdoesthistake)
-                # Report number of nans in array
-                #print ("Number of nan pixels in image array: " + str(numpy.count_nonzero(numpy.isnan(imagedata))))
-                
-                
-
-                # Background clipped
-                hduheader["IMGMIN"] = ( np.nanmin(hdufocusdata), "Minimum Value of Image Array" )
-                hduheader["IMGMAX"] = ( np.nanmax(hdufocusdata), "Maximum Value of Image Array" )
-                hduheader["IMGMEAN"] = ( np.nanmean(hdufocusdata), "Mean Value of Image Array" )
-                hduheader["IMGMED"] = ( np.nanmedian(hdufocusdata), "Median Value of Image Array" )
-                
-                
-                hduheader["IMGSTDEV"] = ( np.nanstd(hdufocusdata), "Median Value of Image Array" )
-                hduheader["IMGMAD"] = ( median_absolute_deviation(hdufocusdata, ignore_nan=True), "Median Absolute Deviation of Image Array" )
-                
-                
-                
-                # Get out raw histogram construction data
-                # Get a flattened array with all nans removed
-                #int_array_flattened=np.rint(hdufocusdata.flatten())
-                int_array_flattened=hdufocusdata.astype(int).ravel()
-                
-                #flat_no_nan_array=(int_array_flattened[~np.isnan(int_array_flattened)])
-                #del int_array_flattened
-                unique,counts=np.unique(int_array_flattened[~np.isnan(int_array_flattened)], return_counts=True)
-                m=counts.argmax()
-                imageMode=unique[m]
-
-                
-                
-                #imageMode = (float(stats.mode(flat_no_nan_array, nan_policy='omit', keepdims=False)[0]))
-                hduheader["IMGMODE"] = ( imageMode, "Mode Value of Image Array" )
-                
-                # Collect unique values and counts
-                #del flat_no_nan_array
-                histogramdata=np.column_stack([unique,counts]).astype(np.int32)
-                
-                #Do some fiddle faddling to figure out the value that goes to zero less 
-                zeroValueArray=histogramdata[histogramdata[:,0] < imageMode]
-                breaker=1
-                counter=0
-                zerocount=0
-                while (breaker != 0):
-                    counter=counter+1
-                    #currentValue= np.count_nonzero(threshcutimage == imageMode-counter)
-                    if not (imageMode-counter) in zeroValueArray[:,0]:
+                #     #currentValue= np.count_nonzero(threshcutimage == imageMode-counter)
+                #     if not (imageMode-counter) in zeroValueArray[:,0]:
                     
-                        zeroValue=(imageMode-counter)
-                        breaker =0
-                #del threshcutimage
-                #masker = ma.masked_less(hdufocusdata, (zeroValue))
-                #hdufocusdata= masker.filled(imageMode)
-                hdufocusdata[hdufocusdata < zeroValue] = imageMode
-                histogramdata=histogramdata[histogramdata[:,0] > zeroValue]
+                #         zeroValue=(imageMode-counter)
+                #         breaker =0
+                # #del threshcutimage
+                # #masker = ma.masked_less(hdufocusdata, (zeroValue))
+                # #hdufocusdata= masker.filled(imageMode)
+                # hdufocusdata[hdufocusdata < zeroValue] = imageMode
+                # histogramdata=histogramdata[histogramdata[:,0] > zeroValue]
                 
-                np.savetxt(
-                    im_path + text_name.replace('.txt', '.his'),
-                    histogramdata, delimiter=','
-                )
+                # np.savetxt(
+                #     im_path + text_name.replace('.txt', '.his'),
+                #     histogramdata, delimiter=','
+                # )
 
+                
+                
+                
+                
+                
+                
+                
+                
+                
+                # if not (g_dev['events']['Civil Dusk'] < ephem.now() < g_dev['events']['Civil Dawn']) :
+                #     plog ("Too bright to consider photometry!")
+
+
+                #     rfp = np.nan
+                #     rfr = np.nan
+                #     rfs = np.nan
+                #     sepsky = np.nan
+                # else:
+
+                #     if frame_type == 'focus':
+                #         focus_crop_width = self.config["camera"][g_dev['cam']
+                #                                                  .name]["settings"]['focus_image_crop_width']
+                #         focus_crop_height = self.config["camera"][g_dev['cam']
+                #                                                   .name]["settings"]['focus_image_crop_height']
+                #         # breakpoint()
+
+                #         fx, fy = hdufocusdata.shape
+
+                #         crop_width = (fx * focus_crop_width) / 2
+                #         crop_height = (fy * focus_crop_height) / 2
+
+                #         # Make sure it is an even number for OSCs
+                #         if (crop_width % 2) != 0:
+                #             crop_width = crop_width+1
+                #         if (crop_height % 2) != 0:
+                #             crop_height = crop_height+1
+
+                #         crop_width = int(crop_width)
+                #         crop_height = int(crop_height)
+                #         # breakpoint()
+
+                #         if crop_width > 0 or crop_height > 0:
+                #             hdufocusdata = hdufocusdata[crop_width:-crop_width, crop_height:-crop_height]
+                #             #plog("Focus image cropped to " + str(hdufocusdata.shape))
+
+                #     # focdate=time.time()
+                #     binfocus = 1
+                #     if self.config["camera"][g_dev['cam'].name]["settings"]["is_osc"]:
+
+                #         if frame_type == 'focus' and self.config["camera"][g_dev['cam'].name]["settings"]['interpolate_for_focus']:
+                #             hdufocusdata=demosaicing_CFA_Bayer_Menon2007(hdufocusdata, 'RGGB')[:,:,1]
+                #             hdufocusdata=hdufocusdata.astype("float32")
+                #             binfocus=1
+                #         if frame_type == 'focus' and self.config["camera"][g_dev['cam'].name]["settings"]['bin_for_focus']: 
+                #             focus_bin_factor=self.config["camera"][g_dev['cam'].name]["settings"]['focus_bin_value']
+                #             hdufocusdata=block_reduce(hdufocusdata,focus_bin_factor)
+                #             binfocus=focus_bin_factor
+                        
+                        
+                #         if frame_type != 'focus' and self.config["camera"][g_dev['cam'].name]["settings"]['interpolate_for_sep']: 
+                #             hdufocusdata=demosaicing_CFA_Bayer_Menon2007(hdufocusdata, 'RGGB')[:,:,1]
+                #             hdufocusdata=hdufocusdata.astype("float32")
+                #             binfocus=1
+                #         if frame_type != 'focus' and self.config["camera"][g_dev['cam'].name]["settings"]['bin_for_sep']:
+                #             sep_bin_factor=self.config["camera"][g_dev['cam'].name]["settings"]['sep_bin_value']
+                #             hdufocusdata=block_reduce(hdufocusdata,sep_bin_factor)
+                #             binfocus=sep_bin_factor
+                            
+
+                #     # If it is a focus image then it will get sent in a different manner to the UI for a jpeg
+                #     if frame_type == 'focus':
+
+                #         hdusmalldata = np.array(hdufocusdata)
+
+                #         fx, fy = hdusmalldata.shape
+
+                #         focus_jpeg_size=self.config["camera"][g_dev['cam'].name]["settings"]['focus_jpeg_size']
+                #         crop_width = (fx - focus_jpeg_size) / 2
+                #         crop_height = (fy - focus_jpeg_size) / 2
+
+       
+
+                #         # Make sure it is an even number for OSCs
+                #         if (crop_width % 2) != 0:
+                #             crop_width = crop_width+1
+                #         if (crop_height % 2) != 0:
+                #             crop_height = crop_height+1
+
+                #         crop_width = int(crop_width)
+                #         crop_height = int(crop_height)
+                #         # breakpoint()
+
+                #         if crop_width > 0 or crop_height > 0:
+                #             hdusmalldata = hdusmalldata[crop_width:-crop_width, crop_height:-crop_height]
+
+                #         hdusmalldata = hdusmalldata - np.min(hdusmalldata)
+
+                #         stretched_data_float = Stretch().stretch(hdusmalldata+1000)
+                #         stretched_256 = 255 * stretched_data_float
+                #         hot = np.where(stretched_256 > 255)
+                #         cold = np.where(stretched_256 < 0)
+                #         stretched_256[hot] = 255
+                #         stretched_256[cold] = 0
+                #         stretched_data_uint8 = stretched_256.astype("uint8")
+                #         hot = np.where(stretched_data_uint8 > 255)
+                #         cold = np.where(stretched_data_uint8 < 0)
+                #         stretched_data_uint8[hot] = 255
+                #         stretched_data_uint8[cold] = 0
+
+                #         iy, ix = stretched_data_uint8.shape
+                #         #stretched_data_uint8 = Image.fromarray(stretched_data_uint8)
+                #         final_image = Image.fromarray(stretched_data_uint8)
+                #         # These steps flip and rotate the jpeg according to the settings in the site-config for this camera
+                #         # if self.config["camera"][g_dev['cam'].name]["settings"]["transpose_jpeg"]:
+                #         #     final_image=final_image.transpose(Image.TRANSPOSE)
+                #         # if self.config["camera"][g_dev['cam'].name]["settings"]['flipx_jpeg']:
+                #         #     final_image=final_image.transpose(Image.FLIP_LEFT_RIGHT)
+                #         # if self.config["camera"][g_dev['cam'].name]["settings"]['flipy_jpeg']:
+                #         #     final_image=final_image.transpose(Image.FLIP_TOP_BOTTOM)
+                #         # if self.config["camera"][g_dev['cam'].name]["settings"]['rotate180_jpeg']:
+                #         #     final_image=final_image.transpose(Image.ROTATE_180)
+                #         # if self.config["camera"][g_dev['cam'].name]["settings"]['rotate90_jpeg']:
+                #         #     final_image=final_image.transpose(Image.ROTATE_90)
+                #         # if self.config["camera"][g_dev['cam'].name]["settings"]['rotate270_jpeg']:
+                #         #     final_image=final_image.transpose(Image.ROTATE_270)
+
+                #         #plog ("Focus image cropped to " + str(hdufocusdata.shape))
+
+                #         #
+                #         # stretched_data_uint8=stretched_data_uint8.transpose(Image.TRANSPOSE) # Not sure why it transposes on array creation ... but it does!
+                #         draw = ImageDraw.Draw(final_image)
+                #         # breakpoint()
+                #         #font=ImageFont.truetype("C:\Windows\Fonts\sans-serif.ttf", 16)
+
+                #         draw.text((0, 0), str(focus_position), (255))
+
+                #         #draw.text((0, 0),str(focus_position),(255,255,255),font=font)
+
+                #         final_image.save(im_path + text_name.replace('EX00.txt', 'EX10.jpg'))
+
+
+                    
+                #     #plog("focus construction time")
+                #     #plog(time.time() -focdate)
+
+                #     actseptime = time.time()
+                #     focusimg = np.array(
+                #         hdufocusdata, order="C"
+                #     )
+
+                #     try:
+                #         # Some of these are liberated from BANZAI
+                #         bkg = sep.Background(focusimg)
+
+                #         sepsky = (np.nanmedian(bkg), "Sky background estimated by SEP")
+
+                #         focusimg -= bkg
+                #         ix, iy = focusimg.shape
+                #         border_x = int(ix * 0.05)
+                #         border_y = int(iy * 0.05)
+                #         sep.set_extract_pixstack(int(ix*iy - 1))
+                #         # minarea is set as roughly how big we think a 0.7 arcsecond seeing star
+                #         # would be at this pixelscale and binning. Different for different cameras/telescopes.
+                #         #minarea = int(pow(0.7*1.5 / (pixscale*binfocus), 2) * 3.14)
+                        
+                        
+                #         #This minarea is totally fudgetastically emprical comparing a 0.138 pixelscale QHY Mono
+                #         # to a 1.25/2.15 QHY OSC. Seems to work, so thats good enough.
+                #         # Makes the minarea small enough for blocky pixels, makes it large enough for oversampling
+                #         minarea= -9.2421 * pixscale + 16.553
+                #         if minarea < 5:  # There has to be a min minarea though!
+                #             minarea = 5
+
+                #         #sep.set_sub_object_limit(10000)
+                #         sources = sep.extract(
+                #             focusimg, 5.0, err=bkg.globalrms, minarea=minarea
+                #         )
+                #         #plog("Actual SEP time: " + str(time.time()-actseptime))
+
+                #         #plog ("min_area: " + str(minarea))
+                #         sources = Table(sources)
+                #         sources = sources[sources['flag'] < 8]
+                #         image_saturation_level = g_dev['cam'].config["camera"][g_dev['cam'].name]["settings"]["saturate"]
+                #         sources = sources[sources["peak"] < 0.8 * image_saturation_level * pow(binfocus, 2)]
+                #         sources = sources[sources["cpeak"] < 0.8 * image_saturation_level * pow(binfocus, 2)]
+                #         #sources = sources[sources["peak"] > 150 * pow(binfocus,2)]
+                #         #sources = sources[sources["cpeak"] > 150 * pow(binfocus,2)]
+                #         sources = sources[sources["flux"] > 2000]
+                #         sources = sources[sources["x"] < ix - border_x]
+                #         sources = sources[sources["x"] > border_x]
+                #         sources = sources[sources["y"] < iy - border_y]
+                #         sources = sources[sources["y"] > border_y]
+
+                #         # BANZAI prune nans from table
+                #         nan_in_row = np.zeros(len(sources), dtype=bool)
+                #         for col in sources.colnames:
+                #             nan_in_row |= np.isnan(sources[col])
+                #         sources = sources[~nan_in_row]
+
+                #         # Calculate the ellipticity (Thanks BANZAI)
+                #         sources['ellipticity'] = 1.0 - (sources['b'] / sources['a'])
+
+                #         sources = sources[sources['ellipticity'] < 0.1]  # Remove things that are not circular stars
+
+                #         # Calculate the kron radius (Thanks BANZAI)
+                #         kronrad, krflag = sep.kron_radius(focusimg, sources['x'], sources['y'],
+                #                                           sources['a'], sources['b'],
+                #                                           sources['theta'], 6.0)
+                #         sources['flag'] |= krflag
+                #         sources['kronrad'] = kronrad
+
+                #         # Calculate uncertainty of image (thanks BANZAI)
+                #         #uncertainty = float(readnoise) * np.ones(hdufocusdata.shape,
+                #         #                                         dtype=hdufocusdata.dtype) / float(readnoise)
+
+                #         uncertainty = float(readnoise) * np.ones(focusimg.shape,
+                #                                                  dtype=focusimg.dtype) / float(readnoise)
+
+
+                #         # DONUT IMAGE DETECTOR.
+                #         #plog ("The Fitzgerald Magical Donut detector")
+                        
+                #         xdonut=np.median(pow(pow(sources['x'] - sources['xpeak'],2),0.5))*pixscale*binfocus
+                #         ydonut=np.median(pow(pow(sources['y'] - sources['ypeak'],2),0.5))*pixscale*binfocus
+                #         if xdonut > 3.0 or ydonut > 3.0 or np.isnan(xdonut) or np.isnan(ydonut):
+                #             plog ("Possible donut image detected.")    
+                #             plog('x ' + str(xdonut))
+                #             plog('y ' + str(ydonut))                        
+                #         #breakpoint()
+
+                #         # Calcuate the equivilent of flux_auto (Thanks BANZAI)
+                #         # This is the preferred best photometry SEP can do.
+                #         try:
+                #             flux, fluxerr, flag = sep.sum_ellipse(focusimg, sources['x'], sources['y'],
+                #                                               sources['a'], sources['b'],
+                #                                               np.pi / 2.0, 2.5 * kronrad,
+                #                                               subpix=1, err=uncertainty)
+                #         except:
+                #             plog(traceback.format_exc())
+                            
+                #         sources['flux'] = flux
+                #         sources['fluxerr'] = fluxerr
+                #         sources['flag'] |= flag
+                #         sources['FWHM'], _ = sep.flux_radius(focusimg, sources['x'], sources['y'], sources['a'], 0.5,
+                #                                              subpix=5)
+                #         # If image has been binned for focus we need to multiply some of these things by the binning
+                #         # To represent the original image
+                #         sources['FWHM'] = (sources['FWHM'] * 2) * binfocus
+                #         sources['x'] = (sources['x']) * binfocus
+                #         sources['y'] = (sources['y']) * binfocus
+
+                #         #
+
+                #         sources['a'] = (sources['a']) * binfocus
+                #         sources['b'] = (sources['b']) * binfocus
+                #         sources['kronrad'] = (sources['kronrad']) * binfocus
+                #         sources['peak'] = (sources['peak']) / pow(binfocus, 2)
+                #         sources['cpeak'] = (sources['cpeak']) / pow(binfocus, 2)
+
+
+
+
+                #         # Need to reject any stars that have FWHM that are less than a extremely
+                #         # perfect night as artifacts
+                #         sources = sources[sources['FWHM'] > (0.6 / (pixscale))]
+                #         sources = sources[sources['FWHM'] > (self.config['minimum_realistic_seeing'] / pixscale)]
+                #         sources = sources[sources['FWHM'] != 0]
+
+                #         # BANZAI prune nans from table
+                #         nan_in_row = np.zeros(len(sources), dtype=bool)
+                #         for col in sources.colnames:
+                #             nan_in_row |= np.isnan(sources[col])
+                #         sources = sources[~nan_in_row]
+
+                #         #plog("No. of detections:  ", len(sources))
+
+                            
+
+                #         if (len(sources) < 2) or ( frame_type == 'focus' and (len(sources) < 10 or len(sources) == np.nan or str(len(sources)) =='nan' or xdonut > 3.0 or ydonut > 3.0 or np.isnan(xdonut) or np.isnan(ydonut))):
+                #             #plog ("not enough sources to estimate a reliable focus")
+                #             plog ("Did not find an acceptable FWHM for this image.")    
+                #             g_dev['cam'].expresult["error"] = True
+                #             g_dev['cam'].expresult['FWHM'] = np.nan
+                #             g_dev['cam'].expresult['No_of_sources'] = np.nan
+                #             sources['FWHM'] = [np.nan] * len(sources)
+                #             rfp = np.nan
+                #             rfr = np.nan
+                #             rfs = np.nan
+                #             sources = sources
+
+                #         else:
+                #             # Get halflight radii
+                #             # breakpoint()
+                #             # fwhmcalc=(np.array(sources['FWHM']))
+                #             fwhmcalc = sources['FWHM']
+                #             #fwhmcalc=fwhmcalc[fwhmcalc > 1.0]
+                #             fwhmcalc = fwhmcalc[fwhmcalc != 0]  # Remove 0 entries
+                #             # fwhmcalc=fwhmcalc[fwhmcalc < 75] # remove stupidly large entries
+
+                #             # sigma clipping iterator to reject large variations
+                #             templen = len(fwhmcalc)
+                #             while True:
+                #                 fwhmcalc = fwhmcalc[fwhmcalc < np.median(fwhmcalc) + 3 * np.std(fwhmcalc)]
+                #                 if len(fwhmcalc) == templen:
+                #                     break
+                #                 else:
+                #                     templen = len(fwhmcalc)
+
+                #             fwhmcalc = fwhmcalc[fwhmcalc > np.median(fwhmcalc) - 3 * np.std(fwhmcalc)]
+                #             rfp = round(np.median(fwhmcalc), 3)
+                #             rfr = round(np.median(fwhmcalc) * pixscale, 3)
+                #             rfs = round(np.std(fwhmcalc) * pixscale, 3)
+                #             plog("\nImage FWHM:  " + str(rfr) + "+/-" + str(rfs) + " arcsecs, " + str(rfp)
+                #                  + " pixels.")
+                #             # breakpoint()
+                #             g_dev['cam'].expresult["FWHM"] = rfr
+                #             g_dev['cam'].expresult["mean_focus"] = avg_foc
+                #             g_dev['cam'].expresult['No_of_sources'] = len(sources)
+
+                #             # rfp = rfp
+                #             # g_dev['cam'].rfr = rfr
+                #             # g_dev['cam'].rfs = rfs
+                #             # g_dev['cam'].sources = sources
+
+                #             # try:
+                #             #     valid = (
+                #             #         0.0 <= result["FWHM"] <= 20.0
+                #             #         and 100 < result["mean_focus"] < 12600
+                #             #     )
+                #             #     result["error"] = False
+
+                #             # except:
+                #             #     result[
+                #             #         "error"
+
+                #             #     ] = True
+                #             #     result["FWHM"] = np.nan
+                #             #     result["mean_focus"] = np.nan
+
+                #             if focus_image != True:
+                #                 # Focus tracker code. This keeps track of the focus and if it drifts
+                #                 # Then it triggers an autofocus.
+                #                 g_dev["foc"].focus_tracker.pop(0)
+                #                 g_dev["foc"].focus_tracker.append(round(rfr, 3))
+                #                 plog("Last ten FWHM: " + str(g_dev["foc"].focus_tracker) + " Median: " + str(np.nanmedian(g_dev["foc"].focus_tracker)) + " Last Solved: " + str(g_dev["foc"].last_focus_fwhm))
+                #                 #plog()
+                #                 #plog("Median last ten FWHM")
+                #                 #plog(np.nanmedian(g_dev["foc"].focus_tracker))
+                #                 #plog("Last solved focus FWHM: " + str(g_dev["foc"].last_focus_fwhm))
+                #                 #plog(g_dev["foc"].last_focus_fwhm)
+
+                #                 # If there hasn't been a focus yet, then it can't check it,
+                #                 # so make this image the last solved focus.
+                #                 if g_dev["foc"].last_focus_fwhm == None:
+                #                     g_dev["foc"].last_focus_fwhm = rfr
+                #                 else:
+                #                     # Very dumb focus slip deteector
+                #                     if (
+                #                         np.nanmedian(g_dev["foc"].focus_tracker)
+                #                         > g_dev["foc"].last_focus_fwhm
+                #                         + self.config["focus_trigger"]
+                #                     ):
+                #                         g_dev["foc"].focus_needed = True
+                #                         g_dev["obs"].send_to_user(
+                #                             "Focus has drifted to "
+                #                             + str(np.nanmedian(g_dev["foc"].focus_tracker))
+                #                             + " from "
+                #                             + str(g_dev["foc"].last_focus_fwhm)
+                #                             + ". Autofocus triggered for next exposures.",
+                #                             p_level="INFO",
+                #                         )
+
+                #         source_delete = ['thresh', 'npix', 'tnpix', 'xmin', 'xmax', 'ymin', 'ymax', 'x2', 'y2', 'xy', 'errx2',
+                #                          'erry2', 'errxy', 'a', 'b', 'theta', 'cxx', 'cyy', 'cxy', 'cflux', 'cpeak', 'xcpeak', 'ycpeak']
+                #         # for sourcedel in source_delete:
+                #         #    breakpoint()
+                #         sources.remove_columns(source_delete)
+
+                #         sources.write(im_path + text_name.replace('.txt', '.sep'), format='csv', overwrite=True)
+
+                        
+
+                            
+                        
+                #         # # Identify the brightest star in the image set
+                        
+                #         # # Make a cutout around this star - 10 times rfp
+                        
+                #         # brightest_array = None
+                        
+                #         # # Send this array up
+                        
+                        
+                        
+                        
+                #         # # Identify the brightest non-saturated star in the image set
+                        
+                #         # # Make a cutout around this star - 10 times rfp
+                        
+                #         # unsaturated_array = None
+                        
+                #         # # Send this array up
+                #         # #import json
+                #         # data = {'brightest': brightest_array, 'unsaturated': unsaturated_array}
+                #         # # To write to a file:
+                #         # with open(im_path + text_name.replace('.txt', '.rad'), "w") as f:
+                #         #     json.dump(data, f)
+                        
+                        
+                #         # try:
+                #         #     g_dev['cam'].enqueue_for_fastAWS(2000, im_path, text_name.replace('.txt', '.rad'))
+                #         #     #plog("Sent SEP up")
+                #         # except:
+                #         #     plog("Failed to send RAD up for some reason")
+                        
+                #         # To print out the JSON string (which you could then hardcode into the JS)
+                #         #json.dumps(data)
+                        
+
+                #     except:
+                #         plog("something failed in SEP calculations for exposure. This could be an overexposed image")
+                #         plog(traceback.format_exc())
+                #         sources = [0]
+                #         rfp = np.nan
+                #         rfr = np.nan
+                #         rfs = np.nan
+                #         sepsky = np.nan
+
+                #     #plog("Sep time to process: " + str(time.time() - sep_timer_begin))
+
+                
+                
+                # # Value-added header items for the UI 
+                
+
+                # try:
+                #     #hduheader["SEPSKY"] = str(sepsky)
+                #     hduheader["SEPSKY"] = sepsky
+                # except:
+                #     hduheader["SEPSKY"] = -9999
+                # try:
+                #     hduheader["FWHM"] = (str(rfp), 'FWHM in pixels')
+                #     hduheader["FWHMpix"] = (str(rfp), 'FWHM in pixels')
+                # except:
+                #     hduheader["FWHM"] = (-99, 'FWHM in pixels')
+                #     hduheader["FWHMpix"] = (-99, 'FWHM in pixels')
+
+                # try:
+                #     hduheader["FWHMasec"] = (str(rfr), 'FWHM in arcseconds')
+                # except:
+                #     hduheader["FWHMasec"] = (-99, 'FWHM in arcseconds')
+                # try:
+                #     hduheader["FWHMstd"] = (str(rfs), 'FWHM standard deviation in arcseconds')
+                # except:
+
+                #     hduheader["FWHMstd"] = ( -99, 'FWHM standard deviation in arcseconds')
+
+                # try:
+                #     hduheader["NSTARS"] = ( len(sources), 'Number of star-like sources in image')
+                # except:
+                #     hduheader["NSTARS"] = ( -99, 'Number of star-like sources in image')
+                
+
+
+
+               
+
+                # LOADING UP THE SEP FILE HERE AGAIN
+                #sources.write(im_path + text_name.replace('.txt', '.sep'), format='csv', overwrite=True)
+                if os.path.exists(im_path + text_name.replace('.txt', '.sep')):
+                    sources = Table.read(im_path + text_name.replace('.txt', '.sep'), format='csv')
+                    
+                    try:
+                        g_dev['cam'].enqueue_for_fastAWS(200, im_path, text_name.replace('.txt', '.sep'))
+                        #plog("Sent SEP up")
+                    except:
+                        plog("Failed to send SEP up for some reason")
+                    
+                    #DONUT IMAGE DETECTOR.
+                    #plog ("The Fitzgerald Magical Donut detector")
+                    binfocus=1
+                    if frame_type == 'focus' and self.config["camera"][g_dev['cam'].name]["settings"]['bin_for_focus']: 
+                        binfocus=self.config["camera"][g_dev['cam'].name]["settings"]['focus_bin_value']
+                    
+                    if frame_type != 'focus' and self.config["camera"][g_dev['cam'].name]["settings"]['bin_for_sep']:                    
+                        binfocus=self.config["camera"][g_dev['cam'].name]["settings"]['sep_bin_value']
+                        
+                    xdonut=np.median(pow(pow(sources['x'] - sources['xpeak'],2),0.5))*pixscale*binfocus
+                    ydonut=np.median(pow(pow(sources['y'] - sources['ypeak'],2),0.5))*pixscale*binfocus
+                    if xdonut > 3.0 or ydonut > 3.0 or np.isnan(xdonut) or np.isnan(ydonut):
+                        plog ("Possible donut image detected.")    
+                        plog('x ' + str(xdonut))
+                        plog('y ' + str(ydonut))  
+                    
+                    
+                    if (len(sources) < 2) or ( frame_type == 'focus' and (len(sources) < 10 or len(sources) == np.nan or str(len(sources)) =='nan' or xdonut > 3.0 or ydonut > 3.0 or np.isnan(xdonut) or np.isnan(ydonut))):
+                        #plog ("not enough sources to estimate a reliable focus")
+                        plog ("Did not find an acceptable FWHM for this image.")    
+                        g_dev['cam'].expresult["error"] = True
+                        g_dev['cam'].expresult['FWHM'] = np.nan
+                        g_dev['cam'].expresult['No_of_sources'] = np.nan
+                        sources['FWHM'] = [np.nan] * len(sources)
+                        rfp = np.nan
+                        rfr = np.nan
+                        rfs = np.nan
+                        sources = sources
+                    else:
+                        # Get halflight radii
+                        # breakpoint()
+                        # fwhmcalc=(np.array(sources['FWHM']))
+                        fwhmcalc = sources['FWHM']
+                        #fwhmcalc=fwhmcalc[fwhmcalc > 1.0]
+                        fwhmcalc = fwhmcalc[fwhmcalc != 0]  # Remove 0 entries
+                        # fwhmcalc=fwhmcalc[fwhmcalc < 75] # remove stupidly large entries
+    
+                        # sigma clipping iterator to reject large variations
+                        templen = len(fwhmcalc)
+                        while True:
+                            fwhmcalc = fwhmcalc[fwhmcalc < np.median(fwhmcalc) + 3 * np.std(fwhmcalc)]
+                            if len(fwhmcalc) == templen:
+                                break
+                            else:
+                                templen = len(fwhmcalc)
+    
+                        fwhmcalc = fwhmcalc[fwhmcalc > np.median(fwhmcalc) - 3 * np.std(fwhmcalc)]
+                        rfp = round(np.median(fwhmcalc), 3)
+                        rfr = round(np.median(fwhmcalc) * pixscale, 3)
+                        rfs = round(np.std(fwhmcalc) * pixscale, 3)
+                        plog("\nImage FWHM:  " + str(rfr) + "+/-" + str(rfs) + " arcsecs, " + str(rfp)
+                             + " pixels.")
+                        # breakpoint()
+                        g_dev['cam'].expresult["FWHM"] = rfr
+                        g_dev['cam'].expresult["mean_focus"] = avg_foc
+                        g_dev['cam'].expresult['No_of_sources'] = len(sources)
+    
+    
+                    if focus_image != True:
+                        # Focus tracker code. This keeps track of the focus and if it drifts
+                        # Then it triggers an autofocus.
+                        g_dev["foc"].focus_tracker.pop(0)
+                        g_dev["foc"].focus_tracker.append(round(rfr, 3))
+                        plog("Last ten FWHM: " + str(g_dev["foc"].focus_tracker) + " Median: " + str(np.nanmedian(g_dev["foc"].focus_tracker)) + " Last Solved: " + str(g_dev["foc"].last_focus_fwhm))
+                        #plog()
+                        #plog("Median last ten FWHM")
+                        #plog(np.nanmedian(g_dev["foc"].focus_tracker))
+                        #plog("Last solved focus FWHM: " + str(g_dev["foc"].last_focus_fwhm))
+                        #plog(g_dev["foc"].last_focus_fwhm)
+    
+                        # If there hasn't been a focus yet, then it can't check it,
+                        # so make this image the last solved focus.
+                        if g_dev["foc"].last_focus_fwhm == None:
+                            g_dev["foc"].last_focus_fwhm = rfr
+                        else:
+                            # Very dumb focus slip deteector
+                            if (
+                                np.nanmedian(g_dev["foc"].focus_tracker)
+                                > g_dev["foc"].last_focus_fwhm
+                                + self.config["focus_trigger"]
+                            ):
+                                g_dev["foc"].focus_needed = True
+                                g_dev["obs"].send_to_user(
+                                    "Focus has drifted to "
+                                    + str(np.nanmedian(g_dev["foc"].focus_tracker))
+                                    + " from "
+                                    + str(g_dev["foc"].last_focus_fwhm)
+                                    + ". Autofocus triggered for next exposures.",
+                                    p_level="INFO",
+                                )
+                
+                else:
+                    plog ("Did not find a source list from SEP for this image.")    
+                    #g_dev['cam'].expresult["error"] = True
+                    g_dev['cam'].expresult['FWHM'] = np.nan
+                    g_dev['cam'].expresult['No_of_sources'] = np.nan
+                    
+                
+                
+                
+                
+                if frame_type == 'focus':
+                    g_dev["cam"].enqueue_for_fastAWS(100, im_path, text_name.replace('EX00.txt', 'EX10.jpg'))
                 
                 try:
                     g_dev['cam'].enqueue_for_fastAWS(180, im_path, text_name.replace('.txt', '.his'))
@@ -2279,479 +2574,6 @@ sel
                 except:
                     plog("Failed to send HIS up for some reason")
                 
-                
-                
-                
-                
-                
-                
-                if not (g_dev['events']['Civil Dusk'] < ephem.now() < g_dev['events']['Civil Dawn']) :
-                    plog ("Too bright to consider photometry!")
-
-
-                    rfp = np.nan
-                    rfr = np.nan
-                    rfs = np.nan
-                    sepsky = np.nan
-                else:
-
-                    if frame_type == 'focus':
-                        focus_crop_width = self.config["camera"][g_dev['cam']
-                                                                 .name]["settings"]['focus_image_crop_width']
-                        focus_crop_height = self.config["camera"][g_dev['cam']
-                                                                  .name]["settings"]['focus_image_crop_height']
-                        # breakpoint()
-
-                        fx, fy = hdufocusdata.shape
-
-                        crop_width = (fx * focus_crop_width) / 2
-                        crop_height = (fy * focus_crop_height) / 2
-
-                        # Make sure it is an even number for OSCs
-                        if (crop_width % 2) != 0:
-                            crop_width = crop_width+1
-                        if (crop_height % 2) != 0:
-                            crop_height = crop_height+1
-
-                        crop_width = int(crop_width)
-                        crop_height = int(crop_height)
-                        # breakpoint()
-
-                        if crop_width > 0 or crop_height > 0:
-                            hdufocusdata = hdufocusdata[crop_width:-crop_width, crop_height:-crop_height]
-                            #plog("Focus image cropped to " + str(hdufocusdata.shape))
-
-                    # focdate=time.time()
-                    binfocus = 1
-                    if self.config["camera"][g_dev['cam'].name]["settings"]["is_osc"]:
-
-                        if frame_type == 'focus' and self.config["camera"][g_dev['cam'].name]["settings"]['interpolate_for_focus']:
-                            hdufocusdata=demosaicing_CFA_Bayer_Menon2007(hdufocusdata, 'RGGB')[:,:,1]
-                            hdufocusdata=hdufocusdata.astype("float32")
-                            binfocus=1
-                        if frame_type == 'focus' and self.config["camera"][g_dev['cam'].name]["settings"]['bin_for_focus']: 
-                            focus_bin_factor=self.config["camera"][g_dev['cam'].name]["settings"]['focus_bin_value']
-                            hdufocusdata=block_reduce(hdufocusdata,focus_bin_factor)
-                            binfocus=focus_bin_factor
-                        
-                        
-                        if frame_type != 'focus' and self.config["camera"][g_dev['cam'].name]["settings"]['interpolate_for_sep']: 
-                            hdufocusdata=demosaicing_CFA_Bayer_Menon2007(hdufocusdata, 'RGGB')[:,:,1]
-                            hdufocusdata=hdufocusdata.astype("float32")
-                            binfocus=1
-                        if frame_type != 'focus' and self.config["camera"][g_dev['cam'].name]["settings"]['bin_for_sep']:
-                            sep_bin_factor=self.config["camera"][g_dev['cam'].name]["settings"]['sep_bin_value']
-                            hdufocusdata=block_reduce(hdufocusdata,sep_bin_factor)
-                            binfocus=sep_bin_factor
-                            
-
-                    # If it is a focus image then it will get sent in a different manner to the UI for a jpeg
-                    if frame_type == 'focus':
-
-                        hdusmalldata = np.array(hdufocusdata)
-
-                        fx, fy = hdusmalldata.shape
-
-                        focus_jpeg_size=self.config["camera"][g_dev['cam'].name]["settings"]['focus_jpeg_size']
-                        crop_width = (fx - focus_jpeg_size) / 2
-                        crop_height = (fy - focus_jpeg_size) / 2
-
-       
-
-                        # Make sure it is an even number for OSCs
-                        if (crop_width % 2) != 0:
-                            crop_width = crop_width+1
-                        if (crop_height % 2) != 0:
-                            crop_height = crop_height+1
-
-                        crop_width = int(crop_width)
-                        crop_height = int(crop_height)
-                        # breakpoint()
-
-                        if crop_width > 0 or crop_height > 0:
-                            hdusmalldata = hdusmalldata[crop_width:-crop_width, crop_height:-crop_height]
-
-                        hdusmalldata = hdusmalldata - np.min(hdusmalldata)
-
-                        stretched_data_float = Stretch().stretch(hdusmalldata+1000)
-                        stretched_256 = 255 * stretched_data_float
-                        hot = np.where(stretched_256 > 255)
-                        cold = np.where(stretched_256 < 0)
-                        stretched_256[hot] = 255
-                        stretched_256[cold] = 0
-                        stretched_data_uint8 = stretched_256.astype("uint8")
-                        hot = np.where(stretched_data_uint8 > 255)
-                        cold = np.where(stretched_data_uint8 < 0)
-                        stretched_data_uint8[hot] = 255
-                        stretched_data_uint8[cold] = 0
-
-                        iy, ix = stretched_data_uint8.shape
-                        #stretched_data_uint8 = Image.fromarray(stretched_data_uint8)
-                        final_image = Image.fromarray(stretched_data_uint8)
-                        # These steps flip and rotate the jpeg according to the settings in the site-config for this camera
-                        # if self.config["camera"][g_dev['cam'].name]["settings"]["transpose_jpeg"]:
-                        #     final_image=final_image.transpose(Image.TRANSPOSE)
-                        # if self.config["camera"][g_dev['cam'].name]["settings"]['flipx_jpeg']:
-                        #     final_image=final_image.transpose(Image.FLIP_LEFT_RIGHT)
-                        # if self.config["camera"][g_dev['cam'].name]["settings"]['flipy_jpeg']:
-                        #     final_image=final_image.transpose(Image.FLIP_TOP_BOTTOM)
-                        # if self.config["camera"][g_dev['cam'].name]["settings"]['rotate180_jpeg']:
-                        #     final_image=final_image.transpose(Image.ROTATE_180)
-                        # if self.config["camera"][g_dev['cam'].name]["settings"]['rotate90_jpeg']:
-                        #     final_image=final_image.transpose(Image.ROTATE_90)
-                        # if self.config["camera"][g_dev['cam'].name]["settings"]['rotate270_jpeg']:
-                        #     final_image=final_image.transpose(Image.ROTATE_270)
-
-                        #plog ("Focus image cropped to " + str(hdufocusdata.shape))
-
-                        #
-                        # stretched_data_uint8=stretched_data_uint8.transpose(Image.TRANSPOSE) # Not sure why it transposes on array creation ... but it does!
-                        draw = ImageDraw.Draw(final_image)
-                        # breakpoint()
-                        #font=ImageFont.truetype("C:\Windows\Fonts\sans-serif.ttf", 16)
-
-                        draw.text((0, 0), str(focus_position), (255))
-
-                        #draw.text((0, 0),str(focus_position),(255,255,255),font=font)
-
-                        final_image.save(im_path + text_name.replace('EX00.txt', 'EX10.jpg'))
-
-                        g_dev["cam"].enqueue_for_fastAWS(100, im_path, text_name.replace('EX00.txt', 'EX10.jpg'))
-
-                    #plog("focus construction time")
-                    #plog(time.time() -focdate)
-
-                    actseptime = time.time()
-                    focusimg = np.array(
-                        hdufocusdata, order="C"
-                    )
-
-                    try:
-                        # Some of these are liberated from BANZAI
-                        bkg = sep.Background(focusimg)
-
-                        sepsky = (np.nanmedian(bkg), "Sky background estimated by SEP")
-
-                        focusimg -= bkg
-                        ix, iy = focusimg.shape
-                        border_x = int(ix * 0.05)
-                        border_y = int(iy * 0.05)
-                        sep.set_extract_pixstack(int(ix*iy - 1))
-                        # minarea is set as roughly how big we think a 0.7 arcsecond seeing star
-                        # would be at this pixelscale and binning. Different for different cameras/telescopes.
-                        #minarea = int(pow(0.7*1.5 / (pixscale*binfocus), 2) * 3.14)
-                        
-                        
-                        #This minarea is totally fudgetastically emprical comparing a 0.138 pixelscale QHY Mono
-                        # to a 1.25/2.15 QHY OSC. Seems to work, so thats good enough.
-                        # Makes the minarea small enough for blocky pixels, makes it large enough for oversampling
-                        minarea= -9.2421 * pixscale + 16.553
-                        if minarea < 5:  # There has to be a min minarea though!
-                            minarea = 5
-
-                        #sep.set_sub_object_limit(10000)
-                        sources = sep.extract(
-                            focusimg, 5.0, err=bkg.globalrms, minarea=minarea
-                        )
-                        #plog("Actual SEP time: " + str(time.time()-actseptime))
-
-                        #plog ("min_area: " + str(minarea))
-                        sources = Table(sources)
-                        sources = sources[sources['flag'] < 8]
-                        image_saturation_level = g_dev['cam'].config["camera"][g_dev['cam'].name]["settings"]["saturate"]
-                        sources = sources[sources["peak"] < 0.8 * image_saturation_level * pow(binfocus, 2)]
-                        sources = sources[sources["cpeak"] < 0.8 * image_saturation_level * pow(binfocus, 2)]
-                        #sources = sources[sources["peak"] > 150 * pow(binfocus,2)]
-                        #sources = sources[sources["cpeak"] > 150 * pow(binfocus,2)]
-                        sources = sources[sources["flux"] > 2000]
-                        sources = sources[sources["x"] < ix - border_x]
-                        sources = sources[sources["x"] > border_x]
-                        sources = sources[sources["y"] < iy - border_y]
-                        sources = sources[sources["y"] > border_y]
-
-                        # BANZAI prune nans from table
-                        nan_in_row = np.zeros(len(sources), dtype=bool)
-                        for col in sources.colnames:
-                            nan_in_row |= np.isnan(sources[col])
-                        sources = sources[~nan_in_row]
-
-                        # Calculate the ellipticity (Thanks BANZAI)
-                        sources['ellipticity'] = 1.0 - (sources['b'] / sources['a'])
-
-                        sources = sources[sources['ellipticity'] < 0.1]  # Remove things that are not circular stars
-
-                        # Calculate the kron radius (Thanks BANZAI)
-                        kronrad, krflag = sep.kron_radius(focusimg, sources['x'], sources['y'],
-                                                          sources['a'], sources['b'],
-                                                          sources['theta'], 6.0)
-                        sources['flag'] |= krflag
-                        sources['kronrad'] = kronrad
-
-                        # Calculate uncertainty of image (thanks BANZAI)
-                        #uncertainty = float(readnoise) * np.ones(hdufocusdata.shape,
-                        #                                         dtype=hdufocusdata.dtype) / float(readnoise)
-
-                        uncertainty = float(readnoise) * np.ones(focusimg.shape,
-                                                                 dtype=focusimg.dtype) / float(readnoise)
-
-
-                        # DONUT IMAGE DETECTOR.
-                        #plog ("The Fitzgerald Magical Donut detector")
-                        
-                        xdonut=np.median(pow(pow(sources['x'] - sources['xpeak'],2),0.5))*pixscale*binfocus
-                        ydonut=np.median(pow(pow(sources['y'] - sources['ypeak'],2),0.5))*pixscale*binfocus
-                        if xdonut > 3.0 or ydonut > 3.0 or np.isnan(xdonut) or np.isnan(ydonut):
-                            plog ("Possible donut image detected.")    
-                            plog('x ' + str(xdonut))
-                            plog('y ' + str(ydonut))                        
-                        #breakpoint()
-
-                        # Calcuate the equivilent of flux_auto (Thanks BANZAI)
-                        # This is the preferred best photometry SEP can do.
-                        try:
-                            flux, fluxerr, flag = sep.sum_ellipse(focusimg, sources['x'], sources['y'],
-                                                              sources['a'], sources['b'],
-                                                              np.pi / 2.0, 2.5 * kronrad,
-                                                              subpix=1, err=uncertainty)
-                        except:
-                            plog(traceback.format_exc())
-                            
-                        sources['flux'] = flux
-                        sources['fluxerr'] = fluxerr
-                        sources['flag'] |= flag
-                        sources['FWHM'], _ = sep.flux_radius(focusimg, sources['x'], sources['y'], sources['a'], 0.5,
-                                                             subpix=5)
-                        # If image has been binned for focus we need to multiply some of these things by the binning
-                        # To represent the original image
-                        sources['FWHM'] = (sources['FWHM'] * 2) * binfocus
-                        sources['x'] = (sources['x']) * binfocus
-                        sources['y'] = (sources['y']) * binfocus
-
-                        #
-
-                        sources['a'] = (sources['a']) * binfocus
-                        sources['b'] = (sources['b']) * binfocus
-                        sources['kronrad'] = (sources['kronrad']) * binfocus
-                        sources['peak'] = (sources['peak']) / pow(binfocus, 2)
-                        sources['cpeak'] = (sources['cpeak']) / pow(binfocus, 2)
-
-
-
-
-                        # Need to reject any stars that have FWHM that are less than a extremely
-                        # perfect night as artifacts
-                        sources = sources[sources['FWHM'] > (0.6 / (pixscale))]
-                        sources = sources[sources['FWHM'] > (self.config['minimum_realistic_seeing'] / pixscale)]
-                        sources = sources[sources['FWHM'] != 0]
-
-                        # BANZAI prune nans from table
-                        nan_in_row = np.zeros(len(sources), dtype=bool)
-                        for col in sources.colnames:
-                            nan_in_row |= np.isnan(sources[col])
-                        sources = sources[~nan_in_row]
-
-                        #plog("No. of detections:  ", len(sources))
-
-                            
-
-                        if (len(sources) < 2) or ( frame_type == 'focus' and (len(sources) < 10 or len(sources) == np.nan or str(len(sources)) =='nan' or xdonut > 3.0 or ydonut > 3.0 or np.isnan(xdonut) or np.isnan(ydonut))):
-                            #plog ("not enough sources to estimate a reliable focus")
-                            plog ("Did not find an acceptable FWHM for this image.")    
-                            g_dev['cam'].expresult["error"] = True
-                            g_dev['cam'].expresult['FWHM'] = np.nan
-                            g_dev['cam'].expresult['No_of_sources'] = np.nan
-                            sources['FWHM'] = [np.nan] * len(sources)
-                            rfp = np.nan
-                            rfr = np.nan
-                            rfs = np.nan
-                            sources = sources
-
-                        else:
-                            # Get halflight radii
-                            # breakpoint()
-                            # fwhmcalc=(np.array(sources['FWHM']))
-                            fwhmcalc = sources['FWHM']
-                            #fwhmcalc=fwhmcalc[fwhmcalc > 1.0]
-                            fwhmcalc = fwhmcalc[fwhmcalc != 0]  # Remove 0 entries
-                            # fwhmcalc=fwhmcalc[fwhmcalc < 75] # remove stupidly large entries
-
-                            # sigma clipping iterator to reject large variations
-                            templen = len(fwhmcalc)
-                            while True:
-                                fwhmcalc = fwhmcalc[fwhmcalc < np.median(fwhmcalc) + 3 * np.std(fwhmcalc)]
-                                if len(fwhmcalc) == templen:
-                                    break
-                                else:
-                                    templen = len(fwhmcalc)
-
-                            fwhmcalc = fwhmcalc[fwhmcalc > np.median(fwhmcalc) - 3 * np.std(fwhmcalc)]
-                            rfp = round(np.median(fwhmcalc), 3)
-                            rfr = round(np.median(fwhmcalc) * pixscale, 3)
-                            rfs = round(np.std(fwhmcalc) * pixscale, 3)
-                            plog("\nImage FWHM:  " + str(rfr) + "+/-" + str(rfs) + " arcsecs, " + str(rfp)
-                                 + " pixels.")
-                            # breakpoint()
-                            g_dev['cam'].expresult["FWHM"] = rfr
-                            g_dev['cam'].expresult["mean_focus"] = avg_foc
-                            g_dev['cam'].expresult['No_of_sources'] = len(sources)
-
-                            # rfp = rfp
-                            # g_dev['cam'].rfr = rfr
-                            # g_dev['cam'].rfs = rfs
-                            # g_dev['cam'].sources = sources
-
-                            # try:
-                            #     valid = (
-                            #         0.0 <= result["FWHM"] <= 20.0
-                            #         and 100 < result["mean_focus"] < 12600
-                            #     )
-                            #     result["error"] = False
-
-                            # except:
-                            #     result[
-                            #         "error"
-
-                            #     ] = True
-                            #     result["FWHM"] = np.nan
-                            #     result["mean_focus"] = np.nan
-
-                            if focus_image != True:
-                                # Focus tracker code. This keeps track of the focus and if it drifts
-                                # Then it triggers an autofocus.
-                                g_dev["foc"].focus_tracker.pop(0)
-                                g_dev["foc"].focus_tracker.append(round(rfr, 3))
-                                plog("Last ten FWHM: " + str(g_dev["foc"].focus_tracker) + " Median: " + str(np.nanmedian(g_dev["foc"].focus_tracker)) + " Last Solved: " + str(g_dev["foc"].last_focus_fwhm))
-                                #plog()
-                                #plog("Median last ten FWHM")
-                                #plog(np.nanmedian(g_dev["foc"].focus_tracker))
-                                #plog("Last solved focus FWHM: " + str(g_dev["foc"].last_focus_fwhm))
-                                #plog(g_dev["foc"].last_focus_fwhm)
-
-                                # If there hasn't been a focus yet, then it can't check it,
-                                # so make this image the last solved focus.
-                                if g_dev["foc"].last_focus_fwhm == None:
-                                    g_dev["foc"].last_focus_fwhm = rfr
-                                else:
-                                    # Very dumb focus slip deteector
-                                    if (
-                                        np.nanmedian(g_dev["foc"].focus_tracker)
-                                        > g_dev["foc"].last_focus_fwhm
-                                        + self.config["focus_trigger"]
-                                    ):
-                                        g_dev["foc"].focus_needed = True
-                                        g_dev["obs"].send_to_user(
-                                            "Focus has drifted to "
-                                            + str(np.nanmedian(g_dev["foc"].focus_tracker))
-                                            + " from "
-                                            + str(g_dev["foc"].last_focus_fwhm)
-                                            + ". Autofocus triggered for next exposures.",
-                                            p_level="INFO",
-                                        )
-
-                        source_delete = ['thresh', 'npix', 'tnpix', 'xmin', 'xmax', 'ymin', 'ymax', 'x2', 'y2', 'xy', 'errx2',
-                                         'erry2', 'errxy', 'a', 'b', 'theta', 'cxx', 'cyy', 'cxy', 'cflux', 'cpeak', 'xcpeak', 'ycpeak']
-                        # for sourcedel in source_delete:
-                        #    breakpoint()
-                        sources.remove_columns(source_delete)
-
-                        sources.write(im_path + text_name.replace('.txt', '.sep'), format='csv', overwrite=True)
-
-                        try:
-                            g_dev['cam'].enqueue_for_fastAWS(200, im_path, text_name.replace('.txt', '.sep'))
-                            #plog("Sent SEP up")
-                        except:
-                            plog("Failed to send SEP up for some reason")
-
-                            
-                        
-                        # # Identify the brightest star in the image set
-                        
-                        # # Make a cutout around this star - 10 times rfp
-                        
-                        # brightest_array = None
-                        
-                        # # Send this array up
-                        
-                        
-                        
-                        
-                        # # Identify the brightest non-saturated star in the image set
-                        
-                        # # Make a cutout around this star - 10 times rfp
-                        
-                        # unsaturated_array = None
-                        
-                        # # Send this array up
-                        # #import json
-                        # data = {'brightest': brightest_array, 'unsaturated': unsaturated_array}
-                        # # To write to a file:
-                        # with open(im_path + text_name.replace('.txt', '.rad'), "w") as f:
-                        #     json.dump(data, f)
-                        
-                        
-                        # try:
-                        #     g_dev['cam'].enqueue_for_fastAWS(2000, im_path, text_name.replace('.txt', '.rad'))
-                        #     #plog("Sent SEP up")
-                        # except:
-                        #     plog("Failed to send RAD up for some reason")
-                        
-                        # To print out the JSON string (which you could then hardcode into the JS)
-                        #json.dumps(data)
-                        
-
-                    except:
-                        plog("something failed in SEP calculations for exposure. This could be an overexposed image")
-                        plog(traceback.format_exc())
-                        sources = [0]
-                        rfp = np.nan
-                        rfr = np.nan
-                        rfs = np.nan
-                        sepsky = np.nan
-
-                    #plog("Sep time to process: " + str(time.time() - sep_timer_begin))
-
-                
-                
-                # Value-added header items for the UI 
-                
-
-                try:
-                    #hduheader["SEPSKY"] = str(sepsky)
-                    hduheader["SEPSKY"] = sepsky
-                except:
-                    hduheader["SEPSKY"] = -9999
-                try:
-                    hduheader["FWHM"] = (str(rfp), 'FWHM in pixels')
-                    hduheader["FWHMpix"] = (str(rfp), 'FWHM in pixels')
-                except:
-                    hduheader["FWHM"] = (-99, 'FWHM in pixels')
-                    hduheader["FWHMpix"] = (-99, 'FWHM in pixels')
-
-                try:
-                    hduheader["FWHMasec"] = (str(rfr), 'FWHM in arcseconds')
-                except:
-                    hduheader["FWHMasec"] = (-99, 'FWHM in arcseconds')
-                try:
-                    hduheader["FWHMstd"] = (str(rfs), 'FWHM standard deviation in arcseconds')
-                except:
-
-                    hduheader["FWHMstd"] = ( -99, 'FWHM standard deviation in arcseconds')
-
-                try:
-                    hduheader["NSTARS"] = ( len(sources), 'Number of star-like sources in image')
-                except:
-                    hduheader["NSTARS"] = ( -99, 'Number of star-like sources in image')
-                
-
-
-
-                # if focus_image == False:
-                text = open(
-                    im_path + text_name, "w"
-                )  # This is needed by AWS to set up database.
-                #breakpoint()
-                text.write(str(hduheader))
-                text.close()
                 g_dev['cam'].enqueue_for_fastAWS(10, im_path, text_name)
 
                 if self.config['keep_focus_images_on_disk']:
@@ -2809,298 +2631,338 @@ sel
                 if not (g_dev['events']['Civil Dusk'] < ephem.now() < g_dev['events']['Civil Dawn']):
                     plog("Too bright to consider platesolving!")
                 else:
-                    # focdate=time.time()
-
-                    # Crop the image for platesolving
+                    
+                    
+                    platesolve_subprocess=subprocess.Popen(['python','subprocesses/Platesolveprocess.py'],stdin=subprocess.PIPE,stdout=subprocess.PIPE,bufsize=0)
+                                  
                     platesolve_crop = self.config["camera"][g_dev['cam'].name]["settings"]['platesolve_image_crop']
-                    # breakpoint()
+                    bin_for_platesolve= self.config["camera"][g_dev['cam'].name]["settings"]['bin_for_platesolve']
+                    platesolve_bin_factor=self.config["camera"][g_dev['cam'].name]["settings"]['platesolve_bin_value']
+                    
+                    pickle.dump([hdufocusdata, hduheader, cal_path, cal_name, frame_type, time_platesolve_requested, 
+                     pixscale, pointing_ra, pointing_dec, platesolve_crop, bin_for_platesolve, platesolve_bin_factor, g_dev['cam'].config["camera"][g_dev['cam'].name]["settings"]["saturate"]], platesolve_subprocess.stdin)
+                                                                                                                                 
+                    #pickle.dump([hdufocusdata, hduheader, cal_path, cal_name, frame_type, time_platesolve_requested, 
+                    # pixscale, pointing_ra, pointing_dec, platesolve_crop, bin_for_platesolve, platesolve_bin_factor, g_dev['cam'].config["camera"][g_dev['cam'].name]["settings"]["saturate"]], open('subprocesses/testplatesolvepickle','wb'))                                                                                                             
 
-                    fx, fy = hdufocusdata.shape
+                    del hdufocusdata
+                    #plog ("pickling time: " + str(time.time()-pickletime))
+                        
+                    # Essentially wait until the subprocess is complete
+                    platesolve_subprocess.communicate()
+                    
+                    
+                    
+                    
+                #     # focdate=time.time()
 
-                    crop_width = (fx * platesolve_crop) / 2
-                    crop_height = (fy * platesolve_crop) / 2
+                #     # Crop the image for platesolving
+                #     platesolve_crop = self.config["camera"][g_dev['cam'].name]["settings"]['platesolve_image_crop']
+                #     # breakpoint()
 
-                    # Make sure it is an even number for OSCs
-                    if (crop_width % 2) != 0:
-                        crop_width = crop_width+1
-                    if (crop_height % 2) != 0:
-                        crop_height = crop_height+1
+                #     fx, fy = hdufocusdata.shape
 
-                    crop_width = int(crop_width)
-                    crop_height = int(crop_height)
+                #     crop_width = (fx * platesolve_crop) / 2
+                #     crop_height = (fy * platesolve_crop) / 2
 
-                    # breakpoint()
-                    if crop_width > 0 or crop_height > 0:
-                        hdufocusdata = hdufocusdata[crop_width:-crop_width, crop_height:-crop_height]
-                    #plog("Platesolve image cropped to " + str(hdufocusdata.shape))
+                #     # Make sure it is an even number for OSCs
+                #     if (crop_width % 2) != 0:
+                #         crop_width = crop_width+1
+                #     if (crop_height % 2) != 0:
+                #         crop_height = crop_height+1
 
-                    binfocus = 1
-                    #if self.config["camera"][g_dev['cam'].name]["settings"]["is_osc"]:
-                    if self.config["camera"][g_dev['cam'].name]["settings"]['bin_for_platesolve']:
-                        platesolve_bin_factor=self.config["camera"][g_dev['cam'].name]["settings"]['platesolve_bin_value']
-                        hdufocusdata=block_reduce(hdufocusdata,platesolve_bin_factor)
-                        binfocus=platesolve_bin_factor                    
+                #     crop_width = int(crop_width)
+                #     crop_height = int(crop_height)
 
-                    #plog("platesolve construction time")
-                    #plog(time.time() -focdate)
+                #     # breakpoint()
+                #     if crop_width > 0 or crop_height > 0:
+                #         hdufocusdata = hdufocusdata[crop_width:-crop_width, crop_height:-crop_height]
+                #     #plog("Platesolve image cropped to " + str(hdufocusdata.shape))
 
-                    # actseptime=time.time()
-                    focusimg = np.array(
-                        hdufocusdata, order="C"
-                    )
+                #     binfocus = 1
+                #     #if self.config["camera"][g_dev['cam'].name]["settings"]["is_osc"]:
+                #     if self.config["camera"][g_dev['cam'].name]["settings"]['bin_for_platesolve']:
+                #         platesolve_bin_factor=self.config["camera"][g_dev['cam'].name]["settings"]['platesolve_bin_value']
+                #         hdufocusdata=block_reduce(hdufocusdata,platesolve_bin_factor)
+                #         binfocus=platesolve_bin_factor                    
 
+                #     #plog("platesolve construction time")
+                #     #plog(time.time() -focdate)
+
+                #     # actseptime=time.time()
+                #     focusimg = np.array(
+                #         hdufocusdata, order="C"
+                #     )
+
+                #     try:
+                #         # Some of these are liberated from BANZAI
+                #         bkg = sep.Background(focusimg)
+
+                #         #sepsky = ( np.nanmedian(bkg), "Sky background estimated by SEP" )
+
+                #         focusimg -= bkg
+                #         ix, iy = focusimg.shape
+                #         border_x = int(ix * 0.05)
+                #         border_y = int(iy * 0.05)
+                #         sep.set_extract_pixstack(int(ix*iy - 1))
+                #         #This minarea is totally fudgetastically emprical comparing a 0.138 pixelscale QHY Mono
+                #         # to a 1.25/2.15 QHY OSC. Seems to work, so thats good enough.
+                #         # Makes the minarea small enough for blocky pixels, makes it large enough for oversampling
+                #         minarea= -9.2421 * pixscale + 16.553
+                #         if minarea < 5:  # There has to be a min minarea though!
+                #             minarea = 5
+
+                #         sources = sep.extract(
+                #             focusimg, 5.0, err=bkg.globalrms, minarea=minarea
+                #         )
+                #         #plog ("min_area: " + str(minarea))
+                #         sources = Table(sources)
+                #         sources = sources[sources['flag'] < 8]
+                #         image_saturation_level = g_dev['cam'].config["camera"][g_dev['cam'].name]["settings"]["saturate"]
+                #         sources = sources[sources["peak"] < 0.8 * image_saturation_level * pow(binfocus, 2)]
+                #         sources = sources[sources["cpeak"] < 0.8 * image_saturation_level * pow(binfocus, 2)]
+                #         #sources = sources[sources["peak"] > 150 * pow(binfocus,2)]
+                #         #sources = sources[sources["cpeak"] > 150 * pow(binfocus,2)]
+                #         sources = sources[sources["flux"] > 2000]
+                #         sources = sources[sources["x"] < ix - border_x]
+                #         sources = sources[sources["x"] > border_x]
+                #         sources = sources[sources["y"] < iy - border_y]
+                #         sources = sources[sources["y"] > border_y]
+
+                #         # BANZAI prune nans from table
+                #         nan_in_row = np.zeros(len(sources), dtype=bool)
+                #         for col in sources.colnames:
+                #             nan_in_row |= np.isnan(sources[col])
+                #         sources = sources[~nan_in_row]
+                #         #plog("Actual Platesolve SEP time: " + str(time.time()-actseptime))
+                #     except:
+                #         plog("Something went wrong with platesolve SEP")
+
+                #     # # Fast checking of the NUMBER of sources
+                #     # # No reason to run a computationally intensive
+                #     # # SEP routine for that, just photutils will do.
+                #     # psource_timer_begin=time.time()
+                #     # plog ("quick image stats from photutils")
+                #     # tempmean, tempmedian, tempstd = sigma_clipped_stats(hdufocusdata, sigma=3.0)
+                #     # plog((tempmean, tempmedian, tempstd))
+                #     # #daofind = DAOStarFinder(fwhm=(2.2 / pixscale), threshold=5.*tempstd)  #estimate fwhm in pixels by reasonable focus level.
+
+                #     # if g_dev['foc'].last_focus_fwhm == None:
+                #     #     tempfwhm=2.2/(pixscale*binfocus)
+                #     # else:
+                #     #     tempfwhm=g_dev['foc'].last_focus_fwhm/(pixscale*binfocus)
+                #     # daofind = DAOStarFinder(fwhm=tempfwhm , threshold=5.*tempstd)
+
+                #     # plog ("Used fwhm is " + str(tempfwhm) + " pixels")
+                #     # sources = daofind(hdufocusdata - tempmedian)
+                #     # plog (sources)
+                #     # plog("Photutils time to process: " + str(time.time() -psource_timer_begin ))
+
+                #     # We only need to save the focus image immediately if there is enough sources to
+                #     #  rationalise that.  It only needs to be on the disk immediately now if platesolve
+                #     #  is going to attempt to pick it up.  Otherwise it goes to the slow queue.
+                #     # Also, too many sources and it will take an unuseful amount of time to solve
+                #     # Too many sources mean a globular or a crowded field where we aren't going to be
+                #     # able to solve too well easily OR it is such a wide field of view that who cares
+                #     # if we are off by 10 arcseconds?
+                #     plog("Number of sources for Platesolve: " + str(len(sources)))
+
+                #     if len(sources) >= 15:
+                #         hdufocus = fits.PrimaryHDU()
+                #         hdufocus.data = hdufocusdata
+                #         hdufocus.header = hduheader
+                #         hdufocus.header["NAXIS1"] = hdufocusdata.shape[0]
+                #         hdufocus.header["NAXIS2"] = hdufocusdata.shape[1]
+                #         hdufocus.writeto(cal_path + 'platesolvetemp.fits', overwrite=True, output_verify='silentfix')
+                #         pixscale = hdufocus.header['PIXSCALE']
+                #         # if self.config["save_to_alt_path"] == "yes":
+                #         #    self.to_slow_process(1000,('raw_alt_path', self.alt_path + g_dev["day"] + "/calib/" + cal_name, hdufocus.data, hdufocus.header, \
+                #         #                                   frame_type))
+
+                #         try:
+                #             hdufocus.close()
+                #         except:
+                #             pass
+                #         del hdufocusdata
+                #         del hdufocus
+
+                #         # Test here that there has not been a slew, if there has been a slew, cancel out!
+                #         if self.time_of_last_slew > time_platesolve_requested:
+                #             plog("detected a slew since beginning platesolve... bailing out of platesolve.")
+                #             # if not self.config['keep_focus_images_on_disk']:
+                #             #    os.remove(cal_path + cal_name)
+                #             #one_at_a_time = 0
+                #             # self.platesolve_queue.task_done()
+                #             # break
+                #         else:
+
+                #             try:
+                #                 # time.sleep(1) # A simple wait to make sure file is saved
+                #                 solve = platesolve.platesolve(
+                #                     cal_path + 'platesolvetemp.fits', pixscale
+                #                 )
+                #                 #plog("Platesolve time to process: " + str(time.time() - psolve_timer_begin))
+
+
+                    if os.path.exists(cal_path + 'platesolve.pickle'):
+                        solve= pickle.load(open(cal_path + 'platesolve.pickle', 'rb'))                    
+                    else:
+                        solve= 'error'
                     try:
-                        # Some of these are liberated from BANZAI
-                        bkg = sep.Background(focusimg)
-
-                        #sepsky = ( np.nanmedian(bkg), "Sky background estimated by SEP" )
-
-                        focusimg -= bkg
-                        ix, iy = focusimg.shape
-                        border_x = int(ix * 0.05)
-                        border_y = int(iy * 0.05)
-                        sep.set_extract_pixstack(int(ix*iy - 1))
-                        #This minarea is totally fudgetastically emprical comparing a 0.138 pixelscale QHY Mono
-                        # to a 1.25/2.15 QHY OSC. Seems to work, so thats good enough.
-                        # Makes the minarea small enough for blocky pixels, makes it large enough for oversampling
-                        minarea= -9.2421 * pixscale + 16.553
-                        if minarea < 5:  # There has to be a min minarea though!
-                            minarea = 5
-
-                        sources = sep.extract(
-                            focusimg, 5.0, err=bkg.globalrms, minarea=minarea
-                        )
-                        #plog ("min_area: " + str(minarea))
-                        sources = Table(sources)
-                        sources = sources[sources['flag'] < 8]
-                        image_saturation_level = g_dev['cam'].config["camera"][g_dev['cam'].name]["settings"]["saturate"]
-                        sources = sources[sources["peak"] < 0.8 * image_saturation_level * pow(binfocus, 2)]
-                        sources = sources[sources["cpeak"] < 0.8 * image_saturation_level * pow(binfocus, 2)]
-                        #sources = sources[sources["peak"] > 150 * pow(binfocus,2)]
-                        #sources = sources[sources["cpeak"] > 150 * pow(binfocus,2)]
-                        sources = sources[sources["flux"] > 2000]
-                        sources = sources[sources["x"] < ix - border_x]
-                        sources = sources[sources["x"] > border_x]
-                        sources = sources[sources["y"] < iy - border_y]
-                        sources = sources[sources["y"] > border_y]
-
-                        # BANZAI prune nans from table
-                        nan_in_row = np.zeros(len(sources), dtype=bool)
-                        for col in sources.colnames:
-                            nan_in_row |= np.isnan(sources[col])
-                        sources = sources[~nan_in_row]
-                        #plog("Actual Platesolve SEP time: " + str(time.time()-actseptime))
+                        os.remove(cal_path + 'platesolve.pickle')
                     except:
-                        plog("Something went wrong with platesolve SEP")
+                        plog ("Could not remove platesolve pickle. ")
+                        
+                    #plog("Planewave results: " + str(solve))
 
-                    # # Fast checking of the NUMBER of sources
-                    # # No reason to run a computationally intensive
-                    # # SEP routine for that, just photutils will do.
-                    # psource_timer_begin=time.time()
-                    # plog ("quick image stats from photutils")
-                    # tempmean, tempmedian, tempstd = sigma_clipped_stats(hdufocusdata, sigma=3.0)
-                    # plog((tempmean, tempmedian, tempstd))
-                    # #daofind = DAOStarFinder(fwhm=(2.2 / pixscale), threshold=5.*tempstd)  #estimate fwhm in pixels by reasonable focus level.
+                    #breakpoint()
 
-                    # if g_dev['foc'].last_focus_fwhm == None:
-                    #     tempfwhm=2.2/(pixscale*binfocus)
-                    # else:
-                    #     tempfwhm=g_dev['foc'].last_focus_fwhm/(pixscale*binfocus)
-                    # daofind = DAOStarFinder(fwhm=tempfwhm , threshold=5.*tempstd)
-
-                    # plog ("Used fwhm is " + str(tempfwhm) + " pixels")
-                    # sources = daofind(hdufocusdata - tempmedian)
-                    # plog (sources)
-                    # plog("Photutils time to process: " + str(time.time() -psource_timer_begin ))
-
-                    # We only need to save the focus image immediately if there is enough sources to
-                    #  rationalise that.  It only needs to be on the disk immediately now if platesolve
-                    #  is going to attempt to pick it up.  Otherwise it goes to the slow queue.
-                    # Also, too many sources and it will take an unuseful amount of time to solve
-                    # Too many sources mean a globular or a crowded field where we aren't going to be
-                    # able to solve too well easily OR it is such a wide field of view that who cares
-                    # if we are off by 10 arcseconds?
-                    plog("Number of sources for Platesolve: " + str(len(sources)))
-
-                    if len(sources) >= 15:
-                        hdufocus = fits.PrimaryHDU()
-                        hdufocus.data = hdufocusdata
-                        hdufocus.header = hduheader
-                        hdufocus.header["NAXIS1"] = hdufocusdata.shape[0]
-                        hdufocus.header["NAXIS2"] = hdufocusdata.shape[1]
-                        hdufocus.writeto(cal_path + 'platesolvetemp.fits', overwrite=True, output_verify='silentfix')
-                        pixscale = hdufocus.header['PIXSCALE']
-                        # if self.config["save_to_alt_path"] == "yes":
-                        #    self.to_slow_process(1000,('raw_alt_path', self.alt_path + g_dev["day"] + "/calib/" + cal_name, hdufocus.data, hdufocus.header, \
-                        #                                   frame_type))
-
-                        try:
-                            hdufocus.close()
-                        except:
-                            pass
-                        del hdufocusdata
-                        del hdufocus
-
+                    if solve == 'error':
+                        plog ("Planewave solve came back as error")
+                    else:
+                        plog(
+                            "PW Solves: ",
+                            solve["ra_j2000_hours"],
+                            solve["dec_j2000_degrees"],
+                        )
+                        # breakpoint()
+                        #pointing_ra = g_dev['mnt'].mount.RightAscension
+                        #pointing_dec = g_dev['mnt'].mount.Declination
+                        #icrs_ra, icrs_dec = g_dev['mnt'].get_mount_coordinates()
+                        #target_ra = g_dev["mnt"].current_icrs_ra
+                        #target_dec = g_dev["mnt"].current_icrs_dec
+                        target_ra = g_dev["mnt"].last_ra
+                        target_dec = g_dev["mnt"].last_dec
+                        solved_ra = solve["ra_j2000_hours"]
+                        solved_dec = solve["dec_j2000_degrees"]
+                        solved_arcsecperpixel = solve["arcsec_per_pixel"]
+                        solved_rotangledegs = solve["rot_angle_degs"]
+                        err_ha = target_ra - solved_ra
+                        err_dec = target_dec - solved_dec
+                        solved_arcsecperpixel = solve["arcsec_per_pixel"]
+                        solved_rotangledegs = solve["rot_angle_degs"]
+                        plog("Deviation from plate solution in ra: " + str(round(err_ha * 15 * 3600, 2)) + " & dec: " + str (round(err_dec * 3600, 2)) + " asec")
+    
+                        # breakpoint()
+                        # Reset Solve timers
+                        g_dev['obs'].last_solve_time = datetime.datetime.now()
+                        g_dev['obs'].images_since_last_solve = 0
+    
                         # Test here that there has not been a slew, if there has been a slew, cancel out!
                         if self.time_of_last_slew > time_platesolve_requested:
                             plog("detected a slew since beginning platesolve... bailing out of platesolve.")
                             # if not self.config['keep_focus_images_on_disk']:
                             #    os.remove(cal_path + cal_name)
-                            #one_at_a_time = 0
+                            # one_at_a_time = 0
                             # self.platesolve_queue.task_done()
                             # break
+    
+                        # If we are WAY out of range, then reset the mount reference and attempt moving back there.
+                        elif (
+                            err_ha * 15 * 3600 > 1200
+                            or err_dec * 3600 > 1200
+                            or err_ha * 15 * 3600 < -1200
+                            or err_dec * 3600 < -1200
+                        ) and self.config["mount"]["mount1"][
+                            "permissive_mount_reset"
+                        ] == "yes":
+                            g_dev["mnt"].reset_mount_reference()
+                            plog("I've  reset the mount_reference 1")
+                            g_dev["mnt"].current_icrs_ra = solved_ra
+                            #    "ra_j2000_hours"
+                            # ]
+                            g_dev["mnt"].current_icrs_dec = solved_dec
+                            #    "dec_j2000_hours"
+                            # ]
+                            err_ha = 0
+                            err_dec = 0
+    
+                            plog("Platesolve is requesting to move back on target!")
+                            #g_dev['mnt'].mount.SlewToCoordinatesAsync(target_ra, target_dec)
+    
+                            self.pointing_correction_requested_by_platesolve_thread = True
+                            self.pointing_correction_request_time = time.time()
+                            self.pointing_correction_request_ra = target_ra
+                            self.pointing_correction_request_dec = target_dec
+    
+                            # wait_for_slew()
+    
                         else:
-
-                            try:
-                                # time.sleep(1) # A simple wait to make sure file is saved
-                                solve = platesolve.platesolve(
-                                    cal_path + 'platesolvetemp.fits', pixscale
-                                )
-                                #plog("Platesolve time to process: " + str(time.time() - psolve_timer_begin))
-
-                                plog(
-                                    "PW Solves: ",
-                                    solve["ra_j2000_hours"],
-                                    solve["dec_j2000_degrees"],
-                                )
-                                # breakpoint()
-                                #pointing_ra = g_dev['mnt'].mount.RightAscension
-                                #pointing_dec = g_dev['mnt'].mount.Declination
-                                #icrs_ra, icrs_dec = g_dev['mnt'].get_mount_coordinates()
-                                #target_ra = g_dev["mnt"].current_icrs_ra
-                                #target_dec = g_dev["mnt"].current_icrs_dec
-                                target_ra = g_dev["mnt"].last_ra
-                                target_dec = g_dev["mnt"].last_dec
-                                solved_ra = solve["ra_j2000_hours"]
-                                solved_dec = solve["dec_j2000_degrees"]
-                                solved_arcsecperpixel = solve["arcsec_per_pixel"]
-                                solved_rotangledegs = solve["rot_angle_degs"]
-                                err_ha = target_ra - solved_ra
-                                err_dec = target_dec - solved_dec
-                                solved_arcsecperpixel = solve["arcsec_per_pixel"]
-                                solved_rotangledegs = solve["rot_angle_degs"]
-                                plog("Deviation from plate solution in ra: " + str(round(err_ha * 15 * 3600, 2)) + " & dec: " + str (round(err_dec * 3600, 2)) + " asec")
-
-                                # breakpoint()
-                                # Reset Solve timers
-                                g_dev['obs'].last_solve_time = datetime.datetime.now()
-                                g_dev['obs'].images_since_last_solve = 0
-
-                                # Test here that there has not been a slew, if there has been a slew, cancel out!
-                                if self.time_of_last_slew > time_platesolve_requested:
-                                    plog("detected a slew since beginning platesolve... bailing out of platesolve.")
-                                    # if not self.config['keep_focus_images_on_disk']:
-                                    #    os.remove(cal_path + cal_name)
-                                   # one_at_a_time = 0
-                                    # self.platesolve_queue.task_done()
-                                    # break
-
-                                # If we are WAY out of range, then reset the mount reference and attempt moving back there.
-                                elif (
-                                    err_ha * 15 * 3600 > 1200
-                                    or err_dec * 3600 > 1200
-                                    or err_ha * 15 * 3600 < -1200
-                                    or err_dec * 3600 < -1200
-                                ) and self.config["mount"]["mount1"][
-                                    "permissive_mount_reset"
-                                ] == "yes":
-                                    g_dev["mnt"].reset_mount_reference()
-                                    plog("I've  reset the mount_reference 1")
-                                    g_dev["mnt"].current_icrs_ra = solved_ra
-                                    #    "ra_j2000_hours"
-                                    # ]
-                                    g_dev["mnt"].current_icrs_dec = solved_dec
-                                    #    "dec_j2000_hours"
-                                    # ]
-                                    err_ha = 0
-                                    err_dec = 0
-
-                                    plog("Platesolve is requesting to move back on target!")
-                                    #g_dev['mnt'].mount.SlewToCoordinatesAsync(target_ra, target_dec)
-
-                                    self.pointing_correction_requested_by_platesolve_thread = True
-                                    self.pointing_correction_request_time = time.time()
-                                    self.pointing_correction_request_ra = target_ra
-                                    self.pointing_correction_request_dec = target_dec
-
-                                    # wait_for_slew()
-
-                                else:
-
-                                    # If the mount has updatable RA and Dec coordinates, then sync that
-                                    # But if not, update the mount reference
-                                    # try:
-                                    #     # If mount has Syncable coordinates
-                                    #     g_dev['mnt'].mount.SyncToCoordinates(solved_ra, solved_dec)
-                                    #     # Reset the mount reference because if the mount has
-                                    #     # syncable coordinates, the mount should already be corrected
-                                    #     g_dev["mnt"].reset_mount_reference()
-
-                                    #     if (
-                                    #          abs(err_ha * 15 * 3600)
-                                    #          > self.config["threshold_mount_update"]
-                                    #          or abs(err_dec * 3600)
-                                    #          > self.config["threshold_mount_update"]
-                                    #      ):
-                                    #         #plog ("I am nudging the telescope slightly!")
-                                    #         #g_dev['mnt'].mount.SlewToCoordinatesAsync(target_ra, target_dec)
-                                    #         #wait_for_slew()
-                                    #         plog ("Platesolve is requesting to move back on target!")
-                                    #         self.pointing_correction_requested_by_platesolve_thread = True
-                                    #         self.pointing_correction_request_time = time.time()
-                                    #         self.pointing_correction_request_ra = target_ra
-                                    #         self.pointing_correction_request_dec = target_dec
-
-                                    # except:
-                                    # If mount doesn't have Syncable coordinates
-
-                                    if (
-                                        abs(err_ha * 15 * 3600)
-                                        > self.config["threshold_mount_update"]
-                                        or abs(err_dec * 3600)
-                                        > self.config["threshold_mount_update"]
-                                    ):
-
-                                        #plog ("I am nudging the telescope slightly!")
-                                        #g_dev['mnt'].mount.SlewToCoordinatesAsync(pointing_ra + err_ha, pointing_dec + err_dec)
-                                        # wait_for_slew()
-                                        #plog("Platesolve is requesting to move back on target!")
-                                        self.pointing_correction_requested_by_platesolve_thread = True
-                                        self.pointing_correction_request_time = time.time()
-                                        self.pointing_correction_request_ra = pointing_ra + err_ha
-                                        self.pointing_correction_request_dec = pointing_dec + err_dec
-
+    
+                            # If the mount has updatable RA and Dec coordinates, then sync that
+                            # But if not, update the mount reference
+                            # try:
+                            #     # If mount has Syncable coordinates
+                            #     g_dev['mnt'].mount.SyncToCoordinates(solved_ra, solved_dec)
+                            #     # Reset the mount reference because if the mount has
+                            #     # syncable coordinates, the mount should already be corrected
+                            #     g_dev["mnt"].reset_mount_reference()
+    
+                            #     if (
+                            #          abs(err_ha * 15 * 3600)
+                            #          > self.config["threshold_mount_update"]
+                            #          or abs(err_dec * 3600)
+                            #          > self.config["threshold_mount_update"]
+                            #      ):
+                            #         #plog ("I am nudging the telescope slightly!")
+                            #         #g_dev['mnt'].mount.SlewToCoordinatesAsync(target_ra, target_dec)
+                            #         #wait_for_slew()
+                            #         plog ("Platesolve is requesting to move back on target!")
+                            #         self.pointing_correction_requested_by_platesolve_thread = True
+                            #         self.pointing_correction_request_time = time.time()
+                            #         self.pointing_correction_request_ra = target_ra
+                            #         self.pointing_correction_request_dec = target_dec
+    
+                            # except:
+                            # If mount doesn't have Syncable coordinates
+    
+                            if (
+                                abs(err_ha * 15 * 3600)
+                                > self.config["threshold_mount_update"]
+                                or abs(err_dec * 3600)
+                                > self.config["threshold_mount_update"]
+                            ):
+    
+                                #plog ("I am nudging the telescope slightly!")
+                                #g_dev['mnt'].mount.SlewToCoordinatesAsync(pointing_ra + err_ha, pointing_dec + err_dec)
+                                # wait_for_slew()
+                                #plog("Platesolve is requesting to move back on target!")
+                                self.pointing_correction_requested_by_platesolve_thread = True
+                                self.pointing_correction_request_time = time.time()
+                                self.pointing_correction_request_ra = pointing_ra + err_ha
+                                self.pointing_correction_request_dec = pointing_dec + err_dec
+    
+                                try:
+                                    # if g_dev["mnt"].pier_side_str == "Looking West":
+                                    if g_dev["mnt"].pier_side == 0:
                                         try:
-                                            # if g_dev["mnt"].pier_side_str == "Looking West":
-                                            if g_dev["mnt"].pier_side == 0:
-                                                try:
-                                                    g_dev["mnt"].adjust_mount_reference(
-                                                        -err_ha, -err_dec
-                                                    )
-                                                except Exception as e:
-                                                    plog("Something is up in the mount reference adjustment code ", e)
-                                            else:
-                                                try:
-                                                    g_dev["mnt"].adjust_flip_reference(
-                                                        -err_ha, -err_dec
-                                                    )  # Need to verify signs
-                                                except Exception as e:
-                                                    plog("Something is up in the mount reference adjustment code ", e)
+                                            g_dev["mnt"].adjust_mount_reference(
+                                                -err_ha, -err_dec
+                                            )
+                                        except Exception as e:
+                                            plog("Something is up in the mount reference adjustment code ", e)
+                                    else:
+                                        try:
+                                            g_dev["mnt"].adjust_flip_reference(
+                                                -err_ha, -err_dec
+                                            )  # Need to verify signs
+                                        except Exception as e:
+                                            plog("Something is up in the mount reference adjustment code ", e)
+    
+                                except:
+                                    plog("This mount doesn't report pierside")
+                                    plog(traceback.format_exc())
+                    self.platesolve_is_processing = False
+                #except Exception as e:
+                #    plog(
+                #        "Image: did not platesolve; this is usually OK. ", e
+                #    )
+                #    plog(traceback.format_exc())
 
-                                        except:
-                                            plog("This mount doesn't report pierside")
-                                            plog(traceback.format_exc())
-                                self.platesolve_is_processing = False
-                            except Exception as e:
-                                plog(
-                                    "Image: did not platesolve; this is usually OK. ", e
-                                )
-                                plog(traceback.format_exc())
-
-                try:
-                    os.remove(cal_path + 'platesolvetemp.fits')
-                except:
-                    pass
+                # try:
+                #     os.remove(cal_path + 'platesolvetemp.fits')
+                # except:
+                #     pass
 
                 self.platesolve_is_processing = False
                 self.platesolve_queue.task_done()
@@ -3634,86 +3496,120 @@ sel
                     #     "auto_focus",
                     # ]:
                     img = fits.open(
-                        paths["red_path"] + paths["red_name01"],
+                        paths["red_path"] + paths["red_name01"].replace('.fits','.head'),
                         ignore_missing_end=True,
                     )
-                    imgdata = img[0].data.copy()
+                    #imgdata = img[0].data.copy()
+                    
+                    
+                    imgdata = np.load(paths["red_path"] + paths["red_name01"].replace('.fits','.npy'))
+                    
+                    if self.config['keep_reduced_on_disk']:
+                        self.to_slow_process(1000,('reduced', paths["red_path"] + paths["red_name01"], imgdata, img[0].header, \
+                                               'EXPOSE', g_dev["mnt"].current_icrs_ra, g_dev["mnt"].current_icrs_dec))
+                    
+                    
+                    
                     # Pick up some header items for smartstacking later
                     ssfilter = str(img[0].header["FILTER"])
                     ssobject = str(img[0].header["OBJECT"])
                     ssexptime = str(img[0].header["EXPTIME"])
+                    sspedestal = str(img[0].header["PEDESTAL"])
+                    imgdata=imgdata-float(sspedestal)
                     #ssframenumber = str(img[0].header["FRAMENUM"])
                     img.close()
                     del img
-                    if not self.config['keep_reduced_on_disk']:
-                        try:
-                            os.remove(paths["red_path"] + paths["red_name01"])
-                        except Exception as e:
-                            plog("could not remove temporary reduced file: ", e)
+                    
+                    try:
+                        os.remove(paths["red_path"] + paths["red_name01"].replace('.fits','.head'))
+                        os.remove(paths["red_path"] + paths["red_name01"].replace('.fits','.npy'))
+                    except:
+                        plog ("couldn't remove smartstack files.")
+                        
+                    
+                    #if not self.config['keep_reduced_on_disk']:
+                    #    try:
+                    #        os.remove(paths["red_path"] + paths["red_name01"])
+                    #    except Exception as e:
+                    #        plog("could not remove temporary reduced file: ", e)
 
                     # sstackimghold=np.array(imgdata)
 
-                    focusimg = np.array(
-                        imgdata, order="C"
-                    )
+                    # focusimg = np.array(
+                    #     imgdata, order="C"
+                    # )
 
-                    try:
-                        # Some of these are liberated from BANZAI
-                        # breakpoint()
-                        try:
-                            bkg = sep.Background(focusimg)
-                        except:
-                            focusimg = focusimg.byteswap().newbyteorder()
-                            bkg = sep.Background(focusimg)
+                    # try:
+                    #     # Some of these are liberated from BANZAI
+                    #     # breakpoint()
+                    #     try:
+                    #         bkg = sep.Background(focusimg)
+                    #     except:
+                    #         focusimg = focusimg.byteswap().newbyteorder()
+                    #         bkg = sep.Background(focusimg)
 
-                        #sepsky = ( np.nanmedian(bkg), "Sky background estimated by SEP" )
+                    #     #sepsky = ( np.nanmedian(bkg), "Sky background estimated by SEP" )
 
-                        focusimg -= bkg
-                        ix, iy = focusimg.shape
-                        border_x = int(ix * 0.05)
-                        border_y = int(iy * 0.05)
-                        sep.set_extract_pixstack(int(ix*iy - 1))
-                        # minarea is set as roughly how big we think a 0.7 arcsecond seeing star
-                        # would be at this pixelscale and binning. Different for different cameras/telescopes.
-                        #minarea=int(pow(0.7*1.5 / (pixscale*binfocus),2)* 3.14)
-                        #This minarea is totally fudgetastically emprical comparing a 0.138 pixelscale QHY Mono
-                        # to a 1.25/2.15 QHY OSC. Seems to work, so thats good enough.
-                        # Makes the minarea small enough for blocky pixels, makes it large enough for oversampling
-                        minarea= -9.2421 * pixscale + 16.553
-                        if minarea < 5:  # There has to be a min minarea though!
-                            minarea = 5
+                    #     focusimg -= bkg
+                    #     ix, iy = focusimg.shape
+                    #     border_x = int(ix * 0.05)
+                    #     border_y = int(iy * 0.05)
+                    #     sep.set_extract_pixstack(int(ix*iy - 1))
+                    #     # minarea is set as roughly how big we think a 0.7 arcsecond seeing star
+                    #     # would be at this pixelscale and binning. Different for different cameras/telescopes.
+                    #     #minarea=int(pow(0.7*1.5 / (pixscale*binfocus),2)* 3.14)
+                    #     #This minarea is totally fudgetastically emprical comparing a 0.138 pixelscale QHY Mono
+                    #     # to a 1.25/2.15 QHY OSC. Seems to work, so thats good enough.
+                    #     # Makes the minarea small enough for blocky pixels, makes it large enough for oversampling
+                    #     minarea= -9.2421 * pixscale + 16.553
+                    #     if minarea < 5:  # There has to be a min minarea though!
+                    #         minarea = 5
 
-                        sources = sep.extract(
-                            focusimg, 5.0, err=bkg.globalrms, minarea=minarea
-                        )
-                        #plog ("min_area: " + str(minarea))\
-                        sources = Table(sources)
-                        sources = sources[sources['flag'] < 8]
-                        image_saturation_level = g_dev['cam'].config["camera"][g_dev['cam'].name]["settings"]["saturate"]
-                        sources = sources[sources["peak"] < 0.8 * image_saturation_level]
-                        sources = sources[sources["cpeak"] < 0.8 * image_saturation_level]
-                        #sources = sources[sources["peak"] > 150 * pow(binfocus,2)]
-                        #sources = sources[sources["cpeak"] > 150 * pow(binfocus,2)]
-                        sources = sources[sources["flux"] > 2000]
-                        sources = sources[sources["x"] < ix - border_x]
-                        sources = sources[sources["x"] > border_x]
-                        sources = sources[sources["y"] < iy - border_y]
-                        sources = sources[sources["y"] > border_y]
+                    #     sources = sep.extract(
+                    #         focusimg, 5.0, err=bkg.globalrms, minarea=minarea
+                    #     )
+                    #     #plog ("min_area: " + str(minarea))\
+                    #     sources = Table(sources)
+                    #     sources = sources[sources['flag'] < 8]
+                    #     image_saturation_level = g_dev['cam'].config["camera"][g_dev['cam'].name]["settings"]["saturate"]
+                    #     sources = sources[sources["peak"] < 0.8 * image_saturation_level]
+                    #     sources = sources[sources["cpeak"] < 0.8 * image_saturation_level]
+                    #     #sources = sources[sources["peak"] > 150 * pow(binfocus,2)]
+                    #     #sources = sources[sources["cpeak"] > 150 * pow(binfocus,2)]
+                    #     sources = sources[sources["flux"] > 2000]
+                    #     sources = sources[sources["x"] < ix - border_x]
+                    #     sources = sources[sources["x"] > border_x]
+                    #     sources = sources[sources["y"] < iy - border_y]
+                    #     sources = sources[sources["y"] > border_y]
 
-                        # BANZAI prune nans from table
-                        nan_in_row = np.zeros(len(sources), dtype=bool)
-                        for col in sources.colnames:
-                            nan_in_row |= np.isnan(sources[col])
-                        sources = sources[~nan_in_row]
-                        #plog("Actual Platesolve SEP time: " + str(time.time()-actseptime))
-                    except:
-                        plog("Something went wrong with platesolve SEP")
-                        plog(traceback.format_exc())
+                    #     # BANZAI prune nans from table
+                    #     nan_in_row = np.zeros(len(sources), dtype=bool)
+                    #     for col in sources.colnames:
+                    #         nan_in_row |= np.isnan(sources[col])
+                    #     sources = sources[~nan_in_row]
+                    #     #plog("Actual Platesolve SEP time: " + str(time.time()-actseptime))
+                    # except:
+                    #     plog("Something went wrong with platesolve SEP")
+                    #     plog(traceback.format_exc())
 
-                    plog("Number of sources just prior to smartstacks: " + str(len(sources)))
-                    if len(sources) < 5:
-                        plog("skipping stacking as there are not enough sources " + str(len(sources)) + " in this image")
 
+
+
+                    # Get the photometry of each of the frames. 
+
+
+                    
+                    
+
+
+
+
+
+
+
+
+
+                    
                     # No need to open the same image twice, just using the same one as SEP.
                     #img = sstackimghold.copy()
                     #del sstackimghold
@@ -3730,11 +3626,27 @@ sel
 
                     # For OSC, we need to smartstack individual frames.
                     if not self.config["camera"][g_dev['cam'].name]["settings"]["is_osc"]:
+
+                        while not os.path.exists(paths["im_path"] + paths["text_name00"].replace('.txt','.sep')):
+                            #plog ("waiting for single frame SEP file to be finished")
+                            time.sleep(1)                        
+                        
+                        #plog("Now to figure out how to get sep into a csv.")
+                        sstack_process_timer = time.time()
+                        sources = Table.read(paths["im_path"] + paths["text_name00"].replace('.txt', '.sep'), format='csv')
+                        #breakpoint()
+                        
+                        
+                        plog("Number of sources just prior to smartstacks: " + str(len(sources)))
+                        if len(sources) < 5:
+                            plog("skipping stacking as there are not enough sources " + str(len(sources)) + " in this image")
+
+                        
                         # Detect and swap img to the correct endianness - needed for the smartstack jpg
-                        if sys.byteorder == 'little':
-                            imgdata = imgdata.newbyteorder('little').byteswap()
-                        else:
-                            imgdata = imgdata.newbyteorder('big').byteswap()
+                        #if sys.byteorder == 'little':
+                        #    imgdata = imgdata.newbyteorder('little').byteswap()
+                        #else:
+                        #    imgdata = imgdata.newbyteorder('big').byteswap()
 
                         # IF SMARSTACK NPY FILE EXISTS DO STUFF, OTHERWISE THIS IMAGE IS THE START OF A SMARTSTACK
                         reprojection_failed = False
@@ -3743,13 +3655,17 @@ sel
                         ):
                             if len(sources) >= 5:
                                 # Store original image
-                                plog("Storing First smartstack image")
+                                plog("Storing First smartstack image and catalogue file")
                                 np.save(
                                     self.obsid_path
                                     + "smartstacks/"
                                     + smartStackFilename,
-                                    imgdata,
+                                    imgdata ,
                                 )
+                                sources.write(self.obsid_path
+                                + "smartstacks/"
+                                + smartStackFilename.replace('.npy','.sep'), format='csv', overwrite=True)
+                                
 
                             else:
                                 plog("Not storing first smartstack image as not enough sources")
@@ -3760,6 +3676,13 @@ sel
                             storedsStack = np.load(
                                 self.obsid_path + "smartstacks/" + smartStackFilename
                             )
+                            # Collect stored SEP for first smartstack image
+                            ref_sources = Table.read(self.obsid_path
+                            + "smartstacks/"
+                            + smartStackFilename.replace('.npy','.sep'), format='csv')
+                            
+                            
+                            
                             #plog (storedsStack.dtype.byteorder)
                             # Prep new image
                             plog("Pasting Next smartstack image")
@@ -3779,12 +3702,32 @@ sel
                                 
                             if len(sources) > 5:
                                 try:
-                                    reprojectedimage, _ = func_timeout.func_timeout(60, aa.register, args=(imgdata, storedsStack),
-                                                                                    kwargs={"detection_sigma": 5, "min_area": minarea})
+                                    
+                                                                        
+                                    #source_delete = ['thresh', 'npix', 'tnpix', 'xmin', 'xmax', 'ymin', 'ymax', 'x2', 'y2', 'xy', 'errx2',
+                                    #                 'erry2', 'errxy', 'a', 'b', 'theta', 'cxx', 'cyy', 'cxy', 'cflux', 'cpeak', 'xcpeak', 'ycpeak']
+                                    #sources.remove_columns(source_delete)
+                                    
+                                    
+                                    sources=np.column_stack((sources['x'],sources['y']))
+                                    ref_sources=np.column_stack((ref_sources['x'],ref_sources['y']))
+                                    
+                                    #breakpoint()
+                                    
+                                    transf, (source_list, target_list) = aa.find_transform(sources, ref_sources)
+                                    
+                                    reprojectedimage= aa.apply_transform(transf, imgdata, storedsStack)[0]
+                                    #reprojectedimage, _ = func_timeout.func_timeout(60, aa.register, args=(imgdata, storedsStack),
+                                    #                                                kwargs={"detection_sigma": 5, "min_area": minarea})
+                                    
+                                    
+                                    #breakpoint()
+                                    
                                     # scalingFactor= np.nanmedian(reprojectedimage / storedsStack)
                                     # plog (" Scaling Factor : " +str(scalingFactor))
                                     # reprojectedimage=(scalingFactor) * reprojectedimage # Insert a scaling factor
-                                    storedsStack = np.array((reprojectedimage + storedsStack))
+                                    #storedsStack = np.array((reprojectedimage + storedsStack))
+                                    storedsStack = reprojectedimage + storedsStack
                                     # Save new stack to disk
                                     np.save(
                                         self.obsid_path
@@ -3793,20 +3736,20 @@ sel
                                         storedsStack,
                                     )
 
-                                    hduss = fits.PrimaryHDU()
-                                    hduss.data = storedsStack
+                                    #hduss = fits.PrimaryHDU()
+                                    #hduss.data = storedsStack
                                     # hdureduced.header=slow_process[3]
                                     #hdureduced.header["NAXIS1"] = hdureduced.data.shape[0]
                                     #hdureduced.header["NAXIS2"] = hdureduced.data.shape[1]
-                                    hduss.data = hduss.data.astype("float32")
-                                    try:
-                                        hduss.writeto(
-                                            self.obsid_path
-                                            + "smartstacks/"
-                                            + smartStackFilename.replace('.npy', '_' + str(sskcounter) + '_' + str(Nsmartstack) + '.fit'), overwrite=True, output_verify='silentfix'
-                                        )  # Save flash reduced file locally
-                                    except:
-                                        plog("Couldn't save smartstack fits. YOU MAY HAVE THE FITS OPEN IN A VIEWER.")
+                                    ##hduss.data = hduss.data.astype("float32")
+                                    #try:
+                                    #     hduss.writeto(
+                                    #        self.obsid_path
+                                    #        + "smartstacks/"
+                                    #        + smartStackFilename.replace('.npy', '_' + str(sskcounter) + '_' + str(Nsmartstack) + '.fit'), overwrite=True, output_verify='silentfix'
+                                    #    )  # Save flash reduced file locally
+                                    #except:
+                                    #    plog("Couldn't save smartstack fits. YOU MAY HAVE THE FITS OPEN IN A VIEWER.")
 
                                     reprojection_failed = False
                                 except func_timeout.FunctionTimedOut:
@@ -3910,252 +3853,304 @@ sel
                     else:
 
                         # img is the image coming in
-
                         if self.config["camera"][g_dev['cam'].name]["settings"]["is_osc"]:
-
+                            sstack_process_timer = time.time()
                             if self.config["camera"][g_dev['cam'].name]["settings"]["osc_bayer"] == 'RGGB':
-
-                                # # Checkerboard collapse for other colours for temporary jpeg
-                                # # Create indexes for B, G, G, R images
-                                # xshape = imgdata.shape[0]
-                                # yshape = imgdata.shape[1]
-
-                                # # B pixels
-                                # list_0_1 = np.array([[0, 0], [0, 1]])
-                                # checkerboard = np.tile(list_0_1, (xshape//2, yshape//2))
-                                # # checkerboard=np.array(checkerboard)
-                                # newhdublue = (block_reduce(imgdata * checkerboard, 2))
-
-                                # # R Pixels
-                                # list_0_1 = np.array([[1, 0], [0, 0]])
-                                # checkerboard = np.tile(list_0_1, (xshape//2, yshape//2))
-                                # # checkerboard=np.array(checkerboard)
-                                # newhdured = (block_reduce(imgdata * checkerboard, 2))
-
-                                # # G top right Pixels
-                                # list_0_1 = np.array([[0, 1], [0, 0]])
-                                # checkerboard = np.tile(list_0_1, (xshape//2, yshape//2))
-                                # # checkerboard=np.array(checkerboard)
-                                # newhdugreen = (block_reduce(imgdata * checkerboard, 2))
-
-                                # # G bottom left Pixels
-                                # #list_0_1 = np.array([ [0,0], [1,0] ])
-                                # #checkerboard=np.tile(list_0_1, (xshape//2, yshape//2))
-                                # # checkerboard=np.array(checkerboard)
-                                # #GBLonly=(block_reduce(storedsStack * checkerboard ,2))
-
-                                # # Sum two Gs together and half them to be vaguely on the same scale
-                                # #hdugreen = np.array(GTRonly + GBLonly) / 2
-                                # #del GTRonly
-                                # #del GBLonly
-                                # del checkerboard
-                                
                                 
                                 newhdured = imgdata[::2, ::2]
                                 newhdugreen = imgdata[::2, 1::2]
-                                #g2 = hdusmalldata[1::2, ::2]
                                 newhdublue = imgdata[1::2, 1::2]
                                 
 
                             else:
                                 plog("this bayer grid not implemented yet")
 
+
+                            # HERE is where to do a simultaneous red, green, blue 
+                            # multithreaded sep.
+                            
+                            
+                            
+                            pixscale=pixscale
+                            image_saturation_level=g_dev['cam'].config["camera"][g_dev['cam'].name]["settings"]["saturate"]
+                            nativebin=g_dev['cam'].native_bin
+                            readnoise=g_dev['cam'].config["camera"][g_dev['cam'].name]["settings"]["reference_noise"]
+                            minimum_realistic_seeing=self.config['minimum_realistic_seeing']
+                            im_path=paths["im_path"]
+                            text_name=paths["text_name00"]
+                            
+                            pickler=[newhdured,pixscale,image_saturation_level,nativebin,readnoise,minimum_realistic_seeing,im_path,text_name,'red']
+                            red_sep_subprocess=subprocess.Popen(['python','subprocesses/OSC_AA_SEPprocess.py'],stdin=subprocess.PIPE,stdout=subprocess.PIPE,bufsize=0)
+                            pickle.dump(pickler, red_sep_subprocess.stdin)
+                            
+                            
+                            pickler[0]=newhdugreen
+                            pickler[8]='green'
+                            green_sep_subprocess=subprocess.Popen(['python','subprocesses/OSC_AA_SEPprocess.py'],stdin=subprocess.PIPE,stdout=subprocess.PIPE,bufsize=0)
+                            pickle.dump(pickler, green_sep_subprocess.stdin)
+                            
+                            pickler[0]=newhdublue       
+                            pickler[8]='blue'
+                            blue_sep_subprocess=subprocess.Popen(['python','subprocesses/OSC_AA_SEPprocess.py'],stdin=subprocess.PIPE,stdout=subprocess.PIPE,bufsize=0)
+                            pickle.dump(pickler, blue_sep_subprocess.stdin)
+                            
+                            # Essentially wait until the subprocess is complete
+                            red_sep_subprocess.communicate()
+                            green_sep_subprocess.communicate()
+                            blue_sep_subprocess.communicate()
+                            
+                            
+                            #breakpoint()
+                            
+                            redsources=pickle.load(open(im_path + 'oscaasep.picklered', 'rb'))
+                            greensources=pickle.load(open(im_path + 'oscaasep.picklegreen', 'rb'))
+                            bluesources=pickle.load(open(im_path + 'oscaasep.pickleblue', 'rb'))
+                            
+                            plog("Number of sources just prior to smartstacks: " + str(len(greensources)))
+                            if len(greensources) < 5:
+                                plog("skipping stacking as there are not enough sources " + str(len(greensources)) + " in this image")
+                            
+                            #hdufocusdata=input_sep_info[0]
+                            #pixscale=input_sep_info[1]
+                            #image_saturation_level= input_sep_info[2]
+                            ##nativebin= input_sep_info[3]
+                            #readnoise= input_sep_info[4]
+                            #minimum_realistic_seeing= input_sep_info[5]
+                            #im_path=input_sep_info[6]
+                            #text_name=input_sep_info[7]
+
+
+
+              
+
+
+                            if len(greensources) > 5:
                             # IF SMARSTACK NPY FILE EXISTS DO STUFF, OTHERWISE THIS IMAGE IS THE START OF A SMARTSTACK
-                            reprojection_failed = False
-                            for colstack in ['blue', 'green', 'red']:
-                                if not os.path.exists(
-                                    self.obsid_path + "smartstacks/" +
-                                        smartStackFilename.replace(smartstackid, smartstackid + str(colstack))
-                                ):
-                                    if len(sources) >= 5:
-                                        # Store original image
-                                        plog("Storing First smartstack image")
-                                        if colstack == 'blue':
-                                            np.save(
-                                                self.obsid_path
-                                                + "smartstacks/"
-                                                + smartStackFilename.replace(smartstackid,
-                                                                             smartstackid + str(colstack)),
-                                                newhdublue,
-                                            )
-                                        if colstack == 'green':
-                                            np.save(
-                                                self.obsid_path
-                                                + "smartstacks/"
-                                                + smartStackFilename.replace(smartstackid,
-                                                                             smartstackid + str(colstack)),
-                                                newhdugreen,
-                                            )
-                                        if colstack == 'red':
-                                            np.save(
-                                                self.obsid_path
-                                                + "smartstacks/"
-                                                + smartStackFilename.replace(smartstackid,
-                                                                             smartstackid + str(colstack)),
-                                                newhdured,
-                                            )
-
-                                    else:
-                                        plog("Not storing first smartstack image as not enough sources")
-                                        reprojection_failed = True
-                                    # if colstack == 'blue':
-                                    #     bluestoredsStack = newhdublue
-                                    # if colstack == 'green':
-                                    #     greenstoredsStack = newhdugreen
-                                    # if colstack == 'red':
-                                    #     redstoredsStack = newhdured
-                                else:
-                                    # Collect stored SmartStack
-                                    storedsStack = np.load(
+                                reprojection_failed = False
+                                for colstack in ['blue', 'green', 'red']:
+                                    if not os.path.exists(
                                         self.obsid_path + "smartstacks/" +
-                                        smartStackFilename.replace(smartstackid, smartstackid + str(colstack))
-                                    )
-                                    #plog (storedsStack.dtype.byteorder)
-                                    # Prep new image
-                                    plog("Pasting Next smartstack image")
-                                    # img=np.nan_to_num(img)
-                                    # backgroundLevel =(np.nanmedian(sep.Background(img.byteswap().newbyteorder())))
-                                    # plog (" Background Level : " + str(backgroundLevel))
-                                    # img= img - backgroundLevel
-                                    # Reproject new image onto footplog of old image.
-                                    # plog(datetime.datetime.now())
-
-                                    #This minarea is totally fudgetastically emprical comparing a 0.138 pixelscale QHY Mono
-                                    # to a 1.25/2.15 QHY OSC. Seems to work, so thats good enough.
-                                    # Makes the minarea small enough for blocky pixels, makes it large enough for oversampling
-                                    minarea= -9.2421 * pixscale + 16.553
-                                    if minarea < 5:  # There has to be a min minarea though!
-                                        minarea = 5
-
-                                    if len(sources) > 5:
-                                        try:
-                                            if colstack == 'red':
-                                                reprojectedimage, _ = func_timeout.func_timeout(60, aa.register, args=(newhdured, storedsStack),
-                                                                                                kwargs={"detection_sigma": 5, "min_area": minarea})
-
+                                            smartStackFilename.replace(smartstackid, smartstackid + str(colstack))
+                                    ):
+                                        if len(greensources) >= 5:
+                                            # Store original image
+                                            #plog("Storing First smartstack image")
                                             if colstack == 'blue':
-                                                reprojectedimage, _ = func_timeout.func_timeout(60, aa.register, args=(newhdublue, storedsStack),
-                                                                                                kwargs={"detection_sigma": 5, "min_area": minarea})
-                                            if colstack == 'green':
-                                                reprojectedimage, _ = func_timeout.func_timeout(60, aa.register, args=(newhdugreen, storedsStack),
-                                                                                                kwargs={"detection_sigma": 5, "min_area": minarea})
-                                                # scalingFactor= np.nanmedian(reprojectedimage / storedsStack)
-                                            # plog (" Scaling Factor : " +str(scalingFactor))
-                                            # reprojectedimage=(scalingFactor) * reprojectedimage # Insert a scaling factor
-                                            storedsStack = np.array((reprojectedimage + storedsStack))
-                                            # Save new stack to disk
-                                            np.save(
-                                                self.obsid_path
-                                                + "smartstacks/"
-                                                + smartStackFilename.replace(smartstackid,
-                                                                             smartstackid + str(colstack)),
-                                                storedsStack,
-                                            )
-
-                                            hduss = fits.PrimaryHDU()
-                                            hduss.data = storedsStack
-                                            # hdureduced.header=slow_process[3]
-                                            #hdureduced.header["NAXIS1"] = hdureduced.data.shape[0]
-                                            #hdureduced.header["NAXIS2"] = hdureduced.data.shape[1]
-                                            hduss.data = hduss.data.astype("float32")
-                                            try:
-                                                hduss.writeto(
+                                                np.save(
                                                     self.obsid_path
                                                     + "smartstacks/"
-                                                    + smartStackFilename.replace(smartstackid, smartstackid + str(colstack)).replace('.npy', '_' + str(sskcounter) + '_' + str(Nsmartstack) + '.fit'), overwrite=True, output_verify='silentfix'
-                                                )  # Save flash reduced file locally
-                                            except:
-                                                plog("Couldn't save smartstack fits. YOU MAY HAVE THE FITS OPEN IN A VIEWER.")
-                                            del hduss
+                                                    + smartStackFilename.replace(smartstackid,
+                                                                                 smartstackid + str(colstack)),
+                                                    newhdublue,
+                                                )
+                                                
+                                                bluesources.write(self.obsid_path
+                                                + "smartstacks/"
+                                                + smartStackFilename.replace('.npy','blue.sep'), format='csv', overwrite=True)
+                                            
+                                                
                                             if colstack == 'green':
-                                                newhdugreen = np.array(storedsStack)
+                                                np.save(
+                                                    self.obsid_path
+                                                    + "smartstacks/"
+                                                    + smartStackFilename.replace(smartstackid,
+                                                                                 smartstackid + str(colstack)),
+                                                    newhdugreen,
+                                                )
+                                                greensources.write(self.obsid_path
+                                                + "smartstacks/"
+                                                + smartStackFilename.replace('.npy','green.sep'), format='csv', overwrite=True)
                                             if colstack == 'red':
-                                                newhdured = np.array(storedsStack)
-                                            if colstack == 'blue':
-                                                newhdublue = np.array(storedsStack)
-                                            del storedsStack
-                                            reprojection_failed = False
-                                        except func_timeout.FunctionTimedOut:
-                                            plog("astroalign timed out")
+                                                np.save(
+                                                    self.obsid_path
+                                                    + "smartstacks/"
+                                                    + smartStackFilename.replace(smartstackid,
+                                                                                 smartstackid + str(colstack)),
+                                                    newhdured,
+                                                )
+                                                redsources.write(self.obsid_path
+                                                + "smartstacks/"
+                                                + smartStackFilename.replace('.npy','red.sep'), format='csv', overwrite=True)
+    
+                                        else:
+                                            plog("Not storing first smartstack image as not enough sources")
                                             reprojection_failed = True
-                                        except aa.MaxIterError:
-                                            plog("astroalign could not find a solution in this image")
-                                            reprojection_failed = True
-                                        except Exception:
-                                            plog("astroalign failed")
-                                            plog(traceback.format_exc())
-                                            reprojection_failed = True
+                                        # if colstack == 'blue':
+                                        #     bluestoredsStack = newhdublue
+                                        # if colstack == 'green':
+                                        #     greenstoredsStack = newhdugreen
+                                        # if colstack == 'red':
+                                        #     redstoredsStack = newhdured
                                     else:
-                                        reprojection_failed = True
+                                        # Collect stored SmartStack
+                                        storedsStack = np.load(
+                                            self.obsid_path + "smartstacks/" +
+                                            smartStackFilename.replace(smartstackid, smartstackid + str(colstack))
+                                        )
+                                        
+                                        ref_sources=ref_sources = Table.read(self.obsid_path
+                                        + "smartstacks/"
+                                        + smartStackFilename.replace('.npy',str(colstack)+'.sep'), format='csv')
+                                        
+                                        if colstack == 'blue':
+                                            sources=bluesources
+                                            imgdata=newhdublue
+                                        if colstack == 'red':
+                                            sources=redsources
+                                            imgdata=newhdured
+                                        if colstack == 'green':
+                                            sources=greensources
+                                            imgdata=newhdugreen
+                                        
+                                        
+                                        sources=np.column_stack((sources['x'],sources['y']))
+                                        ref_sources=np.column_stack((ref_sources['x'],ref_sources['y']))
+                                        
+                                        #plog (storedsStack.dtype.byteorder)
+                                        # Prep new image
+                                        #plog("Pasting Next smartstack image")
+                                        # img=np.nan_to_num(img)
+                                        # backgroundLevel =(np.nanmedian(sep.Background(img.byteswap().newbyteorder())))
+                                        # plog (" Background Level : " + str(backgroundLevel))
+                                        # img= img - backgroundLevel
+                                        # Reproject new image onto footplog of old image.
+                                        # plog(datetime.datetime.now())
+    
+                                        #This minarea is totally fudgetastically emprical comparing a 0.138 pixelscale QHY Mono
+                                        # to a 1.25/2.15 QHY OSC. Seems to work, so thats good enough.
+                                        # Makes the minarea small enough for blocky pixels, makes it large enough for oversampling
+                                        #minarea= -9.2421 * pixscale + 16.553
+                                        #if minarea < 5:  # There has to be a min minarea though!
+                                        #    minarea = 5
+                                            
+                                            
+                                        
+                                        
+                                        
+                                        #redsources=np.column_stack((redsources['x'],redsources['y']))
+                                        #greensources=np.column_stack((greensources['x'],greensources['y']))
+                                        #bluesources=np.column_stack((bluesources['x'],bluesources['y']))
+                                        
+    
+                                        if len(greensources) > 5:
+                                            
+                                            
+                                            
+                                            
+                                            try:
+                                                
+                                                
+                                                transf, (source_list, target_list) = aa.find_transform(sources, ref_sources)
+                                                
+                                                reprojectedimage= aa.apply_transform(transf, imgdata, storedsStack)[0]
+                                                
+                                                
+                                                # if colstack == 'red':
+                                                #     reprojectedimage, _ = func_timeout.func_timeout(60, aa.register, args=(newhdured, storedsStack),
+                                                #                                                     kwargs={"detection_sigma": 5, "min_area": minarea})
+    
+                                                # if colstack == 'blue':
+                                                #     reprojectedimage, _ = func_timeout.func_timeout(60, aa.register, args=(newhdublue, storedsStack),
+                                                #                                                     kwargs={"detection_sigma": 5, "min_area": minarea})
+                                                # if colstack == 'green':
+                                                #     reprojectedimage, _ = func_timeout.func_timeout(60, aa.register, args=(newhdugreen, storedsStack),
+                                                #                                                     kwargs={"detection_sigma": 5, "min_area": minarea})
+                                                #     # scalingFactor= np.nanmedian(reprojectedimage / storedsStack)
+                                                # # plog (" Scaling Factor : " +str(scalingFactor))
+                                                # # reprojectedimage=(scalingFactor) * reprojectedimage # Insert a scaling factor
+                                                storedsStack = reprojectedimage + storedsStack
+                                                # Save new stack to disk
+                                                np.save(
+                                                    self.obsid_path
+                                                    + "smartstacks/"
+                                                    + smartStackFilename.replace(smartstackid,
+                                                                                 smartstackid + str(colstack)),
+                                                    storedsStack,
+                                                )
+    
+                                                #hduss = fits.PrimaryHDU()
+                                                #hduss.data = storedsStack                                            
+                                                #hduss.data = hduss.data.astype("float32")
+                                                #try:
+                                                #    hduss.writeto(
+                                                #        self.obsid_path
+                                                #        + "smartstacks/"
+                                                #        + smartStackFilename.replace(smartstackid, smartstackid + str(colstack)).replace('.npy', '_' + str(sskcounter) + '_' + str(Nsmartstack) + '.fit'), overwrite=True, output_verify='silentfix'
+                                                #    )  # Save flash reduced file locally
+                                                #except:
+                                                #    plog("Couldn't save smartstack fits. YOU MAY HAVE THE FITS OPEN IN A VIEWER.")
+                                                #del hduss
+                                                
+                                                
+                                                if colstack == 'green':
+                                                    #newhdugreen = np.array(storedsStack)
+                                                    newhdugreen = storedsStack
+                                                if colstack == 'red':
+                                                    #newhdured = np.array(storedsStack)
+                                                    newhdured = storedsStack
+                                                if colstack == 'blue':
+                                                    #newhdublue = np.array(storedsStack)
+                                                    newhdublue = storedsStack
+                                                del storedsStack
+                                                reprojection_failed = False
+                                            except func_timeout.FunctionTimedOut:
+                                                plog("astroalign timed out")
+                                                reprojection_failed = True
+                                            except aa.MaxIterError:
+                                                plog("astroalign could not find a solution in this image")
+                                                reprojection_failed = True
+                                            except Exception:
+                                                plog("astroalign failed")
+                                                plog(traceback.format_exc())
+                                                reprojection_failed = True
+                                        else:
+                                            reprojection_failed = True
 
                             # NOW THAT WE HAVE THE INDIVIDUAL IMAGES THEN PUT THEM TOGETHER
                             xshape = newhdugreen.shape[0]
                             yshape = newhdugreen.shape[1]
 
                             # The integer mode of an image is typically the sky value, so squish anything below that
-                            bluemode = stats.mode((newhdublue.astype('int16').flatten()), keepdims=True)[0] - 25
-                            redmode = stats.mode((newhdured.astype('int16').flatten()), keepdims=True)[0] - 25
-                            greenmode = stats.mode((newhdugreen.astype('int16').flatten()), keepdims=True)[0] - 25
-                            newhdublue[newhdublue < bluemode] = bluemode
-                            newhdugreen[newhdugreen < greenmode] = greenmode
-                            newhdured[newhdured < redmode] = redmode
+                            #bluemode = stats.mode((newhdublue.astype('int16').flatten()), keepdims=True)[0] - 25
+                            #redmode = stats.mode((newhdured.astype('int16').flatten()), keepdims=True)[0] - 25
+                            #greenmode = stats.mode((newhdugreen.astype('int16').flatten()), keepdims=True)[0] - 25
+                            #newhdublue[newhdublue < bluemode] = bluemode
+                            #newhdugreen[newhdugreen < greenmode] = greenmode
+                            #newhdured[newhdured < redmode] = redmode
 
-                            # Then bring the background level up a little from there
-                            # blueperc=np.nanpercentile(newhdublue,0.75)
-                            # greenperc=np.nanpercentile(newhdugreen,0.75)
-                            # redperc=np.nanpercentile(newhdured,0.75)
-                            # newhdublue[newhdublue < blueperc] = blueperc
-                            # newhdugreen[newhdugreen < greenperc] = greenperc
-                            # newhdured[newhdured < redperc] = redperc
 
-                            #newhdublue = newhdublue * (np.median(newhdugreen) / np.median(newhdublue))
-                            #newhdured = newhdured * (np.median(newhdugreen) / np.median(newhdured))
 
                             blue_stretched_data_float = Stretch().stretch(newhdublue)*256
-                            ceil = np.percentile(blue_stretched_data_float, 100)  # 5% of pixels will be white
-                            floor = np.percentile(blue_stretched_data_float, 60)  # 5% of pixels will be black
-                            #a = 255/(ceil-floor)
-                            #b = floor*255/(floor-ceil)
-                            blue_stretched_data_float[blue_stretched_data_float < floor] = floor
-                            blue_stretched_data_float = blue_stretched_data_float-floor
-                            blue_stretched_data_float = blue_stretched_data_float * \
-                                (255/np.max(blue_stretched_data_float))
+                            #ceil = np.percentile(blue_stretched_data_float, 100)  # 5% of pixels will be white
+                            #floor = np.percentile(blue_stretched_data_float, 60)  # 5% of pixels will be black
 
-                            #blue_stretched_data_float = np.maximum(0,np.minimum(255,blue_stretched_data_float*a+b)).astype(np.uint8)
                             #blue_stretched_data_float[blue_stretched_data_float < floor] = floor
+                            #blue_stretched_data_float = blue_stretched_data_float-floor
+                            #blue_stretched_data_float = blue_stretched_data_float * \
+                            #    (255/np.max(blue_stretched_data_float))
                             del newhdublue
 
                             green_stretched_data_float = Stretch().stretch(newhdugreen)*256
-                            ceil = np.percentile(green_stretched_data_float, 100)  # 5% of pixels will be white
-                            floor = np.percentile(green_stretched_data_float, 60)  # 5% of pixels will be black
-                            #a = 255/(ceil-floor)
-                            green_stretched_data_float[green_stretched_data_float < floor] = floor
-                            green_stretched_data_float = green_stretched_data_float-floor
-                            green_stretched_data_float = green_stretched_data_float * \
-                                (255/np.max(green_stretched_data_float))
+                            #ceil = np.percentile(green_stretched_data_float, 100)  # 5% of pixels will be white
+                            #floor = np.percentile(green_stretched_data_float, 60)  # 5% of pixels will be black
 
-                            #b = floor*255/(floor-ceil)
-
-                            #green_stretched_data_float[green_stretched_data_float < floor] = floor
-                            #green_stretched_data_float = np.maximum(0,np.minimum(255,green_stretched_data_float*a+b)).astype(np.uint8)
+                            ##green_stretched_data_float[green_stretched_data_float < floor] = floor
+                            #green_stretched_data_float = green_stretched_data_float-floor
+                            #green_stretched_data_float = green_stretched_data_float * \
+                            #    (255/np.max(green_stretched_data_float))
                             del newhdugreen
 
                             red_stretched_data_float = Stretch().stretch(newhdured)*256
-                            ceil = np.percentile(red_stretched_data_float, 100)  # 5% of pixels will be white
-                            floor = np.percentile(red_stretched_data_float, 60)  # 5% of pixels will be black
-                            #a = 255/(ceil-floor)
-                            #b = floor*255/(floor-ceil)
-                            # breakpoint()
-
-                            red_stretched_data_float[red_stretched_data_float < floor] = floor
-                            red_stretched_data_float = red_stretched_data_float-floor
-                            red_stretched_data_float = red_stretched_data_float * (255/np.max(red_stretched_data_float))
-
+                            #ceil = np.percentile(red_stretched_data_float, 100)  # 5% of pixels will be white
+                            #floor = np.percentile(red_stretched_data_float, 60)  # 5% of pixels will be black
+                          
                             #red_stretched_data_float[red_stretched_data_float < floor] = floor
-                            #red_stretched_data_float = np.maximum(0,np.minimum(255,red_stretched_data_float*a+b)).astype(np.uint8)
+                            #red_stretched_data_float = red_stretched_data_float-floor
+                            #red_stretched_data_float = red_stretched_data_float * (255/np.max(red_stretched_data_float))                        
                             del newhdured
 
-                            rgbArray = np.zeros((xshape, yshape, 3), 'uint8')
+                            #rgbArray = np.zeros((xshape, yshape, 3), 'uint8')
+                            rgbArray = np.empty((xshape, yshape, 3), 'uint8')
                             rgbArray[..., 0] = red_stretched_data_float  # *256
                             rgbArray[..., 1] = green_stretched_data_float  # *256
                             rgbArray[..., 2] = blue_stretched_data_float  # *256
@@ -4202,24 +4197,24 @@ sel
 
                             # These steps flip and rotate the jpeg according to the settings in the site-config for this camera
                             if self.config["camera"][g_dev['cam'].name]["settings"]["transpose_jpeg"]:
-                                final_image = final_image.transpose(Image.TRANSPOSE)
+                                final_image = final_image.transpose(Image.Transpose.TRANSPOSE)
                             if self.config["camera"][g_dev['cam'].name]["settings"]['flipx_jpeg']:
-                                final_image = final_image.transpose(Image.FLIP_LEFT_RIGHT)
+                                final_image = final_image.transpose(Image.Transpose.FLIP_LEFT_RIGHT)
                             if self.config["camera"][g_dev['cam'].name]["settings"]['flipy_jpeg']:
-                                final_image = final_image.transpose(Image.FLIP_TOP_BOTTOM)
+                                final_image = final_image.transpose(Image.Transpose.FLIP_TOP_BOTTOM)
                             if self.config["camera"][g_dev['cam'].name]["settings"]['rotate180_jpeg']:
-                                final_image = final_image.transpose(Image.ROTATE_180)
+                                final_image = final_image.transpose(Image.Transpose.ROTATE_180)
                             if self.config["camera"][g_dev['cam'].name]["settings"]['rotate90_jpeg']:
-                                final_image = final_image.transpose(Image.ROTATE_90)
+                                final_image = final_image.transpose(Image.Transpose.ROTATE_90)
                             if self.config["camera"][g_dev['cam'].name]["settings"]['rotate270_jpeg']:
-                                final_image = final_image.transpose(Image.ROTATE_270)
+                                final_image = final_image.transpose(Image.Transpose.ROTATE_270)
 
                             # Detect the pierside and if it is one way, rotate the jpeg 180 degrees
                             # to maintain the orientation. whether it is 1 or 0 that is flipped
                             # is sorta arbitrary... you'd use the site-config settings above to
                             # set it appropriately and leave this alone.
                             if pier_side == 1:
-                                final_image = final_image.transpose(Image.ROTATE_180)
+                                final_image = final_image.transpose(Image.Transpose.ROTATE_180)
 
                             # Save BIG version of JPEG.
                             final_image.save(
@@ -4296,7 +4291,8 @@ sel
                 # POINTING SOLUTIONS HAVE TO HAPPEN AND COMPLETE IN BETWEEN EXPOSURES AND SLEWS
 
                 # time.sleep(0.5)
-                plog("Smartstack time taken: " + str(time.time() - sstack_timer))
+                plog("Smartstack round complete. Time taken: " + str(time.time() - sstack_timer))
+                #plog("Smartstack time MINUS SEP taken: " + str(time.time() - sstack_process_timer))
                 self.img = None  # Clean up all big objects.
                 self.smartstack_queue.task_done()
             else:
@@ -4344,7 +4340,12 @@ def wait_for_slew():
     return
 
 
+
+
 if __name__ == "__main__":
 
+    #def mainjpeg_process():
+    #    self.mainjpeg_process()
+    
     o = Observatory(ptr_config.obs_id, ptr_config.site_config)
     o.run()  # This is meant to be a never ending loop.

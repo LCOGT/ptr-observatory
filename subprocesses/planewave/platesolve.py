@@ -11,7 +11,7 @@ parentPath = Path(getcwd())
 # Point this to the location of the "ps3cli.exe" executable
 #PS3CLI_EXE = 'C:/Users/obs/Documents/GitHub/ptr-observatory/planewave/ps3cli/ps3cli.exe'
 
-PS3CLI_EXE = str(parentPath) +'/planewave/ps3cli/ps3cli.exe'
+PS3CLI_EXE = str(parentPath) +'/subprocesses/planewave/ps3cli/ps3cli.exe'
 # For testing purposes...
 #PS3CLI_EXE = r"C:\Users\kmi\Desktop\Planewave work\Code\PWGit\PWCode\ps3cli\bin\Debug\ps3cli.exe"
 

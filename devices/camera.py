@@ -354,10 +354,10 @@ class Camera:
         Once this is done g_dev['cam'] refers to the selected instance.
         """
         
-        self.last_user_name = "Tobor"
-        self.last_user_id = "Tobor"
-        self.user_name = "Tobor"
-        self.user_id = "Tobor"
+        self.last_user_name = "none"
+        self.last_user_id = "none"
+        self.user_name = "none"
+        self.user_id = "none"
 
         self.name = name
         self.driver = driver
@@ -415,7 +415,8 @@ class Camera:
         if not os.path.exists(self.seq_path):
             os.makedirs(self.seq_path)
 
-
+        # Just need to initialise this filter thing
+        self.current_offset  = 0
 
         """
         This section loads in the calibration files for flash calibrations
@@ -1409,18 +1410,23 @@ class Camera:
                 
                 # Check if filter needs changing, if so, change.                
                 if not g_dev['fil'].filter_selected == requested_filter_name:
-                    self.current_filter, filt_pointer, filter_offset = g_dev["fil"].set_name_command(
-                        {"filter": requested_filter_name}, {}
-                    )
-                    
-                    self.current_offset = g_dev[
-                        "fil"
-                    ].filter_offset  # TEMP   NBNBNB This needs fixing
+                    try:
+                        self.current_filter, filt_pointer, filter_offset = g_dev["fil"].set_name_command(
+                            {"filter": requested_filter_name}, {}
+                        )
+                        
+                        self.current_offset = g_dev[
+                            "fil"
+                        ].filter_offset  # TEMP   NBNBNB This needs fixing
+                    except:
+                        plog ("Failed to change filter! Cancelling exposure.")
+                        return 
                     
                 self.current_filter = g_dev['fil'].filter_selected
                 
                 if self.current_filter == "none":
                     plog("skipping exposure as no adequate filter match found")
+                    g_dev["obs"].send_to_user("Skipping Exposure as no adequate filter found for requested observation")
                     self.exposure_busy = False
                     return
             else:
@@ -1545,9 +1551,9 @@ class Camera:
                         g_dev['obs'].scan_requests()
                         foundcalendar=False                    
                         for tempblock in g_dev['obs'].blocks:
-                            print (tempblock['event_id'])
+                            #print (tempblock['event_id'])
                             if tempblock['event_id'] == calendar_event_id :
-                                print ("FOUND CALENDAR!")
+                                #print ("FOUND CALENDAR!")
                                 foundcalendar=True
                         if foundcalendar == False:
                             print ("could not find calendar entry, cancelling out of block.")
@@ -1615,6 +1621,7 @@ class Camera:
                             dec_at_time_of_exposure = g_dev["mnt"].current_icrs_dec
                             observer_user_name = user_name
 
+                            #breakpoint()
                             try:
                                 self.user_id = user_id
                                 if self.user_id != self.last_user_id:
@@ -1623,6 +1630,9 @@ class Camera:
                             except:
                                 observer_user_id= 'Tobor'
                                 plog("Failed user_id")
+
+                            #print (observer_user_name)
+                            #print (observer_user_id)
 
                             # Calculate current airmass now
                             try:
@@ -1780,6 +1790,15 @@ class Camera:
                 + "  exposure.",
                 p_level="INFO",
             )
+        elif frame_type in ("pointing"):
+            g_dev["obs"].send_to_user(
+                "Starting "
+                + str(exposure_time)
+                + "s "
+                + str(frame_type)
+                + "  exposure.",
+                p_level="INFO",
+            )
         else:
             if "object_name" in opt:
                 g_dev["obs"].send_to_user(
@@ -1788,15 +1807,17 @@ class Camera:
                     + "s " + str(filter_ui_info) + " exposure of "
                     + str(opt["object_name"])
                     + " by user: "
-                    + str(self.user_name) + '. ' + str(int(opt['count']) - int(counter) + 1) + " of " + str(opt['count']),
+                    + str(observer_user_name) + '. ' + str(int(opt['count']) - int(counter) + 1) + " of " + str(opt['count']),
                     p_level="INFO",
                 )
-            else:
-                g_dev["obs"].send_to_user(
-                    "Starting an unnamed frame by user: "
-                    + str(self.user_name),
-                    p_level="INFO",
-                )
+            
+            # else:
+            #     g_dev["obs"].send_to_user(
+            #         "Starting an unnamed frame by user: "
+            #         #+ str(self.user_name),
+            #         + str(observer_user_name),
+            #         p_level="INFO",
+            #     )
 
         self.status_time = time.time() + 10
         self.post_mnt = []
@@ -2189,11 +2210,11 @@ class Camera:
                         datetime.datetime.isoformat(
                             datetime.datetime.utcfromtimestamp(start_time_of_observation)
                         ),
-                        "Start date and time of observation",
+                        "Start date and time of observation"
                     )
                     hdu.header["DAY-OBS"] = (
                         g_dev["day"],
-                        "Date at start of observing night",
+                        "Date at start of observing night"
                     )
                     hdu.header["MJD-OBS"] = (
                         Time(start_time_of_observation, format="unix").mjd,
@@ -2946,14 +2967,21 @@ class Camera:
                                 hdusmallheader['FULLWELL']=float(hdu.header['FULLWELL']) * pow( self.native_bin,2)
                                 hdusmallheader['MAXLIN']=float(hdu.header['MAXLIN']) * pow( self.native_bin,2)
                            
-                            
-
                             # Add a pedestal to the reduced data
                             # This is important for a variety of reasons
                             # Some functions don't work with arrays with negative values
                             # 2000 SHOULD be enough.
                             hdusmalldata=hdusmalldata+2000.0
                             hdusmallheader['PEDESTAL']=2000
+                            
+                            
+                            # Every Image gets SEP'd and gets it's catalogue sent up pronto ahead of the big fits
+                            # Focus images use it for focus, Normal images also report their focus.
+                            # IMMEDIATELY SEND TO SEP QUEUE
+                            # NEEDS to go up as fast as possible ahead of smartstacks to faciliate image matching.
+                            self.sep_processing=True
+                            self.to_sep((hdusmalldata, pixscale, float(hdu.header["RDNOISE"]), avg_foc[1], focus_image, im_path, text_name, hdusmallheader, cal_path, cal_name, frame_type, g_dev['foc'].focuser.Position*g_dev['foc'].steps_to_micron))
+                            
                             
                             if smartstackid == 'no':
                                 if self.config['keep_reduced_on_disk']:
@@ -2964,15 +2992,21 @@ class Camera:
                                 saverretries = 0
                                 while saver == 0 and saverretries < 10:
                                     try:
-                                        hdureduced=fits.PrimaryHDU()
-                                        hdureduced.data=hdusmalldata                            
-                                        hdureduced.header=hdusmallheader
-                                        hdureduced.header["NAXIS1"] = hdusmalldata.shape[0]
-                                        hdureduced.header["NAXIS2"] = hdusmalldata.shape[1]
-                                        hdureduced.data=hdureduced.data.astype("float32")
-                                        hdureduced.writeto(
-                                            red_path + red_name01, overwrite=True, output_verify='silentfix'
-                                        )  # Save flash reduced file locally
+                                        #hdureduced=fits.PrimaryHDU()
+                                        #hdureduced.data=hdusmalldata                            
+                                        #hdureduced.header=hdusmallheader
+                                        #hdureduced.header["NAXIS1"] = hdusmalldata.shape[0]
+                                        #hdureduced.header["NAXIS2"] = hdusmalldata.shape[1]
+                                        #hdureduced.data=hdureduced.data.astype("float32")
+                                        #hdureduced.writeto(
+                                        #    red_path + red_name01, overwrite=True, output_verify='silentfix'
+                                        #)  # Save flash reduced file locally
+                                        np.save(red_path + red_name01.replace('.fits','.npy'), hdusmalldata)
+                                        hdusstack=fits.PrimaryHDU()
+                                        hdusstack.header=hdusmallheader
+                                        hdusstack.header["NAXIS1"] = hdusmalldata.shape[0]
+                                        hdusstack.header["NAXIS2"] = hdusmalldata.shape[1]
+                                        hdusstack.writeto(red_path + red_name01.replace('.fits','.head'), overwrite=True, output_verify='silentfix')
                                         saver = 1
                                     except Exception as e:
                                         plog("Failed to write raw file: ", e)
@@ -3005,11 +3039,6 @@ class Camera:
                                 except:
                                     pass
 
-                        # Every Image gets SEP'd and gets it's catalogue sent up pronto ahead of the big fits
-                        # Focus images use it for focus, Normal images also report their focus.
-                        # IMMEDIATELY SEND TO SEP QUEUE
-                        self.sep_processing=True
-                        self.to_sep((hdusmalldata, pixscale, float(hdu.header["RDNOISE"]), avg_foc[1], focus_image, im_path, text_name, hdusmallheader, cal_path, cal_name, frame_type, g_dev['foc'].focuser.Position*g_dev['foc'].steps_to_micron))
                         
                         
                         # Send data off to process jpeg

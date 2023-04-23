@@ -40,7 +40,7 @@ site_config = {
     
     'debug_site_mode': False,
     
-    'debug_mode': True,
+    'debug_mode': False,
     'admin_owner_commands_only': False,
     'debug_duration_sec': 7200,
     'owner':  ['google-oauth2|112401903840371673242'],  # WER,  Or this can be
@@ -694,7 +694,7 @@ site_config = {
                 'readout_mode':  'Normal',
                 'readout_speed': 0.08,
                 'readout_seconds': 12.5,
-                'smart_stack_exposure_time' : 75,
+                'smart_stack_exposure_time' : 45,
                 'saturate':   65000 ,   # e-.  This is a close guess, not measured, but taken from data sheet.
                 'max_linearity': 65000,
                 'fullwell_capacity': 65000,  #e-.   We need to sort out the units properly NB NB NB
@@ -726,7 +726,7 @@ site_config = {
                 #'dark_length' : 1,
                 'number_of_bias_to_collect' : 10,
                 'number_of_dark_to_collect' : 10,
-                'number_of_flat_to_collect' : 10,
+                'number_of_flat_to_collect' : 5,
                 'number_of_bias_to_store' : 128,
                 'number_of_dark_to_store' : 128,
                 'number_of_flat_to_store' : 63,

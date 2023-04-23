@@ -1045,8 +1045,8 @@ class Sequencer:
             pass
         g_dev['mnt'].unpark_command({}, {})
         g_dev['mnt'].Tracking = True   # unpark_command({}, {})
-        g_dev['cam'].user_name = 'tobor'
-        g_dev['cam'].user_id = 'tobor'
+        #g_dev['cam'].user_name = 'tobor'
+        #g_dev['cam'].user_id = 'tobor'
         #NB  Servo the Dome??
         #timer = time.time() - 1  #This should force an immediate autofocus.
         
@@ -1079,6 +1079,8 @@ class Sequencer:
 
                 user_name = block_specification['creator']
                 user_id = block_specification['creator_id']
+                #g_dev['cam'].user_name = user_name
+                #g_dev['cam'].user_id = user_id
                 user_roles = ['project']
                 
                 longstackname=block_specification['project']['created_at'].replace('-','').replace(':','') # If longstack is to be used.
@@ -2615,22 +2617,22 @@ class Sequencer:
                              #break
                         elif evening and exp_time < min_exposure:   #NB it is too bright, should consider a delay here.
                          #**************THIS SHOUD BE A WHILE LOOP! WAITING FOR THE SKY TO GET DARK AND EXP TIME TO BE LONGER********************
-                             plog("Too bright for current filter, waiting 60s. Est. Exptime: " + str(exp_time))
+                             plog("Too bright for current filter, waiting 10s. Est. Exptime: " + str(exp_time))
                              #g_dev['obs'].send_to_user('Delay 60 seconds to let it get darker.', p_level='INFO')
                              self.estimated_first_flat_exposure = False
                              if time.time() >= self.time_of_next_slew:
                                 g_dev['mnt'].slewToSkyFlatAsync()  
                                 self.time_of_next_slew = time.time() + 600
-                             self.next_flat_observe = time.time() + 60
+                             self.next_flat_observe = time.time() + 10
                         elif morn and exp_time > max_exposure :   #NB it is too bright, should consider a delay here.
                           #**************THIS SHOUD BE A WHILE LOOP! WAITING FOR THE SKY TO GET DARK AND EXP TIME TO BE LONGER********************
-                             plog("Too dim for current filter, waiting 60s Est. Exptime:  " + str(exp_time))
+                             plog("Too dim for current filter, waiting 10s Est. Exptime:  " + str(exp_time))
                              #g_dev['obs'].send_to_user('Delay 60 seconds to let it get lighterer.', p_level='INFO')
                              self.estimated_first_flat_exposure = False
                              if time.time() >= self.time_of_next_slew:
                                 g_dev['mnt'].slewToSkyFlatAsync()  
                                 self.time_of_next_slew = time.time() + 600
-                             self.next_flat_observe = time.time() + 60
+                             self.next_flat_observe = time.time() + 10
                              #*****************NB Recompute exposure or otherwise wait
                              exp_time = min_exposure
                         else:
@@ -4779,6 +4781,10 @@ class Sequencer:
                     return
                 pass
         
+        g_dev["obs"].send_to_user(
+            "Taking a pointing calibration exposure",
+            p_level="INFO",
+        )
         # Take a pointing shot to reposition
         result = g_dev['cam'].expose_command(req, opt, user_id='Tobor', user_name='Tobor', user_roles='system', no_AWS=True, solve_it=True)
         
@@ -4811,6 +4817,11 @@ class Sequencer:
         if not g_dev['obs'].open_and_enabled_to_observe:
             g_dev["obs"].send_to_user("Cancelling out of activity as no longer open and enabled to observe.")  
             return
+        
+        g_dev["obs"].send_to_user(
+            "Taking a pointing confirmation exposure",
+            p_level="INFO",
+        )
         
         # Taking a confirming shot. 
         req = {'time': self.config['pointing_exposure_time'],  'alias':  str(self.config['camera']['camera_1_1']['name']), 'image_type': 'light'}   #  NB Should pick up filter and constats from config
