@@ -1811,13 +1811,13 @@ class Camera:
                     p_level="INFO",
                 )
             
-            else:
-                g_dev["obs"].send_to_user(
-                    "Starting an unnamed frame by user: "
-                    #+ str(self.user_name),
-                    + str(observer_user_name),
-                    p_level="INFO",
-                )
+            # else:
+            #     g_dev["obs"].send_to_user(
+            #         "Starting an unnamed frame by user: "
+            #         #+ str(self.user_name),
+            #         + str(observer_user_name),
+            #         p_level="INFO",
+            #     )
 
         self.status_time = time.time() + 10
         self.post_mnt = []
