@@ -1887,7 +1887,8 @@ sel
                 
                 (hdufocusdata, pixscale, readnoise, avg_foc, focus_image, im_path, text_name, hduheader, cal_path, cal_name, frame_type, focus_position) = self.sep_queue.get(block=False)
 
-
+                if not (g_dev['events']['Civil Dusk'] < ephem.now() < g_dev['events']['Civil Dawn']) :
+                    plog ("Too bright to consider photometry!")
 
                 is_osc= self.config["camera"][g_dev['cam'].name]["settings"]["is_osc"]
                 interpolate_for_focus= self.config["camera"][g_dev['cam'].name]["settings"]['interpolate_for_focus']
