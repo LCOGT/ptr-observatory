@@ -531,3 +531,12 @@ else:
             paths["im_path"] + paths["jpeg_name10"]
         )
         del final_image
+
+try:
+    imgdata.close()
+    # Just in case
+except:
+    pass
+del imgdata
+
+pickle.dump(reprojection_failed, open(paths["im_path"] + 'smartstack.pickle', 'wb'))
