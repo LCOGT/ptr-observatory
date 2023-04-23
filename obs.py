@@ -3484,39 +3484,24 @@ sel
                 # SmartStack Section
                 if smartstackid != "no":
                     sstack_timer = time.time()
-                    # if not paths["frame_type"] in [
-                    #     "bias",
-                    #     "dark",
-                    #     "flat",
-                    #     "solar",
-                    #     "lunar",
-                    #     "skyflat",
-                    #     "screen",
-                    #     "spectrum",
-                    #     "auto_focus",
-                    # ]:
+                   
                     img = fits.open(
                         paths["red_path"] + paths["red_name01"].replace('.fits','.head'),
                         ignore_missing_end=True,
                     )
-                    #imgdata = img[0].data.copy()
-                    
-                    
                     imgdata = np.load(paths["red_path"] + paths["red_name01"].replace('.fits','.npy'))
                     
                     if self.config['keep_reduced_on_disk']:
                         self.to_slow_process(1000,('reduced', paths["red_path"] + paths["red_name01"], imgdata, img[0].header, \
                                                'EXPOSE', g_dev["mnt"].current_icrs_ra, g_dev["mnt"].current_icrs_dec))
-                    
-                    
-                    
+                                       
                     # Pick up some header items for smartstacking later
                     ssfilter = str(img[0].header["FILTER"])
                     ssobject = str(img[0].header["OBJECT"])
                     ssexptime = str(img[0].header["EXPTIME"])
                     sspedestal = str(img[0].header["PEDESTAL"])
                     imgdata=imgdata-float(sspedestal)
-                    #ssframenumber = str(img[0].header["FRAMENUM"])
+                    
                     img.close()
                     del img
                     
@@ -3525,94 +3510,7 @@ sel
                         os.remove(paths["red_path"] + paths["red_name01"].replace('.fits','.npy'))
                     except:
                         plog ("couldn't remove smartstack files.")
-                        
                     
-                    #if not self.config['keep_reduced_on_disk']:
-                    #    try:
-                    #        os.remove(paths["red_path"] + paths["red_name01"])
-                    #    except Exception as e:
-                    #        plog("could not remove temporary reduced file: ", e)
-
-                    # sstackimghold=np.array(imgdata)
-
-                    # focusimg = np.array(
-                    #     imgdata, order="C"
-                    # )
-
-                    # try:
-                    #     # Some of these are liberated from BANZAI
-                    #     # breakpoint()
-                    #     try:
-                    #         bkg = sep.Background(focusimg)
-                    #     except:
-                    #         focusimg = focusimg.byteswap().newbyteorder()
-                    #         bkg = sep.Background(focusimg)
-
-                    #     #sepsky = ( np.nanmedian(bkg), "Sky background estimated by SEP" )
-
-                    #     focusimg -= bkg
-                    #     ix, iy = focusimg.shape
-                    #     border_x = int(ix * 0.05)
-                    #     border_y = int(iy * 0.05)
-                    #     sep.set_extract_pixstack(int(ix*iy - 1))
-                    #     # minarea is set as roughly how big we think a 0.7 arcsecond seeing star
-                    #     # would be at this pixelscale and binning. Different for different cameras/telescopes.
-                    #     #minarea=int(pow(0.7*1.5 / (pixscale*binfocus),2)* 3.14)
-                    #     #This minarea is totally fudgetastically emprical comparing a 0.138 pixelscale QHY Mono
-                    #     # to a 1.25/2.15 QHY OSC. Seems to work, so thats good enough.
-                    #     # Makes the minarea small enough for blocky pixels, makes it large enough for oversampling
-                    #     minarea= -9.2421 * pixscale + 16.553
-                    #     if minarea < 5:  # There has to be a min minarea though!
-                    #         minarea = 5
-
-                    #     sources = sep.extract(
-                    #         focusimg, 5.0, err=bkg.globalrms, minarea=minarea
-                    #     )
-                    #     #plog ("min_area: " + str(minarea))\
-                    #     sources = Table(sources)
-                    #     sources = sources[sources['flag'] < 8]
-                    #     image_saturation_level = g_dev['cam'].config["camera"][g_dev['cam'].name]["settings"]["saturate"]
-                    #     sources = sources[sources["peak"] < 0.8 * image_saturation_level]
-                    #     sources = sources[sources["cpeak"] < 0.8 * image_saturation_level]
-                    #     #sources = sources[sources["peak"] > 150 * pow(binfocus,2)]
-                    #     #sources = sources[sources["cpeak"] > 150 * pow(binfocus,2)]
-                    #     sources = sources[sources["flux"] > 2000]
-                    #     sources = sources[sources["x"] < ix - border_x]
-                    #     sources = sources[sources["x"] > border_x]
-                    #     sources = sources[sources["y"] < iy - border_y]
-                    #     sources = sources[sources["y"] > border_y]
-
-                    #     # BANZAI prune nans from table
-                    #     nan_in_row = np.zeros(len(sources), dtype=bool)
-                    #     for col in sources.colnames:
-                    #         nan_in_row |= np.isnan(sources[col])
-                    #     sources = sources[~nan_in_row]
-                    #     #plog("Actual Platesolve SEP time: " + str(time.time()-actseptime))
-                    # except:
-                    #     plog("Something went wrong with platesolve SEP")
-                    #     plog(traceback.format_exc())
-
-
-
-
-                    # Get the photometry of each of the frames. 
-
-
-                    
-                    
-
-
-
-
-
-
-
-
-
-                    
-                    # No need to open the same image twice, just using the same one as SEP.
-                    #img = sstackimghold.copy()
-                    #del sstackimghold
                     smartStackFilename = (
                         str(ssobject)
                         + "_"
@@ -3640,14 +3538,7 @@ sel
                         plog("Number of sources just prior to smartstacks: " + str(len(sources)))
                         if len(sources) < 5:
                             plog("skipping stacking as there are not enough sources " + str(len(sources)) + " in this image")
-
-                        
-                        # Detect and swap img to the correct endianness - needed for the smartstack jpg
-                        #if sys.byteorder == 'little':
-                        #    imgdata = imgdata.newbyteorder('little').byteswap()
-                        #else:
-                        #    imgdata = imgdata.newbyteorder('big').byteswap()
-
+                    
                         # IF SMARSTACK NPY FILE EXISTS DO STUFF, OTHERWISE THIS IMAGE IS THE START OF A SMARTSTACK
                         reprojection_failed = False
                         if not os.path.exists(
@@ -3665,7 +3556,6 @@ sel
                                 sources.write(self.obsid_path
                                 + "smartstacks/"
                                 + smartStackFilename.replace('.npy','.sep'), format='csv', overwrite=True)
-                                
 
                             else:
                                 plog("Not storing first smartstack image as not enough sources")
@@ -3680,18 +3570,6 @@ sel
                             ref_sources = Table.read(self.obsid_path
                             + "smartstacks/"
                             + smartStackFilename.replace('.npy','.sep'), format='csv')
-                            
-                            
-                            
-                            #plog (storedsStack.dtype.byteorder)
-                            # Prep new image
-                            plog("Pasting Next smartstack image")
-                            # img=np.nan_to_num(img)
-                            # backgroundLevel =(np.nanmedian(sep.Background(img.byteswap().newbyteorder())))
-                            # plog (" Background Level : " + str(backgroundLevel))
-                            # img= img - backgroundLevel
-                            # Reproject new image onto footplog of old image.
-                            # plog(datetime.datetime.now())
 
                             #This minarea is totally fudgetastically emprical comparing a 0.138 pixelscale QHY Mono
                             # to a 1.25/2.15 QHY OSC. Seems to work, so thats good enough.
@@ -3701,33 +3579,13 @@ sel
                                 minarea = 5
                                 
                             if len(sources) > 5:
-                                try:
-                                    
-                                                                        
-                                    #source_delete = ['thresh', 'npix', 'tnpix', 'xmin', 'xmax', 'ymin', 'ymax', 'x2', 'y2', 'xy', 'errx2',
-                                    #                 'erry2', 'errxy', 'a', 'b', 'theta', 'cxx', 'cyy', 'cxy', 'cflux', 'cpeak', 'xcpeak', 'ycpeak']
-                                    #sources.remove_columns(source_delete)
-                                    
-                                    
+                                try:                                    
                                     sources=np.column_stack((sources['x'],sources['y']))
                                     ref_sources=np.column_stack((ref_sources['x'],ref_sources['y']))
-                                    
-                                    #breakpoint()
-                                    
                                     transf, (source_list, target_list) = aa.find_transform(sources, ref_sources)
-                                    
-                                    reprojectedimage= aa.apply_transform(transf, imgdata, storedsStack)[0]
-                                    #reprojectedimage, _ = func_timeout.func_timeout(60, aa.register, args=(imgdata, storedsStack),
-                                    #                                                kwargs={"detection_sigma": 5, "min_area": minarea})
-                                    
-                                    
-                                    #breakpoint()
-                                    
-                                    # scalingFactor= np.nanmedian(reprojectedimage / storedsStack)
-                                    # plog (" Scaling Factor : " +str(scalingFactor))
-                                    # reprojectedimage=(scalingFactor) * reprojectedimage # Insert a scaling factor
-                                    #storedsStack = np.array((reprojectedimage + storedsStack))
+                                    reprojectedimage= aa.apply_transform(transf, imgdata, storedsStack)[0]                            
                                     storedsStack = reprojectedimage + storedsStack
+                                    
                                     # Save new stack to disk
                                     np.save(
                                         self.obsid_path
@@ -3735,22 +3593,6 @@ sel
                                         + smartStackFilename,
                                         storedsStack,
                                     )
-
-                                    #hduss = fits.PrimaryHDU()
-                                    #hduss.data = storedsStack
-                                    # hdureduced.header=slow_process[3]
-                                    #hdureduced.header["NAXIS1"] = hdureduced.data.shape[0]
-                                    #hdureduced.header["NAXIS2"] = hdureduced.data.shape[1]
-                                    ##hduss.data = hduss.data.astype("float32")
-                                    #try:
-                                    #     hduss.writeto(
-                                    #        self.obsid_path
-                                    #        + "smartstacks/"
-                                    #        + smartStackFilename.replace('.npy', '_' + str(sskcounter) + '_' + str(Nsmartstack) + '.fit'), overwrite=True, output_verify='silentfix'
-                                    #    )  # Save flash reduced file locally
-                                    #except:
-                                    #    plog("Couldn't save smartstack fits. YOU MAY HAVE THE FITS OPEN IN A VIEWER.")
-
                                     reprojection_failed = False
                                 except func_timeout.FunctionTimedOut:
                                     plog("astroalign timed out")
@@ -3814,23 +3656,10 @@ sel
                         # Resizing the array to an appropriate shape for the jpg and the small fits
 
                         if iy == ix:
-                            # hdusmalldata = resize(
-                            #     hdusmalldata, (1280, 1280), preserve_range=True
-                            # )
                             final_image = final_image.resize(
                                 (900, 900)
                             )
-                        else:
-                            # stretched_data_uint8 = resize(
-                            #     stretched_data_uint8,
-                            #     (int(1536 * iy / ix), 1536),
-                            #     preserve_range=True,
-                            # )
-                            # stretched_data_uint8 = resize(
-                            #     stretched_data_uint8,
-                            #     (int(900 * iy / ix), 900),
-                            #     preserve_range=True,
-                            # )
+                        else:                            
                             if self.config["camera"][g_dev['cam'].name]["settings"]["squash_on_x_axis"]:
                                 final_image = final_image.resize(
 
@@ -3843,7 +3672,6 @@ sel
                                     (900, int(900 * iy / ix))
 
                                 )
-                        # stretched_data_uint8=stretched_data_uint8.transpose(Image.TRANSPOSE) # Not sure why it transposes on array creation ... but it does!
                         final_image.save(
                             paths["im_path"] + paths["jpeg_name10"]
                         )
@@ -3861,16 +3689,12 @@ sel
                                 newhdugreen = imgdata[::2, 1::2]
                                 newhdublue = imgdata[1::2, 1::2]
                                 
-
                             else:
                                 plog("this bayer grid not implemented yet")
 
 
                             # HERE is where to do a simultaneous red, green, blue 
                             # multithreaded sep.
-                            
-                            
-                            
                             pixscale=pixscale
                             image_saturation_level=g_dev['cam'].config["camera"][g_dev['cam'].name]["settings"]["saturate"]
                             nativebin=g_dev['cam'].native_bin
@@ -3882,8 +3706,7 @@ sel
                             pickler=[newhdured,pixscale,image_saturation_level,nativebin,readnoise,minimum_realistic_seeing,im_path,text_name,'red']
                             red_sep_subprocess=subprocess.Popen(['python','subprocesses/OSC_AA_SEPprocess.py'],stdin=subprocess.PIPE,stdout=subprocess.PIPE,bufsize=0)
                             pickle.dump(pickler, red_sep_subprocess.stdin)
-                            
-                            
+                                                        
                             pickler[0]=newhdugreen
                             pickler[8]='green'
                             green_sep_subprocess=subprocess.Popen(['python','subprocesses/OSC_AA_SEPprocess.py'],stdin=subprocess.PIPE,stdout=subprocess.PIPE,bufsize=0)
@@ -3899,9 +3722,6 @@ sel
                             green_sep_subprocess.communicate()
                             blue_sep_subprocess.communicate()
                             
-                            
-                            #breakpoint()
-                            
                             redsources=pickle.load(open(im_path + 'oscaasep.picklered', 'rb'))
                             greensources=pickle.load(open(im_path + 'oscaasep.picklegreen', 'rb'))
                             bluesources=pickle.load(open(im_path + 'oscaasep.pickleblue', 'rb'))
@@ -3910,20 +3730,7 @@ sel
                             if len(greensources) < 5:
                                 plog("skipping stacking as there are not enough sources " + str(len(greensources)) + " in this image")
                             
-                            #hdufocusdata=input_sep_info[0]
-                            #pixscale=input_sep_info[1]
-                            #image_saturation_level= input_sep_info[2]
-                            ##nativebin= input_sep_info[3]
-                            #readnoise= input_sep_info[4]
-                            #minimum_realistic_seeing= input_sep_info[5]
-                            #im_path=input_sep_info[6]
-                            #text_name=input_sep_info[7]
-
-
-
-              
-
-
+                            
                             if len(greensources) > 5:
                             # IF SMARSTACK NPY FILE EXISTS DO STUFF, OTHERWISE THIS IMAGE IS THE START OF A SMARTSTACK
                                 reprojection_failed = False
@@ -3934,7 +3741,7 @@ sel
                                     ):
                                         if len(greensources) >= 5:
                                             # Store original image
-                                            #plog("Storing First smartstack image")
+
                                             if colstack == 'blue':
                                                 np.save(
                                                     self.obsid_path
@@ -3975,12 +3782,7 @@ sel
                                         else:
                                             plog("Not storing first smartstack image as not enough sources")
                                             reprojection_failed = True
-                                        # if colstack == 'blue':
-                                        #     bluestoredsStack = newhdublue
-                                        # if colstack == 'green':
-                                        #     greenstoredsStack = newhdugreen
-                                        # if colstack == 'red':
-                                        #     redstoredsStack = newhdured
+
                                     else:
                                         # Collect stored SmartStack
                                         storedsStack = np.load(
@@ -4004,61 +3806,17 @@ sel
                                         
                                         
                                         sources=np.column_stack((sources['x'],sources['y']))
-                                        ref_sources=np.column_stack((ref_sources['x'],ref_sources['y']))
-                                        
-                                        #plog (storedsStack.dtype.byteorder)
-                                        # Prep new image
-                                        #plog("Pasting Next smartstack image")
-                                        # img=np.nan_to_num(img)
-                                        # backgroundLevel =(np.nanmedian(sep.Background(img.byteswap().newbyteorder())))
-                                        # plog (" Background Level : " + str(backgroundLevel))
-                                        # img= img - backgroundLevel
-                                        # Reproject new image onto footplog of old image.
-                                        # plog(datetime.datetime.now())
-    
-                                        #This minarea is totally fudgetastically emprical comparing a 0.138 pixelscale QHY Mono
-                                        # to a 1.25/2.15 QHY OSC. Seems to work, so thats good enough.
-                                        # Makes the minarea small enough for blocky pixels, makes it large enough for oversampling
-                                        #minarea= -9.2421 * pixscale + 16.553
-                                        #if minarea < 5:  # There has to be a min minarea though!
-                                        #    minarea = 5
-                                            
-                                            
-                                        
-                                        
-                                        
-                                        #redsources=np.column_stack((redsources['x'],redsources['y']))
-                                        #greensources=np.column_stack((greensources['x'],greensources['y']))
-                                        #bluesources=np.column_stack((bluesources['x'],bluesources['y']))
-                                        
-    
+                                        ref_sources=np.column_stack((ref_sources['x'],ref_sources['y']))                                        
+
                                         if len(greensources) > 5:
                                             
-                                            
-                                            
-                                            
                                             try:
-                                                
-                                                
                                                 transf, (source_list, target_list) = aa.find_transform(sources, ref_sources)
                                                 
                                                 reprojectedimage= aa.apply_transform(transf, imgdata, storedsStack)[0]
                                                 
-                                                
-                                                # if colstack == 'red':
-                                                #     reprojectedimage, _ = func_timeout.func_timeout(60, aa.register, args=(newhdured, storedsStack),
-                                                #                                                     kwargs={"detection_sigma": 5, "min_area": minarea})
-    
-                                                # if colstack == 'blue':
-                                                #     reprojectedimage, _ = func_timeout.func_timeout(60, aa.register, args=(newhdublue, storedsStack),
-                                                #                                                     kwargs={"detection_sigma": 5, "min_area": minarea})
-                                                # if colstack == 'green':
-                                                #     reprojectedimage, _ = func_timeout.func_timeout(60, aa.register, args=(newhdugreen, storedsStack),
-                                                #                                                     kwargs={"detection_sigma": 5, "min_area": minarea})
-                                                #     # scalingFactor= np.nanmedian(reprojectedimage / storedsStack)
-                                                # # plog (" Scaling Factor : " +str(scalingFactor))
-                                                # # reprojectedimage=(scalingFactor) * reprojectedimage # Insert a scaling factor
                                                 storedsStack = reprojectedimage + storedsStack
+                                                
                                                 # Save new stack to disk
                                                 np.save(
                                                     self.obsid_path
@@ -4068,28 +3826,12 @@ sel
                                                     storedsStack,
                                                 )
     
-                                                #hduss = fits.PrimaryHDU()
-                                                #hduss.data = storedsStack                                            
-                                                #hduss.data = hduss.data.astype("float32")
-                                                #try:
-                                                #    hduss.writeto(
-                                                #        self.obsid_path
-                                                #        + "smartstacks/"
-                                                #        + smartStackFilename.replace(smartstackid, smartstackid + str(colstack)).replace('.npy', '_' + str(sskcounter) + '_' + str(Nsmartstack) + '.fit'), overwrite=True, output_verify='silentfix'
-                                                #    )  # Save flash reduced file locally
-                                                #except:
-                                                #    plog("Couldn't save smartstack fits. YOU MAY HAVE THE FITS OPEN IN A VIEWER.")
-                                                #del hduss
                                                 
-                                                
-                                                if colstack == 'green':
-                                                    #newhdugreen = np.array(storedsStack)
+                                                if colstack == 'green':                                                    
                                                     newhdugreen = storedsStack
-                                                if colstack == 'red':
-                                                    #newhdured = np.array(storedsStack)
+                                                if colstack == 'red':                                                    
                                                     newhdured = storedsStack
-                                                if colstack == 'blue':
-                                                    #newhdublue = np.array(storedsStack)
+                                                if colstack == 'blue':                                                    
                                                     newhdublue = storedsStack
                                                 del storedsStack
                                                 reprojection_failed = False
@@ -4109,47 +3851,16 @@ sel
                             # NOW THAT WE HAVE THE INDIVIDUAL IMAGES THEN PUT THEM TOGETHER
                             xshape = newhdugreen.shape[0]
                             yshape = newhdugreen.shape[1]
-
-                            # The integer mode of an image is typically the sky value, so squish anything below that
-                            #bluemode = stats.mode((newhdublue.astype('int16').flatten()), keepdims=True)[0] - 25
-                            #redmode = stats.mode((newhdured.astype('int16').flatten()), keepdims=True)[0] - 25
-                            #greenmode = stats.mode((newhdugreen.astype('int16').flatten()), keepdims=True)[0] - 25
-                            #newhdublue[newhdublue < bluemode] = bluemode
-                            #newhdugreen[newhdugreen < greenmode] = greenmode
-                            #newhdured[newhdured < redmode] = redmode
-
-
-
-                            blue_stretched_data_float = Stretch().stretch(newhdublue)*256
-                            #ceil = np.percentile(blue_stretched_data_float, 100)  # 5% of pixels will be white
-                            #floor = np.percentile(blue_stretched_data_float, 60)  # 5% of pixels will be black
-
-                            #blue_stretched_data_float[blue_stretched_data_float < floor] = floor
-                            #blue_stretched_data_float = blue_stretched_data_float-floor
-                            #blue_stretched_data_float = blue_stretched_data_float * \
-                            #    (255/np.max(blue_stretched_data_float))
+                        
+                            blue_stretched_data_float = Stretch().stretch(newhdublue)*256                            
                             del newhdublue
 
                             green_stretched_data_float = Stretch().stretch(newhdugreen)*256
-                            #ceil = np.percentile(green_stretched_data_float, 100)  # 5% of pixels will be white
-                            #floor = np.percentile(green_stretched_data_float, 60)  # 5% of pixels will be black
-
-                            ##green_stretched_data_float[green_stretched_data_float < floor] = floor
-                            #green_stretched_data_float = green_stretched_data_float-floor
-                            #green_stretched_data_float = green_stretched_data_float * \
-                            #    (255/np.max(green_stretched_data_float))
                             del newhdugreen
 
-                            red_stretched_data_float = Stretch().stretch(newhdured)*256
-                            #ceil = np.percentile(red_stretched_data_float, 100)  # 5% of pixels will be white
-                            #floor = np.percentile(red_stretched_data_float, 60)  # 5% of pixels will be black
-                          
-                            #red_stretched_data_float[red_stretched_data_float < floor] = floor
-                            #red_stretched_data_float = red_stretched_data_float-floor
-                            #red_stretched_data_float = red_stretched_data_float * (255/np.max(red_stretched_data_float))                        
+                            red_stretched_data_float = Stretch().stretch(newhdured)*256                       
                             del newhdured
-
-                            #rgbArray = np.zeros((xshape, yshape, 3), 'uint8')
+                            
                             rgbArray = np.empty((xshape, yshape, 3), 'uint8')
                             rgbArray[..., 0] = red_stretched_data_float  # *256
                             rgbArray[..., 1] = green_stretched_data_float  # *256
@@ -4287,12 +3998,7 @@ sel
                         pass
                     del imgdata
 
-                # WE CANNOT SOLVE FOR POINTING IN THE REDUCE THREAD!
-                # POINTING SOLUTIONS HAVE TO HAPPEN AND COMPLETE IN BETWEEN EXPOSURES AND SLEWS
-
-                # time.sleep(0.5)
-                plog("Smartstack round complete. Time taken: " + str(time.time() - sstack_timer))
-                #plog("Smartstack time MINUS SEP taken: " + str(time.time() - sstack_process_timer))
+                plog("Smartstack round complete. Time taken: " + str(time.time() - sstack_timer))               
                 self.img = None  # Clean up all big objects.
                 self.smartstack_queue.task_done()
             else:
