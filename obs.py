@@ -3853,7 +3853,7 @@ sel
 
                         # img is the image coming in
                         if self.config["camera"][g_dev['cam'].name]["settings"]["is_osc"]:
-
+                            sstack_process_timer = time.time()
                             if self.config["camera"][g_dev['cam'].name]["settings"]["osc_bayer"] == 'RGGB':
                                 
                                 newhdured = imgdata[::2, ::2]
@@ -3870,6 +3870,56 @@ sel
                             
                             
                             
+                            pixscale=pixscale
+                            image_saturation_level=g_dev['cam'].config["camera"][g_dev['cam'].name]["settings"]["saturate"]
+                            nativebin=g_dev['cam'].native_bin
+                            readnoise=g_dev['cam'].config["camera"][g_dev['cam'].name]["settings"]["reference_noise"]
+                            minimum_realistic_seeing=self.config['minimum_realistic_seeing']
+                            im_path=paths["im_path"]
+                            text_name=paths["text_name00"]
+                            
+                            pickler=[newhdured,pixscale,image_saturation_level,nativebin,readnoise,minimum_realistic_seeing,im_path,text_name,'red']
+                            red_sep_subprocess=subprocess.Popen(['python','subprocesses/OSC_AA_SEPprocess.py'],stdin=subprocess.PIPE,stdout=subprocess.PIPE,bufsize=0)
+                            pickle.dump(pickler, red_sep_subprocess.stdin)
+                            
+                            
+                            pickler[0]=newhdugreen
+                            pickler[8]='green'
+                            green_sep_subprocess=subprocess.Popen(['python','subprocesses/OSC_AA_SEPprocess.py'],stdin=subprocess.PIPE,stdout=subprocess.PIPE,bufsize=0)
+                            pickle.dump(pickler, green_sep_subprocess.stdin)
+                            
+                            pickler[0]=newhdublue       
+                            pickler[8]='blue'
+                            blue_sep_subprocess=subprocess.Popen(['python','subprocesses/OSC_AA_SEPprocess.py'],stdin=subprocess.PIPE,stdout=subprocess.PIPE,bufsize=0)
+                            pickle.dump(pickler, blue_sep_subprocess.stdin)
+                            
+                            # Essentially wait until the subprocess is complete
+                            red_sep_subprocess.communicate()
+                            green_sep_subprocess.communicate()
+                            blue_sep_subprocess.communicate()
+                            
+                            
+                            #breakpoint()
+                            
+                            redsources=pickle.load(open(im_path + 'oscaasep.picklered', 'rb'))
+                            greensources=pickle.load(open(im_path + 'oscaasep.picklegreen', 'rb'))
+                            bluesources=pickle.load(open(im_path + 'oscaasep.pickleblue', 'rb'))
+                            
+                            
+                            
+                            #hdufocusdata=input_sep_info[0]
+                            #pixscale=input_sep_info[1]
+                            #image_saturation_level= input_sep_info[2]
+                            ##nativebin= input_sep_info[3]
+                            #readnoise= input_sep_info[4]
+                            #minimum_realistic_seeing= input_sep_info[5]
+                            #im_path=input_sep_info[6]
+                            #text_name=input_sep_info[7]
+
+
+
+              
+
 
 
                             # IF SMARSTACK NPY FILE EXISTS DO STUFF, OTHERWISE THIS IMAGE IS THE START OF A SMARTSTACK
@@ -3879,9 +3929,9 @@ sel
                                     self.obsid_path + "smartstacks/" +
                                         smartStackFilename.replace(smartstackid, smartstackid + str(colstack))
                                 ):
-                                    if len(sources) >= 5:
+                                    if len(greensources) >= 5:
                                         # Store original image
-                                        plog("Storing First smartstack image")
+                                        #plog("Storing First smartstack image")
                                         if colstack == 'blue':
                                             np.save(
                                                 self.obsid_path
@@ -3890,6 +3940,12 @@ sel
                                                                              smartstackid + str(colstack)),
                                                 newhdublue,
                                             )
+                                            
+                                            bluesources.write(self.obsid_path
+                                            + "smartstacks/"
+                                            + smartStackFilename.replace('.npy','blue.sep'), format='csv', overwrite=True)
+                                        
+                                            
                                         if colstack == 'green':
                                             np.save(
                                                 self.obsid_path
@@ -3898,6 +3954,9 @@ sel
                                                                              smartstackid + str(colstack)),
                                                 newhdugreen,
                                             )
+                                            greensources.write(self.obsid_path
+                                            + "smartstacks/"
+                                            + smartStackFilename.replace('.npy','green.sep'), format='csv', overwrite=True)
                                         if colstack == 'red':
                                             np.save(
                                                 self.obsid_path
@@ -3906,6 +3965,9 @@ sel
                                                                              smartstackid + str(colstack)),
                                                 newhdured,
                                             )
+                                            redsources.write(self.obsid_path
+                                            + "smartstacks/"
+                                            + smartStackFilename.replace('.npy','red.sep'), format='csv', overwrite=True)
 
                                     else:
                                         plog("Not storing first smartstack image as not enough sources")
@@ -3922,9 +3984,28 @@ sel
                                         self.obsid_path + "smartstacks/" +
                                         smartStackFilename.replace(smartstackid, smartstackid + str(colstack))
                                     )
+                                    
+                                    ref_sources=ref_sources = Table.read(self.obsid_path
+                                    + "smartstacks/"
+                                    + smartStackFilename.replace('.npy',str(colstack)+'.sep'), format='csv')
+                                    
+                                    if colstack == 'blue':
+                                        sources=bluesources
+                                        imgdata=newhdublue
+                                    if colstack == 'red':
+                                        sources=redsources
+                                        imgdata=newhdured
+                                    if colstack == 'green':
+                                        sources=greensources
+                                        imgdata=newhdugreen
+                                    
+                                    
+                                    sources=np.column_stack((sources['x'],sources['y']))
+                                    ref_sources=np.column_stack((ref_sources['x'],ref_sources['y']))
+                                    
                                     #plog (storedsStack.dtype.byteorder)
                                     # Prep new image
-                                    plog("Pasting Next smartstack image")
+                                    #plog("Pasting Next smartstack image")
                                     # img=np.nan_to_num(img)
                                     # backgroundLevel =(np.nanmedian(sep.Background(img.byteswap().newbyteorder())))
                                     # plog (" Background Level : " + str(backgroundLevel))
@@ -3935,26 +4016,46 @@ sel
                                     #This minarea is totally fudgetastically emprical comparing a 0.138 pixelscale QHY Mono
                                     # to a 1.25/2.15 QHY OSC. Seems to work, so thats good enough.
                                     # Makes the minarea small enough for blocky pixels, makes it large enough for oversampling
-                                    minarea= -9.2421 * pixscale + 16.553
-                                    if minarea < 5:  # There has to be a min minarea though!
-                                        minarea = 5
+                                    #minarea= -9.2421 * pixscale + 16.553
+                                    #if minarea < 5:  # There has to be a min minarea though!
+                                    #    minarea = 5
+                                        
+                                        
+                                    
+                                    
+                                    
+                                    #redsources=np.column_stack((redsources['x'],redsources['y']))
+                                    #greensources=np.column_stack((greensources['x'],greensources['y']))
+                                    #bluesources=np.column_stack((bluesources['x'],bluesources['y']))
+                                    
 
                                     if len(sources) > 5:
+                                        
+                                        
+                                        
+                                        
                                         try:
-                                            if colstack == 'red':
-                                                reprojectedimage, _ = func_timeout.func_timeout(60, aa.register, args=(newhdured, storedsStack),
-                                                                                                kwargs={"detection_sigma": 5, "min_area": minarea})
+                                            
+                                            
+                                            transf, (source_list, target_list) = aa.find_transform(sources, ref_sources)
+                                            
+                                            reprojectedimage= aa.apply_transform(transf, imgdata, storedsStack)[0]
+                                            
+                                            
+                                            # if colstack == 'red':
+                                            #     reprojectedimage, _ = func_timeout.func_timeout(60, aa.register, args=(newhdured, storedsStack),
+                                            #                                                     kwargs={"detection_sigma": 5, "min_area": minarea})
 
-                                            if colstack == 'blue':
-                                                reprojectedimage, _ = func_timeout.func_timeout(60, aa.register, args=(newhdublue, storedsStack),
-                                                                                                kwargs={"detection_sigma": 5, "min_area": minarea})
-                                            if colstack == 'green':
-                                                reprojectedimage, _ = func_timeout.func_timeout(60, aa.register, args=(newhdugreen, storedsStack),
-                                                                                                kwargs={"detection_sigma": 5, "min_area": minarea})
-                                                # scalingFactor= np.nanmedian(reprojectedimage / storedsStack)
-                                            # plog (" Scaling Factor : " +str(scalingFactor))
-                                            # reprojectedimage=(scalingFactor) * reprojectedimage # Insert a scaling factor
-                                            storedsStack = np.array((reprojectedimage + storedsStack))
+                                            # if colstack == 'blue':
+                                            #     reprojectedimage, _ = func_timeout.func_timeout(60, aa.register, args=(newhdublue, storedsStack),
+                                            #                                                     kwargs={"detection_sigma": 5, "min_area": minarea})
+                                            # if colstack == 'green':
+                                            #     reprojectedimage, _ = func_timeout.func_timeout(60, aa.register, args=(newhdugreen, storedsStack),
+                                            #                                                     kwargs={"detection_sigma": 5, "min_area": minarea})
+                                            #     # scalingFactor= np.nanmedian(reprojectedimage / storedsStack)
+                                            # # plog (" Scaling Factor : " +str(scalingFactor))
+                                            # # reprojectedimage=(scalingFactor) * reprojectedimage # Insert a scaling factor
+                                            storedsStack = reprojectedimage + storedsStack
                                             # Save new stack to disk
                                             np.save(
                                                 self.obsid_path

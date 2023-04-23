@@ -47,6 +47,7 @@ readnoise= input_sep_info[4]
 minimum_realistic_seeing= input_sep_info[5]
 im_path=input_sep_info[6]
 text_name=input_sep_info[7]
+channel=input_sep_info[8]
 # readnoise=input_sep_info[2]
 # avg_foc=input_sep_info[3]
 # focus_image=input_sep_info[4]
@@ -399,8 +400,8 @@ sources.remove_columns(source_delete)
 
 sources.write(im_path + text_name.replace('.txt', '.sep'), format='csv', overwrite=True)
 
-    
-    
+ 
+pickle.dump(sources, open(im_path + 'oscaasep.pickle' + channel, 'wb'))
 
 
 #     if (len(sources) < 2) or ( frame_type == 'focus' and (len(sources) < 10 or len(sources) == np.nan or str(len(sources)) =='nan' or xdonut > 3.0 or ydonut > 3.0 or np.isnan(xdonut) or np.isnan(ydonut))):
