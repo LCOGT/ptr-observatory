@@ -19,6 +19,9 @@ from colour_demosaicing import (
     demosaicing_CFA_Bayer_Menon2007)
 from PIL import Image, ImageDraw # ImageFont, ImageDraw#, ImageEnhance
 from astropy.table import Table
+from astropy.utils.exceptions import AstropyUserWarning
+import warnings
+warnings.simplefilter('ignore', category=AstropyUserWarning)
 
 input_sep_info=pickle.load(sys.stdin.buffer)
 #input_jpeg_info=pickle.load(open('testseppickle','rb'))
