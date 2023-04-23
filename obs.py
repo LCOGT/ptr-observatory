@@ -1864,12 +1864,13 @@ sel
                         #    "A preview image of the single image has been sent to the GUI.",
                         #    p_level="INFO",
                         # )
+                        plog("JPEG constructed and sent: " +str(time.time() - osc_jpeg_timer_start)+ "s")
                     except:
                         plog(
                             "there was an issue saving the preview jpg. Pushing on though"
                         )
                         
-                plog("JPEG constructed and sent: " +str(time.time() - osc_jpeg_timer_start)+ "s")
+                    
                 self.mainjpeg_queue.task_done()
                 # one_at_a_time=0
             else:
@@ -4309,8 +4310,8 @@ sel
                 # POINTING SOLUTIONS HAVE TO HAPPEN AND COMPLETE IN BETWEEN EXPOSURES AND SLEWS
 
                 # time.sleep(0.5)
-                plog("Smartstack time taken: " + str(time.time() - sstack_timer))
-                plog("Smartstack time MINUS SEP taken: " + str(time.time() - sstack_process_timer))
+                plog("Smartstack round complete. Time taken: " + str(time.time() - sstack_timer))
+                #plog("Smartstack time MINUS SEP taken: " + str(time.time() - sstack_process_timer))
                 self.img = None  # Clean up all big objects.
                 self.smartstack_queue.task_done()
             else:
