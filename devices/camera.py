@@ -415,7 +415,8 @@ class Camera:
         if not os.path.exists(self.seq_path):
             os.makedirs(self.seq_path)
 
-
+        # Just need to initialise this filter thing
+        self.current_offset  = 0
 
         """
         This section loads in the calibration files for flash calibrations

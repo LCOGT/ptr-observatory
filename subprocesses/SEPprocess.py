@@ -24,7 +24,7 @@ import warnings
 warnings.simplefilter('ignore', category=AstropyUserWarning)
 
 input_sep_info=pickle.load(sys.stdin.buffer)
-#input_jpeg_info=pickle.load(open('testseppickle','rb'))
+#input_sep_info=pickle.load(open('testSEPpickle','rb'))
 
 print ("HERE IS THE INCOMING. ")
 print (input_sep_info)
@@ -270,13 +270,15 @@ else:
         #This minarea is totally fudgetastically emprical comparing a 0.138 pixelscale QHY Mono
         # to a 1.25/2.15 QHY OSC. Seems to work, so thats good enough.
         # Makes the minarea small enough for blocky pixels, makes it large enough for oversampling
-        minarea= -9.2421 * pixscale + 16.553
+        minarea= (-9.2421 * pixscale) + 16.553
         if minarea < 5:  # There has to be a min minarea though!
             minarea = 5
 
+        #breakpoint()
+
         #sep.set_sub_object_limit(10000)
         sources = sep.extract(
-            focusimg, 5.0, err=bkg.globalrms, minarea=minarea
+            focusimg, 3.0, err=bkg.globalrms, minarea=minarea
         )
         #plog("Actual SEP time: " + str(time.time()-actseptime))
 
@@ -301,9 +303,13 @@ else:
         sources = sources[~nan_in_row]
 
         # Calculate the ellipticity (Thanks BANZAI)
+        
         sources['ellipticity'] = 1.0 - (sources['b'] / sources['a'])
 
-        sources = sources[sources['ellipticity'] < 0.1]  # Remove things that are not circular stars
+        if frame_type == 'focus':
+            sources = sources[sources['ellipticity'] < 0.3]  # Remove things that are not circular stars
+        else:
+            sources = sources[sources['ellipticity'] < 0.5]  # Remove things that are not circular stars
 
         # Calculate the kron radius (Thanks BANZAI)
         kronrad, krflag = sep.kron_radius(focusimg, sources['x'], sources['y'],
@@ -365,9 +371,10 @@ else:
 
         # Need to reject any stars that have FWHM that are less than a extremely
         # perfect night as artifacts
-        sources = sources[sources['FWHM'] > (0.6 / (pixscale))]
-        sources = sources[sources['FWHM'] > (minimum_realistic_seeing / pixscale)]
-        sources = sources[sources['FWHM'] != 0]
+        if frame_type == 'focus':
+            sources = sources[sources['FWHM'] > (0.6 / (pixscale))]
+            sources = sources[sources['FWHM'] > (minimum_realistic_seeing / pixscale)]
+            sources = sources[sources['FWHM'] != 0]
 
         # BANZAI prune nans from table
         nan_in_row = np.zeros(len(sources), dtype=bool)

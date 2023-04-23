@@ -1910,7 +1910,12 @@ sel
                                                                                                                                                                            ], sep_subprocess.stdin)
                                                                                                                              
                                                                                                                              
+                pickle.dump([hdufocusdata, pixscale, readnoise, avg_foc, focus_image, im_path, text_name, hduheader, cal_path, cal_name, frame_type, focus_position, g_dev['events'],ephem.now(),self.config["camera"][g_dev['cam']
+                                                         .name]["settings"]['focus_image_crop_width'], self.config["camera"][g_dev['cam']
+                                                                                                   .name]["settings"]['focus_image_crop_height'], is_osc,interpolate_for_focus,bin_for_focus,focus_bin_value,interpolate_for_sep,bin_for_sep,sep_bin_value,focus_jpeg_size,saturate,minimum_realistic_seeing
+                                                                                                                                                                           ], open('subprocesses/testSEPpickle','wb'))
                                                                                                                              
+                                                                                                                                           
                                                                                                                              
                 
                 del hdufocusdata
@@ -3500,6 +3505,8 @@ sel
                     ssfilter = str(img[0].header["FILTER"])
                     ssobject = str(img[0].header["OBJECT"])
                     ssexptime = str(img[0].header["EXPTIME"])
+                    sspedestal = str(img[0].header["PEDESTAL"])
+                    imgdata=imgdata-float(sspedestal)
                     #ssframenumber = str(img[0].header["FRAMENUM"])
                     img.close()
                     del img
@@ -3610,16 +3617,14 @@ sel
 
                     # For OSC, we need to smartstack individual frames.
                     if not self.config["camera"][g_dev['cam'].name]["settings"]["is_osc"]:
+
+                        while not os.path.exists(paths["im_path"] + paths["text_name00"].replace('.txt','.sep')):
+                            #plog ("waiting for single frame SEP file to be finished")
+                            time.sleep(1)                        
                         
-                        
-                        while not os.path.exists(paths["img_path"] + paths["text_name"].replace('.txt','.sep')):
-                            plog ("waiting for single frame SEP file to be finished")
-                            time.sleep(2)
-                        
-                        
-                        plog("Now to figure out how to get sep into a csv.")
-                        
-                        sources = Table.read(paths["img_path"] + paths["text_name"].replace('.txt', '.sep'), format='csv')
+                        #plog("Now to figure out how to get sep into a csv.")
+                        sstack_process_timer = time.time()
+                        sources = Table.read(paths["im_path"] + paths["text_name00"].replace('.txt', '.sep'), format='csv')
                         #breakpoint()
                         
                         
@@ -3629,10 +3634,10 @@ sel
 
                         
                         # Detect and swap img to the correct endianness - needed for the smartstack jpg
-                        if sys.byteorder == 'little':
-                            imgdata = imgdata.newbyteorder('little').byteswap()
-                        else:
-                            imgdata = imgdata.newbyteorder('big').byteswap()
+                        #if sys.byteorder == 'little':
+                        #    imgdata = imgdata.newbyteorder('little').byteswap()
+                        #else:
+                        #    imgdata = imgdata.newbyteorder('big').byteswap()
 
                         # IF SMARSTACK NPY FILE EXISTS DO STUFF, OTHERWISE THIS IMAGE IS THE START OF A SMARTSTACK
                         reprojection_failed = False
@@ -3646,7 +3651,7 @@ sel
                                     self.obsid_path
                                     + "smartstacks/"
                                     + smartStackFilename,
-                                    imgdata,
+                                    imgdata ,
                                 )
                                 sources.write(self.obsid_path
                                 + "smartstacks/"
@@ -3694,21 +3699,26 @@ sel
                                     #                 'erry2', 'errxy', 'a', 'b', 'theta', 'cxx', 'cyy', 'cxy', 'cflux', 'cpeak', 'xcpeak', 'ycpeak']
                                     #sources.remove_columns(source_delete)
                                     
-                                    breakpoint()
+                                    
+                                    sources=np.column_stack((sources['x'],sources['y']))
+                                    ref_sources=np.column_stack((ref_sources['x'],ref_sources['y']))
+                                    
+                                    #breakpoint()
                                     
                                     transf, (source_list, target_list) = aa.find_transform(sources, ref_sources)
                                     
-                                    reprojectedimage= aa.apply_transform(transf, imgdata, storedsStack)
+                                    reprojectedimage= aa.apply_transform(transf, imgdata, storedsStack)[0]
                                     #reprojectedimage, _ = func_timeout.func_timeout(60, aa.register, args=(imgdata, storedsStack),
                                     #                                                kwargs={"detection_sigma": 5, "min_area": minarea})
                                     
                                     
-                                    
+                                    #breakpoint()
                                     
                                     # scalingFactor= np.nanmedian(reprojectedimage / storedsStack)
                                     # plog (" Scaling Factor : " +str(scalingFactor))
                                     # reprojectedimage=(scalingFactor) * reprojectedimage # Insert a scaling factor
-                                    storedsStack = np.array((reprojectedimage + storedsStack))
+                                    #storedsStack = np.array((reprojectedimage + storedsStack))
+                                    storedsStack = reprojectedimage + storedsStack
                                     # Save new stack to disk
                                     np.save(
                                         self.obsid_path
@@ -4191,6 +4201,7 @@ sel
 
                 # time.sleep(0.5)
                 plog("Smartstack time taken: " + str(time.time() - sstack_timer))
+                plog("Smartstack time MINUS SEP taken: " + str(time.time() - sstack_process_timer))
                 self.img = None  # Clean up all big objects.
                 self.smartstack_queue.task_done()
             else:
