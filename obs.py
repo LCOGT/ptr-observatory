@@ -82,6 +82,11 @@ from ptr_utility import plog
 from scipy import stats
 from PIL import Image, ImageEnhance#, ImageFont, ImageDraw
 
+
+from astropy.utils.exceptions import AstropyUserWarning
+import warnings
+warnings.simplefilter('ignore', category=AstropyUserWarning)
+
 #import colour
 #from colour_demosaicing import (
 #    demosaicing_CFA_Bayer_bilinear,  # )#,

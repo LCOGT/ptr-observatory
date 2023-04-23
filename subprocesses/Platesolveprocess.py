@@ -16,7 +16,9 @@ from planewave import platesolve
 import os
 
 
-
+from astropy.utils.exceptions import AstropyUserWarning
+import warnings
+warnings.simplefilter('ignore', category=AstropyUserWarning)
 
 input_psolve_info=pickle.load(sys.stdin.buffer)
 #input_psolve_info=pickle.load(open('testplatesolvepickle','rb'))

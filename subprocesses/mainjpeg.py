@@ -9,6 +9,10 @@ from PIL import Image, ImageEnhance#, ImageFont, ImageDraw
 import sys
 import pickle
 
+from astropy.utils.exceptions import AstropyUserWarning
+import warnings
+warnings.simplefilter('ignore', category=AstropyUserWarning)
+
 # Pick up the pickled array
 
 input_jpeg_info=pickle.load(sys.stdin.buffer)
