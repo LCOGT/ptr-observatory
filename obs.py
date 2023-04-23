@@ -3820,50 +3820,12 @@ sel
                     else:
 
                         # img is the image coming in
-
                         if self.config["camera"][g_dev['cam'].name]["settings"]["is_osc"]:
 
                             if self.config["camera"][g_dev['cam'].name]["settings"]["osc_bayer"] == 'RGGB':
-
-                                # # Checkerboard collapse for other colours for temporary jpeg
-                                # # Create indexes for B, G, G, R images
-                                # xshape = imgdata.shape[0]
-                                # yshape = imgdata.shape[1]
-
-                                # # B pixels
-                                # list_0_1 = np.array([[0, 0], [0, 1]])
-                                # checkerboard = np.tile(list_0_1, (xshape//2, yshape//2))
-                                # # checkerboard=np.array(checkerboard)
-                                # newhdublue = (block_reduce(imgdata * checkerboard, 2))
-
-                                # # R Pixels
-                                # list_0_1 = np.array([[1, 0], [0, 0]])
-                                # checkerboard = np.tile(list_0_1, (xshape//2, yshape//2))
-                                # # checkerboard=np.array(checkerboard)
-                                # newhdured = (block_reduce(imgdata * checkerboard, 2))
-
-                                # # G top right Pixels
-                                # list_0_1 = np.array([[0, 1], [0, 0]])
-                                # checkerboard = np.tile(list_0_1, (xshape//2, yshape//2))
-                                # # checkerboard=np.array(checkerboard)
-                                # newhdugreen = (block_reduce(imgdata * checkerboard, 2))
-
-                                # # G bottom left Pixels
-                                # #list_0_1 = np.array([ [0,0], [1,0] ])
-                                # #checkerboard=np.tile(list_0_1, (xshape//2, yshape//2))
-                                # # checkerboard=np.array(checkerboard)
-                                # #GBLonly=(block_reduce(storedsStack * checkerboard ,2))
-
-                                # # Sum two Gs together and half them to be vaguely on the same scale
-                                # #hdugreen = np.array(GTRonly + GBLonly) / 2
-                                # #del GTRonly
-                                # #del GBLonly
-                                # del checkerboard
-                                
                                 
                                 newhdured = imgdata[::2, ::2]
                                 newhdugreen = imgdata[::2, 1::2]
-                                #g2 = hdusmalldata[1::2, ::2]
                                 newhdublue = imgdata[1::2, 1::2]
                                 
 
