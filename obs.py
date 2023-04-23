@@ -4066,27 +4066,29 @@ sel
                                                 storedsStack,
                                             )
 
-                                            hduss = fits.PrimaryHDU()
-                                            hduss.data = storedsStack
-                                            # hdureduced.header=slow_process[3]
-                                            #hdureduced.header["NAXIS1"] = hdureduced.data.shape[0]
-                                            #hdureduced.header["NAXIS2"] = hdureduced.data.shape[1]
-                                            hduss.data = hduss.data.astype("float32")
-                                            try:
-                                                hduss.writeto(
-                                                    self.obsid_path
-                                                    + "smartstacks/"
-                                                    + smartStackFilename.replace(smartstackid, smartstackid + str(colstack)).replace('.npy', '_' + str(sskcounter) + '_' + str(Nsmartstack) + '.fit'), overwrite=True, output_verify='silentfix'
-                                                )  # Save flash reduced file locally
-                                            except:
-                                                plog("Couldn't save smartstack fits. YOU MAY HAVE THE FITS OPEN IN A VIEWER.")
-                                            del hduss
+                                            #hduss = fits.PrimaryHDU()
+                                            #hduss.data = storedsStack                                            
+                                            #hduss.data = hduss.data.astype("float32")
+                                            #try:
+                                            #    hduss.writeto(
+                                            #        self.obsid_path
+                                            #        + "smartstacks/"
+                                            #        + smartStackFilename.replace(smartstackid, smartstackid + str(colstack)).replace('.npy', '_' + str(sskcounter) + '_' + str(Nsmartstack) + '.fit'), overwrite=True, output_verify='silentfix'
+                                            #    )  # Save flash reduced file locally
+                                            #except:
+                                            #    plog("Couldn't save smartstack fits. YOU MAY HAVE THE FITS OPEN IN A VIEWER.")
+                                            #del hduss
+                                            
+                                            
                                             if colstack == 'green':
-                                                newhdugreen = np.array(storedsStack)
+                                                #newhdugreen = np.array(storedsStack)
+                                                newhdugreen = storedsStack
                                             if colstack == 'red':
-                                                newhdured = np.array(storedsStack)
+                                                #newhdured = np.array(storedsStack)
+                                                newhdured = storedsStack
                                             if colstack == 'blue':
-                                                newhdublue = np.array(storedsStack)
+                                                #newhdublue = np.array(storedsStack)
+                                                newhdublue = storedsStack
                                             del storedsStack
                                             reprojection_failed = False
                                         except func_timeout.FunctionTimedOut:
@@ -4107,69 +4109,46 @@ sel
                             yshape = newhdugreen.shape[1]
 
                             # The integer mode of an image is typically the sky value, so squish anything below that
-                            bluemode = stats.mode((newhdublue.astype('int16').flatten()), keepdims=True)[0] - 25
-                            redmode = stats.mode((newhdured.astype('int16').flatten()), keepdims=True)[0] - 25
-                            greenmode = stats.mode((newhdugreen.astype('int16').flatten()), keepdims=True)[0] - 25
-                            newhdublue[newhdublue < bluemode] = bluemode
-                            newhdugreen[newhdugreen < greenmode] = greenmode
-                            newhdured[newhdured < redmode] = redmode
+                            #bluemode = stats.mode((newhdublue.astype('int16').flatten()), keepdims=True)[0] - 25
+                            #redmode = stats.mode((newhdured.astype('int16').flatten()), keepdims=True)[0] - 25
+                            #greenmode = stats.mode((newhdugreen.astype('int16').flatten()), keepdims=True)[0] - 25
+                            #newhdublue[newhdublue < bluemode] = bluemode
+                            #newhdugreen[newhdugreen < greenmode] = greenmode
+                            #newhdured[newhdured < redmode] = redmode
 
-                            # Then bring the background level up a little from there
-                            # blueperc=np.nanpercentile(newhdublue,0.75)
-                            # greenperc=np.nanpercentile(newhdugreen,0.75)
-                            # redperc=np.nanpercentile(newhdured,0.75)
-                            # newhdublue[newhdublue < blueperc] = blueperc
-                            # newhdugreen[newhdugreen < greenperc] = greenperc
-                            # newhdured[newhdured < redperc] = redperc
 
-                            #newhdublue = newhdublue * (np.median(newhdugreen) / np.median(newhdublue))
-                            #newhdured = newhdured * (np.median(newhdugreen) / np.median(newhdured))
 
                             blue_stretched_data_float = Stretch().stretch(newhdublue)*256
-                            ceil = np.percentile(blue_stretched_data_float, 100)  # 5% of pixels will be white
-                            floor = np.percentile(blue_stretched_data_float, 60)  # 5% of pixels will be black
-                            #a = 255/(ceil-floor)
-                            #b = floor*255/(floor-ceil)
-                            blue_stretched_data_float[blue_stretched_data_float < floor] = floor
-                            blue_stretched_data_float = blue_stretched_data_float-floor
-                            blue_stretched_data_float = blue_stretched_data_float * \
-                                (255/np.max(blue_stretched_data_float))
+                            #ceil = np.percentile(blue_stretched_data_float, 100)  # 5% of pixels will be white
+                            #floor = np.percentile(blue_stretched_data_float, 60)  # 5% of pixels will be black
 
-                            #blue_stretched_data_float = np.maximum(0,np.minimum(255,blue_stretched_data_float*a+b)).astype(np.uint8)
                             #blue_stretched_data_float[blue_stretched_data_float < floor] = floor
+                            #blue_stretched_data_float = blue_stretched_data_float-floor
+                            #blue_stretched_data_float = blue_stretched_data_float * \
+                            #    (255/np.max(blue_stretched_data_float))
                             del newhdublue
 
                             green_stretched_data_float = Stretch().stretch(newhdugreen)*256
-                            ceil = np.percentile(green_stretched_data_float, 100)  # 5% of pixels will be white
-                            floor = np.percentile(green_stretched_data_float, 60)  # 5% of pixels will be black
-                            #a = 255/(ceil-floor)
-                            green_stretched_data_float[green_stretched_data_float < floor] = floor
-                            green_stretched_data_float = green_stretched_data_float-floor
-                            green_stretched_data_float = green_stretched_data_float * \
-                                (255/np.max(green_stretched_data_float))
+                            #ceil = np.percentile(green_stretched_data_float, 100)  # 5% of pixels will be white
+                            #floor = np.percentile(green_stretched_data_float, 60)  # 5% of pixels will be black
 
-                            #b = floor*255/(floor-ceil)
-
-                            #green_stretched_data_float[green_stretched_data_float < floor] = floor
-                            #green_stretched_data_float = np.maximum(0,np.minimum(255,green_stretched_data_float*a+b)).astype(np.uint8)
+                            ##green_stretched_data_float[green_stretched_data_float < floor] = floor
+                            #green_stretched_data_float = green_stretched_data_float-floor
+                            #green_stretched_data_float = green_stretched_data_float * \
+                            #    (255/np.max(green_stretched_data_float))
                             del newhdugreen
 
                             red_stretched_data_float = Stretch().stretch(newhdured)*256
-                            ceil = np.percentile(red_stretched_data_float, 100)  # 5% of pixels will be white
-                            floor = np.percentile(red_stretched_data_float, 60)  # 5% of pixels will be black
-                            #a = 255/(ceil-floor)
-                            #b = floor*255/(floor-ceil)
-                            # breakpoint()
-
-                            red_stretched_data_float[red_stretched_data_float < floor] = floor
-                            red_stretched_data_float = red_stretched_data_float-floor
-                            red_stretched_data_float = red_stretched_data_float * (255/np.max(red_stretched_data_float))
-
+                            #ceil = np.percentile(red_stretched_data_float, 100)  # 5% of pixels will be white
+                            #floor = np.percentile(red_stretched_data_float, 60)  # 5% of pixels will be black
+                          
                             #red_stretched_data_float[red_stretched_data_float < floor] = floor
-                            #red_stretched_data_float = np.maximum(0,np.minimum(255,red_stretched_data_float*a+b)).astype(np.uint8)
+                            #red_stretched_data_float = red_stretched_data_float-floor
+                            #red_stretched_data_float = red_stretched_data_float * (255/np.max(red_stretched_data_float))                        
                             del newhdured
 
-                            rgbArray = np.zeros((xshape, yshape, 3), 'uint8')
+                            #rgbArray = np.zeros((xshape, yshape, 3), 'uint8')
+                            rgbArray = np.empty((xshape, yshape, 3), 'uint8')
                             rgbArray[..., 0] = red_stretched_data_float  # *256
                             rgbArray[..., 1] = green_stretched_data_float  # *256
                             rgbArray[..., 2] = blue_stretched_data_float  # *256
