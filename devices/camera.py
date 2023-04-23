@@ -354,10 +354,10 @@ class Camera:
         Once this is done g_dev['cam'] refers to the selected instance.
         """
         
-        self.last_user_name = "Tobor"
-        self.last_user_id = "Tobor"
-        self.user_name = "Tobor"
-        self.user_id = "Tobor"
+        self.last_user_name = "none"
+        self.last_user_id = "none"
+        self.user_name = "none"
+        self.user_id = "none"
 
         self.name = name
         self.driver = driver
@@ -1551,9 +1551,9 @@ class Camera:
                         g_dev['obs'].scan_requests()
                         foundcalendar=False                    
                         for tempblock in g_dev['obs'].blocks:
-                            print (tempblock['event_id'])
+                            #print (tempblock['event_id'])
                             if tempblock['event_id'] == calendar_event_id :
-                                print ("FOUND CALENDAR!")
+                                #print ("FOUND CALENDAR!")
                                 foundcalendar=True
                         if foundcalendar == False:
                             print ("could not find calendar entry, cancelling out of block.")
@@ -1621,6 +1621,7 @@ class Camera:
                             dec_at_time_of_exposure = g_dev["mnt"].current_icrs_dec
                             observer_user_name = user_name
 
+                            #breakpoint()
                             try:
                                 self.user_id = user_id
                                 if self.user_id != self.last_user_id:
@@ -1629,6 +1630,9 @@ class Camera:
                             except:
                                 observer_user_id= 'Tobor'
                                 plog("Failed user_id")
+
+                            #print (observer_user_name)
+                            #print (observer_user_id)
 
                             # Calculate current airmass now
                             try:
@@ -1794,13 +1798,14 @@ class Camera:
                     + "s " + str(filter_ui_info) + " exposure of "
                     + str(opt["object_name"])
                     + " by user: "
-                    + str(self.user_name) + '. ' + str(int(opt['count']) - int(counter) + 1) + " of " + str(opt['count']),
+                    + str(observer_user_name) + '. ' + str(int(opt['count']) - int(counter) + 1) + " of " + str(opt['count']),
                     p_level="INFO",
                 )
             else:
                 g_dev["obs"].send_to_user(
                     "Starting an unnamed frame by user: "
-                    + str(self.user_name),
+                    #+ str(self.user_name),
+                    + str(observer_user_name),
                     p_level="INFO",
                 )
 
@@ -2195,11 +2200,11 @@ class Camera:
                         datetime.datetime.isoformat(
                             datetime.datetime.utcfromtimestamp(start_time_of_observation)
                         ),
-                        "Start date and time of observation",
+                        "Start date and time of observation"
                     )
                     hdu.header["DAY-OBS"] = (
                         g_dev["day"],
-                        "Date at start of observing night",
+                        "Date at start of observing night"
                     )
                     hdu.header["MJD-OBS"] = (
                         Time(start_time_of_observation, format="unix").mjd,

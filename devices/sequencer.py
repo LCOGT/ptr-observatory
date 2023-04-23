@@ -1045,8 +1045,8 @@ class Sequencer:
             pass
         g_dev['mnt'].unpark_command({}, {})
         g_dev['mnt'].Tracking = True   # unpark_command({}, {})
-        g_dev['cam'].user_name = 'tobor'
-        g_dev['cam'].user_id = 'tobor'
+        #g_dev['cam'].user_name = 'tobor'
+        #g_dev['cam'].user_id = 'tobor'
         #NB  Servo the Dome??
         #timer = time.time() - 1  #This should force an immediate autofocus.
         
@@ -1079,6 +1079,8 @@ class Sequencer:
 
                 user_name = block_specification['creator']
                 user_id = block_specification['creator_id']
+                #g_dev['cam'].user_name = user_name
+                #g_dev['cam'].user_id = user_id
                 user_roles = ['project']
                 
                 longstackname=block_specification['project']['created_at'].replace('-','').replace(':','') # If longstack is to be used.

@@ -1910,10 +1910,10 @@ sel
                                                                                                                                                                            ], sep_subprocess.stdin)
                                                                                                                              
                                                                                                                              
-                pickle.dump([hdufocusdata, pixscale, readnoise, avg_foc, focus_image, im_path, text_name, hduheader, cal_path, cal_name, frame_type, focus_position, g_dev['events'],ephem.now(),self.config["camera"][g_dev['cam']
-                                                         .name]["settings"]['focus_image_crop_width'], self.config["camera"][g_dev['cam']
-                                                                                                   .name]["settings"]['focus_image_crop_height'], is_osc,interpolate_for_focus,bin_for_focus,focus_bin_value,interpolate_for_sep,bin_for_sep,sep_bin_value,focus_jpeg_size,saturate,minimum_realistic_seeing
-                                                                                                                                                                           ], open('subprocesses/testSEPpickle','wb'))
+                #pickle.dump([hdufocusdata, pixscale, readnoise, avg_foc, focus_image, im_path, text_name, hduheader, cal_path, cal_name, frame_type, focus_position, g_dev['events'],ephem.now(),self.config["camera"][g_dev['cam']
+                #                                         .name]["settings"]['focus_image_crop_width'], self.config["camera"][g_dev['cam']
+                #                                                                                   .name]["settings"]['focus_image_crop_height'], is_osc,interpolate_for_focus,bin_for_focus,focus_bin_value,interpolate_for_sep,bin_for_sep,sep_bin_value,focus_jpeg_size,saturate,minimum_realistic_seeing
+                 #                                                                                                                                                          ], open('subprocesses/testSEPpickle','wb'))
                                                                                                                              
                                                                                                                                            
                                                                                                                              
@@ -2798,7 +2798,10 @@ sel
                 #                 #plog("Platesolve time to process: " + str(time.time() - psolve_timer_begin))
 
 
-                    solve= pickle.load(open(cal_path + 'platesolve.pickle', 'rb'))                    
+                    if os.path.exists(cal_path + 'platesolve.pickle'):
+                        solve= pickle.load(open(cal_path + 'platesolve.pickle', 'rb'))                    
+                    else:
+                        solve= 'error'
                     try:
                         os.remove(cal_path + 'platesolve.pickle')
                     except:
