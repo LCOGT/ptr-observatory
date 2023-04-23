@@ -288,9 +288,14 @@ minarea= -9.2421 * pixscale + 16.553
 if minarea < 5:  # There has to be a min minarea though!
     minarea = 5
 
+
+#lenofsources=250000
+extract_factor=8.0
+
+#while lenofsources > 1000:
 #sep.set_sub_object_limit(10000)
 sources = sep.extract(
-    focusimg, 5.0, err=bkg.globalrms, minarea=minarea
+    focusimg, extract_factor, err=bkg.globalrms, minarea=minarea
 )
 #plog("Actual SEP time: " + str(time.time()-actseptime))
 
@@ -317,7 +322,12 @@ sources = sources[~nan_in_row]
 # Calculate the ellipticity (Thanks BANZAI)
 sources['ellipticity'] = 1.0 - (sources['b'] / sources['a'])
 
-sources = sources[sources['ellipticity'] < 0.1]  # Remove things that are not circular stars
+sources = sources[sources['ellipticity'] < 0.3]  # Remove things that are not circular stars
+    
+#    extract_factor=extract_factor+2.0
+#    lenofsources=len(sources)
+
+
 
 # Calculate the kron radius (Thanks BANZAI)
 kronrad, krflag = sep.kron_radius(focusimg, sources['x'], sources['y'],
