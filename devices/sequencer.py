@@ -2615,22 +2615,22 @@ class Sequencer:
                              #break
                         elif evening and exp_time < min_exposure:   #NB it is too bright, should consider a delay here.
                          #**************THIS SHOUD BE A WHILE LOOP! WAITING FOR THE SKY TO GET DARK AND EXP TIME TO BE LONGER********************
-                             plog("Too bright for current filter, waiting 60s. Est. Exptime: " + str(exp_time))
+                             plog("Too bright for current filter, waiting 10s. Est. Exptime: " + str(exp_time))
                              #g_dev['obs'].send_to_user('Delay 60 seconds to let it get darker.', p_level='INFO')
                              self.estimated_first_flat_exposure = False
                              if time.time() >= self.time_of_next_slew:
                                 g_dev['mnt'].slewToSkyFlatAsync()  
                                 self.time_of_next_slew = time.time() + 600
-                             self.next_flat_observe = time.time() + 60
+                             self.next_flat_observe = time.time() + 10
                         elif morn and exp_time > max_exposure :   #NB it is too bright, should consider a delay here.
                           #**************THIS SHOUD BE A WHILE LOOP! WAITING FOR THE SKY TO GET DARK AND EXP TIME TO BE LONGER********************
-                             plog("Too dim for current filter, waiting 60s Est. Exptime:  " + str(exp_time))
+                             plog("Too dim for current filter, waiting 10s Est. Exptime:  " + str(exp_time))
                              #g_dev['obs'].send_to_user('Delay 60 seconds to let it get lighterer.', p_level='INFO')
                              self.estimated_first_flat_exposure = False
                              if time.time() >= self.time_of_next_slew:
                                 g_dev['mnt'].slewToSkyFlatAsync()  
                                 self.time_of_next_slew = time.time() + 600
-                             self.next_flat_observe = time.time() + 60
+                             self.next_flat_observe = time.time() + 10
                              #*****************NB Recompute exposure or otherwise wait
                              exp_time = min_exposure
                         else:
