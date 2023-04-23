@@ -14,19 +14,19 @@ import time
 import traceback
 import ephem
 
-import json
+#import json
 
-from astropy.io import fits, ascii
+from astropy.io import fits#, ascii
 from astropy.time import Time
 from astropy.utils.data import check_download_cache
 from astropy.coordinates import SkyCoord, AltAz
 #from astropy.table import Table
 from astropy.nddata import block_reduce
 from astropy import units as u
-import numpy.ma as ma
+#import numpy.ma as ma
 import glob
 import numpy as np
-import matplotlib.pyplot as plt   # Please do not remove this import.
+#import matplotlib.pyplot as plt   # Please do not remove this import.
 #import sep
 #from skimage.io import imsave
 #from skimage.transform import resize
@@ -34,7 +34,7 @@ import matplotlib.pyplot as plt   # Please do not remove this import.
 import win32com.client
 #from planewave import platesolve
 
-from scipy import stats
+#from scipy import stats
 import math
 #import colour
 #import queue
@@ -433,12 +433,8 @@ class Camera:
         g_dev['obs'].obs_id
         g_dev['cam'].alias
         tempfrontcalib=g_dev['obs'].obs_id + '_' + g_dev['cam'].alias +'_'
-        #print (tempfrontcalib)
-
-        
-        try:
-            #self.biasframe = fits.open(
-
+     
+        try:            
             tempbiasframe = fits.open(self.obsid_path + "archive/" + self.alias + "/calibmasters" \
                                       + "/" + tempfrontcalib + "BIAS_master_bin1.fits")
             tempbiasframe = np.array(tempbiasframe[0].data, dtype=np.float32)
@@ -446,12 +442,8 @@ class Camera:
             del tempbiasframe
         except:
             plog("Bias frame for Binning 1 not available")
-            #plog(traceback.format_exc()) 
-            #breakpoint()               
-            
         
         try:
-            #self.darkframe = fits.open(
             tempdarkframe = fits.open(self.obsid_path + "archive/" + self.alias + "/calibmasters" \
                                       + "/" + tempfrontcalib +  "DARK_master_bin1.fits")
 
@@ -461,15 +453,11 @@ class Camera:
         except:
             plog("Dark frame for Binning 1 not available")  
 
-        try:            
-            
-            
+        try:  
             fileList = glob.glob(self.obsid_path + "archive/" + self.alias + "/calibmasters/masterFlat*_bin1.npy")
-            #breakpoint()
             for file in fileList:
                 if self.config['camera'][self.name]['settings']['hold_flats_in_memory']:
                     tempflatframe=np.load(file)
-                    #breakpoint()
                     self.flatFiles.update({file.split('_')[-2]: np.array(tempflatframe)})
                     del tempflatframe
                 else:
@@ -681,13 +669,11 @@ class Camera:
             
             self.camera.AutoSavePath = (
                 self.archive_path
-                #+ "archive/"
                 + datetime.datetime.strftime(datetime.datetime.now(), "%Y%m%d")
             )
             try:
                 os.mkdir(
                     self.archive_path
-                    #+ "archive/"
                     + datetime.datetime.strftime(datetime.datetime.now(), "%Y%m%d")
                 )
             except:
@@ -756,10 +742,8 @@ class Camera:
                 self.camera.BinY = 1
             except:
                 plog ("self.camera setup didn't work... may be a QHY")
-
             
         self.camera_num_x = int(1)  #NB I do not recognize this.    WER  Apprently not used.
-
 
         self.af_mode = False
         self.af_step = -1
@@ -1811,14 +1795,6 @@ class Camera:
                     p_level="INFO",
                 )
             
-            # else:
-            #     g_dev["obs"].send_to_user(
-            #         "Starting an unnamed frame by user: "
-            #         #+ str(self.user_name),
-            #         + str(observer_user_name),
-            #         p_level="INFO",
-            #     )
-
         self.status_time = time.time() + 10
         self.post_mnt = []
         self.post_rot = []
@@ -1852,7 +1828,6 @@ class Camera:
                 # Scan requests every 4 seconds... primarily hunting for a "Cancel/Stop"
                 if time.time() - exposure_scan_request_timer > 4:                    
                     exposure_scan_request_timer=time.time()
-                    
                     
                     g_dev['obs'].scan_requests()
                     
@@ -2992,15 +2967,6 @@ class Camera:
                                 saverretries = 0
                                 while saver == 0 and saverretries < 10:
                                     try:
-                                        #hdureduced=fits.PrimaryHDU()
-                                        #hdureduced.data=hdusmalldata                            
-                                        #hdureduced.header=hdusmallheader
-                                        #hdureduced.header["NAXIS1"] = hdusmalldata.shape[0]
-                                        #hdureduced.header["NAXIS2"] = hdusmalldata.shape[1]
-                                        #hdureduced.data=hdureduced.data.astype("float32")
-                                        #hdureduced.writeto(
-                                        #    red_path + red_name01, overwrite=True, output_verify='silentfix'
-                                        #)  # Save flash reduced file locally
                                         np.save(red_path + red_name01.replace('.fits','.npy'), hdusmalldata)
                                         hdusstack=fits.PrimaryHDU()
                                         hdusstack.header=hdusmallheader
@@ -3030,7 +2996,6 @@ class Camera:
                             "spectrum",
                             "auto_focus",
                         ]) and smartstackid != 'no' :
-                            #self.to_reduce((paths, pixscale, smartstackid, sskcounter, Nsmartstack, self.sources))
                             self.to_smartstack((paths, pixscale, smartstackid, sskcounter, Nsmartstack, g_dev['mnt'].pier_side))
                         else:
                             if not self.config['keep_reduced_on_disk']:
@@ -3038,15 +3003,12 @@ class Camera:
                                     os.remove(red_path + red_name01)
                                 except:
                                     pass
-
-                        
                         
                         # Send data off to process jpeg
                         # This is for a non-focus jpeg
                         if focus_image == False:
                             self.to_mainjpeg((hdusmalldata, smartstackid, paths, g_dev['mnt'].pier_side))
-                        
-                        
+                                                
                         # If this is a focus image, we need to wait until the SEP queue is finished and empty to pick up the latest
                         # FWHM. 
                         if focus_image == True:
@@ -3067,8 +3029,7 @@ class Camera:
                             #plog ("Time Taken for queue to clear post-exposure: " + str(time.time() - queue_clear_time))
                             focus_image = False
                             
-                            return self.expresult
-                        
+                            return self.expresult                        
 
                         if solve_it == True or ((Nsmartstack == sskcounter+1) and Nsmartstack > 1)\
                                                    or g_dev['obs'].images_since_last_solve > g_dev['obs'].config["solve_nth_image"] or (datetime.datetime.now() - g_dev['obs'].last_solve_time)  > datetime.timedelta(minutes=g_dev['obs'].config["solve_timer"]):
