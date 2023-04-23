@@ -3906,7 +3906,9 @@ sel
                             greensources=pickle.load(open(im_path + 'oscaasep.picklegreen', 'rb'))
                             bluesources=pickle.load(open(im_path + 'oscaasep.pickleblue', 'rb'))
                             
-                            
+                            plog("Number of sources just prior to smartstacks: " + str(len(greensources)))
+                            if len(greensources) < 5:
+                                plog("skipping stacking as there are not enough sources " + str(len(greensources)) + " in this image")
                             
                             #hdufocusdata=input_sep_info[0]
                             #pixscale=input_sep_info[1]
@@ -3922,7 +3924,7 @@ sel
               
 
 
-
+                            if len(greensources) > 5:
                             # IF SMARSTACK NPY FILE EXISTS DO STUFF, OTHERWISE THIS IMAGE IS THE START OF A SMARTSTACK
                             reprojection_failed = False
                             for colstack in ['blue', 'green', 'red']:
@@ -4030,7 +4032,7 @@ sel
                                     #bluesources=np.column_stack((bluesources['x'],bluesources['y']))
                                     
 
-                                    if len(sources) > 5:
+                                    if len(greensources) > 5:
                                         
                                         
                                         
