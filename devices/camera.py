@@ -2946,14 +2946,21 @@ class Camera:
                                 hdusmallheader['FULLWELL']=float(hdu.header['FULLWELL']) * pow( self.native_bin,2)
                                 hdusmallheader['MAXLIN']=float(hdu.header['MAXLIN']) * pow( self.native_bin,2)
                            
-                            
-
                             # Add a pedestal to the reduced data
                             # This is important for a variety of reasons
                             # Some functions don't work with arrays with negative values
                             # 2000 SHOULD be enough.
                             hdusmalldata=hdusmalldata+2000.0
                             hdusmallheader['PEDESTAL']=2000
+                            
+                            
+                            # Every Image gets SEP'd and gets it's catalogue sent up pronto ahead of the big fits
+                            # Focus images use it for focus, Normal images also report their focus.
+                            # IMMEDIATELY SEND TO SEP QUEUE
+                            # NEEDS to go up as fast as possible ahead of smartstacks to faciliate image matching.
+                            self.sep_processing=True
+                            self.to_sep((hdusmalldata, pixscale, float(hdu.header["RDNOISE"]), avg_foc[1], focus_image, im_path, text_name, hdusmallheader, cal_path, cal_name, frame_type, g_dev['foc'].focuser.Position*g_dev['foc'].steps_to_micron))
+                            
                             
                             if smartstackid == 'no':
                                 if self.config['keep_reduced_on_disk']:
@@ -2964,15 +2971,21 @@ class Camera:
                                 saverretries = 0
                                 while saver == 0 and saverretries < 10:
                                     try:
-                                        hdureduced=fits.PrimaryHDU()
-                                        hdureduced.data=hdusmalldata                            
-                                        hdureduced.header=hdusmallheader
-                                        hdureduced.header["NAXIS1"] = hdusmalldata.shape[0]
-                                        hdureduced.header["NAXIS2"] = hdusmalldata.shape[1]
-                                        hdureduced.data=hdureduced.data.astype("float32")
-                                        hdureduced.writeto(
-                                            red_path + red_name01, overwrite=True, output_verify='silentfix'
-                                        )  # Save flash reduced file locally
+                                        #hdureduced=fits.PrimaryHDU()
+                                        #hdureduced.data=hdusmalldata                            
+                                        #hdureduced.header=hdusmallheader
+                                        #hdureduced.header["NAXIS1"] = hdusmalldata.shape[0]
+                                        #hdureduced.header["NAXIS2"] = hdusmalldata.shape[1]
+                                        #hdureduced.data=hdureduced.data.astype("float32")
+                                        #hdureduced.writeto(
+                                        #    red_path + red_name01, overwrite=True, output_verify='silentfix'
+                                        #)  # Save flash reduced file locally
+                                        np.save(red_path + red_name01.replace('.fits','.npy'), hdusmalldata)
+                                        hdusstack=fits.PrimaryHDU()
+                                        hdusstack.header=hdusmallheader
+                                        hdusstack.header["NAXIS1"] = hdusmalldata.shape[0]
+                                        hdusstack.header["NAXIS2"] = hdusmalldata.shape[1]
+                                        hdusstack.writeto(red_path + red_name01.replace('.fits','.head'), overwrite=True, output_verify='silentfix')
                                         saver = 1
                                     except Exception as e:
                                         plog("Failed to write raw file: ", e)
@@ -3005,11 +3018,6 @@ class Camera:
                                 except:
                                     pass
 
-                        # Every Image gets SEP'd and gets it's catalogue sent up pronto ahead of the big fits
-                        # Focus images use it for focus, Normal images also report their focus.
-                        # IMMEDIATELY SEND TO SEP QUEUE
-                        self.sep_processing=True
-                        self.to_sep((hdusmalldata, pixscale, float(hdu.header["RDNOISE"]), avg_foc[1], focus_image, im_path, text_name, hdusmallheader, cal_path, cal_name, frame_type, g_dev['foc'].focuser.Position*g_dev['foc'].steps_to_micron))
                         
                         
                         # Send data off to process jpeg
