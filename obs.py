@@ -3926,185 +3926,185 @@ sel
 
                             if len(greensources) > 5:
                             # IF SMARSTACK NPY FILE EXISTS DO STUFF, OTHERWISE THIS IMAGE IS THE START OF A SMARTSTACK
-                            reprojection_failed = False
-                            for colstack in ['blue', 'green', 'red']:
-                                if not os.path.exists(
-                                    self.obsid_path + "smartstacks/" +
-                                        smartStackFilename.replace(smartstackid, smartstackid + str(colstack))
-                                ):
-                                    if len(greensources) >= 5:
-                                        # Store original image
-                                        #plog("Storing First smartstack image")
-                                        if colstack == 'blue':
-                                            np.save(
-                                                self.obsid_path
-                                                + "smartstacks/"
-                                                + smartStackFilename.replace(smartstackid,
-                                                                             smartstackid + str(colstack)),
-                                                newhdublue,
-                                            )
-                                            
-                                            bluesources.write(self.obsid_path
-                                            + "smartstacks/"
-                                            + smartStackFilename.replace('.npy','blue.sep'), format='csv', overwrite=True)
-                                        
-                                            
-                                        if colstack == 'green':
-                                            np.save(
-                                                self.obsid_path
-                                                + "smartstacks/"
-                                                + smartStackFilename.replace(smartstackid,
-                                                                             smartstackid + str(colstack)),
-                                                newhdugreen,
-                                            )
-                                            greensources.write(self.obsid_path
-                                            + "smartstacks/"
-                                            + smartStackFilename.replace('.npy','green.sep'), format='csv', overwrite=True)
-                                        if colstack == 'red':
-                                            np.save(
-                                                self.obsid_path
-                                                + "smartstacks/"
-                                                + smartStackFilename.replace(smartstackid,
-                                                                             smartstackid + str(colstack)),
-                                                newhdured,
-                                            )
-                                            redsources.write(self.obsid_path
-                                            + "smartstacks/"
-                                            + smartStackFilename.replace('.npy','red.sep'), format='csv', overwrite=True)
-
-                                    else:
-                                        plog("Not storing first smartstack image as not enough sources")
-                                        reprojection_failed = True
-                                    # if colstack == 'blue':
-                                    #     bluestoredsStack = newhdublue
-                                    # if colstack == 'green':
-                                    #     greenstoredsStack = newhdugreen
-                                    # if colstack == 'red':
-                                    #     redstoredsStack = newhdured
-                                else:
-                                    # Collect stored SmartStack
-                                    storedsStack = np.load(
+                                reprojection_failed = False
+                                for colstack in ['blue', 'green', 'red']:
+                                    if not os.path.exists(
                                         self.obsid_path + "smartstacks/" +
-                                        smartStackFilename.replace(smartstackid, smartstackid + str(colstack))
-                                    )
-                                    
-                                    ref_sources=ref_sources = Table.read(self.obsid_path
-                                    + "smartstacks/"
-                                    + smartStackFilename.replace('.npy',str(colstack)+'.sep'), format='csv')
-                                    
-                                    if colstack == 'blue':
-                                        sources=bluesources
-                                        imgdata=newhdublue
-                                    if colstack == 'red':
-                                        sources=redsources
-                                        imgdata=newhdured
-                                    if colstack == 'green':
-                                        sources=greensources
-                                        imgdata=newhdugreen
-                                    
-                                    
-                                    sources=np.column_stack((sources['x'],sources['y']))
-                                    ref_sources=np.column_stack((ref_sources['x'],ref_sources['y']))
-                                    
-                                    #plog (storedsStack.dtype.byteorder)
-                                    # Prep new image
-                                    #plog("Pasting Next smartstack image")
-                                    # img=np.nan_to_num(img)
-                                    # backgroundLevel =(np.nanmedian(sep.Background(img.byteswap().newbyteorder())))
-                                    # plog (" Background Level : " + str(backgroundLevel))
-                                    # img= img - backgroundLevel
-                                    # Reproject new image onto footplog of old image.
-                                    # plog(datetime.datetime.now())
-
-                                    #This minarea is totally fudgetastically emprical comparing a 0.138 pixelscale QHY Mono
-                                    # to a 1.25/2.15 QHY OSC. Seems to work, so thats good enough.
-                                    # Makes the minarea small enough for blocky pixels, makes it large enough for oversampling
-                                    #minarea= -9.2421 * pixscale + 16.553
-                                    #if minarea < 5:  # There has to be a min minarea though!
-                                    #    minarea = 5
-                                        
-                                        
-                                    
-                                    
-                                    
-                                    #redsources=np.column_stack((redsources['x'],redsources['y']))
-                                    #greensources=np.column_stack((greensources['x'],greensources['y']))
-                                    #bluesources=np.column_stack((bluesources['x'],bluesources['y']))
-                                    
-
-                                    if len(greensources) > 5:
-                                        
-                                        
-                                        
-                                        
-                                        try:
-                                            
-                                            
-                                            transf, (source_list, target_list) = aa.find_transform(sources, ref_sources)
-                                            
-                                            reprojectedimage= aa.apply_transform(transf, imgdata, storedsStack)[0]
-                                            
-                                            
-                                            # if colstack == 'red':
-                                            #     reprojectedimage, _ = func_timeout.func_timeout(60, aa.register, args=(newhdured, storedsStack),
-                                            #                                                     kwargs={"detection_sigma": 5, "min_area": minarea})
-
-                                            # if colstack == 'blue':
-                                            #     reprojectedimage, _ = func_timeout.func_timeout(60, aa.register, args=(newhdublue, storedsStack),
-                                            #                                                     kwargs={"detection_sigma": 5, "min_area": minarea})
-                                            # if colstack == 'green':
-                                            #     reprojectedimage, _ = func_timeout.func_timeout(60, aa.register, args=(newhdugreen, storedsStack),
-                                            #                                                     kwargs={"detection_sigma": 5, "min_area": minarea})
-                                            #     # scalingFactor= np.nanmedian(reprojectedimage / storedsStack)
-                                            # # plog (" Scaling Factor : " +str(scalingFactor))
-                                            # # reprojectedimage=(scalingFactor) * reprojectedimage # Insert a scaling factor
-                                            storedsStack = reprojectedimage + storedsStack
-                                            # Save new stack to disk
-                                            np.save(
-                                                self.obsid_path
-                                                + "smartstacks/"
-                                                + smartStackFilename.replace(smartstackid,
-                                                                             smartstackid + str(colstack)),
-                                                storedsStack,
-                                            )
-
-                                            #hduss = fits.PrimaryHDU()
-                                            #hduss.data = storedsStack                                            
-                                            #hduss.data = hduss.data.astype("float32")
-                                            #try:
-                                            #    hduss.writeto(
-                                            #        self.obsid_path
-                                            #        + "smartstacks/"
-                                            #        + smartStackFilename.replace(smartstackid, smartstackid + str(colstack)).replace('.npy', '_' + str(sskcounter) + '_' + str(Nsmartstack) + '.fit'), overwrite=True, output_verify='silentfix'
-                                            #    )  # Save flash reduced file locally
-                                            #except:
-                                            #    plog("Couldn't save smartstack fits. YOU MAY HAVE THE FITS OPEN IN A VIEWER.")
-                                            #del hduss
-                                            
-                                            
-                                            if colstack == 'green':
-                                                #newhdugreen = np.array(storedsStack)
-                                                newhdugreen = storedsStack
-                                            if colstack == 'red':
-                                                #newhdured = np.array(storedsStack)
-                                                newhdured = storedsStack
+                                            smartStackFilename.replace(smartstackid, smartstackid + str(colstack))
+                                    ):
+                                        if len(greensources) >= 5:
+                                            # Store original image
+                                            #plog("Storing First smartstack image")
                                             if colstack == 'blue':
-                                                #newhdublue = np.array(storedsStack)
-                                                newhdublue = storedsStack
-                                            del storedsStack
-                                            reprojection_failed = False
-                                        except func_timeout.FunctionTimedOut:
-                                            plog("astroalign timed out")
+                                                np.save(
+                                                    self.obsid_path
+                                                    + "smartstacks/"
+                                                    + smartStackFilename.replace(smartstackid,
+                                                                                 smartstackid + str(colstack)),
+                                                    newhdublue,
+                                                )
+                                                
+                                                bluesources.write(self.obsid_path
+                                                + "smartstacks/"
+                                                + smartStackFilename.replace('.npy','blue.sep'), format='csv', overwrite=True)
+                                            
+                                                
+                                            if colstack == 'green':
+                                                np.save(
+                                                    self.obsid_path
+                                                    + "smartstacks/"
+                                                    + smartStackFilename.replace(smartstackid,
+                                                                                 smartstackid + str(colstack)),
+                                                    newhdugreen,
+                                                )
+                                                greensources.write(self.obsid_path
+                                                + "smartstacks/"
+                                                + smartStackFilename.replace('.npy','green.sep'), format='csv', overwrite=True)
+                                            if colstack == 'red':
+                                                np.save(
+                                                    self.obsid_path
+                                                    + "smartstacks/"
+                                                    + smartStackFilename.replace(smartstackid,
+                                                                                 smartstackid + str(colstack)),
+                                                    newhdured,
+                                                )
+                                                redsources.write(self.obsid_path
+                                                + "smartstacks/"
+                                                + smartStackFilename.replace('.npy','red.sep'), format='csv', overwrite=True)
+    
+                                        else:
+                                            plog("Not storing first smartstack image as not enough sources")
                                             reprojection_failed = True
-                                        except aa.MaxIterError:
-                                            plog("astroalign could not find a solution in this image")
-                                            reprojection_failed = True
-                                        except Exception:
-                                            plog("astroalign failed")
-                                            plog(traceback.format_exc())
-                                            reprojection_failed = True
+                                        # if colstack == 'blue':
+                                        #     bluestoredsStack = newhdublue
+                                        # if colstack == 'green':
+                                        #     greenstoredsStack = newhdugreen
+                                        # if colstack == 'red':
+                                        #     redstoredsStack = newhdured
                                     else:
-                                        reprojection_failed = True
+                                        # Collect stored SmartStack
+                                        storedsStack = np.load(
+                                            self.obsid_path + "smartstacks/" +
+                                            smartStackFilename.replace(smartstackid, smartstackid + str(colstack))
+                                        )
+                                        
+                                        ref_sources=ref_sources = Table.read(self.obsid_path
+                                        + "smartstacks/"
+                                        + smartStackFilename.replace('.npy',str(colstack)+'.sep'), format='csv')
+                                        
+                                        if colstack == 'blue':
+                                            sources=bluesources
+                                            imgdata=newhdublue
+                                        if colstack == 'red':
+                                            sources=redsources
+                                            imgdata=newhdured
+                                        if colstack == 'green':
+                                            sources=greensources
+                                            imgdata=newhdugreen
+                                        
+                                        
+                                        sources=np.column_stack((sources['x'],sources['y']))
+                                        ref_sources=np.column_stack((ref_sources['x'],ref_sources['y']))
+                                        
+                                        #plog (storedsStack.dtype.byteorder)
+                                        # Prep new image
+                                        #plog("Pasting Next smartstack image")
+                                        # img=np.nan_to_num(img)
+                                        # backgroundLevel =(np.nanmedian(sep.Background(img.byteswap().newbyteorder())))
+                                        # plog (" Background Level : " + str(backgroundLevel))
+                                        # img= img - backgroundLevel
+                                        # Reproject new image onto footplog of old image.
+                                        # plog(datetime.datetime.now())
+    
+                                        #This minarea is totally fudgetastically emprical comparing a 0.138 pixelscale QHY Mono
+                                        # to a 1.25/2.15 QHY OSC. Seems to work, so thats good enough.
+                                        # Makes the minarea small enough for blocky pixels, makes it large enough for oversampling
+                                        #minarea= -9.2421 * pixscale + 16.553
+                                        #if minarea < 5:  # There has to be a min minarea though!
+                                        #    minarea = 5
+                                            
+                                            
+                                        
+                                        
+                                        
+                                        #redsources=np.column_stack((redsources['x'],redsources['y']))
+                                        #greensources=np.column_stack((greensources['x'],greensources['y']))
+                                        #bluesources=np.column_stack((bluesources['x'],bluesources['y']))
+                                        
+    
+                                        if len(greensources) > 5:
+                                            
+                                            
+                                            
+                                            
+                                            try:
+                                                
+                                                
+                                                transf, (source_list, target_list) = aa.find_transform(sources, ref_sources)
+                                                
+                                                reprojectedimage= aa.apply_transform(transf, imgdata, storedsStack)[0]
+                                                
+                                                
+                                                # if colstack == 'red':
+                                                #     reprojectedimage, _ = func_timeout.func_timeout(60, aa.register, args=(newhdured, storedsStack),
+                                                #                                                     kwargs={"detection_sigma": 5, "min_area": minarea})
+    
+                                                # if colstack == 'blue':
+                                                #     reprojectedimage, _ = func_timeout.func_timeout(60, aa.register, args=(newhdublue, storedsStack),
+                                                #                                                     kwargs={"detection_sigma": 5, "min_area": minarea})
+                                                # if colstack == 'green':
+                                                #     reprojectedimage, _ = func_timeout.func_timeout(60, aa.register, args=(newhdugreen, storedsStack),
+                                                #                                                     kwargs={"detection_sigma": 5, "min_area": minarea})
+                                                #     # scalingFactor= np.nanmedian(reprojectedimage / storedsStack)
+                                                # # plog (" Scaling Factor : " +str(scalingFactor))
+                                                # # reprojectedimage=(scalingFactor) * reprojectedimage # Insert a scaling factor
+                                                storedsStack = reprojectedimage + storedsStack
+                                                # Save new stack to disk
+                                                np.save(
+                                                    self.obsid_path
+                                                    + "smartstacks/"
+                                                    + smartStackFilename.replace(smartstackid,
+                                                                                 smartstackid + str(colstack)),
+                                                    storedsStack,
+                                                )
+    
+                                                #hduss = fits.PrimaryHDU()
+                                                #hduss.data = storedsStack                                            
+                                                #hduss.data = hduss.data.astype("float32")
+                                                #try:
+                                                #    hduss.writeto(
+                                                #        self.obsid_path
+                                                #        + "smartstacks/"
+                                                #        + smartStackFilename.replace(smartstackid, smartstackid + str(colstack)).replace('.npy', '_' + str(sskcounter) + '_' + str(Nsmartstack) + '.fit'), overwrite=True, output_verify='silentfix'
+                                                #    )  # Save flash reduced file locally
+                                                #except:
+                                                #    plog("Couldn't save smartstack fits. YOU MAY HAVE THE FITS OPEN IN A VIEWER.")
+                                                #del hduss
+                                                
+                                                
+                                                if colstack == 'green':
+                                                    #newhdugreen = np.array(storedsStack)
+                                                    newhdugreen = storedsStack
+                                                if colstack == 'red':
+                                                    #newhdured = np.array(storedsStack)
+                                                    newhdured = storedsStack
+                                                if colstack == 'blue':
+                                                    #newhdublue = np.array(storedsStack)
+                                                    newhdublue = storedsStack
+                                                del storedsStack
+                                                reprojection_failed = False
+                                            except func_timeout.FunctionTimedOut:
+                                                plog("astroalign timed out")
+                                                reprojection_failed = True
+                                            except aa.MaxIterError:
+                                                plog("astroalign could not find a solution in this image")
+                                                reprojection_failed = True
+                                            except Exception:
+                                                plog("astroalign failed")
+                                                plog(traceback.format_exc())
+                                                reprojection_failed = True
+                                        else:
+                                            reprojection_failed = True
 
                             # NOW THAT WE HAVE THE INDIVIDUAL IMAGES THEN PUT THEM TOGETHER
                             xshape = newhdugreen.shape[0]
