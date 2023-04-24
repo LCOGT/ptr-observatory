@@ -2191,7 +2191,7 @@ sel
                                     n_files = len(list_of_files)
                                     oldest_file = min(list_of_files, key=os.path.getctime)
                                     os.remove(oldest_file)
-                                    plog("removed old bias. ")# + str(oldest_file))
+                                    #plog("removed old bias. ")# + str(oldest_file))
 
                             elif slow_process[4] == 'dark':
                                 tempexposure = temphduheader['EXPTIME']
@@ -2204,7 +2204,7 @@ sel
                                     n_files = len(list_of_files)
                                     oldest_file = min(list_of_files, key=os.path.getctime)
                                     os.remove(oldest_file)
-                                    plog("removed old dark. ")# + str(oldest_file))
+                                    #plog("removed old dark. ")# + str(oldest_file))
 
                             elif slow_process[4] == 'flat' or slow_process[4] == 'skyflat' or slow_process[4] == 'screenflat':
                                 tempfilter = temphduheader['FILTER']
@@ -2221,7 +2221,7 @@ sel
                                     n_files = len(list_of_files)
                                     oldest_file = min(list_of_files, key=os.path.getctime)
                                     os.remove(oldest_file)
-                                    plog("removed old flat. ") # + str(oldest_file))
+                                    #plog("removed old flat. ") # + str(oldest_file))
 
                             # Save the file as an uncompressed numpy binary
 
