@@ -1555,6 +1555,7 @@ sel
                                     plog ("Couldn't upload to PTR archive")
                                     plog ("Caught filespecification error properly")
                                     plog((traceback.format_exc()))
+                                    #breakpoint()
                                     retryarchive = 11
                                     tempPTR =0
                                 except Exception as e:

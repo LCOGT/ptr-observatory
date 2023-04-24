@@ -770,7 +770,10 @@ class Camera:
             seq = test_sequence(self.alias)
         except:
             reset_sequence(self.alias)
-            
+        try:
+            self._stop_expose()
+        except:
+            pass
         
     # Patchable methods   NB These could be default ASCOM
     def _connected(self):
