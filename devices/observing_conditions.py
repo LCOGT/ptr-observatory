@@ -124,6 +124,7 @@ class ObservingConditions:
                 self.sky_monitor_oktoimage = win32com.client.Dispatch(driver_3)
                 self.sky_monitor_oktoimage.Connected = True
                 print("observing_conditions: sky_monitors connected = True")
+
             if config["observing_conditions"]["observing_conditions1"]["has_unihedron"]:
                 self.unihedron_connected = True
                 try:
@@ -233,6 +234,7 @@ class ObservingConditions:
                 illum = int(illum)
             else:
                 illum = round(illum, 3)
+
             if self.unihedron_connected:
                 try:
                     uni_measure = (
@@ -240,6 +242,8 @@ class ObservingConditions:
                     )  #  Provenance of 20.01 is dubious 20200504 WER
                 except:
                     uni_measure = 0
+            else:
+                uni_measure = 0.0
             if uni_measure == 0:
                 uni_measure = round(
                     (mag - 20.01), 2

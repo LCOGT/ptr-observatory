@@ -1,4 +1,4 @@
-""""
+"""
 IMPORTANT TODOs:
 
 WER 20211211
@@ -81,13 +81,14 @@ class Observatory:
         self.site_name = name
         self.config = config
         self.site = config["site"]
-
+ 
         if self.config["wema_is_active"]:
             self.hostname = socket.gethostname()
             if self.hostname in self.config["wema_hostname"]:
                 self.is_wema = True
                 g_dev["wema_share_path"] = config["wema_write_share_path"]
                 self.wema_path = g_dev["wema_share_path"]
+                self.site_path = config["client_path"]
             else:
                 # This host is a client
                 self.is_wema = False  # This is a client.

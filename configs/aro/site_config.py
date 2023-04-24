@@ -44,10 +44,10 @@ site_config = {
                                  # Fat is intended to be simple since
                                  # there is so little to control.
     'client_hostname':"ARO-0m30",     # Generic place for this host to stash.
-    'client_path': 'F:/ptr/',
+    'client_path': 'C:/ptr/',
     'alt_path': '//house-computer/saf_archive_2/archive/sq01/',
     'save_to_alt_path' : 'no',
-    'archive_path': 'F:/ptr/',       # Where images are kept.
+    'archive_path': 'C:/ptr/',       # Where images are kept.
     'archive_age' : -99.9, # Number of days to keep files in the local archive before deletion. Negative means never delete
     'aux_archive_path':  None,
     'wema_is_active':  True,     # True if an agent (ie a wema) is used at a site.   # Wemas are split sites -- at least two CPS's sharing the control.
@@ -56,7 +56,7 @@ site_config = {
     'dome_on_wema':  True,       #NB NB NB CHange this confusing name. 'dome_controlled_by_wema'
     'site_IPC_mechanism':  'shares',   # ['None', shares', 'shelves', 'redis']
     'wema_write_share_path':  'C:/ptr/wema_transfer/',  # Meant to be where Wema puts status data.
-    'client_write_share_path':  '//aro-wema/wema_transfer/', #Meant to be a share written to by the TCS computer
+    'client_write_share_path':  'C:/ptr/wema_transfer/',   #  '//aro-wema/wema_transfer/', #Meant to be a share written to by the TCS computer
     'redis_ip': None,   # None if no redis path present, localhost if redis iself-contained
     'site_is_generic':  False,   # A simple single computer ASCOM site.
     'site_is_specific':  False,  #  Meaning like SRO with site specific methods to read weatehr and roof status
@@ -139,8 +139,8 @@ site_config = {
         'sequencer',
         ],
     'wema_types': [
-       'observing_conditions',
        'enclosure',
+       'observing_conditions',
        ],
     'short_status_devices':  [
        # 'observing_conditions',
@@ -166,9 +166,9 @@ site_config = {
             'driver_2':  'ASCOM.Boltwood.OkToOpen.SafetyMonitor',
             'driver_3':  'ASCOM.Boltwood.OkToImage.SafetyMonitor',
             'redis_ip': '127.0.0.1',   #None if no redis path present
-            'has_unihedron':  True,
+            'has_unihedron':  False,
             'uni_driver': 'ASCOM.SQM.serial.ObservingConditions',
-            'unihedron_port':  10    # False, None or numeric of COM port.
+            'unihedron_port':  6    # False, None or numeric of COM port.
         },
     },
 
@@ -179,15 +179,15 @@ site_config = {
             'name': 'HomeDome',
             'enc_is_specific':  False,
             'hostIP':  '10.0.0.10',
-            'driver': 'ASCOM.DigitalDomeWorks.Dome',  #  'ASCOMDome.Dome',  #ASCOMDome.Dome',  # ASCOM.DeviceHub.Dome',  # ASCOM.DigitalDomeWorks.Dome',  #"  ASCOMDome.Dome',
+            'driver': 'Dragonfly.Dome',  #  'ASCOMDome.Dome',  #ASCOMDome.Dome',  # ASCOM.DeviceHub.Dome',  # ASCOM.DigitalDomeWorks.Dome',  #"  ASCOMDome.Dome',
 
             'has_lights':  True,
             'controlled_by': 'mount1',
-			'is_dome': True,
+			'is_dome': False,
             'mode': 'Automatic',
-            'enc_radius':  70,  #  inches Ok for now.
-            'common_offset_east': -19.5,  # East is negative.  These will vary per telescope.
-            'common_offset_south': -8,  # South is negative.   So think of these as default.
+            'enc_radius':  38,  #  inches Ok for now.
+            'common_offset_east': -10,  # East is negative.  These will vary per telescope.
+            'common_offset_south': 0,  # South is negative.   So think of these as default.
 
             'cool_down': 89.0,     # Minutes prior to sunset.
             'settings': {
@@ -318,9 +318,9 @@ site_config = {
         'rotator1': {
             'parent': 'telescope1',
             'name': 'rotator',
-            'desc':  'Opetc Gemini',
+            'desc':  'Opetc Gemini',   #NB Not connected for ARO
             'driver': 'ASCOM.OptecGemini.Rotator',
-            'com_port':  'COM10',
+            'com_port':  'COM8',
             'minimum': -180.,
             'maximum': 360.0,
             'step_size':  0.0001,     # Is this correct?
@@ -353,7 +353,7 @@ site_config = {
             'name': 'focuser',
             'desc':  'Optec Gemini',
             'driver': 'ASCOM.OptecGemini.Focuser',
-		    'com_port': 'COM13',    #AP 'COM5'  No Temp Probe on SRO AO Honders
+		    'com_port': 'COM813',    #AP 'COM5'  No Temp Probe on SRO AO Honders
             # # F4.9 setup
             # 'reference': 5800,    # 20210313  Nominal at 10C Primary temperature
             # 'ref_temp':  5.1,    # Update when pinning reference
@@ -494,7 +494,7 @@ site_config = {
             'name': 'sq002ms',      # Important because this points to a server file structure by that name.
             'desc':  'QHY 600Pro',
             'service_date': '20211111',
-            'driver': "ASCOM.QHYCCD_CAM2.Camera", #"Maxim.CCDCamera",  # "ASCOM.QHYCCD.Camera", ## 'ASCOM.FLI.Kepler.Camera',
+            'driver': "ASCOM.QHYCCD.Camera", #"Maxim.CCDCamera",  # "ASCOM.QHYCCD.Camera", ## 'ASCOM.FLI.Kepler.Camera',
             'detector':  'Sony IMX455',
             'manufacturer':  'QHY',
             'use_file_mode':  False,
@@ -507,7 +507,7 @@ site_config = {
                 'crop_preview_ytop': 1,
                 'crop_preview_xleft': 1,
                 'crop_preview_xright': 1,
-                'temp_setpoint': -12.5,
+                'temp_setpoint': -2.5,
                 'calib_setpoints': [-12.5, -10, -7.5, -5],  # Should vary with season? by day-of-year mod len(list)
                 'day_warm': False,
                 'cooler_on': True,
@@ -579,7 +579,7 @@ site_config = {
                 'areas_implemented': ["Full", '2x2', '4x4',"600%", "500%", "450%", "300%", "220%", "150%", "133%", "100%", "Sqr", '71%', '50%',  '35%', '25%', '12%'],
                 'default_area':  "Full",
                 'has_darkslide':  True,
-                'darkslide_com':  'COM17',
+                'darkslide_com':  'COM12',
                 'has_screen': True,
                 'screen_settings':  {
                     'screen_saturation':  157.0,   # This reflects WMD setting and needs proper values.

@@ -239,7 +239,8 @@ class Enclosure:
             #  This is meant to be a generic Observing_condition code
             #  instance that can be accessed by a simple site or by the WEMA,
             #  assuming the transducers are connected to the WEMA.
-            self.site_is_generic = True
+
+            self.site_is_generic = False
             win32com.client.pythoncom.CoInitialize()
             self.enclosure = win32com.client.Dispatch(driver)
             print(self.enclosure)
@@ -845,7 +846,9 @@ class Enclosure:
                     print('Could not decouple dome following.')
             if self.status_string in ['Open']:
                 try:
-                    self.enclosure.CloseShutter()
+                    #self.enclosure.CloseShutter()
+                    breakpoint()
+                    print('Dome refused close command.  #1')
                 except:
                     print('Dome refused close command.')
             self.dome_opened = False
@@ -868,7 +871,9 @@ class Enclosure:
                     print('Could not decouple dome following.')
             if self.status_string in ['Open']:
                 try:
-                    self.enclosure.CloseShutter()
+                    #self.enclosure.CloseShutter()
+                    print('Enclosure refused close command. #2')
+                    pass
                 except:
                     print('Enclosure refused close command.')
             self.dome_opened = False
@@ -883,13 +888,15 @@ class Enclosure:
 
         elif close_cmd and self.mode == 'Manual':
             try:
-                self.enclosure.CloseShutter()
+                #self.enclosure.CloseShutter()
+                print('Enclosure refused close command.  #3')
                 g_dev['obs'].send_to_user("Enclosure commanded to close in Manual mode.", p_level='INFO')
             except:
                 print('Dome refused close command. Try again in 120 sec')
                 time.sleep(120)
                 try:
-                    self.enclosure.CloseShutter()
+                   # self.enclosure.CloseShutter()
+                    print('Enclosure refused close command. #4')
                 except:
                     print('Dome refused close command second time.')
                     g_dev['obs'].send_to_user("Enclosure failed to close in Manual mode.", p_level='INFO')
@@ -911,7 +918,7 @@ class Enclosure:
                 if self.status_string in ['Open'] and ephem_now < g_dev['events']['End Eve Sky Flats']:
                     if self.is_dome:
                         self.enclosure.SlewToAzimuth(az_opposite_sun)
-                        print("Slewing Opposite Sun")
+                        print("Slewing to Flat Spot 105 degrees from the Sun")
                         g_dev['obs'].send_to_user("Dome slewing opposite the Solar azimuth", p_level='INFO')
                     time.sleep(5)
             except:
@@ -934,7 +941,8 @@ class Enclosure:
                 try:
                    try:
                        if self.status_string in ['Open']:
-                           self.enclosure.CloseShutter()
+                           print('Enclosure refused close command. #5')
+                          # self.enclosure.CloseShutter()
                    except:
                        pass
 
