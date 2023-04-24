@@ -2556,52 +2556,87 @@ sel
                         
                         self.to_slow_process(1000,('reduced', paths["red_path"] + paths["red_name01"], imgdata, img[0].header, \
                                                'EXPOSE', g_dev["mnt"].current_icrs_ra, g_dev["mnt"].current_icrs_dec))
-                            
-                    picklepayload=[
-                        paths,
-                        smartstackid,
-                        self.config["camera"][g_dev['cam'].name]["settings"]["is_osc"],
-                        self.obsid_path,
-                        pixscale,
-                        self.config["camera"][g_dev['cam'].name]["settings"]["transpose_jpeg"],
-                        self.config["camera"][g_dev['cam'].name]["settings"]['flipx_jpeg'],
-                        self.config["camera"][g_dev['cam'].name]["settings"]['flipy_jpeg'],
-                        self.config["camera"][g_dev['cam'].name]["settings"]['rotate180_jpeg'],
-                        self.config["camera"][g_dev['cam'].name]["settings"]['rotate90_jpeg'],
-                        self.config["camera"][g_dev['cam'].name]["settings"]['rotate270_jpeg'],
-                        pier_side,
-                        self.config["camera"][g_dev['cam'].name]["settings"]["squash_on_x_axis"],
-                        self.config["camera"][g_dev['cam'].name]["settings"]["osc_bayer"],
-                        g_dev['cam'].config["camera"][g_dev['cam'].name]["settings"]["saturate"],
-                        g_dev['cam'].native_bin,
-                        g_dev['cam'].config["camera"][g_dev['cam'].name]["settings"]["reference_noise"],
-                        self.config['minimum_realistic_seeing'],
-                        self.config["camera"][g_dev['cam'].name]["settings"]['osc_brightness_enhance'] ,
-                        self.config["camera"][g_dev['cam'].name]["settings"]['osc_contrast_enhance'] ,
-                        self.config["camera"][g_dev['cam'].name]["settings"]['osc_colour_enhance'] ,
-                        self.config["camera"][g_dev['cam'].name]["settings"]['osc_saturation_enhance'],
-                        self.config["camera"][g_dev['cam'].name]["settings"]['osc_sharpness_enhance'],
-                        self.config["camera"][g_dev['cam'].name]["settings"]["crop_preview"],
-                        self.config["camera"][g_dev['cam'].name]["settings"][
-                            "crop_preview_ybottom"
-                        ],
-                        self.config["camera"][g_dev['cam'].name]["settings"][
-                            "crop_preview_ytop"
-                        ],
-                        self.config["camera"][g_dev['cam'].name]["settings"][
-                            "crop_preview_xleft"
-                        ],
-                        self.config["camera"][g_dev['cam'].name]["settings"][
-                            "crop_preview_xright"
-                        ]
-                        ]
                     
+                    if self.config["camera"][g_dev['cam'].name]["settings"]["is_osc"]:
+                        picklepayload=[
+                            paths,
+                            smartstackid,
+                            self.config["camera"][g_dev['cam'].name]["settings"]["is_osc"],
+                            self.obsid_path,
+                            pixscale,
+                            self.config["camera"][g_dev['cam'].name]["settings"]["transpose_jpeg"],
+                            self.config["camera"][g_dev['cam'].name]["settings"]['flipx_jpeg'],
+                            self.config["camera"][g_dev['cam'].name]["settings"]['flipy_jpeg'],
+                            self.config["camera"][g_dev['cam'].name]["settings"]['rotate180_jpeg'],
+                            self.config["camera"][g_dev['cam'].name]["settings"]['rotate90_jpeg'],
+                            self.config["camera"][g_dev['cam'].name]["settings"]['rotate270_jpeg'],
+                            pier_side,
+                            self.config["camera"][g_dev['cam'].name]["settings"]["squash_on_x_axis"],
+                            self.config["camera"][g_dev['cam'].name]["settings"]["osc_bayer"],
+                            g_dev['cam'].config["camera"][g_dev['cam'].name]["settings"]["saturate"],
+                            g_dev['cam'].native_bin,
+                            g_dev['cam'].config["camera"][g_dev['cam'].name]["settings"]["reference_noise"],
+                            self.config['minimum_realistic_seeing'],
+                            self.config["camera"][g_dev['cam'].name]["settings"]['osc_brightness_enhance'] ,
+                            self.config["camera"][g_dev['cam'].name]["settings"]['osc_contrast_enhance'] ,
+                            self.config["camera"][g_dev['cam'].name]["settings"]['osc_colour_enhance'] ,
+                            self.config["camera"][g_dev['cam'].name]["settings"]['osc_saturation_enhance'],
+                            self.config["camera"][g_dev['cam'].name]["settings"]['osc_sharpness_enhance'],
+                            self.config["camera"][g_dev['cam'].name]["settings"]["crop_preview"],
+                            self.config["camera"][g_dev['cam'].name]["settings"][
+                                "crop_preview_ybottom"
+                            ],
+                            self.config["camera"][g_dev['cam'].name]["settings"][
+                                "crop_preview_ytop"
+                            ],
+                            self.config["camera"][g_dev['cam'].name]["settings"][
+                                "crop_preview_xleft"
+                            ],
+                            self.config["camera"][g_dev['cam'].name]["settings"][
+                                "crop_preview_xright"
+                            ]
+                            ]
+                    else:
+                        picklepayload=[
+                            paths,
+                            smartstackid,
+                            self.config["camera"][g_dev['cam'].name]["settings"]["is_osc"],
+                            self.obsid_path,
+                            pixscale,
+                            self.config["camera"][g_dev['cam'].name]["settings"]["transpose_jpeg"],
+                            self.config["camera"][g_dev['cam'].name]["settings"]['flipx_jpeg'],
+                            self.config["camera"][g_dev['cam'].name]["settings"]['flipy_jpeg'],
+                            self.config["camera"][g_dev['cam'].name]["settings"]['rotate180_jpeg'],
+                            self.config["camera"][g_dev['cam'].name]["settings"]['rotate90_jpeg'],
+                            self.config["camera"][g_dev['cam'].name]["settings"]['rotate270_jpeg'],
+                            pier_side,
+                            self.config["camera"][g_dev['cam'].name]["settings"]["squash_on_x_axis"],
+                            self.config["camera"][g_dev['cam'].name]["settings"]["osc_bayer"],
+                            g_dev['cam'].config["camera"][g_dev['cam'].name]["settings"]["saturate"],
+                            g_dev['cam'].native_bin,
+                            g_dev['cam'].config["camera"][g_dev['cam'].name]["settings"]["reference_noise"],
+                            self.config['minimum_realistic_seeing'],
+                            0,0,0,0,0,
+                            self.config["camera"][g_dev['cam'].name]["settings"]["crop_preview"],
+                            self.config["camera"][g_dev['cam'].name]["settings"][
+                                "crop_preview_ybottom"
+                            ],
+                            self.config["camera"][g_dev['cam'].name]["settings"][
+                                "crop_preview_ytop"
+                            ],
+                            self.config["camera"][g_dev['cam'].name]["settings"][
+                                "crop_preview_xleft"
+                            ],
+                            self.config["camera"][g_dev['cam'].name]["settings"][
+                                "crop_preview_xright"
+                            ]
+                            ]
+                                            
                     smartstack_subprocess=subprocess.Popen(['python','subprocesses/SmartStackprocess.py'],stdin=subprocess.PIPE,stdout=subprocess.PIPE,bufsize=0)
                                      
                     pickle.dump(picklepayload, smartstack_subprocess.stdin)
                                                                                                                                  
-                    #pickle.dump([hdufocusdata, hduheader, cal_path, cal_name, frame_type, time_platesolve_requested, 
-                    # pixscale, pointing_ra, pointing_dec, platesolve_crop, bin_for_platesolve, platesolve_bin_factor, g_dev['cam'].config["camera"][g_dev['cam'].name]["settings"]["saturate"]], open('subprocesses/testsmartstackpickle','wb'))                                                                                                             
+                    #pickle.dump(picklepayload, open('subprocesses/testsmartstackpickle','wb'))                                                                                                             
                         
                     # Essentially wait until the subprocess is complete
                     smartstack_subprocess.communicate()

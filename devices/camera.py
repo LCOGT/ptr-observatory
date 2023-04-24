@@ -1766,6 +1766,12 @@ class Camera:
                 + "  exposure.",
                 p_level="INFO",
             )
+            
+        elif Nsmartstack > 1 : 
+            plog ("Starting smartstack " + str(sskcounter+1) + " out of " + str(int(Nsmartstack)) + " of "
+            + str(opt["object_name"]) 
+            + " by user: " + str(observer_user_name))
+            g_dev["obs"].send_to_user ("Starting smartstack " + str(sskcounter+1) + " out of " + str(Nsmartstack) + " by user: " + str(observer_user_name))
         else:
             if "object_name" in opt:
                 g_dev["obs"].send_to_user(
@@ -2938,52 +2944,63 @@ class Camera:
                             self.sep_processing=True
                             self.to_sep((hdusmalldata, pixscale, float(hdu.header["RDNOISE"]), avg_foc[1], focus_image, im_path, text_name, hdusmallheader, cal_path, cal_name, frame_type, g_dev['foc'].focuser.Position*g_dev['foc'].steps_to_micron))
                             
+                            if smartstackid != 'no':
+                                try:
+                                    np.save(red_path + red_name01.replace('.fits','.npy'), hdusmalldata)
+                                    hdusstack=fits.PrimaryHDU()
+                                    hdusstack.header=hdusmallheader
+                                    hdusstack.header["NAXIS1"] = hdusmalldata.shape[0]
+                                    hdusstack.header["NAXIS2"] = hdusmalldata.shape[1]
+                                    hdusstack.writeto(red_path + red_name01.replace('.fits','.head'), overwrite=True, output_verify='silentfix')
+                                    saver = 1
+                                except Exception as e:
+                                    plog("Failed to write raw file: ", e)
                             
                             if smartstackid == 'no':
                                 if self.config['keep_reduced_on_disk']:
                                     self.to_slow_process(1000,('reduced', red_path + red_name01, hdusmalldata, hdusmallheader, \
                                                            frame_type, g_dev["mnt"].current_icrs_ra, g_dev["mnt"].current_icrs_dec))
-                            else:                            
-                                saver = 0
-                                saverretries = 0
-                                while saver == 0 and saverretries < 10:
-                                    try:
-                                        np.save(red_path + red_name01.replace('.fits','.npy'), hdusmalldata)
-                                        hdusstack=fits.PrimaryHDU()
-                                        hdusstack.header=hdusmallheader
-                                        hdusstack.header["NAXIS1"] = hdusmalldata.shape[0]
-                                        hdusstack.header["NAXIS2"] = hdusmalldata.shape[1]
-                                        hdusstack.writeto(red_path + red_name01.replace('.fits','.head'), overwrite=True, output_verify='silentfix')
-                                        saver = 1
-                                    except Exception as e:
-                                        plog("Failed to write raw file: ", e)
-                                        if "requested" in e and "written" in e:
+                            # else:                            
+                            #     saver = 0
+                            #     saverretries = 0
+                            #     while saver == 0 and saverretries < 10:
+                            #         try:
+                            #             np.save(red_path + red_name01.replace('.fits','.npy'), hdusmalldata)
+                            #             hdusstack=fits.PrimaryHDU()
+                            #             hdusstack.header=hdusmallheader
+                            #             hdusstack.header["NAXIS1"] = hdusmalldata.shape[0]
+                            #             hdusstack.header["NAXIS2"] = hdusmalldata.shape[1]
+                            #             hdusstack.writeto(red_path + red_name01.replace('.fits','.head'), overwrite=True, output_verify='silentfix')
+                            #             saver = 1
+                            #         except Exception as e:
+                            #             plog("Failed to write raw file: ", e)
+                            #             if "requested" in e and "written" in e:
         
-                                            plog(check_download_cache())
-                                        plog(traceback.format_exc())
-                                        time.sleep(10)
-                                        saverretries = saverretries + 1
+                            #                 plog(check_download_cache())
+                            #             plog(traceback.format_exc())
+                            #             time.sleep(10)
+                            #             saverretries = saverretries + 1
 
-                        # This puts the file into the smartstack queue
-                        # And gets it underway ASAP.
-                        if ( not frame_type.lower() in [
-                            "bias",
-                            "dark",
-                            "flat",
-                            "solar",
-                            "lunar",
-                            "skyflat",
-                            "screen",
-                            "spectrum",
-                            "auto_focus",
-                        ]) and smartstackid != 'no' :
-                            self.to_smartstack((paths, pixscale, smartstackid, sskcounter, Nsmartstack, g_dev['mnt'].pier_side))
-                        else:
-                            if not self.config['keep_reduced_on_disk']:
-                                try:                                
-                                    os.remove(red_path + red_name01)
-                                except:
-                                    pass
+                            # This puts the file into the smartstack queue
+                            # And gets it underway ASAP.
+                            if ( not frame_type.lower() in [
+                                "bias",
+                                "dark",
+                                "flat",
+                                "solar",
+                                "lunar",
+                                "skyflat",
+                                "screen",
+                                "spectrum",
+                                "auto_focus",
+                            ]) and smartstackid != 'no' :
+                                self.to_smartstack((paths, pixscale, smartstackid, sskcounter, Nsmartstack, g_dev['mnt'].pier_side))
+                            else:
+                                if not self.config['keep_reduced_on_disk']:
+                                    try:                                
+                                        os.remove(red_path + red_name01)
+                                    except:
+                                        pass
                         
                         # Send data off to process jpeg
                         # This is for a non-focus jpeg

@@ -18,7 +18,7 @@ from PIL import Image, ImageEnhance
 import subprocess
 
 input_sstk_info=pickle.load(sys.stdin.buffer)
-#input_sstk_info=pickle.load(open('testSEPpickle','rb'))
+#input_sstk_info=pickle.load(open('testsmartstackpickle','rb'))
 
 print ("HERE IS THE INCOMING. ")
 print (input_sstk_info)
@@ -60,6 +60,8 @@ img = fits.open(
 imgdata = np.load(paths["red_path"] + paths["red_name01"].replace('.fits','.npy'))
 
 
+
+reprojection_failed = False
                    
 # Pick up some header items for smartstacking later
 ssfilter = str(img[0].header["FILTER"])
@@ -71,11 +73,11 @@ imgdata=imgdata-float(sspedestal)
 img.close()
 del img
 
-try:
-    os.remove(paths["red_path"] + paths["red_name01"].replace('.fits','.head'))
-    os.remove(paths["red_path"] + paths["red_name01"].replace('.fits','.npy'))
-except:
-    pass
+#try:
+#    os.remove(paths["red_path"] + paths["red_name01"].replace('.fits','.head'))
+#    os.remove(paths["red_path"] + paths["red_name01"].replace('.fits','.npy'))
+#except:
+#    pass
     #plog ("couldn't remove smartstack files.")
 
 smartStackFilename = (
@@ -90,7 +92,7 @@ smartStackFilename = (
 )
 
 # For OSC, we need to smartstack individual frames.
-if is_osc:
+if not is_osc:
 
     while not os.path.exists(paths["im_path"] + paths["text_name00"].replace('.txt','.sep')):
         #plog ("waiting for single frame SEP file to be finished")
