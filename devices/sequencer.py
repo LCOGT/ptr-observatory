@@ -2116,6 +2116,8 @@ class Sequencer:
                         plog ("Flat acquisition time finished. Breaking out of the flat loop.")
                         return
                     
+                    slow_report_timer=time.time()
+                    
                     if self.next_flat_observe < time.time():    
                         try:
                             try:
@@ -2169,15 +2171,21 @@ class Sequencer:
                              pop_list.pop(0)
                              acquired_count = flat_count + 1 # trigger end of loop
                             
-                        elif evening and exp_time < min_exposure:   
-                             plog("Too bright for current filter, waiting 10s. Est. Exptime: " + str(exp_time))
+                        elif evening and exp_time < min_exposure:
+                             if time-time()-slow_report_timer > 120:
+                                 plog("Too bright for " + str(current_filter) + " filter, waiting. Est. Exptime: " + str(exp_time))
+                                 g_dev["obs"].send_to_user("Sky is too bright for " + str(current_filter) + " filter, waiting. Est. Exptime: " + str(exp_time))  
+                                 slow_report_timer=time.time()
                              self.estimated_first_flat_exposure = False
                              if time.time() >= self.time_of_next_slew:
                                 g_dev['mnt'].slewToSkyFlatAsync()  
                                 self.time_of_next_slew = time.time() + 600
                              self.next_flat_observe = time.time() + 10
                         elif morn and exp_time > max_exposure :  
-                             plog("Too dim for current filter, waiting 10s Est. Exptime:  " + str(exp_time))
+                             if time-time()-slow_report_timer > 120:                                 
+                                 plog("Too dim for " + str(current_filter) + " filter, waiting. Est. Exptime:  " + str(exp_time))
+                                 g_dev["obs"].send_to_user("Sky is too dim for " + str(current_filter) + " filter, waiting. Est. Exptime: " + str(exp_time))  
+                                 slow_report_timer=time.time()
                              self.estimated_first_flat_exposure = False
                              if time.time() >= self.time_of_next_slew:
                                 g_dev['mnt'].slewToSkyFlatAsync()  
