@@ -1509,7 +1509,8 @@ class Mount:
             if not self.theskyx:   
                 self.mount.Tracking = False
             else:
-                plog("mount tracking but it is theskyx and I haven't figure out how to turn it off yet. ")
+                pass
+                #plog("mount tracking but it is theskyx and I haven't figure out how to turn it off yet. ")
 
         self.move_time = time.time()
         try:

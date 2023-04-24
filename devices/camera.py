@@ -176,14 +176,8 @@ class Qcam:
 
     def __init__(self, dll_path):
         
-            # if sys.maxsize > 2147483647:
-            #     print(sys.maxsize)
-            #     print('64-Bit')
-            # else:
-            #     print(sys.maxsize)
-            #     print('32-Bit')
+
         self.so = windll.LoadLibrary(dll_path)
-        #print('Windows')
 
         self.so.GetQHYCCDParam.restype = c_double
         self.so.GetQHYCCDParam.argtypes = [c_void_p, c_int]
@@ -925,7 +919,7 @@ class Camera:
         try: 
             temptemp=self.camera.CCDTemperature
         except:
-            print ("failed at getting the CCD temperature")
+            plog ("failed at getting the CCD temperature")
             temptemp=999.9
         return temptemp, 999.9, 999.9
 
@@ -1029,7 +1023,7 @@ class Camera:
             qhycam.so.CancelQHYCCDExposingAndReadout(qhycam.camera_params[qhycam_id]['handle'])
         except:
             plog(traceback.format_exc()) 
-            print (success)
+            #print (success)
        
     def _qhyccd_getImageArray(self):
         image_width_byref = c_uint32()
@@ -1414,7 +1408,6 @@ class Camera:
                     self.exposure_busy = False
                     return
             else:
-                #plog ("No filter wheel, not selecting a filter")
                 self.current_filter = self.config["filter_wheel"]["filter_wheel1"]["name"]
         except Exception as e:
             plog("Camera filter setup:  ", e)
@@ -1535,12 +1528,10 @@ class Camera:
                         g_dev['obs'].scan_requests()
                         foundcalendar=False                    
                         for tempblock in g_dev['obs'].blocks:
-                            #print (tempblock['event_id'])
                             if tempblock['event_id'] == calendar_event_id :
-                                #print ("FOUND CALENDAR!")
                                 foundcalendar=True
                         if foundcalendar == False:
-                            print ("could not find calendar entry, cancelling out of block.")
+                            plog ("could not find calendar entry, cancelling out of block.")
                             self.exposure_busy = False
                             plog ("And Cancelling SmartStacks.")
                             Nsmartstack=1
@@ -1581,15 +1572,11 @@ class Camera:
                                     self.pre_ocn
                                 )  # NB NB WEMA must be running or this may fault.
                             except:
-                                #plog(
-                                #    "ocn quick status failing"
-                                #)
                                 pass
                             g_dev["foc"].get_quick_status(self.pre_foc)
                             try:
                                 g_dev["rot"].get_quick_status(self.pre_rot)
                             except:
-                                #plog("There is perhaps no rotator")
                                 pass
 
                             g_dev["mnt"].get_rapid_exposure_status(
@@ -1605,7 +1592,6 @@ class Camera:
                             dec_at_time_of_exposure = g_dev["mnt"].current_icrs_dec
                             observer_user_name = user_name
 
-                            #breakpoint()
                             try:
                                 self.user_id = user_id
                                 if self.user_id != self.last_user_id:
@@ -1614,9 +1600,6 @@ class Camera:
                             except:
                                 observer_user_id= 'Tobor'
                                 plog("Failed user_id")
-
-                            #print (observer_user_name)
-                            #print (observer_user_id)
 
                             # Calculate current airmass now
                             try:
@@ -2896,8 +2879,6 @@ class Camera:
                         except Exception as e:
                             plog("flatting light frame failed", e)
                             #plog(traceback.format_exc()) 
-                            #plog (traceback.format_exc())
-                            #breakpoint()
                         
                         
                         # This saves the REDUCED file to disk
@@ -3026,7 +3007,6 @@ class Camera:
                                         plog ("FOCUS: Waiting for SEP processing to complete and queue to clear")
                                         reported=1
                                     pass
-                            #plog ("Time Taken for queue to clear post-exposure: " + str(time.time() - queue_clear_time))
                             focus_image = False
                             
                             return self.expresult                        
@@ -3115,7 +3095,6 @@ class Camera:
                         self.expresult["mean_rotation"] = avg_rot[1]
                     except:
                         pass
-                        #plog("we ain't got no rotator matey")
                     if not focus_image:
                         self.expresult["FWHM"] = None
                     self.expresult["half_FD"] = None
