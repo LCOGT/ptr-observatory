@@ -2304,12 +2304,14 @@ sel
                         "BSCALE"
                     ] = 1  # Make sure there is no integer scaling left over
 
-                    hdufz.header["DATE"] = (
-                        datetime.date.strftime(
-                            datetime.datetime.utcfromtimestamp(time.time()), "%Y-%m-%d"
-                        ),
-                        "Date FITS file was written",
-                    )
+                    #hdufz.header["DATE"] = (
+                    #    datetime.date.strftime(
+                    #        datetime.datetime.utcfromtimestamp(time.time()), "%Y-%m-%d"
+                    #    ),
+                    #    "Date FITS file was written"
+                    #)
+                    
+                    #breakpoint()
 
                     if not self.config["camera"][g_dev['cam'].name]["settings"]["is_osc"]:
 
