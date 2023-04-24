@@ -2172,7 +2172,7 @@ class Sequencer:
                              acquired_count = flat_count + 1 # trigger end of loop
                             
                         elif evening and exp_time < min_exposure:
-                             if time-time()-slow_report_timer > 120:
+                             if time.time()-slow_report_timer > 120:
                                  plog("Too bright for " + str(current_filter) + " filter, waiting. Est. Exptime: " + str(exp_time))
                                  g_dev["obs"].send_to_user("Sky is too bright for " + str(current_filter) + " filter, waiting. Est. Exptime: " + str(exp_time))  
                                  slow_report_timer=time.time()
@@ -2182,7 +2182,7 @@ class Sequencer:
                                 self.time_of_next_slew = time.time() + 600
                              self.next_flat_observe = time.time() + 10
                         elif morn and exp_time > max_exposure :  
-                             if time-time()-slow_report_timer > 120:                                 
+                             if time.time()-slow_report_timer > 120:                                 
                                  plog("Too dim for " + str(current_filter) + " filter, waiting. Est. Exptime:  " + str(exp_time))
                                  g_dev["obs"].send_to_user("Sky is too dim for " + str(current_filter) + " filter, waiting. Est. Exptime: " + str(exp_time))  
                                  slow_report_timer=time.time()
