@@ -1539,51 +1539,53 @@ sel
 
                 # Only ingest new large fits.fz files to the PTR archive.
                 if filename.endswith("-EX00.fits.fz"):
-                    with open(filepath, "rb") as fileobj:
-                        tempPTR = 0
-                        if self.env_exists == True and (not frame_exists(fileobj)):
-
-                            #plog ("\nstarting ingester")
-                            retryarchive = 0
-                            while retryarchive < 10:
-                                try:                                    
-                                    upload_file_and_ingest_to_archive(fileobj)                                    
+                    try:
+                        with open(filepath, "rb") as fileobj:
+                            tempPTR = 0
+                            if self.env_exists == True and (not frame_exists(fileobj)):
+    
+                                #plog ("\nstarting ingester")
+                                retryarchive = 0
+                                while retryarchive < 10:
+                                    try:                                    
+                                        upload_file_and_ingest_to_archive(fileobj)                                    
+                                        self.aws_queue.task_done()
+                                        tempPTR = 1
+                                        retryarchive = 11
+                                    except ocs_ingester.exceptions.DoNotRetryError:
+                                        plog ("Couldn't upload to PTR archive")
+                                        plog ("Caught filespecification error properly")
+                                        plog((traceback.format_exc()))
+                                        #breakpoint()
+                                        retryarchive = 11
+                                        tempPTR =0
+                                    except Exception as e:
+    
+                                        plog("couldn't send to PTR archive for some reason")
+                                        plog("Retry " + str(retryarchive))
+                                        plog(e)
+                                        plog((traceback.format_exc()))
+                                        time.sleep(pow(retryarchive, 2) + 1)
+                                        if retryarchive < 10:
+                                            retryarchive = retryarchive+1
+                                        tempPTR = 0
+    
+                            # If ingester fails, send to default S3 bucket.
+                            if tempPTR == 0:
+                                files = {"file": (filepath, fileobj)}
+                                try:
+                                    aws_resp = g_dev["obs"].api.authenticated_request(
+                                        "POST", "/upload/", {"object_name": filename})
+                                    req_resp = reqs.post(aws_resp["url"], data=aws_resp["fields"], files=files)
+    
                                     self.aws_queue.task_done()
-                                    tempPTR = 1
-                                    retryarchive = 11
-                                except ocs_ingester.exceptions.DoNotRetryError:
-                                    plog ("Couldn't upload to PTR archive")
-                                    plog ("Caught filespecification error properly")
-                                    plog((traceback.format_exc()))
-                                    #breakpoint()
-                                    retryarchive = 11
-                                    tempPTR =0
-                                except Exception as e:
-
-                                    plog("couldn't send to PTR archive for some reason")
-                                    plog("Retry " + str(retryarchive))
-                                    plog(e)
-                                    plog((traceback.format_exc()))
-                                    time.sleep(pow(retryarchive, 2) + 1)
-                                    if retryarchive < 10:
-                                        retryarchive = retryarchive+1
-                                    tempPTR = 0
-
-                        # If ingester fails, send to default S3 bucket.
-                        if tempPTR == 0:
-                            files = {"file": (filepath, fileobj)}
-                            try:
-                                aws_resp = g_dev["obs"].api.authenticated_request(
-                                    "POST", "/upload/", {"object_name": filename})
-                                req_resp = reqs.post(aws_resp["url"], data=aws_resp["fields"], files=files)
-
-                                self.aws_queue.task_done()
-                                one_at_a_time = 0
-
-                            except:
-                                plog("Connection glitch for the request post, waiting a moment and trying again")
-                                time.sleep(5)
-
+                                    one_at_a_time = 0
+    
+                                except:
+                                    plog("Connection glitch for the request post, waiting a moment and trying again")
+                                    time.sleep(5)
+                    except Exception as e:
+                        plog ("something strange in the AWS uploader", e)
                 # Send all other files to S3.
                 else:
                     with open(filepath, "rb") as fileobj:
