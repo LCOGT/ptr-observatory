@@ -14,19 +14,19 @@ import time
 import traceback
 import ephem
 
-import json
+#import json
 
-from astropy.io import fits, ascii
+from astropy.io import fits#, ascii
 from astropy.time import Time
 from astropy.utils.data import check_download_cache
 from astropy.coordinates import SkyCoord, AltAz
 #from astropy.table import Table
 from astropy.nddata import block_reduce
 from astropy import units as u
-import numpy.ma as ma
+#import numpy.ma as ma
 import glob
 import numpy as np
-import matplotlib.pyplot as plt   # Please do not remove this import.
+#import matplotlib.pyplot as plt   # Please do not remove this import.
 #import sep
 #from skimage.io import imsave
 #from skimage.transform import resize
@@ -34,7 +34,7 @@ import matplotlib.pyplot as plt   # Please do not remove this import.
 import win32com.client
 #from planewave import platesolve
 
-from scipy import stats
+#from scipy import stats
 import math
 #import colour
 #import queue
@@ -176,14 +176,8 @@ class Qcam:
 
     def __init__(self, dll_path):
         
-            # if sys.maxsize > 2147483647:
-            #     print(sys.maxsize)
-            #     print('64-Bit')
-            # else:
-            #     print(sys.maxsize)
-            #     print('32-Bit')
+
         self.so = windll.LoadLibrary(dll_path)
-        #print('Windows')
 
         self.so.GetQHYCCDParam.restype = c_double
         self.so.GetQHYCCDParam.argtypes = [c_void_p, c_int]
@@ -433,12 +427,8 @@ class Camera:
         g_dev['obs'].obs_id
         g_dev['cam'].alias
         tempfrontcalib=g_dev['obs'].obs_id + '_' + g_dev['cam'].alias +'_'
-        #print (tempfrontcalib)
-
-        
-        try:
-            #self.biasframe = fits.open(
-
+     
+        try:            
             tempbiasframe = fits.open(self.obsid_path + "archive/" + self.alias + "/calibmasters" \
                                       + "/" + tempfrontcalib + "BIAS_master_bin1.fits")
             tempbiasframe = np.array(tempbiasframe[0].data, dtype=np.float32)
@@ -446,12 +436,8 @@ class Camera:
             del tempbiasframe
         except:
             plog("Bias frame for Binning 1 not available")
-            #plog(traceback.format_exc()) 
-            #breakpoint()               
-            
         
         try:
-            #self.darkframe = fits.open(
             tempdarkframe = fits.open(self.obsid_path + "archive/" + self.alias + "/calibmasters" \
                                       + "/" + tempfrontcalib +  "DARK_master_bin1.fits")
 
@@ -461,15 +447,11 @@ class Camera:
         except:
             plog("Dark frame for Binning 1 not available")  
 
-        try:            
-            
-            
+        try:  
             fileList = glob.glob(self.obsid_path + "archive/" + self.alias + "/calibmasters/masterFlat*_bin1.npy")
-            #breakpoint()
             for file in fileList:
                 if self.config['camera'][self.name]['settings']['hold_flats_in_memory']:
                     tempflatframe=np.load(file)
-                    #breakpoint()
                     self.flatFiles.update({file.split('_')[-2]: np.array(tempflatframe)})
                     del tempflatframe
                 else:
@@ -681,13 +663,11 @@ class Camera:
             
             self.camera.AutoSavePath = (
                 self.archive_path
-                #+ "archive/"
                 + datetime.datetime.strftime(datetime.datetime.now(), "%Y%m%d")
             )
             try:
                 os.mkdir(
                     self.archive_path
-                    #+ "archive/"
                     + datetime.datetime.strftime(datetime.datetime.now(), "%Y%m%d")
                 )
             except:
@@ -756,10 +736,8 @@ class Camera:
                 self.camera.BinY = 1
             except:
                 plog ("self.camera setup didn't work... may be a QHY")
-
             
         self.camera_num_x = int(1)  #NB I do not recognize this.    WER  Apprently not used.
-
 
         self.af_mode = False
         self.af_step = -1
@@ -792,7 +770,10 @@ class Camera:
             seq = test_sequence(self.alias)
         except:
             reset_sequence(self.alias)
-            
+        try:
+            self._stop_expose()
+        except:
+            pass
         
     # Patchable methods   NB These could be default ASCOM
     def _connected(self):
@@ -941,7 +922,7 @@ class Camera:
         try: 
             temptemp=self.camera.CCDTemperature
         except:
-            print ("failed at getting the CCD temperature")
+            plog ("failed at getting the CCD temperature")
             temptemp=999.9
         return temptemp, 999.9, 999.9
 
@@ -1045,7 +1026,7 @@ class Camera:
             qhycam.so.CancelQHYCCDExposingAndReadout(qhycam.camera_params[qhycam_id]['handle'])
         except:
             plog(traceback.format_exc()) 
-            print (success)
+            #print (success)
        
     def _qhyccd_getImageArray(self):
         image_width_byref = c_uint32()
@@ -1430,7 +1411,6 @@ class Camera:
                     self.exposure_busy = False
                     return
             else:
-                #plog ("No filter wheel, not selecting a filter")
                 self.current_filter = self.config["filter_wheel"]["filter_wheel1"]["name"]
         except Exception as e:
             plog("Camera filter setup:  ", e)
@@ -1551,12 +1531,10 @@ class Camera:
                         g_dev['obs'].scan_requests()
                         foundcalendar=False                    
                         for tempblock in g_dev['obs'].blocks:
-                            #print (tempblock['event_id'])
                             if tempblock['event_id'] == calendar_event_id :
-                                #print ("FOUND CALENDAR!")
                                 foundcalendar=True
                         if foundcalendar == False:
-                            print ("could not find calendar entry, cancelling out of block.")
+                            plog ("could not find calendar entry, cancelling out of block.")
                             self.exposure_busy = False
                             plog ("And Cancelling SmartStacks.")
                             Nsmartstack=1
@@ -1597,15 +1575,11 @@ class Camera:
                                     self.pre_ocn
                                 )  # NB NB WEMA must be running or this may fault.
                             except:
-                                #plog(
-                                #    "ocn quick status failing"
-                                #)
                                 pass
                             g_dev["foc"].get_quick_status(self.pre_foc)
                             try:
                                 g_dev["rot"].get_quick_status(self.pre_rot)
                             except:
-                                #plog("There is perhaps no rotator")
                                 pass
 
                             g_dev["mnt"].get_rapid_exposure_status(
@@ -1621,7 +1595,6 @@ class Camera:
                             dec_at_time_of_exposure = g_dev["mnt"].current_icrs_dec
                             observer_user_name = user_name
 
-                            #breakpoint()
                             try:
                                 self.user_id = user_id
                                 if self.user_id != self.last_user_id:
@@ -1630,9 +1603,6 @@ class Camera:
                             except:
                                 observer_user_id= 'Tobor'
                                 plog("Failed user_id")
-
-                            #print (observer_user_name)
-                            #print (observer_user_id)
 
                             # Calculate current airmass now
                             try:
@@ -1799,6 +1769,12 @@ class Camera:
                 + "  exposure.",
                 p_level="INFO",
             )
+            
+        elif Nsmartstack > 1 : 
+            plog ("Starting smartstack " + str(sskcounter+1) + " out of " + str(int(Nsmartstack)) + " of "
+            + str(opt["object_name"]) 
+            + " by user: " + str(observer_user_name))
+            g_dev["obs"].send_to_user ("Starting smartstack " + str(sskcounter+1) + " out of " + str(int(Nsmartstack)) + " by user: " + str(observer_user_name))
         else:
             if "object_name" in opt:
                 g_dev["obs"].send_to_user(
@@ -1811,14 +1787,6 @@ class Camera:
                     p_level="INFO",
                 )
             
-            # else:
-            #     g_dev["obs"].send_to_user(
-            #         "Starting an unnamed frame by user: "
-            #         #+ str(self.user_name),
-            #         + str(observer_user_name),
-            #         p_level="INFO",
-            #     )
-
         self.status_time = time.time() + 10
         self.post_mnt = []
         self.post_rot = []
@@ -1852,7 +1820,6 @@ class Camera:
                 # Scan requests every 4 seconds... primarily hunting for a "Cancel/Stop"
                 if time.time() - exposure_scan_request_timer > 4:                    
                     exposure_scan_request_timer=time.time()
-                    
                     
                     g_dev['obs'].scan_requests()
                     
@@ -2921,8 +2888,6 @@ class Camera:
                         except Exception as e:
                             plog("flatting light frame failed", e)
                             #plog(traceback.format_exc()) 
-                            #plog (traceback.format_exc())
-                            #breakpoint()
                         
                         
                         # This saves the REDUCED file to disk
@@ -2982,71 +2947,69 @@ class Camera:
                             self.sep_processing=True
                             self.to_sep((hdusmalldata, pixscale, float(hdu.header["RDNOISE"]), avg_foc[1], focus_image, im_path, text_name, hdusmallheader, cal_path, cal_name, frame_type, g_dev['foc'].focuser.Position*g_dev['foc'].steps_to_micron))
                             
+                            if smartstackid != 'no':
+                                try:
+                                    np.save(red_path + red_name01.replace('.fits','.npy'), hdusmalldata)
+                                    hdusstack=fits.PrimaryHDU()
+                                    hdusstack.header=hdusmallheader
+                                    hdusstack.header["NAXIS1"] = hdusmalldata.shape[0]
+                                    hdusstack.header["NAXIS2"] = hdusmalldata.shape[1]
+                                    hdusstack.writeto(red_path + red_name01.replace('.fits','.head'), overwrite=True, output_verify='silentfix')
+                                    saver = 1
+                                except Exception as e:
+                                    plog("Failed to write raw file: ", e)
                             
                             if smartstackid == 'no':
                                 if self.config['keep_reduced_on_disk']:
                                     self.to_slow_process(1000,('reduced', red_path + red_name01, hdusmalldata, hdusmallheader, \
                                                            frame_type, g_dev["mnt"].current_icrs_ra, g_dev["mnt"].current_icrs_dec))
-                            else:                            
-                                saver = 0
-                                saverretries = 0
-                                while saver == 0 and saverretries < 10:
-                                    try:
-                                        #hdureduced=fits.PrimaryHDU()
-                                        #hdureduced.data=hdusmalldata                            
-                                        #hdureduced.header=hdusmallheader
-                                        #hdureduced.header["NAXIS1"] = hdusmalldata.shape[0]
-                                        #hdureduced.header["NAXIS2"] = hdusmalldata.shape[1]
-                                        #hdureduced.data=hdureduced.data.astype("float32")
-                                        #hdureduced.writeto(
-                                        #    red_path + red_name01, overwrite=True, output_verify='silentfix'
-                                        #)  # Save flash reduced file locally
-                                        np.save(red_path + red_name01.replace('.fits','.npy'), hdusmalldata)
-                                        hdusstack=fits.PrimaryHDU()
-                                        hdusstack.header=hdusmallheader
-                                        hdusstack.header["NAXIS1"] = hdusmalldata.shape[0]
-                                        hdusstack.header["NAXIS2"] = hdusmalldata.shape[1]
-                                        hdusstack.writeto(red_path + red_name01.replace('.fits','.head'), overwrite=True, output_verify='silentfix')
-                                        saver = 1
-                                    except Exception as e:
-                                        plog("Failed to write raw file: ", e)
-                                        if "requested" in e and "written" in e:
+                            # else:                            
+                            #     saver = 0
+                            #     saverretries = 0
+                            #     while saver == 0 and saverretries < 10:
+                            #         try:
+                            #             np.save(red_path + red_name01.replace('.fits','.npy'), hdusmalldata)
+                            #             hdusstack=fits.PrimaryHDU()
+                            #             hdusstack.header=hdusmallheader
+                            #             hdusstack.header["NAXIS1"] = hdusmalldata.shape[0]
+                            #             hdusstack.header["NAXIS2"] = hdusmalldata.shape[1]
+                            #             hdusstack.writeto(red_path + red_name01.replace('.fits','.head'), overwrite=True, output_verify='silentfix')
+                            #             saver = 1
+                            #         except Exception as e:
+                            #             plog("Failed to write raw file: ", e)
+                            #             if "requested" in e and "written" in e:
         
-                                            plog(check_download_cache())
-                                        plog(traceback.format_exc())
-                                        time.sleep(10)
-                                        saverretries = saverretries + 1
+                            #                 plog(check_download_cache())
+                            #             plog(traceback.format_exc())
+                            #             time.sleep(10)
+                            #             saverretries = saverretries + 1
 
-                        # This puts the file into the smartstack queue
-                        # And gets it underway ASAP.
-                        if ( not frame_type.lower() in [
-                            "bias",
-                            "dark",
-                            "flat",
-                            "solar",
-                            "lunar",
-                            "skyflat",
-                            "screen",
-                            "spectrum",
-                            "auto_focus",
-                        ]) and smartstackid != 'no' :
-                            #self.to_reduce((paths, pixscale, smartstackid, sskcounter, Nsmartstack, self.sources))
-                            self.to_smartstack((paths, pixscale, smartstackid, sskcounter, Nsmartstack, g_dev['mnt'].pier_side))
-                        else:
-                            if not self.config['keep_reduced_on_disk']:
-                                try:                                
-                                    os.remove(red_path + red_name01)
-                                except:
-                                    pass
-
-                        
+                            # This puts the file into the smartstack queue
+                            # And gets it underway ASAP.
+                            if ( not frame_type.lower() in [
+                                "bias",
+                                "dark",
+                                "flat",
+                                "solar",
+                                "lunar",
+                                "skyflat",
+                                "screen",
+                                "spectrum",
+                                "auto_focus",
+                            ]) and smartstackid != 'no' :
+                                self.to_smartstack((paths, pixscale, smartstackid, sskcounter, Nsmartstack, g_dev['mnt'].pier_side))
+                            else:
+                                if not self.config['keep_reduced_on_disk']:
+                                    try:                                
+                                        os.remove(red_path + red_name01)
+                                    except:
+                                        pass
                         
                         # Send data off to process jpeg
                         # This is for a non-focus jpeg
                         if focus_image == False:
                             self.to_mainjpeg((hdusmalldata, smartstackid, paths, g_dev['mnt'].pier_side))
-                        
-                        
+                                                
                         # If this is a focus image, we need to wait until the SEP queue is finished and empty to pick up the latest
                         # FWHM. 
                         if focus_image == True:
@@ -3064,11 +3027,9 @@ class Camera:
                                         plog ("FOCUS: Waiting for SEP processing to complete and queue to clear")
                                         reported=1
                                     pass
-                            #plog ("Time Taken for queue to clear post-exposure: " + str(time.time() - queue_clear_time))
                             focus_image = False
                             
-                            return self.expresult
-                        
+                            return self.expresult                        
 
                         if solve_it == True or ((Nsmartstack == sskcounter+1) and Nsmartstack > 1)\
                                                    or g_dev['obs'].images_since_last_solve > g_dev['obs'].config["solve_nth_image"] or (datetime.datetime.now() - g_dev['obs'].last_solve_time)  > datetime.timedelta(minutes=g_dev['obs'].config["solve_timer"]):
@@ -3154,7 +3115,6 @@ class Camera:
                         self.expresult["mean_rotation"] = avg_rot[1]
                     except:
                         pass
-                        #plog("we ain't got no rotator matey")
                     if not focus_image:
                         self.expresult["FWHM"] = None
                     self.expresult["half_FD"] = None
