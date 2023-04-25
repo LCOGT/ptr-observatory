@@ -140,6 +140,7 @@ def wait_for_slew():
                 if time.time() - movement_reporting_timer > 2.0:
                     plog( 'm>')
                     movement_reporting_timer=time.time()
+                    g_dev['obs'].time_of_last_slew=time.time()
                 g_dev['obs'].update_status(mount_only=True, dont_wait=True)
            
     except Exception as e:
@@ -365,6 +366,8 @@ class Mount:
         # just some back to basics coordinates to test pointing issues
         self.mtf_dec_offset=0
         self.mtf_ra_offset=0
+        
+        
         
 
     def check_connect(self):
@@ -1111,11 +1114,14 @@ class Mount:
             g_dev['obs'].send_to_user("Slewing telescope to:  " + str( self.object),  p_level="INFO")
         
         if object_is_moon:
+            g_dev['obs'].time_of_last_slew=time.time()
             self.go_coord(ra1, dec1, tracking_rate_ra=dra_moon, tracking_rate_dec = ddec_moon)
         elif alt_az == True:
+            g_dev['obs'].time_of_last_slew=time.time()
             self.move_to_azalt(az, alt)
             g_dev['obs'].send_to_user("Slew Complete.")
         elif ra_dec == True:
+            g_dev['obs'].time_of_last_slew=time.time()
             self.go_coord(ra, dec, tracking_rate_ra=tracking_rate_ra, tracking_rate_dec = tracking_rate_dec)
             g_dev['obs'].send_to_user("Slew Complete.")
             
@@ -1212,6 +1218,7 @@ class Mount:
         wait_for_slew() 
 
         try:
+            g_dev['obs'].time_of_last_slew=time.time()
             self.mount.SlewToCoordinatesAsync(self.ra_mech*RTOH, self.dec_mech*RTOD)  #Is this needed?
             wait_for_slew() 
         except Exception as e:
@@ -1331,6 +1338,7 @@ class Mount:
 
         self.move_time = time.time()
         try:
+            g_dev['obs'].time_of_last_slew=time.time()
             self.move_to_azalt(az, alt)
             g_dev['obs'].time_of_last_slew = time.time()
             # On successful movement of telescope reset the solving timer
@@ -1355,6 +1363,7 @@ class Mount:
             if mount_at_home:
                 plog("Mount is at home.")
             elif not mount_at_home:
+                g_dev['obs'].time_of_last_slew=time.time()
                 plog(f"can find home: {self.mount.CanFindHome}")
                 self.unpark_command()  
                 wait_for_slew()
@@ -1367,6 +1376,7 @@ class Mount:
             self.move_time = time.time()
             home_alt = self.settings["home_altitude"]
             home_az = self.settings["home_azimuth"]
+            g_dev['obs'].time_of_last_slew=time.time()
             self.move_to_azalt(home_az, home_alt)
             wait_for_slew()
         wait_for_slew()
@@ -1388,7 +1398,9 @@ class Mount:
                 plog("mount cmd: parking mount")
                 if g_dev['obs'] is not None:  #THis gets called before obs is created
                     g_dev['obs'].send_to_user("Parking Mount. This can take a moment.")
+                g_dev['obs'].time_of_last_slew=time.time()
                 self.mount.Park()
+                
                 wait_for_slew()
 
     def unpark_command(self, req=None, opt=None):
@@ -1397,6 +1409,7 @@ class Mount:
             if self.mount.AtPark:
                 plog("mount cmd: unparking mount")
                 g_dev['obs'].send_to_user("Unparking Mount. This can take a moment.")
+                g_dev['obs'].time_of_last_slew=time.time()
                 self.mount.Unpark()
                 wait_for_slew()
                 if self.home_after_unpark:
@@ -1622,6 +1635,7 @@ class Mount:
         plog ("Moving to Alt " + str(alt) + " Az " + str(az))
         if self.config['mount']['mount1']['has_ascom_altaz'] == True:
             wait_for_slew() 
+            g_dev['obs'].time_of_last_slew=time.time()
             self.mount.SlewToAltAzAsync(az, alt)
             g_dev['obs'].time_since_last_slew = time.time()
             g_dev['obs'].last_solve_time = datetime.datetime.now() - datetime.timedelta(days=1)
@@ -1635,11 +1649,13 @@ class Mount:
             tempDEC=tempcoord.dec.deg            
             wait_for_slew() 
             try:
+                g_dev['obs'].time_of_last_slew=time.time()
                 self.mount.SlewToCoordinatesAsync(tempRA, tempDEC)
             except Exception as e:
                 if ('Object reference not set to an instance of an object.' in str(e)):                       
                     #self.home_command()
                     self.unpark_command()
+                    g_dev['obs'].time_of_last_slew=time.time()
                     self.mount.SlewToCoordinatesAsync(tempRA, tempDEC)
                     plog (traceback.format_exc())
             
