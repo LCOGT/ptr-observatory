@@ -2031,10 +2031,10 @@ sel
     
                         # If we are WAY out of range, then reset the mount reference and attempt moving back there.
                         elif (
-                            err_ha * 15 * 3600 > 1200
-                            or err_dec * 3600 > 1200
-                            or err_ha * 15 * 3600 < -1200
-                            or err_dec * 3600 < -1200
+                            err_ha * 15 * 3600 > 3600
+                            or err_dec * 3600 > 3600
+                            or err_ha * 15 * 3600 < -3600
+                            or err_dec * 3600 < -3600
                         ) and self.config["mount"]["mount1"][
                             "permissive_mount_reset"
                         ] == "yes":
@@ -2049,13 +2049,17 @@ sel
                             err_ha = 0
                             err_dec = 0
     
-                            plog("Platesolve is requesting to move back on target!")
+                            plog("Platesolve has found that the current suggested pointing is way off!")
+                            plog("This is more than a simple nudge, so not nudging the scope.")
+                            
+                            
+                            #plog("Platesolve is requesting to move back on target!")
                             #g_dev['mnt'].mount.SlewToCoordinatesAsync(target_ra, target_dec)
     
-                            self.pointing_correction_requested_by_platesolve_thread = True
-                            self.pointing_correction_request_time = time.time()
-                            self.pointing_correction_request_ra = target_ra
-                            self.pointing_correction_request_dec = target_dec
+                            #self.pointing_correction_requested_by_platesolve_thread = True
+                            #self.pointing_correction_request_time = time.time()
+                            #self.pointing_correction_request_ra = target_ra
+                            #self.pointing_correction_request_dec = target_dec
     
                             # wait_for_slew()
     
