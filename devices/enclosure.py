@@ -194,7 +194,6 @@ class Enclosure:
         self.config = config
         g_dev['enc'] = self
         self.slew_latch = False
-
         if self.config['site_in_automatic_default'] == "Automatic":
             self.site_in_automatic = True
             self.mode = 'Automatic'
@@ -252,12 +251,12 @@ class Enclosure:
                  print("ASCOM enclosure NOT connected, proabably the App is not connected to telescope.")
         else:
             self.site_is_generic = False    #NB NB Changed to False for MRC from SRA where True
-        self.last_current_az = 315.
+        self.last_current_az = 315.  #For a Roll off maybe report Az of telescope?
         self.last_slewing = False
         self.prior_status = {'enclosure_mode': 'Manual'}    #Just to initialze this rarely used variable.
-        print('\n&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&& \n') 
-        print('      20221014  Close commands are blocked,  System defaults to manual. \n ')
-        print('&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&& \n')
+        # print('\n&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&& \n') 
+        # print('      20221014  Close commands are blocked,  System defaults to manual. \n ')
+        # print('&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&& \n')
     def get_status(self) -> dict:
         if not self.is_wema and self.site_has_proxy and self.dome_on_wema:
             if self.config['site_IPC_mechanism'] == 'shares':
@@ -309,6 +308,7 @@ class Enclosure:
             return status
 
         if self.site_is_generic or self.is_wema or not self.dome_on_wema:#  NB Should be AND?
+
             try:
                 shutter_status = self.enclosure.ShutterStatus
             except:
@@ -317,7 +317,7 @@ class Enclosure:
             try:
                 self.dome_home = self.enclosure.AtHome
             except:
-                self.come_home = True
+                self.dome_home = True
 
             if shutter_status == 0:
                 stat_string = "Open"
@@ -348,7 +348,7 @@ class Enclosure:
                 in_motion = True
             else:
                 in_motion = False
-            self.last_az = 316.5    #THis should be a config for Dome_home_azimuth
+            self.last_az = 999.99    #THis should be a config for Dome_home_azimuth
             status = {'shutter_status': stat_string}
             status['dome_slewing'] = in_motion
             status['enclosure_mode'] = str(self.mode)
@@ -404,7 +404,7 @@ class Enclosure:
                 # status['dome_slewing'] = in_motion
                 # # g_dev['redis'].set('dome_slewing', in_motion, ex=3600)
                 # # g_dev['redis'].set('enc_status', status, ex=3600)
-            if not self.dome_on_wema:
+            if self.dome_on_wema:
                 self.status = status
                 #print("g_dev:  ", g_dev['enc'].status['dome_slewing'])
                 return status

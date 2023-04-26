@@ -578,8 +578,6 @@ site_config = {
                 'smart_stack_exposure_time': 30,
                 'areas_implemented': ["Full", '2x2', '4x4',"600%", "500%", "450%", "300%", "220%", "150%", "133%", "100%", "Sqr", '71%', '50%',  '35%', '25%', '12%'],
                 'default_area':  "Full",
-                'has_darkslide':  True,
-                'darkslide_com':  'COM12',
                 'has_screen': True,
                 'screen_settings':  {
                     'screen_saturation':  157.0,   # This reflects WMD setting and needs proper values.
