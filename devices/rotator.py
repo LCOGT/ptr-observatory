@@ -1,7 +1,28 @@
 import time
 import win32com.client
-
+import psutil
+from ptr_utility import plog
 from global_yard import g_dev
+
+
+def findProcessIdByName(processName):
+    '''
+    Get a list of all the PIDs of a all the running process whose name contains
+    the given string processName
+    '''
+    listOfProcessObjects = []
+    #Iterate over the all the running process
+    for proc in psutil.process_iter():
+       try:
+           pinfo = proc.as_dict(attrs=['pid', 'name', 'create_time'])
+           # Check if process name contains the given name string.
+           if processName.lower() in pinfo['name'].lower() :
+               listOfProcessObjects.append(pinfo)
+       except (psutil.NoSuchProcess, psutil.AccessDenied , psutil.ZombieProcess) :
+           pass
+    return listOfProcessObjects
+
+
 
 
 class Rotator:
@@ -9,11 +30,77 @@ class Rotator:
         self.name = name
         g_dev["rot"] = self
         win32com.client.pythoncom.CoInitialize()
+        self.driver=driver
         self.rotator = win32com.client.Dispatch(driver)
         time.sleep(3)
+        #breakpoint()
         self.rotator.Connected = True
         self.rotator_message = "-"
         print("Rotator connected,  at:  ", round(self.rotator.TargetPosition, 4))
+        
+        self.rotator_meant_to_be_rotating = True
+        self.check_rotator_is_rotating()       
+        
+       
+
+        
+    def check_rotator_is_rotating(self):
+        
+        # Test that the rotator is ACTUALLY connected
+        # Not pretending
+        pos1=g_dev['rot'].rotator.Position
+        time.sleep(0.05)
+        pos2=g_dev['rot'].rotator.Position
+        time.sleep(0.05)
+        pos3=g_dev['rot'].rotator.Position
+        time.sleep(0.05)
+        
+        #plog("Rotator positions (Temporary reporting - MTF)")
+        if pos1 < 180:
+            pos1=pos1+360
+        if pos2 < 180:
+            pos2=pos2+360
+        if pos3 < 180:
+            pos3=pos3+360
+            
+        #plog([pos1,pos2,pos3])
+        
+        avgpos=((pos1)+(pos2)+(pos3))/3
+        
+        #plog("Average rotator position: " + str(avgpos))
+
+        if 359 < avgpos < 361 :
+            print ("The Rotator is indicating telescope is parked")
+            #breakpoint()
+        elif not self.rotator_meant_to_be_rotating:
+            print ("The Rotator is not moving, but it isn't meant to be.")
+        else:
+            print ("THE ROTATOR HAS PERHAPS CRASHED.")
+            #breakpoint()
+            # listOfProcessIds = findProcessIdByName('optec')
+            # for pid in listOfProcessIds:
+            #     pid_num = pid['pid']
+            #     plog("Terminating existing Optec process:  ", pid_num)
+            #     p2k = psutil.Process(pid_num)
+            #     p2k.terminate()
+            
+            # listOfProcessIds = findProcessIdByName('altaz')
+            # for pid in listOfProcessIds:
+            #     pid_num = pid['pid']
+            #     plog("Terminating existing Optec process:  ", pid_num)
+            #     p2k = psutil.Process(pid_num)
+            #     p2k.terminate()
+                
+            # time.sleep(10)
+            
+            # win32com.client.pythoncom.CoInitialize()
+            # self.rotator = win32com.client.Dispatch(self.driver)
+            # time.sleep(3)
+            # self.rotator.Connected = True
+            # self.rotator_message = "-"
+            # print("Rotator connected,  at:  ", round(self.rotator.TargetPosition, 4))
+            
+            # self.rotator_meant_to_be_rotating = True
 
     def get_status(self):
         """
@@ -101,6 +188,7 @@ class Rotator:
     def stop_command(self, req: dict, opt: dict):
         """Stops rotator movement immediately."""
         print("rotator cmd: stop")
+        self.rotator_meant_to_be_rotating = False
         self.rotator.Halt()
 
     def home_command(self, req: dict, opt: dict):
