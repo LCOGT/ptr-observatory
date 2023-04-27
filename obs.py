@@ -1788,10 +1788,10 @@ sel
                                                                                                                                                                            ], sep_subprocess.stdin)
                                                                                                                              
                                                                                                                              
-                #pickle.dump([hdufocusdata, pixscale, readnoise, avg_foc, focus_image, im_path, text_name, hduheader, cal_path, cal_name, frame_type, focus_position, g_dev['events'],ephem.now(),self.config["camera"][g_dev['cam']
-                #                                         .name]["settings"]['focus_image_crop_width'], self.config["camera"][g_dev['cam']
-                #                                                                                   .name]["settings"]['focus_image_crop_height'], is_osc,interpolate_for_focus,bin_for_focus,focus_bin_value,interpolate_for_sep,bin_for_sep,sep_bin_value,focus_jpeg_size,saturate,minimum_realistic_seeing
-                 #                                                                                                                                                          ], open('subprocesses/testSEPpickle','wb'))
+                # pickle.dump([hdufocusdata, pixscale, readnoise, avg_foc, focus_image, im_path, text_name, hduheader, cal_path, cal_name, frame_type, focus_position, g_dev['events'],ephem.now(),self.config["camera"][g_dev['cam']
+                #                                          .name]["settings"]['focus_image_crop_width'], self.config["camera"][g_dev['cam']
+                #                                                                                    .name]["settings"]['focus_image_crop_height'], is_osc,interpolate_for_focus,bin_for_focus,focus_bin_value,interpolate_for_sep,bin_for_sep,sep_bin_value,focus_jpeg_size,saturate,minimum_realistic_seeing
+                #                                                                                                                                                           ], open('subprocesses/testSEPpickle','wb'))
     
                 del hdufocusdata
                 #plog ("pickling time: " + str(time.time()-pickletime))
@@ -1799,7 +1799,11 @@ sel
                 # Essentially wait until the subprocess is complete
                 sep_subprocess.communicate()
 
+
+                
+
                 # LOADING UP THE SEP FILE HERE AGAIN
+                
 
                 if os.path.exists(im_path + text_name.replace('.txt', '.sep')):
                     sources = Table.read(im_path + text_name.replace('.txt', '.sep'), format='csv')
@@ -1907,6 +1911,13 @@ sel
                     g_dev['cam'].expresult['FWHM'] = np.nan
                     g_dev['cam'].expresult['No_of_sources'] = np.nan
                     
+                
+                if os.path.exists(im_path + text_name.replace('.txt', '.rad')):
+                    try:
+                        g_dev['cam'].enqueue_for_fastAWS(250, im_path, text_name.replace('.txt', '.rad'))
+                        #plog("Sent SEP up")
+                    except:
+                        plog("Failed to send RAD up for some reason")
                 
                 if frame_type == 'focus':
                     g_dev["cam"].enqueue_for_fastAWS(100, im_path, text_name.replace('EX00.txt', 'EX10.jpg'))
