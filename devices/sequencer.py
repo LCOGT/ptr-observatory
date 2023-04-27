@@ -486,7 +486,7 @@ class Sequencer:
                                 #g_dev['events']['Observing Begins'] = ephem_now + 0.1/24
                                 self.weather_report_wait_until_open=False
                                 self.weather_report_is_acceptable_to_observe=True
-                                if (g_dev['events']['Observing Begins '] < ephem.now() < g_dev['events']['Observing Ends']):
+                                if (g_dev['events']['Observing Begins'] < ephem.now() < g_dev['events']['Observing Ends']):
                                     # Move to reasonable spot
                                     if g_dev['mnt'].mount.Tracking == False:
                                         if g_dev['mnt'].mount.CanSetTracking:   
