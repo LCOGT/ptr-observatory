@@ -597,7 +597,7 @@ try:
         #crad=radial_profile(hdufocusdata,[cx,cy])[:(5*int(rfp))]
         temp_array=extract_array(hdufocusdata, (radius_of_radialprofile,radius_of_radialprofile), (cy,cx))
         crad=radial_profile(np.asarray(temp_array),[centre_of_radialprofile,centre_of_radialprofile])
-        dodgylist.append([cx,cy,crad])
+        dodgylist.append([cx,cy,crad,temp_array])
         #print (crad)
     
     #print ("Radtime: " + str(time.time()-radtime))

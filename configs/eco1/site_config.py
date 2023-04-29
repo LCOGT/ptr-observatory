@@ -483,7 +483,7 @@ site_config = {
                         
                         #['w',     [0,  0],     0, 72.7, [1.00 ,  72], 'PL'],    #0.   For sequencer autofocus  consider foc or f filter
                         #['focus', [0,  0],     0, 148, [1.00 ,  72], 'focus'],    #0.
-                        ['lum',    [0,  0],     0, 179, [1.00 ,  72], 'PhLum'],    #1.
+                        ['lum',    [0,  0],     0, 75, [1.00 ,  72], 'PhLum'],    #1.
                         ['ip',    [1,  1],     0, 50, [1.00 , 119], 'PhRed'],    #2.
                         ['v',    [2,  2],     0, 16, [1.00 , 113], 'PhGreen'],    #3.
                         ['pb',    [3,  3],     0, 25, [0.80 ,  97], 'PhBlue'],    #4.
@@ -726,7 +726,7 @@ site_config = {
                 #'dark_length' : 1,
                 'number_of_bias_to_collect' : 10,
                 'number_of_dark_to_collect' : 10,
-                'number_of_flat_to_collect' : 5,
+                'number_of_flat_to_collect' : 8,
                 'number_of_bias_to_store' : 128,
                 'number_of_dark_to_store' : 128,
                 'number_of_flat_to_store' : 63,
