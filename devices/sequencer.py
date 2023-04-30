@@ -1025,6 +1025,18 @@ class Sequencer:
             
             g_dev['mnt'].go_coord(dest_ra, dest_dec)
             
+            if g_dev["foc"].last_focus_fwhm == None or g_dev["foc"].focus_needed == True:
+
+                g_dev['obs'].send_to_user("Running an initial autofocus run.")
+
+                req2 = {'target': 'near_tycho_star', 'area': 150}
+                if not g_dev['debug']:
+                    self.auto_focus_script(req2, opt, throw = g_dev['foc'].throw)
+                just_focused = True
+                g_dev["foc"].focus_needed = False
+                
+            g_dev['mnt'].go_coord(dest_ra, dest_dec)
+            
             # Quick pointing check and re_seek at the start of each project block
             # Otherwise everyone will get slightly off-pointing images
             # Necessary
@@ -1096,15 +1108,7 @@ class Sequencer:
 
             while left_to_do > 0 and not ended:
 
-                if g_dev["foc"].last_focus_fwhm == None or g_dev["foc"].focus_needed == True:
-
-                    g_dev['obs'].send_to_user("Running an initial autofocus run.")
-
-                    req2 = {'target': 'near_tycho_star', 'area': 150}
-                    if not g_dev['debug']:
-                        self.auto_focus_script(req2, opt, throw = g_dev['foc'].throw)
-                    just_focused = True
-                    g_dev["foc"].focus_needed = False
+                
 
                 # A flag to make sure the first image after a slew in an exposure set is solved, but then onto the normal solve timer
                 reset_solve = True
