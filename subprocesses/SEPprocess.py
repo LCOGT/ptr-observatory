@@ -7,10 +7,12 @@ Created on Sun Apr 23 04:37:30 2023
 
 import numpy as np
 from astropy.stats import median_absolute_deviation
+from astropy.nddata.utils import extract_array
 import sys
 import pickle
 import time
 import sep
+import math
 from auto_stretch.stretch import Stretch
 from astropy.nddata import block_reduce
 from colour_demosaicing import (
@@ -22,6 +24,20 @@ from astropy.table import Table
 from astropy.utils.exceptions import AstropyUserWarning
 import warnings
 warnings.simplefilter('ignore', category=AstropyUserWarning)
+import matplotlib.pyplot as plt
+
+
+def radial_profile(data, center):
+    y, x = np.indices((data.shape))
+    r = np.sqrt((x - center[0])**2 + (y - center[1])**2)
+    r = r.astype(int)
+
+    tbin = np.bincount(r.ravel(), data.ravel())
+    nr = np.bincount(r.ravel())
+    radialprofile = tbin / nr
+    return radialprofile 
+
+
 
 input_sep_info=pickle.load(sys.stdin.buffer)
 #input_sep_info=pickle.load(open('testSEPpickle','rb'))
@@ -552,3 +568,43 @@ text = open(
 #breakpoint()
 text.write(str(hduheader))
 text.close()
+
+
+
+
+# Create radial profiles for UI
+
+
+
+# Determine radial profiles of top 20 star-ish sources
+try:
+    # Get rid of non-stars
+    sources=sources[sources['FWHM'] < rfr + 2 * rfs]
+
+    # Reverse sort sources on flux
+    sources.sort('flux')
+    sources.reverse()
+    
+    radtime=time.time()
+    dodgylist=[]
+    radius_of_radialprofile=(5*math.ceil(rfp))
+    # Round up to nearest odd number to make a symmetrical array
+    radius_of_radialprofile=(radius_of_radialprofile // 2 *2 +1)
+    centre_of_radialprofile=int((radius_of_radialprofile /2)+1)
+    for i in range(min(len(sources),200)):
+        cx= (sources[i]['x'])
+        cy= (sources[i]['y'])
+        #crad=radial_profile(hdufocusdata,[cx,cy])[:(5*int(rfp))]
+        temp_array=extract_array(hdufocusdata, (radius_of_radialprofile,radius_of_radialprofile), (cy,cx))
+        crad=radial_profile(np.asarray(temp_array),[centre_of_radialprofile,centre_of_radialprofile])
+        dodgylist.append([cx,cy,crad,temp_array])
+        #print (crad)
+    
+    #print ("Radtime: " + str(time.time()-radtime))
+    
+    pickle.dump(dodgylist, open(im_path + text_name.replace('.txt', '.rad'),'wb'))
+    
+    #plt.plot((radial_profile(hdufocusdata,[503,3823])[:(5*int(rfp))]))
+    #breakpoint()
+except:
+    pass
