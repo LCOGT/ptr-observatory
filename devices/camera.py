@@ -1472,7 +1472,7 @@ class Camera:
             if g_dev["fil"].null_filterwheel == False:
                 if self.current_filter.lower() in ['ha', 'o3', 's2', 'n2', 'y', 'up', 'u']:
                     ssExp = ssExp * 3.0 # For narrowband and low throughput filters, increase base exposure time.
-            if not imtype.lower() in ["light"]:
+            if not imtype.lower() in ["light", "expose"]:
                 Nsmartstack=1
                 SmartStackID='no'
             elif (self.smartstack == 'yes' or self.smartstack == True) and (exposure_time >= 3*ssExp):
