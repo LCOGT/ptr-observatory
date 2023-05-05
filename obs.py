@@ -1552,6 +1552,12 @@ sel
                                         self.aws_queue.task_done()
                                         tempPTR = 1
                                         retryarchive = 11
+                                        # Only remove file if successfully uploaded
+                                        if ('calibmasters' not in filepath):
+                                            try:
+                                                os.remove(filepath)
+                                            except:
+                                                plog("Couldn't remove " + str(filepath) + "file after transfer")
                                     except ocs_ingester.exceptions.DoNotRetryError:
                                         plog ("Couldn't upload to PTR archive")
                                         plog ("Caught filespecification error properly")
@@ -1594,6 +1600,14 @@ sel
                             aws_resp = g_dev["obs"].api.authenticated_request(
                                 "POST", "/upload/", {"object_name": filename})
                             reqs.post(aws_resp["url"], data=aws_resp["fields"], files=files)
+                            
+                            # Only remove file if successfully uploaded
+                            if ('calibmasters' not in filepath):
+                                try:
+                                    os.remove(filepath)
+                                except:
+                                    plog("Couldn't remove " + str(filepath) + "file after transfer")
+                            
                             self.aws_queue.task_done()
 
                         except:
@@ -1602,13 +1616,7 @@ sel
 
                 one_at_a_time = 0
 
-                # Don't remove local calibrations after uploading but remove the others
-                #print(filepath)
-                if ('calibmasters' not in filepath):
-                    try:
-                        os.remove(filepath)
-                    except:
-                        plog("Couldn't remove " + str(filepath) + "file after transfer")
+                
             else:
                 time.sleep(0.5)
 

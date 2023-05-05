@@ -23,6 +23,10 @@ import gc
 from pyowm import OWM
 from pyowm.utils import config
 
+from devices.camera import Camera
+from devices.filter_wheel import FilterWheel
+from devices.mount import Mount
+
 #from pyowm.utils import timestamps
 from glob import glob
 import traceback
@@ -1025,6 +1029,7 @@ class Sequencer:
             
             g_dev['mnt'].go_coord(dest_ra, dest_dec)
             
+            # Undertake a focus if necessary before starting observing the target
             if g_dev["foc"].last_focus_fwhm == None or g_dev["foc"].focus_needed == True:
 
                 g_dev['obs'].send_to_user("Running an initial autofocus run.")
@@ -1689,6 +1694,32 @@ class Sequencer:
         # Now time to regenerate the local masters
         
         self.regenerate_local_masters()
+        
+        # Daily reboot of necessary windows 32 programs *Cough* Theskyx *Cough*
+        if g_dev['mnt'].theskyx: # It is only the mount that is the reason theskyx needs to reset
+            os.system("taskkill /IM TheSkyX.exe /F")
+            time.sleep(60) # give it time to settle down.
+            #breakpoint()
+            Mount(self.config['mount']['mount1']['driver'], 
+                           g_dev['obs'].name,
+                           self.config['mount']['mount1']['settings'], 
+                           g_dev['obs'].config, 
+                           g_dev['obs'].astro_events, 
+                           tel=True)
+            
+            g_dev['mnt'].park_command({}, {})
+            
+            # If theskyx is controlling the camera and filter wheel, reconnect the camera and filter wheel
+            if g_dev['cam'].theskyx:
+                Camera(self.config['camera']['camera_1_1']['driver'], 
+                                g_dev['cam'].name, 
+                                self.config)
+            
+            if self.config['filter_wheel']['filter_wheel1']['driver'] == 'CCDSoft2XAdaptor.ccdsoft5Camera':
+                FilterWheel('CCDSoft2XAdaptor.ccdsoft5Camera', 
+                                     g_dev['obs'].name, 
+                                     self.config)
+            
         
         return
         
