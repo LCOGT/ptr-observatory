@@ -1697,29 +1697,34 @@ class Sequencer:
         
         # Daily reboot of necessary windows 32 programs *Cough* Theskyx *Cough*
         if g_dev['mnt'].theskyx: # It is only the mount that is the reason theskyx needs to reset
-            os.system("taskkill /IM TheSkyX.exe /F")
-            time.sleep(60) # give it time to settle down.
-            #breakpoint()
-            Mount(self.config['mount']['mount1']['driver'], 
-                           g_dev['obs'].name,
-                           self.config['mount']['mount1']['settings'], 
-                           g_dev['obs'].config, 
-                           g_dev['obs'].astro_events, 
-                           tel=True)
+            self.kill_and_reboot_theskyx()
             
-            g_dev['mnt'].park_command({}, {})
-            
-            # If theskyx is controlling the camera and filter wheel, reconnect the camera and filter wheel
-            if g_dev['cam'].theskyx:
-                Camera(self.config['camera']['camera_1_1']['driver'], 
-                                g_dev['cam'].name, 
-                                self.config)
-            
-            if self.config['filter_wheel']['filter_wheel1']['driver'] == 'CCDSoft2XAdaptor.ccdsoft5Camera':
-                FilterWheel('CCDSoft2XAdaptor.ccdsoft5Camera', 
-                                     g_dev['obs'].name, 
-                                     self.config)
-            
+        
+        return
+    
+    def kill_and_reboot_theskyx(self):
+        os.system("taskkill /IM TheSkyX.exe /F")
+        time.sleep(60) # give it time to settle down.
+        #breakpoint()
+        Mount(self.config['mount']['mount1']['driver'], 
+                       g_dev['obs'].name,
+                       self.config['mount']['mount1']['settings'], 
+                       g_dev['obs'].config, 
+                       g_dev['obs'].astro_events, 
+                       tel=True)
+        
+        g_dev['mnt'].park_command({}, {})
+        
+        # If theskyx is controlling the camera and filter wheel, reconnect the camera and filter wheel
+        if g_dev['cam'].theskyx:
+            Camera(self.config['camera']['camera_1_1']['driver'], 
+                            g_dev['cam'].name, 
+                            self.config)
+        
+        if self.config['filter_wheel']['filter_wheel1']['driver'] == 'CCDSoft2XAdaptor.ccdsoft5Camera':
+            FilterWheel('CCDSoft2XAdaptor.ccdsoft5Camera', 
+                                 g_dev['obs'].name, 
+                                 self.config)
         
         return
         
@@ -3296,8 +3301,11 @@ class Sequencer:
                 
         except:
             plog("Motion check faulted.")
-            plog(traceback.format_exc())
-            breakpoint()
+            if g_dev['mnt'].theskyx:
+                self.kill_and_reboot_theskyx()
+            else:
+                plog(traceback.format_exc())
+                breakpoint()
         
         if req['target'] == 'near_tycho_star':   ## 'bin', 'area'  Other parameters
             #  Go to closest Mag 7.5 Tycho * with no flip

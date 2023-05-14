@@ -1089,23 +1089,27 @@ sel
 
             # breakpoint()
 
-            # Check that the mount hasn't slewed too close to the sun
-            sun_coords = get_sun(Time.now())
-            temppointing = SkyCoord((g_dev['mnt'].current_icrs_ra)*u.hour,
-                                    (g_dev['mnt'].current_icrs_dec)*u.degree, frame='icrs')
-
-            sun_dist = sun_coords.separation(temppointing)
-            #plog ("sun distance: " + str(sun_dist.degree))
-            if sun_dist.degree < self.config['closest_distance_to_the_sun'] and not g_dev['mnt'].mount.AtPark:
-                g_dev['obs'].send_to_user("Found telescope pointing too close to the sun: " +
-                                          str(sun_dist.degree) + " degrees.")
-                plog("Found telescope pointing too close to the sun: " + str(sun_dist.degree) + " degrees.")
-                g_dev['obs'].send_to_user("Parking scope and cancelling all activity")
-                plog("Parking scope and cancelling all activity")
-                self.cancel_all_activity()
-                if not g_dev['mnt'].mount.AtPark:
-                    g_dev['mnt'].park_command()
-                return
+            
+            if not g_dev['mnt'].mount.AtPark: # Only do the sun check if scope isn't parked
+                # Check that the mount hasn't slewed too close to the sun
+                sun_coords = get_sun(Time.now())
+                try:
+                    temppointing = SkyCoord((g_dev['mnt'].current_icrs_ra)*u.hour,
+                                            (g_dev['mnt'].current_icrs_dec)*u.degree, frame='icrs')
+                except:
+                    breakpoint()
+                sun_dist = sun_coords.separation(temppointing)
+                #plog ("sun distance: " + str(sun_dist.degree))
+                if sun_dist.degree < self.config['closest_distance_to_the_sun'] and not g_dev['mnt'].mount.AtPark:
+                    g_dev['obs'].send_to_user("Found telescope pointing too close to the sun: " +
+                                              str(sun_dist.degree) + " degrees.")
+                    plog("Found telescope pointing too close to the sun: " + str(sun_dist.degree) + " degrees.")
+                    g_dev['obs'].send_to_user("Parking scope and cancelling all activity")
+                    plog("Parking scope and cancelling all activity")
+                    self.cancel_all_activity()
+                    if not g_dev['mnt'].mount.AtPark:
+                        g_dev['mnt'].park_command()
+                    return
 
             # If the shutter is open, check it is meant to be.
             # This is just a brute force overriding safety check.

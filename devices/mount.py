@@ -230,8 +230,11 @@ class Mount:
             
         except:
             plog ("Failed to get the current sidereal time from the mount.")
-        self.current_icrs_ra = "Unspecified_Ra"
-        self.current_icrs_dec = " Unspecified_Dec"
+        self.current_icrs_ra = self.mount.RightAscension
+        self.current_icrs_dec = self.mount.Declination
+        
+        
+        
         self.delta_t_s = HTOSec/12   #5 minutes
         self.prior_roll_rate = 0
         self.prior_pitch_rate = 0
