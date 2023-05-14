@@ -1138,7 +1138,10 @@ class Camera:
         if self.user_name != self.last_user_name:
             self.last_user_name = self.user_name
         if action == "expose" and not self.exposure_busy:
-
+            if req['longstack'] or req['longstack'] == 'yes':
+                req['longstackname'] = (datetime.datetime.now().strftime("%d%m%y%H%M%S") + 'lngstk')
+            print (req)
+            #breakpoint()
             self.expose_command(req, opt, user_id=command['user_id'], user_name=command['user_name'], user_roles=command['user_roles'], do_sep=True, quick=False)
             self.exposure_busy = False  # Hangup needs to be guarded with a timeout.
             self.active_script = None
@@ -1350,6 +1353,8 @@ class Camera:
             LongStackID=(datetime.datetime.now().strftime("%d%m%y%H%M%S"))
         else:
             LongStackID = required_params['longstackname']
+
+        #breakpoint()
 
         self.blockend = required_params.get('block_end', "None")
         self.pane = optional_params.get("pane", None)
