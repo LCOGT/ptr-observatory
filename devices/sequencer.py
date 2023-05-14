@@ -1697,12 +1697,13 @@ class Sequencer:
         
         # Daily reboot of necessary windows 32 programs *Cough* Theskyx *Cough*
         if g_dev['mnt'].theskyx: # It is only the mount that is the reason theskyx needs to reset
-            self.kill_and_reboot_theskyx()
+            self.kill_and_reboot_theskyx(g_dev['mnt'].current_icrs_ra, g_dev['mnt'].current_icrs_dec)
+            g_dev['mnt'].park_command({}, {})
             
         
         return
     
-    def kill_and_reboot_theskyx(self):
+    def kill_and_reboot_theskyx(self, returnra, returndec):
         os.system("taskkill /IM TheSkyX.exe /F")
         time.sleep(60) # give it time to settle down.
         #breakpoint()
@@ -1725,6 +1726,8 @@ class Sequencer:
             FilterWheel('CCDSoft2XAdaptor.ccdsoft5Camera', 
                                  g_dev['obs'].name, 
                                  self.config)
+        
+        g_dev['mnt'].go_coord(returnra, returndec)
         
         return
         
@@ -3302,7 +3305,7 @@ class Sequencer:
         except:
             plog("Motion check faulted.")
             if g_dev['mnt'].theskyx:
-                self.kill_and_reboot_theskyx()
+                self.kill_and_reboot_theskyx(g_dev['mnt'].current_icrs_ra, g_dev['mnt'].current_icrs_dec)
             else:
                 plog(traceback.format_exc())
                 breakpoint()
