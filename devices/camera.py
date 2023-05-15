@@ -2177,7 +2177,15 @@ class Camera:
                         ]['direct_qhy_readout_mode'], "QHY Readout Mode")
     
                         
-                    hdu.header["TIMESYS"] = ("UTC", "Time system used")                    
+                    hdu.header["TIMESYS"] = ("UTC", "Time system used") 
+                                       
+                    hdu.header["DATE"] = (
+                        datetime.datetime.isoformat(
+                            datetime.datetime.utcfromtimestamp(start_time_of_observation)
+                        ),
+                        "Start date and time of observation"
+                    )
+                    
                     hdu.header["DATE-OBS"] = (
                         datetime.datetime.isoformat(
                             datetime.datetime.utcfromtimestamp(start_time_of_observation)
@@ -2491,10 +2499,13 @@ class Camera:
                         "Effective mean airmass",
                     )
                     g_dev["airmass"] = float(airmass_of_observation)
-                    hdu.header["REFRACT"] = (
-                        round(g_dev["mnt"].refraction_rev, 3),
-                        "asec",
-                    )
+                    try:
+                        hdu.header["REFRACT"] = (
+                            round(g_dev["mnt"].refraction_rev, 3),
+                            "asec",
+                        )
+                    except:
+                        pass
                     hdu.header["MNTRDSYS"] = (
                         avg_mnt["coordinate_system"],
                         "Mount coordinate system",
