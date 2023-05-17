@@ -3543,8 +3543,11 @@ class Sequencer:
                 
         except:
             plog("Motion check faulted.")
-            plog(traceback.format_exc())
-            breakpoint()
+            if g_dev['mnt'].theskyx:
+                self.kill_and_reboot_theskyx(g_dev['mnt'].current_icrs_ra, g_dev['mnt'].current_icrs_dec)
+            else:
+                plog(traceback.format_exc())
+                breakpoint()           
             
         
         
@@ -3552,7 +3555,15 @@ class Sequencer:
         g_dev["obs"].send_to_user("Returning to RA:  " +str(start_ra) + " Dec: " + str(start_dec))
         g_dev["mnt"].last_ra = start_ra
         g_dev["mnt"].last_dec = start_dec
-        g_dev['mnt'].mount.SlewToCoordinatesAsync(start_ra, start_dec)   #Return to pre-focus pointing.
+        try:
+            g_dev['mnt'].mount.SlewToCoordinatesAsync(start_ra, start_dec)   #Return to pre-focus pointing.
+        except:
+            plog("mount failed to slew back to original position")
+            if g_dev['mnt'].theskyx:
+                self.kill_and_reboot_theskyx(start_ra, start_dec)
+            else:
+                plog(traceback.format_exc())
+                breakpoint()
         wait_for_slew()
         #if sim:
         #    g_dev['foc'].guarded_move((focus_start)*g_dev['foc'].micron_to_steps)
