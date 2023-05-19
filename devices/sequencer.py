@@ -3398,6 +3398,7 @@ class Sequencer:
                     result['FWHM'] = 4
                     result['mean_focus'] = g_dev['foc'].focuser.Position*g_dev['foc'].steps_to_micron
                 except:
+                    plog(traceback.format_exc())
                     breakpoint()
             try:
                 spot = result['FWHM']
