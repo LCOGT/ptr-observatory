@@ -3394,8 +3394,11 @@ class Sequencer:
                     g_dev["obs"].send_to_user("Cancelling out of activity as no longer open and enabled to observe.")  
                     return
             else:
-                result['FWHM'] = 4
-                result['mean_focus'] = g_dev['foc'].focuser.Position*g_dev['foc'].steps_to_micron
+                try:
+                    result['FWHM'] = 4
+                    result['mean_focus'] = g_dev['foc'].focuser.Position*g_dev['foc'].steps_to_micron
+                except:
+                    breakpoint()
             try:
                 spot = result['FWHM']
                 lsources = result['No_of_sources']
