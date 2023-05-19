@@ -3423,7 +3423,8 @@ class Sequencer:
                         
             except:
                 spot = False
-                foc_pos = False
+                foc_pos = False                
+                lsources=0
                 plog ("spot failed on extensive focus script")
                 plog(traceback.format_exc())
 
@@ -3478,6 +3479,7 @@ class Sequencer:
             except:
                 spot = False
                 foc_pos = False
+                lsources=0
                 plog ("spot failed on extensive focus script")
                 plog(traceback.format_exc())
 
