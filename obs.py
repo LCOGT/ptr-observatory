@@ -1302,7 +1302,7 @@ sel
                             g_dev['mnt'].home_command()
                         # PWI must receive a park() in order to report being parked.  Annoying problem when debugging, because I want tel to stay where it is.
                         g_dev['mnt'].park_command()
-                if g_dev['enc'].status['shutter_status'] is not None:
+                if g_dev['enc'].status is not None:
                     # If the roof IS shut, then the telescope should be shutdown and parked.
                     if g_dev['enc'].status['shutter_status'] == 'Closed':
 
@@ -1330,7 +1330,7 @@ sel
                     if g_dev['enc'].status['shutter_status'] == 'Open' and roof_should_be_shut == False:
                         self.open_and_enabled_to_observe = True
                 else:
-                    plog('Shutter status not reporting correctly')
+                    plog("g_dev['enc'].status not reporting correctly")
             #plog("Current Open and Enabled to Observe Status: " + str(self.open_and_enabled_to_observe))
 
             # Check the mount is still connected
