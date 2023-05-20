@@ -2062,7 +2062,7 @@ sel
                             "permissive_mount_reset"
                         ] == "yes":
                             g_dev["mnt"].reset_mount_reference()
-                            plog("I've  reset the mount_reference 1")
+                            plog("I've  reset the mount_reference.")
                             g_dev["mnt"].current_icrs_ra = solved_ra
                             #    "ra_j2000_hours"
                             # ]
