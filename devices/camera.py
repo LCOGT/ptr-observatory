@@ -1138,7 +1138,10 @@ class Camera:
         if self.user_name != self.last_user_name:
             self.last_user_name = self.user_name
         if action == "expose" and not self.exposure_busy:
-
+            if req['longstack'] or req['longstack'] == 'yes':
+                req['longstackname'] = (datetime.datetime.now().strftime("%d%m%y%H%M%S") + 'lngstk')
+            print (req)
+            #breakpoint()
             self.expose_command(req, opt, user_id=command['user_id'], user_name=command['user_name'], user_roles=command['user_roles'], do_sep=True, quick=False)
             self.exposure_busy = False  # Hangup needs to be guarded with a timeout.
             self.active_script = None
@@ -1350,6 +1353,8 @@ class Camera:
             LongStackID=(datetime.datetime.now().strftime("%d%m%y%H%M%S"))
         else:
             LongStackID = required_params['longstackname']
+
+        #breakpoint()
 
         self.blockend = required_params.get('block_end', "None")
         self.pane = optional_params.get("pane", None)
@@ -2172,7 +2177,15 @@ class Camera:
                         ]['direct_qhy_readout_mode'], "QHY Readout Mode")
     
                         
-                    hdu.header["TIMESYS"] = ("UTC", "Time system used")                    
+                    hdu.header["TIMESYS"] = ("UTC", "Time system used") 
+                                       
+                    hdu.header["DATE"] = (
+                        datetime.datetime.isoformat(
+                            datetime.datetime.utcfromtimestamp(start_time_of_observation)
+                        ),
+                        "Start date and time of observation"
+                    )
+                    
                     hdu.header["DATE-OBS"] = (
                         datetime.datetime.isoformat(
                             datetime.datetime.utcfromtimestamp(start_time_of_observation)
@@ -2486,10 +2499,13 @@ class Camera:
                         "Effective mean airmass",
                     )
                     g_dev["airmass"] = float(airmass_of_observation)
-                    hdu.header["REFRACT"] = (
-                        round(g_dev["mnt"].refraction_rev, 3),
-                        "asec",
-                    )
+                    try:
+                        hdu.header["REFRACT"] = (
+                            round(g_dev["mnt"].refraction_rev, 3),
+                            "asec",
+                        )
+                    except:
+                        pass
                     hdu.header["MNTRDSYS"] = (
                         avg_mnt["coordinate_system"],
                         "Mount coordinate system",

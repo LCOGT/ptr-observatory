@@ -36,29 +36,7 @@ from ptr_utility import plog
 '''
 '''
 
-def wait_for_slew():    
-    
-    try:
-        if not g_dev['mnt'].mount.AtPark:              
-            movement_reporting_timer=time.time()
-            while g_dev['mnt'].mount.Slewing: 
-                if time.time() - movement_reporting_timer > 2.0:
-                    plog( 'm>')
-                    movement_reporting_timer=time.time()
 
-                g_dev['obs'].update_status(mount_only=True, dont_wait=True)            
-            
-    except Exception as e:
-        plog("Motion check faulted.")
-        plog(traceback.format_exc())
-        if 'pywintypes.com_error' in str(e):
-            plog ("Mount disconnected. Recovering.....")
-            time.sleep(30)
-            g_dev['mnt'].mount.Connected = True
-            #g_dev['mnt'].home_command()
-        else:
-            breakpoint()
-    return 
 
 def fit_quadratic(x, y):
     #From Meeus, works fine.
@@ -226,6 +204,27 @@ class Sequencer:
             
             #Consider running this once when in debug mode
         
+
+    def wait_for_slew(self):    
+        
+        try:
+            if not g_dev['mnt'].mount.AtPark:              
+                movement_reporting_timer=time.time()
+                while g_dev['mnt'].mount.Slewing: 
+                    if time.time() - movement_reporting_timer > 2.0:
+                        plog( 'm>')
+                        movement_reporting_timer=time.time()
+
+                    g_dev['obs'].update_status(mount_only=True, dont_wait=True)            
+                
+        except Exception as e:
+            plog("Motion check faulted.")
+            if g_dev['mnt'].theskyx:
+                self.kill_and_reboot_theskyx(g_dev['mnt'].current_icrs_ra, g_dev['mnt'].current_icrs_dec)
+            else:
+                plog(traceback.format_exc())
+                breakpoint() 
+        return 
 
     def get_status(self):
         status = {
@@ -2662,8 +2661,11 @@ class Sequencer:
                 
         except:
             plog("Motion check faulted.")
-            plog(traceback.format_exc())
-            breakpoint()
+            if g_dev['mnt'].theskyx:
+                self.kill_and_reboot_theskyx(g_dev['mnt'].current_icrs_ra, g_dev['mnt'].current_icrs_dec)
+            else:
+                plog(traceback.format_exc())
+                breakpoint()
         
         
         
@@ -2779,7 +2781,7 @@ class Sequencer:
             g_dev["mnt"].last_ra = start_ra
             g_dev["mnt"].last_dec = start_dec
             g_dev['mnt'].mount.SlewToCoordinatesAsync(start_ra, start_dec)  #MAKE sure same style coordinates.
-            wait_for_slew()
+            self.wait_for_slew()
             self.sequencer_hold = False
             self.guard = False
             self.af_guard = False
@@ -2799,7 +2801,7 @@ class Sequencer:
                 self.sequencer_hold = False   #Allow comand checks.
                 self.af_guard = False
                 g_dev['mnt'].mount.SlewToCoordinatesAsync(start_ra, start_dec)   #NB NB Does this really take us back to starting point?
-                wait_for_slew()
+                self.wait_for_slew()
                 self.sequencer_hold = False
                 self.guard = False
                 self.af_guard = False
@@ -2847,7 +2849,7 @@ class Sequencer:
                 g_dev["mnt"].last_ra = start_ra
                 g_dev["mnt"].last_dec = start_dec
                 g_dev['mnt'].mount.SlewToCoordinatesAsync(start_ra, start_dec)   #Return to pre-focus pointing.
-                wait_for_slew()
+                self.wait_for_slew()
             if sim:
 
                 g_dev['foc'].guarded_move((focus_start)*g_dev['foc'].micron_to_steps)
@@ -2909,7 +2911,7 @@ class Sequencer:
                     g_dev["mnt"].last_ra = start_ra
                     g_dev["mnt"].last_dec = start_dec
                     g_dev['mnt'].mount.SlewToCoordinatesAsync(start_ra, start_dec)   #Return to pre-focus pointing.
-                    wait_for_slew()
+                    self.wait_for_slew()
                     return
                 else:
                     plog('Autofocus quadratic equation not converge. Moving back to extensive focus:  ', extensive_focus)
@@ -2924,7 +2926,7 @@ class Sequencer:
                     g_dev["mnt"].last_ra = start_ra
                     g_dev["mnt"].last_dec = start_dec
                     g_dev['mnt'].mount.SlewToCoordinatesAsync(start_ra, start_dec)   #NB NB Does this really take us back to starting point?
-                    wait_for_slew()
+                    self.wait_for_slew()
                     self.sequencer_hold = False
                     self.guard = False
                     self.af_guard = False
@@ -2972,7 +2974,7 @@ class Sequencer:
                 g_dev["mnt"].last_ra = start_ra
                 g_dev["mnt"].last_dec = start_dec
                 g_dev['mnt'].mount.SlewToCoordinatesAsync(start_ra, start_dec)   #Return to pre-focus pointing.
-                wait_for_slew()
+                self.wait_for_slew()
             if sim:
 
                 g_dev['foc'].guarded_move((focus_start)*g_dev['foc'].micron_to_steps)
@@ -3037,7 +3039,7 @@ class Sequencer:
                     g_dev["mnt"].last_ra = start_ra
                     g_dev["mnt"].last_dec = start_dec
                     g_dev['mnt'].mount.SlewToCoordinatesAsync(start_ra, start_dec)   #Return to pre-focus pointing.
-                    wait_for_slew()
+                    self.wait_for_slew()
                     return
                 else:
                     plog('Autofocus quadratic equation not converge. Moving back to extensive focus:  ', extensive_focus)
@@ -3051,7 +3053,7 @@ class Sequencer:
                     g_dev["mnt"].last_ra = start_ra
                     g_dev["mnt"].last_dec = start_dec
                     g_dev['mnt'].mount.SlewToCoordinatesAsync(start_ra, start_dec)   #NB NB Does this really take us back to starting point?
-                    wait_for_slew()
+                    self.wait_for_slew()
                     self.sequencer_hold = False
                     self.guard = False
                     self.af_guard = False
@@ -3110,7 +3112,7 @@ class Sequencer:
                 g_dev["mnt"].last_ra = start_ra
                 g_dev["mnt"].last_dec = start_dec
                 g_dev['mnt'].mount.SlewToCoordinatesAsync(start_ra, start_dec)   #Return to pre-focus pointing.
-                wait_for_slew()
+                self.wait_for_slew()
             else:
                 if extensive_focus == None:
 
@@ -3126,7 +3128,7 @@ class Sequencer:
                     g_dev["mnt"].last_ra = start_ra
                     g_dev["mnt"].last_dec = start_dec
                     g_dev['mnt'].mount.SlewToCoordinatesAsync(start_ra, start_dec)   #Return to pre-focus pointing.
-                    wait_for_slew()
+                    self.wait_for_slew()
                     return
                 else:
                     plog('Autofocus quadratic equation not converge. Moving back to extensive focus:  ', extensive_focus)
@@ -3140,7 +3142,7 @@ class Sequencer:
                     g_dev["mnt"].last_ra = start_ra
                     g_dev["mnt"].last_dec = start_dec
                     g_dev['mnt'].mount.SlewToCoordinatesAsync(start_ra, start_dec)   #NB NB Does this really take us back to starting point?
-                    wait_for_slew()
+                    self.wait_for_slew()
                     self.sequencer_hold = False
                     self.guard = False
                     self.af_guard = False
@@ -3193,7 +3195,7 @@ class Sequencer:
                 g_dev["mnt"].last_ra = start_ra
                 g_dev["mnt"].last_dec = start_dec
                 g_dev['mnt'].mount.SlewToCoordinatesAsync(start_ra, start_dec)   #Return to pre-focus pointing.
-                wait_for_slew()
+                self.wait_for_slew()
                 return
             else:
                 plog('Autofocus quadratic equation not converge. Moving back to extensive focus:  ', extensive_focus)
@@ -3207,7 +3209,7 @@ class Sequencer:
                 g_dev["mnt"].last_ra = start_ra
                 g_dev["mnt"].last_dec = start_dec
                 g_dev['mnt'].mount.SlewToCoordinatesAsync(start_ra, start_dec)   #NB NB Does this really take us back to starting point?
-                wait_for_slew()
+                self.wait_for_slew()
                 self.sequencer_hold = False
                 self.guard = False
                 self.af_guard = False
@@ -3217,7 +3219,7 @@ class Sequencer:
         g_dev["mnt"].last_ra = start_ra
         g_dev["mnt"].last_dec = start_dec
         g_dev['mnt'].mount.SlewToCoordinatesAsync(start_ra, start_dec)   #Return to pre-focus pointing.
-        wait_for_slew()
+        self.wait_for_slew()
         if sim:
 
             g_dev['foc'].guarded_move((focus_start)*g_dev['foc'].micron_to_steps)
@@ -3392,8 +3394,12 @@ class Sequencer:
                     g_dev["obs"].send_to_user("Cancelling out of activity as no longer open and enabled to observe.")  
                     return
             else:
-                result['FWHM'] = 4
-                result['mean_focus'] = g_dev['foc'].focuser.Position*g_dev['foc'].steps_to_micron
+                try:
+                    result['FWHM'] = 4
+                    result['mean_focus'] = g_dev['foc'].focuser.Position*g_dev['foc'].steps_to_micron
+                except:
+                    plog(traceback.format_exc())
+                    breakpoint()
             try:
                 spot = result['FWHM']
                 lsources = result['No_of_sources']
@@ -3421,7 +3427,8 @@ class Sequencer:
                         
             except:
                 spot = False
-                foc_pos = False
+                foc_pos = False                
+                lsources=0
                 plog ("spot failed on extensive focus script")
                 plog(traceback.format_exc())
 
@@ -3476,6 +3483,7 @@ class Sequencer:
             except:
                 spot = False
                 foc_pos = False
+                lsources=0
                 plog ("spot failed on extensive focus script")
                 plog(traceback.format_exc())
 
@@ -3543,8 +3551,11 @@ class Sequencer:
                 
         except:
             plog("Motion check faulted.")
-            plog(traceback.format_exc())
-            breakpoint()
+            if g_dev['mnt'].theskyx:
+                self.kill_and_reboot_theskyx(g_dev['mnt'].current_icrs_ra, g_dev['mnt'].current_icrs_dec)
+            else:
+                plog(traceback.format_exc())
+                breakpoint()           
             
         
         
@@ -3552,8 +3563,16 @@ class Sequencer:
         g_dev["obs"].send_to_user("Returning to RA:  " +str(start_ra) + " Dec: " + str(start_dec))
         g_dev["mnt"].last_ra = start_ra
         g_dev["mnt"].last_dec = start_dec
-        g_dev['mnt'].mount.SlewToCoordinatesAsync(start_ra, start_dec)   #Return to pre-focus pointing.
-        wait_for_slew()
+        try:
+            g_dev['mnt'].mount.SlewToCoordinatesAsync(start_ra, start_dec)   #Return to pre-focus pointing.
+        except:
+            plog("mount failed to slew back to original position")
+            if g_dev['mnt'].theskyx:
+                self.kill_and_reboot_theskyx(start_ra, start_dec)
+            else:
+                plog(traceback.format_exc())
+                breakpoint()
+        self.wait_for_slew()
         #if sim:
         #    g_dev['foc'].guarded_move((focus_start)*g_dev['foc'].micron_to_steps)
         #  NB here we could re-solve with the overlay spot just to verify solution is sane.
@@ -3637,8 +3656,11 @@ class Sequencer:
                 
         except:
             plog("Motion check faulted.")
-            plog(traceback.format_exc())
-            breakpoint()
+            if g_dev['mnt'].theskyx:
+                self.kill_and_reboot_theskyx(g_dev['mnt'].current_icrs_ra, g_dev['mnt'].current_icrs_dec)
+            else:
+                plog(traceback.format_exc())
+                breakpoint()  
         
         if True: #req['target'] == 'near_tycho_star':   ## 'bin', 'area'  Other parameters
             #  Go to closest Mag 7.5 Tycho * with no flip
@@ -3866,7 +3888,7 @@ class Sequencer:
         g_dev["mnt"].last_ra = start_ra
         g_dev["mnt"].last_dec = start_dec
         g_dev['mnt'].mount.SlewToCoordinatesAsync(start_ra, start_dec)   #Return to pre-focus pointing.
-        wait_for_slew()
+        self.wait_for_slew()
         if sim:
             g_dev['foc'].guarded_move((foc_start)*g_dev['foc'].micron_to_steps)
         self.sequencer_hold = False
