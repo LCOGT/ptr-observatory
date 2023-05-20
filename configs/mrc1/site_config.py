@@ -120,7 +120,7 @@ site_config = {
 
 
 
-    'obsid_in_automatic_default': "Automatic",  # "Manual", "Shutdown"
+    'obsid_in_automatic_default': "Shutdown",  # "Manual", "Shutdown"
     'automatic_detail_default': "Enclosure is set to Automatic mode.",
 
 
