@@ -119,7 +119,7 @@ class Enclosure:
         g_dev['enc'] = self
         self.slew_latch = False
 
-        self.dome_open=None # Just initialising this variable
+        self.roof_open=None # Just initialising this variable  NB chnged to roof to be more generic
 
 
         if self.config['site_in_automatic_default'] == "Automatic":
@@ -132,7 +132,7 @@ class Enclosure:
             self.site_in_automatic = False
             self.site_mode = 'Shutdown'
         self.directly_connected = self.config['enclosure']['enclosure1']['enclosure_is_directly_connected']
-        self.is_dome = self.config['enclosure']['enclosure1']['is_dome']
+        self.is_dome = self.config['enclosure']['enclosure1']['enc_is_dome']  #NB Domes generall hve an azimuth property
         self.time_of_next_slew = time.time()
         self.hostname = socket.gethostname()
         if self.hostname in self.config['wema_hostname']:
@@ -200,7 +200,7 @@ class Enclosure:
             self.wema_allowed_to_open_roof = True
         else:
 
-            self.site_allowed_to_open_roof = False
+            self.wema_allowed_to_open_roof = False
 
 
 
@@ -408,6 +408,7 @@ class Enclosure:
             # g_dev['redis'].set('enc_status', status, ex=3600)  #This is occasionally used by mouning.
 
             if self.is_dome:
+                # this is here so we can command the dome, an ARO issue.  WER
 
                 try:
                     # Occasionally this property throws an exception:  (W HomeDome)
@@ -858,12 +859,13 @@ class Enclosure:
     def guarded_open(self):
         # The guard is obsessively redundant!
 
-
+            breakpoint()
             if self.config['observing_conditions']['observing_conditions1']['driver'] == None or \
                 (g_dev['ocn'].status['wx_ok'] in [True, 'Yes'] and not (g_dev['ocn'].wx_hold \
                                               or g_dev['ocn'].clamp_latch)):     # NB Is Wx ok really the right criterion???
+               
                 try:
-                    if self.site_allowed_to_open_roof == True:
+                    if self.wema_allowed_to_open_roof:
                         if time.time() > self.guarded_roof_open_timer:
                             print(g_dev['enc'].status['shutter_status'] != 'Open')
                             print(self.dome_open)
@@ -910,8 +912,9 @@ class Enclosure:
 
         #  NB NB NB Gather some facts:
 
-        ops_window_start, sunset, sunrise, ephem_now = self.astro_events.getSunEvents()
 
+        ops_window_start, sunset, sunrise, ephem_now = self.astro_events.getSunEvents()
+       
         az_opposite_sun = g_dev['evnt'].sun_az_now()
         #plog('Sun Az: ', az_opposite_sun)
         az_opposite_sun -= 180.
@@ -1026,14 +1029,14 @@ class Enclosure:
             self.dome_homed = True    #g_dev['events']['Cool Down, Open']  <=
         elif ((g_dev['events']['Cool Down, Open']  <= ephem_now < g_dev['events']['Observing Ends']) and \
                g_dev['enc'].site_mode == 'Automatic') and not (g_dev['ocn'].wx_hold or g_dev['ocn'].clamp_latch) and net_connected:
-
+            
             try:
                 # if self.status_string in ['Closed']:   #Fails at SRO, attriute not set. 20220806 wer
                 # ****************************NB NB NB For SRO we have no control so just observe and skip all this logic
 
                 # Don't check the string, the string could be wrong!
 
-                if g_dev['enc'].status['shutter_status'] != 'Open' or not self.dome_open:
+                if g_dev['enc'].status is not None and g_dev['enc'].status['shutter_status'] != 'Open' or not self.dome_open:
                     plog("Entering Guarded open, Expect slew opposite Sun")
 
                     self.guarded_open()

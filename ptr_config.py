@@ -29,7 +29,6 @@ pathdone = 0
 
 # First try to get the hostname from a file in the directory above (..) ptr-observatory
 cwd = str(pathlib.Path().resolve())
-
 hwd = cwd.replace("ptr-observatory", "")
 hostname_file = glob.glob(hwd + "hostname*")
 

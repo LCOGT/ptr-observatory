@@ -30,9 +30,9 @@ from datetime import datetime, timezone, timedelta
 from dateutil import tz
 
 siteCoordinates = EarthLocation(
-    lat=site_config["latitude"] * u.deg,
-    lon=site_config["longitude"] * u.deg,
-    height=site_config["elevation"] * u.m,
+    lat=site_config["site_latitude"] * u.deg,
+    lon=site_config["site_longitude"] * u.deg,
+    height=site_config["site_elevation"] * u.m,
 )
 
 Target = namedtuple(
