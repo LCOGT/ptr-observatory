@@ -2604,7 +2604,7 @@ sel
                         )
                         imgdata = np.load(paths["red_path"] + paths["red_name01"].replace('.fits','.npy'))
                         
-                        self.to_slow_process(1000,('reduced', paths["red_path"] + paths["red_name01"], imgdata, img[0].header, \
+                        g_dev['cam'].to_slow_process(1000,('reduced', paths["red_path"] + paths["red_name01"], imgdata, img[0].header, \
                                                'EXPOSE', g_dev["mnt"].current_icrs_ra, g_dev["mnt"].current_icrs_dec))
                     
                     if self.config["camera"][g_dev['cam'].name]["settings"]["is_osc"]:
