@@ -621,7 +621,7 @@ site_config = {
             'settings': {
 
                 # If there is sufficient memory ... OR .... not many flats, it is faster to keep the flats in memory.
-                'hold_flats_in_memory': False,
+                'hold_flats_in_memory': True,
 
 
 

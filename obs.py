@@ -148,6 +148,12 @@ class Observatory:
         self.obsid_path = ptr_config["client_path"] + '/' + self.name + '/'
         if not os.path.exists(self.obsid_path):
             os.makedirs(self.obsid_path)
+        self.local_calibration_path = ptr_config['local_calibration_path'] + self.config['obs_id'] + '/'
+        if not os.path.exists(ptr_config['local_calibration_path']):
+            os.makedirs(ptr_config['local_calibration_path'])
+        if not os.path.exists(self.local_calibration_path):
+            os.makedirs(self.local_calibration_path)
+
 
         if self.debug_flag:
             self.debug_lapse_time = time.time() + self.config['debug_duration_sec']
@@ -268,11 +274,8 @@ class Observatory:
 
 
         # Local Calibration Paths
-        self.local_calibration_path = ptr_config['local_calibration_path'] + self.config['obs_id'] + '/'
-        if not os.path.exists(ptr_config['local_calibration_path']):
-            os.makedirs(ptr_config['local_calibration_path'])
-        if not os.path.exists(self.local_calibration_path):
-            os.makedirs(self.local_calibration_path)
+        #self.local_calibration_path = ptr_config['local_calibration_path'] + self.config['obs_id'] + '/'
+        
         if not os.path.exists(self.local_calibration_path + "calibmasters"):  # retaining for backward compatibility
             os.makedirs(self.local_calibration_path + "calibmasters")
         camera_name = self.config['camera']['camera_1_1']['name']

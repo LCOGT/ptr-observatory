@@ -379,6 +379,10 @@ class Camera:
         self.obsid_path = g_dev['obs'].obsid_path
         if not os.path.exists(self.obsid_path):
             os.makedirs(self.obsid_path)
+        self.local_calibration_path = g_dev['obs'].local_calibration_path
+        if not os.path.exists(self.local_calibration_path):
+            os.makedirs(self.local_calibration_path)
+        
         self.archive_path = self.config["archive_path"] + self.config['obs_id'] + '/'+ "archive/"
         if not os.path.exists(self.config["archive_path"] +'/' + self.config['obs_id']):
             os.makedirs(self.config["archive_path"] +'/' + self.config['obs_id'])
@@ -429,7 +433,7 @@ class Camera:
         tempfrontcalib=g_dev['obs'].obs_id + '_' + g_dev['cam'].alias +'_'
      
         try:            
-            tempbiasframe = fits.open(self.obsid_path + "archive/" + self.alias + "/calibmasters" \
+            tempbiasframe = fits.open(self.local_calibration_path + "archive/" + self.alias + "/calibmasters" \
                                       + "/" + tempfrontcalib + "BIAS_master_bin1.fits")
             tempbiasframe = np.array(tempbiasframe[0].data, dtype=np.float32)
             self.biasFiles.update({'1': tempbiasframe})
@@ -438,7 +442,7 @@ class Camera:
             plog("Bias frame for Binning 1 not available")
         
         try:
-            tempdarkframe = fits.open(self.obsid_path + "archive/" + self.alias + "/calibmasters" \
+            tempdarkframe = fits.open(self.local_calibration_path + "archive/" + self.alias + "/calibmasters" \
                                       + "/" + tempfrontcalib +  "DARK_master_bin1.fits")
 
             tempdarkframe = np.array(tempdarkframe[0].data, dtype=np.float32)
@@ -448,7 +452,7 @@ class Camera:
             plog("Dark frame for Binning 1 not available")  
 
         try:  
-            fileList = glob.glob(self.obsid_path + "archive/" + self.alias + "/calibmasters/masterFlat*_bin1.npy")
+            fileList = glob.glob(self.local_calibration_path + "archive/" + self.alias + "/calibmasters/masterFlat*_bin1.npy")
             for file in fileList:
                 if self.config['camera'][self.name]['settings']['hold_flats_in_memory']:
                     tempflatframe=np.load(file)
