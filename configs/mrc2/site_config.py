@@ -662,7 +662,7 @@ site_config = {
             'file_mode_path':  'Q:/000ptr_saf/archive/kf01/autosaves/',
             'settings': {
                 
-                'hold_flats_in_memory': False, # If there is sufficient memory ... OR .... not many flats, it is faster to keep the flats in memory.
+                'hold_flats_in_memory': True, # If there is sufficient memory ... OR .... not many flats, it is faster to keep the flats in memory.
 
                 # For direct QHY usage we need to set the appropriate gain.
                 # This changes from site to site. "Fast" scopes like the RASA need lower gain then "slow".
