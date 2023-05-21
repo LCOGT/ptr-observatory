@@ -151,6 +151,9 @@ site_config = {
     'stdev_fwhm': 0.5,  # This is the expected variation in FWHM at a given telescope/camera/site combination. This is used to check if a fwhm is within normal range or the focus has shifted
     'focus_exposure_time': 10,  # Exposure time in seconds for exposure image
     'pointing_exposure_time': 20,  # Exposure time in seconds for exposure image
+    'pointing_correction_dec_multiplier' : -1,
+    'pointing_correction_ra_multiplier' : -1,
+    
     'focus_trigger': 0.75,  # What FWHM increase is needed to trigger an autofocus
     'solve_nth_image': 1,  # Only solve every nth image
     'solve_timer': 0.05,  # Only solve every X minutes

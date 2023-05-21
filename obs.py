@@ -2010,10 +2010,10 @@ sel
                     bin_for_platesolve= self.config["camera"][g_dev['cam'].name]["settings"]['bin_for_platesolve']
                     platesolve_bin_factor=self.config["camera"][g_dev['cam'].name]["settings"]['platesolve_bin_value']
                     
-                    pickle.dump([hdufocusdata, hduheader, cal_path, cal_name, frame_type, time_platesolve_requested, 
+                    pickle.dump([hdufocusdata, hduheader, self.local_calibration_path, cal_name, frame_type, time_platesolve_requested, 
                      pixscale, pointing_ra, pointing_dec, platesolve_crop, bin_for_platesolve, platesolve_bin_factor, g_dev['cam'].config["camera"][g_dev['cam'].name]["settings"]["saturate"]], platesolve_subprocess.stdin)
                                                                                                                                  
-                    #pickle.dump([hdufocusdata, hduheader, cal_path, cal_name, frame_type, time_platesolve_requested, 
+                    #pickle.dump([hdufocusdata, hduheader, self.local_calibration_path, cal_name, frame_type, time_platesolve_requested, 
                     # pixscale, pointing_ra, pointing_dec, platesolve_crop, bin_for_platesolve, platesolve_bin_factor, g_dev['cam'].config["camera"][g_dev['cam'].name]["settings"]["saturate"]], open('subprocesses/testplatesolvepickle','wb'))                                                                                                             
 
                     del hdufocusdata
@@ -2022,12 +2022,12 @@ sel
                     platesolve_subprocess.communicate()
                     
 
-                    if os.path.exists(cal_path + 'platesolve.pickle'):
-                        solve= pickle.load(open(cal_path + 'platesolve.pickle', 'rb'))                    
+                    if os.path.exists(self.local_calibration_path + 'platesolve.pickle'):
+                        solve= pickle.load(open(self.local_calibration_path + 'platesolve.pickle', 'rb'))                    
                     else:
                         solve= 'error'
                     try:
-                        os.remove(cal_path + 'platesolve.pickle')
+                        os.remove(self.local_calibration_path + 'platesolve.pickle')
                     except:
                         plog ("Could not remove platesolve pickle. ")                        
 
@@ -2145,10 +2145,13 @@ sel
                                 #g_dev['mnt'].mount.SlewToCoordinatesAsync(pointing_ra + err_ha, pointing_dec + err_dec)
                                 # wait_for_slew()
                                 #plog("Platesolve is requesting to move back on target!")
+                                
+                                ra_correction_multiplier= self.config['pointing_correction_ra_multiplier']
+                                dec_correction_multiplier= self.config['pointing_correction_dec_multiplier']
                                 self.pointing_correction_requested_by_platesolve_thread = True
                                 self.pointing_correction_request_time = time.time()
-                                self.pointing_correction_request_ra = pointing_ra + err_ha
-                                self.pointing_correction_request_dec = pointing_dec + err_dec
+                                self.pointing_correction_request_ra = pointing_ra + (err_ha * ra_correction_multiplier)
+                                self.pointing_correction_request_dec = pointing_dec + (err_dec * dec_correction_multiplier)
     
                                 try:
                                     # if g_dev["mnt"].pier_side_str == "Looking West":
