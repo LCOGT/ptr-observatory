@@ -1828,6 +1828,13 @@ sel
 
                 if not (g_dev['events']['Civil Dusk'] < ephem.now() < g_dev['events']['Civil Dawn']) :
                     plog ("Too bright to consider photometry!")
+                    # If it doesn't go through SEP then the fits header text file needs to be dumped here
+                    text = open(
+                        im_path + text_name, "w"
+                    )  # This is needed by AWS to set up database.
+                    #breakpoint()
+                    text.write(str(hduheader))
+                    text.close()
 
                 is_osc= self.config["camera"][g_dev['cam'].name]["settings"]["is_osc"]
                 interpolate_for_focus= self.config["camera"][g_dev['cam'].name]["settings"]['interpolate_for_focus']
