@@ -248,15 +248,7 @@ class Observatory:
         self.create_devices()
         self.loud_status = False
 
-        # Clear out smartstacks directory
-        #plog ("removing and reconstituting smartstacks directory")
-        try:
-            shutil.rmtree(self.obsid_path + "smartstacks")
-        except:
-            plog("problems with removing the smartstacks directory... usually a file is open elsewhere")
-        time.sleep(3)
-        if not os.path.exists(self.obsid_path + "smartstacks"):
-            os.makedirs(self.obsid_path + "smartstacks")
+        
 
         # Check directory system has been constructed
         # for new sites or changed directories in configs.
@@ -271,27 +263,48 @@ class Observatory:
             os.makedirs(self.obsid_path + "tokens")
         if not os.path.exists(self.obsid_path + "astropycache"):
             os.makedirs(self.obsid_path + "astropycache")
-        if not os.path.exists(self.obsid_path + "smartstacks"):
-            os.makedirs(self.obsid_path + "smartstacks")
-        if not os.path.exists(self.obsid_path + "calibmasters"):  # retaining for backward compatibility
-            os.makedirs(self.obsid_path + "calibmasters")
+        
+        
+
+
+        # Local Calibration Paths
+        self.local_calibration_path = ptr_config['local_calibration_path'] + self.config['obs_id'] + '/'
+        if not os.path.exists(ptr_config['local_calibration_path']):
+            os.makedirs(ptr_config['local_calibration_path'])
+        if not os.path.exists(self.local_calibration_path):
+            os.makedirs(self.local_calibration_path)
+        if not os.path.exists(self.local_calibration_path + "calibmasters"):  # retaining for backward compatibility
+            os.makedirs(self.local_calibration_path + "calibmasters")
         camera_name = self.config['camera']['camera_1_1']['name']
-        if not os.path.exists(self.obsid_path + "archive/" + camera_name + "/calibmasters"):
-            os.makedirs(self.obsid_path + "archive/" + camera_name + "/calibmasters")
-        if not os.path.exists(self.obsid_path + "archive/" + camera_name + "/localcalibrations"):
-            os.makedirs(self.obsid_path + "archive/" + camera_name + "/localcalibrations")
+        if not os.path.exists(self.local_calibration_path + "archive/" + camera_name + "/calibmasters"):
+            os.makedirs(self.local_calibration_path + "archive/" + camera_name + "/calibmasters")
+        if not os.path.exists(self.local_calibration_path + "archive/" + camera_name + "/localcalibrations"):
+            os.makedirs(self.local_calibration_path + "archive/" + camera_name + "/localcalibrations")
+        if not os.path.exists(self.local_calibration_path + "archive/" + camera_name + "/localcalibrations/darks"):
+            os.makedirs(self.local_calibration_path + "archive/" + camera_name + "/localcalibrations/darks")
+        if not os.path.exists(self.local_calibration_path + "archive/" + camera_name + "/localcalibrations/biases"):
+            os.makedirs(self.local_calibration_path + "archive/" + camera_name + "/localcalibrations/biases")
+        if not os.path.exists(self.local_calibration_path + "archive/" + camera_name + "/localcalibrations/flats"):
+            os.makedirs(self.local_calibration_path + "archive/" + camera_name + "/localcalibrations/flats")
+               
+            
+        self.calib_masters_folder = self.local_calibration_path + "archive/" + camera_name + "/calibmasters" + '/'
+        self.local_dark_folder = self.local_calibration_path + "archive/" + camera_name + "/localcalibrations/darks" + '/'
+        self.local_bias_folder = self.local_calibration_path + "archive/" + camera_name + "/localcalibrations/biases" + '/'
+        self.local_flat_folder = self.local_calibration_path + "archive/" + camera_name + "/localcalibrations/flats" + '/'
 
-        if not os.path.exists(self.obsid_path + "archive/" + camera_name + "/localcalibrations/darks"):
-            os.makedirs(self.obsid_path + "archive/" + camera_name + "/localcalibrations/darks")
-        if not os.path.exists(self.obsid_path + "archive/" + camera_name + "/localcalibrations/biases"):
-            os.makedirs(self.obsid_path + "archive/" + camera_name + "/localcalibrations/biases")
-        if not os.path.exists(self.obsid_path + "archive/" + camera_name + "/localcalibrations/flats"):
-            os.makedirs(self.obsid_path + "archive/" + camera_name + "/localcalibrations/flats")
+        # Clear out smartstacks directory
+        #plog ("removing and reconstituting smartstacks directory")
+        try:
+            shutil.rmtree(self.local_calibration_path + "smartstacks")
+        except:
+            plog("problems with removing the smartstacks directory... usually a file is open elsewhere")
+        time.sleep(3)
+        if not os.path.exists(self.local_calibration_path + "smartstacks"):
+            os.makedirs(self.local_calibration_path + "smartstacks")
+        
 
-        self.calib_masters_folder = self.obsid_path + "archive/" + camera_name + "/calibmasters" + '/'
-        self.local_dark_folder = self.obsid_path + "archive/" + camera_name + "/localcalibrations/darks" + '/'
-        self.local_bias_folder = self.obsid_path + "archive/" + camera_name + "/localcalibrations/biases" + '/'
-        self.local_flat_folder = self.obsid_path + "archive/" + camera_name + "/localcalibrations/flats" + '/'
+
 
         self.last_solve_time = datetime.datetime.now() - datetime.timedelta(days=1)
         self.images_since_last_solve = 10000
@@ -2597,7 +2610,7 @@ sel
                             paths,
                             smartstackid,
                             self.config["camera"][g_dev['cam'].name]["settings"]["is_osc"],
-                            self.obsid_path,
+                            self.local_calibration_path,
                             pixscale,
                             self.config["camera"][g_dev['cam'].name]["settings"]["transpose_jpeg"],
                             self.config["camera"][g_dev['cam'].name]["settings"]['flipx_jpeg'],
