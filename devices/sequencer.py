@@ -449,6 +449,7 @@ class Sequencer:
         # things when it looks for shutter_status
         if enc_status == None:
             enc_status = {'shutter_status': 'Unknown'}
+            enc_status['enclosure_mode'] = 'Automatic'
         
         # Check for delayed opening of the observatory and act accordingly.
 
@@ -690,6 +691,12 @@ class Sequencer:
 
             try:
                 self.nightly_reset_complete = False
+                
+                try:
+                    enc_status['enclosure_mode'] in ['Autonomous!', 'Automatic']
+                except:
+                    breakpoint()
+                
                 
                 if enc_status['enclosure_mode'] in ['Autonomous!', 'Automatic']:
                     blocks = g_dev['obs'].blocks
