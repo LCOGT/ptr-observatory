@@ -344,6 +344,10 @@ class Observatory:
         self.mainjpeg_queue_thread = threading.Thread(target=self.mainjpeg_process, args=())
         self.mainjpeg_queue_thread.start()
 
+        self.laterdelete_queue = queue.Queue(maxsize=0)
+        self.laterdelete_queue_thread = threading.Thread(target=self.laterdelete_process, args=())
+        self.laterdelete_queue_thread.start()
+
         # Set up command_queue for incoming jobs
         self.cmd_queue = queue.Queue(
             maxsize=0
@@ -1579,7 +1583,8 @@ sel
                                             try:
                                                 os.remove(filepath)
                                             except:
-                                                plog("Couldn't remove " + str(filepath) + "file after transfer")
+                                                #plog("Couldn't remove " + str(filepath) + " file after transfer, sending to delete queue")
+                                                self.laterdelete_queue.put( filepath, block=False)
                                     except ocs_ingester.exceptions.DoNotRetryError:
                                         plog ("Couldn't upload to PTR archive")
                                         plog ("Caught filespecification error properly")
@@ -1628,7 +1633,8 @@ sel
                                 try:
                                     os.remove(filepath)
                                 except:
-                                    plog("Couldn't remove " + str(filepath) + "file after transfer")
+                                    #plog("Couldn't remove " + str(filepath) + " file after transfer")
+                                    self.laterdelete.put( filepath, block=False)
                             
                             self.aws_queue.task_done()
 
@@ -1662,6 +1668,31 @@ sel
                     self.status_interval = 10
                 self.status_upload_time = upload_time
                 one_at_a_time = 0
+            else:
+                time.sleep(0.1)
+                
+    def laterdelete_process(self):
+        """This is a thread where things that fail to get 
+        deleted from the filesystem go to get deleted later on.
+        Usually due to slow or network I/O         
+        """
+
+        # This stopping mechanism allows for threads to close cleanly.
+        # one_at_a_time=0
+        while True:
+            if (not self.laterdelete_queue.empty()):  # and one_at_a_time==0
+                (deletefilename) = self.laterdelete_queue.get(block=False)
+                notdelete=1
+                while notdelete==1:
+                    try:
+                        os.remove(deletefilename)
+                        notdelete=0
+                    except:
+                        plog("failed to remove: " + str(deletefilename) + " trying again soon")
+                        time.sleep(10)
+                    
+                self.laterdelete_queue.task_done()
+                # one_at_a_time=0
             else:
                 time.sleep(0.1)
 
