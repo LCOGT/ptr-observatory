@@ -1854,7 +1854,7 @@ sel
                 #                                                                                    .name]["settings"]['focus_image_crop_height'], is_osc,interpolate_for_focus,bin_for_focus,focus_bin_value,interpolate_for_sep,bin_for_sep,sep_bin_value,focus_jpeg_size,saturate,minimum_realistic_seeing
                 #                                                                                                                                                           ], open('subprocesses/testSEPpickle','wb'))
     
-                del hdufocusdata
+                #
                 #plog ("pickling time: " + str(time.time()-pickletime))
                     
                 # Essentially wait until the subprocess is complete
@@ -1992,15 +1992,15 @@ sel
                 g_dev['cam'].enqueue_for_fastAWS(10, im_path, text_name)
 
                 if self.config['keep_focus_images_on_disk']:
-                    try:
-                        g_dev['cam'].to_slow_process(1000, ('focus', cal_path + cal_name, hdufocusdata, hduheader,
-                                                            frame_type, g_dev["mnt"].current_icrs_ra, g_dev["mnt"].current_icrs_dec))
+                    g_dev['cam'].to_slow_process(1000, ('focus', cal_path + cal_name, hdufocusdata, hduheader,
+                                                        frame_type, g_dev["mnt"].current_icrs_ra, g_dev["mnt"].current_icrs_dec))
 
-                        if self.config["save_to_alt_path"] == "yes":
-                            g_dev['cam'].to_slow_process(1000, ('raw_alt_path', self.alt_path + g_dev["day"] + "/calib/" + cal_name, hdufocusdata, hduheader,
-                                                                frame_type, g_dev["mnt"].current_icrs_ra, g_dev["mnt"].current_icrs_dec))
-                    except:
-                        pass # This is usually because there actually is no focus image.
+                    if self.config["save_to_alt_path"] == "yes":
+                        g_dev['cam'].to_slow_process(1000, ('raw_alt_path', self.alt_path + g_dev["day"] + "/calib/" + cal_name, hdufocusdata, hduheader,
+                                                            frame_type, g_dev["mnt"].current_icrs_ra, g_dev["mnt"].current_icrs_dec))
+                    
+
+                del hdufocusdata
 
                 g_dev['cam'].sep_processing = False
                 self.sep_queue.task_done()
