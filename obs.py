@@ -1961,14 +1961,15 @@ sel
                 g_dev['cam'].enqueue_for_fastAWS(10, im_path, text_name)
 
                 if self.config['keep_focus_images_on_disk']:
-
-                    g_dev['cam'].to_slow_process(1000, ('focus', cal_path + cal_name, hdufocusdata, hduheader,
-                                                        frame_type, g_dev["mnt"].current_icrs_ra, g_dev["mnt"].current_icrs_dec))
-
-                    if self.config["save_to_alt_path"] == "yes":
-                        g_dev['cam'].to_slow_process(1000, ('raw_alt_path', self.alt_path + g_dev["day"] + "/calib/" + cal_name, hdufocusdata, hduheader,
+                    try:
+                        g_dev['cam'].to_slow_process(1000, ('focus', cal_path + cal_name, hdufocusdata, hduheader,
                                                             frame_type, g_dev["mnt"].current_icrs_ra, g_dev["mnt"].current_icrs_dec))
 
+                        if self.config["save_to_alt_path"] == "yes":
+                            g_dev['cam'].to_slow_process(1000, ('raw_alt_path', self.alt_path + g_dev["day"] + "/calib/" + cal_name, hdufocusdata, hduheader,
+                                                                frame_type, g_dev["mnt"].current_icrs_ra, g_dev["mnt"].current_icrs_dec))
+                    except:
+                        pass # This is usually because there actually is no focus image.
 
                 g_dev['cam'].sep_processing = False
                 self.sep_queue.task_done()
