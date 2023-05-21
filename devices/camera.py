@@ -1451,6 +1451,7 @@ class Camera:
 
         self.expresult = {}  #  This is a default return just in case
         num_retries = 0
+        incoming_exposure_time=exposure_time
         for seq in range(count):
             
             # SEQ is the outer repeat loop and takes count images; those individual exposures are wrapped in a
@@ -1484,13 +1485,15 @@ class Camera:
             if not imtype.lower() in ["light", "expose"]:
                 Nsmartstack=1
                 SmartStackID='no'
-            elif (self.smartstack == 'yes' or self.smartstack == True) and (exposure_time >= 3*ssExp):
-                Nsmartstack=np.ceil(exposure_time / ssExp)
+                exposure_time=incoming_exposure_time
+            elif (self.smartstack == 'yes' or self.smartstack == True) and (incoming_exposure_time >= 3*ssExp):
+                Nsmartstack=np.ceil(incoming_exposure_time / ssExp)
                 exposure_time=ssExp
                 SmartStackID=(datetime.datetime.now().strftime("%d%m%y%H%M%S"))
             else:
                 Nsmartstack=1
                 SmartStackID='no'
+                exposure_time=incoming_exposure_time
         
             self.retry_camera = 3
             self.retry_camera_start_time = time.time()
@@ -2611,7 +2614,9 @@ class Camera:
 
                     next_seq = next_sequence(current_camera_name)
                     hdu.header["FRAMENUM"] = (int(next_seq), "Running frame number")
-                    hdu.header["SMARTSTK"] = smartstackid # ID code for an individual smart stack group                                        
+                    plog (str(smartstackid) + " SMARTSTACKID - temp MTF check")
+                    hdu.header["SMARTSTK"] = smartstackid # ID code for an individual smart stack group
+                    plog (str(longstackid) + " LONGSTACKID - temp MTF check")
                     hdu.header["SSTKNUM"] = sskcounter
                     hdu.header['SSTKLEN'] = Nsmartstack
                     hdu.header["LONGSTK"] = longstackid # Is this a member of a longer stack - to be replaced by 
