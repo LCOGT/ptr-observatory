@@ -551,6 +551,9 @@ site_config = {
             'service_date': '20180101',
             'driver': 'Maxim.CCDcamera', 
             'dual_wheel':  True,
+            
+            "filter_settle_time": 5, #how long to wait for the filter to settle after a filter change(seconds)
+
             'ip_string': 'http://127.0.0.1',
             "desc":  'Dual Apogee custom Dual 50mm sq.',
             #"driver": ['ASCOM.Apogee.FilterWheel', 'ASCOM.Apogee2.FilterWheel'],

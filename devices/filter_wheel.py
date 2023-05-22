@@ -35,6 +35,7 @@ class FilterWheel:
             self.filter_screen_sort = self.config["filter_wheel1"]["settings"][
                 "filter_screen_sort"
             ]
+            self.wait_time_after_filter_change=self.config["filter_wheel1"]["filter_settle_time"]
             #self.filter_reference = int(
             #    self.config["filter_wheel1"]["settings"]["filter_reference"]
             #)
@@ -431,6 +432,10 @@ class FilterWheel:
                 pass
 
             self.filter_offset = float(self.filter_data[filt_pointer][2])
+
+        if self.wait_time_after_filter_change != 0:
+            plog ("Waiting " + str(self.wait_time_after_filter_change) + " seconds for filter wheel.")
+            time.sleep(self.wait_time_after_filter_change)
 
         return filter_name, match, self.filter_offset
 

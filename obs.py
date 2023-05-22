@@ -2184,7 +2184,7 @@ sel
                                 #g_dev['mnt'].mount.SlewToCoordinatesAsync(pointing_ra + err_ha, pointing_dec + err_dec)
                                 # wait_for_slew()
                                 #plog("Platesolve is requesting to move back on target!")
-                                
+                                plog(str(g_dev["mnt"].pier_side) + " <-- pierside TEMP MTF reporting")
                                 ra_correction_multiplier= self.config['pointing_correction_ra_multiplier']
                                 dec_correction_multiplier= self.config['pointing_correction_dec_multiplier']
                                 self.pointing_correction_requested_by_platesolve_thread = True

@@ -151,8 +151,8 @@ site_config = {
     'stdev_fwhm': 0.5,  # This is the expected variation in FWHM at a given telescope/camera/site combination. This is used to check if a fwhm is within normal range or the focus has shifted
     'focus_exposure_time': 10,  # Exposure time in seconds for exposure image
     'pointing_exposure_time': 20,  # Exposure time in seconds for exposure image
-    'pointing_correction_dec_multiplier' : -1,
-    'pointing_correction_ra_multiplier' : -1,
+    'pointing_correction_dec_multiplier' : 1,
+    'pointing_correction_ra_multiplier' : 1,
     
     'focus_trigger': 0.75,  # What FWHM increase is needed to trigger an autofocus
     'solve_nth_image': 1,  # Only solve every nth image
@@ -515,6 +515,7 @@ site_config = {
             "driver": "Maxim.CCDCamera",
             # "driver":   'ASCOM.FLI.FilterWheel',   #  NB THIS IS THE NEW DRIVER FROM peter.oleynikov@gmail.com  Found in Kepler ASCOM section
             "dual_wheel": True,
+            "filter_settle_time": 1, #how long to wait for the filter to settle after a filter change(seconds)
 
 
             # WER - if there is no filter wheel, then these two are used, otherwise they are harmless
