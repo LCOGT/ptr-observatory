@@ -489,6 +489,8 @@ site_config = {
             "parent": "telescope1",
             "name": "RGGB" ,  # When there is no filter wheel, the filter will be named this.
             'service_date': '20180101',
+            
+            "filter_settle_time": 0, #how long to wait for the filter to settle after a filter change(seconds)
 
             'flat_sky_gain' : 900,
 
