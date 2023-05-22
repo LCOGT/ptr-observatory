@@ -1054,6 +1054,11 @@ class Sequencer:
             plog ("Taking a quick pointing check and re_seek for new project block")
             result = self.centering_exposure()
             
+            
+            # This actually replaces the "requested" dest_ra by the actual centered pointing ra and dec. 
+            dest_ra = g_dev['mnt'].mount.RightAscension   #Read these to go back.  NB NB Need to cleanly pass these on so we can return to proper target.
+            dest_dec = g_dev['mnt'].mount.Declination
+            
             if result == 'blockend':
                 plog ("End of Block, exiting project block.")
                 if block_specification['project']['project_constraints']['close_on_block_completion']:
@@ -1221,7 +1226,9 @@ class Sequencer:
                         new_ra, new_dec = ra_dec_fix_hd(new_ra, new_dec)
 
                         #if offset != [(0., 0.)]: # only move if you need to move to another position in the mosaic.
-                        plog('Seeking to:  ', new_ra, new_dec)
+                        
+                        # DISABLED UNTIL WE GET AROUND TO DOING OFFSETS AND TESTING - MTF
+                        #plog('Seeking to:  ', new_ra, new_dec)
                         #g_dev['mnt'].go_coord(new_ra, new_dec, reset_solve=reset_solve)  # This needs full angle checks
                             #time.sleep(5) # Give scope time to settle.
                         reset_solve=False # make sure slews after the first slew do not reset the PW Solve timer.
