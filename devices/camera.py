@@ -1782,8 +1782,13 @@ class Camera:
                 p_level="INFO",
             )
             
-        elif Nsmartstack > 1 : 
-            plog ("Starting smartstack " + str(sskcounter+1) + " out of " + str(int(Nsmartstack)) + " of "
+        elif Nsmartstack > 1 and self.current_filter.lower() in ['ha', 'o3', 's2', 'n2', 'y', 'up', 'u']:
+            plog ("Starting narrowband " +str(exposure_time) + "s smartstack " + str(sskcounter+1) + " out of " + str(int(Nsmartstack)) + " of "
+            + str(opt["object_name"]) 
+            + " by user: " + str(observer_user_name))
+            g_dev["obs"].send_to_user ("Starting smartstack " + str(sskcounter+1) + " out of " + str(int(Nsmartstack)) + " by user: " + str(observer_user_name))
+        elif Nsmartstack > 1 :
+            plog ("Starting broadband " +str(exposure_time) + "s smartstack " + str(sskcounter+1) + " out of " + str(int(Nsmartstack)) + " of "
             + str(opt["object_name"]) 
             + " by user: " + str(observer_user_name))
             g_dev["obs"].send_to_user ("Starting smartstack " + str(sskcounter+1) + " out of " + str(int(Nsmartstack)) + " by user: " + str(observer_user_name))
