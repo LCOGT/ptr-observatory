@@ -2195,12 +2195,12 @@ sel
                                 # wait_for_slew()
                                 #plog("Platesolve is requesting to move back on target!")
                                 plog(str(g_dev["mnt"].pier_side) + " <-- pierside TEMP MTF reporting")
-                                ra_correction_multiplier= self.config['pointing_correction_ra_multiplier']
-                                dec_correction_multiplier= self.config['pointing_correction_dec_multiplier']
+                                #ra_correction_multiplier= self.config['pointing_correction_ra_multiplier']
+                               # dec_correction_multiplier= self.config['pointing_correction_dec_multiplier']
                                 self.pointing_correction_requested_by_platesolve_thread = True
                                 self.pointing_correction_request_time = time.time()
-                                self.pointing_correction_request_ra = pointing_ra + (err_ha * ra_correction_multiplier)
-                                self.pointing_correction_request_dec = pointing_dec + (err_dec * dec_correction_multiplier)
+                                self.pointing_correction_request_ra = pointing_ra + err_ha #* ra_correction_multiplier)
+                                self.pointing_correction_request_dec = pointing_dec + err_dec# * dec_correction_multiplier)
     
                                 try:
                                     # if g_dev["mnt"].pier_side_str == "Looking West":
