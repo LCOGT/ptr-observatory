@@ -177,6 +177,8 @@ site_config = {
     'stdev_fwhm' : 1.0, # This is the expected variation in FWHM at a given telescope/camera/site combination. This is used to check if a fwhm is within normal range or the focus has shifted
     'focus_exposure_time': 15, # Exposure time in seconds for exposure image
     'pointing_exposure_time': 20, # Exposure time in seconds for exposure image
+    'pointing_correction_dec_multiplier' : 1,
+    'pointing_correction_ra_multiplier' : 1,
     
     'focus_trigger' : 5.0, # What FWHM increase is needed to trigger an autofocus
     'solve_nth_image' : 10, # Only solve every nth image
@@ -597,12 +599,12 @@ site_config = {
                      
                 
                 'filter_data': [
-                                ['air',     [0, 0], -1000, 72,    [2, 17], 'ai'],   # 0
-                                ['Lum',     [0, 1],     0, 65,   [2, 17], 'w '],   # 20
+                                ['air',     [0, 0], -1000, 22,    [2, 17], 'ai'],   # 0
+                                ['Lum',     [0, 1],     0, 20,   [2, 17], 'w '],   # 20
                                 ['Red',     [4, 0],     0, 15,   [2, 17], 'r '],  # 21                                ['JV (Grn)',      [0, 3],     0, 1 [2, 17], 'V '],   # 9
                                 ['Green',   [3, 0],     0, 21,   [2, 17], 'V '],   # 22
                                 ['Blue',    [1, 0],     0, 18,   [2, 17], 'B '],   # 23
-                                ['w',       [0, 1],     0, 65,  [2, 17], 'w '],   # 1
+                                ['w',       [0, 1],     0, 20,  [2, 17], 'w '],   # 1
                                 #['dif',    [0, 2],     0, 34,    [2, 17], 'df'],   # 2
                                 ['O3',      [0, 3],     0, 0.5,    [2, 17], 'O3'],   # 3
                                 ['HA',      [0, 4],     0, 0.5,    [2, 17], 'HA'],   # 4
@@ -613,14 +615,14 @@ site_config = {
                                 ['JV',      [3, 0],     0, 21,   [2, 17], 'V '],   # 9
                                 ['rp',      [4, 0],     0, 21,   [2, 17], 'r '],  # 10
                                 ['ip',      [5, 0],     0, 21,   [2, 17], 'i '],  # 11
-                                ['EXO',     [6, 0],     0, 21,  [2, 17], 'EX'],  # 12
+                                ['EXO',     [6, 0],     0, 11,  [2, 17], 'EX'],  # 12
                                 ['dark',    [1, 6],     0, 0.0,   [2, 17], 'dk']], # 19
                                 
                 'filter_screen_sort':  ['0', '1', '2', '10', '7', '6', '18', '12', '11', '13', '8',  '3', \
                                         '14', '15', '4', '16'],   #  '9', '21'],  # '5', '17'], #Most to least throughput, \
                                 #so screen brightens, skipping u and zs which really need sky.
-                'filter_sky_sort':     ['S2', 'HA', 'N2', 'O3', 'rp', 'ip', 'JV',\
-                                        'JB', 'gp', 'EXO',  'w', 'air']  #Least to most throughput
+                'filter_sky_sort':     ['S2', 'HA', 'N2', 'O3', 'ip', 'rp', 'Red', 'JV',\
+                                        'Green','JB', 'gp',   'Blue', 'EXO',  'w','Lum',  'air']  #Least to most throughput
 
             },
         },
@@ -804,25 +806,25 @@ site_config = {
                 'data_sec': '[25:9600, 1:6388], [13:4800, 1:3194], [9:3200, 1:2129], [7:2400, 1:1597]',
                 'trim_sec': '[1:9576, 1:6388], [1:4788, 1:3194], [1:3192, 1:2129], [1:2394, 1:1597]',
                 
-                'x_field_deg': 0.5331,  # round(4096*0.468547/3600, 4),   #32_0 X 32 AMIN  3MIN X 0.5 DEG
-                'y_field_deg': 0.5331,  # round(4096*0.468547/3600, 4),
-                'field_area_sq_amin': 1023,
+                'x_field_deg': 0.5267,  # round(4096*0.468547/3600, 4),   #32_0 X 32 AMIN  3MIN X 0.5 DEG
+                'y_field_deg': 0.3513,  # ^^^Now correct for QHY 600
+                'field_area_sq_amin': 666.1,
                 'overscan_x': 0,
                 'overscan_y': 0,
                 'north_offset': 0.0,
                 'east_offset': 0.0,
                 'rotation': 0.0,
 
-                'min_exposure': 0.005,  #Need to check this setting out
+                'min_exposure': 0.0001,  #Need to check this Key out  Not sure it is used.
                 'max_daytime_exposure': 60,
-                'min_flat_exposure' : 0.005, # For certain leaf shutters, short exposures aren't good for flats. Some CMOS have banding in too short an exposure. Largely applies to ccds though.
+                'min_flat_exposure' : 0.0001, # For certain leaf shutters, short exposures aren't good for flats. Some CMOS have banding in too short an exposure. Largely applies to ccds though.
                 'max_flat_exposure' : 20.0, # Realistically there should be a maximum flat_exposure that makes sure flats are efficient and aren't collecting actual stars.
                 'number_of_bias_to_collect' : 63,
-                'number_of_dark_to_collect' : 13,
-                'number_of_flat_to_collect' : 7,
+                'number_of_dark_to_collect' : 17,
+                'number_of_flat_to_collect' : 11,
                 'number_of_bias_to_store' : 127,
-                'number_of_dark_to_store' : 127,
-                'number_of_flat_to_store' : 127,
+                'number_of_dark_to_store' : 45,
+                'number_of_flat_to_store' : 45,
                 'dark_exposure': 180,
                 'max_exposure': 360.0,
                 'ref_dark': 180.0,

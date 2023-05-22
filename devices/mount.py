@@ -835,7 +835,7 @@ class Mount:
             self.go_command(req, opt, offset=True, calibrate=False)
 
         elif action == 'sky_flat_position':
-            self.slewToSkyFlatAsync()
+            self.slewToSkyFlatAsync(skip_open_test=True)
         else:
             plog(f"Command <{action}> not recognized.")
 
@@ -1329,7 +1329,7 @@ class Mount:
                 g_dev['obs'].send_to_user("Refusing skyflat pointing request as the observatory is not enabled to observe.")
                 plog("Refusing skyflat pointing request as the observatory is not enabled to observe.")
                 return
-        
+
         az, alt = self.astro_events.flat_spot_now()
         self.unpark_command()        
 
@@ -1342,7 +1342,8 @@ class Mount:
         self.move_time = time.time()
         try:
             g_dev['obs'].time_of_last_slew=time.time()
-            self.move_to_azalt(az, alt)
+            #self.move_to_azalt(az, max(alt, 35))   #Hack for MRC testing
+            self.move_to_azalt(az, alt)   #Hack for MRC testing
             g_dev['obs'].time_of_last_slew = time.time()
             # On successful movement of telescope reset the solving timer
             g_dev['obs'].last_solve_time = datetime.datetime.now() - datetime.timedelta(days=1)

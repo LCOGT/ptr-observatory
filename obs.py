@@ -466,7 +466,7 @@ class Observatory:
         #opt = {'area': 150, 'count': 1, 'bin': '2, 2', 'filter': 'focus'}
         #opt = {'area': 150, 'count': 1, 'bin': 1, 'filter': 'focus'}
         #result = g_dev['cam'].expose_command(req, opt, no_AWS=False, solve_it=True)
-
+        # breakpoint()
         #g_dev['seq'].regenerate_local_masters()
 
     def set_last_reference(self, delta_ra, delta_dec, last_time):
@@ -1586,9 +1586,9 @@ sel
                                                 #plog("Couldn't remove " + str(filepath) + " file after transfer, sending to delete queue")
                                                 self.laterdelete_queue.put( filepath, block=False)
                                     except ocs_ingester.exceptions.DoNotRetryError:
-                                        plog ("Couldn't upload to PTR archive")
-                                        plog ("Caught filespecification error properly")
-                                        plog((traceback.format_exc()))
+                                        plog ("Couldn't upload to PTR archive: " + str(filepath))
+                                        #plog ("Caught filespecification error properly")
+                                        #plog((traceback.format_exc()))
                                         #breakpoint()
                                         retryarchive = 11
                                         tempPTR =0

@@ -1222,7 +1222,7 @@ class Sequencer:
 
                         #if offset != [(0., 0.)]: # only move if you need to move to another position in the mosaic.
                         plog('Seeking to:  ', new_ra, new_dec)
-                        g_dev['mnt'].go_coord(new_ra, new_dec, reset_solve=reset_solve)  # This needs full angle checks
+                        #g_dev['mnt'].go_coord(new_ra, new_dec, reset_solve=reset_solve)  # This needs full angle checks
                             #time.sleep(5) # Give scope time to settle.
                         reset_solve=False # make sure slews after the first slew do not reset the PW Solve timer.
                         #if not just_focused:
@@ -1771,6 +1771,7 @@ class Sequencer:
             PLDrive = np.memmap(g_dev['obs'].local_bias_folder + 'tempfile', dtype='float32', mode= 'w+', shape = (shapeImage[0],shapeImage[1],len(inputList)))
             # Store the biases in the memmap file
             i=0
+            n = len(inputList)
             for file in inputList:
                 plog (datetime.datetime.now().strftime("%H:%M:%S"))
 
@@ -1785,7 +1786,7 @@ class Sequencer:
                 PLDrive[:,:,i] = hdu1data    
                 del hdu1data
                 timetaken=datetime.datetime.now() -starttime
-                plog ("Time Taken to put in memmap: " + str(timetaken))
+                plog ("Time Taken to put in memmap: " + str(timetaken), "To Go:  ", n - i -1)
                 i=i+1                
 
             plog ("**********************************")
@@ -2081,7 +2082,7 @@ class Sequencer:
         """
         
         
-        if (ephem.now() < g_dev['events']['Eve Sky Flats']) or \
+        if  (ephem.now() < g_dev['events']['Eve Sky Flats']) or \
             (g_dev['events']['End Morn Sky Flats'] < ephem.now() < g_dev['events']['Nightly Reset']):
             plog ("NOT DOING FLATS -- IT IS THE DAYTIME!!")
             g_dev["obs"].send_to_user("A sky flat script request was rejected as it is during the daytime.")            
@@ -2152,6 +2153,7 @@ class Sequencer:
 
                 scale = 1
                 self.estimated_first_flat_exposure = False
+                #if current_filter == 'rp':  breakpoint()
                 while (acquired_count < flat_count):
                     g_dev['obs'].scan_requests()
                     g_dev['obs'].update()                    
