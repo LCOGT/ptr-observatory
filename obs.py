@@ -122,6 +122,8 @@ def send_status(obsy, column, status_to_send):
         reqs.post(uri_status, data=data)
     except Exception as e:
         plog("Failed to send_status. Usually not fatal:  ", e)
+        
+    #breakpoint()
 
 
 debug_flag = None
@@ -316,7 +318,14 @@ class Observatory:
         if not os.path.exists(self.local_calibration_path + "smartstacks"):
             os.makedirs(self.local_calibration_path + "smartstacks")
         
-
+        # Orphan and Broken paths
+        self.orphan_path=self.config['client_path'] +'/' + g_dev['obs'].name + '/' + 'orphans/'
+        if not os.path.exists(self.orphan_path):
+            os.makedirs(self.orphan_path)
+        
+        self.broken_path=self.config['client_path'] +'/' + g_dev['obs'].name + '/' + 'broken/'
+        if not os.path.exists(self.broken_path):
+            os.makedirs(self.broken_path)
 
 
         self.last_solve_time = datetime.datetime.now() - datetime.timedelta(days=1)
@@ -1576,6 +1585,7 @@ sel
                 # Only ingest new large fits.fz files to the PTR archive.
                 if filename.endswith("-EX00.fits.fz"):
                     try:
+                        broken = 0
                         with open(filepath, "rb") as fileobj:
                             tempPTR = 0
                             if self.env_exists == True and (not frame_exists(fileobj)):
@@ -1597,6 +1607,8 @@ sel
                                                 self.laterdelete_queue.put( filepath, block=False)
                                     except ocs_ingester.exceptions.DoNotRetryError:
                                         plog ("Couldn't upload to PTR archive: " + str(filepath))
+                                        broken=1
+                                        
                                         #plog ("Caught filespecification error properly")
                                         #plog((traceback.format_exc()))
                                         #breakpoint()
@@ -1627,6 +1639,15 @@ sel
                                 except:
                                     plog("Connection glitch for the request post, waiting a moment and trying again")
                                     time.sleep(5)
+                        
+                        if broken == 1:
+                        
+                            #breakpoint()
+                            
+                            try:
+                                shutil.move(filepath, self.broken_path + filename)
+                            except:
+                                plog ("Couldn't move " + str(filepath) + " to broken folder.")
                     except Exception as e:
                         plog ("something strange in the AWS uploader", e)
                 # Send all other files to S3.

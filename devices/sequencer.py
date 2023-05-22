@@ -1458,6 +1458,10 @@ class Sequencer:
         if not os.path.exists(orphan_path):
             os.makedirs(orphan_path)
         
+        broken_path=self.config['client_path'] +'/' + g_dev['obs'].name + '/' + 'broken/'
+        if not os.path.exists(broken_path):
+            os.makedirs(broken_path)
+        
         
         cameras=glob(dir_path + "*/")
         
