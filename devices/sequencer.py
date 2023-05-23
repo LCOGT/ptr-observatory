@@ -192,7 +192,7 @@ class Sequencer:
         self.weather_report_close_during_evening_time=ephem_now + 86400
         self.nightly_weather_report_complete=False
         
-        self.time_roof_last_opening = time.time() -500
+        self.time_roof_last_opened = time.time() -500
         # Run a weather report on bootup so observatory can run if need be. 
         #self.global_wx()
         #breakpoint()
