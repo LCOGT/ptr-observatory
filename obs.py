@@ -43,10 +43,10 @@ import ptr_config
 from devices.camera import Camera
 from devices.filter_wheel import FilterWheel
 from devices.focuser import Focuser
-from devices.enclosure import Enclosure
+#from devices.enclosure import Enclosure
 from devices.mount import Mount
 from devices.telescope import Telescope
-from devices.observing_conditions import ObservingConditions
+#from devices.observing_conditions import ObservingConditions
 from devices.rotator import Rotator
 from devices.selector import Selector
 from devices.screen import Screen

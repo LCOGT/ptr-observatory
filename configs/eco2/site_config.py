@@ -23,8 +23,8 @@ Created on Fri Feb 07,  11:57:41 2020
  # bolt = ['u', 'g', 'r', 'i', 'zs', 'B', 'V', 'EXO', 'w', 'O3', 'Ha', 'S', 'Cr', 'NIR']
  # print(len(bolt))
 
-site_name = 'eco'
-obs_id = 'eco2'
+site_name = 'eco' # THIS IS THE NAME OF THE WEMA
+obs_id = 'eco2' # THIS IS THE NAME OF THIS OBSERVATORY
                     #\\192.168.1.57\SRO10-Roof  r:
                     #SRO-Weather (\\192.168.1.57) w:
                     #Username: wayne_rosingPW: 29yzpe
@@ -33,9 +33,10 @@ site_config = {
     # THESE ARE TO BE DELETED VERY SOON!
     # THEY EXIST SOLELY SO AS TO NOT BREAK THE UI UNTIL 
     #THINGS ARE MOVED TO OBS_ID
-    'site': 'eco2', #TIM this may no longer be needed.
-    'site_id': 'eco2',
+    #'site': 'eco2', #TIM this may no longer be needed.
+    #'site_id': 'eco2',
     ####################################################
+    'site_name' : 'eco', # THIS IS THE NAME OF THE WEMA
     'obs_id': 'eco2',
     'observatory_location': site_name.lower(),
     
@@ -100,9 +101,9 @@ site_config = {
     'mpc_code':  'ZZ23',    #  This is made up for now.
     'time_offset':  11,   #  These two keys may be obsolete given the new TZ stuff
     'timezone': 'AEST',      #  This was meant to be coloquial Time zone abbreviation, alternate for "TX_data..."
-    'latitude': -37.70097222,     #  Decimal degrees, North is Positive
-    'longitude': 145.1918056,   #  Decimal degrees, West is negative
-    'elevation': 150,    #  meters above sea level
+    'obs_latitude': -37.70097222,     #  Decimal degrees, North is Positive
+    'obs_longitude': 145.1918056,   #  Decimal degrees, West is negative
+    'obs_elevation': 150,    #  meters above sea level
     'reference_ambient':  10,  #  Degrees Celsius.  Alternately 12 entries, one for every - mid month.
     'reference_pressure':  867.254,    #mbar   A rough guess 20200315
 
@@ -146,8 +147,8 @@ site_config = {
     'threshold_mount_update' : 50, # only update mount when X arcseconds away
 
     'defaults': {
-        'observing_conditions': 'observing_conditions1',  #  These are used as keys, may go away.
-        'enclosure': 'enclosure1',
+        #'observing_conditions': 'observing_conditions1',  #  These are used as keys, may go away.
+        #'enclosure': 'enclosure1',
         'screen': 'screen1',
         'mount': 'mount1',
         'telescope': 'telescope1',     #How do we handle selector here, if at all?
@@ -159,8 +160,8 @@ site_config = {
         'sequencer': 'sequencer1'
         },
     'device_types': [
-            'observing_conditions',
-            'enclosure',
+            #'observing_conditions',
+            #'enclosure',
             'mount',
             'telescope',
             #'screen',
@@ -172,15 +173,15 @@ site_config = {
             'sequencer'
             ],
     'wema_types': [                                      # or site_specific types.
-            'observing_conditions1',
-            'enclosure1'
+            #'observing_conditions1',
+            #'enclosure1'
             ],
     'enc_types': [
-            'enclosure'
+            #'enclosure'
             ],
     'short_status_devices': [
-            'observing_conditions',
-            'enclosure',
+            #'observing_conditions',
+            #'enclosure',
             'mount',
             'telescope',
             'screen',
@@ -191,52 +192,52 @@ site_config = {
             'camera',
             'sequencer'
             ],
-    'observing_conditions' : {
-        'observing_conditions1': {
-            'parent': 'site',
-            'ocn_is_specific':  False,  # Indicates some special site code.
-            # Intention it is found in this file.
-            'name': 'SRO File',
-            'driver': None,  # Could be redis, ASCOM, ...
-            'share_path_name': 'F:/ptr/',
-            'driver_2':  None,   #' ASCOM.Boltwood.OkToOpen.SafetyMonitor',
-            'driver_3':  None,    # 'ASCOM.Boltwood.OkToImage.SafetyMonitor'
-            'ocn_has_unihedron':  False,
-            'have_local_unihedron': False,     #  Need to add these to setups.
-            'uni_driver': 'ASCOM.SQM.serial.ObservingConditions',
-            'unihedron_port':  10    #  False, None or numeric of COM port.
-        },
-    },
+    # 'observing_conditions' : {
+    #     'observing_conditions1': {
+    #         'parent': 'site',
+    #         'ocn_is_specific':  False,  # Indicates some special site code.
+    #         # Intention it is found in this file.
+    #         'name': 'SRO File',
+    #         'driver': None,  # Could be redis, ASCOM, ...
+    #         'share_path_name': 'F:/ptr/',
+    #         'driver_2':  None,   #' ASCOM.Boltwood.OkToOpen.SafetyMonitor',
+    #         'driver_3':  None,    # 'ASCOM.Boltwood.OkToImage.SafetyMonitor'
+    #         'ocn_has_unihedron':  False,
+    #         'have_local_unihedron': False,     #  Need to add these to setups.
+    #         'uni_driver': 'ASCOM.SQM.serial.ObservingConditions',
+    #         'unihedron_port':  10    #  False, None or numeric of COM port.
+    #     },
+    # },
 
 
-    'enclosure': {
-        'enclosure1': {
-            'parent': 'site',
-            'enc_is_specific':  False,  # Indicates some special site code.            
-            'directly_connected': True, # For ECO and EC2, they connect directly to the enclosure, whereas WEMA are different.
-            'name': 'Dragonfly Roof',
-            'hostIP':  None,
-            'driver': 'Dragonfly.Dome',  #'ASCOM.DigitalDomeWorks.Dome',  #  ASCOMDome.Dome',  #  ASCOM.DeviceHub.Dome',  #  ASCOM.DigitalDomeWorks.Dome',  #"  ASCOMDome.Dome',
-            'has_lights':  False,
-            'controlled_by': 'mount1',
-            'is_dome': False,
-            'mode': 'Automatic',
-            #'cool_down': -90.0,    #  Minutes prior to sunset.
-            'settings': {
-                'lights':  ['Auto', 'White', 'Red', 'IR', 'Off'],       #A way to encode possible states or options???
-                                                                        #First Entry is always default condition.
-                'roof_shutter':  ['Auto', 'Open', 'Close', 'Lock Closed', 'Unlock'],
-            },
-            #'eve_bias_dark_dur':  2.0,   #  hours Duration, prior to next.
-            #'eve_screen_flat_dur': 1.0,   #  hours Duration, prior to next.
-            #'operations_begin':  -1.0,   #  - hours from Sunset
-            #'eve_cooldown_offset': -.99,   #  - hours beforeSunset
-            #'eve_sky_flat_offset':  0.5,   #  - hours beforeSunset
-            #'morn_sky_flat_offset':  0.4,   #  + hours after Sunrise
-            #'morning_close_offset':  0.41,   #  + hours after Sunrise
-            #'operations_end':  0.42,
-        },
-    },
+    # 'enclosure': {
+    #     'enclosure1': {
+    #         'parent': 'site',
+    #         'enc_is_specific':  False,  # Indicates some special site code.            
+    #         'directly_connected': True, # For ECO and EC2, they connect directly to the enclosure, whereas WEMA are different.
+    #         'name': 'Dragonfly Roof',
+    #         'hostIP':  None,
+    #         'driver': 'Dragonfly.Dome',  #'ASCOM.DigitalDomeWorks.Dome',  #  ASCOMDome.Dome',  #  ASCOM.DeviceHub.Dome',  #  ASCOM.DigitalDomeWorks.Dome',  #"  ASCOMDome.Dome',
+    #         'has_lights':  False,
+    #         'controlled_by': 'mount1',
+    #         'is_dome': False,
+    #         'mode': 'Automatic',
+    #         #'cool_down': -90.0,    #  Minutes prior to sunset.
+    #         'settings': {
+    #             'lights':  ['Auto', 'White', 'Red', 'IR', 'Off'],       #A way to encode possible states or options???
+    #                                                                     #First Entry is always default condition.
+    #             'roof_shutter':  ['Auto', 'Open', 'Close', 'Lock Closed', 'Unlock'],
+    #         },
+    #         #'eve_bias_dark_dur':  2.0,   #  hours Duration, prior to next.
+    #         #'eve_screen_flat_dur': 1.0,   #  hours Duration, prior to next.
+    #         #'operations_begin':  -1.0,   #  - hours from Sunset
+    #         #'eve_cooldown_offset': -.99,   #  - hours beforeSunset
+    #         #'eve_sky_flat_offset':  0.5,   #  - hours beforeSunset
+    #         #'morn_sky_flat_offset':  0.4,   #  + hours after Sunrise
+    #         #'morning_close_offset':  0.41,   #  + hours after Sunrise
+    #         #'operations_end':  0.42,
+    #     },
+    # },
 
 
 
