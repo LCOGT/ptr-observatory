@@ -56,6 +56,8 @@ site_config = {
     'alt_path':  'C:/ptr/',  # Generic place for this host to stash misc stuff
     'save_to_alt_path' : 'no',
     'archive_path':  'C:/ptr/',  # Meant to be where /archive/<camera_id> is added by camera.
+    'local_calibration_path': 'C:/ptr/', # THIS FOLDER HAS TO BE ON A LOCAL DRIVE, not a network drive due to the necessity of huge memmap files
+    
     'archive_age' : 2.0, # Number of days to keep files in the local archive before deletion. Negative means never delete
     'send_files_at_end_of_night' : 'no', # For low bandwidth sites, do not send up large files until the end of the night. set to 'no' to disable
     'save_raw_to_disk' : False, # For low diskspace sites (or just because they aren't needed), don't save a separate raw file to disk after conversion to fz.    
@@ -127,8 +129,8 @@ site_config = {
     'auto_midnight_moonless_bias_dark': False,
     'auto_eve_sky_flat': True,
 
-    'eve_sky_flat_sunset_offset': -0.5,  #  Minutes  neg means before, + after.
-    'eve_cool_down_open' : -80.0,
+    'eve_sky_flat_sunset_offset': +20.0,  #  Minutes  neg means before, + after.
+    'eve_cool_down_open' : -60.0,
     'auto_morn_sky_flat': True,
     'auto_morn_bias_dark': False,
     're-calibrate_on_solve': True,
@@ -487,8 +489,10 @@ site_config = {
             "parent": "telescope1",
             "name": "RGGB" ,  # When there is no filter wheel, the filter will be named this.
             'service_date': '20180101',
+            
+            "filter_settle_time": 0, #how long to wait for the filter to settle after a filter change(seconds)
 
-            'flat_sky_gain' : 504,
+            'flat_sky_gain' : 900,
 
             "driver":   None,   #"LCO.dual",  #  'ASCOM.FLI.FilterWheel',
             #"driver":   "Maxim.Image",   #"LCO.dual",  #  'ASCOM.FLI.FilterWheel',
@@ -934,7 +938,7 @@ site_config = {
                 'readout_mode': 'Normal',
                 'readout_speed':  0.4,
                 'readout_seconds': 2.4,
-                'smart_stack_exposure_time': 20,
+                'smart_stack_exposure_time': 45,
                 'square_detector': False,
                 'square_pixels': True,
                 'areas_implemented': ['Full', 'SQR', '0.5*0.5°',  '0.7x0.7°', '1x1°', '1.4x1.4°', '2x2°', '2.8x2.8°', '4x4sq°', '5.6x5.6°'],

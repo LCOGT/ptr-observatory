@@ -1,10 +1,19 @@
+# -*- coding: utf-8 -*-
+"""
+Created on Fri Mar 24 19:29:34 2023
 
+@author: obs
+"""
+
+# -*- coding: utf-8 -*-
 '''
+
 FIRST Created on Fri Aug  2 11:57:41 2019
 
 Refactored on 20230407
 
-@author: wrosing, et al.
+
+@author: wrosing
 '''
 import json
 
@@ -13,12 +22,15 @@ import json
 12345678901234567890123456789012345678901234567890123456789012345678901234567890123456789012345678901234567890123456789012345678
 '''
 
+
 # NB NB NB json is not bi-directional with tuples (), instead, use lists [], nested if tuples are needed.
 degree_symbol = "°"
 site_name = 'mrc'
 obs_id = None  # NB These must be unique across all of PTR. Pre-pend with airport code if needed: 'sba_wmdo'
 
-site_config = {
+
+obs_id = None    #NB These must be unique across all of PTR. Pre-pend with airport code if needed: 'sba_wmdo'
+
 
     'site': 'mrc',
     'site_id': 'mrc',
@@ -32,10 +44,12 @@ site_config = {
     'admin_owner_commands_only': False,
     'debug_duration_sec': 3600,
 
+
     'owner':  ['google-oauth2|112401903840371673242'],  # Wayne
 
     'owner_alias': ['WER', 'TELOPS'],
     'admin_aliases': ["ANS", "WER", "TELOPS", "TB", "DH", "KVH", "KC"],
+
 
     'client_hostname':  'MRC-0m35',  # This is also the long-name  Client is confusing!
     # NB NB disk D at mrc may be faster for temp storage
@@ -60,6 +74,7 @@ site_config = {
     # This allows culling of unphysical results in photometry and other things
     # Particularly useful for focus
     'minimum_realistic_seeing': 1.0,
+
 
     'aux_archive_path':  None,  # NB NB we might want to put Q: here for MRC
     'wema_is_active':  True,          # True if the split computers used at a site.  NB CHANGE THE DAMN NAME!
@@ -142,6 +157,7 @@ site_config = {
     'auto_morn_sky_flat': True,
     'auto_morn_bias_dark': True,
     're-calibrate_on_solve': True,
+
     'pointing_calibration_on_startup': False,  # MF I am leaving this alone.
     # This is a time, in hours, over which to bypass automated focussing (e.g. at the start of a project it will not refocus if a new project starts X hours after the last focus)
     'periodic_focus_time': 0.5,
@@ -151,6 +167,7 @@ site_config = {
     'solve_nth_image': 1,  # Only solve every nth image
     'solve_timer': 0.05,  # Only solve every X minutes
     'threshold_mount_update': 100,  # only update mount when X arcseconds away
+
 
     'defaults': {
         'observing_conditions': 'observing_conditions1',
@@ -166,6 +183,7 @@ site_config = {
         'sequencer': 'sequencer1'
     },
     'device_types': [
+
         'observing_conditions',
         'enclosure',
         'mount',
@@ -202,6 +220,7 @@ site_config = {
     ],
     
         'observing_conditions': {
+
         'observing_conditions1': {
             'parent': 'site',
             'ocn_is_specific':  False,  # Indicates some special site code.
@@ -224,11 +243,13 @@ site_config = {
 
     'enclosure': {
         'enclosure1': {
+
             'parent': 'site',           
            
             'name': 'Megawan',
             'hostIP':  '10.15.0.65',
             'driver': 'ASCOM.SkyRoofHub.Dome',    #  Not really a dome for Skyroof!  MRC is a clamshell. But all these are 'domes" for Open Close purposes.
+
             'redis_ip': '10.15.0.109',   #None if no redis path present
             'enc_is_specific':  False,   #Obsolete thie terrible variable name in favor of 'custom'.
             'enclosure_is_directly_connected': False, # True for ECO and EC2, they connect directly to the enclosure, whereas WEMA are different.
@@ -263,7 +284,9 @@ site_config = {
             # 'operations_end':  0.42,
         },
     },
+
 }    #New terminating brace. 20230324 WER  This is dangerous now we have two configs to manage.
+
 
 
 if __name__ == '__main__':

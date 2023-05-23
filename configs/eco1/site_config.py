@@ -53,6 +53,8 @@ site_config = {
     'alt_path':  'C:/ptr/',  # Generic place for this host to stash misc stuff
     'save_to_alt_path' : 'no',
     'archive_path':  'C:/ptr/',  # Meant to be where /archive/<camera_id> is added by camera.
+    'local_calibration_path': 'C:/ptr/', # THIS FOLDER HAS TO BE ON A LOCAL DRIVE, not a network drive due to the necessity of huge memmap files
+    
     'archive_age' : 2.0, # Number of days to keep files in the local archive before deletion. Negative means never delete
     'send_files_at_end_of_night' : 'no', # For low bandwidth sites, do not send up large files until the end of the night. set to 'no' to disable
     'save_raw_to_disk' : False, # For low diskspace sites (or just because they aren't needed), don't save a separate raw file to disk after conversion to fz.
@@ -123,7 +125,7 @@ site_config = {
     'auto_midnight_moonless_bias_dark': True,
     'auto_eve_sky_flat': True,
     'eve_sky_flat_sunset_offset': -20.5,  #  Minutes  neg means before, + after.
-    'eve_cool_down_open' : -80.0,
+    'eve_cool_down_open' : -60.0,
     'auto_morn_sky_flat': True,
     'auto_morn_bias_dark': False,
     're-calibrate_on_solve': True,
@@ -444,6 +446,9 @@ site_config = {
             "parent": "telescope1",
             "name": "SBIG 8-position wheel" ,  #"LCO filter wheel FW50_001d",
             'service_date': '20180101',
+            
+            "filter_settle_time": 0, #how long to wait for the filter to settle after a filter change(seconds)
+
             "driver":   "CCDSoft2XAdaptor.ccdsoft5Camera",   #"LCO.dual",  #  'ASCOM.FLI.FilterWheel',
             #"driver":   "Maxim.Image",   #"LCO.dual",  #  'ASCOM.FLI.FilterWheel',
             'ip_string': None,
@@ -483,7 +488,7 @@ site_config = {
                         
                         #['w',     [0,  0],     0, 72.7, [1.00 ,  72], 'PL'],    #0.   For sequencer autofocus  consider foc or f filter
                         #['focus', [0,  0],     0, 148, [1.00 ,  72], 'focus'],    #0.
-                        ['lum',    [0,  0],     0, 179, [1.00 ,  72], 'PhLum'],    #1.
+                        ['lum',    [0,  0],     0, 75, [1.00 ,  72], 'PhLum'],    #1.
                         ['ip',    [1,  1],     0, 50, [1.00 , 119], 'PhRed'],    #2.
                         ['v',    [2,  2],     0, 16, [1.00 , 113], 'PhGreen'],    #3.
                         ['pb',    [3,  3],     0, 25, [0.80 ,  97], 'PhBlue'],    #4.
@@ -694,7 +699,7 @@ site_config = {
                 'readout_mode':  'Normal',
                 'readout_speed': 0.08,
                 'readout_seconds': 12.5,
-                'smart_stack_exposure_time' : 75,
+                'smart_stack_exposure_time' : 45,
                 'saturate':   65000 ,   # e-.  This is a close guess, not measured, but taken from data sheet.
                 'max_linearity': 65000,
                 'fullwell_capacity': 65000,  #e-.   We need to sort out the units properly NB NB NB
@@ -726,7 +731,7 @@ site_config = {
                 #'dark_length' : 1,
                 'number_of_bias_to_collect' : 10,
                 'number_of_dark_to_collect' : 10,
-                'number_of_flat_to_collect' : 10,
+                'number_of_flat_to_collect' : 8,
                 'number_of_bias_to_store' : 128,
                 'number_of_dark_to_store' : 128,
                 'number_of_flat_to_store' : 63,

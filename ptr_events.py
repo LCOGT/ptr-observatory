@@ -52,12 +52,13 @@ class Events:
         self.config = config
         g_dev['evnt'] = self
 
+
         self.siteLatitude = round(float(self.config['site_latitude']), 8)  # 34 20 34.569   #34 + (20 + 34.549/60.)/60.
         self.siteLongitude = round(float(self.config['site_longitude']), 8)  # -(119 + (40 + 52.061/60.)/60.) 119 40 52.061 W
         self.siteElevation = round(float(self.config['site_elevation']), 3)
+
         self.siteRefTemp = round(float(self.config['reference_ambient']), 2)  # These should be a monthly average data.
         self.siteRefPress = round(float(self.config['reference_pressure']), 2)
-
         self.flat_offset = self.config['eve_sky_flat_sunset_offset']    # -35 min for SRO
 
     ###############################
@@ -537,13 +538,17 @@ class Events:
                      ('Sun Set            ', ephem.Date(self.sunset)),
                      ('Civil Dusk         ', ephem.Date(self.civilDusk)),
                      ('Naut Dusk          ', ephem.Date(self.nauticalDusk)),
-                     ('End Eve Sky Flats  ', ephem.Date(self.nauticalDusk - 10/1440)),
-                     ('Clock & Auto Focus ', ephem.Date(self.nautDusk_plus_half - 8/1440.)),
-                     ('Observing Begins   ', ephem.Date(self.nautDusk_plus_half)),
+                     #('End Eve Sky Flats  ', ephem.Date(self.nauticalDusk - 10/1440)),
+                     ('End Eve Sky Flats  ', ephem.Date(self.civilDusk + 5/1440)),
+                     #('Clock & Auto Focus ', ephem.Date(self.nautDusk_plus_half - 8/1440.)),
+                     ('Clock & Auto Focus ', ephem.Date(self.civilDusk + 8/1440)),
+                     #('Observing Begins   ', ephem.Date(self.nautDusk_plus_half)),
+                     ('Observing Begins   ', ephem.Date(self.civilDusk + 18/1440)),
                      ('Astro Dark         ', ephem.Date(self.astroDark)),
                      ('Middle of Night    ', ephem.Date(self.middleNight)),
                      ('End Astro Dark     ', ephem.Date(self.astroEnd)),
-                     ('Observing Ends     ', ephem.Date(self.nautDawn_minus_half)),
+                     #('Observing Ends     ', ephem.Date(self.nautDawn_minus_half)),
+                     ('Observing Ends     ', ephem.Date(self.civilDawn - 18/1440)),
                      ('Naut Dawn          ', ephem.Date(self.nauticalDawn)),
                      ('Morn Sky Flats     ', ephem.Date(self.nauticalDawn + 30/1440.)),
                      ('Civil Dawn         ', ephem.Date(self.civilDawn)),
@@ -566,10 +571,8 @@ class Events:
         self.evnt_sort = self._sortTuple(self.evnt)
         day_dir = self.compute_day_directory()
 
-
         self.timezone = "  " + self.config['timezone'] + ": "
         self.offset = self.config['time_offset']
-        
 
         event_dict = {}
         for item in self.evnt_sort:
@@ -578,11 +581,7 @@ class Events:
         event_dict['day_directory'] = str(day_dir)
         g_dev['events'] = event_dict
 
-
-
-
-    def display_events(self, endofnightoverride='no'): 
-
+    def display_events(self, endofnightoverride='no'):
 
         plog('Events module reporting for duty. \n')
         plog('Ephem date     :    ', dayNow)
@@ -594,7 +593,6 @@ class Events:
         plog('Moon Ra; Dec   :    ', round(self.mid_moon_ra, 2), ";  ", round(self.mid_moon_dec, 1))
         plog('Moon phase %   :    ', round(self.mid_moon_phase, 1), '%\n')
         plog("Key events for the evening, presented by the Solar System: \n")
-
 
         for self.evnt in self.evnt_sort:
             plog(self.evnt[0], 'UTC: ', self.evnt[1], self.timezone, ephem.Date(self.evnt[1] + float(self.offset)/24.))

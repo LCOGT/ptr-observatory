@@ -29,20 +29,21 @@ site_config = {
     ####################################################
     'obs_id': 'mrc1',
     'observatory_location': "SBA",  # Nearest major airport
-    'debug_site_mode': True,
+    'debug_site_mode': False,
 
     'debug_mode': True,
     'admin_owner_commands_only': False,
-    'debug_duration_sec': 20000,
+    'debug_duration_sec': 1800,
 
     'owner':  ['google-oauth2|112401903840371673242'],  # Wayne
 
     'owner_alias': ['WER', 'TELOPS'],
     'admin_aliases': ["ANS", "WER", "TELOPS", "TB", "DH", "KVH", "KC"],
 
-    'client_hostname':  'MRC-0m35',  # This is also the long-name  Client is confusing!
+    'client_hostname':  'mrc-0m35',  # This is also the long-name  Client is confusing!
     # NB NB disk D at mrc may be faster for temp storage
     'client_path':  'Q:/ptr/',  # Generic place for client host to stash misc stuff
+    'local_calibration_path': 'D:/ptr/', # THIS FOLDER HAS TO BE ON A LOCAL DRIVE, not a network drive due to the necessity of huge memmap files
     'alt_path':  'Q:/ptr/',  # Generic place for this host to stash misc stuff
     'plog_path':  'Q:/ptr/mrc1/',  # place where night logs can be found.
     'save_to_alt_path': 'no',
@@ -66,7 +67,7 @@ site_config = {
 
     'aux_archive_path':  None,  # NB NB we might want to put Q: here for MRC
     'wema_is_active':  True,          # True if the split computers used at a site.  NB CHANGE THE DAMN NAME!
-    'wema_hostname': 'MRC-WMS-ENC',   # Prefer the shorter version
+    'wema_hostname': 'MRC-WEMA',   # Prefer the shorter version
     'wema_path':  'Q:/ptr/',  # '/wema_transfer/',
     'dome_on_wema':   True,
     'site_IPC_mechanism':  'redis',   # ['None', shares', 'shelves', 'redis']  Pick One
@@ -78,12 +79,13 @@ site_config = {
     'obsid_is_specific':  False,  # Indicates some special code for this site, found at end of config.
 
 
-    'host_wema_site_name':  'MRC',  # The umbrella header for obsys in close geographic proximity,
+    'host_wema_site_name':  'mrc',  # The umbrella header for obsys in close geographic proximity,
                                     #  under the control of one wema
-    'name': 'Mountain Ranch Camp Observatory 0m35f7.2',
+    'name': 'Mountain Ranch Camp Observatory 0m35 f7.2',
     'airport_code': 'SBA',
     'location': 'Near Santa Barbara CA,  USA',
     'telescope_description': '0m35 f7.2 Planewave CDK',
+    'site_path': 'Q:/',
     'observatory_url': 'https://starz-r-us.sky/clearskies',
     'observatory_logo': None,
     'description':  '''
@@ -119,7 +121,7 @@ site_config = {
 
 
 
-    'obsid_in_automatic_default': "Automatic",  # "Manual", "Shutdown"
+    'obsid_in_automatic_default': "Shutdown",  # "Manual", "Shutdown"
     'automatic_detail_default': "Enclosure is set to Automatic mode.",
 
 
@@ -149,6 +151,9 @@ site_config = {
     'stdev_fwhm': 0.5,  # This is the expected variation in FWHM at a given telescope/camera/site combination. This is used to check if a fwhm is within normal range or the focus has shifted
     'focus_exposure_time': 10,  # Exposure time in seconds for exposure image
     'pointing_exposure_time': 20,  # Exposure time in seconds for exposure image
+    'pointing_correction_dec_multiplier' : 1,
+    'pointing_correction_ra_multiplier' : 1,
+    
     'focus_trigger': 0.75,  # What FWHM increase is needed to trigger an autofocus
     'solve_nth_image': 1,  # Only solve every nth image
     'solve_timer': 0.05,  # Only solve every X minutes
@@ -510,6 +515,7 @@ site_config = {
             "driver": "Maxim.CCDCamera",
             # "driver":   'ASCOM.FLI.FilterWheel',   #  NB THIS IS THE NEW DRIVER FROM peter.oleynikov@gmail.com  Found in Kepler ASCOM section
             "dual_wheel": True,
+            "filter_settle_time": 1, #how long to wait for the filter to settle after a filter change(seconds)
 
 
             # WER - if there is no filter wheel, then these two are used, otherwise they are harmless
@@ -619,7 +625,7 @@ site_config = {
             'settings': {
 
                 # If there is sufficient memory ... OR .... not many flats, it is faster to keep the flats in memory.
-                'hold_flats_in_memory': False,
+                'hold_flats_in_memory': True,
 
 
 
