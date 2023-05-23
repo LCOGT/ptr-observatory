@@ -34,7 +34,7 @@ site_config = {
     'observatory_location': "SBA",  # Nearest major airport
     'debug_site_mode': False,
 
-    'debug_mode': True,
+    'debug_mode': False,
     'admin_owner_commands_only': False,
     'debug_duration_sec': 1800,
 
