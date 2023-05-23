@@ -101,6 +101,9 @@ site_config = {
     'obs_latitude': -37.70097222,     #  Decimal degrees, North is Positive
     'obs_longitude': 145.1918056,   #  Decimal degrees, West is negative
     'obs_elevation': 150,    #  meters above sea level
+    'latitude': -37.70097222,     #  Decimal degrees, North is Positive
+    'longitude': 145.1918056,   #  Decimal degrees, West is negative
+    'elevation': 150,    #  meters above sea level
     'reference_ambient':  10,  #  Degrees Celsius.  Alternately 12 entries, one for every - mid month.
     'reference_pressure':  867.254,    #mbar   A rough guess 20200315
 
@@ -124,7 +127,7 @@ site_config = {
     'enclosure_check_period' : 2,    # How many minutes between enclosure checks
     'auto_eve_bias_dark': False,
     'auto_midnight_moonless_bias_dark': True,
-    'auto_eve_sky_flat': True,
+    'auto_eve_sky_flat': False,
     'eve_sky_flat_sunset_offset': -20.5,  #  Minutes  neg means before, + after.
     'eve_cool_down_open' : -60.0,
     'auto_morn_sky_flat': True,

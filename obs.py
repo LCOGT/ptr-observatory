@@ -111,6 +111,9 @@ def send_status(obsy, column, status_to_send):
     uri_status = f"https://status.photonranch.org/status/{obsy}/status/"
     # None of the strings can be empty. Otherwise this put faults.
     payload = {"statusType": str(column), "status": status_to_send}
+    
+    
+    #print (payload)
 
     try:
 
@@ -887,8 +890,8 @@ sel
         if bpt:
             plog('UpdateStatus bpt was invoked.')
             # breakpoint()
-        send_enc = False
-        send_ocn = False
+        #send_enc = False
+        #send_ocn = False
 
         # Wait a bit between status updates
         if dont_wait == True:
@@ -913,26 +916,79 @@ sel
         # Loop through all types of devices.
         # For each type, we get and save the status of each device.
 
-        if not self.config["wema_is_active"]:
+        #if not self.config["wema_is_active"]:
             #device_list = self.short_status_devices()
-            device_list = self.device_types
-            remove_enc = False
-        if self.config["wema_is_active"]:
+        device_list = self.device_types
+        #breakpoint()
+            #remove_enc = False
+        #if self.config["wema_is_active"]:
             # used when wema is sending ocn and enc status via a different stream.
-            device_list = self.short_status_devices
-            remove_enc = False
+            #device_list = self.short_status_devices
+            #remove_enc = False
 
-        else:
-            device_list = self.device_types  # used when one computer is doing everything for a site.
-            remove_enc = True
+        #else:
+            #device_list = self.device_types  # used when one computer is doing everything for a site.
+            #remove_enc = True
 
+        obsy = self.name
         if mount_only == True:
             device_list = ['mount', 'telescope']
+
+        # Get current enclosure status
+        #send_enc=False
+        #print ("enc status timer: " + str(datetime.datetime.now() - self.enclosure_status_timer))
+        #print (datetime.timedelta(minutes=self.enclosure_check_period))
+        #if (
+        #    datetime.datetime.now() - self.enclosure_status_timer
+        #) > datetime.timedelta(minutes=self.enclosure_check_period):
+            
+        #    g_dev['obs'].enc_status = g_dev['obs'].get_enclosure_status_from_aws()    
+        #    lane = "enclosure"                
+        #    self.enclosure_status_timer = datetime.datetime.now()
+            #self.send_status_queue.put((obsy, lane, g_dev['obs'].enc_status), block=False)
+        #    print ("status sendy!")
+        #    print (g_dev['obs'].enc_status)
+        
+        #status['enclosure']['enclosure1'] = g_dev['obs'].enc_status
+        
+        # Get current weather status  
+        #send_ocn=False
+        if (
+            datetime.datetime.now() - self.observing_status_timer
+        ) > datetime.timedelta(minutes=self.observing_check_period):
+            g_dev['obs'].ocn_status = g_dev['obs'].get_weather_status_from_aws()
+            #lane = "weather"
+            self.observing_status_timer = datetime.datetime.now()
+            #self.send_status_queue.put((obsy, lane, g_dev['obs'].ocn_status), block=False)
+        
+        if (
+            datetime.datetime.now() - self.enclosure_status_timer
+        ) > datetime.timedelta(minutes=self.enclosure_check_period):
+            
+            g_dev['obs'].enc_status = g_dev['obs'].get_enclosure_status_from_aws()
+            self.enclosure_status_timer = datetime.datetime.now()
+        
+        
+        
+
+
+        # if ocn_status is not None:
+        #     lane = "weather"
+        #     # send_status(obsy, lane, ocn_status)  # NB Do not remove this send for SAF!
+        #     if send_ocn == True:
+        #         self.send_status_queue.put((obsy, lane, ocn_status), block=False)
+        # if enc_status is not None:
+        #     lane = "enclosure"
+        #     #send_status(obsy, lane, enc_status)
+        #     if send_enc == True:
+        #         self.send_status_queue.put((obsy, lane, enc_status), block=False)
 
         for dev_type in device_list:
             #  The status that we will send is grouped into lists of
             #  devices by dev_type.
             status[dev_type] = {}
+            #status['enclosure'] = {}
+            #status['observing_conditions'] = {}
             # Names of all devices of the current type.
             # Recall that self.all_devices[type] is a dictionary of all
             # `type` devices, with key=name and val=device object itself.
@@ -946,82 +1002,90 @@ sel
                 # ...and add it to main status dict.
                 # breakpoint()
 
-                if (
-                   "enclosure" in device_name
-                    # and device_name in self.config["wema_types"]
-                    # and (self.is_wema or self.obsid_is_specific)
-                ):
 
-                    if self.config['enclosure']['enclosure1']['driver'] == None and not self.obsid_is_specific:
-                        # Even if no connection send a satus
-                        status = {'shutter_status': "No enclosure.",
-                                  'enclosure_synchronized': False,  # self.following, 20220103_0135 WER
-                                  'dome_azimuth': 0,
-                                  'dome_slewing': False,
-                                  'enclosure_mode': "No Enclosure",
-                                  'enclosure_message': "No message"},  # self.state}#self.following, 20220103_0135 WER
+                
 
-                    elif (
-                        datetime.datetime.now() - self.enclosure_status_timer
-                    ) < datetime.timedelta(minutes=self.enclosure_check_period):
-                        result = None
-                        send_enc = False
-                    else:
-                        #plog("Running enclosure status check")
-                        self.enclosure_status_timer = datetime.datetime.now()
-                        send_enc = True
 
-                        result = device.get_status()
+                # if (
+                #    "enclosure" in device_name
+                #     # and device_name in self.config["wema_types"]
+                #     # and (self.is_wema or self.obsid_is_specific)
+                # ):
 
-                elif ("observing_conditions" in device_name
-                      and self.config['observing_conditions']['observing_conditions1']['driver'] == None):
-                    # Here is where the weather config gets updated.
-                    if (
-                        datetime.datetime.now() - self.observing_status_timer
-                    ) < datetime.timedelta(minutes=self.observing_check_period):
-                        result = None
-                        send_ocn = False
-                    else:
-                        #plog("Running weather status check.")
-                        self.observing_status_timer = datetime.datetime.now()
-                        result = device.get_noocndevice_status()
-                        send_ocn = True
-                        if self.obsid_is_specific:
-                            remove_enc = False
+                #     if self.config['enclosure']['enclosure1']['driver'] == None and not self.obsid_is_specific:
+                #         # Even if no connection send a satus
+                #         status = {'shutter_status': "No enclosure.",
+                #                   'enclosure_synchronized': False,  # self.following, 20220103_0135 WER
+                #                   'dome_azimuth': 0,
+                #                   'dome_slewing': False,
+                #                   'enclosure_mode': "No Enclosure",
+                #                   'enclosure_message': "No message"},  # self.state}#self.following, 20220103_0135 WER
 
-                elif (
-                    "observing_conditions" in device_name
-                    and device_name in self.config["wema_types"]
-                    and (self.is_wema or self.obsid_is_specific)
-                ):
-                    # Here is where the weather config gets updated.
-                    if (
-                        datetime.datetime.now() - self.observing_status_timer
-                    ) < datetime.timedelta(minutes=self.observing_check_period):
-                        result = None
-                        send_ocn = False
-                    else:
-                        plog("Running weather status check.")
-                        self.observing_status_timer = datetime.datetime.now()
-                        result = device.get_status(g_dev=g_dev)
-                        send_ocn = True
-                        if self.obsid_is_specific:
-                            remove_enc = False
+                #     elif (
+                #         datetime.datetime.now() - self.enclosure_status_timer
+                #     ) < datetime.timedelta(minutes=self.enclosure_check_period):
+                #         result = None
+                #         send_enc = False
+                #     else:
+                #         #plog("Running enclosure status check")
+                #         self.enclosure_status_timer = datetime.datetime.now()
+                #         send_enc = True
 
+                #         result = device.get_status()
+
+                # elif ("observing_conditions" in device_name
+                #       and self.config['observing_conditions']['observing_conditions1']['driver'] == None):
+                #     # Here is where the weather config gets updated.
+                #     if (
+                #         datetime.datetime.now() - self.observing_status_timer
+                #     ) < datetime.timedelta(minutes=self.observing_check_period):
+                #         result = None
+                #         send_ocn = False
+                #     else:
+                #         #plog("Running weather status check.")
+                #         self.observing_status_timer = datetime.datetime.now()
+                #         result = device.get_noocndevice_status()
+                #         send_ocn = True
+                #         if self.obsid_is_specific:
+                #             remove_enc = False
+
+                # elif (
+                #     "observing_conditions" in device_name
+                #     and device_name in self.config["wema_types"]
+                #     and (self.is_wema or self.obsid_is_specific)
+                # ):
+                #     # Here is where the weather config gets updated.
+                #     if (
+                #         datetime.datetime.now() - self.observing_status_timer
+                #     ) < datetime.timedelta(minutes=self.observing_check_period):
+                #         result = None
+                #         send_ocn = False
+                #     else:
+                #         plog("Running weather status check.")
+                #         self.observing_status_timer = datetime.datetime.now()
+                #         result = device.get_status(g_dev=g_dev)
+                #         send_ocn = True
+                #         if self.obsid_is_specific:
+                #             remove_enc = False
+
+                
+                if 'telescope' in device_name:
+                    status['telescope'] = status['mount']
                 else:
-                    if 'telescope' in device_name:
-                        status['telescope'] = status['mount']
-                    else:
-                        result = device.get_status()
+                    result = device.get_status()
+                    
                 if result is not None:
                     status[dev_type][device_name] = result
 
+        #status['observing_conditions']['observing_conditions1'] = g_dev['obs'].ocn_status
+        #status['enclosure']['enclosure1'] = g_dev['obs'].enc_status
+
         # If the roof is open, then it is open and enabled to observe
-        try:
-            if g_dev['enc'].status['shutter_status'] == 'Open':
-                self.open_and_enabled_to_observe = True
-        except:
-            pass
+        #try:
+        if g_dev['obs'].enc_status['shutter_status'] == 'Open':
+            self.open_and_enabled_to_observe = True
+        #except:
+        #    pass
 
         # Check that the mount hasn't slewed too close to the sun
         try:
@@ -1047,33 +1111,24 @@ sel
 
         status["timestamp"] = round((time.time() + t1) / 2.0, 3)
         status["send_heartbeat"] = False
-        try:
-            ocn_status = None
-            enc_status = None
-            ocn_status = {"observing_conditions": status.pop("observing_conditions")}
-            enc_status = {"enclosure": status.pop("enclosure")}
-            device_status = status
-        except:
-            pass
+        #try:
+            #ocn_status = None
+            #enc_status = None
+            #ocn_status = {"observing_conditions": status.pop("observing_conditions")}
+            #enc_status = {"enclosure": status.pop("enclosure")}
+            #device_status = status
+        #except:
+        #    pass
         #plog ("Status update length: " + str(time.time() - beginning_update_status))
         loud = False
         # Consider inhibiting unless status rate is low
-        obsy = self.name
+        
 
         if status is not None:
             lane = "device"
             #send_status(obsy, lane, status)
             self.send_status_queue.put((obsy, lane, status), block=False)
-        if ocn_status is not None:
-            lane = "weather"
-            # send_status(obsy, lane, ocn_status)  # NB Do not remove this send for SAF!
-            if send_ocn == True:
-                self.send_status_queue.put((obsy, lane, ocn_status), block=False)
-        if enc_status is not None:
-            lane = "enclosure"
-            #send_status(obsy, lane, enc_status)
-            if send_enc == True:
-                self.send_status_queue.put((obsy, lane, enc_status), block=False)
+        
         # if loud:
         #    plog("\n\nStatus Sent:  \n", status)
         # else:
@@ -2842,17 +2897,32 @@ sel
 
         try:
             aws_enclosure_status=reqs.get(uri_status)
+            
             aws_enclosure_status=aws_enclosure_status.json()
+            aws_enclosure_status['status']['enclosure']['enclosure1']['enclosure_mode'] = aws_enclosure_status['status']['enclosure']['enclosure1']['enclosure_mode']['val']
+            aws_enclosure_status['status']['enclosure']['enclosure1']['dome_azimuth'] = aws_enclosure_status['status']['enclosure']['enclosure1']['dome_azimuth']['val']
+            aws_enclosure_status['status']['enclosure']['enclosure1']['enclosure_synchronized'] = aws_enclosure_status['status']['enclosure']['enclosure1']['enclosure_synchronized']['val']
+            aws_enclosure_status['status']['enclosure']['enclosure1']['dome_slewing'] = aws_enclosure_status['status']['enclosure']['enclosure1']['dome_slewing']['val']
+            aws_enclosure_status['status']['enclosure']['enclosure1']['shutter_status'] = aws_enclosure_status['status']['enclosure']['enclosure1']['shutter_status']['val']
+            
+            
+            
+            #breakpoint()
+            try:
+                self.send_status_queue.put((self.name, 'enclosure', aws_enclosure_status['status']), block=False)
+                #breakpoint()
+            except:
+                pass
             aws_enclosure_status=aws_enclosure_status['status']['enclosure']['enclosure1']
         except Exception as e:
             plog("Failed to get aws enclosure status. Usually not fatal:  ", e)
         
-        status = {'shutter_status': aws_enclosure_status["shutter_status"]['val'],
-                  'enclosure_synchronized': aws_enclosure_status["enclosure_synchronized"]['val'],  # self.following, 20220103_0135 WER
-                  'dome_azimuth': aws_enclosure_status["dome_azimuth"]['val'],
-                  'dome_slewing': aws_enclosure_status["dome_slewing"]['val'],
-                  'enclosure_mode': aws_enclosure_status["enclosure_mode"]['val'],
-                  'enclosure_message': "No message"}
+        status = {'shutter_status': aws_enclosure_status["shutter_status"],
+                  'enclosure_synchronized': aws_enclosure_status["enclosure_synchronized"],  # self.following, 20220103_0135 WER
+                  'dome_azimuth': aws_enclosure_status["dome_azimuth"],
+                  'dome_slewing': aws_enclosure_status["dome_slewing"],
+                  'enclosure_mode': aws_enclosure_status["enclosure_mode"]}#,
+                  #'enclosure_message': "No message"}
 
         return status
     
