@@ -1206,23 +1206,24 @@ class Mount:
         
         self.sid_now_r = self.current_sidereal*HTOR   #NB NB ADDED THIS FOR SRO, WHY IS THIS NEEDED?
 
-        self.ha_obs_r, self.dec_obs_r, self.refr_asec = ptr_utility.appToObsRaHa(ra_app_h*HTOR, dec_app_d*DTOR, self.sid_now_r)
-        #ra_obs_r, dec_obs_r = ptr_utility.transformHatoRaDec(ha_obs_r, dec_obs_r, self.sid_now_r)
-        #Here we would convert to model and calculate tracking rate correction.
-        self.ha_mech, self.dec_mech = ptr_utility.transform_observed_to_mount_r(self.ha_obs_r, self.dec_obs_r, pier_east, loud=False, enable=True)
-        self.ra_mech, self.dec_mech = ptr_utility.transform_haDec_to_raDec_r(self.ha_mech, self.dec_mech, self.sid_now_r)
-        self.ha_corr = ptr_utility.reduce_ha_r(self.ha_mech -self. ha_obs_r)*RTOS
-        self.dec_corr = ptr_utility.reduce_dec_r(self.dec_mech - self.dec_obs_r)*RTOS
+        # self.ha_obs_r, self.dec_obs_r, self.refr_asec = ptr_utility.appToObsRaHa(ra_app_h*HTOR, dec_app_d*DTOR, self.sid_now_r)
+        # #ra_obs_r, dec_obs_r = ptr_utility.transformHatoRaDec(ha_obs_r, dec_obs_r, self.sid_now_r)
+        # #Here we would convert to model and calculate tracking rate correction.
+        # self.ha_mech, self.dec_mech = ptr_utility.transform_observed_to_mount_r(self.ha_obs_r, self.dec_obs_r, pier_east, loud=False, enable=True)
+        # self.ra_mech, self.dec_mech = ptr_utility.transform_haDec_to_raDec_r(self.ha_mech, self.dec_mech, self.sid_now_r)
+        # self.ha_corr = ptr_utility.reduce_ha_r(self.ha_mech -self. ha_obs_r)*RTOS
+        # self.dec_corr = ptr_utility.reduce_dec_r(self.dec_mech - self.dec_obs_r)*RTOS
   
-        self.move_time = time.time()
-        az, alt = ptr_utility.transform_haDec_to_azAlt_r(self.ha_mech, self.dec_mech, self.latitude_r)
-        self.target_az = az*RTOD
+        # self.move_time = time.time()
+        # az, alt = ptr_utility.transform_haDec_to_azAlt_r(self.ha_mech, self.dec_mech, self.latitude_r)
+        # self.target_az = az*RTOD
 
         wait_for_slew() 
 
         try:
             g_dev['obs'].time_of_last_slew=time.time()
-            self.mount.SlewToCoordinatesAsync(self.ra_mech*RTOH, self.dec_mech*RTOD)  #Is this needed?
+            #self.mount.SlewToCoordinatesAsync(self.ra_mech*RTOH, self.dec_mech*RTOD)  #Is this needed?
+            self.mount.SlewToCoordinatesAsync(ra, dec)  #Is this needed?
             wait_for_slew() 
         except Exception as e:
             # This catches an occasional ASCOM/TheSkyX glitch and gets it out of being stuck
@@ -1268,42 +1269,42 @@ class Mount:
         wait_for_slew()    
         
         
-        ###  figure out velocity  Apparent place is unchanged.
-        self.sid_next_r = (self.sid_now_h + self.delta_t_s*STOH)*HTOR    #delta_t_s is five minutes
-        self.ha_obs_adv, self.dec_obs_adv, self.refr_adv = ptr_utility.appToObsRaHa(ra_app_h*HTOR, dec_app_d*DTOR, self.sid_next_r)   #% minute advance
-        self.ha_mech_adv, self.dec_mech_adv = ptr_utility.transform_observed_to_mount_r(self.ha_obs_adv, self.dec_obs_adv, pier_east, loud=False)
-        self.ra_adv, self.dec_adv = ptr_utility.transform_haDec_to_raDec_r(self.ha_mech_adv, self.dec_mech_adv, self.sid_next_r)
-        self.adv_ha_corr = ptr_utility.reduce_ha_r(self.ha_mech_adv - self.ha_obs_adv)*RTOS     #These are mechanical values, not j.anything
-        self.adv_dec_corr = ptr_utility.reduce_dec_r(self.dec_mech_adv - self.dec_obs_adv)*RTOS
-        self.prior_seek_ha_h = self.ha_mech
-        self.prior_seek_dec_d = self.dec_mech
-        self.prior_seek_time = time.time()
-        self.prior_sid_time =  self.sid_now_r
+        # ###  figure out velocity  Apparent place is unchanged.
+        # self.sid_next_r = (self.sid_now_h + self.delta_t_s*STOH)*HTOR    #delta_t_s is five minutes
+        # self.ha_obs_adv, self.dec_obs_adv, self.refr_adv = ptr_utility.appToObsRaHa(ra_app_h*HTOR, dec_app_d*DTOR, self.sid_next_r)   #% minute advance
+        # self.ha_mech_adv, self.dec_mech_adv = ptr_utility.transform_observed_to_mount_r(self.ha_obs_adv, self.dec_obs_adv, pier_east, loud=False)
+        # self.ra_adv, self.dec_adv = ptr_utility.transform_haDec_to_raDec_r(self.ha_mech_adv, self.dec_mech_adv, self.sid_next_r)
+        # self.adv_ha_corr = ptr_utility.reduce_ha_r(self.ha_mech_adv - self.ha_obs_adv)*RTOS     #These are mechanical values, not j.anything
+        # self.adv_dec_corr = ptr_utility.reduce_dec_r(self.dec_mech_adv - self.dec_obs_adv)*RTOS
+        # self.prior_seek_ha_h = self.ha_mech
+        # self.prior_seek_dec_d = self.dec_mech
+        # self.prior_seek_time = time.time()
+        # self.prior_sid_time =  self.sid_now_r
         '''
         The units of this property are arcseconds per SI (atomic) second.
         Please note that for historic reasons the units of the
         RightAscensionRate property are seconds of RA per sidereal second.
         '''
-        if self.CanSetRightAscensionRate:
-            self.prior_roll_rate = -((self.ha_mech_adv - self. ha_mech)*RTOS*MOUNTRATE/self.delta_t_s - MOUNTRATE)/(APPTOSID*15)    #Conversion right 20219329
-            self.mount.RightAscensionRate = 0.0 # self.prior_roll_rate  #Neg number makes RA decrease
-            self.RightAscensionRate = 0.0
-        else:
-            self.prior_roll_rate = 0.0
-        if self.CanSetDeclinationRate:
-           self.prior_pitch_rate = -(self.dec_mech_adv - self.dec_mech)*RTOS/self.delta_t_s    #20210329 OK 1 hour from zenith.  No Appsid correction per ASCOM spec.
-           self.mount.DeclinationRate = 0.0 #self.prior_pitch_rate  #Neg sign makes Dec decrease
-           self.DeclinationRate = 0.0 #self.prior_pitch_rate
-           #plog("Rates, refr are:  ", self.prior_roll_rate, self.prior_pitch_rate, self.refr_asec)
-        else:
-            self.prior_pitch_rate = 0.0
+        # if self.CanSetRightAscensionRate:
+        #     self.prior_roll_rate = -((self.ha_mech_adv - self. ha_mech)*RTOS*MOUNTRATE/self.delta_t_s - MOUNTRATE)/(APPTOSID*15)    #Conversion right 20219329
+        #     self.mount.RightAscensionRate = 0.0 # self.prior_roll_rate  #Neg number makes RA decrease
+        #     self.RightAscensionRate = 0.0
+        # else:
+        #     self.prior_roll_rate = 0.0
+        # if self.CanSetDeclinationRate:
+        #    self.prior_pitch_rate = -(self.dec_mech_adv - self.dec_mech)*RTOS/self.delta_t_s    #20210329 OK 1 hour from zenith.  No Appsid correction per ASCOM spec.
+        #    self.mount.DeclinationRate = 0.0 #self.prior_pitch_rate  #Neg sign makes Dec decrease
+        #    self.DeclinationRate = 0.0 #self.prior_pitch_rate
+        #    #plog("Rates, refr are:  ", self.prior_roll_rate, self.prior_pitch_rate, self.refr_asec)
+        # else:
+        #     self.prior_pitch_rate = 0.0
        
-        if self.CanSetRightAscensionRate:
-            self.mount.RightAscensionRate = 0.0 #self.prior_roll_rate
-            self.RightAscensionRate = 0.0
-        if self.CanSetDeclinationRate:
-            self.mount.DeclinationRate = 0.0#self.prior_pitch_rate
-            self.DeclinationRate = 0.0 #self.prior_pitch_rate
+        # if self.CanSetRightAscensionRate:
+        #     self.mount.RightAscensionRate = 0.0 #self.prior_roll_rate
+        #     self.RightAscensionRate = 0.0
+        # if self.CanSetDeclinationRate:
+        #     self.mount.DeclinationRate = 0.0#self.prior_pitch_rate
+        #     self.DeclinationRate = 0.0 #self.prior_pitch_rate
 
         self.seek_commanded = True        
 
