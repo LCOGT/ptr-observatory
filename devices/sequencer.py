@@ -192,6 +192,8 @@ class Sequencer:
         self.weather_report_close_during_evening_time=ephem_now + 86400
         self.nightly_weather_report_complete=False
         
+        
+        self.last_roof_status = 'Closed'
         self.time_roof_last_opened = time.time() -500
         # Run a weather report on bootup so observatory can run if need be. 
         #self.global_wx()
@@ -558,7 +560,7 @@ class Sequencer:
         
         # This bit is really to get the scope up and running if the roof opens
         if ((g_dev['events']['Cool Down, Open']  <= ephem_now < g_dev['events']['Observing Ends'])) and not self.cool_down_latch and \
-            g_dev['obs'].open_and_enabled_to_observe and g_dev['mnt'].mount.AtPark and (time.time() - self.time_roof_last_opened) < 120 :
+            g_dev['obs'].open_and_enabled_to_observe and g_dev['mnt'].mount.AtPark and (time.time() - self.time_roof_last_opened) < 300 :
 
             self.cool_down_latch = True
             

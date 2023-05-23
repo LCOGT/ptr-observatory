@@ -2917,6 +2917,18 @@ sel
         except Exception as e:
             plog("Failed to get aws enclosure status. Usually not fatal:  ", e)
         
+        #if aws_enclosure_status["shutter_status"] in ['Closed','closed']:
+        #    g_dev['seq'].time_roof_last_shut=time.time()
+        
+        
+        if self.last_roof_status == 'Closed' and aws_enclosure_status["shutter_status"] in ['Open','open']:
+            g_dev['seq'].time_roof_last_opened=time.time()  
+            self.last_roof_status == 'Open'
+            
+        if self.last_roof_status == 'Open' and aws_enclosure_status["shutter_status"] in ['Closed','closed']:
+            self.last_roof_status == 'Closed'
+        
+        
         status = {'shutter_status': aws_enclosure_status["shutter_status"],
                   'enclosure_synchronized': aws_enclosure_status["enclosure_synchronized"],  # self.following, 20220103_0135 WER
                   'dome_azimuth': aws_enclosure_status["dome_azimuth"],
