@@ -29,11 +29,11 @@ from global_yard import g_dev
 from datetime import datetime, timezone, timedelta
 from dateutil import tz
 
-# siteCoordinates = EarthLocation(
-#     lat=site_config["site_latitude"] * u.deg,
-#     lon=site_config["site_longitude"] * u.deg,
-#     height=site_config["site_elevation"] * u.m,
-# )
+siteCoordinates = EarthLocation(
+    lat=site_config["obs_latitude"] * u.deg,
+    lon=site_config["obs_longitude"] * u.deg,
+    height=site_config["obs_elevation"] * u.m,
+)
 
 # siteCoordinates = EarthLocation(
 #     lat=site_config["site_latitude"] * u.deg,
@@ -1904,7 +1904,7 @@ def test_haDec_altAz_haDec():
     for ha in lHa:
         for dec in lDec:
             print("Starting:  ", ha, dec)
-            site_latitude = config["latitude"]
+            site_latitude = config["obs_latitude"]
             lAz, lAlt = transform_haDec_to_azAlt(ha, dec, siteLatitude)
             tHa, tDec = transform_azAlt_to_HaDec(lAz, lAlt, siteLatitude)
             print(ha, tHa, dec, tDec)
@@ -1973,13 +1973,13 @@ def appToObsRaHa(appRa, appDec, pSidTime):
         pass
     appHa, appDec = transform_raDec_to_haDec_r(appRa, appDec, pSidTime)
     appAz, appAlt = transform_haDec_to_azAlt_r(
-        appHa, appDec, site_config["latitude"] * DTOR
+        appHa, appDec, site_config["obs_latitude"] * DTOR
     )
     obsAlt, refAsec = apply_refraction_inEl_r(
         appAlt, g_dev["ocn"].temperature, g_dev["ocn"].pressure
     )
     obsHa, obsDec = transform_azAlt_to_haDec_r(
-        appAz, obsAlt, site_config["latitude"] * DTOR
+        appAz, obsAlt, site_config["obs_latitude"] * DTOR
     )
     raRefr = reduce_ha_r(appHa - obsHa) * HTOS
     decRefr = -reduce_dec_r(appDec - obsDec) * DTOS
@@ -1993,7 +1993,7 @@ def obsToAppHaRa(obsHa, obsDec, pSidTime):
     except:
         pass
     obsAz, obsAlt = transform_haDec_to_azAlt_r(
-        obsHa, obsDec, site_config["latitude"] * DTOR
+        obsHa, obsDec, site_config["obs_latitude"] * DTOR
     )
     refr = 0.0
     try:
@@ -2004,7 +2004,7 @@ def obsToAppHaRa(obsHa, obsDec, pSidTime):
         appAlt = 0
         pass
     appHa, appDec = transform_azAlt_to_haDec_r(
-        obsAz, appAlt, site_config["latitude"] * DTOR
+        obsAz, appAlt, site_config["obs_latitude"] * DTOR
     )
     appRa, appDec = transform_haDec_to_raDec_r(appHa, appDec, pSidTime)
     raRefr = reduce_ha_r(-appHa + obsHa) * HTOS
@@ -2133,7 +2133,7 @@ def transform_observed_to_mount_r(pRoll, pPitch, pPierSide, loud=False, enable=F
         # Apply IJ and ID to incoming coordinates, and if needed GEM correction.
         rRoll = math.radians(pRoll * 15 - ih / 3600.0)
         rPitch = math.radians(pPitch - idec / 3600.0)
-        siteLatitude = site_config["latitude"]
+        siteLatitude = site_config["obs_latitude"]
 
         if not ALTAZ:
             if pPierSide == 0:

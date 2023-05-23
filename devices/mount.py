@@ -204,10 +204,10 @@ class Mount:
         else:
             self.theskyx = False
 
-        self.site_coordinates = EarthLocation(lat=float(config['latitude'])*u.deg, \
-                                lon=float(config['longitude'])*u.deg,
-                                height=float(config['elevation'])*u.m)
-        self.latitude_r = config['latitude']*DTOR
+        self.site_coordinates = EarthLocation(lat=float(config['obs_latitude'])*u.deg, \
+                                lon=float(config['obs_longitude'])*u.deg,
+                                height=float(config['obs_elevation'])*u.m)
+        self.latitude_r = config['obs_latitude']*DTOR
         self.rdsys = 'J.now'
         self.inst = 'tel1'
         self.tel = tel   #for now this implies the primary telescope on a mounting.
@@ -301,8 +301,8 @@ class Mount:
             #self.paddle_thread = threading.Thread(target=self.paddle, args=())
             #self.paddle_thread.start()
         self.obs = ephem.Observer()
-        self.obs.long = config['longitude']*DTOR
-        self.obs.lat = config['latitude']*DTOR
+        self.obs.long = config['obs_longitude']*DTOR
+        self.obs.lat = config['obs_latitude']*DTOR
 
         self.theskyx_tracking_rescues = 0
         

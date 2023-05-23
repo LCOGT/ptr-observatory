@@ -47,9 +47,9 @@ class Telescope:
         self.inst = name[:3] + name[-1]
         self.tel = tel
         self.telescope_message = "-"
-        self.site_coordinates = EarthLocation(lat=float(config['latitude'])*u.deg, \
-                        lon=float(config['longitude'])*u.deg,
-                        height=float(config['elevation'])*u.m)
+        self.site_coordinates = EarthLocation(lat=float(config['obs_latitude'])*u.deg, \
+                        lon=float(config['obs_longitude'])*u.deg,
+                        height=float(config['obs_elevation'])*u.m)
 
 
         if not tel:    # This looks like ol debugging cruft.
