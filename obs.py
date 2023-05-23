@@ -2921,12 +2921,12 @@ sel
         #    g_dev['seq'].time_roof_last_shut=time.time()
         
         
-        if self.last_roof_status == 'Closed' and aws_enclosure_status["shutter_status"] in ['Open','open']:
+        if g_dev['seq'].last_roof_status == 'Closed' and aws_enclosure_status["shutter_status"] in ['Open','open']:
             g_dev['seq'].time_roof_last_opened=time.time()  
-            self.last_roof_status == 'Open'
+            g_dev['seq'].last_roof_status == 'Open'
             
-        if self.last_roof_status == 'Open' and aws_enclosure_status["shutter_status"] in ['Closed','closed']:
-            self.last_roof_status == 'Closed'
+        if g_dev['seq'].last_roof_status == 'Open' and aws_enclosure_status["shutter_status"] in ['Closed','closed']:
+            g_dev['seq'].last_roof_status == 'Closed'
         
         
         status = {'shutter_status': aws_enclosure_status["shutter_status"],
