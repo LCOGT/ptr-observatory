@@ -839,7 +839,7 @@ sel
 
                     body = json.dumps(
                         {
-                            "site": self.config["site"],
+                            "site": self.config["obs_id"],
                             "start": start_aperture[0].replace('/', '-') + 'T' + start_aperture[1] + 'Z',
                             "end": close_aperture[0].replace('/', '-') + 'T' + close_aperture[1] + 'Z',
                             "full_project_details:": False,
