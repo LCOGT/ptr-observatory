@@ -217,7 +217,7 @@ class Enclosure:
         if self.config['obsid_in_automatic_default'] == "Automatic":
 
 
-        self.roof_open=None # Just initialising this variable  NB chnged to roof to be more generic
+            self.roof_open=None # Just initialising this variable  NB chnged to roof to be more generic
 
 
         if self.config['site_in_automatic_default'] == "Automatic":
@@ -313,7 +313,7 @@ class Enclosure:
         If wema go to manager
             if manager updates status with any enc command, update status
         
-        now return accurate status.
+        now return accurate status. '''
 
 
     def get_status(self) -> dict:
@@ -910,37 +910,37 @@ class Enclosure:
         # The guard is obsessively redundant!
 
 
-            #breakpoint()
-            if self.config['observing_conditions']['observing_conditions1']['driver'] == None or \
-                (g_dev['ocn'].status['wx_ok'] in [True, 'Yes'] and not (g_dev['ocn'].wx_hold \
-                                              or g_dev['ocn'].clamp_latch)):     # NB Is Wx ok really the right criterion???
-               
-                try:
-                    if self.wema_allowed_to_open_roof:
-                        if time.time() > self.guarded_roof_open_timer:
-                            print(g_dev['enc'].status['shutter_status'] != 'Open')
-                            print(self.dome_open)
-                            if g_dev['enc'].status['shutter_status'] != 'Open' or not self.dome_open:
-                                self.enclosure.OpenShutter()
-                                plog("An actual shutter open command has been issued.")
-                                if self.enclosure.ShutterStatus == 0:
-                                    g_dev['obs'].send_to_user("Roof/shutter has opened.", p_level='INFO')
-                                    #self.redis_server.set('Shutter_is_open', True)
-                                    self.dome_open = True
-                                    self.dome_home = True
-                                    return True
-                                else:
-                                    plog("A command to open the roof was sent.")
-                                    plog("But the roof failed to open.")
-                                    plog("We can only try once every 5 minutes.")
-                                    self.guarded_roof_open_timer = time.time() + 300
-                                    return False
-                        else:
-                            plog("An open command was requested, but an attempt was made only recently. Still waiting to try again")
-    
-
+        #breakpoint()
+        if self.config['observing_conditions']['observing_conditions1']['driver'] == None or \
+            (g_dev['ocn'].status['wx_ok'] in [True, 'Yes'] and not (g_dev['ocn'].wx_hold \
+                                          or g_dev['ocn'].clamp_latch)):     # NB Is Wx ok really the right criterion???
+           
+            try:
+                if self.wema_allowed_to_open_roof:
+                    if time.time() > self.guarded_roof_open_timer:
+                        print(g_dev['enc'].status['shutter_status'] != 'Open')
+                        print(self.dome_open)
+                        if g_dev['enc'].status['shutter_status'] != 'Open' or not self.dome_open:
+                            self.enclosure.OpenShutter()
+                            plog("An actual shutter open command has been issued.")
+                            if self.enclosure.ShutterStatus == 0:
+                                g_dev['obs'].send_to_user("Roof/shutter has opened.", p_level='INFO')
+                                #self.redis_server.set('Shutter_is_open', True)
+                                self.dome_open = True
+                                self.dome_home = True
+                                return True
+                            else:
+                                plog("A command to open the roof was sent.")
+                                plog("But the roof failed to open.")
+                                plog("We can only try once every 5 minutes.")
+                                self.guarded_roof_open_timer = time.time() + 300
+                                return False
                     else:
                         plog("An open command was requested, but an attempt was made only recently. Still waiting to try again")
+
+
+                # else:
+                #     plog("An open command was requested, but an attempt was made only recently. Still waiting to try again")
 
                 else:
                     plog("An open command was sent, but this site is not allowed to open the roof (site-config)")

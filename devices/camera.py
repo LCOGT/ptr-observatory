@@ -2445,26 +2445,26 @@ class Camera:
                         ] = "None"  # This is a maxim camera setup, not a flip status
                     hdu.header["DITHER"] = (0, "[] Dither")
                     hdu.header["OPERATOR"] = ("WER", "Site operator")
-                    hdu.header["ENCLOSUR"] = (
-                        self.config["enclosure"]["enclosure1"]["name"],
-                        "Enclosure description",
-                    )  # "Clamshell"   #Need to document shutter status, azimuth, internal light.
-                    if g_dev["enc"].is_dome:
-                        hdu.header["DOMEAZ"] = (
-                            g_dev["enc"].status["dome_azimuth"],
-                            "Dome azimuth",
-                        )
+                    #hdu.header["ENCLOSUR"] = (
+                    #    self.config["enclosure"]["enclosure1"]["name"],
+                    #    "Enclosure description",
+                    #)  # "Clamshell"   #Need to document shutter status, azimuth, internal light.
+                    #if g_dev["enc"].is_dome:
+                    #    hdu.header["DOMEAZ"] = (
+                    #        g_dev["enc"].status["dome_azimuth"],
+                    #        "Dome azimuth",
+                    #    )
                     hdu.header["ENCLIGHT"] = ("Off/White/Red/NIR", "Enclosure lights")
                     hdu.header["ENCRLIGT"] = ("", "Enclosure red lights state")
                     hdu.header["ENCWLIGT"] = ("", "Enclosure white lights state")
-                    if g_dev["enc"] is not None:
-                        try:
+                    #if g_dev["enc"] is not None:
+                    #    try:
 
-                            hdu.header["ENC1STAT"] = g_dev["enc"].status[
-                                "shutter_status"
-                            ]  # "Open/Closed" enclosure 1 status
-                        except:
-                            pass
+                    #        hdu.header["ENC1STAT"] = g_dev["enc"].status[
+                    #            "shutter_status"
+                    #        ]  # "Open/Closed" enclosure 1 status
+                    #    except:
+                    #        pass
 
                     hdu.header["MNT-SIDT"] = (
                         avg_mnt["sidereal_time"],

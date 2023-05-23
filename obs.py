@@ -43,10 +43,10 @@ import ptr_config
 from devices.camera import Camera
 from devices.filter_wheel import FilterWheel
 from devices.focuser import Focuser
-from devices.enclosure import Enclosure
+#from devices.enclosure import Enclosure
 from devices.mount import Mount
 from devices.telescope import Telescope
-from devices.observing_conditions import ObservingConditions
+#from devices.observing_conditions import ObservingConditions
 from devices.rotator import Rotator
 from devices.selector import Selector
 from devices.screen import Screen
@@ -111,6 +111,9 @@ def send_status(obsy, column, status_to_send):
     uri_status = f"https://status.photonranch.org/status/{obsy}/status/"
     # None of the strings can be empty. Otherwise this put faults.
     payload = {"statusType": str(column), "status": status_to_send}
+    
+    
+    #print (payload)
 
     try:
 
@@ -124,6 +127,10 @@ def send_status(obsy, column, status_to_send):
         plog("Failed to send_status. Usually not fatal:  ", e)
         
     #breakpoint()
+
+
+    
+    
 
 
 debug_flag = None
@@ -141,7 +148,9 @@ class Observatory:
         self.name = name  
         self.obs_id = name
         g_dev['name'] = name
+        
         self.config = ptr_config
+        self.wema_name = self.config['site_name']
         self.observatory_location = ptr_config["observatory_location"]
         self.debug_flag = self.config['debug_mode']
         self.admin_only_flag = self.config['admin_owner_commands_only']
@@ -830,7 +839,7 @@ sel
 
                     body = json.dumps(
                         {
-                            "site": self.config["site"],
+                            "site": self.config["obs_id"],
                             "start": start_aperture[0].replace('/', '-') + 'T' + start_aperture[1] + 'Z',
                             "end": close_aperture[0].replace('/', '-') + 'T' + close_aperture[1] + 'Z',
                             "full_project_details:": False,
@@ -881,8 +890,8 @@ sel
         if bpt:
             plog('UpdateStatus bpt was invoked.')
             # breakpoint()
-        send_enc = False
-        send_ocn = False
+        #send_enc = False
+        #send_ocn = False
 
         # Wait a bit between status updates
         if dont_wait == True:
@@ -907,26 +916,79 @@ sel
         # Loop through all types of devices.
         # For each type, we get and save the status of each device.
 
-        if not self.config["wema_is_active"]:
+        #if not self.config["wema_is_active"]:
             #device_list = self.short_status_devices()
-            device_list = self.device_types
-            remove_enc = False
-        if self.config["wema_is_active"]:
+        device_list = self.device_types
+        #breakpoint()
+            #remove_enc = False
+        #if self.config["wema_is_active"]:
             # used when wema is sending ocn and enc status via a different stream.
-            device_list = self.short_status_devices
-            remove_enc = False
+            #device_list = self.short_status_devices
+            #remove_enc = False
 
-        else:
-            device_list = self.device_types  # used when one computer is doing everything for a site.
-            remove_enc = True
+        #else:
+            #device_list = self.device_types  # used when one computer is doing everything for a site.
+            #remove_enc = True
 
+        obsy = self.name
         if mount_only == True:
             device_list = ['mount', 'telescope']
+
+        # Get current enclosure status
+        #send_enc=False
+        #print ("enc status timer: " + str(datetime.datetime.now() - self.enclosure_status_timer))
+        #print (datetime.timedelta(minutes=self.enclosure_check_period))
+        #if (
+        #    datetime.datetime.now() - self.enclosure_status_timer
+        #) > datetime.timedelta(minutes=self.enclosure_check_period):
+            
+        #    g_dev['obs'].enc_status = g_dev['obs'].get_enclosure_status_from_aws()    
+        #    lane = "enclosure"                
+        #    self.enclosure_status_timer = datetime.datetime.now()
+            #self.send_status_queue.put((obsy, lane, g_dev['obs'].enc_status), block=False)
+        #    print ("status sendy!")
+        #    print (g_dev['obs'].enc_status)
+        
+        #status['enclosure']['enclosure1'] = g_dev['obs'].enc_status
+        
+        # Get current weather status  
+        #send_ocn=False
+        if (
+            datetime.datetime.now() - self.observing_status_timer
+        ) > datetime.timedelta(minutes=self.observing_check_period):
+            g_dev['obs'].ocn_status = g_dev['obs'].get_weather_status_from_aws()
+            #lane = "weather"
+            self.observing_status_timer = datetime.datetime.now()
+            #self.send_status_queue.put((obsy, lane, g_dev['obs'].ocn_status), block=False)
+        
+        if (
+            datetime.datetime.now() - self.enclosure_status_timer
+        ) > datetime.timedelta(minutes=self.enclosure_check_period):
+            
+            g_dev['obs'].enc_status = g_dev['obs'].get_enclosure_status_from_aws()
+            self.enclosure_status_timer = datetime.datetime.now()
+        
+        
+        
+
+
+        # if ocn_status is not None:
+        #     lane = "weather"
+        #     # send_status(obsy, lane, ocn_status)  # NB Do not remove this send for SAF!
+        #     if send_ocn == True:
+        #         self.send_status_queue.put((obsy, lane, ocn_status), block=False)
+        # if enc_status is not None:
+        #     lane = "enclosure"
+        #     #send_status(obsy, lane, enc_status)
+        #     if send_enc == True:
+        #         self.send_status_queue.put((obsy, lane, enc_status), block=False)
 
         for dev_type in device_list:
             #  The status that we will send is grouped into lists of
             #  devices by dev_type.
             status[dev_type] = {}
+            #status['enclosure'] = {}
+            #status['observing_conditions'] = {}
             # Names of all devices of the current type.
             # Recall that self.all_devices[type] is a dictionary of all
             # `type` devices, with key=name and val=device object itself.
@@ -940,82 +1002,90 @@ sel
                 # ...and add it to main status dict.
                 # breakpoint()
 
-                if (
-                   "enclosure" in device_name
-                    # and device_name in self.config["wema_types"]
-                    # and (self.is_wema or self.obsid_is_specific)
-                ):
 
-                    if self.config['enclosure']['enclosure1']['driver'] == None and not self.obsid_is_specific:
-                        # Even if no connection send a satus
-                        status = {'shutter_status': "No enclosure.",
-                                  'enclosure_synchronized': False,  # self.following, 20220103_0135 WER
-                                  'dome_azimuth': 0,
-                                  'dome_slewing': False,
-                                  'enclosure_mode': "No Enclosure",
-                                  'enclosure_message': "No message"},  # self.state}#self.following, 20220103_0135 WER
+                
 
-                    elif (
-                        datetime.datetime.now() - self.enclosure_status_timer
-                    ) < datetime.timedelta(minutes=self.enclosure_check_period):
-                        result = None
-                        send_enc = False
-                    else:
-                        #plog("Running enclosure status check")
-                        self.enclosure_status_timer = datetime.datetime.now()
-                        send_enc = True
 
-                        result = device.get_status()
+                # if (
+                #    "enclosure" in device_name
+                #     # and device_name in self.config["wema_types"]
+                #     # and (self.is_wema or self.obsid_is_specific)
+                # ):
 
-                elif ("observing_conditions" in device_name
-                      and self.config['observing_conditions']['observing_conditions1']['driver'] == None):
-                    # Here is where the weather config gets updated.
-                    if (
-                        datetime.datetime.now() - self.observing_status_timer
-                    ) < datetime.timedelta(minutes=self.observing_check_period):
-                        result = None
-                        send_ocn = False
-                    else:
-                        #plog("Running weather status check.")
-                        self.observing_status_timer = datetime.datetime.now()
-                        result = device.get_noocndevice_status()
-                        send_ocn = True
-                        if self.obsid_is_specific:
-                            remove_enc = False
+                #     if self.config['enclosure']['enclosure1']['driver'] == None and not self.obsid_is_specific:
+                #         # Even if no connection send a satus
+                #         status = {'shutter_status': "No enclosure.",
+                #                   'enclosure_synchronized': False,  # self.following, 20220103_0135 WER
+                #                   'dome_azimuth': 0,
+                #                   'dome_slewing': False,
+                #                   'enclosure_mode': "No Enclosure",
+                #                   'enclosure_message': "No message"},  # self.state}#self.following, 20220103_0135 WER
 
-                elif (
-                    "observing_conditions" in device_name
-                    and device_name in self.config["wema_types"]
-                    and (self.is_wema or self.obsid_is_specific)
-                ):
-                    # Here is where the weather config gets updated.
-                    if (
-                        datetime.datetime.now() - self.observing_status_timer
-                    ) < datetime.timedelta(minutes=self.observing_check_period):
-                        result = None
-                        send_ocn = False
-                    else:
-                        plog("Running weather status check.")
-                        self.observing_status_timer = datetime.datetime.now()
-                        result = device.get_status(g_dev=g_dev)
-                        send_ocn = True
-                        if self.obsid_is_specific:
-                            remove_enc = False
+                #     elif (
+                #         datetime.datetime.now() - self.enclosure_status_timer
+                #     ) < datetime.timedelta(minutes=self.enclosure_check_period):
+                #         result = None
+                #         send_enc = False
+                #     else:
+                #         #plog("Running enclosure status check")
+                #         self.enclosure_status_timer = datetime.datetime.now()
+                #         send_enc = True
 
+                #         result = device.get_status()
+
+                # elif ("observing_conditions" in device_name
+                #       and self.config['observing_conditions']['observing_conditions1']['driver'] == None):
+                #     # Here is where the weather config gets updated.
+                #     if (
+                #         datetime.datetime.now() - self.observing_status_timer
+                #     ) < datetime.timedelta(minutes=self.observing_check_period):
+                #         result = None
+                #         send_ocn = False
+                #     else:
+                #         #plog("Running weather status check.")
+                #         self.observing_status_timer = datetime.datetime.now()
+                #         result = device.get_noocndevice_status()
+                #         send_ocn = True
+                #         if self.obsid_is_specific:
+                #             remove_enc = False
+
+                # elif (
+                #     "observing_conditions" in device_name
+                #     and device_name in self.config["wema_types"]
+                #     and (self.is_wema or self.obsid_is_specific)
+                # ):
+                #     # Here is where the weather config gets updated.
+                #     if (
+                #         datetime.datetime.now() - self.observing_status_timer
+                #     ) < datetime.timedelta(minutes=self.observing_check_period):
+                #         result = None
+                #         send_ocn = False
+                #     else:
+                #         plog("Running weather status check.")
+                #         self.observing_status_timer = datetime.datetime.now()
+                #         result = device.get_status(g_dev=g_dev)
+                #         send_ocn = True
+                #         if self.obsid_is_specific:
+                #             remove_enc = False
+
+                
+                if 'telescope' in device_name:
+                    status['telescope'] = status['mount']
                 else:
-                    if 'telescope' in device_name:
-                        status['telescope'] = status['mount']
-                    else:
-                        result = device.get_status()
+                    result = device.get_status()
+                    
                 if result is not None:
                     status[dev_type][device_name] = result
 
+        #status['observing_conditions']['observing_conditions1'] = g_dev['obs'].ocn_status
+        #status['enclosure']['enclosure1'] = g_dev['obs'].enc_status
+
         # If the roof is open, then it is open and enabled to observe
-        try:
-            if g_dev['enc'].status['shutter_status'] == 'Open':
-                self.open_and_enabled_to_observe = True
-        except:
-            pass
+        #try:
+        if g_dev['obs'].enc_status['shutter_status'] == 'Open':
+            self.open_and_enabled_to_observe = True
+        #except:
+        #    pass
 
         # Check that the mount hasn't slewed too close to the sun
         try:
@@ -1041,33 +1111,24 @@ sel
 
         status["timestamp"] = round((time.time() + t1) / 2.0, 3)
         status["send_heartbeat"] = False
-        try:
-            ocn_status = None
-            enc_status = None
-            ocn_status = {"observing_conditions": status.pop("observing_conditions")}
-            enc_status = {"enclosure": status.pop("enclosure")}
-            device_status = status
-        except:
-            pass
+        #try:
+            #ocn_status = None
+            #enc_status = None
+            #ocn_status = {"observing_conditions": status.pop("observing_conditions")}
+            #enc_status = {"enclosure": status.pop("enclosure")}
+            #device_status = status
+        #except:
+        #    pass
         #plog ("Status update length: " + str(time.time() - beginning_update_status))
         loud = False
         # Consider inhibiting unless status rate is low
-        obsy = self.name
+        
 
         if status is not None:
             lane = "device"
             #send_status(obsy, lane, status)
             self.send_status_queue.put((obsy, lane, status), block=False)
-        if ocn_status is not None:
-            lane = "weather"
-            # send_status(obsy, lane, ocn_status)  # NB Do not remove this send for SAF!
-            if send_ocn == True:
-                self.send_status_queue.put((obsy, lane, ocn_status), block=False)
-        if enc_status is not None:
-            lane = "enclosure"
-            #send_status(obsy, lane, enc_status)
-            if send_enc == True:
-                self.send_status_queue.put((obsy, lane, enc_status), block=False)
+        
         # if loud:
         #    plog("\n\nStatus Sent:  \n", status)
         # else:
@@ -1167,44 +1228,49 @@ sel
             #except:
             #    plog("Enc status not reporting, Wema may be OTL.")
 
-            # Roof Checks only if not in Manual mode and not debug mode
-            if g_dev['enc'].mode != 'Manual' or not self.debug_flag:
-                if g_dev['enc'].status is not None:
-                    if g_dev['enc'].status['shutter_status'] == 'Software Fault':
+            # Roof Checks only if not in debug mode
+            # And only check if the scope thinks everything is open and hunky dory
+            if not self.debug_flag and self.open_and_enabled_to_observe:
+                if g_dev['obs'].enc_status is not None:
+                    if g_dev['obs'].enc_status['shutter_status'] == 'Software Fault':
                         plog("Software Fault Detected. Will alert the authorities!")
                         plog("Parking Scope in the meantime")
-                        if self.config['obsid_roof_control'] and g_dev['enc'].mode == 'Automatic':
+                        #if self.config['obsid_roof_control'] and g_dev['enc'].mode == 'Automatic':
+                        self.open_and_enabled_to_observe = False
+                        self.cancel_all_activity()   #NB THis kills bias-dark
+                        if not g_dev['mnt'].mount.AtPark:
+                            if g_dev['mnt'].home_before_park:
+                                g_dev['mnt'].home_command()
+                            g_dev['mnt'].park_command()
+                        # will send a Close call out into the blue just in case it catches
+                        #g_dev['enc'].enclosure.CloseShutter()
+                        #g_dev['seq'].enclosure_next_open_time = time.time(
+                        #) + self.config['roof_open_safety_base_time'] * g_dev['seq'].opens_this_evening
+
+                    if g_dev['obs'].enc_status['shutter_status'] == 'Closing':
+                        #if self.config['obsid_roof_control'] and g_dev['enc'].mode == 'Automatic':
+                            plog("Detected Roof Closing.")
                             self.open_and_enabled_to_observe = False
-                            # self.cancel_all_activity()   #NB THis kills bias-dark
+                            self.cancel_all_activity()    #NB Kills bias dark
                             if not g_dev['mnt'].mount.AtPark:
                                 if g_dev['mnt'].home_before_park:
                                     g_dev['mnt'].home_command()
                                 g_dev['mnt'].park_command()
-                            # will send a Close call out into the blue just in case it catches
-                            g_dev['enc'].enclosure.CloseShutter()
-                            g_dev['seq'].enclosure_next_open_time = time.time(
-                            ) + self.config['roof_open_safety_base_time'] * g_dev['seq'].opens_this_evening
+                            
+                            #g_dev['enc'].enclosure.CloseShutter()
+                            #g_dev['seq'].enclosure_next_open_time = time.time(
+                            #) + self.config['roof_open_safety_base_time'] * g_dev['seq'].opens_this_evening
 
-                    if g_dev['enc'].status['shutter_status'] == 'Closing':
+                    if g_dev['obs'].enc_status['shutter_status'] == 'Error':
                         if self.config['obsid_roof_control'] and g_dev['enc'].mode == 'Automatic':
-                            plog(
-                                "Detected Roof Closing. Sending another close command just in case the roof got stuck on this status (this happens!)")
+                            plog("Detected an Error in the Roof Status. Packing up for safety.")
+                            #plog("This is usually because the weather system forced the roof to shut.")
+                            #plog("By closing it again, it resets the switch to closed.")
+                            self.cancel_all_activity()    #NB Kills bias dark
                             self.open_and_enabled_to_observe = False
-                            # self.cancel_all_activity()    #NB Kills bias dark
-                            g_dev['enc'].enclosure.CloseShutter()
-                            g_dev['seq'].enclosure_next_open_time = time.time(
-                            ) + self.config['roof_open_safety_base_time'] * g_dev['seq'].opens_this_evening
-
-                    if g_dev['enc'].status['shutter_status'] == 'Error':
-                        if self.config['obsid_roof_control'] and g_dev['enc'].mode == 'Automatic':
-                            plog("Detected an Error in the Roof Status. Closing up for safety.")
-                            plog("This is usually because the weather system forced the roof to shut.")
-                            plog("By closing it again, it resets the switch to closed.")
-                            # self.cancel_all_activity()    #NB Kills bias dark
-                            self.open_and_enabled_to_observe = False
-                            g_dev['enc'].enclosure.CloseShutter()
-                            g_dev['seq'].enclosure_next_open_time = time.time(
-                            ) + self.config['roof_open_safety_base_time'] * g_dev['seq'].opens_this_evening
+                            #g_dev['enc'].enclosure.CloseShutter()
+                            #g_dev['seq'].enclosure_next_open_time = time.time(
+                            #) + self.config['roof_open_safety_base_time'] * g_dev['seq'].opens_this_evening
                             # while g_dev['enc'].enclosure.ShutterStatus == 3:
                             #plog ("closing")
                             plog("Also Parking the Scope")
@@ -1213,39 +1279,39 @@ sel
                                     g_dev['mnt'].home_command()
                                 g_dev['mnt'].park_command()
 
-                    roof_should_be_shut = False
+                    #roof_should_be_shut = False
                 else:
                     plog("Enclosure roof status probably not reporting correctly. WEMA down?")
-                try:
-                    if g_dev['enc'].status['shutter_status'] == 'Closing':
-                        if self.config['obsid_roof_control'] and g_dev['enc'].mode == 'Automatic':
-                            plog(
-                                "Detected Roof Closing. Sending another close command just in case the roof got stuck on this status (this happens!)")
-                            self.open_and_enabled_to_observe = False
-                            # self.cancel_all_activity()    #NB Kills bias dark
-                            g_dev['enc'].enclosure.CloseShutter()
-                            g_dev['seq'].enclosure_next_open_time = time.time(
-                            ) + self.config['roof_open_safety_base_time'] * g_dev['seq'].opens_this_evening
+                # try:
+                #     if g_dev['enc'].status['shutter_status'] == 'Closing':
+                #         if self.config['obsid_roof_control'] and g_dev['enc'].mode == 'Automatic':
+                #             plog(
+                #                 "Detected Roof Closing. Sending another close command just in case the roof got stuck on this status (this happens!)")
+                #             self.open_and_enabled_to_observe = False
+                #             # self.cancel_all_activity()    #NB Kills bias dark
+                #             g_dev['enc'].enclosure.CloseShutter()
+                #             g_dev['seq'].enclosure_next_open_time = time.time(
+                #             ) + self.config['roof_open_safety_base_time'] * g_dev['seq'].opens_this_evening
     
-                    if g_dev['enc'].status['shutter_status'] == 'Error':
-                        if self.config['obsid_roof_control'] and g_dev['enc'].mode == 'Automatic':
-                            plog("Detected an Error in the Roof Status. Closing up for safety.")
-                            plog("This is usually because the weather system forced the roof to shut.")
-                            plog("By closing it again, it resets the switch to closed.")
-                            # self.cancel_all_activity()    #NB Kills bias dark
-                            self.open_and_enabled_to_observe = False
-                            g_dev['enc'].enclosure.CloseShutter()
-                            g_dev['seq'].enclosure_next_open_time = time.time(
-                            ) + self.config['roof_open_safety_base_time'] * g_dev['seq'].opens_this_evening
-                            # while g_dev['enc'].enclosure.ShutterStatus == 3:
-                            #plog ("closing")
-                            plog("Also Parking the Scope")
-                            if not g_dev['mnt'].mount.AtPark:
-                                if g_dev['mnt'].home_before_park:
-                                    g_dev['mnt'].home_command()
-                                g_dev['mnt'].park_command()
-                except:
-                    plog("shutter status enclosure tests did not work. Usually shutter status is None")
+                #     if g_dev['enc'].status['shutter_status'] == 'Error':
+                #         if self.config['obsid_roof_control'] and g_dev['enc'].mode == 'Automatic':
+                #             plog("Detected an Error in the Roof Status. Closing up for safety.")
+                #             plog("This is usually because the weather system forced the roof to shut.")
+                #             plog("By closing it again, it resets the switch to closed.")
+                #             # self.cancel_all_activity()    #NB Kills bias dark
+                #             self.open_and_enabled_to_observe = False
+                #             g_dev['enc'].enclosure.CloseShutter()
+                #             g_dev['seq'].enclosure_next_open_time = time.time(
+                #             ) + self.config['roof_open_safety_base_time'] * g_dev['seq'].opens_this_evening
+                #             # while g_dev['enc'].enclosure.ShutterStatus == 3:
+                #             #plog ("closing")
+                #             plog("Also Parking the Scope")
+                #             if not g_dev['mnt'].mount.AtPark:
+                #                 if g_dev['mnt'].home_before_park:
+                #                     g_dev['mnt'].home_command()
+                #                 g_dev['mnt'].park_command()
+                # except:
+                #     plog("shutter status enclosure tests did not work. Usually shutter status is None")
                 roof_should_be_shut = False
 
                 # breakpoint()
@@ -1264,26 +1330,26 @@ sel
                     self.open_and_enabled_to_observe = False
 
                 try:
-                    if g_dev['enc'].status['shutter_status'] == 'Open':
+                    if g_dev['obs'].enc_status['shutter_status'] == 'Open':
                         if roof_should_be_shut == True:
-                            plog("Safety check found that the roof was open outside of the normal observing period")
-                            if self.config['obsid_roof_control'] and g_dev['enc'].mode == 'Automatic':
-                                plog("Shutting the roof out of an abundance of caution. This may also be normal functioning")
+                            plog("Safety check notices that the roof was open outside of the normal observing period")
+                            # if self.config['obsid_roof_control'] and g_dev['enc'].mode == 'Automatic':
+                            #     plog("Shutting the roof out of an abundance of caution. This may also be normal functioning")
 
-                                # self.cancel_all_activity()  #NB Kills bias dark
-                                g_dev['enc'].enclosure.CloseShutter()
-                                while g_dev['enc'].enclosure.ShutterStatus == 3:
-                                    plog("closing")
-                                    time.sleep(3)
-                            else:
-                                plog("This scope does not have control of the roof though.")
+                            #     # self.cancel_all_activity()  #NB Kills bias dark
+                            #     g_dev['enc'].enclosure.CloseShutter()
+                            #     while g_dev['enc'].enclosure.ShutterStatus == 3:
+                            #         plog("closing")
+                            #         time.sleep(3)
+                            #else:
+                            #    plog("This scope does not have control of the roof though.")
                 except:
                     plog('Line 1192 Roof shutter status faulted.')
 
                 # If the roof should be shut, then the telescope should be parked.
-                if roof_should_be_shut == True and g_dev['enc'].mode == 'Automatic':
+                if roof_should_be_shut == True and g_dev['obs'].enc_status['enclosure_mode'] == 'Automatic':
                     if not g_dev['mnt'].mount.AtPark:
-                        plog('Parking telescope.')
+                        plog('Parking telescope as it is during the period that the roof is meant to be shut.')
                         self.open_and_enabled_to_observe = False
                         # self.cancel_all_activity()   #NB Kills bias dark
                         if g_dev['mnt'].home_before_park:
@@ -1291,9 +1357,9 @@ sel
                         # PWI must receive a park() in order to report being parked.  Annoying problem when debugging, because I want tel to stay where it is.
                         g_dev['mnt'].park_command()
 
-                if g_dev['enc'].status is not None:
+                if g_dev['obs'].enc_status is not None:
                     # If the roof IS shut, then the telescope should be shutdown and parked.
-                    if g_dev['enc'].status['shutter_status'] == 'Closed':
+                    if g_dev['obs'].enc_status['shutter_status'] == 'Closed':
 
                         if not g_dev['mnt'].mount.AtPark:
                             plog("Telescope found not parked when the observatory roof is shut. Parking scope.")
@@ -1316,11 +1382,11 @@ sel
                     #             g_dev['mnt'].park_command()
 
                     # But after all that if everything is ok, then all is ok, it is safe to observe
-                    if g_dev['enc'].status['shutter_status'] == 'Open' and roof_should_be_shut == False:
+                    if g_dev['obs'].enc_status['shutter_status'] == 'Open' and roof_should_be_shut == False:
                         self.open_and_enabled_to_observe = True
 
                 else:
-                    plog("g_dev['enc'].status not reporting correctly")
+                    plog("g_dev['obs'].enc_status not reporting correctly")
             #plog("Current Open and Enabled to Observe Status: " + str(self.open_and_enabled_to_observe))
 
             # Check the mount is still connected
@@ -2812,7 +2878,98 @@ sel
                     g_dev['obs'].pointing_correction_request_ra, g_dev['obs'].pointing_correction_request_dec)
                 g_dev['obs'].time_of_last_slew = time.time()
                 wait_for_slew()
+    
+    def get_enclosure_status_from_aws(self):
+        
+        obsy = self.wema_name
+        """Sends an update to the status endpoint."""
+        uri_status = f"https://status.photonranch.org/status/{obsy}/enclosure/"
+        # None of the strings can be empty. Otherwise this put faults.
+        #payload = {"statusType": str(column), "status": status_to_send}
 
+        #try:
+
+        #    data = json.dumps(payload)
+        #except Exception as e:
+        #    plog("Failed to create status payload. Usually not fatal:  ", e)
+
+        #breakpoint()
+
+        try:
+            aws_enclosure_status=reqs.get(uri_status)
+            
+            aws_enclosure_status=aws_enclosure_status.json()
+            aws_enclosure_status['status']['enclosure']['enclosure1']['enclosure_mode'] = aws_enclosure_status['status']['enclosure']['enclosure1']['enclosure_mode']['val']
+            aws_enclosure_status['status']['enclosure']['enclosure1']['dome_azimuth'] = aws_enclosure_status['status']['enclosure']['enclosure1']['dome_azimuth']['val']
+            aws_enclosure_status['status']['enclosure']['enclosure1']['enclosure_synchronized'] = aws_enclosure_status['status']['enclosure']['enclosure1']['enclosure_synchronized']['val']
+            aws_enclosure_status['status']['enclosure']['enclosure1']['dome_slewing'] = aws_enclosure_status['status']['enclosure']['enclosure1']['dome_slewing']['val']
+            aws_enclosure_status['status']['enclosure']['enclosure1']['shutter_status'] = aws_enclosure_status['status']['enclosure']['enclosure1']['shutter_status']['val']
+            
+            
+            
+            #breakpoint()
+            try:
+                self.send_status_queue.put((self.name, 'enclosure', aws_enclosure_status['status']), block=False)
+                #breakpoint()
+            except:
+                pass
+            aws_enclosure_status=aws_enclosure_status['status']['enclosure']['enclosure1']
+        except Exception as e:
+            plog("Failed to get aws enclosure status. Usually not fatal:  ", e)
+        
+        #if aws_enclosure_status["shutter_status"] in ['Closed','closed']:
+        #    g_dev['seq'].time_roof_last_shut=time.time()
+        
+        
+        if g_dev['seq'].last_roof_status == 'Closed' and aws_enclosure_status["shutter_status"] in ['Open','open']:
+            g_dev['seq'].time_roof_last_opened=time.time()  
+            g_dev['seq'].last_roof_status == 'Open'
+            
+        if g_dev['seq'].last_roof_status == 'Open' and aws_enclosure_status["shutter_status"] in ['Closed','closed']:
+            g_dev['seq'].last_roof_status == 'Closed'
+        
+        
+        status = {'shutter_status': aws_enclosure_status["shutter_status"],
+                  'enclosure_synchronized': aws_enclosure_status["enclosure_synchronized"],  # self.following, 20220103_0135 WER
+                  'dome_azimuth': aws_enclosure_status["dome_azimuth"],
+                  'dome_slewing': aws_enclosure_status["dome_slewing"],
+                  'enclosure_mode': aws_enclosure_status["enclosure_mode"]}#,
+                  #'enclosure_message': "No message"}
+
+        return status
+    
+    def get_weather_status_from_aws(self):
+        
+        obsy = self.wema_name
+        """Sends an update to the status endpoint."""
+        uri_status = f"https://status.photonranch.org/status/{obsy}/weather/"
+        # None of the strings can be empty. Otherwise this put faults.
+        #payload = {"statusType": str(column), "status": status_to_send}
+
+        #try:
+
+        #    data = json.dumps(payload)
+        #except Exception as e:
+        #    plog("Failed to create status payload. Usually not fatal:  ", e)
+
+        #breakpoint()
+
+        try:
+            aws_weather_status=reqs.get(uri_status)
+            aws_weather_status=aws_weather_status.json()
+            #breakpoint()
+            aws_weather_status=aws_weather_status['status']['observing_conditions']['observing_conditions1']
+        except Exception as e:
+            plog("Failed to get aws enclosure status. Usually not fatal:  ", e)
+        
+        #status = {'shutter_status': aws_enclosure_status["shutter_status"]['val'],
+        #          'enclosure_synchronized': aws_enclosure_status["enclosure_synchronized"]['val'],  # self.following, 20220103_0135 WER
+        #          'dome_azimuth': aws_enclosure_status["dome_azimuth"]['val'],
+        ##          'dome_slewing': aws_enclosure_status["dome_slewing"]['val'],
+        #          'enclosure_mode': aws_enclosure_status["enclosure_mode"]['val'],
+        #          'enclosure_message': "No message"}
+
+        return aws_weather_status
 
 def wait_for_slew():
 
