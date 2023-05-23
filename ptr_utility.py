@@ -29,11 +29,17 @@ from global_yard import g_dev
 from datetime import datetime, timezone, timedelta
 from dateutil import tz
 
-siteCoordinates = EarthLocation(
-    lat=site_config["site_latitude"] * u.deg,
-    lon=site_config["site_longitude"] * u.deg,
-    height=site_config["site_elevation"] * u.m,
-)
+# siteCoordinates = EarthLocation(
+#     lat=site_config["site_latitude"] * u.deg,
+#     lon=site_config["site_longitude"] * u.deg,
+#     height=site_config["site_elevation"] * u.m,
+# )
+
+# siteCoordinates = EarthLocation(
+#     lat=site_config["site_latitude"] * u.deg,
+#     lon=site_config["site_longitude"] * u.deg,
+#     height=site_config["site_elevation"] * u.m,
+# )
 
 Target = namedtuple(
     "Target", ["ra", "dec", "name", "simbad", "obj", "mag", "size", "pa", "ly", "cdist"]
