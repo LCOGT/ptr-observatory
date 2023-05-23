@@ -67,9 +67,10 @@ site_config = {
     # THESE ARE TO BE DELETED VERY SOON!
     # THEY EXIST SOLELY SO AS TO NOT BREAK THE UI UNTIL 
     #THINGS ARE MOVED TO OBS_ID
-    'site': 'mrc2', #TIM this may no longer be needed.
-    'site_id': 'mrc2',
+    #'site': 'mrc2', #TIM this may no longer be needed.
+    #'site_id': 'mrc2',
     ####################################################    
+    'site_name' : 'mrc' ,
     'obs_id': 'mrc2',
     'observatory_location': site_name.lower(),
 
@@ -186,8 +187,8 @@ site_config = {
     'threshold_mount_update' : 10, # only update mount when X arcseconds away
 
     'defaults': {
-        'observing_conditions': 'observing_conditions1',
-        'enclosure': 'enclosure1',
+        #'observing_conditions': 'observing_conditions1',
+        #'enclosure': 'enclosure1',
         'mount': 'mount1',
         'telescope': 'telescope1',
         'focuser': 'focuser1',
@@ -199,8 +200,8 @@ site_config = {
         'sequencer': 'sequencer1'
         },
     'device_types': [
-        'observing_conditions',
-        'enclosure',
+        #'observing_conditions',
+        #'enclosure',
         'mount',
         'telescope',
         #'screen',
@@ -212,11 +213,11 @@ site_config = {
         'sequencer',
         ],
      'wema_types': [
-        'observing_conditions',
-        'enclosure',
+        #'observing_conditions',
+        #'enclosure',
         ],
      'enc_types': [
-             'enclosure'
+             #'enclosure'
              ],
      'short_status_devices':  [
         # 'observing_conditions',
@@ -231,54 +232,54 @@ site_config = {
         'camera',
         'sequencer',
         ],
-    'observing_conditions' : {
-        'observing_conditions1': {
-            'parent': 'site',
-            'ocn_is_specific':  True,  # Indicates some special site code.
-            # Intention it is found in this file.
-            'name': 'SRO File',
-            'driver': 'Windows.Share',  # Could be redis, ASCOM, ...
-            'share_path_name': 'F:/ptr/',
-            'driver_2':  None,   #' ASCOM.Boltwood.OkToOpen.SafetyMonitor',
-            'driver_3':  None,    # 'ASCOM.Boltwood.OkToImage.SafetyMonitor'
-            'ocn_has_unihedron':  False,
-            'have_local_unihedron': False,     #  Need to add these to setups.
-            'uni_driver': 'ASCOM.SQM.serial.ObservingConditions',
-            'unihedron_port':  10    #  False, None or numeric of COM port.
-        },
-    },
+    # 'observing_conditions' : {
+    #     'observing_conditions1': {
+    #         'parent': 'site',
+    #         'ocn_is_specific':  True,  # Indicates some special site code.
+    #         # Intention it is found in this file.
+    #         'name': 'SRO File',
+    #         'driver': 'Windows.Share',  # Could be redis, ASCOM, ...
+    #         'share_path_name': 'F:/ptr/',
+    #         'driver_2':  None,   #' ASCOM.Boltwood.OkToOpen.SafetyMonitor',
+    #         'driver_3':  None,    # 'ASCOM.Boltwood.OkToImage.SafetyMonitor'
+    #         'ocn_has_unihedron':  False,
+    #         'have_local_unihedron': False,     #  Need to add these to setups.
+    #         'uni_driver': 'ASCOM.SQM.serial.ObservingConditions',
+    #         'unihedron_port':  10    #  False, None or numeric of COM port.
+    #     },
+    # },
 
 
-    'enclosure': {
-        'enclosure1': {
-            'parent': 'site',
-            'name': 'Megawan',
-            'hostIP':  '10.15.0.30',
-            'driver': 'Windows_share',
-            'enc_is_specific':  False,  # Indicates some special site code.
-            'directly_connected': False, # For ECO and EC2, they connect directly to the enclosure, whereas WEMA are different.
+    # 'enclosure': {
+    #     'enclosure1': {
+    #         'parent': 'site',
+    #         'name': 'Megawan',
+    #         'hostIP':  '10.15.0.30',
+    #         'driver': 'Windows_share',
+    #         'enc_is_specific':  False,  # Indicates some special site code.
+    #         'directly_connected': False, # For ECO and EC2, they connect directly to the enclosure, whereas WEMA are different.
             
-            'shutdown_script':  None,
-            'has_lights':  True,
-            'controlled_by':  ['mount1', 'mount2'],
-            'is_dome': False,
-            'mode': 'Automatic',
-            #'cool_down': -90.0,    #  Minutes prior to sunset.
-            'settings': {
-                'lights':  ['Auto', 'White', 'Red', 'IR', 'Off'],
+    #         'shutdown_script':  None,
+    #         'has_lights':  True,
+    #         'controlled_by':  ['mount1', 'mount2'],
+    #         'is_dome': False,
+    #         'mode': 'Automatic',
+    #         #'cool_down': -90.0,    #  Minutes prior to sunset.
+    #         'settings': {
+    #             'lights':  ['Auto', 'White', 'Red', 'IR', 'Off'],
                 
-                'roof_shutter':  ['Auto', 'Open', 'Close', 'Lock Closed', 'Unlock'],
-                },
-            'eve_bias_dark_dur':  2.0,   #hours Duration, prior to next.
-            'eve_screen_flat_dur': 1.0,   #hours Duration, prior to next.
-            'operations_begin':  -1.0,   #  - hours from Sunset
-            'eve_cooldown_offset': -.99,   #  - hours beforeSunset
-            'eve_sky_flat_offset':  0.5,   #  - hours beforeSunset
-            'morn_sky_flat_offset':  0.4,   #  + hours after Sunrise
-            'morning_close_offset':  0.41,   #  + hours after Sunrise
-            'operations_end':  0.42,
-            }
-        },
+    #             'roof_shutter':  ['Auto', 'Open', 'Close', 'Lock Closed', 'Unlock'],
+    #             },
+    #         'eve_bias_dark_dur':  2.0,   #hours Duration, prior to next.
+    #         'eve_screen_flat_dur': 1.0,   #hours Duration, prior to next.
+    #         'operations_begin':  -1.0,   #  - hours from Sunset
+    #         'eve_cooldown_offset': -.99,   #  - hours beforeSunset
+    #         'eve_sky_flat_offset':  0.5,   #  - hours beforeSunset
+    #         'morn_sky_flat_offset':  0.4,   #  + hours after Sunrise
+    #         'morning_close_offset':  0.41,   #  + hours after Sunrise
+    #         'operations_end':  0.42,
+    #         }
+    #     },
 
 
 
