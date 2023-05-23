@@ -97,10 +97,7 @@ site_config = {
     'TZ_database_name':  'Australia/Melbourne',
     'mpc_code':  'ZZ23',    #  This is made up for now.
     'time_offset':  11,   #  These two keys may be obsolete given the new TZ stuff
-    'timezone': 'AEST',      #  This was meant to be coloquial Time zone abbreviation, alternate for "TX_data..."
-    'obs_latitude': -37.70097222,     #  Decimal degrees, North is Positive
-    'obs_longitude': 145.1918056,   #  Decimal degrees, West is negative
-    'obs_elevation': 150,    #  meters above sea level
+    'timezone': 'AEST',      #  This was meant to be coloquial Time zone abbreviation, alternate for "TX_data..."    
     'latitude': -37.70097222,     #  Decimal degrees, North is Positive
     'longitude': 145.1918056,   #  Decimal degrees, West is negative
     'elevation': 150,    #  meters above sea level

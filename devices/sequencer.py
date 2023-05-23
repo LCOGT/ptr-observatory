@@ -3970,8 +3970,8 @@ class Sequencer:
         mgr = owm.weather_manager() 
         try:
             #34.459375 -119.681172
-            plog('Wx at:  ', self.config["obs_latitude"], self.config["obs_longitude"])
-            one_call = mgr.one_call(lat=self.config["obs_latitude"], lon=self.config["obs_longitude"])
+            plog('Wx at:  ', self.config["latitude"], self.config["longitude"])
+            one_call = mgr.one_call(lat=self.config["latitude"], lon=self.config["longitude"])
             ownsuccess=True
         except:
             plog ("call to OWM failed. Starting a retry schedule.")
@@ -3980,7 +3980,7 @@ class Sequencer:
             while owncounter <5:
                 time.sleep(10)
                 try:
-                    one_call = mgr.one_call(lat=self.config["obs_latitude"], lon=self.config["obs_longitude"])
+                    one_call = mgr.one_call(lat=self.config["latitude"], lon=self.config["longitude"])
                     owncounter=6
                     ownsuccess=True
                 except:                   
