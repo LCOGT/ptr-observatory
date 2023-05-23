@@ -51,9 +51,12 @@ class Events:
     def __init__(self, config: dict):
         self.config = config
         g_dev['evnt'] = self
-        self.siteLatitude = round(float(self.config['latitude']), 8)  # 34 20 34.569   #34 + (20 + 34.549/60.)/60.
-        self.siteLongitude = round(float(self.config['longitude']), 8)  # -(119 + (40 + 52.061/60.)/60.) 119 40 52.061 W
-        self.siteElevation = round(float(self.config['elevation']), 3)
+
+
+        self.siteLatitude = round(float(self.config['site_latitude']), 8)  # 34 20 34.569   #34 + (20 + 34.549/60.)/60.
+        self.siteLongitude = round(float(self.config['site_longitude']), 8)  # -(119 + (40 + 52.061/60.)/60.) 119 40 52.061 W
+        self.siteElevation = round(float(self.config['site_elevation']), 3)
+
         self.siteRefTemp = round(float(self.config['reference_ambient']), 2)  # These should be a monthly average data.
         self.siteRefPress = round(float(self.config['reference_pressure']), 2)
         self.flat_offset = self.config['eve_sky_flat_sunset_offset']    # -35 min for SRO

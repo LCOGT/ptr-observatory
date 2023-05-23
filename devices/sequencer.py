@@ -192,6 +192,8 @@ class Sequencer:
         self.weather_report_close_during_evening_time=ephem_now + 86400
         self.nightly_weather_report_complete=False
         # Run a weather report on bootup so observatory can run if need be. 
+        self.global_wx()
+        breakpoint()
         if not g_dev['debug']:
             #self.global_wx()
 
@@ -4171,7 +4173,7 @@ class Sequencer:
         # g_dev['ocn'].status = g_dev['ocn'].get_status()
         # g_dev['enc'].status = g_dev['enc'].get_status()
         # ocn_status = g_dev['ocn'].status
-        # enc_status = g_dev['enc'].status
+        # enc_status = g_dev['enc'].statusl
         # events = g_dev['events']
         #breakpoint()
         obs_win_begin, sunset, sunrise, ephem_now = self.astro_events.getSunEvents()
@@ -4179,31 +4181,30 @@ class Sequencer:
             self.nightly_weather_report_complete=True
             # First thing to do at the Cool Down, Open time is to calculate the quality of the evening
             # using the broad weather report.
-            #             site    >0m5 small
-            lat_lons = [['mrc' , 1.75, 1,  34.459375, -119.681172], 
-                        ['sqa' ,  1.0, 0,  34.691481, -120.042251], 
-                        ['sro' ,    1, 1,  37.070365, -119.413107], 
-                        ['udro',    1, 1,  37.737001, -113.691774], 
-                        ['aro' ,    0, 3,  35.554307, -105.870189], 
-                        ['elp' , 0.75, 1,  30.679280, -104.024396], 
-                        ['roc' , 0.75, 1,  42.250616, -77.7850655], 
-                        ['lsc' ,    1, 1, -30.167654, -70.804709 ], 
-                        ['tfn' ,    1, 2,  28.302079, -16.5113277], 
-                        ['cpt' ,    0, 2,  32.380561,  20.810137 ], 
-                        ['tlv' ,    0, 1,  30.597529,  34.7623430], 
-                        ['nsq' ,    1, 1,  32.354453,  80.0531263],
-                        ['coj' ,    1, 2, -31.272856,  149.070813],
-                        ['eco' ,    0, 2, -37.700976,  145.191672],
-                        ['whs' ,    0, 1,  21.388383, -157.993459],
-                        ['ogg' ,    1, 3,  20.707034, -156.257481],
-                        ]
+            #             site   >=2m>=1m>m45 sml sol   lat
+            lat_lons = [['coj' ,    1,  2,  2,  3,  1,  -31.272856,  149.070813],
+                        ['eco' ,    0,  0,  1,  1,  0,  -37.700976,  145.191672],          
+                        ['nsq' ,    0,  2,  2,  1,  1,   32.354453,  80.0531263],
+                        ['tlv' ,    0,  1,  0,  0,  0,   30.597529,  34.7623430], 
+                        ['cpt' ,    0,  2,  1,  1,  1,  -32.380561,  20.810137 ],
+                        ['tfn' ,    0,  2,  1,  1,  1,   28.302079, -16.5113277],
+                        ['lsc' ,    0,  3,  2,  1,  1,  -30.167654, -70.804709 ],
+                        ['roc' ,    0,  0,  2,  0,  0,   42.250616, -77.7850655],
+                        ['elp' ,    0,  2,  1,  1,  0,   30.679280, -104.024396],
+                        ['aro' ,    0,  0,  3,  1,  1,   35.554307, -105.870189],
+                        ['udro',    0,  0,  1,  1,  0,   37.737001, -113.691774],
+                        ['sro' ,    0,  0,  1,  1,  0,   37.070365, -119.413107],
+                        ['mrc' ,    0,  0,  2,  2,  1,   34.459375, -119.681172],
+                        ['sqa' ,    0,  0,  1,  0,  0,   34.691481, -120.042251],                      
+                        ['ogg' ,    1,  0,  4,  2,  1,   20.707034, -156.257481],
+                        ['whs' ,    0,  0,  1,  0,  0,   21.388383, -157.993459]]
             plog("Appraising quality of evening from Open Weather Map.")
             owm = OWM('d5c3eae1b48bf7df3f240b8474af3ed0')
             mgr = owm.weather_manager()
             clear_hrs = 0
             cloudy_hrs = 0
             for site in lat_lons:            
-                one_call = mgr.one_call(lat=site[2], lon=site[3])
+                one_call = mgr.one_call(lat=site[-2], lon=site[-1])
                 two_day = one_call.forecast_hourly
 
                 print( '\n' + site[0], two_day, '\n' + site[0], '\n\n')
