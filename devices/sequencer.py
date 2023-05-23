@@ -191,6 +191,8 @@ class Sequencer:
         self.weather_report_close_during_evening=False
         self.weather_report_close_during_evening_time=ephem_now + 86400
         self.nightly_weather_report_complete=False
+        
+        self.time_roof_last_opening = time.time() -500
         # Run a weather report on bootup so observatory can run if need be. 
         #self.global_wx()
         #breakpoint()
@@ -306,105 +308,105 @@ class Sequencer:
         else:
             plog('Sequencer command:  ', command, ' not recognized.')
 
-    def open_observatory(self,enc_status, ocn_status, no_sky=False):
+    # def open_observatory(self,enc_status, ocn_status, no_sky=False):
         
-        if not self.config['obsid_roof_control']:
-            #plog("A request to open observatory was made even though this platform has no roof control. Returning.")
-            return
+    #     if not self.config['obsid_roof_control']:
+    #         #plog("A request to open observatory was made even though this platform has no roof control. Returning.")
+    #         return
         
-        flat_spot, flat_alt = g_dev['evnt'].flat_spot_now()
-        obs_win_begin, sunZ88Op, sunZ88Cl, ephem_now = self.astro_events.getSunEvents()
+    #     flat_spot, flat_alt = g_dev['evnt'].flat_spot_now()
+    #     obs_win_begin, sunZ88Op, sunZ88Cl, ephem_now = self.astro_events.getSunEvents()
         
-        # Only send an enclosure open command if the weather 
-        if g_dev['seq'].weather_report_is_acceptable_to_observe:
+    #     # Only send an enclosure open command if the weather 
+    #     if g_dev['seq'].weather_report_is_acceptable_to_observe:
 
-            if not g_dev['debug'] and not g_dev['enc'].mode in [ 'Manual'] and (ephem.now() < g_dev['events']['Cool Down, Open'] ) or \
-                (g_dev['events']['End Morn Bias Dark']  < ephem.now() < g_dev['events']['Nightly Reset']):
-                plog ("NOT OPENING THE OBSERVATORY -- IT IS THE DAYTIME!!")
-                g_dev["obs"].send_to_user("An open observatory request was rejected as it is during the daytime.")
-                return
-            else:
+    #         if not g_dev['debug'] and not g_dev['obs'].enc_status['enclosure_mode'] in [ 'Manual'] and (ephem.now() < g_dev['events']['Cool Down, Open'] ) or \
+    #             (g_dev['events']['End Morn Bias Dark']  < ephem.now() < g_dev['events']['Nightly Reset']):
+    #             plog ("NOT OPENING THE OBSERVATORY -- IT IS THE DAYTIME!!")
+    #             g_dev["obs"].send_to_user("An open observatory request was rejected as it is during the daytime.")
+    #             return
+    #         else:
             
-                try: 
-                    # First unpark and move telescope away from the sun or just to the home position. 
-                    plog("Unparking Scope in preparation for observatory opening.")
-                    if g_dev['mnt'].mount.AtParK:
-                        g_dev['mnt'].unpark_command({}, {})
+    #             try: 
+    #                 # First unpark and move telescope away from the sun or just to the home position. 
+    #                 plog("Unparking Scope in preparation for observatory opening.")
+    #                 if g_dev['mnt'].mount.AtParK:
+    #                     g_dev['mnt'].unpark_command({}, {})
                     
-                    # If during the flat period, point it away from the sun, otherwise point the telescope at the home position                
-                    if (g_dev['events']['Cool Down, Open']  <= ephem_now < g_dev['events']['End Eve Sky Flats']):
-                        plog("Unparking Scope and pointing it away from the sun.")
-                        g_dev['mnt'].slewToSkyFlatAsync(skip_open_test=True)                
-                    elif (g_dev['events']['Morn Sky Flats'] <= ephem_now < g_dev['events']['End Morn Sky Flats']):
-                        plog("Unparking Scope and pointing it away from the sun.")
-                        g_dev['mnt'].slewToSkyFlatAsync(skip_open_test=True)
-                    else:
-                        plog("Unparking Scope and pointing it to the home position.")
-                        g_dev['mnt'].home_command()
+    #                 # If during the flat period, point it away from the sun, otherwise point the telescope at the home position                
+    #                 if (g_dev['events']['Cool Down, Open']  <= ephem_now < g_dev['events']['End Eve Sky Flats']):
+    #                     plog("Unparking Scope and pointing it away from the sun.")
+    #                     g_dev['mnt'].slewToSkyFlatAsync(skip_open_test=True)                
+    #                 elif (g_dev['events']['Morn Sky Flats'] <= ephem_now < g_dev['events']['End Morn Sky Flats']):
+    #                     plog("Unparking Scope and pointing it away from the sun.")
+    #                     g_dev['mnt'].slewToSkyFlatAsync(skip_open_test=True)
+    #                 else:
+    #                     plog("Unparking Scope and pointing it to the home position.")
+    #                     g_dev['mnt'].home_command()
                     
                     
-                    self.time_of_next_slew = time.time() + 600 
+    #                 self.time_of_next_slew = time.time() + 600 
                     
-                    plog("Attempting to open the roof.")
+    #                 # plog("Attempting to open the roof.")
 
-                    if ocn_status == None:
-                            if self.config['obsid_roof_control'] and not enc_status['shutter_status'] in ['Open', 'open','Opening', 'opening'] and g_dev['enc'].mode == 'Automatic'\
-                            and (self.config['obsid_allowed_to_open_roof']) and self.weather_report_is_acceptable_to_observe:
+    #                 # if ocn_status == None:
+    #                 #         if self.config['obsid_roof_control'] and not enc_status['shutter_status'] in ['Open', 'open','Opening', 'opening'] and g_dev['obs'].enc_status['enclosure_mode'] == 'Automatic'\
+    #                 #         and (self.config['obsid_allowed_to_open_roof']) and self.weather_report_is_acceptable_to_observe:
                                 
-                                self.opens_this_evening= self.opens_this_evening+1                    
+    #                 #             self.opens_this_evening= self.opens_this_evening+1                    
                                 
-                                g_dev['enc'].open_roof_directly({}, {})
-                                #g_dev['enc'].open_command({}, {})
+    #                 #             g_dev['enc'].open_roof_directly({}, {})
+    #                 #             #g_dev['enc'].open_command({}, {})
                                 
                                 
-                    elif self.config['obsid_roof_control']  and not enc_status['shutter_status'] in ['Open', 'open','Opening', 'opening'] and g_dev['enc'].mode == 'Automatic' \
-                        and ocn_status['hold_duration'] <= 0.1 and self.config['obsid_allowed_to_open_roof'] and self.weather_report_is_acceptable_to_observe:   #NB
+    #                 # elif self.config['obsid_roof_control']  and not enc_status['shutter_status'] in ['Open', 'open','Opening', 'opening'] and g_dev['enc'].mode == 'Automatic' \
+    #                 #     and ocn_status['hold_duration'] <= 0.1 and self.config['obsid_allowed_to_open_roof'] and self.weather_report_is_acceptable_to_observe:   #NB
 
-                        self.opens_this_evening= self.opens_this_evening+1                    
+    #                 #     self.opens_this_evening= self.opens_this_evening+1                    
                         
-                        g_dev['enc'].open_roof_directly({}, {})
-                        #g_dev['enc'].open_command({}, {})
+    #                 #     g_dev['enc'].open_roof_directly({}, {})
+    #                 #     #g_dev['enc'].open_command({}, {})
          
                         
-                    plog("Attempting to Open Shutter. Waiting until shutter opens")
-                    if not g_dev['enc'].enclosure.ShutterStatus == 0:
-                        time.sleep(self.config['period_of_time_to_wait_for_roof_to_open'])
+    #                 #plog("Attempting to Open Shutter. Waiting until shutter opens")
+    #                 #if not g_dev['enc'].enclosure.ShutterStatus == 0:
+    #                 #    time.sleep(self.config['period_of_time_to_wait_for_roof_to_open'])
                     
-                    self.enclosure_next_open_time = time.time() + (self.config['roof_open_safety_base_time']*60) * g_dev['seq'].opens_this_evening
+    #                 #self.enclosure_next_open_time = time.time() + (self.config['roof_open_safety_base_time']*60) * g_dev['seq'].opens_this_evening
                     
-                    if g_dev['enc'].enclosure.ShutterStatus == 0:                    
-                        g_dev['obs'].open_and_enabled_to_observe = True                    
+    #                 if g_dev['enc'].enclosure.ShutterStatus == 0:                    
+    #                     g_dev['obs'].open_and_enabled_to_observe = True                    
                         
-                        try:
-                            plog("Synchronising dome.")
-                            g_dev['enc'].sync_mount_command({}, {})
-                        except:
-                            pass
-                        #Prior to skyflats no dome following.
-                        self.dome_homed = False
+    #                     try:
+    #                         plog("Synchronising dome.")
+    #                         g_dev['enc'].sync_mount_command({}, {})
+    #                     except:
+    #                         pass
+    #                     #Prior to skyflats no dome following.
+    #                     self.dome_homed = False
                         
-                        return
+    #                     return
                     
-                    else:
-                        plog("Failed to open roof, parking telescope again and sending the close command to the roof.")
-                        #g_dev['enc'].close_roof_directly()
-                        plog ("opens this eve: " + str(g_dev['seq'].opens_this_evening))
-                        plog ("minutes until next open attempt ALLOWED: " + str( (g_dev['seq'].enclosure_next_open_time - time.time()) /60))
-                        g_dev['enc'].close_roof_directly({}, {})
+    #                 else:
+    #                     plog("Failed to open roof, parking telescope again and sending the close command to the roof.")
+    #                     #g_dev['enc'].close_roof_directly()
+    #                     plog ("opens this eve: " + str(g_dev['seq'].opens_this_evening))
+    #                     plog ("minutes until next open attempt ALLOWED: " + str( (g_dev['seq'].enclosure_next_open_time - time.time()) /60))
+    #                     g_dev['enc'].close_roof_directly({}, {})
                         
-                        #g_dev['enc'].close_command({}, {})
-                        if not g_dev['mnt'].mount.AtParK:   ###Test comment here
-                            g_dev['mnt'].park_command({}, {}) # Get there early
-                        return
+    #                     #g_dev['enc'].close_command({}, {})
+    #                     if not g_dev['mnt'].mount.AtParK:   ###Test comment here
+    #                         g_dev['mnt'].park_command({}, {}) # Get there early
+    #                     return
                                             
-                except Exception as e:
-                    plog ("Enclosure opening glitched out: ", e)
-                    plog(traceback.format_exc())
+    #             except Exception as e:
+    #                 plog ("Enclosure opening glitched out: ", e)
+    #                 plog(traceback.format_exc())
         
-        else:
-            plog("An enclosure command was rejected because the weather report was not acceptable.")
+    #     else:
+    #         plog("An enclosure command was rejected because the weather report was not acceptable.")
         
-        return
+    #     return
 
     def park_and_close(self, enc_status):
         try:
@@ -412,14 +414,14 @@ class Sequencer:
                 g_dev['mnt'].park_command({}, {}) # Get there early
         except:
             plog("Park not executed during Park and Close" )
-        try:
-            if self.config['obsid_roof_control']  and g_dev['enc'].mode == 'Automatic': # and enc_status['shutter_status'] in ['open', ] $ Don't check, just close!
-                #g_dev['enc'].close_command( {}, {})
-                g_dev['obs'].send_to_user("Closing the Shutter", p_level='INFO')
-                plog("Closing the Shutter")
-                g_dev['enc'].enclosure.CloseShutter()
-        except:
-            plog('Dome close not executed during Park and Close.')
+        # try:
+        #     if self.config['obsid_roof_control']  and g_dev['enc'].mode == 'Automatic': # and enc_status['shutter_status'] in ['open', ] $ Don't check, just close!
+        #         #g_dev['enc'].close_command( {}, {})
+        #         g_dev['obs'].send_to_user("Closing the Shutter", p_level='INFO')
+        #         plog("Closing the Shutter")
+        #         g_dev['enc'].enclosure.CloseShutter()
+        # except:
+        #     plog('Dome close not executed during Park and Close.')
 
 
     ###############################
@@ -459,101 +461,104 @@ class Sequencer:
         
         # Check for delayed opening of the observatory and act accordingly.
 
-        # If the observatory is simply delayed until opening, then wait until then, then attempt to start up the observatory
-        if self.weather_report_wait_until_open and not self.cool_down_latch:
-            if ephem_now >  self.weather_report_wait_until_open_time:
+        # # If the observatory is simply delayed until opening, then wait until then, then attempt to start up the observatory
+        # if self.weather_report_wait_until_open and not self.cool_down_latch:
+        #     if ephem_now >  self.weather_report_wait_until_open_time:
                 
-                self.cool_down_latch=True
-                self.weather_report_wait_until_open == False
-                # Things may have changed! So re-checking the weather and such
+        #         self.cool_down_latch=True
+        #         self.weather_report_wait_until_open == False
+        #         # Things may have changed! So re-checking the weather and such
                 
-                # Reopening config and resetting all the things.
-                # This is necessary just in case a previous weather report was done today
-                # That can sometimes change the timing. 
-                self.astro_events.compute_day_directory()
-                self.astro_events.calculate_events()
-                #self.astro_events.display_events()
-                g_dev['obs'].astro_events = self.astro_events
-                # Run nightly weather report
-                self.run_nightly_weather_report()
+        #         # Reopening config and resetting all the things.
+        #         # This is necessary just in case a previous weather report was done today
+        #         # That can sometimes change the timing. 
+        #         self.astro_events.compute_day_directory()
+        #         self.astro_events.calculate_events()
+        #         #self.astro_events.display_events()
+        #         g_dev['obs'].astro_events = self.astro_events
+        #         # Run nightly weather report
+        #         self.run_nightly_weather_report()
                 
                 
                 
-                if not g_dev['obs'].open_and_enabled_to_observe and self.weather_report_is_acceptable_to_observe==True:
-                    if (g_dev['events']['Cool Down, Open'] < ephem.now() < g_dev['events']['Observing Ends']):
-                        if time.time() > self.enclosure_next_open_time and self.opens_this_evening < self.config['maximum_roof_opens_per_evening']:
-                            #self.enclosure_next_open_time = time.time() + 300 # Only try to open the roof every five minutes
+        #         if not g_dev['obs'].open_and_enabled_to_observe and self.weather_report_is_acceptable_to_observe==True:
+        #             if (g_dev['events']['Cool Down, Open'] < ephem.now() < g_dev['events']['Observing Ends']):
+        #                 if time.time() > self.enclosure_next_open_time and self.opens_this_evening < self.config['maximum_roof_opens_per_evening']:
+        #                     #self.enclosure_next_open_time = time.time() + 300 # Only try to open the roof every five minutes
                             
-                            #self.weather_report_is_acceptable_to_observe=True
-                            self.open_observatory(enc_status, ocn_status)
+        #                     #self.weather_report_is_acceptable_to_observe=True
+        #                     self.open_observatory(enc_status, ocn_status)
                             
-                            # If the observatory opens, set clock and auto focus and observing to now
-                            if g_dev['obs'].open_and_enabled_to_observe:
-                                self.weather_report_is_acceptable_to_observe=False
-                                self.night_focus_ready=True
-                                obs_win_begin, sunZ88Op, sunZ88Cl, ephem_now = self.astro_events.getSunEvents()
-                                #g_dev['events']['Clock & Auto Focus'] = ephem_now - 0.1/24
-                                #g_dev['events']['Observing Begins'] = ephem_now + 0.1/24
-                                self.weather_report_wait_until_open=False
-                                self.weather_report_is_acceptable_to_observe=True
-                                if (g_dev['events']['Observing Begins'] < ephem.now() < g_dev['events']['Observing Ends']):
-                                    # Move to reasonable spot
-                                    if g_dev['mnt'].mount.Tracking == False:
-                                        if g_dev['mnt'].mount.CanSetTracking:   
-                                            g_dev['mnt'].mount.Tracking = True
-                                        else:
-                                            plog("mount is not tracking but this mount doesn't support ASCOM changing tracking")
+        #                     # If the observatory opens, set clock and auto focus and observing to now
+        #                     if g_dev['obs'].open_and_enabled_to_observe:
+        #                         self.weather_report_is_acceptable_to_observe=False
+        #                         self.night_focus_ready=True
+        #                         obs_win_begin, sunZ88Op, sunZ88Cl, ephem_now = self.astro_events.getSunEvents()
+        #                         #g_dev['events']['Clock & Auto Focus'] = ephem_now - 0.1/24
+        #                         #g_dev['events']['Observing Begins'] = ephem_now + 0.1/24
+        #                         self.weather_report_wait_until_open=False
+        #                         self.weather_report_is_acceptable_to_observe=True
+        #                         if (g_dev['events']['Observing Begins'] < ephem.now() < g_dev['events']['Observing Ends']):
+        #                             # Move to reasonable spot
+        #                             if g_dev['mnt'].mount.Tracking == False:
+        #                                 if g_dev['mnt'].mount.CanSetTracking:   
+        #                                     g_dev['mnt'].mount.Tracking = True
+        #                                 else:
+        #                                     plog("mount is not tracking but this mount doesn't support ASCOM changing tracking")
     
-                                    g_dev['mnt'].move_to_azalt(70, 70)
-                                    g_dev['foc'].time_of_last_focus = datetime.datetime.now() - datetime.timedelta(
-                                        days=1
-                                    )  # Initialise last focus as yesterday
+        #                             g_dev['mnt'].move_to_azalt(70, 70)
+        #                             g_dev['foc'].time_of_last_focus = datetime.datetime.now() - datetime.timedelta(
+        #                                 days=1
+        #                             )  # Initialise last focus as yesterday
     
-                                    # Autofocus
-                                    req2 = {'target': 'near_tycho_star', 'area': 150}
-                                    opt = {}
-                                    plog ("Running initial autofocus upon opening observatory")
-                                    self.extensive_focus_script(req2, opt)
-                self.cool_down_latch = False
+        #                             # Autofocus
+        #                             req2 = {'target': 'near_tycho_star', 'area': 150}
+        #                             opt = {}
+        #                             plog ("Running initial autofocus upon opening observatory")
+        #                             self.extensive_focus_script(req2, opt)
+        #         self.cool_down_latch = False
         
-        # If the observatory is meant to shut during the evening
-        obs_win_begin, sunZ88Op, sunZ88Cl, ephem_now = self.astro_events.getSunEvents()
-        if self.weather_report_close_during_evening==True :
-            if ephem_now >  self.weather_report_close_during_evening_time and ephem_now < events['Morn Bias Dark']: # Don't want scope to cancel all activity during bias/darks etc.
-                if self.config['obsid_roof_control']  and g_dev['enc'].mode == 'Automatic':
-                    self.weather_report_is_acceptable_to_observe=False
-                    plog ("End of Observing Period due to weather. Closing up observatory early.")
-                    g_dev['obs'].cancel_all_activity()
-                    g_dev['obs'].open_and_enabled_to_observe=False
-                    g_dev['enc'].enclosure.CloseShutter()
-                    #while g_dev['enc'].enclosure.ShutterStatus == 3:
-                    #plog ("closing")
-                    plog ("Also Parking the Scope")    
-                    if not g_dev['mnt'].mount.AtPark:  
-                        g_dev['mnt'].home_command()
-                        g_dev['mnt'].park_command() 
-                    self.weather_report_close_during_evening=False 
+        # # If the observatory is meant to shut during the evening
+        # obs_win_begin, sunZ88Op, sunZ88Cl, ephem_now = self.astro_events.getSunEvents()
+        # if self.weather_report_close_during_evening==True :
+        #     if ephem_now >  self.weather_report_close_during_evening_time and ephem_now < events['Morn Bias Dark']: # Don't want scope to cancel all activity during bias/darks etc.
+        #         if self.config['obsid_roof_control']  and g_dev['enc'].mode == 'Automatic':
+        #             self.weather_report_is_acceptable_to_observe=False
+        #             plog ("End of Observing Period due to weather. Closing up observatory early.")
+        #             g_dev['obs'].cancel_all_activity()
+        #             g_dev['obs'].open_and_enabled_to_observe=False
+        #             g_dev['enc'].enclosure.CloseShutter()
+        #             #while g_dev['enc'].enclosure.ShutterStatus == 3:
+        #             #plog ("closing")
+        #             plog ("Also Parking the Scope")    
+        #             if not g_dev['mnt'].mount.AtPark:  
+        #                 g_dev['mnt'].home_command()
+        #                 g_dev['mnt'].park_command() 
+        #             self.weather_report_close_during_evening=False 
                                         
         # Do nightly weather report at cool down open 
-        if (g_dev['events']['Cool Down, Open']  <= ephem_now < g_dev['events']['Observing Ends']) and not self.nightly_weather_report_complete and not g_dev['debug']:
+        # if (g_dev['events']['Cool Down, Open']  <= ephem_now < g_dev['events']['Observing Ends']) and not self.nightly_weather_report_complete and not g_dev['debug']:
 
-            # Reopening config and resetting all the things.
-            # This is necessary just in case a previous weather report was done today
-            # That can sometimes change the timing. 
-            self.astro_events.compute_day_directory()
-            self.astro_events.calculate_events()
-            #self.astro_events.display_events()
-            g_dev['obs'].astro_events = self.astro_events
-            # Run nightly weather report
-            self.run_nightly_weather_report()
-            self.nightly_weather_report_complete=True
+        #     # Reopening config and resetting all the things.
+        #     # This is necessary just in case a previous weather report was done today
+        #     # That can sometimes change the timing. 
+        #     self.astro_events.compute_day_directory()
+        #     self.astro_events.calculate_events()
+        #     #self.astro_events.display_events()
+        #     g_dev['obs'].astro_events = self.astro_events
+        #     # Run nightly weather report
+        #     self.run_nightly_weather_report()
+        #     self.nightly_weather_report_complete=True
             
-            # Also make sure nightly reset is switched to go off
-            self.nightly_reset_complete = False
-            # As well as nightly focus routine.
-            self.night_focus_ready=True
+        #     # Also make sure nightly reset is switched to go off
+        #     self.nightly_reset_complete = False
+        #     # As well as nightly focus routine.
+        #     self.night_focus_ready=True
         
-        if ((g_dev['events']['Cool Down, Open']  <= ephem_now < g_dev['events']['Observing Ends'])) and not self.cool_down_latch:
+        
+        # This bit is really to get the scope up and running if the roof opens
+        if ((g_dev['events']['Cool Down, Open']  <= ephem_now < g_dev['events']['Observing Ends'])) and not self.cool_down_latch and \
+            g_dev['obs'].open_and_enabled_to_observe and g_dev['mnt'].mount.AtPark and (time.time() - self.time_roof_last_opened) < 120 :
 
             self.cool_down_latch = True
             
@@ -566,34 +571,34 @@ class Sequencer:
                     #    self.open_observatory(enc_status, ocn_status)
                     
                     # If the observatory opens, set clock and auto focus and observing to now
-            if g_dev['obs'].open_and_enabled_to_observe:
-                self.night_focus_ready=False
-                obs_win_begin, sunZ88Op, sunZ88Cl, ephem_now = self.astro_events.getSunEvents()
-                #g_dev['events']['Clock & Auto Focus'] = ephem_now - 0.1/24
-                #g_dev['events']['Observing Begins'] = ephem_now + 0.1/24
-                #self.weather_report_wait_until_open=False
-                #self.weather_report_is_acceptable_to_observe=True
-                if (g_dev['events']['Observing Begins'] < ephem.now() < g_dev['events']['Observing Ends']):
-                    # Move to reasonable spot
-                    if g_dev['mnt'].mount.Tracking == False:
-                        if g_dev['mnt'].mount.CanSetTracking:   
-                            g_dev['mnt'].mount.Tracking = True
-                        else:
-                            plog("mount is not tracking but this mount doesn't support ASCOM changing tracking")
+            #if g_dev['obs'].open_and_enabled_to_observe:
+            self.night_focus_ready=False
+            obs_win_begin, sunZ88Op, sunZ88Cl, ephem_now = self.astro_events.getSunEvents()
+            #g_dev['events']['Clock & Auto Focus'] = ephem_now - 0.1/24
+            #g_dev['events']['Observing Begins'] = ephem_now + 0.1/24
+            #self.weather_report_wait_until_open=False
+            #self.weather_report_is_acceptable_to_observe=True
+            if (g_dev['events']['Observing Begins'] < ephem.now() < g_dev['events']['Observing Ends']):
+                # Move to reasonable spot
+                if g_dev['mnt'].mount.Tracking == False:
+                    if g_dev['mnt'].mount.CanSetTracking:   
+                        g_dev['mnt'].mount.Tracking = True
+                    else:
+                        plog("mount is not tracking but this mount doesn't support ASCOM changing tracking")
 
-                    g_dev['mnt'].move_to_azalt(70, 70)
-                    g_dev['foc'].time_of_last_focus = datetime.datetime.now() - datetime.timedelta(
-                        days=1
-                    )  # Initialise last focus as yesterday
+                g_dev['mnt'].move_to_azalt(70, 70)
+                g_dev['foc'].time_of_last_focus = datetime.datetime.now() - datetime.timedelta(
+                    days=1
+                )  # Initialise last focus as yesterday
 
-                    # Autofocus
-                    req2 = {'target': 'near_tycho_star', 'area': 150}
-                    opt = {}
-                    plog ("Running initial autofocus upon opening observatory")
-                    
-                    self.extensive_focus_script(req2, opt)
-                else:
-                    self.night_focus_ready=True
+                # Autofocus
+                req2 = {'target': 'near_tycho_star', 'area': 150}
+                opt = {}
+                plog ("Running initial autofocus upon opening observatory")
+                
+                self.extensive_focus_script(req2, opt)
+            else:
+                self.night_focus_ready=True
                     
                    
             self.cool_down_latch = False
@@ -612,12 +617,12 @@ class Sequencer:
                 g_dev['mnt'].home_command()
                 g_dev['mnt'].park_command()
             
-            if g_dev['enc'].status['shutter_status'] in ['Open', 'open']:
-                plog ("Found shutter open after Close and Park, shutting up the shutter")
-                self.park_and_close(enc_status)
+            #if g_dev['enc'].status['shutter_status'] in ['Open', 'open']:
+            #    plog ("Found shutter open after Close and Park, shutting up the shutter")
+            #    self.park_and_close(enc_status)
             
         if not self.bias_dark_latch and ((events['Eve Bias Dark'] <= ephem_now < events['End Eve Bias Dark']) and \
-             self.config['auto_eve_bias_dark'] and not  self.eve_bias_done and g_dev['enc'].mode in ['Automatic', 'Autonomous', 'Manual'] and g_dev['obs'].camera_temperature_in_range_for_calibrations):   #events['End Eve Bias Dark']) and \
+             self.config['auto_eve_bias_dark'] and not self.eve_bias_done and g_dev['obs'].camera_temperature_in_range_for_calibrations):   #events['End Eve Bias Dark']) and \
             
             self.bias_dark_latch = True
             req = {'bin1': True, 'bin2': False, 'bin3': False, 'bin4': False, 'numOfBias': 45, \
@@ -647,8 +652,7 @@ class Sequencer:
             self.eve_flats_done = True
             
 
-        elif ((g_dev['events']['Clock & Auto Focus']  <= ephem_now < g_dev['events']['Observing Begins']) and \
-               g_dev['enc'].mode == 'Automatic') and not g_dev['ocn'].wx_hold  \
+        elif ((g_dev['events']['Clock & Auto Focus']  <= ephem_now < g_dev['events']['Observing Begins'])) \
                 and self.night_focus_ready==True and  g_dev['obs'].open_and_enabled_to_observe and not self.clock_focus_latch:
 
             
@@ -688,114 +692,113 @@ class Sequencer:
 #         Perhaps we should default set enc_status['enclosure_mode'] = 'Shutdown' as a default?
 # =============================================================================
         elif (events['Observing Begins'] <= ephem_now \
-                                   < events['Observing Ends']) and not g_dev['ocn'].wx_hold \
+                                   < events['Observing Ends'])  \
                                    and  g_dev['obs'].blocks is not None and g_dev['obs'].projects \
                                    is not None and g_dev['obs'].open_and_enabled_to_observe:
 
             try:
                 self.nightly_reset_complete = False
                 
-                try:
-                    enc_status['enclosure_mode'] in ['Autonomous!', 'Automatic']
-                except:
-                    breakpoint()
+                #try:
+                #    enc_status['enclosure_mode'] in ['Autonomous!', 'Automatic']
+                #except:
+                #    breakpoint()
                 
                 
-                if enc_status['enclosure_mode'] in ['Autonomous!', 'Automatic']:
-                    blocks = g_dev['obs'].blocks
-                    projects = g_dev['obs'].projects
-                    debug = False         
-                    
-                    if debug:
-                        plog("# of Blocks, projects:  ", len(g_dev['obs'].blocks),  len(g_dev['obs'].projects))
-        
-                    #Note here we could evaluate projects to see which meet observability constraints and place them
-                    #In an observables list, then we could pick one to start.  IF there is no pre-sheduled observing block
-                    #it would just run.  Voila an Opportunistic scheduler.  An observing block may be empty or point to
-                    #a project and if the project is runnable any way, it runs or is marked completed.
-                    # NB without deepcopy decrementing counts in blocks will be local to the machine an subject
-                    # to over_write as the respons from AWS updates. This is particularly important for owner
-                    # and background blocks.
-        
-                    #First, sort blocks to be in ascending order, just to promote clarity. Remove expired projects.
-                    for block in blocks:  #  This merges project spec into the blocks.
-                        for project in projects:
-        
-                            try:
-                                if block['project_id'] == project['project_name'] + '#' + project['created_at']:
-                                    block['project'] = project
-                            except:
-                                block['project'] = None  #nb nb nb 20220920   this faults with 'string indices must be integers". WER
-       
-
+                #if enc_status['enclosure_mode'] in ['Autonomous!', 'Automatic']:
+                blocks = g_dev['obs'].blocks
+                projects = g_dev['obs'].projects
+                debug = False         
+                
+                if debug:
+                    plog("# of Blocks, projects:  ", len(g_dev['obs'].blocks),  len(g_dev['obs'].projects))
+    
+                #Note here we could evaluate projects to see which meet observability constraints and place them
+                #In an observables list, then we could pick one to start.  IF there is no pre-sheduled observing block
+                #it would just run.  Voila an Opportunistic scheduler.  An observing block may be empty or point to
+                #a project and if the project is runnable any way, it runs or is marked completed.
+                # NB without deepcopy decrementing counts in blocks will be local to the machine an subject
+                # to over_write as the respons from AWS updates. This is particularly important for owner
+                # and background blocks.
+    
+                #First, sort blocks to be in ascending order, just to promote clarity. Remove expired projects.
+                for block in blocks:  #  This merges project spec into the blocks.
                     for project in projects:
-                        if block['project_id']  != 'none':
-                            try:
-        
-                                if block['project_id'] == project['project_name'] + '#' + project['created_at']:
-                                    block['project'] = project
-                            except:
-                                block['project'] = None
-                        else:
-                            pass
-                        
-                    '''
-                    evaluate supplied projects for observable and mark as same. Discard
-                    unobservable projects.  Projects may be "site" projects or 'ptr' (network wide:
-                    All, Owner, PTR-network, North, South.)
-                        The westernmost project is offered to run unless there is a runnable scheduled block.
-                        for any given time, are the constraints met? Airmass < x, Moon Phaze < y, moon dist > z,
-                        flip rules
-        
-                    '''
-                    # breakpoint()
-                    # #Figure out which are observable.  Currently only supports one target/proj
-                    # NB Observing events without a project are "observable."
-                    # observable = []
-                    # for projects in projects:
-                    #     ra = projects['project_targets']['ra']
-                    #     dec = projects['project_targets']['dec']
-                    #     sid = g_dev['mnt'].mount.SiderealTime
-                    #     ha = tycho.reduceHA(sid - ra)
-                    #     az, alt = transform_haDec_to_azAlt(ha, dec)
-                    #     # Do not start a block within 15 min of end time???
-                    #plog("Initial length:  ", len(blocks))
+    
+                        try:
+                            if block['project_id'] == project['project_name'] + '#' + project['created_at']:
+                                block['project'] = project
+                        except:
+                            block['project'] = None  #nb nb nb 20220920   this faults with 'string indices must be integers". WER
+   
 
-                    for block in blocks:
-                        now_date_timeZ = datetime.datetime.now().isoformat().split('.')[0] +'Z'
-                        if not self.block_guard \
-                            and (block['start'] <= now_date_timeZ < block['end']) \
-                            and not self.is_in_completes(block['event_id']):
-                            if block['project_id'] in ['none', 'real_time_slot', 'real_time_block']:
-                                self.block_guard = False   # Changed from True WER on 20221011@2:24 UTC
-                                return   # Do not try to execute an empty block.
-                            self.block_guard = True
-        
-                            if block['project'] == None:
-                                plog (block)
-                                plog ("Skipping a block that contains an empty project")
-                                return
-        
-                            g_dev['obs'].update()
-                            completed_block = self.execute_block(block)  #In this we need to ultimately watch for weather holds.
-                            try:
-                                self.append_completes(completed_block['event_id'])
-                            except:
-                                plog ("block complete append didn't work")
-                                plog(traceback.format_exc())
-                                
-                            #block['project_id'] in ['none', 'real_time_slot', 'real_time_block']
-                            '''
-                            When a scheduled block is completed it is not re-entered or the block needs to
-                            be restored.  IN the execute block we need to make a deepcopy of the input block
-                            so it does not get modified.
-                            '''                                       
+                for project in projects:
+                    if block['project_id']  != 'none':
+                        try:
+    
+                            if block['project_id'] == project['project_name'] + '#' + project['created_at']:
+                                block['project'] = project
+                        except:
+                            block['project'] = None
+                    else:
+                        pass
+                    
+                '''
+                evaluate supplied projects for observable and mark as same. Discard
+                unobservable projects.  Projects may be "site" projects or 'ptr' (network wide:
+                All, Owner, PTR-network, North, South.)
+                    The westernmost project is offered to run unless there is a runnable scheduled block.
+                    for any given time, are the constraints met? Airmass < x, Moon Phaze < y, moon dist > z,
+                    flip rules
+    
+                '''
+                # breakpoint()
+                # #Figure out which are observable.  Currently only supports one target/proj
+                # NB Observing events without a project are "observable."
+                # observable = []
+                # for projects in projects:
+                #     ra = projects['project_targets']['ra']
+                #     dec = projects['project_targets']['dec']
+                #     sid = g_dev['mnt'].mount.SiderealTime
+                #     ha = tycho.reduceHA(sid - ra)
+                #     az, alt = transform_haDec_to_azAlt(ha, dec)
+                #     # Do not start a block within 15 min of end time???
+                #plog("Initial length:  ", len(blocks))
+
+                for block in blocks:
+                    now_date_timeZ = datetime.datetime.now().isoformat().split('.')[0] +'Z'
+                    if not self.block_guard \
+                        and (block['start'] <= now_date_timeZ < block['end']) \
+                        and not self.is_in_completes(block['event_id']):
+                        if block['project_id'] in ['none', 'real_time_slot', 'real_time_block']:
+                            self.block_guard = False   # Changed from True WER on 20221011@2:24 UTC
+                            return   # Do not try to execute an empty block.
+                        self.block_guard = True
+    
+                        if block['project'] == None:
+                            plog (block)
+                            plog ("Skipping a block that contains an empty project")
+                            return
+    
+                        g_dev['obs'].update()
+                        completed_block = self.execute_block(block)  #In this we need to ultimately watch for weather holds.
+                        try:
+                            self.append_completes(completed_block['event_id'])
+                        except:
+                            plog ("block complete append didn't work")
+                            plog(traceback.format_exc())
+                            
+                        #block['project_id'] in ['none', 'real_time_slot', 'real_time_block']
+                        '''
+                        When a scheduled block is completed it is not re-entered or the block needs to
+                        be restored.  IN the execute block we need to make a deepcopy of the input block
+                        so it does not get modified.
+                        '''                                       
             except:
                 plog(traceback.format_exc())
                 plog("Hang up in sequencer.")
                 
-        elif not self.morn_sky_flat_latch and ((events['Morn Sky Flats'] <= ephem_now < events['End Morn Sky Flats'])  \
-               and g_dev['enc'].mode == 'Automatic' and not g_dev['ocn'].wx_hold and \
+        elif not self.morn_sky_flat_latch and ((events['Morn Sky Flats'] <= ephem_now < events['End Morn Sky Flats']) and \
                self.config['auto_morn_sky_flat']) and not self.morn_flats_done and g_dev['obs'].camera_temperature_in_range_for_calibrations and g_dev['obs'].open_and_enabled_to_observe:
 
             self.morn_sky_flat_latch = True
@@ -832,11 +835,11 @@ class Sequencer:
         
         else:
             self.current_script = "No current script, or site not in Automatic."
-            try:
-                pass
+            #try:
+            #    pass
                 #self.park_and_close(enc_status)
-            except:
-                plog("Park and close failed at end of sequencer loop.")
+            #except:
+            #    plog("Park and close failed at end of sequencer loop.")
                 
         #Here is where observatories who do their biases at night... well.... do their biases!
         #If it hasn't already been done tonight.        
