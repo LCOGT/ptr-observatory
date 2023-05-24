@@ -434,6 +434,7 @@ site_config = {
             'name': 'rotator',
             'desc':  'Opetc Gemini',
             'driver': 'ASCOM.AltAzDS.Rotator',
+            'telescope_driver': 'ASCOM.AltAzDS.Telescope',
             'com_port':  None,
             'minimum': -180.0,
             'maximum': 360.0,

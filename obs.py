@@ -165,15 +165,15 @@ class Observatory:
         if not os.path.exists(self.local_calibration_path):
             os.makedirs(self.local_calibration_path)
 
-        # Kill rotator softwares
-        #try:
-        #    os.system("taskkill /IM AltAzDSConfig.exe /F")
-        #except:
-        #    pass
-        #try:
-        #    os.system('taskkill /IM "Gemini Software.exe" /F')
-        #except:
-        #    pass
+        # Kill rotator softwares on boot-up to resync.
+        try:
+            os.system("taskkill /IM AltAzDSConfig.exe /F")
+        except:
+            pass
+        try:
+            os.system('taskkill /IM "Gemini Software.exe" /F')
+        except:
+            pass
         #breakpoint()
 
         if self.debug_flag:

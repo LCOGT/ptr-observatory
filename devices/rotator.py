@@ -31,12 +31,18 @@ class Rotator:
         g_dev["rot"] = self
         win32com.client.pythoncom.CoInitialize()
         self.driver=driver
-        self.rotator = win32com.client.Dispatch(driver)
+        self.rotator = win32com.client.Dispatch(driver)        
         time.sleep(3)
         #breakpoint()
         self.rotator.Connected = True
         self.rotator_message = "-"
         print("Rotator connected,  at:  ", round(self.rotator.TargetPosition, 4))
+        
+        # The telescope driver also needs to be connected
+        self.rotator_telescope = win32com.client.Dispatch(driver.replace('Rotator','Telescope'))
+        self.rotator_telescope.Connected = True
+        
+        
         
         self.rotator_meant_to_be_rotating = True
         self.check_rotator_is_rotating()       
