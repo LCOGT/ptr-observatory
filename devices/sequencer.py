@@ -611,8 +611,7 @@ class Sequencer:
         #        self.nightly_reset_complete == False
                 
         # If in post-close and park era of the night, check those two things have happened!       
-        if (events['Close and Park'] <= ephem_now < events['End Morn Bias Dark'])  \
-               and g_dev['enc'].mode == 'Automatic':
+        if (events['Close and Park'] <= ephem_now < events['End Morn Bias Dark']):
             
             if not g_dev['mnt'].mount.AtPark:  
                 plog ("Found telescope unparked after Close and Park, parking the scope")
