@@ -1350,8 +1350,7 @@ class Sequencer:
                 # The biasdark script can sometimes overrun the time that the roof should open, 
                 # So a check for whether it hits cool down time in this loop is appropriate
                 obs_win_begin, sunZ88Op, sunZ88Cl, ephem_now = self.astro_events.getSunEvents()
-                if ((g_dev['events']['Cool Down, Open']  <= ephem_now < g_dev['events']['Eve Sky Flats']) and \
-                       g_dev['enc'].mode == 'Automatic') and not g_dev['ocn'].wx_hold and cool_down_opened_already == False:
+                if ((g_dev['events']['Cool Down, Open']  <= ephem_now < g_dev['events']['Eve Sky Flats'])) and cool_down_opened_already == False:
 
                     
                     if not self.nightly_weather_report_complete and not g_dev['debug']:
