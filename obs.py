@@ -1347,7 +1347,7 @@ sel
                     plog('Line 1192 Roof shutter status faulted.')
 
                 # If the roof should be shut, then the telescope should be parked.
-                if roof_should_be_shut == True and g_dev['obs'].enc_status['enclosure_mode'] == 'Automatic':
+                if roof_should_be_shut == True:
                     if not g_dev['mnt'].mount.AtPark:
                         plog('Parking telescope as it is during the period that the roof is meant to be shut.')
                         self.open_and_enabled_to_observe = False
