@@ -1262,22 +1262,22 @@ sel
                             #) + self.config['roof_open_safety_base_time'] * g_dev['seq'].opens_this_evening
 
                     if g_dev['obs'].enc_status['shutter_status'] == 'Error':
-                        if self.config['obsid_roof_control'] and g_dev['enc'].mode == 'Automatic':
-                            plog("Detected an Error in the Roof Status. Packing up for safety.")
-                            #plog("This is usually because the weather system forced the roof to shut.")
-                            #plog("By closing it again, it resets the switch to closed.")
-                            self.cancel_all_activity()    #NB Kills bias dark
-                            self.open_and_enabled_to_observe = False
-                            #g_dev['enc'].enclosure.CloseShutter()
-                            #g_dev['seq'].enclosure_next_open_time = time.time(
-                            #) + self.config['roof_open_safety_base_time'] * g_dev['seq'].opens_this_evening
-                            # while g_dev['enc'].enclosure.ShutterStatus == 3:
-                            #plog ("closing")
-                            plog("Also Parking the Scope")
-                            if not g_dev['mnt'].mount.AtPark:
-                                if g_dev['mnt'].home_before_park:
-                                    g_dev['mnt'].home_command()
-                                g_dev['mnt'].park_command()
+                        
+                        plog("Detected an Error in the Roof Status. Packing up for safety.")
+                        #plog("This is usually because the weather system forced the roof to shut.")
+                        #plog("By closing it again, it resets the switch to closed.")
+                        self.cancel_all_activity()    #NB Kills bias dark
+                        self.open_and_enabled_to_observe = False
+                        #g_dev['enc'].enclosure.CloseShutter()
+                        #g_dev['seq'].enclosure_next_open_time = time.time(
+                        #) + self.config['roof_open_safety_base_time'] * g_dev['seq'].opens_this_evening
+                        # while g_dev['enc'].enclosure.ShutterStatus == 3:
+                        #plog ("closing")
+                        plog("Also Parking the Scope")
+                        if not g_dev['mnt'].mount.AtPark:
+                            if g_dev['mnt'].home_before_park:
+                                g_dev['mnt'].home_command()
+                            g_dev['mnt'].park_command()
 
                     #roof_should_be_shut = False
                 else:
@@ -1577,7 +1577,7 @@ sel
                         g_dev['mnt'].park_command()
                         self.time_of_last_slew = time.time()
 
-                    g_dev['enc'].enclosure.CloseShutter()
+                    #g_dev['enc'].enclosure.CloseShutter()
 
             if (g_dev['seq'].enclosure_next_open_time - time.time()) > 0:
                 plog("opens this eve: " + str(g_dev['seq'].opens_this_evening))
