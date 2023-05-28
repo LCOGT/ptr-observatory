@@ -410,7 +410,7 @@ class Sequencer:
         
     #     return
 
-    def park_and_close(self, enc_status):
+    def park_and_close(self):
         try:
             if not g_dev['mnt'].mount.AtParK:   ###Test comment here
                 g_dev['mnt'].park_command({}, {}) # Get there early
@@ -821,11 +821,11 @@ class Sequencer:
                     'hotMap': True, 'coldMap': True, 'script': 'genBiasDarkMaster', }  #This specificatin is obsolete
             opt = {}
 
-            self.park_and_close(enc_status)
+            self.park_and_close()
             #NB The above put dome closed and telescope at Park, Which is where it should have been upon entry.
             self.bias_dark_script(req, opt, morn=True)
 
-            self.park_and_close(enc_status)
+            self.park_and_close()
             self.morn_bias_dark_latch = False
             self.morn_bias_done = True
             
