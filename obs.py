@@ -485,7 +485,7 @@ class Observatory:
         #        'hotMap': True, 'coldMap': True, 'script': 'genBiasDarkMaster', }  #This specificatin is obsolete
         #opt = {}
         # No action needed on  the enclosure at this level
-        # self.park_and_close(enc_status)
+        # self. enc_status)
         # NB The above put dome closed and telescope at Park, Which is where it should have been upon entry.
         #g_dev['seq'].bias_dark_script(req, opt, morn=True)
         
@@ -538,13 +538,13 @@ class Observatory:
                 plog(name)
                 driver = devices_of_type[name]["driver"]
                 settings = devices_of_type[name].get("settings", {})
-                if dev_type == "observing_conditions":
-                    device = ObservingConditions(
-                        driver, name, self.config, self.astro_events
-                    )
-                elif dev_type == "enclosure":
-                    device = Enclosure(driver, name, self.config, self.astro_events)
-                elif dev_type == "mount":
+                #if dev_type == "observing_conditions":
+                #    device = ObservingConditions(
+                 #      driver, name, self.config, self.astro_events
+                #    )
+                #elif dev_type == "enclosure":
+                #    device = Enclosure(driver, name, self.config, self.astro_events)
+                if dev_type == "mount":
                     device = Mount(
                         driver, name, settings, self.config, self.astro_events, tel=True
                     )  # NB this needs to be straightened out.

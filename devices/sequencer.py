@@ -1550,10 +1550,10 @@ class Sequencer:
         isExist = os.path.exists(g_dev['obs'].obsid_path + 'tokens')
         if not isExist:
             os.makedirs(g_dev['obs'].obsid_path + 'tokens')
-        runNightToken= g_dev['obs'].obsid_path + 'tokens/' + self.config['site'] + runNight + '.token'
+        runNightToken= g_dev['obs'].obsid_path + 'tokens/' + self.config['obs_id'] + runNight + '.token'
         with open(runNightToken, 'w') as f:
             f.write('Night Completed')
-        image = (g_dev['obs'].obsid_path + 'tokens/', self.config['site'] + runNight + '.token')
+        image = (g_dev['obs'].obsid_path + 'tokens/', self.config['obs_id'] + runNight + '.token')
         g_dev['obs'].aws_queue.put((30000000000, image), block=False)
         g_dev['obs'].send_to_user("End of Night Token sent to AWS.", p_level='INFO')
         
@@ -1609,7 +1609,7 @@ class Sequencer:
         '''
         Send the config to aws.
         '''
-        uri = f"{self.config['site']}/config/"
+        uri = f"{self.config['obs_id']}/config/"
         self.config['events'] = g_dev['events']
         response = g_dev['obs'].api.authenticated_request("PUT", uri, self.config)
         if response:
