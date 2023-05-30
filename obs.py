@@ -1703,6 +1703,8 @@ sel
                                     one_at_a_time = 0
     
                                 except:
+                                    plog(traceback.format_exc())
+                                    breakpoint()
                                     plog("Connection glitch for the request post, waiting a moment and trying again")
                                     time.sleep(5)
                         
@@ -1731,11 +1733,13 @@ sel
                                     os.remove(filepath)
                                 except:
                                     #plog("Couldn't remove " + str(filepath) + " file after transfer")
-                                    self.laterdelete.put( filepath, block=False)
+                                    self.laterdelete_queue.put( filepath, block=False)
                             
                             self.aws_queue.task_done()
 
                         except:
+                            plog(traceback.format_exc())
+                            breakpoint()
                             plog("Connection glitch for the request post, waiting a moment and trying again")
                             time.sleep(5)
 
