@@ -1685,7 +1685,7 @@ sel
                                     except ocs_ingester.exceptions.DoNotRetryError:
                                         plog((traceback.format_exc()))
                                         plog ("Couldn't upload to PTR archive: " + str(filepath))
-                                        breakpoint()
+                                        #breakpoint()
                                         broken=1
                                         
                                         #plog ("Caught filespecification error properly")
@@ -1717,7 +1717,7 @@ sel
     
                                 except:
                                     plog(traceback.format_exc())
-                                    breakpoint()
+                                    #breakpoint()
                                     plog("Connection glitch for the request post, waiting a moment and trying again")
                                     time.sleep(5)
                         
@@ -1752,7 +1752,7 @@ sel
 
                         except:
                             plog(traceback.format_exc())
-                            breakpoint()
+                            #breakpoint()
                             plog("Connection glitch for the request post, waiting a moment and trying again")
                             time.sleep(5)
 
