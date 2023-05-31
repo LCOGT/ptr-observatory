@@ -1681,7 +1681,7 @@ sel
                                                 os.remove(filepath)
                                             except:
                                                 #plog("Couldn't remove " + str(filepath) + " file after transfer, sending to delete queue")
-                                                self.laterdelete_queue.put( filepath, block=False)
+                                                self.laterdelete_queue.put(filepath, block=False)
                                     except ocs_ingester.exceptions.DoNotRetryError:
                                         plog((traceback.format_exc()))
                                         plog ("Couldn't upload to PTR archive: " + str(filepath))
@@ -1746,7 +1746,7 @@ sel
                                     os.remove(filepath)
                                 except:
                                     #plog("Couldn't remove " + str(filepath) + " file after transfer")
-                                    self.laterdelete_queue.put( filepath, block=False)
+                                    self.laterdelete_queue.put(filepath, block=False)
                             
                             self.aws_queue.task_done()
 
@@ -1796,16 +1796,19 @@ sel
         while True:
             if (not self.laterdelete_queue.empty()):  # and one_at_a_time==0
                 (deletefilename) = self.laterdelete_queue.get(block=False)
-                notdelete=1
-                while notdelete==1:
-                    try:
-                        os.remove(deletefilename)
-                        notdelete=0
-                    except:
-                        plog("failed to remove: " + str(deletefilename) + " trying again soon")
-                        time.sleep(10)
+                #notdelete=1
+                #while notdelete==1:
+                plog("Deleting: " +str(deletefilename))
                     
                 self.laterdelete_queue.task_done()
+                try:
+                    os.remove(deletefilename)
+                    #notdelete=0
+                except:
+                    plog("failed to remove: " + str(deletefilename) + " trying again soon")
+                    self.laterdelete_queue.put(deletefilename, block=False)
+                
+                
                 # one_at_a_time=0
             else:
                 time.sleep(0.1)
