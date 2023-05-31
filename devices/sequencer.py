@@ -446,9 +446,17 @@ class Sequencer:
         #just to be safe:  Should fix Line 344 Exception.
         #g_dev['ocn'].status = g_dev['ocn'].get_status()
         #g_dev['enc'].status = g_dev['enc'].get_status()
+        try:
+            g_dev['obs'].enc_status = g_dev['obs'].get_enclosure_status_from_aws()
+        except:
+            g_dev['obs'].enc_status = None
         
-        g_dev['obs'].enc_status = g_dev['obs'].get_enclosure_status_from_aws()
-        g_dev['obs'].ocn_status = g_dev['obs'].get_weather_status_from_aws()
+        
+        try:        
+            g_dev['obs'].ocn_status = g_dev['obs'].get_weather_status_from_aws()
+        except:
+            g_dev['obs'].ocn_status = None
+        
         
         ocn_status = g_dev['obs'].ocn_status
         enc_status = g_dev['obs'].enc_status
