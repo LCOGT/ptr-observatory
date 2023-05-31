@@ -1659,7 +1659,18 @@ sel
                                 #plog ("\nstarting ingester")
                                 retryarchive = 0
                                 while retryarchive < 10:
-                                    try:                                    
+                                    try:      
+                                        # Get header explicitly out to send up
+                                        tempheader=fits.open(filepath)
+                                        tempheader=tempheader[1].header
+                                        headerdict = {}
+                                        for entry in tempheader.keys():
+                                            headerdict[entry] = tempheader[entry]
+                                            #print (entry)
+                                            #print ("***********")
+                                            
+                                        breakpoint()
+                                        
                                         upload_file_and_ingest_to_archive(fileobj)                                    
                                         self.aws_queue.task_done()
                                         tempPTR = 1
@@ -1672,7 +1683,9 @@ sel
                                                 #plog("Couldn't remove " + str(filepath) + " file after transfer, sending to delete queue")
                                                 self.laterdelete_queue.put( filepath, block=False)
                                     except ocs_ingester.exceptions.DoNotRetryError:
+                                        plog((traceback.format_exc()))
                                         plog ("Couldn't upload to PTR archive: " + str(filepath))
+                                        breakpoint()
                                         broken=1
                                         
                                         #plog ("Caught filespecification error properly")
