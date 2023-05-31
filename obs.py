@@ -1669,9 +1669,9 @@ sel
                                             #print (entry)
                                             #print ("***********")
                                             
-                                        breakpoint()
+                                        #breakpoint()
                                         
-                                        upload_file_and_ingest_to_archive(fileobj)                                    
+                                        upload_file_and_ingest_to_archive(fileobj, file_metadata=headerdict)                                    
                                         self.aws_queue.task_done()
                                         tempPTR = 1
                                         retryarchive = 11
