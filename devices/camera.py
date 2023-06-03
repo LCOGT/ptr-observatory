@@ -1786,12 +1786,12 @@ class Camera:
             plog ("Starting narrowband " +str(exposure_time) + "s smartstack " + str(sskcounter+1) + " out of " + str(int(Nsmartstack)) + " of "
             + str(opt["object_name"]) 
             + " by user: " + str(observer_user_name))
-            g_dev["obs"].send_to_user ("Starting narrowband " +str(exposure_time) + "s smartstack " + str(sskcounter+1) + str(int(Nsmartstack)) + " by user: " + str(observer_user_name))
+            g_dev["obs"].send_to_user ("Starting narrowband " +str(exposure_time) + "s smartstack " + str(sskcounter+1) + " out of " + str(int(Nsmartstack)) + " by user: " + str(observer_user_name))
         elif Nsmartstack > 1 :
             plog ("Starting broadband " +str(exposure_time) + "s smartstack " + str(sskcounter+1) + " out of " + str(int(Nsmartstack)) + " of "
             + str(opt["object_name"]) 
             + " by user: " + str(observer_user_name))
-            g_dev["obs"].send_to_user ("Starting broadband " +str(exposure_time) + "s smartstack " + str(sskcounter+1) + str(int(Nsmartstack)) + " by user: " + str(observer_user_name))
+            g_dev["obs"].send_to_user ("Starting broadband " +str(exposure_time) + "s smartstack " + str(sskcounter+1) + " out of " + str(int(Nsmartstack)) + " by user: " + str(observer_user_name))
         else:
             if "object_name" in opt:
                 g_dev["obs"].send_to_user(
