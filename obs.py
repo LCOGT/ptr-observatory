@@ -1082,8 +1082,9 @@ sel
 
         # If the roof is open, then it is open and enabled to observe
         #try:
-        if g_dev['obs'].enc_status['shutter_status'] == 'Open':
-            self.open_and_enabled_to_observe = True
+        if not g_dev['obs'].enc_status['shutter_status'] == None:
+            if g_dev['obs'].enc_status['shutter_status'] == 'Open':
+                self.open_and_enabled_to_observe = True
         #except:
         #    pass
 
