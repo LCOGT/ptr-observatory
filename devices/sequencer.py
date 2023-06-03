@@ -2105,7 +2105,7 @@ class Sequencer:
                         then haveing only 35 or so minutes is still limiting.
                         I am going to push this to Git right now so MFitz can comment. Then i will get back to the pseudo code.
         """
-        breakpoint()
+
         
         if  (ephem.now() < g_dev['events']['Eve Sky Flats']) or \
             (g_dev['events']['End Morn Sky Flats'] < ephem.now() < g_dev['events']['Nightly Reset']):

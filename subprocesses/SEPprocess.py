@@ -373,6 +373,8 @@ else:
         sources['FWHM'] = (sources['FWHM'] * 2) * binfocus
         sources['x'] = (sources['x']) * binfocus
         sources['y'] = (sources['y']) * binfocus
+        sources['xpeak'] = (sources['xpeak']) * binfocus
+        sources['ypeak'] = (sources['ypeak']) * binfocus
 
         #
 
