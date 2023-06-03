@@ -1642,6 +1642,20 @@ class Camera:
                             azimuth_of_observation = az
                             altitude_of_observation = alt
                             start_time_of_observation=time.time()
+                            
+                            # Always check rotator just before exposure  The Rot jitters wehn parked so
+                            # this give rot moving report during bia darks
+                            rot_report=0
+                            if g_dev['rot']!=None:                
+                                while g_dev['rot'].rotator.IsMoving:    #This signal fibrulates!                
+                                    #if g_dev['rot'].rotator.IsMoving:                                       
+                                     if rot_report == 0 :
+                                         plog("Waiting for camera rotator to catch up. ")
+                                         g_dev["obs"].send_to_user("Waiting for camera rotator to catch up before exposing.")
+                                                     
+                                         rot_report=1
+                                         time.sleep(0.2) 
+                            
                             self._expose(exposure_time, bias_dark_or_light_type_frame)
                             
                             
@@ -1738,6 +1752,9 @@ class Camera:
         altitude_of_observation=None
         
     ):
+        
+          
+        
         plog(
             "Exposure Started:  " + str(exposure_time) + "s ",
             frame_type
