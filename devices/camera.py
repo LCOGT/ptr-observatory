@@ -3084,8 +3084,13 @@ class Camera:
                            
                     # Now that the jpeg, sep and platesolve has been sent up pronto,
                     # We turn back to getting the bigger raw, reduced and fz files dealt with
-                    
-                    self.to_slow_process(5,('fz_and_send', raw_path + raw_name00 + ".fz", hdu.data, hdu.header, frame_type, g_dev["mnt"].current_icrs_ra, g_dev["mnt"].current_icrs_dec))                    
+                    if not ( frame_type.lower() in [
+                        "bias",
+                        "dark",
+                        "flat",
+                        "focus",
+                        "skyflat"]):
+                        self.to_slow_process(5,('fz_and_send', raw_path + raw_name00 + ".fz", hdu.data, hdu.header, frame_type, g_dev["mnt"].current_icrs_ra, g_dev["mnt"].current_icrs_dec))                    
 
         
                     # If the files are local calibrations, save them out to the local calibration directory
