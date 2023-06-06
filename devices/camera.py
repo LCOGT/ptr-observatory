@@ -462,7 +462,7 @@ class Camera:
 
         self.hint = None
         self.focus_cache = None
-        self.darkslide = False
+    
         self.darkslide_state = "N.A."   #Not Available.
         if self.config["camera"][self.name]["settings"]["has_darkslide"]:
             self.darkslide = True
@@ -761,6 +761,7 @@ class Camera:
         if self.user_name != self.last_user_name:
             self.last_user_name = self.user_name
         if action == "expose" and not self.exposure_busy:
+
             self.expose_command(req, opt, do_sep=True, quick=False)
             self.exposure_busy = False  # Hangup needs to be guarded with a timeout.
             self.active_script = None
@@ -848,6 +849,7 @@ class Camera:
 
 
         # Force a reseek //eventually dither//
+        # nb nb nb THIS FAULTS SELF.T0 IS NOT DEFINED
         try:
             if (
                 g_dev["mnt"].last_seek_time < self.t0 - 180
@@ -1497,7 +1499,7 @@ class Camera:
                     #plog("no ocn")
 
                 try:
-                     
+
                     if self.config["camera"][self.name]["settings"]["transpose_fits"]:
                         hdu = fits.PrimaryHDU(
                             self.img.transpose().astype('float32'))

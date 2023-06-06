@@ -86,8 +86,8 @@ site_config = {
     'mpc_code':  'ZZ24',    # This is made up for now.
     'time_offset':  -6.0,   # These two keys may be obsolete give the new TZ stuff
     'timezone': 'MDT',      # This was meant to be coloquial Time zone abbreviation, alternate for "TX_data..."
-    'latitude': 35.554298,     # Decimal degrees, North is Positive
-    'longitude': -105.870197,   # Decimal degrees, West is negative
+    'latitude': 35.554298,     # ARo 35d33m15.472s Decimal degrees, North is Positive
+    'longitude': -105.870197,   #ARO -105d52m12.7092s Decimal degrees, West is negative
     'elevation': 2194,    # meters above sea level
     'reference_ambient':  10.0,  # Degrees Celsius.  Alternately 12 entries, one for every - mid month.
     'reference_pressure':  794.0,    #mbar   A rough guess 20200315
@@ -427,6 +427,7 @@ site_config = {
             "driver": "LCO.dual",  # 'ASCOM.FLI.FilterWheel',   #'MAXIM',
             'ip_string': 'http://10.0.0.110',
             "dual_wheel": True,
+            'filter_reference': 'w',
             'settings': {
                 'filter_count': 43,
                 "filter_type": "50mm_sq.",
@@ -514,7 +515,7 @@ site_config = {
             'name': 'sq002ms',      # Important because this points to a server file structure by that name.
             'desc':  'QHY 600Pro',
             'service_date': '20211111',
-            'driver': "ASCOM.QHYCCD_CAM2.Camera", #"Maxim.CCDCamera",  # "ASCOM.QHYCCD.Camera", ## 'ASCOM.FLI.Kepler.Camera',
+            'driver': "ASCOM.QHYCCD.Camera", #"Maxim.CCDCamera",  # "ASCOM.QHYCCD.Camera", ## 'ASCOM.FLI.Kepler.Camera',
             'detector':  'Sony IMX455',
             'manufacturer':  'QHY',
             'use_file_mode':  False,
@@ -525,7 +526,26 @@ site_config = {
                 'is_osc' : False,
                 
                 'transpose_fits' : False,
+                'flipx_fits': False,
+                'flipy_fits': False,
+                'rotate90_fits': False,
+                'rotate180_fits': False,
+                'rotate270_fits': False,
                 'transpose_jpeg' : True,
+                'squash_on_x_axis': False,
+                'flipx_jpeg': False,
+                'flipy_jpeg': False,
+                'rotate90_jpeg': False,
+                'rotate180_jpeg': False,
+                'rotate270_jpeg': False,
+                'reduced_image_edge_crop': 30,
+                'focus_image_crop_width': 0.0,
+                'focus_image_crop_height': 0.0,
+                'focus_jpeg_size': 1500,
+                'platesolve_image_crop': 0.0,
+                'sep_image_crop_width': 0.0,
+                'sep_image_crop_Height': 0.0,
+                'do_cosmics':  False,
                 'osc_bayer' : 'RGGB',
                 'crop_preview': False,
                 'crop_preview_ybottom': 1,
@@ -533,7 +553,7 @@ site_config = {
                 'crop_preview_xleft': 1,
                 'crop_preview_xright': 1,
                 'temp_setpoint': -12.5,
-                'calib_setpoints': [-12.5, -10, -7.5, -5],  # Should vary with season? by day-of-year mod len(list)
+                'calib_setpoints': [-7.5, -5, 0],  # Should vary with season? by day-of-year mod len(list)
                 'day_warm': False,
                 'cooler_on': True,
                 'x_start':  0,
@@ -578,20 +598,20 @@ site_config = {
                 
                 'cosmics_at_default' : 'yes',
                 'cosmics_at_maximum' : 'yes',
-                'cycle_time':  [18, 15, 15, 12],  # 3x3 requires a 1, 1 reaout then a software bin, so slower.
+                'cycle_time':  18,  # 3x3 requires a 1, 1 reaout then a software bin, so slower.
                 'rbi_delay':  0.,      # This being zero says RBI is not available, eg. for SBIG.
                 'is_cmos':  True,
                 'is_color':  False,
                 'can_set_gain':  False,
                 'bayer_pattern':  None,    # Need to verify R as in RGGB is pixel x=0, y=0, B is x=1, y = 1
-                'reference_gain': [1.3, 2.6, 3.9, 5.2],     #One val for each binning.
-                'reference_noise': [6, 6, 6, 6],    #  NB Guess
-                'reference_dark': [.2, .8, 1.8, 3.2],  #  Guess
+                'reference_gain': 1.3,#  3  2.6, 3.9, 5.2],     #One val for each binning.
+                'reference_noise': 1.5, # 6, 6, 6],    #  NB Guess
+                'reference_dark': 0.1, #, .8, 1.8, 3.2],  #  Guess
                 'ref_dark': 360.0,    #  this needs fixing.
                 'long_dark':600.0,
                 'max_linearity':  60000,   # Guess  60% of this is max counts for skyflats.  75% rejects the skyflat
-                'saturate':  [[1, 65000], [2,262000], [3,589815], [4, 1048560]] ,   # e-.  This is a close guess, not measured, but taken from data sheet.
-                'fullwell_capacity': [80000, 320000, 720000, 1280000],
+                'saturate':   60000,  #  [2,262000], [3,589815], [4, 1048560]] ,   # e-.  This is a close guess, not measured, but taken from data sheet.
+                'fullwell_capacity': 80000, #  320000, 720000, 1280000],
                                     #hdu.header['RDMODE'] = (self.config['camera'][self.name]['settings']['read_mode'], 'Camera read mode')
                     #hdu.header['RDOUTM'] = (self.config['camera'][self.name]['readout_mode'], 'Camera readout mode')
                     #hdu.header['RDOUTSP'] = (self.config['camera'][self.name]['settings']['readout_speed'], '[FPS] Readout speed')
@@ -603,10 +623,11 @@ site_config = {
                 'areas_implemented': ["Full", '2x2', '4x4',"600%", "500%", "450%", "300%", "220%", "150%", "133%", "100%", "Sqr", '71%', '50%',  '35%', '25%', '12%'],
                 'default_area':  "Full",
                 'has_darkslide':  True,
+                'darkslide_com': 'COM10',
                 'shutter_type': "Electronic",
-                'flat_bin_spec': ['1,1','2,2'],    #Default binning for flats
-                'bias_dark_bin_spec': ['1,1','2,2'],    #Default binning for flats
-                'bin_enable': ['1,1', '2,2'],
+                'flat_bin_spec': '1,1', #'2,2'],    #Default binning for flats
+                'bias_dark_bin_spec': '1,1', #'2,2'],    #Default binning for flats
+                'bin_enable': '1,1', #'2,2'],
                 'dark_length' : 900,
                 'bias_count' : 10,
                 'dark_count' : 10,
@@ -614,7 +635,6 @@ site_config = {
                 'optimal_bin':  [2, 2, 0.575],
                 'max_res_bin':  [1, 1, 0.2876],
                 'pix_scale': [0.2876, 0.575, 0.863, 1.15],    #  1.4506,  bin-2  2* math.degrees(math.atan(9/3962000))*3600
-                'darkslide_com':  'COM17',
                 'has_screen': True,
                 'screen_settings':  {
                     'screen_saturation':  157.0,   # This reflects WMD setting and needs proper values.

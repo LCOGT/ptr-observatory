@@ -380,6 +380,7 @@ class Observatory:
                 elif dev_type == "screen":
                     device = Screen(driver, name, self.config)
                 elif dev_type == "filter_wheel":
+
                     device = FilterWheel(driver, name, self.config)
                 elif dev_type == "selector":
                     device = Selector(driver, name, self.config)
@@ -837,7 +838,7 @@ class Observatory:
         # Also an area to put things to irregularly check if things are still connected, e.g. cooler
         #
         # Probably we don't want to run these checkes EVERY status update, just every 5 minutes
-        if time.time() - self.time_since_safety_checks > 300:
+        if False and ( time.time() - self.time_since_safety_checks > 300):
             self.time_since_safety_checks=time.time()
             
             #breakpoint()
@@ -847,8 +848,10 @@ class Observatory:
             # Opening and Shutting should be done more glamorously through the
             # sequencer, but if all else fails, this routine should save
             # the observatory from rain, wasps and acts of god.
-            print ("Roof Status: " + str(g_dev['enc'].status['shutter_status']))
-            
+            try:
+                print ("Roof Status: " + str(g_dev['enc'].status['shutter_status']))
+            except:
+                plog("ARO not reporting roof sataus in obs line 854")
             
             if g_dev['enc'].status['shutter_status'] == 'Software Fault':
                 print ("Software Fault Detected. Will alert the authorities!")

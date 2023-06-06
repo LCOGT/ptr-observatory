@@ -60,10 +60,12 @@ class Focuser:
             "Focuser connected, at:  ",
             round(self.focuser.Position * self.steps_to_micron, 1),
         )
+
         self.reference = None
         self.last_known_focus = None
         self.last_temperature = None
         self.last_source = None
+
         self.time_of_last_focus = datetime.datetime.now() - datetime.timedelta(
             days=1
         )  # Initialise last focus as yesterday
@@ -148,6 +150,7 @@ class Focuser:
         return float(self.config["reference"])
 
     def get_status(self):
+
         try:
             if g_dev['fil'].null_filterwheel == False:
                 status = {
@@ -174,7 +177,6 @@ class Focuser:
             print ("usually the focusser program has crashed. This breakpoint is to help catch and code in a fix - MTF")
             print ("possibly just institute a full reboot")
             print (traceback.format_exc())
-            breakpoint()
 
 
         # except:
