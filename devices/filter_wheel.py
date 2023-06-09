@@ -69,9 +69,9 @@ class FilterWheel:
                 self.ascom = False
                 self.dual = True
                 self.custom = True
-                self.filter_selected = self.filter_data[self.filter_reference][0]
-                self.filter_number = self.filter_reference
-                self.filter_offset = self.filter_data[self.filter_reference][2]
+                #self.filter_selected = self.filter_data[self.filter_reference][0]
+                #self.filter_number = self.filter_reference
+                #self.filter_offset = self.filter_data[self.filter_reference][2]
             elif isinstance(driver, list) and self.dual_filter:
                 # TODO: Fix this, THIS IS A FAST KLUDGE TO GET MRC WORKING, NEED TO VERIFY THE FILTER ORDERING
                 self.filter_back = win32com.client.Dispatch(driver[0])  # Closest to Camera
@@ -83,9 +83,9 @@ class FilterWheel:
                 self.filter_back.Position = 0
                 self.dual = True
                 self.custom = False
-                self.filter_selected = self.filter_data[self.filter_reference][0]
-                self.filter_number = self.filter_reference
-                self.filter_offset = self.filter_data[self.filter_reference][2]
+                #self.filter_selected = self.filter_data[self.filter_reference][0]
+                #self.filter_number = self.filter_reference
+                #self.filter_offset = self.filter_data[self.filter_reference][2]
                 # First setup:
                 #time.sleep(1)
                 while self.filter_front.Position == -1:

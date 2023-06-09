@@ -31,9 +31,9 @@ pathdone = 0
 cwd = str(pathlib.Path().resolve())
 hwd = cwd.replace("ptr-observatory", "")
 hostname_file = glob.glob(hwd + "hostname*")
-
+#breakpoint()
 try:
-    site_name = hostname_file[0].split("hostname")[1]
+    site_name = hostname_file[0].replace('.txt','').split("hostname")[1]
     # print(
     #     "Adding new config path: "
     #     + str(os.path.join(pathlib.Path().resolve(), "configs", site_name))
