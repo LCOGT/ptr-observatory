@@ -7,6 +7,10 @@ Updated 20220914 WER   This version does not support color camera channel.
 @author: wrosing
 
 NB NB NB  If we have one config file then paths need to change depending upon which host does what job.
+
+aro-0m35   10.0.0.73
+aro_wema   10.0.0.50
+Dragonfly  
 '''
 
 #                                                                                                  1         1         1
@@ -674,7 +678,8 @@ site_config = {
                 'east_offset': 0.0,     # Not sure why these three are even here.
                 'rotation': 0.0,        # Probably remove.
                 'min_exposure': 0.00001,
-                'max_exposure': 360.0,
+                'ma)xexposure': 360,
+                'max_daytime_exposure': 0.5,
                 'can_subframe':  True,
                 'min_subframe':  [128, 128],
                 
@@ -707,6 +712,9 @@ site_config = {
                 'has_darkslide':  True,
                 'darkslide_com': 'COM17',
                 'shutter_type': "Electronic",
+                'number_of_bias_to_collect': 17,
+                'number_of_dark_to_collect': 9,
+                'dark_exposure': 360,
                 'flat_bin_spec': '1,1', #'2,2'],    #Default binning for flats
                 'bias_dark_bin_spec': '1,1', #'2,2'],    #Default binning for flats
                 'bin_enable': '1,1', #'2,2'],

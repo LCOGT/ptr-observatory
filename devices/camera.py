@@ -765,6 +765,8 @@ class Camera:
                 self.darkslide_open = True
                 self.darkslide_state = 'Open'
 
+        #breakpoint()
+
 
         # A flag to tell the camera main queue
         # whether the separate sep thread has completed yet
