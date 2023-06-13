@@ -2948,14 +2948,15 @@ sel
         #if aws_enclosure_status["shutter_status"] in ['Closed','closed']:
         #    g_dev['seq'].time_roof_last_shut=time.time()
         
-        
-        if g_dev['seq'].last_roof_status == 'Closed' and aws_enclosure_status["shutter_status"] in ['Open','open']:
-            g_dev['seq'].time_roof_last_opened=time.time()  
-            g_dev['seq'].last_roof_status == 'Open'
-            
-        if g_dev['seq'].last_roof_status == 'Open' and aws_enclosure_status["shutter_status"] in ['Closed','closed']:
-            g_dev['seq'].last_roof_status == 'Closed'
-        
+        try:
+            if g_dev['seq'].last_roof_status == 'Closed' and aws_enclosure_status["shutter_status"] in ['Open','open']:
+                g_dev['seq'].time_roof_last_opened=time.time()  
+                g_dev['seq'].last_roof_status == 'Open'
+                
+            if g_dev['seq'].last_roof_status == 'Open' and aws_enclosure_status["shutter_status"] in ['Closed','closed']:
+                g_dev['seq'].last_roof_status == 'Closed'
+        except:
+            plog("Glitch on getting shutter status in aws call.")
         
         status = {'shutter_status': aws_enclosure_status["shutter_status"],
                   'enclosure_synchronized': aws_enclosure_status["enclosure_synchronized"],  # self.following, 20220103_0135 WER
