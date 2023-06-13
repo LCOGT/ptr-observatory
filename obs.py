@@ -2926,15 +2926,22 @@ sel
             aws_enclosure_status['status']['enclosure']['enclosure1']['dome_slewing'] = aws_enclosure_status['status']['enclosure']['enclosure1']['dome_slewing']['val']
             aws_enclosure_status['status']['enclosure']['enclosure1']['shutter_status'] = aws_enclosure_status['status']['enclosure']['enclosure1']['shutter_status']['val']
             
-            
-            
+            #aws_enclosure_status['server_timestamp_ms'] = int(time.time())
+            #aws_enclosure_status['site'] = self.obs_id
+            #plog(aws_enclosure_status)
             #breakpoint()
             try:
                 self.send_status_queue.put((self.name, 'enclosure', aws_enclosure_status['status']), block=False)
+                #self.send_status_queue.put((self.name, 'enclosure', aws_enclosure_status), block=False)
+                
+            #breakpoint()
+            except Exception as e:
                 #breakpoint()
-            except:
+                #plog ("aws enclosure send failed ", e)
                 pass
+            
             aws_enclosure_status=aws_enclosure_status['status']['enclosure']['enclosure1']
+        
         except Exception as e:
             plog("Failed to get aws enclosure status. Usually not fatal:  ", e)
         

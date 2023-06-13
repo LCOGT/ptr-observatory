@@ -394,10 +394,10 @@ site_config = {
             #F4.9 setup
             'start_at_config_reference': True,
             'use_focuser_temperature': False,
-            'reference':12050,    #  20210313  Nominal at 10C Primary temperature
-            'ref_temp':  12050.0,    #  Update when pinning reference
+            'reference':26000,    #  20210313  Nominal at 10C Primary temperature
+            'ref_temp':  26000.0,    #  Update when pinning reference
             'coef_c': 0,   #  Negative means focus moves out as Primary gets colder
-            'coef_0': 12050,  #  Nominal intercept when Primary is at 0.0 C.
+            'coef_0': 26000,  #  Nominal intercept when Primary is at 0.0 C.
             'coef_date':  '20220914',    #This appears to be sensible result 44 points -13 to 3C'reference':  6431,    #  Nominal at 10C Primary temperature
             # #F9 setup
             # 'reference': 4375,    #   Guess 20210904  Nominal at 10C Primary temperature
@@ -493,7 +493,7 @@ site_config = {
             
             "filter_settle_time": 0, #how long to wait for the filter to settle after a filter change(seconds)
 
-            'flat_sky_gain' : 900,
+            'flat_sky_gain' : 450,
 
             "driver":   None,   #"LCO.dual",  #  'ASCOM.FLI.FilterWheel',
             #"driver":   "Maxim.Image",   #"LCO.dual",  #  'ASCOM.FLI.FilterWheel',
@@ -905,7 +905,7 @@ site_config = {
 
                 'number_of_bias_to_collect' : 32,
                 'number_of_dark_to_collect' : 32,
-                'number_of_flat_to_collect' : 10,
+                'number_of_flat_to_collect' : 32,
                 'number_of_bias_to_store' : 32,
                 'number_of_dark_to_store' : 32,
                 'number_of_flat_to_store' : 32,
