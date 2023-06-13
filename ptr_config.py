@@ -62,7 +62,7 @@ if pathdone == 0:
     sys.path.append(os.path.join(pathlib.Path().resolve(), "configs", host_site))
 
 try:
-    from site_config import *
+    from obs_config import *
 
 except ImportError:
     print(
