@@ -919,7 +919,7 @@ class Mount:
             return
         
         # Fourth thing, check that the roof is open and we are enabled to observe
-        if (g_dev['obs'].open_and_enabled_to_observe==False and g_dev['enc'].mode == 'Automatic') and (not g_dev['obs'].debug_flag):
+        if (g_dev['obs'].open_and_enabled_to_observe==False ) and (not g_dev['obs'].debug_flag):
             g_dev['obs'].send_to_user("Refusing pointing request as the observatory is not enabled to observe.")
             plog("Refusing pointing request as the observatory is not enabled to observe.")
             return
@@ -1337,7 +1337,7 @@ class Mount:
                 plog("Refusing pointing request as it is outside of skyflat pointing time.")
                 return
             
-            if (g_dev['obs'].open_and_enabled_to_observe==False and g_dev['enc'].mode == 'Automatic') and (not g_dev['obs'].debug_flag):
+            if (g_dev['obs'].open_and_enabled_to_observe==False ) and (not g_dev['obs'].debug_flag):
                 g_dev['obs'].send_to_user("Refusing skyflat pointing request as the observatory is not enabled to observe.")
                 plog("Refusing skyflat pointing request as the observatory is not enabled to observe.")
                 return

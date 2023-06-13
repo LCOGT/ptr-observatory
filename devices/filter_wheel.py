@@ -385,7 +385,7 @@ class FilterWheel:
                     .text.split('"position":')[1]
                     .split("}")[0]
                 )
-                plog(r0_t, r1_t)
+                #plog(r0_t, r1_t)
                 if r0_t == 808 or r1_t == 808:
                     #time.sleep(1)
                     continue
