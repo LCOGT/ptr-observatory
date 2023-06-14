@@ -60,12 +60,12 @@ site_config = {
                                  # Fat is intended to be simple since
                                  # there is so little to control.
     'client_hostname':"ARO-0m30",     # Generic place for this host to stash.
-    'client_path': 'F:/ptr/',
+    'client_path': 'Q:/ptr/',
     #'alt_path': '//house-computer/saf_archive_2/archive/sq01/',
-    'alt_path': 'F:/ptraltpath',
+    'alt_path': 'Q:/ptraltpath',
     
     'save_to_alt_path' : 'no',
-    'archive_path': 'F:/ptr/',       # Where images are kept.
+    'archive_path': 'Q:/ptr/',       # Where images are kept.
     
     'local_calibration_path': 'F:/ptr/', # THIS FOLDER HAS TO BE ON A LOCAL DRIVE, not a network drive due to the necessity of huge memmap files
     
@@ -599,7 +599,7 @@ site_config = {
                 # If the pixel scale is well-sampled (e.g. 0.6 arcsec per RGGB pixel or 0.3 arcsec per individual debayer pixel)
                 # Then binning is probably fine for all three. For understampled pixel scales - which are likely with OSCs
                 # then binning for focus is recommended. SEP and Platesolve can generally always be binned.                
-                'interpolate_for_focus': True,
+                'interpolate_for_focus': False,
                 'bin_for_focus' : True, # This setting will bin the image for focussing rather than interpolating. Good for 1x1 pixel sizes < 0.6.
                 'focus_bin_value' : 2,
                 'interpolate_for_sep' : False,
@@ -615,7 +615,7 @@ site_config = {
                 'rotate180_fits': False,
                 'rotate270_fits': False,
                 'transpose_jpeg' : True,
-                'squash_on_x_axis': False,
+                'squash_on_x_axis': True,
                 'flipx_jpeg': False,
                 'flipy_jpeg': False,
                 'rotate90_jpeg': False,
@@ -629,6 +629,22 @@ site_config = {
                 'sep_image_crop_width': 0.0,
                 'sep_image_crop_Height': 0.0,
                 'do_cosmics':  False,
+                
+                # The drizzle_value is by the new pixelscale
+                # for the new resolution when stacking in the EVA pipeline
+                # Realistically you want a resolution of about 0.5 arcseconds per pixel
+                # Unless you are at a very poor quality site.
+                # If you have a higher resolution pixelscale it will use that instead.
+                # Generally leave this at 0.5 - the optimal value for ground based
+                # observatories.... unless you have a large field of view.                
+                'drizzle_value_for_later_stacking': 0.5,
+               
+               
+                'do_cosmics' : False,
+                #'dark_length' : 1,
+                
+                
+                
                 'osc_bayer' : 'RGGB',
                 'crop_preview': False,
                 'crop_preview_ybottom': 1,
@@ -710,17 +726,22 @@ site_config = {
                 'areas_implemented': ["Full", '2x2', '4x4',"600%", "500%", "450%", "300%", "220%", "150%", "133%", "100%", "Sqr", '71%', '50%',  '35%', '25%', '12%'],
                 'default_area':  "Full",
                 'has_darkslide':  True,
-                'darkslide_com': 'COM17',
+                'darkslide_com': 'COM10',  #old controller COM10, new one 9a COM17
                 'shutter_type': "Electronic",
-                'number_of_bias_to_collect': 17,
-                'number_of_dark_to_collect': 9,
+                'number_of_bias_to_collect': 63,
+                'number_of_dark_to_collect': 17,
+                'number_of_bias_to_store': 255,   #SWAGS by Wayne 20230613
+                'number_of_dark_to_store': 71,                
+                'number_of_flat_to_collect' : 8,                
+                'number_of_flat_to_store' : 63,
+                
                 'dark_exposure': 360,
                 'flat_bin_spec': '1,1', #'2,2'],    #Default binning for flats
                 'bias_dark_bin_spec': '1,1', #'2,2'],    #Default binning for flats
                 'bin_enable': '1,1', #'2,2'],
                 'dark_length' : 360,
-                'bias_count' : 10,
-                'dark_count' : 10,
+                #'bias_count' : 10,
+                #'dark_count' : 10,
                 'bin_modes':  [[1, 1, 0.2876], [2, 2, 0.575], [3, 3, 0.863], [4, 4, 1.15]],   #Meaning no binning choice if list has only one entry, default should be first.
                 'optimal_bin':  [2, 2, 0.575],
                 'max_res_bin':  [1, 1, 0.2876],
@@ -739,7 +760,7 @@ site_config = {
                 # observatories.... unless you have a large field of view.                
                 'drizzle_value_for_later_stacking': 0.5,
                 
-                'has_screen': True,
+                'has_screen': False,
                 'screen_settings':  {
                     'screen_saturation':  157.0,   # This reflects WMD setting and needs proper values.
                     'screen_x4':  -4E-12,  # 'y = -4E-12x4 + 3E-08x3 - 9E-05x2 + 0.1285x + 8.683     20190731'
