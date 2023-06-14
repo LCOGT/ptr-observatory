@@ -1089,8 +1089,9 @@ sel
         #    pass
 
         # Check that the mount hasn't slewed too close to the sun
+        # If the roof is open and enabled to observe
         try:
-            if not g_dev['mnt'].mount.Slewing:
+            if not g_dev['mnt'].mount.Slewing and self.open_and_enabled_to_observe:
                 sun_coords = get_sun(Time.now())
                 temppointing = SkyCoord((g_dev['mnt'].current_icrs_ra)*u.hour,
                                         (g_dev['mnt'].current_icrs_dec)*u.degree, frame='icrs')
