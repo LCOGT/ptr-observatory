@@ -1,0 +1,1 @@
+wget -c --tries=inf https://s3.amazonaws.com/www.photonranch.org/Kepler.zip
