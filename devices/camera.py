@@ -1932,10 +1932,8 @@ class Camera:
 
 
                 continue
-
-            incoming_image_list = []
-            
-            if self.async_exposure_lock == False and self._imageavailable():   #NB no more file-mode
+            elif self.async_exposure_lock == False and self._imageavailable():   #NB no more file-mode
+                incoming_image_list = []    
                 try:
                     g_dev["mnt"].get_rapid_exposure_status(
                         self.post_mnt
