@@ -151,7 +151,7 @@ class Observatory:
         
         self.config = ptr_config
         self.wema_name = self.config['site_name']
-        self.observatory_location = ptr_config["observatory_location"]
+        #self.observatory_location = ptr_config["observatory_location"]
         self.debug_flag = self.config['debug_mode']
         self.admin_only_flag = self.config['admin_owner_commands_only']
 
@@ -2894,11 +2894,15 @@ sel
         if g_dev['obs'].pointing_correction_requested_by_platesolve_thread:
             g_dev['obs'].pointing_correction_requested_by_platesolve_thread = False
             if g_dev['obs'].pointing_correction_request_time > g_dev['obs'].time_of_last_slew:  # Check it hasn't slewed since request
-                plog("Re-centering Telescope Slightly.")
-                self.send_to_user("Re-centering Telescope Slightly.")
-                g_dev['mnt'].mount.SlewToCoordinatesAsync(g_dev['obs'].pointing_correction_request_ra, g_dev['obs'].pointing_correction_request_dec)
-                g_dev['obs'].time_of_last_slew = time.time()
-                wait_for_slew()
+                
+                if self.config['turn_auto_centering_off']:
+                    plog ("Telescope off-center, but auto-centering turned off")
+                else:
+                    plog("Re-centering Telescope Slightly.")
+                    self.send_to_user("Re-centering Telescope Slightly.")
+                    g_dev['mnt'].mount.SlewToCoordinatesAsync(g_dev['obs'].pointing_correction_request_ra, g_dev['obs'].pointing_correction_request_dec)
+                    g_dev['obs'].time_of_last_slew = time.time()
+                    wait_for_slew()
     
     def get_enclosure_status_from_aws(self):
         

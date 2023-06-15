@@ -38,11 +38,12 @@ site_config = {
     ####################################################
     'site_name' : 'eco', # THIS IS THE NAME OF THE WEMA
     'obs_id': 'eco2',
-    'observatory_location': site_name.lower(),
+    #'observatory_location': site_name.lower(),
     
-    'debug_site_mode': False,
+    #'debug_site_mode': False,
     
-
+    # Auto-cenering is great .... unless you are polar aligning
+    'turn_auto_centering_off': False,
     'debug_mode': False,
     'admin_owner_commands_only': False,
 

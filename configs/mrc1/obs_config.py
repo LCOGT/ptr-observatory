@@ -31,9 +31,12 @@ site_config = {
     ####################################################
     'site_name' : 'mrc',
     'obs_id': 'mrc1',
-    'observatory_location': "SBA",  # Nearest major airport
-    'debug_site_mode': False,
+    #'observatory_location': "SBA",  # Nearest major airport
+    #'debug_site_mode': False,
 
+
+    # Auto-cenering is great .... unless you are polar aligning
+    'turn_auto_centering_off': False,
     'debug_mode': False,
     'admin_owner_commands_only': False,
     'debug_duration_sec': 1800,
