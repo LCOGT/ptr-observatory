@@ -39,6 +39,11 @@ site_config = {
     
 
     'debug_mode': True,
+    
+    # Auto-centering is great.... unless you are polar aligning 
+    'turn_auto_centering_off': True,
+    
+    
     'admin_owner_commands_only': False,
 
     'debug_duration_sec': 7200,
@@ -83,7 +88,8 @@ site_config = {
     'wema_hostname':  'ARO-WEMA',
     'wema_path': 'C:/ptr/',      #Local storage on Wema disk.
     'dome_on_wema':  True,       #NB NB NB CHange this confusing name. 'dome_controlled_by_wema'
-    'site_IPC_mechanism':  'shares',   # ['None', shares', 'shelves', 'redis']
+    #'site_IPC_mechanism':  'shares',   # ['None', shares', 'shelves', 'redis']
+    'site_IPC_mechanism':  'None',   # ['None', shares', 'shelves', 'redis']
     'wema_write_share_path':  'C:/ptr/wema_transfer/',  # Meant to be where Wema puts status data.
     'client_write_share_path':  '//aro-wema/wema_transfer/', #Meant to be a share written to by the TCS computer
     'redis_ip': None,   # None if no redis path present, localhost if redis iself-contained
@@ -614,8 +620,8 @@ site_config = {
                 'rotate90_fits': False,
                 'rotate180_fits': False,
                 'rotate270_fits': False,
-                'transpose_jpeg' : True,
-                'squash_on_x_axis': True,
+                'transpose_jpeg' : False,
+                'squash_on_x_axis': False,
                 'flipx_jpeg': False,
                 'flipy_jpeg': False,
                 'rotate90_jpeg': False,
