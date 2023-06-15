@@ -35,6 +35,12 @@ siteCoordinates = EarthLocation(
     height=site_config["elevation"] * u.m,
 )
 
+# siteCoordinates = EarthLocation(
+#     lat=site_config["site_latitude"] * u.deg,
+#     lon=site_config["site_longitude"] * u.deg,
+#     height=site_config["site_elevation"] * u.m,
+# )
+
 Target = namedtuple(
     "Target", ["ra", "dec", "name", "simbad", "obj", "mag", "size", "pa", "ly", "cdist"]
 )  # last a string with unit
@@ -1969,12 +1975,16 @@ def appToObsRaHa(appRa, appDec, pSidTime):
     appAz, appAlt = transform_haDec_to_azAlt_r(
         appHa, appDec, site_config["latitude"] * DTOR
     )
-    obsAlt, refAsec = apply_refraction_inEl_r(
-        appAlt, g_dev["ocn"].temperature, g_dev["ocn"].pressure
-    )
-    obsHa, obsDec = transform_azAlt_to_haDec_r(
-        appAz, obsAlt, site_config["latitude"] * DTOR
-    )
+    try:
+        obsAlt, refAsec = apply_refraction_inEl_r(
+            appAlt, g_dev["ocn"].temperature, g_dev["ocn"].pressure
+        )
+        obsHa, obsDec = transform_azAlt_to_haDec_r(
+            appAz, obsAlt, site_config["latitude"] * DTOR
+        )
+    except:
+        pass
+    
     raRefr = reduce_ha_r(appHa - obsHa) * HTOS
     decRefr = -reduce_dec_r(appDec - obsDec) * DTOS
     return reduce_ha_r(obsHa), reduce_dec_r(obsDec), refAsec

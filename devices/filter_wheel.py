@@ -35,6 +35,7 @@ class FilterWheel:
             self.filter_screen_sort = self.config["filter_wheel1"]["settings"][
                 "filter_screen_sort"
             ]
+            self.wait_time_after_filter_change=self.config["filter_wheel1"]["filter_settle_time"]
             #self.filter_reference = int(
             #    self.config["filter_wheel1"]["settings"]["filter_reference"]
             #)
@@ -68,9 +69,9 @@ class FilterWheel:
                 self.ascom = False
                 self.dual = True
                 self.custom = True
-                self.filter_selected = self.filter_data[self.filter_reference][0]
-                self.filter_number = self.filter_reference
-                self.filter_offset = self.filter_data[self.filter_reference][2]
+                #self.filter_selected = self.filter_data[self.filter_reference][0]
+                #self.filter_number = self.filter_reference
+                #self.filter_offset = self.filter_data[self.filter_reference][2]
             elif isinstance(driver, list) and self.dual_filter:
                 # TODO: Fix this, THIS IS A FAST KLUDGE TO GET MRC WORKING, NEED TO VERIFY THE FILTER ORDERING
                 self.filter_back = win32com.client.Dispatch(driver[0])  # Closest to Camera
@@ -82,9 +83,9 @@ class FilterWheel:
                 self.filter_back.Position = 0
                 self.dual = True
                 self.custom = False
-                self.filter_selected = self.filter_data[self.filter_reference][0]
-                self.filter_number = self.filter_reference
-                self.filter_offset = self.filter_data[self.filter_reference][2]
+                #self.filter_selected = self.filter_data[self.filter_reference][0]
+                #self.filter_number = self.filter_reference
+                #self.filter_offset = self.filter_data[self.filter_reference][2]
                 # First setup:
                 #time.sleep(1)
                 while self.filter_front.Position == -1:
@@ -384,7 +385,7 @@ class FilterWheel:
                     .text.split('"position":')[1]
                     .split("}")[0]
                 )
-                plog(r0_t, r1_t)
+                #plog(r0_t, r1_t)
                 if r0_t == 808 or r1_t == 808:
                     #time.sleep(1)
                     continue
@@ -431,6 +432,10 @@ class FilterWheel:
                 pass
 
             self.filter_offset = float(self.filter_data[filt_pointer][2])
+
+        if self.wait_time_after_filter_change != 0:
+            plog ("Waiting " + str(self.wait_time_after_filter_change) + " seconds for filter wheel.")
+            time.sleep(self.wait_time_after_filter_change)
 
         return filter_name, match, self.filter_offset
 

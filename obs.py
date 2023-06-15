@@ -1,5 +1,5 @@
 
-""""
+"""
 IMPORTANT TODOs:
 
 WER 20211211
@@ -43,10 +43,10 @@ import ptr_config
 from devices.camera import Camera
 from devices.filter_wheel import FilterWheel
 from devices.focuser import Focuser
-from devices.enclosure import Enclosure
+#from devices.enclosure import Enclosure
 from devices.mount import Mount
 from devices.telescope import Telescope
-from devices.observing_conditions import ObservingConditions
+#from devices.observing_conditions import ObservingConditions
 from devices.rotator import Rotator
 from devices.selector import Selector
 from devices.screen import Screen
@@ -111,6 +111,9 @@ def send_status(obsy, column, status_to_send):
     uri_status = f"https://status.photonranch.org/status/{obsy}/status/"
     # None of the strings can be empty. Otherwise this put faults.
     payload = {"statusType": str(column), "status": status_to_send}
+    
+    
+    #print (payload)
 
     try:
 
@@ -122,6 +125,12 @@ def send_status(obsy, column, status_to_send):
         reqs.post(uri_status, data=data)
     except Exception as e:
         plog("Failed to send_status. Usually not fatal:  ", e)
+        
+    #breakpoint()
+
+
+    
+    
 
 
 debug_flag = None
@@ -139,8 +148,10 @@ class Observatory:
         self.name = name  
         self.obs_id = name
         g_dev['name'] = name
+        
         self.config = ptr_config
-        self.observatory_location = ptr_config["observatory_location"]
+        self.wema_name = self.config['site_name']
+        #self.observatory_location = ptr_config["observatory_location"]
         self.debug_flag = self.config['debug_mode']
         self.admin_only_flag = self.config['admin_owner_commands_only']
 
@@ -148,6 +159,22 @@ class Observatory:
         self.obsid_path = ptr_config["client_path"] + '/' + self.name + '/'
         if not os.path.exists(self.obsid_path):
             os.makedirs(self.obsid_path)
+        self.local_calibration_path = ptr_config['local_calibration_path'] + self.config['obs_id'] + '/'
+        if not os.path.exists(ptr_config['local_calibration_path']):
+            os.makedirs(ptr_config['local_calibration_path'])
+        if not os.path.exists(self.local_calibration_path):
+            os.makedirs(self.local_calibration_path)
+
+        # Kill rotator softwares on boot-up to resync.
+        try:
+            os.system("taskkill /IM AltAzDSConfig.exe /F")
+        except:
+            pass
+        try:
+            os.system('taskkill /IM "Gemini Software.exe" /F')
+        except:
+            pass
+        #breakpoint()
 
         if self.debug_flag:
             self.debug_lapse_time = time.time() + self.config['debug_duration_sec']
@@ -159,30 +186,30 @@ class Observatory:
             g_dev['debug'] = False
             #g_dev['obs'].open_and_enabled_to_observe = False
 
-        if self.config["wema_is_active"]:
-            self.hostname = socket.gethostname()
-            if self.hostname in self.config["wema_hostname"]:
-                self.is_wema = True
-                g_dev["wema_share_path"] = ptr_config["wema_write_share_path"]
-                self.wema_path = g_dev["wema_share_path"]
-            else:
-                # This host is a client
-                self.is_wema = False  # This is a client.
-                self.obsid_path = ptr_config["client_path"] + '/' + self.name + '/'
-                if not os.path.exists(self.obsid_path):
-                    os.makedirs(self.obsid_path)
+        #if self.config["wema_is_active"]:
+        #    self.hostname = socket.gethostname()
+        #    if self.hostname in self.config["wema_hostname"]:
+        #        self.is_wema = True
+        #        g_dev["wema_share_path"] = ptr_config["wema_write_share_path"]
+        #        self.wema_path = g_dev["wema_share_path"]
+        #    else:
+        # This host is a client
+        self.is_wema = False  # This is a client.
+        self.obsid_path = ptr_config["client_path"] + '/' + self.name + '/'
+        if not os.path.exists(self.obsid_path):
+            os.makedirs(self.obsid_path)
 
-                g_dev["obsid_path"] = self.obsid_path
-                g_dev["wema_share_path"] = ptr_config[
-                    "client_write_share_path"
-                ]  # Just to be safe.
-                self.wema_path = g_dev["wema_share_path"]
-        else:
-            self.is_wema = False  # This is a client.
-            self.obsid_path = ptr_config["client_path"] + self.config['obs_id'] + '/'
-            g_dev["obsid_path"] = self.obsid_path
-            g_dev["wema_share_path"] = self.obsid_path  # Just to be safe.
-            self.wema_path = g_dev["wema_share_path"]
+        g_dev["obsid_path"] = self.obsid_path
+        #g_dev["wema_share_path"] = ptr_config[
+        #    "client_write_share_path"
+        #]  # Just to be safe.
+        #self.wema_path = g_dev["wema_share_path"]
+        #else:
+        #    self.is_wema = False  # This is a client.
+        #    self.obsid_path = ptr_config["client_path"] + self.config['obs_id'] + '/'
+        #    g_dev["obsid_path"] = self.obsid_path
+        #    g_dev["wema_share_path"] = self.obsid_path  # Just to be safe.
+        #    self.wema_path = g_dev["wema_share_path"]
 
         if self.config["obsid_is_specific"]:
             self.obsid_is_specific = True
@@ -248,15 +275,7 @@ class Observatory:
         self.create_devices()
         self.loud_status = False
 
-        # Clear out smartstacks directory
-        #plog ("removing and reconstituting smartstacks directory")
-        try:
-            shutil.rmtree(self.obsid_path + "smartstacks")
-        except:
-            plog("problems with removing the smartstacks directory... usually a file is open elsewhere")
-        time.sleep(3)
-        if not os.path.exists(self.obsid_path + "smartstacks"):
-            os.makedirs(self.obsid_path + "smartstacks")
+        
 
         # Check directory system has been constructed
         # for new sites or changed directories in configs.
@@ -271,27 +290,52 @@ class Observatory:
             os.makedirs(self.obsid_path + "tokens")
         if not os.path.exists(self.obsid_path + "astropycache"):
             os.makedirs(self.obsid_path + "astropycache")
-        if not os.path.exists(self.obsid_path + "smartstacks"):
-            os.makedirs(self.obsid_path + "smartstacks")
-        if not os.path.exists(self.obsid_path + "calibmasters"):  # retaining for backward compatibility
-            os.makedirs(self.obsid_path + "calibmasters")
+        
+        
+
+
+        # Local Calibration Paths
+        #self.local_calibration_path = ptr_config['local_calibration_path'] + self.config['obs_id'] + '/'
+        
+        if not os.path.exists(self.local_calibration_path + "calibmasters"):  # retaining for backward compatibility
+            os.makedirs(self.local_calibration_path + "calibmasters")
         camera_name = self.config['camera']['camera_1_1']['name']
-        if not os.path.exists(self.obsid_path + "archive/" + camera_name + "/calibmasters"):
-            os.makedirs(self.obsid_path + "archive/" + camera_name + "/calibmasters")
-        if not os.path.exists(self.obsid_path + "archive/" + camera_name + "/localcalibrations"):
-            os.makedirs(self.obsid_path + "archive/" + camera_name + "/localcalibrations")
+        if not os.path.exists(self.local_calibration_path + "archive/" + camera_name + "/calibmasters"):
+            os.makedirs(self.local_calibration_path + "archive/" + camera_name + "/calibmasters")
+        if not os.path.exists(self.local_calibration_path + "archive/" + camera_name + "/localcalibrations"):
+            os.makedirs(self.local_calibration_path + "archive/" + camera_name + "/localcalibrations")
+        if not os.path.exists(self.local_calibration_path + "archive/" + camera_name + "/localcalibrations/darks"):
+            os.makedirs(self.local_calibration_path + "archive/" + camera_name + "/localcalibrations/darks")
+        if not os.path.exists(self.local_calibration_path + "archive/" + camera_name + "/localcalibrations/biases"):
+            os.makedirs(self.local_calibration_path + "archive/" + camera_name + "/localcalibrations/biases")
+        if not os.path.exists(self.local_calibration_path + "archive/" + camera_name + "/localcalibrations/flats"):
+            os.makedirs(self.local_calibration_path + "archive/" + camera_name + "/localcalibrations/flats")
+               
+            
+        self.calib_masters_folder = self.local_calibration_path + "archive/" + camera_name + "/calibmasters" + '/'
+        self.local_dark_folder = self.local_calibration_path + "archive/" + camera_name + "/localcalibrations/darks" + '/'
+        self.local_bias_folder = self.local_calibration_path + "archive/" + camera_name + "/localcalibrations/biases" + '/'
+        self.local_flat_folder = self.local_calibration_path + "archive/" + camera_name + "/localcalibrations/flats" + '/'
 
-        if not os.path.exists(self.obsid_path + "archive/" + camera_name + "/localcalibrations/darks"):
-            os.makedirs(self.obsid_path + "archive/" + camera_name + "/localcalibrations/darks")
-        if not os.path.exists(self.obsid_path + "archive/" + camera_name + "/localcalibrations/biases"):
-            os.makedirs(self.obsid_path + "archive/" + camera_name + "/localcalibrations/biases")
-        if not os.path.exists(self.obsid_path + "archive/" + camera_name + "/localcalibrations/flats"):
-            os.makedirs(self.obsid_path + "archive/" + camera_name + "/localcalibrations/flats")
+        # Clear out smartstacks directory
+        #plog ("removing and reconstituting smartstacks directory")
+        try:
+            shutil.rmtree(self.local_calibration_path + "smartstacks")
+        except:
+            plog("problems with removing the smartstacks directory... usually a file is open elsewhere")
+        time.sleep(3)
+        if not os.path.exists(self.local_calibration_path + "smartstacks"):
+            os.makedirs(self.local_calibration_path + "smartstacks")
+        
+        # Orphan and Broken paths
+        self.orphan_path=self.config['client_path'] +'/' + g_dev['obs'].name + '/' + 'orphans/'
+        if not os.path.exists(self.orphan_path):
+            os.makedirs(self.orphan_path)
+        
+        self.broken_path=self.config['client_path'] +'/' + g_dev['obs'].name + '/' + 'broken/'
+        if not os.path.exists(self.broken_path):
+            os.makedirs(self.broken_path)
 
-        self.calib_masters_folder = self.obsid_path + "archive/" + camera_name + "/calibmasters" + '/'
-        self.local_dark_folder = self.obsid_path + "archive/" + camera_name + "/localcalibrations/darks" + '/'
-        self.local_bias_folder = self.obsid_path + "archive/" + camera_name + "/localcalibrations/biases" + '/'
-        self.local_flat_folder = self.obsid_path + "archive/" + camera_name + "/localcalibrations/flats" + '/'
 
         self.last_solve_time = datetime.datetime.now() - datetime.timedelta(days=1)
         self.images_since_last_solve = 10000
@@ -327,6 +371,10 @@ class Observatory:
         self.mainjpeg_queue = queue.Queue(maxsize=0)
         self.mainjpeg_queue_thread = threading.Thread(target=self.mainjpeg_process, args=())
         self.mainjpeg_queue_thread.start()
+
+        self.laterdelete_queue = queue.Queue(maxsize=0)
+        self.laterdelete_queue_thread = threading.Thread(target=self.laterdelete_process, args=())
+        self.laterdelete_queue_thread.start()
 
         # Set up command_queue for incoming jobs
         self.cmd_queue = queue.Queue(
@@ -437,7 +485,7 @@ class Observatory:
         #        'hotMap': True, 'coldMap': True, 'script': 'genBiasDarkMaster', }  #This specificatin is obsolete
         #opt = {}
         # No action needed on  the enclosure at this level
-        # self.park_and_close(enc_status)
+        # self. enc_status)
         # NB The above put dome closed and telescope at Park, Which is where it should have been upon entry.
         #g_dev['seq'].bias_dark_script(req, opt, morn=True)
         
@@ -446,7 +494,7 @@ class Observatory:
         #opt = {'area': 150, 'count': 1, 'bin': '2, 2', 'filter': 'focus'}
         #opt = {'area': 150, 'count': 1, 'bin': 1, 'filter': 'focus'}
         #result = g_dev['cam'].expose_command(req, opt, no_AWS=False, solve_it=True)
-
+        # breakpoint()
         #g_dev['seq'].regenerate_local_masters()
 
     def set_last_reference(self, delta_ra, delta_dec, last_time):
@@ -490,13 +538,13 @@ class Observatory:
                 plog(name)
                 driver = devices_of_type[name]["driver"]
                 settings = devices_of_type[name].get("settings", {})
-                if dev_type == "observing_conditions":
-                    device = ObservingConditions(
-                        driver, name, self.config, self.astro_events
-                    )
-                elif dev_type == "enclosure":
-                    device = Enclosure(driver, name, self.config, self.astro_events)
-                elif dev_type == "mount":
+                #if dev_type == "observing_conditions":
+                #    device = ObservingConditions(
+                 #      driver, name, self.config, self.astro_events
+                #    )
+                #elif dev_type == "enclosure":
+                #    device = Enclosure(driver, name, self.config, self.astro_events)
+                if dev_type == "mount":
                     device = Mount(
                         driver, name, settings, self.config, self.astro_events, tel=True
                     )  # NB this needs to be straightened out.
@@ -791,7 +839,7 @@ sel
 
                     body = json.dumps(
                         {
-                            "site": self.config["site"],
+                            "site": self.config["obs_id"],
                             "start": start_aperture[0].replace('/', '-') + 'T' + start_aperture[1] + 'Z',
                             "end": close_aperture[0].replace('/', '-') + 'T' + close_aperture[1] + 'Z',
                             "full_project_details:": False,
@@ -842,8 +890,8 @@ sel
         if bpt:
             plog('UpdateStatus bpt was invoked.')
             # breakpoint()
-        send_enc = False
-        send_ocn = False
+        #send_enc = False
+        #send_ocn = False
 
         # Wait a bit between status updates
         if dont_wait == True:
@@ -868,26 +916,79 @@ sel
         # Loop through all types of devices.
         # For each type, we get and save the status of each device.
 
-        if not self.config["wema_is_active"]:
+        #if not self.config["wema_is_active"]:
             #device_list = self.short_status_devices()
-            device_list = self.device_types
-            remove_enc = False
-        if self.config["wema_is_active"]:
+        device_list = self.device_types
+        #breakpoint()
+            #remove_enc = False
+        #if self.config["wema_is_active"]:
             # used when wema is sending ocn and enc status via a different stream.
-            device_list = self.short_status_devices
-            remove_enc = False
+            #device_list = self.short_status_devices
+            #remove_enc = False
 
-        else:
-            device_list = self.device_types  # used when one computer is doing everything for a site.
-            remove_enc = True
+        #else:
+            #device_list = self.device_types  # used when one computer is doing everything for a site.
+            #remove_enc = True
 
+        obsy = self.name
         if mount_only == True:
             device_list = ['mount', 'telescope']
+
+        # Get current enclosure status
+        #send_enc=False
+        #print ("enc status timer: " + str(datetime.datetime.now() - self.enclosure_status_timer))
+        #print (datetime.timedelta(minutes=self.enclosure_check_period))
+        #if (
+        #    datetime.datetime.now() - self.enclosure_status_timer
+        #) > datetime.timedelta(minutes=self.enclosure_check_period):
+            
+        #    g_dev['obs'].enc_status = g_dev['obs'].get_enclosure_status_from_aws()    
+        #    lane = "enclosure"                
+        #    self.enclosure_status_timer = datetime.datetime.now()
+            #self.send_status_queue.put((obsy, lane, g_dev['obs'].enc_status), block=False)
+        #    print ("status sendy!")
+        #    print (g_dev['obs'].enc_status)
+        
+        #status['enclosure']['enclosure1'] = g_dev['obs'].enc_status
+        
+        # Get current weather status  
+        #send_ocn=False
+        if (
+            datetime.datetime.now() - self.observing_status_timer
+        ) > datetime.timedelta(minutes=self.observing_check_period):
+            g_dev['obs'].ocn_status = g_dev['obs'].get_weather_status_from_aws()
+            #lane = "weather"
+            self.observing_status_timer = datetime.datetime.now()
+            #self.send_status_queue.put((obsy, lane, g_dev['obs'].ocn_status), block=False)
+        
+        if (
+            datetime.datetime.now() - self.enclosure_status_timer
+        ) > datetime.timedelta(minutes=self.enclosure_check_period):
+            
+            g_dev['obs'].enc_status = g_dev['obs'].get_enclosure_status_from_aws()
+            self.enclosure_status_timer = datetime.datetime.now()
+        
+        
+        
+
+
+        # if ocn_status is not None:
+        #     lane = "weather"
+        #     # send_status(obsy, lane, ocn_status)  # NB Do not remove this send for SAF!
+        #     if send_ocn == True:
+        #         self.send_status_queue.put((obsy, lane, ocn_status), block=False)
+        # if enc_status is not None:
+        #     lane = "enclosure"
+        #     #send_status(obsy, lane, enc_status)
+        #     if send_enc == True:
+        #         self.send_status_queue.put((obsy, lane, enc_status), block=False)
 
         for dev_type in device_list:
             #  The status that we will send is grouped into lists of
             #  devices by dev_type.
             status[dev_type] = {}
+            #status['enclosure'] = {}
+            #status['observing_conditions'] = {}
             # Names of all devices of the current type.
             # Recall that self.all_devices[type] is a dictionary of all
             # `type` devices, with key=name and val=device object itself.
@@ -901,86 +1002,96 @@ sel
                 # ...and add it to main status dict.
                 # breakpoint()
 
-                if (
-                   "enclosure" in device_name
-                    # and device_name in self.config["wema_types"]
-                    # and (self.is_wema or self.obsid_is_specific)
-                ):
 
-                    if self.config['enclosure']['enclosure1']['driver'] == None and not self.obsid_is_specific:
-                        # Even if no connection send a satus
-                        status = {'shutter_status': "No enclosure.",
-                                  'enclosure_synchronized': False,  # self.following, 20220103_0135 WER
-                                  'dome_azimuth': 0,
-                                  'dome_slewing': False,
-                                  'enclosure_mode': "No Enclosure",
-                                  'enclosure_message': "No message"},  # self.state}#self.following, 20220103_0135 WER
+                
 
-                    elif (
-                        datetime.datetime.now() - self.enclosure_status_timer
-                    ) < datetime.timedelta(minutes=self.enclosure_check_period):
-                        result = None
-                        send_enc = False
-                    else:
-                        #plog("Running enclosure status check")
-                        self.enclosure_status_timer = datetime.datetime.now()
-                        send_enc = True
 
-                        result = device.get_status()
+                # if (
+                #    "enclosure" in device_name
+                #     # and device_name in self.config["wema_types"]
+                #     # and (self.is_wema or self.obsid_is_specific)
+                # ):
 
-                elif ("observing_conditions" in device_name
-                      and self.config['observing_conditions']['observing_conditions1']['driver'] == None):
-                    # Here is where the weather config gets updated.
-                    if (
-                        datetime.datetime.now() - self.observing_status_timer
-                    ) < datetime.timedelta(minutes=self.observing_check_period):
-                        result = None
-                        send_ocn = False
-                    else:
-                        #plog("Running weather status check.")
-                        self.observing_status_timer = datetime.datetime.now()
-                        result = device.get_noocndevice_status()
-                        send_ocn = True
-                        if self.obsid_is_specific:
-                            remove_enc = False
+                #     if self.config['enclosure']['enclosure1']['driver'] == None and not self.obsid_is_specific:
+                #         # Even if no connection send a satus
+                #         status = {'shutter_status': "No enclosure.",
+                #                   'enclosure_synchronized': False,  # self.following, 20220103_0135 WER
+                #                   'dome_azimuth': 0,
+                #                   'dome_slewing': False,
+                #                   'enclosure_mode': "No Enclosure",
+                #                   'enclosure_message': "No message"},  # self.state}#self.following, 20220103_0135 WER
 
-                elif (
-                    "observing_conditions" in device_name
-                    and device_name in self.config["wema_types"]
-                    and (self.is_wema or self.obsid_is_specific)
-                ):
-                    # Here is where the weather config gets updated.
-                    if (
-                        datetime.datetime.now() - self.observing_status_timer
-                    ) < datetime.timedelta(minutes=self.observing_check_period):
-                        result = None
-                        send_ocn = False
-                    else:
-                        plog("Running weather status check.")
-                        self.observing_status_timer = datetime.datetime.now()
-                        result = device.get_status(g_dev=g_dev)
-                        send_ocn = True
-                        if self.obsid_is_specific:
-                            remove_enc = False
+                #     elif (
+                #         datetime.datetime.now() - self.enclosure_status_timer
+                #     ) < datetime.timedelta(minutes=self.enclosure_check_period):
+                #         result = None
+                #         send_enc = False
+                #     else:
+                #         #plog("Running enclosure status check")
+                #         self.enclosure_status_timer = datetime.datetime.now()
+                #         send_enc = True
 
+                #         result = device.get_status()
+
+                # elif ("observing_conditions" in device_name
+                #       and self.config['observing_conditions']['observing_conditions1']['driver'] == None):
+                #     # Here is where the weather config gets updated.
+                #     if (
+                #         datetime.datetime.now() - self.observing_status_timer
+                #     ) < datetime.timedelta(minutes=self.observing_check_period):
+                #         result = None
+                #         send_ocn = False
+                #     else:
+                #         #plog("Running weather status check.")
+                #         self.observing_status_timer = datetime.datetime.now()
+                #         result = device.get_noocndevice_status()
+                #         send_ocn = True
+                #         if self.obsid_is_specific:
+                #             remove_enc = False
+
+                # elif (
+                #     "observing_conditions" in device_name
+                #     and device_name in self.config["wema_types"]
+                #     and (self.is_wema or self.obsid_is_specific)
+                # ):
+                #     # Here is where the weather config gets updated.
+                #     if (
+                #         datetime.datetime.now() - self.observing_status_timer
+                #     ) < datetime.timedelta(minutes=self.observing_check_period):
+                #         result = None
+                #         send_ocn = False
+                #     else:
+                #         plog("Running weather status check.")
+                #         self.observing_status_timer = datetime.datetime.now()
+                #         result = device.get_status(g_dev=g_dev)
+                #         send_ocn = True
+                #         if self.obsid_is_specific:
+                #             remove_enc = False
+
+                
+                if 'telescope' in device_name:
+                    status['telescope'] = status['mount']
                 else:
-                    if 'telescope' in device_name:
-                        status['telescope'] = status['mount']
-                    else:
-                        result = device.get_status()
+                    result = device.get_status()
+                    
                 if result is not None:
                     status[dev_type][device_name] = result
 
+        #status['observing_conditions']['observing_conditions1'] = g_dev['obs'].ocn_status
+        #status['enclosure']['enclosure1'] = g_dev['obs'].enc_status
+
         # If the roof is open, then it is open and enabled to observe
-        try:
-            if g_dev['enc'].status['shutter_status'] == 'Open':
+        #try:
+        if not g_dev['obs'].enc_status == None:
+            if g_dev['obs'].enc_status['shutter_status'] == 'Open':
                 self.open_and_enabled_to_observe = True
-        except:
-            pass
+        #except:
+        #    pass
 
         # Check that the mount hasn't slewed too close to the sun
+        # If the roof is open and enabled to observe
         try:
-            if not g_dev['mnt'].mount.Slewing:
+            if not g_dev['mnt'].mount.Slewing and self.open_and_enabled_to_observe:
                 sun_coords = get_sun(Time.now())
                 temppointing = SkyCoord((g_dev['mnt'].current_icrs_ra)*u.hour,
                                         (g_dev['mnt'].current_icrs_dec)*u.degree, frame='icrs')
@@ -1002,33 +1113,24 @@ sel
 
         status["timestamp"] = round((time.time() + t1) / 2.0, 3)
         status["send_heartbeat"] = False
-        try:
-            ocn_status = None
-            enc_status = None
-            ocn_status = {"observing_conditions": status.pop("observing_conditions")}
-            enc_status = {"enclosure": status.pop("enclosure")}
-            device_status = status
-        except:
-            pass
+        #try:
+            #ocn_status = None
+            #enc_status = None
+            #ocn_status = {"observing_conditions": status.pop("observing_conditions")}
+            #enc_status = {"enclosure": status.pop("enclosure")}
+            #device_status = status
+        #except:
+        #    pass
         #plog ("Status update length: " + str(time.time() - beginning_update_status))
         loud = False
         # Consider inhibiting unless status rate is low
-        obsy = self.name
+        
 
         if status is not None:
             lane = "device"
             #send_status(obsy, lane, status)
             self.send_status_queue.put((obsy, lane, status), block=False)
-        if ocn_status is not None:
-            lane = "weather"
-            # send_status(obsy, lane, ocn_status)  # NB Do not remove this send for SAF!
-            if send_ocn == True:
-                self.send_status_queue.put((obsy, lane, ocn_status), block=False)
-        if enc_status is not None:
-            lane = "enclosure"
-            #send_status(obsy, lane, enc_status)
-            if send_enc == True:
-                self.send_status_queue.put((obsy, lane, enc_status), block=False)
+        
         # if loud:
         #    plog("\n\nStatus Sent:  \n", status)
         # else:
@@ -1089,23 +1191,27 @@ sel
 
             # breakpoint()
 
-            # Check that the mount hasn't slewed too close to the sun
-            sun_coords = get_sun(Time.now())
-            temppointing = SkyCoord((g_dev['mnt'].current_icrs_ra)*u.hour,
-                                    (g_dev['mnt'].current_icrs_dec)*u.degree, frame='icrs')
-
-            sun_dist = sun_coords.separation(temppointing)
-            #plog ("sun distance: " + str(sun_dist.degree))
-            if sun_dist.degree < self.config['closest_distance_to_the_sun'] and not g_dev['mnt'].mount.AtPark:
-                g_dev['obs'].send_to_user("Found telescope pointing too close to the sun: " +
-                                          str(sun_dist.degree) + " degrees.")
-                plog("Found telescope pointing too close to the sun: " + str(sun_dist.degree) + " degrees.")
-                g_dev['obs'].send_to_user("Parking scope and cancelling all activity")
-                plog("Parking scope and cancelling all activity")
-                self.cancel_all_activity()
-                if not g_dev['mnt'].mount.AtPark:
-                    g_dev['mnt'].park_command()
-                return
+            
+            if not g_dev['mnt'].mount.AtPark: # Only do the sun check if scope isn't parked
+                # Check that the mount hasn't slewed too close to the sun
+                sun_coords = get_sun(Time.now())
+                try:
+                    temppointing = SkyCoord((g_dev['mnt'].current_icrs_ra)*u.hour,
+                                            (g_dev['mnt'].current_icrs_dec)*u.degree, frame='icrs')
+                except:
+                    breakpoint()
+                sun_dist = sun_coords.separation(temppointing)
+                #plog ("sun distance: " + str(sun_dist.degree))
+                if sun_dist.degree < self.config['closest_distance_to_the_sun'] and not g_dev['mnt'].mount.AtPark:
+                    g_dev['obs'].send_to_user("Found telescope pointing too close to the sun: " +
+                                              str(sun_dist.degree) + " degrees.")
+                    plog("Found telescope pointing too close to the sun: " + str(sun_dist.degree) + " degrees.")
+                    g_dev['obs'].send_to_user("Parking scope and cancelling all activity")
+                    plog("Parking scope and cancelling all activity")
+                    self.cancel_all_activity()
+                    if not g_dev['mnt'].mount.AtPark:
+                        g_dev['mnt'].park_command()
+                    return
 
             # If the shutter is open, check it is meant to be.
             # This is just a brute force overriding safety check.
@@ -1124,92 +1230,97 @@ sel
             #except:
             #    plog("Enc status not reporting, Wema may be OTL.")
 
-            # Roof Checks only if not in Manual mode and not debug mode
-            if g_dev['enc'].mode != 'Manual' or not self.debug_flag:
-                if g_dev['enc'].status is not None:
-                    if g_dev['enc'].status['shutter_status'] == 'Software Fault':
+            # Roof Checks only if not in debug mode
+            # And only check if the scope thinks everything is open and hunky dory
+            if not self.debug_flag and self.open_and_enabled_to_observe:
+                if g_dev['obs'].enc_status is not None:
+                    if g_dev['obs'].enc_status['shutter_status'] == 'Software Fault':
                         plog("Software Fault Detected. Will alert the authorities!")
                         plog("Parking Scope in the meantime")
-                        if self.config['obsid_roof_control'] and g_dev['enc'].mode == 'Automatic':
+                        #if self.config['obsid_roof_control'] and g_dev['enc'].mode == 'Automatic':
+                        self.open_and_enabled_to_observe = False
+                        self.cancel_all_activity()   #NB THis kills bias-dark
+                        if not g_dev['mnt'].mount.AtPark:
+                            if g_dev['mnt'].home_before_park:
+                                g_dev['mnt'].home_command()
+                            g_dev['mnt'].park_command()
+                        # will send a Close call out into the blue just in case it catches
+                        #g_dev['enc'].enclosure.CloseShutter()
+                        #g_dev['seq'].enclosure_next_open_time = time.time(
+                        #) + self.config['roof_open_safety_base_time'] * g_dev['seq'].opens_this_evening
+
+                    if g_dev['obs'].enc_status['shutter_status'] == 'Closing':
+                        #if self.config['obsid_roof_control'] and g_dev['enc'].mode == 'Automatic':
+                            plog("Detected Roof Closing.")
                             self.open_and_enabled_to_observe = False
-                            # self.cancel_all_activity()   #NB THis kills bias-dark
+                            self.cancel_all_activity()    #NB Kills bias dark
                             if not g_dev['mnt'].mount.AtPark:
                                 if g_dev['mnt'].home_before_park:
                                     g_dev['mnt'].home_command()
                                 g_dev['mnt'].park_command()
-                            # will send a Close call out into the blue just in case it catches
-                            g_dev['enc'].enclosure.CloseShutter()
-                            g_dev['seq'].enclosure_next_open_time = time.time(
-                            ) + self.config['roof_open_safety_base_time'] * g_dev['seq'].opens_this_evening
+                            
+                            #g_dev['enc'].enclosure.CloseShutter()
+                            #g_dev['seq'].enclosure_next_open_time = time.time(
+                            #) + self.config['roof_open_safety_base_time'] * g_dev['seq'].opens_this_evening
 
-                    if g_dev['enc'].status['shutter_status'] == 'Closing':
-                        if self.config['obsid_roof_control'] and g_dev['enc'].mode == 'Automatic':
-                            plog(
-                                "Detected Roof Closing. Sending another close command just in case the roof got stuck on this status (this happens!)")
-                            self.open_and_enabled_to_observe = False
-                            # self.cancel_all_activity()    #NB Kills bias dark
-                            g_dev['enc'].enclosure.CloseShutter()
-                            g_dev['seq'].enclosure_next_open_time = time.time(
-                            ) + self.config['roof_open_safety_base_time'] * g_dev['seq'].opens_this_evening
+                    if g_dev['obs'].enc_status['shutter_status'] == 'Error':
+                        
+                        plog("Detected an Error in the Roof Status. Packing up for safety.")
+                        #plog("This is usually because the weather system forced the roof to shut.")
+                        #plog("By closing it again, it resets the switch to closed.")
+                        self.cancel_all_activity()    #NB Kills bias dark
+                        self.open_and_enabled_to_observe = False
+                        #g_dev['enc'].enclosure.CloseShutter()
+                        #g_dev['seq'].enclosure_next_open_time = time.time(
+                        #) + self.config['roof_open_safety_base_time'] * g_dev['seq'].opens_this_evening
+                        # while g_dev['enc'].enclosure.ShutterStatus == 3:
+                        #plog ("closing")
+                        plog("Also Parking the Scope")
+                        if not g_dev['mnt'].mount.AtPark:
+                            if g_dev['mnt'].home_before_park:
+                                g_dev['mnt'].home_command()
+                            g_dev['mnt'].park_command()
 
-                    if g_dev['enc'].status['shutter_status'] == 'Error':
-                        if self.config['obsid_roof_control'] and g_dev['enc'].mode == 'Automatic':
-                            plog("Detected an Error in the Roof Status. Closing up for safety.")
-                            plog("This is usually because the weather system forced the roof to shut.")
-                            plog("By closing it again, it resets the switch to closed.")
-                            # self.cancel_all_activity()    #NB Kills bias dark
-                            self.open_and_enabled_to_observe = False
-                            g_dev['enc'].enclosure.CloseShutter()
-                            g_dev['seq'].enclosure_next_open_time = time.time(
-                            ) + self.config['roof_open_safety_base_time'] * g_dev['seq'].opens_this_evening
-                            # while g_dev['enc'].enclosure.ShutterStatus == 3:
-                            #plog ("closing")
-                            plog("Also Parking the Scope")
-                            if not g_dev['mnt'].mount.AtPark:
-                                if g_dev['mnt'].home_before_park:
-                                    g_dev['mnt'].home_command()
-                                g_dev['mnt'].park_command()
-
-                    roof_should_be_shut = False
+                    #roof_should_be_shut = False
                 else:
                     plog("Enclosure roof status probably not reporting correctly. WEMA down?")
-                try:
-                    if g_dev['enc'].status['shutter_status'] == 'Closing':
-                        if self.config['obsid_roof_control'] and g_dev['enc'].mode == 'Automatic':
-                            plog(
-                                "Detected Roof Closing. Sending another close command just in case the roof got stuck on this status (this happens!)")
-                            self.open_and_enabled_to_observe = False
-                            # self.cancel_all_activity()    #NB Kills bias dark
-                            g_dev['enc'].enclosure.CloseShutter()
-                            g_dev['seq'].enclosure_next_open_time = time.time(
-                            ) + self.config['roof_open_safety_base_time'] * g_dev['seq'].opens_this_evening
+                # try:
+                #     if g_dev['enc'].status['shutter_status'] == 'Closing':
+                #         if self.config['obsid_roof_control'] and g_dev['enc'].mode == 'Automatic':
+                #             plog(
+                #                 "Detected Roof Closing. Sending another close command just in case the roof got stuck on this status (this happens!)")
+                #             self.open_and_enabled_to_observe = False
+                #             # self.cancel_all_activity()    #NB Kills bias dark
+                #             g_dev['enc'].enclosure.CloseShutter()
+                #             g_dev['seq'].enclosure_next_open_time = time.time(
+                #             ) + self.config['roof_open_safety_base_time'] * g_dev['seq'].opens_this_evening
     
-                    if g_dev['enc'].status['shutter_status'] == 'Error':
-                        if self.config['obsid_roof_control'] and g_dev['enc'].mode == 'Automatic':
-                            plog("Detected an Error in the Roof Status. Closing up for safety.")
-                            plog("This is usually because the weather system forced the roof to shut.")
-                            plog("By closing it again, it resets the switch to closed.")
-                            # self.cancel_all_activity()    #NB Kills bias dark
-                            self.open_and_enabled_to_observe = False
-                            g_dev['enc'].enclosure.CloseShutter()
-                            g_dev['seq'].enclosure_next_open_time = time.time(
-                            ) + self.config['roof_open_safety_base_time'] * g_dev['seq'].opens_this_evening
-                            # while g_dev['enc'].enclosure.ShutterStatus == 3:
-                            #plog ("closing")
-                            plog("Also Parking the Scope")
-                            if not g_dev['mnt'].mount.AtPark:
-                                if g_dev['mnt'].home_before_park:
-                                    g_dev['mnt'].home_command()
-                                g_dev['mnt'].park_command()
-                except:
-                    plog("shutter status enclosure tests did not work. Usually shutter status is None")
+                #     if g_dev['enc'].status['shutter_status'] == 'Error':
+                #         if self.config['obsid_roof_control'] and g_dev['enc'].mode == 'Automatic':
+                #             plog("Detected an Error in the Roof Status. Closing up for safety.")
+                #             plog("This is usually because the weather system forced the roof to shut.")
+                #             plog("By closing it again, it resets the switch to closed.")
+                #             # self.cancel_all_activity()    #NB Kills bias dark
+                #             self.open_and_enabled_to_observe = False
+                #             g_dev['enc'].enclosure.CloseShutter()
+                #             g_dev['seq'].enclosure_next_open_time = time.time(
+                #             ) + self.config['roof_open_safety_base_time'] * g_dev['seq'].opens_this_evening
+                #             # while g_dev['enc'].enclosure.ShutterStatus == 3:
+                #             #plog ("closing")
+                #             plog("Also Parking the Scope")
+                #             if not g_dev['mnt'].mount.AtPark:
+                #                 if g_dev['mnt'].home_before_park:
+                #                     g_dev['mnt'].home_command()
+                #                 g_dev['mnt'].park_command()
+                # except:
+                #     plog("shutter status enclosure tests did not work. Usually shutter status is None")
                 roof_should_be_shut = False
 
                 # breakpoint()
                 if (g_dev['events']['End Morn Sky Flats'] < ephem.now() < g_dev['events']['End Morn Bias Dark']):
                     roof_should_be_shut = True
                     self.open_and_enabled_to_observe = False
-                if not self.config['auto_morn_sky_flat'] and self.config['only_scope_that_controls_the_roof']:
+                if not self.config['auto_morn_sky_flat']:
                     if (g_dev['events']['Observing Ends'] < ephem.now() < g_dev['events']['End Morn Bias Dark']):
                         roof_should_be_shut = True
                         self.open_and_enabled_to_observe = False
@@ -1221,35 +1332,36 @@ sel
                     self.open_and_enabled_to_observe = False
 
                 try:
-                    if g_dev['enc'].status['shutter_status'] == 'Open':
+                    if g_dev['obs'].enc_status['shutter_status'] == 'Open':
                         if roof_should_be_shut == True:
-                            plog("Safety check found that the roof was open outside of the normal observing period")
-                            if self.config['obsid_roof_control'] and g_dev['enc'].mode == 'Automatic':
-                                plog("Shutting the roof out of an abundance of caution. This may also be normal functioning")
+                            plog("Safety check notices that the roof was open outside of the normal observing period")
+                            # if self.config['obsid_roof_control'] and g_dev['enc'].mode == 'Automatic':
+                            #     plog("Shutting the roof out of an abundance of caution. This may also be normal functioning")
 
-                                # self.cancel_all_activity()  #NB Kills bias dark
-                                g_dev['enc'].enclosure.CloseShutter()
-                                while g_dev['enc'].enclosure.ShutterStatus == 3:
-                                    plog("closing")
-                                    time.sleep(3)
-                            else:
-                                plog("This scope does not have control of the roof though.")
+                            #     # self.cancel_all_activity()  #NB Kills bias dark
+                            #     g_dev['enc'].enclosure.CloseShutter()
+                            #     while g_dev['enc'].enclosure.ShutterStatus == 3:
+                            #         plog("closing")
+                            #         time.sleep(3)
+                            #else:
+                            #    plog("This scope does not have control of the roof though.")
                 except:
                     plog('Line 1192 Roof shutter status faulted.')
 
                 # If the roof should be shut, then the telescope should be parked.
-                if roof_should_be_shut == True and g_dev['enc'].mode == 'Automatic':
+                if roof_should_be_shut == True:
                     if not g_dev['mnt'].mount.AtPark:
-                        plog('Parking telescope.')
+                        plog('Parking telescope as it is during the period that the roof is meant to be shut.')
                         self.open_and_enabled_to_observe = False
                         # self.cancel_all_activity()   #NB Kills bias dark
                         if g_dev['mnt'].home_before_park:
                             g_dev['mnt'].home_command()
                         # PWI must receive a park() in order to report being parked.  Annoying problem when debugging, because I want tel to stay where it is.
                         g_dev['mnt'].park_command()
-                if g_dev['enc'].status['shutter_status'] is not None:
+
+                if g_dev['obs'].enc_status is not None:
                     # If the roof IS shut, then the telescope should be shutdown and parked.
-                    if g_dev['enc'].status['shutter_status'] == 'Closed':
+                    if g_dev['obs'].enc_status['shutter_status'] == 'Closed':
 
                         if not g_dev['mnt'].mount.AtPark:
                             plog("Telescope found not parked when the observatory roof is shut. Parking scope.")
@@ -1272,10 +1384,11 @@ sel
                     #             g_dev['mnt'].park_command()
 
                     # But after all that if everything is ok, then all is ok, it is safe to observe
-                    if g_dev['enc'].status['shutter_status'] == 'Open' and roof_should_be_shut == False:
+                    if g_dev['obs'].enc_status['shutter_status'] == 'Open' and roof_should_be_shut == False:
                         self.open_and_enabled_to_observe = True
+
                 else:
-                    plog('Shutter status not reporting correctly')
+                    plog("g_dev['obs'].enc_status not reporting correctly")
             #plog("Current Open and Enabled to Observe Status: " + str(self.open_and_enabled_to_observe))
 
             # Check the mount is still connected
@@ -1466,7 +1579,7 @@ sel
                         g_dev['mnt'].park_command()
                         self.time_of_last_slew = time.time()
 
-                    g_dev['enc'].enclosure.CloseShutter()
+                    #g_dev['enc'].enclosure.CloseShutter()
 
             if (g_dev['seq'].enclosure_next_open_time - time.time()) > 0:
                 plog("opens this eve: " + str(g_dev['seq'].opens_this_evening))
@@ -1540,6 +1653,7 @@ sel
                 # Only ingest new large fits.fz files to the PTR archive.
                 if filename.endswith("-EX00.fits.fz"):
                     try:
+                        broken = 0
                         with open(filepath, "rb") as fileobj:
                             tempPTR = 0
                             if self.env_exists == True and (not frame_exists(fileobj)):
@@ -1547,8 +1661,19 @@ sel
                                 #plog ("\nstarting ingester")
                                 retryarchive = 0
                                 while retryarchive < 10:
-                                    try:                                    
-                                        upload_file_and_ingest_to_archive(fileobj)                                    
+                                    try:      
+                                        # Get header explicitly out to send up
+                                        tempheader=fits.open(filepath)
+                                        tempheader=tempheader[1].header
+                                        headerdict = {}
+                                        for entry in tempheader.keys():
+                                            headerdict[entry] = tempheader[entry]
+                                            #print (entry)
+                                            #print ("***********")
+                                            
+                                        #breakpoint()
+                                        
+                                        upload_file_and_ingest_to_archive(fileobj, file_metadata=headerdict)                                    
                                         self.aws_queue.task_done()
                                         tempPTR = 1
                                         retryarchive = 11
@@ -1557,11 +1682,16 @@ sel
                                             try:
                                                 os.remove(filepath)
                                             except:
-                                                plog("Couldn't remove " + str(filepath) + "file after transfer")
+                                                #plog("Couldn't remove " + str(filepath) + " file after transfer, sending to delete queue")
+                                                self.laterdelete_queue.put(filepath, block=False)
                                     except ocs_ingester.exceptions.DoNotRetryError:
-                                        plog ("Couldn't upload to PTR archive")
-                                        plog ("Caught filespecification error properly")
                                         plog((traceback.format_exc()))
+                                        plog ("Couldn't upload to PTR archive: " + str(filepath))
+                                        #breakpoint()
+                                        broken=1
+                                        
+                                        #plog ("Caught filespecification error properly")
+                                        #plog((traceback.format_exc()))
                                         #breakpoint()
                                         retryarchive = 11
                                         tempPTR =0
@@ -1588,8 +1718,19 @@ sel
                                     one_at_a_time = 0
     
                                 except:
+                                    plog(traceback.format_exc())
+                                    #breakpoint()
                                     plog("Connection glitch for the request post, waiting a moment and trying again")
                                     time.sleep(5)
+                        
+                        if broken == 1:
+                        
+                            #breakpoint()
+                            
+                            try:
+                                shutil.move(filepath, self.broken_path + filename)
+                            except:
+                                plog ("Couldn't move " + str(filepath) + " to broken folder.")
                     except Exception as e:
                         plog ("something strange in the AWS uploader", e)
                 # Send all other files to S3.
@@ -1606,11 +1747,14 @@ sel
                                 try:
                                     os.remove(filepath)
                                 except:
-                                    plog("Couldn't remove " + str(filepath) + "file after transfer")
+                                    #plog("Couldn't remove " + str(filepath) + " file after transfer")
+                                    self.laterdelete_queue.put(filepath, block=False)
                             
                             self.aws_queue.task_done()
 
                         except:
+                            plog(traceback.format_exc())
+                            #breakpoint()
                             plog("Connection glitch for the request post, waiting a moment and trying again")
                             time.sleep(5)
 
@@ -1640,6 +1784,34 @@ sel
                     self.status_interval = 10
                 self.status_upload_time = upload_time
                 one_at_a_time = 0
+            else:
+                time.sleep(0.1)
+                
+    def laterdelete_process(self):
+        """This is a thread where things that fail to get 
+        deleted from the filesystem go to get deleted later on.
+        Usually due to slow or network I/O         
+        """
+
+        # This stopping mechanism allows for threads to close cleanly.
+        # one_at_a_time=0
+        while True:
+            if (not self.laterdelete_queue.empty()):  # and one_at_a_time==0
+                (deletefilename) = self.laterdelete_queue.get(block=False)
+                #notdelete=1
+                #while notdelete==1:
+                plog("Deleting: " +str(deletefilename))
+                    
+                self.laterdelete_queue.task_done()
+                try:
+                    os.remove(deletefilename)
+                    #notdelete=0
+                except:
+                    plog("failed to remove: " + str(deletefilename) + " trying again soon")
+                    self.laterdelete_queue.put(deletefilename, block=False)
+                
+                
+                # one_at_a_time=0
             else:
                 time.sleep(0.1)
 
@@ -1775,178 +1947,187 @@ sel
 
                 if not (g_dev['events']['Civil Dusk'] < ephem.now() < g_dev['events']['Civil Dawn']) :
                     plog ("Too bright to consider photometry!")
-
-                is_osc= self.config["camera"][g_dev['cam'].name]["settings"]["is_osc"]
-                interpolate_for_focus= self.config["camera"][g_dev['cam'].name]["settings"]['interpolate_for_focus']
-                bin_for_focus= self.config["camera"][g_dev['cam'].name]["settings"]['bin_for_focus']
-                focus_bin_value= self.config["camera"][g_dev['cam'].name]["settings"]['focus_bin_value']
-                interpolate_for_sep=self.config["camera"][g_dev['cam'].name]["settings"]['interpolate_for_sep']
-                bin_for_sep= self.config["camera"][g_dev['cam'].name]["settings"]['bin_for_sep']
-                sep_bin_value= self.config["camera"][g_dev['cam'].name]["settings"]['sep_bin_value']
-                focus_jpeg_size= self.config["camera"][g_dev['cam'].name]["settings"]['focus_jpeg_size']
-                saturate=g_dev['cam'].config["camera"][g_dev['cam'].name]["settings"]["saturate"]
-                minimum_realistic_seeing=self.config['minimum_realistic_seeing']
-                sep_subprocess=subprocess.Popen(['python','subprocesses/SEPprocess.py'],stdin=subprocess.PIPE,stdout=subprocess.PIPE,bufsize=0)
-                              
-                
-                
-                pickle.dump([hdufocusdata, pixscale, readnoise, avg_foc, focus_image, im_path, text_name, hduheader, cal_path, cal_name, frame_type, focus_position, g_dev['events'],ephem.now(),self.config["camera"][g_dev['cam']
-                                                         .name]["settings"]['focus_image_crop_width'], self.config["camera"][g_dev['cam']
-                                                                                                   .name]["settings"]['focus_image_crop_height'], is_osc,interpolate_for_focus,bin_for_focus,focus_bin_value,interpolate_for_sep,bin_for_sep,sep_bin_value,focus_jpeg_size,saturate,minimum_realistic_seeing
-                                                                                                                                                                           ], sep_subprocess.stdin)
-                                                                                                                             
-                                                                                                                             
-                # pickle.dump([hdufocusdata, pixscale, readnoise, avg_foc, focus_image, im_path, text_name, hduheader, cal_path, cal_name, frame_type, focus_position, g_dev['events'],ephem.now(),self.config["camera"][g_dev['cam']
-                #                                          .name]["settings"]['focus_image_crop_width'], self.config["camera"][g_dev['cam']
-                #                                                                                    .name]["settings"]['focus_image_crop_height'], is_osc,interpolate_for_focus,bin_for_focus,focus_bin_value,interpolate_for_sep,bin_for_sep,sep_bin_value,focus_jpeg_size,saturate,minimum_realistic_seeing
-                #                                                                                                                                                           ], open('subprocesses/testSEPpickle','wb'))
-    
-                del hdufocusdata
-                #plog ("pickling time: " + str(time.time()-pickletime))
+                    # If it doesn't go through SEP then the fits header text file needs to be dumped here
+                    text = open(
+                        im_path + text_name, "w"
+                    )  # This is needed by AWS to set up database.
+                    #breakpoint()
+                    text.write(str(hduheader))
+                    text.close()
+                else:
+                    is_osc= self.config["camera"][g_dev['cam'].name]["settings"]["is_osc"]
+                    interpolate_for_focus= self.config["camera"][g_dev['cam'].name]["settings"]['interpolate_for_focus']
+                    bin_for_focus= self.config["camera"][g_dev['cam'].name]["settings"]['bin_for_focus']
+                    focus_bin_value= self.config["camera"][g_dev['cam'].name]["settings"]['focus_bin_value']
+                    interpolate_for_sep=self.config["camera"][g_dev['cam'].name]["settings"]['interpolate_for_sep']
+                    bin_for_sep= self.config["camera"][g_dev['cam'].name]["settings"]['bin_for_sep']
+                    sep_bin_value= self.config["camera"][g_dev['cam'].name]["settings"]['sep_bin_value']
+                    focus_jpeg_size= self.config["camera"][g_dev['cam'].name]["settings"]['focus_jpeg_size']
+                    saturate=g_dev['cam'].config["camera"][g_dev['cam'].name]["settings"]["saturate"]
+                    minimum_realistic_seeing=self.config['minimum_realistic_seeing']
+                    sep_subprocess=subprocess.Popen(['python','subprocesses/SEPprocess.py'],stdin=subprocess.PIPE,stdout=subprocess.PIPE,bufsize=0)
+                                  
                     
-                # Essentially wait until the subprocess is complete
-                sep_subprocess.communicate()
-
-
-                
-
-                # LOADING UP THE SEP FILE HERE AGAIN
-                
-
-                if os.path.exists(im_path + text_name.replace('.txt', '.sep')):
-                    sources = Table.read(im_path + text_name.replace('.txt', '.sep'), format='csv')
                     
-                    try:
-                        g_dev['cam'].enqueue_for_fastAWS(200, im_path, text_name.replace('.txt', '.sep'))
-                        #plog("Sent SEP up")
-                    except:
-                        plog("Failed to send SEP up for some reason")
-                    
-                    #DONUT IMAGE DETECTOR.
-                    #plog ("The Fitzgerald Magical Donut detector")
-                    binfocus=1
-                    if frame_type == 'focus' and self.config["camera"][g_dev['cam'].name]["settings"]['bin_for_focus']: 
-                        binfocus=self.config["camera"][g_dev['cam'].name]["settings"]['focus_bin_value']
-                    
-                    if frame_type != 'focus' and self.config["camera"][g_dev['cam'].name]["settings"]['bin_for_sep']:                    
-                        binfocus=self.config["camera"][g_dev['cam'].name]["settings"]['sep_bin_value']
+                    pickle.dump([hdufocusdata, pixscale, readnoise, avg_foc, focus_image, im_path, text_name, hduheader, cal_path, cal_name, frame_type, focus_position, g_dev['events'],ephem.now(),self.config["camera"][g_dev['cam']
+                                                             .name]["settings"]['focus_image_crop_width'], self.config["camera"][g_dev['cam']
+                                                                                                       .name]["settings"]['focus_image_crop_height'], is_osc,interpolate_for_focus,bin_for_focus,focus_bin_value,interpolate_for_sep,bin_for_sep,sep_bin_value,focus_jpeg_size,saturate,minimum_realistic_seeing
+                                                                                                                                                                               ], sep_subprocess.stdin)
+                                                                                                                                 
+                                                                                                                                 
+                    # pickle.dump([hdufocusdata, pixscale, readnoise, avg_foc, focus_image, im_path, text_name, hduheader, cal_path, cal_name, frame_type, focus_position, g_dev['events'],ephem.now(),self.config["camera"][g_dev['cam']
+                    #                                          .name]["settings"]['focus_image_crop_width'], self.config["camera"][g_dev['cam']
+                    #                                                                                    .name]["settings"]['focus_image_crop_height'], is_osc,interpolate_for_focus,bin_for_focus,focus_bin_value,interpolate_for_sep,bin_for_sep,sep_bin_value,focus_jpeg_size,saturate,minimum_realistic_seeing
+                    #                                                                                                                                                           ], open('subprocesses/testSEPpickle','wb'))
+        
+                    #
+                    #plog ("pickling time: " + str(time.time()-pickletime))
                         
-                    xdonut=np.median(pow(pow(sources['x'] - sources['xpeak'],2),0.5))*pixscale*binfocus
-                    ydonut=np.median(pow(pow(sources['y'] - sources['ypeak'],2),0.5))*pixscale*binfocus
-                    if xdonut > 3.0 or ydonut > 3.0 or np.isnan(xdonut) or np.isnan(ydonut):
-                        plog ("Possible donut image detected.")    
-                        plog('x ' + str(xdonut))
-                        plog('y ' + str(ydonut))  
+                    # Essentially wait until the subprocess is complete
+                    sep_subprocess.communicate()
+    
+    
                     
+    
+                    # LOADING UP THE SEP FILE HERE AGAIN
                     
-                    if (len(sources) < 2) or ( frame_type == 'focus' and (len(sources) < 10 or len(sources) == np.nan or str(len(sources)) =='nan' or xdonut > 3.0 or ydonut > 3.0 or np.isnan(xdonut) or np.isnan(ydonut))):
-                        #plog ("not enough sources to estimate a reliable focus")
-                        plog ("Did not find an acceptable FWHM for this image.")    
-                        g_dev['cam'].expresult["error"] = True
+    
+                    if os.path.exists(im_path + text_name.replace('.txt', '.sep')):
+                        sources = Table.read(im_path + text_name.replace('.txt', '.sep'), format='csv')
+                        
+                        try:
+                            g_dev['cam'].enqueue_for_fastAWS(200, im_path, text_name.replace('.txt', '.sep'))
+                            #plog("Sent SEP up")
+                        except:
+                            plog("Failed to send SEP up for some reason")
+                        
+                        #DONUT IMAGE DETECTOR.
+                        #plog ("The Fitzgerald Magical Donut detector")
+                        binfocus=1
+                        if frame_type == 'focus' and self.config["camera"][g_dev['cam'].name]["settings"]['bin_for_focus']: 
+                            binfocus=self.config["camera"][g_dev['cam'].name]["settings"]['focus_bin_value']
+                        
+                        if frame_type != 'focus' and self.config["camera"][g_dev['cam'].name]["settings"]['bin_for_sep']:                    
+                            binfocus=self.config["camera"][g_dev['cam'].name]["settings"]['sep_bin_value']
+                            
+                        xdonut=np.median(pow(pow(sources['x'] - sources['xpeak'],2),0.5))*pixscale*binfocus
+                        ydonut=np.median(pow(pow(sources['y'] - sources['ypeak'],2),0.5))*pixscale*binfocus
+                        if xdonut > 3.0 or ydonut > 3.0 or np.isnan(xdonut) or np.isnan(ydonut):
+                            plog ("Possible donut image detected.")    
+                            plog('x ' + str(xdonut))
+                            plog('y ' + str(ydonut))  
+                        
+                        
+                        if (len(sources) < 2) or ( frame_type == 'focus' and (len(sources) < 10 or len(sources) == np.nan or str(len(sources)) =='nan' or xdonut > 3.0 or ydonut > 3.0 or np.isnan(xdonut) or np.isnan(ydonut))):
+                            #plog ("not enough sources to estimate a reliable focus")
+                            plog ("Did not find an acceptable FWHM for this image.")    
+                            g_dev['cam'].expresult["error"] = True
+                            g_dev['cam'].expresult['FWHM'] = np.nan
+                            g_dev['cam'].expresult['No_of_sources'] = np.nan
+                            sources['FWHM'] = [np.nan] * len(sources)
+                            rfp = np.nan
+                            rfr = np.nan
+                            rfs = np.nan
+                            sources = sources
+                        else:
+                            # Get halflight radii
+                            # breakpoint()
+                            # fwhmcalc=(np.array(sources['FWHM']))
+                            fwhmcalc = sources['FWHM']
+                            #fwhmcalc=fwhmcalc[fwhmcalc > 1.0]
+                            fwhmcalc = fwhmcalc[fwhmcalc != 0]  # Remove 0 entries
+                            # fwhmcalc=fwhmcalc[fwhmcalc < 75] # remove stupidly large entries
+        
+                            # sigma clipping iterator to reject large variations
+                            templen = len(fwhmcalc)
+                            while True:
+                                fwhmcalc = fwhmcalc[fwhmcalc < np.median(fwhmcalc) + 3 * np.std(fwhmcalc)]
+                                if len(fwhmcalc) == templen:
+                                    break
+                                else:
+                                    templen = len(fwhmcalc)
+        
+                            fwhmcalc = fwhmcalc[fwhmcalc > np.median(fwhmcalc) - 3 * np.std(fwhmcalc)]
+                            rfp = round(np.median(fwhmcalc), 3)
+                            rfr = round(np.median(fwhmcalc) * pixscale, 3)
+                            rfs = round(np.std(fwhmcalc) * pixscale, 3)
+                            plog("\nImage FWHM:  " + str(rfr) + "+/-" + str(rfs) + " arcsecs, " + str(rfp)
+                                 + " pixels.")
+                            # breakpoint()
+                            g_dev['cam'].expresult["FWHM"] = rfr
+                            g_dev['cam'].expresult["mean_focus"] = avg_foc
+                            g_dev['cam'].expresult['No_of_sources'] = len(sources)
+        
+        
+                        if focus_image != True:
+                            # Focus tracker code. This keeps track of the focus and if it drifts
+                            # Then it triggers an autofocus.
+                            g_dev["foc"].focus_tracker.pop(0)
+                            g_dev["foc"].focus_tracker.append(round(rfr, 3))
+                            plog("Last ten FWHM: " + str(g_dev["foc"].focus_tracker) + " Median: " + str(np.nanmedian(g_dev["foc"].focus_tracker)) + " Last Solved: " + str(g_dev["foc"].last_focus_fwhm))
+                            #plog()
+                            #plog("Median last ten FWHM")
+                            #plog(np.nanmedian(g_dev["foc"].focus_tracker))
+                            #plog("Last solved focus FWHM: " + str(g_dev["foc"].last_focus_fwhm))
+                            #plog(g_dev["foc"].last_focus_fwhm)
+        
+                            # If there hasn't been a focus yet, then it can't check it,
+                            # so make this image the last solved focus.
+                            if g_dev["foc"].last_focus_fwhm == None:
+                                g_dev["foc"].last_focus_fwhm = rfr
+                            else:
+                                # Very dumb focus slip deteector
+                                if (
+                                    np.nanmedian(g_dev["foc"].focus_tracker)
+                                    > g_dev["foc"].last_focus_fwhm
+                                    + self.config["focus_trigger"]
+                                ):
+                                    g_dev["foc"].focus_needed = True
+                                    g_dev["obs"].send_to_user(
+                                        "Focus has drifted to "
+                                        + str(np.nanmedian(g_dev["foc"].focus_tracker))
+                                        + " from "
+                                        + str(g_dev["foc"].last_focus_fwhm)
+                                        + ". Autofocus triggered for next exposures.",
+                                        p_level="INFO",
+                                    )
+                    
+                    else:
+                        plog ("Did not find a source list from SEP for this image.")    
+                        #g_dev['cam'].expresult["error"] = True
                         g_dev['cam'].expresult['FWHM'] = np.nan
                         g_dev['cam'].expresult['No_of_sources'] = np.nan
-                        sources['FWHM'] = [np.nan] * len(sources)
-                        rfp = np.nan
-                        rfr = np.nan
-                        rfs = np.nan
-                        sources = sources
-                    else:
-                        # Get halflight radii
-                        # breakpoint()
-                        # fwhmcalc=(np.array(sources['FWHM']))
-                        fwhmcalc = sources['FWHM']
-                        #fwhmcalc=fwhmcalc[fwhmcalc > 1.0]
-                        fwhmcalc = fwhmcalc[fwhmcalc != 0]  # Remove 0 entries
-                        # fwhmcalc=fwhmcalc[fwhmcalc < 75] # remove stupidly large entries
-    
-                        # sigma clipping iterator to reject large variations
-                        templen = len(fwhmcalc)
-                        while True:
-                            fwhmcalc = fwhmcalc[fwhmcalc < np.median(fwhmcalc) + 3 * np.std(fwhmcalc)]
-                            if len(fwhmcalc) == templen:
-                                break
-                            else:
-                                templen = len(fwhmcalc)
-    
-                        fwhmcalc = fwhmcalc[fwhmcalc > np.median(fwhmcalc) - 3 * np.std(fwhmcalc)]
-                        rfp = round(np.median(fwhmcalc), 3)
-                        rfr = round(np.median(fwhmcalc) * pixscale, 3)
-                        rfs = round(np.std(fwhmcalc) * pixscale, 3)
-                        plog("\nImage FWHM:  " + str(rfr) + "+/-" + str(rfs) + " arcsecs, " + str(rfp)
-                             + " pixels.")
-                        # breakpoint()
-                        g_dev['cam'].expresult["FWHM"] = rfr
-                        g_dev['cam'].expresult["mean_focus"] = avg_foc
-                        g_dev['cam'].expresult['No_of_sources'] = len(sources)
-    
-    
-                    if focus_image != True:
-                        # Focus tracker code. This keeps track of the focus and if it drifts
-                        # Then it triggers an autofocus.
-                        g_dev["foc"].focus_tracker.pop(0)
-                        g_dev["foc"].focus_tracker.append(round(rfr, 3))
-                        plog("Last ten FWHM: " + str(g_dev["foc"].focus_tracker) + " Median: " + str(np.nanmedian(g_dev["foc"].focus_tracker)) + " Last Solved: " + str(g_dev["foc"].last_focus_fwhm))
-                        #plog()
-                        #plog("Median last ten FWHM")
-                        #plog(np.nanmedian(g_dev["foc"].focus_tracker))
-                        #plog("Last solved focus FWHM: " + str(g_dev["foc"].last_focus_fwhm))
-                        #plog(g_dev["foc"].last_focus_fwhm)
-    
-                        # If there hasn't been a focus yet, then it can't check it,
-                        # so make this image the last solved focus.
-                        if g_dev["foc"].last_focus_fwhm == None:
-                            g_dev["foc"].last_focus_fwhm = rfr
-                        else:
-                            # Very dumb focus slip deteector
-                            if (
-                                np.nanmedian(g_dev["foc"].focus_tracker)
-                                > g_dev["foc"].last_focus_fwhm
-                                + self.config["focus_trigger"]
-                            ):
-                                g_dev["foc"].focus_needed = True
-                                g_dev["obs"].send_to_user(
-                                    "Focus has drifted to "
-                                    + str(np.nanmedian(g_dev["foc"].focus_tracker))
-                                    + " from "
-                                    + str(g_dev["foc"].last_focus_fwhm)
-                                    + ". Autofocus triggered for next exposures.",
-                                    p_level="INFO",
-                                )
-                
-                else:
-                    plog ("Did not find a source list from SEP for this image.")    
-                    #g_dev['cam'].expresult["error"] = True
-                    g_dev['cam'].expresult['FWHM'] = np.nan
-                    g_dev['cam'].expresult['No_of_sources'] = np.nan
+                        
                     
-                
-                if os.path.exists(im_path + text_name.replace('.txt', '.rad')):
+                    if os.path.exists(im_path + text_name.replace('.txt', '.rad')):
+                        try:
+                            g_dev['cam'].enqueue_for_fastAWS(250, im_path, text_name.replace('.txt', '.rad'))
+                            #plog("Sent SEP up")
+                        except:
+                            plog("Failed to send RAD up for some reason")
+                    
+                    if frame_type == 'focus':
+                        g_dev["cam"].enqueue_for_fastAWS(100, im_path, text_name.replace('EX00.txt', 'EX10.jpg'))
+                    
                     try:
-                        g_dev['cam'].enqueue_for_fastAWS(250, im_path, text_name.replace('.txt', '.rad'))
+                        g_dev['cam'].enqueue_for_fastAWS(180, im_path, text_name.replace('.txt', '.his'))
                         #plog("Sent SEP up")
                     except:
-                        plog("Failed to send RAD up for some reason")
-                
-                if frame_type == 'focus':
-                    g_dev["cam"].enqueue_for_fastAWS(100, im_path, text_name.replace('EX00.txt', 'EX10.jpg'))
-                
-                try:
-                    g_dev['cam'].enqueue_for_fastAWS(180, im_path, text_name.replace('.txt', '.his'))
-                    #plog("Sent SEP up")
-                except:
-                    plog("Failed to send HIS up for some reason")
+                        plog("Failed to send HIS up for some reason")
+                    
+                    
+    
+                    if self.config['keep_focus_images_on_disk']:
+                        g_dev['cam'].to_slow_process(1000, ('focus', cal_path + cal_name, hdufocusdata, hduheader,
+                                                            frame_type, g_dev["mnt"].current_icrs_ra, g_dev["mnt"].current_icrs_dec))
+    
+                        if self.config["save_to_alt_path"] == "yes":
+                            g_dev['cam'].to_slow_process(1000, ('raw_alt_path', self.alt_path + g_dev["day"] + "/calib/" + cal_name, hdufocusdata, hduheader,
+                                                                frame_type, g_dev["mnt"].current_icrs_ra, g_dev["mnt"].current_icrs_dec))
                 
                 g_dev['cam'].enqueue_for_fastAWS(10, im_path, text_name)
 
-                if self.config['keep_focus_images_on_disk']:
-
-                    g_dev['cam'].to_slow_process(1000, ('focus', cal_path + cal_name, hdufocusdata, hduheader,
-                                                        frame_type, g_dev["mnt"].current_icrs_ra, g_dev["mnt"].current_icrs_dec))
-
-                    if self.config["save_to_alt_path"] == "yes":
-                        g_dev['cam'].to_slow_process(1000, ('raw_alt_path', self.alt_path + g_dev["day"] + "/calib/" + cal_name, hdufocusdata, hduheader,
-                                                            frame_type, g_dev["mnt"].current_icrs_ra, g_dev["mnt"].current_icrs_dec))
-
+                del hdufocusdata
 
                 g_dev['cam'].sep_processing = False
                 self.sep_queue.task_done()
@@ -1987,10 +2168,10 @@ sel
                     bin_for_platesolve= self.config["camera"][g_dev['cam'].name]["settings"]['bin_for_platesolve']
                     platesolve_bin_factor=self.config["camera"][g_dev['cam'].name]["settings"]['platesolve_bin_value']
                     
-                    pickle.dump([hdufocusdata, hduheader, cal_path, cal_name, frame_type, time_platesolve_requested, 
+                    pickle.dump([hdufocusdata, hduheader, self.local_calibration_path, cal_name, frame_type, time_platesolve_requested, 
                      pixscale, pointing_ra, pointing_dec, platesolve_crop, bin_for_platesolve, platesolve_bin_factor, g_dev['cam'].config["camera"][g_dev['cam'].name]["settings"]["saturate"]], platesolve_subprocess.stdin)
                                                                                                                                  
-                    #pickle.dump([hdufocusdata, hduheader, cal_path, cal_name, frame_type, time_platesolve_requested, 
+                    #pickle.dump([hdufocusdata, hduheader, self.local_calibration_path, cal_name, frame_type, time_platesolve_requested, 
                     # pixscale, pointing_ra, pointing_dec, platesolve_crop, bin_for_platesolve, platesolve_bin_factor, g_dev['cam'].config["camera"][g_dev['cam'].name]["settings"]["saturate"]], open('subprocesses/testplatesolvepickle','wb'))                                                                                                             
 
                     del hdufocusdata
@@ -1999,12 +2180,12 @@ sel
                     platesolve_subprocess.communicate()
                     
 
-                    if os.path.exists(cal_path + 'platesolve.pickle'):
-                        solve= pickle.load(open(cal_path + 'platesolve.pickle', 'rb'))                    
+                    if os.path.exists(self.local_calibration_path + 'platesolve.pickle'):
+                        solve= pickle.load(open(self.local_calibration_path + 'platesolve.pickle', 'rb'))                    
                     else:
                         solve= 'error'
                     try:
-                        os.remove(cal_path + 'platesolve.pickle')
+                        os.remove(self.local_calibration_path + 'platesolve.pickle')
                     except:
                         plog ("Could not remove platesolve pickle. ")                        
 
@@ -2058,7 +2239,7 @@ sel
                             "permissive_mount_reset"
                         ] == "yes":
                             g_dev["mnt"].reset_mount_reference()
-                            plog("I've  reset the mount_reference 1")
+                            plog("I've  reset the mount_reference.")
                             g_dev["mnt"].current_icrs_ra = solved_ra
                             #    "ra_j2000_hours"
                             # ]
@@ -2122,10 +2303,13 @@ sel
                                 #g_dev['mnt'].mount.SlewToCoordinatesAsync(pointing_ra + err_ha, pointing_dec + err_dec)
                                 # wait_for_slew()
                                 #plog("Platesolve is requesting to move back on target!")
+                                plog(str(g_dev["mnt"].pier_side) + " <-- pierside TEMP MTF reporting")
+                                #ra_correction_multiplier= self.config['pointing_correction_ra_multiplier']
+                               # dec_correction_multiplier= self.config['pointing_correction_dec_multiplier']
                                 self.pointing_correction_requested_by_platesolve_thread = True
                                 self.pointing_correction_request_time = time.time()
-                                self.pointing_correction_request_ra = pointing_ra + err_ha
-                                self.pointing_correction_request_dec = pointing_dec + err_dec
+                                self.pointing_correction_request_ra = pointing_ra + err_ha #* ra_correction_multiplier)
+                                self.pointing_correction_request_dec = pointing_dec + err_dec# * dec_correction_multiplier)
     
                                 try:
                                     # if g_dev["mnt"].pier_side_str == "Looking West":
@@ -2582,7 +2766,7 @@ sel
                         )
                         imgdata = np.load(paths["red_path"] + paths["red_name01"].replace('.fits','.npy'))
                         
-                        self.to_slow_process(1000,('reduced', paths["red_path"] + paths["red_name01"], imgdata, img[0].header, \
+                        g_dev['cam'].to_slow_process(1000,('reduced', paths["red_path"] + paths["red_name01"], imgdata, img[0].header, \
                                                'EXPOSE', g_dev["mnt"].current_icrs_ra, g_dev["mnt"].current_icrs_dec))
                     
                     if self.config["camera"][g_dev['cam'].name]["settings"]["is_osc"]:
@@ -2590,7 +2774,7 @@ sel
                             paths,
                             smartstackid,
                             self.config["camera"][g_dev['cam'].name]["settings"]["is_osc"],
-                            self.obsid_path,
+                            self.local_calibration_path,
                             pixscale,
                             self.config["camera"][g_dev['cam'].name]["settings"]["transpose_jpeg"],
                             self.config["camera"][g_dev['cam'].name]["settings"]['flipx_jpeg'],
@@ -2710,13 +2894,115 @@ sel
         if g_dev['obs'].pointing_correction_requested_by_platesolve_thread:
             g_dev['obs'].pointing_correction_requested_by_platesolve_thread = False
             if g_dev['obs'].pointing_correction_request_time > g_dev['obs'].time_of_last_slew:  # Check it hasn't slewed since request
-                plog("Re-centering Telescope Slightly.")
-                self.send_to_user("Re-centering Telescope Slightly.")
-                g_dev['mnt'].mount.SlewToCoordinatesAsync(
-                    g_dev['obs'].pointing_correction_request_ra, g_dev['obs'].pointing_correction_request_dec)
-                g_dev['obs'].time_of_last_slew = time.time()
-                wait_for_slew()
+                
+                if self.config['turn_auto_centering_off']:
+                    plog ("Telescope off-center, but auto-centering turned off")
+                else:
+                    plog("Re-centering Telescope Slightly.")
+                    self.send_to_user("Re-centering Telescope Slightly.")
+                    g_dev['mnt'].mount.SlewToCoordinatesAsync(g_dev['obs'].pointing_correction_request_ra, g_dev['obs'].pointing_correction_request_dec)
+                    g_dev['obs'].time_of_last_slew = time.time()
+                    wait_for_slew()
+    
+    def get_enclosure_status_from_aws(self):
+        
+        obsy = self.wema_name
+        """Sends an update to the status endpoint."""
+        uri_status = f"https://status.photonranch.org/status/{obsy}/enclosure/"
+        # None of the strings can be empty. Otherwise this put faults.
+        #payload = {"statusType": str(column), "status": status_to_send}
 
+        #try:
+
+        #    data = json.dumps(payload)
+        #except Exception as e:
+        #    plog("Failed to create status payload. Usually not fatal:  ", e)
+
+        #breakpoint()
+
+        try:
+            aws_enclosure_status=reqs.get(uri_status)
+            
+            aws_enclosure_status=aws_enclosure_status.json()
+            aws_enclosure_status['status']['enclosure']['enclosure1']['enclosure_mode'] = aws_enclosure_status['status']['enclosure']['enclosure1']['enclosure_mode']['val']
+            aws_enclosure_status['status']['enclosure']['enclosure1']['dome_azimuth'] = aws_enclosure_status['status']['enclosure']['enclosure1']['dome_azimuth']['val']
+            aws_enclosure_status['status']['enclosure']['enclosure1']['enclosure_synchronized'] = aws_enclosure_status['status']['enclosure']['enclosure1']['enclosure_synchronized']['val']
+            aws_enclosure_status['status']['enclosure']['enclosure1']['dome_slewing'] = aws_enclosure_status['status']['enclosure']['enclosure1']['dome_slewing']['val']
+            aws_enclosure_status['status']['enclosure']['enclosure1']['shutter_status'] = aws_enclosure_status['status']['enclosure']['enclosure1']['shutter_status']['val']
+            
+            #aws_enclosure_status['server_timestamp_ms'] = int(time.time())
+            #aws_enclosure_status['site'] = self.obs_id
+            #plog(aws_enclosure_status)
+            #breakpoint()
+            try:
+                self.send_status_queue.put((self.name, 'enclosure', aws_enclosure_status['status']), block=False)
+                #self.send_status_queue.put((self.name, 'enclosure', aws_enclosure_status), block=False)
+                
+            #breakpoint()
+            except Exception as e:
+                #breakpoint()
+                #plog ("aws enclosure send failed ", e)
+                pass
+            
+            aws_enclosure_status=aws_enclosure_status['status']['enclosure']['enclosure1']
+        
+        except Exception as e:
+            plog("Failed to get aws enclosure status. Usually not fatal:  ", e)
+        
+        #if aws_enclosure_status["shutter_status"] in ['Closed','closed']:
+        #    g_dev['seq'].time_roof_last_shut=time.time()
+        
+        try:
+            if g_dev['seq'].last_roof_status == 'Closed' and aws_enclosure_status["shutter_status"] in ['Open','open']:
+                g_dev['seq'].time_roof_last_opened=time.time()  
+                g_dev['seq'].last_roof_status == 'Open'
+                
+            if g_dev['seq'].last_roof_status == 'Open' and aws_enclosure_status["shutter_status"] in ['Closed','closed']:
+                g_dev['seq'].last_roof_status == 'Closed'
+        except:
+            plog("Glitch on getting shutter status in aws call.")
+        
+        status = {'shutter_status': aws_enclosure_status["shutter_status"],
+                  'enclosure_synchronized': aws_enclosure_status["enclosure_synchronized"],  # self.following, 20220103_0135 WER
+                  'dome_azimuth': aws_enclosure_status["dome_azimuth"],
+                  'dome_slewing': aws_enclosure_status["dome_slewing"],
+                  'enclosure_mode': aws_enclosure_status["enclosure_mode"]}#,
+                  #'enclosure_message': "No message"}
+
+        return status
+    
+    def get_weather_status_from_aws(self):
+        
+        obsy = self.wema_name
+        """Sends an update to the status endpoint."""
+        uri_status = f"https://status.photonranch.org/status/{obsy}/weather/"
+        # None of the strings can be empty. Otherwise this put faults.
+        #payload = {"statusType": str(column), "status": status_to_send}
+
+        #try:
+
+        #    data = json.dumps(payload)
+        #except Exception as e:
+        #    plog("Failed to create status payload. Usually not fatal:  ", e)
+
+        #breakpoint()
+
+        try:
+            aws_weather_status=reqs.get(uri_status)
+            aws_weather_status=aws_weather_status.json()
+            #breakpoint()
+            aws_weather_status=aws_weather_status['status']['observing_conditions']['observing_conditions1']
+        except Exception as e:
+            plog("Failed to get aws enclosure status. Usually not fatal:  ", e)
+        
+        #status = {'shutter_status': aws_enclosure_status["shutter_status"]['val'],
+        #          'enclosure_synchronized': aws_enclosure_status["enclosure_synchronized"]['val'],  # self.following, 20220103_0135 WER
+        #          'dome_azimuth': aws_enclosure_status["dome_azimuth"]['val'],
+        ##          'dome_slewing': aws_enclosure_status["dome_slewing"]['val'],
+        #          'enclosure_mode': aws_enclosure_status["enclosure_mode"]['val'],
+        #          'enclosure_message': "No message"}
+
+        return aws_weather_status
 
 def wait_for_slew():
 

@@ -49,7 +49,7 @@ class Focuser:
                     plog ("focuser doesn't have ASCOM Connected keyword, attempted to send a positive Link")
                 except:
                     plog ("focuser doesn't have ASCOM Connected keyword, also crashed on focuser.Link")
-                    breakpoint()
+                    
         
         self.micron_to_steps = float(
             config["focuser"]["focuser1"]["unit_conversion"]
