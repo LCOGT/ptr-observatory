@@ -270,8 +270,10 @@ site_config = {
             'pointing_tel': 'tel1',     # This can be changed to 'tel2'... by user.  This establishes a default.
             
             'home_after_unpark' : False,
-            
             'home_before_park' : False,
+            
+            'settle_time_after_unpark' : 10,
+            'settle_time_after_park' : 10,
   #
             'permissive_mount_reset' : 'no', # if this is set to yes, it will reset the mount at startup and when coordinates are out significantly
             'lowest_acceptable_altitude' : -10.0, # Below this altitude, it will automatically try to home and park the scope to recover.

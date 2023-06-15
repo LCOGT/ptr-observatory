@@ -243,6 +243,10 @@ class Mount:
         self.west_clutch_dec_correction = config['mount']['mount1']['west_clutch_dec_correction']
         self.east_flip_ra_correction = config['mount']['mount1']['east_flip_ra_correction']
         self.east_flip_dec_correction = config['mount']['mount1']['east_flip_dec_correction']
+        
+        self.settle_time_after_unpark = config['mount']['mount1']['settle_time_after_unpark']
+        self.settle_time_after_park = config['mount']['mount1']['settle_time_after_park']
+        
         self.refraction = 0
         self.target_az = 0   #Degrees Azimuth
         self.ha_corr = 0
@@ -1418,6 +1422,9 @@ class Mount:
                 self.mount.Park()
                 
                 wait_for_slew()
+            if self.settle_time_after_park > 0:
+                time.sleep(self.settle_time_after_park)
+                plog("Waiting " + str(self.settle_time_after_park) + " seconds for mount to settle.")
 
     def unpark_command(self, req=None, opt=None):
         ''' unpark the telescope mount '''
@@ -1428,6 +1435,11 @@ class Mount:
                 g_dev['obs'].time_of_last_slew=time.time()
                 self.mount.Unpark()
                 wait_for_slew()
+
+                if self.settle_time_after_unpark > 0:
+                    time.sleep(self.settle_time_after_unpark)
+                    plog("Waiting " + str(self.settle_time_after_unpark) + " seconds for mount to settle.")
+
                 if self.home_after_unpark:
                     try: 
                         self.mount.FindHome()
@@ -1436,6 +1448,7 @@ class Mount:
                         home_az = self.settings["home_azimuth"]
                         self.move_to_azalt(home_az, home_alt)
                     wait_for_slew()
+                
 
     def paddle(self):
         return

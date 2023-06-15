@@ -263,6 +263,10 @@ site_config = {
             'home_after_unpark' : True,
             
             'home_before_park' : True,
+            
+            
+            'settle_time_after_unpark' : 0,
+            'settle_time_after_park' : 0,
             'permissive_mount_reset' : 'yes', # if this is set to yes, it will reset the mount at startup and when coordinates are out significantly
             'lowest_acceptable_altitude' : -7.0, # Below this altitude, it will automatically try to home and park the scope to recover.
             'time_inactive_until_park' : 3600.0, # How many seconds of inactivity until it will park the telescope

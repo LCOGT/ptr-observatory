@@ -292,6 +292,9 @@ site_config = {
             'east_flip_dec_correction': 0.0,  #
             'home_after_unpark': False,
             'home_before_park': False,
+            
+            'settle_time_after_unpark' : 0,
+            'settle_time_after_park' : 0,
             # if this is set to yes, it will reset the mount at startup and when coordinates are out significantly'home_after_unpark' : True,
             'permissive_mount_reset': 'yes',
             # Below this altitude, it will automatically try to home and park the scope to recover.
