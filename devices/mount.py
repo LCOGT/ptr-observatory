@@ -212,15 +212,15 @@ class Mount:
         self.inst = 'tel1'
         self.tel = tel   #for now this implies the primary telescope on a mounting.
         self.mount_message = "-"
-        if self.config['wema_is_active']:
-            self.site_is_proxy = True
-        else:
-            self.site_is_proxy = False
-        if self.obsid == 'MRC2':
-            self.has_paddle = config['mount']['mount2']['has_paddle']
-        else:
-            self.has_paddle = config['mount']['mount1']['has_paddle']
-            
+        #if self.config['wema_is_active']:
+        #    self.site_is_proxy = True
+        #else:
+        #    self.site_is_proxy = False
+        #if self.obsid == 'MRC2':
+        #    self.has_paddle = config['mount']['mount2']['has_paddle']
+        #else:
+        #    self.has_paddle = config['mount']['mount1']['has_paddle']
+        self.has_paddle = config['mount']['mount1']['has_paddle']
         
         self.object = "Unspecified"
         try:

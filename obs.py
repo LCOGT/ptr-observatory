@@ -186,30 +186,30 @@ class Observatory:
             g_dev['debug'] = False
             #g_dev['obs'].open_and_enabled_to_observe = False
 
-        if self.config["wema_is_active"]:
-            self.hostname = socket.gethostname()
-            if self.hostname in self.config["wema_hostname"]:
-                self.is_wema = True
-                g_dev["wema_share_path"] = ptr_config["wema_write_share_path"]
-                self.wema_path = g_dev["wema_share_path"]
-            else:
-                # This host is a client
-                self.is_wema = False  # This is a client.
-                self.obsid_path = ptr_config["client_path"] + '/' + self.name + '/'
-                if not os.path.exists(self.obsid_path):
-                    os.makedirs(self.obsid_path)
+        #if self.config["wema_is_active"]:
+        #    self.hostname = socket.gethostname()
+        #    if self.hostname in self.config["wema_hostname"]:
+        #        self.is_wema = True
+        #        g_dev["wema_share_path"] = ptr_config["wema_write_share_path"]
+        #        self.wema_path = g_dev["wema_share_path"]
+        #    else:
+        # This host is a client
+        self.is_wema = False  # This is a client.
+        self.obsid_path = ptr_config["client_path"] + '/' + self.name + '/'
+        if not os.path.exists(self.obsid_path):
+            os.makedirs(self.obsid_path)
 
-                g_dev["obsid_path"] = self.obsid_path
-                g_dev["wema_share_path"] = ptr_config[
-                    "client_write_share_path"
-                ]  # Just to be safe.
-                self.wema_path = g_dev["wema_share_path"]
-        else:
-            self.is_wema = False  # This is a client.
-            self.obsid_path = ptr_config["client_path"] + self.config['obs_id'] + '/'
-            g_dev["obsid_path"] = self.obsid_path
-            g_dev["wema_share_path"] = self.obsid_path  # Just to be safe.
-            self.wema_path = g_dev["wema_share_path"]
+        g_dev["obsid_path"] = self.obsid_path
+        #g_dev["wema_share_path"] = ptr_config[
+        #    "client_write_share_path"
+        #]  # Just to be safe.
+        #self.wema_path = g_dev["wema_share_path"]
+        #else:
+        #    self.is_wema = False  # This is a client.
+        #    self.obsid_path = ptr_config["client_path"] + self.config['obs_id'] + '/'
+        #    g_dev["obsid_path"] = self.obsid_path
+        #    g_dev["wema_share_path"] = self.obsid_path  # Just to be safe.
+        #    self.wema_path = g_dev["wema_share_path"]
 
         if self.config["obsid_is_specific"]:
             self.obsid_is_specific = True

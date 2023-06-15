@@ -71,12 +71,12 @@ site_config = {
     'minimum_realistic_seeing' : 1.0,
     
     'aux_archive_path':  None, # '//house-computer/saf_archive_2/archive/',  #  Path to auxillary backup disk.
-    'wema_is_active':  False,    #True if split computers used at a site.
-    'wema_hostname':  [],  #  Prefer the shorter version
-    'dome_on_wema': False, #  Implying enclosure controlled by client.
-    'site_IPC_mechanism':  None,   # ['None', 'shares', 'redis']  Pick One
-    'wema_write_share_path':  None,   # This and below provide two different ways to define
-    'client_read_share_path':  None,  #     a path to a network share.
+    '#wema_is_active':  False,    #True if split computers used at a site.
+    #'wema_hostname':  [],  #  Prefer the shorter version
+    #'dome_on_wema': False, #  Implying enclosure controlled by client.
+    #'site_IPC_mechanism':  None,   # ['None', 'shares', 'redis']  Pick One
+    #'wema_write_share_path':  None,   # This and below provide two different ways to define
+    #'client_read_share_path':  None,  #     a path to a network share.
     'redis_ip': None,  #'127.0.0.1', None if no redis path present,
     'obsid_is_generic':  True,   # A simple single computer ASCOM site.
     'obsid_is_specific':  False,  # Indicates some special code for this site, found at end of config.
@@ -106,16 +106,16 @@ site_config = {
     'reference_ambient':  10,  #  Degrees Celsius.  Alternately 12 entries, one for every - mid month.
     'reference_pressure':  867.254,    #mbar   A rough guess 20200315
 
-    'obsid_roof_control': True, #MTF entered this in to remove sro specific code.... Basically do we have control of the roof or not see line 338 sequencer.py
-    'obsid_allowed_to_open_roof': True,
-    'period_of_time_to_wait_for_roof_to_open' : 100, # seconds - needed to check if the roof ACTUALLY opens. 
-    'only_scope_that_controls_the_roof': False, # If multiple scopes control the roof, set this to False
+    #'obsid_roof_control': True, #MTF entered this in to remove sro specific code.... Basically do we have control of the roof or not see line 338 sequencer.py
+    #'obsid_allowed_to_open_roof': True,
+    #'period_of_time_to_wait_for_roof_to_open' : 100, # seconds - needed to check if the roof ACTUALLY opens. 
+    #'only_scope_that_controls_the_roof': False, # If multiple scopes control the roof, set this to False
     
 
     
     'check_time': 300,   #MF's original setting.
-    'maximum_roof_opens_per_evening' : 4,
-    'roof_open_safety_base_time' : 15, # How many minutes to use as the default retry time to open roof. This will be progressively multiplied as a back-off function.
+    #'maximum_roof_opens_per_evening' : 4,
+    #'roof_open_safety_base_time' : 15, # How many minutes to use as the default retry time to open roof. This will be progressively multiplied as a back-off function.
     'closest_distance_to_the_sun': 45, # Degrees. For normal pointing requests don't go this close to the sun. 
     'closest_distance_to_the_moon': 10, # Degrees. For normal pointing requests don't go this close to the moon. 
     
