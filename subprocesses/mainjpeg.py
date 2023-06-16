@@ -340,7 +340,7 @@ if smartstackid == 'no':
         # is sorta arbitrary... you'd use the site-config settings above to
         # set it appropriately and leave this alone.
         if pier_side == 1:
-            final_image = final_image.transpose(Image.ROTATE_180)
+            final_image = final_image.transpose(Image.Transpose.ROTATE_180)
 
         # Save BIG version of JPEG.
         final_image.save(
