@@ -565,11 +565,16 @@ class Sequencer:
         #     # As well as nightly focus routine.
         #     self.night_focus_ready=True
         
+        # Check that nightly_reset is set to False no matter what happens
+        if self.nightly_reset_complete == True:
+            if ((g_dev['events']['Cool Down, Open']  <= ephem_now < g_dev['events']['Observing Ends'])):
+                self.nightly_reset_complete = False
         
         # This bit is really to get the scope up and running if the roof opens
         if ((g_dev['events']['Cool Down, Open']  <= ephem_now < g_dev['events']['Observing Ends'])) and not self.cool_down_latch and \
             g_dev['obs'].open_and_enabled_to_observe and g_dev['mnt'].mount.AtPark and (time.time() - self.time_roof_last_opened) < 300 :
 
+            self.nightly_reset_complete = False
             self.cool_down_latch = True
             
             #if not g_dev['obs'].open_and_enabled_to_observe and self.weather_report_is_acceptable_to_observe==True and self.weather_report_wait_until_open==False:
@@ -664,7 +669,7 @@ class Sequencer:
         elif ((g_dev['events']['Clock & Auto Focus']  <= ephem_now < g_dev['events']['Observing Begins'])) \
                 and self.night_focus_ready==True and not g_dev['debug'] and  g_dev['obs'].open_and_enabled_to_observe and not self.clock_focus_latch:
 
-            
+            self.nightly_reset_complete = False
             self.clock_focus_latch = True
 
             g_dev['obs'].send_to_user("Beginning start of night Focus and Pointing Run", p_level='INFO')
@@ -704,7 +709,7 @@ class Sequencer:
                                    < events['Observing Ends'])  \
                                    and  g_dev['obs'].blocks is not None and g_dev['obs'].projects \
                                    is not None and g_dev['obs'].open_and_enabled_to_observe:
-
+                                     
             try:
                 self.nightly_reset_complete = False
                 
