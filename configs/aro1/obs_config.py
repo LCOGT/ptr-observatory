@@ -148,10 +148,15 @@ site_config = {
     'pointing_calibration_on_startup': False,
     'periodic_focus_time' : 0.5, # This is a time, in hours, over which to bypass automated focussing (e.g. at the start of a project it will not refocus if a new project starts X hours after the last focus)
     'stdev_fwhm' : 0.5, # This is the expected variation in FWHM at a given telescope/camera/site combination. This is used to check if a fwhm is within normal range or the focus has shifted
-    'focus_exposure_time': 15, # Exposure time in seconds for exposure image
+    'focus_exposure_time': 10,  # Exposure time in seconds for exposure image
+    'pointing_exposure_time': 20,  # Exposure time in seconds for exposure image
+    'pointing_correction_dec_multiplier' : 1,
+    'pointing_correction_ra_multiplier' : 1,
+    
+    
     'focus_trigger' : 0.5, # What FWHM increase is needed to trigger an autofocus
-    'solve_nth_image' : 6, # Only solve every nth image
-    'solve_timer' : 4, # Only solve every X minutes
+    'solve_nth_image' : 1, # Only solve every nth image
+    'solve_timer' : 0.1, # Only solve every X minutes
     'threshold_mount_update' : 10, # only update mount when X arcseconds away
     'get_ocn_status': None,
     'get_enc_status': None,
@@ -266,7 +271,7 @@ site_config = {
             'alignment': 'Equatorial',
             'default_zenith_avoid': 0.0,   # degrees floating, 0.0 means do not apply this constraint.
             'has_paddle': False,      #paddle refers to something supported by the Python code, not the AP paddle.
-            'has_ascom_altaz': True,
+            'has_ascom_altaz': False,
             'pointing_tel': 'tel1',     # This can be changed to 'tel2'... by user.  This establishes a default.
             
             'home_after_unpark' : False,
