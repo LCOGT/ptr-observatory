@@ -43,7 +43,7 @@ site_config = {
     
     # Auto-cenering is great .... unless you are polar aligning
     'turn_auto_centering_off': False,
-    'debug_mode': True,
+    'debug_mode': False,
     'admin_owner_commands_only': False,
     'debug_duration_sec': 7200,
     'owner':  ['google-oauth2|112401903840371673242'],  # WER,  Or this can be
@@ -260,8 +260,8 @@ site_config = {
             'home_after_unpark' : True,
             
             'home_before_park' : True,
-            'settle_time_after_unpark' : 10,
-            'settle_time_after_park' : 10,
+            'settle_time_after_unpark' : 0,
+            'settle_time_after_park' : 0,
             
             'permissive_mount_reset' : 'yes', # if this is set to yes, it will reset the mount at startup and when coordinates are out significantly
             'lowest_acceptable_altitude' : -5.0, # Below this altitude, it will automatically try to home and park the scope to recover.

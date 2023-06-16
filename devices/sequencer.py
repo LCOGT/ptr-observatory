@@ -662,7 +662,7 @@ class Sequencer:
             
 
         elif ((g_dev['events']['Clock & Auto Focus']  <= ephem_now < g_dev['events']['Observing Begins'])) \
-                and self.night_focus_ready==True and  g_dev['obs'].open_and_enabled_to_observe and not self.clock_focus_latch:
+                and self.night_focus_ready==True and not g_dev['debug'] and  g_dev['obs'].open_and_enabled_to_observe and not self.clock_focus_latch:
 
             
             self.clock_focus_latch = True
