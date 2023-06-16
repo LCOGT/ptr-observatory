@@ -1776,6 +1776,7 @@ class Sequencer:
         plog ("Regenerating bias")
         darkinputList=(glob(g_dev['obs'].local_dark_folder +'*.n*'))
         inputList=(glob(g_dev['obs'].local_bias_folder +'*.n*'))
+        archiveDate=str(datetime.date.today()).replace('-','')
 # =============================================================================
 #        inputList = inputList[-19:] # WER used for speed testing
 # =============================================================================
@@ -1839,6 +1840,14 @@ class Sequencer:
                 filepathaws=g_dev['obs'].calib_masters_folder
                 filenameaws=tempfrontcalib + 'BIAS_master_bin1.fits'
                 g_dev['cam'].enqueue_for_AWS(50, filepathaws,filenameaws)
+                
+                # Store a version of the dakr for the archive too
+                fits.writeto(g_dev['obs'].calib_masters_folder + 'ARCHIVE_' +  archiveDate + '_' + tempfrontcalib + 'BIAS_master_bin1.fits', masterBias, overwrite=True)
+                
+                filepathaws=g_dev['obs'].calib_masters_folder
+                filenameaws='ARCHIVE_' +  archiveDate + '_' + tempfrontcalib + 'BIAS_master_bin1.fits'
+                g_dev['cam'].enqueue_for_AWS(80, filepathaws,filenameaws)
+                
             except Exception as e:
                 plog ("Could not save bias frame: ",e)
                 
@@ -1893,6 +1902,16 @@ class Sequencer:
                 filepathaws=g_dev['obs'].calib_masters_folder
                 filenameaws=tempfrontcalib + 'DARK_master_bin1.fits'
                 g_dev['cam'].enqueue_for_AWS(50, filepathaws,filenameaws)
+                
+                # Store a version of the dakr for the archive too
+                fits.writeto(g_dev['obs'].calib_masters_folder + 'ARCHIVE_' +  archiveDate + '_' + tempfrontcalib + 'DARK_master_bin1.fits', masterDark, overwrite=True)
+                
+                filepathaws=g_dev['obs'].calib_masters_folder
+                filenameaws='ARCHIVE_' +  archiveDate + '_' + tempfrontcalib + 'DARK_master_bin1.fits'
+                g_dev['cam'].enqueue_for_AWS(80, filepathaws,filenameaws)
+                
+                
+                
             except Exception as e:
                 plog ("Could not save dark frame: ",e)
             
@@ -1970,11 +1989,22 @@ class Sequencer:
                         try:
                             np.save(g_dev['obs'].calib_masters_folder + 'masterFlat_'+ str(filtercode) + '_bin1.npy', temporaryFlat)            
                             
+                            # Write to and upload current master flat                            
                             fits.writeto(g_dev['obs'].calib_masters_folder + tempfrontcalib + 'masterFlat_'+ str(filtercode) + '_bin1.fits', temporaryFlat, overwrite=True)
                             
                             filepathaws=g_dev['obs'].calib_masters_folder
                             filenameaws=tempfrontcalib + 'masterFlat_'+ str(filtercode) + '_bin1.fits'
                             g_dev['cam'].enqueue_for_AWS(50, filepathaws,filenameaws)
+                            
+                            # Store a version of the flat for the archive too
+                            fits.writeto(g_dev['obs'].calib_masters_folder + 'ARCHIVE_' +  archiveDate + '_' + tempfrontcalib + 'masterFlat_'+ str(filtercode) + '_bin1.fits', temporaryFlat, overwrite=True)
+                            
+                            filepathaws=g_dev['obs'].calib_masters_folder
+                            filenameaws='ARCHIVE_' +  archiveDate + '_' + tempfrontcalib + 'masterFlat_'+ str(filtercode) + '_bin1.fits'
+                            g_dev['cam'].enqueue_for_AWS(80, filepathaws,filenameaws)
+                            
+                            #breakpoint()
+                            
                         except Exception as e:
                             plog ("Could not save flat frame: ",e)
                         
