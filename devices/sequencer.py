@@ -708,7 +708,7 @@ class Sequencer:
         elif (events['Observing Begins'] <= ephem_now \
                                    < events['Observing Ends'])  \
                                    and  g_dev['obs'].blocks is not None and g_dev['obs'].projects \
-                                   is not None and g_dev['obs'].open_and_enabled_to_observe:
+                                   is not None and g_dev['obs'].open_and_enabled_to_observe and self.clock_focus_latch == False:
                                      
             try:
                 self.nightly_reset_complete = False
