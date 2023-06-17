@@ -2130,8 +2130,11 @@ class Camera:
                         self.config["obs_id"].replace("-", "").replace("_", "")
                     )
                     hdu.header["SITEID"] = (
-                        self.config["site_name"].replace("-", "").replace("_", "")
+                        self.config["wema_name"].replace("-", "").replace("_", "")
                     )
+                    #hdu.header["OBSID"] = (
+                    #    self.config["obs_id"].replace("-", "").replace("_", "")
+                    #)
                     
                     #hdu.header["SITE"] = (
                     #    self.config["observatory_location"].replace("-", "").replace("_", "")
