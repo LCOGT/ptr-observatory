@@ -22,8 +22,9 @@ from global_yard import g_dev
 
  # bolt = ['u', 'g', 'r', 'i', 'zs', 'B', 'V', 'EXO', 'w', 'O3', 'Ha', 'S', 'Cr', 'NIR']
  # print(len(bolt))
-
-site_name = 'sro'
+ 
+instance_type = 'obs' # This is the type of site this is.
+wema_name = 'sro'
 obs_id = 'sro1'
                     #\\192.168.1.57\SRO10-Roof  r:
                     #SRO-Weather (\\192.168.1.57) w:
@@ -35,8 +36,9 @@ site_config = {
     # THESE ARE TO BE DELETED VERY SOON!
     # THEY EXIST SOLELY SO AS TO NOT BREAK THE UI UNTIL 
     #THINGS ARE MOVED TO OBS_ID
-    'site': 'sro1', #TIM this may no longer be needed.
-    'site_id': 'sro1',
+    #'site': 'sro1', #TIM this may no longer be needed.
+    'instance_type' : 'obs',
+    'wema_name': 'sro',
     ####################################################
     'obs_id': 'sro1',
     #'observatory_location': site_name.lower(),

@@ -565,11 +565,16 @@ class Sequencer:
         #     # As well as nightly focus routine.
         #     self.night_focus_ready=True
         
+        # Check that nightly_reset is set to False no matter what happens
+        if self.nightly_reset_complete == True:
+            if ((g_dev['events']['Cool Down, Open']  <= ephem_now < g_dev['events']['Observing Ends'])):
+                self.nightly_reset_complete = False
         
         # This bit is really to get the scope up and running if the roof opens
         if ((g_dev['events']['Cool Down, Open']  <= ephem_now < g_dev['events']['Observing Ends'])) and not self.cool_down_latch and \
             g_dev['obs'].open_and_enabled_to_observe and g_dev['mnt'].mount.AtPark and (time.time() - self.time_roof_last_opened) < 300 :
 
+            self.nightly_reset_complete = False
             self.cool_down_latch = True
             
             #if not g_dev['obs'].open_and_enabled_to_observe and self.weather_report_is_acceptable_to_observe==True and self.weather_report_wait_until_open==False:
@@ -662,9 +667,9 @@ class Sequencer:
             
 
         elif ((g_dev['events']['Clock & Auto Focus']  <= ephem_now < g_dev['events']['Observing Begins'])) \
-                and self.night_focus_ready==True and  g_dev['obs'].open_and_enabled_to_observe and not self.clock_focus_latch:
+                and self.night_focus_ready==True and not g_dev['debug'] and  g_dev['obs'].open_and_enabled_to_observe and not self.clock_focus_latch:
 
-            
+            self.nightly_reset_complete = False
             self.clock_focus_latch = True
 
             g_dev['obs'].send_to_user("Beginning start of night Focus and Pointing Run", p_level='INFO')
@@ -703,8 +708,8 @@ class Sequencer:
         elif (events['Observing Begins'] <= ephem_now \
                                    < events['Observing Ends'])  \
                                    and  g_dev['obs'].blocks is not None and g_dev['obs'].projects \
-                                   is not None and g_dev['obs'].open_and_enabled_to_observe:
-
+                                   is not None and g_dev['obs'].open_and_enabled_to_observe and self.clock_focus_latch == False:
+                                     
             try:
                 self.nightly_reset_complete = False
                 
@@ -956,8 +961,8 @@ class Sequencer:
         #ocn_status = eval(self.redis_server.get('ocn_status'))
         #enc_status = eval(self.redis_server.get('enc_status'))
         
-        if (ephem.now() < g_dev['events']['Naut Dusk'] ) or \
-            (g_dev['events']['Naut Dawn']  < ephem.now() < g_dev['events']['Nightly Reset']):
+        if (ephem.now() < g_dev['events']['Civil Dusk'] ) or \
+            (g_dev['events']['Civil Dawn']  < ephem.now() < g_dev['events']['Nightly Reset']):
             plog ("NOT RUNNING PROJECT BLOCK -- IT IS THE DAYTIME!!")
             g_dev["obs"].send_to_user("A project block was rejected as it is during the daytime.")            
             return
@@ -1771,6 +1776,7 @@ class Sequencer:
         plog ("Regenerating bias")
         darkinputList=(glob(g_dev['obs'].local_dark_folder +'*.n*'))
         inputList=(glob(g_dev['obs'].local_bias_folder +'*.n*'))
+        archiveDate=str(datetime.date.today()).replace('-','')
 # =============================================================================
 #        inputList = inputList[-19:] # WER used for speed testing
 # =============================================================================
@@ -1834,6 +1840,14 @@ class Sequencer:
                 filepathaws=g_dev['obs'].calib_masters_folder
                 filenameaws=tempfrontcalib + 'BIAS_master_bin1.fits'
                 g_dev['cam'].enqueue_for_AWS(50, filepathaws,filenameaws)
+                
+                # Store a version of the dakr for the archive too
+                fits.writeto(g_dev['obs'].calib_masters_folder + 'ARCHIVE_' +  archiveDate + '_' + tempfrontcalib + 'BIAS_master_bin1.fits', masterBias, overwrite=True)
+                
+                filepathaws=g_dev['obs'].calib_masters_folder
+                filenameaws='ARCHIVE_' +  archiveDate + '_' + tempfrontcalib + 'BIAS_master_bin1.fits'
+                g_dev['cam'].enqueue_for_AWS(80, filepathaws,filenameaws)
+                
             except Exception as e:
                 plog ("Could not save bias frame: ",e)
                 
@@ -1888,6 +1902,16 @@ class Sequencer:
                 filepathaws=g_dev['obs'].calib_masters_folder
                 filenameaws=tempfrontcalib + 'DARK_master_bin1.fits'
                 g_dev['cam'].enqueue_for_AWS(50, filepathaws,filenameaws)
+                
+                # Store a version of the dakr for the archive too
+                fits.writeto(g_dev['obs'].calib_masters_folder + 'ARCHIVE_' +  archiveDate + '_' + tempfrontcalib + 'DARK_master_bin1.fits', masterDark, overwrite=True)
+                
+                filepathaws=g_dev['obs'].calib_masters_folder
+                filenameaws='ARCHIVE_' +  archiveDate + '_' + tempfrontcalib + 'DARK_master_bin1.fits'
+                g_dev['cam'].enqueue_for_AWS(80, filepathaws,filenameaws)
+                
+                
+                
             except Exception as e:
                 plog ("Could not save dark frame: ",e)
             
@@ -1965,11 +1989,22 @@ class Sequencer:
                         try:
                             np.save(g_dev['obs'].calib_masters_folder + 'masterFlat_'+ str(filtercode) + '_bin1.npy', temporaryFlat)            
                             
+                            # Write to and upload current master flat                            
                             fits.writeto(g_dev['obs'].calib_masters_folder + tempfrontcalib + 'masterFlat_'+ str(filtercode) + '_bin1.fits', temporaryFlat, overwrite=True)
                             
                             filepathaws=g_dev['obs'].calib_masters_folder
                             filenameaws=tempfrontcalib + 'masterFlat_'+ str(filtercode) + '_bin1.fits'
                             g_dev['cam'].enqueue_for_AWS(50, filepathaws,filenameaws)
+                            
+                            # Store a version of the flat for the archive too
+                            fits.writeto(g_dev['obs'].calib_masters_folder + 'ARCHIVE_' +  archiveDate + '_' + tempfrontcalib + 'masterFlat_'+ str(filtercode) + '_bin1.fits', temporaryFlat, overwrite=True)
+                            
+                            filepathaws=g_dev['obs'].calib_masters_folder
+                            filenameaws='ARCHIVE_' +  archiveDate + '_' + tempfrontcalib + 'masterFlat_'+ str(filtercode) + '_bin1.fits'
+                            g_dev['cam'].enqueue_for_AWS(80, filepathaws,filenameaws)
+                            
+                            #breakpoint()
+                            
                         except Exception as e:
                             plog ("Could not save flat frame: ",e)
                         

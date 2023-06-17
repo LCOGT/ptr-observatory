@@ -112,6 +112,9 @@ def send_status(obsy, column, status_to_send):
     # None of the strings can be empty. Otherwise this put faults.
     payload = {"statusType": str(column), "status": status_to_send}
     
+    #if payload['statusType'] == 'weather':
+    #   breakpoint()
+    
     
     #print (payload)
 
@@ -150,7 +153,7 @@ class Observatory:
         g_dev['name'] = name
         
         self.config = ptr_config
-        self.wema_name = self.config['site_name']
+        self.wema_name = self.config['wema_name']
         #self.observatory_location = ptr_config["observatory_location"]
         self.debug_flag = self.config['debug_mode']
         self.admin_only_flag = self.config['admin_owner_commands_only']
@@ -960,13 +963,15 @@ sel
             #lane = "weather"
             self.observing_status_timer = datetime.datetime.now()
             #self.send_status_queue.put((obsy, lane, g_dev['obs'].ocn_status), block=False)
-        
+            #plog (g_dev['obs'].ocn_status)
         if (
             datetime.datetime.now() - self.enclosure_status_timer
         ) > datetime.timedelta(minutes=self.enclosure_check_period):
-            
+            #lane = "enclosure"
             g_dev['obs'].enc_status = g_dev['obs'].get_enclosure_status_from_aws()
             self.enclosure_status_timer = datetime.datetime.now()
+            #self.send_status_queue.put((obsy, lane, g_dev['obs'].enc_status), block=False)
+            #plog (g_dev['obs'].enc_status)
         
         
         
@@ -2941,8 +2946,8 @@ sel
             #breakpoint()
             except Exception as e:
                 #breakpoint()
-                #plog ("aws enclosure send failed ", e)
-                pass
+                plog ("aws enclosure send failed ", e)
+                #pass
             
             aws_enclosure_status=aws_enclosure_status['status']['enclosure']['enclosure1']
         
@@ -2987,13 +2992,37 @@ sel
 
         #breakpoint()
 
+
+
         try:
             aws_weather_status=reqs.get(uri_status)
             aws_weather_status=aws_weather_status.json()
             #breakpoint()
+            
+            if aws_weather_status['status']['observing_conditions']['observing_conditions1'] == None:
+                aws_weather_status['status']['observing_conditions']['observing_conditions1'] = {'wx_ok': 'Unknown'} 
+            
+            try:
+                self.send_status_queue.put((self.name, 'weather', aws_weather_status['status']), block=False)
+                #self.send_status_queue.put((self.name, 'enclosure', aws_enclosure_status), block=False)
+                
+            #breakpoint()
+            except Exception as e:
+                #breakpoint()
+                plog ("aws enclosure send failed ", e)
+                #pass
+            
             aws_weather_status=aws_weather_status['status']['observing_conditions']['observing_conditions1']
+            
+            
+            
         except Exception as e:
             plog("Failed to get aws enclosure status. Usually not fatal:  ", e)
+        
+        
+        
+        
+        
         
         #status = {'shutter_status': aws_enclosure_status["shutter_status"]['val'],
         #          'enclosure_synchronized': aws_enclosure_status["enclosure_synchronized"]['val'],  # self.following, 20220103_0135 WER

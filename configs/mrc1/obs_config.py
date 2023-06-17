@@ -18,7 +18,8 @@ import json
 degree_symbol = "°"
 # site_name = 'mrco'  # Ideally 3-4 characters max 5.
 
-site_name = 'mrc' # THIS REFERS TO THE WEMA NOT THE OBS
+instance_type = 'obs' # This is the type of site this is.
+wema_name = 'mrc' # THIS REFERS TO THE WEMA NOT THE OBS
 obs_id = 'mrc1'  # NB These must be unique across all of PTR. Pre-pend with airport code if needed: 'sba_wmdo'
 
 site_config = {
@@ -29,7 +30,8 @@ site_config = {
     #'site_id': 'mrc1',  # WER THis appears unused
     ####################################################
     ####################################################
-    'site_name' : 'mrc',
+    'instance_type' : 'obs',
+    'wema_name' : 'mrc',
     'obs_id': 'mrc1',
     #'observatory_location': "SBA",  # Nearest major airport
     #'debug_site_mode': False,

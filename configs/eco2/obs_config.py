@@ -23,11 +23,16 @@ Created on Fri Feb 07,  11:57:41 2020
  # bolt = ['u', 'g', 'r', 'i', 'zs', 'B', 'V', 'EXO', 'w', 'O3', 'Ha', 'S', 'Cr', 'NIR']
  # print(len(bolt))
 
-site_name = 'eco' # THIS IS THE NAME OF THE WEMA
-obs_id = 'eco2' # THIS IS THE NAME OF THIS OBSERVATORY
+
+instance_type = 'obs' # This is the type of site this is.
+
+wema_name = 'eco' # THIS IS THE NAME OF THE WEMA that governs or IS this code
+obs_id = 'eco2' # THIS IS THE NAME OF THIS OBSERVATORY if it is an obs
                     #\\192.168.1.57\SRO10-Roof  r:
                     #SRO-Weather (\\192.168.1.57) w:
                     #Username: wayne_rosingPW: 29yzpe
+                    
+
 
 site_config = {
     # THESE ARE TO BE DELETED VERY SOON!
@@ -36,7 +41,8 @@ site_config = {
     #'site': 'eco2', #TIM this may no longer be needed.
     #'site_id': 'eco2',
     ####################################################
-    'site_name' : 'eco', # THIS IS THE NAME OF THE WEMA
+    'instance_type' : 'obs',
+    'wema_name' : 'eco', # THIS IS THE NAME OF THE WEMA
     'obs_id': 'eco2',
     #'observatory_location': site_name.lower(),
     

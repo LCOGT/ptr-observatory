@@ -20,12 +20,15 @@ Created on Fri Feb 07,  11:57:41 2020
 
  # bolt = ['u', 'g', 'r', 'i', 'zs', 'B', 'V', 'EXO', 'w', 'O3', 'Ha', 'S', 'Cr', 'NIR']
  # print(len(bolt))
+ 
+instance_type = 'obs' # This is the type of site this is.
 
-site_name = 'eco' # THIS IS THE NAME OF THE WEMA
+wema_name = 'eco' # THIS IS THE NAME OF THE WEMA
 obs_id = 'eco1' # THIS IS THE NAME OF THIS OBSERVATORY
                     #\\192.168.1.57\SRO10-Roof  r:
                     #SRO-Weather (\\192.168.1.57) w:
                     #Username: wayne_rosingPW: 29yzpe
+
 
 site_config = {
     # THESE ARE TO BE DELETED VERY SOON!
@@ -34,7 +37,8 @@ site_config = {
     #'site': 'eco1', #TIM this may no longer be needed.
     #'site_id': 'eco1',
     ####################################################
-    'site_name' : 'eco', # THIS IS THE NAME OF THE WEMA
+    'instance_type' : 'obs',
+    'wema_name' : 'eco', # THIS IS THE NAME OF THE WEMA
     'obs_id': 'eco1', # THIS IS THE NAME OF THIS OBSERVATORY
     #'observatory_location': site_name.lower(),
     
@@ -43,7 +47,7 @@ site_config = {
     
     # Auto-cenering is great .... unless you are polar aligning
     'turn_auto_centering_off': False,
-    'debug_mode': True,
+    'debug_mode': False,
     'admin_owner_commands_only': False,
     'debug_duration_sec': 7200,
     'owner':  ['google-oauth2|112401903840371673242'],  # WER,  Or this can be
@@ -122,8 +126,8 @@ site_config = {
     'lowest_requestable_altitude': -5, # Degrees. For normal pointing requests don't allow requests to go this low. 
     'obsid_in_automatic_default': "Automatic",   #  ["Manual", "Shutdown", "Automatic"]
     'automatic_detail_default': "Enclosure is initially set to Automatic mode.",
-    'observing_check_period' : 2,    # How many minutes between weather checks
-    'enclosure_check_period' : 2,    # How many minutes between enclosure checks
+    'observing_check_period' : 0.1,    # How many minutes between weather checks
+    'enclosure_check_period' : 0.1,    # How many minutes between enclosure checks
     'auto_eve_bias_dark': False,
     'auto_midnight_moonless_bias_dark': True,
     'auto_eve_sky_flat': False,
@@ -260,8 +264,8 @@ site_config = {
             'home_after_unpark' : True,
             
             'home_before_park' : True,
-            'settle_time_after_unpark' : 10,
-            'settle_time_after_park' : 10,
+            'settle_time_after_unpark' : 0,
+            'settle_time_after_park' : 0,
             
             'permissive_mount_reset' : 'yes', # if this is set to yes, it will reset the mount at startup and when coordinates are out significantly
             'lowest_acceptable_altitude' : -5.0, # Below this altitude, it will automatically try to home and park the scope to recover.

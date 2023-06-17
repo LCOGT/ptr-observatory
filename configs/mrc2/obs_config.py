@@ -58,8 +58,8 @@ Park 207.3, 5.285.
 
 
 
-
-site_name = 'mrc'    #NB These must be unique across all of PTR.
+instance_type = 'obs' # This is the type of site this is.
+wema_name = 'mrc'    #NB These must be unique across all of PTR.
 obs_id = 'mrc2'
 
 site_config = {
@@ -70,7 +70,8 @@ site_config = {
     #'site': 'mrc2', #TIM this may no longer be needed.
     #'site_id': 'mrc2',
     ####################################################    
-    'site_name' : 'mrc' ,
+    'instance_type' : 'obs',
+    'wema_name' : 'mrc' ,
     'obs_id': 'mrc2',
     #'observatory_location': site_name.lower(),
 
