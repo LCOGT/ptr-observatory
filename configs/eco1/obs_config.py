@@ -20,8 +20,10 @@ Created on Fri Feb 07,  11:57:41 2020
 
  # bolt = ['u', 'g', 'r', 'i', 'zs', 'B', 'V', 'EXO', 'w', 'O3', 'Ha', 'S', 'Cr', 'NIR']
  # print(len(bolt))
+ 
+instance_type = 'obs' # This is the type of site this is.
 
-site_name = 'eco' # THIS IS THE NAME OF THE WEMA
+wema_name = 'eco' # THIS IS THE NAME OF THE WEMA
 obs_id = 'eco1' # THIS IS THE NAME OF THIS OBSERVATORY
                     #\\192.168.1.57\SRO10-Roof  r:
                     #SRO-Weather (\\192.168.1.57) w:
@@ -34,7 +36,8 @@ site_config = {
     #'site': 'eco1', #TIM this may no longer be needed.
     #'site_id': 'eco1',
     ####################################################
-    'site_name' : 'eco', # THIS IS THE NAME OF THE WEMA
+    'instance_type' : 'obs',
+    'wema_name' : 'eco', # THIS IS THE NAME OF THE WEMA
     'obs_id': 'eco1', # THIS IS THE NAME OF THIS OBSERVATORY
     #'observatory_location': site_name.lower(),
     

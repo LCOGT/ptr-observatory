@@ -150,7 +150,7 @@ class Observatory:
         g_dev['name'] = name
         
         self.config = ptr_config
-        self.wema_name = self.config['site_name']
+        self.wema_name = self.config['wema_name']
         #self.observatory_location = ptr_config["observatory_location"]
         self.debug_flag = self.config['debug_mode']
         self.admin_only_flag = self.config['admin_owner_commands_only']

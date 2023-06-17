@@ -26,14 +26,16 @@ g_dev = None
 
 
 #THis is branch wer-mrc first entered here 20221029:21:40 on WEMA
-site_name = 'aro'
+instance_type = 'obs' # This is the type of site this is.
+wema_name = 'aro'
 obs_id = 'aro1'
 
 site_config = {
-    'site_name' : 'aro',
+    'instance_type' : 'obs',
+    'wema_name' : 'aro',
     'obs_id' : 'aro1',
     
-    'observatory_location': site_name.lower(),
+    #'observatory_location': site_name.lower(),
     
     'debug_site_mode': False,
     
