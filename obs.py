@@ -112,6 +112,9 @@ def send_status(obsy, column, status_to_send):
     # None of the strings can be empty. Otherwise this put faults.
     payload = {"statusType": str(column), "status": status_to_send}
     
+    #if payload['statusType'] == 'weather':
+    #   breakpoint()
+    
     
     #print (payload)
 
@@ -960,13 +963,15 @@ sel
             #lane = "weather"
             self.observing_status_timer = datetime.datetime.now()
             #self.send_status_queue.put((obsy, lane, g_dev['obs'].ocn_status), block=False)
-        
+            #plog (g_dev['obs'].ocn_status)
         if (
             datetime.datetime.now() - self.enclosure_status_timer
         ) > datetime.timedelta(minutes=self.enclosure_check_period):
-            
+            #lane = "enclosure"
             g_dev['obs'].enc_status = g_dev['obs'].get_enclosure_status_from_aws()
             self.enclosure_status_timer = datetime.datetime.now()
+            #self.send_status_queue.put((obsy, lane, g_dev['obs'].enc_status), block=False)
+            #plog (g_dev['obs'].enc_status)
         
         
         
@@ -2941,8 +2946,8 @@ sel
             #breakpoint()
             except Exception as e:
                 #breakpoint()
-                #plog ("aws enclosure send failed ", e)
-                pass
+                plog ("aws enclosure send failed ", e)
+                #pass
             
             aws_enclosure_status=aws_enclosure_status['status']['enclosure']['enclosure1']
         
