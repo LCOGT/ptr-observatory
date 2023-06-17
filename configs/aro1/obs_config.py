@@ -716,7 +716,7 @@ site_config = {
                 
                 'cosmics_at_default' : 'yes',
                 'cosmics_at_maximum' : 'yes',
-                'cycle_time':  1,  # 3x3 requires a 1, 1 reaout then a software bin, so slower.
+                'cycle_time':  0.5,  # 3x3 requires a 1, 1 reaout then a software bin, so slower.
                 'rbi_delay':  0.,      # This being zero says RBI is not available, eg. for SBIG.
                 'is_cmos':  True,
                 'is_color':  False,

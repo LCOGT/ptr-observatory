@@ -851,7 +851,7 @@ site_config = {
                 'bin-desc':              ['1x1', '2x2', '3x3', '4x4'],
                 'chan_color':            ['col', 'gry', 'gry', 'gry'],
                 # 'cycle_time':            [ 18,    13,    15,    12   ],   # NB somewhat a Guess.
-                'cycle_time':            0,   # Meas 20230219  for a bias
+                'cycle_time':            0.5,   # Meas 20230219  for a bias
                 # 'enable_bin':            [ True, False,  False,  False],
                 # 'bias_dark_bin_spec':    ['1,1', '2,2', '3,3', '4,4' ],    #Default binning for flats
                 'number_of_bias_to_collect': 63,

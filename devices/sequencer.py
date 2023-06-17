@@ -458,7 +458,7 @@ class Sequencer:
             g_dev['obs'].ocn_status = None
         
         
-        ocn_status = g_dev['obs'].ocn_status
+        #ocn_status = g_dev['obs'].ocn_status
         enc_status = g_dev['obs'].enc_status
         events = g_dev['events']
         
@@ -1524,6 +1524,7 @@ class Sequencer:
         self.morn_flats_done = False
         self.morn_bias_done = False
         self.eve_bias_done = False
+        
         self.nightime_bias_counter = 0
         self.nightime_dark_counter = 0
 

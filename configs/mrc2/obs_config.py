@@ -843,7 +843,7 @@ site_config = {
                 'cosmics_at_default' : 'no',
                 'cosmics_at_maximum' : 'yes',
 
-                'cycle_time': 0, # [10, 12, 8, 6],  # 3x3 requires a 1, 1 reaout then a software bin, so slower.
+                'cycle_time': 0.5, # [10, 12, 8, 6],  # 3x3 requires a 1, 1 reaout then a software bin, so slower.
                 
                 
                 
