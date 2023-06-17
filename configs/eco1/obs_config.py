@@ -27,6 +27,7 @@ obs_id = 'eco1' # THIS IS THE NAME OF THIS OBSERVATORY
                     #SRO-Weather (\\192.168.1.57) w:
                     #Username: wayne_rosingPW: 29yzpe
 
+
 site_config = {
     # THESE ARE TO BE DELETED VERY SOON!
     # THEY EXIST SOLELY SO AS TO NOT BREAK THE UI UNTIL 
@@ -122,8 +123,8 @@ site_config = {
     'lowest_requestable_altitude': -5, # Degrees. For normal pointing requests don't allow requests to go this low. 
     'obsid_in_automatic_default': "Automatic",   #  ["Manual", "Shutdown", "Automatic"]
     'automatic_detail_default': "Enclosure is initially set to Automatic mode.",
-    'observing_check_period' : 2,    # How many minutes between weather checks
-    'enclosure_check_period' : 2,    # How many minutes between enclosure checks
+    'observing_check_period' : 0.1,    # How many minutes between weather checks
+    'enclosure_check_period' : 0.1,    # How many minutes between enclosure checks
     'auto_eve_bias_dark': False,
     'auto_midnight_moonless_bias_dark': True,
     'auto_eve_sky_flat': False,
