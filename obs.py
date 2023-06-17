@@ -2992,13 +2992,37 @@ sel
 
         #breakpoint()
 
+
+
         try:
             aws_weather_status=reqs.get(uri_status)
             aws_weather_status=aws_weather_status.json()
             #breakpoint()
+            
+            if aws_weather_status['status']['observing_conditions']['observing_conditions1'] == None:
+                aws_weather_status['status']['observing_conditions']['observing_conditions1'] = {'wx_ok': 'Unknown'} 
+            
+            try:
+                self.send_status_queue.put((self.name, 'weather', aws_weather_status['status']), block=False)
+                #self.send_status_queue.put((self.name, 'enclosure', aws_enclosure_status), block=False)
+                
+            #breakpoint()
+            except Exception as e:
+                #breakpoint()
+                plog ("aws enclosure send failed ", e)
+                #pass
+            
             aws_weather_status=aws_weather_status['status']['observing_conditions']['observing_conditions1']
+            
+            
+            
         except Exception as e:
             plog("Failed to get aws enclosure status. Usually not fatal:  ", e)
+        
+        
+        
+        
+        
         
         #status = {'shutter_status': aws_enclosure_status["shutter_status"]['val'],
         #          'enclosure_synchronized': aws_enclosure_status["enclosure_synchronized"]['val'],  # self.following, 20220103_0135 WER
