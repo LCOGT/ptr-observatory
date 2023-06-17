@@ -961,8 +961,8 @@ class Sequencer:
         #ocn_status = eval(self.redis_server.get('ocn_status'))
         #enc_status = eval(self.redis_server.get('enc_status'))
         
-        if (ephem.now() < g_dev['events']['Naut Dusk'] ) or \
-            (g_dev['events']['Naut Dawn']  < ephem.now() < g_dev['events']['Nightly Reset']):
+        if (ephem.now() < g_dev['events']['Civil Dusk'] ) or \
+            (g_dev['events']['Civil Dawn']  < ephem.now() < g_dev['events']['Nightly Reset']):
             plog ("NOT RUNNING PROJECT BLOCK -- IT IS THE DAYTIME!!")
             g_dev["obs"].send_to_user("A project block was rejected as it is during the daytime.")            
             return
