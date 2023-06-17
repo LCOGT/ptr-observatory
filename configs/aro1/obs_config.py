@@ -285,10 +285,10 @@ site_config = {
             'permissive_mount_reset' : 'no', # if this is set to yes, it will reset the mount at startup and when coordinates are out significantly
             'lowest_acceptable_altitude' : -10.0, # Below this altitude, it will automatically try to home and park the scope to recover.
             'time_inactive_until_park' : 3600.0, # How many seconds of inactivity until it will park the telescope
-            'west_clutch_ra_correction': -0.05323724387608619,  #final:   0.0035776615398219747 -0.1450812805892454
-            'west_clutch_dec_correction': 0.3251459235809251,
-            'east_flip_ra_correction':   -0.040505313212952586, # Initially -0.039505313212952586,
-            'east_flip_dec_correction':  -0.54607711292257797,  #initially  -0.39607711292257797,
+            'west_clutch_ra_correction': 0.0,  #final:   0.0035776615398219747 -0.1450812805892454
+            'west_clutch_dec_correction': 0.0,
+            'east_flip_ra_correction':   0.0, # Initially -0.039505313212952586,
+            'east_flip_dec_correction':  0.0,  #initially  -0.39607711292257797,
 
                 'latitude_offset': 0.0,     # Decimal degrees, North is Positive   These *could* be slightly different than site.
                 'longitude_offset': 0.0,   # Decimal degrees, West is negative  #NB This could be an eval( <<site config data>>))
@@ -716,7 +716,7 @@ site_config = {
                 
                 'cosmics_at_default' : 'yes',
                 'cosmics_at_maximum' : 'yes',
-                'cycle_time':  0,  # 3x3 requires a 1, 1 reaout then a software bin, so slower.
+                'cycle_time':  1,  # 3x3 requires a 1, 1 reaout then a software bin, so slower.
                 'rbi_delay':  0.,      # This being zero says RBI is not available, eg. for SBIG.
                 'is_cmos':  True,
                 'is_color':  False,
