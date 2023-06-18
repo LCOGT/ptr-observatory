@@ -461,7 +461,7 @@ class Observatory:
         # Get a list of new jobs to complete (this request
         # marks the commands as "RECEIVED")
         reqs.request(
-            "POST", url_job, data=json.dumps(body)
+            "POST", url_job, data=json.dumps(body), timeout=20
         ).json()
 
         # On startup, collect orphaned fits files that may have been dropped from the queue
@@ -676,7 +676,7 @@ sel
                 # Get a list of new jobs to complete (this request
                 # marks the commands as "RECEIVED")
                 unread_commands = reqs.request(
-                    "POST", url_job, data=json.dumps(body)
+                    "POST", url_job, data=json.dumps(body), timeout=20
                 ).json()
                 # Make sure the list is sorted in the order the jobs were issued
                 # Note: the ulid for a job is a unique lexicographically-sortable id.
