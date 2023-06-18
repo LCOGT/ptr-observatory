@@ -60,7 +60,7 @@ warnings.simplefilter('ignore', category=AstropyUserWarning)
 # Incorporate better request retry strategy
 from requests.adapters import HTTPAdapter, Retry
 reqs = requests.Session()
-retries = Retry(total=50,
+retries = Retry(total=3,
                 backoff_factor=0.1,
                 status_forcelist=[500, 502, 503, 504])
 reqs.mount('http://', HTTPAdapter(max_retries=retries))
@@ -1135,7 +1135,12 @@ sel
             lane = "device"
             #send_status(obsy, lane, status)
             #print( obsy, lane, status['timestamp'] )
-            self.send_status_queue.put((obsy, lane, status), block=False)
+            #plog (status)
+            #plog("Status Queue size: "+ str(self.send_status_queue.qsize()))
+            # To stop status's filling up the queue under poor connection conditions
+            # There is a size limit to the queue
+            if self.send_status_queue.qsize() < 7:
+                self.send_status_queue.put((obsy, lane, status), block=False)
         
         # if loud:
         #    plog("\n\nStatus Sent:  \n", status)
@@ -2942,7 +2947,10 @@ sel
             #plog(aws_enclosure_status)
             #breakpoint()
             try:
-                self.send_status_queue.put((self.name, 'enclosure', aws_enclosure_status['status']), block=False)
+                # To stop status's filling up the queue under poor connection conditions
+                # There is a size limit to the queue
+                if self.send_status_queue.qsize() < 7:
+                    self.send_status_queue.put((self.name, 'enclosure', aws_enclosure_status['status']), block=False)
                 #self.send_status_queue.put((self.name, 'enclosure', aws_enclosure_status), block=False)
                 
             #breakpoint()
@@ -3010,7 +3018,10 @@ sel
             
             
             try:
-                self.send_status_queue.put((self.name, 'weather', aws_weather_status['status']), block=False)
+                # To stop status's filling up the queue under poor connection conditions
+                # There is a size limit to the queue
+                if self.send_status_queue.qsize() < 7:            
+                    self.send_status_queue.put((self.name, 'weather', aws_weather_status['status']), block=False)
                 #self.send_status_queue.put((self.name, 'enclosure', aws_enclosure_status), block=False)
                 
             #breakpoint()
