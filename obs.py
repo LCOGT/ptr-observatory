@@ -1757,7 +1757,8 @@ sel
                             # Only remove file if successfully uploaded
                             if ('calibmasters' not in filepath):
                                 try:
-                                    os.remove(filepath)
+                                    #os.remove(filepath)
+                                    plog("not deleting")
                                 except:
                                     #plog("Couldn't remove " + str(filepath) + " file after transfer")
                                     self.laterdelete_queue.put(filepath, block=False)
@@ -2515,17 +2516,13 @@ sel
                     # Note that even though the raw file is int16,
                     # The compression and a few pieces of software require float32
                     # BUT it actually compresses to the same size either way
-                    hdufz = fits.CompImageHDU(
-                        np.array(slow_process[2], dtype=np.float32), temphduheader
-                    )
-                    hdufz.verify("fix")
-                    hdufz.header[
-                        "BZERO"
-                    ] = 0  # Make sure there is no integer scaling left over
-                    hdufz.header[
-                        "BSCALE"
-                    ] = 1  # Make sure there is no integer scaling left over
-
+                    
+                    temphduheader["BZERO"] = 0  # Make sure there is no integer scaling left over
+                    temphduheader["BSCALE"] = 1  # Make sure there is no integer scaling left over
+                    
+                    
+                    #hdufz.verify("fix")
+                    
                     #hdufz.header["DATE"] = (
                     #    datetime.date.strftime(
                     #        datetime.datetime.utcfromtimestamp(time.time()), "%Y-%m-%d"
@@ -2537,6 +2534,12 @@ sel
 
                     if not self.config["camera"][g_dev['cam'].name]["settings"]["is_osc"]:
 
+                        
+
+                        hdufz = fits.CompImageHDU(
+                            np.array(slow_process[2], dtype=np.float32), temphduheader
+                        )
+
                         # This routine saves the file ready for uploading to AWS
                         # It usually works perfectly 99.9999% of the time except
                         # when there is an astropy cache error. It is likely that
@@ -2547,7 +2550,8 @@ sel
                         while saver == 0 and saverretries < 10:
                             try:
                                 hdufz.writeto(
-                                    slow_process[1], overwrite=True, output_verify='silentfix'
+                                    #slow_process[1], overwrite=True, output_verify='silentfix'
+                                    slow_process[1], overwrite=True
                                 )  # Save full fz file locally
                                 saver = 1
                             except Exception as e:
@@ -2571,6 +2575,7 @@ sel
                             )
 
                     else:  # Is an OSC
+                    
                         if self.config["camera"][g_dev['cam'].name]["settings"]["osc_bayer"] == 'RGGB':                                                        
                             
                             newhdured = slow_process[2][::2, ::2]
@@ -2580,24 +2585,27 @@ sel
 
                             oscmatchcode = (datetime.datetime.now().strftime("%d%m%y%H%M%S"))
 
-                            hdufz.header["OSCMATCH"] = oscmatchcode
-                            hdufz.header['OSCSEP'] = 'yes'
-                            hdufz.header['NAXIS1'] = float(hdufz.header['NAXIS1'])/2
-                            hdufz.header['NAXIS2'] = float(hdufz.header['NAXIS2'])/2
-                            hdufz.header['CRPIX1'] = float(hdufz.header['CRPIX1'])/2
-                            hdufz.header['CRPIX2'] = float(hdufz.header['CRPIX2'])/2
-                            hdufz.header['PIXSCALE'] = float(hdufz.header['PIXSCALE'])*2
-                            hdufz.header['CDELT1'] = float(hdufz.header['CDELT1'])*2
-                            hdufz.header['CDELT2'] = float(hdufz.header['CDELT2'])*2
-                            tempfilter = hdufz.header['FILTER']
+                            temphduheader["OSCMATCH"] = oscmatchcode
+                            temphduheader['OSCSEP'] = 'yes'
+                            temphduheader['NAXIS1'] = float(temphduheader['NAXIS1'])/2
+                            temphduheader['NAXIS2'] = float(temphduheader['NAXIS2'])/2
+                            temphduheader['CRPIX1'] = float(temphduheader['CRPIX1'])/2
+                            temphduheader['CRPIX2'] = float(temphduheader['CRPIX2'])/2
+                            temphduheader['PIXSCALE'] = float(temphduheader['PIXSCALE'])*2
+                            temphduheader['CDELT1'] = float(temphduheader['CDELT1'])*2
+                            temphduheader['CDELT2'] = float(temphduheader['CDELT2'])*2
+                            tempfilter = temphduheader['FILTER']
                             tempfilename = slow_process[1]
 
                             # Save and send R1
-                            hdufz.header['FILTER'] = tempfilter + '_R1'
+                            temphduheader['FILTER'] = tempfilter + '_R1'
 
-                            hdufz.data = newhdured
+                            
+                            hdufz = fits.CompImageHDU(
+                                np.array(newhdured, dtype=np.float32), temphduheader
+                            )
                             hdufz.writeto(
-                                tempfilename.replace('-EX', 'R1-EX'), overwrite=True, output_verify='silentfix'
+                                tempfilename.replace('-EX', 'R1-EX'), overwrite=True#, output_verify='silentfix'
                             )  # Save full fz file locally
                             del newhdured
                             if self.config['send_files_at_end_of_night'] == 'no':
@@ -2606,10 +2614,13 @@ sel
                                 )
 
                             # Save and send G1
-                            hdufz.header['FILTER'] = tempfilter + '_G1'
-                            hdufz.data = GTRonly
+                            temphduheader['FILTER'] = tempfilter + '_G1'
+                            
+                            hdufz = fits.CompImageHDU(
+                                np.array(GTRonly, dtype=np.float32), temphduheader
+                            )
                             hdufz.writeto(
-                                tempfilename.replace('-EX', 'G1-EX'), overwrite=True, output_verify='silentfix'
+                                tempfilename.replace('-EX', 'G1-EX'), overwrite=True#, output_verify='silentfix'
                             )  # Save full fz file locally
                             del GTRonly
                             if self.config['send_files_at_end_of_night'] == 'no':
@@ -2618,10 +2629,13 @@ sel
                                 )
 
                             # Save and send G2
-                            hdufz.header['FILTER'] = tempfilter + '_G2'
-                            hdufz.data = GBLonly
+                            temphduheader['FILTER'] = tempfilter + '_G2'
+                           
+                            hdufz = fits.CompImageHDU(
+                                np.array(GBLonly, dtype=np.float32), temphduheader
+                            )
                             hdufz.writeto(
-                                tempfilename.replace('-EX', 'G2-EX'), overwrite=True, output_verify='silentfix'
+                                tempfilename.replace('-EX', 'G2-EX'), overwrite=True#, output_verify='silentfix'
                             )  # Save full fz file locally
                             del GBLonly
                             if self.config['send_files_at_end_of_night'] == 'no':
@@ -2630,10 +2644,13 @@ sel
                                 )
 
                             # Save and send B1
-                            hdufz.header['FILTER'] = tempfilter + '_B1'
-                            hdufz.data = newhdublue
+                            temphduheader['FILTER'] = tempfilter + '_B1'
+                            
+                            hdufz = fits.CompImageHDU(
+                                np.array(newhdublue, dtype=np.float32), temphduheader
+                            )
                             hdufz.writeto(
-                                tempfilename.replace('-EX', 'B1-EX'), overwrite=True, output_verify='silentfix'
+                                tempfilename.replace('-EX', 'B1-EX'), overwrite=True#, output_verify='silentfix'
                             )  # Save full fz file locally
                             del newhdublue
                             if self.config['send_files_at_end_of_night'] == 'no':
