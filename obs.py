@@ -1134,6 +1134,7 @@ sel
         if status is not None:
             lane = "device"
             #send_status(obsy, lane, status)
+            #print( obsy, lane, status['timestamp'] )
             self.send_status_queue.put((obsy, lane, status), block=False)
         
         # if loud:
@@ -1417,15 +1418,16 @@ sel
             except Exception as e:
                 plog(traceback.format_exc())
                 plog(e)
-                breakpoint()
-                if 'GetAltAz' in str(e) and 'ASCOM.SoftwareBisque.Telescope' in str(e):
-                    plog("The SkyX Altitude detection had an error.")
+                
+                if g_dev['mnt'].theskyx:
+                    
+                    plog("The SkyX had an error.")
                     plog("Usually this is because of a broken connection.")
-                    plog("Waiting 60 seconds then reconnecting")
-
-                    time.sleep(60)
-
-                    g_dev['mnt'].mount.Connected = True
+                    plog("Killing then waiting 60 seconds then reconnecting")
+                    g_dev['seq'].kill_and_reboot_theskyx(-1,-1)
+                else:
+                    breakpoint()
+                    
                     # g_dev['mnt'].home_command()
 
             # If no activity for an hour, park the scope

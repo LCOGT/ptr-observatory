@@ -1740,8 +1740,9 @@ class Sequencer:
         
         return
     
-    def kill_and_reboot_theskyx(self, returnra, returndec):
+    def kill_and_reboot_theskyx(self, returnra, returndec): # Return to a given ra and dec or send -1,-1 to remain at park
         os.system("taskkill /IM TheSkyX.exe /F")
+        os.system("taskkill /IM TheSky64.exe /F")
         time.sleep(60) # give it time to settle down.
         #breakpoint()
         Mount(self.config['mount']['mount1']['driver'], 
@@ -1764,7 +1765,10 @@ class Sequencer:
                                  g_dev['obs'].name, 
                                  self.config)
         
-        g_dev['mnt'].go_coord(returnra, returndec)
+        if returnra == -1 or returndec == -1:
+            pass
+        else:
+            g_dev['mnt'].go_coord(returnra, returndec)
         
         return
         
