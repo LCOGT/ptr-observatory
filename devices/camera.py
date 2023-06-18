@@ -3046,6 +3046,8 @@ class Camera:
                                 "screen",
                                 "spectrum",
                                 "auto_focus",
+                                "focus",
+                                "pointing"
                             ]) and smartstackid != 'no' :
                                 self.to_smartstack((paths, pixscale, smartstackid, sskcounter, Nsmartstack, g_dev['mnt'].pier_side))
                             else:
@@ -3109,7 +3111,9 @@ class Camera:
                         "dark",
                         "flat",
                         "focus",
-                        "skyflat"]):
+                        "skyflat",
+                        "pointing"
+                        ]):
                         self.to_slow_process(5,('fz_and_send', raw_path + raw_name00 + ".fz", hdu.data, hdu.header, frame_type, g_dev["mnt"].current_icrs_ra, g_dev["mnt"].current_icrs_dec))                    
 
         

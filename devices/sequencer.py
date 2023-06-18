@@ -4427,7 +4427,7 @@ class Sequencer:
 
     def centering_exposure(self):
 
-        req = {'time': self.config['pointing_exposure_time'],  'alias':  str(self.config['camera']['camera_1_1']['name']), 'image_type': 'light'}   #  NB Should pick up filter and constats from config
+        req = {'time': self.config['pointing_exposure_time'],  'alias':  str(self.config['camera']['camera_1_1']['name']), 'image_type': 'pointing'}   #  NB Should pick up filter and constats from config
         opt = {'area': 100, 'count': 1, 'filter': 'focus'}
         
         
