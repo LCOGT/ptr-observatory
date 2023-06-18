@@ -23,7 +23,7 @@ Created on Fri Feb 07,  11:57:41 2020
  
 instance_type = 'obs' # This is the type of site this is.
 
-wema_name = 'eco' # THIS IS THE NAME OF THE WEMA
+wema_name = 'mrc' # THIS IS THE NAME OF THE WEMA
 obs_id = 'eco1' # THIS IS THE NAME OF THIS OBSERVATORY
                     #\\192.168.1.57\SRO10-Roof  r:
                     #SRO-Weather (\\192.168.1.57) w:
@@ -38,7 +38,7 @@ site_config = {
     #'site_id': 'eco1',
     ####################################################
     'instance_type' : 'obs',
-    'wema_name' : 'eco', # THIS IS THE NAME OF THE WEMA
+    'wema_name' : 'mrc', # THIS IS THE NAME OF THE WEMA
     'obs_id': 'eco1', # THIS IS THE NAME OF THIS OBSERVATORY
     #'observatory_location': site_name.lower(),
     

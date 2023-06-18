@@ -3001,6 +3001,11 @@ sel
             
             if aws_weather_status['status']['observing_conditions']['observing_conditions1'] == None:
                 aws_weather_status['status']['observing_conditions']['observing_conditions1'] = {'wx_ok': 'Unknown'} 
+            else:
+                #breakpoint()
+                for weatherkey in aws_weather_status['status']['observing_conditions']['observing_conditions1'].keys():
+                    aws_weather_status['status']['observing_conditions']['observing_conditions1'][weatherkey]=aws_weather_status['status']['observing_conditions']['observing_conditions1'][weatherkey]['val']
+            
             
             try:
                 self.send_status_queue.put((self.name, 'weather', aws_weather_status['status']), block=False)
