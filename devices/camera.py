@@ -2639,9 +2639,9 @@ class Camera:
 
                     next_seq = next_sequence(current_camera_name)
                     hdu.header["FRAMENUM"] = (int(next_seq), "Running frame number")
-                    plog (str(smartstackid) + " SMARTSTACKID - temp MTF check")
+                    #plog (str(smartstackid) + " SMARTSTACKID - temp MTF check")
                     hdu.header["SMARTSTK"] = smartstackid # ID code for an individual smart stack group
-                    plog (str(longstackid) + " LONGSTACKID - temp MTF check")
+                    #plog (str(longstackid) + " LONGSTACKID - temp MTF check")
                     hdu.header["SSTKNUM"] = sskcounter
                     hdu.header['SSTKLEN'] = Nsmartstack
                     hdu.header["LONGSTK"] = longstackid # Is this a member of a longer stack - to be replaced by 
