@@ -1134,6 +1134,7 @@ sel
         if status is not None:
             lane = "device"
             #send_status(obsy, lane, status)
+            #print( obsy, lane, status['timestamp'] )
             self.send_status_queue.put((obsy, lane, status), block=False)
         
         # if loud:
