@@ -2936,45 +2936,50 @@ sel
             aws_enclosure_status=reqs.get(uri_status)
             
             aws_enclosure_status=aws_enclosure_status.json()
-            aws_enclosure_status['status']['enclosure']['enclosure1']['enclosure_mode'] = aws_enclosure_status['status']['enclosure']['enclosure1']['enclosure_mode']['val']
-            aws_enclosure_status['status']['enclosure']['enclosure1']['dome_azimuth'] = aws_enclosure_status['status']['enclosure']['enclosure1']['dome_azimuth']['val']
-            aws_enclosure_status['status']['enclosure']['enclosure1']['enclosure_synchronized'] = aws_enclosure_status['status']['enclosure']['enclosure1']['enclosure_synchronized']['val']
-            aws_enclosure_status['status']['enclosure']['enclosure1']['dome_slewing'] = aws_enclosure_status['status']['enclosure']['enclosure1']['dome_slewing']['val']
-            aws_enclosure_status['status']['enclosure']['enclosure1']['shutter_status'] = aws_enclosure_status['status']['enclosure']['enclosure1']['shutter_status']['val']
             
-            #breakpoint()
-            # New Tim Entries
-            if aws_enclosure_status['status']['enclosure']['enclosure1']['shutter_status'] =='Open':
-                aws_enclosure_status['status']['enclosure']['enclosure1']['observatory_open'] = True
-                aws_enclosure_status['status']['enclosure']['enclosure1']['shut_reason_bad_weather'] = False
-                aws_enclosure_status['status']['enclosure']['enclosure1']['shut_reason_daytime'] = False
-                aws_enclosure_status['status']['enclosure']['enclosure1']['shut_reason_manual_mode'] = False
-            else:
-                aws_enclosure_status['status']['enclosure']['enclosure1']['observatory_open'] = False
-                if not aws_enclosure_status['status']['enclosure']['enclosure1']['enclosure_mode'] == 'Automatic':
-                    aws_enclosure_status['status']['enclosure']['enclosure1']['shut_reason_manual_mode'] = True
-                else:
-                    aws_enclosure_status['status']['enclosure']['enclosure1']['shut_reason_manual_mode'] = False
-                if g_dev['obs'].ocn_status['wx_ok'] == 'Unknown':
-                    aws_enclosure_status['status']['enclosure']['enclosure1']['shut_reason_bad_weather'] = False
-                elif g_dev['obs'].ocn_status['wx_ok'] == 'No':
-                    aws_enclosure_status['status']['enclosure']['enclosure1']['shut_reason_bad_weather'] = True
-                else:
-                    aws_enclosure_status['status']['enclosure']['enclosure1']['shut_reason_bad_weather'] = False
-                    # NEED TO INCLUDE WEATHER REPORT AND FITZ NUMBER HERE
-                if g_dev['events']['Cool Down, Open'] < ephem.now() or ephem.now() < g_dev['events']['Close and Park'] > ephem.now():
-                    aws_enclosure_status['status']['enclosure']['enclosure1']['shut_reason_daytime'] = True
-                else:
-                    aws_enclosure_status['status']['enclosure']['enclosure1']['shut_reason_daytime'] = False
+            for enclosurekey in aws_enclosure_status['status']['enclosure']['enclosure1'].keys():
+                aws_enclosure_status['status']['enclosure']['enclosure1'][enclosurekey]=aws_enclosure_status['status']['enclosure']['enclosure1'][enclosurekey]['val']
+        
+            
+            # aws_enclosure_status['status']['enclosure']['enclosure1']['enclosure_mode'] = aws_enclosure_status['status']['enclosure']['enclosure1']['enclosure_mode']['val']
+            # aws_enclosure_status['status']['enclosure']['enclosure1']['dome_azimuth'] = aws_enclosure_status['status']['enclosure']['enclosure1']['dome_azimuth']['val']
+            # aws_enclosure_status['status']['enclosure']['enclosure1']['enclosure_synchronized'] = aws_enclosure_status['status']['enclosure']['enclosure1']['enclosure_synchronized']['val']
+            # aws_enclosure_status['status']['enclosure']['enclosure1']['dome_slewing'] = aws_enclosure_status['status']['enclosure']['enclosure1']['dome_slewing']['val']
+            # aws_enclosure_status['status']['enclosure']['enclosure1']['shutter_status'] = aws_enclosure_status['status']['enclosure']['enclosure1']['shutter_status']['val']
+            
+            # #breakpoint()
+            # # New Tim Entries
+            # if aws_enclosure_status['status']['enclosure']['enclosure1']['shutter_status'] =='Open':
+            #     aws_enclosure_status['status']['enclosure']['enclosure1']['observatory_open'] = True
+            #     aws_enclosure_status['status']['enclosure']['enclosure1']['shut_reason_bad_weather'] = False
+            #     aws_enclosure_status['status']['enclosure']['enclosure1']['shut_reason_daytime'] = False
+            #     aws_enclosure_status['status']['enclosure']['enclosure1']['shut_reason_manual_mode'] = False
+            # else:
+            #     aws_enclosure_status['status']['enclosure']['enclosure1']['observatory_open'] = False
+            #     if not aws_enclosure_status['status']['enclosure']['enclosure1']['enclosure_mode'] == 'Automatic':
+            #         aws_enclosure_status['status']['enclosure']['enclosure1']['shut_reason_manual_mode'] = True
+            #     else:
+            #         aws_enclosure_status['status']['enclosure']['enclosure1']['shut_reason_manual_mode'] = False
+            #     if g_dev['obs'].ocn_status['wx_ok'] == 'Unknown':
+            #         aws_enclosure_status['status']['enclosure']['enclosure1']['shut_reason_bad_weather'] = False
+            #     elif g_dev['obs'].ocn_status['wx_ok'] == 'No':
+            #         aws_enclosure_status['status']['enclosure']['enclosure1']['shut_reason_bad_weather'] = True
+            #     else:
+            #         aws_enclosure_status['status']['enclosure']['enclosure1']['shut_reason_bad_weather'] = False
+            #         # NEED TO INCLUDE WEATHER REPORT AND FITZ NUMBER HERE
+            #     if g_dev['events']['Cool Down, Open'] < ephem.now() or ephem.now() < g_dev['events']['Close and Park'] > ephem.now():
+            #         aws_enclosure_status['status']['enclosure']['enclosure1']['shut_reason_daytime'] = True
+            #     else:
+            #         aws_enclosure_status['status']['enclosure']['enclosure1']['shut_reason_daytime'] = False
                     
                     
             
             
-            g_dev['obs'].ocn_status 
+            # g_dev['obs'].ocn_status 
             
-            aws_enclosure_status['status']['enclosure']['enclosure1']['shut_reason_bad_weather']
-            aws_enclosure_status['status']['enclosure']['enclosure1']['shut_reason_daytime']
-            aws_enclosure_status['status']['enclosure']['enclosure1']['shut_reason_manual_mode']
+            # aws_enclosure_status['status']['enclosure']['enclosure1']['shut_reason_bad_weather']
+            # aws_enclosure_status['status']['enclosure']['enclosure1']['shut_reason_daytime']
+            # aws_enclosure_status['status']['enclosure']['enclosure1']['shut_reason_manual_mode']
             
             #aws_enclosure_status['server_timestamp_ms'] = int(time.time())
             #aws_enclosure_status['site'] = self.obs_id
