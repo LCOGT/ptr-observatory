@@ -1644,7 +1644,8 @@ class Camera:
                             azimuth_of_observation = az
                             altitude_of_observation = alt
                             start_time_of_observation=time.time()
-                            
+                            self.start_time_of_observation=time.time()
+                            self.current_exposure_time=exposure_time
                             # Always check rotator just before exposure  The Rot jitters wehn parked so
                             # this give rot moving report during bia darks
                             rot_report=0

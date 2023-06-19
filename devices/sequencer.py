@@ -3,7 +3,7 @@ import datetime
 from datetime import timedelta
 import copy
 from global_yard import g_dev
-from astropy.coordinates import SkyCoord, AltAz, get_moon
+from astropy.coordinates import SkyCoord, AltAz, get_moon, Angle
 from astropy import units as u
 from astropy.time import Time
 from astropy.io import fits
@@ -4064,6 +4064,14 @@ class Sequencer:
 
         #grid_stars = tycho.az_sort_targets(sid, grid)  #4 produces about 50 targets.
         
+        #tpointcsv=np.genfromtxt('C:/PTR/tpointmodel1687189214d0307853.csv', delimiter=',')
+        #tpointdatafile=[]
+        
+        
+        
+            
+
+        
         #print (self.focus_catalogue)
         catalogue=self.focus_catalogue
         
@@ -4190,10 +4198,13 @@ class Sequencer:
             sid = float((Time(datetime.datetime.utcnow(), scale='utc', location=g_dev['mnt'].site_coordinates).sidereal_time('apparent')*u.deg) / u.deg / u.hourangle)
             
             # Get RA, DEC, ra deviation, dec deviation and add to the list
-            deviation_catalogue_for_tpoint.append ([grid_star[0] / 15, grid_star[1], g_dev['obs'].last_platesolved_ra, g_dev['obs'].last_platesolved_dec,g_dev['obs'].last_platesolved_ra_err, g_dev['obs'].last_platesolved_dec_err, sid, g_dev["mnt"].pier_side])
             
-            result=[grid_star[0] / 15, grid_star[1], g_dev['obs'].last_platesolved_ra, g_dev['obs'].last_platesolved_dec,g_dev['obs'].last_platesolved_ra_err, g_dev['obs'].last_platesolved_dec_err, sid, g_dev["mnt"].pier_side]
-            plog ([grid_star[0] / 15, grid_star[1], g_dev['obs'].last_platesolved_ra, g_dev['obs'].last_platesolved_dec,g_dev['obs'].last_platesolved_ra_err, g_dev['obs'].last_platesolved_dec_err, sid,g_dev["mnt"].pier_side])
+            result=[grid_star[0] / 15, grid_star[1], g_dev['obs'].last_platesolved_ra, g_dev['obs'].last_platesolved_dec,g_dev['obs'].last_platesolved_ra_err, g_dev['obs'].last_platesolved_dec_err, sid, g_dev["mnt"].pier_side,g_dev['cam'].start_time_of_observation,g_dev['cam'].current_exposure_time]
+            deviation_catalogue_for_tpoint.append (result)
+            plog(result)
+            
+            
+            
             
             g_dev['obs'].update_status()
             #result = 'simulated result.'
@@ -4207,6 +4218,28 @@ class Sequencer:
         deviation_catalogue_for_tpoint = np.asarray(deviation_catalogue_for_tpoint, dtype=float)
         np.savetxt(self.config['client_path'] +'/'+'tpointmodel' + str(time.time()).replace('.','d') + '.csv', deviation_catalogue_for_tpoint, delimiter=',')
         
+        
+        tpointnamefile=self.config['client_path'] +'/'+'TPOINTDAT'+str(time.time()).replace('.','d')+'.txt'
+        for entry in deviation_catalogue_for_tpoint:
+            #print (entry[0], entry[1])        
+            ra_wanted=Angle(entry[0],u.hour).to_string(sep=' ')
+            dec_wanted=Angle(entry[1],u.degree).to_string(sep=' ')
+            ra_got=Angle(entry[2],u.hour).to_string(sep=' ')
+            
+            
+            if entry[7] == 0:
+                pierstring='WEST'
+                dec_got=Angle(entry[3]+180,u.degree).to_string(sep=' ')
+            else:
+                pierstring='EAST'
+                dec_got=Angle(entry[3],u.degree).to_string(sep=' ')
+        
+            writeline = ra_wanted + " " + dec_wanted + " " + ra_got + " " + dec_got + " "+ str(entry[6]) + " "+ pierstring
+                        
+            with open(tpointnamefile, "a+") as f:            	
+                	f.write(writeline+"\n")
+                    
+            plog(writeline) 
         
         #breakpoint()
         
