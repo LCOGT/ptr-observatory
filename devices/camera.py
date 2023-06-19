@@ -2915,7 +2915,7 @@ class Camera:
 
                         # Make a copy of hdu to use as jpg and small fits as well as a local raw used file for 
                         # planewave solves
-                        hdusmalldata = np.array(hdu.data.astype("float32"))
+                        hdusmalldata = copy.deepcopy(hdu.data.astype("float32"))
                             
                         # Quick flash bias and dark frame                           
                         
@@ -3114,7 +3114,7 @@ class Camera:
                         "skyflat",
                         "pointing"
                         ]):
-                        self.to_slow_process(5,('fz_and_send', raw_path + raw_name00 + ".fz", hdu.data, hdu.header, frame_type, g_dev["mnt"].current_icrs_ra, g_dev["mnt"].current_icrs_dec))                    
+                        self.to_slow_process(5,('fz_and_send', raw_path + raw_name00 + ".fz", copy.deepcopy(hdu.data), copy.deepcopy(hdu.header), frame_type, g_dev["mnt"].current_icrs_ra, g_dev["mnt"].current_icrs_dec))                    
 
         
                     # If the files are local calibrations, save them out to the local calibration directory

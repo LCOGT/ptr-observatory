@@ -3045,12 +3045,21 @@ sel
         except:
             plog("Glitch on getting shutter status in aws call.")
         
-        status = {'shutter_status': aws_enclosure_status["shutter_status"],
-                  'enclosure_synchronized': aws_enclosure_status["enclosure_synchronized"],  # self.following, 20220103_0135 WER
-                  'dome_azimuth': aws_enclosure_status["dome_azimuth"],
-                  'dome_slewing': aws_enclosure_status["dome_slewing"],
-                  'enclosure_mode': aws_enclosure_status["enclosure_mode"]}#,
-                  #'enclosure_message': "No message"}
+        try:
+        
+            status = {'shutter_status': aws_enclosure_status["shutter_status"],
+                      'enclosure_synchronized': aws_enclosure_status["enclosure_synchronized"],  # self.following, 20220103_0135 WER
+                      'dome_azimuth': aws_enclosure_status["dome_azimuth"],
+                      'dome_slewing': aws_enclosure_status["dome_slewing"],
+                      'enclosure_mode': aws_enclosure_status["enclosure_mode"]}#,
+                      #'enclosure_message': "No message"}
+
+        except:
+            try:
+                status = {'shutter_status': aws_enclosure_status["shutter_status"]}
+            except:
+                plog ('failed enclosure status!')
+                status = {'shutter_status': 'Unknown'}
 
         return status
     

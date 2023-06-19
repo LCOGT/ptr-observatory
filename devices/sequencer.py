@@ -4190,10 +4190,10 @@ class Sequencer:
             sid = float((Time(datetime.datetime.utcnow(), scale='utc', location=g_dev['mnt'].site_coordinates).sidereal_time('apparent')*u.deg) / u.deg / u.hourangle)
             
             # Get RA, DEC, ra deviation, dec deviation and add to the list
-            deviation_catalogue_for_tpoint.append ([grid_star[0] / 15, grid_star[1], g_dev['obs'].last_platesolved_ra, g_dev['obs'].last_platesolved_dec,g_dev['obs'].last_platesolved_ra_err, g_dev['obs'].last_platesolved_dec_err, sid])
+            deviation_catalogue_for_tpoint.append ([grid_star[0] / 15, grid_star[1], g_dev['obs'].last_platesolved_ra, g_dev['obs'].last_platesolved_dec,g_dev['obs'].last_platesolved_ra_err, g_dev['obs'].last_platesolved_dec_err, sid, g_dev["mnt"].pier_side])
             
-            result=[grid_star[0] / 15, grid_star[1], g_dev['obs'].last_platesolved_ra, g_dev['obs'].last_platesolved_dec,g_dev['obs'].last_platesolved_ra_err, g_dev['obs'].last_platesolved_dec_err, sid]
-            plog ([grid_star[0] / 15, grid_star[1], g_dev['obs'].last_platesolved_ra, g_dev['obs'].last_platesolved_dec,g_dev['obs'].last_platesolved_ra_err, g_dev['obs'].last_platesolved_dec_err, sid])
+            result=[grid_star[0] / 15, grid_star[1], g_dev['obs'].last_platesolved_ra, g_dev['obs'].last_platesolved_dec,g_dev['obs'].last_platesolved_ra_err, g_dev['obs'].last_platesolved_dec_err, sid, g_dev["mnt"].pier_side]
+            plog ([grid_star[0] / 15, grid_star[1], g_dev['obs'].last_platesolved_ra, g_dev['obs'].last_platesolved_dec,g_dev['obs'].last_platesolved_ra_err, g_dev['obs'].last_platesolved_dec_err, sid,g_dev["mnt"].pier_side])
             
             g_dev['obs'].update_status()
             #result = 'simulated result.'
