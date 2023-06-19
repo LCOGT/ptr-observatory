@@ -1757,8 +1757,8 @@ sel
                             # Only remove file if successfully uploaded
                             if ('calibmasters' not in filepath):
                                 try:
-                                    #os.remove(filepath)
-                                    plog("not deleting")
+                                    os.remove(filepath)
+                                    #plog("not deleting")
                                 except:
                                     #plog("Couldn't remove " + str(filepath) + " file after transfer")
                                     self.laterdelete_queue.put(filepath, block=False)
