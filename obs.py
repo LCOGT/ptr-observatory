@@ -278,7 +278,7 @@ class Observatory:
         self.create_devices()
         self.loud_status = False
 
-        
+        self.auto_centering_off=self.config['turn_auto_centering_off']
 
         # Check directory system has been constructed
         # for new sites or changed directories in configs.
@@ -499,6 +499,8 @@ class Observatory:
         #result = g_dev['cam'].expose_command(req, opt, no_AWS=False, solve_it=True)
         # breakpoint()
         #g_dev['seq'].regenerate_local_masters()
+        
+        g_dev['seq'].sky_grid_pointing_run(max_pointings=10, alt_minimum=25)
 
     def set_last_reference(self, delta_ra, delta_dec, last_time):
         mnt_shelf = shelve.open(self.obsid_path + "ptr_night_shelf/" + "last" + str(self.name))
@@ -1813,7 +1815,7 @@ sel
                 (deletefilename) = self.laterdelete_queue.get(block=False)
                 #notdelete=1
                 #while notdelete==1:
-                plog("Deleting: " +str(deletefilename))
+                #plog("Deleting: " +str(deletefilename))
                     
                 self.laterdelete_queue.task_done()
                 try:
@@ -2204,6 +2206,11 @@ sel
 
                     if solve == 'error':
                         plog ("Planewave solve came back as error")
+                        self.last_platesolved_ra = np.nan
+                        self.last_platesolved_dec = np.nan
+                        self.last_platesolved_ra_err = np.nan
+                        self.last_platesolved_dec_err = np.nan
+                        
                     else:
                         plog(
                             "PW Solves: ",
@@ -2227,7 +2234,12 @@ sel
                         #solved_arcsecperpixel = solve["arcsec_per_pixel"]
                         #solved_rotangledegs = solve["rot_angle_degs"]
                         plog("Deviation from plate solution in ra: " + str(round(err_ha * 15 * 3600, 2)) + " & dec: " + str (round(err_dec * 3600, 2)) + " asec")
-    
+                        
+                        self.last_platesolved_ra = solve["ra_j2000_hours"]
+                        self.last_platesolved_dec = solve["dec_j2000_degrees"]
+                        self.last_platesolved_ra_err = target_ra - solved_ra
+                        self.last_platesolved_dec_err = target_dec - solved_dec
+                        
                         # breakpoint()
                         # Reset Solve timers
                         g_dev['obs'].last_solve_time = datetime.datetime.now()
@@ -2924,7 +2936,7 @@ sel
             g_dev['obs'].pointing_correction_requested_by_platesolve_thread = False
             if g_dev['obs'].pointing_correction_request_time > g_dev['obs'].time_of_last_slew:  # Check it hasn't slewed since request
                 
-                if self.config['turn_auto_centering_off']:
+                if self.auto_centering_off:
                     plog ("Telescope off-center, but auto-centering turned off")
                 else:
                     plog("Re-centering Telescope Slightly.")

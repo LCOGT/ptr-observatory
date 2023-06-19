@@ -46,8 +46,8 @@ site_config = {
     #'debug_site_mode': False,
     
     # Auto-cenering is great .... unless you are polar aligning
-    'turn_auto_centering_off': False,
-    'debug_mode': True,
+    'turn_auto_centering_off': True,
+    'debug_mode': False,
     'admin_owner_commands_only': False,
     'debug_duration_sec': 7200,
     'owner':  ['google-oauth2|112401903840371673242'],  # WER,  Or this can be
