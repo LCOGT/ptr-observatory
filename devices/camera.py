@@ -13,7 +13,7 @@ import shelve
 import time
 import traceback
 import ephem
-
+import copy
 #import json
 
 from astropy.io import fits#, ascii
@@ -1296,24 +1296,24 @@ class Camera:
         self.hint = optional_params.get("hint", "")
         self.script = required_params.get("script", "None")        
         
-        no_AWS, self.toss = True if imtype.lower() == "test image" else False, False
-        quick = True if imtype.lower() == "quick" else False
-        #  NBNB this is obsolete and needs rework 20221002 WER
-        if imtype.lower() in (
-            "quick",
-            "bias",
-            "dark",
-            "screen flat",
-            "sky flat",
-            "near flat",
-            "thor flat",
-            "arc flat",
-            "lamp flat",
-            "solar flat",
-        ):
-            do_sep = False
-        else:
-            do_sep = True
+        # no_AWS, self.toss = True if imtype.lower() == "test image" else False, False
+        # quick = True if imtype.lower() == "quick" else False
+        # #  NBNB this is obsolete and needs rework 20221002 WER
+        # if imtype.lower() in (
+        #     "quick",
+        #     "bias",
+        #     "dark",
+        #     "screen flat",
+        #     "sky flat",
+        #     "near flat",
+        #     "thor flat",
+        #     "arc flat",
+        #     "lamp flat",
+        #     "solar flat",
+        # ):
+        #     do_sep = False
+        # else:
+        #     do_sep = True
 
         if imtype.lower() in ("bias"):
             
@@ -1366,7 +1366,7 @@ class Camera:
         self.pane = optional_params.get("pane", None)
 
         bin_x = 1               
-        bin_y = 1  # NB This needs fixing someday!
+        #bin_y = 1  # NB This needs fixing someday!
         self.native_bin = self.config["camera"][self.name]["settings"]["native_bin"]
         self.ccd_sum = str(1) + ' ' + str(1)
 
@@ -1380,7 +1380,7 @@ class Camera:
             optional_params.get("count", 1)
         )  
         
-        lcl_repeat = 1
+        #lcl_repeat = 1
         if count < 1:
             count = 1  # Hence frame does not repeat unless count > 1
 
@@ -1433,9 +1433,9 @@ class Camera:
         else:
             exposure_filter_offset = 0
 
-        self.len_x = self.camera_x_size // bin_x
-        self.len_y = self.camera_y_size // bin_y  # Unit is binned pixels.
-        self.len_xs = 0  # THIS IS A HACK, indicating no overscan.
+        #self.len_x = self.camera_x_size // bin_x
+        #self.len_y = self.camera_y_size // bin_y  # Unit is binned pixels.
+        #self.len_xs = 0  # THIS IS A HACK, indicating no overscan.
         
          # Always check rotator just before exposure  The Rot jitters wehn parked so
          # this give rot moving report during bia darks
@@ -2948,7 +2948,7 @@ class Camera:
                         if "hdusmalldata" in locals():
                             
                             # Set up reduced header
-                            hdusmallheader=hdu.header
+                            hdusmallheader=copy.deepcopy(hdu.header)
                             
                             #From the reduced data, crop around the edges of the
                             #raw 1x1 image to get rid of overscan and crusty edge bits

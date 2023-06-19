@@ -46,7 +46,7 @@ site_config = {
     #'debug_site_mode': False,
     
     # Auto-cenering is great .... unless you are polar aligning
-    'turn_auto_centering_off': True,
+    'turn_auto_centering_off': False,
     'debug_mode': False,
     'admin_owner_commands_only': False,
     'debug_duration_sec': 7200,
@@ -592,7 +592,7 @@ site_config = {
                # This is primarily to get rid of overscan areas and also all images
                # Do tend to be a bit dodgy around the edges, so perhaps a standard
                # value of 30 is good. Increase this if your camera has particularly bad
-               # edges.
+               # edges. This doesn't affect the raw image.
                'reduced_image_edge_crop': 30,
                # HERE YOU CAN FLIP THE IMAGE TO YOUR HEARTS DESIRE
                # HOPEFULLY YOUR HEARTS DESIRE IS SIMILAR TO THE
@@ -678,8 +678,8 @@ site_config = {
 
                 'x_field_deg': 1.3333,   #   round(4784*1.0481/3600, 4),
                 'y_field_deg': 1.0665,   #  round(3194*1.0481/3600, 4),
-                'overscan_x': 24,
-                'overscan_y': 3,
+                #'overscan_x': 24,
+                #'overscan_y': 3,
                 'north_offset': 0.0,    #  These three are normally 0.0 for the primary telescope
                 'east_offset': 0.0,     #  Not sure why these three are even here.
                 'rotation': 0.0,        #  Probably remove.
@@ -701,7 +701,7 @@ site_config = {
                 'reference_gain': 1.27,     #  One val for each binning. SWAG!
                 'reference_noise': 10,    #  All SWAGs right now!
 
-                'reference_dark': [0.0, 0.0, 0.0, 0.0],     #  Might these best be pedastal values?  NO!
+                #'reference_dark': [0.0, 0.0, 0.0, 0.0],     #  Might these best be pedastal values?  NO!
                                     #hdu.header['RDMODE'] = (self.config['camera'][self.name]['settings']['read_mode'], 'Camera read mode')
                     #hdu.header['RDOUTM'] = (self.config['camera'][self.name]['readout_mode'], 'Camera readout mode')
                     #hdu.header['RDOUTSP'] = (self.config['camera'][self.name]['settings']['readout_speed'], '[FPS] Readout speed')
