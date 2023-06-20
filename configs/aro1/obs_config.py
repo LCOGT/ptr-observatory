@@ -37,7 +37,7 @@ site_config = {
     
     #'observatory_location': site_name.lower(),
     
-    'debug_site_mode': False,
+    'debug_site_mode': True,
     
 
     'debug_mode': True,
@@ -48,7 +48,7 @@ site_config = {
     
     'admin_owner_commands_only': False,
 
-    'debug_duration_sec': 7200,
+    'debug_duration_sec': 70200,
     
     "version_date": "20230606.wer",
     'site_desc': "Apache Ridge Observatory, Santa Fe, NM, USA. 2194m",
