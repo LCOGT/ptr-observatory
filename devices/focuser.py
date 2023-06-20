@@ -236,7 +236,7 @@ class Focuser:
             "secondsUntilComplete": seconds_remaining,
             "newStatus": status,
         }
-        response = requests.request("POST", url, data=json.dumps(body))
+        response = requests.request("POST", url, data=json.dumps(body), timeout=5)
         if response:
             plog(response.status_code)
         return response

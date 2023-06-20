@@ -15,6 +15,7 @@ class API_calls:
         # Populate the request parameters. Include data only if it was sent.
         request_kwargs = { 
             "method": method,
+            "timeout" : 10,
             "url": f"{self.base_url()}/{uri}",
         }
         if payload is not None: 
