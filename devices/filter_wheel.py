@@ -49,8 +49,8 @@ class FilterWheel:
                 # home the wheel and get responses, which indicates it is connected.
                 # set current_0 and _1 to [0, 0] position to default of w/L filter.
     
-                r0 = requests.get(self.ip + "/filterwheel/0/position")
-                r1 = requests.get(self.ip + "/filterwheel/1/position")
+                r0 = requests.get(self.ip + "/filterwheel/0/position", timeout=5)
+                r1 = requests.get(self.ip + "/filterwheel/1/position", timeout=5)
                 if str(r0) == str(r1) == "<Response [200]>":
                     plog("LCO Wheel present and connected.")
     
@@ -60,8 +60,8 @@ class FilterWheel:
                 self.r1 = r1
                 r0["filterwheel"]["position"] = 0
                 r1["filterwheel"]["position"] = 7
-                r0_pr = requests.put(self.ip + "/filterwheel/0/position", json=r0)
-                r1_pr = requests.put(self.ip + "/filterwheel/1/position", json=r1)
+                r0_pr = requests.put(self.ip + "/filterwheel/0/position", json=r0, timeout=5)
+                r1_pr = requests.put(self.ip + "/filterwheel/1/position", json=r1, timeout=5)
                 if str(r0_pr) == str(r1_pr) == "<Response [200]>":
                     plog("Set up default filter configuration.")
                 self.maxim = False
@@ -369,19 +369,19 @@ class FilterWheel:
             r1 = self.r1
             r0["filterwheel"]["position"] = filter_selections[0]
             r1["filterwheel"]["position"] = filter_selections[1]
-            r0_pr = requests.put(self.ip + "/filterwheel/0/position", json=r0)
-            r1_pr = requests.put(self.ip + "/filterwheel/1/position", json=r1)
+            r0_pr = requests.put(self.ip + "/filterwheel/0/position", json=r0, timeout=5)
+            r1_pr = requests.put(self.ip + "/filterwheel/1/position", json=r1, timeout=5)
             if str(r0_pr) == str(r1_pr) == "<Response [200]>":
                 plog("Set up filter configuration;  ", filter_selections)
                 plog("Status:  ", r0_pr.text, r1_pr.text)
             while True:
                 r0_t = int(
-                    requests.get(self.ip + "/filterwheel/0/position")
+                    requests.get(self.ip + "/filterwheel/0/position", timeout=5)
                     .text.split('"position":')[1]
                     .split("}")[0]
                 )
                 r1_t = int(
-                    requests.get(self.ip + "/filterwheel/1/position")
+                    requests.get(self.ip + "/filterwheel/1/position", timeout=5)
                     .text.split('"position":')[1]
                     .split("}")[0]
                 )

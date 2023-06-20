@@ -44,14 +44,14 @@ from astropy.utils.exceptions import AstropyUserWarning
 import warnings
 warnings.simplefilter('ignore', category=AstropyUserWarning)
 
-import requests
+#import requests
 #Incorporate better request retry strategy
-from requests.adapters import HTTPAdapter, Retry
-reqs = requests.Session()
-retries = Retry(total=50,
-                backoff_factor=0.1,
-                status_forcelist=[ 500, 502, 503, 504 ])
-reqs.mount('http://', HTTPAdapter(max_retries=retries))
+#from requests.adapters import HTTPAdapter, Retry
+#reqs = requests.Session()
+#retries = Retry(total=5,
+#               backoff_factor=0.1,
+#                status_forcelist=[ 500, 502, 503, 504 ])
+#reqs.mount('http://', HTTPAdapter(max_retries=retries))
 
     
 #from colour_demosaicing import (
