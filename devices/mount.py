@@ -1243,14 +1243,18 @@ class Mount:
         except Exception as e:
             # This catches an occasional ASCOM/TheSkyX glitch and gets it out of being stuck
             # And back on tracking. 
-            if ('Object reference not set to an instance of an object.' in str(e)):
-                self.home_command()
-                self.park_command()
-                wait_for_slew()
+            if g_dev['mnt'].theskyx:
+                
+                plog("The SkyX had an error.")
+                plog("Usually this is because of a broken connection.")
+                plog("Killing then waiting 60 seconds then reconnecting")
+                g_dev['seq'].kill_and_reboot_theskyx(-1,-1)
                 self.unpark_command()
                 wait_for_slew()
                 self.mount.SlewToCoordinatesAsync(self.ra_mech*RTOH, self.dec_mech*RTOD)  #Is this needed?
-                wait_for_slew()
+            else:
+                plog (traceback.format_exc())
+            
                 
         if self.mount.Tracking == False:
             try:
@@ -1260,23 +1264,17 @@ class Mount:
                 # Yes, this is an awfully non-elegant way to force a mount to start 
                 # Tracking when it isn't implemented in the ASCOM driver. But if anyone has any better ideas, I am all ears - MF
                 # It also doesn't want to get into an endless loop of parking and unparking and homing, hence the rescue counter
-                if ('Property write Tracking is not implemented in this driver.' in str(e)) and self.theskyx_tracking_rescues < 5:
-                    self.theskyx_tracking_rescues=self.theskyx_tracking_rescues + 1
-                    self.park_command()
-                    wait_for_slew()
+                if g_dev['mnt'].theskyx:
+                    
+                    plog("The SkyX had an error.")
+                    plog("Usually this is because of a broken connection.")
+                    plog("Killing then waiting 60 seconds then reconnecting")
+                    g_dev['seq'].kill_and_reboot_theskyx(-1,-1)
                     self.unpark_command()
                     wait_for_slew()
                     self.mount.SlewToCoordinatesAsync(self.ra_mech*RTOH, self.dec_mech*RTOD)  #Is this needed?
-                    wait_for_slew()                  
-                
-                    plog ("this mount may not accept tracking commands")
-                elif ('Property write Tracking is not implemented in this driver.' in str(e)) and self.theskyx_tracking_rescues >= 5:
-                    plog ("theskyx has been rescued one too many times. Just sending it to park.")
-                    self.park_command()
-                    wait_for_slew()
-                    return
                 else:
-                    plog ("problem with setting tracking: ", e)
+                    plog (traceback.format_exc())
         
         g_dev['obs'].time_since_last_slew = time.time()
         g_dev['obs'].last_solve_time = datetime.datetime.now() - datetime.timedelta(days=1)
@@ -1681,11 +1679,16 @@ class Mount:
                 g_dev['obs'].time_of_last_slew=time.time()
                 self.mount.SlewToCoordinatesAsync(tempRA, tempDEC)
             except Exception as e:
-                if ('Object reference not set to an instance of an object.' in str(e)):                       
-                    #self.home_command()
+                if g_dev['mnt'].theskyx:
+                    
+                    plog("The SkyX had an error.")
+                    plog("Usually this is because of a broken connection.")
+                    plog("Killing then waiting 60 seconds then reconnecting")
+                    g_dev['seq'].kill_and_reboot_theskyx(-1,-1)
                     self.unpark_command()
-                    g_dev['obs'].time_of_last_slew=time.time()
-                    self.mount.SlewToCoordinatesAsync(tempRA, tempDEC)
+                    wait_for_slew()
+                    self.mount.SlewToCoordinatesAsync(tempRA, tempDEC)  #Is this needed?
+                else:
                     plog (traceback.format_exc())
             
             g_dev['obs'].time_since_last_slew = time.time()
