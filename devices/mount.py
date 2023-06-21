@@ -827,22 +827,41 @@ class Mount:
             self.unpark_command(req, opt)
         elif action == 'center_on_pixels':
             plog (command)
-            # Need to convert image fraction into offset
-            image_x = req['image_x']
-            image_y = req['image_y']            
-            # And the current pixel scale
-            pixscale=g_dev['cam'].config["camera"][g_dev['cam'].name]["settings"]["pix_scale"]
-            pixscale_hours=(pixscale/60/60) / 15
-            pixscale_degrees=(pixscale/60/60) 
-            # Calculate the RA and Dec of the pointing
-            req['ra']=g_dev["mnt"].current_icrs_ra + (((float(image_x)-0.5) * g_dev['cam'].camera_x_size) * pixscale_hours)
-            req['dec']=g_dev["mnt"].current_icrs_dec + (((float(image_y)-0.5)* g_dev['cam'].camera_y_size) * pixscale_degrees)
-            plog ("X centre shift: " + str((((float(image_x)-0.5)* g_dev['cam'].camera_x_size)) * pixscale_hours))
-            plog ("Y centre shift: " + str((((float(image_y)-0.5)* g_dev['cam'].camera_y_size)) * pixscale_degrees))
-            plog ("New RA: " + str(req['ra']))
-            plog ("New DEC: " + str(req['dec']))
-            
-            self.go_command(req, opt, offset=True, calibrate=False)
+            try:
+                # Need to convert image fraction into offset
+                image_x = req['image_x']
+                image_y = req['image_y']            
+                # And the current pixel scale
+                pixscale=float(req['header_pixscale'])
+                pixscale_hours=(pixscale/60/60) / 15
+                pixscale_degrees=(pixscale/60/60) 
+                #breakpoint()
+                # Calculate the RA and Dec of the pointing
+                center_image_ra=float(req['header_rahrs'])
+                center_image_dec=float(req['header_decdeg'])
+
+                
+                x_pixel_shift = ((float(image_x)-0.5) * g_dev['cam'].camera_x_size)/2
+                y_pixel_shift = ((float(image_y)-0.5) * g_dev['cam'].camera_y_size)/2
+                plog ("X pixel shift: " + str(x_pixel_shift))
+                plog ("Y pixel shift: " + str(y_pixel_shift))                
+                
+                req['ra']=center_image_ra + (x_pixel_shift * pixscale_hours)
+                req['dec']=center_image_dec + (y_pixel_shift * pixscale_degrees)
+                
+                plog ("X centre shift: " + str((x_pixel_shift * pixscale_hours)))
+                plog ("Y centre shift: " + str(((y_pixel_shift * pixscale_degrees))))
+                plog ("New RA: " + str(req['ra']))
+                plog ("New DEC: " + str(req['dec']))
+                
+                plog ("New RA - Old RA = "+ str(float(req['ra'])-center_image_ra))
+                plog ("New dec - Old dec = "+ str(float(req['dec'])-center_image_dec))
+                
+
+                
+                self.go_command(req, {})#, offset=True, calibrate=False)
+            except:
+                plog ("seems the image header hasn't arrived at the UI yet, wait a moment")
 
         elif action == 'sky_flat_position':
             self.slewToSkyFlatAsync(skip_open_test=True)

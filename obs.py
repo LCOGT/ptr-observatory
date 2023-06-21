@@ -500,7 +500,7 @@ class Observatory:
         # breakpoint()
         #g_dev['seq'].regenerate_local_masters()
         
-        #g_dev['seq'].sky_grid_pointing_run(max_pointings=50, alt_minimum=25)
+        #g_dev['seq'].sky_grid_pointing_run(max_pointings=8, alt_minimum=25)
 
     def set_last_reference(self, delta_ra, delta_dec, last_time):
         mnt_shelf = shelve.open(self.obsid_path + "ptr_night_shelf/" + "last" + str(self.name))
