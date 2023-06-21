@@ -183,7 +183,7 @@ class Observatory:
             self.debug_lapse_time = time.time() + self.config['debug_duration_sec']
             g_dev['debug'] = True
             self.camera_temperature_in_range_for_calibrations = True
-            #g_dev['obs'].open_and_enabled_to_observe = True
+            g_dev['obs'].open_and_enabled_to_observe = True
         else:
             self.debug_lapse_time = 0.0
             g_dev['debug'] = False
@@ -476,7 +476,8 @@ class Observatory:
         # Send the config to AWS. TODO This has faulted.
         self.update_config()  # This is the never-ending control loop
 
-        # g_dev['obs'].open_and_enabled_to_observe=True
+        if self.debug_flag:
+            g_dev['obs'].open_and_enabled_to_observe=True
 
         # breakpoint()
         #req2 = {'target': 'near_tycho_star', 'area': 150}
