@@ -827,22 +827,41 @@ class Mount:
             self.unpark_command(req, opt)
         elif action == 'center_on_pixels':
             plog (command)
-            # Need to convert image fraction into offset
-            image_x = req['image_x']
-            image_y = req['image_y']            
-            # And the current pixel scale
-            pixscale=g_dev['cam'].config["camera"][g_dev['cam'].name]["settings"]["pix_scale"]
-            pixscale_hours=(pixscale/60/60) / 15
-            pixscale_degrees=(pixscale/60/60) 
-            # Calculate the RA and Dec of the pointing
-            req['ra']=g_dev["mnt"].current_icrs_ra + (((float(image_x)-0.5) * g_dev['cam'].camera_x_size) * pixscale_hours)
-            req['dec']=g_dev["mnt"].current_icrs_dec + (((float(image_y)-0.5)* g_dev['cam'].camera_y_size) * pixscale_degrees)
-            plog ("X centre shift: " + str((((float(image_x)-0.5)* g_dev['cam'].camera_x_size)) * pixscale_hours))
-            plog ("Y centre shift: " + str((((float(image_y)-0.5)* g_dev['cam'].camera_y_size)) * pixscale_degrees))
-            plog ("New RA: " + str(req['ra']))
-            plog ("New DEC: " + str(req['dec']))
-            
-            self.go_command(req, opt, offset=True, calibrate=False)
+            try:
+                # Need to convert image fraction into offset
+                image_x = req['image_x']
+                image_y = req['image_y']            
+                # And the current pixel scale
+                pixscale=float(req['header_pixscale'])
+                pixscale_hours=(pixscale/60/60) / 15
+                pixscale_degrees=(pixscale/60/60) 
+                #breakpoint()
+                # Calculate the RA and Dec of the pointing
+                center_image_ra=float(req['header_rahrs'])
+                center_image_dec=float(req['header_decdeg'])
+
+                
+                x_pixel_shift = ((float(image_x)-0.5) * g_dev['cam'].camera_x_size)/2
+                y_pixel_shift = ((float(image_y)-0.5) * g_dev['cam'].camera_y_size)/2
+                plog ("X pixel shift: " + str(x_pixel_shift))
+                plog ("Y pixel shift: " + str(y_pixel_shift))                
+                
+                req['ra']=center_image_ra + (x_pixel_shift * pixscale_hours)
+                req['dec']=center_image_dec + (y_pixel_shift * pixscale_degrees)
+                
+                plog ("X centre shift: " + str((x_pixel_shift * pixscale_hours)))
+                plog ("Y centre shift: " + str(((y_pixel_shift * pixscale_degrees))))
+                plog ("New RA: " + str(req['ra']))
+                plog ("New DEC: " + str(req['dec']))
+                
+                plog ("New RA - Old RA = "+ str(float(req['ra'])-center_image_ra))
+                plog ("New dec - Old dec = "+ str(float(req['dec'])-center_image_dec))
+                
+
+                
+                self.go_command(req, {})#, offset=True, calibrate=False)
+            except:
+                plog ("seems the image header hasn't arrived at the UI yet, wait a moment")
 
         elif action == 'sky_flat_position':
             self.slewToSkyFlatAsync(skip_open_test=True)
@@ -1243,14 +1262,18 @@ class Mount:
         except Exception as e:
             # This catches an occasional ASCOM/TheSkyX glitch and gets it out of being stuck
             # And back on tracking. 
-            if ('Object reference not set to an instance of an object.' in str(e)):
-                self.home_command()
-                self.park_command()
-                wait_for_slew()
+            if g_dev['mnt'].theskyx:
+                
+                plog("The SkyX had an error.")
+                plog("Usually this is because of a broken connection.")
+                plog("Killing then waiting 60 seconds then reconnecting")
+                g_dev['seq'].kill_and_reboot_theskyx(-1,-1)
                 self.unpark_command()
                 wait_for_slew()
                 self.mount.SlewToCoordinatesAsync(self.ra_mech*RTOH, self.dec_mech*RTOD)  #Is this needed?
-                wait_for_slew()
+            else:
+                plog (traceback.format_exc())
+            
                 
         if self.mount.Tracking == False:
             try:
@@ -1260,23 +1283,17 @@ class Mount:
                 # Yes, this is an awfully non-elegant way to force a mount to start 
                 # Tracking when it isn't implemented in the ASCOM driver. But if anyone has any better ideas, I am all ears - MF
                 # It also doesn't want to get into an endless loop of parking and unparking and homing, hence the rescue counter
-                if ('Property write Tracking is not implemented in this driver.' in str(e)) and self.theskyx_tracking_rescues < 5:
-                    self.theskyx_tracking_rescues=self.theskyx_tracking_rescues + 1
-                    self.park_command()
-                    wait_for_slew()
+                if g_dev['mnt'].theskyx:
+                    
+                    plog("The SkyX had an error.")
+                    plog("Usually this is because of a broken connection.")
+                    plog("Killing then waiting 60 seconds then reconnecting")
+                    g_dev['seq'].kill_and_reboot_theskyx(-1,-1)
                     self.unpark_command()
                     wait_for_slew()
                     self.mount.SlewToCoordinatesAsync(self.ra_mech*RTOH, self.dec_mech*RTOD)  #Is this needed?
-                    wait_for_slew()                  
-                
-                    plog ("this mount may not accept tracking commands")
-                elif ('Property write Tracking is not implemented in this driver.' in str(e)) and self.theskyx_tracking_rescues >= 5:
-                    plog ("theskyx has been rescued one too many times. Just sending it to park.")
-                    self.park_command()
-                    wait_for_slew()
-                    return
                 else:
-                    plog ("problem with setting tracking: ", e)
+                    plog (traceback.format_exc())
         
         g_dev['obs'].time_since_last_slew = time.time()
         g_dev['obs'].last_solve_time = datetime.datetime.now() - datetime.timedelta(days=1)
@@ -1681,11 +1698,16 @@ class Mount:
                 g_dev['obs'].time_of_last_slew=time.time()
                 self.mount.SlewToCoordinatesAsync(tempRA, tempDEC)
             except Exception as e:
-                if ('Object reference not set to an instance of an object.' in str(e)):                       
-                    #self.home_command()
+                if g_dev['mnt'].theskyx:
+                    
+                    plog("The SkyX had an error.")
+                    plog("Usually this is because of a broken connection.")
+                    plog("Killing then waiting 60 seconds then reconnecting")
+                    g_dev['seq'].kill_and_reboot_theskyx(-1,-1)
                     self.unpark_command()
-                    g_dev['obs'].time_of_last_slew=time.time()
-                    self.mount.SlewToCoordinatesAsync(tempRA, tempDEC)
+                    wait_for_slew()
+                    self.mount.SlewToCoordinatesAsync(tempRA, tempDEC)  #Is this needed?
+                else:
                     plog (traceback.format_exc())
             
             g_dev['obs'].time_since_last_slew = time.time()

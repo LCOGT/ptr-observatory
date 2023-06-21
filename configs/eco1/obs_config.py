@@ -47,7 +47,7 @@ site_config = {
     
     # Auto-cenering is great .... unless you are polar aligning
     'turn_auto_centering_off': False,
-    'debug_mode': False,
+    'debug_mode': True,
     'admin_owner_commands_only': False,
     'debug_duration_sec': 7200,
     'owner':  ['google-oauth2|112401903840371673242'],  # WER,  Or this can be
@@ -501,13 +501,13 @@ site_config = {
                         ['lum',    [0,  0],     0, 75, [1.00 ,  72], 'PhLum'],    #1.
                         ['ip',    [1,  1],     0, 50, [1.00 , 119], 'PhRed'],    #2.
                         ['v',    [2,  2],     0, 16, [1.00 , 113], 'PhGreen'],    #3.
-                        ['pb',    [3,  3],     0, 25, [0.80 ,  97], 'PhBlue'],    #4.
-                        ['ha',    [4,  4],     0, 2.634, [0.80 ,  97], 'PhBlue'],    #4.
+                        ['pb',    [3,  3],     600, 25, [0.80 ,  97], 'PhBlue'],    #4.
+                        ['ha',    [4,  4],     400, 2.634, [0.80 ,  97], 'PhBlue'],    #4.
                         #['PR',    [1,  1],     0, 170, [1.00 , 119], 'PhBlue'],    #2.
                         #['PG',    [2,  2],     0, 220, [1.00 , 113], 'PhGreen'],    #3.
                         #['PB',    [3,  3],     0, 300, [0.80 ,  97], 'PhRed'],    #4.
-                        ['s2',    [5,  5],     0, 4.728, [5.00 , 200], 'Halpha'],    #5.
-                        ['o3',    [6,  6],     0, 3.52, [4.00 , 200], 'OIII']],    #6.
+                        ['s2',    [5,  5],     400, 4.728, [5.00 , 200], 'Halpha'],    #5.
+                        ['o3',    [6,  6],     400, 3.52, [4.00 , 200], 'OIII']],    #6.
                         #['s2',    [7,  7],     0, 58.239, [10.0,  200], 'SII']],    #7.
                         #['air',   [7,  7], -1000, 100., [1.00,   70], 'air'],    #8.
                         #['gooble',  [6,  6],     0, .221, [   0,    0], 'dark'],   #9.
