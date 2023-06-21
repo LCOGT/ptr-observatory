@@ -125,7 +125,7 @@ def send_status(obsy, column, status_to_send):
         plog("Failed to create status payload. Usually not fatal:  ", e)
 
     try:
-        reqs.post(uri_status, data=data)
+        reqs.post(uri_status, data=data, timeout=5)
     except Exception as e:
         plog("Failed to send_status. Usually not fatal:  ", e)
         
@@ -461,7 +461,7 @@ class Observatory:
         # Get a list of new jobs to complete (this request
         # marks the commands as "RECEIVED")
         reqs.request(
-            "POST", url_job, data=json.dumps(body), timeout=20
+            "POST", url_job, data=json.dumps(body), timeout=30
         ).json()
 
         # On startup, collect orphaned fits files that may have been dropped from the queue
@@ -678,7 +678,7 @@ sel
                 # Get a list of new jobs to complete (this request
                 # marks the commands as "RECEIVED")
                 unread_commands = reqs.request(
-                    "POST", url_job, data=json.dumps(body), timeout=20
+                    "POST", url_job, data=json.dumps(body), timeout=30
                 ).json()
                 # Make sure the list is sorted in the order the jobs were issued
                 # Note: the ulid for a job is a unique lexicographically-sortable id.
@@ -851,13 +851,13 @@ sel
                         }
                     )
                     
-                    blocks = reqs.post(url_blk, body).json()
+                    blocks = reqs.post(url_blk, body, timeout=30).json()
 
                     self.blocks = blocks
 
                     url_proj = "https://projects.photonranch.org/projects/get-all-projects"
                     if True:
-                        all_projects = reqs.post(url_proj).json()
+                        all_projects = reqs.post(url_proj, timeout=30).json()
                         self.projects = []
                         if len(all_projects) > 0 and len(blocks) > 0:
                             self.projects = all_projects  # NOTE creating a list with a dict entry as item 0
@@ -877,7 +877,7 @@ sel
                             "https://api.photonranch.org/api/events?site="
                             + self.obs_id.upper()
                         )
-                        self.events_new = reqs.get(url).json()
+                        self.events_new = reqs.get(url, timeout=30).json()
                 return  # This creates an infinite loop
 
             else:
@@ -1726,7 +1726,7 @@ sel
                                 try:
                                     aws_resp = g_dev["obs"].api.authenticated_request(
                                         "POST", "/upload/", {"object_name": filename})
-                                    req_resp = reqs.post(aws_resp["url"], data=aws_resp["fields"], files=files)
+                                    req_resp = reqs.post(aws_resp["url"], data=aws_resp["fields"], files=files, timeout=30)
     
                                     self.aws_queue.task_done()
                                     one_at_a_time = 0
@@ -1754,7 +1754,7 @@ sel
                         try:
                             aws_resp = g_dev["obs"].api.authenticated_request(
                                 "POST", "/upload/", {"object_name": filename})
-                            reqs.post(aws_resp["url"], data=aws_resp["fields"], files=files)
+                            reqs.post(aws_resp["url"], data=aws_resp["fields"], files=files, timeout=30)
                             
                             # Only remove file if successfully uploaded
                             if ('calibmasters' not in filepath):
@@ -2749,11 +2749,12 @@ sel
                     #print('\nfiles;  ', files)
                     while True:
                         try:
-                            reqs.post(aws_resp["url"], data=aws_resp["fields"], files=files)
+                            reqs.post(aws_resp["url"], data=aws_resp["fields"], files=files, timeout=30)
 
                             break
                         except:
                             plog("Non-fatal connection glitch for a file posted.")
+                            plog(files)
                             time.sleep(5)
                 self.fast_queue.task_done()
                 one_at_a_time = 0
@@ -2773,7 +2774,7 @@ sel
         )
 
         try:
-            reqs.post(url_log, body)
+            reqs.post(url_log, body, timeout=5)
         # if not response.ok:
         except:
             plog("Log did not send, usually not fatal.")
@@ -2962,7 +2963,7 @@ sel
         #breakpoint()
 
         try:
-            aws_enclosure_status=reqs.get(uri_status)
+            aws_enclosure_status=reqs.get(uri_status, timeout=5)
             
             aws_enclosure_status=aws_enclosure_status.json()
             
@@ -3082,7 +3083,7 @@ sel
 
 
         try:
-            aws_weather_status=reqs.get(uri_status)
+            aws_weather_status=reqs.get(uri_status, timeout=5)
             aws_weather_status=aws_weather_status.json()
             #breakpoint()
             
