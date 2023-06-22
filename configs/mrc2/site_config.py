@@ -78,7 +78,7 @@ site_config = {
     
     'debug_mode' : True,
     'admin_owner_commands_only': False,
-    'debug_duration_sec': 1800,
+    'debug_duration_sec': 70000,
     'owner':  ['google-oauth2|112401903840371673242'],  # Wayne
 
     'owner_alias': ['WER', 'TELOPS'],

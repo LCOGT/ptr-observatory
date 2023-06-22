@@ -401,7 +401,7 @@ class Mount:
             except Exception as e:
                 plog (traceback.format_exc())
                 plog ("mount reconnection failed.")     
-                breakpoint()
+                #breakpoint()
             
             plog ("Trying full-scale reboot")
             try:
@@ -413,7 +413,7 @@ class Mount:
             except Exception as e:
                 plog (traceback.format_exc())
                 plog ("mount full scale reboot failed.")
-                breakpoint()
+                #breakpoint()
             
 
     def get_mount_coordinates(self):
@@ -893,7 +893,7 @@ class Mount:
 
     def go_command(self, req, opt,  offset=False, calibrate=False, auto_center=False):
         ''' Slew to the given ra/dec coordinates. '''        
-        
+
         # First thing to do is check the position of the sun and
         # Whether this violates the pointing principle. 
         sun_coords=get_sun(Time.now())        

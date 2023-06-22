@@ -156,6 +156,7 @@ class Observatory:
         self.wema_name = self.config['wema_name']
         #self.observatory_location = ptr_config["observatory_location"]
         self.debug_flag = self.config['debug_mode']
+
         self.admin_only_flag = self.config['admin_owner_commands_only']
 
         # Default path
@@ -180,10 +181,11 @@ class Observatory:
         #breakpoint()
 
         if self.debug_flag:
+
             self.debug_lapse_time = time.time() + self.config['debug_duration_sec']
             g_dev['debug'] = True
             self.camera_temperature_in_range_for_calibrations = True
-            g_dev['obs'].open_and_enabled_to_observe = True
+            #g_dev['obs'].open_and_enabled_to_observe = True
         else:
             self.debug_lapse_time = 0.0
             g_dev['debug'] = False
@@ -663,6 +665,7 @@ sel
         # This stopping mechanism allows for threads to close cleanly.
         try:
             if self.debug_flag and time.time() > self.debug_lapse_time:
+                #breakpoint()
                 self.debug_flag = False
                 plog("Debug_flag time has lapsed, so disabled. ")
         except:
@@ -1090,8 +1093,9 @@ sel
 
         # If the roof is open, then it is open and enabled to observe
         #try:
+
         if not g_dev['obs'].enc_status == None:
-            if g_dev['obs'].enc_status['shutter_status'] == 'Open':
+            if g_dev['obs'].enc_status['shutter_status'] == 'Open' or self.debug_flag:
                 self.open_and_enabled_to_observe = True
         #except:
         #    pass
