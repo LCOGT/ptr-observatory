@@ -58,8 +58,8 @@ Park 207.3, 5.285.
 
 
 
-instance_type = 'obs' # This is the type of site this is.
-wema_name = 'mrc'    #NB These must be unique across all of PTR.
+
+site_name = 'mrc'    #NB These must be unique across all of PTR.
 obs_id = 'mrc2'
 
 site_config = {
@@ -70,15 +70,12 @@ site_config = {
     #'site': 'mrc2', #TIM this may no longer be needed.
     #'site_id': 'mrc2',
     ####################################################    
-    'instance_type' : 'obs',
-    'wema_name' : 'mrc' ,
+    'site_name' : 'mrc' ,
     'obs_id': 'mrc2',
-    #'observatory_location': site_name.lower(),
+    'observatory_location': site_name.lower(),
 
-    #'debug_site_mode': False,
+    'debug_site_mode': True,
     
-    # Auto-cenering is great .... unless you are polar aligning
-    'turn_auto_centering_off': False,
     'debug_mode' : True,
     'admin_owner_commands_only': False,
     'debug_duration_sec': 70000,
@@ -177,7 +174,7 @@ site_config = {
     'auto_morn_bias_dark': False,
     're-calibrate_on_solve': True,
     'pointing_calibration_on_startup': False,
-    'periodic_focus_time' : 2.0, # This is a time, in hours, over which to bypass automated focussing (e.g. at the start of a project it will not refocus if a new project starts X hours after the last focus)
+    'periodic_focus_time' : 0.5, # This is a time, in hours, over which to bypass automated focussing (e.g. at the start of a project it will not refocus if a new project starts X hours after the last focus)
     'stdev_fwhm' : 1.0, # This is the expected variation in FWHM at a given telescope/camera/site combination. This is used to check if a fwhm is within normal range or the focus has shifted
     'focus_exposure_time': 15, # Exposure time in seconds for exposure image
     'pointing_exposure_time': 20, # Exposure time in seconds for exposure image
@@ -309,9 +306,6 @@ site_config = {
             'east_flip_dec_correction': 0.0,
             'home_after_unpark' : False,
             'home_before_park' : False,
-            
-            'settle_time_after_unpark' : 0,
-            'settle_time_after_park' : 0,
             'permissive_mount_reset' : 'yes', # if this is set to yes, it will reset the mount at startup and when coordinates are out significantly
             'lowest_acceptable_altitude' : -5.0, # Below this altitude, it will automatically try to home and park the scope to recover.
             'time_inactive_until_park' : 3600.0, # How many seconds of inactivity until it will park the telescope
@@ -843,7 +837,7 @@ site_config = {
                 'cosmics_at_default' : 'no',
                 'cosmics_at_maximum' : 'yes',
 
-                'cycle_time': 0.5, # [10, 12, 8, 6],  # 3x3 requires a 1, 1 reaout then a software bin, so slower.
+                'cycle_time': 0, # [10, 12, 8, 6],  # 3x3 requires a 1, 1 reaout then a software bin, so slower.
                 
                 
                 
