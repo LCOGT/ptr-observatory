@@ -682,7 +682,7 @@ sel
                 # Get a list of new jobs to complete (this request
                 # marks the commands as "RECEIVED")
                 unread_commands = reqs.request(
-                    "POST", url_job, data=json.dumps(body), timeout=30
+                    "POST", url_job, data=json.dumps(body), timeout=5
                 ).json()
                 # Make sure the list is sorted in the order the jobs were issued
                 # Note: the ulid for a job is a unique lexicographically-sortable id.
@@ -855,13 +855,13 @@ sel
                         }
                     )
                     
-                    blocks = reqs.post(url_blk, body, timeout=30).json()
+                    blocks = reqs.post(url_blk, body, timeout=5).json()
 
                     self.blocks = blocks
 
                     url_proj = "https://projects.photonranch.org/projects/get-all-projects"
                     if True:
-                        all_projects = reqs.post(url_proj, timeout=30).json()
+                        all_projects = reqs.post(url_proj, timeout=5).json()
                         self.projects = []
                         if len(all_projects) > 0 and len(blocks) > 0:
                             self.projects = all_projects  # NOTE creating a list with a dict entry as item 0
@@ -881,7 +881,7 @@ sel
                             "https://api.photonranch.org/api/events?site="
                             + self.obs_id.upper()
                         )
-                        self.events_new = reqs.get(url, timeout=30).json()
+                        self.events_new = reqs.get(url, timeout=5).json()
                 return  # This creates an infinite loop
 
             else:
@@ -1731,7 +1731,7 @@ sel
                                 try:
                                     aws_resp = g_dev["obs"].api.authenticated_request(
                                         "POST", "/upload/", {"object_name": filename})
-                                    req_resp = reqs.post(aws_resp["url"], data=aws_resp["fields"], files=files, timeout=30)
+                                    req_resp = reqs.post(aws_resp["url"], data=aws_resp["fields"], files=files, timeout=5)
     
                                     self.aws_queue.task_done()
                                     one_at_a_time = 0
@@ -1759,7 +1759,7 @@ sel
                         try:
                             aws_resp = g_dev["obs"].api.authenticated_request(
                                 "POST", "/upload/", {"object_name": filename})
-                            reqs.post(aws_resp["url"], data=aws_resp["fields"], files=files, timeout=30)
+                            reqs.post(aws_resp["url"], data=aws_resp["fields"], files=files, timeout=5)
                             
                             # Only remove file if successfully uploaded
                             if ('calibmasters' not in filepath):
@@ -2754,7 +2754,7 @@ sel
                     #print('\nfiles;  ', files)
                     while True:
                         try:
-                            reqs.post(aws_resp["url"], data=aws_resp["fields"], files=files, timeout=30)
+                            reqs.post(aws_resp["url"], data=aws_resp["fields"], files=files, timeout=5)
 
                             break
                         except:
