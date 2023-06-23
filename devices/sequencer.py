@@ -154,6 +154,7 @@ class Sequencer:
             
         # Load up focus catalogue
         self.focus_catalogue = np.genfromtxt('support_info/focusCatalogue.csv', delimiter=',')
+        self.pointing_catalogue = np.genfromtxt('support_info/pointingCatalogue.csv', delimiter=',')
 
         # This variable prevents the roof being called to open every loop...        
         self.enclosure_next_open_time = time.time()
@@ -4068,12 +4069,12 @@ class Sequencer:
         #tpointdatafile=[]
         
         
-        
+        #breakpoint()
             
 
         
         #print (self.focus_catalogue)
-        catalogue=self.focus_catalogue
+        catalogue=self.pointing_catalogue
         
         plog("Constructing sweep catalogue above altitude " + str(alt_minimum))
         sweep_catalogue=[]
@@ -4198,7 +4199,15 @@ class Sequencer:
             sid = float((Time(datetime.datetime.utcnow(), scale='utc', location=g_dev['mnt'].site_coordinates).sidereal_time('apparent')*u.deg) / u.deg / u.hourangle)
             
             # Get RA, DEC, ra deviation, dec deviation and add to the list
-            
+            try:
+                g_dev['mnt'].pier_side = g_dev[
+                    "mnt"
+                ].mount.sideOfPier  # 0 == Tel Looking West, is flipped.
+                #self.can_report_pierside = True
+            except Exception as e:
+                #plog (e)
+                plog ("Mount cannot report pierside. Setting the code not to ask again, assuming default pointing west.")
+                
             result=[grid_star[0] / 15, grid_star[1], g_dev['obs'].last_platesolved_ra, g_dev['obs'].last_platesolved_dec,g_dev['obs'].last_platesolved_ra_err, g_dev['obs'].last_platesolved_dec_err, sid, g_dev["mnt"].pier_side,g_dev['cam'].start_time_of_observation,g_dev['cam'].current_exposure_time]
             deviation_catalogue_for_tpoint.append (result)
             plog(result)
@@ -4219,7 +4228,14 @@ class Sequencer:
         np.savetxt(self.config['client_path'] +'/'+'tpointmodel' + str(time.time()).replace('.','d') + '.csv', deviation_catalogue_for_tpoint, delimiter=',')
         
         
-        tpointnamefile=self.config['client_path'] +'/'+'TPOINTDAT'+str(time.time()).replace('.','d')+'.txt'
+        tpointnamefile=self.config['client_path'] +'/'+'TPOINTDAT'+str(time.time()).replace('.','d')+'.DAT'
+        
+        with open(tpointnamefile, "a+") as f:            	
+            	f.write(self.config["name"] +"\n")
+        with open(tpointnamefile, "a+") as f:            	        
+            f.write(":NODA\n")
+            f.write(":EQUAT\n")
+            f.write(Angle(float(self.config["latitude"]),u.degree).to_string(sep=' ')+ "\n")
         for entry in deviation_catalogue_for_tpoint:
             #print (entry[0], entry[1])        
             ra_wanted=Angle(entry[0],u.hour).to_string(sep=' ')
