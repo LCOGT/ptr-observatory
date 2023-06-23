@@ -40,7 +40,10 @@ class Rotator:
         
         # The telescope driver also needs to be connected
         self.rotator_telescope = win32com.client.Dispatch(driver.replace('Rotator','Telescope'))
-        self.rotator_telescope.Connected = True
+        try:
+            self.rotator_telescope.Connected = True
+        except:
+            breakpoint()
         
         
         
