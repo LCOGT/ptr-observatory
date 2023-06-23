@@ -41,6 +41,7 @@ import serial
 import time, json
 import datetime
 import traceback
+import os
 import shelve
 from math import cos, radians    #"What plan do we have for making some imports be done this way, elg, import numpy as np...?"
 from global_yard import g_dev    #"Ditto guestion we are importing a single object instance."
@@ -51,7 +52,7 @@ from astropy import units as u
 from astropy.coordinates import SkyCoord, FK5, ICRS,  \
                          EarthLocation, AltAz, get_sun, get_moon
                          #This should be removed or put in a try
-
+#import traceback
 import ptr_utility
 #from config import site_config
 import math
@@ -194,7 +195,15 @@ class Mount:
         self.settings = settings
         win32com.client.pythoncom.CoInitialize()
         self.mount = win32com.client.Dispatch(driver)
-        self.mount.Connected = True
+        try:
+            self.mount.Connected = True
+        except Exception as e:
+            print (e)
+            if 'PWI4_ASCOM' in str(e):
+                os.system('"C:\Program Files (x86)\PlaneWave Instruments\PlaneWave Interface 4\PWI4.exe"')
+            else:
+                plog(traceback.format_exc())
+                breakpoint()
         
         self.driver = driver
         
