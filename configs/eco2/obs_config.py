@@ -405,10 +405,10 @@ site_config = {
             #F4.9 setup
             'start_at_config_reference': True,
             'use_focuser_temperature': False,
-            'reference':26000,    #  20210313  Nominal at 10C Primary temperature
-            'ref_temp':  26000.0,    #  Update when pinning reference
+            'reference':23900,    #  20210313  Nominal at 10C Primary temperature
+            'ref_temp':  23900.0,    #  Update when pinning reference
             'coef_c': 0,   #  Negative means focus moves out as Primary gets colder
-            'coef_0': 26000,  #  Nominal intercept when Primary is at 0.0 C.
+            'coef_0': 23900,  #  Nominal intercept when Primary is at 0.0 C.
             'coef_date':  '20220914',    #This appears to be sensible result 44 points -13 to 3C'reference':  6431,    #  Nominal at 10C Primary temperature
             # #F9 setup
             # 'reference': 4375,    #   Guess 20210904  Nominal at 10C Primary temperature
@@ -417,7 +417,7 @@ site_config = {
             # 'coef_0': 5969,  #  Nominal intercept when Primary is at 0.0 C.
             # 'coef_date':  '20210903',    #  SWAG  OLD: This appears to be sensible result 44 points -13 to 3C
             'minimum': 0,     #  NB this area is confusing steps and microns, and need fixing.
-            'maximum': 18000,   #12672 actually
+            'maximum': 30000,   #12672 actually
             'step_size': 1,
             'backlash': 0,
             'throw' : 200,
@@ -950,7 +950,7 @@ site_config = {
                 'readout_mode': 'Normal',
                 'readout_speed':  0.4,
                 'readout_seconds': 2.4,
-                'smart_stack_exposure_time': 45,
+                'smart_stack_exposure_time': 20,
                 'square_detector': False,
                 'square_pixels': True,
                 'areas_implemented': ['Full', 'SQR', '0.5*0.5°',  '0.7x0.7°', '1x1°', '1.4x1.4°', '2x2°', '2.8x2.8°', '4x4sq°', '5.6x5.6°'],

@@ -3448,6 +3448,9 @@ class Sequencer:
         result = {}
         plog('Autofocus Starting at:  ', foc_pos0, '\n\n')
         
+        # In extensive focus, we widen the throw as we are searching a wider range
+        throw=throw*1.5
+        
         extensive_focus=[]
         for ctr in range(4):
             g_dev['foc'].guarded_move((foc_pos0 - (ctr+0)*throw)*g_dev['foc'].micron_to_steps)  #Added 20220209! A bit late
