@@ -10,3 +10,4 @@ pip install ocs_ingester
 pip install astroquery
 pip install ephem
 pip install pyowm
+pip install serial

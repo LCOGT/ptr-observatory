@@ -125,7 +125,7 @@ def send_status(obsy, column, status_to_send):
         plog("Failed to create status payload. Usually not fatal:  ", e)
 
     try:
-        reqs.post(uri_status, data=data, timeout=5)
+        reqs.post(uri_status, data=data, timeout=20)
     except Exception as e:
         plog("Failed to send_status. Usually not fatal:  ", e)
         
@@ -682,7 +682,7 @@ sel
                 # Get a list of new jobs to complete (this request
                 # marks the commands as "RECEIVED")
                 unread_commands = reqs.request(
-                    "POST", url_job, data=json.dumps(body), timeout=5
+                    "POST", url_job, data=json.dumps(body), timeout=20
                 ).json()
                 # Make sure the list is sorted in the order the jobs were issued
                 # Note: the ulid for a job is a unique lexicographically-sortable id.
@@ -855,7 +855,7 @@ sel
                         }
                     )
                     
-                    blocks = reqs.post(url_blk, body, timeout=5).json()
+                    blocks = reqs.post(url_blk, body, timeout=20).json()
 
                     self.blocks = blocks
 
@@ -881,7 +881,7 @@ sel
                             "https://api.photonranch.org/api/events?site="
                             + self.obs_id.upper()
                         )
-                        self.events_new = reqs.get(url, timeout=5).json()
+                        self.events_new = reqs.get(url, timeout=20).json()
                 return  # This creates an infinite loop
 
             else:
@@ -1731,7 +1731,7 @@ sel
                                 try:
                                     aws_resp = g_dev["obs"].api.authenticated_request(
                                         "POST", "/upload/", {"object_name": filename})
-                                    req_resp = reqs.post(aws_resp["url"], data=aws_resp["fields"], files=files, timeout=5)
+                                    req_resp = reqs.post(aws_resp["url"], data=aws_resp["fields"], files=files, timeout=20)
     
                                     self.aws_queue.task_done()
                                     one_at_a_time = 0
@@ -1759,7 +1759,7 @@ sel
                         try:
                             aws_resp = g_dev["obs"].api.authenticated_request(
                                 "POST", "/upload/", {"object_name": filename})
-                            reqs.post(aws_resp["url"], data=aws_resp["fields"], files=files, timeout=5)
+                            reqs.post(aws_resp["url"], data=aws_resp["fields"], files=files, timeout=20)
                             
                             # Only remove file if successfully uploaded
                             if ('calibmasters' not in filepath):
@@ -2754,7 +2754,7 @@ sel
                     #print('\nfiles;  ', files)
                     while True:
                         try:
-                            reqs.post(aws_resp["url"], data=aws_resp["fields"], files=files, timeout=5)
+                            reqs.post(aws_resp["url"], data=aws_resp["fields"], files=files, timeout=20)
 
                             break
                         except:
@@ -2968,7 +2968,7 @@ sel
         #breakpoint()
 
         try:
-            aws_enclosure_status=reqs.get(uri_status, timeout=5)
+            aws_enclosure_status=reqs.get(uri_status, timeout=20)
             
             aws_enclosure_status=aws_enclosure_status.json()
             
@@ -3088,7 +3088,7 @@ sel
 
 
         try:
-            aws_weather_status=reqs.get(uri_status, timeout=5)
+            aws_weather_status=reqs.get(uri_status, timeout=20)
             aws_weather_status=aws_weather_status.json()
             #breakpoint()
             
