@@ -39,21 +39,21 @@ site_config = {
     # Manual mode turns all automation off. 
     # The scope will only do what you tell it
     # This DOESN'T turn some safetys off 
-    'scope_in_manual_mode' : True,
-    'mount_reference_model_off': True,
+    'scope_in_manual_mode' : False,
+    'mount_reference_model_off': False,
     'sun_checks_off': False,
     'altitude_checks_off': False,    
     'daytime_exposure_time_safety_off': False,
-    
+    # Auto-centering is great.... unless you are polar aligning 
+    'turn_auto_centering_off': False,
     #'observatory_location': site_name.lower(),
     
-    'debug_site_mode': True,
+    'debug_site_mode': False,
     
 
-    'debug_mode': True,
+    'debug_mode': False,
     
-    # Auto-centering is great.... unless you are polar aligning 
-    'turn_auto_centering_off': True,
+    
     
     
     'admin_owner_commands_only': False,
@@ -157,7 +157,7 @@ site_config = {
     'auto_eve_sky_flat': False,
     'eve_sky_flat_sunset_offset': -60.0,  # Minutes  neg means before, + after.
     'eve_cool_down_open' : -60.0,
-    'auto_morn_sky_flat': False,
+    'auto_morn_sky_flat': True,
     'auto_morn_bias_dark': True,
     're-calibrate_on_solve': True,
     'pointing_calibration_on_startup': False,
@@ -498,40 +498,40 @@ site_config = {
                 "filter_type": "50mm_sq.",
                 "filter_manuf": "Astrodon",
                 'home_filter':  1,
-                'default_filter': "w",
+                'default_filter': "Lum",
                 'filter_reference': 1,   # We choose to use W as the default filter.  Gains taken at F9, Ceravolo 300mm
                 # Columns for filter data are : ['filter', 'filter_index', 'filter_offset', 'sky_gain', 'screen_gain', 'alias']
                 #NB NB Note to WER please add cwl, bw and 'shape'
                 'filter_data': [
                         ['air',  [0,  0], -800, 81.6, [2   ,  20], 'ai'],    # 0.  Gains 20211020 Clear NE sky
-                        ['focus',[7,  0],    0, 72.8, [360 , 170], 'w '],    # 1.
-                        ['Lum',  [7,  0],    0, 72.8, [360 , 170], 'w '],    # 2.
-                        ['Red',  [0,  8],    0, 11.0, [360 , 170], 'w '],    # 3.
-                        ['Green',[0 , 7],    0, 18.6, [360 , 170], 'w '],    # 4.
-                        ['Blue', [0,  6],    0, 42.3, [360 , 170], 'w '],    # 5.
-                        ['w',    [7,  0],    0, 74.5, [360 , 170], 'w '],    # 6.
-                        ['up',   [1,  0],    0, 1.39, [2   ,  20], 'up'],    # 7.
-                        ['gp',   [2,  0],    0, 49.4, [.77 ,  20], 'gp'],    # 8.
-                        ['rp',   [3,  0],    0, 17.5, [1.2 ,  20], 'rp'],    # 9.
-                        ['ip',   [4,  0],    0, 5.15, [.65 ,  20], 'ip'],    #10.
-                        ['z',    [5,  0],    0, .855, [1.0 ,  20], 'zs'],    #11.
-                        ['zp',   [0,  9],    0, 1.08, [360 , 170], 'zp'],    #12.
-                        ['y',    [6,  0],    0, .500, [360 , 170], 'y '],    #13.
-                        ['EXO',  [8,  0],    0, 39.7, [360 , 170], 'ex'],    #14.
-                        ['JB',   [9,  0],    0, 28.0, [0.65,  20], 'BB'],    #15.
-                        ['JV',   [10, 0],    0, 24.4, [.32 ,  20], 'BV'],    #16.
-                        ['Rc',   [11, 0],    0, 17.2, [10  , 170], 'BR'],    #17.
-                        ['Ic',   [12, 0],    0, 3.66, [360 , 170], 'BI'],    #18.
-                        ['PL',   [7,  0],    0, 74.34,[360 , 170], 'PL'],    #19.
-                        ['PR',   [0,  8],    0, 13.7, [.32 ,  20], 'PB'],    #20.
-                        ['PG',   [0,  7],    0, 24.0, [30  , 170], 'PG'],    #21.
-                        ['PB',   [0,  6],    0, 37.4, [360 , 170], 'PR'],    #22.
+                        #['focus',[7,  0],    0, 72.8, [360 , 170], 'w '],    # 1.
+                        #['Lum',  [7,  0],    0, 72.8, [360 , 170], 'w '],    # 2.
+                        #['Red',  [0,  8],    0, 11.0, [360 , 170], 'w '],    # 3.
+                        #['Green',[0 , 7],    0, 18.6, [360 , 170], 'w '],    # 4.
+                        #['Blue', [0,  6],    0, 42.3, [360 , 170], 'w '],    # 5.
+                        #['w',    [7,  0],    0, 74.5, [360 , 170], 'w '],    # 6.
+                        ['up',   [1,  0],    0, 5.39, [2   ,  20], 'up'],    # 7.
+                        ['gp',   [2,  0],    0, 358.4, [.77 ,  20], 'gp'],    # 8.
+                        ['rp',   [3,  0],    0, 166.5, [1.2 ,  20], 'rp'],    # 9.
+                        ['ip',   [4,  0],    0, 76.15, [.65 ,  20], 'ip'],    #10.
+                        ['z',    [5,  0],    0, 10.855, [1.0 ,  20], 'zs'],    #11.
+                        ['zp',   [0,  9],    0, 13.08, [360 , 170], 'zp'],    #12.
+                        ['y',    [6,  0],    0, 2.500, [360 , 170], 'y '],    #13.
+                        ['EXO',  [8,  0],    0, 394.7, [360 , 170], 'ex'],    #14.
+                        ['JB',   [9,  0],    0, 200.0, [0.65,  20], 'BB'],    #15.
+                        ['JV',   [10, 0],    0, 213.4, [.32 ,  20], 'BV'],    #16.
+                        ['Rc',   [11, 0],    0, 177.2, [10  , 170], 'BR'],    #17.
+                        ['Ic',   [12, 0],    0, 53.66, [360 , 170], 'BI'],    #18.
+                        ['PL',   [7,  0],    0, 435,[360 , 170], 'PL'],    #19.
+                        ['PR',   [0,  8],    0, 145.7, [.32 ,  20], 'PB'],    #20.
+                        ['PG',   [0,  7],    0, 167.0, [30  , 170], 'PG'],    #21.
+                        ['PB',   [0,  6],    0, 291.4, [360 , 170], 'PR'],    #22.
                         ['NIR',  [0, 10],    0, 5.11, [0.65,  20], 'ni'],    #23.
                         ['O3',   [0,  2],    0, 1.79, [360 , 170], 'O3'],    #24.
-                        ['HA',   [0,  3],    0, .537, [360 , 170], 'HA'],    #25.
-                        ['N2',   [13, 0],    0, 0.32, [360 , 170], 'N2'],    #26.
-                        ['S2',   [0,  4],    0, .847, [0.65,  20], 'S2'],    #27.
-                        ['CR',   [0,  5],    0, .556, [360 , 170], 'Rc'],    #28.
+                        ['HA',   [0,  3],    0, 2.537, [360 , 170], 'HA'],    #25.
+                        ['N2',   [13, 0],    0, 1.32, [360 , 170], 'N2'],    #26.
+                        ['S2',   [0,  4],    0, 2.847, [0.65,  20], 'S2'],    #27.
+                        ['CR',   [0,  5],    0, 1.556, [360 , 170], 'Rc'],    #28.
                         ['dark', [5,  6],    0, 0.20, [360 , 170], 'dk'],    #29.
                         ['dif',  [0,  1],    0, 75.0, [360 , 170], 'df'],    #30. #NONE OF THESE OR BELOW have accurate gains.
                         ['difw', [7,  1],    0, 72.6, [0.65,  20], 'dw'],    #31.
@@ -548,10 +548,9 @@ site_config = {
                         ['difIc',[12, 1],    0, 10. , [0.65,  20], 'dI']],   #42.
 
                 'filter_screen_sort':  [12, 0, 11, 2, 3, 5, 4, 1, 6],   # don't use narrow yet,  8, 10, 9], useless to try.
-
-
-                'filter_sky_sort': [ 27, 26, 25, 28, 12, 7, 24, 18, 23, 10, 20, 17, 9,\
-                                    21 ,16, 15, 14, 22, 8, 30, 19, 6, 0]    #  No diffuser based filters
+                'filter_sky_sort': ['S2','N2','HA','up','NIR','y','z','zp','ip','Ic','PB','JB','JV','PG','gp','EXO','Rc','rp','PR','PL']
+                #'filter_sky_sort': [ 27, 26, 25, 28, 12, 7, 24, 18, 23, 10, 20, 17, 9,\
+                #                    21 ,16, 15, 14, 22, 8, 30, 19, 6, 0]    #  No diffuser based filters
 
 
 
@@ -591,7 +590,8 @@ site_config = {
 
             'settings': {
                 'hold_flats_in_memory': True, # If there is sufficient memory ... OR .... not many flats, it is faster to keep the flats in memory.
-
+                'min_flat_exposure': 0.1,
+                'max_flat_exposure' : 20,
                 
                 
                 # For direct QHY usage we need to set the appropriate gain.
@@ -761,7 +761,7 @@ site_config = {
                 'number_of_dark_to_collect': 17,
                 'number_of_bias_to_store': 255,   #SWAGS by Wayne 20230613
                 'number_of_dark_to_store': 71,                
-                'number_of_flat_to_collect' : 8,                
+                'number_of_flat_to_collect' : 5,                
                 'number_of_flat_to_store' : 63,
                 
                 'dark_exposure': 360,

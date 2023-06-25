@@ -420,6 +420,8 @@ class Observatory:
         self.daytime_exposure_time_safety_off=self.config['daytime_exposure_time_safety_off']
         self.mount_reference_model_off= self.config['mount_reference_model_off'],
         
+        self.camera_temperature_in_range_for_calibrations=True
+        
         self.last_platesolved_ra = np.nan
         self.last_platesolved_dec =np.nan
         self.last_platesolved_ra_err = np.nan
@@ -498,6 +500,7 @@ class Observatory:
         # breakpoint()
         #req2 = {'target': 'near_tycho_star', 'area': 150}
         #opt = {}
+        #g_dev['obs'].open_and_enabled_to_observe = True
         #g_dev['seq'].sky_flat_script({}, {}, morn=True)
         # g_dev['seq'].extensive_focus_script(req2,opt)
         #req = {'bin1': True, 'bin2': False, 'bin3': False, 'bin4': False, 'numOfBias': 63, \
@@ -517,7 +520,7 @@ class Observatory:
         # breakpoint()
         #g_dev['seq'].regenerate_local_masters()
         
-        g_dev['seq'].sky_grid_pointing_run(max_pointings=25, alt_minimum=25)
+        #g_dev['seq'].sky_grid_pointing_run(max_pointings=25, alt_minimum=25)
 
     def set_last_reference(self, delta_ra, delta_dec, last_time):
         mnt_shelf = shelve.open(self.obsid_path + "ptr_night_shelf/" + "last" + str(self.name))
@@ -1382,7 +1385,7 @@ sel
                             #    plog("This scope does not have control of the roof though.")
                 except:
                     plog('Line 1192 Roof shutter status faulted.')
-                if not self.scope_in_manual_mode:
+                if not self.scope_in_manual_mode and not g_dev['seq'].flats_being_collected :
                     # If the roof should be shut, then the telescope should be parked.
                     if roof_should_be_shut == True:
                         if not g_dev['mnt'].mount.AtPark:
