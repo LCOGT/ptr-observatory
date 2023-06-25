@@ -151,12 +151,12 @@ site_config = {
     'automatic_detail_default': "Enclosure is initially set to Manual by ARO site_config.",
     'observing_check_period' : 2,    # How many minutes between weather checks
     'enclosure_check_period' : 2,    # How many minutes between enclosure checks
-    'auto_eve_bias_dark': False,
+    'auto_eve_bias_dark': True,
     
     'auto_midnight_moonless_bias_dark': False,
-    'auto_eve_sky_flat': False,
-    'eve_sky_flat_sunset_offset': -60.0,  # Minutes  neg means before, + after.
-    'eve_cool_down_open' : -60.0,
+    'auto_eve_sky_flat': True,
+    'eve_sky_flat_sunset_offset': -45.0,  # Minutes  neg means before, + after.
+    'eve_cool_down_open' : -50.0,
     'auto_morn_sky_flat': True,
     'auto_morn_bias_dark': True,
     're-calibrate_on_solve': True,
@@ -164,7 +164,7 @@ site_config = {
     'periodic_focus_time' : 2.0, # This is a time, in hours, over which to bypass automated focussing (e.g. at the start of a project it will not refocus if a new project starts X hours after the last focus)
     'stdev_fwhm' : 0.5, # This is the expected variation in FWHM at a given telescope/camera/site combination. This is used to check if a fwhm is within normal range or the focus has shifted
     'focus_exposure_time': 10,  # Exposure time in seconds for exposure image
-    'pointing_exposure_time': 20,  # Exposure time in seconds for exposure image
+    'pointing_exposure_time': 10,  # Exposure time in seconds for pointing run image
     'pointing_correction_dec_multiplier' : 1,
     'pointing_correction_ra_multiplier' : 1,
     
@@ -296,7 +296,7 @@ site_config = {
             'settle_time_after_park' : 10,
   #
             'permissive_mount_reset' : 'no', # if this is set to yes, it will reset the mount at startup and when coordinates are out significantly
-            'lowest_acceptable_altitude' : -10.0, # Below this altitude, it will automatically try to home and park the scope to recover.
+            'lowest_acceptable_altitude' : -1.0, # Below this altitude, it will automatically try to home and park the scope to recover.
             'time_inactive_until_park' : 3600.0, # How many seconds of inactivity until it will park the telescope
             'west_clutch_ra_correction': 0.0,  #final:   0.0035776615398219747 -0.1450812805892454
             'west_clutch_dec_correction': 0.0,
@@ -308,14 +308,14 @@ site_config = {
                 'elevation_offset': 0.0,  # meters above sea level
                 'home_park_altitude': 0.0,
                 'home_park_azimuth': 0.0,
-                'horizon':  20.,    # Meant to be a circular horizon. Or set to None if below is filled in.
+                'horizon':  25.,    # Meant to be a circular horizon. Or set to None if below is filled in.
                 'horizon_detail': {  # Meant to be something to draw on the Skymap with a spline fit.
-                    '0.0': 10,
-                    '90' : 10,
-                    '180': 10,
-                    '270': 10,
-                    '359': 10
-                    },  # We use a dict because of fragmented azimuth mesurements.
+                    '0.0': 25.,
+                    '90' : 25.,
+                    '180': 25.,
+                    '270': 25.,
+                    '359': 25.
+                    },  # We use a dict because of fragmented azimuth measurements.
                 'refraction_on': True,
                 'model_on': True,
                 'rates_on': True,
@@ -514,7 +514,7 @@ site_config = {
                         ['gp',   [2,  0],    0, 358.4, [.77 ,  20], 'gp'],    # 8.
                         ['rp',   [3,  0],    0, 166.5, [1.2 ,  20], 'rp'],    # 9.
                         ['ip',   [4,  0],    0, 76.15, [.65 ,  20], 'ip'],    #10.
-                        ['z',    [5,  0],    0, 10.855, [1.0 ,  20], 'zs'],    #11.
+                        ['zs',   [5,  0],    0, 10.855, [1.0 ,  20], 'zs'],    #11.
                         ['zp',   [0,  9],    0, 13.08, [360 , 170], 'zp'],    #12.
                         ['y',    [6,  0],    0, 2.500, [360 , 170], 'y '],    #13.
                         ['EXO',  [8,  0],    0, 394.7, [360 , 170], 'ex'],    #14.
@@ -548,7 +548,7 @@ site_config = {
                         ['difIc',[12, 1],    0, 10. , [0.65,  20], 'dI']],   #42.
 
                 'filter_screen_sort':  [12, 0, 11, 2, 3, 5, 4, 1, 6],   # don't use narrow yet,  8, 10, 9], useless to try.
-                'filter_sky_sort': ['S2','N2','HA','up','NIR','y','z','zp','ip','Ic','PB','JB','JV','PG','gp','EXO','Rc','rp','PR','PL']
+                'filter_sky_sort': ['S2','N2','HA','up','NIR','y','zs','zp','ip','Ic','PB','JB','JV','PG','gp','EXO','Rc','rp','PR','PL']
                 #'filter_sky_sort': [ 27, 26, 25, 28, 12, 7, 24, 18, 23, 10, 20, 17, 9,\
                 #                    21 ,16, 15, 14, 22, 8, 30, 19, 6, 0]    #  No diffuser based filters
 
@@ -723,7 +723,7 @@ site_config = {
                 'east_offset': 0.0,     # Not sure why these three are even here.
                 'rotation': 0.0,        # Probably remove.
                 'min_exposure': 0.00001,
-                'ma)xexposure': 360,
+                'max_exposure': 360,
                 'max_daytime_exposure': 0.5,
                 'can_subframe':  True,
                 'min_subframe':  [128, 128],
@@ -757,12 +757,12 @@ site_config = {
                 'has_darkslide':  True,
                 'darkslide_com': 'COM10',  #old controller COM10, new one 9a COM17
                 'shutter_type': "Electronic",
-                'number_of_bias_to_collect': 63,
-                'number_of_dark_to_collect': 17,
-                'number_of_bias_to_store': 255,   #SWAGS by Wayne 20230613
-                'number_of_dark_to_store': 71,                
-                'number_of_flat_to_collect' : 5,                
-                'number_of_flat_to_store' : 63,
+                'number_of_bias_to_collect': 31,
+                'number_of_dark_to_collect': 11,
+                'number_of_bias_to_store': 31,   #SWAGS by Wayne 20230613
+                'number_of_dark_to_store': 31,                
+                'number_of_flat_to_collect': 5,                
+                'number_of_flat_to_store' : 15,
                 
                 'dark_exposure': 360,
                 'flat_bin_spec': '1,1', #'2,2'],    #Default binning for flats
@@ -771,15 +771,15 @@ site_config = {
                 'dark_length' : 360,
                 #'bias_count' : 10,
                 #'dark_count' : 10,
-                'bin_modes':  [[1, 1, 0.2876], [2, 2, 0.575], [3, 3, 0.863], [4, 4, 1.15]],   #Meaning no binning choice if list has only one entry, default should be first.
-                'optimal_bin':  [2, 2, 0.575],
-                'max_res_bin':  [1, 1, 0.2876],
-                #'pix_scale': [0.2876, 0.575, 0.863, 1.15],    #  1.4506,  bin-2  2* math.degrees(math.atan(9/3962000))*3600
+                'bin_modes':  [[1, 1, 0.528], [2, 2, 1.055], [3, 3, 1.583], [4, 4, 2.110]],   #Meaning no binning choice if list has only one entry, default should be first.
+                'optimal_bin':  [2, 2, 1.055],
+                'max_res_bin':  [1, 1, 0.528],
+                #'pix_scale': [0.528, 1.055, 1.583, 2.110],    #  1.4506,  bin-2  2* math.degrees(math.atan(9/3962000))*3600
                 
                 
                 
-                '1x1_pix_scale': 0.2876,    #  This is the 1x1 binning pixelscale
-                'native_bin': 1, # Needs to be simple, it will recalculate things on the 1x1 binning pixscale above.
+                '1x1_pix_scale': 0.528,    #  This is the 1x1 binning pixelscale
+                'native_bin': 2, # Needs to be simple, it will recalculate things on the 1x1 binning pixscale above.
                 # The drizzle_value is by the new pixelscale
                 # for the new resolution when stacking in the EVA pipeline
                 # Realistically you want a resolution of about 0.5 arcseconds per pixel
