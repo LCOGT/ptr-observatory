@@ -4126,6 +4126,8 @@ class Sequencer:
                 print ("still too many")
                 if len(finalCatalogue) < 20:
                     spread=spread+2400
+                elif (len(finalCatalogue) / max_pointings) > 4:
+                    spread=spread+3600                    
                 else:
                     spread=spread + 1200
             else:
