@@ -516,7 +516,7 @@ class Observatory:
         # breakpoint()
         #g_dev['seq'].regenerate_local_masters()
         
-        #g_dev['seq'].sky_grid_pointing_run(max_pointings=30, alt_minimum=25)
+        g_dev['seq'].sky_grid_pointing_run(max_pointings=25, alt_minimum=25)
 
     def set_last_reference(self, delta_ra, delta_dec, last_time):
         mnt_shelf = shelve.open(self.obsid_path + "ptr_night_shelf/" + "last" + str(self.name))
@@ -2360,7 +2360,10 @@ sel
                                 self.pointing_correction_request_dec = pointing_dec + err_dec# * dec_correction_multiplier)
                                 if target_dec > -85 and target_dec < 85:
                                     try:
-                                        g_dev["mnt"].pier_side=self.mount.sideOfPier
+                                        try:
+                                            g_dev["mnt"].pier_side=g_dev['mnt'].mount.sideOfPier
+                                        except:
+                                            plog("MTF chase this later")
                                         # if g_dev["mnt"].pier_side_str == "Looking West":
                                         if g_dev["mnt"].pier_side == 0:
                                             try:
