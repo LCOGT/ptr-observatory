@@ -418,6 +418,7 @@ class Observatory:
         self.sun_checks_off=self.config['sun_checks_off']
         self.altitude_checks_off=self.config['altitude_checks_off']
         self.daytime_exposure_time_safety_off=self.config['daytime_exposure_time_safety_off']
+        self.mount_reference_model_off= self.config['mount_reference_model_off'],
         
         self.last_platesolved_ra = np.nan
         self.last_platesolved_dec =np.nan
