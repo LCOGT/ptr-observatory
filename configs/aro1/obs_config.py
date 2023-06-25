@@ -141,7 +141,7 @@ site_config = {
     'automatic_detail_default': "Enclosure is initially set to Manual by ARO site_config.",
     'observing_check_period' : 2,    # How many minutes between weather checks
     'enclosure_check_period' : 2,    # How many minutes between enclosure checks
-    'auto_eve_bias_dark': True,
+    'auto_eve_bias_dark': False,
     
     'auto_midnight_moonless_bias_dark': False,
     'auto_eve_sky_flat': False,

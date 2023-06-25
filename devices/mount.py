@@ -556,7 +556,7 @@ class Mount:
                 icrs_dec=self.current_icrs_dec
                 rd = SkyCoord(ra=self.current_icrs_ra*u.hour, dec=self.current_icrs_dec*u.deg)  
             
-            aa = AltAz (location=self.site_coordinates, obstime=Time.now())
+            aa = AltAz(location=self.site_coordinates, obstime=Time.now())
             rd = rd.transform_to(aa)
             alt = float(rd.alt/u.deg)
             az = float(rd.az/u.deg)  

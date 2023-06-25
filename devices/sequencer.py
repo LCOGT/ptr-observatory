@@ -278,6 +278,7 @@ class Sequencer:
         elif action == "run" and script == 'collectSkyFlats':
             self.sky_flat_script(req, opt)
         elif action == "run" and script in ['32TargetPointingRun', 'pointingRun', 'makeModel']:
+            breakpoint()
             if req['gridType'] == 'sweep':
                self.equatorial_pointing_run(req, opt)
             elif req['gridType'] == 'cross':
@@ -4117,6 +4118,7 @@ class Sequencer:
             				#print (sweep_catalogue[ctr])
             
             print ("Sweep Size: " + str(len(finalCatalogue)))
+            breakpoint()
             if len(finalCatalogue) > max_pointings:
                 print ("still too many")
                 if len(finalCatalogue) < 20:
@@ -4244,13 +4246,21 @@ class Sequencer:
             
             
             if entry[7] == 0:
-                pierstring='WEST'
-                dec_got=Angle(entry[3]+180,u.degree).to_string(sep=' ')
+                pierstring='0  1'
+                entry[2] += 12.
+                while entry[2] >= 24:
+                    entry[2] -= 24.
+                ra_got=Angle(entry[2],u.hour).to_string(sep=' ')
+                # NB NB The next line is incorrect for the Southern hemisphere. WER
+                dec_got=Angle(180 - entry[3],u.degree).to_string(sep=' ')  # as in 89 90 91 92 when going 'under the pole'.
+                plog("Mechanical adjust  Ra, Dec: ", ra_got, dec_got)
             else:
-                pierstring='EAST'
+                pierstring='0  0'
+                ra_got=Angle(entry[2],u.hour).to_string(sep=' ')
                 dec_got=Angle(entry[3],u.degree).to_string(sep=' ')
         
-            writeline = ra_wanted + " " + dec_wanted + " " + ra_got + " " + dec_got + " "+ str(entry[6]) + " "+ pierstring
+            sid_str = Angle(entry[6], u.hour).to_string(sep=' ')[:5]
+            writeline = ra_wanted + " " + dec_wanted + " " + ra_got + " " + dec_got + " "+ sid_str + " "+ pierstring
                         
             with open(tpointnamefile, "a+") as f:            	
                 	f.write(writeline+"\n")

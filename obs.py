@@ -503,7 +503,7 @@ class Observatory:
         # breakpoint()
         #g_dev['seq'].regenerate_local_masters()
         
-        #g_dev['seq'].sky_grid_pointing_run(max_pointings=8, alt_minimum=25)
+        #g_dev['seq'].sky_grid_pointing_run(max_pointings=30, alt_minimum=25)
 
     def set_last_reference(self, delta_ra, delta_dec, last_time):
         mnt_shelf = shelve.open(self.obsid_path + "ptr_night_shelf/" + "last" + str(self.name))
@@ -1103,7 +1103,7 @@ sel
         # Check that the mount hasn't slewed too close to the sun
         # If the roof is open and enabled to observe
         try:
-            if not g_dev['mnt'].mount.Slewing and self.open_and_enabled_to_observe:
+            if False and not g_dev['mnt'].mount.Slewing and self.open_and_enabled_to_observe:
                 sun_coords = get_sun(Time.now())
                 temppointing = SkyCoord((g_dev['mnt'].current_icrs_ra)*u.hour,
                                         (g_dev['mnt'].current_icrs_dec)*u.degree, frame='icrs')
@@ -2108,7 +2108,7 @@ sel
                                         + str(np.nanmedian(g_dev["foc"].focus_tracker))
                                         + " from "
                                         + str(g_dev["foc"].last_focus_fwhm)
-                                        + ". Autofocus triggered for next exposures.",
+                                        + ".",
                                         p_level="INFO",
                                     )
                     
