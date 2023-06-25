@@ -278,13 +278,12 @@ class Sequencer:
         elif action == "run" and script == 'collectSkyFlats':
             self.sky_flat_script(req, opt)
         elif action == "run" and script in ['32TargetPointingRun', 'pointingRun', 'makeModel']:
-            breakpoint()
             if req['gridType'] == 'sweep':
                self.equatorial_pointing_run(req, opt)
             elif req['gridType'] == 'cross':
                 self.cross_pointing_run(req, opt)
             else:
-                self.sky_grid_pointing_run(req, opt)
+                self.sky_grid_pointing_run()  # req, opt)
         elif action == "run" and script in ("collectBiasesAndDarks"):
             self.bias_dark_script(req, opt, morn=True)
         elif action == "run" and script == 'takeLRGBStack':
@@ -4121,9 +4120,9 @@ class Sequencer:
             				#print (sweep_catalogue[ctr])
             
             print ("Sweep Size: " + str(len(finalCatalogue)))
-            breakpoint()
+
             if len(finalCatalogue) > max_pointings:
-                print ("still too many")
+                print ("still too many:  ", len(finalCatalogue))
                 if len(finalCatalogue) < 20:
                     spread=spread+2400
                 elif (len(finalCatalogue) / max_pointings) > 4:
@@ -4244,7 +4243,8 @@ class Sequencer:
         with open(tpointnamefile, "a+") as f:            	        
             f.write(":NODA\n")
             f.write(":EQUAT\n")
-            f.write(Angle(float(self.config["latitude"]),u.degree).to_string(sep=' ')+ "\n")
+            latitude = float(self.config["latitude"])
+            f.write(Angle(latitude,u.degree).to_string(sep=' ')+ "\n")
         for entry in deviation_catalogue_for_tpoint:
             #print (entry[0], entry[1])        
             ra_wanted=Angle(entry[0],u.hour).to_string(sep=' ')
@@ -4258,9 +4258,12 @@ class Sequencer:
                 while entry[2] >= 24:
                     entry[2] -= 24.
                 ra_got=Angle(entry[2],u.hour).to_string(sep=' ')
-                # NB NB The next line is incorrect for the Southern hemisphere. WER
-                dec_got=Angle(180 - entry[3],u.degree).to_string(sep=' ')  # as in 89 90 91 92 when going 'under the pole'.
-                plog("Mechanical adjust  Ra, Dec: ", ra_got, dec_got)
+            
+                if latitude >= 0:
+                    dec_got=Angle(180 - entry[3],u.degree).to_string(sep=' ')  # as in 89 90 91 92 when going 'under the pole'.
+                else:
+                    dec_got=Angle(-(180 + entry[3]),u.degree).to_string(sep=' ') 
+                #plog("Mechanical adjust  Ra, Dec: ", ra_got, dec_got)
             else:
                 pierstring='0  0'
                 ra_got=Angle(entry[2],u.hour).to_string(sep=' ')
