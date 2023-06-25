@@ -574,7 +574,7 @@ class Sequencer:
         
         # This bit is really to get the scope up and running if the roof opens
         if ((g_dev['events']['Cool Down, Open']  <= ephem_now < g_dev['events']['Observing Ends'])) and not self.cool_down_latch and \
-            g_dev['obs'].open_and_enabled_to_observe and g_dev['mnt'].mount.AtPark and (time.time() - self.time_roof_last_opened) < 300 :
+            g_dev['obs'].open_and_enabled_to_observe and not g_dev['obs'].scope_in_manual_mode and g_dev['mnt'].mount.AtPark and (time.time() - self.time_roof_last_opened) < 300 :
 
             self.nightly_reset_complete = False
             self.cool_down_latch = True
@@ -637,7 +637,7 @@ class Sequencer:
             #    plog ("Found shutter open after Close and Park, shutting up the shutter")
             #    self.park_and_close(enc_status)
             
-        if not self.bias_dark_latch and ((events['Eve Bias Dark'] <= ephem_now < events['End Eve Bias Dark']) and \
+        if not self.bias_dark_latch and not g_dev['obs'].scope_in_manual_mode and ((events['Eve Bias Dark'] <= ephem_now < events['End Eve Bias Dark']) and \
              self.config['auto_eve_bias_dark'] and not self.eve_bias_done and g_dev['obs'].camera_temperature_in_range_for_calibrations):   #events['End Eve Bias Dark']) and \
             
             self.bias_dark_latch = True
@@ -651,7 +651,7 @@ class Sequencer:
             self.eve_bias_done = True
             self.bias_dark_latch = False
             
-        elif not self.eve_sky_flat_latch and ((events['Eve Sky Flats'] <= ephem_now < events['End Eve Sky Flats'])  \
+        elif not self.eve_sky_flat_latch and not g_dev['obs'].scope_in_manual_mode and ((events['Eve Sky Flats'] <= ephem_now < events['End Eve Sky Flats'])  \
                and self.config['auto_eve_sky_flat'] and g_dev['obs'].open_and_enabled_to_observe and not self.eve_flats_done and g_dev['obs'].camera_temperature_in_range_for_calibrations):
 
             self.eve_sky_flat_latch = True
@@ -669,7 +669,7 @@ class Sequencer:
             
 
         elif ((g_dev['events']['Clock & Auto Focus']  <= ephem_now < g_dev['events']['Observing Begins'])) \
-                and self.night_focus_ready==True and not g_dev['debug'] and  g_dev['obs'].open_and_enabled_to_observe and not self.clock_focus_latch:
+                and self.night_focus_ready==True and not g_dev['obs'].scope_in_manual_mode and not g_dev['debug'] and  g_dev['obs'].open_and_enabled_to_observe and not self.clock_focus_latch:
 
             self.nightly_reset_complete = False
             self.clock_focus_latch = True
@@ -709,7 +709,7 @@ class Sequencer:
 # =============================================================================
         elif (events['Observing Begins'] <= ephem_now \
                                    < events['Observing Ends'])  \
-                                   and  g_dev['obs'].blocks is not None and g_dev['obs'].projects \
+                                   and  g_dev['obs'].blocks is not None and not g_dev['obs'].scope_in_manual_mode and g_dev['obs'].projects \
                                    is not None and g_dev['obs'].open_and_enabled_to_observe and self.clock_focus_latch == False:
                                      
             try:
@@ -815,7 +815,7 @@ class Sequencer:
                 plog("Hang up in sequencer.")
                 
         elif not self.morn_sky_flat_latch and ((events['Morn Sky Flats'] <= ephem_now < events['End Morn Sky Flats']) and \
-               self.config['auto_morn_sky_flat']) and not self.morn_flats_done and g_dev['obs'].camera_temperature_in_range_for_calibrations and g_dev['obs'].open_and_enabled_to_observe:
+               self.config['auto_morn_sky_flat']) and not g_dev['obs'].scope_in_manual_mode and not self.morn_flats_done and g_dev['obs'].camera_temperature_in_range_for_calibrations and g_dev['obs'].open_and_enabled_to_observe:
 
             self.morn_sky_flat_latch = True
             
@@ -828,7 +828,7 @@ class Sequencer:
             
         
         elif not self.morn_bias_dark_latch and (events['Morn Bias Dark'] <= ephem_now < events['End Morn Bias Dark']) and \
-                  self.config['auto_morn_bias_dark'] and not  self.morn_bias_done and g_dev['obs'].camera_temperature_in_range_for_calibrations: # and g_dev['enc'].mode == 'Automatic' ):
+                  self.config['auto_morn_bias_dark'] and not g_dev['obs'].scope_in_manual_mode and not  self.morn_bias_done and g_dev['obs'].camera_temperature_in_range_for_calibrations: # and g_dev['enc'].mode == 'Automatic' ):
 
             self.morn_bias_dark_latch = True
             req = {'bin1': True, 'bin2': False, 'bin3': False, 'bin4': False, 'numOfBias': 63, \
@@ -859,7 +859,7 @@ class Sequencer:
                 
         #Here is where observatories who do their biases at night... well.... do their biases!
         #If it hasn't already been done tonight.        
-        if self.config['auto_midnight_moonless_bias_dark']:
+        if self.config['auto_midnight_moonless_bias_dark'] and not g_dev['obs'].scope_in_manual_mode:
             # Check it is in the dark of night
             if  (events['Astro Dark'] <= ephem_now < events['End Astro Dark']):     
                 # Check that there isn't any activity indicating someone using it...
@@ -3449,6 +3449,9 @@ class Sequencer:
         result = {}
         plog('Autofocus Starting at:  ', foc_pos0, '\n\n')
         
+        # In extensive focus, we widen the throw as we are searching a wider range
+        throw=throw*1.5
+        
         extensive_focus=[]
         for ctr in range(4):
             g_dev['foc'].guarded_move((foc_pos0 - (ctr+0)*throw)*g_dev['foc'].micron_to_steps)  #Added 20220209! A bit late
@@ -4259,8 +4262,10 @@ class Sequencer:
                 ra_got=Angle(entry[2],u.hour).to_string(sep=' ')
                 dec_got=Angle(entry[3],u.degree).to_string(sep=' ')
         
+
             sid_str = Angle(entry[6], u.hour).to_string(sep=' ')[:5]
             writeline = ra_wanted + " " + dec_wanted + " " + ra_got + " " + dec_got + " "+ sid_str + " "+ pierstring
+
                         
             with open(tpointnamefile, "a+") as f:            	
                 	f.write(writeline+"\n")

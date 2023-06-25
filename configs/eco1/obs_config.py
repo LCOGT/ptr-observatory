@@ -42,6 +42,12 @@ site_config = {
     'obs_id': 'eco1', # THIS IS THE NAME OF THIS OBSERVATORY
     #'observatory_location': site_name.lower(),
     
+    # Manual mode turns all automation off. 
+    # The scope will only do what you tell it
+    # This DOESN'T turn some safetys off 
+    'scope_in_manual_mode' : False,
+    'sun_checks_off': False,
+    'altitude_checks_off': False,
     
     #'debug_site_mode': False,
     

@@ -125,7 +125,7 @@ def send_status(obsy, column, status_to_send):
         plog("Failed to create status payload. Usually not fatal:  ", e)
 
     try:
-        reqs.post(uri_status, data=data, timeout=5)
+        reqs.post(uri_status, data=data, timeout=20)
     except Exception as e:
         plog("Failed to send_status. Usually not fatal:  ", e)
         
@@ -411,6 +411,13 @@ class Observatory:
         # if self.config["mount"]["mount1"]["permissive_mount_reset"] == "yes":
         g_dev["mnt"].reset_mount_reference()
 
+
+        # set manual mode at startup
+        self.scope_in_manual_mode=self.config['scope_in_manual_mode']
+        
+        self.sun_checks_off=self.config['sun_checks_off']
+        self.altitude_checks_off=self.config['altitude_checks_off']
+        
         # Keep track of how long it has been since the last activity
         self.time_of_last_exposure = time.time()
         self.time_of_last_slew = time.time()
@@ -682,7 +689,7 @@ sel
                 # Get a list of new jobs to complete (this request
                 # marks the commands as "RECEIVED")
                 unread_commands = reqs.request(
-                    "POST", url_job, data=json.dumps(body), timeout=5
+                    "POST", url_job, data=json.dumps(body), timeout=20
                 ).json()
                 # Make sure the list is sorted in the order the jobs were issued
                 # Note: the ulid for a job is a unique lexicographically-sortable id.
@@ -855,7 +862,7 @@ sel
                         }
                     )
                     
-                    blocks = reqs.post(url_blk, body, timeout=5).json()
+                    blocks = reqs.post(url_blk, body, timeout=20).json()
 
                     self.blocks = blocks
 
@@ -881,7 +888,7 @@ sel
                             "https://api.photonranch.org/api/events?site="
                             + self.obs_id.upper()
                         )
-                        self.events_new = reqs.get(url, timeout=5).json()
+                        self.events_new = reqs.get(url, timeout=20).json()
                 return  # This creates an infinite loop
 
             else:
@@ -1103,7 +1110,9 @@ sel
         # Check that the mount hasn't slewed too close to the sun
         # If the roof is open and enabled to observe
         try:
-            if False and not g_dev['mnt'].mount.Slewing and self.open_and_enabled_to_observe:
+
+            if not g_dev['mnt'].mount.Slewing and self.open_and_enabled_to_observe and not self.sun_checks_off:
+
                 sun_coords = get_sun(Time.now())
                 temppointing = SkyCoord((g_dev['mnt'].current_icrs_ra)*u.hour,
                                         (g_dev['mnt'].current_icrs_dec)*u.degree, frame='icrs')
@@ -1210,7 +1219,7 @@ sel
             # breakpoint()
 
             
-            if not g_dev['mnt'].mount.AtPark: # Only do the sun check if scope isn't parked
+            if not g_dev['mnt'].mount.AtPark and self.open_and_enabled_to_observe and not self.sun_checks_off: # Only do the sun check if scope isn't parked
                 # Check that the mount hasn't slewed too close to the sun
                 sun_coords = get_sun(Time.now())
                 try:
@@ -1250,7 +1259,7 @@ sel
 
             # Roof Checks only if not in debug mode
             # And only check if the scope thinks everything is open and hunky dory
-            if not self.debug_flag and self.open_and_enabled_to_observe:
+            if not self.debug_flag and self.open_and_enabled_to_observe and not self.scope_in_manual_mode:
                 if g_dev['obs'].enc_status is not None:
                     if g_dev['obs'].enc_status['shutter_status'] == 'Software Fault':
                         plog("Software Fault Detected. Will alert the authorities!")
@@ -1335,19 +1344,20 @@ sel
                 roof_should_be_shut = False
 
                 # breakpoint()
-                if (g_dev['events']['End Morn Sky Flats'] < ephem.now() < g_dev['events']['End Morn Bias Dark']):
-                    roof_should_be_shut = True
-                    self.open_and_enabled_to_observe = False
-                if not self.config['auto_morn_sky_flat']:
-                    if (g_dev['events']['Observing Ends'] < ephem.now() < g_dev['events']['End Morn Bias Dark']):
+                if not self.scope_in_manual_mode:
+                    if (g_dev['events']['End Morn Sky Flats'] < ephem.now() < g_dev['events']['End Morn Bias Dark']):
                         roof_should_be_shut = True
                         self.open_and_enabled_to_observe = False
-                    if (g_dev['events']['Naut Dawn'] < ephem.now() < g_dev['events']['Morn Bias Dark']):
+                    if not self.config['auto_morn_sky_flat']:
+                        if (g_dev['events']['Observing Ends'] < ephem.now() < g_dev['events']['End Morn Bias Dark']):
+                            roof_should_be_shut = True
+                            self.open_and_enabled_to_observe = False
+                        if (g_dev['events']['Naut Dawn'] < ephem.now() < g_dev['events']['Morn Bias Dark']):
+                            roof_should_be_shut = True
+                            self.open_and_enabled_to_observe = False
+                    if not (g_dev['events']['Cool Down, Open'] < ephem.now() < g_dev['events']['Close and Park']):
                         roof_should_be_shut = True
                         self.open_and_enabled_to_observe = False
-                if not (g_dev['events']['Cool Down, Open'] < ephem.now() < g_dev['events']['Close and Park']):
-                    roof_should_be_shut = True
-                    self.open_and_enabled_to_observe = False
 
                 try:
                     if g_dev['obs'].enc_status['shutter_status'] == 'Open':
@@ -1365,29 +1375,29 @@ sel
                             #    plog("This scope does not have control of the roof though.")
                 except:
                     plog('Line 1192 Roof shutter status faulted.')
-
-                # If the roof should be shut, then the telescope should be parked.
-                if roof_should_be_shut == True:
-                    if not g_dev['mnt'].mount.AtPark:
-                        plog('Parking telescope as it is during the period that the roof is meant to be shut.')
-                        self.open_and_enabled_to_observe = False
-                        # self.cancel_all_activity()   #NB Kills bias dark
-                        if g_dev['mnt'].home_before_park:
-                            g_dev['mnt'].home_command()
-                        # PWI must receive a park() in order to report being parked.  Annoying problem when debugging, because I want tel to stay where it is.
-                        g_dev['mnt'].park_command()
-
-                if g_dev['obs'].enc_status is not None:
-                    # If the roof IS shut, then the telescope should be shutdown and parked.
-                    if g_dev['obs'].enc_status['shutter_status'] == 'Closed':
-
+                if not self.scope_in_manual_mode:
+                    # If the roof should be shut, then the telescope should be parked.
+                    if roof_should_be_shut == True:
                         if not g_dev['mnt'].mount.AtPark:
-                            plog("Telescope found not parked when the observatory roof is shut. Parking scope.")
+                            plog('Parking telescope as it is during the period that the roof is meant to be shut.')
                             self.open_and_enabled_to_observe = False
-                            # self.cancel_all_activity()  #NB Kills bias dark
+                            # self.cancel_all_activity()   #NB Kills bias dark
                             if g_dev['mnt'].home_before_park:
                                 g_dev['mnt'].home_command()
+                            # PWI must receive a park() in order to report being parked.  Annoying problem when debugging, because I want tel to stay where it is.
                             g_dev['mnt'].park_command()
+    
+                    if g_dev['obs'].enc_status is not None:
+                        # If the roof IS shut, then the telescope should be shutdown and parked.
+                        if g_dev['obs'].enc_status['shutter_status'] == 'Closed':
+    
+                            if not g_dev['mnt'].mount.AtPark:
+                                plog("Telescope found not parked when the observatory roof is shut. Parking scope.")
+                                self.open_and_enabled_to_observe = False
+                                # self.cancel_all_activity()  #NB Kills bias dark
+                                if g_dev['mnt'].home_before_park:
+                                    g_dev['mnt'].home_command()
+                                g_dev['mnt'].park_command()
 
                     # if g_dev['enc'].status['shutter_status'] == 'Open':
                     #     self.config['mount']'auto_morn_sky_flat': False,
@@ -1401,12 +1411,12 @@ sel
                     #             g_dev['mnt'].home_command()
                     #             g_dev['mnt'].park_command()
 
-                    # But after all that if everything is ok, then all is ok, it is safe to observe
-                    if g_dev['obs'].enc_status['shutter_status'] == 'Open' and roof_should_be_shut == False:
-                        self.open_and_enabled_to_observe = True
-
-                else:
-                    plog("g_dev['obs'].enc_status not reporting correctly")
+                        # But after all that if everything is ok, then all is ok, it is safe to observe
+                        if g_dev['obs'].enc_status['shutter_status'] == 'Open' and roof_should_be_shut == False:
+                            self.open_and_enabled_to_observe = True
+    
+                    else:
+                        plog("g_dev['obs'].enc_status not reporting correctly")
             #plog("Current Open and Enabled to Observe Status: " + str(self.open_and_enabled_to_observe))
 
             # Check the mount is still connected
@@ -1414,43 +1424,45 @@ sel
             # if got here, mount is connected. NB Plumb in PW startup code
 
             # Check that the mount hasn't tracked too low or an odd slew hasn't sent it pointing to the ground.
-            try:
-                mount_altitude = g_dev['mnt'].mount.Altitude
-                lowest_acceptable_altitude = self.config['mount']['mount1']['lowest_acceptable_altitude']
-                if mount_altitude < lowest_acceptable_altitude:
-                    plog("Altitude too low! " + str(mount_altitude) + ". Parking scope for safety!")
-                    if not g_dev['mnt'].mount.AtPark:
-                        # self.cancel_all_activity()  #NB Kills bias dark
-                        if g_dev['mnt'].home_before_park:
-                            g_dev['mnt'].home_command()
-                        g_dev['mnt'].park_command()
-                        # Reset mount reference because thats how it probably got pointing at the dirt in the first place!
-                        if self.config["mount"]["mount1"]["permissive_mount_reset"] == "yes":
-                            g_dev["mnt"].reset_mount_reference()
-            except Exception as e:
-                plog(traceback.format_exc())
-                plog(e)
-                
-                if g_dev['mnt'].theskyx:
+            if not self.altitude_checks_off:
+                try:
+                    mount_altitude = g_dev['mnt'].mount.Altitude
+                    lowest_acceptable_altitude = self.config['mount']['mount1']['lowest_acceptable_altitude']
+                    if mount_altitude < lowest_acceptable_altitude:
+                        plog("Altitude too low! " + str(mount_altitude) + ". Parking scope for safety!")
+                        if not g_dev['mnt'].mount.AtPark:
+                            # self.cancel_all_activity()  #NB Kills bias dark
+                            if g_dev['mnt'].home_before_park:
+                                g_dev['mnt'].home_command()
+                            g_dev['mnt'].park_command()
+                            # Reset mount reference because thats how it probably got pointing at the dirt in the first place!
+                            if self.config["mount"]["mount1"]["permissive_mount_reset"] == "yes":
+                                g_dev["mnt"].reset_mount_reference()
+                except Exception as e:
+                    plog(traceback.format_exc())
+                    plog(e)
                     
-                    plog("The SkyX had an error.")
-                    plog("Usually this is because of a broken connection.")
-                    plog("Killing then waiting 60 seconds then reconnecting")
-                    g_dev['seq'].kill_and_reboot_theskyx(-1,-1)
-                else:
-                    breakpoint()
-                    
+                    if g_dev['mnt'].theskyx:
+                        
+                        plog("The SkyX had an error.")
+                        plog("Usually this is because of a broken connection.")
+                        plog("Killing then waiting 60 seconds then reconnecting")
+                        g_dev['seq'].kill_and_reboot_theskyx(-1,-1)
+                    else:
+                        breakpoint()
+                        
                     # g_dev['mnt'].home_command()
 
             # If no activity for an hour, park the scope
-            if time.time() - self.time_of_last_slew > self.config['mount']['mount1']['time_inactive_until_park'] and time.time() - self.time_of_last_exposure > self.config['mount']['mount1']['time_inactive_until_park']:
-                if not g_dev['mnt'].mount.AtPark:
-                    plog("Parking scope due to inactivity")
-                    if g_dev['mnt'].home_before_park:
-                        g_dev['mnt'].home_command()
-                    g_dev['mnt'].park_command()
-                self.time_of_last_slew = time.time()
-                self.time_of_last_exposure = time.time()
+            if not self.scope_in_manual_mode:
+                if time.time() - self.time_of_last_slew > self.config['mount']['mount1']['time_inactive_until_park'] and time.time() - self.time_of_last_exposure > self.config['mount']['mount1']['time_inactive_until_park']:
+                    if not g_dev['mnt'].mount.AtPark:
+                        plog("Parking scope due to inactivity")
+                        if g_dev['mnt'].home_before_park:
+                            g_dev['mnt'].home_command()
+                        g_dev['mnt'].park_command()
+                    self.time_of_last_slew = time.time()
+                    self.time_of_last_exposure = time.time()
 
             # Check that rotator is rotating
             if g_dev['rot'] != None:
@@ -1600,11 +1612,11 @@ sel
 
                     #g_dev['enc'].enclosure.CloseShutter()
 
-            if (g_dev['seq'].enclosure_next_open_time - time.time()) > 0:
-                plog("opens this eve: " + str(g_dev['seq'].opens_this_evening))
+            #if (g_dev['seq'].enclosure_next_open_time - time.time()) > 0:
+            #    plog("opens this eve: " + str(g_dev['seq'].opens_this_evening))
 
-                plog("minutes until next open attempt ALLOWED: " +
-                     str((g_dev['seq'].enclosure_next_open_time - time.time()) / 60))
+            #    plog("minutes until next open attempt ALLOWED: " +
+            #         str((g_dev['seq'].enclosure_next_open_time - time.time()) / 60))
 
             # Report on when the observatory might close up if it intends to
             #if g_dev['seq'].weather_report_close_during_evening == True:
@@ -1731,7 +1743,7 @@ sel
                                 try:
                                     aws_resp = g_dev["obs"].api.authenticated_request(
                                         "POST", "/upload/", {"object_name": filename})
-                                    req_resp = reqs.post(aws_resp["url"], data=aws_resp["fields"], files=files, timeout=5)
+                                    req_resp = reqs.post(aws_resp["url"], data=aws_resp["fields"], files=files, timeout=20)
     
                                     self.aws_queue.task_done()
                                     one_at_a_time = 0
@@ -1759,7 +1771,7 @@ sel
                         try:
                             aws_resp = g_dev["obs"].api.authenticated_request(
                                 "POST", "/upload/", {"object_name": filename})
-                            reqs.post(aws_resp["url"], data=aws_resp["fields"], files=files, timeout=5)
+                            reqs.post(aws_resp["url"], data=aws_resp["fields"], files=files, timeout=20)
                             
                             # Only remove file if successfully uploaded
                             if ('calibmasters' not in filepath):
@@ -2340,27 +2352,28 @@ sel
                                 self.pointing_correction_request_time = time.time()
                                 self.pointing_correction_request_ra = pointing_ra + err_ha #* ra_correction_multiplier)
                                 self.pointing_correction_request_dec = pointing_dec + err_dec# * dec_correction_multiplier)
-    
-                                try:
-                                    # if g_dev["mnt"].pier_side_str == "Looking West":
-                                    if g_dev["mnt"].pier_side == 0:
-                                        try:
-                                            g_dev["mnt"].adjust_mount_reference(
-                                                -err_ha, -err_dec
-                                            )
-                                        except Exception as e:
-                                            plog("Something is up in the mount reference adjustment code ", e)
-                                    else:
-                                        try:
-                                            g_dev["mnt"].adjust_flip_reference(
-                                                -err_ha, -err_dec
-                                            )  # Need to verify signs
-                                        except Exception as e:
-                                            plog("Something is up in the mount reference adjustment code ", e)
-    
-                                except:
-                                    plog("This mount doesn't report pierside")
-                                    plog(traceback.format_exc())
+                                if target_dec > -85 and target_dec < 85:
+                                    try:
+                                        g_dev["mnt"].pier_side=self.mount.sideOfPier
+                                        # if g_dev["mnt"].pier_side_str == "Looking West":
+                                        if g_dev["mnt"].pier_side == 0:
+                                            try:
+                                                g_dev["mnt"].adjust_mount_reference(
+                                                    -err_ha, -err_dec
+                                                )
+                                            except Exception as e:
+                                                plog("Something is up in the mount reference adjustment code ", e)
+                                        else:
+                                            try:
+                                                g_dev["mnt"].adjust_flip_reference(
+                                                    -err_ha, -err_dec
+                                                )  # Need to verify signs
+                                            except Exception as e:
+                                                plog("Something is up in the mount reference adjustment code ", e)
+        
+                                    except:
+                                        plog("This mount doesn't report pierside")
+                                        plog(traceback.format_exc())
                     self.platesolve_is_processing = False
 
                 self.platesolve_is_processing = False
@@ -2754,7 +2767,7 @@ sel
                     #print('\nfiles;  ', files)
                     while True:
                         try:
-                            reqs.post(aws_resp["url"], data=aws_resp["fields"], files=files, timeout=5)
+                            reqs.post(aws_resp["url"], data=aws_resp["fields"], files=files, timeout=20)
 
                             break
                         except:
@@ -2968,7 +2981,7 @@ sel
         #breakpoint()
 
         try:
-            aws_enclosure_status=reqs.get(uri_status, timeout=5)
+            aws_enclosure_status=reqs.get(uri_status, timeout=20)
             
             aws_enclosure_status=aws_enclosure_status.json()
             
@@ -3088,7 +3101,7 @@ sel
 
 
         try:
-            aws_weather_status=reqs.get(uri_status, timeout=5)
+            aws_weather_status=reqs.get(uri_status, timeout=20)
             aws_weather_status=aws_weather_status.json()
             #breakpoint()
             
