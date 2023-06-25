@@ -1351,7 +1351,7 @@ sel
                 roof_should_be_shut = False
 
                 # breakpoint()
-                if not self.scope_in_manual_mode:
+                if not self.scope_in_manual_mode and not g_dev['seq'].flats_being_collected:
                     if (g_dev['events']['End Morn Sky Flats'] < ephem.now() < g_dev['events']['End Morn Bias Dark']):
                         roof_should_be_shut = True
                         self.open_and_enabled_to_observe = False
@@ -1370,6 +1370,7 @@ sel
                     if g_dev['obs'].enc_status['shutter_status'] == 'Open':
                         if roof_should_be_shut == True:
                             plog("Safety check notices that the roof was open outside of the normal observing period")
+                            
                             # if self.config['obsid_roof_control'] and g_dev['enc'].mode == 'Automatic':
                             #     plog("Shutting the roof out of an abundance of caution. This may also be normal functioning")
 
@@ -1382,7 +1383,7 @@ sel
                             #    plog("This scope does not have control of the roof though.")
                 except:
                     plog('Line 1192 Roof shutter status faulted.')
-                if not self.scope_in_manual_mode:
+                if not self.scope_in_manual_mode and not g_dev['seq'].flats_being_collected:
                     # If the roof should be shut, then the telescope should be parked.
                     if roof_should_be_shut == True:
                         if not g_dev['mnt'].mount.AtPark:
