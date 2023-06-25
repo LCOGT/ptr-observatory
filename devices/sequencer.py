@@ -4281,6 +4281,10 @@ class Sequencer:
                 plog(writeline) 
         
         #breakpoint()
+        try:
+            shutil.copy (tpointnamefile, "C:/Users/user/Desktop/TPOINT/" + 'TPOINTDAT'+str(time.time()).replace('.','d')+'.DAT')
+        except:
+            plog('Could not copy file to tpoint directory... you will have to do it yourself!')
         
         plog ("Final devation catalogue for Tpoint")
         plog (deviation_catalogue_for_tpoint)
