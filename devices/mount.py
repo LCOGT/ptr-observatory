@@ -925,7 +925,7 @@ class Mount:
             temppointing = AltAz(location=self.site_coordinates, obstime=Time.now(), alt=alt*u.deg, az=az*u.deg)    
         sun_dist = sun_coords.separation(temppointing)
 
-        if sun_dist.degree <  self.config['closest_distance_to_the_sun']:
+        if sun_dist.degree <  self.config['closest_distance_to_the_sun'] and g_dev['obs'].open_and_enabled_to_observe and not g_dev['obs'].sun_checks_off:
             if not (g_dev['events']['Civil Dusk'] < ephem.now() < g_dev['events']['Civil Dawn']):
                 g_dev['obs'].send_to_user("Refusing pointing request as it is too close to the sun: " + str(sun_dist.degree) + " degrees.")
                 plog("Refusing pointing request as it is too close to the sun: " + str(sun_dist.degree) + " degrees.")

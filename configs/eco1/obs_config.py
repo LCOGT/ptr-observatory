@@ -49,6 +49,8 @@ site_config = {
     'sun_checks_off': False,
     'altitude_checks_off': False,
     
+    'daytime_exposure_time_safety_off': False,
+    
     #'debug_site_mode': False,
     
     # Auto-cenering is great .... unless you are polar aligning

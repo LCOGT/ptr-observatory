@@ -40,7 +40,8 @@ site_config = {
     # This DOESN'T turn some safetys off 
     'scope_in_manual_mode' : False,
     'sun_checks_off': False,
-    'altitude_checks_off': False,
+    'altitude_checks_off': False,    
+    'daytime_exposure_time_safety_off': False,
 
     # Auto-cenering is great .... unless you are polar aligning
     'turn_auto_centering_off': False,
