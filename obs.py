@@ -419,8 +419,10 @@ class Observatory:
         self.altitude_checks_off=self.config['altitude_checks_off']
         
         
-        g_dev['obs'].last_platesolved_ra = 0.0
-        g_dev['obs'].last_platesolved_dec =0.0
+        self.last_platesolved_ra = 0.0
+        self.last_platesolved_dec =0.0
+        self.last_platesolved_ra_err = 0.0
+        self.last_platesolved_dec_err =0.0
         
         # Keep track of how long it has been since the last activity
         self.time_of_last_exposure = time.time()
