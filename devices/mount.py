@@ -997,7 +997,10 @@ class Mount:
             object_is_moon = False
 
         icrs_ra, icrs_dec = self.get_mount_coordinates()
-
+        
+        plog ("********")
+        plog ("mount icrs_ra " + str(icrs_ra))
+        plog ("mount icrs_dec " + str(icrs_dec))
 
         # MTF has commented out this section because it is not working. 
         # Not necessarily deleting it, 
@@ -1154,6 +1157,10 @@ class Mount:
             #plog("Going to:  ", self.object)   #NB Needs cleaning up.
             g_dev['obs'].send_to_user("Slewing telescope to:  " + str( self.object),  p_level="INFO")
         
+        
+        print ("ra sent to go_coord " + str(ra))
+        print ("dec sent to go_coord " + str(dec))
+        
         if object_is_moon:
             g_dev['obs'].time_of_last_slew=time.time()
             self.go_coord(ra1, dec1, tracking_rate_ra=dra_moon, tracking_rate_dec = ddec_moon)
@@ -1221,7 +1228,8 @@ class Mount:
             else:
                 delta_ra, delta_dec = self.get_flip_reference()
                 #pier_east = 0
-            
+        
+        
             #if self.pier_side == 0:
             #    pier_east = 1
             #else:
@@ -1230,12 +1238,32 @@ class Mount:
 
         plog('starting pier side: ' + str(previous_pier_side) + "   Temp reporting")
 
-        try:        
-            ra += delta_ra #NB it takes a restart to pick up a new correction which is also J.now.
-            dec += delta_dec
-        except:
-            pass
+        print ("ra without delta " + str(ra))
+        print ("dec without delta " + str(dec))
+
+
+        if g_dev['obs'].mount_reference_model_off:
+            print ("mount reference turned off")
+            print ("ra with delta " + str(ra+delta_ra))
+            print ("dec with delta " + str(dec+delta_dec))
+        else:
+            print ("mount reference turned on")
+            try:        
+                ra += delta_ra #NB it takes a restart to pick up a new correction which is also J.now.
+                dec += delta_dec
+            except:
+                pass
+            
+            print ("ra with delta " + str(ra))
+            print ("dec with delta " + str(dec))
+        
+        
+        
         ra, dec = ra_dec_fix_h(ra,dec)
+        print ('radec post-fixh ' + str(ra) + ' ' + str(dec))
+        
+        
+        
         if self.EquatorialSystem == 1:    #equTopocentric
             self.get_current_times()   #  NB We should find a way to refresh this once a day, esp. for status return.
             #  Input is meant to be IRCS, so change to that Astropy type;
@@ -1281,6 +1309,7 @@ class Mount:
             try:
                 g_dev['obs'].time_of_last_slew=time.time()
                 #self.mount.SlewToCoordinatesAsync(self.ra_mech*RTOH, self.dec_mech*RTOD)  #Is this needed?
+                plog('actual sent ra: ' + str(ra) + ' dec: ' + str(dec))
                 self.mount.SlewToCoordinatesAsync(ra, dec)  #Is this needed?
                 wait_for_slew() 
             except Exception as e:
@@ -1304,16 +1333,30 @@ class Mount:
             print ("New Side Of Pier: "+ str(g_dev["mnt"].pier_side)+ " temp reporting")
             if previous_pier_side == g_dev["mnt"].pier_side or self.can_report_destination_pierside:
                 successful_move=1
-            else:                
+            else:
+                
                 if g_dev["mnt"].pier_side == 0:
                     delta_ra, delta_dec = self.get_mount_reference()
                     #pier_east = 1
                 else:
                     delta_ra, delta_dec = self.get_flip_reference()
                     #pier_east = 0
-                ra += delta_ra #NB it takes a restart to pick up a new correction which is also J.now.
-                dec += delta_dec
+                
+                
+                if g_dev['obs'].mount_reference_model_off:
+                    print ("mount reference turned off")
+                    print ("ra with delta " + str(ra+delta_ra))
+                    print ("dec with delta " + str(dec+delta_dec))
+                else:
+                    print ("mount reference turned on")                
+                    ra=self.last_ra + delta_ra
+                    dec=self.last_dec + delta_dec
+                    print ("ra with delta " + str(ra))
+                    print ("dec with delta " + str(dec))
+                #ra += delta_ra #NB it takes a restart to pick up a new correction which is also J.now.
+                #dec += delta_dec
                 #self.mount.SlewToCoordinatesAsync(self.ra_mech*RTOH, self.dec_mech*RTOD)
+                plog('actual sent ra: ' + str(ra) + ' dec: ' + str(dec))
                 self.mount.SlewToCoordinatesAsync(ra, dec)
                 #self.can_report_destination_pierside
                 wait_for_slew()
