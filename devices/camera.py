@@ -2724,18 +2724,8 @@ class Camera:
                         + im_type
                         + "00.fits"
                     )
-                    red_name01 = (
-                        self.config["obs_id"]
-                        + "-"
-                        + current_camera_name
-                        + "-"
-                        + g_dev["day"]
-                        + "-"
-                        + next_seq
-                        + "-"
-                        + im_type
-                        + "01.fits"
-                    )
+                    red_name01 = (self.config["obs_id"] + "-" + str(hdu.header['OBJECT']) +'-'+str(hdu.header['FILTER']) + "-" + next_seq+ "-"+ im_type+ "01.fits")
+                        
                     red_name01_lcl = (
                         red_name01[:-9]
                         + pier_string
@@ -2997,6 +2987,7 @@ class Camera:
                             # NEEDS to go up as fast as possible ahead of smartstacks to faciliate image matching.
                             self.sep_processing=True
                             self.to_sep((hdusmalldata, pixscale, float(hdu.header["RDNOISE"]), avg_foc[1], focus_image, im_path, text_name, hdusmallheader, cal_path, cal_name, frame_type, g_dev['foc'].focuser.Position*g_dev['foc'].steps_to_micron))
+                            
                             
                             if smartstackid != 'no':
                                 try:
