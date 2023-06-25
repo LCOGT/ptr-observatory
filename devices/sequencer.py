@@ -4246,38 +4246,39 @@ class Sequencer:
             latitude = float(self.config["latitude"])
             f.write(Angle(latitude,u.degree).to_string(sep=' ')+ "\n")
         for entry in deviation_catalogue_for_tpoint:
-            #print (entry[0], entry[1])        
-            ra_wanted=Angle(entry[0],u.hour).to_string(sep=' ')
-            dec_wanted=Angle(entry[1],u.degree).to_string(sep=' ')
-            ra_got=Angle(entry[2],u.hour).to_string(sep=' ')
-            
-            
-            if entry[7] == 0:
-                pierstring='0  1'
-                entry[2] += 12.
-                while entry[2] >= 24:
-                    entry[2] -= 24.
+            if not np.isnan(entry[2]):
+                #print (entry[0], entry[1])        
+                ra_wanted=Angle(entry[0],u.hour).to_string(sep=' ')
+                dec_wanted=Angle(entry[1],u.degree).to_string(sep=' ')
                 ra_got=Angle(entry[2],u.hour).to_string(sep=' ')
-            
-                if latitude >= 0:
-                    dec_got=Angle(180 - entry[3],u.degree).to_string(sep=' ')  # as in 89 90 91 92 when going 'under the pole'.
+                
+                
+                if entry[7] == 0:
+                    pierstring='0  1'
+                    entry[2] += 12.
+                    while entry[2] >= 24:
+                        entry[2] -= 24.
+                    ra_got=Angle(entry[2],u.hour).to_string(sep=' ')
+                
+                    if latitude >= 0:
+                        dec_got=Angle(180 - entry[3],u.degree).to_string(sep=' ')  # as in 89 90 91 92 when going 'under the pole'.
+                    else:
+                        dec_got=Angle(-(180 + entry[3]),u.degree).to_string(sep=' ') 
+                    #plog("Mechanical adjust  Ra, Dec: ", ra_got, dec_got)
                 else:
-                    dec_got=Angle(-(180 + entry[3]),u.degree).to_string(sep=' ') 
-                #plog("Mechanical adjust  Ra, Dec: ", ra_got, dec_got)
-            else:
-                pierstring='0  0'
-                ra_got=Angle(entry[2],u.hour).to_string(sep=' ')
-                dec_got=Angle(entry[3],u.degree).to_string(sep=' ')
-        
-
-            sid_str = Angle(entry[6], u.hour).to_string(sep=' ')[:5]
-            writeline = ra_wanted + " " + dec_wanted + " " + ra_got + " " + dec_got + " "+ sid_str + " "+ pierstring
-
+                    pierstring='0  0'
+                    ra_got=Angle(entry[2],u.hour).to_string(sep=' ')
+                    dec_got=Angle(entry[3],u.degree).to_string(sep=' ')
+            
+    
+                sid_str = Angle(entry[6], u.hour).to_string(sep=' ')[:5]
+                writeline = ra_wanted + " " + dec_wanted + " " + ra_got + " " + dec_got + " "+ sid_str + " "+ pierstring
+    
+                            
+                with open(tpointnamefile, "a+") as f:            	
+                    	f.write(writeline+"\n")
                         
-            with open(tpointnamefile, "a+") as f:            	
-                	f.write(writeline+"\n")
-                    
-            plog(writeline) 
+                plog(writeline) 
         
         #breakpoint()
         

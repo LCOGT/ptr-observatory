@@ -419,10 +419,10 @@ class Observatory:
         self.altitude_checks_off=self.config['altitude_checks_off']
         self.daytime_exposure_time_safety_off=self.config['daytime_exposure_time_safety_off']
         
-        self.last_platesolved_ra = 0.0
-        self.last_platesolved_dec =0.0
-        self.last_platesolved_ra_err = 0.0
-        self.last_platesolved_dec_err =0.0
+        self.last_platesolved_ra = np.nan
+        self.last_platesolved_dec =np.nan
+        self.last_platesolved_ra_err = np.nan
+        self.last_platesolved_dec_err =np.nan
         
         # Keep track of how long it has been since the last activity
         self.time_of_last_exposure = time.time()
