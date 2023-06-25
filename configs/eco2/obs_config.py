@@ -44,6 +44,15 @@ site_config = {
     'instance_type' : 'obs',
     'wema_name' : 'eco', # THIS IS THE NAME OF THE WEMA
     'obs_id': 'eco2',
+    
+    # Manual mode turns all automation off. 
+    # The scope will only do what you tell it
+    # This DOESN'T turn some safetys off 
+    'scope_in_manual_mode' : True,
+    'sun_checks_off': False,
+    'altitude_checks_off': False,
+    
+    
     #'observatory_location': site_name.lower(),
     
     #'debug_site_mode': False,

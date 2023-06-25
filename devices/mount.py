@@ -951,7 +951,7 @@ class Mount:
             return
         
         # Fourth thing, check that the roof is open and we are enabled to observe
-        if (g_dev['obs'].open_and_enabled_to_observe==False ) and (not g_dev['obs'].debug_flag):
+        if (g_dev['obs'].open_and_enabled_to_observe==False ) and (not g_dev['obs'].debug_flag) and not g_dev['obs'].scope_in_manual_mode:
             g_dev['obs'].send_to_user("Refusing pointing request as the observatory is not enabled to observe.")
             plog("Refusing pointing request as the observatory is not enabled to observe.")
             return
@@ -1189,6 +1189,7 @@ class Mount:
         #flip offset.  So a GEM could track into positive HA territory without a problem but the next reseek should
         #result in a flip.  So first figure out if there will be a flip:
 
+        previous_pier_side=self.mount.sideOfPier
         
         if self.can_report_destination_pierside == True:   
             try:                          #  NB NB Might be good to log is flipping on a re-seek.                
@@ -1196,28 +1197,38 @@ class Mount:
                 if len(new_pierside) > 1:
                     if new_pierside[0] == 0:
                         delta_ra, delta_dec = self.get_mount_reference()
-                        pier_east = 1
+                        #pier_east = 1
                     else:
                         delta_ra, delta_dec = self.get_flip_reference()
-                        pier_east = 0
+                        #pier_east = 0
             except:
                 try:
                     new_pierside =  self.mount.DestinationSideOfPier(ra, dec) #  A tuple gets returned: (pierside, Ra.h and dec.d)
                     if new_pierside == 0:
                         delta_ra, delta_dec = self.get_mount_reference()
-                        pier_east = 1
+                        #pier_east = 1
                     else:
                         delta_ra, delta_dec = self.get_flip_reference()
-                        pier_east = 0
+                        #pier_east = 0
                 except:
                     delta_ra, delta_dec = self.get_mount_reference()
-                    pier_east = 1
-        else: 
-            if self.pier_side == 0:
-                pier_east = 1
+                    #pier_east = 1
+        
+        else:
+            if previous_pier_side == 0:
+                delta_ra, delta_dec = self.get_mount_reference()
+                #pier_east = 1
             else:
-                pier_east = 0
+                delta_ra, delta_dec = self.get_flip_reference()
+                #pier_east = 0
+            
+            #if self.pier_side == 0:
+            #    pier_east = 1
+            #else:
+            #    pier_east = 0
          #Update incoming ra and dec with mounting offsets.
+
+        plog('starting pier side: ' + str(previous_pier_side) + "   Temp reporting")
 
         try:        
             ra += delta_ra #NB it takes a restart to pick up a new correction which is also J.now.
@@ -1263,25 +1274,51 @@ class Mount:
         
         wait_for_slew() 
 
-        try:
-            g_dev['obs'].time_of_last_slew=time.time()
-            #self.mount.SlewToCoordinatesAsync(self.ra_mech*RTOH, self.dec_mech*RTOD)  #Is this needed?
-            self.mount.SlewToCoordinatesAsync(ra, dec)  #Is this needed?
-            wait_for_slew() 
-        except Exception as e:
-            # This catches an occasional ASCOM/TheSkyX glitch and gets it out of being stuck
-            # And back on tracking. 
-            if g_dev['mnt'].theskyx:
-                
-                plog("The SkyX had an error.")
-                plog("Usually this is because of a broken connection.")
-                plog("Killing then waiting 60 seconds then reconnecting")
-                g_dev['seq'].kill_and_reboot_theskyx(-1,-1)
-                self.unpark_command()
+
+        # First move, then check the pier side
+        successful_move=0
+        while successful_move==0:
+            try:
+                g_dev['obs'].time_of_last_slew=time.time()
+                #self.mount.SlewToCoordinatesAsync(self.ra_mech*RTOH, self.dec_mech*RTOD)  #Is this needed?
+                self.mount.SlewToCoordinatesAsync(ra, dec)  #Is this needed?
+                wait_for_slew() 
+            except Exception as e:
+                # This catches an occasional ASCOM/TheSkyX glitch and gets it out of being stuck
+                # And back on tracking. 
+                if g_dev['mnt'].theskyx:
+                    
+                    plog("The SkyX had an error.")
+                    plog("Usually this is because of a broken connection.")
+                    plog("Killing then waiting 60 seconds then reconnecting")
+                    g_dev['seq'].kill_and_reboot_theskyx(-1,-1)
+                    self.unpark_command()
+                    wait_for_slew()
+                    #self.mount.SlewToCoordinatesAsync(self.ra_mech*RTOH, self.dec_mech*RTOD)  #Is this needed?
+                    self.mount.SlewToCoordinatesAsync(ra, dec)
+                else:
+                    plog (traceback.format_exc())
+            
+            # Make sure the current pier_side variable is set
+            g_dev["mnt"].pier_side=self.mount.sideOfPier
+            print ("New Side Of Pier: "+ str(g_dev["mnt"].pier_side)+ " temp reporting")
+            if previous_pier_side == g_dev["mnt"].pier_side or self.can_report_destination_pierside:
+                successful_move=1
+            else:                
+                if g_dev["mnt"].pier_side == 0:
+                    delta_ra, delta_dec = self.get_mount_reference()
+                    #pier_east = 1
+                else:
+                    delta_ra, delta_dec = self.get_flip_reference()
+                    #pier_east = 0
+                ra += delta_ra #NB it takes a restart to pick up a new correction which is also J.now.
+                dec += delta_dec
+                #self.mount.SlewToCoordinatesAsync(self.ra_mech*RTOH, self.dec_mech*RTOD)
+                self.mount.SlewToCoordinatesAsync(ra, dec)
+                #self.can_report_destination_pierside
                 wait_for_slew()
-                self.mount.SlewToCoordinatesAsync(self.ra_mech*RTOH, self.dec_mech*RTOD)  #Is this needed?
-            else:
-                plog (traceback.format_exc())
+                successful_move=1
+            
             
                 
         if self.mount.Tracking == False:
@@ -1303,6 +1340,9 @@ class Mount:
                     self.mount.SlewToCoordinatesAsync(self.ra_mech*RTOH, self.dec_mech*RTOD)  #Is this needed?
                 else:
                     plog (traceback.format_exc())
+        
+        
+        
         
         g_dev['obs'].time_since_last_slew = time.time()
         g_dev['obs'].last_solve_time = datetime.datetime.now() - datetime.timedelta(days=1)

@@ -35,7 +35,12 @@ site_config = {
     'obs_id': 'mrc1',
     #'observatory_location': "SBA",  # Nearest major airport
     #'debug_site_mode': False,
-
+    # Manual mode turns all automation off. 
+    # The scope will only do what you tell it
+    # This DOESN'T turn some safetys off 
+    'scope_in_manual_mode' : False,
+    'sun_checks_off': False,
+    'altitude_checks_off': False,
 
     # Auto-cenering is great .... unless you are polar aligning
     'turn_auto_centering_off': False,

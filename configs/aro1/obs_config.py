@@ -35,6 +35,14 @@ site_config = {
     'wema_name' : 'aro',
     'obs_id' : 'aro1',
     
+    
+    # Manual mode turns all automation off. 
+    # The scope will only do what you tell it
+    # This DOESN'T turn some safetys off 
+    'scope_in_manual_mode' : True,
+    'sun_checks_off': False,
+    'altitude_checks_off': False,
+    
     #'observatory_location': site_name.lower(),
     
     'debug_site_mode': True,
