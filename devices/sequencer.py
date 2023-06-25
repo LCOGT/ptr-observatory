@@ -156,6 +156,9 @@ class Sequencer:
         self.focus_catalogue = np.genfromtxt('support_info/focusCatalogue.csv', delimiter=',')
         self.pointing_catalogue = np.genfromtxt('support_info/pointingCatalogue.csv', delimiter=',')
 
+
+        self.flats_being_collected=False
+
         # This variable prevents the roof being called to open every loop...        
         self.enclosure_next_open_time = time.time()
         # This keeps a track of how many times the roof has been open this evening
@@ -2158,7 +2161,7 @@ class Sequencer:
             plog ("NOT DOING FLATS -- IT IS THE NIGHTIME!!")
             g_dev["obs"].send_to_user("A sky flat script request was rejected as it too dark.")            
             return
-
+        self.flats_being_collected = True
         self.sky_guard = True   #20220409 I think this is obsolete or unused.
         plog('Sky Flat sequence Starting.')
         self.next_flat_observe = time.time()
@@ -2193,7 +2196,9 @@ class Sequencer:
         exp_time = 0
         scale = 1.0
         collecting_area = self.config['telescope']['telescope1']['collecting_area']/31808.   
-
+        
+        #breakpoint()
+        
         while len(pop_list) > 0  and ephem.now() < ending and g_dev['obs'].open_and_enabled_to_observe:
             
                 # This is just a very occasional slew to keep it pointing in the same general vicinity                
@@ -2414,6 +2419,7 @@ class Sequencer:
         
         g_dev['mnt'].park_command({}, {}) # You actually always want it to park, TheSkyX can't stop the telescope tracking, so park is safer... it is before focus anyway.
         self.sky_guard = False
+        self.flats_being_collected = False
 
 
     def screen_flat_script(self, req, opt):
