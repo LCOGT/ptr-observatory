@@ -417,7 +417,7 @@ class Observatory:
         
         self.sun_checks_off=self.config['sun_checks_off']
         self.altitude_checks_off=self.config['altitude_checks_off']
-        
+        self.daytime_exposure_time_safety_off=self.config['daytime_exposure_time_safety_off']
         
         g_dev['obs'].last_platesolved_ra = 0.0
         g_dev['obs'].last_platesolved_dec =0.0

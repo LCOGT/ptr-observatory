@@ -41,7 +41,8 @@ site_config = {
     # This DOESN'T turn some safetys off 
     'scope_in_manual_mode' : True,
     'sun_checks_off': False,
-    'altitude_checks_off': False,
+    'altitude_checks_off': False,    
+    'daytime_exposure_time_safety_off': False,
     
     #'observatory_location': site_name.lower(),
     
