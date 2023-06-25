@@ -4288,7 +4288,10 @@ class Sequencer:
         
         #breakpoint()
         try:
-            shutil.copy (tpointnamefile, "C:/Users/user/Desktop/TPOINT/" + 'TPOINTDAT'+str(time.time()).replace('.','d')+'.DAT')
+            os.path.expanduser('~')
+            print (os.path.expanduser('~'))
+            print (os.path.expanduser('~')+ "/Desktop/TPOINT/")
+            shutil.copy (tpointnamefile, os.path.expanduser('~') + "/Desktop/TPOINT/" + 'TPOINTDAT'+str(time.time()).replace('.','d')+'.DAT')
         except:
             plog('Could not copy file to tpoint directory... you will have to do it yourself!')
         
