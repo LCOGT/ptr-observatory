@@ -1219,11 +1219,12 @@ sel
         # Also an area to put things to irregularly check if things are still connected, e.g. cooler
         #
         # Probably we don't want to run these checkes EVERY status update, just every 5 minutes
-        check_time = self.config['check_time']
-        if self.debug_flag:
-            check_time *= 4
-            self.time_since_safety_checks = time.time() + check_time
-        if time.time() - self.time_since_safety_checks > check_time and not self.debug_flag:
+        safety_check_period = self.config['safety_check_period']
+        #if self.debug_flag:
+        #    safety_check_period *= 4
+        #    self.time_since_safety_checks = time.time() + safety_check_period
+            
+        if time.time() - self.time_since_safety_checks > safety_check_period and not self.debug_flag:
             self.time_since_safety_checks = time.time()
 
             # breakpoint()

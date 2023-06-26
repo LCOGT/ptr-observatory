@@ -129,7 +129,7 @@ site_config = {
     'only_scope_that_controls_the_roof': False,  # If multiple scopes control the roof, set this to False
 
 
-    'check_time': 300,  # MF's original setting.
+    'safety_check_period': 300,  # MF's original setting.
     'maximum_roof_opens_per_evening': 4,
     # How many minutes to use as the default retry time to open roof. This will be progressively multiplied as a back-off function.
     'roof_open_safety_base_time': 15,
