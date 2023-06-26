@@ -1228,6 +1228,10 @@ sel
 
             # breakpoint()
 
+
+            # Check nightly_reset is all good
+            if ((g_dev['events']['Cool Down, Open']  <= ephem.now() < g_dev['events']['Observing Ends'])):
+                g_dev['seq'].nightly_reset_complete = False
             
             if not g_dev['mnt'].mount.AtPark and self.open_and_enabled_to_observe and not self.sun_checks_off: # Only do the sun check if scope isn't parked
                 # Check that the mount hasn't slewed too close to the sun
