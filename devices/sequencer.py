@@ -568,11 +568,9 @@ class Sequencer:
         #     self.nightly_reset_complete = False
         #     # As well as nightly focus routine.
         #     self.night_focus_ready=True
-        
-        # Check that nightly_reset is set to False no matter what happens
-        if self.nightly_reset_complete == True:
-            if ((g_dev['events']['Cool Down, Open']  <= ephem_now < g_dev['events']['Observing Ends'])):
-                self.nightly_reset_complete = False
+                
+        if ((g_dev['events']['Cool Down, Open'] <= ephem_now < g_dev['events']['Observing Ends'])):
+            self.nightly_reset_complete = False
         
         # This bit is really to get the scope up and running if the roof opens
         if ((g_dev['events']['Cool Down, Open']  <= ephem_now < g_dev['events']['Observing Ends'])) and not self.cool_down_latch and \
