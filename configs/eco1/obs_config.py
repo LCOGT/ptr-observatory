@@ -46,17 +46,17 @@ site_config = {
     # The scope will only do what you tell it
     # This DOESN'T turn some safetys off 
     'scope_in_manual_mode' : False,
-    'mount_reference_model_off': False,
+    'mount_reference_model_off': True,
     'sun_checks_off': False,
     'altitude_checks_off': False,
     
+    'debug_mode': False,
     'daytime_exposure_time_safety_off': False,
     
     #'debug_site_mode': False,
     
     # Auto-cenering is great .... unless you are polar aligning
     'turn_auto_centering_off': False,
-    'debug_mode': True,
     'admin_owner_commands_only': False,
     'debug_duration_sec': 7200,
     'owner':  ['google-oauth2|112401903840371673242'],  # WER,  Or this can be
