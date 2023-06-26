@@ -617,10 +617,10 @@ site_config = {
                 'filter_data': [
                                 ['air',     [0, 0], -1000, 22,    [2, 17], 'ai'],   # 0
                                 ['Lum',     [0, 1],     0, 20,   [2, 17], 'w '],   # 20
-                                ['Red',     [4, 0],     0, 15,   [2, 17], 'r '],  # 21                                ['JV (Grn)',      [0, 3],     0, 1 [2, 17], 'V '],   # 9
-                                ['Green',   [3, 0],     0, 21,   [2, 17], 'V '],   # 22
-                                ['Blue',    [1, 0],     0, 18,   [2, 17], 'B '],   # 23
-                                ['w',       [0, 1],     0, 20,  [2, 17], 'w '],   # 1
+                                #['Red',     [4, 0],     0, 15,   [2, 17], 'r '],  # 21                                ['JV (Grn)',      [0, 3],     0, 1 [2, 17], 'V '],   # 9
+                                #['Green',   [3, 0],     0, 21,   [2, 17], 'V '],   # 22
+                                #['Blue',    [1, 0],     0, 18,   [2, 17], 'B '],   # 23
+                                #['w',       [0, 1],     0, 20,  [2, 17], 'w '],   # 1
                                 #['dif',    [0, 2],     0, 34,    [2, 17], 'df'],   # 2
                                 ['O3',      [0, 3],     0, 0.5,    [2, 17], 'O3'],   # 3
                                 ['HA',      [0, 4],     0, 0.5,    [2, 17], 'HA'],   # 4
@@ -637,8 +637,10 @@ site_config = {
                 'filter_screen_sort':  ['0', '1', '2', '10', '7', '6', '18', '12', '11', '13', '8',  '3', \
                                         '14', '15', '4', '16'],   #  '9', '21'],  # '5', '17'], #Most to least throughput, \
                                 #so screen brightens, skipping u and zs which really need sky.
-                'filter_sky_sort':     ['S2', 'HA', 'N2', 'O3', 'ip', 'rp', 'Red', 'JV',\
-                                        'Green','JB', 'gp',   'Blue', 'EXO',  'w','Lum',  'air']  #Least to most throughput
+                #'filter_sky_sort':     ['S2', 'HA', 'N2', 'O3', 'ip', 'rp', 'Red', 'JV',\
+                #                        'Green','JB', 'gp',   'Blue', 'EXO',  'w','Lum',  'air']  #Least to most throughput
+                'filter_sky_sort':     ['S2', 'HA', 'N2', 'O3', 'ip', 'rp', 'JV',\
+                                        'JB', 'gp', 'EXO', 'Lum',  'air']  #Least to most throughput
 
             },
         },
