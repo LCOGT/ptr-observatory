@@ -432,7 +432,8 @@ class Observatory:
         self.time_of_last_slew = time.time()
 
         # Only poll the broad safety checks (altitude and inactivity) every 5 minutes
-        self.time_since_safety_checks = time.time() - 310.0
+        self.safety_check_period = self.config['safety_check_period']
+        self.time_since_safety_checks = time.time() - (2* self.safety_check_period)
 
         # Keep track of how long it has been since the last live connection to the internet
         self.time_of_last_live_net_connection = time.time()
@@ -1219,12 +1220,12 @@ sel
         # Also an area to put things to irregularly check if things are still connected, e.g. cooler
         #
         # Probably we don't want to run these checkes EVERY status update, just every 5 minutes
-        safety_check_period = self.config['safety_check_period']
+        
         #if self.debug_flag:
         #    safety_check_period *= 4
         #    self.time_since_safety_checks = time.time() + safety_check_period
             
-        if time.time() - self.time_since_safety_checks > safety_check_period and not self.debug_flag:
+        if time.time() - self.time_since_safety_checks > self.safety_check_period and not self.debug_flag:
             self.time_since_safety_checks = time.time()
 
             # breakpoint()
