@@ -1228,8 +1228,11 @@ sel
             self.time_since_safety_checks = time.time()
 
             # breakpoint()
-
-
+            print (ephem.now())
+            print ("Nightly Reset Complete      : " + str(g_dev['seq'].nightly_reset_complete))
+            plog("Time until Nightly Reset      : " + str(round(( g_dev['events']['Nightly Reset'] - ephem.now()) * 24,2)) + " hours")
+            
+            
             # Check nightly_reset is all good
             if ((g_dev['events']['Cool Down, Open']  <= ephem.now() < g_dev['events']['Observing Ends'])):
                 g_dev['seq'].nightly_reset_complete = False

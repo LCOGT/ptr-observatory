@@ -568,6 +568,14 @@ class Sequencer:
         #     self.nightly_reset_complete = False
         #     # As well as nightly focus routine.
         #     self.night_focus_ready=True
+        
+        if (events['Nightly Reset'] <= ephem_now < events['End Nightly Reset']): # and g_dev['enc'].mode == 'Automatic' ):
+             if self.nightly_reset_complete == False:
+                 self.nightly_reset_complete = True
+                 self.nightly_reset_script()
+                 
+        
+        
                 
         if ((g_dev['events']['Cool Down, Open'] <= ephem_now < g_dev['events']['Observing Ends'])):
             self.nightly_reset_complete = False
@@ -844,10 +852,7 @@ class Sequencer:
             self.morn_bias_dark_latch = False
             self.morn_bias_done = True
             
-        elif (events['Nightly Reset'] <= ephem_now < events['End Nightly Reset']): # and g_dev['enc'].mode == 'Automatic' ):
-            
-            if self.nightly_reset_complete == False:
-                self.nightly_reset_script()
+        
         
         else:
             self.current_script = "No current script, or site not in Automatic."
@@ -856,7 +861,9 @@ class Sequencer:
                 #self.park_and_close(enc_status)
             #except:
             #    plog("Park and close failed at end of sequencer loop.")
-                
+         
+        
+        
         #Here is where observatories who do their biases at night... well.... do their biases!
         #If it hasn't already been done tonight.        
         if self.config['auto_midnight_moonless_bias_dark'] and not g_dev['obs'].scope_in_manual_mode:
