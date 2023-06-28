@@ -521,7 +521,10 @@ class Events:
         self.endNightTime = ephem.Date(self.sunrise + 120/1440.)
         #endNightTime = ephem.Date(nautDawn_minus_half + 10/1440.)
         self.cool_down_open = self.sunset + self.wema_config['eve_cool_down_open']/1440
-        self.close_and_park = self.sunrise + self.wema_config['morn_close_and_park']/1440
+        try:
+            self.close_and_park = self.sunrise + self.wema_config['morn_close_and_park']/1440
+        except:
+            self.close_and_park = 32 # This is a very temporary hack so I didn't have to restart MRC WEMA!
         self.eve_skyFlatBegin = self.sunset + self.config['eve_sky_flat_sunset_offset']/1440
 
         if endofnightoverride == 'no':
