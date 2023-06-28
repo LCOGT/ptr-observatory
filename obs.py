@@ -519,7 +519,7 @@ class Observatory:
         #opt = {'area': 150, 'count': 1, 'bin': 1, 'filter': 'focus'}
         #result = g_dev['cam'].expose_command(req, opt, no_AWS=False, solve_it=True)
         # breakpoint()
-        g_dev['seq'].regenerate_local_masters()
+        #g_dev['seq'].regenerate_local_masters()
         
         #g_dev['seq'].sky_grid_pointing_run(max_pointings=25, alt_minimum=25)
 
@@ -1396,7 +1396,7 @@ sel
                 except:
                     plog('Line 1192 Roof shutter status faulted.')
 
-                if not self.scope_in_manual_mode :
+                if not self.scope_in_manual_mode and not g_dev['seq'].flats_being_collected :
 
                     # If the roof should be shut, then the telescope should be parked.
                     if roof_should_be_shut == True:
