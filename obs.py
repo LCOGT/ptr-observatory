@@ -1396,7 +1396,7 @@ sel
                 except:
                     plog('Line 1192 Roof shutter status faulted.')
 
-                if not self.scope_in_manual_mode and not g_dev['seq'].flats_being_collected :
+                if not self.scope_in_manual_mode :
 
                     # If the roof should be shut, then the telescope should be parked.
                     if roof_should_be_shut == True:
