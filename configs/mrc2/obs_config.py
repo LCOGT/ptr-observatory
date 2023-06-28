@@ -88,7 +88,7 @@ site_config = {
     
     # Auto-cenering is great .... unless you are polar aligning
     'turn_auto_centering_off': False,
-    'debug_mode' : True,
+    'debug_mode' : False,
     'admin_owner_commands_only': False,
     'debug_duration_sec': 70000,
     'owner':  ['google-oauth2|112401903840371673242'],  # Wayne
@@ -837,12 +837,12 @@ site_config = {
                 'max_daytime_exposure': 60,
                 'min_flat_exposure' : 0.0001, # For certain leaf shutters, short exposures aren't good for flats. Some CMOS have banding in too short an exposure. Largely applies to ccds though.
                 'max_flat_exposure' : 20.0, # Realistically there should be a maximum flat_exposure that makes sure flats are efficient and aren't collecting actual stars.
-                'number_of_bias_to_collect' : 63,
-                'number_of_dark_to_collect' : 17,
-                'number_of_flat_to_collect' : 11,
-                'number_of_bias_to_store' : 127,
-                'number_of_dark_to_store' : 45,
-                'number_of_flat_to_store' : 45,
+                'number_of_bias_to_collect': 33,
+                'number_of_dark_to_collect': 17,
+                'number_of_flat_to_collect': 5,
+                'number_of_bias_to_store': 63,
+                'number_of_dark_to_store': 31,
+                'number_of_flat_to_store': 15,
                 'dark_exposure': 180,
                 'max_exposure': 360.0,
                 'ref_dark': 180.0,

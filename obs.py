@@ -1709,6 +1709,7 @@ sel
                         broken = 0
                         with open(filepath, "rb") as fileobj:
                             tempPTR = 0
+
                             if self.env_exists == True and (not frame_exists(fileobj)):
     
                                 #plog ("\nstarting ingester")
@@ -1740,7 +1741,7 @@ sel
                                     except ocs_ingester.exceptions.DoNotRetryError:
                                         plog((traceback.format_exc()))
                                         plog ("Couldn't upload to PTR archive: " + str(filepath))
-                                        #breakpoint()
+
                                         broken=1
                                         
                                         #plog ("Caught filespecification error properly")
@@ -1749,7 +1750,7 @@ sel
                                         retryarchive = 11
                                         tempPTR =0
                                     except Exception as e:
-    
+                                        
                                         plog("couldn't send to PTR archive for some reason")
                                         plog("Retry " + str(retryarchive))
                                         plog(e)
