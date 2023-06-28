@@ -213,10 +213,10 @@ class Mount:
         else:
             self.theskyx = False
 
-        self.site_coordinates = EarthLocation(lat=float(config['latitude'])*u.deg, \
-                                lon=float(config['longitude'])*u.deg,
-                                height=float(config['elevation'])*u.m)
-        self.latitude_r = config['latitude']*DTOR
+        self.site_coordinates = EarthLocation(lat=float(g_dev['evnt'].wema_config['latitude'])*u.deg, \
+                                lon=float(g_dev['evnt'].wema_config['longitude'])*u.deg,
+                                height=float(g_dev['evnt'].wema_config['elevation'])*u.m)
+        self.latitude_r = g_dev['evnt'].wema_config['latitude']*DTOR
         self.rdsys = 'J.now'
         self.inst = 'tel1'
         self.tel = tel   #for now this implies the primary telescope on a mounting.
@@ -314,8 +314,8 @@ class Mount:
             #self.paddle_thread = threading.Thread(target=self.paddle, args=())
             #self.paddle_thread.start()
         self.obs = ephem.Observer()
-        self.obs.long = config['longitude']*DTOR
-        self.obs.lat = config['latitude']*DTOR
+        self.obs.long = g_dev['evnt'].wema_config['longitude']*DTOR
+        self.obs.lat = g_dev['evnt'].wema_config['latitude']*DTOR
 
         self.theskyx_tracking_rescues = 0
         
@@ -1315,18 +1315,21 @@ class Mount:
             except Exception as e:
                 # This catches an occasional ASCOM/TheSkyX glitch and gets it out of being stuck
                 # And back on tracking. 
-                if g_dev['mnt'].theskyx:
-                    
-                    plog("The SkyX had an error.")
-                    plog("Usually this is because of a broken connection.")
-                    plog("Killing then waiting 60 seconds then reconnecting")
-                    g_dev['seq'].kill_and_reboot_theskyx(-1,-1)
-                    self.unpark_command()
-                    wait_for_slew()
-                    #self.mount.SlewToCoordinatesAsync(self.ra_mech*RTOH, self.dec_mech*RTOD)  #Is this needed?
-                    self.mount.SlewToCoordinatesAsync(ra, dec)
-                else:
-                    plog (traceback.format_exc())
+                try:
+                    if g_dev['mnt'].theskyx:
+                        
+                        plog("The SkyX had an error.")
+                        plog("Usually this is because of a broken connection.")
+                        plog("Killing then waiting 60 seconds then reconnecting")
+                        g_dev['seq'].kill_and_reboot_theskyx(-1,-1)
+                        self.unpark_command()
+                        wait_for_slew()
+                        #self.mount.SlewToCoordinatesAsync(self.ra_mech*RTOH, self.dec_mech*RTOD)  #Is this needed?
+                        self.mount.SlewToCoordinatesAsync(ra, dec)
+                    else:
+                        plog (traceback.format_exc())
+                except:
+                    breakpoint()
             
             # Make sure the current pier_side variable is set
             g_dev["mnt"].pier_side=self.mount.sideOfPier
@@ -1458,11 +1461,16 @@ class Mount:
         az, alt = self.astro_events.flat_spot_now()
         self.unpark_command()        
 
-        if self.mount.Tracking == True:
-            if not self.theskyx:   
-                self.mount.Tracking = False
-            else:
-                pass
+        try:
+            self.mount.Tracking = True
+        except:
+            pass
+
+        #if self.mount.Tracking == True:
+        #    if not self.theskyx:   
+        #        self.mount.Tracking = False
+        #    else:
+        #        pass
 
         self.move_time = time.time()
         try:

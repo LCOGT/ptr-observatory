@@ -113,15 +113,15 @@ site_config = {
     'location _pole_monitor': None,  # This probably gets us to some sort of image (Polaris in the North)
     'location_seeing_report': None,  # Probably a path to a jpeg or png graph.
     'debug_flag': True,  # Be careful about setting this flag True when pushing up to dev!
-    'TZ_database_name': 'America/Los_Angeles',
+    #'TZ_database_name': 'America/Los_Angeles',
     'mpc_code':  'ZZ23',  # This is made up for now.
-    'time_offset': -7,     # NB these two should be derived from Python libs so change is automatic
-    'timezone': 'PDT',
-    'latitude': 34.459375,  # Decimal degrees, North is Positive
-    'longitude': -119.681172,  # Decimal degrees, West is negative
-    'elevation': 317.75,    # meters above sea level
-    'reference_ambient':  10.0,  # Degrees Celsius.  Alternately 12 entries, one for every - mid month.
-    'reference_pressure':  977.83,  # mbar Alternately 12 entries, one for every - mid month.
+    #'time_offset': -7,     # NB these two should be derived from Python libs so change is automatic
+    #'timezone': 'PDT',
+    #'latitude': 34.459375,  # Decimal degrees, North is Positive
+    #'longitude': -119.681172,  # Decimal degrees, West is negative
+    #'elevation': 317.75,    # meters above sea level
+    #'reference_ambient':  10.0,  # Degrees Celsius.  Alternately 12 entries, one for every - mid month.
+    #'reference_pressure':  977.83,  # mbar Alternately 12 entries, one for every - mid month.
 
     'obsid_roof_control': False,  # MTF entered this in to remove sro specific code  NB 'site_is_specifc' also deals with this
     'obsid_allowed_to_open_roof': False,
@@ -149,7 +149,7 @@ site_config = {
     'observing_check_period': 5,    # How many minutes between weather checks
     'enclosure_check_period': 5,    # How many minutes between enclosure checks
 
-    'auto_eve_bias_dark': False,
+    'auto_eve_bias_dark': True,
 
     'auto_midnight_moonless_bias_dark': True,
     'auto_eve_sky_flat': True,
@@ -597,7 +597,7 @@ site_config = {
 
                 # 'filter_sky_sort':     ['HA', 'S2', 'CR', 'N2', 'O3', 'PR', 'PG', 'PB', 'w', 'air']  #Least to most throughput  \
                 # Temporary MTF filter-sky-sort to get OSC flats ... if after March 23 return to above
-                'filter_sky_sort':     ['S2', 'N2', 'O3', 'HA', 'z', 'PR', 'PG', 'PB', 'gp', 'rp', 'ip', 'w', 'PL', 'focus', 'air']  # Least to most throughput  \
+                'filter_sky_sort':     ['S2', 'N2', 'O3', 'HA', 'z', 'PR', 'PG', 'PB', 'gp', 'rp', 'ip', 'w', 'PL', 'air']  # Least to most throughput  \
                 # 'filter_sky_sort':     [  'PB', 'gp','rp','ip', 'w','PL', 'focus', 'air']  #Least to most throughput  \
 
             },

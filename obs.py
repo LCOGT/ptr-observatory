@@ -432,7 +432,8 @@ class Observatory:
         self.time_of_last_slew = time.time()
 
         # Only poll the broad safety checks (altitude and inactivity) every 5 minutes
-        self.time_since_safety_checks = time.time() - 310.0
+        self.safety_check_period = self.config['safety_check_period']
+        self.time_since_safety_checks = time.time() - (2* self.safety_check_period)
 
         # Keep track of how long it has been since the last live connection to the internet
         self.time_of_last_live_net_connection = time.time()
@@ -501,7 +502,7 @@ class Observatory:
         #req2 = {'target': 'near_tycho_star', 'area': 150}
         #opt = {}
         #g_dev['obs'].open_and_enabled_to_observe = True
-        #g_dev['seq'].sky_flat_script({}, {}, morn=True)
+        #g_dev['seq'].sky_flat_script({}, {}, morn=False)
         # g_dev['seq'].extensive_focus_script(req2,opt)
         #req = {'bin1': True, 'bin2': False, 'bin3': False, 'bin4': False, 'numOfBias': 63, \
         #        'numOfDark': 31, 'darkTime': 75, 'numOfDark2': 31, 'dark2Time': 75, \
@@ -1219,17 +1220,20 @@ sel
         # Also an area to put things to irregularly check if things are still connected, e.g. cooler
         #
         # Probably we don't want to run these checkes EVERY status update, just every 5 minutes
-        safety_check_period = self.config['safety_check_period']
+        
         #if self.debug_flag:
         #    safety_check_period *= 4
         #    self.time_since_safety_checks = time.time() + safety_check_period
             
-        if time.time() - self.time_since_safety_checks > safety_check_period and not self.debug_flag:
+        if time.time() - self.time_since_safety_checks > self.safety_check_period and not self.debug_flag:
             self.time_since_safety_checks = time.time()
 
             # breakpoint()
-
-
+            print (ephem.now())
+            print ("Nightly Reset Complete      : " + str(g_dev['seq'].nightly_reset_complete))
+            plog("Time until Nightly Reset      : " + str(round(( g_dev['events']['Nightly Reset'] - ephem.now()) * 24,2)) + " hours")
+            
+            
             # Check nightly_reset is all good
             if ((g_dev['events']['Cool Down, Open']  <= ephem.now() < g_dev['events']['Observing Ends'])):
                 g_dev['seq'].nightly_reset_complete = False
@@ -1761,7 +1765,7 @@ sel
                                 try:
                                     aws_resp = g_dev["obs"].api.authenticated_request(
                                         "POST", "/upload/", {"object_name": filename})
-                                    req_resp = reqs.post(aws_resp["url"], data=aws_resp["fields"], files=files, timeout=20)
+                                    req_resp = reqs.post(aws_resp["url"], data=aws_resp["fields"], files=files, timeout=600)
     
                                     self.aws_queue.task_done()
                                     one_at_a_time = 0
@@ -1786,27 +1790,30 @@ sel
                 else:
                     with open(filepath, "rb") as fileobj:
                         files = {"file": (filepath, fileobj)}
-                        try:
-                            aws_resp = g_dev["obs"].api.authenticated_request(
-                                "POST", "/upload/", {"object_name": filename})
-                            reqs.post(aws_resp["url"], data=aws_resp["fields"], files=files, timeout=20)
-                            
-                            # Only remove file if successfully uploaded
-                            if ('calibmasters' not in filepath):
-                                try:
-                                    os.remove(filepath)
-                                    #plog("not deleting")
-                                except:
-                                    #plog("Couldn't remove " + str(filepath) + " file after transfer")
-                                    self.laterdelete_queue.put(filepath, block=False)
-                            
-                            self.aws_queue.task_done()
-
-                        except:
-                            plog(traceback.format_exc())
-                            #breakpoint()
-                            plog("Connection glitch for the request post, waiting a moment and trying again")
-                            time.sleep(5)
+                        uploaded=False
+                        while not uploaded:                            
+                            try:
+                                aws_resp = g_dev["obs"].api.authenticated_request(
+                                    "POST", "/upload/", {"object_name": filename})
+                                reqs.post(aws_resp["url"], data=aws_resp["fields"], files=files, timeout=600)
+                                
+                                # Only remove file if successfully uploaded
+                                if ('calibmasters' not in filepath):
+                                    try:
+                                        os.remove(filepath)
+                                        #plog("not deleting")
+                                    except:
+                                        #plog("Couldn't remove " + str(filepath) + " file after transfer")
+                                        self.laterdelete_queue.put(filepath, block=False)
+                                
+                                self.aws_queue.task_done()
+                                uploaded=True
+    
+                            except:
+                                plog(traceback.format_exc())
+                                #breakpoint()
+                                plog("Connection glitch for the request post, waiting a moment and trying again")
+                                time.sleep(5)
 
                 one_at_a_time = 0
 

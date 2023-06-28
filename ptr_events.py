@@ -44,7 +44,14 @@ LONGESTDARK = 5.5/1440  # 6 min
 DAY_Directory = None  # NB this is an evil use of Globals by WER.  20200408   WER
 Day_tomorrow = None
 dayNow = None
-
+import traceback
+import requests
+from requests.adapters import HTTPAdapter, Retry
+reqs = requests.Session()
+retries = Retry(total=3,
+                backoff_factor=0.1,
+                status_forcelist=[500, 502, 503, 504])
+reqs.mount('http://', HTTPAdapter(max_retries=retries))
 
 class Events:
 
@@ -52,14 +59,28 @@ class Events:
         self.config = config
         g_dev['evnt'] = self
 
+        # Grab relevant info from WEMA
+        wema = config['wema_name']
+        """Sends an update to the status endpoint."""
+        uri_status = f"https://api.photonranch.org/api/{wema}/config/"
+        try:
+            self.wema_config=reqs.get(uri_status, timeout=20).json()['configuration']
+        except:
+            plog ("Failed to get wema_config")
+            plog(traceback.format_exc())
+        
 
-        self.siteLatitude = round(float(self.config['latitude']), 8)  # 34 20 34.569   #34 + (20 + 34.549/60.)/60.
-        self.siteLongitude = round(float(self.config['longitude']), 8)  # -(119 + (40 + 52.061/60.)/60.) 119 40 52.061 W
-        self.siteElevation = round(float(self.config['elevation']), 3)
+        #breakpoint()
+        #api.photonranch.org/api/<site name (abbreviation)/config
 
-        self.siteRefTemp = round(float(self.config['reference_ambient']), 2)  # These should be a monthly average data.
-        self.siteRefPress = round(float(self.config['reference_pressure']), 2)
-        self.flat_offset = self.config['eve_sky_flat_sunset_offset']    # -35 min for SRO
+
+        self.siteLatitude = round(float(self.wema_config['latitude']), 8)  # 34 20 34.569   #34 + (20 + 34.549/60.)/60.
+        self.siteLongitude = round(float(self.wema_config['longitude']), 8)  # -(119 + (40 + 52.061/60.)/60.) 119 40 52.061 W
+        self.siteElevation = round(float(self.wema_config['elevation']), 3)
+
+        self.siteRefTemp = round(float(self.wema_config['reference_ambient']), 2)  # These should be a monthly average data.
+        self.siteRefPress = round(float(self.wema_config['reference_pressure']), 2)
+        #self.flat_offset = self.config['eve_sky_flat_sunset_offset']    # -35 min for SRO
 
     ###############################
     ###    Internal Methods    ####
@@ -405,7 +426,7 @@ class Events:
 
         # Checking the local time to check if it is setting up for tonight or tomorrow night.
         now_utc = datetime.now(timezone.utc)  # timezone aware UTC, shouldn't depend on clock time.
-        to_zone = tz.gettz(self.config['TZ_database_name'])
+        to_zone = tz.gettz(self.wema_config['TZ_database_name'])
         now_here = now_utc.astimezone(to_zone)
         int_sunrise_hour = ephem.Observer().next_rising(ephem.Sun()).datetime().hour + 1
         if int(now_here.hour) < int_sunrise_hour:
@@ -499,7 +520,11 @@ class Events:
         # then needs to be pulled back a day. Primarily because it sometimes does weird things.....
         self.endNightTime = ephem.Date(self.sunrise + 120/1440.)
         #endNightTime = ephem.Date(nautDawn_minus_half + 10/1440.)
-        self.cool_down_open = self.sunset + self.config['eve_cool_down_open']/1440
+        self.cool_down_open = self.sunset + self.wema_config['eve_cool_down_open']/1440
+        try:
+            self.close_and_park = self.sunrise + self.wema_config['morn_close_and_park']/1440
+        except:
+            self.close_and_park = self.sunrise + 32/1440 # This is a very temporary hack so I didn't have to restart MRC WEMA!
         self.eve_skyFlatBegin = self.sunset + self.config['eve_sky_flat_sunset_offset']/1440
 
         if endofnightoverride == 'no':
@@ -529,9 +554,12 @@ class Events:
                 self.sunrise = self.sunrise - 24*ephem.hour
             if ephem.Date(self.cool_down_open) > self.endNightTime:
                 self.cool_down_open = self.cool_down_open - 24*ephem.hour
+                
+        # we want the end of eve bias dark to be at least 2* dark exposure before the roof opens
+        dark_exposure_in_minutes = self.config['camera']['camera_1_1']['settings']['dark_exposure'] /60
 
-        self.evnt = [('Eve Bias Dark      ', ephem.Date(self.eve_skyFlatBegin - 125/1440)),
-                     ('End Eve Bias Dark  ', ephem.Date(self.eve_skyFlatBegin - 5/1440)),
+        self.evnt = [('Eve Bias Dark      ', ephem.Date(self.cool_down_open- 125/1440)),
+                     ('End Eve Bias Dark  ', ephem.Date(self.cool_down_open - (2*dark_exposure_in_minutes)/1440)),
                      ('Ops Window Start   ', ephem.Date(self.eve_skyFlatBegin)),  # Enclosure may open.
                      ('Cool Down, Open    ', ephem.Date(self.cool_down_open)),
                      ('Eve Sky Flats      ', ephem.Date(self.eve_skyFlatBegin)),  # Nominally -35 for SRO
@@ -552,15 +580,15 @@ class Events:
                      ('Naut Dawn          ', ephem.Date(self.nauticalDawn)),
                      ('Morn Sky Flats     ', ephem.Date(self.nauticalDawn + 30/1440.)),
                      ('Civil Dawn         ', ephem.Date(self.civilDawn)),
-                     ('End Morn Sky Flats ', ephem.Date(self.sunrise + 30/1440.)),  # SRO drving this
+                     ('End Morn Sky Flats ', ephem.Date(self.close_and_park - 5/1440.)),  # SRO drving this
                      # Enclosure must close 5 min after sunrise
-                     ('Ops Window Closes  ', ephem.Date(self.sunrise + 31/1440.)),
-                     ('Close and Park     ', ephem.Date(self.sunrise + 32/1440.)),
+                     ('Ops Window Closes  ', ephem.Date(self.close_and_park - 2/1440.)),
+                     ('Close and Park     ', ephem.Date(self.close_and_park)),
                      ('Sun Rise           ', ephem.Date(self.sunrise)),
-                     ('Morn Bias Dark     ', ephem.Date(self.sunrise + 34/1440.)),
-                     ('End Morn Bias Dark ', ephem.Date(self.sunrise + 140/1440.)),
-                     ('Nightly Reset      ', ephem.Date(self.sunrise + 180/1440.)),
-                     ('End Nightly Reset  ', ephem.Date(self.sunrise + 200/1440.)),
+                     ('Morn Bias Dark     ', ephem.Date(self.close_and_park + 10/1440.)),
+                     ('End Morn Bias Dark ', ephem.Date(self.close_and_park + 120/1440.)),
+                     ('Nightly Reset      ', ephem.Date(self.close_and_park + 150/1440.)),
+                     ('End Nightly Reset  ', ephem.Date(self.close_and_park + 200/1440.)),
                      ('Prior Moon Rise    ', ephem.Date(self.last_moonrise)),
                      ('Prior Moon Transit ', ephem.Date(self.last_moontransit)),
                      ('Prior Moon Set     ', ephem.Date(self.last_moonset)),
@@ -568,11 +596,13 @@ class Events:
                      ('Moon Transit       ', ephem.Date(self.next_moontransit)),
                      ('Moon Set           ', ephem.Date(self.next_moonset))]
 
+
+
         self.evnt_sort = self._sortTuple(self.evnt)
         day_dir = self.compute_day_directory()
 
-        self.timezone = "  " + self.config['timezone'] + ": "
-        self.offset = self.config['time_offset']
+        self.timezone = "  " + self.wema_config['timezone'] + ": "
+        self.offset = self.wema_config['time_offset']
 
         event_dict = {}
         for item in self.evnt_sort:

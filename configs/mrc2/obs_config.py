@@ -144,25 +144,25 @@ site_config = {
     'location_seeing_report': None,  # Probably a path to a jpeg or png graph.
 
     'mpc_code':  'ZZ23',    #This is made up for now.
-    'time_offset':  -7,
-    'TZ_database_name':  'America/Los_Angeles',
-    'timezone': 'PDT',
-    'latitude':    34.459376,     #Decimal degrees, North is Positive
-    'longitude': -119.681163,    #Decimal degrees, West is negative
-    'elevation': 317.75,    # meters above sea level
-    'reference_ambient':  15.0,  #Degrees Celsius.  Alternately 12 entries, one for every - mid month.
-    'reference_pressure':  977.83,  #mbar Alternately 12 entries, one for every - mid month.
+    #'time_offset':  -7,
+    #'TZ_database_name':  'America/Los_Angeles',
+    #'timezone': 'PDT',
+    #'latitude':    34.459376,     #Decimal degrees, North is Positive
+    #'longitude': -119.681163,    #Decimal degrees, West is negative
+    #'elevation': 317.75,    # meters above sea level
+    #'reference_ambient':  15.0,  #Degrees Celsius.  Alternately 12 entries, one for every - mid month.
+    #'reference_pressure':  977.83,  #mbar Alternately 12 entries, one for every - mid month.
 
-    'obsid_roof_control': False, #MTF entered this in to remove sro specific code.... Basically do we have control of the roof or not see line 338 sequencer.py
-    'obsid_allowed_to_open_roof': False,
-    'period_of_time_to_wait_for_roof_to_open' : 50, # seconds - needed to check if the roof ACTUALLY opens. 
-    'only_scope_that_controls_the_roof': False, # If multiple scopes control the roof, set this to False
+    #'obsid_roof_control': False, #MTF entered this in to remove sro specific code.... Basically do we have control of the roof or not see line 338 sequencer.py
+    #'obsid_allowed_to_open_roof': False,
+    #'period_of_time_to_wait_for_roof_to_open' : 50, # seconds - needed to check if the roof ACTUALLY opens. 
+    #'only_scope_that_controls_the_roof': False, # If multiple scopes control the roof, set this to False
     
     
     
     'safety_check_period': 300,   #MF's original setting.
-    'maximum_roof_opens_per_evening' : 4,
-    'roof_open_safety_base_time' : 15, # How many minutes to use as the default retry time to open roof. This will be progressively multiplied as a back-off function.
+    #'maximum_roof_opens_per_evening' : 4,
+    #'roof_open_safety_base_time' : 15, # How many minutes to use as the default retry time to open roof. This will be progressively multiplied as a back-off function.
     
     
     'closest_distance_to_the_sun': 45, # Degrees. For normal pointing requests don't go this close to the sun. 
