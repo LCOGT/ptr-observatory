@@ -524,7 +524,7 @@ class Events:
         try:
             self.close_and_park = self.sunrise + self.wema_config['morn_close_and_park']/1440
         except:
-            self.close_and_park = 32 # This is a very temporary hack so I didn't have to restart MRC WEMA!
+            self.close_and_park = self.sunrise + 32/1440 # This is a very temporary hack so I didn't have to restart MRC WEMA!
         self.eve_skyFlatBegin = self.sunset + self.config['eve_sky_flat_sunset_offset']/1440
 
         if endofnightoverride == 'no':
