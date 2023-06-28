@@ -126,17 +126,17 @@ site_config = {
     'location _pole_monitor': None,  #This probably gets us to some sort of image (Polaris in the North)
     'location_seeing_report': None,  # Probably a path to
 
-    'TZ_database_name':  'America/Denver',
+    #'TZ_database_name':  'America/Denver',
     'mpc_code':  'ZZ24',    # This is made up for now.
-    'time_offset':  -6.0,   # These two keys may be obsolete give the new TZ stuff
-    'timezone': 'MDT',      # This was meant to be coloquial Time zone abbreviation, alternate for "TX_data..."
-    'latitude': 35.554298,     # ARo 35d33m15.472s Decimal degrees, North is Positive
-    'longitude': -105.870197,   #ARO -105d52m12.7092s Decimal degrees, West is negative
-    'elevation': 2194,    # meters above sea level
-    'reference_ambient':  10.0,  # Degrees Celsius.  Alternately 12 entries, one for every - mid month.
-    'reference_pressure':  794.0,    #mbar   A rough guess 20200315
+    #'time_offset':  -6.0,   # These two keys may be obsolete give the new TZ stuff
+    #'timezone': 'MDT',      # This was meant to be coloquial Time zone abbreviation, alternate for "TX_data..."
+    #'latitude': 35.554298,     # ARo 35d33m15.472s Decimal degrees, North is Positive
+    #'longitude': -105.870197,   #ARO -105d52m12.7092s Decimal degrees, West is negative
+    #'elevation': 2194,    # meters above sea level
+    #'reference_ambient':  10.0,  # Degrees Celsius.  Alternately 12 entries, one for every - mid month.
+    #'reference_pressure':  794.0,    #mbar   A rough guess 20200315
     
-    'check_time': 300,   #MF's original setting.
+    'safety_check_period': 300,   #MF's original setting.
     
     'closest_distance_to_the_sun': 45, # Degrees. For normal pointing requests don't go this close to the sun. 
     'closest_distance_to_the_moon': 10, # Degrees. For normal pointing requests don't go this close to the moon. 

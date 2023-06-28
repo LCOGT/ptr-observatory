@@ -213,10 +213,10 @@ class Mount:
         else:
             self.theskyx = False
 
-        self.site_coordinates = EarthLocation(lat=float(config['latitude'])*u.deg, \
-                                lon=float(config['longitude'])*u.deg,
-                                height=float(config['elevation'])*u.m)
-        self.latitude_r = config['latitude']*DTOR
+        self.site_coordinates = EarthLocation(lat=float(g_dev['evnt'].wema_config['latitude'])*u.deg, \
+                                lon=float(g_dev['evnt'].wema_config['longitude'])*u.deg,
+                                height=float(g_dev['evnt'].wema_config['elevation'])*u.m)
+        self.latitude_r = g_dev['evnt'].wema_config['latitude']*DTOR
         self.rdsys = 'J.now'
         self.inst = 'tel1'
         self.tel = tel   #for now this implies the primary telescope on a mounting.
@@ -314,8 +314,8 @@ class Mount:
             #self.paddle_thread = threading.Thread(target=self.paddle, args=())
             #self.paddle_thread.start()
         self.obs = ephem.Observer()
-        self.obs.long = config['longitude']*DTOR
-        self.obs.lat = config['latitude']*DTOR
+        self.obs.long = g_dev['evnt'].wema_config['longitude']*DTOR
+        self.obs.lat = g_dev['evnt'].wema_config['latitude']*DTOR
 
         self.theskyx_tracking_rescues = 0
         
@@ -1461,11 +1461,16 @@ class Mount:
         az, alt = self.astro_events.flat_spot_now()
         self.unpark_command()        
 
-        if self.mount.Tracking == True:
-            if not self.theskyx:   
-                self.mount.Tracking = False
-            else:
-                pass
+        try:
+            self.mount.Tracking = True
+        except:
+            pass
+
+        #if self.mount.Tracking == True:
+        #    if not self.theskyx:   
+        #        self.mount.Tracking = False
+        #    else:
+        #        pass
 
         self.move_time = time.time()
         try:

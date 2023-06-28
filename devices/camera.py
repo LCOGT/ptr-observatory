@@ -2015,6 +2015,8 @@ class Camera:
                     else:
                         plog('Good flat value! :  ', bi_mean)
                         g_dev["obs"].send_to_user('Good flat value! :  ' +str(bi_mean))
+                        self.expresult["error"] = False
+                        self.expresult["patch"] = bi_mean
                     
                 if not g_dev["cam"].exposure_busy:
                     self.expresult = {"stopped": True}
@@ -2347,15 +2349,15 @@ class Camera:
                         "[mm^2] Telescope collecting area",
                     )
                     hdu.header["LATITUDE"] = (
-                        round(float(self.config["latitude"]), 6),
+                        round(float(g_dev['evnt'].wema_config["latitude"]), 6),
                         "[Deg N] Telescope Latitude",
                     )
                     hdu.header["LONGITUD"] = (
-                        round(float(self.config["longitude"]), 6),
+                        round(float(g_dev['evnt'].wema_config["longitude"]), 6),
                         "[Deg E] Telescope Longitude",
                     )
                     hdu.header["HEIGHT"] = (
-                        round(float(self.config["elevation"]), 2),
+                        round(float(g_dev['evnt'].wema_config["elevation"]), 2),
                         "[m] Altitude of Telescope above sea level",
                     )
                     hdu.header["MPC-CODE"] = (
