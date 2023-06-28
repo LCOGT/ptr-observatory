@@ -149,7 +149,7 @@ site_config = {
     'observing_check_period': 5,    # How many minutes between weather checks
     'enclosure_check_period': 5,    # How many minutes between enclosure checks
 
-    'auto_eve_bias_dark': False,
+    'auto_eve_bias_dark': True,
 
     'auto_midnight_moonless_bias_dark': True,
     'auto_eve_sky_flat': True,
@@ -597,7 +597,7 @@ site_config = {
 
                 # 'filter_sky_sort':     ['HA', 'S2', 'CR', 'N2', 'O3', 'PR', 'PG', 'PB', 'w', 'air']  #Least to most throughput  \
                 # Temporary MTF filter-sky-sort to get OSC flats ... if after March 23 return to above
-                'filter_sky_sort':     ['S2', 'N2', 'O3', 'HA', 'z', 'PR', 'PG', 'PB', 'gp', 'rp', 'ip', 'w', 'PL', 'focus', 'air']  # Least to most throughput  \
+                'filter_sky_sort':     ['S2', 'N2', 'O3', 'HA', 'z', 'PR', 'PG', 'PB', 'gp', 'rp', 'ip', 'w', 'PL', 'air']  # Least to most throughput  \
                 # 'filter_sky_sort':     [  'PB', 'gp','rp','ip', 'w','PL', 'focus', 'air']  #Least to most throughput  \
 
             },
