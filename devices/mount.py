@@ -1315,18 +1315,21 @@ class Mount:
             except Exception as e:
                 # This catches an occasional ASCOM/TheSkyX glitch and gets it out of being stuck
                 # And back on tracking. 
-                if g_dev['mnt'].theskyx:
-                    
-                    plog("The SkyX had an error.")
-                    plog("Usually this is because of a broken connection.")
-                    plog("Killing then waiting 60 seconds then reconnecting")
-                    g_dev['seq'].kill_and_reboot_theskyx(-1,-1)
-                    self.unpark_command()
-                    wait_for_slew()
-                    #self.mount.SlewToCoordinatesAsync(self.ra_mech*RTOH, self.dec_mech*RTOD)  #Is this needed?
-                    self.mount.SlewToCoordinatesAsync(ra, dec)
-                else:
-                    plog (traceback.format_exc())
+                try:
+                    if g_dev['mnt'].theskyx:
+                        
+                        plog("The SkyX had an error.")
+                        plog("Usually this is because of a broken connection.")
+                        plog("Killing then waiting 60 seconds then reconnecting")
+                        g_dev['seq'].kill_and_reboot_theskyx(-1,-1)
+                        self.unpark_command()
+                        wait_for_slew()
+                        #self.mount.SlewToCoordinatesAsync(self.ra_mech*RTOH, self.dec_mech*RTOD)  #Is this needed?
+                        self.mount.SlewToCoordinatesAsync(ra, dec)
+                    else:
+                        plog (traceback.format_exc())
+                except:
+                    breakpoint()
             
             # Make sure the current pier_side variable is set
             g_dev["mnt"].pier_side=self.mount.sideOfPier
