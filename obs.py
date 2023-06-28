@@ -1790,27 +1790,30 @@ sel
                 else:
                     with open(filepath, "rb") as fileobj:
                         files = {"file": (filepath, fileobj)}
-                        try:
-                            aws_resp = g_dev["obs"].api.authenticated_request(
-                                "POST", "/upload/", {"object_name": filename})
-                            reqs.post(aws_resp["url"], data=aws_resp["fields"], files=files, timeout=20)
-                            
-                            # Only remove file if successfully uploaded
-                            if ('calibmasters' not in filepath):
-                                try:
-                                    os.remove(filepath)
-                                    #plog("not deleting")
-                                except:
-                                    #plog("Couldn't remove " + str(filepath) + " file after transfer")
-                                    self.laterdelete_queue.put(filepath, block=False)
-                            
-                            self.aws_queue.task_done()
-
-                        except:
-                            plog(traceback.format_exc())
-                            #breakpoint()
-                            plog("Connection glitch for the request post, waiting a moment and trying again")
-                            time.sleep(5)
+                        uploaded=False
+                        while not uploaded:                            
+                            try:
+                                aws_resp = g_dev["obs"].api.authenticated_request(
+                                    "POST", "/upload/", {"object_name": filename})
+                                reqs.post(aws_resp["url"], data=aws_resp["fields"], files=files, timeout=600)
+                                
+                                # Only remove file if successfully uploaded
+                                if ('calibmasters' not in filepath):
+                                    try:
+                                        os.remove(filepath)
+                                        #plog("not deleting")
+                                    except:
+                                        #plog("Couldn't remove " + str(filepath) + " file after transfer")
+                                        self.laterdelete_queue.put(filepath, block=False)
+                                
+                                self.aws_queue.task_done()
+                                uploaded=True
+    
+                            except:
+                                plog(traceback.format_exc())
+                                #breakpoint()
+                                plog("Connection glitch for the request post, waiting a moment and trying again")
+                                time.sleep(5)
 
                 one_at_a_time = 0
 
