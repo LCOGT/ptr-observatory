@@ -29,11 +29,7 @@ from global_yard import g_dev
 from datetime import datetime, timezone, timedelta
 from dateutil import tz
 
-siteCoordinates = EarthLocation(
-    lat=site_config["latitude"] * u.deg,
-    lon=site_config["longitude"] * u.deg,
-    height=site_config["elevation"] * u.m,
-)
+
 
 # siteCoordinates = EarthLocation(
 #     lat=site_config["site_latitude"] * u.deg,
@@ -174,12 +170,13 @@ DAY_Directory= g_dev['day']
 
 
 now_utc = datetime.now(timezone.utc) # timezone aware UTC, shouldn't depend on clock time.
-to_zone = tz.gettz(site_config['TZ_database_name'])
-now_here = now_utc.astimezone(to_zone)
+#breakpoint()
+#to_zone = tz.gettz(site_config['TZ_database_name'])
+#now_here = now_utc.astimezone(to_zone)
 int_sunrise_hour=ephem.Observer().next_rising(ephem.Sun()).datetime().hour + 1
-if int(now_here.hour) < int_sunrise_hour:
-    now_here = now_here - timedelta(days=1)
-DAY_Directory = str(now_here.year) + str(now_here.month) + str(now_here.day)
+if int(now_utc.hour) < int_sunrise_hour:
+    now_utc = now_utc - timedelta(days=1)
+DAY_Directory = str(now_utc.year) + str(now_utc.month) + str(now_utc.day)
 
 try:
     if not os.path.exists(site_config['plog_path']  + 'plog/'):
@@ -1662,6 +1659,11 @@ class Pointing(object):
 
 
 def get_current_times():
+    siteCoordinates = EarthLocation(
+        lat=site_config["latitude"] * u.deg,
+        lon=site_config["longitude"] * u.deg,
+        height=site_config["elevation"] * u.m,
+    )
     ut_now = Time(datetime.now(), scale="utc", location=siteCoordinates)
     sid_now = ut_now.sidereal_time("apparent")  # Should convert this to a value.
     sidTime = sid_now
@@ -2625,16 +2627,16 @@ def test_icrs_mount_icrs():
                     print(pRa, pDec, lst, ra_err, dec_err)
 
 #plog('day_directory:  ', '20221105', '\n')
-ut_now, sid_now, equinox_now, day_of_year = get_current_times()
-sidTime = round(sid_now.hour, 7)
+#ut_now, sid_now, equinox_now, day_of_year = get_current_times()
+#sidTime = round(sid_now.hour, 7)
 
-plog("Ut, Sid, Jnow:  ", ut_now, sid_now, equinox_now)
+#plog("Ut, Sid, Jnow:  ", ut_now, sid_now, equinox_now)
 press = 970 * u.hPa
 temp = 10 * u.deg_C
 hum = 0.5  # 50%
 
 plog("Utility module loaded at: ", ephem.now(), round((ephem.now()), 4))
-plog("Local system Sidereal time is:  ", sidTime)
+#plog("Local system Sidereal time is:  ", sidTime)
 
 if __name__ == "__main__":
     print("Welcome to the utility module.")

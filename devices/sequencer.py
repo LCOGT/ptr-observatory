@@ -2156,13 +2156,13 @@ class Sequencer:
         """
 
         
-        if  (ephem.now() < g_dev['events']['Eve Sky Flats']) or \
-            (g_dev['events']['End Morn Sky Flats'] < ephem.now() < g_dev['events']['Nightly Reset']):
+        if  ((ephem.now() < g_dev['events']['Eve Sky Flats']) or \
+            (g_dev['events']['End Morn Sky Flats'] < ephem.now() < g_dev['events']['Nightly Reset'])) and not g_dev['debug']:
             plog ("NOT DOING FLATS -- IT IS THE DAYTIME!!")
             g_dev["obs"].send_to_user("A sky flat script request was rejected as it is during the daytime.")            
             return
 
-        if (g_dev['events']['Naut Dusk'] < ephem.now() < g_dev['events']['Naut Dawn']):
+        if (g_dev['events']['Naut Dusk'] < ephem.now() < g_dev['events']['Naut Dawn']) and not g_dev['debug']:
             plog ("NOT DOING FLATS -- IT IS THE NIGHTIME!!")
             g_dev["obs"].send_to_user("A sky flat script request was rejected as it too dark.")            
             return
@@ -2179,10 +2179,34 @@ class Sequencer:
 
         exp_time = min_exposure 
         
+        # Load up the pickled list of gains or start a new one. 
+        filter_gain_shelf = shelve.open(g_dev['obs'].obsid_path + 'ptr_night_shelf/' + 'filtergain' + g_dev['cam'].name + str(g_dev['obs'].name))
+        #breakpoint()
+        if len(filter_gain_shelf)==0:
+            plog ("Looks like a new filter gain shelf.")
+        else:
+            plog ("Beginning stored filter gains")
+            for filtertempgain in list(filter_gain_shelf.keys()):
+                plog (str(filtertempgain) + " " + str(filter_gain_shelf[filtertempgain]))
+        
+        #try:
+        #    init_ra = mnt_shelf['ra_cal_offset']
+        #    init_dec = mnt_shelf['dec_cal_offset']     # NB NB THese need to be modulo corrected, maybe limited
+        #except:
+        #    init_ra = 0.0
+        #    init_dec =0.0
+            
+        #plog("initial:  ", init_ra, init_dec)
+        #filter_gain_shelf['ra_cal_offset'] = init_ra + err_ha
+        #filter_gain_shelf['dec_cal_offset'] = init_dec + err_dec
+        
+        
+        
+        
         #  Pick up list of filters is sky flat order of lowest to highest transparency.
         if g_dev["fil"].null_filterwheel == True:
             plog ("No Filter Wheel, just getting non-filtered flats")
-            pop_list = [0]
+            pop_list = [0]            
         else:
             pop_list = self.config['filter_wheel']['filter_wheel1']['settings']['filter_sky_sort'].copy()
 
@@ -2218,10 +2242,24 @@ class Sequencer:
                 g_dev['obs'].update() 
             
                 if g_dev["fil"].null_filterwheel == False:
-                    current_filter = pop_list[0]
+                    current_filter = pop_list[0]                    
                     plog("Beginning flat run for filter: " + str(current_filter))
-                    g_dev['obs'].send_to_user("Beginning flat run for filter: " + str(current_filter))                    
-                    filter_gain = g_dev['fil'].return_filter_gain({"filter": current_filter}, {})  
+                else:
+                    current_filter='No Filter'
+                    plog("Beginning flat run for filterless observation")
+                    
+                g_dev['obs'].send_to_user("Beginning flat run for filter: " + str(current_filter))  
+                try:
+                    filter_gain=filter_gain_shelf[current_filter]
+                    plog ("Using stored gain : " + str(filter_gain))
+                except:  
+                    if g_dev["fil"].null_filterwheel == False:                      
+                        filter_gain = g_dev['fil'].return_filter_gain({"filter": current_filter}, {})  
+                    else:
+                        filter_gain = float(self.config['filter_wheel']['filter_wheel1']['flat_sky_gain'])
+                    plog ("Using initial gain from config : "+ str(filter_gain))
+                
+                        
                 acquired_count = 0                
                 flat_saturation_level = g_dev['cam'].config["camera"][g_dev['cam'].name]["settings"]["saturate"]
                 
@@ -2236,11 +2274,13 @@ class Sequencer:
                     
                     if g_dev['obs'].open_and_enabled_to_observe == False:
                         plog ("Observatory closed or disabled during flat script. Cancelling out of flat acquisition loop.")
+                        filter_gain_shelf.close()
                         return
                     
                     # Check that Flat time hasn't ended
                     if ephem.now() > ending:
                         plog ("Flat acquisition time finished. Breaking out of the flat loop.")
+                        filter_gain_shelf.close()
                         return
                     
                     slow_report_timer=time.time()
@@ -2265,12 +2305,12 @@ class Sequencer:
                         if self.estimated_first_flat_exposure == False:
                             self.estimated_first_flat_exposure = True
                             if sky_lux != None:
-                                if g_dev["fil"].null_filterwheel == False:                                    
-                                    exp_time = target_flat/(collecting_area*sky_lux*float(filter_gain))  #g_dev['ocn'].calc_HSI_lux)  #meas_sky_lux)
-                                    plog('Exposure time:  ', exp_time, scale, sky_lux, float(filter_gain))
-                                else:
-                                    exp_time = target_flat/(collecting_area*sky_lux*self.config['filter_wheel']['filter_wheel1']['flat_sky_gain'])  #g_dev['ocn'].calc_HSI_lux)  #meas_sky_lux)
-                                    plog('Exposure time:  ', exp_time, scale)
+                                #if g_dev["fil"].null_filterwheel == False:                                    
+                                exp_time = target_flat/(collecting_area*sky_lux*float(filter_gain))  #g_dev['ocn'].calc_HSI_lux)  #meas_sky_lux)
+                                plog('Exposure time:  ', exp_time, scale, sky_lux, float(filter_gain))
+                                #else:
+                                #    exp_time = target_flat/(collecting_area*sky_lux*self.config['filter_wheel']['filter_wheel1']['flat_sky_gain'])  #g_dev['ocn'].calc_HSI_lux)  #meas_sky_lux)
+                                #    plog('Exposure time:  ', exp_time, scale)
                             else: 
                                 if morn:
                                     exp_time = 5.0
@@ -2282,9 +2322,11 @@ class Sequencer:
             
                         if self.stop_script_called:
                             g_dev["obs"].send_to_user("Cancelling out of calibration script as stop script has been called.")  
+                            filter_gain_shelf.close()
                             return
                         if not g_dev['obs'].open_and_enabled_to_observe:
                             g_dev["obs"].send_to_user("Cancelling out of activity as no longer open and enabled to observe.")  
+                            filter_gain_shelf.close()
                             return
                         
                         # Here it makes four tests and if it doesn't match those tests, then it will attempt a flat. 
@@ -2330,9 +2372,11 @@ class Sequencer:
                             
                             if self.stop_script_called:
                                 g_dev["obs"].send_to_user("Cancelling out of calibration script as stop script has been called.")  
+                                filter_gain_shelf.close()
                                 return
                             if not g_dev['obs'].open_and_enabled_to_observe:
                                 g_dev["obs"].send_to_user("Cancelling out of activity as no longer open and enabled to observe.")  
+                                filter_gain_shelf.close()
                                 return                                      
                                             
                             req = {'time': float(exp_time),  'alias': camera_name, 'image_type': 'sky flat', 'script': 'On'}
@@ -2349,6 +2393,7 @@ class Sequencer:
                                         g_dev['mnt'].park_command({}, {})
                                     except:
                                         plog("Mount did not park at end of morning skyflats.")
+                                filter_gain_shelf.close()
                                 return
                             try:
                                 self.time_of_next_slew = time.time()
@@ -2358,9 +2403,11 @@ class Sequencer:
                                 try:
                                     if self.stop_script_called:
                                         g_dev["obs"].send_to_user("Cancelling out of calibration script as stop script has been called.")  
+                                        filter_gain_shelf.close()
                                         return
                                     if not g_dev['obs'].open_and_enabled_to_observe:
                                         g_dev["obs"].send_to_user("Cancelling out of activity as no longer open and enabled to observe.")  
+                                        filter_gain_shelf.close()
                                         return
                                 except Exception as e:
                                     plog ('something funny in stop_script still',e)
@@ -2386,21 +2433,36 @@ class Sequencer:
                             g_dev['mnt'].slewToSkyFlatAsync()
                             if self.stop_script_called:
                                 g_dev["obs"].send_to_user("Cancelling out of calibration script as stop script has been called.")  
+                                filter_gain_shelf.close()
                                 return
                             if not g_dev['obs'].open_and_enabled_to_observe:
                                 g_dev["obs"].send_to_user("Cancelling out of activity as no longer open and enabled to observe.")  
+                                filter_gain_shelf.close()
                                 return
                             
                             if g_dev["fil"].null_filterwheel == False:
                                 if sky_lux != None:
                                     plog(current_filter,' New Gain value: ', round(bright/(sky_lux*collecting_area*exp_time), 3), '\n\n')
+                                    new_gain_value = round(bright/(sky_lux*collecting_area*exp_time), 3)
                                 else:
                                     plog(current_filter,' New Gain value: ', round(bright/(collecting_area*exp_time), 3), '\n\n')
+                                    new_gain_value = round(bright/(collecting_area*exp_time), 3)
                             else:
                                 if sky_lux != None:
                                     plog('New Gain value: ', round(bright/(sky_lux*collecting_area*exp_time), 3), '\n\n')
+                                    new_gain_value = round(bright/(sky_lux*collecting_area*exp_time), 3)
                                 else:
                                     plog('New Gain value: ', round(bright/(collecting_area*exp_time), 3), '\n\n')
+                                    new_gain_value = round(bright/(collecting_area*exp_time), 3)
+            
+                            if (
+                                bright
+                                <= 0.75* flat_saturation_level and
+                            
+                                bright
+                                >= 0.25 * flat_saturation_level
+                            ):
+                                filter_gain_shelf[current_filter]=new_gain_value
             
                             acquired_count += 1
                             if acquired_count == flat_count:
@@ -2417,8 +2479,12 @@ class Sequencer:
         else:
             self.eve_sky_flat_latch = False
             
-                       
-            
+        
+        plog ("Ending stored filter gains")
+        for filtertempgain in list(filter_gain_shelf.keys()):
+            plog (filtertempgain + " " + filter_gain_shelf[filtertempgain])
+               
+        filter_gain_shelf.close()
         plog('\nSky flat sequence complete.\n')
         g_dev["obs"].send_to_user("Sky flat collection complete.")            
         
