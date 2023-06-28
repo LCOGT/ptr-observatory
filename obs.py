@@ -1765,7 +1765,7 @@ sel
                                 try:
                                     aws_resp = g_dev["obs"].api.authenticated_request(
                                         "POST", "/upload/", {"object_name": filename})
-                                    req_resp = reqs.post(aws_resp["url"], data=aws_resp["fields"], files=files, timeout=20)
+                                    req_resp = reqs.post(aws_resp["url"], data=aws_resp["fields"], files=files, timeout=600)
     
                                     self.aws_queue.task_done()
                                     one_at_a_time = 0
