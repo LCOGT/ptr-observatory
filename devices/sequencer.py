@@ -2399,7 +2399,7 @@ class Sequencer:
                                 self.time_of_next_slew = time.time()
                                 fred = g_dev['cam'].expose_command(req, opt, user_id='Tobor', user_name='Tobor', user_roles='system', no_AWS=True, do_sep = False,skip_daytime_check=True)
                                 
-                                
+                                #breakpoint()
                                 try:
                                     if self.stop_script_called:
                                         g_dev["obs"].send_to_user("Cancelling out of calibration script as stop script has been called.")  
@@ -2411,7 +2411,12 @@ class Sequencer:
                                         return
                                 except Exception as e:
                                     plog ('something funny in stop_script still',e)
-                                bright = fred['patch']   
+                                try:
+                                    bright = fred['patch']   
+                                except:
+                                    plog ("patch broken?")
+                                    plog(traceback.format_exc())
+                                    
                                 
                                                                 
                             except Exception as e:
@@ -2482,7 +2487,7 @@ class Sequencer:
         
         plog ("Ending stored filter gains")
         for filtertempgain in list(filter_gain_shelf.keys()):
-            plog (filtertempgain + " " + filter_gain_shelf[filtertempgain])
+            plog (str(filtertempgain) + " " + str(filter_gain_shelf[filtertempgain]))
                
         filter_gain_shelf.close()
         plog('\nSky flat sequence complete.\n')
