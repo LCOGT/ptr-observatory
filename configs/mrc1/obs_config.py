@@ -146,8 +146,8 @@ site_config = {
 
     'lowest_requestable_altitude': -5,  # Degrees. For normal pointing requests don't allow requests to go this low.
 
-    'observing_check_period': 5,    # How many minutes between weather checks
-    'enclosure_check_period': 5,    # How many minutes between enclosure checks
+    'observing_check_period': 1,    # How many minutes between weather checks
+    'enclosure_check_period': 1,    # How many minutes between enclosure checks
 
     'auto_eve_bias_dark': True,
 
