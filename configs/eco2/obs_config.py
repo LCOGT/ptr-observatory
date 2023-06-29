@@ -142,8 +142,8 @@ site_config = {
     'lowest_requestable_altitude': -5, # Degrees. For normal pointing requests don't allow requests to go this low. 
     'obsid_in_automatic_default': "Automatic",   #  ["Manual", "Shutdown", "Automatic"]
     'automatic_detail_default': "Enclosure is initially set to Automatic mode.",
-    'observing_check_period' : 5,    # How many minutes between weather checks
-    'enclosure_check_period' : 5,    # How many minutes between enclosure checks
+    'observing_check_period' : 1,    # How many minutes between weather checks
+    'enclosure_check_period' : 1,    # How many minutes between enclosure checks
     'auto_eve_bias_dark': False,
     'auto_midnight_moonless_bias_dark': False,
     'auto_eve_sky_flat': True,

@@ -175,9 +175,12 @@ site_config = {
 
     'obsid_in_automatic_default': "Automatic",   #"Manual", "Shutdown"
     'automatic_detail_default': "Enclosure is initially set to Automatic mode.",
-    'observing_check_period' : 2,    # How many minutes between weather checks
-    'enclosure_check_period' : 2,    # How many minutes between enclosure checks
+
     'auto_eve_bias_dark': True,
+
+    'observing_check_period' : 1,    # How many minutes between weather checks
+    'enclosure_check_period' : 1,    # How many minutes between enclosure checks
+
     'auto_midnight_moonless_bias_dark': True,
     'auto_eve_sky_flat': True,
     'eve_sky_flat_sunset_offset': -45.,  #  Minutes  neg means before, + after.

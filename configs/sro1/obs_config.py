@@ -142,8 +142,8 @@ site_config = {
     
     'obsid_in_automatic_default': "Automatic",   #  ["Manual", "Shutdown", "Automatic"]
     'automatic_detail_default': "Enclosure is Autonmous, under Owner control.",
-    'observing_check_period' : 3,    # How many minutes between weather checks
-    'enclosure_check_period' : 3,    # How many minutes between enclosure checks
+    'observing_check_period' : 2,    # How many minutes between weather checks
+    'enclosure_check_period' : 2,    # How many minutes between enclosure checks
 
     'auto_eve_bias_dark': False,    
     'auto_midnight_moonless_bias_dark': True,
