@@ -97,7 +97,7 @@ site_config = {
     'obsid_is_specific':  True,  # Indicates some special code for this site, found at end of config.
 
 
-    'host_wema_site_name':  'SRO',  #  The umbrella header for obsys in close geographic proximity.
+    #'host_wema_site_name':  'SRO',  #  The umbrella header for obsys in close geographic proximity.
     'name': 'PTR Sierra Remote Observatory 0m3f38',
     'airport_code':  'FAT  :  Fresno Air Terminal',
     'location': 'Near Shaver Lake CA,  USA',

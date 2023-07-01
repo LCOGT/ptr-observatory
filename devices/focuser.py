@@ -32,34 +32,49 @@ class Focuser:
         g_dev["foc"] = self
         self.config = config["focuser"]["focuser1"]
         self.throw = int(config["focuser"]["focuser1"]["throw"])
+
         win32com.client.pythoncom.CoInitialize()
+        
+        #breakpoint()
+        
         self.focuser = win32com.client.Dispatch(driver)
         time.sleep(4)
 
-        #breakpoint()
+        if driver == "CCDSoft2XAdaptor.ccdsoft5Camera":
+            self.theskyx=True
 
         try:        
             self.focuser.Connected = True
         except:
-            if self.focuser.Link == True:
-                plog ("focuser doesn't have ASCOM Connected keyword, but reports a positive link")
-            else:
-                try:
-                    self.focuser.Link = True
-                    plog ("focuser doesn't have ASCOM Connected keyword, attempted to send a positive Link")
-                except:
-                    plog ("focuser doesn't have ASCOM Connected keyword, also crashed on focuser.Link")
-                    
+            try:
+                self.focuser.focConnect()
+            except:
+                if self.focuser.Link == True:
+                    plog ("focuser doesn't have ASCOM Connected keyword, but reports a positive link")
+                else:
+                    try:
+                        self.focuser.Link = True
+                        plog ("focuser doesn't have ASCOM Connected keyword, attempted to send a positive Link")
+                    except:
+                        plog ("focuser doesn't have ASCOM Connected keyword, also crashed on focuser.Link")
+                        
         
         self.micron_to_steps = float(
             config["focuser"]["focuser1"]["unit_conversion"]
         )  #  Note this can be a bogus value
         self.steps_to_micron = 1 / self.micron_to_steps
         self.focuser_message = "-"
-        plog(
-            "Focuser connected, at:  ",
-            round(self.focuser.Position * self.steps_to_micron, 1),
-        )
+
+        if self.theskyx:
+            plog(
+                "Focuser connected, at:  ",
+                round(self.focuser.focPosition() * self.steps_to_micron, 1),
+            )    
+        else:
+            plog(
+                "Focuser connected, at:  ",
+                round(self.focuser.Position * self.steps_to_micron, 1),
+            )
         self.reference = None
         self.last_known_focus = None
         self.last_temperature = None
@@ -128,7 +143,22 @@ class Focuser:
                     self.reference,
                 )
                 # The config reference should be a table of value
-        self.focuser.Move(int(float(self.reference) * self.micron_to_steps))
+        if self.theskyx:
+            #self.focuser.focPosition =  int(float(self.reference) * self.micron_to_steps)  
+            #print (self.focuser.focPosition())
+            requestedPosition=int(float(self.reference) * self.micron_to_steps)
+            difference_in_position=self.focuser.focPosition() - requestedPosition
+            absdifference_in_position=abs(self.focuser.focPosition() - requestedPosition)
+            print (difference_in_position)
+            print (absdifference_in_position)
+            if difference_in_position < 0 :
+                self.focuser.focMoveOut(absdifference_in_position)
+            else:
+                self.focuser.focMoveIn(absdifference_in_position)
+            print (self.focuser.focPosition())
+
+        else:
+            self.focuser.Move(int(float(self.reference) * self.micron_to_steps))
 
 
     def calculate_compensation(self, temp_primary):
@@ -149,7 +179,20 @@ class Focuser:
 
     def get_status(self):
         try:
-            if g_dev['fil'].null_filterwheel == False:
+            
+            if self.theskyx:
+            #self.focuser.focPosition =  int(float(self.reference) * self.micron_to_steps)  
+            #print (self.focuser.focPosition())
+                    status = {
+                    "focus_position": round(
+                        self.focuser.focPosition() * self.steps_to_micron, 1
+                    ),  # THIS occasionally glitches, usually no temp probe on Gemini
+                    "focus_temperature": self.focuser.focTemperature,
+                    #"focus_moving": False,
+                    "comp": self.config["coef_c"],
+                    "filter_offset": g_dev["fil"].filter_offset,
+                }
+            elif g_dev['fil'].null_filterwheel == False:
                 status = {
                     "focus_position": round(
                         self.focuser.Position * self.steps_to_micron, 1
@@ -199,13 +242,25 @@ class Focuser:
 
     def get_quick_status(self, quick):
 
-        quick.append(time.time())
-        quick.append(self.focuser.Position * self.steps_to_micron)
-        try:
-            quick.append(self.focuser.Temperature)
-        except:
-            quick.append(10.0)
-        quick.append(self.focuser.IsMoving)
+        if self.theskyx:
+            quick.append(time.time())
+            quick.append(self.focuser.focPosition() * self.steps_to_micron)
+            try:
+                quick.append(self.focuser.focTemperature())
+            except:
+                quick.append(10.0)
+            quick.append(False)
+            #self.focuser.focPosition()
+        else:
+            
+
+            quick.append(time.time())
+            quick.append(self.focuser.Position * self.steps_to_micron)
+            try:
+                quick.append(self.focuser.Temperature)
+            except:
+                quick.append(10.0)
+            quick.append(self.focuser.IsMoving)
         return quick
 
     def get_average_status(self, pre, post):
@@ -291,7 +346,15 @@ class Focuser:
 
     def get_position(self, counts=False):
         if not counts:
-            return int(self.focuser.Position * self.steps_to_micron)
+            if not self.theskyx:
+                return int(self.focuser.Position * self.steps_to_micron)
+            else:
+                return int(self.focuser.focPosition() * self.steps_to_micron)
+                
+
+       
+
+
 
     def adjust_focus(self):
         """Adjusts the focus relative to the last formal focus procedure.
@@ -337,64 +400,129 @@ class Focuser:
 
     def guarded_move(self, to_focus):
         try:
-            self.focuser.Move(int(to_focus))
-            time.sleep(0.1)
-            movement_report=0
-            while self.focuser.IsMoving:
-                if movement_report==0:
-                    plog("Focuser is moving.....")
-                    movement_report=1
-                time.sleep(0.3)
-                
-                #plog(">f")
+             if self.theskyx:
+                self.focuser.focPosition =  int(float(self.reference) * self.micron_to_steps)  
+                #print (self.focuser.focPosition())
+                requestedPosition=int(to_focus * self.micron_to_steps)
+                difference_in_position=self.focuser.focPosition() - requestedPosition
+                absdifference_in_position=abs(self.focuser.focPosition() - requestedPosition)
+                print (difference_in_position)
+                print (absdifference_in_position)
+                if difference_in_position < 0 :
+                    self.focuser.focMoveOut(absdifference_in_position)
+                else:
+                    self.focuser.focMoveIn(absdifference_in_position)
+                print (self.focuser.focPosition())
+    
+             else:
+            
+                self.focuser.Move(int(to_focus))
+                time.sleep(0.1)
+                movement_report=0
+                while self.focuser.IsMoving:
+                    if movement_report==0:
+                        plog("Focuser is moving.....")
+                        movement_report=1
+                    time.sleep(0.3)
+                    
+                    #plog(">f")
         except:
             plog("AF Guarded move failed.")
+
+
+
+
+
 
     def move_relative_command(self, req: dict, opt: dict):
         """Sets the focus position by moving relative to current position."""
         # The string must start with a + or a - sign, otherwise treated as zero and no action.
 
         position_string = req["position"]
-        position = int(self.focuser.Position * self.steps_to_micron)
-        movement_report=0
-        if position_string[0] != "-":
-            relative = int(position_string)
-            position += relative
-            self.focuser.Move(int(position * self.micron_to_steps))
-            time.sleep(0.1)
-            while self.focuser.IsMoving:                
-                if movement_report==0:
-                    plog("Focuser is moving ++ .....")
-                    movement_report=1
-                time.sleep(0.2)
-        elif position_string[0] == "-":
-            relative = int(position_string[1:])
-            position -= relative
-            self.focuser.Move(int(position * self.micron_to_steps))
-            time.sleep(0.1)
-            while self.focuser.IsMoving:
-                if movement_report==0:
-                    plog("Focuser is moving >f rel.....")
-                    movement_report=1
-                time.sleep(0.2)
+        
+        #position = int(self.focuser.Position * self.steps_to_micron)
+        if self.theskyx:
+            position = self.focuser.focPosition() * self.steps_to_micron
         else:
-            plog("Supplied relative move is lacking a sign; ignoring.")
+            position = self.focuser.Position * self.steps_to_micron
+        
+        
+        if self.theskyx:
+            #self.focuser.focPosition =  int(float(self.reference) * self.micron_to_steps)  
+            #print (self.focuser.focPosition())
+            #requestedPosition=int(float(position) * self.micron_to_steps)
+            difference_in_position=int(position_string)
+            absdifference_in_position=abs(int(position_string))
+            #print (difference_in_position)
+            #print (absdifference_in_position)
+            if difference_in_position < 0 :
+                self.focuser.focMoveOut(absdifference_in_position)
+            else:
+                self.focuser.focMoveIn(absdifference_in_position)
+            print (self.focuser.focPosition())
+        else:
+        
+            movement_report=0
+            if position_string[0] != "-":
+                relative = int(position_string)
+                position += relative
+                self.focuser.Move(int(position * self.micron_to_steps))
+                time.sleep(0.1)
+                while self.focuser.IsMoving:                
+                    if movement_report==0:
+                        plog("Focuser is moving ++ .....")
+                        movement_report=1
+                    time.sleep(0.2)
+            elif position_string[0] == "-":
+                relative = int(position_string[1:])
+                position -= relative
+                self.focuser.Move(int(position * self.micron_to_steps))
+                time.sleep(0.1)
+                while self.focuser.IsMoving:
+                    if movement_report==0:
+                        plog("Focuser is moving >f rel.....")
+                        movement_report=1
+                    time.sleep(0.2)
+            else:
+                plog("Supplied relative move is lacking a sign; ignoring.")
 
     def move_absolute_command(self, req: dict, opt: dict):
         """Sets the focus position by moving to an absolute position."""
 
         position = int(float(req["position"]))
-        current_position = self.focuser.Position * self.steps_to_micron
+        
+        
+        
+        if self.theskyx:
+            current_position = self.focuser.focPosition() * self.steps_to_micron
+        else:
+            current_position = self.focuser.Position * self.steps_to_micron
         if current_position > position:
             tag = ">f abs"
         else:
             tag = "<f abs"
-        self.focuser.Move(int(position * self.micron_to_steps))
-        plog(tag)
-        time.sleep(0.3)
-        while self.focuser.IsMoving:
-            time.sleep(0.3)
+            
+        
+        if self.theskyx:
+            #self.focuser.focPosition =  int(float(self.reference) * self.micron_to_steps)  
+            #print (self.focuser.focPosition())
+            requestedPosition=int(float(position) * self.micron_to_steps)
+            difference_in_position=self.focuser.focPosition() - requestedPosition
+            absdifference_in_position=abs(self.focuser.focPosition() - requestedPosition)
+            print (difference_in_position)
+            print (absdifference_in_position)
+            if difference_in_position < 0 :
+                self.focuser.focMoveOut(absdifference_in_position)
+            else:
+                self.focuser.focMoveIn(absdifference_in_position)
+            print (self.focuser.focPosition())
+        else:
+            self.focuser.Move(int(position * self.micron_to_steps))
             plog(tag)
+            time.sleep(0.3)
+            while self.focuser.IsMoving:
+                time.sleep(0.3)
+                plog(tag)
 
         # Here we could spin until the move is completed, simplifying other devices.
         # Since normally these are short moves,

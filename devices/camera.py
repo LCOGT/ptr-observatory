@@ -2988,7 +2988,12 @@ class Camera:
                             # IMMEDIATELY SEND TO SEP QUEUE
                             # NEEDS to go up as fast as possible ahead of smartstacks to faciliate image matching.
                             self.sep_processing=True
-                            self.to_sep((hdusmalldata, pixscale, float(hdu.header["RDNOISE"]), avg_foc[1], focus_image, im_path, text_name, hdusmallheader, cal_path, cal_name, frame_type, g_dev['foc'].focuser.Position*g_dev['foc'].steps_to_micron, self.native_bin))
+                            
+                            if g_dev['foc'].theskyx:
+                                focus_position=g_dev['foc'].focuser.focPosition()*g_dev['foc'].steps_to_micron
+                            else:
+                                focus_position=g_dev['foc'].focuser.Position*g_dev['foc'].steps_to_micron
+                            self.to_sep((hdusmalldata, pixscale, float(hdu.header["RDNOISE"]), avg_foc[1], focus_image, im_path, text_name, hdusmallheader, cal_path, cal_name, frame_type, focus_position, self.native_bin))
                             
                             
                             if smartstackid != 'no':
