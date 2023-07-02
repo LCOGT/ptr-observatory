@@ -1136,7 +1136,9 @@ sel
                     plog("Found telescope pointing too close to the sun: " + str(sun_dist.degree) + " degrees.")
                     g_dev['obs'].send_to_user("Parking scope and cancelling all activity")
                     plog("Parking scope and cancelling all activity")
-                    self.cancel_all_activity()
+                    
+                    if not g_dev['seq'].morn_bias_dark_latch and not g_dev['seq'].bias_dark_latch:
+                        self.cancel_all_activity()
                     if not g_dev['mnt'].mount.AtPark:
                         g_dev['mnt'].park_command()
                     return
@@ -1254,7 +1256,8 @@ sel
                     plog("Found telescope pointing too close to the sun: " + str(sun_dist.degree) + " degrees.")
                     g_dev['obs'].send_to_user("Parking scope and cancelling all activity")
                     plog("Parking scope and cancelling all activity")
-                    self.cancel_all_activity()
+                    if not g_dev['seq'].morn_bias_dark_latch and not g_dev['seq'].bias_dark_latch:
+                        self.cancel_all_activity()
                     if not g_dev['mnt'].mount.AtPark:
                         g_dev['mnt'].park_command()
                     return
@@ -1285,7 +1288,8 @@ sel
                         plog("Parking Scope in the meantime")
                         #if self.config['obsid_roof_control'] and g_dev['enc'].mode == 'Automatic':
                         self.open_and_enabled_to_observe = False
-                        self.cancel_all_activity()   #NB THis kills bias-dark
+                        if not g_dev['seq'].morn_bias_dark_latch and not g_dev['seq'].bias_dark_latch:
+                            self.cancel_all_activity()   #NB THis kills bias-dark
                         if not g_dev['mnt'].mount.AtPark:
                             if g_dev['mnt'].home_before_park:
                                 g_dev['mnt'].home_command()
@@ -1299,7 +1303,8 @@ sel
                         #if self.config['obsid_roof_control'] and g_dev['enc'].mode == 'Automatic':
                             plog("Detected Roof Closing.")
                             self.open_and_enabled_to_observe = False
-                            self.cancel_all_activity()    #NB Kills bias dark
+                            if not g_dev['seq'].morn_bias_dark_latch and not g_dev['seq'].bias_dark_latch:
+                                self.cancel_all_activity()
                             if not g_dev['mnt'].mount.AtPark:
                                 if g_dev['mnt'].home_before_park:
                                     g_dev['mnt'].home_command()
@@ -1314,7 +1319,8 @@ sel
                         plog("Detected an Error in the Roof Status. Packing up for safety.")
                         #plog("This is usually because the weather system forced the roof to shut.")
                         #plog("By closing it again, it resets the switch to closed.")
-                        self.cancel_all_activity()    #NB Kills bias dark
+                        if not g_dev['seq'].morn_bias_dark_latch and not g_dev['seq'].bias_dark_latch:
+                            self.cancel_all_activity()    #NB Kills bias dark
                         self.open_and_enabled_to_observe = False
                         #g_dev['enc'].enclosure.CloseShutter()
                         #g_dev['seq'].enclosure_next_open_time = time.time(
@@ -1455,7 +1461,8 @@ sel
                     if mount_altitude < lowest_acceptable_altitude:
                         plog("Altitude too low! " + str(mount_altitude) + ". Parking scope for safety!")
                         if not g_dev['mnt'].mount.AtPark:
-                            # self.cancel_all_activity()  #NB Kills bias dark
+                            if not g_dev['seq'].morn_bias_dark_latch and not g_dev['seq'].bias_dark_latch:
+                                self.cancel_all_activity()
                             if g_dev['mnt'].home_before_park:
                                 g_dev['mnt'].home_command()
                             g_dev['mnt'].park_command()
@@ -1626,7 +1633,8 @@ sel
                 else:
                     plog("Looks like the net is down, closing up and parking the observatory")
                     self.open_and_enabled_to_observe = False
-                    self.cancel_all_activity()
+                    if not g_dev['seq'].morn_bias_dark_latch and not g_dev['seq'].bias_dark_latch:
+                        self.cancel_all_activity()
                     if not g_dev['mnt'].mount.AtPark:
                         plog("Parking scope due to inactivity")
                         if g_dev['mnt'].home_before_park:
