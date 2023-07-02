@@ -199,6 +199,11 @@ class Sequencer:
         
         self.last_roof_status = 'Closed'
         self.time_roof_last_opened = time.time() -500
+        
+        
+        
+        self.end_of_night_token_sent = False
+        
         # Run a weather report on bootup so observatory can run if need be. 
         #self.global_wx()
         #breakpoint()
@@ -861,9 +866,25 @@ class Sequencer:
                 #self.park_and_close(enc_status)
             #except:
             #    plog("Park and close failed at end of sequencer loop.")
-         
-        
-        
+        if events['Sun Rise'] <= ephem_now and not self.end_of_night_token_sent:
+            
+            self.end_of_night_token_sent = True
+            # Sending token to AWS to inform it that all files have been uploaded
+            plog ("sending end of night token to AWS")
+            #g_dev['cam'].enqueue_for_AWS(jpeg_data_size, paths['im_path'], paths['jpeg_name10'])
+            
+            isExist = os.path.exists(g_dev['obs'].obsid_path + 'tokens')
+            yesterday = datetime.datetime.now() - timedelta(1)
+            runNight=datetime.datetime.strftime(yesterday, '%Y%m%d') 
+            if not isExist:
+                os.makedirs(g_dev['obs'].obsid_path + 'tokens')
+            runNightToken= g_dev['obs'].obsid_path + 'tokens/' + self.config['obs_id'] + runNight + '.token'
+            with open(runNightToken, 'w') as f:
+                f.write('Night Completed')
+            image = (g_dev['obs'].obsid_path + 'tokens/', self.config['obs_id'] + runNight + '.token')
+            g_dev['obs'].aws_queue.put((30000000000, image), block=False)
+            g_dev['obs'].send_to_user("End of Night Token sent to AWS.", p_level='INFO')
+            
         #Here is where observatories who do their biases at night... well.... do their biases!
         #If it hasn't already been done tonight.        
         if self.config['auto_midnight_moonless_bias_dark'] and not g_dev['obs'].scope_in_manual_mode:
@@ -1566,19 +1587,7 @@ class Sequencer:
         # do need to get to BANZAI
         self.collect_and_queue_neglected_fits()
         
-        # Sending token to AWS to inform it that all files have been uploaded
-        plog ("sending end of night token to AWS")
-        #g_dev['cam'].enqueue_for_AWS(jpeg_data_size, paths['im_path'], paths['jpeg_name10'])
         
-        isExist = os.path.exists(g_dev['obs'].obsid_path + 'tokens')
-        if not isExist:
-            os.makedirs(g_dev['obs'].obsid_path + 'tokens')
-        runNightToken= g_dev['obs'].obsid_path + 'tokens/' + self.config['obs_id'] + runNight + '.token'
-        with open(runNightToken, 'w') as f:
-            f.write('Night Completed')
-        image = (g_dev['obs'].obsid_path + 'tokens/', self.config['obs_id'] + runNight + '.token')
-        g_dev['obs'].aws_queue.put((30000000000, image), block=False)
-        g_dev['obs'].send_to_user("End of Night Token sent to AWS.", p_level='INFO')
         
         # Culling the archive
         if self.config['archive_age'] > 0 :
@@ -1736,6 +1745,9 @@ class Sequencer:
         
         # No harm in doubly checking it has parked
         g_dev['mnt'].park_command({}, {})
+        
+        
+        self.end_of_night_token_sent = False
         
         # Now time to regenerate the local masters
         
