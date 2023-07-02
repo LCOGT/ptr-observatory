@@ -1230,8 +1230,8 @@ sel
 
             # breakpoint()
             print (ephem.now())
-            print ("Nightly Reset Complete      : " + str(g_dev['seq'].nightly_reset_complete))
-            plog("Time until Nightly Reset      : " + str(round(( g_dev['events']['Nightly Reset'] - ephem.now()) * 24,2)) + " hours")
+            #print ("Nightly Reset Complete      : " + str(g_dev['seq'].nightly_reset_complete))
+            #plog("Time until Nightly Reset      : " + str(round(( g_dev['events']['Nightly Reset'] - ephem.now()) * 24,2)) + " hours")
             
             
             # Check nightly_reset is all good
@@ -1403,7 +1403,8 @@ sel
                         if not g_dev['mnt'].mount.AtPark:
                             plog('Parking telescope as it is during the period that the roof is meant to be shut.')
                             self.open_and_enabled_to_observe = False
-                            # self.cancel_all_activity()   #NB Kills bias dark
+                            if not g_dev['seq'].morn_bias_dark_latch and not g_dev['seq'].bias_dark_latch:
+                                self.cancel_all_activity()  #NB Kills bias dark
                             if g_dev['mnt'].home_before_park:
                                 g_dev['mnt'].home_command()
                             # PWI must receive a park() in order to report being parked.  Annoying problem when debugging, because I want tel to stay where it is.
@@ -1416,7 +1417,8 @@ sel
                             if not g_dev['mnt'].mount.AtPark:
                                 plog("Telescope found not parked when the observatory roof is shut. Parking scope.")
                                 self.open_and_enabled_to_observe = False
-                                # self.cancel_all_activity()  #NB Kills bias dark
+                                if not g_dev['seq'].morn_bias_dark_latch and not g_dev['seq'].bias_dark_latch:
+                                    self.cancel_all_activity()  #NB Kills bias dark
                                 if g_dev['mnt'].home_before_park:
                                     g_dev['mnt'].home_command()
                                 g_dev['mnt'].park_command()

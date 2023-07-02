@@ -136,7 +136,7 @@ site_config = {
     #'reference_ambient':  10.0,  # Degrees Celsius.  Alternately 12 entries, one for every - mid month.
     #'reference_pressure':  794.0,    #mbar   A rough guess 20200315
     
-    'safety_check_period': 300,   #MF's original setting.
+    'safety_check_period': 45,   #MF's original setting.
     
     'closest_distance_to_the_sun': 45, # Degrees. For normal pointing requests don't go this close to the sun. 
     'closest_distance_to_the_moon': 10, # Degrees. For normal pointing requests don't go this close to the moon. 

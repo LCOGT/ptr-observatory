@@ -123,7 +123,7 @@ site_config = {
     'reference_pressure':  867.254,    #mbar   A rough guess 20200315
     
     
-    'safety_check_period': 300,   #MF's original setting.
+    'safety_check_period': 45,   #MF's original setting.
 
     #'obsid_roof_control': False, #MTF entered this in to remove sro specific code.... Basically do we have control of the roof or not see line 338 sequencer.py
     #'obsid_allowed_to_open_roof': False,
