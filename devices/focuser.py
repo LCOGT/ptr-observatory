@@ -42,6 +42,8 @@ class Focuser:
 
         if driver == "CCDSoft2XAdaptor.ccdsoft5Camera":
             self.theskyx=True
+        else:
+            self.theskyx=False
 
         try:        
             self.focuser.Connected = True
