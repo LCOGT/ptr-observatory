@@ -1746,7 +1746,7 @@ sel
                                         tempPTR = 1
                                         retryarchive = 11
                                         # Only remove file if successfully uploaded
-                                        if ('calibmasters' not in filepath):
+                                        if ('calibmasters' not in filepath) or ('ARCHIVE_' in filepath):
                                             try:
                                                 os.remove(filepath)
                                             except:

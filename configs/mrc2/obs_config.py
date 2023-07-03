@@ -842,7 +842,7 @@ site_config = {
                 'max_flat_exposure' : 20.0, # Realistically there should be a maximum flat_exposure that makes sure flats are efficient and aren't collecting actual stars.
                 'number_of_bias_to_collect': 33,
                 'number_of_dark_to_collect': 17,
-                'number_of_flat_to_collect': 5,
+                'number_of_flat_to_collect': 12,
                 'number_of_bias_to_store': 63,
                 'number_of_dark_to_store': 31,
                 'number_of_flat_to_store': 15,

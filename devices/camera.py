@@ -246,9 +246,12 @@ def init_camera_param(cam_id):
         qhycam.camera_params[cam_id] = {'connect_to_pc': False,
                                      'connect_to_sdk': False,
                                      'EXPOSURE': c_double(1000.0 * 1000.0),
+                                     #'GAIN': c_double(54.0),
                                      'GAIN': c_double(54.0),
                                      'CONTROL_BRIGHTNESS': c_int(0),
+                                     #'CONTROL_GAIN': c_int(6),
                                      'CONTROL_GAIN': c_int(6),
+                                     #'CONTROL_USBTRAFFIC': c_int(6),
                                      'CONTROL_USBTRAFFIC': c_int(6),
                                      'CONTROL_EXPOSURE': c_int(8),
                                      #'CONTROL_CURTEMP': c_int(14),
@@ -266,8 +269,8 @@ def init_camera_param(cam_id):
                                      'mem_len': c_ulong(),
                                      'stream_mode': c_uint8(0),
                                      'channels': c_uint32(),
-                                     'read_mode_number': c_uint32(),
-                                     'read_mode_index': c_uint32(),
+                                     'read_mode_number': c_uint32(g_dev['obs'].config["camera"]["camera_1_1"]["settings"]['direct_qhy_readout_mode']),
+                                     'read_mode_index': c_uint32(g_dev['obs'].config["camera"]["camera_1_1"]["settings"]['direct_qhy_readout_mode']),
                                      'read_mode_name': c_char('-'.encode('utf-8')),
                                      'prev_img_data': c_void_p(0),
                                      'prev_img': None,
@@ -532,17 +535,24 @@ class Camera:
             if qhycam.camera_params[qhycam_id]['handle'] is None:
                 print('open camera error %s' % cam_id)
             
-            success = qhycam.so.SetQHYCCDReadMode(qhycam.camera_params[qhycam_id]['handle'], self.config["camera"][self.name]["settings"]['direct_qhy_readout_mode']) # 0 is Photographic DSO 16 Bit
+            read_mode=self.config["camera"][self.name]["settings"]['direct_qhy_readout_mode']
+            numModes=c_int32()
+            
+            #success = qhycam.so.GetQHYCCDNumberOfReadModes(qhycam.camera_params[qhycam_id]['handle'],numModes)
+            #print (numModes)
+            success = qhycam.so.SetQHYCCDReadMode(qhycam.camera_params[qhycam_id]['handle'], read_mode) # 0 is Photographic DSO 16 Bit
             
             qhycam.camera_params[qhycam_id]['stream_mode'] = c_uint8(qhycam.stream_single_mode)
             success = qhycam.so.SetQHYCCDStreamMode(qhycam.camera_params[qhycam_id]['handle'], qhycam.camera_params[qhycam_id]['stream_mode'])
            
             success = qhycam.so.InitQHYCCD(qhycam.camera_params[qhycam_id]['handle'])
-            
+            #breakpoint()
             
             mode_name = create_string_buffer(qhycam.STR_BUFFER_SIZE)
-            qhycam.so.GetReadModeName(qhycam_id, self.config["camera"][self.name]["settings"]['direct_qhy_readout_mode'], mode_name) # 0 is Photographic DSO 16 bit
-
+            qhycam.so.GetReadModeName(qhycam_id, read_mode, mode_name) # 0 is Photographic DSO 16 bit
+            read_mode_name_str = mode_name.value.decode('utf-8').replace(' ', '_')
+            plog ("Read Mode: "+ read_mode_name_str)
+            #breakpoint()
             success = qhycam.so.SetQHYCCDBitsMode(qhycam.camera_params[qhycam_id]['handle'], c_uint32(qhycam.bit_depth_16))
 
             success = qhycam.so.GetQHYCCDChipInfo(qhycam.camera_params[qhycam_id]['handle'],
