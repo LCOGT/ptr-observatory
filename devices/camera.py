@@ -1999,6 +1999,7 @@ class Camera:
                         )
                         self.expresult["error"] = True
                         self.expresult["patch"] = bi_mean
+                        self.expresult["camera_gain"] = np.nan
                         return self.expresult  # signals to flat routine image was rejected, prompt return
                     
                     elif (
@@ -2011,10 +2012,47 @@ class Camera:
                         )
                         self.expresult["error"] = True
                         self.expresult["patch"] = bi_mean
+                        self.expresult["camera_gain"] = np.nan
                         return self.expresult  # signals to flat routine image was rejected, prompt return
                     else:
                         plog('Good flat value! :  ', bi_mean)
                         g_dev["obs"].send_to_user('Good flat value! :  ' +str(bi_mean))
+                        
+                        # Now estimate camera gain.
+                        camera_gain_estimate_image=copy.deepcopy(self.img)
+                        # First we debias,dedark and flatfield the image with the previous master
+                        try:
+                            camera_gain_estimate_image = camera_gain_estimate_image - self.biasFiles[str(1)]
+                            camera_gain_estimate_image = camera_gain_estimate_image - (self.darkFiles[str(1)] * exposure_time)
+                            if self.config['camera'][self.name]['settings']['hold_flats_in_memory']:
+                                camera_gain_estimate_image = np.divide(camera_gain_estimate_image, self.flatFiles[self.current_filter])                               
+                            else:
+                                camera_gain_estimate_image = np.divide(camera_gain_estimate_image, np.load(self.flatFiles[str(self.current_filter + "_bin" + str(1))]))
+                        
+                            cge_median=np.nanmedian(camera_gain_estimate_image)
+                            cge_stdev=np.nanstd(camera_gain_estimate_image)
+                            cge_sqrt=pow(cge_median,0.5)
+                            cge_gain=pow(cge_sqrt/cge_stdev, 2)
+                            
+                            print ("Camera gain median: " + str(cge_median) + " stdev: " +str(cge_stdev)+ " sqrt: " + str(cge_sqrt) + " gain: " +str(cge_gain))
+                            self.expresult["camera_gain"] = cge_gain
+                            
+                        
+                        except Exception as e:
+                            plog("Could not estimate the camera gain from this flat.")
+                            self.expresult["camera_gain"] = np.nan
+                            
+                        # # Quick flat flat frame
+                        # try:
+                        #     if self.config['camera'][self.name]['settings']['hold_flats_in_memory']:
+                        #         camera_gain_estimate_image = np.divide(camera_gain_estimate_image, self.flatFiles[self.current_filter])                               
+                        #     else:
+                        #         camera_gain_estimate_image = np.divide(camera_gain_estimate_image, np.load(self.flatFiles[str(self.current_filter + "_bin" + str(flashbinning))]))
+                        # except:
+                            
+                            
+                        
+                        
                         self.expresult["error"] = False
                         self.expresult["patch"] = bi_mean
                     
@@ -2176,11 +2214,11 @@ class Camera:
                     hdu.header['SHUTTYPE'] = (self.config["camera"][self.name]["settings"]["shutter_type"], 
                                               'Type of shutter')
                     hdu.header["GAIN"] = (
-                        self.config["camera"][self.name]["settings"]["reference_gain"],
+                        self.config["camera"][self.name]["settings"]["camera_gain"],
                         "[e-/ADU] Pixel gain",
                     )
                     hdu.header["RDNOISE"] = (
-                        self.config["camera"][self.name]["settings"]["reference_noise"],
+                        self.config["camera"][self.name]["settings"]["read_noise"],
                         "[e-/pixel] Read noise",
                     )
                     hdu.header["CMOSCAM"] = (self.is_cmos, "Is CMOS camera")
@@ -2912,11 +2950,11 @@ class Camera:
                             
                         # Quick flash bias and dark frame                           
                         
-                        flashbinning=1
+                        #flashbinning=1
                         
                         try:
-                            hdusmalldata = hdusmalldata - self.biasFiles[str(flashbinning)]
-                            hdusmalldata = hdusmalldata - (self.darkFiles[str(flashbinning)] * exposure_time)
+                            hdusmalldata = hdusmalldata - self.biasFiles[str(1)]
+                            hdusmalldata = hdusmalldata - (self.darkFiles[str(1)] * exposure_time)
                             
                         except Exception as e:
                             plog("debias/darking light frame failed: ", e)
@@ -2926,7 +2964,7 @@ class Camera:
                             if self.config['camera'][self.name]['settings']['hold_flats_in_memory']:
                                 hdusmalldata = np.divide(hdusmalldata, self.flatFiles[self.current_filter])                               
                             else:
-                                hdusmalldata = np.divide(hdusmalldata, np.load(self.flatFiles[str(self.current_filter + "_bin" + str(flashbinning))]))
+                                hdusmalldata = np.divide(hdusmalldata, np.load(self.flatFiles[str(self.current_filter + "_bin" + str(1))]))
                             
                         except Exception as e:
                             plog("flatting light frame failed", e)
