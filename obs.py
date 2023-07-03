@@ -1813,7 +1813,7 @@ sel
                                 reqs.post(aws_resp["url"], data=aws_resp["fields"], files=files, timeout=600)
                                 
                                 # Only remove file if successfully uploaded
-                                if ('calibmasters' not in filepath):
+                                if ('calibmasters' not in filepath) or ('ARCHIVE_' in filepath):
                                     try:
                                         os.remove(filepath)
                                         #plog("not deleting")
