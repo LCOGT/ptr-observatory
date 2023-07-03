@@ -136,7 +136,7 @@ site_config = {
 
 
 
-    'obsid_in_automatic_default': "Shutdown",  # "Manual", "Shutdown"
+    'obsid_in_automatic_default': "Automatic",  # "Manual", "Shutdown"
     'automatic_detail_default': "Enclosure is set to Automatic mode.",
 
 
@@ -158,7 +158,7 @@ site_config = {
 
     'eve_cool_down_open': -50.0,
     'auto_morn_sky_flat': True,
-    'auto_morn_bias_dark': False,
+    'auto_morn_bias_dark': True,
     're-calibrate_on_solve': True,
     'pointing_calibration_on_startup': False,  # MF I am leaving this alone.
     # This is a time, in hours, over which to bypass automated focussing (e.g. at the start of a project it will not refocus if a new project starts X hours after the last focus)
