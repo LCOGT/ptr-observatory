@@ -23,8 +23,8 @@ Created on Fri Feb 07,  11:57:41 2020
  
 instance_type = 'obs' # This is the type of site this is.
 
-wema_name = 'eco' # THIS IS THE NAME OF THE WEMA
-obs_id = 'eco1' # THIS IS THE NAME OF THIS OBSERVATORY
+wema_name = 'sro' # THIS IS THE NAME OF THE WEMA
+obs_id = 'sro2' # THIS IS THE NAME OF THIS OBSERVATORY
                     #\\192.168.1.57\SRO10-Roof  r:
                     #SRO-Weather (\\192.168.1.57) w:
                     #Username: wayne_rosingPW: 29yzpe
@@ -38,14 +38,14 @@ site_config = {
     #'site_id': 'eco1',
     ####################################################
     'instance_type' : 'obs',
-    'wema_name' : 'eco', # THIS IS THE NAME OF THE WEMA
-    'obs_id': 'eco1', # THIS IS THE NAME OF THIS OBSERVATORY
+    'wema_name' : 'sro', # THIS IS THE NAME OF THE WEMA
+    'obs_id': 'sro2', # THIS IS THE NAME OF THIS OBSERVATORY
     #'observatory_location': site_name.lower(),
     
     # Manual mode turns all automation off. 
     # The scope will only do what you tell it
     # This DOESN'T turn some safetys off 
-    'scope_in_manual_mode' : False,
+    'scope_in_manual_mode' : True,
     'mount_reference_model_off': True,
     'sun_checks_off': False,
     'altitude_checks_off': False,
@@ -64,14 +64,14 @@ site_config = {
     'owner_alias': ['WER', 'TELOPS'],
     'admin_aliases': ["ANS", "WER", "KVH", "TELOPS", "TB", "DH", 'KC'],
 
-    'client_hostname':  'ECO-0m40',
-    'client_path':  'C:/ptr/',  # Generic place for this host to stash misc stuff
-    'alt_path':  'C:/ptr/',  # Generic place for this host to stash misc stuff
+    'client_hostname':  'SRO-16inch',
+    'client_path':  'D:/ptr/',  # Generic place for this host to stash misc stuff
+    'alt_path':  'D:/ptr/',  # Generic place for this host to stash misc stuff
     'save_to_alt_path' : 'no',
-    'archive_path':  'C:/ptr/',  # Meant to be where /archive/<camera_id> is added by camera.
+    'archive_path':  'D:/ptr/',  # Meant to be where /archive/<camera_id> is added by camera.
     'local_calibration_path': 'C:/ptr/', # THIS FOLDER HAS TO BE ON A LOCAL DRIVE, not a network drive due to the necessity of huge memmap files
     
-    'archive_age' : 2.0, # Number of days to keep files in the local archive before deletion. Negative means never delete
+    'archive_age' : 5.0, # Number of days to keep files in the local archive before deletion. Negative means never delete
     'send_files_at_end_of_night' : 'no', # For low bandwidth sites, do not send up large files until the end of the night. set to 'no' to disable
     'save_raw_to_disk' : True, # For low diskspace sites (or just because they aren't needed), don't save a separate raw file to disk after conversion to fz.
     'keep_reduced_on_disk' : False, # PTR uses the reduced file for some calculations (focus, SEP, etc.). To save space, this file can be removed after usage or not saved.
@@ -95,14 +95,15 @@ site_config = {
     'obsid_is_specific':  False,  # Indicates some special code for this site, found at end of config.
     
 
-    'host_wema_site_name':  'ECO',  #  The umbrella header for obsys in close geographic proximity.
-    'name': 'Eltham College Observatory, 0m4f6.8',
-    'airport_code':  'MEL: Melbourne Airport',
-    'location': 'Eltham, Victoria, Australia',
-    'telescope_description': 'n.a.',
-    'observatory_url': 'https://elthamcollege.vic.edu.au/',   #  This is meant to be optional
+    #'host_wema_site_name':  'ECO',  #  The umbrella header for obsys in close geographic proximity.
+    'name': 'PTR Sierra Remote Observatory 0m3f38',
+    'airport_code':  'FAT  :  Fresno Air Terminal',
+    'location': 'Near Shaver Lake CA,  USA',
+    'telescope_description': 'Astro-Physics, 300mmF3.8 Ricardi Honders Astrograph.',
+    'observatory_url': 'https://www.sierra-remote.com/',   #  This is meant to be optional
     'observatory_logo': None,   # I expect these will ususally end up as .png format icons
-    'description':  '''Eltham College is an independent, non-denominational, co-educational day school situated in Research, an outer suburb north east of Melbourne.
+    'description':  '''Sierra Remote Observatories​ provide telescope Hosting for Remote Astronomical Imaging,
+                       Data Acquisition, ​Satellite Tracking and Space Based Communications.
                     ''',    #  i.e, a multi-line text block supplied and eventually mark-up formatted by the owner.
     'location_day_allsky':  None,  #  Thus ultimately should be a URL, probably a color camera.
     'location_night_allsky':  None,  #  Thus ultimately should be a URL, usually Mono camera with filters.
@@ -139,7 +140,7 @@ site_config = {
     'enclosure_check_period' : 1,    # How many minutes between enclosure checks
     'auto_eve_bias_dark': False,
     'auto_midnight_moonless_bias_dark': True,
-    'auto_eve_sky_flat': False,
+    'auto_eve_sky_flat': True,
     'eve_sky_flat_sunset_offset': -20.5,  #  Minutes  neg means before, + after.
     'eve_cool_down_open' : -60.0,
     'auto_morn_sky_flat': True,
@@ -255,8 +256,8 @@ site_config = {
     'mount': {
         'mount1': {
             'parent': 'enclosure1',
-            'tel_id': '0m40',
-            'name': 'ecocdkpier',
+            'tel_id': '16inch',
+            'name': 'sro2-16inch',
             'hostIP':  '10.0.0.140',     #Can be a name if local DNS recognizes it.
             'hostname':  'ecocdkpier',
             'desc':  'Paramount ME II',
@@ -323,9 +324,9 @@ site_config = {
         'telescope1': {
             'parent': 'mount1',
             'name': 'Main OTA',
-            'telescop': 'eco1',
-            'ptrtel': 'CDK17',
-            'desc':  'CDK17',
+            'telescop': 'sro2',
+            'ptrtel': '16-inch',
+            'desc':  '16-inch',
             'driver': None,                     #  Essentially this device is informational.  It is mostly about the optics.
             'collecting_area': 100000,
             'obscuration':  23.7,   #  %
@@ -412,15 +413,21 @@ site_config = {
             'parent': 'telescope1',
             'name': 'focuser',
             'desc':  'Planewave Focuser',
-            'driver': 'ASCOM.PWI3.Focuser',
+            #'driver': 'ASCOM.PWI3.Focuser',
+            #'driver': 'ASCOM.RCOS_AE.Focuser',
+            #'driver': 'RCOS_AE.Focuser',
+            #'driver': 'ASCOM Focuser',
+            'driver': "CCDSoft2XAdaptor.ccdsoft5Camera",  # "ASCOM.QHYCCD.Camera", ##  'ASCOM.FLI.Kepler.Camera',
+            
+            
 			'com_port':  'COM9',
             #F4.9 setup
             'start_at_config_reference': True,
             'use_focuser_temperature': True,
-            'reference': 13500,    #  20210313  Nominal at 10C Primary temperature
+            'reference': 23750,    #  20210313  Nominal at 10C Primary temperature
             'ref_temp':  6265.0,    #  Update when pinning reference
             'coef_c': 0,   #  Negative means focus moves out as Primary gets colder
-            'coef_0': 13500,  #  Nominal intercept when Primary is at 0.0 C.
+            'coef_0': 23750,  #  Nominal intercept when Primary is at 0.0 C.
             'coef_date':  '20220914',    #This appears to be sensible result 44 points -13 to 3C'reference':  6431,    #  Nominal at 10C Primary temperature
             # #F9 setup
             # 'reference': 4375,    #   Guess 20210904  Nominal at 10C Primary temperature
@@ -429,7 +436,7 @@ site_config = {
             # 'coef_0': 5969,  #  Nominal intercept when Primary is at 0.0 C.
             # 'coef_date':  '20210903',    #  SWAG  OLD: This appears to be sensible result 44 points -13 to 3C
             'minimum': 0,     #  NB this area is confusing steps and microns, and need fixing.
-            'maximum': 18000,   #12672 actually
+            'maximum': 40000,   #12672 actually
             'step_size': 1,
             'backlash': 0,
             'throw' : 400,
@@ -508,15 +515,15 @@ site_config = {
                         #['w',     [0,  0],     0, 72.7, [1.00 ,  72], 'PL'],    #0.   For sequencer autofocus  consider foc or f filter
                         #['focus', [0,  0],     0, 148, [1.00 ,  72], 'focus'],    #0.
                         ['lum',    [0,  0],     0, 75, [1.00 ,  72], 'PhLum'],    #1.
-                        ['ip',    [1,  1],     0, 50, [1.00 , 119], 'PhRed'],    #2.
-                        ['v',    [2,  2],     0, 16, [1.00 , 113], 'PhGreen'],    #3.
-                        ['pb',    [3,  3],     600, 25, [0.80 ,  97], 'PhBlue'],    #4.
+                        ['red',    [1,  1],     0, 50, [1.00 , 119], 'PhRed'],    #2.
+                        ['green',    [2,  2],     0, 16, [1.00 , 113], 'PhGreen'],    #3.
+                        ['blue',    [3,  3],     600, 25, [0.80 ,  97], 'PhBlue'],    #4.
                         ['ha',    [4,  4],     400, 2.634, [0.80 ,  97], 'PhBlue'],    #4.
                         #['PR',    [1,  1],     0, 170, [1.00 , 119], 'PhBlue'],    #2.
                         #['PG',    [2,  2],     0, 220, [1.00 , 113], 'PhGreen'],    #3.
                         #['PB',    [3,  3],     0, 300, [0.80 ,  97], 'PhRed'],    #4.
-                        ['s2',    [5,  5],     400, 4.728, [5.00 , 200], 'Halpha'],    #5.
-                        ['o3',    [6,  6],     400, 3.52, [4.00 , 200], 'OIII']],    #6.
+                        ['o3',    [5,  5],     400, 4.728, [5.00 , 200], 'Halpha'],    #5.
+                        ['s2',    [6,  6],     400, 3.52, [4.00 , 200], 'OIII']],    #6.
                         #['s2',    [7,  7],     0, 58.239, [10.0,  200], 'SII']],    #7.
                         #['air',   [7,  7], -1000, 100., [1.00,   70], 'air'],    #8.
                         #['gooble',  [6,  6],     0, .221, [   0,    0], 'dark'],   #9.
@@ -550,7 +557,7 @@ site_config = {
     'camera': {
         'camera_1_1': {
             'parent': 'telescope1',
-            'name': 'ec002c',      #  Important because this points to a server file structure by that name.
+            'name': 'sro002ms',      #  Important because this points to a server file structure by that name.
             'desc':  'SBIG16803',
             'service_date': '20211111',
             'driver': "CCDSoft2XAdaptor.ccdsoft5Camera",  # "ASCOM.QHYCCD.Camera", ##  'ASCOM.FLI.Kepler.Camera',

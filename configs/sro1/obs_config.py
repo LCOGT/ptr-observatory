@@ -97,7 +97,7 @@ site_config = {
     'obsid_is_specific':  True,  # Indicates some special code for this site, found at end of config.
 
 
-    'host_wema_site_name':  'SRO',  #  The umbrella header for obsys in close geographic proximity.
+    #'host_wema_site_name':  'SRO',  #  The umbrella header for obsys in close geographic proximity.
     'name': 'PTR Sierra Remote Observatory 0m3f38',
     'airport_code':  'FAT  :  Fresno Air Terminal',
     'location': 'Near Shaver Lake CA,  USA',
@@ -123,7 +123,7 @@ site_config = {
     'reference_pressure':  867.254,    #mbar   A rough guess 20200315
     
     
-    'safety_check_period': 300,   #MF's original setting.
+    'safety_check_period': 45,   #MF's original setting.
 
     #'obsid_roof_control': False, #MTF entered this in to remove sro specific code.... Basically do we have control of the roof or not see line 338 sequencer.py
     #'obsid_allowed_to_open_roof': False,

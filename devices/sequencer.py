@@ -10,7 +10,7 @@ from astropy.io import fits
 #from astropy.utils.data import get_pkg_data_filename
 from astropy.convolution import Gaussian2DKernel, interpolate_replace_nans #convolve,
 kernel = Gaussian2DKernel(x_stddev=2,y_stddev=2)
-
+from astropy.stats import sigma_clip, mad_std
 import ephem
 #import build_tycho as tycho
 import shelve
@@ -18,6 +18,7 @@ import redis
 import math
 import shutil
 import numpy as np
+from numpy import inf
 import os
 import gc
 from pyowm import OWM
@@ -199,6 +200,11 @@ class Sequencer:
         
         self.last_roof_status = 'Closed'
         self.time_roof_last_opened = time.time() -500
+        
+        
+        
+        self.end_of_night_token_sent = False
+        
         # Run a weather report on bootup so observatory can run if need be. 
         #self.global_wx()
         #breakpoint()
@@ -861,9 +867,25 @@ class Sequencer:
                 #self.park_and_close(enc_status)
             #except:
             #    plog("Park and close failed at end of sequencer loop.")
-         
-        
-        
+        if events['Sun Rise'] <= ephem_now and not self.end_of_night_token_sent:
+            
+            self.end_of_night_token_sent = True
+            # Sending token to AWS to inform it that all files have been uploaded
+            plog ("sending end of night token to AWS")
+            #g_dev['cam'].enqueue_for_AWS(jpeg_data_size, paths['im_path'], paths['jpeg_name10'])
+            
+            isExist = os.path.exists(g_dev['obs'].obsid_path + 'tokens')
+            yesterday = datetime.datetime.now() - timedelta(1)
+            runNight=datetime.datetime.strftime(yesterday, '%Y%m%d') 
+            if not isExist:
+                os.makedirs(g_dev['obs'].obsid_path + 'tokens')
+            runNightToken= g_dev['obs'].obsid_path + 'tokens/' + self.config['obs_id'] + runNight + '.token'
+            with open(runNightToken, 'w') as f:
+                f.write('Night Completed')
+            image = (g_dev['obs'].obsid_path + 'tokens/', self.config['obs_id'] + runNight + '.token')
+            g_dev['obs'].aws_queue.put((30000000000, image), block=False)
+            g_dev['obs'].send_to_user("End of Night Token sent to AWS.", p_level='INFO')
+            
         #Here is where observatories who do their biases at night... well.... do their biases!
         #If it hasn't already been done tonight.        
         if self.config['auto_midnight_moonless_bias_dark'] and not g_dev['obs'].scope_in_manual_mode:
@@ -1566,19 +1588,7 @@ class Sequencer:
         # do need to get to BANZAI
         self.collect_and_queue_neglected_fits()
         
-        # Sending token to AWS to inform it that all files have been uploaded
-        plog ("sending end of night token to AWS")
-        #g_dev['cam'].enqueue_for_AWS(jpeg_data_size, paths['im_path'], paths['jpeg_name10'])
         
-        isExist = os.path.exists(g_dev['obs'].obsid_path + 'tokens')
-        if not isExist:
-            os.makedirs(g_dev['obs'].obsid_path + 'tokens')
-        runNightToken= g_dev['obs'].obsid_path + 'tokens/' + self.config['obs_id'] + runNight + '.token'
-        with open(runNightToken, 'w') as f:
-            f.write('Night Completed')
-        image = (g_dev['obs'].obsid_path + 'tokens/', self.config['obs_id'] + runNight + '.token')
-        g_dev['obs'].aws_queue.put((30000000000, image), block=False)
-        g_dev['obs'].send_to_user("End of Night Token sent to AWS.", p_level='INFO')
         
         # Culling the archive
         if self.config['archive_age'] > 0 :
@@ -1737,14 +1747,18 @@ class Sequencer:
         # No harm in doubly checking it has parked
         g_dev['mnt'].park_command({}, {})
         
+        
+        self.end_of_night_token_sent = False
+        
         # Now time to regenerate the local masters
         
         self.regenerate_local_masters()
         
         # Daily reboot of necessary windows 32 programs *Cough* Theskyx *Cough*
         if g_dev['mnt'].theskyx: # It is only the mount that is the reason theskyx needs to reset
-            self.kill_and_reboot_theskyx(g_dev['mnt'].current_icrs_ra, g_dev['mnt'].current_icrs_dec)
-            g_dev['mnt'].park_command({}, {})
+            #self.kill_and_reboot_theskyx(g_dev['mnt'].current_icrs_ra, g_dev['mnt'].current_icrs_dec)
+            self.kill_and_reboot_theskyx(-1,-1)
+            #g_dev['mnt'].park_command({}, {})
             
         
         return
@@ -1761,7 +1775,7 @@ class Sequencer:
                        g_dev['obs'].astro_events, 
                        tel=True)
         
-        g_dev['mnt'].park_command({}, {})
+        
         
         # If theskyx is controlling the camera and filter wheel, reconnect the camera and filter wheel
         if g_dev['cam'].theskyx:
@@ -1774,9 +1788,15 @@ class Sequencer:
                                  g_dev['obs'].name, 
                                  self.config)
         
+        time.sleep(10)
+        
+                
+        
         if returnra == -1 or returndec == -1:
-            pass
+            g_dev['mnt'].park_command({}, {})
+            #pass
         else:
+            g_dev['mnt'].park_command({}, {})
             g_dev['mnt'].go_coord(returnra, returndec)
         
         return
@@ -1870,6 +1890,33 @@ class Sequencer:
             gc.collect()
             os.remove(g_dev['obs'].local_bias_folder  + 'tempfile')
     
+            # Now that we have the master bias, we can estimate the readnoise actually
+            # by comparing the standard deviations between the bias and the masterbias
+            readnoise_array=[]
+            post_readnoise_array=[]
+            plog ("Calculating Readnoise. Please Wait.")
+            for file in inputList:
+                #plog (datetime.datetime.now().strftime("%H:%M:%S"))
+
+                #starttime=datetime.datetime.now() 
+                
+
+                hdu1data = np.load(file, mmap_mode='r')
+                hdu1data=hdu1data-masterBias
+                hdu1data = hdu1data[500:-500,500:-500]
+                stddiffimage=np.nanstd(pow(pow(hdu1data,2),0.5))
+                
+                est_read_noise= (stddiffimage * g_dev['cam'].config["camera"][g_dev['cam'].name]["settings"]["camera_gain"]) / 1.414
+    
+                #plog("Calculated Readnoise for : " + str(file) + " is " + str(est_read_noise))
+                readnoise_array.append(est_read_noise)
+                post_readnoise_array.append(stddiffimage)
+            
+            readnoise_array=np.array(readnoise_array)
+            plog ("Raw Readnoise outputs: " +str(readnoise_array))
+            plog ("WARNING, THIS VALUE IS ONLY TRUE IF YOU HAVE THE CORRECT GAIN IN reference_gain")
+            plog ("Final Readnoise: " + str(np.nanmedian(readnoise_array)) + " std: " + str(np.nanstd(readnoise_array)))
+    
             # NOW we have the master bias, we can move onto the dark frames
             plog (datetime.datetime.now().strftime("%H:%M:%S"))
             plog ("Regenerating dark") 
@@ -1940,6 +1987,10 @@ class Sequencer:
             plog ("Regenerating flats")        
             plog (tempfilters)
             
+            estimated_flat_gain=[]
+            
+            flat_gains={}
+            
             if len(tempfilters) == 0:
                 plog ("there are no filter directories, so not processing flats")
             else:
@@ -1950,6 +2001,7 @@ class Sequencer:
                     plog ("Regenerating flat for " + str(filtercode))
                     inputList=(glob(g_dev['obs'].local_flat_folder + filtercode + '/*.n*'))
                     # Generate temp memmap
+                    single_filter_gains=[]
                     if len(inputList) == 0 or len(inputList) == 1:
                         plog ("Not doing " + str(filtercode) + " flat. Not enough available files in directory.")
                     else:
@@ -1996,10 +2048,15 @@ class Sequencer:
                         del finalImage
                         # Fix up any glitches in the flat
                         temporaryFlat[temporaryFlat < 0.1] = np.nan
+                        temporaryFlat[temporaryFlat > 2.0] = np.nan
+                        #temporaryFlat[temporaryFlat < 0.1] = 0.8
+                        #temporaryFlat[np.isnan(temporaryFlat)] = 0.8
                         
                         temporaryFlat=interpolate_replace_nans(temporaryFlat, kernel)
-                        temporaryFlat[temporaryFlat < 0.1] = 0.8
-                        temporaryFlat[np.isnan(temporaryFlat)] = 0.8
+                        temporaryFlat[temporaryFlat == inf] = np.nan
+                        temporaryFlat[temporaryFlat == -inf] = np.nan
+                        temporaryFlat[temporaryFlat < 0.1 ] = np.nan
+                        
                         try:
                             np.save(g_dev['obs'].calib_masters_folder + 'masterFlat_'+ str(filtercode) + '_bin1.npy', temporaryFlat)            
                             
@@ -2022,11 +2079,88 @@ class Sequencer:
                         except Exception as e:
                             plog ("Could not save flat frame: ",e)
                         
+                        # Now to estimate gain from flats
+                        for fullflat in inputList:
+                            #camera_gain_estimate_image=PLDrive[:,:,fullflat]/temporaryFlat
+                            hdu1data = np.load(fullflat, mmap_mode='r')     
+                            hdu1exp=float(file.split('_')[-2])
+                            #numpy.seterr(invalid=’ignore’)
+                            camera_gain_estimate_image=((hdu1data-masterBias)-(masterDark*hdu1exp)) /temporaryFlat
+                            camera_gain_estimate_image[camera_gain_estimate_image == inf] = np.nan
+                            camera_gain_estimate_image[camera_gain_estimate_image == -inf] = np.nan
+                            
+                            camera_gain_estimate_image = camera_gain_estimate_image[500:-500,500:-500]
+                            
+                            camera_gain_estimate_image = sigma_clip(camera_gain_estimate_image.ravel())
+                            
+                            
+                            cge_median=np.nanmedian(camera_gain_estimate_image)
+                            cge_stdev=np.nanstd(camera_gain_estimate_image)
+                            #cge_stdev=mad_std(camera_gain_estimate_image)
+                            cge_sqrt=pow(cge_median,0.5)
+                            cge_gain=pow(cge_sqrt/cge_stdev, 2)
+                            print ("Camera gain median: " + str(cge_median) + " stdev: " +str(cge_stdev)+ " sqrt: " + str(cge_sqrt) + " gain: " +str(cge_gain))
+                            #self.expresult["camera_gain"] = cge_gain
+                            estimated_flat_gain.append(cge_gain)
+                        
+                            single_filter_gains.append(cge_gain)
+                            #breakpoint()
+                        
+                            #fits.writeto(g_dev['obs'].calib_masters_folder + 'DODGY_' + tempfrontcalib + 'masterFlat_'+ str(filtercode) + '_bin1.fits', camera_gain_estimate_image, overwrite=True)
+                            #breakpoint()
+                        single_filter_gains=np.array(single_filter_gains)
+                        single_filter_gains = sigma_clip(single_filter_gains.ravel())
+                        plog ("Ftiler Gain Sigma Clipped Estimates: " + str(np.nanmedian(single_filter_gains)) + " std " + str(np.std(single_filter_gains)) + " N " + str(len(single_filter_gains)))
+                        flat_gains[filtercode]=[np.nanmedian(single_filter_gains), np.std(single_filter_gains),len(single_filter_gains)]
+                        
                         PLDrive._mmap.close()
                         del PLDrive
                         gc.collect()
                         os.remove(g_dev['obs'].local_flat_folder  + 'tempfile')
-            
+                        
+                        #for file in inputList:
+                            #plog (datetime.datetime.now().strftime("%H:%M:%S"))
+
+                            #starttime=datetime.datetime.now() 
+                            
+
+                        #    hdu1data = np.load(file, mmap_mode='r')
+                        
+                        
+                        
+                # Report on camera estimated gains
+                # Report on camera gain estimation
+                try:
+                    estimated_flat_gain=np.array(estimated_flat_gain)
+                    plog ("Raw List of Gains: " +str(estimated_flat_gain))
+                    plog ("Camera Gain Non-Sigma Clipped Estimates: " + str(np.nanmedian(estimated_flat_gain)) + " std " + str(np.std(estimated_flat_gain)) + " N " + str(len(estimated_flat_gain)))
+                    
+                    estimated_flat_gain = sigma_clip(estimated_flat_gain.ravel())
+                    plog ("Camera Gain Sigma Clipped Estimates: " + str(np.nanmedian(estimated_flat_gain)) + " std " + str(np.std(estimated_flat_gain)) + " N " + str(len(estimated_flat_gain)))
+                    
+                    
+                    
+                    #plog("Calculated Readnoise for : " + str(file) + " is " + str(est_read_noise))
+                    #readnoise_array.append(est_read_noise)
+                    est_read_noise=[]
+                    for rnentry in post_readnoise_array:
+                    #post_readnoise_array= np.array(post_readnoise_array)
+                    #stddiffimage=np.nanmedian(post_readnoise_array)
+                        est_read_noise.append( (rnentry * np.nanmedian(estimated_flat_gain)) / 1.414)
+        
+                    est_read_noise=np.array(est_read_noise)
+                    plog ("Non Sigma Clipped Readnoise with this gain: " + str(np.nanmedian(est_read_noise)) + " std: " + str(np.nanstd(est_read_noise)))
+                    est_read_noise = sigma_clip(est_read_noise.ravel())
+                    plog ("Non Sigma Clipped Readnoise with this gain: " + str(np.nanmedian(est_read_noise)) + " std: " + str(np.nanstd(est_read_noise)))
+                    
+                    plog ("Gains by filter")
+                    plog (flat_gains)
+                except:
+                    plog ("hit some snag with reporting gains")
+                    breakpoint()
+                
+                
+                
                 # THEN reload them to use for the next night.                
                 # First delete the calibrations out of memory.
                 
@@ -2227,6 +2361,8 @@ class Sequencer:
         collecting_area = self.config['telescope']['telescope1']['collecting_area']/31808.   
         
         #breakpoint()
+        
+        camera_gain_collector=[]
         
         while len(pop_list) > 0  and ephem.now() < ending and g_dev['obs'].open_and_enabled_to_observe:
             
@@ -2468,6 +2604,7 @@ class Sequencer:
                                 >= 0.25 * flat_saturation_level
                             ):
                                 filter_gain_shelf[current_filter]=new_gain_value
+                                camera_gain_collector.append(fred["camera_gain"])
             
                             acquired_count += 1
                             if acquired_count == flat_count:
@@ -2490,6 +2627,18 @@ class Sequencer:
             plog (str(filtertempgain) + " " + str(filter_gain_shelf[filtertempgain]))
                
         filter_gain_shelf.close()
+        
+        # Report on camera gain estimation
+        try:
+            camera_gain_collector=np.array(camera_gain_collector)
+            plog ("Camera Gain Estimates: " + str(np.nanmedian(camera_gain_collector) + " std " + str(np.std(camera_gain_collector)) + " N " + str(len(camera_gain_collector))))
+            plog ("Raw List of Gains: " +str(camera_gain_collector))
+        except:
+            plog ("hit some snag with reporting gains")
+        
+        
+        
+        
         plog('\nSky flat sequence complete.\n')
         g_dev["obs"].send_to_user("Sky flat collection complete.")            
         
