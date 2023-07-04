@@ -529,7 +529,6 @@ class Observatory:
                 plog (str(filtertempgain) + " " + str(filter_gain_shelf[filtertempgain]))
         filter_gain_shelf.close()                
 
-
         
 
         # breakpoint()
