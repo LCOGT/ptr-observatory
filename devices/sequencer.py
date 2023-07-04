@@ -456,16 +456,30 @@ class Sequencer:
         #just to be safe:  Should fix Line 344 Exception.
         #g_dev['ocn'].status = g_dev['ocn'].get_status()
         #g_dev['enc'].status = g_dev['enc'].get_status()
-        try:
-            g_dev['obs'].enc_status = g_dev['obs'].get_enclosure_status_from_aws()
-        except:
-            g_dev['obs'].enc_status = None
+        #try:
+        #    g_dev['obs'].enc_status = g_dev['obs'].get_enclosure_status_from_aws()
+        #except:
+        #    g_dev['obs'].enc_status = None
         
         
-        try:        
+        #try:        
+        #    g_dev['obs'].ocn_status = g_dev['obs'].get_weather_status_from_aws()
+        #except:
+        #    g_dev['obs'].ocn_status = None
+        
+        
+        if (
+            (datetime.datetime.now() - g_dev['obs'].observing_status_timer)
+        ) > datetime.timedelta(minutes=g_dev['obs'].observing_check_period):
             g_dev['obs'].ocn_status = g_dev['obs'].get_weather_status_from_aws()
-        except:
-            g_dev['obs'].ocn_status = None
+            g_dev['obs'].observing_status_timer = datetime.datetime.now()
+
+        
+        if (
+            (datetime.datetime.now() - g_dev['obs'].enclosure_status_timer)
+        ) > datetime.timedelta(minutes=g_dev['obs'].enclosure_check_period):
+            g_dev['obs'].enc_status = g_dev['obs'].get_enclosure_status_from_aws()
+            g_dev['obs'].enclosure_status_timer = datetime.datetime.now()
         
         
         #ocn_status = g_dev['obs'].ocn_status
