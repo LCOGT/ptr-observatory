@@ -868,10 +868,10 @@ site_config = {
                 'is_cmos':  False,
                 'bayer_pattern':  None,    #  Need to verify R as in RGGB is pixel x=0, y=0, B is x=1, y = 1
                 'can_set_gain':  False,
-                'camera_gain':   0.45, #[10., 10., 10., 10.],     #  One val for each binning.
-                'camera_gain_stdev':   0.15, #[10., 10., 10., 10.],     #  One val for each binning.
-                'read_noise':  1.92, #[9, 9, 9, 9],    #  All SWAGs right now
-                'read_noise_stdev':   0.003, #[10., 10., 10., 10.],     #  One val for each binning.
+                'camera_gain':   0.612, #[10., 10., 10., 10.],     #  One val for each binning.
+                'camera_gain_stdev':   0.011, #[10., 10., 10., 10.],     #  One val for each binning.
+                'read_noise':  2.636, #[9, 9, 9, 9],    #  All SWAGs right now
+                'read_noise_stdev':   0.009, #[10., 10., 10., 10.],     #  One val for each binning.
                 'reference_dark':  2.0, #[0.0, 0.0, 0.0, 0.0],     #  Might these best be pedastal values?
                 'saturate':  60000.0, #[[1, 65000], [2,262000], [3,589815], [4, 1048560]] ,   # e-.  This is a close guess, not measured, but taken from data sheet.
                 'max_linearity':  55000.,

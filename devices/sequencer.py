@@ -2105,10 +2105,22 @@ class Sequencer:
                             #camera_gain_estimate_image=PLDrive[:,:,fullflat]/temporaryFlat
                             hdu1data = np.load(fullflat, mmap_mode='r')     
                             hdu1exp=float(file.split('_')[-2])
-                            #numpy.seterr(invalid=’ignore’)
+                            
                             camera_gain_estimate_image=((hdu1data-masterBias)-(masterDark*hdu1exp)) /temporaryFlat
                             camera_gain_estimate_image[camera_gain_estimate_image == inf] = np.nan
                             camera_gain_estimate_image[camera_gain_estimate_image == -inf] = np.nan
+                            
+                            # If an OSC, just use one set of the green pixels.
+                            if g_dev['cam'].config["camera"][g_dev['cam'].name]["settings"]["is_osc"]:
+                                camera_gain_estimate_image = hdu1data[::2, 1::2]
+                                #GBLonly = hdu1data[2][1::2, ::2]
+                                
+                                
+                            
+                            
+                            
+                            #numpy.seterr(invalid=’ignore’)
+                            
                             
                             #camera_gain_estimate_image = camera_gain_estimate_image[500:-500,500:-500]
                             
