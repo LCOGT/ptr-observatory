@@ -1450,18 +1450,19 @@ class Camera:
          # Always check rotator just before exposure  The Rot jitters wehn parked so
          # this give rot moving report during bia darks
         rot_report=0
-        if g_dev['rot']!=None:                
-            while g_dev['rot'].rotator.IsMoving:    #This signal fibrulates!                
-                #if g_dev['rot'].rotator.IsMoving:                                       
-                    if rot_report == 0 and imtype not in ['bias', 'dark']:
-                        plog("Waiting for camera rotator to catch up. ")
-                        g_dev["obs"].send_to_user("Waiting for camera rotator to catch up before exposing.")
-                                    
-                        rot_report=1
-                    time.sleep(0.2)
-                    if g_dev["obs"].stop_all_activity:
-                        return                              
-                            
+        if g_dev['rot']!=None:
+            if not g_dev['mnt'].mount.AtPark:                
+                while g_dev['rot'].rotator.IsMoving:    #This signal fibrulates!                
+                    #if g_dev['rot'].rotator.IsMoving:                                       
+                        if rot_report == 0 and imtype not in ['bias', 'dark']:
+                            plog("Waiting for camera rotator to catch up. ")
+                            g_dev["obs"].send_to_user("Waiting for camera rotator to catch up before exposing.")
+                                        
+                            rot_report=1
+                        time.sleep(0.2)
+                        if g_dev["obs"].stop_all_activity:
+                            return                              
+                                
 
         self.expresult = {}  #  This is a default return just in case
         num_retries = 0
@@ -1661,18 +1662,19 @@ class Camera:
                             # Always check rotator just before exposure  The Rot jitters wehn parked so
                             # this give rot moving report during bia darks
                             rot_report=0
-                            if g_dev['rot']!=None:                
-                                while g_dev['rot'].rotator.IsMoving:    #This signal fibrulates!                
-                                    #if g_dev['rot'].rotator.IsMoving:                                       
-                                     if rot_report == 0 :
-                                         plog("Waiting for camera rotator to catch up. ")
-                                         g_dev["obs"].send_to_user("Waiting for camera rotator to catch up before exposing.")
-                                                     
-                                         rot_report=1
-                                     time.sleep(0.2) 
-                                     if g_dev["obs"].stop_all_activity:
-                                         return
-                            
+                            if g_dev['rot']!=None:      
+                                if not g_dev['mnt'].mount.AtPark:
+                                    while g_dev['rot'].rotator.IsMoving:    #This signal fibrulates!                
+                                        #if g_dev['rot'].rotator.IsMoving:                                       
+                                         if rot_report == 0 :
+                                             plog("Waiting for camera rotator to catch up. ")
+                                             g_dev["obs"].send_to_user("Waiting for camera rotator to catch up before exposing.")
+                                                         
+                                             rot_report=1
+                                         time.sleep(0.2) 
+                                         if g_dev["obs"].stop_all_activity:
+                                             return
+                                
                             self._expose(exposure_time, bias_dark_or_light_type_frame)
                             
                             
