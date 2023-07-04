@@ -670,8 +670,10 @@ site_config = {
                 'is_color':  False,
                 'bayer_pattern':  None,    #  'RGGB" is a valid string in camera is color.
                 'can_set_gain':  True,
-                'reference_gain': [2., 4., 18., 32.],     #  One val for each binning. SWAG!
-                'reference_noise': [10, 10, 10, 10],    #  All SWAGs right now!
+                'camera_gain':   0.45, #[10., 10., 10., 10.],     #  One val for each binning.
+                'camera_gain_stdev':   0.15, #[10., 10., 10., 10.],     #  One val for each binning.
+                'read_noise':  1.92, #[9, 9, 9, 9],    #  All SWAGs right now
+                'read_noise_stdev':   0.003, #[10., 10., 10., 10.],     #  One val for each binning.
                 'ref_dark': 360.,
                 'reference_dark': [0.0, 0.0, 0.0, 0.0],     #  Might these best be pedastal values?  NO!
                                     #hdu.header['RDMODE'] = (self.config['camera'][self.name]['settings']['read_mode'], 'Camera read mode')

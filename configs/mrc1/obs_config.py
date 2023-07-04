@@ -850,8 +850,10 @@ site_config = {
                 'min_subframe': [128, 128],
                 # Meaning fixed binning if list has only one entry
                 'bin_modes':  [['Optimal', 0.91], ['Fine', 0.61], ['Coarse', 1.2], ['Eng', 0.30]],
-                'reference_gain': 1.3,  # NB GUess One val for each binning. Assumed digitalsumming in camera???
-                'reference_noise': 6,  # NB Guess
+                'camera_gain':   0.45, #[10., 10., 10., 10.],     #  One val for each binning.
+                'camera_gain_stdev':   0.15, #[10., 10., 10., 10.],     #  One val for each binning.
+                'read_noise':  1.92, #[9, 9, 9, 9],    #  All SWAGs right now
+                'read_noise_stdev':   0.003, #[10., 10., 10., 10.],     #  One val for each binning.
                 'reference_dark': 0.2,  # NB  Guess
                 'reference_offset': 611,  # NB Guess  ADU vaules not times in sec.
                 'fullwell_capacity': 80000,  # NB Guess

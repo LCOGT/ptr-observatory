@@ -736,9 +736,17 @@ site_config = {
                 'is_color':  False,
                 'can_set_gain':  False,
                 'bayer_pattern':  None,    # Need to verify R as in RGGB is pixel x=0, y=0, B is x=1, y = 1
-                'reference_gain': 1.3,#  3  2.6, 3.9, 5.2],     #One val for each binning.
-                'reference_noise': 1.5, # 6, 6, 6],    #  NB Guess
+                'camera_gain':   0.45, #[10., 10., 10., 10.],     #  One val for each binning.
+                'camera_gain_stdev':   0.15, #[10., 10., 10., 10.],     #  One val for each binning.
+                'read_noise':  1.92, #[9, 9, 9, 9],    #  All SWAGs right now
+                'read_noise_stdev':   0.003, #[10., 10., 10., 10.],     #  One val for each binning.
+                
                 'reference_dark': 0.1, #, .8, 1.8, 3.2],  #  Guess
+                
+                
+                
+                
+                
                 'ref_dark': 360.0,    #  this needs fixing.
                 'long_dark':600.0,
                 'max_linearity':  60000,   # Guess  60% of this is max counts for skyflats.  75% rejects the skyflat
