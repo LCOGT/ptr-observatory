@@ -500,6 +500,25 @@ class Observatory:
         if self.debug_flag:
             g_dev['obs'].open_and_enabled_to_observe=True
 
+
+
+
+                
+        
+        # Report filter Gains as part of bootup
+        filter_gain_shelf = shelve.open(g_dev['obs'].obsid_path + 'ptr_night_shelf/' + 'filtergain' + g_dev['cam'].name + str(g_dev['obs'].name))
+        #breakpoint()
+        if len(filter_gain_shelf)==0:
+            plog ("Looks like there is no filter shelf.")
+        else:
+            plog ("Stored filter gains")
+            for filtertempgain in list(filter_gain_shelf.keys()):
+                plog (str(filtertempgain) + " " + str(filter_gain_shelf[filtertempgain]))
+        filter_gain_shelf.close()                
+
+
+
+
         # breakpoint()
         #req2 = {'target': 'near_tycho_star', 'area': 150}
         #opt = {}

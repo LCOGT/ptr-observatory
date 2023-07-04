@@ -532,23 +532,23 @@ site_config = {
                         ['N2',   [13, 0],    0, 1.32, [360 , 170], 'N2'],    #26.
                         ['S2',   [0,  4],    0, 2.847, [0.65,  20], 'S2'],    #27.
                         ['CR',   [0,  5],    0, 1.556, [360 , 170], 'Rc'],    #28.
-                        ['dark', [5,  6],    0, 0.20, [360 , 170], 'dk'],    #29.
-                        ['dif',  [0,  1],    0, 75.0, [360 , 170], 'df'],    #30. #NONE OF THESE OR BELOW have accurate gains.
-                        ['difw', [7,  1],    0, 72.6, [0.65,  20], 'dw'],    #31.
-                        ['difup',[1,  1],    0, 10.5, [0.65,  20], 'du'],    #31.
-                        ['difgp',[2,  1],    0, 234,  [0.65,  20], 'dg'],    #33.
-                        ['difrp',[3,  1],    0, 70.0, [0.65,  20], 'dr'],    #34.
-                        ['difip',[4,  1],    0, 150., [0.65,  20], 'di'],    #35.
-                        ['difz', [5,  1],    0, 0.73, [0.65,  20], 'ds'],    #35.
-                        ['dify', [6,  1],    0, 0.15, [0.65,  20], 'dY'],    #37.
-                        ['difEXO',[8, 1],    0, 161., [0.65,  20], 'dx'],    #38.
-                        ['difJB',[9,  1],    0, 42.5, [0.65,  20], 'dB'],    #39.
-                        ['difJV',[10, 1],    0, 33.0, [0.65,  20], 'dV'],    #40.
-                        ['difRc',[11, 1],    0, 22.2, [0.65,  20], 'dR'],    #41.
-                        ['difIc',[12, 1],    0, 10. , [0.65,  20], 'dI']],   #42.
+                        ['dark', [5,  6],    0, 0.20, [360 , 170], 'dk']],    #29.
+                        # ['dif',  [0,  1],    0, 75.0, [360 , 170], 'df'],    #30. #NONE OF THESE OR BELOW have accurate gains.
+                        # ['difw', [7,  1],    0, 72.6, [0.65,  20], 'dw'],    #31.
+                        # ['difup',[1,  1],    0, 10.5, [0.65,  20], 'du'],    #31.
+                        # ['difgp',[2,  1],    0, 234,  [0.65,  20], 'dg'],    #33.
+                        # ['difrp',[3,  1],    0, 70.0, [0.65,  20], 'dr'],    #34.
+                        # ['difip',[4,  1],    0, 150., [0.65,  20], 'di'],    #35.
+                        # ['difz', [5,  1],    0, 0.73, [0.65,  20], 'ds'],    #35.
+                        # ['dify', [6,  1],    0, 0.15, [0.65,  20], 'dY'],    #37.
+                        # ['difEXO',[8, 1],    0, 161., [0.65,  20], 'dx'],    #38.
+                        # ['difJB',[9,  1],    0, 42.5, [0.65,  20], 'dB'],    #39.
+                        # ['difJV',[10, 1],    0, 33.0, [0.65,  20], 'dV'],    #40.
+                        # ['difRc',[11, 1],    0, 22.2, [0.65,  20], 'dR'],    #41.
+                        # ['difIc',[12, 1],    0, 10. , [0.65,  20], 'dI']],   #42.
 
                 'filter_screen_sort':  [12, 0, 11, 2, 3, 5, 4, 1, 6],   # don't use narrow yet,  8, 10, 9], useless to try.
-                'filter_sky_sort': ['S2','N2','HA','up','NIR','y','zs','zp','ip','Ic','PB','JB','JV','PG','gp','EXO','Rc','rp','PR','PL', 'air'],
+                'filter_sky_sort': ['S2','N2','HA','up','NIR','y','zs','zp','ip','Ic','PB','JB','JV','PG','gp','EXO','Rc','rp','PR','PL','air'],
                 'override_automatic_filter_gains': False, # This ignores the automatically estimated filter gains and starts with the values from the config file
                 
                 
@@ -769,11 +769,11 @@ site_config = {
                 'darkslide_com': 'COM10',  #old controller COM10, new one 9a COM17
                 'shutter_type': "Electronic",
                 'number_of_bias_to_collect': 31,
-                'number_of_dark_to_collect': 11,
-                'number_of_bias_to_store': 31,   #SWAGS by Wayne 20230613
-                'number_of_dark_to_store': 31,                
-                'number_of_flat_to_collect': 5,                
-                'number_of_flat_to_store' : 15,
+                'number_of_dark_to_collect': 15,
+                'number_of_bias_to_store': 45,   #SWAGS by Wayne 20230613
+                'number_of_dark_to_store': 45,                
+                'number_of_flat_to_collect': 7,                
+                'number_of_flat_to_store' : 21,
                 
                 'dark_exposure': 360,
                 'flat_bin_spec': '1,1', #'2,2'],    #Default binning for flats

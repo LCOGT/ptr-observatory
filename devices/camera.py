@@ -1422,6 +1422,9 @@ class Camera:
                         ].filter_offset  # TEMP   NBNBNB This needs fixing
                     except:
                         plog ("Failed to change filter! Cancelling exposure.")
+                        ##DEBUG Error on 20230703  System halted here. putting in
+                        ##a breakpoint to catch this path next time.  WER
+                        breakpoint()
                         return 
                     
                 self.current_filter = g_dev['fil'].filter_selected
