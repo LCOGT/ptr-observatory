@@ -2095,6 +2095,7 @@ class Sequencer:
                         
                         # Now to estimate gain from flats
                         for fullflat in inputList:
+                            breakpoint()
                             #camera_gain_estimate_image=PLDrive[:,:,fullflat]/temporaryFlat
                             hdu1data = np.load(fullflat, mmap_mode='r')     
                             hdu1exp=float(file.split('_')[-2])
@@ -2103,9 +2104,12 @@ class Sequencer:
                             camera_gain_estimate_image[camera_gain_estimate_image == inf] = np.nan
                             camera_gain_estimate_image[camera_gain_estimate_image == -inf] = np.nan
                             
-                            camera_gain_estimate_image = camera_gain_estimate_image[500:-500,500:-500]
+                            #camera_gain_estimate_image = camera_gain_estimate_image[500:-500,500:-500]
                             
-                            camera_gain_estimate_image = sigma_clip(camera_gain_estimate_image.ravel())
+                            cropx = int( (camera_gain_estimate_image.shape[0] -500)/2)
+                            cropy = int((camera_gain_estimate_image.shape[1] -500) /2)
+                            camera_gain_estimate_image=camera_gain_estimate_image[cropx:-cropx, cropy:-cropy]
+                            camera_gain_estimate_image = sigma_clip(camera_gain_estimate_image, masked=False, axis=None)
                             
                             
                             cge_median=np.nanmedian(camera_gain_estimate_image)
