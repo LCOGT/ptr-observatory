@@ -154,7 +154,7 @@ class Qcam:
 
     bit_depth_8 = 8
     bit_depth_16 = 16
-
+    readmodenum=c_int32(2)
     CONTROL_BRIGHTNESS = c_int(0)
     CONTROL_GAIN = c_int(6)
     CONTROL_USBTRAFFIC = c_int(6)
@@ -209,7 +209,7 @@ class Qcam:
         # self.so.GetQHYCCDNumberOfReadModes.argtypes = [c_void_p, c_void_p]
         # self.so.GetQHYCCDReadModeName.argtypes = [c_void_p, c_uint32, c_char_p]
         # self.so.GetQHYCCDReadModeName.argtypes = [c_void_p, c_uint32]
-
+        self.so.GetQHYCCDReadMode.argtypes = [c_void_p,c_uint32]
         self.so.GetReadModesNumber.argtypes = [c_char_p, c_void_p]
         self.so.GetReadModeName.argtypes = [c_char_p, c_uint32, c_char_p]
         self.so.SetQHYCCDReadMode.argtypes = [c_void_p, c_uint32]
@@ -541,12 +541,21 @@ class Camera:
             #success = qhycam.so.GetQHYCCDNumberOfReadModes(qhycam.camera_params[qhycam_id]['handle'],numModes)
             #print (numModes)
             success = qhycam.so.SetQHYCCDReadMode(qhycam.camera_params[qhycam_id]['handle'], read_mode) # 0 is Photographic DSO 16 Bit
-            
+            #print ("******")
+            #print (success)
+            #print (read_mode)
             qhycam.camera_params[qhycam_id]['stream_mode'] = c_uint8(qhycam.stream_single_mode)
             success = qhycam.so.SetQHYCCDStreamMode(qhycam.camera_params[qhycam_id]['handle'], qhycam.camera_params[qhycam_id]['stream_mode'])
            
             success = qhycam.so.InitQHYCCD(qhycam.camera_params[qhycam_id]['handle'])
+            
+            #readmodenum=c_uint32()
             #breakpoint()
+            #success=qhycam.so.GetQHYCCDReadMode(qhycam.camera_params[qhycam_id]['handle'], readmodenum)
+            
+            
+            
+            
             
             mode_name = create_string_buffer(qhycam.STR_BUFFER_SIZE)
             qhycam.so.GetReadModeName(qhycam_id, read_mode, mode_name) # 0 is Photographic DSO 16 bit
