@@ -2182,7 +2182,10 @@ class Sequencer:
         # Load up the pickled list of gains or start a new one. 
         filter_gain_shelf = shelve.open(g_dev['obs'].obsid_path + 'ptr_night_shelf/' + 'filtergain' + g_dev['cam'].name + str(g_dev['obs'].name))
         #breakpoint()
-        if len(filter_gain_shelf)==0:
+        if self.config['filter_wheel']['filter_wheel1']['settings']['override_automatic_filter_gains']:
+            plog ("Config is set to not use the automatically estimated")
+            plog ("Filter gains. Starting with config gain entries.")
+        elif len(filter_gain_shelf)==0:
             plog ("Looks like a new filter gain shelf.")
         else:
             plog ("Beginning stored filter gains")
@@ -2249,10 +2252,10 @@ class Sequencer:
                     plog("Beginning flat run for filterless observation")
                     
                 g_dev['obs'].send_to_user("Beginning flat run for filter: " + str(current_filter))  
-                try:
+                if (current_filter in filter_gain_shelf.keys()) and (not self.config['filter_wheel']['filter_wheel1']['settings']['override_automatic_filter_gains']):
                     filter_gain=filter_gain_shelf[current_filter]
                     plog ("Using stored gain : " + str(filter_gain))
-                except:  
+                else:  
                     if g_dev["fil"].null_filterwheel == False:                      
                         filter_gain = g_dev['fil'].return_filter_gain({"filter": current_filter}, {})  
                     else:
@@ -2267,6 +2270,9 @@ class Sequencer:
 
                 scale = 1
                 self.estimated_first_flat_exposure = False
+                
+                slow_report_timer=time.time()
+                
                 #if current_filter == 'rp':  breakpoint()
                 while (acquired_count < flat_count):
                     g_dev['obs'].scan_requests()
@@ -2283,7 +2289,7 @@ class Sequencer:
                         filter_gain_shelf.close()
                         return
                     
-                    slow_report_timer=time.time()
+                    
                     
                     if self.next_flat_observe < time.time():    
                         try:
@@ -2479,11 +2485,19 @@ class Sequencer:
         else:
             self.eve_sky_flat_latch = False
             
+        textfilename= g_dev['obs'].obsid_path + 'ptr_night_shelf/' + 'filtergain' + g_dev['cam'].name + str(g_dev['obs'].name) +'.txt'
+        try:
+            os.remove(textfilename)
+        except:
+            pass
         
-        plog ("Ending stored filter gains")
-        for filtertempgain in list(filter_gain_shelf.keys()):
-            plog (filtertempgain + " " + filter_gain_shelf[filtertempgain])
-               
+        with open(textfilename, 'w') as f:                                                                 
+            plog ("Ending stored filter gains")
+            for filtertempgain in list(filter_gain_shelf.keys()):
+                filtline=str(filtertempgain) + " " + str(filter_gain_shelf[filtertempgain])
+                plog (filtline)
+                f.write(filtline +"\n")
+                
         filter_gain_shelf.close()
         plog('\nSky flat sequence complete.\n')
         g_dev["obs"].send_to_user("Sky flat collection complete.")            

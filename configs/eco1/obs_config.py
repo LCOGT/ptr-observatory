@@ -528,7 +528,9 @@ site_config = {
 
                 
                 #'filter_sky_sort': ['ha','o3','s2','v','pb','ip','lum']    #No diffuser based filters
-                'filter_sky_sort': ['ha','o3','s2','v','pb','ip','lum']    #No diffuser based filters
+                'filter_sky_sort': ['ha','o3','s2','v','pb','ip','lum'],
+                'override_automatic_filter_gains': False, # This ignores the automatically estimated filter gains and starts with the values from the config file
+                #No diffuser based filters
                 
 
 

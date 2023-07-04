@@ -640,7 +640,9 @@ site_config = {
                 #'filter_sky_sort':     ['S2', 'HA', 'N2', 'O3', 'ip', 'rp', 'Red', 'JV',\
                 #                        'Green','JB', 'gp',   'Blue', 'EXO',  'w','Lum',  'air']  #Least to most throughput
                 'filter_sky_sort':     ['S2', 'HA', 'N2', 'O3', 'ip', 'rp', 'JV',\
-                                        'JB', 'gp', 'EXO', 'Lum',  'air']  #Least to most throughput
+                                        'JB', 'gp', 'EXO', 'Lum',  'air'],
+                'override_automatic_filter_gains': False, # This ignores the automatically estimated filter gains and starts with the values from the config file
+                  #Least to most throughput
 
             },
         },

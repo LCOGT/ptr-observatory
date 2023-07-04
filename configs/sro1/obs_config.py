@@ -477,7 +477,7 @@ site_config = {
                 'filter_data': [  #NB NB NB add cwl & bw in nm.
 
                         #['w',     [0,  0],     0, 72.7, [1.00 ,  72], 'PL'],    #0.   For sequencer autofocus  consider foc or f filter
-                        ['focus', [0,  0],     0, 72.7, [1.00 ,  72], 'focus'],    #0.
+                        #['focus', [0,  0],     0, 72.7, [1.00 ,  72], 'focus'],    #0.
                         ['PL',    [0,  0],     0, 620, [1.00 ,  72], 'PhLum'],    #1.
                         ['PR',    [1,  1],     0, 170, [1.00 , 119], 'PhRed'],    #2.
                         ['PG',    [2,  2],     0, 220, [1.00 , 113], 'PhGreen'],    #3.
@@ -488,15 +488,17 @@ site_config = {
                         ['HA',    [4,  4],     0, .400, [5.00 , 200], 'Halpha'],    #5.
                         ['O3',    [5,  5],     0, 6, [4.00 , 200], 'OIII'],    #6.
                         ['S2',    [6,  6],     0, .221, [10.0,  200], 'SII'],    #7.
-                        ['air',   [7,  7], -1000, 100., [1.00,   70], 'air'],    #8.
-                        ['dark',  [6,  6],     0, .221, [   0,    0], 'dark'],   #9.
-                        ['LRGB',  [0,  0],     0, .221, [   0,    0], 'LRGB']],#],   #10.
+                        ['air',   [7,  7], -1000, 100., [1.00,   70], 'air']] ,  #8.
+                        #['dark',  [6,  6],     0, .221, [   0,    0], 'dark'],   #9.
+                        #['LRGB',  [0,  0],     0, .221, [   0,    0], 'LRGB']],#],   #10.
 
 
                 'filter_screen_sort':  [8, 1, 4, 3, 2, 6, 5, 7],   #  don't use narrow yet,  8, 10, 9], useless to try.
 
 
-                'filter_sky_sort': [6, 4, 5, 1, 2, 3,  0]    #No diffuser based filters
+                'filter_sky_sort': ['S2','O3','HA','PB','PG','PR','PL','air'] ,
+                'override_automatic_filter_gains': False, # This ignores the automatically estimated filter gains and starts with the values from the config file
+                
                 #'filter_sky_sort': [7, 19, 2, 13, 18, 5, 15,\
                 #                    12, 4, 11, 16, 10, 9, 17, 3, 14, 1, 0]    #basically no diffuser based filters
                 #[32, 8, 22, 21, 20, 23, 31, 6, 7, 19, 27, 2, 37, 13, 18, 30, 5, 15, 36, 12,\

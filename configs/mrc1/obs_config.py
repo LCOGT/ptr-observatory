@@ -597,7 +597,9 @@ site_config = {
 
                 # 'filter_sky_sort':     ['HA', 'S2', 'CR', 'N2', 'O3', 'PR', 'PG', 'PB', 'w', 'air']  #Least to most throughput  \
                 # Temporary MTF filter-sky-sort to get OSC flats ... if after March 23 return to above
-                'filter_sky_sort':     ['S2', 'N2', 'O3', 'HA', 'z', 'PR', 'PG', 'PB', 'gp', 'rp', 'ip', 'w', 'PL', 'air']  # Least to most throughput  \
+                'filter_sky_sort':     ['S2', 'N2', 'O3', 'HA', 'z', 'PR', 'PG', 'PB', 'gp', 'rp', 'ip', 'w', 'PL', 'air'],
+                'override_automatic_filter_gains': False, # This ignores the automatically estimated filter gains and starts with the values from the config file
+                  # Least to most throughput  \
                 # 'filter_sky_sort':     [  'PB', 'gp','rp','ip', 'w','PL', 'focus', 'air']  #Least to most throughput  \
 
             },

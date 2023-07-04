@@ -401,7 +401,7 @@ site_config = {
             'maximum': 360.0,
             'step_size':  0.0001,     # Is this correct?
             'backlash':  0.0,
-            'throw': 400,
+            'throw': 300,
             'unit':  'degree'    # 'steps'
         },
 
@@ -548,7 +548,10 @@ site_config = {
                         ['difIc',[12, 1],    0, 10. , [0.65,  20], 'dI']],   #42.
 
                 'filter_screen_sort':  [12, 0, 11, 2, 3, 5, 4, 1, 6],   # don't use narrow yet,  8, 10, 9], useless to try.
-                'filter_sky_sort': ['S2','N2','HA','up','NIR','y','zs','zp','ip','Ic','PB','JB','JV','PG','gp','EXO','Rc','rp','PR','PL']
+                'filter_sky_sort': ['S2','N2','HA','up','NIR','y','zs','zp','ip','Ic','PB','JB','JV','PG','gp','EXO','Rc','rp','PR','PL', 'air'],
+                'override_automatic_filter_gains': False, # This ignores the automatically estimated filter gains and starts with the values from the config file
+                
+                
                 #'filter_sky_sort': [ 27, 26, 25, 28, 12, 7, 24, 18, 23, 10, 20, 17, 9,\
                 #                    21 ,16, 15, 14, 22, 8, 30, 19, 6, 0]    #  No diffuser based filters
 
@@ -590,7 +593,7 @@ site_config = {
 
             'settings': {
                 'hold_flats_in_memory': True, # If there is sufficient memory ... OR .... not many flats, it is faster to keep the flats in memory.
-                'min_flat_exposure': 0.1,
+                'min_flat_exposure': 0.01,
                 'max_flat_exposure' : 20,
                 
                 
