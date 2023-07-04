@@ -2127,7 +2127,7 @@ class Sequencer:
                             #fits.writeto(g_dev['obs'].calib_masters_folder + 'DODGY_' + tempfrontcalib + 'masterFlat_'+ str(filtercode) + '_bin1.fits', camera_gain_estimate_image, overwrite=True)
                             #breakpoint()
                         single_filter_gains=np.array(single_filter_gains)
-                        single_filter_gains = sigma_clip(single_filter_gains.ravel())
+                        single_filter_gains = sigma_clip(single_filter_gains, masked=False, axis=None)
                         plog ("Ftiler Gain Sigma Clipped Estimates: " + str(np.nanmedian(single_filter_gains)) + " std " + str(np.std(single_filter_gains)) + " N " + str(len(single_filter_gains)))
                         flat_gains[filtercode]=[np.nanmedian(single_filter_gains), np.std(single_filter_gains),len(single_filter_gains)]
                         
@@ -2153,7 +2153,7 @@ class Sequencer:
                     plog ("Raw List of Gains: " +str(estimated_flat_gain))
                     plog ("Camera Gain Non-Sigma Clipped Estimates: " + str(np.nanmedian(estimated_flat_gain)) + " std " + str(np.std(estimated_flat_gain)) + " N " + str(len(estimated_flat_gain)))
                     
-                    estimated_flat_gain = sigma_clip(estimated_flat_gain.ravel())
+                    estimated_flat_gain = sigma_clip(estimated_flat_gain, masked=False, axis=None))
                     plog ("Camera Gain Sigma Clipped Estimates: " + str(np.nanmedian(estimated_flat_gain)) + " std " + str(np.std(estimated_flat_gain)) + " N " + str(len(estimated_flat_gain)))
                     
                     
@@ -2168,7 +2168,7 @@ class Sequencer:
         
                     est_read_noise=np.array(est_read_noise)
                     plog ("Non Sigma Clipped Readnoise with this gain: " + str(np.nanmedian(est_read_noise)) + " std: " + str(np.nanstd(est_read_noise)))
-                    est_read_noise = sigma_clip(est_read_noise.ravel())
+                    est_read_noise = sigma_clip(est_read_noise, masked=False, axis=None))
                     plog ("Non Sigma Clipped Readnoise with this gain: " + str(np.nanmedian(est_read_noise)) + " std: " + str(np.nanstd(est_read_noise)))
                     
                     plog ("Gains by filter")
