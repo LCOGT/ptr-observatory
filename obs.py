@@ -521,7 +521,7 @@ class Observatory:
         #opt = {'area': 150, 'count': 1, 'bin': 1, 'filter': 'focus'}
         #result = g_dev['cam'].expose_command(req, opt, no_AWS=False, solve_it=True)
         # breakpoint()
-        #g_dev['seq'].regenerate_local_masters()
+        g_dev['seq'].regenerate_local_masters()
         
         #g_dev['seq'].sky_grid_pointing_run(max_pointings=25, alt_minimum=25)
 
@@ -2805,7 +2805,7 @@ sel
                     #print('\nfiles;  ', files)
                     while True:
                         try:
-                            reqs.post(aws_resp["url"], data=aws_resp["fields"], files=files, timeout=20)
+                            reqs.post(aws_resp["url"], data=aws_resp["fields"], files=files, timeout=45)
 
                             break
                         except:

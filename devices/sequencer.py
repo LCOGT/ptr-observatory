@@ -1829,6 +1829,11 @@ class Sequencer:
 #        inputList = inputList[-19:] # WER used for speed testing
 # =============================================================================
         
+        # have to remove flats from memory to make room for.... flats!
+        try:
+            del g_dev['cam'].flatFiles
+        except:
+            pass
         
         if len(inputList) == 0 or len(darkinputList) == 0 or len(inputList) == 1 or len(darkinputList) == 1:
             plog ("Not reprocessing local masters as there are not enough biases or darks")
@@ -1857,7 +1862,8 @@ class Sequencer:
                 starttime=datetime.datetime.now() 
                 plog("Storing in a memmap array: " + str(file))
 
-                hdu1data = np.load(file, mmap_mode='r')
+                #hdu1data = np.load(file, mmap_mode='r')
+                hdu1data = np.load(file)
                 timetaken=datetime.datetime.now() -starttime
                 plog ("Time Taken to load array: " + str(timetaken))
                                 
