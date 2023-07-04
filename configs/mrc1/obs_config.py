@@ -129,14 +129,14 @@ site_config = {
     'only_scope_that_controls_the_roof': False,  # If multiple scopes control the roof, set this to False
 
 
-    'safety_check_period': 300,  # MF's original setting.
+    'safety_check_period': 45,  # MF's original setting.
     'maximum_roof_opens_per_evening': 4,
     # How many minutes to use as the default retry time to open roof. This will be progressively multiplied as a back-off function.
     'roof_open_safety_base_time': 15,
 
 
 
-    'obsid_in_automatic_default': "Shutdown",  # "Manual", "Shutdown"
+    'obsid_in_automatic_default': "Automatic",  # "Manual", "Shutdown"
     'automatic_detail_default': "Enclosure is set to Automatic mode.",
 
 
@@ -146,8 +146,8 @@ site_config = {
 
     'lowest_requestable_altitude': -5,  # Degrees. For normal pointing requests don't allow requests to go this low.
 
-    'observing_check_period': 5,    # How many minutes between weather checks
-    'enclosure_check_period': 5,    # How many minutes between enclosure checks
+    'observing_check_period': 1,    # How many minutes between weather checks
+    'enclosure_check_period': 1,    # How many minutes between enclosure checks
 
     'auto_eve_bias_dark': True,
 
@@ -158,7 +158,7 @@ site_config = {
 
     'eve_cool_down_open': -50.0,
     'auto_morn_sky_flat': True,
-    'auto_morn_bias_dark': False,
+    'auto_morn_bias_dark': True,
     're-calibrate_on_solve': True,
     'pointing_calibration_on_startup': False,  # MF I am leaving this alone.
     # This is a time, in hours, over which to bypass automated focussing (e.g. at the start of a project it will not refocus if a new project starts X hours after the last focus)
@@ -852,8 +852,10 @@ site_config = {
                 'min_subframe': [128, 128],
                 # Meaning fixed binning if list has only one entry
                 'bin_modes':  [['Optimal', 0.91], ['Fine', 0.61], ['Coarse', 1.2], ['Eng', 0.30]],
-                'reference_gain': 1.3,  # NB GUess One val for each binning. Assumed digitalsumming in camera???
-                'reference_noise': 6,  # NB Guess
+                'camera_gain':   0.45, #[10., 10., 10., 10.],     #  One val for each binning.
+                'camera_gain_stdev':   0.15, #[10., 10., 10., 10.],     #  One val for each binning.
+                'read_noise':  1.92, #[9, 9, 9, 9],    #  All SWAGs right now
+                'read_noise_stdev':   0.003, #[10., 10., 10., 10.],     #  One val for each binning.
                 'reference_dark': 0.2,  # NB  Guess
                 'reference_offset': 611,  # NB Guess  ADU vaules not times in sec.
                 'fullwell_capacity': 80000,  # NB Guess
@@ -863,12 +865,12 @@ site_config = {
                 'cycle_time':            0.5,   # Meas 20230219  for a bias
                 # 'enable_bin':            [ True, False,  False,  False],
                 # 'bias_dark_bin_spec':    ['1,1', '2,2', '3,3', '4,4' ],    #Default binning for flats
-                'number_of_bias_to_collect': 63,
+                'number_of_bias_to_collect': 33,
                 'number_of_dark_to_collect': 17,
                 'number_of_flat_to_collect': 5,
-                'number_of_bias_to_store': 128,
-                'number_of_dark_to_store': 128,
-                'number_of_flat_to_store': 128,
+                'number_of_bias_to_store': 63,
+                'number_of_dark_to_store': 31,
+                'number_of_flat_to_store': 15,
 
                 'dark_exposure': 180,
                 # 'flat_bin_spec':         ['1,1', '2,2', '3,3', '4,4' ],   #Is this necessary?

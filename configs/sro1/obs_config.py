@@ -97,7 +97,7 @@ site_config = {
     'obsid_is_specific':  True,  # Indicates some special code for this site, found at end of config.
 
 
-    'host_wema_site_name':  'SRO',  #  The umbrella header for obsys in close geographic proximity.
+    #'host_wema_site_name':  'SRO',  #  The umbrella header for obsys in close geographic proximity.
     'name': 'PTR Sierra Remote Observatory 0m3f38',
     'airport_code':  'FAT  :  Fresno Air Terminal',
     'location': 'Near Shaver Lake CA,  USA',
@@ -123,7 +123,7 @@ site_config = {
     'reference_pressure':  867.254,    #mbar   A rough guess 20200315
     
     
-    'safety_check_period': 300,   #MF's original setting.
+    'safety_check_period': 45,   #MF's original setting.
 
     #'obsid_roof_control': False, #MTF entered this in to remove sro specific code.... Basically do we have control of the roof or not see line 338 sequencer.py
     #'obsid_allowed_to_open_roof': False,
@@ -142,8 +142,8 @@ site_config = {
     
     'obsid_in_automatic_default': "Automatic",   #  ["Manual", "Shutdown", "Automatic"]
     'automatic_detail_default': "Enclosure is Autonmous, under Owner control.",
-    'observing_check_period' : 3,    # How many minutes between weather checks
-    'enclosure_check_period' : 3,    # How many minutes between enclosure checks
+    'observing_check_period' : 2,    # How many minutes between weather checks
+    'enclosure_check_period' : 2,    # How many minutes between enclosure checks
 
     'auto_eve_bias_dark': False,    
     'auto_midnight_moonless_bias_dark': True,
@@ -672,8 +672,10 @@ site_config = {
                 'is_color':  False,
                 'bayer_pattern':  None,    #  'RGGB" is a valid string in camera is color.
                 'can_set_gain':  True,
-                'reference_gain': [2., 4., 18., 32.],     #  One val for each binning. SWAG!
-                'reference_noise': [10, 10, 10, 10],    #  All SWAGs right now!
+                'camera_gain':   0.45, #[10., 10., 10., 10.],     #  One val for each binning.
+                'camera_gain_stdev':   0.15, #[10., 10., 10., 10.],     #  One val for each binning.
+                'read_noise':  1.92, #[9, 9, 9, 9],    #  All SWAGs right now
+                'read_noise_stdev':   0.003, #[10., 10., 10., 10.],     #  One val for each binning.
                 'ref_dark': 360.,
                 'reference_dark': [0.0, 0.0, 0.0, 0.0],     #  Might these best be pedastal values?  NO!
                                     #hdu.header['RDMODE'] = (self.config['camera'][self.name]['settings']['read_mode'], 'Camera read mode')

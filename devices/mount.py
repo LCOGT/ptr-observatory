@@ -1316,19 +1316,29 @@ class Mount:
                 # This catches an occasional ASCOM/TheSkyX glitch and gets it out of being stuck
                 # And back on tracking. 
                 try:
-                    if g_dev['mnt'].theskyx:
-                        
-                        plog("The SkyX had an error.")
-                        plog("Usually this is because of a broken connection.")
-                        plog("Killing then waiting 60 seconds then reconnecting")
-                        g_dev['seq'].kill_and_reboot_theskyx(-1,-1)
-                        self.unpark_command()
-                        wait_for_slew()
-                        #self.mount.SlewToCoordinatesAsync(self.ra_mech*RTOH, self.dec_mech*RTOD)  #Is this needed?
-                        self.mount.SlewToCoordinatesAsync(ra, dec)
-                    else:
-                        plog (traceback.format_exc())
+                    retry=0
+                    while retry <3:
+                        try:
+                            if g_dev['mnt'].theskyx:
+                                
+                                plog("The SkyX had an error.")
+                                plog("Usually this is because of a broken connection.")
+                                plog("Killing then waiting 60 seconds then reconnecting")
+                                g_dev['seq'].kill_and_reboot_theskyx(-1,-1)
+                                self.unpark_command()
+                                wait_for_slew()
+                                #self.mount.SlewToCoordinatesAsync(self.ra_mech*RTOH, self.dec_mech*RTOD)  #Is this needed?
+                                self.mount.SlewToCoordinatesAsync(ra, dec)
+                                retry=4
+                            else:
+                                
+                                plog (traceback.format_exc())
+                                breakpoint()
+                        except:
+                            time.sleep(120)
+                            retry=retry+1
                 except:
+                    plog (traceback.format_exc())
                     breakpoint()
             
             # Make sure the current pier_side variable is set

@@ -247,6 +247,8 @@ class Observatory:
             "enclosure_check_period"
         ]  # How many minutes between enclosure check
 
+        self.last_time_report_to_console = time.time()
+
         self.project_call_timer = time.time()
         self.get_new_job_timer = time.time()
         self.status_upload_time = 0.5
@@ -506,7 +508,7 @@ class Observatory:
         # g_dev['seq'].extensive_focus_script(req2,opt)
         #req = {'bin1': True, 'bin2': False, 'bin3': False, 'bin4': False, 'numOfBias': 63, \
         #        'numOfDark': 31, 'darkTime': 75, 'numOfDark2': 31, 'dark2Time': 75, \
-        #        'hotMap': True, 'coldMap': True, 'script': 'genBiasDarkMaster', }  #This specificatin is obsolete
+         #       'hotMap': True, 'coldMap': True, 'script': 'genBiasDarkMaster', }  #This specificatin is obsolete
         #opt = {}
         # No action needed on  the enclosure at this level
         # self. enc_status)
@@ -980,37 +982,32 @@ sel
         
         # Get current weather status  
         #send_ocn=False
+        #plog ("Obs")
+        #plog (datetime.datetime.now() - self.observing_status_timer)
+        #plog (datetime.timedelta(minutes=self.observing_check_period))
+        
         if (
-            datetime.datetime.now() - self.observing_status_timer
+            (datetime.datetime.now() - self.observing_status_timer)
         ) > datetime.timedelta(minutes=self.observing_check_period):
             g_dev['obs'].ocn_status = g_dev['obs'].get_weather_status_from_aws()
             #lane = "weather"
             self.observing_status_timer = datetime.datetime.now()
             #self.send_status_queue.put((obsy, lane, g_dev['obs'].ocn_status), block=False)
             #plog (g_dev['obs'].ocn_status)
+            #plog ("Ping obs")
+            
+        #plog ("end")
+        #plog (datetime.datetime.now() - self.enclosure_status_timer)
+        #plog (datetime.timedelta(minutes=self.enclosure_check_period)) 
+        
         if (
-            datetime.datetime.now() - self.enclosure_status_timer
+            (datetime.datetime.now() - self.enclosure_status_timer)
         ) > datetime.timedelta(minutes=self.enclosure_check_period):
             #lane = "enclosure"
             g_dev['obs'].enc_status = g_dev['obs'].get_enclosure_status_from_aws()
             self.enclosure_status_timer = datetime.datetime.now()
-            #self.send_status_queue.put((obsy, lane, g_dev['obs'].enc_status), block=False)
-            #plog (g_dev['obs'].enc_status)
-        
-        
-        
+            #plog ("Ping end")
 
-
-        # if ocn_status is not None:
-        #     lane = "weather"
-        #     # send_status(obsy, lane, ocn_status)  # NB Do not remove this send for SAF!
-        #     if send_ocn == True:
-        #         self.send_status_queue.put((obsy, lane, ocn_status), block=False)
-        # if enc_status is not None:
-        #     lane = "enclosure"
-        #     #send_status(obsy, lane, enc_status)
-        #     if send_enc == True:
-        #         self.send_status_queue.put((obsy, lane, enc_status), block=False)
 
         for dev_type in device_list:
             #  The status that we will send is grouped into lists of
@@ -1136,7 +1133,9 @@ sel
                     plog("Found telescope pointing too close to the sun: " + str(sun_dist.degree) + " degrees.")
                     g_dev['obs'].send_to_user("Parking scope and cancelling all activity")
                     plog("Parking scope and cancelling all activity")
-                    self.cancel_all_activity()
+                    
+                    if not g_dev['seq'].morn_bias_dark_latch and not g_dev['seq'].bias_dark_latch:
+                        self.cancel_all_activity()
                     if not g_dev['mnt'].mount.AtPark:
                         g_dev['mnt'].park_command()
                     return
@@ -1229,9 +1228,11 @@ sel
             self.time_since_safety_checks = time.time()
 
             # breakpoint()
-            print (ephem.now())
-            print ("Nightly Reset Complete      : " + str(g_dev['seq'].nightly_reset_complete))
-            plog("Time until Nightly Reset      : " + str(round(( g_dev['events']['Nightly Reset'] - ephem.now()) * 24,2)) + " hours")
+            if (time.time() - self.last_time_report_to_console) > 600:
+                plog (ephem.now())
+                self.last_time_report_to_console = time.time()
+            #print ("Nightly Reset Complete      : " + str(g_dev['seq'].nightly_reset_complete))
+            #plog("Time until Nightly Reset      : " + str(round(( g_dev['events']['Nightly Reset'] - ephem.now()) * 24,2)) + " hours")
             
             
             # Check nightly_reset is all good
@@ -1254,7 +1255,8 @@ sel
                     plog("Found telescope pointing too close to the sun: " + str(sun_dist.degree) + " degrees.")
                     g_dev['obs'].send_to_user("Parking scope and cancelling all activity")
                     plog("Parking scope and cancelling all activity")
-                    self.cancel_all_activity()
+                    if not g_dev['seq'].morn_bias_dark_latch and not g_dev['seq'].bias_dark_latch:
+                        self.cancel_all_activity()
                     if not g_dev['mnt'].mount.AtPark:
                         g_dev['mnt'].park_command()
                     return
@@ -1285,7 +1287,8 @@ sel
                         plog("Parking Scope in the meantime")
                         #if self.config['obsid_roof_control'] and g_dev['enc'].mode == 'Automatic':
                         self.open_and_enabled_to_observe = False
-                        self.cancel_all_activity()   #NB THis kills bias-dark
+                        if not g_dev['seq'].morn_bias_dark_latch and not g_dev['seq'].bias_dark_latch:
+                            self.cancel_all_activity()   #NB THis kills bias-dark
                         if not g_dev['mnt'].mount.AtPark:
                             if g_dev['mnt'].home_before_park:
                                 g_dev['mnt'].home_command()
@@ -1299,7 +1302,8 @@ sel
                         #if self.config['obsid_roof_control'] and g_dev['enc'].mode == 'Automatic':
                             plog("Detected Roof Closing.")
                             self.open_and_enabled_to_observe = False
-                            self.cancel_all_activity()    #NB Kills bias dark
+                            if not g_dev['seq'].morn_bias_dark_latch and not g_dev['seq'].bias_dark_latch:
+                                self.cancel_all_activity()
                             if not g_dev['mnt'].mount.AtPark:
                                 if g_dev['mnt'].home_before_park:
                                     g_dev['mnt'].home_command()
@@ -1314,7 +1318,8 @@ sel
                         plog("Detected an Error in the Roof Status. Packing up for safety.")
                         #plog("This is usually because the weather system forced the roof to shut.")
                         #plog("By closing it again, it resets the switch to closed.")
-                        self.cancel_all_activity()    #NB Kills bias dark
+                        if not g_dev['seq'].morn_bias_dark_latch and not g_dev['seq'].bias_dark_latch:
+                            self.cancel_all_activity()    #NB Kills bias dark
                         self.open_and_enabled_to_observe = False
                         #g_dev['enc'].enclosure.CloseShutter()
                         #g_dev['seq'].enclosure_next_open_time = time.time(
@@ -1396,14 +1401,15 @@ sel
                 except:
                     plog('Line 1192 Roof shutter status faulted.')
 
-                if not self.scope_in_manual_mode :
+                if not self.scope_in_manual_mode and not g_dev['seq'].flats_being_collected :
 
                     # If the roof should be shut, then the telescope should be parked.
                     if roof_should_be_shut == True:
                         if not g_dev['mnt'].mount.AtPark:
                             plog('Parking telescope as it is during the period that the roof is meant to be shut.')
                             self.open_and_enabled_to_observe = False
-                            # self.cancel_all_activity()   #NB Kills bias dark
+                            if not g_dev['seq'].morn_bias_dark_latch and not g_dev['seq'].bias_dark_latch:
+                                self.cancel_all_activity()  #NB Kills bias dark
                             if g_dev['mnt'].home_before_park:
                                 g_dev['mnt'].home_command()
                             # PWI must receive a park() in order to report being parked.  Annoying problem when debugging, because I want tel to stay where it is.
@@ -1416,7 +1422,8 @@ sel
                             if not g_dev['mnt'].mount.AtPark:
                                 plog("Telescope found not parked when the observatory roof is shut. Parking scope.")
                                 self.open_and_enabled_to_observe = False
-                                # self.cancel_all_activity()  #NB Kills bias dark
+                                if not g_dev['seq'].morn_bias_dark_latch and not g_dev['seq'].bias_dark_latch:
+                                    self.cancel_all_activity()  #NB Kills bias dark
                                 if g_dev['mnt'].home_before_park:
                                     g_dev['mnt'].home_command()
                                 g_dev['mnt'].park_command()
@@ -1453,7 +1460,8 @@ sel
                     if mount_altitude < lowest_acceptable_altitude:
                         plog("Altitude too low! " + str(mount_altitude) + ". Parking scope for safety!")
                         if not g_dev['mnt'].mount.AtPark:
-                            # self.cancel_all_activity()  #NB Kills bias dark
+                            if not g_dev['seq'].morn_bias_dark_latch and not g_dev['seq'].bias_dark_latch:
+                                self.cancel_all_activity()
                             if g_dev['mnt'].home_before_park:
                                 g_dev['mnt'].home_command()
                             g_dev['mnt'].park_command()
@@ -1487,11 +1495,11 @@ sel
                     self.time_of_last_exposure = time.time()
 
             # Check that rotator is rotating
-            if g_dev['rot'] != None:
-                try:
-                    g_dev['rot'].check_rotator_is_rotating() 
-                except:
-                    plog("occasionally rotator skips a beat when homing.")
+            #if g_dev['rot'] != None:
+            #    try:
+            #        g_dev['rot'].check_rotator_is_rotating() 
+            #    except:
+            #        plog("occasionally rotator skips a beat when homing.")
                 
             # Check that cooler is alive
             if g_dev['cam']._cooler_on():
@@ -1624,7 +1632,8 @@ sel
                 else:
                     plog("Looks like the net is down, closing up and parking the observatory")
                     self.open_and_enabled_to_observe = False
-                    self.cancel_all_activity()
+                    if not g_dev['seq'].morn_bias_dark_latch and not g_dev['seq'].bias_dark_latch:
+                        self.cancel_all_activity()
                     if not g_dev['mnt'].mount.AtPark:
                         plog("Parking scope due to inactivity")
                         if g_dev['mnt'].home_before_park:
@@ -1709,6 +1718,7 @@ sel
                         broken = 0
                         with open(filepath, "rb") as fileobj:
                             tempPTR = 0
+
                             if self.env_exists == True and (not frame_exists(fileobj)):
     
                                 #plog ("\nstarting ingester")
@@ -1731,7 +1741,7 @@ sel
                                         tempPTR = 1
                                         retryarchive = 11
                                         # Only remove file if successfully uploaded
-                                        if ('calibmasters' not in filepath):
+                                        if ('calibmasters' not in filepath) or ('ARCHIVE_' in filepath):
                                             try:
                                                 os.remove(filepath)
                                             except:
@@ -1740,7 +1750,7 @@ sel
                                     except ocs_ingester.exceptions.DoNotRetryError:
                                         plog((traceback.format_exc()))
                                         plog ("Couldn't upload to PTR archive: " + str(filepath))
-                                        #breakpoint()
+
                                         broken=1
                                         
                                         #plog ("Caught filespecification error properly")
@@ -1749,7 +1759,7 @@ sel
                                         retryarchive = 11
                                         tempPTR =0
                                     except Exception as e:
-    
+                                        
                                         plog("couldn't send to PTR archive for some reason")
                                         plog("Retry " + str(retryarchive))
                                         plog(e)
@@ -1798,7 +1808,7 @@ sel
                                 reqs.post(aws_resp["url"], data=aws_resp["fields"], files=files, timeout=600)
                                 
                                 # Only remove file if successfully uploaded
-                                if ('calibmasters' not in filepath):
+                                if ('calibmasters' not in filepath) or ('ARCHIVE_' in filepath):
                                     try:
                                         os.remove(filepath)
                                         #plog("not deleting")
@@ -2000,7 +2010,7 @@ sel
 
                 #sep_timer_begin=time.time()
                 
-                (hdufocusdata, pixscale, readnoise, avg_foc, focus_image, im_path, text_name, hduheader, cal_path, cal_name, frame_type, focus_position) = self.sep_queue.get(block=False)
+                (hdufocusdata, pixscale, readnoise, avg_foc, focus_image, im_path, text_name, hduheader, cal_path, cal_name, frame_type, focus_position, nativebin) = self.sep_queue.get(block=False)
 
                 if not (g_dev['events']['Civil Dusk'] < ephem.now() < g_dev['events']['Civil Dawn']) :
                     plog ("Too bright to consider photometry!")
@@ -2028,7 +2038,7 @@ sel
                     
                     pickle.dump([hdufocusdata, pixscale, readnoise, avg_foc, focus_image, im_path, text_name, hduheader, cal_path, cal_name, frame_type, focus_position, g_dev['events'],ephem.now(),self.config["camera"][g_dev['cam']
                                                              .name]["settings"]['focus_image_crop_width'], self.config["camera"][g_dev['cam']
-                                                                                                       .name]["settings"]['focus_image_crop_height'], is_osc,interpolate_for_focus,bin_for_focus,focus_bin_value,interpolate_for_sep,bin_for_sep,sep_bin_value,focus_jpeg_size,saturate,minimum_realistic_seeing
+                                                                                                       .name]["settings"]['focus_image_crop_height'], is_osc,interpolate_for_focus,bin_for_focus,focus_bin_value,interpolate_for_sep,bin_for_sep,sep_bin_value,focus_jpeg_size,saturate,minimum_realistic_seeing,nativebin
                                                                                                                                                                                ], sep_subprocess.stdin)
                                                                                                                                  
                                                                                                                                  
@@ -2914,7 +2924,7 @@ sel
                             self.config["camera"][g_dev['cam'].name]["settings"]["osc_bayer"],
                             g_dev['cam'].config["camera"][g_dev['cam'].name]["settings"]["saturate"],
                             g_dev['cam'].native_bin,
-                            g_dev['cam'].config["camera"][g_dev['cam'].name]["settings"]["reference_noise"],
+                            g_dev['cam'].config["camera"][g_dev['cam'].name]["settings"]["read_noise"],
                             self.config['minimum_realistic_seeing'],
                             0,0,0,0,0,
                             self.config["camera"][g_dev['cam'].name]["settings"]["crop_preview"],

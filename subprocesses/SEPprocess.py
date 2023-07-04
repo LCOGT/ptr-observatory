@@ -74,6 +74,7 @@ sep_bin_value= input_sep_info[22]
 focus_jpeg_size= input_sep_info[23]
 saturate= input_sep_info[24]
 minimum_realistic_seeing=input_sep_info[25]
+nativebin=input_sep_info[25]
 
 
 
@@ -370,7 +371,7 @@ else:
                                              subpix=5)
         # If image has been binned for focus we need to multiply some of these things by the binning
         # To represent the original image
-        sources['FWHM'] = (sources['FWHM'] * 2) * binfocus
+        sources['FWHM'] = (sources['FWHM'] * 2) * binfocus 
         sources['x'] = (sources['x']) * binfocus
         sources['y'] = (sources['y']) * binfocus
         sources['xpeak'] = (sources['xpeak']) * binfocus
@@ -447,8 +448,8 @@ else:
 
             fwhmcalc = fwhmcalc[fwhmcalc > np.median(fwhmcalc) - 3 * np.std(fwhmcalc)]
             rfp = round(np.median(fwhmcalc), 3)
-            rfr = round(np.median(fwhmcalc) * pixscale, 3)
-            rfs = round(np.std(fwhmcalc) * pixscale, 3)
+            rfr = round(np.median(fwhmcalc) * pixscale * nativebin, 3) 
+            rfs = round(np.std(fwhmcalc) * pixscale * nativebin, 3)
             #plog("\nImage FWHM:  " + str(rfr) + "+/-" + str(rfs) + " arcsecs, " + str(rfp)
             #     + " pixels.")
             # breakpoint()

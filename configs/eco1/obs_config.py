@@ -126,7 +126,7 @@ site_config = {
     
 
     
-    'safety_check_period': 300,   #MF's original setting.
+    'safety_check_period': 45,   #MF's original setting.
     #'maximum_roof_opens_per_evening' : 4,
     #'roof_open_safety_base_time' : 15, # How many minutes to use as the default retry time to open roof. This will be progressively multiplied as a back-off function.
     'closest_distance_to_the_sun': 45, # Degrees. For normal pointing requests don't go this close to the sun. 
@@ -135,8 +135,8 @@ site_config = {
     'lowest_requestable_altitude': -5, # Degrees. For normal pointing requests don't allow requests to go this low. 
     'obsid_in_automatic_default': "Automatic",   #  ["Manual", "Shutdown", "Automatic"]
     'automatic_detail_default': "Enclosure is initially set to Automatic mode.",
-    'observing_check_period' : 0.1,    # How many minutes between weather checks
-    'enclosure_check_period' : 0.1,    # How many minutes between enclosure checks
+    'observing_check_period' : 1,    # How many minutes between weather checks
+    'enclosure_check_period' : 1,    # How many minutes between enclosure checks
     'auto_eve_bias_dark': False,
     'auto_midnight_moonless_bias_dark': True,
     'auto_eve_sky_flat': False,
@@ -709,9 +709,11 @@ site_config = {
                 'is_color':  False,
                 'bayer_pattern':  None,    #  'RGGB" is a valid string in camera is color.
                 'can_set_gain':  True,
-                'reference_gain': 1.27,     #  One val for each binning. SWAG!
-                'reference_noise': 10,    #  All SWAGs right now!
-
+                'camera_gain':   1.27, #[10., 10., 10., 10.],     #  One val for each binning.
+                'camera_gain_stdev':   0.15, #[10., 10., 10., 10.],     #  One val for each binning.
+                'read_noise':  1.92, #[9, 9, 9, 9],    #  All SWAGs right now
+                'read_noise_stdev':   0.003, #[10., 10., 10., 10.],     #  One val for each binning.
+                
                 #'reference_dark': [0.0, 0.0, 0.0, 0.0],     #  Might these best be pedastal values?  NO!
                                     #hdu.header['RDMODE'] = (self.config['camera'][self.name]['settings']['read_mode'], 'Camera read mode')
                     #hdu.header['RDOUTM'] = (self.config['camera'][self.name]['readout_mode'], 'Camera readout mode')

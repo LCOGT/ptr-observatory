@@ -246,9 +246,12 @@ def init_camera_param(cam_id):
         qhycam.camera_params[cam_id] = {'connect_to_pc': False,
                                      'connect_to_sdk': False,
                                      'EXPOSURE': c_double(1000.0 * 1000.0),
+                                     #'GAIN': c_double(54.0),
                                      'GAIN': c_double(54.0),
                                      'CONTROL_BRIGHTNESS': c_int(0),
+                                     #'CONTROL_GAIN': c_int(6),
                                      'CONTROL_GAIN': c_int(6),
+                                     #'CONTROL_USBTRAFFIC': c_int(6),
                                      'CONTROL_USBTRAFFIC': c_int(6),
                                      'CONTROL_EXPOSURE': c_int(8),
                                      #'CONTROL_CURTEMP': c_int(14),
@@ -266,8 +269,8 @@ def init_camera_param(cam_id):
                                      'mem_len': c_ulong(),
                                      'stream_mode': c_uint8(0),
                                      'channels': c_uint32(),
-                                     'read_mode_number': c_uint32(),
-                                     'read_mode_index': c_uint32(),
+                                     'read_mode_number': c_uint32(g_dev['obs'].config["camera"]["camera_1_1"]["settings"]['direct_qhy_readout_mode']),
+                                     'read_mode_index': c_uint32(g_dev['obs'].config["camera"]["camera_1_1"]["settings"]['direct_qhy_readout_mode']),
                                      'read_mode_name': c_char('-'.encode('utf-8')),
                                      'prev_img_data': c_void_p(0),
                                      'prev_img': None,
@@ -532,17 +535,24 @@ class Camera:
             if qhycam.camera_params[qhycam_id]['handle'] is None:
                 print('open camera error %s' % cam_id)
             
-            success = qhycam.so.SetQHYCCDReadMode(qhycam.camera_params[qhycam_id]['handle'], self.config["camera"][self.name]["settings"]['direct_qhy_readout_mode']) # 0 is Photographic DSO 16 Bit
+            read_mode=self.config["camera"][self.name]["settings"]['direct_qhy_readout_mode']
+            numModes=c_int32()
+            
+            #success = qhycam.so.GetQHYCCDNumberOfReadModes(qhycam.camera_params[qhycam_id]['handle'],numModes)
+            #print (numModes)
+            success = qhycam.so.SetQHYCCDReadMode(qhycam.camera_params[qhycam_id]['handle'], read_mode) # 0 is Photographic DSO 16 Bit
             
             qhycam.camera_params[qhycam_id]['stream_mode'] = c_uint8(qhycam.stream_single_mode)
             success = qhycam.so.SetQHYCCDStreamMode(qhycam.camera_params[qhycam_id]['handle'], qhycam.camera_params[qhycam_id]['stream_mode'])
            
             success = qhycam.so.InitQHYCCD(qhycam.camera_params[qhycam_id]['handle'])
-            
+            #breakpoint()
             
             mode_name = create_string_buffer(qhycam.STR_BUFFER_SIZE)
-            qhycam.so.GetReadModeName(qhycam_id, self.config["camera"][self.name]["settings"]['direct_qhy_readout_mode'], mode_name) # 0 is Photographic DSO 16 bit
-
+            qhycam.so.GetReadModeName(qhycam_id, read_mode, mode_name) # 0 is Photographic DSO 16 bit
+            read_mode_name_str = mode_name.value.decode('utf-8').replace(' ', '_')
+            plog ("Read Mode: "+ read_mode_name_str)
+            #breakpoint()
             success = qhycam.so.SetQHYCCDBitsMode(qhycam.camera_params[qhycam_id]['handle'], c_uint32(qhycam.bit_depth_16))
 
             success = qhycam.so.GetQHYCCDChipInfo(qhycam.camera_params[qhycam_id]['handle'],
@@ -1999,6 +2009,7 @@ class Camera:
                         )
                         self.expresult["error"] = True
                         self.expresult["patch"] = bi_mean
+                        self.expresult["camera_gain"] = np.nan
                         return self.expresult  # signals to flat routine image was rejected, prompt return
                     
                     elif (
@@ -2011,10 +2022,47 @@ class Camera:
                         )
                         self.expresult["error"] = True
                         self.expresult["patch"] = bi_mean
+                        self.expresult["camera_gain"] = np.nan
                         return self.expresult  # signals to flat routine image was rejected, prompt return
                     else:
                         plog('Good flat value! :  ', bi_mean)
                         g_dev["obs"].send_to_user('Good flat value! :  ' +str(bi_mean))
+                        
+                        # Now estimate camera gain.
+                        camera_gain_estimate_image=copy.deepcopy(self.img)
+                        # First we debias,dedark and flatfield the image with the previous master
+                        try:
+                            camera_gain_estimate_image = camera_gain_estimate_image - self.biasFiles[str(1)]
+                            camera_gain_estimate_image = camera_gain_estimate_image - (self.darkFiles[str(1)] * exposure_time)
+                            if self.config['camera'][self.name]['settings']['hold_flats_in_memory']:
+                                camera_gain_estimate_image = np.divide(camera_gain_estimate_image, self.flatFiles[self.current_filter])                               
+                            else:
+                                camera_gain_estimate_image = np.divide(camera_gain_estimate_image, np.load(self.flatFiles[str(self.current_filter + "_bin" + str(1))]))
+                        
+                            cge_median=np.nanmedian(camera_gain_estimate_image)
+                            cge_stdev=np.nanstd(camera_gain_estimate_image)
+                            cge_sqrt=pow(cge_median,0.5)
+                            cge_gain=pow(cge_sqrt/cge_stdev, 2)
+                            
+                            print ("Camera gain median: " + str(cge_median) + " stdev: " +str(cge_stdev)+ " sqrt: " + str(cge_sqrt) + " gain: " +str(cge_gain))
+                            self.expresult["camera_gain"] = cge_gain
+                            
+                        
+                        except Exception as e:
+                            plog("Could not estimate the camera gain from this flat.")
+                            self.expresult["camera_gain"] = np.nan
+                            
+                        # # Quick flat flat frame
+                        # try:
+                        #     if self.config['camera'][self.name]['settings']['hold_flats_in_memory']:
+                        #         camera_gain_estimate_image = np.divide(camera_gain_estimate_image, self.flatFiles[self.current_filter])                               
+                        #     else:
+                        #         camera_gain_estimate_image = np.divide(camera_gain_estimate_image, np.load(self.flatFiles[str(self.current_filter + "_bin" + str(flashbinning))]))
+                        # except:
+                            
+                            
+                        
+                        
                         self.expresult["error"] = False
                         self.expresult["patch"] = bi_mean
                     
@@ -2176,11 +2224,11 @@ class Camera:
                     hdu.header['SHUTTYPE'] = (self.config["camera"][self.name]["settings"]["shutter_type"], 
                                               'Type of shutter')
                     hdu.header["GAIN"] = (
-                        self.config["camera"][self.name]["settings"]["reference_gain"],
+                        self.config["camera"][self.name]["settings"]["camera_gain"],
                         "[e-/ADU] Pixel gain",
                     )
                     hdu.header["RDNOISE"] = (
-                        self.config["camera"][self.name]["settings"]["reference_noise"],
+                        self.config["camera"][self.name]["settings"]["read_noise"],
                         "[e-/pixel] Read noise",
                     )
                     hdu.header["CMOSCAM"] = (self.is_cmos, "Is CMOS camera")
@@ -2912,11 +2960,11 @@ class Camera:
                             
                         # Quick flash bias and dark frame                           
                         
-                        flashbinning=1
+                        #flashbinning=1
                         
                         try:
-                            hdusmalldata = hdusmalldata - self.biasFiles[str(flashbinning)]
-                            hdusmalldata = hdusmalldata - (self.darkFiles[str(flashbinning)] * exposure_time)
+                            hdusmalldata = hdusmalldata - self.biasFiles[str(1)]
+                            hdusmalldata = hdusmalldata - (self.darkFiles[str(1)] * exposure_time)
                             
                         except Exception as e:
                             plog("debias/darking light frame failed: ", e)
@@ -2926,7 +2974,7 @@ class Camera:
                             if self.config['camera'][self.name]['settings']['hold_flats_in_memory']:
                                 hdusmalldata = np.divide(hdusmalldata, self.flatFiles[self.current_filter])                               
                             else:
-                                hdusmalldata = np.divide(hdusmalldata, np.load(self.flatFiles[str(self.current_filter + "_bin" + str(flashbinning))]))
+                                hdusmalldata = np.divide(hdusmalldata, np.load(self.flatFiles[str(self.current_filter + "_bin" + str(1))]))
                             
                         except Exception as e:
                             plog("flatting light frame failed", e)
@@ -2988,7 +3036,12 @@ class Camera:
                             # IMMEDIATELY SEND TO SEP QUEUE
                             # NEEDS to go up as fast as possible ahead of smartstacks to faciliate image matching.
                             self.sep_processing=True
-                            self.to_sep((hdusmalldata, pixscale, float(hdu.header["RDNOISE"]), avg_foc[1], focus_image, im_path, text_name, hdusmallheader, cal_path, cal_name, frame_type, g_dev['foc'].focuser.Position*g_dev['foc'].steps_to_micron))
+                            
+                            if g_dev['foc'].theskyx:
+                                focus_position=g_dev['foc'].focuser.focPosition()*g_dev['foc'].steps_to_micron
+                            else:
+                                focus_position=g_dev['foc'].focuser.Position*g_dev['foc'].steps_to_micron
+                            self.to_sep((hdusmalldata, pixscale, float(hdu.header["RDNOISE"]), avg_foc[1], focus_image, im_path, text_name, hdusmallheader, cal_path, cal_name, frame_type, focus_position, self.native_bin))
                             
                             
                             if smartstackid != 'no':
