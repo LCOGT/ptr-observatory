@@ -517,7 +517,15 @@ class Observatory:
         filter_gain_shelf.close()                
 
 
-
+        # Report camera gains
+        
+        
+        
+        
+        
+        
+        
+        
 
         # breakpoint()
         #req2 = {'target': 'near_tycho_star', 'area': 150}
