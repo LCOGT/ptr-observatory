@@ -1458,7 +1458,9 @@ class Camera:
                         g_dev["obs"].send_to_user("Waiting for camera rotator to catch up before exposing.")
                                     
                         rot_report=1
-                    time.sleep(0.2)                                
+                    time.sleep(0.2)
+                    if g_dev["obs"].stop_all_activity:
+                        return                              
                             
 
         self.expresult = {}  #  This is a default return just in case
@@ -1667,7 +1669,9 @@ class Camera:
                                          g_dev["obs"].send_to_user("Waiting for camera rotator to catch up before exposing.")
                                                      
                                          rot_report=1
-                                         time.sleep(0.2) 
+                                     time.sleep(0.2) 
+                                     if g_dev["obs"].stop_all_activity:
+                                         return
                             
                             self._expose(exposure_time, bias_dark_or_light_type_frame)
                             
