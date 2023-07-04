@@ -1433,6 +1433,7 @@ class Camera:
                         plog ("Failed to change filter! Cancelling exposure.")
                         ##DEBUG Error on 20230703  System halted here. putting in
                         ##a breakpoint to catch this path next time.  WER
+                        plog(traceback.format_exc())  
                         breakpoint()
                         return 
                     
@@ -2009,42 +2010,99 @@ class Camera:
                 ix, iy = self.img.shape
 
                 image_saturation_level = g_dev['cam'].config["camera"][g_dev['cam'].name]["settings"]["saturate"]
+                
+                # For OSC's flats are a bit more tricky! We need to get
+                # the brightest part of the bayer range to be in the upper range.
+                if self.config["camera"][self.name]["settings"]['is_osc']:
+                    temp_is_osc=True
+                    osc_fits=copy.deepcopy(self.img)
+                    
+                    debayered=[]
+                    max_median=0                    
+                    
+                    debayered.append(osc_fits[::2, ::2])
+                    debayered.append(osc_fits[::2, 1::2])
+                    debayered.append(osc_fits[1::2, ::2])
+                    debayered.append(osc_fits[1::2, 1::2])
+                    
+                    # crop each of the images to the central region
+                    oscounter=0
+                    for oscimage in debayered:
+                        cropx = int( (oscimage.shape[0] -500)/2)
+                        cropy = int((oscimage.shape[1] -500) /2)
+                        oscimage=oscimage[cropx:-cropx, cropy:-cropy]
+                        #oscimage = sigma_clip(camera_gain_estimate_image, masked=False, axis=None)
+                        oscmedian=np.nanmedian(oscimage)
+                        if oscmedian > max_median:
+                            max_median=oscmedian
+                            brightest_bayer=oscounter
+                        oscounter=oscounter+1
+                    
+                    del osc_fits
+                    del debayered
+                    
+                    
+                    central_median=max_median
+                
+                else:
+                    temp_is_osc=False
+                    osc_fits=copy.deepcopy(self.img)
+                    cropx = int( (osc_fits.shape[0] -500)/2)
+                    cropy = int((osc_fits.shape[1] -500) /2)
+                    osc_fits=osc_fits[cropx:-cropx, cropy:-cropy]
+                    #oscimage = sigma_clip(camera_gain_estimate_image, masked=False, axis=None)
+                    central_median=np.nanmedian(oscimage)
+                    
+                    
+                
                 # Get bi_mean of middle patch for flat usage                
-                test_saturated = self.img[ix // 3 : ix * 2 // 3, iy // 3 : iy * 2 // 3]
+                #test_saturated = self.img[ix // 3 : ix * 2 // 3, iy // 3 : iy * 2 // 3]
                 # 1/9th the chip area, but central.   NB NB why 3, is this what flat uses???
-                bi_mean = round((test_saturated.mean() + np.median(test_saturated)) / 2, 1)
+                #bi_mean = round((test_saturated.mean() + np.median(test_saturated)) / 2, 1)
                 
                 
                 if frame_type[-4:] == "flat":                      
                     
                     if (
-                        bi_mean
+                        central_median
                         >= 0.75* image_saturation_level
                     ):
-                        plog("Flat rejected, center is too bright:  ", bi_mean)
+                        plog("Flat rejected, center is too bright:  ", central_median)
                         g_dev["obs"].send_to_user(
                             "Flat rejected, too bright.", p_level="INFO"
                         )
                         self.expresult["error"] = True
-                        self.expresult["patch"] = bi_mean
+                        self.expresult["patch"] = central_median
                         self.expresult["camera_gain"] = np.nan
                         return self.expresult  # signals to flat routine image was rejected, prompt return
                     
                     elif (
-                        bi_mean
+                        central_median
                         <= 0.25 * image_saturation_level
-                    ):
-                        plog("Flat rejected, center is too dim:  ", bi_mean)
+                    ) and not temp_is_osc:
+                        plog("Flat rejected, center is too dim:  ", central_median)
                         g_dev["obs"].send_to_user(
                             "Flat rejected, too dim.", p_level="INFO"
                         )
                         self.expresult["error"] = True
-                        self.expresult["patch"] = bi_mean
+                        self.expresult["patch"] = central_median
+                        self.expresult["camera_gain"] = np.nan
+                        return self.expresult  # signals to flat routine image was rejected, prompt return
+                    elif (
+                        central_median
+                        <= 0.5 * image_saturation_level
+                    ) and temp_is_osc:
+                        plog("Flat rejected, center is too dim:  ", central_median)
+                        g_dev["obs"].send_to_user(
+                            "Flat rejected, too dim.", p_level="INFO"
+                        )
+                        self.expresult["error"] = True
+                        self.expresult["patch"] = central_median
                         self.expresult["camera_gain"] = np.nan
                         return self.expresult  # signals to flat routine image was rejected, prompt return
                     else:
-                        plog('Good flat value! :  ', bi_mean)
-                        g_dev["obs"].send_to_user('Good flat value! :  ' +str(bi_mean))
+                        plog('Good flat value! :  ', central_median)
+                        g_dev["obs"].send_to_user('Good flat value! :  ' +str(central_median))
                         
                         # Now estimate camera gain.
                         camera_gain_estimate_image=copy.deepcopy(self.img)
@@ -2082,7 +2140,7 @@ class Camera:
                         
                         
                         self.expresult["error"] = False
-                        self.expresult["patch"] = bi_mean
+                        self.expresult["patch"] = central_median
                     
                 if not g_dev["cam"].exposure_busy:
                     self.expresult = {"stopped": True}
@@ -2719,7 +2777,7 @@ class Camera:
                     hdu.header["PEDESTAL"] = (0.0, "This value has been added to the data")
                     hdu.header[
                         "PATCH"
-                    ] = bi_mean  # A crude value for the central exposure
+                    ] = central_median # A crude value for the central exposure
                     hdu.header["ERRORVAL"] = 0
                     hdu.header["IMGAREA"] = opt["area"]
                     hdu.header[
@@ -3243,9 +3301,9 @@ class Camera:
                         self.expresult["FWHM"] = None
                     self.expresult["half_FD"] = None
                     if self.overscan is not None:
-                        self.expresult["patch"] = bi_mean - self.overscan
+                        self.expresult["patch"] = central_median- self.overscan
                     else:
-                        self.expresult["patch"] = bi_mean
+                        self.expresult["patch"] = central_median
                     self.expresult["calc_sky"] = 0  # avg_ocn[7]
                     self.expresult["temperature"] = 0  # avg_foc[2]
                     self.expresult["gain"] = 0

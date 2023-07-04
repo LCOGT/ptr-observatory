@@ -491,6 +491,8 @@ site_config = {
                         ['air',   [7,  7], -1000, 100., [1.00,   70], 'air']] ,  #8.
                         #['dark',  [6,  6],     0, .221, [   0,    0], 'dark'],   #9.
                         #['LRGB',  [0,  0],     0, .221, [   0,    0], 'LRGB']],#],   #10.
+                
+                'focus_filter' : 'PL',
 
 
                 'filter_screen_sort':  [8, 1, 4, 3, 2, 6, 5, 7],   #  don't use narrow yet,  8, 10, 9], useless to try.

@@ -590,6 +590,8 @@ site_config = {
                                 ['HA',      [6, 0],     0,  0.124,  [2, 17], 'HA'],  # 16
                                 #['focus',   [2, 0],     0,  16.0,   [2, 17], 'fo'],  # 17
                                 ['dark',    [8, 5],     0,   0.0,   [2, 17], 'dk']],  # 18
+                
+                'focus_filter' : 'w',
 
                 # Screen = 100; QHY400 ~ 92% DQE   HDR Mode    Screen = 160 sat  20190825 measured.
                 'filter_screen_sort':  ['air', 'w', 'PL', 'gp', 'PB', 'rp', 'PG', 'PR', 'ip', 'O3', 'N2', 'CR', 'S2', 'HA'],  # 9, 21],  # 5, 17], #Most to least throughput, \
@@ -852,9 +854,9 @@ site_config = {
                 'min_subframe': [128, 128],
                 # Meaning fixed binning if list has only one entry
                 'bin_modes':  [['Optimal', 0.91], ['Fine', 0.61], ['Coarse', 1.2], ['Eng', 0.30]],
-                'camera_gain':   0.45, #[10., 10., 10., 10.],     #  One val for each binning.
-                'camera_gain_stdev':   0.15, #[10., 10., 10., 10.],     #  One val for each binning.
-                'read_noise':  1.92, #[9, 9, 9, 9],    #  All SWAGs right now
+                'camera_gain':   0.454, #[10., 10., 10., 10.],     #  One val for each binning.
+                'camera_gain_stdev':   0.01, #[10., 10., 10., 10.],     #  One val for each binning.
+                'read_noise':  1.87, #[9, 9, 9, 9],    #  All SWAGs right now
                 'read_noise_stdev':   0.003, #[10., 10., 10., 10.],     #  One val for each binning.
                 'reference_dark': 0.2,  # NB  Guess
                 'reference_offset': 611,  # NB Guess  ADU vaules not times in sec.

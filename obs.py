@@ -501,6 +501,19 @@ class Observatory:
             g_dev['obs'].open_and_enabled_to_observe=True
 
 
+        # Report Camera Gains as part of bootup
+        textfilename= g_dev['obs'].obsid_path + 'ptr_night_shelf/' + 'cameragain' + g_dev['cam'].name + str(g_dev['obs'].name) +'.txt'
+        if os.path.exists(textfilename):
+            try:
+                 with open(textfilename, 'r') as f:
+                     lines=f.readlines()
+                     print (lines)
+                     for line in lines:
+                         print (line)
+            except:
+                plog ("something wrong with opening camera gain text file")
+                breakpoint()
+
 
 
                 
@@ -517,7 +530,7 @@ class Observatory:
         filter_gain_shelf.close()                
 
 
-
+        
 
         # breakpoint()
         #req2 = {'target': 'near_tycho_star', 'area': 150}

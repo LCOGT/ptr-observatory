@@ -529,6 +529,8 @@ site_config = {
                         #['gooble',  [6,  6],     0, .221, [   0,    0], 'dark'],   #9.
                         #['LRGB',  [0,  0],     0, .221, [   0,    0], 'LRGB']],   #10.
 
+                
+                'focus_filter' : 'lum',
 
                 'filter_screen_sort':  ['s2','o3','ha','pb','pg','pr','lum'],   #  don't use narrow yet,  8, 10, 9], useless to try.
 

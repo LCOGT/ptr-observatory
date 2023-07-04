@@ -636,7 +636,12 @@ site_config = {
                                 ['ip',      [5, 0],     0, 21,   [2, 17], 'i '],  # 11
                                 ['EXO',     [6, 0],     0, 11,  [2, 17], 'EX'],  # 12
                                 ['dark',    [1, 6],     0, 0.0,   [2, 17], 'dk']], # 19
-                                
+                
+                
+                'focus_filter' : 'Lum',
+
+                
+                
                 'filter_screen_sort':  ['0', '1', '2', '10', '7', '6', '18', '12', '11', '13', '8',  '3', \
                                         '14', '15', '4', '16'],   #  '9', '21'],  # '5', '17'], #Most to least throughput, \
                                 #so screen brightens, skipping u and zs which really need sky.
