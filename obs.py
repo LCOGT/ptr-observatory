@@ -521,7 +521,7 @@ class Observatory:
         #opt = {'area': 150, 'count': 1, 'bin': 1, 'filter': 'focus'}
         #result = g_dev['cam'].expose_command(req, opt, no_AWS=False, solve_it=True)
         # breakpoint()
-        g_dev['seq'].regenerate_local_masters()
+        #g_dev['seq'].regenerate_local_masters()
         
         #g_dev['seq'].sky_grid_pointing_run(max_pointings=25, alt_minimum=25)
 
