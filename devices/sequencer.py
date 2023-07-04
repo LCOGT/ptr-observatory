@@ -2159,7 +2159,7 @@ class Sequencer:
                     plog ("Raw List of Gains: " +str(estimated_flat_gain))
                     plog ("Camera Gain Non-Sigma Clipped Estimates: " + str(np.nanmedian(estimated_flat_gain)) + " std " + str(np.std(estimated_flat_gain)) + " N " + str(len(estimated_flat_gain)))
                     
-                    estimated_flat_gain = sigma_clip(estimated_flat_gain, masked=False, axis=None))
+                    estimated_flat_gain = sigma_clip(estimated_flat_gain, masked=False, axis=None)
                     plog ("Camera Gain Sigma Clipped Estimates: " + str(np.nanmedian(estimated_flat_gain)) + " std " + str(np.std(estimated_flat_gain)) + " N " + str(len(estimated_flat_gain)))
                     
                     
@@ -2174,7 +2174,7 @@ class Sequencer:
         
                     est_read_noise=np.array(est_read_noise)
                     plog ("Non Sigma Clipped Readnoise with this gain: " + str(np.nanmedian(est_read_noise)) + " std: " + str(np.nanstd(est_read_noise)))
-                    est_read_noise = sigma_clip(est_read_noise, masked=False, axis=None))
+                    est_read_noise = sigma_clip(est_read_noise, masked=False, axis=None)
                     plog ("Non Sigma Clipped Readnoise with this gain: " + str(np.nanmedian(est_read_noise)) + " std: " + str(np.nanstd(est_read_noise)))
                     
                     plog ("Gains by filter")
