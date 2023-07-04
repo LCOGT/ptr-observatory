@@ -2095,7 +2095,7 @@ class Sequencer:
                         
                         # Now to estimate gain from flats
                         for fullflat in inputList:
-                            breakpoint()
+                            #breakpoint()
                             #camera_gain_estimate_image=PLDrive[:,:,fullflat]/temporaryFlat
                             hdu1data = np.load(fullflat, mmap_mode='r')     
                             hdu1exp=float(file.split('_')[-2])
