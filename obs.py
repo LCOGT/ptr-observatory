@@ -1298,9 +1298,9 @@ sel
                         #g_dev['seq'].enclosure_next_open_time = time.time(
                         #) + self.config['roof_open_safety_base_time'] * g_dev['seq'].opens_this_evening
 
-                    if g_dev['obs'].enc_status['shutter_status'] == 'Closing':
+                    if g_dev['obs'].enc_status['shutter_status'] == 'Closing' or g_dev['obs'].enc_status['shutter_status'] == 'Opening':
                         #if self.config['obsid_roof_control'] and g_dev['enc'].mode == 'Automatic':
-                            plog("Detected Roof Closing.")
+                            plog("Detected Roof Movement.")
                             self.open_and_enabled_to_observe = False
                             if not g_dev['seq'].morn_bias_dark_latch and not g_dev['seq'].bias_dark_latch:
                                 self.cancel_all_activity()
