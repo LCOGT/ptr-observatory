@@ -982,37 +982,32 @@ sel
         
         # Get current weather status  
         #send_ocn=False
+        plog ("Obs")
+        plog (datetime.datetime.now() - self.observing_status_timer)
+        plog (datetime.timedelta(minutes=self.observing_check_period))
+        
         if (
-            datetime.datetime.now() - self.observing_status_timer
+            (datetime.datetime.now() - self.observing_status_timer)
         ) > datetime.timedelta(minutes=self.observing_check_period):
             g_dev['obs'].ocn_status = g_dev['obs'].get_weather_status_from_aws()
             #lane = "weather"
             self.observing_status_timer = datetime.datetime.now()
             #self.send_status_queue.put((obsy, lane, g_dev['obs'].ocn_status), block=False)
             #plog (g_dev['obs'].ocn_status)
+            plog ("Ping obs")
+            
+        plog ("end")
+        plog (datetime.datetime.now() - self.enclosure_status_timer)
+        plog (datetime.timedelta(minutes=self.enclosure_check_period)) 
+        
         if (
-            datetime.datetime.now() - self.enclosure_status_timer
+            (datetime.datetime.now() - self.enclosure_status_timer)
         ) > datetime.timedelta(minutes=self.enclosure_check_period):
             #lane = "enclosure"
             g_dev['obs'].enc_status = g_dev['obs'].get_enclosure_status_from_aws()
             self.enclosure_status_timer = datetime.datetime.now()
-            #self.send_status_queue.put((obsy, lane, g_dev['obs'].enc_status), block=False)
-            #plog (g_dev['obs'].enc_status)
-        
-        
-        
+            plog ("Ping end")
 
-
-        # if ocn_status is not None:
-        #     lane = "weather"
-        #     # send_status(obsy, lane, ocn_status)  # NB Do not remove this send for SAF!
-        #     if send_ocn == True:
-        #         self.send_status_queue.put((obsy, lane, ocn_status), block=False)
-        # if enc_status is not None:
-        #     lane = "enclosure"
-        #     #send_status(obsy, lane, enc_status)
-        #     if send_enc == True:
-        #         self.send_status_queue.put((obsy, lane, enc_status), block=False)
 
         for dev_type in device_list:
             #  The status that we will send is grouped into lists of
