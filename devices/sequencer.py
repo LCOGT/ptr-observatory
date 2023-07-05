@@ -2110,13 +2110,42 @@ class Sequencer:
                             camera_gain_estimate_image[camera_gain_estimate_image == inf] = np.nan
                             camera_gain_estimate_image[camera_gain_estimate_image == -inf] = np.nan
                             
-                            # If an OSC, just use one set of the green pixels.
+                            # If an OSC, just use the brightest bayer bit.
                             if g_dev['cam'].config["camera"][g_dev['cam'].name]["settings"]["is_osc"]:
-                                camera_gain_estimate_image = hdu1data[::2, 1::2]
-                                #GBLonly = hdu1data[2][1::2, ::2]
                                 
+                                #temp_is_osc=True
+                                osc_fits=copy.deepcopy(camera_gain_estimate_image)
                                 
+                                debayered=[]
+                                max_median=0                    
+                                
+                                debayered.append(osc_fits[::2, ::2])
+                                debayered.append(osc_fits[::2, 1::2])
+                                debayered.append(osc_fits[1::2, ::2])
+                                debayered.append(osc_fits[1::2, 1::2])
+                                
+                                # crop each of the images to the central region
+                                oscounter=0
+                                for oscimage in debayered:
+                                    cropx = int( (oscimage.shape[0] -500)/2)
+                                    cropy = int((oscimage.shape[1] -500) /2)
+                                    oscimage=oscimage[cropx:-cropx, cropy:-cropy]
+                                    #oscimage = sigma_clip(camera_gain_estimate_image, masked=False, axis=None)
+                                    oscmedian=np.nanmedian(oscimage)
+                                    if oscmedian > max_median:
+                                        max_median=oscmedian
+                                        brightest_bayer=copy.deepcopy(oscounter)
+                                    oscounter=oscounter+1
+                                
+                                camera_gain_estimate_image=copy.deepcopy(debayered[brightest_bayer])
+                                
+                                del osc_fits
+                                del debayered
+                                
+                                #plog ("Brightest Bayer " + str(brightest_bayer))
+                                #central_median=max_median 
                             
+                                
                             
                             
                             #numpy.seterr(invalid=’ignore’)
