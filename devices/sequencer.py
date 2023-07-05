@@ -2461,7 +2461,10 @@ class Sequencer:
                 acquired_count = 0                
                 flat_saturation_level = g_dev['cam'].config["camera"][g_dev['cam'].name]["settings"]["saturate"]
                 
-                target_flat = 0.5 * flat_saturation_level
+                if g_dev['cam'].config["camera"][g_dev['cam'].name]["settings"]["is_osc"]:
+                    target_flat = 0.65 * flat_saturation_level
+                else:
+                    target_flat = 0.5 * flat_saturation_level
 
                 scale = 1
                 self.estimated_first_flat_exposure = False
@@ -2661,15 +2664,27 @@ class Sequencer:
                                     plog('New Gain value: ', round(bright/(collecting_area*exp_time), 3), '\n\n')
                                     new_gain_value = round(bright/(collecting_area*exp_time), 3)
             
-                            if (
-                                bright
-                                <= 0.75* flat_saturation_level and
-                            
-                                bright
-                                >= 0.25 * flat_saturation_level
-                            ):
-                                filter_gain_shelf[current_filter]=new_gain_value
-                                camera_gain_collector.append(fred["camera_gain"])
+                            if g_dev['cam'].config["camera"][g_dev['cam'].name]["settings"]["is_osc"]:
+            
+                                if (
+                                    bright
+                                    <= 0.75* flat_saturation_level and
+                                
+                                    bright
+                                    >= 0.5 * flat_saturation_level
+                                ):
+                                    filter_gain_shelf[current_filter]=new_gain_value
+                                    camera_gain_collector.append(fred["camera_gain"])
+                            else:
+                                if (
+                                    bright
+                                    <= 0.75* flat_saturation_level and
+                                
+                                    bright
+                                    >= 0.25 * flat_saturation_level
+                                ):
+                                    filter_gain_shelf[current_filter]=new_gain_value
+                                    camera_gain_collector.append(fred["camera_gain"])
             
                             acquired_count += 1
                             if acquired_count == flat_count:
