@@ -2051,7 +2051,7 @@ class Camera:
                     cropy = int((osc_fits.shape[1] -500) /2)
                     osc_fits=osc_fits[cropx:-cropx, cropy:-cropy]
                     #oscimage = sigma_clip(camera_gain_estimate_image, masked=False, axis=None)
-                    central_median=np.nanmedian(oscimage)
+                    central_median=np.nanmedian(osc_fits)
                     
                     
                 
