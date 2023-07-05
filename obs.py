@@ -507,9 +507,9 @@ class Observatory:
             try:
                  with open(textfilename, 'r') as f:
                      lines=f.readlines()
-                     print (lines)
+                     #print (lines)
                      for line in lines:
-                         print (line)
+                         plog (line.replace('\n',''))
             except:
                 plog ("something wrong with opening camera gain text file")
                 breakpoint()
