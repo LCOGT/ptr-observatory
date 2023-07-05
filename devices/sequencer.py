@@ -1828,7 +1828,13 @@ class Sequencer:
 # =============================================================================
 #        inputList = inputList[-19:] # WER used for speed testing
 # =============================================================================
-        
+        # Test each flat file actually opens
+        for file in inputList:
+            try:
+                hdu1data = np.load(file, mmap_mode='r')
+            except:
+                plog ("corrupt bias skipped: " + str(file))
+                inputList.remove(file)
         # have to remove flats from memory to make room for.... flats!
         try:
             del g_dev['cam'].flatFiles
@@ -1941,6 +1947,15 @@ class Sequencer:
             plog (datetime.datetime.now().strftime("%H:%M:%S"))
             plog ("Regenerating dark") 
             inputList=(glob(g_dev['obs'].local_dark_folder +'*.n*'))
+            
+            # Test each flat file actually opens
+            for file in inputList:
+                try:
+                    hdu1data = np.load(file, mmap_mode='r')
+                except:
+                    plog ("corrupt dark skipped: " + str(file))
+                    inputList.remove(file)
+            
 # =============================================================================
 #            inputList = inputList[-19:]  # Speed improvement WER 
 # =============================================================================           
