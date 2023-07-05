@@ -2216,6 +2216,7 @@ class Sequencer:
                         #breakpoint()
                 except:
                     plog ("hit some snag with reporting gains")
+                    plog(traceback.format_exc()) 
                     breakpoint()
                 
                 
@@ -2706,10 +2707,12 @@ class Sequencer:
         # Report on camera gain estimation
         try:
             camera_gain_collector=np.array(camera_gain_collector)
-            plog ("Camera Gain Estimates: " + str(np.nanmedian(camera_gain_collector) + " std " + str(np.std(camera_gain_collector)) + " N " + str(len(camera_gain_collector))))
+            plog ("Camera Gain Estimates: " + str(np.nanmedian(camera_gain_collector)) + " std " + str(np.std(camera_gain_collector)) + " N " + str(len(camera_gain_collector)))
             plog ("Raw List of Gains: " +str(camera_gain_collector))
         except:
             plog ("hit some snag with reporting gains")
+            plog(traceback.format_exc()) 
+            breakpoint()
         
         
         

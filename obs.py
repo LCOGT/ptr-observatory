@@ -1779,7 +1779,7 @@ sel
                                                 #plog("Couldn't remove " + str(filepath) + " file after transfer, sending to delete queue")
                                                 self.laterdelete_queue.put(filepath, block=False)
                                     except ocs_ingester.exceptions.DoNotRetryError:
-                                        plog((traceback.format_exc()))
+                                        #plog((traceback.format_exc()))
                                         plog ("Couldn't upload to PTR archive: " + str(filepath))
 
                                         broken=1
@@ -1792,9 +1792,9 @@ sel
                                     except Exception as e:
                                         
                                         plog("couldn't send to PTR archive for some reason")
-                                        plog("Retry " + str(retryarchive))
-                                        plog(e)
-                                        plog((traceback.format_exc()))
+                                        #plog("Retry " + str(retryarchive))
+                                        #plog(e)
+                                        #plog((traceback.format_exc()))
                                         time.sleep(pow(retryarchive, 2) + 1)
                                         if retryarchive < 10:
                                             retryarchive = retryarchive+1
