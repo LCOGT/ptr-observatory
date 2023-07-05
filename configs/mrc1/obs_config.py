@@ -570,24 +570,24 @@ site_config = {
 
                 # 'filter_list': ['PL','PR','PG','PB','HA','O3','S2', 'air','dif','w','CR','N2','up','gp','rp','ip','z', 'difup','difgp','difrp','difip','dark'], # A list of actual physical filters for the substitution function
 
-                'filter_data': [['air',     [0, 0], -1000,  20.00, [2, 17], 'ai'],  # 0 357
+                'filter_data': [['air',     [0, 0], -1000,  56.00, [2, 17], 'ai'],  # 0 357
                                 # 1  330NB NB NB If this in series should change focus about 1mm more.
                                 ['dif',     [4, 0],     0,  16.00,  [2, 17], 'df'],
-                                ['w',       [2, 0],     0,  17.468, [2, 17], 'w '],  # 2 346
-                                ['PL',      [0, 4],     0,  16.00,  [2, 17], "PL"],  # 3 317
-                                ['gp',      [0, 6],     0,  14.87,  [2, 17], 'gp'],  # 4
-                                ['PB',      [0, 1],     0,  10.25,  [2, 17], 'PB'],  # 5
-                                ['rp',      [0, 7],     0,  3.853,  [2, 17], 'rp'],  # 6
-                                ['PG',      [0, 2],     0,  11.048, [2, 17], 'PG'],  # 7
-                                ['PR',      [0, 3],     0,  1.336,  [2, 17], 'PR'],  # 8
-                                ['ip',      [0, 8],     0,  4.741,  [2, 17], 'ip'],  # 9
+                                ['w',       [2, 0],     0,  56.468, [2, 17], 'w '],  # 2 346
+                                ['PL',      [0, 4],     0,  46.00,  [2, 17], "PL"],  # 3 317
+                                ['gp',      [0, 6],     0,  43.87,  [2, 17], 'gp'],  # 4
+                                ['PB',      [0, 1],     0,  40.25,  [2, 17], 'PB'],  # 5
+                                ['rp',      [0, 7],     0,  27.853,  [2, 17], 'rp'],  # 6
+                                ['PG',      [0, 2],     0,  31.048, [2, 17], 'PG'],  # 7
+                                ['PR',      [0, 3],     0,  11.336,  [2, 17], 'PR'],  # 8
+                                ['ip',      [0, 8],     0,  15.741,  [2, 17], 'ip'],  # 9
                                 ['z',       [5, 0],     0,  2.147,  [2, 17], 'z'],  # 10
                                 ['O3',      [7, 0],     0,  1.151,  [2, 17], '03'],  # 11
                                 ['up',      [0, 5],     0,  1.506,  [1, 17], 'up'],  # 12
-                                ['N2',      [3, 0],     0,  0.126,  [2, 17], 'N2'],  # 13
-                                ['CR',      [1, 0],     0,  0.2,    [2, 17], 'CR'],  # 14
-                                ['S2',      [8, 0],     0,  0.137,  [2, 17], 'S2'],  # 15
-                                ['HA',      [6, 0],     0,  0.124,  [2, 17], 'HA'],  # 16
+                                ['N2',      [3, 0],     0,  0.47,  [2, 17], 'N2'],  # 13
+                                ['CR',      [1, 0],     0,  1.117,    [2, 17], 'CR'],  # 14
+                                ['S2',      [8, 0],     0,  0.412,  [2, 17], 'S2'],  # 15
+                                ['HA',      [6, 0],     0,  0.48,  [2, 17], 'HA'],  # 16
                                 #['focus',   [2, 0],     0,  16.0,   [2, 17], 'fo'],  # 17
                                 ['dark',    [8, 5],     0,   0.0,   [2, 17], 'dk']],  # 18
                 
@@ -599,7 +599,7 @@ site_config = {
 
                 # 'filter_sky_sort':     ['HA', 'S2', 'CR', 'N2', 'O3', 'PR', 'PG', 'PB', 'w', 'air']  #Least to most throughput  \
                 # Temporary MTF filter-sky-sort to get OSC flats ... if after March 23 return to above
-                'filter_sky_sort':     ['S2', 'N2', 'O3', 'HA', 'z', 'PR', 'PG', 'PB', 'gp', 'rp', 'ip', 'w', 'PL', 'air'],
+                'filter_sky_sort':     ['S2', 'N2', 'CR', 'O3', 'HA', 'z', 'PR', 'PG', 'PB', 'gp', 'rp', 'ip', 'w', 'PL', 'air'],
                 'override_automatic_filter_gains': False, # This ignores the automatically estimated filter gains and starts with the values from the config file
                   # Least to most throughput  \
                 # 'filter_sky_sort':     [  'PB', 'gp','rp','ip', 'w','PL', 'focus', 'air']  #Least to most throughput  \
@@ -869,10 +869,10 @@ site_config = {
                 # 'bias_dark_bin_spec':    ['1,1', '2,2', '3,3', '4,4' ],    #Default binning for flats
                 'number_of_bias_to_collect': 33,
                 'number_of_dark_to_collect': 17,
-                'number_of_flat_to_collect': 5,
+                'number_of_flat_to_collect': 8,
                 'number_of_bias_to_store': 63,
                 'number_of_dark_to_store': 31,
-                'number_of_flat_to_store': 15,
+                'number_of_flat_to_store': 31,
 
                 'dark_exposure': 180,
                 # 'flat_bin_spec':         ['1,1', '2,2', '3,3', '4,4' ],   #Is this necessary?

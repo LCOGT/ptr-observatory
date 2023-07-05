@@ -32,6 +32,7 @@ import numpy as np
 #from skimage.transform import resize
 #from auto_stretch.stretch import Stretch
 import win32com.client
+from astropy.stats import sigma_clip, mad_std
 #from planewave import platesolve
 
 #from scipy import stats
@@ -2035,13 +2036,13 @@ class Camera:
                         oscmedian=np.nanmedian(oscimage)
                         if oscmedian > max_median:
                             max_median=oscmedian
-                            brightest_bayer=oscounter
+                            brightest_bayer=copy.deepcopy(oscounter)
                         oscounter=oscounter+1
                     
                     del osc_fits
                     del debayered
                     
-                    
+                    plog ("Brightest Bayer " + str(brightest_bayer))
                     central_median=max_median
                 
                 else:
@@ -2110,22 +2111,48 @@ class Camera:
                         try:
                             camera_gain_estimate_image = camera_gain_estimate_image - self.biasFiles[str(1)]
                             camera_gain_estimate_image = camera_gain_estimate_image - (self.darkFiles[str(1)] * exposure_time)
-                            if self.config['camera'][self.name]['settings']['hold_flats_in_memory']:
-                                camera_gain_estimate_image = np.divide(camera_gain_estimate_image, self.flatFiles[self.current_filter])                               
-                            else:
-                                camera_gain_estimate_image = np.divide(camera_gain_estimate_image, np.load(self.flatFiles[str(self.current_filter + "_bin" + str(1))]))
-                        
+                            
+                            
+                            # Attempt to flatfield the image, which may not work if
+                            # This is the first time the filter is being run.
+                            try:
+                                if self.config['camera'][self.name]['settings']['hold_flats_in_memory']:
+                                    camera_gain_estimate_image = np.divide(camera_gain_estimate_image, self.flatFiles[self.current_filter])                               
+                                else:
+                                    camera_gain_estimate_image = np.divide(camera_gain_estimate_image, np.load(self.flatFiles[str(self.current_filter + "_bin" + str(1))]))
+                            except:
+                                pass
+                            plog ("Brightest Bayer " + str(brightest_bayer))
+                            # Get the brightest bayer layer for gains
+                            if self.config["camera"][self.name]["settings"]['is_osc']:
+                                if brightest_bayer == 0:                                                                             
+                                    camera_gain_estimate_image=camera_gain_estimate_image[::2, ::2]
+                                elif brightest_bayer == 1:   
+                                    camera_gain_estimate_image=camera_gain_estimate_image[::2, 1::2]
+                                elif brightest_bayer == 2:    
+                                    camera_gain_estimate_image=camera_gain_estimate_image[1::2, ::2]
+                                elif brightest_bayer == 3:    
+                                    camera_gain_estimate_image=camera_gain_estimate_image[1::2, 1::2]
+                            
+                            cropx = int( (camera_gain_estimate_image.shape[0] -500)/2)
+                            cropy = int((camera_gain_estimate_image.shape[1] -500) /2)
+                            camera_gain_estimate_image=camera_gain_estimate_image[cropx:-cropx, cropy:-cropy]
+                            camera_gain_estimate_image = sigma_clip(camera_gain_estimate_image, masked=False, axis=None)
+                            
+                            
+                            
                             cge_median=np.nanmedian(camera_gain_estimate_image)
                             cge_stdev=np.nanstd(camera_gain_estimate_image)
                             cge_sqrt=pow(cge_median,0.5)
                             cge_gain=pow(cge_sqrt/cge_stdev, 2)
                             
-                            print ("Camera gain median: " + str(cge_median) + " stdev: " +str(cge_stdev)+ " sqrt: " + str(cge_sqrt) + " gain: " +str(cge_gain))
+                            plog ("Camera gain median: " + str(cge_median) + " stdev: " +str(cge_stdev)+ " sqrt: " + str(cge_sqrt) + " gain: " +str(cge_gain))
                             self.expresult["camera_gain"] = cge_gain
                             
                         
                         except Exception as e:
                             plog("Could not estimate the camera gain from this flat.")
+                            plog(e) 
                             self.expresult["camera_gain"] = np.nan
                             
                         # # Quick flat flat frame
