@@ -2067,41 +2067,53 @@ class Sequencer:
                             # Normalising flat file
                             if not g_dev['cam'].config["camera"][g_dev['cam'].name]["settings"]["is_osc"]:
                                 normalising_factor=np.nanmedian(flatdebiaseddedarked)
+                                flatdebiaseddedarked = flatdebiaseddedarked/normalising_factor
                             else:
                                 
                                 #temp_is_osc=True
-                                osc_fits=copy.deepcopy(flatdebiaseddedarked)
+                                #osc_fits=copy.deepcopy(flatdebiaseddedarked)
                                 
                                 debayered=[]
                                 max_median=0                    
                                 
-                                debayered.append(osc_fits[::2, ::2])
-                                debayered.append(osc_fits[::2, 1::2])
-                                debayered.append(osc_fits[1::2, ::2])
-                                debayered.append(osc_fits[1::2, 1::2])
+                                debayered.append(flatdebiaseddedarked[::2, ::2])
+                                debayered.append(flatdebiaseddedarked[::2, 1::2])
+                                debayered.append(flatdebiaseddedarked[1::2, ::2])
+                                debayered.append(flatdebiaseddedarked[1::2, 1::2])
                                 
+                                
+                                osc_normalising_factor=[]
                                 # crop each of the images to the central region
-                                oscounter=0
+                                #oscounter=0
                                 for oscimage in debayered:
                                     cropx = int( (oscimage.shape[0] -500)/2)
                                     cropy = int((oscimage.shape[1] -500) /2)
                                     oscimage=oscimage[cropx:-cropx, cropy:-cropy]
                                     #oscimage = sigma_clip(camera_gain_estimate_image, masked=False, axis=None)
                                     oscmedian=np.nanmedian(oscimage)
-                                    if oscmedian > max_median:
-                                        max_median=oscmedian
+                                    #if oscmedian > max_median:
+                                    #    max_median=oscmedian
                                         #brightest_bayer=copy.deepcopy(oscounter)
-                                    oscounter=oscounter+1
+                                    #oscounter=oscounter+1
+                                    osc_normalising_factor.append(oscmedian)
+                                
+                                del debayered
+                                
+                                flatdebiaseddedarked[::2, ::2]=flatdebiaseddedarked[::2, ::2]/osc_normalising_factor[0]
+                                flatdebiaseddedarked[::2, 1::2]=flatdebiaseddedarked[::2, 1::2]/osc_normalising_factor[1]
+                                flatdebiaseddedarked[1::2, ::2]=flatdebiaseddedarked[1::2, ::2]/osc_normalising_factor[2]
+                                flatdebiaseddedarked[1::2, 1::2]=flatdebiaseddedarked[1::2, 1::2]/osc_normalising_factor[3]
+                                
                                 
                                 #camera_gain_estimate_image=copy.deepcopy(debayered[brightest_bayer])
                                 
-                                del osc_fits
-                                del debayered
+                                #del osc_fits
                                 
-                                normalising_factor=max_median
+                                
+                                #normalising_factor=max_median
                             
                             
-                            flatdebiaseddedarked = flatdebiaseddedarked/normalising_factor     
+                                 
                             
                             
                             
