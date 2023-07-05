@@ -2132,7 +2132,8 @@ class Sequencer:
                             hdu1data = np.load(fullflat, mmap_mode='r')     
                             hdu1exp=float(file.split('_')[-2])
                             
-                            camera_gain_estimate_image=((hdu1data-masterBias)-(masterDark*hdu1exp)) /temporaryFlat
+                            #camera_gain_estimate_image=((hdu1data-masterBias)-(masterDark*hdu1exp)) /temporaryFlat
+                            camera_gain_estimate_image=((hdu1data-masterBias)-(masterDark*hdu1exp))
                             camera_gain_estimate_image[camera_gain_estimate_image == inf] = np.nan
                             camera_gain_estimate_image[camera_gain_estimate_image == -inf] = np.nan
                             
