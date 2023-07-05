@@ -2035,7 +2035,7 @@ class Camera:
                         #oscimage = sigma_clip(camera_gain_estimate_image, masked=False, axis=None)
                         oscmedian=np.nanmedian(oscimage)
                         if oscmedian > max_median:
-                            max_median=oscmedian
+                            max_median=copy.deepcopy(oscmedian)
                             brightest_bayer=copy.deepcopy(oscounter)
                         oscounter=oscounter+1
                     
@@ -2066,7 +2066,7 @@ class Camera:
                     
                     if (
                         central_median
-                        >= 0.75* image_saturation_level
+                        >= 0.70* image_saturation_level
                     ):
                         plog("Flat rejected, center is too bright:  ", central_median)
                         g_dev["obs"].send_to_user(

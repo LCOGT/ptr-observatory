@@ -2020,6 +2020,17 @@ class Sequencer:
                     filtercode=filterfolder.split('\\')[-2]
                     plog ("Regenerating flat for " + str(filtercode))
                     inputList=(glob(g_dev['obs'].local_flat_folder + filtercode + '/*.n*'))
+                    
+                    # Test each flat file actually opens
+                    for file in inputList:
+                        try:
+                            hdu1data = np.load(file, mmap_mode='r')
+                        except:
+                            plog ("corrupt flat skipped: " + str(file))
+                            inputList.remove(file)
+                    
+                    
+                    
                     # Generate temp memmap
                     single_filter_gains=[]
                     if len(inputList) == 0 or len(inputList) == 1:
