@@ -210,7 +210,7 @@ class Qcam:
         # self.so.GetQHYCCDNumberOfReadModes.argtypes = [c_void_p, c_void_p]
         # self.so.GetQHYCCDReadModeName.argtypes = [c_void_p, c_uint32, c_char_p]
         # self.so.GetQHYCCDReadModeName.argtypes = [c_void_p, c_uint32]
-        self.so.GetQHYCCDReadMode.argtypes = [c_void_p,c_uint32]
+        #self.so.GetQHYCCDReadMode.argtypes = [c_void_p,c_uint32]
         self.so.GetReadModesNumber.argtypes = [c_char_p, c_void_p]
         self.so.GetReadModeName.argtypes = [c_char_p, c_uint32, c_char_p]
         self.so.SetQHYCCDReadMode.argtypes = [c_void_p, c_uint32]
@@ -269,6 +269,7 @@ def init_camera_param(cam_id):
                                      'bits_per_pixel': c_uint32(),
                                      'mem_len': c_ulong(),
                                      'stream_mode': c_uint8(0),
+                                     #'read_mode': c_uint8(0),
                                      'channels': c_uint32(),
                                      'read_mode_number': c_uint32(g_dev['obs'].config["camera"]["camera_1_1"]["settings"]['direct_qhy_readout_mode']),
                                      'read_mode_index': c_uint32(g_dev['obs'].config["camera"]["camera_1_1"]["settings"]['direct_qhy_readout_mode']),
@@ -550,12 +551,12 @@ class Camera:
            
             success = qhycam.so.InitQHYCCD(qhycam.camera_params[qhycam_id]['handle'])
             
-            #readmodenum=c_uint32()
+            #qhycam.camera_params[qhycam_id]['read_mode'] = c_uint8(qhycam.stream_single_mode)
             #breakpoint()
-            #success=qhycam.so.GetQHYCCDReadMode(qhycam.camera_params[qhycam_id]['handle'], readmodenum)
+            #success=qhycam.so.GetQHYCCDReadMode(qhycam.camera_params[qhycam_id]['handle'], qhycam.camera_params[qhycam_id]['read_mode'])
+            #print (qhycam.camera_params[qhycam_id]['read_mode'])
             
-            
-            
+            #breakpoint()
             
             
             mode_name = create_string_buffer(qhycam.STR_BUFFER_SIZE)

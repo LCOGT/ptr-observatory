@@ -635,7 +635,14 @@ class Observatory:
         uri = f"{self.config['obs_id']}/config/"
         self.config["events"] = g_dev["events"]
 
-        response = g_dev["obs"].api.authenticated_request("PUT", uri, self.config)
+        retryapi=True
+        while retryapi:
+            try:
+                response = g_dev["obs"].api.authenticated_request("PUT", uri, self.config)
+                retryapi=False
+            except:
+                plog ("connection glitch in update config. Waiting 5 seconds.")
+                time.sleep(5)
         if 'message' in response:
             if response['message'] == "Missing Authentication Token":
                 plog("Missing Authentication Token. Config unable to be uploaded. Please fix this now.")
@@ -905,8 +912,10 @@ sel
                             "full_project_details:": False,
                         }
                     )
-                    
-                    blocks = reqs.post(url_blk, body, timeout=20).json()
+                    try:
+                        blocks = reqs.post(url_blk, body, timeout=20).json()
+                    except:
+                        plog ("glitch out in the blocks reqs post")
 
                     self.blocks = blocks
 
@@ -1803,19 +1812,22 @@ sel
                             # If ingester fails, send to default S3 bucket.
                             if tempPTR == 0:
                                 files = {"file": (filepath, fileobj)}
-                                try:
-                                    aws_resp = g_dev["obs"].api.authenticated_request(
-                                        "POST", "/upload/", {"object_name": filename})
-                                    req_resp = reqs.post(aws_resp["url"], data=aws_resp["fields"], files=files, timeout=600)
-    
-                                    self.aws_queue.task_done()
-                                    one_at_a_time = 0
-    
-                                except:
-                                    plog(traceback.format_exc())
-                                    #breakpoint()
-                                    plog("Connection glitch for the request post, waiting a moment and trying again")
-                                    time.sleep(5)
+                                retryapi=True
+                                while retryapi:
+                                    try:
+                                        aws_resp = g_dev["obs"].api.authenticated_request(
+                                            "POST", "/upload/", {"object_name": filename})
+                                        req_resp = reqs.post(aws_resp["url"], data=aws_resp["fields"], files=files, timeout=600)
+        
+                                        self.aws_queue.task_done()
+                                        one_at_a_time = 0
+                                        retryapi=False
+        
+                                    except:
+                                        plog(traceback.format_exc())
+                                        #breakpoint()
+                                        plog("Connection glitch for the request post, waiting a moment and trying again")
+                                        time.sleep(5)
                         
                         if broken == 1:
                         
@@ -2826,9 +2838,15 @@ sel
                 # Here we parse the file, set up and send to AWS
                 filename = pri_image[1][1]
                 filepath = pri_image[1][0] + filename  # Full path to file on disk
-                aws_resp = g_dev["obs"].api.authenticated_request(
-                    "POST", "/upload/", {"object_name": filename})
-
+                retryapi=True
+                while retryapi:
+                    try:
+                        aws_resp = g_dev["obs"].api.authenticated_request(
+                            "POST", "/upload/", {"object_name": filename})
+                        retryapi=False
+                    except:
+                        plog ("connection glitch in fast_aws thread. Waiting 5 seconds.")
+                        time.sleep(5)
                 # Send all other files to S3.               
 
                 with open(filepath, "rb") as fileobj:
