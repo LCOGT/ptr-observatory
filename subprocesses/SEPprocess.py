@@ -74,7 +74,7 @@ sep_bin_value= input_sep_info[22]
 focus_jpeg_size= input_sep_info[23]
 saturate= input_sep_info[24]
 minimum_realistic_seeing=input_sep_info[25]
-nativebin=input_sep_info[25]
+nativebin=input_sep_info[26]
 
 
 
