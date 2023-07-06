@@ -2856,7 +2856,7 @@ class Camera:
                     cal_name = (
                         self.config["obs_id"]
                         + "-"
-                        + current_camera_name
+                        + current_camera_name 
                         + "-"
                         + g_dev["day"]
                         + "-"
@@ -2869,22 +2869,21 @@ class Camera:
                     raw_name00 = (
                         self.config["obs_id"]
                         + "-"
-                        + current_camera_name
+                        + current_camera_name + "-" + str(hdu.header['OBJECT']) +'-'+str(hdu.header['FILTER'])
                         + "-"
                         + g_dev["day"]
                         + "-"
-                        + next_seq
+                        + next_seq + "-" + str(exposure_time.replace('.','d'))
                         + "-"
                         + im_type
                         + "00.fits"
                     )
-                    red_name01 = (self.config["obs_id"] + "-" + str(hdu.header['OBJECT']) +'-'+str(hdu.header['FILTER']) + "-" + next_seq+ "-"+ im_type+ "01.fits")
-                        
+                    red_name01 = (self.config["obs_id"] + "-" + str(hdu.header['OBJECT']) +'-'+str(hdu.header['FILTER']) + "-" + next_seq+ "-" + str(exposure_time.replace('.','d')) + "-"+ im_type+ "01.fits")                        
+                    
                     red_name01_lcl = (
                         red_name01[:-9]
-                        + pier_string
+                        + pier_string + '-'
                         + this_exposure_filter
-                        + "-"
                         + red_name01[-9:]
                     )
                     if self.pane is not None:
