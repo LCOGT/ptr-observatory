@@ -2763,18 +2763,18 @@ class Sequencer:
                             
                             if g_dev["fil"].null_filterwheel == False:
                                 if sky_lux != None:
-                                    plog(current_filter,' New Gain value: ', round(bright/(sky_lux*collecting_area*exp_time), 3), '\n\n')
-                                    new_gain_value = round(bright/(sky_lux*collecting_area*exp_time), 3)
+                                    plog(current_filter,' New Gain value: ', round(bright/(sky_lux*collecting_area*pixel_area*exp_time), 3), '\n\n')
+                                    new_gain_value = round(bright/(sky_lux*collecting_area*pixel_area*exp_time), 3)
                                 else:
-                                    plog(current_filter,' New Gain value: ', round(bright/(collecting_area*exp_time), 3), '\n\n')
-                                    new_gain_value = round(bright/(collecting_area*exp_time), 3)
+                                    plog(current_filter,' New Gain value: ', round(bright/(collecting_area*pixel_area*exp_time), 3), '\n\n')
+                                    new_gain_value = round(bright/(collecting_area*pixel_area*exp_time), 3)
                             else:
                                 if sky_lux != None:
-                                    plog('New Gain value: ', round(bright/(sky_lux*collecting_area*exp_time), 3), '\n\n')
-                                    new_gain_value = round(bright/(sky_lux*collecting_area*exp_time), 3)
+                                    plog('New Gain value: ', round(bright/(sky_lux*collecting_area*pixel_area*exp_time), 3), '\n\n')
+                                    new_gain_value = round(bright/(sky_lux*collecting_area*pixel_area*exp_time), 3)
                                 else:
-                                    plog('New Gain value: ', round(bright/(collecting_area*exp_time), 3), '\n\n')
-                                    new_gain_value = round(bright/(collecting_area*exp_time), 3)
+                                    plog('New Gain value: ', round(bright/(collecting_area*pixel_area*exp_time), 3), '\n\n')
+                                    new_gain_value = round(bright/(collecting_area*pixel_area*exp_time), 3)
             
                             if g_dev['cam'].config["camera"][g_dev['cam'].name]["settings"]["is_osc"]:
             
