@@ -2916,7 +2916,7 @@ sel
                             self.config["camera"][g_dev['cam'].name]["settings"]["osc_bayer"],
                             g_dev['cam'].config["camera"][g_dev['cam'].name]["settings"]["saturate"],
                             g_dev['cam'].native_bin,
-                            g_dev['cam'].config["camera"][g_dev['cam'].name]["settings"]["reference_noise"],
+                            g_dev['cam'].config["camera"][g_dev['cam'].name]["settings"]["read_noise"],
                             self.config['minimum_realistic_seeing'],
                             self.config["camera"][g_dev['cam'].name]["settings"]['osc_brightness_enhance'] ,
                             self.config["camera"][g_dev['cam'].name]["settings"]['osc_contrast_enhance'] ,
