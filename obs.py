@@ -3201,6 +3201,10 @@ sel
             
         except Exception as e:
             plog("Failed to get aws enclosure status. Usually not fatal:  ", e)
+            aws_weather_status={} 
+            aws_weather_status['status']={}
+            aws_weather_status['status']['observing_conditions']={}
+            aws_weather_status['status']['observing_conditions']['observing_conditions1'] = None
         
         
         
