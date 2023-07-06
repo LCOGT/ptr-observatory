@@ -2162,8 +2162,8 @@ sel
         
                             fwhmcalc = fwhmcalc[fwhmcalc > np.median(fwhmcalc) - 3 * np.std(fwhmcalc)]
                             rfp = round(np.median(fwhmcalc), 3)
-                            rfr = round(np.median(fwhmcalc) * pixscale, 3)
-                            rfs = round(np.std(fwhmcalc) * pixscale, 3)
+                            rfr = round(np.median(fwhmcalc) * pixscale * g_dev['cam'].native_bin, 3)
+                            rfs = round(np.std(fwhmcalc) * pixscale * g_dev['cam'].native_bin, 3)
                             plog("\nImage FWHM:  " + str(rfr) + "+/-" + str(rfs) + " arcsecs, " + str(rfp)
                                  + " pixels.")
                             # breakpoint()
