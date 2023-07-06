@@ -912,7 +912,10 @@ sel
 
                     url_proj = "https://projects.photonranch.org/projects/get-all-projects"
                     if True:
-                        all_projects = reqs.post(url_proj, timeout=5).json()
+                        try:
+                            all_projects = reqs.post(url_proj, timeout=20).json()
+                        except:
+                            plog ("connection glitch in picking up projects")
                         self.projects = []
                         if len(all_projects) > 0 and len(blocks) > 0:
                             self.projects = all_projects  # NOTE creating a list with a dict entry as item 0
