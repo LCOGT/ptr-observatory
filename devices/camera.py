@@ -2043,7 +2043,7 @@ class Camera:
                     del osc_fits
                     del debayered
                     
-                    plog ("Brightest Bayer " + str(brightest_bayer))
+                    #plog ("Brightest Bayer " + str(brightest_bayer))
                     central_median=max_median
                 
                 else:
@@ -2126,7 +2126,7 @@ class Camera:
                             
                             # Get the brightest bayer layer for gains
                             if self.config["camera"][self.name]["settings"]['is_osc']:
-                                plog ("Brightest Bayer " + str(brightest_bayer))
+                                #plog ("Brightest Bayer " + str(brightest_bayer))
                                 if brightest_bayer == 0:                                                                             
                                     camera_gain_estimate_image=camera_gain_estimate_image[::2, ::2]
                                 elif brightest_bayer == 1:   
