@@ -1925,12 +1925,14 @@ sel
                 #plog("Deleting: " +str(deletefilename))
                     
                 self.laterdelete_queue.task_done()
+                
                 try:
                     os.remove(deletefilename)
                     #notdelete=0
                 except:
-                    plog("failed to remove: " + str(deletefilename) + " trying again soon")
+                    #plog("failed to remove: " + str(deletefilename) + " trying again soon")
                     self.laterdelete_queue.put(deletefilename, block=False)
+                    time.sleep(5)
                 
                 
                 # one_at_a_time=0
