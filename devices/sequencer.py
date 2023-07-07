@@ -1147,7 +1147,7 @@ class Sequencer:
             
             g_dev['obs'].update()
 
-            plog("CAUTION:  rotator may block")
+            #plog("CAUTION:  rotator may block")
             pa = float(block_specification['project']['project_constraints']['position_angle'])
             if abs(pa) > 0.01:
                 try:
@@ -1182,7 +1182,7 @@ class Sequencer:
                     plog('# of mosaic panes:  ', multiplex)
                 else:
                     left_to_do += int(exposure['count'])
-                    plog('Singleton image')
+                    #plog('Singleton image')
 
             plog("Left to do initial value:  ", left_to_do)
             req = {'target': 'near_tycho_star'}

@@ -2043,7 +2043,7 @@ class Camera:
                     del osc_fits
                     del debayered
                     
-                    plog ("Brightest Bayer " + str(brightest_bayer))
+                    #plog ("Brightest Bayer " + str(brightest_bayer))
                     central_median=max_median
                 
                 else:
@@ -2126,7 +2126,7 @@ class Camera:
                             
                             # Get the brightest bayer layer for gains
                             if self.config["camera"][self.name]["settings"]['is_osc']:
-                                plog ("Brightest Bayer " + str(brightest_bayer))
+                                #plog ("Brightest Bayer " + str(brightest_bayer))
                                 if brightest_bayer == 0:                                                                             
                                     camera_gain_estimate_image=camera_gain_estimate_image[::2, ::2]
                                 elif brightest_bayer == 1:   
@@ -2870,7 +2870,7 @@ class Camera:
                     raw_name00 = (
                         self.config["obs_id"]
                         + "-"
-                        + current_camera_name + "-" + str(hdu.header['OBJECT']) +'-'+str(hdu.header['FILTER'])
+                        + current_camera_name
                         + "-"
                         + g_dev["day"]
                         + "-"
@@ -2879,7 +2879,7 @@ class Camera:
                         + im_type
                         + "00.fits"
                     )
-                    red_name01 = (self.config["obs_id"] + "-" + str(hdu.header['OBJECT']) +'-'+str(hdu.header['FILTER']) + "-" + next_seq+ "-" + str(exposure_time).replace('.','d') + "-"+ im_type+ "01.fits")                        
+                    red_name01 = (self.config["obs_id"] + "-" + str(hdu.header['OBJECT']).replace(' ','').replace('-','') +'-'+str(hdu.header['FILTER']) + "-" + next_seq+ "-" + str(exposure_time).replace('.','d') + "-"+ im_type+ "01.fits")                        
                     
                     red_name01_lcl = (
                         red_name01[:-9]

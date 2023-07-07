@@ -2117,105 +2117,109 @@ sel
                     
     
                     if os.path.exists(im_path + text_name.replace('.txt', '.sep')):
-                        sources = Table.read(im_path + text_name.replace('.txt', '.sep'), format='csv')
-                        
                         try:
-                            g_dev['cam'].enqueue_for_fastAWS(200, im_path, text_name.replace('.txt', '.sep'))
-                            #plog("Sent SEP up")
-                        except:
-                            plog("Failed to send SEP up for some reason")
-                        
-                        #DONUT IMAGE DETECTOR.
-                        #plog ("The Fitzgerald Magical Donut detector")
-                        binfocus=1
-                        if frame_type == 'focus' and self.config["camera"][g_dev['cam'].name]["settings"]['bin_for_focus']: 
-                            binfocus=self.config["camera"][g_dev['cam'].name]["settings"]['focus_bin_value']
-                        
-                        if frame_type != 'focus' and self.config["camera"][g_dev['cam'].name]["settings"]['bin_for_sep']:                    
-                            binfocus=self.config["camera"][g_dev['cam'].name]["settings"]['sep_bin_value']
+                            sources = Table.read(im_path + text_name.replace('.txt', '.sep'), format='csv')
                             
-                        xdonut=np.median(pow(pow(sources['x'] - sources['xpeak'],2),0.5))*pixscale*binfocus
-                        ydonut=np.median(pow(pow(sources['y'] - sources['ypeak'],2),0.5))*pixscale*binfocus
-                        if xdonut > 3.0 or ydonut > 3.0 or np.isnan(xdonut) or np.isnan(ydonut):
-                            plog ("Possible donut image detected.")    
-                            plog('x ' + str(xdonut))
-                            plog('y ' + str(ydonut))  
-                        
-                        
-                        if (len(sources) < 2) or ( frame_type == 'focus' and (len(sources) < 10 or len(sources) == np.nan or str(len(sources)) =='nan' or xdonut > 3.0 or ydonut > 3.0 or np.isnan(xdonut) or np.isnan(ydonut))):
-                            #plog ("not enough sources to estimate a reliable focus")
-                            plog ("Did not find an acceptable FWHM for this image.")    
-                            g_dev['cam'].expresult["error"] = True
-                            g_dev['cam'].expresult['FWHM'] = np.nan
-                            g_dev['cam'].expresult['No_of_sources'] = np.nan
-                            sources['FWHM'] = [np.nan] * len(sources)
-                            rfp = np.nan
-                            rfr = np.nan
-                            rfs = np.nan
-                            sources = sources
-                        else:
-                            # Get halflight radii
-                            # breakpoint()
-                            # fwhmcalc=(np.array(sources['FWHM']))
-                            fwhmcalc = sources['FWHM']
-                            #fwhmcalc=fwhmcalc[fwhmcalc > 1.0]
-                            fwhmcalc = fwhmcalc[fwhmcalc != 0]  # Remove 0 entries
-                            # fwhmcalc=fwhmcalc[fwhmcalc < 75] # remove stupidly large entries
-        
-                            # sigma clipping iterator to reject large variations
-                            templen = len(fwhmcalc)
-                            while True:
-                                fwhmcalc = fwhmcalc[fwhmcalc < np.median(fwhmcalc) + 3 * np.std(fwhmcalc)]
-                                if len(fwhmcalc) == templen:
-                                    break
-                                else:
-                                    templen = len(fwhmcalc)
-        
-                            fwhmcalc = fwhmcalc[fwhmcalc > np.median(fwhmcalc) - 3 * np.std(fwhmcalc)]
-                            rfp = round(np.median(fwhmcalc), 3)
-                            rfr = round(np.median(fwhmcalc) * pixscale * g_dev['cam'].native_bin, 3)
-                            rfs = round(np.std(fwhmcalc) * pixscale * g_dev['cam'].native_bin, 3)
-                            plog("\nImage FWHM:  " + str(rfr) + "+/-" + str(rfs) + " arcsecs, " + str(rfp)
-                                 + " pixels.")
-                            # breakpoint()
-                            g_dev['cam'].expresult["FWHM"] = rfr
-                            g_dev['cam'].expresult["mean_focus"] = avg_foc
-                            g_dev['cam'].expresult['No_of_sources'] = len(sources)
-        
-        
-                        if focus_image != True:
-                            # Focus tracker code. This keeps track of the focus and if it drifts
-                            # Then it triggers an autofocus.
-                            g_dev["foc"].focus_tracker.pop(0)
-                            g_dev["foc"].focus_tracker.append(round(rfr, 3))
-                            plog("Last ten FWHM: " + str(g_dev["foc"].focus_tracker) + " Median: " + str(np.nanmedian(g_dev["foc"].focus_tracker)) + " Last Solved: " + str(g_dev["foc"].last_focus_fwhm))
-                            #plog()
-                            #plog("Median last ten FWHM")
-                            #plog(np.nanmedian(g_dev["foc"].focus_tracker))
-                            #plog("Last solved focus FWHM: " + str(g_dev["foc"].last_focus_fwhm))
-                            #plog(g_dev["foc"].last_focus_fwhm)
-        
-                            # If there hasn't been a focus yet, then it can't check it,
-                            # so make this image the last solved focus.
-                            if g_dev["foc"].last_focus_fwhm == None:
-                                g_dev["foc"].last_focus_fwhm = rfr
+                            try:
+                                g_dev['cam'].enqueue_for_fastAWS(200, im_path, text_name.replace('.txt', '.sep'))
+                                #plog("Sent SEP up")
+                            except:
+                                plog("Failed to send SEP up for some reason")
+                            
+                            #DONUT IMAGE DETECTOR.
+                            #plog ("The Fitzgerald Magical Donut detector")
+                            binfocus=1
+                            if frame_type == 'focus' and self.config["camera"][g_dev['cam'].name]["settings"]['bin_for_focus']: 
+                                binfocus=self.config["camera"][g_dev['cam'].name]["settings"]['focus_bin_value']
+                            
+                            if frame_type != 'focus' and self.config["camera"][g_dev['cam'].name]["settings"]['bin_for_sep']:                    
+                                binfocus=self.config["camera"][g_dev['cam'].name]["settings"]['sep_bin_value']
+                                
+                            xdonut=np.median(pow(pow(sources['x'] - sources['xpeak'],2),0.5))*pixscale*binfocus
+                            ydonut=np.median(pow(pow(sources['y'] - sources['ypeak'],2),0.5))*pixscale*binfocus
+                            if xdonut > 3.0 or ydonut > 3.0 or np.isnan(xdonut) or np.isnan(ydonut):
+                                plog ("Possible donut image detected.")    
+                                plog('x ' + str(xdonut))
+                                plog('y ' + str(ydonut))  
+                            
+                            
+                            if (len(sources) < 2) or ( frame_type == 'focus' and (len(sources) < 10 or len(sources) == np.nan or str(len(sources)) =='nan' or xdonut > 3.0 or ydonut > 3.0 or np.isnan(xdonut) or np.isnan(ydonut))):
+                                #plog ("not enough sources to estimate a reliable focus")
+                                plog ("Did not find an acceptable FWHM for this image.")    
+                                g_dev['cam'].expresult["error"] = True
+                                g_dev['cam'].expresult['FWHM'] = np.nan
+                                g_dev['cam'].expresult['No_of_sources'] = np.nan
+                                sources['FWHM'] = [np.nan] * len(sources)
+                                rfp = np.nan
+                                rfr = np.nan
+                                rfs = np.nan
+                                sources = sources
                             else:
-                                # Very dumb focus slip deteector
-                                if (
-                                    np.nanmedian(g_dev["foc"].focus_tracker)
-                                    > g_dev["foc"].last_focus_fwhm
-                                    + self.config["focus_trigger"]
-                                ):
-                                    g_dev["foc"].focus_needed = True
-                                    g_dev["obs"].send_to_user(
-                                        "Focus has drifted to "
-                                        + str(np.nanmedian(g_dev["foc"].focus_tracker))
-                                        + " from "
-                                        + str(g_dev["foc"].last_focus_fwhm)
-                                        + ".",
-                                        p_level="INFO",
-                                    )
-                    
+                                # Get halflight radii
+                                # breakpoint()
+                                # fwhmcalc=(np.array(sources['FWHM']))
+                                fwhmcalc = sources['FWHM']
+                                #fwhmcalc=fwhmcalc[fwhmcalc > 1.0]
+                                fwhmcalc = fwhmcalc[fwhmcalc != 0]  # Remove 0 entries
+                                # fwhmcalc=fwhmcalc[fwhmcalc < 75] # remove stupidly large entries
+            
+                                # sigma clipping iterator to reject large variations
+                                templen = len(fwhmcalc)
+                                while True:
+                                    fwhmcalc = fwhmcalc[fwhmcalc < np.median(fwhmcalc) + 3 * np.std(fwhmcalc)]
+                                    if len(fwhmcalc) == templen:
+                                        break
+                                    else:
+                                        templen = len(fwhmcalc)
+            
+                                fwhmcalc = fwhmcalc[fwhmcalc > np.median(fwhmcalc) - 3 * np.std(fwhmcalc)]
+                                rfp = round(np.median(fwhmcalc), 3)
+                                rfr = round(np.median(fwhmcalc) * pixscale * g_dev['cam'].native_bin, 3)
+                                rfs = round(np.std(fwhmcalc) * pixscale * g_dev['cam'].native_bin, 3)
+                                plog("\nImage FWHM:  " + str(rfr) + "+/-" + str(rfs) + " arcsecs, " + str(rfp)
+                                     + " pixels.")
+                                # breakpoint()
+                                g_dev['cam'].expresult["FWHM"] = rfr
+                                g_dev['cam'].expresult["mean_focus"] = avg_foc
+                                g_dev['cam'].expresult['No_of_sources'] = len(sources)
+            
+            
+                            if focus_image != True:
+                                # Focus tracker code. This keeps track of the focus and if it drifts
+                                # Then it triggers an autofocus.
+                                g_dev["foc"].focus_tracker.pop(0)
+                                g_dev["foc"].focus_tracker.append(round(rfr, 3))
+                                plog("Last ten FWHM: " + str(g_dev["foc"].focus_tracker) + " Median: " + str(np.nanmedian(g_dev["foc"].focus_tracker)) + " Last Solved: " + str(g_dev["foc"].last_focus_fwhm))
+                                #plog()
+                                #plog("Median last ten FWHM")
+                                #plog(np.nanmedian(g_dev["foc"].focus_tracker))
+                                #plog("Last solved focus FWHM: " + str(g_dev["foc"].last_focus_fwhm))
+                                #plog(g_dev["foc"].last_focus_fwhm)
+            
+                                # If there hasn't been a focus yet, then it can't check it,
+                                # so make this image the last solved focus.
+                                if g_dev["foc"].last_focus_fwhm == None:
+                                    g_dev["foc"].last_focus_fwhm = rfr
+                                else:
+                                    # Very dumb focus slip deteector
+                                    if (
+                                        np.nanmedian(g_dev["foc"].focus_tracker)
+                                        > g_dev["foc"].last_focus_fwhm
+                                        + self.config["focus_trigger"]
+                                    ):
+                                        g_dev["foc"].focus_needed = True
+                                        g_dev["obs"].send_to_user(
+                                            "Focus has drifted to "
+                                            + str(np.nanmedian(g_dev["foc"].focus_tracker))
+                                            + " from "
+                                            + str(g_dev["foc"].last_focus_fwhm)
+                                            + ".",
+                                            p_level="INFO",
+                                        )
+                        except Exception as e:
+                            plog ("something odd occured in the reinterpretation of the SEP file")
+                            plog(traceback.format_exc())
+                            
                     else:
                         plog ("Did not find a source list from SEP for this image.")    
                         #g_dev['cam'].expresult["error"] = True
