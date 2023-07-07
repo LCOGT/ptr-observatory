@@ -2870,7 +2870,7 @@ class Camera:
                     raw_name00 = (
                         self.config["obs_id"]
                         + "-"
-                        + current_camera_name + "-" + str(hdu.header['OBJECT']) +'-'+str(hdu.header['FILTER'])
+                        + current_camera_name
                         + "-"
                         + g_dev["day"]
                         + "-"
@@ -2879,7 +2879,7 @@ class Camera:
                         + im_type
                         + "00.fits"
                     )
-                    red_name01 = (self.config["obs_id"] + "-" + str(hdu.header['OBJECT']) +'-'+str(hdu.header['FILTER']) + "-" + next_seq+ "-" + str(exposure_time).replace('.','d') + "-"+ im_type+ "01.fits")                        
+                    red_name01 = (self.config["obs_id"] + "-" + str(hdu.header['OBJECT']).replace(' ','').replace('-','') +'-'+str(hdu.header['FILTER']) + "-" + next_seq+ "-" + str(exposure_time).replace('.','d') + "-"+ im_type+ "01.fits")                        
                     
                     red_name01_lcl = (
                         red_name01[:-9]
