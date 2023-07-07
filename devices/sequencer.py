@@ -2519,10 +2519,10 @@ class Sequencer:
             for filter_name in pop_list:
                 filter_identified=0
                 for match in range(           
-                    len(self.filter_data)
+                    len(g_dev['fil'].filter_data)
                 ):  
 
-                    if filter_name.lower() in str(self.filter_data[match][0]).lower():
+                    if filter_name.lower() in str(g_dev['fil'].filter_data[match][0]).lower():
                         #filt_pointer = match                
                         filter_identified = 1
                         #break
