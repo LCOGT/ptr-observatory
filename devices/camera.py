@@ -2123,9 +2123,10 @@ class Camera:
                                     camera_gain_estimate_image = np.divide(camera_gain_estimate_image, np.load(self.flatFiles[str(self.current_filter + "_bin" + str(1))]))
                             except:
                                 pass
-                            plog ("Brightest Bayer " + str(brightest_bayer))
+                            
                             # Get the brightest bayer layer for gains
                             if self.config["camera"][self.name]["settings"]['is_osc']:
+                                plog ("Brightest Bayer " + str(brightest_bayer))
                                 if brightest_bayer == 0:                                                                             
                                     camera_gain_estimate_image=camera_gain_estimate_image[::2, ::2]
                                 elif brightest_bayer == 1:   

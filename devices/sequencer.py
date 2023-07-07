@@ -2515,6 +2515,21 @@ class Sequencer:
         else:
             pop_list = self.config['filter_wheel']['filter_wheel1']['settings']['filter_sky_sort'].copy()
 
+            # Check that filters are actually in the filter_list
+            for filter_name in pop_list:
+                filter_identified=0
+                for match in range(           
+                    len(self.filter_data)
+                ):  
+
+                    if filter_name.lower() in str(self.filter_data[match][0]).lower():
+                        #filt_pointer = match                
+                        filter_identified = 1
+                        #break
+                if filter_identified == 0:
+                    plog ("Could not find filter: "+str(filter_name) +" in main filter list. Removing it from flat filter list.")
+                    pop_list.delete(filter_name)
+
             if morn:
                 pop_list.reverse()
                 plog('filters by high to low transmission:  ', pop_list)                
@@ -2622,7 +2637,8 @@ class Sequencer:
                                 # Original line before MTF started fiddling 
                                 #exp_time = target_flat/(collecting_area*sky_lux*float(filter_gain))  #g_dev['ocn'].calc_HSI_lux)  #meas_sky_lux)
                                 # Factoring in pixel size
-                                pixel_area=pow(float(g_dev['cam'].config["camera"][g_dev['cam']]["settings"]["1x1_pix_scale"]),2)
+                                #breakpoint()
+                                pixel_area=pow(float(g_dev['cam'].config["camera"][g_dev['cam'].name]["settings"]["1x1_pix_scale"]),2)
                                 exp_time = target_flat/(collecting_area*pixel_area*sky_lux*float(filter_gain))  #g_dev['ocn'].calc_HSI_lux)  #meas_sky_lux)
                                 
                                 plog('Exposure time:  ', exp_time, scale, sky_lux, float(filter_gain))

@@ -14,6 +14,7 @@ import time
 import requests
 import serial
 import win32com.client
+import numpy as np
 
 import ptr_config
 from global_yard import g_dev
@@ -309,9 +310,12 @@ class FilterWheel:
                 filt_pointer = match                
                 filter_identified = 1
                 break
-
-
-        filter_gain = float(self.filter_data[filt_pointer][3])
+            
+        try:
+            filter_gain = float(self.filter_data[filt_pointer][3])
+        except:
+            plog("Could not find an appropriate gain for " +str(filter_name))
+            filter_gain = np.nan
 
         return filter_gain
 
