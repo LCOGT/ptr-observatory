@@ -1238,29 +1238,30 @@ class Mount:
 
         plog('starting pier side: ' + str(previous_pier_side) + "   Temp reporting")
 
-        print ("ra without delta " + str(ra))
-        print ("dec without delta " + str(dec))
+        #print ("ra without delta " + str(ra))
+        #print ("dec without delta " + str(dec))
 
 
         if g_dev['obs'].mount_reference_model_off:
-            print ("mount reference turned off")
-            print ("ra with delta " + str(ra+delta_ra))
-            print ("dec with delta " + str(dec+delta_dec))
+            #print ("mount reference turned off")
+            #print ("ra with delta " + str(ra+delta_ra))
+            #print ("dec with delta " + str(dec+delta_dec))
+            pass
         else:
-            print ("mount reference turned on")
+            #print ("mount reference turned on")
             try:        
                 ra += delta_ra #NB it takes a restart to pick up a new correction which is also J.now.
                 dec += delta_dec
             except:
                 pass
             
-            print ("ra with delta " + str(ra))
-            print ("dec with delta " + str(dec))
+            #print ("ra with delta " + str(ra))
+            #print ("dec with delta " + str(dec))
         
         
         
         ra, dec = ra_dec_fix_h(ra,dec)
-        print ('radec post-fixh ' + str(ra) + ' ' + str(dec))
+        #print ('radec post-fixh ' + str(ra) + ' ' + str(dec))
         
         
         
