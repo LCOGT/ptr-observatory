@@ -1802,15 +1802,24 @@ sel
                                         retryarchive = 11
                                         tempPTR =0
                                     except Exception as e:
-                                        
-                                        plog("couldn't send to PTR archive for some reason")
-                                        #plog("Retry " + str(retryarchive))
-                                        #plog(e)
-                                        #plog((traceback.format_exc()))
-                                        time.sleep(pow(retryarchive, 2) + 1)
-                                        if retryarchive < 10:
-                                            retryarchive = retryarchive+1
-                                        tempPTR = 0
+                                        if 'list index out of range' in str(e):
+                                            #plog((traceback.format_exc()))
+                                            # This error is thrown when there is a corrupt file
+                                            try:
+                                                os.remove(filepath)
+                                            except:
+                                                #plog("Couldn't remove " + str(filepath) + " file after transfer, sending to delete queue")
+                                                self.laterdelete_queue.put(filepath, block=False)
+                                            retryarchive=11
+                                        else:
+                                            plog("couldn't send to PTR archive for some reason: ", e)
+                                            #plog("Retry " + str(retryarchive))
+                                            #plog(e)
+                                            #plog((traceback.format_exc()))
+                                            time.sleep(pow(retryarchive, 2) + 1)
+                                            if retryarchive < 10:
+                                                retryarchive = retryarchive+1
+                                            tempPTR = 0
     
                             # If ingester fails, send to default S3 bucket.
                             if tempPTR == 0:
