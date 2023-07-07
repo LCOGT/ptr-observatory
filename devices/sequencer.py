@@ -2622,7 +2622,7 @@ class Sequencer:
                                 # Original line before MTF started fiddling 
                                 #exp_time = target_flat/(collecting_area*sky_lux*float(filter_gain))  #g_dev['ocn'].calc_HSI_lux)  #meas_sky_lux)
                                 # Factoring in pixel size
-                                pixel_area=pow(float(g_dev['cam'].config["camera"][g_dev['cam']]["settings"]["1x1_pix_scale"]),2)
+                                pixel_area=pow(float(g_dev['cam'].config["camera"][g_dev['cam'].name]["settings"]["1x1_pix_scale"]),2)
                                 exp_time = target_flat/(collecting_area*pixel_area*sky_lux*float(filter_gain))  #g_dev['ocn'].calc_HSI_lux)  #meas_sky_lux)
                                 
                                 plog('Exposure time:  ', exp_time, scale, sky_lux, float(filter_gain))
