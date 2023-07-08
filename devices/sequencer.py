@@ -235,6 +235,7 @@ class Sequencer:
                 
         except Exception as e:
             plog("Motion check faulted.")
+            plog(traceback.format_exc())
             if g_dev['mnt'].theskyx:
                 self.kill_and_reboot_theskyx(g_dev['mnt'].current_icrs_ra, g_dev['mnt'].current_icrs_dec)
             else:
@@ -3070,7 +3071,7 @@ class Sequencer:
         #  SO this may reult in drift if the return does not go to the mecahnical Ra and DEC.
         start_ra = g_dev['mnt'].mount.RightAscension   #Read these to go back.  NB NB Need to cleanly pass these on so we can return to proper target.
         start_dec = g_dev['mnt'].mount.Declination
-        focus_start = g_dev['foc'].focuser.Position*g_dev['foc'].steps_to_micron
+        focus_start = g_dev['foc'].get_position()
         #breakpoint()
 # =============================================================================
 # =============================================================================
@@ -3158,9 +3159,9 @@ class Sequencer:
             st = ""
             
             rot_report=0
-            while g_dev['foc'].focuser.IsMoving or \
+            while g_dev['foc'].is_moving() or \
                   g_dev['mnt'].mount.Slewing: 
-                if g_dev['foc'].focuser.IsMoving: st += 'Waiting for Focuser to shift.\n'
+                if g_dev['foc'].is_moving(): st += 'Waiting for Focuser to shift.\n'
                 if g_dev['mnt'].mount.Slewing: st += 'Waiting for Mount to Slew\n'
                 
                 if rot_report == 0:
@@ -3185,6 +3186,7 @@ class Sequencer:
                 
         except:
             plog("Motion check faulted.")
+            plog(traceback.format_exc())
             if g_dev['mnt'].theskyx:
                 self.kill_and_reboot_theskyx(g_dev['mnt'].current_icrs_ra, g_dev['mnt'].current_icrs_dec)
             else:
@@ -3214,7 +3216,7 @@ class Sequencer:
             else:
 
                 result['FWHM'] = 3
-                result['mean_focus'] = g_dev['foc'].focuser.Position*g_dev['foc'].steps_to_micron
+                result['mean_focus'] = g_dev['foc'].get_position()
 
             try:
                 spot1 = result['FWHM']
@@ -3248,7 +3250,7 @@ class Sequencer:
                 return
         else:
             result['FWHM'] = 4
-            result['mean_focus'] = g_dev['foc'].focuser.Position*g_dev['foc'].steps_to_micron
+            result['mean_focus'] = g_dev['foc'].get_position()
         try:
             spot2 = result['FWHM']
             foc_pos2 = result['mean_focus']
@@ -3278,7 +3280,7 @@ class Sequencer:
                 return
         else:
             result['FWHM'] = 4.5
-            result['mean_focus'] = g_dev['foc'].focuser.Position*g_dev['foc'].steps_to_micron
+            result['mean_focus'] = g_dev['foc'].get_position()
         try:
             spot3 = result['FWHM']
             foc_pos3 = result['mean_focus']
@@ -3357,7 +3359,7 @@ class Sequencer:
                         return
                 else:
                     result['FWHM'] = new_spot
-                    result['mean_focus'] = g_dev['foc'].focuser.Position*g_dev['foc'].steps_to_micron
+                    result['mean_focus'] = g_dev['foc'].get_position()
                 try:
                     spot4 = result['FWHM']
                     foc_pos4 = result['mean_focus']
@@ -3401,7 +3403,7 @@ class Sequencer:
                     return
             else:
                 result['FWHM'] = 6
-                result['mean_focus'] = g_dev['foc'].focuser.Position*g_dev['foc'].steps_to_micron
+                result['mean_focus'] = g_dev['foc'].get_position()
             try:
                 spot4 = result['FWHM']
                 foc_pos4 = result['mean_focus']
@@ -3482,7 +3484,7 @@ class Sequencer:
                         return
                 else:
                     result['FWHM'] = new_spot
-                    result['mean_focus'] = g_dev['foc'].focuser.Position*g_dev['foc'].steps_to_micron
+                    result['mean_focus'] = g_dev['foc'].get_position()
                 try:
                     spot4 = result['FWHM']
                     foc_pos4 = result['mean_focus']
@@ -3528,7 +3530,7 @@ class Sequencer:
                     return
             else:
                 result['FWHM'] = 5.5
-                result['mean_focus'] = g_dev['foc'].focuser.Position*g_dev['foc'].steps_to_micron
+                result['mean_focus'] = g_dev['foc'].get_position()
             try:
                 spot4 = result['FWHM']
                 foc_pos4 = result['mean_focus']
@@ -3620,7 +3622,7 @@ class Sequencer:
                         return
                 else:
                     result['FWHM'] = new_spot
-                    result['mean_focus'] = g_dev['foc'].focuser.Position*g_dev['foc'].steps_to_micron
+                    result['mean_focus'] = g_dev['foc'].get_position()
                 try:
                     spot4 = result['FWHM']
                     foc_pos4 = result['mean_focus']
@@ -3789,7 +3791,7 @@ class Sequencer:
         sim = False
         # Reset focus tracker
         if begin_at is None:  #  ADDED 20120821 WER
-            foc_start = g_dev['foc'].focuser.Position*g_dev['foc'].steps_to_micron
+            foc_start = g_dev['foc'].get_position()
         else:
             foc_start = begin_at  #In this case we start at a place close to a 3 point minimum.
             g_dev['foc'].guarded_move((foc_start)*g_dev['foc'].micron_to_steps)
@@ -3803,9 +3805,9 @@ class Sequencer:
             st = ""
            
             rot_report=0
-            while g_dev['foc'].focuser.IsMoving or \
+            while g_dev['foc'].is_moving() or \
                   g_dev['mnt'].mount.Slewing: 
-                if g_dev['foc'].focuser.IsMoving: st += 'Waiting for Focuser to shift.\n'
+                if g_dev['foc'].is_moving(): st += 'Waiting for Focuser to shift.\n'
                 if g_dev['mnt'].mount.Slewing: st += 'Waiting for Mount to Slew\n'
 
                 if rot_report == 0:
@@ -3828,6 +3830,7 @@ class Sequencer:
                 
         except:
             plog("Motion check faulted.")
+            plog(traceback.format_exc())
             if g_dev['mnt'].theskyx:
                 self.kill_and_reboot_theskyx(g_dev['mnt'].current_icrs_ra, g_dev['mnt'].current_icrs_dec)
             else:
@@ -3921,7 +3924,7 @@ class Sequencer:
             else:
                 try:
                     result['FWHM'] = 4
-                    result['mean_focus'] = g_dev['foc'].focuser.Position*g_dev['foc'].steps_to_micron
+                    result['mean_focus'] = g_dev['foc'].get_position()
                 except:
                     plog(traceback.format_exc())
                     breakpoint()
@@ -3981,7 +3984,7 @@ class Sequencer:
                     return
             else:
                 result['FWHM'] = 4
-                result['mean_focus'] = g_dev['foc'].focuser.Position*g_dev['foc'].steps_to_micron
+                result['mean_focus'] = g_dev['foc'].get_position()
             try:
                 spot = result['FWHM']
                 lsources = result['No_of_sources']
@@ -4050,9 +4053,9 @@ class Sequencer:
             
             
             rot_report=0
-            while g_dev['foc'].focuser.IsMoving or \
+            while g_dev['foc'].is_moving() or \
                   g_dev['mnt'].mount.Slewing:
-                if g_dev['foc'].focuser.IsMoving: st += 'Waiting for Focuser to shift.\n'
+                if g_dev['foc'].is_moving(): st += 'Waiting for Focuser to shift.\n'
                 if g_dev['mnt'].mount.Slewing: st += 'Waiting for Mount to Slew\n'
 
                 if rot_report == 0:
@@ -4075,6 +4078,7 @@ class Sequencer:
                 
         except:
             plog("Motion check faulted.")
+            plog(traceback.format_exc())
             if g_dev['mnt'].theskyx:
                 self.kill_and_reboot_theskyx(g_dev['mnt'].current_icrs_ra, g_dev['mnt'].current_icrs_dec)
             else:
@@ -4141,7 +4145,7 @@ class Sequencer:
         start_ra = g_dev['mnt'].mount.RightAscension
         start_dec = g_dev['mnt'].mount.Declination
         if begin_at is None:  #  ADDED 20120821 WER
-            foc_start = g_dev['foc'].focuser.Position*g_dev['foc'].steps_to_micron
+            foc_start = g_dev['foc'].get_position()
         else:
             foc_start = begin_at  #In this case we start at a place close to a 3 point minimum.
             g_dev['foc'].guarded_move((foc_start)*g_dev['foc'].micron_to_steps)
@@ -4154,9 +4158,9 @@ class Sequencer:
             
             
             rot_report=0
-            while g_dev['foc'].focuser.IsMoving or \
+            while g_dev['foc'].is_moving() or \
                   g_dev['mnt'].mount.Slewing:
-                if g_dev['foc'].focuser.IsMoving: st += 'Waiting for Focuser to shift.\n'
+                if g_dev['foc'].is_moving(): st += 'Waiting for Focuser to shift.\n'
                 if g_dev['mnt'].mount.Slewing: st += 'Waiting for Mount to Slew\n'
                 
                 if rot_report == 0:
@@ -4179,6 +4183,7 @@ class Sequencer:
                 
         except:
             plog("Motion check faulted.")
+            plog(traceback.format_exc())
             if g_dev['mnt'].theskyx:
                 self.kill_and_reboot_theskyx(g_dev['mnt'].current_icrs_ra, g_dev['mnt'].current_icrs_dec)
             else:
@@ -4237,7 +4242,7 @@ class Sequencer:
                 return
         else:
             result['FWHM'] = 4
-            result['mean_focus'] = g_dev['foc'].focuser.Position*g_dev['foc'].steps_to_micron
+            result['mean_focus'] = g_dev['foc'].get_position()
         try:
             spot1 = result['FWHM']
             foc_pos1 = result['mean_focus']
@@ -4264,7 +4269,7 @@ class Sequencer:
                 return
         else:
             result['FWHM'] = 5
-            result['mean_focus'] = g_dev['foc'].focuser.Position*g_dev['foc'].steps_to_micron
+            result['mean_focus'] = g_dev['foc'].get_position()
         try:
             spot2 = result['FWHM']
             foc_pos2 = result['mean_focus']
@@ -4290,7 +4295,7 @@ class Sequencer:
                 return
         else:
             result['FWHM'] = 6
-            result['mean_focus'] = g_dev['foc'].focuser.Position*g_dev['foc'].steps_to_micron
+            result['mean_focus'] = g_dev['foc'].get_position()
         try:
             spot3 = result['FWHM']
             foc_pos3 = result['mean_focus']
@@ -4317,7 +4322,7 @@ class Sequencer:
                 return
         else:
             result['FWHM'] = 6.5
-            result['mean_focus'] = g_dev['foc'].focuser.Position*g_dev['foc'].steps_to_micron
+            result['mean_focus'] = g_dev['foc'].get_position()
         try:
             spot4 = result['FWHM']
             foc_pos4 = result['mean_focus']
@@ -4343,7 +4348,7 @@ class Sequencer:
                 return
         else:
             result['FWHM'] = 5.75
-            result['mean_focus'] = g_dev['foc'].focuser.Position*g_dev['foc'].steps_to_micron
+            result['mean_focus'] = g_dev['foc'].get_position()
         try:
             spot5 = result['FWHM']
             foc_pos5 = result['mean_focus']
@@ -4392,7 +4397,7 @@ class Sequencer:
                     return
             else:
                 result['FWHM'] = new_spot
-                result['mean_focus'] = g_dev['foc'].focuser.Position*g_dev['foc'].steps_to_micron
+                result['mean_focus'] = g_dev['foc'].get_position()
             try:
                 spot6 = result['FWHM']
                 foc_pos4 = result['mean_focus']

@@ -403,7 +403,7 @@ class Focuser:
     def guarded_move(self, to_focus):
         try:
              if self.theskyx:
-                self.focuser.focPosition =  int(float(self.reference) * self.micron_to_steps)  
+                #self.focuser.focPosition =  int(float(self.reference) * self.micron_to_steps)  
                 #print (self.focuser.focPosition())
                 requestedPosition=int(to_focus * self.micron_to_steps)
                 difference_in_position=self.focuser.focPosition() - requestedPosition
@@ -430,10 +430,15 @@ class Focuser:
                     #plog(">f")
         except:
             plog("AF Guarded move failed.")
+            plog (traceback.format_exc())
 
 
 
-
+    def is_moving(self):
+        if self.theskyx:
+            return False
+        else:
+            return self.focuser.IsMoving 
 
 
     def move_relative_command(self, req: dict, opt: dict):
