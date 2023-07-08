@@ -45,7 +45,7 @@ site_config = {
     # Manual mode turns all automation off. 
     # The scope will only do what you tell it
     # This DOESN'T turn some safetys off 
-    'scope_in_manual_mode' : True,
+    'scope_in_manual_mode' : False,
     'mount_reference_model_off': True,
     'sun_checks_off': False,
     'altitude_checks_off': False,
@@ -149,8 +149,8 @@ site_config = {
     'pointing_calibration_on_startup': False,
     'periodic_focus_time' : 2.0, # This is a time, in hours, over which to bypass automated focussing (e.g. at the start of a project it will not refocus if a new project starts X hours after the last focus)
     'stdev_fwhm' : 0.5, # This is the expected variation in FWHM at a given telescope/camera/site combination. This is used to check if a fwhm is within normal range or the focus has shifted
-    'focus_exposure_time': 30, # Exposure time in seconds for exposure image
-    'pointing_exposure_time': 30, # Exposure time in seconds for exposure image
+    'focus_exposure_time': 15, # Exposure time in seconds for exposure image
+    'pointing_exposure_time': 15, # Exposure time in seconds for exposure image
     
 
     'focus_trigger' : 5.0, # What FWHM increase is needed to trigger an autofocus
@@ -726,7 +726,7 @@ site_config = {
                 'readout_mode':  'Normal',
                 'readout_speed': 0.08,
                 'readout_seconds': 12.5,
-                'smart_stack_exposure_time' : 10,
+                'smart_stack_exposure_time' : 30,
                 'saturate':   65000 ,   # e-.  This is a close guess, not measured, but taken from data sheet.
                 'max_linearity': 65000,
                 'fullwell_capacity': 65000,  #e-.   We need to sort out the units properly NB NB NB
@@ -741,7 +741,7 @@ site_config = {
                 #'max_res_bin':  [1, 1, 0.269],    #  Matched to seeing situation by owner
                 #'bin_modes':  [[1, 1, 0.269],[2, 2, 0.538],[3, 3, 0.807],[4, 4, 1.076]], #  , [2, 2, 2.13], [3, 3, 3.21], [4, 4, 4.27]],   #Meaning no binning choice if list has only one entry, default should be first.
                 #'pix_scale': 0.637,
-                '1x1_pix_scale': 0.637,    #  This is the 1x1 binning pixelscale
+                '1x1_pix_scale': 0.523,    #  This is the 1x1 binning pixelscale
                 'native_bin': 1, # Needs to be simple, it will recalculate things on the 1x1 binning pixscale above.
                 
                 # The drizzle_value is by the new pixelscale

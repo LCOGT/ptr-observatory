@@ -998,9 +998,9 @@ class Mount:
 
         icrs_ra, icrs_dec = self.get_mount_coordinates()
         
-        plog ("********")
-        plog ("mount icrs_ra " + str(icrs_ra))
-        plog ("mount icrs_dec " + str(icrs_dec))
+       # plog ("********")
+        #plog ("mount icrs_ra " + str(icrs_ra))
+        #plog ("mount icrs_dec " + str(icrs_dec))
 
         # MTF has commented out this section because it is not working. 
         # Not necessarily deleting it, 
@@ -1158,8 +1158,8 @@ class Mount:
             g_dev['obs'].send_to_user("Slewing telescope to:  " + str( self.object),  p_level="INFO")
         
         
-        print ("ra sent to go_coord " + str(ra))
-        print ("dec sent to go_coord " + str(dec))
+        #print ("ra sent to go_coord " + str(ra))
+        #print ("dec sent to go_coord " + str(dec))
         
         if object_is_moon:
             g_dev['obs'].time_of_last_slew=time.time()
@@ -1236,7 +1236,7 @@ class Mount:
             #    pier_east = 0
          #Update incoming ra and dec with mounting offsets.
 
-        plog('starting pier side: ' + str(previous_pier_side) + "   Temp reporting")
+        #plog('starting pier side: ' + str(previous_pier_side) + "   Temp reporting")
 
         #print ("ra without delta " + str(ra))
         #print ("dec without delta " + str(dec))
@@ -1310,7 +1310,7 @@ class Mount:
             try:
                 g_dev['obs'].time_of_last_slew=time.time()
                 #self.mount.SlewToCoordinatesAsync(self.ra_mech*RTOH, self.dec_mech*RTOD)  #Is this needed?
-                plog('actual sent ra: ' + str(ra) + ' dec: ' + str(dec))
+                #plog('actual sent ra: ' + str(ra) + ' dec: ' + str(dec))
                 self.mount.SlewToCoordinatesAsync(ra, dec)  #Is this needed?
                 wait_for_slew() 
             except Exception as e:
@@ -1344,7 +1344,7 @@ class Mount:
             
             # Make sure the current pier_side variable is set
             g_dev["mnt"].pier_side=self.mount.sideOfPier
-            print ("New Side Of Pier: "+ str(g_dev["mnt"].pier_side)+ " temp reporting")
+            #print ("New Side Of Pier: "+ str(g_dev["mnt"].pier_side)+ " temp reporting")
             if previous_pier_side == g_dev["mnt"].pier_side or self.can_report_destination_pierside:
                 successful_move=1
             else:
