@@ -2528,7 +2528,7 @@ class Sequencer:
                         #break
                 if filter_identified == 0:
                     plog ("Could not find filter: "+str(filter_name) +" in main filter list. Removing it from flat filter list.")
-                    pop_list.delete(filter_name)
+                    pop_list.remove(filter_name)
 
             if morn:
                 pop_list.reverse()
@@ -2593,7 +2593,7 @@ class Sequencer:
                 scale = 1
                 self.estimated_first_flat_exposure = False
                 
-                slow_report_timer=time.time()
+                slow_report_timer=time.time()-180
                 
                 #if current_filter == 'rp':  breakpoint()
                 while (acquired_count < flat_count):

@@ -537,14 +537,13 @@ class Observatory:
         #g_dev['obs'].open_and_enabled_to_observe = True
         #g_dev['seq'].sky_flat_script({}, {}, morn=False)
         # g_dev['seq'].extensive_focus_script(req2,opt)
-        #req = {'bin1': True, 'bin2': False, 'bin3': False, 'bin4': False, 'numOfBias': 63, \
-        #        'numOfDark': 31, 'darkTime': 75, 'numOfDark2': 31, 'dark2Time': 75, \
-         #       'hotMap': True, 'coldMap': True, 'script': 'genBiasDarkMaster', }  #This specificatin is obsolete
-        #opt = {}
-        # No action needed on  the enclosure at this level
-        # self. enc_status)
-        # NB The above put dome closed and telescope at Park, Which is where it should have been upon entry.
-        #g_dev['seq'].bias_dark_script(req, opt, morn=True)
+        
+        
+        # req = {'bin1': True, 'bin2': False, 'bin3': False, 'bin4': False, 'numOfBias': 63, \
+        #         'numOfDark': 31, 'darkTime': 75, 'numOfDark2': 31, 'dark2Time': 75, \
+        #         'hotMap': True, 'coldMap': True, 'script': 'genBiasDarkMaster', }  #This specificatin is obsolete
+        # opt = {}        
+        # g_dev['seq'].bias_dark_script(req, opt, morn=True)
         
         # Pointing
         #req = {'time': self.config['focus_exposure_time'],  'alias':  str(self.config['camera']['camera_1_1']['name']), 'image_type': 'focus'}   #  NB Should pick up filter and constats from config

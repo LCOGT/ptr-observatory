@@ -127,7 +127,7 @@ site_config = {
     
 
     
-    'safety_check_period': 45,   #MF's original setting.
+    'safety_check_period': 300,   #MF's original setting.
     #'maximum_roof_opens_per_evening' : 4,
     #'roof_open_safety_base_time' : 15, # How many minutes to use as the default retry time to open roof. This will be progressively multiplied as a back-off function.
     'closest_distance_to_the_sun': 45, # Degrees. For normal pointing requests don't go this close to the sun. 
@@ -141,7 +141,7 @@ site_config = {
     'auto_eve_bias_dark': False,
     'auto_midnight_moonless_bias_dark': True,
     'auto_eve_sky_flat': True,
-    'eve_sky_flat_sunset_offset': -20.5,  #  Minutes  neg means before, + after.
+    'eve_sky_flat_sunset_offset': -45.5,  #  Minutes  neg means before, + after.
     'eve_cool_down_open' : -60.0,
     'auto_morn_sky_flat': True,
     'auto_morn_bias_dark': False,
@@ -515,29 +515,27 @@ site_config = {
                         #['w',     [0,  0],     0, 72.7, [1.00 ,  72], 'PL'],    #0.   For sequencer autofocus  consider foc or f filter
                         #['focus', [0,  0],     0, 148, [1.00 ,  72], 'focus'],    #0.
                         ['lum',    [0,  0],     0, 75, [1.00 ,  72], 'PhLum'],    #1.
-                        ['red',    [1,  1],     0, 50, [1.00 , 119], 'PhRed'],    #2.
-                        ['green',    [2,  2],     0, 16, [1.00 , 113], 'PhGreen'],    #3.
-                        ['blue',    [3,  3],     600, 25, [0.80 ,  97], 'PhBlue'],    #4.
-                        ['ha',    [4,  4],     400, 2.634, [0.80 ,  97], 'PhBlue'],    #4.
+                        ['pr',    [1,  1],     0, 50, [1.00 , 119], 'PhRed'],    #2.
+                        ['pg',    [2,  2],     0, 30, [1.00 , 113], 'PhGreen'],    #3.
+                        ['pb',    [3,  3],     0, 30, [0.80 ,  97], 'PhBlue'],    #4.
+                        ['ha',    [4,  4],     0, 4.634, [0.80 ,  97], 'PhBlue'],    #4.
                         #['PR',    [1,  1],     0, 170, [1.00 , 119], 'PhBlue'],    #2.
                         #['PG',    [2,  2],     0, 220, [1.00 , 113], 'PhGreen'],    #3.
                         #['PB',    [3,  3],     0, 300, [0.80 ,  97], 'PhRed'],    #4.
-                        ['o3',    [5,  5],     400, 4.728, [5.00 , 200], 'Halpha'],    #5.
-                        ['s2',    [6,  6],     400, 3.52, [4.00 , 200], 'OIII']],    #6.
+                        ['o3',    [5,  5],     0, 4.728, [5.00 , 200], 'Halpha'],    #5.
+                        ['s2',    [6,  6],     0, 3.52, [4.00 , 200], 'OIII']],    #6.
                         #['s2',    [7,  7],     0, 58.239, [10.0,  200], 'SII']],    #7.
                         #['air',   [7,  7], -1000, 100., [1.00,   70], 'air'],    #8.
                         #['gooble',  [6,  6],     0, .221, [   0,    0], 'dark'],   #9.
                         #['LRGB',  [0,  0],     0, .221, [   0,    0], 'LRGB']],   #10.
 
-                
-                'focus_filter' : 'lum',
 
                 'filter_screen_sort':  ['s2','o3','ha','pb','pg','pr','lum'],   #  don't use narrow yet,  8, 10, 9], useless to try.
-
+                'override_automatic_filter_gains': False,
 
                 
                 #'filter_sky_sort': ['ha','o3','s2','v','pb','ip','lum']    #No diffuser based filters
-                'filter_sky_sort': ['ha','o3','s2','v','pb','ip','lum']    #No diffuser based filters
+                'filter_sky_sort': ['s2','o3','ha','pb','pg','pr','lum']    #No diffuser based filters
                 
 
 
@@ -559,9 +557,9 @@ site_config = {
     'camera': {
         'camera_1_1': {
             'parent': 'telescope1',
-            'name': 'sro002ms',      #  Important because this points to a server file structure by that name.
-            'desc':  'SBIG16803',
-            'service_date': '20211111',
+            'name': 'sro002sbig6303',      #  Important because this points to a server file structure by that name.
+            'desc':  'SBIG6303',
+            'service_date': '20230701',
             'driver': "CCDSoft2XAdaptor.ccdsoft5Camera",  # "ASCOM.QHYCCD.Camera", ##  'ASCOM.FLI.Kepler.Camera',
             
             
@@ -578,7 +576,7 @@ site_config = {
                 'hold_flats_in_memory': True, # If there is sufficient memory ... OR .... not many flats, it is faster to keep the flats in memory.
 
                 
-                'squash_on_x_axis' : True,
+                'squash_on_x_axis' : False,
                 
                 
                 
@@ -619,7 +617,7 @@ site_config = {
                'flipx_jpeg' : False,
                'flipy_jpeg' : False,
                'rotate180_jpeg' : False,
-               'rotate90_jpeg' : True,
+               'rotate90_jpeg' : False,
                'rotate270_jpeg' : False,
                
                # For large fields of view, crop the images down to solve faster.                 
@@ -702,7 +700,7 @@ site_config = {
                 'east_offset': 0.0,     #  Not sure why these three are even here.
                 'rotation': 0.0,        #  Probably remove.
                 'min_exposure': 0.2,
-                'min_flat_exposure' : 3.0, # For certain shutters, short exposures aren't good for flats. Some CMOS have banding in too short an exposure. Largely applies to ccds though.
+                'min_flat_exposure' : 1.0, # For certain shutters, short exposures aren't good for flats. Some CMOS have banding in too short an exposure. Largely applies to ccds though.
                 'max_flat_exposure' : 45.0, # Realistically there should be a maximum flat_exposure that makes sure flats are efficient and aren't collecting actual stars.
                 'max_exposure': 3600,
                 'max_daytime_exposure': 0.0001,
@@ -710,17 +708,16 @@ site_config = {
                 'min_subframe':  [128, 128],
                
                 
-                'cycle_time':  12.5,  # 3x3 requires a 1, 1 reaout then a software bin, so slower.
+                'cycle_time':  8,  # 3x3 requires a 1, 1 reaout then a software bin, so slower.
                 'rbi_delay':  0.,      #  This being zero says RBI is not available, eg. for SBIG.
                 'is_cmos':  False,
                 'is_color':  False,
                 'bayer_pattern':  None,    #  'RGGB" is a valid string in camera is color.
                 'can_set_gain':  True,
-                'camera_gain':   0.45, #[10., 10., 10., 10.],     #  One val for each binning.
+                'camera_gain':   1.27, #[10., 10., 10., 10.],     #  One val for each binning.
                 'camera_gain_stdev':   0.15, #[10., 10., 10., 10.],     #  One val for each binning.
                 'read_noise':  1.92, #[9, 9, 9, 9],    #  All SWAGs right now
                 'read_noise_stdev':   0.003, #[10., 10., 10., 10.],     #  One val for each binning.
-                
                 #'reference_dark': [0.0, 0.0, 0.0, 0.0],     #  Might these best be pedastal values?  NO!
                                     #hdu.header['RDMODE'] = (self.config['camera'][self.name]['settings']['read_mode'], 'Camera read mode')
                     #hdu.header['RDOUTM'] = (self.config['camera'][self.name]['readout_mode'], 'Camera readout mode')
@@ -759,12 +756,12 @@ site_config = {
                 
                 'do_cosmics' : False,
                 #'dark_length' : 1,
-                'number_of_bias_to_collect' : 10,
-                'number_of_dark_to_collect' : 10,
+                'number_of_bias_to_collect' : 32,
+                'number_of_dark_to_collect' : 32,
                 'number_of_flat_to_collect' : 8,
-                'number_of_bias_to_store' : 128,
-                'number_of_dark_to_store' : 128,
-                'number_of_flat_to_store' : 63,
+                'number_of_bias_to_store' : 32,
+                'number_of_dark_to_store' : 32,
+                'number_of_flat_to_store' : 32,
                 
                 'dark_exposure': 75,
                 'has_darkslide':  False,
