@@ -2975,7 +2975,7 @@ sel
                         picklepayload=[
                             paths,
                             smartstackid,
-                            self.config["camera"][g_dev['cam'].name]["settings"]["is_osc"],
+                            False,
                             self.obsid_path,
                             pixscale,
                             self.config["camera"][g_dev['cam'].name]["settings"]["transpose_jpeg"],
@@ -2986,7 +2986,7 @@ sel
                             self.config["camera"][g_dev['cam'].name]["settings"]['rotate270_jpeg'],
                             pier_side,
                             self.config["camera"][g_dev['cam'].name]["settings"]["squash_on_x_axis"],
-                            self.config["camera"][g_dev['cam'].name]["settings"]["osc_bayer"],
+                            None,
                             g_dev['cam'].config["camera"][g_dev['cam'].name]["settings"]["saturate"],
                             g_dev['cam'].native_bin,
                             g_dev['cam'].config["camera"][g_dev['cam'].name]["settings"]["read_noise"],
@@ -3006,7 +3006,14 @@ sel
                                 "crop_preview_xright"
                             ]
                             ]
-                                            
+                    
+                    #print ("pierside")
+                    #print (pier_side)
+                    #print (picklepayload)
+                    #pickle.dump(picklepayload, open('subprocesses/testsmartstackpickle','wb')) 
+                    #sys.exit()
+                    
+                                           
                     smartstack_subprocess=subprocess.Popen(['python','subprocesses/SmartStackprocess.py'],stdin=subprocess.PIPE,stdout=subprocess.PIPE,bufsize=0)
                                      
                     pickle.dump(picklepayload, smartstack_subprocess.stdin)

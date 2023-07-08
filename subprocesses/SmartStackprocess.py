@@ -60,6 +60,11 @@ img = fits.open(
 imgdata = np.load(paths["red_path"] + paths["red_name01"].replace('.fits','.npy'))
 
 
+#Make sure there is a smartstack directory!
+if not os.path.exists(obsid_path+ "smartstacks/"):
+            os.makedirs(obsid_path+ "smartstacks/")
+ 
+
 
 reprojection_failed = False
                    
