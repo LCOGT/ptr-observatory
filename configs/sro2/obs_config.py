@@ -149,8 +149,8 @@ site_config = {
     'pointing_calibration_on_startup': False,
     'periodic_focus_time' : 2.0, # This is a time, in hours, over which to bypass automated focussing (e.g. at the start of a project it will not refocus if a new project starts X hours after the last focus)
     'stdev_fwhm' : 0.5, # This is the expected variation in FWHM at a given telescope/camera/site combination. This is used to check if a fwhm is within normal range or the focus has shifted
-    'focus_exposure_time': 10, # Exposure time in seconds for exposure image
-    'pointing_exposure_time': 20, # Exposure time in seconds for exposure image
+    'focus_exposure_time': 30, # Exposure time in seconds for exposure image
+    'pointing_exposure_time': 30, # Exposure time in seconds for exposure image
     
 
     'focus_trigger' : 5.0, # What FWHM increase is needed to trigger an autofocus
@@ -424,10 +424,10 @@ site_config = {
             #F4.9 setup
             'start_at_config_reference': True,
             'use_focuser_temperature': True,
-            'reference': 23750,    #  20210313  Nominal at 10C Primary temperature
+            'reference': 23000,    #  20210313  Nominal at 10C Primary temperature
             'ref_temp':  6265.0,    #  Update when pinning reference
             'coef_c': 0,   #  Negative means focus moves out as Primary gets colder
-            'coef_0': 23750,  #  Nominal intercept when Primary is at 0.0 C.
+            'coef_0': 23000,  #  Nominal intercept when Primary is at 0.0 C.
             'coef_date':  '20220914',    #This appears to be sensible result 44 points -13 to 3C'reference':  6431,    #  Nominal at 10C Primary temperature
             # #F9 setup
             # 'reference': 4375,    #   Guess 20210904  Nominal at 10C Primary temperature
@@ -514,16 +514,16 @@ site_config = {
                         
                         #['w',     [0,  0],     0, 72.7, [1.00 ,  72], 'PL'],    #0.   For sequencer autofocus  consider foc or f filter
                         #['focus', [0,  0],     0, 148, [1.00 ,  72], 'focus'],    #0.
-                        ['lum',    [0,  0],     0, 75, [1.00 ,  72], 'PhLum'],    #1.
+                        ['lum',    [0,  0],     0, 105, [1.00 ,  72], 'PhLum'],    #1.
                         ['pr',    [1,  1],     0, 50, [1.00 , 119], 'PhRed'],    #2.
-                        ['pg',    [2,  2],     0, 30, [1.00 , 113], 'PhGreen'],    #3.
-                        ['pb',    [3,  3],     0, 30, [0.80 ,  97], 'PhBlue'],    #4.
-                        ['ha',    [4,  4],     0, 4.634, [0.80 ,  97], 'PhBlue'],    #4.
+                        ['pg',    [2,  2],     0, 12, [1.00 , 113], 'PhGreen'],    #3.
+                        ['pb',    [3,  3],     0, 16, [0.80 ,  97], 'PhBlue'],    #4.
+                        ['ha',    [4,  4],     0, 2.792, [0.80 ,  97], 'PhBlue'],    #4.
                         #['PR',    [1,  1],     0, 170, [1.00 , 119], 'PhBlue'],    #2.
                         #['PG',    [2,  2],     0, 220, [1.00 , 113], 'PhGreen'],    #3.
                         #['PB',    [3,  3],     0, 300, [0.80 ,  97], 'PhRed'],    #4.
-                        ['o3',    [5,  5],     0, 4.728, [5.00 , 200], 'Halpha'],    #5.
-                        ['s2',    [6,  6],     0, 3.52, [4.00 , 200], 'OIII']],    #6.
+                        ['o3',    [5,  5],     0, 2.54, [5.00 , 200], 'Halpha'],    #5.
+                        ['s2',    [6,  6],     0, 3.94, [4.00 , 200], 'OIII']],    #6.
                         #['s2',    [7,  7],     0, 58.239, [10.0,  200], 'SII']],    #7.
                         #['air',   [7,  7], -1000, 100., [1.00,   70], 'air'],    #8.
                         #['gooble',  [6,  6],     0, .221, [   0,    0], 'dark'],   #9.
@@ -535,7 +535,7 @@ site_config = {
 
                 
                 #'filter_sky_sort': ['ha','o3','s2','v','pb','ip','lum']    #No diffuser based filters
-                'filter_sky_sort': ['s2','o3','ha','pb','pg','pr','lum']    #No diffuser based filters
+                'filter_sky_sort': ['o3','ha','s2','pg','pb','pr','lum']    #No diffuser based filters
                 
 
 
@@ -714,7 +714,7 @@ site_config = {
                 'is_color':  False,
                 'bayer_pattern':  None,    #  'RGGB" is a valid string in camera is color.
                 'can_set_gain':  True,
-                'camera_gain':   1.27, #[10., 10., 10., 10.],     #  One val for each binning.
+                'camera_gain':   1.00, #[10., 10., 10., 10.],     #  One val for each binning.
                 'camera_gain_stdev':   0.15, #[10., 10., 10., 10.],     #  One val for each binning.
                 'read_noise':  1.92, #[9, 9, 9, 9],    #  All SWAGs right now
                 'read_noise_stdev':   0.003, #[10., 10., 10., 10.],     #  One val for each binning.

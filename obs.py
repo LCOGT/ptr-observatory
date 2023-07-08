@@ -529,8 +529,6 @@ class Observatory:
                 plog (str(filtertempgain) + " " + str(filter_gain_shelf[filtertempgain]))
         filter_gain_shelf.close()                
 
-        
-
         # breakpoint()
         #req2 = {'target': 'near_tycho_star', 'area': 150}
         #opt = {}
@@ -680,6 +678,7 @@ class Observatory:
             self.cmd_queue.queue.clear()
 
         plog("Stopping Exposure")
+        g_dev['cam'].expresult["stopped"] = True
         try:
             # if g_dev["cam"].exposure_busy:
             g_dev["cam"]._stop_expose()                # Should we try to flush the image array?

@@ -24,7 +24,7 @@ from astropy.table import Table
 from astropy.utils.exceptions import AstropyUserWarning
 import warnings
 warnings.simplefilter('ignore', category=AstropyUserWarning)
-import matplotlib.pyplot as plt
+#import matplotlib.pyplot as plt
 
 
 def radial_profile(data, center):

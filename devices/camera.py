@@ -871,6 +871,7 @@ class Camera:
 
     def _theskyx_stop_expose(self):
         self.camera.AbortExposure()
+        g_dev['cam'].expresult["stopped"] = True
 
     def _theskyx_imageavailable(self):
         plog(self.camera.IsExposureComplete)
@@ -928,6 +929,7 @@ class Camera:
 
     def _maxim_stop_expose(self):
         self.camera.AbortExposure()
+        g_dev['cam'].expresult["stopped"] = True
 
     def _maxim_imageavailable(self):
         return self.camera.ImageReady
@@ -989,6 +991,7 @@ class Camera:
 
     def _ascom_stop_expose(self):
         self.camera.StopExposure()  # ASCOM also has an AbortExposure method.
+        g_dev['cam'].expresult["stopped"] = True
 
     def _ascom_getImageArray(self):
         return np.asarray(self.camera.ImageArray)
@@ -1049,11 +1052,13 @@ class Camera:
         qhycam.so.ExpQHYCCDSingleFrame(qhycam.camera_params[qhycam_id]['handle'])
        
     def _qhyccd_stop_expose(self):
+        g_dev['cam'].expresult["stopped"] = True
         try:
             qhycam.so.CancelQHYCCDExposingAndReadout(qhycam.camera_params[qhycam_id]['handle'])
         except:
             plog(traceback.format_exc()) 
             #print (success)
+        
        
     def _qhyccd_getImageArray(self):
         image_width_byref = c_uint32()
@@ -1749,6 +1754,7 @@ class Camera:
     def stop_command(self, required_params, optional_params):
         """Stop the current exposure and return the camera to Idle state."""
         self._stop_expose()
+        g_dev['cam'].expresult["stopped"] = True
         self.exposure_busy = False
         self.exposure_halted = True
 
