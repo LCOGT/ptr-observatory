@@ -2110,9 +2110,12 @@ class Camera:
                         camera_gain_estimate_image=copy.deepcopy(self.img)
                         # First we debias,dedark and flatfield the image with the previous master
                         try:
-                            camera_gain_estimate_image = camera_gain_estimate_image - self.biasFiles[str(1)]
-                            camera_gain_estimate_image = camera_gain_estimate_image - (self.darkFiles[str(1)] * exposure_time)
                             
+                            try:
+                                camera_gain_estimate_image = camera_gain_estimate_image - self.biasFiles[str(1)]
+                                camera_gain_estimate_image = camera_gain_estimate_image - (self.darkFiles[str(1)] * exposure_time)
+                            except:
+                                pass
                             
                             # Attempt to flatfield the image, which may not work if
                             # This is the first time the filter is being run.
@@ -2155,6 +2158,7 @@ class Camera:
                         except Exception as e:
                             plog("Could not estimate the camera gain from this flat.")
                             plog(e) 
+                            #plog(traceback.format_exc()) 
                             self.expresult["camera_gain"] = np.nan
                             
                         # # Quick flat flat frame
