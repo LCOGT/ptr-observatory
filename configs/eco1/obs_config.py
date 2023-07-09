@@ -50,7 +50,7 @@ site_config = {
     'sun_checks_off': False,
     'altitude_checks_off': False,
     
-    'debug_mode': True,
+    'debug_mode': False,
     'daytime_exposure_time_safety_off': False,
     
     #'debug_site_mode': False,
@@ -757,9 +757,9 @@ site_config = {
                 'number_of_bias_to_collect' : 10,
                 'number_of_dark_to_collect' : 10,
                 'number_of_flat_to_collect' : 8,
-                'number_of_bias_to_store' : 128,
-                'number_of_dark_to_store' : 128,
-                'number_of_flat_to_store' : 63,
+                'number_of_bias_to_store' : 64,
+                'number_of_dark_to_store' : 64,
+                'number_of_flat_to_store' : 32,
                 
                 'dark_exposure': 75,
                 'has_darkslide':  False,

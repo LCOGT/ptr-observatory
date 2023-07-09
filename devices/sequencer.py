@@ -1781,7 +1781,7 @@ class Sequencer:
     def kill_and_reboot_theskyx(self, returnra, returndec): # Return to a given ra and dec or send -1,-1 to remain at park
         os.system("taskkill /IM TheSkyX.exe /F")
         os.system("taskkill /IM TheSky64.exe /F")
-        time.sleep(60) # give it time to settle down.
+        time.sleep(120) # give it time to settle down.
         #breakpoint()
         Mount(self.config['mount']['mount1']['driver'], 
                        g_dev['obs'].name,
@@ -1797,7 +1797,7 @@ class Sequencer:
             Camera(self.config['camera']['camera_1_1']['driver'], 
                             g_dev['cam'].name, 
                             self.config)
-        
+        time.sleep(10)
         if self.config['filter_wheel']['filter_wheel1']['driver'] == 'CCDSoft2XAdaptor.ccdsoft5Camera':
             FilterWheel('CCDSoft2XAdaptor.ccdsoft5Camera', 
                                  g_dev['obs'].name, 
