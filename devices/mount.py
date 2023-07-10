@@ -811,8 +811,13 @@ class Mount:
         action = command['action']
         self.check_connect()
         if action == "go":
+            
+            #breakpoint()
 
             self.go_command(req, opt)   #  Entered from Target Explorer or Telescope tabs.
+            
+            #if opt['do_centering_rount']
+            
         elif action == "stop":
             self.stop_command(req, opt)
         elif action == "home":
@@ -1173,7 +1178,8 @@ class Mount:
             self.go_coord(ra, dec, tracking_rate_ra=tracking_rate_ra, tracking_rate_dec = tracking_rate_dec)
             g_dev['obs'].send_to_user("Slew Complete.")
             
-        
+        if opt['do_centering_routine']:
+            g_dev['seq'].centering_exposure()
 
         # On successful movement of telescope reset the solving timer
         g_dev['obs'].last_solve_time = datetime.datetime.now() - datetime.timedelta(days=1)

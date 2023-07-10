@@ -4899,6 +4899,14 @@ class Sequencer:
 
     def centering_exposure(self):
 
+        if not (g_dev['events']['Civil Dusk'] < ephem.now() < g_dev['events']['Civil Dawn']):
+            plog("Too bright to consider platesolving!")
+            plog("Hence too bright to do a centering exposure.")   
+            g_dev["obs"].send_to_user("Too bright to auto-center the image.")  
+            
+            return
+        
+        
         req = {'time': self.config['pointing_exposure_time'],  'alias':  str(self.config['camera']['camera_1_1']['name']), 'image_type': 'pointing'}   #  NB Should pick up filter and constats from config
         opt = {'area': 100, 'count': 1, 'filter': 'focus'}
         
