@@ -2884,7 +2884,7 @@ class Camera:
                         + "-"
                         + g_dev["day"]
                         + "-"
-                        + next_seq + "-" + str(exposure_time).replace('.','d')
+                        + next_seq
                         + "-"
                         + im_type
                         + "00.fits"
