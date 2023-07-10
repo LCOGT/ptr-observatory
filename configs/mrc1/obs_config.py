@@ -43,6 +43,7 @@ site_config = {
     'sun_checks_off': False,
     'altitude_checks_off': False,    
     'daytime_exposure_time_safety_off': False,
+    'degrees_to_avoid_zenith_area_for_calibrations': 0, 
 
     # Auto-cenering is great .... unless you are polar aligning
     'turn_auto_centering_off': False,

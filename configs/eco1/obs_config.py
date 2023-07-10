@@ -49,9 +49,11 @@ site_config = {
     'mount_reference_model_off': True,
     'sun_checks_off': False,
     'altitude_checks_off': False,
-    
-    'debug_mode': False,
     'daytime_exposure_time_safety_off': False,
+    'degrees_to_avoid_zenith_area_for_calibrations': 20,    
+    
+    'debug_mode': True,
+    
     
     #'debug_site_mode': False,
     

@@ -47,6 +47,7 @@ site_config = {
     # Auto-centering is great.... unless you are polar aligning 
     'turn_auto_centering_off': False,
     #'observatory_location': site_name.lower(),
+    'degrees_to_avoid_zenith_area_for_calibrations': 0, 
     
     'debug_site_mode': False,
     

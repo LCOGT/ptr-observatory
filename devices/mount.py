@@ -1472,6 +1472,15 @@ class Mount:
         az, alt = self.astro_events.flat_spot_now()
         self.unpark_command()        
 
+        plog ("Requested Flat Spot, az: " + str(az) + " alt: " + str(alt))
+
+        if self.config['degrees_to_avoid_zenith_area_for_calibrations'] > 0:
+            #breakpoint()
+            if (90-alt) < self.config['degrees_to_avoid_zenith_area_for_calibrations']:
+                alt=90-self.config['degrees_to_avoid_zenith_area_for_calibrations']
+                plog ("adjusted altitude to " + str(alt) + "to avoid the zenith region")
+                
+
         try:
             self.mount.Tracking = True
         except:

@@ -50,8 +50,9 @@ site_config = {
     'scope_in_manual_mode' : False,
     'mount_reference_model_off': False,
     'sun_checks_off': False,
-    'altitude_checks_off': False,    
+    'altitude_checks_off': False,  
     'daytime_exposure_time_safety_off': False,
+    'degrees_to_avoid_zenith_area_for_calibrations': 0, 
     
     #'debug_site_mode': False,
     # Auto-cenering is great .... unless you are polar aligning
