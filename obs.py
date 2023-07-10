@@ -678,11 +678,12 @@ class Observatory:
             self.cmd_queue.queue.clear()
 
         plog("Stopping Exposure")
-        g_dev['cam'].expresult["stopped"] = True
+        
         try:
             # if g_dev["cam"].exposure_busy:
             g_dev["cam"]._stop_expose()                # Should we try to flush the image array?
             g_dev["cam"].exposure_busy = False
+            g_dev['cam'].expresult["stopped"] = True
         except Exception as e:
             plog("Camera is not busy.", e)
             self.exposure_busy = False
