@@ -533,7 +533,7 @@ site_config = {
                 'focus_filter' : 'PL',
 
                 'filter_screen_sort':  [1],   # don't use narrow yet,  8, 10, 9], useless to try.
-                'filter_sky_sort': ['y','S2','N2','up','HA','CR','O3','zs','zp','Ic','PR','rp','JB','PG', \
+                'filter_sky_sort': ['S2','N2','up','HA','CR','O3','zs','zp','Ic','PR','rp','JB','PG', \
                                     'ip','Rc','JV','NIR','PB','gp','PL','EXO','air'],
                 'override_automatic_filter_gains': False, # This ignores the automatically estimated filter gains and starts with the values from the config file
                 
