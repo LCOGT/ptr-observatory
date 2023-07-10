@@ -302,7 +302,7 @@ site_config = {
             'west_clutch_dec_correction': 0.0,
             'east_flip_ra_correction':   0.0, # Initially -0.039505313212952586,
             'east_flip_dec_correction':  0.0,  #initially  -0.39607711292257797,
-
+            'settings': {
                 'latitude_offset': 0.0,     # Decimal degrees, North is Positive   These *could* be slightly different than site.
                 'longitude_offset': 0.0,   # Decimal degrees, West is negative  #NB This could be an eval( <<site config data>>))
                 'elevation_offset': 0.0,  # meters above sea level
@@ -337,6 +337,8 @@ site_config = {
                     }
                 },
             },
+
+    },
 
 
 
