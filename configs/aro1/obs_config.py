@@ -303,7 +303,7 @@ site_config = {
             'west_clutch_dec_correction': 0.0,
             'east_flip_ra_correction':   0.0, # Initially -0.039505313212952586,
             'east_flip_dec_correction':  0.0,  #initially  -0.39607711292257797,
-
+            'settings': {
                 'latitude_offset': 0.0,     # Decimal degrees, North is Positive   These *could* be slightly different than site.
                 'longitude_offset': 0.0,   # Decimal degrees, West is negative  #NB This could be an eval( <<site config data>>))
                 'elevation_offset': 0.0,  # meters above sea level
@@ -338,6 +338,8 @@ site_config = {
                     }
                 },
             },
+
+    },
 
 
 
@@ -532,7 +534,7 @@ site_config = {
                 'focus_filter' : 'PL',
 
                 'filter_screen_sort':  [1],   # don't use narrow yet,  8, 10, 9], useless to try.
-                'filter_sky_sort': ['y','S2','N2','up','HA','CR','O3','zs','zp','Ic','PR','rp','JB','PG', \
+                'filter_sky_sort': ['S2','N2','up','HA','CR','O3','zs','zp','Ic','PR','rp','JB','PG', \
                                     'ip','Rc','JV','NIR','PB','gp','PL','EXO','air'],
                 'override_automatic_filter_gains': False, # This ignores the automatically estimated filter gains and starts with the values from the config file
                 
