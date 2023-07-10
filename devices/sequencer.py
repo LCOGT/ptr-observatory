@@ -2381,7 +2381,7 @@ class Sequencer:
         return
 
 
-    def sky_flat_script(self, req, opt, morn=False):
+    def sky_flat_script(self, req, opt, morn=False, skip_moon_check=False):
         """
         If entered, put up a guard.
         if open conditions are acceptable then take a dark image of a dark screen, just for
@@ -2469,6 +2469,29 @@ class Sequencer:
             plog ("NOT DOING FLATS -- IT IS THE NIGHTIME!!")
             g_dev["obs"].send_to_user("A sky flat script request was rejected as it too dark.")            
             return
+        
+        # Moon check.
+        if (skip_moon_check==False):
+            # Moon current alt/az
+            currentaltazframe = AltAz(location=g_dev['mnt'].site_coordinates, obstime=Time.now())
+            moondata=get_moon(Time.now()).transform_to(currentaltazframe)
+            # Flatspot position.
+            flatspotaz, flatspotalt = self.astro_events.flat_spot_now()
+            temp_separation=((ephem.separation( (flatspotaz,flatspotalt), (moondata.az.deg,moondata.alt.deg))))
+            #breakpoint()
+            
+            if (moondata.alt.deg < -15):
+                plog ("Moon is far below the ground, alt " + str(moondata.alt.deg) + ", sky flats going ahead.")
+            elif temp_separation < 105:
+                plog ("Moon is in the sky and less than 105 degrees ("+str(temp_separation)+") away from the flat spot, skipping this flat time.")
+                return
+            #elif
+            
+            
+        
+        
+        
+        
         self.flats_being_collected = True
         self.sky_guard = True   #20220409 I think this is obsolete or unused.
         plog('Sky Flat sequence Starting.')
@@ -2557,8 +2580,35 @@ class Sequencer:
                 if time.time() >= self.time_of_next_slew:
                     if g_dev['mnt'].mount.AtParK:
                         g_dev['mnt'].unpark_command({}, {})
-                        
-                    g_dev['mnt'].slewToSkyFlatAsync()  
+                    
+                    not_too_close_to_zenith=False
+                    while not_too_close_to_zenith:
+                        alt, az = g_dev['mnt'].slewToSkyFlatAsync()  
+                        if self.config['degrees_to_avoid_zenith_area_for_calibrations'] > 0:
+                            #breakpoint()
+                            if (90-alt) < self.config['degrees_to_avoid_zenith_area_for_calibrations']:
+                                alt=90-self.config['degrees_to_avoid_zenith_area_for_calibrations']
+                                #plog ("Requested Flat Spot, az: " + str(az) + " alt: " + str(alt))
+                                #plog ("adjusted altitude to " + str(alt) + "to avoid the zenith region")
+                                plog ("waiting for the flat spot to move through the zenith")
+                                time.sleep(30)
+                                
+                                if g_dev['obs'].open_and_enabled_to_observe == False:
+                                    plog ("Observatory closed or disabled during flat script. Cancelling out of flat acquisition loop.")
+                                    filter_gain_shelf.close()
+                                    return
+                                
+                                # Check that Flat time hasn't ended
+                                if ephem.now() > ending:
+                                    plog ("Flat acquisition time finished. Breaking out of the flat loop.")
+                                    filter_gain_shelf.close()
+                                    return
+                                
+                            else:
+                                not_too_close_to_zenith=True
+                    
+                    
+                    
                     self.time_of_next_slew = time.time() + 600
                 
                 g_dev['obs'].scan_requests()
@@ -2680,7 +2730,30 @@ class Sequencer:
                                  slow_report_timer=time.time()
                              self.estimated_first_flat_exposure = False
                              if time.time() >= self.time_of_next_slew:
-                                g_dev['mnt'].slewToSkyFlatAsync()  
+                                not_too_close_to_zenith=False
+                                while not_too_close_to_zenith:
+                                    alt, az = g_dev['mnt'].slewToSkyFlatAsync()  
+                                    if self.config['degrees_to_avoid_zenith_area_for_calibrations'] > 0:
+                                        #breakpoint()
+                                        if (90-alt) < self.config['degrees_to_avoid_zenith_area_for_calibrations']:
+                                            alt=90-self.config['degrees_to_avoid_zenith_area_for_calibrations']
+                                            #plog ("Requested Flat Spot, az: " + str(az) + " alt: " + str(alt))
+                                            #plog ("adjusted altitude to " + str(alt) + "to avoid the zenith region")
+                                            plog ("waiting for the flat spot to move through the zenith")
+                                            time.sleep(30)
+                                            
+                                            if g_dev['obs'].open_and_enabled_to_observe == False:
+                                                plog ("Observatory closed or disabled during flat script. Cancelling out of flat acquisition loop.")
+                                                filter_gain_shelf.close()
+                                                return
+                                            
+                                            # Check that Flat time hasn't ended
+                                            if ephem.now() > ending:
+                                                plog ("Flat acquisition time finished. Breaking out of the flat loop.")
+                                                filter_gain_shelf.close()
+                                                return                                            
+                                        else:
+                                            not_too_close_to_zenith=True  
                                 self.time_of_next_slew = time.time() + 600
                              self.next_flat_observe = time.time() + 10
                         elif morn and exp_time > max_exposure :  
@@ -2690,7 +2763,30 @@ class Sequencer:
                                  slow_report_timer=time.time()
                              self.estimated_first_flat_exposure = False
                              if time.time() >= self.time_of_next_slew:
-                                g_dev['mnt'].slewToSkyFlatAsync()  
+                                not_too_close_to_zenith=False
+                                while not_too_close_to_zenith:
+                                    alt, az = g_dev['mnt'].slewToSkyFlatAsync()  
+                                    if self.config['degrees_to_avoid_zenith_area_for_calibrations'] > 0:
+                                        #breakpoint()
+                                        if (90-alt) < self.config['degrees_to_avoid_zenith_area_for_calibrations']:
+                                            alt=90-self.config['degrees_to_avoid_zenith_area_for_calibrations']
+                                            #plog ("Requested Flat Spot, az: " + str(az) + " alt: " + str(alt))
+                                            #plog ("adjusted altitude to " + str(alt) + "to avoid the zenith region")
+                                            plog ("waiting for the flat spot to move through the zenith")
+                                            time.sleep(30)
+                                            
+                                            if g_dev['obs'].open_and_enabled_to_observe == False:
+                                                plog ("Observatory closed or disabled during flat script. Cancelling out of flat acquisition loop.")
+                                                filter_gain_shelf.close()
+                                                return
+                                            
+                                            # Check that Flat time hasn't ended
+                                            if ephem.now() > ending:
+                                                plog ("Flat acquisition time finished. Breaking out of the flat loop.")
+                                                filter_gain_shelf.close()
+                                                return                                            
+                                        else:
+                                            not_too_close_to_zenith=True  
                                 self.time_of_next_slew = time.time() + 600
                              self.next_flat_observe = time.time() + 10
                              exp_time = min_exposure
@@ -2700,7 +2796,30 @@ class Sequencer:
                             # If scope has gone to bed due to inactivity, wake it up!
                             if g_dev['mnt'].mount.AtParK:
                                 g_dev['mnt'].unpark_command({}, {})
-                                g_dev['mnt'].slewToSkyFlatAsync()  
+                                not_too_close_to_zenith=False
+                                while not_too_close_to_zenith:
+                                    alt, az = g_dev['mnt'].slewToSkyFlatAsync()  
+                                    if self.config['degrees_to_avoid_zenith_area_for_calibrations'] > 0:
+                                        #breakpoint()
+                                        if (90-alt) < self.config['degrees_to_avoid_zenith_area_for_calibrations']:
+                                            alt=90-self.config['degrees_to_avoid_zenith_area_for_calibrations']
+                                            #plog ("Requested Flat Spot, az: " + str(az) + " alt: " + str(alt))
+                                            #plog ("adjusted altitude to " + str(alt) + "to avoid the zenith region")
+                                            plog ("waiting for the flat spot to move through the zenith")
+                                            time.sleep(30)
+                                            
+                                            if g_dev['obs'].open_and_enabled_to_observe == False:
+                                                plog ("Observatory closed or disabled during flat script. Cancelling out of flat acquisition loop.")
+                                                filter_gain_shelf.close()
+                                                return
+                                            
+                                            # Check that Flat time hasn't ended
+                                            if ephem.now() > ending:
+                                                plog ("Flat acquisition time finished. Breaking out of the flat loop.")
+                                                filter_gain_shelf.close()
+                                                return                                            
+                                        else:
+                                            not_too_close_to_zenith=True  
                                 self.time_of_next_slew = time.time() + 600
                             
                             if self.stop_script_called:
@@ -2768,7 +2887,30 @@ class Sequencer:
                                 
                             # We only want to move after a successful set of independant binning flats
                             # If we move before we calculate exposure, we are wasting time slewing. 
-                            g_dev['mnt'].slewToSkyFlatAsync()
+                            not_too_close_to_zenith=False
+                            while not_too_close_to_zenith:
+                                alt, az = g_dev['mnt'].slewToSkyFlatAsync()  
+                                if self.config['degrees_to_avoid_zenith_area_for_calibrations'] > 0:
+                                    #breakpoint()
+                                    if (90-alt) < self.config['degrees_to_avoid_zenith_area_for_calibrations']:
+                                        alt=90-self.config['degrees_to_avoid_zenith_area_for_calibrations']
+                                        #plog ("Requested Flat Spot, az: " + str(az) + " alt: " + str(alt))
+                                        #plog ("adjusted altitude to " + str(alt) + "to avoid the zenith region")
+                                        plog ("waiting for the flat spot to move through the zenith")
+                                        time.sleep(30)
+                                        
+                                        if g_dev['obs'].open_and_enabled_to_observe == False:
+                                            plog ("Observatory closed or disabled during flat script. Cancelling out of flat acquisition loop.")
+                                            filter_gain_shelf.close()
+                                            return
+                                        
+                                        # Check that Flat time hasn't ended
+                                        if ephem.now() > ending:
+                                            plog ("Flat acquisition time finished. Breaking out of the flat loop.")
+                                            filter_gain_shelf.close()
+                                            return                                            
+                                    else:
+                                        not_too_close_to_zenith=True
                             if self.stop_script_called:
                                 g_dev["obs"].send_to_user("Cancelling out of calibration script as stop script has been called.")  
                                 filter_gain_shelf.close()

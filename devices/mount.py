@@ -1472,12 +1472,13 @@ class Mount:
         az, alt = self.astro_events.flat_spot_now()
         self.unpark_command()        
 
-        plog ("Requested Flat Spot, az: " + str(az) + " alt: " + str(alt))
+        
 
         if self.config['degrees_to_avoid_zenith_area_for_calibrations'] > 0:
             #breakpoint()
             if (90-alt) < self.config['degrees_to_avoid_zenith_area_for_calibrations']:
                 alt=90-self.config['degrees_to_avoid_zenith_area_for_calibrations']
+                plog ("Requested Flat Spot, az: " + str(az) + " alt: " + str(alt))
                 plog ("adjusted altitude to " + str(alt) + "to avoid the zenith region")
                 
 
@@ -1506,6 +1507,8 @@ class Mount:
             plog (traceback.format_exc())
             #plog ("NEED TO POINT TELESCOPE TO RA AND DEC, MOUNT DOES NOT HAVE AN ALTAZ request in the driver")
 
+        # return alt and az so the sky flat routine knows to wait. 
+        return alt, az
 
 
     def stop_command(self, req, opt):

@@ -553,7 +553,7 @@ class Observatory:
         
         #g_dev['seq'].sky_grid_pointing_run(max_pointings=25, alt_minimum=25)
         
-        g_dev['mnt'].slewToSkyFlatAsync(skip_open_test=True) 
+        #g_dev['mnt'].slewToSkyFlatAsync(skip_open_test=True) 
 
     def set_last_reference(self, delta_ra, delta_dec, last_time):
         mnt_shelf = shelve.open(self.obsid_path + "ptr_night_shelf/" + "last" + str(self.name))
