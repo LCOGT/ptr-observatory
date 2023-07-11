@@ -472,8 +472,7 @@ class Sequencer:
         #except:
         #    g_dev['obs'].enc_status = None
         
-        
-        
+
         if time.time()-self.pulse_timer >30:
             self.pulse_timer=time.time()
             if g_dev['obs'].debug_flag:
