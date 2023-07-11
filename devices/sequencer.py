@@ -831,12 +831,12 @@ class Sequencer:
                 # To the extent a project is not visible at a site, aws should not present it. If it is
                 # visible and passes the owners priority it should then be presented to the site.
 
-                if self.events_new is None:
-                    url = (
-                        "https://api.photonranch.org/api/events?site="
-                        + self.obs_id.upper()
-                    )
-                    self.events_new = reqs.get(url, timeout=20).json()    
+                #if self.events_new is None:
+                #    url = (
+                #        "https://api.photonranch.org/api/events?site="
+                #        + self.obs_id.upper()
+                #    )
+                #    self.events_new = reqs.get(url, timeout=20).json()    
                     
                     
                     

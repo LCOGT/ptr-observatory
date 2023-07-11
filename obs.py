@@ -399,7 +399,7 @@ class Observatory:
         self.smartstack_queue_thread.start()
         self.blocks = None
         self.projects = None
-        self.events_new = None
+        #self.events_new = None
         self.reset_last_reference()
         self.env_exists = os.path.exists(os.getcwd() + '\.env')  # Boolean, check if .env present
 
