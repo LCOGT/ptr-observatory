@@ -53,7 +53,7 @@ site_config = {
     'degrees_to_avoid_zenith_area_for_calibrations': 0, 
     
 
-    'debug_mode': True,
+    'debug_mode': False,
 
     
     #'debug_site_mode': False,

@@ -817,9 +817,9 @@ class Sequencer:
                     all_projects = reqs.post(url_proj, timeout=20).json()
                 except:
                     plog ("connection glitch in picking up projects")
-                self.projects = []
-                if len(all_projects) > 0 and len(self.blocks) > 0:
-                    self.projects = all_projects  # NOTE creating a list with a dict entry as item 0
+                #self.projects = []
+                #if len(all_projects) > 0 and len(self.blocks) > 0:
+                self.projects = all_projects  # NOTE creating a list with a dict entry as item 0
                 # Note the above does not load projects if there are no blocks scheduled.
                 # A sched block may or may not havean associated project.
 
@@ -844,7 +844,7 @@ class Sequencer:
                 
                 #blocks = g_dev['obs'].blocks
                 #projects = g_dev['obs'].projects
-                debug = True         
+                debug = False         
                 
                 if debug:
                     plog("# of Blocks, projects:  ", len(self.blocks),  len(self.projects))
@@ -856,80 +856,103 @@ class Sequencer:
                 # NB without deepcopy decrementing counts in blocks will be local to the machine an subject
                 # to over_write as the respons from AWS updates. This is particularly important for owner
                 # and background blocks.
+                #print (self.projects)
     
-                #First, sort blocks to be in ascending order, just to promote clarity. Remove expired projects.
-                for block in self.blocks:  #  This merges project spec into the blocks.
-                    for project in self.projects:
-    
+                skip_project_cycle=False
+                if 'message' in self.projects:
+                    if 'Internal server error' in str(self.projects['message']):
+                        plog ("internal server error in self.projects... skippping this round and moving to the next")
+                        skip_project_cycle=True
+                
+                
+                if not skip_project_cycle:
+                    #First, sort blocks to be in ascending order, just to promote clarity. Remove expired projects.
+                    for block in self.blocks:  #  This merges project spec into the blocks.
                         
-                        if block['project_id'] == project['project_name'] + '#' + project['created_at']:
-                            block['project'] = project
-                        else:
-                            block['project'] = None  #nb nb nb 20220920   this faults with 'string indices must be integers". WER
-   
-
-                for project in self.projects:
-                    if block['project_id']  != 'none':
                         
+                        for project in self.projects:
+                            #if block['project_id'].split("#")[0] == project['project_name']:
+                                #print("******************************")
+                                #print (block['project_id'].split("#")[0])
+                                #print (project['project_name'] )
+                                
+                                #breakpoint()
+                                
+                            try:
+                                if block['project_id'] == project['project_name'] + '#' + project['created_at']:
+                                    block['project'] = project
+                                    break
+                                else:
+                                    block['project'] = None  #nb nb nb 20220920   this faults with 'string indices must be integers". WER
+                            except:
+                                plog(traceback.format_exc())
+                                breakpoint()
     
-                        if block['project_id'] == project['project_name'] + '#' + project['created_at']:
-                            block['project'] = project
-                        else:
-                            block['project'] = None
-                    else:
-                        pass
-                    
-                '''
-                evaluate supplied projects for observable and mark as same. Discard
-                unobservable projects.  Projects may be "site" projects or 'ptr' (network wide:
-                All, Owner, PTR-network, North, South.)
-                    The westernmost project is offered to run unless there is a runnable scheduled block.
-                    for any given time, are the constraints met? Airmass < x, Moon Phaze < y, moon dist > z,
-                    flip rules
-    
-                '''
-                # breakpoint()
-                # #Figure out which are observable.  Currently only supports one target/proj
-                # NB Observing events without a project are "observable."
-                # observable = []
-                # for projects in projects:
-                #     ra = projects['project_targets']['ra']
-                #     dec = projects['project_targets']['dec']
-                #     sid = g_dev['mnt'].mount.SiderealTime
-                #     ha = tycho.reduceHA(sid - ra)
-                #     az, alt = transform_haDec_to_azAlt(ha, dec)
-                #     # Do not start a block within 15 min of end time???
-                #plog("Initial length:  ", len(blocks))
-
-                for block in self.blocks:
-                    now_date_timeZ = datetime.datetime.now().isoformat().split('.')[0] +'Z'
-                    if not self.block_guard \
-                        and (block['start'] <= now_date_timeZ < block['end']) \
-                        and not self.is_in_completes(block['event_id']):
-                        if block['project_id'] in ['none', 'real_time_slot', 'real_time_block']:
-                            self.block_guard = False   # Changed from True WER on 20221011@2:24 UTC
-                            return   # Do not try to execute an empty block.
-                        self.block_guard = True
-    
-                        if block['project'] == None:
-                            plog (block)
-                            plog ("Skipping a block that contains an empty project")
-                            return
-    
-                        g_dev['obs'].update()
-                        completed_block = self.execute_block(block)  #In this we need to ultimately watch for weather holds.
-                        try:
-                            self.append_completes(completed_block['event_id'])
-                        except:
-                            plog ("block complete append didn't work")
-                            plog(traceback.format_exc())
+                    # for project in self.projects:
+                    #     if block['project_id']  != 'none':
                             
-                        #block['project_id'] in ['none', 'real_time_slot', 'real_time_block']
-                        '''
-                        When a scheduled block is completed it is not re-entered or the block needs to
-                        be restored.  IN the execute block we need to make a deepcopy of the input block
-                        so it does not get modified.
-                        '''                                       
+                    #         try:
+                    #             if block['project_id'] == project['project_name'] + '#' + project['created_at']:
+                    #                 block['project'] = project
+                    #             else:
+                    #                 block['project'] = None
+                    #         except:
+                    #             plog(traceback.format_exc())
+                    #             breakpoint()
+                    #     else:
+                    #         pass
+                        
+                    '''
+                    evaluate supplied projects for observable and mark as same. Discard
+                    unobservable projects.  Projects may be "site" projects or 'ptr' (network wide:
+                    All, Owner, PTR-network, North, South.)
+                        The westernmost project is offered to run unless there is a runnable scheduled block.
+                        for any given time, are the constraints met? Airmass < x, Moon Phaze < y, moon dist > z,
+                        flip rules
+        
+                    '''
+                    # breakpoint()
+                    # #Figure out which are observable.  Currently only supports one target/proj
+                    # NB Observing events without a project are "observable."
+                    # observable = []
+                    # for projects in projects:
+                    #     ra = projects['project_targets']['ra']
+                    #     dec = projects['project_targets']['dec']
+                    #     sid = g_dev['mnt'].mount.SiderealTime
+                    #     ha = tycho.reduceHA(sid - ra)
+                    #     az, alt = transform_haDec_to_azAlt(ha, dec)
+                    #     # Do not start a block within 15 min of end time???
+                    #plog("Initial length:  ", len(blocks))
+    
+                    for block in self.blocks:
+                        now_date_timeZ = datetime.datetime.utcnow().isoformat().split('.')[0] +'Z'
+                        if not self.block_guard \
+                            and (block['start'] <= now_date_timeZ < block['end']) \
+                            and not self.is_in_completes(block['event_id']):
+                            if block['project_id'] in ['none', 'real_time_slot', 'real_time_block']:
+                                self.block_guard = False   # Changed from True WER on 20221011@2:24 UTC
+                                return   # Do not try to execute an empty block.
+                            self.block_guard = True
+        
+                            if block['project'] == None:
+                                plog (block)
+                                plog ("Skipping a block that contains an empty project")
+                                return
+        
+                            g_dev['obs'].update()
+                            completed_block = self.execute_block(block)  #In this we need to ultimately watch for weather holds.
+                            try:
+                                self.append_completes(completed_block['event_id'])
+                            except:
+                                plog ("block complete append didn't work")
+                                plog(traceback.format_exc())
+                                
+                            #block['project_id'] in ['none', 'real_time_slot', 'real_time_block']
+                            '''
+                            When a scheduled block is completed it is not re-entered or the block needs to
+                            be restored.  IN the execute block we need to make a deepcopy of the input block
+                            so it does not get modified.
+                            '''                                       
             except:
                 plog(traceback.format_exc())
                 plog("Hang up in sequencer.")
