@@ -2,6 +2,7 @@ import time
 import datetime
 from datetime import timedelta
 import copy
+import json
 from global_yard import g_dev
 from astropy.coordinates import SkyCoord, AltAz, get_moon, Angle
 from astropy import units as u
@@ -33,7 +34,13 @@ from glob import glob
 import traceback
 from ptr_utility import plog
 #from pprint import pprint
-
+import requests
+from requests.adapters import HTTPAdapter, Retry
+reqs = requests.Session()
+retries = Retry(total=3,
+                backoff_factor=0.1,
+                status_forcelist=[500, 502, 503, 504])
+reqs.mount('http://', HTTPAdapter(max_retries=retries))
 '''
 '''
 
@@ -204,7 +211,7 @@ class Sequencer:
         
         
         self.end_of_night_token_sent = False
-        
+        self.project_call_timer = time.time() -60
         # Run a weather report on bootup so observatory can run if need be. 
         #self.global_wx()
         #breakpoint()
@@ -738,25 +745,109 @@ class Sequencer:
 # =============================================================================
         elif (events['Observing Begins'] <= ephem_now \
                                    < events['Observing Ends'])  \
-                                   and  g_dev['obs'].blocks is not None and not g_dev['obs'].scope_in_manual_mode and g_dev['obs'].projects \
-                                   is not None and g_dev['obs'].open_and_enabled_to_observe and self.clock_focus_latch == False:
+                                   and  (time.time() - self.project_call_timer > 30) and not g_dev['obs'].scope_in_manual_mode  and g_dev['obs'].open_and_enabled_to_observe and self.clock_focus_latch == False:
                                      
             try:
                 self.nightly_reset_complete = False
                 
                 #try:
-                #    enc_status['enclosure_mode'] in ['Autonomous!', 'Automatic']
+                #    enc_status['enclosure_mode'] in ['Autonomous!', 'Automatic']   and g_dev['obs'].blocks is not None and g_dev['obs'].projects \
+                #is not None
                 #except:
                 #    breakpoint()
                 
                 
                 #if enc_status['enclosure_mode'] in ['Autonomous!', 'Automatic']:
-                blocks = g_dev['obs'].blocks
-                projects = g_dev['obs'].projects
-                debug = False         
+                    
+                # TO KEEP THE REAL-TIME USE A BIT SNAPPIER, POLL FOR NEW PROJECTS ON A MUCH SLOWER TIMESCALE
+                # TO REMOVE UNNECESSARY CALLS FOR PROJECTS.
+                #if time.time() - self.project_call_timer > 30:
+                self.project_call_timer = time.time()
+                if g_dev['obs'].debug_flag:
+                    plog("~")
+                else:
+                    plog('.')
+                    # We print this to stay informed of process on the console.
+                url_blk = "https://calendar.photonranch.org/calendar/siteevents"
+                # UTC VERSION
+                start_aperture = str(g_dev['events']['Eve Sky Flats']).split()
+                close_aperture = str(g_dev['events']['End Morn Sky Flats']).split()
+
+                # Reformat ephem.Date into format required by the UI
+                startapyear = start_aperture[0].split('/')[0]
+                startapmonth = start_aperture[0].split('/')[1]
+                startapday = start_aperture[0].split('/')[2]
+                closeapyear = close_aperture[0].split('/')[0]
+                closeapmonth = close_aperture[0].split('/')[1]
+                closeapday = close_aperture[0].split('/')[2]
+
+                if len(str(startapmonth)) == 1:
+                    startapmonth = '0' + startapmonth
+                if len(str(startapday)) == 1:
+                    startapday = '0' + str(startapday)
+                if len(str(closeapmonth)) == 1:
+                    closeapmonth = '0' + closeapmonth
+                if len(str(closeapday)) == 1:
+                    closeapday = '0' + str(closeapday)
+
+                start_aperture_date = startapyear + '-' + startapmonth + '-' + startapday
+                close_aperture_date = closeapyear + '-' + closeapmonth + '-' + closeapday
+
+                start_aperture[0] = start_aperture_date
+                close_aperture[0] = close_aperture_date
+
+                body = json.dumps(
+                    {
+                        "site": self.config["obs_id"],
+                        "start": start_aperture[0].replace('/', '-') + 'T' + start_aperture[1] + 'Z',
+                        "end": close_aperture[0].replace('/', '-') + 'T' + close_aperture[1] + 'Z',
+                        "full_project_details:": False,
+                    }
+                )
+                try:
+                    self.blocks = reqs.post(url_blk, body, timeout=20).json()
+                except:
+                    plog ("glitch out in the blocks reqs post")
+
+                #self.blocks = blocks
+
+                url_proj = "https://projects.photonranch.org/projects/get-all-projects"
+            
+                try:
+                    all_projects = reqs.post(url_proj, timeout=20).json()
+                except:
+                    plog ("connection glitch in picking up projects")
+                self.projects = []
+                if len(all_projects) > 0 and len(self.blocks) > 0:
+                    self.projects = all_projects  # NOTE creating a list with a dict entry as item 0
+                # Note the above does not load projects if there are no blocks scheduled.
+                # A sched block may or may not havean associated project.
+
+                # Design Note. Blocks relate to scheduled time at a site so we expect AWS to mediate block
+                # assignments. Priority of blocks is determined by the owner and a 'equipment match' for
+                # background projects.
+
+                # Projects on the other hand can be a very large pool so how to manage becomes an issue.
+                # To the extent a project is not visible at a site, aws should not present it. If it is
+                # visible and passes the owners priority it should then be presented to the site.
+
+                if self.events_new is None:
+                    url = (
+                        "https://api.photonranch.org/api/events?site="
+                        + self.obs_id.upper()
+                    )
+                    self.events_new = reqs.get(url, timeout=20).json()    
+                    
+                    
+                    
+                    
+                
+                #blocks = g_dev['obs'].blocks
+                #projects = g_dev['obs'].projects
+                debug = True         
                 
                 if debug:
-                    plog("# of Blocks, projects:  ", len(g_dev['obs'].blocks),  len(g_dev['obs'].projects))
+                    plog("# of Blocks, projects:  ", len(self.blocks),  len(self.projects))
     
                 #Note here we could evaluate projects to see which meet observability constraints and place them
                 #In an observables list, then we could pick one to start.  IF there is no pre-sheduled observing block
@@ -767,23 +858,23 @@ class Sequencer:
                 # and background blocks.
     
                 #First, sort blocks to be in ascending order, just to promote clarity. Remove expired projects.
-                for block in blocks:  #  This merges project spec into the blocks.
-                    for project in projects:
+                for block in self.blocks:  #  This merges project spec into the blocks.
+                    for project in self.projects:
     
-                        try:
-                            if block['project_id'] == project['project_name'] + '#' + project['created_at']:
-                                block['project'] = project
-                        except:
+                        
+                        if block['project_id'] == project['project_name'] + '#' + project['created_at']:
+                            block['project'] = project
+                        else:
                             block['project'] = None  #nb nb nb 20220920   this faults with 'string indices must be integers". WER
    
 
-                for project in projects:
+                for project in self.projects:
                     if block['project_id']  != 'none':
-                        try:
+                        
     
-                            if block['project_id'] == project['project_name'] + '#' + project['created_at']:
-                                block['project'] = project
-                        except:
+                        if block['project_id'] == project['project_name'] + '#' + project['created_at']:
+                            block['project'] = project
+                        else:
                             block['project'] = None
                     else:
                         pass
@@ -810,7 +901,7 @@ class Sequencer:
                 #     # Do not start a block within 15 min of end time???
                 #plog("Initial length:  ", len(blocks))
 
-                for block in blocks:
+                for block in self.blocks:
                     now_date_timeZ = datetime.datetime.now().isoformat().split('.')[0] +'Z'
                     if not self.block_guard \
                         and (block['start'] <= now_date_timeZ < block['end']) \
