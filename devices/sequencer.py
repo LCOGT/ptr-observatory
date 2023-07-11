@@ -28,6 +28,7 @@ from pyowm.utils import config
 from devices.camera import Camera
 from devices.filter_wheel import FilterWheel
 from devices.mount import Mount
+from devices.focuser import Focuser
 
 #from pyowm.utils import timestamps
 from glob import glob
@@ -1886,36 +1887,43 @@ class Sequencer:
         os.system("taskkill /IM TheSky64.exe /F")
         time.sleep(120) # give it time to settle down.
         #breakpoint()
-        Mount(self.config['mount']['mount1']['driver'], 
-                       g_dev['obs'].name,
-                       self.config['mount']['mount1']['settings'], 
-                       g_dev['obs'].config, 
-                       g_dev['obs'].astro_events, 
-                       tel=True)
+        try:
+            Mount(self.config['mount']['mount1']['driver'], 
+                           g_dev['obs'].name,
+                           self.config['mount']['mount1']['settings'], 
+                           g_dev['obs'].config, 
+                           g_dev['obs'].astro_events, 
+                           tel=True)
+            
+            
+            
+            # If theskyx is controlling the camera and filter wheel, reconnect the camera and filter wheel
+            if g_dev['cam'].theskyx:
+                Camera(self.config['camera']['camera_1_1']['driver'], 
+                                g_dev['cam'].name, 
+                                self.config)
+                time.sleep(10)
+            if self.config['filter_wheel']['filter_wheel1']['driver'] == 'CCDSoft2XAdaptor.ccdsoft5Camera':
+                FilterWheel('CCDSoft2XAdaptor.ccdsoft5Camera', 
+                                     g_dev['obs'].name, 
+                                     self.config)
+            
+                time.sleep(10)
+            
+            if self.config['focuser']['focuser1']['driver'] == 'CCDSoft2XAdaptor.ccdsoft5Camera':
+                Focuser('CCDSoft2XAdaptor.ccdsoft5Camera', 
+                                     g_dev['obs'].name,  self.config)
+                time.sleep(10)
+            
+            if returnra == -1 or returndec == -1:
+                g_dev['mnt'].park_command({}, {})
+                #pass
+            else:
+                g_dev['mnt'].park_command({}, {})
+                g_dev['mnt'].go_coord(returnra, returndec)
         
-        
-        
-        # If theskyx is controlling the camera and filter wheel, reconnect the camera and filter wheel
-        if g_dev['cam'].theskyx:
-            Camera(self.config['camera']['camera_1_1']['driver'], 
-                            g_dev['cam'].name, 
-                            self.config)
-        time.sleep(10)
-        if self.config['filter_wheel']['filter_wheel1']['driver'] == 'CCDSoft2XAdaptor.ccdsoft5Camera':
-            FilterWheel('CCDSoft2XAdaptor.ccdsoft5Camera', 
-                                 g_dev['obs'].name, 
-                                 self.config)
-        
-        time.sleep(10)
-        
-                
-        
-        if returnra == -1 or returndec == -1:
-            g_dev['mnt'].park_command({}, {})
-            #pass
-        else:
-            g_dev['mnt'].park_command({}, {})
-            g_dev['mnt'].go_coord(returnra, returndec)
+        except:
+            breakpoint()
         
         return
         
