@@ -1364,15 +1364,16 @@ class Mount:
                 
                 
                 if g_dev['obs'].mount_reference_model_off:
-                    print ("mount reference turned off")
-                    print ("ra with delta " + str(ra+delta_ra))
-                    print ("dec with delta " + str(dec+delta_dec))
+                    #print ("mount reference turned off")
+                    #print ("ra with delta " + str(ra+delta_ra))
+                    #print ("dec with delta " + str(dec+delta_dec))
+                    pass
                 else:
-                    print ("mount reference turned on")                
+                    #print ("mount reference turned on")                
                     ra=self.last_ra + delta_ra
                     dec=self.last_dec + delta_dec
-                    print ("ra with delta " + str(ra))
-                    print ("dec with delta " + str(dec))
+                    #print ("ra with delta " + str(ra))
+                    #print ("dec with delta " + str(dec))
                 #ra += delta_ra #NB it takes a restart to pick up a new correction which is also J.now.
                 #dec += delta_dec
                 #self.mount.SlewToCoordinatesAsync(self.ra_mech*RTOH, self.dec_mech*RTOD)
