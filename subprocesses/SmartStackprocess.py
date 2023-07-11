@@ -547,3 +547,14 @@ except:
 del imgdata
 
 pickle.dump(reprojection_failed, open(paths["im_path"] + 'smartstack.pickle', 'wb'))
+
+
+try:
+    os.remove(paths["red_path"] + paths["red_name01"].replace('.fits','.head'))
+except:
+    pass
+
+try:
+    os.remove(paths["red_path"] + paths["red_name01"].replace('.fits','.npy'))
+except:
+    pass
