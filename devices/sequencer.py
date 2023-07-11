@@ -838,6 +838,8 @@ class Sequencer:
                     
                     now_date_timeZ = datetime.datetime.utcnow().isoformat().split('.')[0] +'Z'
                     
+                    identified_block=None
+                    
                     if not skip_project_cycle:
                         #First, sort blocks to be in ascending order, just to promote clarity. Remove expired projects.
                         for block in self.blocks:  #  This merges project spec into the blocks.
@@ -857,6 +859,7 @@ class Sequencer:
                                     try:
                                         if block['project_id'] == project['project_name'] + '#' + project['created_at']:
                                             block['project'] = project
+                                            identified_block=copy.deepcopy(block)
                                             break
                                         else:
                                             block['project'] = None  #nb nb nb 20220920   this faults with 'string indices must be integers". WER
@@ -902,19 +905,28 @@ class Sequencer:
         
                         #for block in self.blocks:
                         #    if not self.block_guard:
-                                    
-                        if block['project_id'] in ['none', 'real_time_slot', 'real_time_block']:
+                               
+                        
+                        #print ("found block: " + str(block))
+                        #breakpoint()
+                        
+                        if identified_block == None:
+                            self.block_guard = False   # Changed from True WER on 20221011@2:24 UTC
+                            return   # Do not try to execute an empty block.
+                        
+                        if identified_block['project_id'] in ['none', 'real_time_slot', 'real_time_block']:
                             self.block_guard = False   # Changed from True WER on 20221011@2:24 UTC
                             return   # Do not try to execute an empty block.
                         self.block_guard = True
     
-                        if block['project'] == None:
-                            plog (block)
+                        if identified_block['project'] == None:
+                            plog (identified_block)
                             plog ("Skipping a block that contains an empty project")
+                            self.block_guard=False
                             return
     
                         g_dev['obs'].update()
-                        completed_block = self.execute_block(block)  #In this we need to ultimately watch for weather holds.
+                        completed_block = self.execute_block(identified_block)  #In this we need to ultimately watch for weather holds.
                         try:
                             self.append_completes(completed_block['event_id'])
                         except:
