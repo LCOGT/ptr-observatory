@@ -52,7 +52,9 @@ site_config = {
     'daytime_exposure_time_safety_off': False,
     'degrees_to_avoid_zenith_area_for_calibrations': 0, 
     
+
     'debug_mode': True,
+
     
     #'debug_site_mode': False,
     
@@ -180,27 +182,27 @@ site_config = {
             #'screen',
             #'rotator',
             'focuser',
-            'selector',
+            #'selector',
             'filter_wheel',
-            'camera',
+            'camera',           #why are these two off?
             'sequencer'
             ],
-    'wema_types': [                                      # or site_specific types.
-            #'observing_conditions1',
-            #'enclosure1'
+    'wema_types': [                      # is this used?
+            'observing_conditions1',
+            'enclosure1'
             ],
-    'enc_types': [
-            #'enclosure'
+    'enc_types': [                    # is this used?
+            'enclosure'
             ],
     'short_status_devices': [
             #'observing_conditions',
             #'enclosure',
             'mount',
             'telescope',
-            'screen',
-            'rotator',
+            #'screen',
+            #'rotator',
             'focuser',
-            'selector',
+            #'selector',
             'filter_wheel',
             'camera',
             'sequencer'
@@ -440,7 +442,7 @@ site_config = {
             'maximum': 40000,   #12672 actually
             'step_size': 1,
             'backlash': 0,
-            'throw' : 400,
+            'throw' : 150,
             'unit': 'micron',
             #'unit_conversion': 9.09090909091,
             'unit_conversion': 1.0,
