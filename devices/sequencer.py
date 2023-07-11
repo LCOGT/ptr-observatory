@@ -474,7 +474,7 @@ class Sequencer:
         
         
         
-        if time.time()-self.pulse_timer() >30:
+        if time.time()-self.pulse_timer >30:
             self.pulse_timer=time.time()
             if g_dev['obs'].debug_flag:
                 plog("~")
@@ -756,12 +756,12 @@ class Sequencer:
 #         Perhaps we should default set enc_status['enclosure_mode'] = 'Shutdown' as a default?
 # =============================================================================
         elif (events['Observing Begins'] <= ephem_now \
-                                   < events['Observing Ends'])  \
+                                   < events['Observing Ends']) and not self.block_guard \
                                    and  (time.time() - self.project_call_timer > 30) and not g_dev['obs'].scope_in_manual_mode  and g_dev['obs'].open_and_enabled_to_observe and self.clock_focus_latch == False:
                                      
             try:
                 self.nightly_reset_complete = False
-                
+                self.block_guard = True
                 #try:
                 #    enc_status['enclosure_mode'] in ['Autonomous!', 'Automatic']   and g_dev['obs'].blocks is not None and g_dev['obs'].projects \
                 #is not None
@@ -777,50 +777,13 @@ class Sequencer:
                 self.project_call_timer = time.time()
                 
                     # We print this to stay informed of process on the console.
-                url_blk = "https://calendar.photonranch.org/calendar/siteevents"
-                # UTC VERSION
-                start_aperture = str(g_dev['events']['Eve Sky Flats']).split()
-                close_aperture = str(g_dev['events']['End Morn Sky Flats']).split()
-
-                # Reformat ephem.Date into format required by the UI
-                startapyear = start_aperture[0].split('/')[0]
-                startapmonth = start_aperture[0].split('/')[1]
-                startapday = start_aperture[0].split('/')[2]
-                closeapyear = close_aperture[0].split('/')[0]
-                closeapmonth = close_aperture[0].split('/')[1]
-                closeapday = close_aperture[0].split('/')[2]
-
-                if len(str(startapmonth)) == 1:
-                    startapmonth = '0' + startapmonth
-                if len(str(startapday)) == 1:
-                    startapday = '0' + str(startapday)
-                if len(str(closeapmonth)) == 1:
-                    closeapmonth = '0' + closeapmonth
-                if len(str(closeapday)) == 1:
-                    closeapday = '0' + str(closeapday)
-
-                start_aperture_date = startapyear + '-' + startapmonth + '-' + startapday
-                close_aperture_date = closeapyear + '-' + closeapmonth + '-' + closeapday
-
-                start_aperture[0] = start_aperture_date
-                close_aperture[0] = close_aperture_date
-
-                body = json.dumps(
-                    {
-                        "site": self.config["obs_id"],
-                        "start": start_aperture[0].replace('/', '-') + 'T' + start_aperture[1] + 'Z',
-                        "end": close_aperture[0].replace('/', '-') + 'T' + close_aperture[1] + 'Z',
-                        "full_project_details:": False,
-                    }
-                )
-                try:
-                    self.blocks = reqs.post(url_blk, body, timeout=20).json()
-                except:
-                    plog ("glitch out in the blocks reqs post")
+                
+                self.update_calendar_blocks()
 
                 # only need to bother with the rest if there is more than 0 blocks. 
-                if len(self.blocks) > 0:
-
+                if not len(self.blocks) > 0:
+                    self.block_guard=False
+                else:
                     url_proj = "https://projects.photonranch.org/projects/get-all-projects"
                 
                     try:
@@ -874,29 +837,33 @@ class Sequencer:
                             plog ("internal server error in self.projects... skippping this round and moving to the next")
                             skip_project_cycle=True
                     
+                    now_date_timeZ = datetime.datetime.utcnow().isoformat().split('.')[0] +'Z'
                     
                     if not skip_project_cycle:
                         #First, sort blocks to be in ascending order, just to promote clarity. Remove expired projects.
                         for block in self.blocks:  #  This merges project spec into the blocks.
                             
-                            
-                            for project in self.projects:
-                                #if block['project_id'].split("#")[0] == project['project_name']:
-                                    #print("******************************")
-                                    #print (block['project_id'].split("#")[0])
-                                    #print (project['project_name'] )
+                            # Look only in current  incomplete blocks:
+                            if (block['start'] <= now_date_timeZ < block['end'])  and not self.is_in_completes(block['event_id']):
+                                for project in self.projects:
+                                    #if block['project_id'].split("#")[0] == project['project_name']:
+                                        #print("******************************")
+                                        #print (block['project_id'].split("#")[0])
+                                        #print (project['project_name'] )
+                                        
+                                        #breakpoint()
                                     
-                                    #breakpoint()
-                                    
-                                try:
-                                    if block['project_id'] == project['project_name'] + '#' + project['created_at']:
-                                        block['project'] = project
-                                        break
-                                    else:
-                                        block['project'] = None  #nb nb nb 20220920   this faults with 'string indices must be integers". WER
-                                except:
-                                    plog(traceback.format_exc())
-                                    breakpoint()
+                                        
+                                        
+                                    try:
+                                        if block['project_id'] == project['project_name'] + '#' + project['created_at']:
+                                            block['project'] = project
+                                            break
+                                        else:
+                                            block['project'] = None  #nb nb nb 20220920   this faults with 'string indices must be integers". WER
+                                    except:
+                                        plog(traceback.format_exc())
+                                        breakpoint()
         
                         # for project in self.projects:
                         #     if block['project_id']  != 'none':
@@ -934,35 +901,33 @@ class Sequencer:
                         #     # Do not start a block within 15 min of end time???
                         #plog("Initial length:  ", len(blocks))
         
-                        for block in self.blocks:
-                            now_date_timeZ = datetime.datetime.utcnow().isoformat().split('.')[0] +'Z'
-                            if not self.block_guard \
-                                and (block['start'] <= now_date_timeZ < block['end']) \
-                                and not self.is_in_completes(block['event_id']):
-                                if block['project_id'] in ['none', 'real_time_slot', 'real_time_block']:
-                                    self.block_guard = False   # Changed from True WER on 20221011@2:24 UTC
-                                    return   # Do not try to execute an empty block.
-                                self.block_guard = True
-            
-                                if block['project'] == None:
-                                    plog (block)
-                                    plog ("Skipping a block that contains an empty project")
-                                    return
-            
-                                g_dev['obs'].update()
-                                completed_block = self.execute_block(block)  #In this we need to ultimately watch for weather holds.
-                                try:
-                                    self.append_completes(completed_block['event_id'])
-                                except:
-                                    plog ("block complete append didn't work")
-                                    plog(traceback.format_exc())
+                        #for block in self.blocks:
+                        #    if not self.block_guard:
                                     
-                                #block['project_id'] in ['none', 'real_time_slot', 'real_time_block']
-                                '''
-                                When a scheduled block is completed it is not re-entered or the block needs to
-                                be restored.  IN the execute block we need to make a deepcopy of the input block
-                                so it does not get modified.
-                                '''                                       
+                        if block['project_id'] in ['none', 'real_time_slot', 'real_time_block']:
+                            self.block_guard = False   # Changed from True WER on 20221011@2:24 UTC
+                            return   # Do not try to execute an empty block.
+                        self.block_guard = True
+    
+                        if block['project'] == None:
+                            plog (block)
+                            plog ("Skipping a block that contains an empty project")
+                            return
+    
+                        g_dev['obs'].update()
+                        completed_block = self.execute_block(block)  #In this we need to ultimately watch for weather holds.
+                        try:
+                            self.append_completes(completed_block['event_id'])
+                        except:
+                            plog ("block complete append didn't work")
+                            plog(traceback.format_exc())
+                        self.block_guard=False
+                        #block['project_id'] in ['none', 'real_time_slot', 'real_time_block']
+                        '''
+                        When a scheduled block is completed it is not re-entered or the block needs to
+                        be restored.  IN the execute block we need to make a deepcopy of the input block
+                        so it does not get modified.
+                        '''                                       
             except:
                 plog(traceback.format_exc())
                 plog("Hang up in sequencer.")
@@ -1326,7 +1291,10 @@ class Sequencer:
                     # If not, stop running block
                     g_dev['obs'].scan_requests()
                     foundcalendar=False
-                    for tempblock in g_dev['obs'].blocks:
+                    
+                    #Check the calendar blocks
+                    self.update_calendar_blocks()                    
+                    for tempblock in self.blocks:
                         plog (tempblock['event_id'])
                         if tempblock['event_id'] == calendar_event_id :
                             foundcalendar=True
@@ -1798,8 +1766,8 @@ class Sequencer:
         # Resetting complete projects
         plog ("Nightly reset of complete projects")
         self.reset_completes()
-        g_dev['obs'].blocks = None
-        g_dev['obs'].projects = None
+        #g_dev['obs'].blocks = None
+        #g_dev['obs'].projects = None
         g_dev['obs'].events_new = None
         g_dev['obs'].reset_last_reference()
         if self.config['mount']['mount1']['permissive_mount_reset'] == 'yes':
@@ -5110,7 +5078,49 @@ class Sequencer:
         
         return result
 
+    def update_calendar_blocks(self):
 
+        url_blk = "https://calendar.photonranch.org/calendar/siteevents"
+        # UTC VERSION
+        start_aperture = str(g_dev['events']['Eve Sky Flats']).split()
+        close_aperture = str(g_dev['events']['End Morn Sky Flats']).split()
+
+        # Reformat ephem.Date into format required by the UI
+        startapyear = start_aperture[0].split('/')[0]
+        startapmonth = start_aperture[0].split('/')[1]
+        startapday = start_aperture[0].split('/')[2]
+        closeapyear = close_aperture[0].split('/')[0]
+        closeapmonth = close_aperture[0].split('/')[1]
+        closeapday = close_aperture[0].split('/')[2]
+
+        if len(str(startapmonth)) == 1:
+            startapmonth = '0' + startapmonth
+        if len(str(startapday)) == 1:
+            startapday = '0' + str(startapday)
+        if len(str(closeapmonth)) == 1:
+            closeapmonth = '0' + closeapmonth
+        if len(str(closeapday)) == 1:
+            closeapday = '0' + str(closeapday)
+
+        start_aperture_date = startapyear + '-' + startapmonth + '-' + startapday
+        close_aperture_date = closeapyear + '-' + closeapmonth + '-' + closeapday
+
+        start_aperture[0] = start_aperture_date
+        close_aperture[0] = close_aperture_date
+
+        body = json.dumps(
+            {
+                "site": self.config["obs_id"],
+                "start": start_aperture[0].replace('/', '-') + 'T' + start_aperture[1] + 'Z',
+                "end": close_aperture[0].replace('/', '-') + 'T' + close_aperture[1] + 'Z',
+                "full_project_details:": False,
+            }
+        )
+        try:
+            self.blocks = reqs.post(url_blk, body, timeout=20).json()
+        except:
+            plog ("glitch out in the blocks reqs post")
+            
     def reset_completes(self):
         try:
             camera = self.config['camera']['camera_1_1']['name']

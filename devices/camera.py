@@ -1576,8 +1576,9 @@ class Camera:
                     # If not, stop running block
                     if not calendar_event_id == None:
                         g_dev['obs'].scan_requests()
-                        foundcalendar=False                    
-                        for tempblock in g_dev['obs'].blocks:
+                        foundcalendar=False    
+                        g_dev['seq'].update_calendar_blocks()
+                        for tempblock in g_dev['seq'].blocks:
                             if tempblock['event_id'] == calendar_event_id :
                                 foundcalendar=True
                         if foundcalendar == False:
