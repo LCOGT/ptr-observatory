@@ -914,10 +914,10 @@ site_config = {
                 'can_subframe':  True,
                 'min_subframe': [128,128],
                 #'bin_modes':  [['Optimal', 0.91], ['Fine', 0.61], ['Coarse', 1.2], ['Eng', 0.30]],     #Meaning fixed binning if list has only one entry
-                'camera_gain':   0.45, #[10., 10., 10., 10.],     #  One val for each binning.
-                'camera_gain_stdev':   0.15, #[10., 10., 10., 10.],     #  One val for each binning.
-                'read_noise':  1.92, #[9, 9, 9, 9],    #  All SWAGs right now
-                'read_noise_stdev':   0.003, #[10., 10., 10., 10.],     #  One val for each binning.
+                'camera_gain':   0.38, #[10., 10., 10., 10.],     #  One val for each binning.
+                'camera_gain_stdev':   0.09, #[10., 10., 10., 10.],     #  One val for each binning.
+                'read_noise':  1.61, #[9, 9, 9, 9],    #  All SWAGs right now
+                'read_noise_stdev':   0.0004, #[10., 10., 10., 10.],     #  One val for each binning.
                 'reference_dark': 0.2,  #  NB  Guess
                 'reference_offset': 611, #  NB Guess  ADU vaules not times in sec.
                 'fullwell_capacity': 80000,   #  NB Guess
@@ -928,12 +928,12 @@ site_config = {
                 #'enable_bin':            [ True, False,  False,  False],
                 #'bias_dark_bin_spec':    ['1,1', '2,2', '3,3', '4,4' ],    #Default binning for flats
 
-                'number_of_bias_to_collect' : 32,
-                'number_of_dark_to_collect' : 32,
-                'number_of_flat_to_collect' : 32,
-                'number_of_bias_to_store' : 32,
-                'number_of_dark_to_store' : 32,
-                'number_of_flat_to_store' : 32,
+                'number_of_bias_to_collect' : 128,
+                'number_of_dark_to_collect' : 128,
+                'number_of_flat_to_collect' : 128,
+                'number_of_bias_to_store' : 128,
+                'number_of_dark_to_store' : 128,
+                'number_of_flat_to_store' : 128,
 
  
                 'dark_exposure': 20,
