@@ -4912,7 +4912,7 @@ class Sequencer:
                         return
                     pass
             
-            
+            print ("Got out of platesolving")
             
             sid = float((Time(datetime.datetime.utcnow(), scale='utc', location=g_dev['mnt'].site_coordinates).sidereal_time('apparent')*u.deg) / u.deg / u.hourangle)
             

@@ -53,6 +53,12 @@ yt = input_sstk_info[25]
 xl = input_sstk_info[26]
 xr = input_sstk_info[27]
 
+try:
+    os.remove(paths["im_path"] + 'smartstack.pickle')
+except:
+    pass
+
+
 img = fits.open(
     paths["red_path"] + paths["red_name01"].replace('.fits','.head'),
     ignore_missing_end=True,

@@ -267,6 +267,7 @@ site_config = {
             'driver': 'ASCOM.SoftwareBisque.Telescope',
             'alignment': 'Equatorial',
             'default_zenith_avoid': 0.0,   #degrees floating, 0.0 means do not apply this constraint.
+            
             'has_paddle': False,      #paddle refers to something supported by the Python code, not the AP paddle.
             'has_ascom_altaz': False,
             'pointing_tel': 'tel1',     #This can be changed to 'tel2'... by user.  This establishes a default.

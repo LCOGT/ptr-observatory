@@ -2272,6 +2272,8 @@ sel
                         #solved_rotangledegs = solve["rot_angle_degs"]
                         plog("Deviation from plate solution in ra: " + str(round(err_ha * 15 * 3600, 2)) + " & dec: " + str (round(err_dec * 3600, 2)) + " asec")
                         
+                        #breakpoint()
+                        
                         self.last_platesolved_ra = solve["ra_j2000_hours"]
                         self.last_platesolved_dec = solve["dec_j2000_degrees"]
                         self.last_platesolved_ra_err = target_ra - solved_ra
@@ -2372,31 +2374,33 @@ sel
                                 self.pointing_correction_request_time = time.time()
                                 self.pointing_correction_request_ra = pointing_ra + err_ha #* ra_correction_multiplier)
                                 self.pointing_correction_request_dec = pointing_dec + err_dec# * dec_correction_multiplier)
-                                if target_dec > -85 and target_dec < 85:
-                                    try:
+                                
+                                if not self.config['mount_reference_model_off']:
+                                    if target_dec > -85 and target_dec < 85:
                                         try:
-                                            g_dev["mnt"].pier_side=g_dev['mnt'].mount.sideOfPier
+                                            #try:
+                                            #    g_dev["mnt"].pier_side=g_dev['mnt'].mount.sideOfPier
+                                            #except:
+                                            #    plog("MTF chase this later")
+                                            # if g_dev["mnt"].pier_side_str == "Looking West":
+                                            if g_dev["mnt"].pier_side == 0:
+                                                try:
+                                                    g_dev["mnt"].adjust_mount_reference(
+                                                        -err_ha, -err_dec
+                                                    )
+                                                except Exception as e:
+                                                    plog("Something is up in the mount reference adjustment code ", e)
+                                            else:
+                                                try:
+                                                    g_dev["mnt"].adjust_flip_reference(
+                                                        -err_ha, -err_dec
+                                                    )  # Need to verify signs
+                                                except Exception as e:
+                                                    plog("Something is up in the mount reference adjustment code ", e)
+            
                                         except:
-                                            plog("MTF chase this later")
-                                        # if g_dev["mnt"].pier_side_str == "Looking West":
-                                        if g_dev["mnt"].pier_side == 0:
-                                            try:
-                                                g_dev["mnt"].adjust_mount_reference(
-                                                    -err_ha, -err_dec
-                                                )
-                                            except Exception as e:
-                                                plog("Something is up in the mount reference adjustment code ", e)
-                                        else:
-                                            try:
-                                                g_dev["mnt"].adjust_flip_reference(
-                                                    -err_ha, -err_dec
-                                                )  # Need to verify signs
-                                            except Exception as e:
-                                                plog("Something is up in the mount reference adjustment code ", e)
-        
-                                    except:
-                                        plog("This mount doesn't report pierside")
-                                        plog(traceback.format_exc())
+                                            plog("This mount doesn't report pierside")
+                                            plog(traceback.format_exc())
                     self.platesolve_is_processing = False
 
                 self.platesolve_is_processing = False
