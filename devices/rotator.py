@@ -33,7 +33,7 @@ class Rotator:
         self.driver=driver
         self.rotator = win32com.client.Dispatch(driver)        
         time.sleep(3)
-        #breakpoint()
+
         self.rotator.Connected = True
         self.rotator_message = "-"
         print("Rotator connected,  at:  ", round(self.rotator.TargetPosition, 4))

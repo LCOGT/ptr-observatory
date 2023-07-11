@@ -155,6 +155,9 @@ class Sequencer:
         
         self.reset_completes()  # NB NB Note this is reset each time sequencer is restarted.
 
+        self.pulse_timer=time.time()
+
+
         try:
             self.is_in_completes(None)
         except:
@@ -470,6 +473,15 @@ class Sequencer:
         #    g_dev['obs'].enc_status = None
         
         
+        
+        if time.time()-self.pulse_timer() >30:
+            self.pulse_timer=time.time()
+            if g_dev['obs'].debug_flag:
+                plog("~")
+            else:
+                plog('.')
+        
+        
         #try:        
         #    g_dev['obs'].ocn_status = g_dev['obs'].get_weather_status_from_aws()
         #except:
@@ -763,10 +775,7 @@ class Sequencer:
                 # TO REMOVE UNNECESSARY CALLS FOR PROJECTS.
                 #if time.time() - self.project_call_timer > 30:
                 self.project_call_timer = time.time()
-                if g_dev['obs'].debug_flag:
-                    plog("~")
-                else:
-                    plog('.')
+                
                     # We print this to stay informed of process on the console.
                 url_blk = "https://calendar.photonranch.org/calendar/siteevents"
                 # UTC VERSION
