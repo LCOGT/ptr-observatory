@@ -29,7 +29,7 @@ site_config = {       #the NAME "SITE" IS INCONSISTENT  bIG CHANGE TO EFFECT, ob
     # Manual mode turns all automation off. 
     # The scope will only do what you tell it
     # This DOESN'T turn some safetys off 
-    'scope_in_manual_mode': False,
+    'scope_in_manual_mode': True,
     'mount_reference_model_off': False,
     'sun_checks_off': False,
     'altitude_checks_off': False,    
@@ -590,7 +590,7 @@ site_config = {       #the NAME "SITE" IS INCONSISTENT  bIG CHANGE TO EFFECT, ob
             'settings': {
                 # 'filter_count': 23,
                 # 'home_filter':  2,
-                'default_filter':  'w',
+                'default_filter':  'PL',
 
                 'auto_color_options': ['OSC'],  # OPtions include 'OSC', 'manual','RGB','NB','RGBHA','RGBNB'
                 # B, G, R filter codes for this camera if it is a monochrome camera with filters
