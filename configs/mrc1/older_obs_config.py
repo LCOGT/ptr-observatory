@@ -17,26 +17,22 @@ import json
 # NB NB NB json is not bi-directional with tuples (), instead, use lists [], nested if tuples are needed.
 degree_symbol = "°"
 
-# instance_type = 'obs' # This is the type of site this is.
-# wema_name = 'mrc' # THIS REFERS TO THE WEMA NOT THE OBS
-# 
-obs_id = 'mrc1'  # NB These must be unique across all of PTR. Pre-pend with airport code if needed: 'sba_wmdo'
+site_config = {
 
-site_config = {       #the NAME "SITE" IS INCONSISTENT  bIG CHANGE TO EFFECT, obsp_config maybe??  >>>>
     'instance_type' : 'obs',
     'wema_name' : 'mrc',
     'obs_id': 'mrc1',
+    #'observatory_location': "SBA",  # Nearest major airport
+    #'debug_site_mode': False,
     # Manual mode turns all automation off. 
     # The scope will only do what you tell it
     # This DOESN'T turn some safetys off 
-    'scope_in_manual_mode': False,
+    'scope_in_manual_mode' : False,
     'mount_reference_model_off': False,
     'sun_checks_off': False,
     'altitude_checks_off': False,    
     'daytime_exposure_time_safety_off': False,
-    'degrees_to_avoid_zenith_area_for_calibrations': 0,
-    
-    #MANY KEYS FOUND HERE REALLY APPLY TO MOUNT, CAMERA, ETC.
+    'degrees_to_avoid_zenith_area_for_calibrations': 0, 
 
     # Auto-cenering is great .... unless you are polar aligning
     'turn_auto_centering_off': False,
@@ -97,7 +93,7 @@ site_config = {       #the NAME "SITE" IS INCONSISTENT  bIG CHANGE TO EFFECT, ob
     'site_path': 'Q:/',
     'observatory_url': 'https://starz-r-us.sky/clearskies',
     'observatory_logo': None,
-    'dedication':  '''
+    'description':  '''
                     Now is the time for all good persons
                     to get out and vote early and often lest
                     we lose charge of our democracy.
@@ -168,7 +164,7 @@ site_config = {       #the NAME "SITE" IS INCONSISTENT  bIG CHANGE TO EFFECT, ob
     'solve_timer': 0.05,  # Only solve every X minutes
     'threshold_mount_update': 100,  # only update mount when X arcseconds away
 
-    'defaults': {       # >>>>
+    'defaults': {
         #'observing_conditions': 'observing_conditions1',
         #'enclosure': 'enclosure1',
         'mount': 'mount1',
@@ -182,38 +178,40 @@ site_config = {       #the NAME "SITE" IS INCONSISTENT  bIG CHANGE TO EFFECT, ob
         'sequencer': 'sequencer1'
     },
     'device_types': [
+        #'observing_conditions',
+        #'enclosure',
         'mount',
         'telescope',
-        'screen',    #  We do have one!  >>>>
+        # 'screen',
         'rotator',
         'focuser',
-        'selector',     #  Right now not used  >>>>
+        'selector',
         'filter_wheel',
         'camera',
-        'sequencer',    #NB I think we will add "engineering or telops" to the model >>>>
-        'telops',       #   >>>>
-    ],
-    # 'wema_types': [       #>>>>
-    #     #'observing_conditions',
-    #     #'enclosure',
-    # ],
-    # 'enc_types': [
-    #     #'enclosure'
-    # ],
-    # 'short_status_devices':  [    #  >>>>
-    #     # 'observing_conditions',
-    #     # 'enclosure',
-    #     'mount',
-    #     'telescope',
-    #     # 'screen',
-    #     'rotator',
-    #     'focuser',
-    #     'selector',
-    #     'filter_wheel',
-    #     'camera',
 
-    #     'sequencer',
-    # ],
+        'sequencer',
+    ],
+    'wema_types': [
+        #'observing_conditions',
+        #'enclosure',
+    ],
+    'enc_types': [
+        #'enclosure'
+    ],
+    'short_status_devices':  [
+        # 'observing_conditions',
+        # 'enclosure',
+        'mount',
+        'telescope',
+        # 'screen',
+        'rotator',
+        'focuser',
+        'selector',
+        'filter_wheel',
+        'camera',
+
+        'sequencer',
+    ],
 
     # 'observing_conditions': {
     #     'observing_conditions1': {
@@ -274,8 +272,8 @@ site_config = {       #the NAME "SITE" IS INCONSISTENT  bIG CHANGE TO EFFECT, ob
 
 
     'mount': {
-        'mount1': {       # NB There can only be one mount with our new model.  >>>>
-            #parent': 'enclosure1',     #   >>>>
+        'mount1': {
+            'parent': 'enclosure1',
             'tel_id': '0m35',
             'name': 'eastpier',
             'hostIP':  '10.15.0.30',
@@ -286,7 +284,7 @@ site_config = {       #the NAME "SITE" IS INCONSISTENT  bIG CHANGE TO EFFECT, ob
             'recover_script':  None,
             'shutdown_script':  None,
             'alignment': 'Alt-Az',
-            #'default_zenith_avoid': 5.0,  # degrees floating   Removed to test default >>>>
+            'default_zenith_avoid': 7.0,  # degrees floating
             'west_clutch_ra_correction': 0.0,
             'west_clutch_dec_correction': 0.0,
             'east_flip_ra_correction': 0.0,
@@ -305,14 +303,14 @@ site_config = {       #the NAME "SITE" IS INCONSISTENT  bIG CHANGE TO EFFECT, ob
             'has_paddle': False,
             'has_ascom_altaz': True,
             'pointing_tel': 'tel1',
-            # 'Selector': {     # This does not belong here but in the repective OTA  >>>>
-            #     'available': False,  # If True add these lines;
-            #     # 'positions': 4,
-            #     # 'inst 1': 'camera_1_1',      #inst_1 is always the default until status reports different
-            #     # 'inst 2': 'echelle1',     #These are all types od cameras.
-            #     # 'inst 3': 'camera3',
-            #     # 'inst 4': 'lowres1',
-            # },
+            'Selector': {
+                'available': False,  # If True add these lines;
+                # 'positions': 4,
+                # 'inst 1': 'camera_1_1',      #inst_1 is always the default until status reports different
+                # 'inst 2': 'echelle1',     #These are all types od cameras.
+                # 'inst 3': 'camera3',
+                # 'inst 4': 'lowres1',
+            },
             'settings': {
                 # Decimal degrees, North is Positive. These *could* be slightly different than site.
                 'latitude_offset': 0.0,
@@ -329,7 +327,7 @@ site_config = {       #the NAME "SITE" IS INCONSISTENT  bIG CHANGE TO EFFECT, ob
                 'model_on': True,
                 'rates_on': True,
                 'horizon':  20,
-                'horizon_detail': {  #In principle there can be slightly different Horizons for a multiple OTA obsp. >>>>
+                'horizon_detail': {
                     '0': 32,
                     '30': 35,
                     '36.5': 39,
@@ -357,7 +355,7 @@ site_config = {       #the NAME "SITE" IS INCONSISTENT  bIG CHANGE TO EFFECT, ob
                     '315': 32,
                     '360': 32,
                 },
-                'model': {          #In principle different OTA's could have offsets.
+                'model': {
                     'IH': 0,
                     'ID': 0.,
                     'WH': 0.,
@@ -389,9 +387,9 @@ site_config = {       #the NAME "SITE" IS INCONSISTENT  bIG CHANGE TO EFFECT, ob
 
     },
 
-    'telescope': {           #OTA or Optics might be a better name >>>>
-        'telescope1': {      #MRC1 has two OTAs  >>>>
-            #'parent': 'mount1',   #THis is redundant and unecessary >>>>
+    'telescope': {
+        'telescope1': {
+            'parent': 'mount1',
             'name': 'Main OTA',
             # 'desc':  'Planewave_CDK_14_F7.2',
             'telescop': 'mrc1',  # The tenth telescope at mrc will be 'mrc10'. mrc2 already exists.
@@ -432,10 +430,7 @@ site_config = {       #the NAME "SITE" IS INCONSISTENT  bIG CHANGE TO EFFECT, ob
                 'west_flip_dec_offset': 0.0
             },
         },
-# =============================================================================
-#         'ota2': {      #Where the second OTA stuff goes
-#         },
-# =============================================================================
+
     },
 
     'rotator': {
@@ -453,10 +448,6 @@ site_config = {       #the NAME "SITE" IS INCONSISTENT  bIG CHANGE TO EFFECT, ob
             'unit':  'degree',
             'has_rotator': True  # Indicates to camera and Project to include rotation box.
         },
-# =============================================================================
-#         'rotator2': {    # >>>>
-#         },
-# =============================================================================
 
     },
 
@@ -465,24 +456,13 @@ site_config = {       #the NAME "SITE" IS INCONSISTENT  bIG CHANGE TO EFFECT, ob
             'parent': 'telescope1',
             'name': 'screen',
             'desc':  'Optec Alnitak 24"',
-            'driver': None,  # This needs to be a four or 5 character string as in 'COM8' or 'COM22'
+            'driver': 'COM13',  # This needs to be a four or 5 character string as in 'COM8' or 'COM22'
             'com_port': 'COM10',
             'minimum': 5.0,  # This is the % of light emitted when Screen is on and nominally at 0% bright.
             'saturate': 170,  # Out of 0.0 - 255, this is the last value where the screen is linear with output.
-                                # These values have a minor temperature sensitivity we have yet to quantify.
+                                # These values have a minor temperature sensitivity yet to quantify.
         },
-# =============================================================================
-#         'screen2': {       # >>>>
-#             'parent': 'ota2',
-#             'name': 'screen',
-#             'desc':  'Optec Alnitak 24"',
-#             'driver': 'None',  # This needs to be a four or 5 character string as in 'COM8' or 'COM22'
-#             'com_port': 'COM99',
-#             'minimum': 5.0,  # This is the % of light emitted when Screen is on and nominally at 0% bright.
-#             'saturate': 170,  # Out of 0.0 - 255, this is the last value where the screen is linear with output.
-#                                 # These values have a minor temperature sensitivity yet to quantify.
-#         },
-# =============================================================================
+
     },
 
     'focuser': {
@@ -493,6 +473,8 @@ site_config = {       #the NAME "SITE" IS INCONSISTENT  bIG CHANGE TO EFFECT, ob
             'driver': 'ASCOM.OptecGemini.Focuser',
             'start_at_config_reference': False,
             'use_focuser_temperature': True,
+            # *********Guesses   7379@10 7457@20  7497 @ 25
+            # 'reference': 7250, #20221103    #7418,    # Nominal at 15C Primary temperature, in microns not steps. Guess
             'reference': 7250,  # 20221103    #7418,    # Nominal at 15C Primary temperature, in microns not steps. Guess
             'ref_temp':  10,      # Update when pinning reference  Larger at lower temperatures.
             'coef_c': -8.583,    # Negative means focus moves out (larger numerically) as Primary gets colder
@@ -511,36 +493,8 @@ site_config = {       #the NAME "SITE" IS INCONSISTENT  bIG CHANGE TO EFFECT, ob
             'unit_conversion':  9.09090909091,  # Taken from Gemini at mid-range.
             'has_dial_indicator': False
         },
-# =============================================================================
-#         'focuser2': {         # >>>>
-#             'parent': 'ota2',
-#             'name': 'focuser',
-#             'desc':  'Optec Gemini',
-#             'driver': 'ASCOM.OptecGemini.Focuser',
-#             'start_at_config_reference': False,
-#             'use_focuser_temperature': True,
-#             # *********Guesses   7379@10 7457@20  7497 @ 25
-#             # 'reference': 7250, #20221103    #7418,    # Nominal at 15C Primary temperature, in microns not steps. Guess
-#             'reference': 7250,  # 20221103    #7418,    # Nominal at 15C Primary temperature, in microns not steps. Guess
-#             'ref_temp':  10,      # Update when pinning reference  Larger at lower temperatures.
-#             'coef_c': -8.583,    # Negative means focus moves out (larger numerically) as Primary gets colder
-#             # 'coef_0': 7250,  #20221103# Nominal intercept when Primary is at 0.0 C.
-#             'coef_0': 7355,  # 20221103# Nominal intercept when Primary is at 0.0 C.
-#             'coef_date':  '20230220',  # A Guess as to coef_c
-#             'z_compression': 0.0,  # microns per degree of zenith distance
-#             'z_coef_date':  '20221002',   # 'reference': 4375,    #   Guess 20210904  Nominal at 10C Primary temperature
-#             'use_local_temp':  True,
-#             'minimum': 0,    # NB this needs clarifying, we are mixing steps and microns.
-#             'maximum': 12700,
-#             'step_size': 1,
-#             'backlash':  0,
-#             'throw': 250,
-#             'unit': 'micron',
-#             'unit_conversion':  9.09090909091,  # Taken from Gemini at mid-range.
-#             'has_dial_indicator': False
-#         },
-# 
-# =============================================================================
+
+
     },
     'selector': {
         'selector1': {
@@ -642,26 +596,20 @@ site_config = {       #the NAME "SITE" IS INCONSISTENT  bIG CHANGE TO EFFECT, ob
 
             },
         },
-# =============================================================================
-#         'filter_wheel_2': {      #   >>>>
-#         },
-# =============================================================================
 
     },
 
 
-# =============================================================================  >>>>
-#     'lamp_box': {
-#         'lamp_box1': {
-#             'parent': 'camera_1',  # Parent is camera for the spectrograph
-#             'name': 'None',  # "UVEX Calibration Unit", 'None'
-#             'desc': 'None',  # 'eshel',  # "uvex", 'None'
-#             'spectrograph': 'None',  # 'echelle', 'uvex'; 'None'
-#             'driver': 'None',  # ASCOM.Spox.Switch; 'None'; Note change to correct COM port used for the eShel calibration unit at mrc2
-#             'switches': "None"  # A string of switches/lamps the box has for the FITS header. # 'None'; "Off,Mirr,Tung,NeAr" for UVEX
-#         },
-#     },
-# =============================================================================
+    'lamp_box': {
+        'lamp_box1': {
+            'parent': 'camera_1',  # Parent is camera for the spectrograph
+            'name': 'None',  # "UVEX Calibration Unit", 'None'
+            'desc': 'None',  # 'eshel',  # "uvex", 'None'
+            'spectrograph': 'None',  # 'echelle', 'uvex'; 'None'
+            'driver': 'None',  # ASCOM.Spox.Switch; 'None'; Note change to correct COM port used for the eShel calibration unit at mrc2
+            'switches': "None"  # A string of switches/lamps the box has for the FITS header. # 'None'; "Off,Mirr,Tung,NeAr" for UVEX
+        },
+    },
 
 
 
@@ -675,16 +623,15 @@ site_config = {       #the NAME "SITE" IS INCONSISTENT  bIG CHANGE TO EFFECT, ob
     'camera': {
         'camera_1_1': {
             'parent': 'telescope1',
-            'name': 'sq002cs',  # Important because this points to a server file structure by that name.
-            'desc':  'QHY 410C',
+            'name': 'sq001cs',  # Important because this points to a server file structure by that name.
+            'desc':  'QHY 600C Pro',
             #'driver':  "ASCOM.QHYCCD_CAM2.Camera", # NB Be careful this is not QHY Camera2 or Guider  "Maxim.CCDCamera",   #'ASCOM.FLI.Kepler.Camera', "ASCOM.QHYCCD.Camera",   #
             # NB Be careful this is not QHY Camera2 or Guider  "Maxim.CCDCamera",   #'ASCOM.FLI.Kepler.Camera', "ASCOM.QHYCCD.Camera",   #
             'driver':  "QHYCCD_Direct_Control",
-            'service_date': '20230712',  #Replaced sq001cs which appears to have a TEC failure
 
 
 
-            'detector':  'Sony IMX441 Color',  # It would be good to build out a table of chip characteristics
+            'detector':  'Sony IMX455 Color',  # It would be good to build out a table of chip characteristics
             'use_file_mode':  False,   # NB we should clean out all file mode stuff.
             'file_mode_path':  'Q:/archive/sq01/maxim/',  # NB NB all file_mode Maxim stuff should go!
             'manufacturer':  "QHY",
@@ -719,7 +666,7 @@ site_config = {       #the NAME "SITE" IS INCONSISTENT  bIG CHANGE TO EFFECT, ob
                 # In that sense, QHY600 NEEDS to be set at GAIN 26 and the only thing to adjust is the offset.....
                 # USB Speed is a tradeoff between speed and banding, min 0, max 60. 60 is least banding. Most of the
                 # readout seems to be dominated by the slow driver (difference is a small fraction of a second), so I've left it at 60 - least banding.
-                'direct_qhy_readout_mode': 1,  #These settings may be wrong. WER 20230712
+                'direct_qhy_readout_mode': 3,
                 'direct_qhy_gain': 26,
                 'direct_qhy_offset': 60,
                 'direct_qhy_usb_speed': 60,
@@ -822,27 +769,26 @@ site_config = {       #the NAME "SITE" IS INCONSISTENT  bIG CHANGE TO EFFECT, ob
                 'crop_preview_xleft': 2,
                 'crop_preview_xright': 2,
                 'temp_setpoint': -5,  # Verify we can go colder, this system has a chiller
-                'has_chiller': False,
-                'calib_setpoints': [-5, -5, -5, -5, -5, -5, \
-                                    -5, -5, -5, -5, -5, -5],  # Picked by month-of-year
+                'has_chiller': True,
+                'calib_setpoints': [-20, -20, -20, -20, -20, -20, \
+                                    -20, -20, -20, -20, -20, -20],  # Picked by month-of-year
                 'day_warm': False,
-                'day_warm_degrees': 0,  # Number of degrees to warm during the daytime.
-                'protect_camera_from_overheating' : False,
+                'day_warm_degrees': 8,  # Number of degrees to warm during the daytime.
                 'cooler_on': True,
                 "cam_needs_NumXY_init": True,
                 'x_start':  0,
                 # 'x_start':  24,
                 'y_start':  0,
-                'x_width':  6072,  # NB Should be set up with overscan, which this camera is!  20200315 WER
-                'y_width':  4044,
-                'x_chip':  6072,  # NB Should specify the active pixel area.   20200315 WER
-                'y_chip':  4044,
-                'x_trim_offset':  0,  # NB these four entries are guesses.
-                'y_trim_offset':  0,
+                'x_width':  9576,  # NB Should be set up with overscan, which this camera is!  20200315 WER
+                'y_width':  6388,
+                'x_chip':  9576,  # NB Should specify the active pixel area.   20200315 WER
+                'y_chip':  6388,
+                'x_trim_offset':  8,  # NB these four entries are guesses.
+                'y_trim_offset':  8,
                 'pre_bias_available': False,  # if so need to specify as below for post_bias.
                 'post_bias_available': True,  # if so need to specify as below for post_bias.
-                'x_bias_start':  6066,
-                'y_bias_start': 4034,
+                'x_bias_start':  9577,
+                'y_bias_start': 6389,
                 'x_bias_end':  None,       # Vert band self.img[-38:-18, 0]
                 'y_bias_send': None,
                 'corner_everlap': None,
@@ -856,11 +802,11 @@ site_config = {       #the NAME "SITE" IS INCONSISTENT  bIG CHANGE TO EFFECT, ob
                 'det_sec': ['[25:9600, 1:6388]', '[13:4800, 1:3194]', '[9:3200, 1:2129]', '[7:2400, 1:1597]'],
                 'data_sec': ['[25:9600, 1:6388]', '[13:4800, 1:3194]', '[9:3200, 1:2129]', '[7:2400, 1:1597]'],
                 'trim_sec': ['[1:9576, 1:6388]', '[1:4788, 1:3194]', '[1:3192, 1:2129]', '[1:2394, 1:1597]'],
-                'x_pixel':  5.94,
-                'y_pixel':  5.94,
+                'x_pixel':  3.76,
+                'y_pixel':  3.76,
 
-                'pix_scale': 0.478039,    #   bin-2  2* math.degrees(math.atan(3.76/2563000))*3600
-                '1x1_pix_scale': 0.478039,    #  This is the 1x1 binning pixelscale
+                'pix_scale': 0.302597,    #   bin-2  2* math.degrees(math.atan(3.76/2563000))*3600
+                '1x1_pix_scale': 0.302597,    #  This is the 1x1 binning pixelscale
                 'native_bin': 1, # Needs to be simple, it will recalculate things on the 1x1 binning pixscale above.
                 
                 # The drizzle_value is by the new pixelscale
@@ -873,7 +819,7 @@ site_config = {       #the NAME "SITE" IS INCONSISTENT  bIG CHANGE TO EFFECT, ob
                 'drizzle_value_for_later_stacking': 0.5,
 
 
-                'CameraXSize': 6072,
+                'CameraXSize': 9600,
                 'CameraYSize': 6422,
                 'StartX': 1,
                 'StartY': 1,
@@ -882,8 +828,8 @@ site_config = {       #the NAME "SITE" IS INCONSISTENT  bIG CHANGE TO EFFECT, ob
                 'x_field_deg': 0.8042,  # round(4784*0.605194/3600, 4),   #48 X 32 AMIN  3MIN X 0.5 DEG
                 'y_field_deg': 0.5369,  # round(3194*0.605194/3600, 4),
                 'area_sq_deg':  0.4318,
-                'overscan_x': 0,
-                'overscan_y': 0,
+                'overscan_x': 24,
+                'overscan_y': 34,
                 'north_offset': 0.0,  # These three are normally 0.0 for the primary telescope
                 'east_offset': 0.0,
                 'rotation': 0.0,
@@ -897,7 +843,7 @@ site_config = {       #the NAME "SITE" IS INCONSISTENT  bIG CHANGE TO EFFECT, ob
                 'can_subframe':  True,
                 'min_subframe': [128, 128],
                 # Meaning fixed binning if list has only one entry
-                'bin_modes':  [['Optimal', 1.42], ['Fine', 0.96], ['Coarse', 1.91], ['Eng', 0.48]],
+                'bin_modes':  [['Optimal', 0.91], ['Fine', 0.61], ['Coarse', 1.2], ['Eng', 0.30]],
                 'camera_gain':   0.454, #[10., 10., 10., 10.],     #  One val for each binning.
                 'camera_gain_stdev':   0.01, #[10., 10., 10., 10.],     #  One val for each binning.
                 'read_noise':  1.87, #[9, 9, 9, 9],    #  All SWAGs right now
@@ -977,8 +923,8 @@ site_config = {       #the NAME "SITE" IS INCONSISTENT  bIG CHANGE TO EFFECT, ob
 
     },
 
-    'sequencer': {        
-        'sequencer1': {       
+    'sequencer': {
+        'sequencer1': {
             'parent': 'site',
             'name': 'Sequencer',
             'desc':  'Automation Control',
@@ -988,22 +934,15 @@ site_config = {       #the NAME "SITE" IS INCONSISTENT  bIG CHANGE TO EFFECT, ob
             'shutdown_script':  None,
         },
     },
-    'telops': {        #>>>>
-        'sequencer1': {       
-            'parent': 'site',
-            'name': 'Telops Scripts',
-            'desc':  'Engineering Control',
-            'driver': None,
-            'startup_script':  None,
-            'recover_script':  None,
-            'shutdown_script':  None,
-        },
-    },
     # As aboove, need to get this sensibly suported on GUI and in fits headers.
 
 
+    # Need to put switches here for above devices.
 
-    # AWS does not need this, but my configuration code might make use of it. 
+    # Need to build instrument selector and multi-OTA configurations.
+
+    # AWS does not need this, but my configuration code might make use of it. VALENTINA this device will probably
+    # alwys be custom per installation. In my case Q: points to a 40TB NAS server in the basement. WER
     'server': {
         'server1': {
             'name': 'QNAP',
@@ -1014,7 +953,17 @@ site_config = {       #the NAME "SITE" IS INCONSISTENT  bIG CHANGE TO EFFECT, ob
             'shutdown_script':  None,
         },
     },
-}  # This brace closes the whole configuration dictionary. Match found up top at:  obs_config = {
+}  # This brace closes the while configuration dictionary. Match found up top at:  site_config = {
+
+# def get_ocn_status():    #NB NB I think we should get rid of these two dummy methods. WER
+#    pass
+# def get_enc_status():
+#    pass
+
+'''
+Here we create the basic directory structures needed for this respective 
+site, telescope and instruments.
+'''
 
 
 if __name__ == '__main__':
@@ -1028,9 +977,25 @@ if __name__ == '__main__':
         print('Strings matched.')
     if site_config == site_unjasoned:
         print('Dictionaries matched.')
+# def get_ocn_status():    #NB NB I think we should get rid of these two dummy methods. WER
+#    pass
+# def get_enc_status():
+#    pass
+
+'''
+Here we create the basic directory structures needed for this respective 
+site, telescope and instruments.
+'''
 
 
+if __name__ == '__main__':
+    '''
+    This is a simple test to send and receive via json.
+    '''
 
-
-
-
+    j_dump = json.dumps(site_config)
+    site_unjasoned = json.loads(j_dump)
+    if str(site_config) == str(site_unjasoned):
+        print('Strings matched.')
+    if site_config == site_unjasoned:
+        print('Dictionaries matched.')

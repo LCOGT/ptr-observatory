@@ -655,6 +655,8 @@ class Camera:
         self._set_setpoint(self.setpoint)
         self.day_warm = float(self.config["camera"][self.name]["settings"]['day_warm'])
         self.day_warm_degrees = float(self.config["camera"][self.name]["settings"]['day_warm_degrees'])
+        self.protect_camera_from_overheating=float(self.config["camera"][self.name]["settings"]['protect_camera_from_overheating'])
+        
         plog("Cooler setpoint is now:  ", self.setpoint)
         if self.config["camera"][self.name]["settings"][
             "cooler_on"

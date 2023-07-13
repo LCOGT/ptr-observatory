@@ -9,20 +9,23 @@ class Screen(object):
         self.config = config["screen"]["screen1"]
         self.device_name = name
         win32com.client.pythoncom.CoInitialize()
-        self.screen = win32com.client.Dispatch(driver)
         self.description = self.config["desc"]
-        self.screen.Connected = True
+        if driver is not None:
+            self.screen = win32com.client.Dispatch(driver)
+            self.screen.Connected = True
+            self.screen.CalibratorOff()
+            self.screen_dark()
+        else:
+            self.screen = None
         print("Screens may take a few seconds to process commands.")
-        self.scrn = str("Alnitak")
-
-        self.screen.CalibratorOff()
+        self.scrn = str("Alnitak")   #Should come from config.
         self.status = "Off"
         self.screen_message = "-"
         self.dark_setting = "Screen is Off"
         self.bright_setting = 0.0
         self.minimum = 5
         self.saturate = 255  # NB should pick up from config
-        self.screen_dark()
+
 
     def set_screen_bright(self, pBright, is_percent=False):
         if pBright <= 0:

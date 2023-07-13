@@ -14,13 +14,12 @@ import json
 12345678901234567890123456789012345678901234567890123456789012345678901234567890123456789012345678901234567890123456789012345678
 '''
 
-# NB NB NB json is not bi-directional with tuples (), instead, use lists [], nested if tuples are needed.
+# NB NB NB Json is not bi-directional with tuples (), instead, use lists [], nested if tuples are needed.
 degree_symbol = "°"
 
 # instance_type = 'obs' # This is the type of site this is.
 # wema_name = 'mrc' # THIS REFERS TO THE WEMA NOT THE OBS
-# 
-obs_id = 'mrc1'  # NB These must be unique across all of PTR. Pre-pend with airport code if needed: 'sba_wmdo'
+# obs_id = 'mrc1'  # NB These must be unique across all of PTR. Pre-pend with airport code if needed: 'sba_wmdo'
 
 site_config = {       #the NAME "SITE" IS INCONSISTENT  bIG CHANGE TO EFFECT, obsp_config maybe??  >>>>
     'instance_type' : 'obs',
@@ -29,7 +28,7 @@ site_config = {       #the NAME "SITE" IS INCONSISTENT  bIG CHANGE TO EFFECT, ob
     # Manual mode turns all automation off. 
     # The scope will only do what you tell it
     # This DOESN'T turn some safetys off 
-    'scope_in_manual_mode': False,
+    'scope_in_manual_mode': False,   #  SCOPE is ambiguous. >>>>
     'mount_reference_model_off': False,
     'sun_checks_off': False,
     'altitude_checks_off': False,    
@@ -168,19 +167,19 @@ site_config = {       #the NAME "SITE" IS INCONSISTENT  bIG CHANGE TO EFFECT, ob
     'solve_timer': 0.05,  # Only solve every X minutes
     'threshold_mount_update': 100,  # only update mount when X arcseconds away
 
-    'defaults': {       # >>>>
-        #'observing_conditions': 'observing_conditions1',
-        #'enclosure': 'enclosure1',
-        'mount': 'mount1',
-        'telescope': 'telescope1',
-        'focuser': 'focuser1',
-        'rotator': 'rotator1',
-        'selector':  None,
-        'screen': 'screen1',
-        'filter_wheel': 'filter_wheel1',
-        'camera': 'camera_1_1',
-        'sequencer': 'sequencer1'
-    },
+    # 'defaults': {       # >>>>
+    #     #'observing_conditions': 'observing_conditions1',
+    #     #'enclosure': 'enclosure1',
+    #     'mount': 'mount1',
+    #     'telescope': 'telescope1',
+    #     'focuser': 'focuser1',
+    #     'rotator': 'rotator1',
+    #     'selector':  None,
+    #     'screen': 'screen1',
+    #     'filter_wheel': 'filter_wheel1',
+    #     'camera': 'camera_1_1',
+    #     'sequencer': 'sequencer1'
+    # },
     'device_types': [
         'mount',
         'telescope',
@@ -675,16 +674,15 @@ site_config = {       #the NAME "SITE" IS INCONSISTENT  bIG CHANGE TO EFFECT, ob
     'camera': {
         'camera_1_1': {
             'parent': 'telescope1',
-            'name': 'sq002cs',  # Important because this points to a server file structure by that name.
-            'desc':  'QHY 410C',
+            'name': 'sq001cs',  # Important because this points to a server file structure by that name.
+            'desc':  'QHY 600C Pro',
             #'driver':  "ASCOM.QHYCCD_CAM2.Camera", # NB Be careful this is not QHY Camera2 or Guider  "Maxim.CCDCamera",   #'ASCOM.FLI.Kepler.Camera', "ASCOM.QHYCCD.Camera",   #
             # NB Be careful this is not QHY Camera2 or Guider  "Maxim.CCDCamera",   #'ASCOM.FLI.Kepler.Camera', "ASCOM.QHYCCD.Camera",   #
             'driver':  "QHYCCD_Direct_Control",
-            'service_date': '20230712',  #Replaced sq001cs which appears to have a TEC failure
 
 
 
-            'detector':  'Sony IMX441 Color',  # It would be good to build out a table of chip characteristics
+            'detector':  'Sony IMX455 Color',  # It would be good to build out a table of chip characteristics
             'use_file_mode':  False,   # NB we should clean out all file mode stuff.
             'file_mode_path':  'Q:/archive/sq01/maxim/',  # NB NB all file_mode Maxim stuff should go!
             'manufacturer':  "QHY",
@@ -719,7 +717,7 @@ site_config = {       #the NAME "SITE" IS INCONSISTENT  bIG CHANGE TO EFFECT, ob
                 # In that sense, QHY600 NEEDS to be set at GAIN 26 and the only thing to adjust is the offset.....
                 # USB Speed is a tradeoff between speed and banding, min 0, max 60. 60 is least banding. Most of the
                 # readout seems to be dominated by the slow driver (difference is a small fraction of a second), so I've left it at 60 - least banding.
-                'direct_qhy_readout_mode': 1,  #These settings may be wrong. WER 20230712
+                'direct_qhy_readout_mode': 3,
                 'direct_qhy_gain': 26,
                 'direct_qhy_offset': 60,
                 'direct_qhy_usb_speed': 60,
@@ -822,27 +820,26 @@ site_config = {       #the NAME "SITE" IS INCONSISTENT  bIG CHANGE TO EFFECT, ob
                 'crop_preview_xleft': 2,
                 'crop_preview_xright': 2,
                 'temp_setpoint': -5,  # Verify we can go colder, this system has a chiller
-                'has_chiller': False,
-                'calib_setpoints': [-5, -5, -5, -5, -5, -5, \
-                                    -5, -5, -5, -5, -5, -5],  # Picked by month-of-year
+                'has_chiller': True,
+                'calib_setpoints': [-20, -20, -20, -20, -20, -20, \
+                                    -20, -20, -20, -20, -20, -20],  # Picked by month-of-year
                 'day_warm': False,
-                'day_warm_degrees': 0,  # Number of degrees to warm during the daytime.
-                'protect_camera_from_overheating' : False,
+                'day_warm_degrees': 8,  # Number of degrees to warm during the daytime.
                 'cooler_on': True,
                 "cam_needs_NumXY_init": True,
                 'x_start':  0,
                 # 'x_start':  24,
                 'y_start':  0,
-                'x_width':  6072,  # NB Should be set up with overscan, which this camera is!  20200315 WER
-                'y_width':  4044,
-                'x_chip':  6072,  # NB Should specify the active pixel area.   20200315 WER
-                'y_chip':  4044,
-                'x_trim_offset':  0,  # NB these four entries are guesses.
-                'y_trim_offset':  0,
+                'x_width':  9576,  # NB Should be set up with overscan, which this camera is!  20200315 WER
+                'y_width':  6388,
+                'x_chip':  9576,  # NB Should specify the active pixel area.   20200315 WER
+                'y_chip':  6388,
+                'x_trim_offset':  8,  # NB these four entries are guesses.
+                'y_trim_offset':  8,
                 'pre_bias_available': False,  # if so need to specify as below for post_bias.
                 'post_bias_available': True,  # if so need to specify as below for post_bias.
-                'x_bias_start':  6066,
-                'y_bias_start': 4034,
+                'x_bias_start':  9577,
+                'y_bias_start': 6389,
                 'x_bias_end':  None,       # Vert band self.img[-38:-18, 0]
                 'y_bias_send': None,
                 'corner_everlap': None,
@@ -856,11 +853,11 @@ site_config = {       #the NAME "SITE" IS INCONSISTENT  bIG CHANGE TO EFFECT, ob
                 'det_sec': ['[25:9600, 1:6388]', '[13:4800, 1:3194]', '[9:3200, 1:2129]', '[7:2400, 1:1597]'],
                 'data_sec': ['[25:9600, 1:6388]', '[13:4800, 1:3194]', '[9:3200, 1:2129]', '[7:2400, 1:1597]'],
                 'trim_sec': ['[1:9576, 1:6388]', '[1:4788, 1:3194]', '[1:3192, 1:2129]', '[1:2394, 1:1597]'],
-                'x_pixel':  5.94,
-                'y_pixel':  5.94,
+                'x_pixel':  3.76,
+                'y_pixel':  3.76,
 
-                'pix_scale': 0.478039,    #   bin-2  2* math.degrees(math.atan(3.76/2563000))*3600
-                '1x1_pix_scale': 0.478039,    #  This is the 1x1 binning pixelscale
+                'pix_scale': 0.302597,    #   bin-2  2* math.degrees(math.atan(3.76/2563000))*3600
+                '1x1_pix_scale': 0.302597,    #  This is the 1x1 binning pixelscale
                 'native_bin': 1, # Needs to be simple, it will recalculate things on the 1x1 binning pixscale above.
                 
                 # The drizzle_value is by the new pixelscale
@@ -873,7 +870,7 @@ site_config = {       #the NAME "SITE" IS INCONSISTENT  bIG CHANGE TO EFFECT, ob
                 'drizzle_value_for_later_stacking': 0.5,
 
 
-                'CameraXSize': 6072,
+                'CameraXSize': 9600,
                 'CameraYSize': 6422,
                 'StartX': 1,
                 'StartY': 1,
@@ -882,8 +879,8 @@ site_config = {       #the NAME "SITE" IS INCONSISTENT  bIG CHANGE TO EFFECT, ob
                 'x_field_deg': 0.8042,  # round(4784*0.605194/3600, 4),   #48 X 32 AMIN  3MIN X 0.5 DEG
                 'y_field_deg': 0.5369,  # round(3194*0.605194/3600, 4),
                 'area_sq_deg':  0.4318,
-                'overscan_x': 0,
-                'overscan_y': 0,
+                'overscan_x': 24,
+                'overscan_y': 34,
                 'north_offset': 0.0,  # These three are normally 0.0 for the primary telescope
                 'east_offset': 0.0,
                 'rotation': 0.0,
@@ -897,7 +894,7 @@ site_config = {       #the NAME "SITE" IS INCONSISTENT  bIG CHANGE TO EFFECT, ob
                 'can_subframe':  True,
                 'min_subframe': [128, 128],
                 # Meaning fixed binning if list has only one entry
-                'bin_modes':  [['Optimal', 1.42], ['Fine', 0.96], ['Coarse', 1.91], ['Eng', 0.48]],
+                'bin_modes':  [['Optimal', 0.91], ['Fine', 0.61], ['Coarse', 1.2], ['Eng', 0.30]],
                 'camera_gain':   0.454, #[10., 10., 10., 10.],     #  One val for each binning.
                 'camera_gain_stdev':   0.01, #[10., 10., 10., 10.],     #  One val for each binning.
                 'read_noise':  1.87, #[9, 9, 9, 9],    #  All SWAGs right now
