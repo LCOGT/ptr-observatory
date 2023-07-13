@@ -2354,7 +2354,7 @@ class Sequencer:
                             cge_stdev=np.nanstd(camera_gain_estimate_image)
                             #cge_stdev=mad_std(camera_gain_estimate_image)
                             cge_sqrt=pow(cge_median,0.5)
-                            cge_gain=pow(cge_sqrt/cge_stdev, 2)
+                            cge_gain=1/pow(cge_sqrt/cge_stdev, 2)
                             print ("Camera gain median: " + str(cge_median) + " stdev: " +str(cge_stdev)+ " sqrt: " + str(cge_sqrt) + " gain: " +str(cge_gain))
                             #self.expresult["camera_gain"] = cge_gain
                             estimated_flat_gain.append(cge_gain)
@@ -2366,7 +2366,7 @@ class Sequencer:
                             #breakpoint()
                         single_filter_gains=np.array(single_filter_gains)
                         single_filter_gains = sigma_clip(single_filter_gains, masked=False, axis=None)
-                        plog ("Ftiler Gain Sigma Clipped Estimates: " + str(np.nanmedian(single_filter_gains)) + " std " + str(np.std(single_filter_gains)) + " N " + str(len(single_filter_gains)))
+                        plog ("Filter Gain Sigma Clipped Estimates: " + str(np.nanmedian(single_filter_gains)) + " std " + str(np.std(single_filter_gains)) + " N " + str(len(single_filter_gains)))
                         flat_gains[filtercode]=[np.nanmedian(single_filter_gains), np.std(single_filter_gains),len(single_filter_gains)]
                         
                         PLDrive._mmap.close()

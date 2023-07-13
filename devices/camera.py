@@ -1143,6 +1143,7 @@ class Camera:
         #if self.qhydirect:
         #    breakpoint()
         #    cam_stat = self.config['camera'][self.name]['name'] + " connected. # self.camera.CameraState
+       
         cam_stat = self.config['camera'][self.name]['name'] + " connected." # self.camera.CameraState
         status[
             "status"
@@ -2158,7 +2159,7 @@ class Camera:
                             cge_median=np.nanmedian(camera_gain_estimate_image)
                             cge_stdev=np.nanstd(camera_gain_estimate_image)
                             cge_sqrt=pow(cge_median,0.5)
-                            cge_gain=pow(cge_sqrt/cge_stdev, 2)
+                            cge_gain=1/pow(cge_sqrt/cge_stdev, 2)
                             
                             plog ("Camera gain median: " + str(cge_median) + " stdev: " +str(cge_stdev)+ " sqrt: " + str(cge_sqrt) + " gain: " +str(cge_gain))
                             self.expresult["camera_gain"] = cge_gain
