@@ -1922,6 +1922,8 @@ class Sequencer:
                 g_dev['mnt'].park_command({}, {})
                 g_dev['mnt'].go_coord(returnra, returndec)
         
+            time.sleep(10)
+        
         except:
             breakpoint()
         

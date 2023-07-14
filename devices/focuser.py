@@ -185,15 +185,42 @@ class Focuser:
             if self.theskyx:
             #self.focuser.focPosition =  int(float(self.reference) * self.micron_to_steps)  
             #print (self.focuser.focPosition())
-                    status = {
-                    "focus_position": round(
-                        self.focuser.focPosition() * self.steps_to_micron, 1
-                    ),  # THIS occasionally glitches, usually no temp probe on Gemini
-                    "focus_temperature": self.focuser.focTemperature,
-                    #"focus_moving": False,
-                    "comp": self.config["coef_c"],
-                    "filter_offset": g_dev["fil"].filter_offset,
-                }
+                try:
+                        status = {
+                        "focus_position": round(
+                            self.focuser.focPosition() * self.steps_to_micron, 1
+                        ),  # THIS occasionally glitches, usually no temp probe on Gemini
+                        "focus_temperature": self.focuser.focTemperature,
+                        #"focus_moving": False,
+                        "comp": self.config["coef_c"],
+                        "filter_offset": g_dev["fil"].filter_offset,
+                    }
+                except Exception as e:
+                    try:
+                        if 'COleException: The RPC server is unavailable.' in str(e):
+                            plog ("TheSkyX focuser glitch.... recovering......")
+                            time.sleep(10)
+                            self.focuser = win32com.client.Dispatch('CCDSoft2XAdaptor.ccdsoft5Camera')
+                            time.sleep(10)
+                            self.focuser.focConnect()
+                            time.sleep(10)
+                            status = {
+                            "focus_position": round(
+                                self.focuser.focPosition() * self.steps_to_micron, 1
+                            ),  # THIS occasionally glitches, usually no temp probe on Gemini
+                            "focus_temperature": self.focuser.focTemperature,
+                            #"focus_moving": False,
+                            "comp": self.config["coef_c"],
+                            "filter_offset": g_dev["fil"].filter_offset,
+                        }
+                    except Exception as e:
+                        plog ("focuser status breakdown: ", e)
+                        plog ("usually the focusser program has crashed. This breakpoint is to help catch and code in a fix - MTF")
+                        plog ("possibly just institute a full reboot")
+                        plog (traceback.format_exc())
+                        breakpoint()
+                        
+                        
             elif g_dev['fil'].null_filterwheel == False:
                 status = {
                     "focus_position": round(
