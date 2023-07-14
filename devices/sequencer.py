@@ -1107,7 +1107,7 @@ class Sequencer:
     def execute_block(self, block_specification):
         #ocn_status = eval(self.redis_server.get('ocn_status'))
         #enc_status = eval(self.redis_server.get('enc_status'))
-        
+        self.block_guard = True
         if (ephem.now() < g_dev['events']['Civil Dusk'] ) or \
             (g_dev['events']['Civil Dawn']  < ephem.now() < g_dev['events']['Nightly Reset']):
             plog ("NOT RUNNING PROJECT BLOCK -- IT IS THE DAYTIME!!")
@@ -1121,7 +1121,7 @@ class Sequencer:
 
         calendar_event_id=block_specification['event_id']
 
-        self.block_guard = True
+        
         # NB we assume the dome is open and already slaving.
         block = copy.deepcopy(block_specification)
         #ocn_status = g_dev['ocn'].status
