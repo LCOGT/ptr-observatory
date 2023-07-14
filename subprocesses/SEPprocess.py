@@ -194,10 +194,13 @@ else:
 
         fx, fy = hdusmalldata.shape
 
+        aspect_ratio= fx/fy
+
+
         #focus_jpeg_size=self.config["camera"][g_dev['cam'].name]["settings"]['focus_jpeg_size']
         crop_width = (fx - focus_jpeg_size) / 2
-        crop_height = (fy - focus_jpeg_size) / 2
-
+        crop_height = (fy - (focus_jpeg_size / aspect_ratio) ) / 2
+        
 
 
         # Make sure it is an even number for OSCs
