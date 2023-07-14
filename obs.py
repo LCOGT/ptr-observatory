@@ -3147,51 +3147,37 @@ sel
             aws_weather_status=reqs.get(uri_status, timeout=20)
             aws_weather_status=aws_weather_status.json()
             #breakpoint()
-            
-            if aws_weather_status['status']['observing_conditions']['observing_conditions1'] == None:
-                aws_weather_status['status']['observing_conditions']['observing_conditions1'] = {'wx_ok': 'Unknown'} 
-            else:
-                #breakpoint()
-                for weatherkey in aws_weather_status['status']['observing_conditions']['observing_conditions1'].keys():
-                    aws_weather_status['status']['observing_conditions']['observing_conditions1'][weatherkey]=aws_weather_status['status']['observing_conditions']['observing_conditions1'][weatherkey]['val']
-            
-            
-            try:
-                # To stop status's filling up the queue under poor connection conditions
-                # There is a size limit to the queue
-                if self.send_status_queue.qsize() < 7:            
-                    self.send_status_queue.put((self.name, 'weather', aws_weather_status['status']), block=False)
-                #self.send_status_queue.put((self.name, 'enclosure', aws_enclosure_status), block=False)
-                
-            #breakpoint()
-            except Exception as e:
-                #breakpoint()
-                plog ("aws enclosure send failed ", e)
-                #pass
-            
-            aws_weather_status=aws_weather_status['status']['observing_conditions']['observing_conditions1']
-            
-            
-            
         except Exception as e:
             plog("Failed to get aws enclosure status. Usually not fatal:  ", e)
             aws_weather_status={} 
             aws_weather_status['status']={}
             aws_weather_status['status']['observing_conditions']={}
             aws_weather_status['status']['observing_conditions']['observing_conditions1'] = None
+            
+            
+        if aws_weather_status['status']['observing_conditions']['observing_conditions1'] == None:
+            aws_weather_status['status']['observing_conditions']['observing_conditions1'] = {'wx_ok': 'Unknown'} 
+        else:
+            #breakpoint()
+            for weatherkey in aws_weather_status['status']['observing_conditions']['observing_conditions1'].keys():
+                aws_weather_status['status']['observing_conditions']['observing_conditions1'][weatherkey]=aws_weather_status['status']['observing_conditions']['observing_conditions1'][weatherkey]['val']
         
         
+        try:
+            # To stop status's filling up the queue under poor connection conditions
+            # There is a size limit to the queue
+            if self.send_status_queue.qsize() < 7:            
+                self.send_status_queue.put((self.name, 'weather', aws_weather_status['status']), block=False)
+            #self.send_status_queue.put((self.name, 'enclosure', aws_enclosure_status), block=False)
+            
+        #breakpoint()
+        except Exception as e:
+            #breakpoint()
+            plog ("aws enclosure send failed ", e)
+            #pass
         
-        
-        
-        
-        #status = {'shutter_status': aws_enclosure_status["shutter_status"]['val'],
-        #          'enclosure_synchronized': aws_enclosure_status["enclosure_synchronized"]['val'],  # self.following, 20220103_0135 WER
-        #          'dome_azimuth': aws_enclosure_status["dome_azimuth"]['val'],
-        ##          'dome_slewing': aws_enclosure_status["dome_slewing"]['val'],
-        #          'enclosure_mode': aws_enclosure_status["enclosure_mode"]['val'],
-        #          'enclosure_message': "No message"}
-
+        aws_weather_status=aws_weather_status['status']['observing_conditions']['observing_conditions1']
+                        
         return aws_weather_status
 
 def wait_for_slew():
