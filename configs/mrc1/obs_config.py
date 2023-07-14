@@ -166,7 +166,7 @@ site_config = {       #the NAME "SITE" IS INCONSISTENT  bIG CHANGE TO EFFECT, ob
     'focus_trigger': 0.75,  # What FWHM increase is needed to trigger an autofocus
     'solve_nth_image': 1,  # Only solve every nth image
     'solve_timer': 0.05,  # Only solve every X minutes
-    'threshold_mount_update': 100,  # only update mount when X arcseconds away
+    'threshold_mount_update': 45,  # only update mount when X arcseconds away
 
     'defaults': {       # >>>>
         #'observing_conditions': 'observing_conditions1',
@@ -752,11 +752,15 @@ site_config = {       #the NAME "SITE" IS INCONSISTENT  bIG CHANGE TO EFFECT, ob
                 # 'osc_colour_enhance' : 1.5,
                 # 'osc_sharpness_enhance' : 1.5,
                 'osc_brightness_enhance': 1.0,
-                'osc_contrast_enhance': 1.5,
-                'osc_saturation_enhance': 2.5,
-                'osc_colour_enhance': 1.7,
-                'osc_sharpness_enhance': 1.5,
-                'osc_background_cut': 25.0,
+                # 'osc_contrast_enhance': 1.5,
+                # 'osc_saturation_enhance': 2.5,
+                # 'osc_colour_enhance': 1.7,
+                # 'osc_sharpness_enhance': 1.5,
+                'osc_contrast_enhance': 1.2,
+                'osc_saturation_enhance': 1.5,
+                'osc_colour_enhance': 1.2,
+                'osc_sharpness_enhance': 1.2,
+                'osc_background_cut': 15.0,
                 # This setting will bin the image for focussing rather than interpolating. Good for 1x1 pixel sizes < 0.6.
                 'bin_for_focus': True,
 
@@ -776,7 +780,7 @@ site_config = {       #the NAME "SITE" IS INCONSISTENT  bIG CHANGE TO EFFECT, ob
                 # Do tend to be a bit dodgy around the edges, so perhaps a standard
                 # value of 30 is good. Increase this if your camera has particularly bad
                 # edges.
-                'reduced_image_edge_crop': 30,
+                'reduced_image_edge_crop': 50,
 
                 # HERE YOU CAN FLIP THE IMAGE TO YOUR HEARTS DESIRE
                 # HOPEFULLY YOUR HEARTS DESIRE IS SIMILAR TO THE
