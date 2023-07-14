@@ -1518,7 +1518,7 @@ sel
                     else:
                         print("Camera Overheating Safety Warm Cycle on.")
 
-                elif g_dev['cam'].protect_camera_from_overheating and (float(current_camera_temperature) - g_dev['cam'].current_setpoint) > (2 * g_dev['cam'].day_warm_degrees):
+                elif (float(current_camera_temperature) - g_dev['cam'].current_setpoint) > (2 * g_dev['cam'].day_warm_degrees):
                     plog("Found cooler on, but warm.")
                     plog("Keeping it slightly warm ( " + str(2 * g_dev['cam'].day_warm_degrees) +
                           " degrees warmer ) for about 20 minutes just in case the camera overheated.")

@@ -844,6 +844,7 @@ site_config = {
                                     -20, -20, -20, -20, -20, -20],  #  Picked by month-of-year 
                 'day_warm': True,
                 'day_warm_degrees' : 6, # Number of degrees to warm during the daytime.
+                'protect_camera_from_overheating' : True,
                 'cooler_on': True,
                 "cam_needs_NumXY_init": True,
                 'x_start':  24,

@@ -300,7 +300,7 @@ site_config = {
 
 
     'mount': {
-        'mount1': {
+        'mount1': {      #NB NB There can only be one mounting given the new model.
             'parent': 'enclosure1',
             'tel_id': '0m35',
             'name': 'westpier',
@@ -312,7 +312,7 @@ site_config = {
             'recover_script':  None,
             'shutdown_script':  None,
             'alignment': 'Alt-Az',
-            'default_zenith_avoid': 7.0,   #degrees floating
+            'default_zenith_avoid': 5.0,   #degrees floating
             'has_paddle': False,      #paddle refers to something supported by the Python code, not the AP paddle.
             'has_ascom_altaz': False,
             'pointing_tel': 'tel1',  
@@ -414,7 +414,7 @@ site_config = {
     },
 
 
-    'telescope': {
+    'telescope': {                 #Better called OTA or "Optics
         'telescope1': {
             'parent': 'mount2',
             'name': 'Main OTA',
@@ -460,8 +460,11 @@ site_config = {
                 'west_flip_dec_offset': 0.0
                 },
 
-            },
-
+        },
+        #'ota2':{    #NB NB second OTA here   >>>>
+            
+        #}
+        
 
     },
 
@@ -804,6 +807,7 @@ site_config = {
                 'chiller_ref_temp':  16,
                 'day_warm': False,
                 'day_warm_degrees' : 8, # Number of degrees to warm during the daytime.
+                'protect_camera_from_overheating' : False,
                 'cooler_on': True,
                 "cam_needs_NumXY_init": True,
                 'x_start':  24,

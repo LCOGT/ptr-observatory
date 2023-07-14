@@ -674,6 +674,7 @@ site_config = {
                 'calib_setpoints': [-7.5, -5, 0],  # Should vary with season? by day-of-year mod len(list)
                 'day_warm': False,
                 'day_warm_degrees' : 6, # Number of degrees to warm during the daytime.
+                'protect_camera_from_overheating' : False,
                 'cooler_on': True,
                 
                 "cam_needs_NumXY_init": True,

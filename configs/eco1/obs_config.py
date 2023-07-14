@@ -52,7 +52,7 @@ site_config = {
     'daytime_exposure_time_safety_off': False,
     'degrees_to_avoid_zenith_area_for_calibrations': 20,    
     
-    'debug_mode': True,
+    'debug_mode': False,
     
     
     #'debug_site_mode': False,
@@ -648,6 +648,7 @@ site_config = {
                 #'calib_setpoints': [-35,-30, -25, -20, -15, -10 ],  #  Should vary with season?
                 'day_warm': True,
                 'day_warm_degrees' : 8, # Number of degrees to warm during the daytime.
+                'protect_camera_from_overheating' : True,
                 'cooler_on': True,
                 
                 "cam_needs_NumXY_init": False,
