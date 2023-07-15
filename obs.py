@@ -412,7 +412,7 @@ class Observatory:
         # Not all who wander are lost.... but those that point below altitude -10 probably are.
         # if self.config["mount"]["mount1"]["permissive_mount_reset"] == "yes":
         g_dev["mnt"].reset_mount_reference()
-
+        self.warm_report_timer = time.time()
 
         # set manual mode at startup
         self.scope_in_manual_mode=self.config['scope_in_manual_mode']
@@ -1530,9 +1530,10 @@ sel
                     # Some cameras need to be sent this to change the temperature also.. e.g. TheSkyX
                     g_dev['cam']._set_cooler_on()
 
-            if not self.camera_overheat_safety_warm_on:                
+            if not self.camera_overheat_safety_warm_on and (time.time() - self.warm_report_timer > 300):                
                 # Daytime... a bit tricky! Two periods... just after biases but before nightly reset OR ... just before eve bias dark
                 # As nightly reset resets the calendar
+                self.warm_report_timer = time.time()
                 if g_dev['cam'].day_warm and (ephem.now() < g_dev['events']['Eve Bias Dark'] - ephem.hour) or \
                         (g_dev['events']['End Morn Bias Dark'] + ephem.hour < ephem.now() < g_dev['events']['Nightly Reset']):
                     plog("In Daytime: Camera set at warmer temperature")
