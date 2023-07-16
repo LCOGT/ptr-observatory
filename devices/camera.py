@@ -1906,6 +1906,7 @@ class Camera:
                         self.expresult["stopped"] = True
                         #self.expresult["patch"] = bi_mean
                         g_dev["obs"].exposure_halted_indicator =False
+                        plog ("Exposure Halted Indicator On. Cancelling Exposure.")
                         return self.expresult
 
                 remaining = round(self.completion_time - time.time(), 1)

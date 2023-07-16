@@ -694,6 +694,7 @@ class Observatory:
             self.exposure_busy = False
 
         g_dev["obs"].exposure_halted_indicator = True
+        g_dev["obs"].exposure_halted_indicator_timer = time.time()
 
         # except:
         #    plog("Camera stop faulted.")
@@ -903,6 +904,11 @@ sel
             g_dev["obs"].send_to_user("Stop Script Complete.")
             g_dev['seq'].stop_script_called = False
             g_dev['seq'].stop_script_called_time = time.time()
+
+        if g_dev["obs"].exposure_halted_indicator == True:
+            if g_dev["obs"].exposure_halted_indicator_timer - time.time() > 12:
+                g_dev["obs"].exposure_halted_indicator = False
+                g_dev["obs"].exposure_halted_indicator_timer = time.time()
 
         # Good spot to check if we need to nudge the telescope as long as we aren't exposing.
         if not g_dev["cam"].exposure_busy:
