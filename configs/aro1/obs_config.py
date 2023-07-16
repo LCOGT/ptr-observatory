@@ -491,7 +491,8 @@ site_config = {
             
             
             "filter_settle_time": 0, #how long to wait for the filter to settle after a filter change(seconds)
-
+            'override_automatic_filter_gains': False, # This ignores the automatically estimated filter gains and starts with the values from the config file
+            
             "driver": "LCO.dual",  # 'ASCOM.FLI.FilterWheel',   #'MAXIM',
             'ip_string': 'http://10.0.0.110',
             "dual_wheel": True,
@@ -536,7 +537,6 @@ site_config = {
                 'filter_screen_sort':  [1],   # don't use narrow yet,  8, 10, 9], useless to try.
                 'filter_sky_sort': ['S2','N2','up','HA','CR','O3','zs','zp','Ic','PR','rp','JB','PG', \
                                     'ip','Rc','JV','NIR','PB','gp','PL','EXO','air'],
-                'override_automatic_filter_gains': False, # This ignores the automatically estimated filter gains and starts with the values from the config file
                 
                 
                 #'filter_sky_sort': [ 27, 26, 25, 28, 12, 7, 24, 18, 23, 10, 20, 17, 9,\

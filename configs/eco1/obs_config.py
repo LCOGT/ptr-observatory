@@ -484,6 +484,7 @@ site_config = {
                 'mono_RGB_relative_weights' : [1.2,1,0.8],
                 'mono_Narrowband_colour_filters' : ['ha','o3','s2'], # ha, o3, s2 filter codes for this camera if it is a monochrome camera with filters
                 'mono_Narrowband_relative_weights' : [1.0,2,2.5],
+                'override_automatic_filter_gains': False, # This ignores the automatically estimated filter gains and starts with the values from the config file
                 
                 
                 #'filter_reference': 4,   #  We choose to use W as the default filter.  Gains taken at F9, Ceravolo 300mm
@@ -533,7 +534,6 @@ site_config = {
                 
                 #'filter_sky_sort': ['ha','o3','s2','v','pb','ip','lum']    #No diffuser based filters
                 'filter_sky_sort': ['ha','o3','s2','v','pb','ip','lum'],
-                'override_automatic_filter_gains': False, # This ignores the automatically estimated filter gains and starts with the values from the config file
                 #No diffuser based filters
                 
 

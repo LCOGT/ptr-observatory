@@ -478,6 +478,7 @@ site_config = {
             'service_date': '20180101',
             
             "filter_settle_time": 0, #how long to wait for the filter to settle after a filter change(seconds)
+            'override_automatic_filter_gains': False,
 
             "driver":   "CCDSoft2XAdaptor.ccdsoft5Camera",   #"LCO.dual",  #  'ASCOM.FLI.FilterWheel',
             #"driver":   "Maxim.Image",   #"LCO.dual",  #  'ASCOM.FLI.FilterWheel',
@@ -535,8 +536,7 @@ site_config = {
 
 
                 'filter_screen_sort':  ['s2','o3','ha','pb','pg','pr','lum'],   #  don't use narrow yet,  8, 10, 9], useless to try.
-                'override_automatic_filter_gains': False,
-
+                
                 
                 #'filter_sky_sort': ['ha','o3','s2','v','pb','ip','lum']    #No diffuser based filters
                 'filter_sky_sort': ['o3','ha','s2','pg','pb','pr','lum']    #No diffuser based filters

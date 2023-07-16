@@ -461,6 +461,8 @@ site_config = {
             "name": "SBIG 8-position wheel" ,  #"LCO filter wheel FW50_001d",
             'service_date': '20180101',
             "driver":   "Maxim.CCDCamera",   #"LCO.dual",  #  'ASCOM.FLI.FilterWheel',
+            'override_automatic_filter_gains': False,
+
             'ip_string': None,
             "dual_wheel": False,
             'settings': {
@@ -500,7 +502,6 @@ site_config = {
 
 
                 'filter_sky_sort': ['S2','O3','HA','PB','PG','PR','PL','air'] ,
-                'override_automatic_filter_gains': False, # This ignores the automatically estimated filter gains and starts with the values from the config file
                 
                 #'filter_sky_sort': [7, 19, 2, 13, 18, 5, 15,\
                 #                    12, 4, 11, 16, 10, 9, 17, 3, 14, 1, 0]    #basically no diffuser based filters

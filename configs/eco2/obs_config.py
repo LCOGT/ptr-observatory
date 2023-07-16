@@ -515,8 +515,9 @@ site_config = {
             'service_date': '20180101',
             
             "filter_settle_time": 0, #how long to wait for the filter to settle after a filter change(seconds)
-
-            'flat_sky_gain' : 450,
+            'override_automatic_filter_gains': False, # This ignores the automatically estimated filter gains and starts with the values from the config file
+            
+            'flat_sky_gain' : 650,
 
             "driver":   None,   #"LCO.dual",  #  'ASCOM.FLI.FilterWheel',
             #"driver":   "Maxim.Image",   #"LCO.dual",  #  'ASCOM.FLI.FilterWheel',

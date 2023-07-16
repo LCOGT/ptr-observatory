@@ -2621,7 +2621,8 @@ class Sequencer:
         # Load up the pickled list of gains or start a new one. 
         filter_gain_shelf = shelve.open(g_dev['obs'].obsid_path + 'ptr_night_shelf/' + 'filtergain' + g_dev['cam'].name + str(g_dev['obs'].name))
         #breakpoint()
-        if self.config['filter_wheel']['filter_wheel1']['settings']['override_automatic_filter_gains']:
+        
+        if self.config['filter_wheel']['filter_wheel1']['override_automatic_filter_gains']:
             plog ("Config is set to not use the automatically estimated")
             plog ("Filter gains. Starting with config gain entries.")
         elif len(filter_gain_shelf)==0:

@@ -572,7 +572,8 @@ site_config = {       #the NAME "SITE" IS INCONSISTENT  bIG CHANGE TO EFFECT, ob
             "dual_wheel": True,
             "filter_settle_time": 1, #how long to wait for the filter to settle after a filter change(seconds)
 
-
+            'override_automatic_filter_gains': False, # This ignores the automatically estimated filter gains and starts with the values from the config file
+             
             # WER - if there is no filter wheel, then these two are used, otherwise they are harmless
             "name": "RGGB",
             # 'flat_sky_gain' : 1148,
@@ -636,7 +637,6 @@ site_config = {       #the NAME "SITE" IS INCONSISTENT  bIG CHANGE TO EFFECT, ob
                 # 'filter_sky_sort':     ['HA', 'S2', 'CR', 'N2', 'O3', 'PR', 'PG', 'PB', 'w', 'air']  #Least to most throughput  \
                 # Temporary MTF filter-sky-sort to get OSC flats ... if after March 23 return to above
                 'filter_sky_sort':     ['S2', 'N2', 'CR', 'O3', 'HA', 'z', 'PR', 'PG', 'PB', 'gp', 'rp', 'ip', 'w', 'PL', 'air'],
-                'override_automatic_filter_gains': False, # This ignores the automatically estimated filter gains and starts with the values from the config file
                   # Least to most throughput  \
                 # 'filter_sky_sort':     [  'PB', 'gp','rp','ip', 'w','PL', 'focus', 'air']  #Least to most throughput  \
 
