@@ -1484,6 +1484,7 @@ class Camera:
                             rot_report=1
                         time.sleep(0.2)
                         if g_dev["obs"].stop_all_activity:
+                            plog('stop_all_activity cancelling camera exposure')
                             return                              
                                 
 
@@ -1555,6 +1556,7 @@ class Camera:
                                 plog("Camera retry loop stopped by Cancel Exposure")
                                 self.exposure_busy = False
                         self.exposure_busy = False
+                        plog ("stop_all_activity cancelling out of camera exposure")
                         return
 
                     # Check that the block isn't ending during normal observing time (don't check while biasing, flats etc.)
@@ -1697,6 +1699,7 @@ class Camera:
                                              rot_report=1
                                          time.sleep(0.2) 
                                          if g_dev["obs"].stop_all_activity:
+                                             plog ("stop_all_activity cancelling out of camera exposure")
                                              return
                                 
                             self._expose(exposure_time, bias_dark_or_light_type_frame)
@@ -2188,6 +2191,7 @@ class Camera:
                     
                 if not g_dev["cam"].exposure_busy:
                     self.expresult = {"stopped": True}
+                    plog ("exposure busy cancelling out of camera")
                     return self.expresult
                 
 
@@ -3329,6 +3333,7 @@ class Camera:
                     
                     if not g_dev["cam"].exposure_busy:
                         self.expresult = {"stopped": True}
+                        plog ("exposure busy cancelling out of camera")
                         return self.expresult
                     #self.expresult["mean_focus"] = avg_foc[1]
                     try:
