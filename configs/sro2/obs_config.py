@@ -478,7 +478,7 @@ site_config = {
             'service_date': '20180101',
             
             "filter_settle_time": 0, #how long to wait for the filter to settle after a filter change(seconds)
-            'override_automatic_filter_gains': False,
+            'override_automatic_filter_throughputs': False,
 
             "driver":   "CCDSoft2XAdaptor.ccdsoft5Camera",   #"LCO.dual",  #  'ASCOM.FLI.FilterWheel',
             #"driver":   "Maxim.Image",   #"LCO.dual",  #  'ASCOM.FLI.FilterWheel',

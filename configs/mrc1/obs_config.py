@@ -572,7 +572,7 @@ site_config = {       #the NAME "SITE" IS INCONSISTENT  bIG CHANGE TO EFFECT, ob
             "dual_wheel": True,
             "filter_settle_time": 1, #how long to wait for the filter to settle after a filter change(seconds)
 
-            'override_automatic_filter_gains': False, # This ignores the automatically estimated filter gains and starts with the values from the config file
+            'override_automatic_filter_throughputs': False, # This ignores the automatically estimated filter gains and starts with the values from the config file
              
             # WER - if there is no filter wheel, then these two are used, otherwise they are harmless
             "name": "RGGB",

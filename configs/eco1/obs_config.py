@@ -469,7 +469,8 @@ site_config = {
             'service_date': '20180101',
             
             "filter_settle_time": 0, #how long to wait for the filter to settle after a filter change(seconds)
-
+            'override_automatic_filter_throughputs': False, # This ignores the automatically estimated filter gains and starts with the values from the config file
+            
             "driver":   "CCDSoft2XAdaptor.ccdsoft5Camera",   #"LCO.dual",  #  'ASCOM.FLI.FilterWheel',
             #"driver":   "Maxim.Image",   #"LCO.dual",  #  'ASCOM.FLI.FilterWheel',
             'ip_string': None,
@@ -484,7 +485,6 @@ site_config = {
                 'mono_RGB_relative_weights' : [1.2,1,0.8],
                 'mono_Narrowband_colour_filters' : ['ha','o3','s2'], # ha, o3, s2 filter codes for this camera if it is a monochrome camera with filters
                 'mono_Narrowband_relative_weights' : [1.0,2,2.5],
-                'override_automatic_filter_gains': False, # This ignores the automatically estimated filter gains and starts with the values from the config file
                 
                 
                 #'filter_reference': 4,   #  We choose to use W as the default filter.  Gains taken at F9, Ceravolo 300mm
@@ -715,8 +715,8 @@ site_config = {
                 'is_color':  False,
                 'bayer_pattern':  None,    #  'RGGB" is a valid string in camera is color.
                 'can_set_gain':  True,
-                'camera_gain':   1.27, #[10., 10., 10., 10.],     #  One val for each binning.
-                'camera_gain_stdev':   0.15, #[10., 10., 10., 10.],     #  One val for each binning.
+                'camera_gain':   1.6, #[10., 10., 10., 10.],     #  One val for each binning.
+                'camera_gain_stdev':   0.2, #[10., 10., 10., 10.],     #  One val for each binning.
                 'read_noise':  1.92, #[9, 9, 9, 9],    #  All SWAGs right now
                 'read_noise_stdev':   0.003, #[10., 10., 10., 10.],     #  One val for each binning.
                 

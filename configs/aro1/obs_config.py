@@ -491,7 +491,7 @@ site_config = {
             
             
             "filter_settle_time": 0, #how long to wait for the filter to settle after a filter change(seconds)
-            'override_automatic_filter_gains': False, # This ignores the automatically estimated filter gains and starts with the values from the config file
+            'override_automatic_filter_throughputs': False, # This ignores the automatically estimated filter gains and starts with the values from the config file
             
             "driver": "LCO.dual",  # 'ASCOM.FLI.FilterWheel',   #'MAXIM',
             'ip_string': 'http://10.0.0.110',

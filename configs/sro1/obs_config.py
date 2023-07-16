@@ -461,7 +461,7 @@ site_config = {
             "name": "SBIG 8-position wheel" ,  #"LCO filter wheel FW50_001d",
             'service_date': '20180101',
             "driver":   "Maxim.CCDCamera",   #"LCO.dual",  #  'ASCOM.FLI.FilterWheel',
-            'override_automatic_filter_gains': False,
+            'override_automatic_filter_throughputs': False,
 
             'ip_string': None,
             "dual_wheel": False,

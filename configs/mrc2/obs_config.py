@@ -576,7 +576,7 @@ site_config = {
             'service_date': '20180101',
             'driver': 'Maxim.CCDcamera', 
             'dual_wheel':  True,
-            'override_automatic_filter_gains': False, # This ignores the automatically estimated filter gains and starts with the values from the config file
+            'override_automatic_filter_throughputs': False, # This ignores the automatically estimated filter gains and starts with the values from the config file
              
             "filter_settle_time": 8, #how long to wait for the filter to settle after a filter change(seconds)
 

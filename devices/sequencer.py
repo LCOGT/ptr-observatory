@@ -2368,7 +2368,7 @@ class Sequencer:
                             #breakpoint()
                         single_filter_gains=np.array(single_filter_gains)
                         single_filter_gains = sigma_clip(single_filter_gains, masked=False, axis=None)
-                        plog ("Filter Gain Sigma Clipped Estimates: " + str(np.nanmedian(single_filter_gains)) + " std " + str(np.std(single_filter_gains)) + " N " + str(len(single_filter_gains)))
+                        plog ("Filter Throughput Sigma Clipped Estimates: " + str(np.nanmedian(single_filter_gains)) + " std " + str(np.std(single_filter_gains)) + " N " + str(len(single_filter_gains)))
                         flat_gains[filtercode]=[np.nanmedian(single_filter_gains), np.std(single_filter_gains),len(single_filter_gains)]
                         
                         PLDrive._mmap.close()
@@ -2399,7 +2399,7 @@ class Sequencer:
                 # Report on camera gain estimation
                 try:
                     with open(textfilename, 'w') as f:                                                                 
-                        plog ("Ending stored filter gains")
+                        plog ("Ending stored filter throughputs")
                         
                             
                         estimated_flat_gain=np.array(estimated_flat_gain)
@@ -2620,18 +2620,18 @@ class Sequencer:
         exp_time = min_exposure 
         
         # Load up the pickled list of gains or start a new one. 
-        filter_gain_shelf = shelve.open(g_dev['obs'].obsid_path + 'ptr_night_shelf/' + 'filtergain' + g_dev['cam'].name + str(g_dev['obs'].name))
+        filter_throughput_shelf = shelve.open(g_dev['obs'].obsid_path + 'ptr_night_shelf/' + 'filterthroughput' + g_dev['cam'].name + str(g_dev['obs'].name))
         #breakpoint()
         
-        if self.config['filter_wheel']['filter_wheel1']['override_automatic_filter_gains']:
+        if self.config['filter_wheel']['filter_wheel1']['override_automatic_filter_throughputs']:
             plog ("Config is set to not use the automatically estimated")
-            plog ("Filter gains. Starting with config gain entries.")
-        elif len(filter_gain_shelf)==0:
-            plog ("Looks like a new filter gain shelf.")
+            plog ("Filter throughputs. Starting with config gain entries.")
+        elif len(filter_throughput_shelf)==0:
+            plog ("Looks like a new filter throughput shelf.")
         else:
-            plog ("Beginning stored filter gains")
-            for filtertempgain in list(filter_gain_shelf.keys()):
-                plog (str(filtertempgain) + " " + str(filter_gain_shelf[filtertempgain]))
+            plog ("Beginning stored filter throughputs")
+            for filtertempgain in list(filter_throughput_shelf.keys()):
+                plog (str(filtertempgain) + " " + str(filter_throughput_shelf[filtertempgain]))
         
         #try:
         #    init_ra = mnt_shelf['ra_cal_offset']
@@ -2641,8 +2641,8 @@ class Sequencer:
         #    init_dec =0.0
             
         #plog("initial:  ", init_ra, init_dec)
-        #filter_gain_shelf['ra_cal_offset'] = init_ra + err_ha
-        #filter_gain_shelf['dec_cal_offset'] = init_dec + err_dec
+        #filter_throughput_shelf['ra_cal_offset'] = init_ra + err_ha
+        #filter_throughput_shelf['dec_cal_offset'] = init_dec + err_dec
         
         
         
@@ -2710,13 +2710,13 @@ class Sequencer:
                                 
                                 if g_dev['obs'].open_and_enabled_to_observe == False:
                                     plog ("Observatory closed or disabled during flat script. Cancelling out of flat acquisition loop.")
-                                    filter_gain_shelf.close()
+                                    filter_throughput_shelf.close()
                                     return
                                 
                                 # Check that Flat time hasn't ended
                                 if ephem.now() > ending:
                                     plog ("Flat acquisition time finished. Breaking out of the flat loop.")
-                                    filter_gain_shelf.close()
+                                    filter_throughput_shelf.close()
                                     return
                                 
                             else:
@@ -2737,8 +2737,8 @@ class Sequencer:
                     plog("Beginning flat run for filterless observation")
                     
                 g_dev['obs'].send_to_user("Beginning flat run for filter: " + str(current_filter))  
-                if (current_filter in filter_gain_shelf.keys()) and (not self.config['filter_wheel']['filter_wheel1']['override_automatic_filter_gains']):
-                    filter_gain=filter_gain_shelf[current_filter]
+                if (current_filter in filter_throughput_shelf.keys()) and (not self.config['filter_wheel']['filter_wheel1']['override_automatic_filter_gains']):
+                    filter_gain=filter_throughput_shelf[current_filter]
                     plog ("Using stored gain : " + str(filter_gain))
                 else:  
                     if g_dev["fil"].null_filterwheel == False:                      
@@ -2768,13 +2768,13 @@ class Sequencer:
                     
                     if g_dev['obs'].open_and_enabled_to_observe == False:
                         plog ("Observatory closed or disabled during flat script. Cancelling out of flat acquisition loop.")
-                        filter_gain_shelf.close()
+                        filter_throughput_shelf.close()
                         return
                     
                     # Check that Flat time hasn't ended
                     if ephem.now() > ending:
                         plog ("Flat acquisition time finished. Breaking out of the flat loop.")
-                        filter_gain_shelf.close()
+                        filter_throughput_shelf.close()
                         return
                     
                     
@@ -2820,11 +2820,11 @@ class Sequencer:
             
                         if self.stop_script_called:
                             g_dev["obs"].send_to_user("Cancelling out of calibration script as stop script has been called.")  
-                            filter_gain_shelf.close()
+                            filter_throughput_shelf.close()
                             return
                         if not g_dev['obs'].open_and_enabled_to_observe:
                             g_dev["obs"].send_to_user("Cancelling out of activity as no longer open and enabled to observe.")  
-                            filter_gain_shelf.close()
+                            filter_throughput_shelf.close()
                             return
                         
                         # Here it makes four tests and if it doesn't match those tests, then it will attempt a flat. 
@@ -2859,13 +2859,13 @@ class Sequencer:
                                             
                                             if g_dev['obs'].open_and_enabled_to_observe == False:
                                                 plog ("Observatory closed or disabled during flat script. Cancelling out of flat acquisition loop.")
-                                                filter_gain_shelf.close()
+                                                filter_throughput_shelf.close()
                                                 return
                                             
                                             # Check that Flat time hasn't ended
                                             if ephem.now() > ending:
                                                 plog ("Flat acquisition time finished. Breaking out of the flat loop.")
-                                                filter_gain_shelf.close()
+                                                filter_throughput_shelf.close()
                                                 return                                            
                                         else:
                                             not_too_close_to_zenith=True  
@@ -2892,13 +2892,13 @@ class Sequencer:
                                             
                                             if g_dev['obs'].open_and_enabled_to_observe == False:
                                                 plog ("Observatory closed or disabled during flat script. Cancelling out of flat acquisition loop.")
-                                                filter_gain_shelf.close()
+                                                filter_throughput_shelf.close()
                                                 return
                                             
                                             # Check that Flat time hasn't ended
                                             if ephem.now() > ending:
                                                 plog ("Flat acquisition time finished. Breaking out of the flat loop.")
-                                                filter_gain_shelf.close()
+                                                filter_throughput_shelf.close()
                                                 return                                            
                                         else:
                                             not_too_close_to_zenith=True  
@@ -2925,13 +2925,13 @@ class Sequencer:
                                             
                                             if g_dev['obs'].open_and_enabled_to_observe == False:
                                                 plog ("Observatory closed or disabled during flat script. Cancelling out of flat acquisition loop.")
-                                                filter_gain_shelf.close()
+                                                filter_throughput_shelf.close()
                                                 return
                                             
                                             # Check that Flat time hasn't ended
                                             if ephem.now() > ending:
                                                 plog ("Flat acquisition time finished. Breaking out of the flat loop.")
-                                                filter_gain_shelf.close()
+                                                filter_throughput_shelf.close()
                                                 return                                            
                                         else:
                                             not_too_close_to_zenith=True  
@@ -2939,11 +2939,11 @@ class Sequencer:
                             
                             if self.stop_script_called:
                                 g_dev["obs"].send_to_user("Cancelling out of calibration script as stop script has been called.")  
-                                filter_gain_shelf.close()
+                                filter_throughput_shelf.close()
                                 return
                             if not g_dev['obs'].open_and_enabled_to_observe:
                                 g_dev["obs"].send_to_user("Cancelling out of activity as no longer open and enabled to observe.")  
-                                filter_gain_shelf.close()
+                                filter_throughput_shelf.close()
                                 return                                      
                                             
                             req = {'time': float(exp_time),  'alias': camera_name, 'image_type': 'sky flat', 'script': 'On'}
@@ -2960,7 +2960,7 @@ class Sequencer:
                                         g_dev['mnt'].park_command({}, {})
                                     except:
                                         plog("Mount did not park at end of morning skyflats.")
-                                filter_gain_shelf.close()
+                                filter_throughput_shelf.close()
                                 return
                             try:
                                 self.time_of_next_slew = time.time()
@@ -2970,11 +2970,11 @@ class Sequencer:
                                 try:
                                     if self.stop_script_called:
                                         g_dev["obs"].send_to_user("Cancelling out of calibration script as stop script has been called.")  
-                                        filter_gain_shelf.close()
+                                        filter_throughput_shelf.close()
                                         return
                                     if not g_dev['obs'].open_and_enabled_to_observe:
                                         g_dev["obs"].send_to_user("Cancelling out of activity as no longer open and enabled to observe.")  
-                                        filter_gain_shelf.close()
+                                        filter_throughput_shelf.close()
                                         return
                                 except Exception as e:
                                     plog ('something funny in stop_script still',e)
@@ -3016,23 +3016,23 @@ class Sequencer:
                                         
                                         if g_dev['obs'].open_and_enabled_to_observe == False:
                                             plog ("Observatory closed or disabled during flat script. Cancelling out of flat acquisition loop.")
-                                            filter_gain_shelf.close()
+                                            filter_throughput_shelf.close()
                                             return
                                         
                                         # Check that Flat time hasn't ended
                                         if ephem.now() > ending:
                                             plog ("Flat acquisition time finished. Breaking out of the flat loop.")
-                                            filter_gain_shelf.close()
+                                            filter_throughput_shelf.close()
                                             return                                            
                                     else:
                                         not_too_close_to_zenith=True
                             if self.stop_script_called:
                                 g_dev["obs"].send_to_user("Cancelling out of calibration script as stop script has been called.")  
-                                filter_gain_shelf.close()
+                                filter_throughput_shelf.close()
                                 return
                             if not g_dev['obs'].open_and_enabled_to_observe:
                                 g_dev["obs"].send_to_user("Cancelling out of activity as no longer open and enabled to observe.")  
-                                filter_gain_shelf.close()
+                                filter_throughput_shelf.close()
                                 return
                             
                             if g_dev["fil"].null_filterwheel == False:
@@ -3059,7 +3059,7 @@ class Sequencer:
                                     bright
                                     >= 0.5 * flat_saturation_level
                                 ):
-                                    filter_gain_shelf[current_filter]=new_gain_value
+                                    filter_throughput_shelf[current_filter]=new_gain_value
                                     camera_gain_collector.append(fred["camera_gain"])
                             else:
                                 if (
@@ -3069,7 +3069,7 @@ class Sequencer:
                                     bright
                                     >= 0.25 * flat_saturation_level
                                 ):
-                                    filter_gain_shelf[current_filter]=new_gain_value
+                                    filter_throughput_shelf[current_filter]=new_gain_value
                                     camera_gain_collector.append(fred["camera_gain"])
             
                             acquired_count += 1
@@ -3095,14 +3095,14 @@ class Sequencer:
         
 
         with open(textfilename, 'w') as f:                                                                 
-            plog ("Ending stored filter gains")
-            for filtertempgain in list(filter_gain_shelf.keys()):
-                filtline=str(filtertempgain) + " " + str(filter_gain_shelf[filtertempgain])
+            plog ("Ending stored filter throughputs")
+            for filtertempgain in list(filter_throughput_shelf.keys()):
+                filtline=str(filtertempgain) + " " + str(filter_throughput_shelf[filtertempgain])
                 plog (filtline)
                 f.write(filtline +"\n")
                 
 
-        filter_gain_shelf.close()
+        filter_throughput_shelf.close()
         
         # Report on camera gain estimation
         try:
