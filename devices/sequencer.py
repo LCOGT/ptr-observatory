@@ -3087,7 +3087,7 @@ class Sequencer:
         else:
             self.eve_sky_flat_latch = False
             
-        textfilename= g_dev['obs'].obsid_path + 'ptr_night_shelf/' + 'filtergain' + g_dev['cam'].name + str(g_dev['obs'].name) +'.txt'
+        textfilename= g_dev['obs'].obsid_path + 'ptr_night_shelf/' + 'filterthroughput' + g_dev['cam'].name + str(g_dev['obs'].name) +'.txt'
         try:
             os.remove(textfilename)
         except:
