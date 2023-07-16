@@ -2593,11 +2593,11 @@ class Sequencer:
             temp_separation=((ephem.separation( (flatspotaz,flatspotalt), (moondata.az.deg,moondata.alt.deg))))
             #breakpoint()
             
-            if (moondata.alt.deg < -15):
-                plog ("Moon is far below the ground, alt " + str(moondata.alt.deg) + ", sky flats going ahead.")
-            elif temp_separation < 105:
-                plog ("Moon is in the sky and less than 105 degrees ("+str(temp_separation)+") away from the flat spot, skipping this flat time.")
-                return
+            # if (moondata.alt.deg < -15):
+            #     plog ("Moon is far below the ground, alt " + str(moondata.alt.deg) + ", sky flats going ahead.")
+            # elif temp_separation < 105:
+            #     plog ("Moon is in the sky and less than 105 degrees ("+str(temp_separation)+") away from the flat spot, skipping this flat time.")
+            #     return
             #elif
             
             
@@ -2736,7 +2736,7 @@ class Sequencer:
                     plog("Beginning flat run for filterless observation")
                     
                 g_dev['obs'].send_to_user("Beginning flat run for filter: " + str(current_filter))  
-                if (current_filter in filter_gain_shelf.keys()) and (not self.config['filter_wheel']['filter_wheel1']['settings']['override_automatic_filter_gains']):
+                if (current_filter in filter_gain_shelf.keys()) and (not self.config['filter_wheel']['filter_wheel1']['override_automatic_filter_gains']):
                     filter_gain=filter_gain_shelf[current_filter]
                     plog ("Using stored gain : " + str(filter_gain))
                 else:  
