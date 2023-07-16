@@ -893,9 +893,10 @@ site_config = {       #the NAME "SITE" IS INCONSISTENT  bIG CHANGE TO EFFECT, ob
                 'rotation': 0.0,
                 'min_exposure': 0.0001,  # NB possibly these are gated by is_cmos
                 # For certain shutters, short exposures aren't good for flats. Some CMOS have banding in too short an exposure. Largely applies to ccds though.
-                'min_flat_exposure': 0.0001,
+                'min_flat_exposure': 0.0001,                
                 # Realistically there should be a maximum flat_exposure that makes sure flats are efficient and aren't collecting actual stars.
                 'max_flat_exposure': 20.0,
+                'reject_new_flat_by_known_gain' : False,
                 'max_exposure': 360.,
                 'max_daytime_exposure': 0.0001,  # NB why this?
                 'can_subframe':  True,

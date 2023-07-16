@@ -582,7 +582,7 @@ site_config = {
                 'hold_flats_in_memory': True, # If there is sufficient memory ... OR .... not many flats, it is faster to keep the flats in memory.
                 'min_flat_exposure': 0.01,
                 'max_flat_exposure' : 20,
-                
+                'reject_new_flat_by_known_gain' : False,
                 
                 # For direct QHY usage we need to set the appropriate gain.
                 # This changes from site to site. "Fast" scopes like the RASA need lower gain then "slow".
