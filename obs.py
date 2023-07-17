@@ -1206,6 +1206,8 @@ sel
             # breakpoint()
             if (time.time() - self.last_time_report_to_console) > 600:
                 plog (ephem.now())
+                if self.camera_temperature_in_range_for_calibrations == True:
+                    plog ("Camera currently too warm for calibrations.")
                 self.last_time_report_to_console = time.time()
             #print ("Nightly Reset Complete      : " + str(g_dev['seq'].nightly_reset_complete))
             #plog("Time until Nightly Reset      : " + str(round(( g_dev['events']['Nightly Reset'] - ephem.now()) * 24,2)) + " hours")
