@@ -622,7 +622,7 @@ class Sequencer:
         
         # This bit is really to get the scope up and running if the roof opens
         if ((g_dev['events']['Cool Down, Open']  <= ephem_now < g_dev['events']['Observing Ends'])) and not self.cool_down_latch and \
-            g_dev['obs'].open_and_enabled_to_observe and not g_dev['obs'].scope_in_manual_mode and g_dev['mnt'].mount.AtPark and (time.time() - self.time_roof_last_opened) < 300 :
+            g_dev['obs'].open_and_enabled_to_observe and not g_dev['obs'].scope_in_manual_mode and g_dev['mnt'].mount.AtPark and ((time.time() - self.time_roof_last_opened) < 300) :
 
             self.nightly_reset_complete = False
             self.cool_down_latch = True
@@ -784,15 +784,22 @@ class Sequencer:
                 if not len(self.blocks) > 0:
                     self.block_guard=False
                 else:
-                    url_proj = "https://projects.photonranch.org/projects/get-all-projects"
+                    
+                    
+                    
+                    # url_proj = "https://projects.photonranch.org/projects/get-all-projects"
                 
-                    try:
-                        all_projects = reqs.post(url_proj, timeout=20).json()
-                    except:
-                        plog ("connection glitch in picking up projects")
-                    #self.projects = []
-                    #if len(all_projects) > 0 and len(self.blocks) > 0:
-                    self.projects = all_projects  # NOTE creating a list with a dict entry as item 0
+                    # try:
+                    #     all_projects = reqs.post(url_proj, timeout=20).json()
+                    # except:
+                    #     plog ("connection glitch in picking up projects")
+                    
+                    # self.projects = all_projects 
+                    
+                    
+                    
+                    
+                    # NOTE creating a list with a dict entry as item 0
                     # Note the above does not load projects if there are no blocks scheduled.
                     # A sched block may or may not havean associated project.
     
@@ -817,10 +824,10 @@ class Sequencer:
                     
                     #blocks = g_dev['obs'].blocks
                     #projects = g_dev['obs'].projects
-                    debug = False         
+                    #debug = False         
                     
-                    if debug:
-                        plog("# of Blocks, projects:  ", len(self.blocks),  len(self.projects))
+                    #if debug:
+                    #    plog("# of Blocks, projects:  ", len(self.blocks),  len(self.projects))
         
                     #Note here we could evaluate projects to see which meet observability constraints and place them
                     #In an observables list, then we could pick one to start.  IF there is no pre-sheduled observing block
@@ -831,43 +838,81 @@ class Sequencer:
                     # and background blocks.
                     #print (self.projects)
         
-                    skip_project_cycle=False
-                    if 'message' in self.projects:
-                        if 'Internal server error' in str(self.projects['message']):
-                            plog ("internal server error in self.projects... skippping this round and moving to the next")
-                            skip_project_cycle=True
+                    
                     
                     now_date_timeZ = datetime.datetime.utcnow().isoformat().split('.')[0] +'Z'
                     
                     identified_block=None
                     
-                    if not skip_project_cycle:
-                        #First, sort blocks to be in ascending order, just to promote clarity. Remove expired projects.
-                        for block in self.blocks:  #  This merges project spec into the blocks.
+                    #if not skip_project_cycle:
+                    #First, sort blocks to be in ascending order, just to promote clarity. Remove expired projects.
+                    for block in self.blocks:  #  This merges project spec into the blocks.
+                        #breakpoint()
+                        # Look only in current  incomplete blocks:
+                        if (block['start'] <= now_date_timeZ < block['end'])  and not self.is_in_completes(block['event_id']):
                             
-                            # Look only in current  incomplete blocks:
-                            if (block['start'] <= now_date_timeZ < block['end'])  and not self.is_in_completes(block['event_id']):
-                                for project in self.projects:
-                                    #if block['project_id'].split("#")[0] == project['project_name']:
-                                        #print("******************************")
-                                        #print (block['project_id'].split("#")[0])
-                                        #print (project['project_name'] )
-                                        
-                                        #breakpoint()
+                            # url_proj = "https://projects.photonranch.org/projects/get-all-projects"
+                        
+                            # try:
+                            #     all_projects = reqs.post(url_proj, timeout=20).json()
+                            # except:
+                            #     plog ("connection glitch in picking up projects")
+                            
+                            # self.projects = all_projects 
+                            
+                            #for project in self.projects:
+                                #if block['project_id'].split("#")[0] == project['project_name']:
+                                    #print("******************************")
+                                    #print (block['project_id'].split("#")[0])
+                                    #print (project['project_name'] )
                                     
-                                        
-                                        
-                                    try:
-                                        if block['project_id'] == project['project_name'] + '#' + project['created_at']:
-                                            block['project'] = project
-                                            identified_block=copy.deepcopy(block)
-                                            break
-                                        else:
-                                            block['project'] = None  #nb nb nb 20220920   this faults with 'string indices must be integers". WER
-                                    except:
-                                        plog(traceback.format_exc())
-                                        breakpoint()
-        
+                                    #breakpoint()
+                                
+                                    
+                                    
+                            try:
+                                # Go and fish out the project from AWS
+                                
+                                
+                                
+                                
+                                # url_proj = "https://projects.photonranch.org/projects/get-all-projects"
+                                url_proj = "https://projects.photonranch.org/projects/get-project"
+                                request_body = json.dumps({
+                                  "project_name": block['project_id'].split('#')[0],
+                                  "created_at": block['project_id'].split('#')[1],
+                                })
+                                project_response=requests.post(url_proj, request_body)
+                                print (project_response)
+                                # skip_project_cycle=False
+                                # if 'message' in self.projects:
+                                #     if 'Internal server error' in str(self.projects['message']):
+                                #         plog ("internal server error in self.projects... skippping this round and moving to the next")
+                                #         skip_project_cycle=True
+                                
+                                if project_response.status_code ==200:  
+                                    self.block_guard = True
+                                    block['project']=project_response.json()
+                                    identified_block=copy.deepcopy(block)
+                                # try:
+                                #     all_projects = reqs.post(url_proj, timeout=20).json()
+                                # except:
+                                #     plog ("connection glitch in picking up projects")
+                                #breakpoint()
+                                
+                                
+                                
+                                #project=None
+                                #if block['project_id'] == project['project_name'] + '#' + project['created_at']:
+                                #    block['project'] = project
+                                    
+                                #    break
+                                #else:
+                                #    block['project'] = None  #nb nb nb 20220920   this faults with 'string indices must be integers". WER
+                            except:
+                                plog(traceback.format_exc())
+                                breakpoint()
+    
                         # for project in self.projects:
                         #     if block['project_id']  != 'none':
                                 
@@ -911,35 +956,35 @@ class Sequencer:
                         #print ("found block: " + str(block))
                         #breakpoint()
                         
-                        if identified_block == None:
-                            self.block_guard = False   # Changed from True WER on 20221011@2:24 UTC
-                            return   # Do not try to execute an empty block.
-                        
-                        if identified_block['project_id'] in ['none', 'real_time_slot', 'real_time_block']:
-                            self.block_guard = False   # Changed from True WER on 20221011@2:24 UTC
-                            return   # Do not try to execute an empty block.
-                        self.block_guard = True
-    
-                        if identified_block['project'] == None:
-                            plog (identified_block)
-                            plog ("Skipping a block that contains an empty project")
-                            self.block_guard=False
-                            return
-    
-                        g_dev['obs'].update()
-                        completed_block = self.execute_block(identified_block)  #In this we need to ultimately watch for weather holds.
-                        try:
-                            self.append_completes(completed_block['event_id'])
-                        except:
-                            plog ("block complete append didn't work")
-                            plog(traceback.format_exc())
+                    if identified_block == None:
+                        self.block_guard = False   # Changed from True WER on 20221011@2:24 UTC
+                        return   # Do not try to execute an empty block.
+                    
+                    if identified_block['project_id'] in ['none', 'real_time_slot', 'real_time_block']:
+                        self.block_guard = False   # Changed from True WER on 20221011@2:24 UTC
+                        return   # Do not try to execute an empty block.
+                    
+
+                    if identified_block['project'] == None:
+                        plog (identified_block)
+                        plog ("Skipping a block that contains an empty project")
                         self.block_guard=False
-                        #block['project_id'] in ['none', 'real_time_slot', 'real_time_block']
-                        '''
-                        When a scheduled block is completed it is not re-entered or the block needs to
-                        be restored.  IN the execute block we need to make a deepcopy of the input block
-                        so it does not get modified.
-                        '''                                       
+                        return
+
+                    #g_dev['obs'].update()
+                    completed_block = self.execute_block(identified_block)  #In this we need to ultimately watch for weather holds.
+                    try:
+                        self.append_completes(completed_block['event_id'])
+                    except:
+                        plog ("block complete append didn't work")
+                        plog(traceback.format_exc())
+                    self.block_guard=False
+                    #block['project_id'] in ['none', 'real_time_slot', 'real_time_block']
+                    '''
+                    When a scheduled block is completed it is not re-entered or the block needs to
+                    be restored.  IN the execute block we need to make a deepcopy of the input block
+                    so it does not get modified.
+                    '''                                       
             except:
                 plog(traceback.format_exc())
                 plog("Hang up in sequencer.")
@@ -1307,7 +1352,7 @@ class Sequencer:
                     #Check the calendar blocks
                     self.update_calendar_blocks()                    
                     for tempblock in self.blocks:
-                        plog (tempblock['event_id'])
+                        #plog (tempblock['event_id'])
                         if tempblock['event_id'] == calendar_event_id :
                             foundcalendar=True
                             block['end']=tempblock['end']

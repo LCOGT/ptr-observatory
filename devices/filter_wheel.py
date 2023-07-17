@@ -314,7 +314,7 @@ class FilterWheel:
         try:
             filter_throughput = float(self.filter_data[filt_pointer][3])
         except:
-            plog("Could not find an appropriate gain for " +str(filter_name))
+            plog("Could not find an appropriate throughput for " +str(filter_name))
             filter_throughput = np.nan
 
         return filter_throughput
@@ -376,8 +376,9 @@ class FilterWheel:
             r0_pr = requests.put(self.ip + "/filterwheel/0/position", json=r0, timeout=5)
             r1_pr = requests.put(self.ip + "/filterwheel/1/position", json=r1, timeout=5)
             if str(r0_pr) == str(r1_pr) == "<Response [200]>":
-                plog("Set up filter configuration;  ", filter_selections)
-                plog("Status:  ", r0_pr.text, r1_pr.text)
+                #plog("Set up filter configuration;  ", filter_selections)
+                #plog("Status:  ", r0_pr.text, r1_pr.text)
+                pass
             while True:
                 r0_t = int(
                     requests.get(self.ip + "/filterwheel/0/position", timeout=5)
