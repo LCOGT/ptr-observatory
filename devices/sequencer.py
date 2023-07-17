@@ -2161,7 +2161,7 @@ class Sequencer:
                     
                     
                     # Generate temp memmap
-                    single_filter_gains=[]
+                    single_filter_camera_gains=[]
                     if len(inputList) == 0 or len(inputList) == 1:
                         plog ("Not doing " + str(filtercode) + " flat. Not enough available files in directory.")
                     else:
@@ -2361,15 +2361,15 @@ class Sequencer:
                             #self.expresult["camera_gain"] = cge_gain
                             estimated_flat_gain.append(cge_gain)
                         
-                            single_filter_gains.append(cge_gain)
+                            single_filter_camera_gains.append(cge_gain)
                             #breakpoint()
                         
                             #fits.writeto(g_dev['obs'].calib_masters_folder + 'DODGY_' + tempfrontcalib + 'masterFlat_'+ str(filtercode) + '_bin1.fits', camera_gain_estimate_image, overwrite=True)
                             #breakpoint()
-                        single_filter_gains=np.array(single_filter_gains)
-                        single_filter_gains = sigma_clip(single_filter_gains, masked=False, axis=None)
-                        plog ("Filter Throughput Sigma Clipped Estimates: " + str(np.nanmedian(single_filter_gains)) + " std " + str(np.std(single_filter_gains)) + " N " + str(len(single_filter_gains)))
-                        flat_gains[filtercode]=[np.nanmedian(single_filter_gains), np.std(single_filter_gains),len(single_filter_gains)]
+                        single_filter_camera_gains=np.array(single_filter_camera_gains)
+                        single_filter_camera_gains = sigma_clip(single_filter_camera_gains, masked=False, axis=None)
+                        plog ("Filter Throughput Sigma Clipped Estimates: " + str(np.nanmedian(single_filter_camera_gains)) + " std " + str(np.std(single_filter_camera_gains)) + " N " + str(len(single_filter_camera_gains)))
+                        flat_gains[filtercode]=[np.nanmedian(single_filter_camera_gains), np.std(single_filter_camera_gains),len(single_filter_camera_gains)]
                         
                         PLDrive._mmap.close()
                         del PLDrive
@@ -2625,7 +2625,7 @@ class Sequencer:
         
         if self.config['filter_wheel']['filter_wheel1']['override_automatic_filter_throughputs']:
             plog ("Config is set to not use the automatically estimated")
-            plog ("Filter throughputs. Starting with config gain entries.")
+            plog ("Filter throughputs. Starting with config throughput entries.")
         elif len(filter_throughput_shelf)==0:
             plog ("Looks like a new filter throughput shelf.")
         else:
@@ -2737,15 +2737,15 @@ class Sequencer:
                     plog("Beginning flat run for filterless observation")
                     
                 g_dev['obs'].send_to_user("Beginning flat run for filter: " + str(current_filter))  
-                if (current_filter in filter_throughput_shelf.keys()) and (not self.config['filter_wheel']['filter_wheel1']['override_automatic_filter_gains']):
-                    filter_gain=filter_throughput_shelf[current_filter]
-                    plog ("Using stored gain : " + str(filter_gain))
+                if (current_filter in filter_throughput_shelf.keys()) and (not self.config['filter_wheel']['filter_wheel1']['override_automatic_filter_throughputs']):
+                    filter_throughput=filter_throughput_shelf[current_filter]
+                    plog ("Using stored throughput : " + str(filter_throughput))
                 else:  
                     if g_dev["fil"].null_filterwheel == False:                      
-                        filter_gain = g_dev['fil'].return_filter_gain({"filter": current_filter}, {})  
+                        filter_throughput = g_dev['fil'].return_filter_throughput({"filter": current_filter}, {})  
                     else:
-                        filter_gain = float(self.config['filter_wheel']['filter_wheel1']['flat_sky_gain'])
-                    plog ("Using initial gain from config : "+ str(filter_gain))
+                        filter_throughput = float(self.config['filter_wheel']['filter_wheel1']['flat_sky_gain'])
+                    plog ("Using initial gain from config : "+ str(filter_throughput))
                 
                         
                 acquired_count = 0                
@@ -2801,13 +2801,13 @@ class Sequencer:
                             if sky_lux != None:                              
 
                                 # Original line before MTF started fiddling 
-                                #exp_time = target_flat/(collecting_area*sky_lux*float(filter_gain))  #g_dev['ocn'].calc_HSI_lux)  #meas_sky_lux)
+                                #exp_time = target_flat/(collecting_area*sky_lux*float(filter_throughput))  #g_dev['ocn'].calc_HSI_lux)  #meas_sky_lux)
                                 # Factoring in pixel size
 
                                 pixel_area=pow(float(g_dev['cam'].config["camera"][g_dev['cam'].name]["settings"]["1x1_pix_scale"]),2)
-                                exp_time = target_flat/(collecting_area*pixel_area*sky_lux*float(filter_gain))  #g_dev['ocn'].calc_HSI_lux)  #meas_sky_lux)
+                                exp_time = target_flat/(collecting_area*pixel_area*sky_lux*float(filter_throughput))  #g_dev['ocn'].calc_HSI_lux)  #meas_sky_lux)
                                 
-                                plog('Exposure time:  ', exp_time, scale, sky_lux, float(filter_gain))
+                                plog('Exposure time:  ', exp_time, scale, sky_lux, float(filter_throughput))
                                 
                             else: 
                                 if morn:
@@ -3037,18 +3037,18 @@ class Sequencer:
                             
                             if g_dev["fil"].null_filterwheel == False:
                                 if sky_lux != None:
-                                    plog(current_filter,' New Gain value: ', round(bright/(sky_lux*collecting_area*pixel_area*exp_time), 3), '\n\n')
-                                    new_gain_value = round(bright/(sky_lux*collecting_area*pixel_area*exp_time), 3)
+                                    plog(current_filter,' New Throughput Value: ', round(bright/(sky_lux*collecting_area*pixel_area*exp_time), 3), '\n\n')
+                                    new_throughput_value = round(bright/(sky_lux*collecting_area*pixel_area*exp_time), 3)
                                 else:
-                                    plog(current_filter,' New Gain value: ', round(bright/(collecting_area*pixel_area*exp_time), 3), '\n\n')
-                                    new_gain_value = round(bright/(collecting_area*pixel_area*exp_time), 3)
+                                    plog(current_filter,' New Throughput Value: ', round(bright/(collecting_area*pixel_area*exp_time), 3), '\n\n')
+                                    new_throughput_value = round(bright/(collecting_area*pixel_area*exp_time), 3)
                             else:
                                 if sky_lux != None:
-                                    plog('New Gain value: ', round(bright/(sky_lux*collecting_area*pixel_area*exp_time), 3), '\n\n')
-                                    new_gain_value = round(bright/(sky_lux*collecting_area*pixel_area*exp_time), 3)
+                                    plog('New Throughput Value: ', round(bright/(sky_lux*collecting_area*pixel_area*exp_time), 3), '\n\n')
+                                    new_throughput_value = round(bright/(sky_lux*collecting_area*pixel_area*exp_time), 3)
                                 else:
-                                    plog('New Gain value: ', round(bright/(collecting_area*pixel_area*exp_time), 3), '\n\n')
-                                    new_gain_value = round(bright/(collecting_area*pixel_area*exp_time), 3)
+                                    plog('New Throughput Value: ', round(bright/(collecting_area*pixel_area*exp_time), 3), '\n\n')
+                                    new_throughput_value = round(bright/(collecting_area*pixel_area*exp_time), 3)
             
                             if g_dev['cam'].config["camera"][g_dev['cam'].name]["settings"]["is_osc"]:
             
@@ -3059,7 +3059,7 @@ class Sequencer:
                                     bright
                                     >= 0.5 * flat_saturation_level
                                 ):
-                                    filter_throughput_shelf[current_filter]=new_gain_value
+                                    filter_throughput_shelf[current_filter]=new_throughput_value
                                     camera_gain_collector.append(fred["camera_gain"])
                             else:
                                 if (
@@ -3069,7 +3069,7 @@ class Sequencer:
                                     bright
                                     >= 0.25 * flat_saturation_level
                                 ):
-                                    filter_throughput_shelf[current_filter]=new_gain_value
+                                    filter_throughput_shelf[current_filter]=new_throughput_value
                                     camera_gain_collector.append(fred["camera_gain"])
             
                             acquired_count += 1

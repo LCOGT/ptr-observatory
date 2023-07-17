@@ -292,8 +292,8 @@ class FilterWheel:
     ###############################
 
 
-    def return_filter_gain(self, req: dict, opt: dict):
-        """Returns the filter gain given a filter name."""      
+    def return_filter_throughput(self, req: dict, opt: dict):
+        """Returns the filter throughput given a filter name."""      
 
         try:
             filter_name = str(req["filter"]).lower()
@@ -312,12 +312,12 @@ class FilterWheel:
                 break
             
         try:
-            filter_gain = float(self.filter_data[filt_pointer][3])
+            filter_throughput = float(self.filter_data[filt_pointer][3])
         except:
             plog("Could not find an appropriate gain for " +str(filter_name))
-            filter_gain = np.nan
+            filter_throughput = np.nan
 
-        return filter_gain
+        return filter_throughput
 
 
 
