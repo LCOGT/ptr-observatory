@@ -878,7 +878,7 @@ class Camera:
         g_dev['cam'].expresult["stopped"] = True
 
     def _theskyx_imageavailable(self):
-        plog(self.camera.IsExposureComplete)
+        #plog(self.camera.IsExposureComplete)
         return self.camera.IsExposureComplete
 
     def _theskyx_getImageArray(self): 
