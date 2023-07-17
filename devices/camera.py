@@ -2176,7 +2176,7 @@ class Camera:
                             elif not self.config['camera']['camera_1_1']['settings']['reject_new_flat_by_known_gain']:
                                 g_dev["obs"].send_to_user('Good flat value:  ' +str(central_median) + ' Bad Gain: ' + str(cge_gain) + ' Flat rejection by gain is off.')    
                             else:
-                                g_dev["obs"].send_to_user('Good flat value:  ' +str(central_median) + ' Good Gain: ' + str(cge_gain) + ' Flat rejected.')    
+                                g_dev["obs"].send_to_user('Good flat value:  ' +str(central_median) + ' Bad Gain: ' + str(cge_gain) + ' Flat rejected.')    
                                 self.expresult["error"] = True
                                 self.expresult["patch"] = central_median
                                 self.expresult["camera_gain"] = np.nan
