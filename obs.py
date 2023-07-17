@@ -1507,6 +1507,7 @@ sel
                     except:
                         plog("Camera cooler reconnect failed 2nd time.")
             
+            # Things that only rarely have to be reported go in this block.
             if (time.time() - self.last_time_report_to_console) > 600:
                 plog (ephem.now())
                 if self.camera_temperature_in_range_for_calibrations == True:
