@@ -852,7 +852,7 @@ site_config = {
                 'max_daytime_exposure': 60,
                 'min_flat_exposure' : 0.0001, # For certain leaf shutters, short exposures aren't good for flats. Some CMOS have banding in too short an exposure. Largely applies to ccds though.
                 'max_flat_exposure' : 20.0, # Realistically there should be a maximum flat_exposure that makes sure flats are efficient and aren't collecting actual stars.
-                'reject_new_flat_by_known_gain' : False,
+                'reject_new_flat_by_known_gain' : True,
                 'number_of_bias_to_collect': 31,
                 'number_of_dark_to_collect': 17,
                 'number_of_flat_to_collect': 12,
@@ -879,10 +879,10 @@ site_config = {
                 'is_cmos':  False,
                 'bayer_pattern':  None,    #  Need to verify R as in RGGB is pixel x=0, y=0, B is x=1, y = 1
                 'can_set_gain':  False,
-                'camera_gain':   0.612, #[10., 10., 10., 10.],     #  One val for each binning.
-                'camera_gain_stdev':   0.011, #[10., 10., 10., 10.],     #  One val for each binning.
-                'read_noise':  2.636, #[9, 9, 9, 9],    #  All SWAGs right now
-                'read_noise_stdev':   0.009, #[10., 10., 10., 10.],     #  One val for each binning.
+                'camera_gain':   2.48, #[10., 10., 10., 10.],     #  One val for each binning.
+                'camera_gain_stdev':   0.04, #[10., 10., 10., 10.],     #  One val for each binning.
+                'read_noise':  10.615, #[9, 9, 9, 9],    #  All SWAGs right now
+                'read_noise_stdev':   0.012, #[10., 10., 10., 10.],     #  One val for each binning.
                 'reference_dark':  2.0, #[0.0, 0.0, 0.0, 0.0],     #  Might these best be pedastal values?
                 'saturate':  60000.0, #[[1, 65000], [2,262000], [3,589815], [4, 1048560]] ,   # e-.  This is a close guess, not measured, but taken from data sheet.
                 'max_linearity':  55000.,
