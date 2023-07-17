@@ -623,23 +623,23 @@ site_config = {
                      
                 
                 'filter_data': [
-                                ['air',     [0, 0], -1000, 220,    [2, 17], 'ai'],   # 0
-                                ['Lum',     [0, 1],     0, 200,   [2, 17], 'w '],   # 20
+                                ['air',     [0, 0], -1000, 582,    [2, 17], 'ai'],   # 0
+                                ['Lum',     [0, 1],     0, 544,   [2, 17], 'w '],   # 20
                                 #['Red',     [4, 0],     0, 15,   [2, 17], 'r '],  # 21                                ['JV (Grn)',      [0, 3],     0, 1 [2, 17], 'V '],   # 9
                                 #['Green',   [3, 0],     0, 21,   [2, 17], 'V '],   # 22
                                 #['Blue',    [1, 0],     0, 18,   [2, 17], 'B '],   # 23
-                                #['w',       [0, 1],     0, 20,  [2, 17], 'w '],   # 1
+                                ['w',       [0, 1],     0, 544,  [2, 17], 'w '],   # 1
                                 #['dif',    [0, 2],     0, 34,    [2, 17], 'df'],   # 2
-                                ['O3',      [0, 3],     0, 5,    [2, 17], 'O3'],   # 3
-                                ['HA',      [0, 4],     0, 5,    [2, 17], 'HA'],   # 4
-                                ['N2',      [0, 5],     0, 5,     [2, 17], 'S2'],   # 5
-                                ['S2',      [0, 6],     0, 5,    [2, 17], 'N2'],   # 6
-                                ['JB',      [1, 0],     0, 180,    [2, 17], 'B '],   # 7
-                                ['gp',      [2, 0],     0, 210,    [2, 17], 'g '],   # 8
-                                ['JV',      [3, 0],     0, 210,   [2, 17], 'V '],   # 9
-                                ['rp',      [4, 0],     0, 210,   [2, 17], 'r '],  # 10
-                                ['ip',      [5, 0],     0, 210,   [2, 17], 'i '],  # 11
-                                ['EXO',     [6, 0],     0, 110,  [2, 17], 'EX'],  # 12
+                                ['O3',      [0, 3],     0, 7.75,    [2, 17], 'O3'],   # 3
+                                ['HA',      [0, 4],     0, 2.76,    [2, 17], 'HA'],   # 4
+                                ['N2',      [0, 5],     0, 3.39,     [2, 17], 'S2'],   # 5
+                                ['S2',      [0, 6],     0, 3.51,    [2, 17], 'N2'],   # 6
+                                ['JB',      [1, 0],     0, 104,    [2, 17], 'B '],   # 7
+                                ['gp',      [2, 0],     0, 271,    [2, 17], 'g '],   # 8
+                                ['JV',      [3, 0],     0, 178,   [2, 17], 'V '],   # 9
+                                ['rp',      [4, 0],     0, 152,   [2, 17], 'r '],  # 10
+                                ['ip',      [5, 0],     0, 59.5,   [2, 17], 'i '],  # 11
+                                ['EXO',     [6, 0],     0, 392,  [2, 17], 'EX'],  # 12
                                 ['dark',    [1, 6],     0, 0.0,   [2, 17], 'dk']], # 19
                 
                 
@@ -852,7 +852,7 @@ site_config = {
                 'max_daytime_exposure': 60,
                 'min_flat_exposure' : 0.0001, # For certain leaf shutters, short exposures aren't good for flats. Some CMOS have banding in too short an exposure. Largely applies to ccds though.
                 'max_flat_exposure' : 20.0, # Realistically there should be a maximum flat_exposure that makes sure flats are efficient and aren't collecting actual stars.
-                'reject_new_flat_by_known_gain' : False,
+                'reject_new_flat_by_known_gain' : True,
                 'number_of_bias_to_collect': 31,
                 'number_of_dark_to_collect': 17,
                 'number_of_flat_to_collect': 12,
@@ -879,10 +879,10 @@ site_config = {
                 'is_cmos':  False,
                 'bayer_pattern':  None,    #  Need to verify R as in RGGB is pixel x=0, y=0, B is x=1, y = 1
                 'can_set_gain':  False,
-                'camera_gain':   0.612, #[10., 10., 10., 10.],     #  One val for each binning.
-                'camera_gain_stdev':   0.011, #[10., 10., 10., 10.],     #  One val for each binning.
-                'read_noise':  2.636, #[9, 9, 9, 9],    #  All SWAGs right now
-                'read_noise_stdev':   0.009, #[10., 10., 10., 10.],     #  One val for each binning.
+                'camera_gain':   2.48, #[10., 10., 10., 10.],     #  One val for each binning.
+                'camera_gain_stdev':   0.04, #[10., 10., 10., 10.],     #  One val for each binning.
+                'read_noise':  10.615, #[9, 9, 9, 9],    #  All SWAGs right now
+                'read_noise_stdev':   0.012, #[10., 10., 10., 10.],     #  One val for each binning.
                 'reference_dark':  2.0, #[0.0, 0.0, 0.0, 0.0],     #  Might these best be pedastal values?
                 'saturate':  60000.0, #[[1, 65000], [2,262000], [3,589815], [4, 1048560]] ,   # e-.  This is a close guess, not measured, but taken from data sheet.
                 'max_linearity':  55000.,

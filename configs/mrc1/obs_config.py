@@ -903,10 +903,10 @@ site_config = {       #the NAME "SITE" IS INCONSISTENT  bIG CHANGE TO EFFECT, ob
                 'min_subframe': [128, 128],
                 # Meaning fixed binning if list has only one entry
                 'bin_modes':  [['Optimal', 1.42], ['Fine', 0.96], ['Coarse', 1.91], ['Eng', 0.48]],
-                'camera_gain':   0.454, #[10., 10., 10., 10.],     #  One val for each binning.
-                'camera_gain_stdev':   0.01, #[10., 10., 10., 10.],     #  One val for each binning.
-                'read_noise':  1.87, #[9, 9, 9, 9],    #  All SWAGs right now
-                'read_noise_stdev':   0.003, #[10., 10., 10., 10.],     #  One val for each binning.
+                'camera_gain':   8.634, #[10., 10., 10., 10.],     #  One val for each binning.
+                'camera_gain_stdev':   0.179, #[10., 10., 10., 10.],     #  One val for each binning.
+                'read_noise':  47.74, #[9, 9, 9, 9],    #  All SWAGs right now
+                'read_noise_stdev':   0.03, #[10., 10., 10., 10.],     #  One val for each binning.
                 'reference_dark': 0.2,  # NB  Guess
                 'reference_offset': 611,  # NB Guess  ADU vaules not times in sec.
                 'fullwell_capacity': 80000,  # NB Guess

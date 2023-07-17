@@ -247,7 +247,7 @@ class Observatory:
             "enclosure_check_period"
         ]  # How many minutes between enclosure check
 
-        self.last_time_report_to_console = time.time()
+        self.last_time_report_to_console = time.time()-700
 
         self.project_call_timer = time.time()
         self.get_new_job_timer = time.time()
@@ -1204,9 +1204,7 @@ sel
             self.time_since_safety_checks = time.time()
 
             # breakpoint()
-            if (time.time() - self.last_time_report_to_console) > 600:
-                plog (ephem.now())
-                self.last_time_report_to_console = time.time()
+            
             #print ("Nightly Reset Complete      : " + str(g_dev['seq'].nightly_reset_complete))
             #plog("Time until Nightly Reset      : " + str(round(( g_dev['events']['Nightly Reset'] - ephem.now()) * 24,2)) + " hours")
             
@@ -1482,10 +1480,11 @@ sel
 
                 current_camera_temperature, cur_humidity, cur_pressure = (g_dev['cam']._temperature())
                 current_camera_temperature = float(current_camera_temperature)   
-                if current_camera_temperature - g_dev['cam'].setpoint > 1.5 or current_camera_temperature - g_dev['cam'].setpoint < -1.5:
+                if abs(float(current_camera_temperature) - float(g_dev['cam'].setpoint)) > 1.5:
                     self.camera_temperature_in_range_for_calibrations = False
                 else:
                     self.camera_temperature_in_range_for_calibrations = True
+                
 
             else:
                 try:
@@ -1507,7 +1506,16 @@ sel
                         g_dev['cam']._set_cooler_on()
                     except:
                         plog("Camera cooler reconnect failed 2nd time.")
-
+            
+            # Things that only rarely have to be reported go in this block.
+            if (time.time() - self.last_time_report_to_console) > 600:
+                plog (ephem.now())
+                if self.camera_temperature_in_range_for_calibrations == False:
+                    plog ("Camera currently too warm ("+ str(current_camera_temperature)+") for calibrations.")
+                    plog ("Difference: " + str( (current_camera_temperature - g_dev['cam'].setpoint)))
+                self.last_time_report_to_console = time.time()
+                
+                
             # After the observatory and camera have had time to settle....
             if (time.time() - self.camera_time_initialised) > 1200:
                 # Check that the camera is not overheating.
