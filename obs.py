@@ -1510,7 +1510,7 @@ sel
             # Things that only rarely have to be reported go in this block.
             if (time.time() - self.last_time_report_to_console) > 600:
                 plog (ephem.now())
-                if self.camera_temperature_in_range_for_calibrations == True:
+                if self.camera_temperature_in_range_for_calibrations == False:
                     plog ("Camera currently too warm ("+ str(current_camera_temperature)+") for calibrations.")
                     plog ("Difference: " + str( (current_camera_temperature - g_dev['cam'].setpoint)))
                 self.last_time_report_to_console = time.time()
