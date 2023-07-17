@@ -1480,11 +1480,11 @@ sel
 
                 current_camera_temperature, cur_humidity, cur_pressure = (g_dev['cam']._temperature())
                 current_camera_temperature = float(current_camera_temperature)   
-                if ((current_camera_temperature - g_dev['cam'].setpoint) > 1.5) or ((current_camera_temperature - g_dev['cam'].setpoint) < -1.5):
+                if abs(float(current_camera_temperature) - float(g_dev['cam'].setpoint)) > 1.5:
                     self.camera_temperature_in_range_for_calibrations = False
                 else:
                     self.camera_temperature_in_range_for_calibrations = True
-                    
+                
 
             else:
                 try:
