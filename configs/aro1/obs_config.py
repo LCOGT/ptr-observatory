@@ -582,7 +582,7 @@ site_config = {
                 'hold_flats_in_memory': True, # If there is sufficient memory ... OR .... not many flats, it is faster to keep the flats in memory.
                 'min_flat_exposure': 0.01,
                 'max_flat_exposure' : 20,
-                'reject_new_flat_by_known_gain' : False,
+                'reject_new_flat_by_known_gain' : True,
                 
                 # For direct QHY usage we need to set the appropriate gain.
                 # This changes from site to site. "Fast" scopes like the RASA need lower gain then "slow".
@@ -727,7 +727,7 @@ site_config = {
                 'is_color':  False,
                 'can_set_gain':  False,
                 'bayer_pattern':  None,    # Need to verify R as in RGGB is pixel x=0, y=0, B is x=1, y = 1
-                'camera_gain':   0.45, #[10., 10., 10., 10.],     #  One val for each binning.
+                'camera_gain':   1.97, #[10., 10., 10., 10.],     #  One val for each binning.
                 'camera_gain_stdev':   0.15, #[10., 10., 10., 10.],     #  One val for each binning.
                 'read_noise':  1.92, #[9, 9, 9, 9],    #  All SWAGs right now
                 'read_noise_stdev':   0.003, #[10., 10., 10., 10.],     #  One val for each binning.
