@@ -395,7 +395,8 @@ class FilterWheel:
                     #time.sleep(1)
                     continue
                 else:
-                    plog("Filters:  ", r0_t, r1_t)
+                    pass
+                    #plog("Filters:  ", r0_t, r1_t)
                     break
 
         elif self.dual and not self.maxim:
