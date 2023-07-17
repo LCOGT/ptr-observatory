@@ -510,10 +510,10 @@ site_config = {
                         
                         #['w',     [0,  0],     0, 72.7, [1.00 ,  72], 'PL'],    #0.   For sequencer autofocus  consider foc or f filter
                         #['focus', [0,  0],     0, 148, [1.00 ,  72], 'focus'],    #0.
-                        ['lum',    [0,  0],     0, 75, [1.00 ,  72], 'PhLum'],    #1.
-                        ['ip',    [1,  1],     0, 50, [1.00 , 119], 'PhRed'],    #2.
-                        ['v',    [2,  2],     0, 16, [1.00 , 113], 'PhGreen'],    #3.
-                        ['pb',    [3,  3],     600, 25, [0.80 ,  97], 'PhBlue'],    #4.
+                        ['lum',    [0,  0],     0, 150, [1.00 ,  72], 'PhLum'],    #1.
+                        ['ip',    [1,  1],     0, 70, [1.00 , 119], 'PhRed'],    #2.
+                        ['v',    [2,  2],     0, 70, [1.00 , 113], 'PhGreen'],    #3.
+                        ['pb',    [3,  3],     600, 70, [0.80 ,  97], 'PhBlue'],    #4.
                         ['ha',    [4,  4],     400, 2.634, [0.80 ,  97], 'PhBlue'],    #4.
                         #['PR',    [1,  1],     0, 170, [1.00 , 119], 'PhBlue'],    #2.
                         #['PG',    [2,  2],     0, 220, [1.00 , 113], 'PhGreen'],    #3.
@@ -716,7 +716,7 @@ site_config = {
                 'bayer_pattern':  None,    #  'RGGB" is a valid string in camera is color.
                 'can_set_gain':  True,
                 'camera_gain':   1.6, #[10., 10., 10., 10.],     #  One val for each binning.
-                'camera_gain_stdev':   0.2, #[10., 10., 10., 10.],     #  One val for each binning.
+                'camera_gain_stdev':   0.5, #[10., 10., 10., 10.],     #  One val for each binning.
                 'read_noise':  1.92, #[9, 9, 9, 9],    #  All SWAGs right now
                 'read_noise_stdev':   0.003, #[10., 10., 10., 10.],     #  One val for each binning.
                 

@@ -2852,14 +2852,14 @@ class Sequencer:
                                 pixel_area=pow(float(g_dev['cam'].config["camera"][g_dev['cam'].name]["settings"]["1x1_pix_scale"]),2)
                                 exp_time = target_flat/(collecting_area*pixel_area*sky_lux*float(filter_throughput))  #g_dev['ocn'].calc_HSI_lux)  #meas_sky_lux)
                                 
-                                plog('Exposure time:  ', exp_time, scale, sky_lux, float(filter_throughput))
+                                #plog('Exposure time:  ', exp_time, scale, sky_lux, float(filter_throughput))
                                 
                             else: 
                                 if morn:
                                     exp_time = 5.0
                                 else:
                                     exp_time = min_exposure
-                                plog('Exposure time:  ', exp_time, scale)
+                                #plog('Exposure time:  ', exp_time, scale)
                         else:
                             exp_time = scale * exp_time
             

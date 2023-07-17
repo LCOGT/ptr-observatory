@@ -2119,7 +2119,7 @@ class Camera:
                         self.expresult["camera_gain"] = np.nan
                         return self.expresult  # signals to flat routine image was rejected, prompt return
                     else:
-                        plog('Good flat value! :  ', central_median)
+                        #plog('Good flat value! :  ', central_median)
                         
                         
                         # Now estimate camera gain.
@@ -2167,16 +2167,25 @@ class Camera:
                             cge_sqrt=pow(cge_median,0.5)
                             cge_gain=1/pow(cge_sqrt/cge_stdev, 2)
                             
-                            plog ("Camera gain median: " + str(cge_median) + " stdev: " +str(cge_stdev)+ " sqrt: " + str(cge_sqrt) + " gain: " +str(cge_gain))
+                            #plog ("Camera gain median: " + str(cge_median) + " stdev: " +str(cge_stdev)+ " sqrt: " + str(cge_sqrt) + " gain: " +str(cge_gain))
                             
                             
                             
-                            if (self.camera_known_gain - 3 *self.camera_known_gain_stdev) < cge_gain < (self.camera_known_gain + 3 *self.camera_known_gain_stdev):
-                                g_dev["obs"].send_to_user('Good flat value:  ' +str(central_median) + 'Good Gain: ' + str(cge_gain))    
-                            elif not self.config['camera']['camera_1_1']['settings']['reject_new_flat_by_known_gain']:
+                            
+                            
+                            # low values SHOULD be ok. 
+                            #if (self.camera_known_gain - 3 *self.camera_known_gain_stdev) < cge_gain < (self.camera_known_gain + 3 *self.camera_known_gain_stdev):
+                            if cge_gain < (self.camera_known_gain + 3 *self.camera_known_gain_stdev):
+                                g_dev["obs"].send_to_user('Good flat value:  ' +str(central_median) + 'Good Gain: ' + str(cge_gain))
+                                plog('Good flat value:  ' +str(central_median) + 'Good Gain: ' + str(cge_gain))    
+                                
+                            elif (not self.config['camera']['camera_1_1']['settings']['reject_new_flat_by_known_gain']):
                                 g_dev["obs"].send_to_user('Good flat value:  ' +str(central_median) + ' Bad Gain: ' + str(cge_gain) + ' Flat rejection by gain is off.')    
+                                plog('Good flat value:  ' +str(central_median) + ' Bad Gain: ' + str(cge_gain) + ' Flat rejection by gain is off.')    
+                            
                             else:
                                 g_dev["obs"].send_to_user('Good flat value:  ' +str(central_median) + ' Bad Gain: ' + str(cge_gain) + ' Flat rejected.')    
+                                plog('Good flat value:  ' +str(central_median) + ' Bad Gain: ' + str(cge_gain) + ' Flat rejected.')    
                                 self.expresult["error"] = True
                                 self.expresult["patch"] = central_median
                                 self.expresult["camera_gain"] = np.nan
