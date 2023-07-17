@@ -2128,22 +2128,22 @@ class Camera:
                         camera_gain_estimate_image=copy.deepcopy(self.img)
                         # First we debias,dedark and flatfield the image with the previous master
                         try:
+                            # Don't calibrate! That throws things out! 
+                            # try:
+                            #     camera_gain_estimate_image = camera_gain_estimate_image - self.biasFiles[str(1)]
+                            #     camera_gain_estimate_image = camera_gain_estimate_image - (self.darkFiles[str(1)] * exposure_time)
+                            # except:
+                            #     pass
                             
-                            try:
-                                camera_gain_estimate_image = camera_gain_estimate_image - self.biasFiles[str(1)]
-                                camera_gain_estimate_image = camera_gain_estimate_image - (self.darkFiles[str(1)] * exposure_time)
-                            except:
-                                pass
-                            
-                            # Attempt to flatfield the image, which may not work if
-                            # This is the first time the filter is being run.
-                            try:
-                                if self.config['camera'][self.name]['settings']['hold_flats_in_memory']:
-                                    camera_gain_estimate_image = np.divide(camera_gain_estimate_image, self.flatFiles[self.current_filter])                               
-                                else:
-                                    camera_gain_estimate_image = np.divide(camera_gain_estimate_image, np.load(self.flatFiles[str(self.current_filter + "_bin" + str(1))]))
-                            except:
-                                pass
+                            # # Attempt to flatfield the image, which may not work if
+                            # # This is the first time the filter is being run.
+                            # try:
+                            #     if self.config['camera'][self.name]['settings']['hold_flats_in_memory']:
+                            #         camera_gain_estimate_image = np.divide(camera_gain_estimate_image, self.flatFiles[self.current_filter])                               
+                            #     else:
+                            #         camera_gain_estimate_image = np.divide(camera_gain_estimate_image, np.load(self.flatFiles[str(self.current_filter + "_bin" + str(1))]))
+                            # except:
+                            #     pass
                             
                             # Get the brightest bayer layer for gains
                             if self.config["camera"][self.name]["settings"]['is_osc']:
@@ -2925,7 +2925,7 @@ class Camera:
                         + im_type
                         + "00.fits"
                     )
-                    red_name01 = (self.config["obs_id"] + "-" + str(hdu.header['OBJECT']).replace(' ','').replace('-','') +'-'+str(hdu.header['FILTER']) + "-" + next_seq+ "-" + str(exposure_time).replace('.','d') + "-"+ im_type+ "01.fits")                        
+                    red_name01 = (self.config["obs_id"] + "-" + str(hdu.header['OBJECT']).replace(':','d').replace('.','d').replace(' ','').replace('-','') +'-'+str(hdu.header['FILTER']) + "-" + next_seq+ "-" + str(exposure_time).replace('.','d') + "-"+ im_type+ "01.fits")                        
                     
                     red_name01_lcl = (
                         red_name01[:-9]
