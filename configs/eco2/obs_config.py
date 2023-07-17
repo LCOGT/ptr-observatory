@@ -752,9 +752,9 @@ site_config = {
                 'can_subframe':  True,
                 'min_subframe': [128,128],
                 #'bin_modes':  [['Optimal', 0.91], ['Fine', 0.61], ['Coarse', 1.2], ['Eng', 0.30]],     #Meaning fixed binning if list has only one entry
-                'camera_gain':   2.64, #[10., 10., 10., 10.],     #  One val for each binning.
-                'camera_gain_stdev':   0.009, #[10., 10., 10., 10.],     #  One val for each binning.
-                'read_noise':  11.2, #[9, 9, 9, 9],    #  All SWAGs right now
+                'camera_gain':   2.417, #[10., 10., 10., 10.],     #  One val for each binning.
+                'camera_gain_stdev':   0.011, #[10., 10., 10., 10.],     #  One val for each binning.
+                'read_noise':  10.224, #[9, 9, 9, 9],    #  All SWAGs right now
                 'read_noise_stdev':   0.003, #[10., 10., 10., 10.],     #  One val for each binning.
                 'reference_dark': 0.2,  #  NB  Guess
                 'reference_offset': 611, #  NB Guess  ADU vaules not times in sec.

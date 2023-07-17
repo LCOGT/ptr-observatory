@@ -534,7 +534,7 @@ class Observatory:
         #opt = {}
         #g_dev['obs'].open_and_enabled_to_observe = True
         #g_dev['seq'].sky_flat_script({}, {}, morn=False)
-        # g_dev['seq'].extensive_focus_script(req2,opt)
+        #g_dev['seq'].extensive_focus_script(req2,opt)
         
         
         # req = {'bin1': True, 'bin2': False, 'bin3': False, 'bin4': False, 'numOfBias': 63, \
