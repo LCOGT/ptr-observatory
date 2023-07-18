@@ -757,7 +757,7 @@ class Sequencer:
 # =============================================================================
         elif (events['Observing Begins'] <= ephem_now \
                                    < events['Observing Ends']) and not self.block_guard \
-                                   and  (time.time() - self.project_call_timer > 30) and not g_dev['obs'].scope_in_manual_mode  and g_dev['obs'].open_and_enabled_to_observe and self.clock_focus_latch == False:
+                                   and  (time.time() - self.project_call_timer > 10) and not g_dev['obs'].scope_in_manual_mode  and g_dev['obs'].open_and_enabled_to_observe and self.clock_focus_latch == False:
                                      
             try:
                 self.nightly_reset_complete = False
