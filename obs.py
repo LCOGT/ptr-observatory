@@ -3169,14 +3169,19 @@ sel
             aws_weather_status['status']['observing_conditions']={}
             aws_weather_status['status']['observing_conditions']['observing_conditions1'] = None
             
-            
-        if aws_weather_status['status']['observing_conditions']['observing_conditions1'] == None:
-            aws_weather_status['status']['observing_conditions']['observing_conditions1'] = {'wx_ok': 'Unknown'} 
-        else:
-            #breakpoint()
-            for weatherkey in aws_weather_status['status']['observing_conditions']['observing_conditions1'].keys():
-                aws_weather_status['status']['observing_conditions']['observing_conditions1'][weatherkey]=aws_weather_status['status']['observing_conditions']['observing_conditions1'][weatherkey]['val']
-        
+        try:    
+            if aws_weather_status['status']['observing_conditions']['observing_conditions1'] == None:
+                aws_weather_status['status']['observing_conditions']['observing_conditions1'] = {'wx_ok': 'Unknown'} 
+            else:
+                #breakpoint()
+                for weatherkey in aws_weather_status['status']['observing_conditions']['observing_conditions1'].keys():
+                    aws_weather_status['status']['observing_conditions']['observing_conditions1'][weatherkey]=aws_weather_status['status']['observing_conditions']['observing_conditions1'][weatherkey]['val']
+        except:
+            plog ("bit of a glitch in weather status")
+            aws_weather_status={} 
+            aws_weather_status['status']={}
+            aws_weather_status['status']['observing_conditions']={}
+            aws_weather_status['status']['observing_conditions']['observing_conditions1'] = {'wx_ok': 'Unknown'}
         
         try:
             # To stop status's filling up the queue under poor connection conditions
