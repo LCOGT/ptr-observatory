@@ -75,10 +75,10 @@ if not os.path.exists(obsid_path+ "smartstacks/"):
 reprojection_failed = False
                    
 # Pick up some header items for smartstacking later
-ssfilter = str(img[0].header["FILTER"])
-ssobject = str(img[0].header["OBJECT"])
-ssexptime = str(img[0].header["EXPTIME"])
-sspedestal = str(img[0].header["PEDESTAL"])
+ssfilter = str(img[0].header["FILTER"]).replace('.','d').replace(' ','')
+ssobject = str(img[0].header["OBJECT"]).replace(':','d').replace('.','d').replace(' ','').replace('-','')
+ssexptime = str(img[0].header["EXPTIME"]).replace('.','d').replace(' ','')
+sspedestal = str(img[0].header["PEDESTAL"]).replace('.','d').replace(' ','')
 imgdata=imgdata-float(sspedestal)
 
 img.close()

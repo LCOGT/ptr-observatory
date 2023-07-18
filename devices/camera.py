@@ -878,7 +878,7 @@ class Camera:
         g_dev['cam'].expresult["stopped"] = True
 
     def _theskyx_imageavailable(self):
-        plog(self.camera.IsExposureComplete)
+        #plog(self.camera.IsExposureComplete)
         return self.camera.IsExposureComplete
 
     def _theskyx_getImageArray(self): 
@@ -1449,13 +1449,15 @@ class Camera:
                         breakpoint()
                         return 
                     
-                self.current_filter = g_dev['fil'].filter_selected
                 
-                if self.current_filter == "none":
+                
+                if self.current_filter == "none" or self.current_filter == None :
                     plog("skipping exposure as no adequate filter match found")
                     g_dev["obs"].send_to_user("Skipping Exposure as no adequate filter found for requested observation")
                     self.exposure_busy = False
                     return
+                
+                self.current_filter = g_dev['fil'].filter_selected
             else:
                 self.current_filter = self.config["filter_wheel"]["filter_wheel1"]["name"]
         except Exception as e:
@@ -2119,29 +2121,29 @@ class Camera:
                         self.expresult["camera_gain"] = np.nan
                         return self.expresult  # signals to flat routine image was rejected, prompt return
                     else:
-                        plog('Good flat value! :  ', central_median)
+                        #plog('Good flat value! :  ', central_median)
                         
                         
                         # Now estimate camera gain.
                         camera_gain_estimate_image=copy.deepcopy(self.img)
                         # First we debias,dedark and flatfield the image with the previous master
                         try:
+                            # Don't calibrate! That throws things out! 
+                            # try:
+                            #     camera_gain_estimate_image = camera_gain_estimate_image - self.biasFiles[str(1)]
+                            #     camera_gain_estimate_image = camera_gain_estimate_image - (self.darkFiles[str(1)] * exposure_time)
+                            # except:
+                            #     pass
                             
-                            try:
-                                camera_gain_estimate_image = camera_gain_estimate_image - self.biasFiles[str(1)]
-                                camera_gain_estimate_image = camera_gain_estimate_image - (self.darkFiles[str(1)] * exposure_time)
-                            except:
-                                pass
-                            
-                            # Attempt to flatfield the image, which may not work if
-                            # This is the first time the filter is being run.
-                            try:
-                                if self.config['camera'][self.name]['settings']['hold_flats_in_memory']:
-                                    camera_gain_estimate_image = np.divide(camera_gain_estimate_image, self.flatFiles[self.current_filter])                               
-                                else:
-                                    camera_gain_estimate_image = np.divide(camera_gain_estimate_image, np.load(self.flatFiles[str(self.current_filter + "_bin" + str(1))]))
-                            except:
-                                pass
+                            # # Attempt to flatfield the image, which may not work if
+                            # # This is the first time the filter is being run.
+                            # try:
+                            #     if self.config['camera'][self.name]['settings']['hold_flats_in_memory']:
+                            #         camera_gain_estimate_image = np.divide(camera_gain_estimate_image, self.flatFiles[self.current_filter])                               
+                            #     else:
+                            #         camera_gain_estimate_image = np.divide(camera_gain_estimate_image, np.load(self.flatFiles[str(self.current_filter + "_bin" + str(1))]))
+                            # except:
+                            #     pass
                             
                             # Get the brightest bayer layer for gains
                             if self.config["camera"][self.name]["settings"]['is_osc']:
@@ -2167,16 +2169,25 @@ class Camera:
                             cge_sqrt=pow(cge_median,0.5)
                             cge_gain=1/pow(cge_sqrt/cge_stdev, 2)
                             
-                            plog ("Camera gain median: " + str(cge_median) + " stdev: " +str(cge_stdev)+ " sqrt: " + str(cge_sqrt) + " gain: " +str(cge_gain))
+                            #plog ("Camera gain median: " + str(cge_median) + " stdev: " +str(cge_stdev)+ " sqrt: " + str(cge_sqrt) + " gain: " +str(cge_gain))
                             
                             
                             
-                            if (self.camera_known_gain - 3 *self.camera_known_gain_stdev) < cge_gain < (self.camera_known_gain + 3 *self.camera_known_gain_stdev):
-                                g_dev["obs"].send_to_user('Good flat value:  ' +str(central_median) + 'Good Gain: ' + str(cge_gain))    
-                            elif not self.config['camera']['camera_1_1']['settings']['reject_new_flat_by_known_gain']:
+                            
+                            
+                            # low values SHOULD be ok. 
+                            #if (self.camera_known_gain - 3 *self.camera_known_gain_stdev) < cge_gain < (self.camera_known_gain + 3 *self.camera_known_gain_stdev):
+                            if cge_gain < (self.camera_known_gain + 3 *self.camera_known_gain_stdev):
+                                g_dev["obs"].send_to_user('Good flat value:  ' +str(central_median) + 'Good Gain: ' + str(cge_gain))
+                                plog('Good flat value:  ' +str(central_median) + ' Good Gain: ' + str(cge_gain))    
+                                
+                            elif (not self.config['camera']['camera_1_1']['settings']['reject_new_flat_by_known_gain']):
                                 g_dev["obs"].send_to_user('Good flat value:  ' +str(central_median) + ' Bad Gain: ' + str(cge_gain) + ' Flat rejection by gain is off.')    
+                                plog('Good flat value:  ' +str(central_median) + ' Bad Gain: ' + str(cge_gain) + ' Flat rejection by gain is off.')    
+                            
                             else:
                                 g_dev["obs"].send_to_user('Good flat value:  ' +str(central_median) + ' Bad Gain: ' + str(cge_gain) + ' Flat rejected.')    
+                                plog('Good flat value:  ' +str(central_median) + ' Bad Gain: ' + str(cge_gain) + ' Flat rejected.')    
                                 self.expresult["error"] = True
                                 self.expresult["patch"] = central_median
                                 self.expresult["camera_gain"] = np.nan
@@ -2914,7 +2925,7 @@ class Camera:
                         + im_type
                         + "00.fits"
                     )
-                    red_name01 = (self.config["obs_id"] + "-" + str(hdu.header['OBJECT']).replace(' ','').replace('-','') +'-'+str(hdu.header['FILTER']) + "-" + next_seq+ "-" + str(exposure_time).replace('.','d') + "-"+ im_type+ "01.fits")                        
+                    red_name01 = (self.config["obs_id"] + "-" + str(hdu.header['OBJECT']).replace(':','d').replace('.','d').replace(' ','').replace('-','') +'-'+str(hdu.header['FILTER']) + "-" + next_seq+ "-" + str(exposure_time).replace('.','d') + "-"+ im_type+ "01.fits")                        
                     
                     red_name01_lcl = (
                         red_name01[:-9]
