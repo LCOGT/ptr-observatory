@@ -667,6 +667,7 @@ class Observatory:
     def cancel_all_activity(self):
 
         g_dev["obs"].stop_all_activity = True
+        g_dev["obs"].stop_all_activity_timer = time.time()
         plog("Stop_all_activity is now set True.")
         self.send_to_user(
             "Cancel/Stop received. Exposure stopped, camera may begin readout, then will discard image."
@@ -909,6 +910,10 @@ sel
             if g_dev["obs"].exposure_halted_indicator_timer - time.time() > 12:
                 g_dev["obs"].exposure_halted_indicator = False
                 g_dev["obs"].exposure_halted_indicator_timer = time.time()
+
+        if g_dev["obs"].stop_all_activity and ((time.time() - g_dev["obs"].stop_all_activity_timer) > 35):
+            g_dev["obs"].stop_all_activity = False
+            #g_dev["obs"].stop_all_activity_timer = time.time()
 
         # Good spot to check if we need to nudge the telescope as long as we aren't exposing.
         if not g_dev["cam"].exposure_busy:
