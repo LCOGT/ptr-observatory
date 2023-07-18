@@ -362,11 +362,14 @@ class FilterWheel:
             g_dev["obs"].send_to_user("Filter set to:  " + str(self.filter_data[match][0]))
         except:
             pass  # This is usually when it is just booting up and obs doesn't exist yet
-
-        self.filter_number = filt_pointer
-        self.filter_selected = str(filter_name).lower()
-        filter_selections = self.filter_data[filt_pointer][1]
-        self.filter_offset = float(self.filter_data[filt_pointer][2])
+        try:
+            self.filter_number = filt_pointer
+            self.filter_selected = str(filter_name).lower()
+            filter_selections = self.filter_data[filt_pointer][1]
+            self.filter_offset = float(self.filter_data[filt_pointer][2])
+        except:
+            plog("Failed to change filter. Returning.")
+            return None, None, None
 
         if self.dual and self.custom:
             r0 = self.r0

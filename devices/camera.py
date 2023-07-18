@@ -1449,13 +1449,15 @@ class Camera:
                         breakpoint()
                         return 
                     
-                self.current_filter = g_dev['fil'].filter_selected
                 
-                if self.current_filter == "none":
+                
+                if self.current_filter == "none" or self.current_filter == None :
                     plog("skipping exposure as no adequate filter match found")
                     g_dev["obs"].send_to_user("Skipping Exposure as no adequate filter found for requested observation")
                     self.exposure_busy = False
                     return
+                
+                self.current_filter = g_dev['fil'].filter_selected
             else:
                 self.current_filter = self.config["filter_wheel"]["filter_wheel1"]["name"]
         except Exception as e:
