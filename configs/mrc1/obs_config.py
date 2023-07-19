@@ -493,6 +493,9 @@ site_config = {       #the NAME "SITE" IS INCONSISTENT  bIG CHANGE TO EFFECT, ob
             'driver': 'ASCOM.OptecGemini.Focuser',
             'start_at_config_reference': False,
             'use_focuser_temperature': True,
+            'correct_focus_for_temperature' : True,
+            'maximum_good_focus_in_arcsecond': 2.5, # highest value to consider as being in "good focus". Used to select last good focus value
+            
             'reference': 7250,  # 20221103    #7418,    # Nominal at 15C Primary temperature, in microns not steps. Guess
             'ref_temp':  10,      # Update when pinning reference  Larger at lower temperatures.
             'coef_c': -8.583,    # Negative means focus moves out (larger numerically) as Primary gets colder

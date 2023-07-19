@@ -1699,12 +1699,12 @@ class Sequencer:
         bigfzs=glob(orphan_path + '*.fz')
 
         for fzneglect in bigfzs:
-            plog ("Reattempting upload of " + str(os.path.basename(fzneglect)))            
+            #plog ("Reattempting upload of " + str(os.path.basename(fzneglect)))            
             g_dev['cam'].enqueue_for_AWS(56000000, orphan_path, fzneglect.split('orphans')[-1].replace('\\',''))
            
         bigtokens=glob(g_dev['obs'].obsid_path + 'tokens/*.token')
         for fzneglect in bigtokens:
-            plog ("Reattempting upload of " + str(os.path.basename(fzneglect)))
+            #plog ("Reattempting upload of " + str(os.path.basename(fzneglect)))
             g_dev['cam'].enqueue_for_AWS(56000001, g_dev['obs'].obsid_path + 'tokens/', fzneglect.split('tokens')[-1].replace('\\',''))
    
     

@@ -412,6 +412,9 @@ site_config = {
 			'com_port':  'COM9',
             'start_at_config_reference': False,
             'use_focuser_temperature': False,
+            'correct_focus_for_temperature' : False,
+            'maximum_good_focus_in_arcsecond': 2.5, # highest value to consider as being in "good focus". Used to select last good focus value
+            
             #F4.9 setup
             'reference':7650,    #  20210313  Nominal at 10C Primary temperature
             'ref_temp':  6265.0,    #  Update when pinning reference
