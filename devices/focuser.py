@@ -11,6 +11,7 @@ import traceback
 
 from global_yard import g_dev
 from ptr_utility import plog
+from dateutil import parser
 
 # Unused except for WMD
 def probeRead(com_port):
@@ -38,7 +39,7 @@ class Focuser:
         #breakpoint()
         
         self.focuser = win32com.client.Dispatch(driver)
-        time.sleep(4)
+        #time.sleep(1)
 
         if driver == "CCDSoft2XAdaptor.ccdsoft5Camera":
             self.theskyx=True
@@ -91,7 +92,10 @@ class Focuser:
         self.focus_tracker = [np.nan] * 10
         self.focus_needed = False # A variable that if the code detects that the focus has worsened it can trigger an autofocus
         try:
-            best_previous_focus_point=self.get_af_log()
+            best_previous_focus_point, last_successful_focus_time=self.get_af_log()
+            if last_successful_focus_time != None:
+                self.time_of_last_focus=parser.parse(last_successful_focus_time)
+
             if best_previous_focus_point==None:
                 best_previous_focus_point=config["focuser"]["focuser1"]["reference"]
         except:
@@ -659,9 +663,9 @@ class Focuser:
             for item in previous_focus:
                 if item[2] < max_arcsecond:
                     plog ("Best previous focus is at: " +str(item))
-                    return item[1]
+                    return item[1], item[4]
             
-            return None
+            return None, None
             
             #breakpoint()
             #plog(str(item))

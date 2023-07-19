@@ -492,7 +492,6 @@ site_config = {       #the NAME "SITE" IS INCONSISTENT  bIG CHANGE TO EFFECT, ob
             'desc':  'Optec Gemini',
             'driver': 'ASCOM.OptecGemini.Focuser',
             'start_at_config_reference': False,
-            'use_focuser_temperature': True,
             'correct_focus_for_temperature' : True,
             'maximum_good_focus_in_arcsecond': 2.5, # highest value to consider as being in "good focus". Used to select last good focus value
             
