@@ -3001,7 +3001,6 @@ sel
                             + ", has been sent to the GUI.",
                             p_level="INFO",
                         )
-
                     plog(datetime.datetime.now())
 
                 plog("Smartstack round complete. Time taken: " + str(time.time() - sstack_timer))               
@@ -3120,6 +3119,8 @@ sel
         try:
             if g_dev['seq'].last_roof_status == 'Closed' and aws_enclosure_status["shutter_status"] in ['Open','open']:
                 g_dev['seq'].time_roof_last_opened=time.time()  
+                # reset blocks so it can restart a caelndar event
+                g_dev['seq'].reset_completes()
                 g_dev['seq'].last_roof_status = 'Open'
                 
             if g_dev['seq'].last_roof_status == 'Open' and aws_enclosure_status["shutter_status"] in ['Closed','closed']:
