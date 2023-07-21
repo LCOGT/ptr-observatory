@@ -418,7 +418,7 @@ site_config = {
 			'com_port':  'COM9',
             #F4.9 setup
             'start_at_config_reference': False,
-            'correct_focus_for_temperature' : False,
+            'correct_focus_for_temperature' : True,
             'maximum_good_focus_in_arcsecond': 2.5, # highest value to consider as being in "good focus". Used to select last good focus value
             'reference': 13500,    #  20210313  Nominal at 10C Primary temperature
             'ref_temp':  6265.0,    #  Update when pinning reference
@@ -717,9 +717,9 @@ site_config = {
                 'bayer_pattern':  None,    #  'RGGB" is a valid string in camera is color.
                 'can_set_gain':  True,
                 'camera_gain':   1.6, #[10., 10., 10., 10.],     #  One val for each binning.
-                'camera_gain_stdev':   0.5, #[10., 10., 10., 10.],     #  One val for each binning.
-                'read_noise':  1.92, #[9, 9, 9, 9],    #  All SWAGs right now
-                'read_noise_stdev':   0.003, #[10., 10., 10., 10.],     #  One val for each binning.
+                'camera_gain_stdev':   0.45, #[10., 10., 10., 10.],     #  One val for each binning.
+                'read_noise':  6.22, #[9, 9, 9, 9],    #  All SWAGs right now
+                'read_noise_stdev':   0.02, #[10., 10., 10., 10.],     #  One val for each binning.
                 
                 #'reference_dark': [0.0, 0.0, 0.0, 0.0],     #  Might these best be pedastal values?  NO!
                                     #hdu.header['RDMODE'] = (self.config['camera'][self.name]['settings']['read_mode'], 'Camera read mode')
