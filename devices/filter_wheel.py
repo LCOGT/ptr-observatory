@@ -484,11 +484,11 @@ class FilterWheel:
         # next we need to purge for out sites and set them up with the correct defaults.
         #other filters in the offing:  Duo, Quad, LPR and NEB.
         filter_groups = [
-            (["U", "JU", "up"], ["up", "U", "JU"]),  # U broadband
-            (["Blue", "B", "JB", "PB"], ["JB", "PB"]),  # B broadband
-            (["Green", "JV", "PG"], ["JV", "PG", "V"]),  # G broadband
-            (["Red", "R", "r", "PR", "Rc", "rp"], ["rp", "Rc", "PR"]),  # R broadband
-            (["i", "Ic", "ip"], ["ip", "Ic"]),  # infrared broadband
+            (["U", "JU", "BU", "up"], ["up", "U", "BU","JU"]),  # U broadband
+            (["Blue", "B", "JB", "BB", "PB"], ["JB", "BB","PB"]),  # B broadband
+            (["Green", "JV", "BV", "PG"], ["JV", "BV","PG", "V"]),  # G broadband
+            (["Red", "R", "BR", "r", "PR", "Rc", "rp"], ["rp", "Rc", "BR", "PR"]),  # R broadband
+            (["i", "Ic", "ip", "BI"], ["ip", "Ic", "BI"]),  # infrared broadband
             (["z", "zs", "zp"], ["zp", "zs", "z"]),  # NB z broadband  z and zs are different.  Y?  WER
             (["gp", "g"], ["gp"]),  # generic sdss-g
             (["HA", "H", 'Ha'], ["HA"]),  # generic H

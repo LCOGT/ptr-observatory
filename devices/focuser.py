@@ -11,6 +11,7 @@ import traceback
 
 from global_yard import g_dev
 from ptr_utility import plog
+from dateutil import parser
 
 # Unused except for WMD
 def probeRead(com_port):
@@ -38,7 +39,7 @@ class Focuser:
         #breakpoint()
         
         self.focuser = win32com.client.Dispatch(driver)
-        time.sleep(4)
+        #time.sleep(1)
 
         if driver == "CCDSoft2XAdaptor.ccdsoft5Camera":
             self.theskyx=True
@@ -90,8 +91,18 @@ class Focuser:
         self.last_focus_fwhm = None
         self.focus_tracker = [np.nan] * 10
         self.focus_needed = False # A variable that if the code detects that the focus has worsened it can trigger an autofocus
+
+        self.focus_temp_slope = None
+        self.focus_temp_intercept = None
+        self.best_previous_focus_point = None
         try:
-            self.get_af_log()
+            self.best_previous_focus_point, last_successful_focus_time, self.focus_temp_slope, self.focus_temp_intercept=self.get_af_log()
+
+            if last_successful_focus_time != None:
+                self.time_of_last_focus=parser.parse(last_successful_focus_time)
+
+            if self.best_previous_focus_point==None:
+                self.best_previous_focus_point=config["focuser"]["focuser1"]["reference"]
         except:
             self.set_focal_ref_reset_log(config["focuser"]["focuser1"]["reference"])
 
@@ -107,43 +118,52 @@ class Focuser:
                 "Focus reference derived from supplied config file for 10C:  ",
                 self.reference,
             )
-        else:
-            try:  #  NB NB NB This mess neads cleaning up.
-                try:
-                    # TODO no site-specific code!
-                    if config["focuser"]["focuser1"]["reference"]:
-                        self.last_temperature = self.focuser.Temperature
-                        self.reference = self.calculate_compensation(
-                            self.focuser.Temperature
-                        )  # need to change to config supplied
-                    else:
-                        self.last_temperature = g_dev["ocn"].temperature
-                        self.reference = self.calculate_compensation(
-                            g_dev["ocn"].temperature
-                        )
-    
-                    plog(
-                        "Focus position set from temp compensated value:  ",
-                        self.reference,
-                        ".  Temp used:  ",
-                        self.last_temperature,
-                    )
-                    self.last_known_focus = self.reference
-                    self.last_source = "Focuser__init__  Calculate Comp references Config"
-                except:
-                    self.reference = float(
-                        self.get_focal_ref()
-                    )  # need to change to config supplied
-                    self.last_known_focus = self.reference
-                    plog("Focus reference updated from Night Shelf:  ", self.reference)
-                    # Is this of any real value except to persist self.last_known...?
+        elif config["focuser"]["focuser1"]['correct_focus_for_temperature']:            
+            # Get temperature
+            try:
+                if self.theskyx:
+                    self.last_temperature = self.focuser.focTemperature
+                    
+                else:
+                    self.last_temperature = self.focuser.Temperature
+                self.reference = self.calculate_compensation(
+                    self.last_temperature
+                )  # need to change to config supplied
             except:
-                self.reference = int(self.config["reference"])
-                self.last_known_focus = self.reference
-                plog(
-                    "Focus reference derived from supplied config file for 10C:  ",
-                    self.reference,
-                )
+                try:
+                    self.last_temperature = g_dev["ocn"].temperature
+                    self.reference = self.calculate_compensation(
+                        g_dev["ocn"].temperature
+                    )
+                except:
+                    plog ("could not get temperature from ocn in focuser.py")
+                    self.last_temperature=10.0
+                    self.reference = self.calculate_compensation(
+                        g_dev["ocn"].temperature
+                    )
+        
+                    
+            plog(
+                "Focus position set from temp compensated value:  ",
+                self.reference,
+                ".  Temp used:  ",
+                self.last_temperature,
+            )
+            
+            self.last_known_focus = self.reference
+            self.last_source = "Focuser__init__  Calculate Comp references Config"
+        else:
+            self.reference = float(self.best_previous_focus_point)
+            self.last_known_focus = self.reference
+            plog("Focus reference updated from best recent focus from Night Shelf:  ", self.reference)
+            # Is this of any real value except to persist self.last_known...?
+            # except:
+            #     self.reference = int(self.config["reference"])
+            #     self.last_known_focus = self.reference
+            #     plog(
+            #         "Focus reference derived from supplied config file for 10C:  ",
+            #         self.reference,
+            #     )
                 # The config reference should be a table of value
         if self.theskyx:
             #self.focuser.focPosition =  int(float(self.reference) * self.micron_to_steps)  
@@ -162,22 +182,29 @@ class Focuser:
         else:
             self.focuser.Move(int(float(self.reference) * self.micron_to_steps))
 
+        #breakpoint()
+
 
     def calculate_compensation(self, temp_primary):
 
-        if -20 <= temp_primary <= 45:
+        if (-20 <= temp_primary <= 45) and (self.focus_temp_slope != None):
             trial = round(
                 float(
-                    self.config["coef_0"] + float(self.config["coef_c"]) * temp_primary
+                    #self.config["coef_0"] + float(self.config["coef_c"]) * temp_primary
+                    (self.focus_temp_slope * temp_primary) + self.focus_temp_intercept
                 ),
                 1,
             )
-            trial = max(trial, 500)  # These values are for an Optec Gemini.
-            trial = min(trial, 12150)
+            #trial = max(trial, 500)  # These values are for an Optec Gemini.
+            #trial = min(trial, 12150)
             # NB NB Numbers should all come from site config.
             return int(trial)
-        plog("Primary out of range -20C to 45C, using reference focus.")
-        return float(self.config["reference"])
+        elif self.best_previous_focus_point != None:
+            return int(self.best_previous_focus_point)
+        else:
+            return int(self.config["reference"])
+        #plog("Primary out of range -20C to 45C, using reference focus.")
+        #return float(self.config["reference"])
 
     def get_status(self):
         try:
@@ -629,8 +656,51 @@ class Focuser:
             cam_shelf = shelve.open(
                 self.obsid_path + "ptr_night_shelf/" + self.camera_name + str(g_dev['obs'].name), writeback=True
             )
+            
+            max_arcsecond=self.config['maximum_good_focus_in_arcsecond']
+            
+            
+            # Load last focuses and order from most recent to oldest
+            previous_focus=[]
             for item in cam_shelf["af_log"]:
+                previous_focus.append(item)
+            
+            
+            
+            
+            # Print focus log and sort in order of date
+            for item in previous_focus:
                 plog(str(item))
+            
+            previous_focus.reverse()          
+            
+            # Cacluate the temperature coefficient and zero point
+            tempvalues=[]
+            for item in previous_focus:
+                if item[2] < max_arcsecond and item[1] !=False:
+                    tempvalues.append([item[0],item[1]])
+            if len(tempvalues) > 10:
+                tempvalues=np.array(tempvalues)
+                # Calculate least squares fit
+                x = tempvalues[:,0]
+                A = np.vstack([x, np.ones(len(x))]).T
+                focus_temp_slope, focus_temp_intercept = np.linalg.lstsq(A, tempvalues[:,1], rcond=None)[0]
+            else:
+                focus_temp_slope = None
+                focus_temp_intercept = None
+            
+            #breakpoint()
+            
+            # Figure out best last focus position
+            for item in previous_focus:
+                if item[2] < max_arcsecond and item[1] !=False:
+                    plog ("Best previous focus is at: " +str(item))
+                    return item[1], item[4], focus_temp_slope, focus_temp_intercept
+            
+            return None, None, focus_temp_slope, focus_temp_intercept
+            
+            #breakpoint()
+            #plog(str(item))
         except:
             plog("There is no focus log on the night shelf.")
 

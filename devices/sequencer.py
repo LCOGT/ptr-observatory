@@ -1699,12 +1699,12 @@ class Sequencer:
         bigfzs=glob(orphan_path + '*.fz')
 
         for fzneglect in bigfzs:
-            plog ("Reattempting upload of " + str(os.path.basename(fzneglect)))            
+            #plog ("Reattempting upload of " + str(os.path.basename(fzneglect)))            
             g_dev['cam'].enqueue_for_AWS(56000000, orphan_path, fzneglect.split('orphans')[-1].replace('\\',''))
            
         bigtokens=glob(g_dev['obs'].obsid_path + 'tokens/*.token')
         for fzneglect in bigtokens:
-            plog ("Reattempting upload of " + str(os.path.basename(fzneglect)))
+            #plog ("Reattempting upload of " + str(os.path.basename(fzneglect)))
             g_dev['cam'].enqueue_for_AWS(56000001, g_dev['obs'].obsid_path + 'tokens/', fzneglect.split('tokens')[-1].replace('\\',''))
    
     
@@ -5118,7 +5118,11 @@ class Sequencer:
         plog ("Time Taken for queue to clear post-exposure: " + str(time.time() - queue_clear_time))
         
         # Nudge if needed.
-        g_dev['obs'].check_platesolve_and_nudge()
+        if not g_dev['obs'].pointing_correction_requested_by_platesolve_thread:
+            g_dev["obs"].send_to_user("Pointing adequate on first slew. Slew & Center complete.") 
+            return result
+        else:
+            g_dev['obs'].check_platesolve_and_nudge()
         
         if self.stop_script_called:
             g_dev["obs"].send_to_user("Cancelling out of autofocus script as stop script has been called.")  
@@ -5143,6 +5147,8 @@ class Sequencer:
         if not g_dev['obs'].open_and_enabled_to_observe:
             g_dev["obs"].send_to_user("Cancelling out of activity as no longer open and enabled to observe.")  
             return
+        
+        g_dev["obs"].send_to_user("Pointing confirmation exposure complete. Slew & Center complete.") 
         
         return result
 
