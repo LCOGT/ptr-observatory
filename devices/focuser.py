@@ -91,7 +91,7 @@ class Focuser:
         self.last_focus_fwhm = None
         self.focus_tracker = [np.nan] * 10
         self.focus_needed = False # A variable that if the code detects that the focus has worsened it can trigger an autofocus
-        try:
+        try:            
             best_previous_focus_point, last_successful_focus_time=self.get_af_log()
             if last_successful_focus_time != None:
                 self.time_of_last_focus=parser.parse(last_successful_focus_time)
@@ -150,7 +150,7 @@ class Focuser:
         else:
             self.reference = float(best_previous_focus_point)
             self.last_known_focus = self.reference
-            plog("Focus reference updated from Night Shelf:  ", self.reference)
+            plog("Focus reference updated from best recent focus from Night Shelf:  ", self.reference)
             # Is this of any real value except to persist self.last_known...?
             # except:
             #     self.reference = int(self.config["reference"])
