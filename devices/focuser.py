@@ -93,13 +93,14 @@ class Focuser:
         self.focus_needed = False # A variable that if the code detects that the focus has worsened it can trigger an autofocus
         self.focus_temp_slope = None
         self.focus_temp_intercept = None
+        self.best_previous_focus_point = None
         try:
-            best_previous_focus_point, last_successful_focus_time, self.focus_temp_slope, self.focus_temp_intercept=self.get_af_log()
+            self.best_previous_focus_point, last_successful_focus_time, self.focus_temp_slope, self.focus_temp_intercept=self.get_af_log()
             if last_successful_focus_time != None:
                 self.time_of_last_focus=parser.parse(last_successful_focus_time)
 
-            if best_previous_focus_point==None:
-                best_previous_focus_point=config["focuser"]["focuser1"]["reference"]
+            if self.best_previous_focus_point==None:
+                self.best_previous_focus_point=config["focuser"]["focuser1"]["reference"]
         except:
             self.set_focal_ref_reset_log(config["focuser"]["focuser1"]["reference"])
 
@@ -150,7 +151,7 @@ class Focuser:
             self.last_known_focus = self.reference
             self.last_source = "Focuser__init__  Calculate Comp references Config"
         else:
-            self.reference = float(best_previous_focus_point)
+            self.reference = float(self.best_previous_focus_point)
             self.last_known_focus = self.reference
             plog("Focus reference updated from Night Shelf:  ", self.reference)
             # Is this of any real value except to persist self.last_known...?
@@ -184,7 +185,7 @@ class Focuser:
 
     def calculate_compensation(self, temp_primary):
 
-        if -20 <= temp_primary <= 45:
+        if (-20 <= temp_primary <= 45) and (self.focus_temp_slope != None):
             trial = round(
                 float(
                     #self.config["coef_0"] + float(self.config["coef_c"]) * temp_primary
@@ -196,6 +197,10 @@ class Focuser:
             #trial = min(trial, 12150)
             # NB NB Numbers should all come from site config.
             return int(trial)
+        elif self.best_previous_focus_point != None:
+            return int(self.best_previous_focus_point)
+        else:
+            return int(self.config["reference"])
         #plog("Primary out of range -20C to 45C, using reference focus.")
         #return float(self.config["reference"])
 
