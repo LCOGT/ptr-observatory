@@ -496,43 +496,49 @@ site_config = {
             "driver": "LCO.dual",  # 'ASCOM.FLI.FilterWheel',   #'MAXIM',
             'ip_string': 'http://10.0.0.110',
             "dual_wheel": True,
-            'filter_reference': 'w',
+            'filter_reference': 'PL',
             'settings': {
                 'filter_count': 43,
                 "filter_type": "50mm_sq.",
                 "filter_manuf": "Astrodon",
                 'home_filter':  1,
-                'default_filter': "Lum",
+                'default_filter': "PL",
+                'focus_filter' : 'PL',
                 'filter_reference': 1,   # We choose to use W as the default filter.  Gains taken at F9, Ceravolo 300mm
                 # Columns for filter data are : ['filter', 'filter_index', 'filter_offset', 'sky_gain', 'screen_gain', 'alias']
                 #NB NB Note to WER please add cwl, bw and 'shape'
                 'filter_data': [
-                        ['air',  [0,  0], -800, 1050., [2   ,  20], 'air'],    #0  Gains 20230703 
-                        ['EXO',  [8,  0],    0, 1015., [360 , 170], 'ex'],     #1
-                        ['PL',   [7,  0],    0, 988.,  [360 , 170], 'PL'],     #2
-                        ['gp',   [2,  0],    0, 913.,  [.77 ,  20], 'gp'],     #3
-                        ['PB',   [0,  6],    0, 844,   [360 , 170], 'PR'],     #4
-                        ['NIR',  [0, 10],    0, 614.,  [0.65,  20], 'ni'],     #5
-                        ['JV',   [10, 0],    0, 613.,  [.32 ,  20], 'BV'],     #6
-                        ['Rc',   [11, 0],    0, 609.,  [10  , 170], 'BR'],     #7
-                        ['ip',   [4,  0],    0, 491.,  [.65 ,  20], 'ip'],     #8
-                        ['PG',   [0,  7],    0, 487.,  [30  , 170], 'PG'],     #9
-                        ['JB',   [9,  0],    0, 469.,  [0.65,  20], 'BB'],     #10
-                        ['rp',   [3,  0],    0, 469.,  [1.2 ,  20], 'rp'],     #11
-                        ['PR',   [0,  8],    0, 437.,  [.32 ,  20], 'PB'],     #12
-                        ['Ic',   [12, 0],    0, 415.,  [360 , 170], 'BI'],     #13
-                        ['zp',   [0,  9],    0, 107.6, [360 , 170], 'zp'],     #14    # NB I think these may be backward labeled,
-                        ['zs',   [5,  0],    0, 107.4, [1.0 ,  20], 'zs'],     #15    # NB ZP is a broader filter than zs.
-                        ['O3',   [0,  2],    0, 80.0,  [360 , 170], 'O3'],     #16    #guess
-                        ['CR',   [0,  5],    0, 45.0,  [360 , 170], 'CR'],     #17    #Guess
-                        ['HA',   [0,  3],    0, 41.7,  [360 , 170], 'HA'],     #18
-                        ['up',   [1,  0],    0, 25.61, [2   ,  20], 'up'],     #19
-                        ['N2',   [13, 0],    0, 20.67, [360 , 170], 'N2'],     #20
-                        ['S2',   [0,  4],    0, 20.11, [0.65,  20], 'S2'],     #21
-                        ['y',    [6,  0],    0, 7.28,  [360 , 170], 'y '],     #22     #This filter looks defective
+                        ['Air',  [0,  0], -800, 1050., [2   ,  20], 'AIR'],    #0  Gains 20230703 
+                        ['Exo',  [8,  0],    0, 1015., [360 , 170], 'Exoplanet - yellow, no UV or NIR'],     #1
+                        
+                        ['PL',   [7,  0],    0, 988.,  [360 , 170], 'Photo Luminance - does not pass NIR'],     #2
+                        ['PR',   [0,  8],    0, 437.,  [.32 ,  20], 'Photo Blue'],     #3
+                        ['PG',   [0,  7],    0, 487.,  [30  , 170], 'Photo Green'],     #4
+                        ['PB',   [0,  6],    0, 844,   [360 , 170], 'Photo Blue'],     #5
+                        ['NIR',  [0, 10],    0, 614.,  [0.65,  20], 'Near IR - redward of PR'],     #6
+                        
+                        ['O3',   [0,  2],    0, 80.0,  [360 , 170], 'Oxygen III'],     #7    #guess
+                        ['HA',   [0,  3],    0, 41.7,  [360 , 170], 'Hydrogen Alpha - aka II'],     #8
+                        ['N2',   [13, 0],    0, 20.67, [360 , 170], 'Nitrogen II'],     #9
+                        ['S2',   [0,  4],    0, 20.11, [0.65,  20], 'Sulphur II'],     #10
+                        ['CR',   [0,  5],    0, 45.0,  [360 , 170], 'Continuum Red - for Star subtraction'],     #11
+                        
+                        ['up',   [1,  0],    0, 25.61, [2   ,  20], "Sloan u'"],     #12
+                        ['BB',   [9,  0],    0, 469.,  [0.65,  20], 'Bessell B'],     #13
+                        ['gp',   [2,  0],    0, 913.,  [.77 ,  20], "Sloan g'"],     #14
+                        ['BV',   [10, 0],    0, 613.,  [.32 ,  20], 'Bessell V'],     #15
+                        ['BR',   [11, 0],    0, 609.,  [10  , 170], 'Bessell R'],     #16
+                        ['rp',   [3,  0],    0, 469.,  [1.2 ,  20], "Sloan r'"],     #17
+                        ['ip',   [4,  0],    0, 491.,  [.65 ,  20], "Sloan i'"],     #18
+                        ['BI',   [12, 0],    0, 415.,  [360 , 170], 'Bessell I'],     #19
+                        ['zp',   [0,  9],    0, 107.6, [360 , 170], "Sloan z'"],     #20    # NB I think these may be backward labeled,
+                        ['zs',   [5,  0],    0, 107.4, [1.0 ,  20], "Sloan z-short"],     #21    # NB ZP is a broader filter than zs.
+                        ['Y',    [6,  0],    0, 7.28,  [360 , 170], "Rubin Y - low throughput "],     #22
+                        
+  
                         ['dark', [5,  6],    0, 0.00,  [360 , 170], 'dk']],    #23     #Not a real filter.
 
-                'focus_filter' : 'PL',
+                
 
                 'filter_screen_sort':  [1],   # don't use narrow yet,  8, 10, 9], useless to try.
                 'filter_sky_sort': ['S2','N2','up','HA','CR','O3','zs','zp','Ic','PR','rp','JB','PG', \
