@@ -37,8 +37,8 @@ platesolve_crop=input_psolve_info[9]
 bin_for_platesolve=input_psolve_info[10]
 platesolve_bin_factor=input_psolve_info[11]
 image_saturation_level = input_psolve_info[12]
-
-
+readnoise=input_psolve_info[13]
+minimum_realistic_seeing=input_psolve_info[14]
 
 # focdate=time.time()
 
@@ -94,7 +94,7 @@ sep.set_extract_pixstack(int(ix*iy - 1))
 #This minarea is totally fudgetastically emprical comparing a 0.138 pixelscale QHY Mono
 # to a 1.25/2.15 QHY OSC. Seems to work, so thats good enough.
 # Makes the minarea small enough for blocky pixels, makes it large enough for oversampling
-minarea= -9.2421 * pixscale + 16.553
+minarea= -9.2421 * (pixscale*platesolve_bin_factor) + 16.553
 if minarea < 5:  # There has to be a min minarea though!
     minarea = 5
 
@@ -120,47 +120,83 @@ nan_in_row = np.zeros(len(sources), dtype=bool)
 for col in sources.colnames:
     nan_in_row |= np.isnan(sources[col])
 sources = sources[~nan_in_row]
-    #plog("Actual Platesolve SEP time: " + str(time.time()-actseptime))
+
+# Calculate the ellipticity (Thanks BANZAI)
+
+sources['ellipticity'] = 1.0 - (sources['b'] / sources['a'])
+sources = sources[sources['ellipticity'] < 0.4]  # Remove things that are not circular stars
+
+# Calculate the kron radius (Thanks BANZAI)
+kronrad, krflag = sep.kron_radius(focusimg, sources['x'], sources['y'],
+                                  sources['a'], sources['b'],
+                                  sources['theta'], 6.0)
+sources['flag'] |= krflag
+sources['kronrad'] = kronrad
+
+# Calculate uncertainty of image (thanks BANZAI)
+#uncertainty = float(readnoise) * np.ones(hdufocusdata.shape,
+#                                         dtype=hdufocusdata.dtype) / float(readnoise)
+
+uncertainty = float(readnoise) * np.ones(focusimg.shape,
+                                         dtype=focusimg.dtype) / float(readnoise)
+
+
+flux, fluxerr, flag = sep.sum_ellipse(focusimg, sources['x'], sources['y'],
+                                  sources['a'], sources['b'],
+                                  np.pi / 2.0, 2.5 * kronrad,
+                                  subpix=1, err=uncertainty)
 #except:
-#    plog("Something went wrong with platesolve SEP")
+#    plog(traceback.format_exc())
+    
+sources['flux'] = flux
+sources['fluxerr'] = fluxerr
+sources['flag'] |= flag
+sources['FWHM'], _ = sep.flux_radius(focusimg, sources['x'], sources['y'], sources['a'], 0.5,
+                                     subpix=5)
 
-# # Fast checking of the NUMBER of sources
-# # No reason to run a computationally intensive
-# # SEP routine for that, just photutils will do.
-# psource_timer_begin=time.time()
-# plog ("quick image stats from photutils")
-# tempmean, tempmedian, tempstd = sigma_clipped_stats(hdufocusdata, sigma=3.0)
-# plog((tempmean, tempmedian, tempstd))
-# #daofind = DAOStarFinder(fwhm=(2.2 / pixscale), threshold=5.*tempstd)  #estimate fwhm in pixels by reasonable focus level.
 
-# if g_dev['foc'].last_focus_fwhm == None:
-#     tempfwhm=2.2/(pixscale*binfocus)
-# else:
-#     tempfwhm=g_dev['foc'].last_focus_fwhm/(pixscale*binfocus)
-# daofind = DAOStarFinder(fwhm=tempfwhm , threshold=5.*tempstd)
-
-# plog ("Used fwhm is " + str(tempfwhm) + " pixels")
-# sources = daofind(hdufocusdata - tempmedian)
-# plog (sources)
-# plog("Photutils time to process: " + str(time.time() -psource_timer_begin ))
-
-# We only need to save the focus image immediately if there is enough sources to
-#  rationalise that.  It only needs to be on the disk immediately now if platesolve
-#  is going to attempt to pick it up.  Otherwise it goes to the slow queue.
-# Also, too many sources and it will take an unuseful amount of time to solve
-# Too many sources mean a globular or a crowded field where we aren't going to be
-# able to solve too well easily OR it is such a wide field of view that who cares
-# if we are off by 10 arcseconds?
-#plog("Number of sources for Platesolve: " + str(len(sources)))
+sources = sources[sources['FWHM'] > (0.6 / (pixscale * platesolve_bin_factor))]
+sources = sources[sources['FWHM'] > (minimum_realistic_seeing / pixscale * platesolve_bin_factor)]
+sources = sources[sources['FWHM'] != 0]
 
 if len(sources) >= 15:
+    
+    
+    # Get size of original image
+    xpixelsize = hdufocusdata.shape[0]
+    ypixelsize = hdufocusdata.shape[1]
+    shape = (xpixelsize, ypixelsize)
+
+    # Make blank synthetic image with a sky background
+    synthetic_image = np.zeros([xpixelsize, ypixelsize])
+    synthetic_image = synthetic_image + 200
+
+    #Bullseye Star Shape
+    modelstar = [[ 0.1 , 0.2 , 0.4,  0.2, 0.1], 
+                [ 0.2 , 0.4 , 0.8,  0.4, 0.2],
+                [ 0.4 , 0.8 , 1,  0.8, 0.4],
+                [ 0.2 , 0.4 , 0.8,  0.4, 0.2],
+                [ 0.1 , 0.2 , 0.4,  0.2, 0.1]]
+    modelstar=np.array(modelstar)
+
+    # Add bullseye stars to blank image
+    for addingstar in sources:
+        x = round(addingstar['x'] -1)
+        y = round(addingstar['y'] -1)
+        peak = int(addingstar['peak'])    
+        # Add star to numpy array as a slice
+        synthetic_image[x-2:x+3,y-2:y+3] += peak*modelstar
+
+    # Make an int16 image for planewave solver
+    hdufocusdata = np.array(synthetic_image, dtype=np.int16)    
+    
     hdufocus = fits.PrimaryHDU()
     hdufocus.data = hdufocusdata
     hdufocus.header = hduheader
     hdufocus.header["NAXIS1"] = hdufocusdata.shape[0]
     hdufocus.header["NAXIS2"] = hdufocusdata.shape[1]
     hdufocus.writeto(cal_path + 'platesolvetemp.fits', overwrite=True, output_verify='silentfix')
-    pixscale = hdufocus.header['PIXSCALE']
+    pixscale = (hdufocus.header['PIXSCALE'] * platesolve_bin_factor)
     # if self.config["save_to_alt_path"] == "yes":
     #    self.to_slow_process(1000,('raw_alt_path', self.alt_path + g_dev["day"] + "/calib/" + cal_name, hdufocus.data, hdufocus.header, \
     #                                   frame_type))
@@ -185,7 +221,7 @@ if len(sources) >= 15:
     try:
         # time.sleep(1) # A simple wait to make sure file is saved
         solve = platesolve.platesolve(
-            cal_path + 'platesolvetemp.fits', pixscale
+            cal_path + 'platesolvetemp.fits', pixscale*platesolve_bin_factor
         )
     except:
         solve = 'error'
