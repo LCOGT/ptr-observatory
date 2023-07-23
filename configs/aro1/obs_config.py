@@ -147,16 +147,16 @@ site_config = {
     'site_allowed_to_open_roof': 'yes',
     
     'maximum_roof_opens_per_evening' : 4,
-    'site_in_automatic_default': "Manual",   # ["Manual", "Shutdown", "Automatic"]
+    'site_in_automatic_default': "Automatic",   # ["Manual", "Shutdown", "Automatic"]
     
-    'automatic_detail_default': "Enclosure is initially set to Manual by ARO site_config.",
+    'automatic_detail_default': "Enclosure is initially set to Automatic by ARO site_config.",
     'observing_check_period' : 1,    # How many minutes between weather checks
     'enclosure_check_period' : 1,    # How many minutes between enclosure checks
     'auto_eve_bias_dark': True,
     
     'auto_midnight_moonless_bias_dark': False,
     'auto_eve_sky_flat': True,
-    'eve_sky_flat_sunset_offset': -55.0,  # Minutes  neg means before, + after.
+    'eve_sky_flat_sunset_offset': -45.0,  # Minutes  neg means before, + after.
     #'eve_cool_down_open' : -56.0,
     'auto_morn_sky_flat': True,
     'auto_morn_bias_dark': True,
