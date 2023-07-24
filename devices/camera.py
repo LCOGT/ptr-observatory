@@ -3196,8 +3196,8 @@ class Camera:
                             # This is important for a variety of reasons
                             # Some functions don't work with arrays with negative values
                             # 2000 SHOULD be enough.
-                            hdusmalldata=hdusmalldata+2000.0
-                            hdusmallheader['PEDESTAL']=2000
+                            hdusmalldata=hdusmalldata+200.0
+                            hdusmallheader['PEDESTAL']=200
                             
                             
                             # Every Image gets SEP'd and gets it's catalogue sent up pronto ahead of the big fits
