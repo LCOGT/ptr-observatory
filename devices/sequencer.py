@@ -4323,6 +4323,16 @@ class Sequencer:
         
         minimumFWHM = 100.0
         #breakpoint()
+        
+        
+        # Remove Faulty measurements
+        trimmed_list=[]
+        for focentry in extensive_focus:
+            if focentry[1] != False:
+                trimmed_list.append(focentry)
+        
+        extensive_focus=trimmed_list
+        
         # Find the maximum number of sources detected
         maxsources=max(np.asarray(extensive_focus)[:,2])
         

@@ -456,7 +456,7 @@ site_config = {
             'maximum': 12600,   #12672 actually
             'step_size': 1,
             'backlash': 0,
-            'throw': 300,
+            'throw': 125,
             'unit': 'micron',
             'unit_conversion': 9.09090909091,
             'has_dial_indicator': False
