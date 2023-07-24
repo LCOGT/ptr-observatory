@@ -626,6 +626,7 @@ class Sequencer:
 
             self.nightly_reset_complete = False
             self.cool_down_latch = True
+            self.reset_completes()
             
             #if not g_dev['obs'].open_and_enabled_to_observe and self.weather_report_is_acceptable_to_observe==True and self.weather_report_wait_until_open==False:
 
