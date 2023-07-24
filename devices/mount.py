@@ -1834,6 +1834,8 @@ class Mount:
         if self.config['mount']['mount1']['has_ascom_altaz'] == True:
             wait_for_slew() 
             g_dev['obs'].time_of_last_slew=time.time()
+            if g_dev['mnt'].mount.AtPark:
+                self.unpark_command()
             self.mount.SlewToAltAzAsync(az, alt)
             g_dev['obs'].time_since_last_slew = time.time()
             g_dev['obs'].last_solve_time = datetime.datetime.now() - datetime.timedelta(days=1)
@@ -1848,6 +1850,8 @@ class Mount:
             wait_for_slew() 
             try:
                 g_dev['obs'].time_of_last_slew=time.time()
+                if g_dev['mnt'].mount.AtPark:
+                    self.unpark_command()
                 self.mount.SlewToCoordinatesAsync(tempRA, tempDEC)
             except Exception as e:
                 if g_dev['mnt'].theskyx:
