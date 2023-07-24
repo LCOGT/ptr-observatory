@@ -3300,7 +3300,7 @@ class Sequencer:
 
 
 
-    def auto_focus_script(self, req, opt, throw=600, skip_timer_check=False, extensive_focus=None):
+    def auto_focus_script(self, req, opt, throw=None, skip_timer_check=False, extensive_focus=None):
         '''
         V curve is a big move focus designed to fit two lines adjacent to the more normal focus curve.
         It finds the approximate focus, particulary for a new instrument. It requires 8 points plus
@@ -3317,6 +3317,9 @@ class Sequencer:
                         result['patch'] = cal_result
                         result['temperature'] = avg_foc[2]  This is probably tube not reported by Gemini.
         '''
+
+        if throw==None:
+            throw= self.config['focuser']['focuser1']['throw']
 
         if (ephem.now() < g_dev['events']['End Eve Bias Dark'] ) or \
             (g_dev['events']['End Morn Bias Dark']  < ephem.now() < g_dev['events']['Nightly Reset']):
@@ -4076,7 +4079,7 @@ class Sequencer:
         return
 
 
-    def extensive_focus_script(self, req, opt, throw=700, begin_at=None, no_auto_after_solve=False):
+    def extensive_focus_script(self, req, opt, throw=None, begin_at=None, no_auto_after_solve=False):
         '''
         This is an extensive focus that covers a wide berth of central values
         and throws.
@@ -4089,7 +4092,8 @@ class Sequencer:
         
         '''
         
-        
+        if throw==None:
+            throw= self.config['focuser']['focuser1']['throw']
         
         if (ephem.now() < g_dev['events']['End Eve Bias Dark'] ) or \
             (g_dev['events']['End Morn Bias Dark']  < ephem.now() < g_dev['events']['Nightly Reset']):
