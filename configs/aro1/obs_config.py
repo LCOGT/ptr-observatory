@@ -632,8 +632,8 @@ site_config = {
                 'interpolate_for_sep' : False,
                 'bin_for_sep' : True, # This setting will bin the image for SEP photometry.
                 'sep_bin_value' : 2,
-                'bin_for_platesolve' : True, # This setting will bin the image for platesolving.
-                'platesolve_bin_value' : 2,
+                'bin_for_platesolve' : False, # This setting will bin the image for platesolving.
+                'platesolve_bin_value' : 1,
                 
                 'transpose_fits' : False,
                 'flipx_fits': False,

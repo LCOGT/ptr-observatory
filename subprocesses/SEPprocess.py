@@ -311,10 +311,10 @@ else:
         #sources = sources[sources["peak"] > 150 * pow(binfocus,2)]
         #sources = sources[sources["cpeak"] > 150 * pow(binfocus,2)]
         sources = sources[sources["flux"] > 2000]
-        sources = sources[sources["x"] < ix - border_x]
-        sources = sources[sources["x"] > border_x]
-        sources = sources[sources["y"] < iy - border_y]
-        sources = sources[sources["y"] > border_y]
+        sources = sources[sources["x"] < iy - border_y]
+        sources = sources[sources["x"] > border_y]
+        sources = sources[sources["y"] < ix - border_x]
+        sources = sources[sources["y"] > border_x]
 
         # BANZAI prune nans from table
         nan_in_row = np.zeros(len(sources), dtype=bool)

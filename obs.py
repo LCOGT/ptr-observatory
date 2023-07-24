@@ -2247,10 +2247,10 @@ sel
                      pixscale, pointing_ra, pointing_dec, platesolve_crop, bin_for_platesolve, platesolve_bin_factor, g_dev['cam'].config["camera"][g_dev['cam'].name]["settings"]["saturate"], g_dev['cam'].camera_known_readnoise, self.config['minimum_realistic_seeing']], platesolve_subprocess.stdin)
                                                                                                                                  
                     #pickle.dump([hdufocusdata, hduheader, self.local_calibration_path, cal_name, frame_type, time_platesolve_requested, 
-                    # pixscale, pointing_ra, pointing_dec, platesolve_crop, bin_for_platesolve, platesolve_bin_factor, g_dev['cam'].config["camera"][g_dev['cam'].name]["settings"]["saturate"]], open('subprocesses/testplatesolvepickle','wb'))                                                                                                             
+                    # pixscale, pointing_ra, pointing_dec, platesolve_crop, bin_for_platesolve, platesolve_bin_factor, g_dev['cam'].config["camera"][g_dev['cam'].name]["settings"]["saturate"], g_dev['cam'].camera_known_readnoise, self.config['minimum_realistic_seeing']], open('subprocesses/testplatesolvepickle','wb'))                                                                                                             
 
                     del hdufocusdata
-                        
+                    #breakpoint()
                     # Essentially wait until the subprocess is complete
                     platesolve_subprocess.communicate()
                     

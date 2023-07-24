@@ -661,7 +661,7 @@ class Sequencer:
                 opt = {}
                 plog ("Running initial autofocus upon opening observatory")
                 
-                self.extensive_focus_script(req2, opt)
+                self.auto_focus_script(req2, opt)
             else:
                 self.night_focus_ready=True
                     
@@ -1161,7 +1161,7 @@ class Sequencer:
         
         g_dev['obs'].update()
         
-        plog('|n|n Staring a new project!  \n')
+        plog('|n|n Starting a new project!  \n')
         plog(block_specification, ' \n\n\n')
 
         calendar_event_id=block_specification['event_id']
@@ -1302,12 +1302,26 @@ class Sequencer:
                 except:
                     pass
 
+            # Input the global smartstack and longstack request from the project
+            # Into the individual exposure requests
+            try:
+                do_long_stack=block['project']['project_constraints']['long_stack']
+                do_smart_stack=block['project']['project_constraints']['smart_stack']
+            except:
+                pass # REMOVE THESE SOON
+
             #Compute how many to do.
             left_to_do = 0
             ended = False
             #  NB NB NB Any mosaic larger than +SQ should be specified in degrees and be square
             #  NB NB NB NB this is the source of a big error$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$!!!! WER 20220814
             for exposure in block['project']['exposures']:
+                try:
+                    exposure['longstack'] = do_long_stack
+                    exposure['smartstack'] = do_smart_stack
+                except:
+                    pass # REMOVE THESE SOON
+                
                 multiplex = 0
                 if exposure['area'] in ['300', '300%', 300, '220', '220%', 220, '150', '150%', 150, '250', '250%', 250]:
                     if block_specification['project']['project_constraints']['add_center_to_mosaic']:

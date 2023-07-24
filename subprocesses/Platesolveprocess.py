@@ -88,8 +88,8 @@ bkg = sep.Background(focusimg)
 
 focusimg -= bkg
 ix, iy = focusimg.shape
-border_x = int(ix * 0.05)
-border_y = int(iy * 0.05)
+#border_x = int(ix * 0.05)
+#border_y = int(iy * 0.05)
 sep.set_extract_pixstack(int(ix*iy - 1))
 #This minarea is totally fudgetastically emprical comparing a 0.138 pixelscale QHY Mono
 # to a 1.25/2.15 QHY OSC. Seems to work, so thats good enough.
@@ -101,6 +101,7 @@ if minarea < 5:  # There has to be a min minarea though!
 sources = sep.extract(
     focusimg, 5.0, err=bkg.globalrms, minarea=minarea
 )
+
 #plog ("min_area: " + str(minarea))
 sources = Table(sources)
 sources = sources[sources['flag'] < 8]
@@ -110,10 +111,12 @@ sources = sources[sources["cpeak"] < 0.8 * image_saturation_level * pow(binfocus
 #sources = sources[sources["peak"] > 150 * pow(binfocus,2)]
 #sources = sources[sources["cpeak"] > 150 * pow(binfocus,2)]
 sources = sources[sources["flux"] > 2000]
-sources = sources[sources["x"] < ix - border_x]
-sources = sources[sources["x"] > border_x]
-sources = sources[sources["y"] < iy - border_y]
-sources = sources[sources["y"] > border_y]
+sources = sources[sources["x"] < iy -50]
+sources = sources[sources["x"] > 50]
+sources = sources[sources["y"] < ix - 50]
+sources = sources[sources["y"] > 50]
+
+
 
 # BANZAI prune nans from table
 nan_in_row = np.zeros(len(sources), dtype=bool)
@@ -155,9 +158,25 @@ sources['FWHM'], _ = sep.flux_radius(focusimg, sources['x'], sources['y'], sourc
                                      subpix=5)
 
 
-sources = sources[sources['FWHM'] > (0.6 / (pixscale * platesolve_bin_factor))]
-sources = sources[sources['FWHM'] > (minimum_realistic_seeing / pixscale * platesolve_bin_factor)]
+#sources = sources[sources['FWHM'] > (0.6 / (pixscale * platesolve_bin_factor))]
+#sources = sources[sources['FWHM'] > (minimum_realistic_seeing / (pixscale * platesolve_bin_factor))]
 sources = sources[sources['FWHM'] != 0]
+sources = sources[sources['FWHM'] > 0.5] 
+sources = sources[sources['FWHM'] < (np.median(sources['FWHM']) + (4 * np.std(sources['FWHM'])))]
+
+sources = sources[sources['flux'] > 0]
+sources = sources[sources['flux'] < 1000000]
+
+
+if len(sources) >= 2000:
+    fraction_to_remove = 1-(2000/len(sources))
+    top_cut = fraction_to_remove * 0.25 * 100
+    bottom_cut = fraction_to_remove * 0.75 * 100
+    top_percentile = np.percentile(sources['flux'],100-top_cut)
+    bottom_percentile = np.percentile(sources['flux'],bottom_cut)
+    #breakpoint()
+    sources = sources[sources['flux'] > bottom_percentile]
+    sources = sources[sources['flux'] < top_percentile]
 
 if len(sources) >= 15:
     
@@ -166,6 +185,8 @@ if len(sources) >= 15:
     xpixelsize = hdufocusdata.shape[0]
     ypixelsize = hdufocusdata.shape[1]
     shape = (xpixelsize, ypixelsize)
+    
+
 
     # Make blank synthetic image with a sky background
     synthetic_image = np.zeros([xpixelsize, ypixelsize])
@@ -185,22 +206,29 @@ if len(sources) >= 15:
         y = round(addingstar['y'] -1)
         peak = int(addingstar['peak'])    
         # Add star to numpy array as a slice
-        synthetic_image[x-2:x+3,y-2:y+3] += peak*modelstar
-
-    # Make an int16 image for planewave solver
-    hdufocusdata = np.array(synthetic_image, dtype=np.int16)    
+        #print (peak)
+        try:
+            synthetic_image[y-2:y+3,x-2:x+3] += peak*modelstar
+        except Exception as e:
+            print (e)
+            breakpoint()
     
+    
+    
+    # Make an int16 image for planewave solver
+    hdufocusdata = np.array(synthetic_image, dtype=np.int32)    
+    hdufocusdata[hdufocusdata < 0] = 200
     hdufocus = fits.PrimaryHDU()
     hdufocus.data = hdufocusdata
     hdufocus.header = hduheader
     hdufocus.header["NAXIS1"] = hdufocusdata.shape[0]
     hdufocus.header["NAXIS2"] = hdufocusdata.shape[1]
     hdufocus.writeto(cal_path + 'platesolvetemp.fits', overwrite=True, output_verify='silentfix')
-    pixscale = (hdufocus.header['PIXSCALE'] * platesolve_bin_factor)
+    pixscale = (hdufocus.header['PIXSCALE'] * platesolve_bin_factor) / hdufocus.header['XBINING']
     # if self.config["save_to_alt_path"] == "yes":
     #    self.to_slow_process(1000,('raw_alt_path', self.alt_path + g_dev["day"] + "/calib/" + cal_name, hdufocus.data, hdufocus.header, \
     #                                   frame_type))
-
+    #breakpoint()
     try:
         hdufocus.close()
     except:
@@ -221,10 +249,13 @@ if len(sources) >= 15:
     try:
         # time.sleep(1) # A simple wait to make sure file is saved
         solve = platesolve.platesolve(
-            cal_path + 'platesolvetemp.fits', pixscale*platesolve_bin_factor
-        )
+            #cal_path + 'platesolvetemp.fits', pixscale*platesolve_bin_factor
+            cal_path + 'platesolvetemp.fits', pixscale*platesolve_bin_factor)
     except:
         solve = 'error'
+    
+    #print (sources)
+    #breakpoint()
     
     pickle.dump(solve, open(cal_path + 'platesolve.pickle', 'wb'))
     
