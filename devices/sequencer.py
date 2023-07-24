@@ -627,7 +627,8 @@ class Sequencer:
             self.nightly_reset_complete = False
             self.cool_down_latch = True
             self.reset_completes()
-            
+            self.block_guard=False
+            self.clock_focus_latch=False
             #if not g_dev['obs'].open_and_enabled_to_observe and self.weather_report_is_acceptable_to_observe==True and self.weather_report_wait_until_open==False:
 
                 #if time.time() > self.enclosure_next_open_time and self.opens_this_evening < self.config['maximum_roof_opens_per_evening']:
@@ -884,7 +885,7 @@ class Sequencer:
                                   "created_at": block['project_id'].split('#')[1],
                                 })
                                 project_response=requests.post(url_proj, request_body)
-                                print (project_response)
+                                #print (project_response)
                                 # skip_project_cycle=False
                                 # if 'message' in self.projects:
                                 #     if 'Internal server error' in str(self.projects['message']):
