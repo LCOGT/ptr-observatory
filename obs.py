@@ -2287,7 +2287,8 @@ sel
                         target_dec = g_dev["mnt"].last_dec
                         solved_ra = solve["ra_j2000_hours"]
                         solved_dec = solve["dec_j2000_degrees"]
-                        #solved_arcsecperpixel = solve["arcsec_per_pixel"]
+                        solved_arcsecperpixel = solve["arcsec_per_pixel"]
+                        plog("1x1 pixelscale solved: " + str(float(solved_arcsecperpixel / platesolve_bin_factor / g_dev['cam'].native_bin)))
                         #solved_rotangledegs = solve["rot_angle_degs"]
                         err_ha = target_ra - solved_ra
                         err_dec = target_dec - solved_dec
