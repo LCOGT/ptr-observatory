@@ -657,7 +657,7 @@ class Sequencer:
                 g_dev['foc'].time_of_last_focus = datetime.datetime.now() - datetime.timedelta(
                     days=1
                 )  # Initialise last focus as yesterday
-
+                g_dev['foc'].set_initial_best_guess_for_focus()
                 # Autofocus
                 req2 = {'target': 'near_tycho_star', 'area': 150}
                 opt = {}
@@ -707,6 +707,8 @@ class Sequencer:
             self.eve_sky_flat_latch = True
             self.current_script = "Eve Sky Flat script starting"
             
+            g_dev['foc'].set_initial_best_guess_for_focus()
+            
             self.sky_flat_script({}, {}, morn=False)   #Null command dictionaries
             
             if g_dev['mnt'].mount.Tracking == False:
@@ -737,6 +739,8 @@ class Sequencer:
             g_dev['foc'].time_of_last_focus = datetime.datetime.now() - datetime.timedelta(
                 days=1
             )  # Initialise last focus as yesterday
+            
+            g_dev['foc'].set_initial_best_guess_for_focus()
 
             # Autofocus
             req2 = {'target': 'near_tycho_star', 'area': 150}

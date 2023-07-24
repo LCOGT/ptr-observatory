@@ -95,92 +95,13 @@ class Focuser:
         self.focus_temp_slope = None
         self.focus_temp_intercept = None
         self.best_previous_focus_point = None
-        try:
-            self.best_previous_focus_point, last_successful_focus_time, self.focus_temp_slope, self.focus_temp_intercept=self.get_af_log()
-
-            if last_successful_focus_time != None:
-                self.time_of_last_focus=parser.parse(last_successful_focus_time)
-
-            if self.best_previous_focus_point==None:
-                self.best_previous_focus_point=config["focuser"]["focuser1"]["reference"]
-        except:
-            self.set_focal_ref_reset_log(config["focuser"]["focuser1"]["reference"])
-
-        try:
-            self.z_compression = config["focuser"]["focuser1"]["z_compression"]
-        except:
-            self.z_compression = 0.0
-
-        if config["focuser"]["focuser1"]['start_at_config_reference']:
-            self.reference = int(self.config["reference"])
-            self.last_known_focus = self.reference
-            plog(
-                "Focus reference derived from supplied config file for 10C:  ",
-                self.reference,
-            )
-        elif config["focuser"]["focuser1"]['correct_focus_for_temperature']:            
-            # Get temperature
-            try:
-                if self.theskyx:
-                    self.last_temperature = self.focuser.focTemperature
-                    
-                else:
-                    self.last_temperature = self.focuser.Temperature
-                self.reference = self.calculate_compensation(
-                    self.last_temperature
-                )  # need to change to config supplied
-            except:
-                try:
-                    self.last_temperature = g_dev["ocn"].temperature
-                    self.reference = self.calculate_compensation(
-                        g_dev["ocn"].temperature
-                    )
-                except:
-                    plog ("could not get temperature from ocn in focuser.py")
-                    self.last_temperature=10.0
-                    self.reference = self.calculate_compensation(
-                        g_dev["ocn"].temperature
-                    )
         
-                    
-            plog(
-                "Focus position set from temp compensated value:  ",
-                self.reference,
-                ".  Temp used:  ",
-                self.last_temperature,
-            )
-            
-            self.last_known_focus = self.reference
-            self.last_source = "Focuser__init__  Calculate Comp references Config"
-        else:
-            self.reference = float(self.best_previous_focus_point)
-            self.last_known_focus = self.reference
-            plog("Focus reference updated from best recent focus from Night Shelf:  ", self.reference)
-            # Is this of any real value except to persist self.last_known...?
-            # except:
-            #     self.reference = int(self.config["reference"])
-            #     self.last_known_focus = self.reference
-            #     plog(
-            #         "Focus reference derived from supplied config file for 10C:  ",
-            #         self.reference,
-            #     )
-                # The config reference should be a table of value
-        if self.theskyx:
-            #self.focuser.focPosition =  int(float(self.reference) * self.micron_to_steps)  
-            #print (self.focuser.focPosition())
-            requestedPosition=int(float(self.reference) * self.micron_to_steps)
-            difference_in_position=self.focuser.focPosition() - requestedPosition
-            absdifference_in_position=abs(self.focuser.focPosition() - requestedPosition)
-            print (difference_in_position)
-            print (absdifference_in_position)
-            if difference_in_position < 0 :
-                self.focuser.focMoveOut(absdifference_in_position)
-            else:
-                self.focuser.focMoveIn(absdifference_in_position)
-            print (self.focuser.focPosition())
-
-        else:
-            self.focuser.Move(int(float(self.reference) * self.micron_to_steps))
+        
+        
+        self.set_initial_best_guess_for_focus()
+        
+        
+        
 
         #breakpoint()
 
@@ -409,7 +330,95 @@ class Focuser:
                 
 
        
+    def set_initial_best_guess_for_focus(self):
+        
+        try:
+            self.best_previous_focus_point, last_successful_focus_time, self.focus_temp_slope, self.focus_temp_intercept=self.get_af_log()
 
+            if last_successful_focus_time != None:
+                self.time_of_last_focus=parser.parse(last_successful_focus_time)
+
+            if self.best_previous_focus_point==None:
+                self.best_previous_focus_point=self.config["reference"]
+        except:
+            self.set_focal_ref_reset_log(self.config["reference"])
+
+        try:
+            self.z_compression = self.config["z_compression"]
+        except:
+            self.z_compression = 0.0
+
+        if self.config['start_at_config_reference']:
+            self.reference = int(self.config["reference"])
+            self.last_known_focus = self.reference
+            plog(
+                "Focus reference derived from supplied config file for 10C:  ",
+                self.reference,
+            )
+        elif self.config['correct_focus_for_temperature']:            
+            # Get temperature
+            try:
+                if self.theskyx:
+                    self.last_temperature = self.focuser.focTemperature
+                    
+                else:
+                    self.last_temperature = self.focuser.Temperature
+                self.reference = self.calculate_compensation(
+                    self.last_temperature
+                )  # need to change to config supplied
+            except:
+                try:
+                    self.last_temperature = g_dev["ocn"].temperature
+                    self.reference = self.calculate_compensation(
+                        g_dev["ocn"].temperature
+                    )
+                except:
+                    plog ("could not get temperature from ocn in focuser.py")
+                    self.last_temperature=10.0
+                    self.reference = self.calculate_compensation(
+                        g_dev["ocn"].temperature
+                    )
+        
+                    
+            plog(
+                "Focus position set from temp compensated value:  ",
+                self.reference,
+                ".  Temp used:  ",
+                self.last_temperature,
+            )
+            
+            self.last_known_focus = self.reference
+            self.last_source = "Focuser__init__  Calculate Comp references Config"
+        else:
+            self.reference = float(self.best_previous_focus_point)
+            self.last_known_focus = self.reference
+            plog("Focus reference updated from best recent focus from Night Shelf:  ", self.reference)
+            # Is this of any real value except to persist self.last_known...?
+            # except:
+            #     self.reference = int(self.config["reference"])
+            #     self.last_known_focus = self.reference
+            #     plog(
+            #         "Focus reference derived from supplied config file for 10C:  ",
+            #         self.reference,
+            #     )
+                # The config reference should be a table of value
+        
+        if self.theskyx:
+            #self.focuser.focPosition =  int(float(self.reference) * self.micron_to_steps)  
+            #print (self.focuser.focPosition())
+            requestedPosition=int(float(self.reference) * self.micron_to_steps)
+            difference_in_position=self.focuser.focPosition() - requestedPosition
+            absdifference_in_position=abs(self.focuser.focPosition() - requestedPosition)
+            print (difference_in_position)
+            print (absdifference_in_position)
+            if difference_in_position < 0 :
+                self.focuser.focMoveOut(absdifference_in_position)
+            else:
+                self.focuser.focMoveIn(absdifference_in_position)
+            print (self.focuser.focPosition())
+
+        else:
+            self.focuser.Move(int(float(self.reference) * self.micron_to_steps))
 
 
     def adjust_focus(self):
@@ -427,32 +436,52 @@ class Focuser:
         # makes more sense than a full recalcutatin of ax + b...
 
         try:
-            if self.obsid != "sro":
-                temp_delta = self.focuser.Temperature - self.last_temperature
+            if self.theskyx:
+                temp_delta = self.focuser.focTemperature - self.last_temperature                
             else:
-                try:
-                    temp_delta = (
-                        g_dev["ocn"].status["temperature_C"] - self.last_temperature
-                    )
-                except:
-                    temp_delta = 0.0
-
-            adjust = 0.0
-            if abs(temp_delta) > 0.1 and self.last_temperature is not None:
-                adjust = round(temp_delta * float(self.config["coef_c"]), 1)
-            adjust += g_dev["fil"].filter_offset
-
+                temp_delta = self.focuser.Temperature - self.last_temperature
+        except:
             try:
-                self.last_temperature = g_dev["ocn"].status[
-                    "temperature_C"
-                ]  # Save this for next adjustment
+                temp_delta = (
+                    g_dev["ocn"].status["temperature_C"] - self.last_temperature
+                )
             except:
-                pass
+                temp_delta = 0.0
+                
+                
+        try:
+            adjust = 0.0            
+            
+            
+            if abs(temp_delta) > 0.1 and self.last_temperature is not None:
+                adjust = round(temp_delta * float(self.focus_temp_slope), 1)
+                
+            adjust += g_dev["fil"].filter_offset
+    
+
+            
+            
             req = {"position": str(self.last_known_focus + adjust)}
             opt = {}
             self.move_absolute_command(req, opt)
+            
+            
+            try:
+                if self.theskyx:
+                    self.last_temperature = self.focuser.focTemperature                 
+                else:
+                    self.last_temperature = self.focuser.Temperature 
+            except:
+                try:
+                    self.last_temperature = (
+                        g_dev["ocn"].status["temperature_C"] 
+                    )
+                except:
+                    self.last_temperature = None
+            
         except:
             plog("Focus-adjust: no changes made.")
+        
 
     def guarded_move(self, to_focus):
         try:
