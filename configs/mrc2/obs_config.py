@@ -314,21 +314,21 @@ site_config = {
             'alignment': 'Alt-Az',
             'default_zenith_avoid': 5.0,   #degrees floating
             'has_paddle': False,      #paddle refers to something supported by the Python code, not the AP paddle.
-            'has_ascom_altaz': False,
+            #'has_ascom_altaz': False,
             'pointing_tel': 'tel1',  
             'west_clutch_ra_correction': 0.0,
             'west_clutch_dec_correction': 0.0, 
             'east_flip_ra_correction': 0.0,
             'east_flip_dec_correction': 0.0,
-            'home_after_unpark' : False,
-            'home_before_park' : False,
+            'home_after_unpark' : True,
+            'home_before_park' : True,
             
             'settle_time_after_unpark' : 0,
             'settle_time_after_park' : 0,
             'permissive_mount_reset' : 'yes', # if this is set to yes, it will reset the mount at startup and when coordinates are out significantly
             'lowest_acceptable_altitude' : -5.0, # Below this altitude, it will automatically try to home and park the scope to recover.
             'time_inactive_until_park' : 3600.0, # How many seconds of inactivity until it will park the telescope
-            'home_after_unpark' : False,
+            #'home_after_unpark' : False,
             'home_altitude':  0.0,
             'home_azimuth':  210.0,
             'has_paddle': False,    #or a string that permits proper configuration.

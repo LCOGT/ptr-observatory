@@ -291,8 +291,8 @@ site_config = {       #the NAME "SITE" IS INCONSISTENT  bIG CHANGE TO EFFECT, ob
             'west_clutch_dec_correction': 0.0,
             'east_flip_ra_correction': 0.0,
             'east_flip_dec_correction': 0.0,  #
-            'home_after_unpark': False,
-            'home_before_park': False,
+            'home_after_unpark': True,
+            'home_before_park': True,
             
             'settle_time_after_unpark' : 0,
             'settle_time_after_park' : 0,
