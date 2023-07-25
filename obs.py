@@ -2328,16 +2328,17 @@ sel
                         ] == "yes":
                             g_dev["mnt"].reset_mount_reference()
                             plog("I've  reset the mount_reference.")
-                            g_dev["mnt"].current_icrs_ra = solved_ra
+                            #g_dev["mnt"].current_icrs_ra = solved_ra
                             #    "ra_j2000_hours"
                             # ]
-                            g_dev["mnt"].current_icrs_dec = solved_dec
+                            #g_dev["mnt"].current_icrs_dec = solved_dec
                             #    "dec_j2000_hours"
                             # ]
                             err_ha = 0
                             err_dec = 0
     
                             plog("Platesolve has found that the current suggested pointing is way off!")
+                            plog("This may be a poor pointing estimate.")
                             plog("This is more than a simple nudge, so not nudging the scope.")
                             
                             

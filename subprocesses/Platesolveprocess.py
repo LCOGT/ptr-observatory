@@ -224,7 +224,7 @@ if len(sources) >= 15:
     hdufocus.header["NAXIS1"] = hdufocusdata.shape[0]
     hdufocus.header["NAXIS2"] = hdufocusdata.shape[1]
     hdufocus.writeto(cal_path + 'platesolvetemp.fits', overwrite=True, output_verify='silentfix')
-    pixscale = (hdufocus.header['PIXSCALE'] * platesolve_bin_factor) / hdufocus.header['XBINING']
+    pixscale = (hdufocus.header['PIXSCALE']) 
     # if self.config["save_to_alt_path"] == "yes":
     #    self.to_slow_process(1000,('raw_alt_path', self.alt_path + g_dev["day"] + "/calib/" + cal_name, hdufocus.data, hdufocus.header, \
     #                                   frame_type))

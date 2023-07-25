@@ -29,7 +29,7 @@ site_config = {       #the NAME "SITE" IS INCONSISTENT  bIG CHANGE TO EFFECT, ob
     # Manual mode turns all automation off. 
     # The scope will only do what you tell it
     # This DOESN'T turn some safetys off 
-    'scope_in_manual_mode': True,
+    'scope_in_manual_mode': False,
     'mount_reference_model_off': False,
     'sun_checks_off': False,
     'altitude_checks_off': False,    

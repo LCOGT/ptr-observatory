@@ -855,6 +855,7 @@ class Sequencer:
                     for block in self.blocks:  #  This merges project spec into the blocks.
                         #breakpoint()
                         # Look only in current  incomplete blocks:
+                        #breakpoint()
                         if (block['start'] <= now_date_timeZ < block['end'])  and not self.is_in_completes(block['event_id']):
                             
                             # url_proj = "https://projects.photonranch.org/projects/get-all-projects"
@@ -874,7 +875,7 @@ class Sequencer:
                                     
                                     #breakpoint()
                                 
-                                    
+                                  
                                     
                             try:
                                 # Go and fish out the project from AWS
@@ -889,6 +890,10 @@ class Sequencer:
                                   "created_at": block['project_id'].split('#')[1],
                                 })
                                 project_response=requests.post(url_proj, request_body)
+                                
+
+                                
+                                
                                 #print (project_response)
                                 # skip_project_cycle=False
                                 # if 'message' in self.projects:
