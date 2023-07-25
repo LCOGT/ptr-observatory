@@ -1402,7 +1402,9 @@ class Mount:
                     g_dev['seq'].kill_and_reboot_theskyx(-1,-1)
                     self.unpark_command()
                     wait_for_slew()
-                    self.mount.SlewToCoordinatesAsync(self.ra_mech*RTOH, self.dec_mech*RTOD)  #Is this needed?
+                    #self.mount.SlewToCoordinatesAsync(self.ra_mech*RTOH, self.dec_mech*RTOD)  #Is this needed?
+                    self.mount.SlewToCoordinatesAsync(ra, dec)  #Is this needed?
+                    
                 else:
                     plog (traceback.format_exc())
         
