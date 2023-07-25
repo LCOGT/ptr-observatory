@@ -762,7 +762,7 @@ class Sequencer:
 #         Perhaps we should default set enc_status['enclosure_mode'] = 'Shutdown' as a default?
 # =============================================================================
         elif (events['Observing Begins'] <= ephem_now \
-                                   < events['Observing Ends']) and not self.block_guard \
+                                   < events['Observing Ends']) and not self.block_guard and not g_dev["cam"].exposure_busy\
                                    and  (time.time() - self.project_call_timer > 10) and not g_dev['obs'].scope_in_manual_mode  and g_dev['obs'].open_and_enabled_to_observe and self.clock_focus_latch == False:
                                      
             try:
