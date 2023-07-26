@@ -247,6 +247,9 @@ class Observatory:
             "enclosure_check_period"
         ]  # How many minutes between enclosure check
 
+
+        self.block_center_in_process = False
+
         self.last_time_report_to_console = time.time()-700
 
         self.project_call_timer = time.time()
@@ -3021,6 +3024,10 @@ sel
                 
                 if self.auto_centering_off:
                     plog ("Telescope off-center, but auto-centering turned off")
+                elif g_dev['seq'].block_guard == True and self.block_center_in_process == False:
+                    self.block_center_in_process = True
+                    g_dev['seq'].centering_exposure(no_confirmation=True)
+                    self.block_center_in_process = False
                 else:
                     plog("Re-centering Telescope Slightly.")
                     self.send_to_user("Re-centering Telescope Slightly.")

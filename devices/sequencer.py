@@ -5099,7 +5099,7 @@ class Sequencer:
         return
 
 
-    def centering_exposure(self):
+    def centering_exposure(self, no_confirmation=False):
 
         if not (g_dev['events']['Civil Dusk'] < ephem.now() < g_dev['events']['Civil Dawn']):
             plog("Too bright to consider platesolving!")
@@ -5166,33 +5166,36 @@ class Sequencer:
         else:
             g_dev['obs'].check_platesolve_and_nudge()
         
-        if self.stop_script_called:
-            g_dev["obs"].send_to_user("Cancelling out of autofocus script as stop script has been called.")  
-            return
-        if not g_dev['obs'].open_and_enabled_to_observe:
-            g_dev["obs"].send_to_user("Cancelling out of activity as no longer open and enabled to observe.")  
-            return
-        
-        g_dev["obs"].send_to_user(
-            "Taking a pointing confirmation exposure",
-            p_level="INFO",
-        )
-        
-        # Taking a confirming shot. 
-        req = {'time': self.config['pointing_exposure_time'],  'alias':  str(self.config['camera']['camera_1_1']['name']), 'image_type': 'light'}   #  NB Should pick up filter and constats from config
-        opt = {'area': 100, 'count': 1, 'filter': 'focus'}
-        result = g_dev['cam'].expose_command(req, opt, user_id='Tobor', user_name='Tobor', user_roles='system', no_AWS=True, solve_it=True)
-        
-        if self.stop_script_called:
-            g_dev["obs"].send_to_user("Cancelling out of autofocus script as stop script has been called.")  
-            return
-        if not g_dev['obs'].open_and_enabled_to_observe:
-            g_dev["obs"].send_to_user("Cancelling out of activity as no longer open and enabled to observe.")  
-            return
-        
-        g_dev["obs"].send_to_user("Pointing confirmation exposure complete. Slew & Center complete.") 
-        
-        return result
+        if no_confirmation == True:
+            return result
+        else:
+            if self.stop_script_called:
+                g_dev["obs"].send_to_user("Cancelling out of autofocus script as stop script has been called.")  
+                return
+            if not g_dev['obs'].open_and_enabled_to_observe:
+                g_dev["obs"].send_to_user("Cancelling out of activity as no longer open and enabled to observe.")  
+                return
+            
+            g_dev["obs"].send_to_user(
+                "Taking a pointing confirmation exposure",
+                p_level="INFO",
+            )
+            
+            # Taking a confirming shot. 
+            req = {'time': self.config['pointing_exposure_time'],  'alias':  str(self.config['camera']['camera_1_1']['name']), 'image_type': 'light'}   #  NB Should pick up filter and constats from config
+            opt = {'area': 100, 'count': 1, 'filter': 'focus'}
+            result = g_dev['cam'].expose_command(req, opt, user_id='Tobor', user_name='Tobor', user_roles='system', no_AWS=True, solve_it=True)
+            
+            if self.stop_script_called:
+                g_dev["obs"].send_to_user("Cancelling out of autofocus script as stop script has been called.")  
+                return
+            if not g_dev['obs'].open_and_enabled_to_observe:
+                g_dev["obs"].send_to_user("Cancelling out of activity as no longer open and enabled to observe.")  
+                return
+            
+            g_dev["obs"].send_to_user("Pointing confirmation exposure complete. Slew & Center complete.") 
+            
+            return result
 
     def update_calendar_blocks(self):
 
