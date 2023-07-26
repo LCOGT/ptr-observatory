@@ -1588,8 +1588,12 @@ class Camera:
                         foundcalendar=False    
                         g_dev['seq'].update_calendar_blocks()
                         for tempblock in g_dev['seq'].blocks:
-                            if tempblock['event_id'] == calendar_event_id :
-                                foundcalendar=True
+                            try:
+                                if tempblock['event_id'] == calendar_event_id :
+                                    foundcalendar=True
+                            except:
+                                plog("glitch in calendar finder")
+                                plog(str(tempblock))
                         if foundcalendar == False:
                             plog ("could not find calendar entry, cancelling out of block.")
                             self.exposure_busy = False
