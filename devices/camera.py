@@ -1607,7 +1607,7 @@ class Camera:
                             
                             self.open_and_enabled_to_observe = False
                             if not g_dev['seq'].morn_bias_dark_latch and not g_dev['seq'].bias_dark_latch:
-                                self.cancel_all_activity()  #NB Kills bias dark
+                                g_dev['obs'].cancel_all_activity()  #NB Kills bias dark
                             if g_dev['mnt'].home_before_park:
                                 g_dev['mnt'].home_command()
                             g_dev['mnt'].park_command()
