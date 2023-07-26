@@ -1728,7 +1728,25 @@ class Camera:
                                          if g_dev["obs"].stop_all_activity:
                                              plog ("stop_all_activity cancelling out of camera exposure")
                                              return
+                            
+                            if bias_dark_or_light_type_frame in ["bias", "dark"] or 'flat' in frame_type:
+                                #plog("Median of full-image area bias, dark or flat:  ", np.median(self.img))
                                 
+                                # Check that the temperature is ok before accepting
+                                current_camera_temperature, cur_humidity, cur_pressure = (g_dev['cam']._temperature())
+                                current_camera_temperature = float(current_camera_temperature)   
+                                if abs(float(current_camera_temperature) - float(g_dev['cam'].setpoint)) > 1.5:
+                                    plog ("temperature out of range for calibrations ("+ str(current_camera_temperature)+"), NOT attempting calibration frame")
+                                    g_dev['obs'].camera_temperature_in_range_for_calibrations = False
+                                    self.expresult = {}
+                                    self.expresult["error":True]
+                                    self.exposure_busy = False
+                                    return self.expresult
+                                    
+                                else:
+                                    plog ("temperature in range for calibrations ("+ str(current_camera_temperature)+"), attempting calibration frame")
+                                    g_dev['obs'].camera_temperature_in_range_for_calibrations = True
+                            
                             self._expose(exposure_time, bias_dark_or_light_type_frame)
                             
                             
@@ -2044,6 +2062,34 @@ class Camera:
 
                 if frame_type in ["bias", "dark"] or frame_type[-4:] == ['flat']:
                     plog("Median of full-image area bias, dark or flat:  ", np.median(self.img))
+                    
+                    # Check that the temperature is ok before accepting
+                    current_camera_temperature, cur_humidity, cur_pressure = (g_dev['cam']._temperature())
+                    current_camera_temperature = float(current_camera_temperature)   
+                    if abs(float(current_camera_temperature) - float(g_dev['cam'].setpoint)) > 1.5:
+                        plog ("temperature out of range for calibrations ("+ str(current_camera_temperature)+"), rejecting calibration frame")
+                        g_dev['obs'].camera_temperature_in_range_for_calibrations = False
+                        self.expresult = {}
+                        self.expresult["error":True]
+                        self.exposure_busy = False
+                        return self.expresult
+                        
+                    else:
+                        plog ("temperature in range for calibrations ("+ str(current_camera_temperature)+"), accepting calibration frame")
+                        g_dev['obs'].camera_temperature_in_range_for_calibrations = True
+                    
+                    # For a dark, check that the debiased dark has an adequately low value
+                    # If there is no master bias, it will just skip this check
+                    if frame_type in ["dark"]:
+                        try:
+                            debiaseddarkmedian= np.nanmedian(self.img - self.biasFiles[str(1)])
+                            plog ("Debiased Dark Median is " + str(debiaseddarkmedian))
+                            if debiaseddarkmedian > 20:
+                                plog ("Reject!")
+                                
+                        except:
+                            pass
+                    
 
                 self.overscan = 0
 
