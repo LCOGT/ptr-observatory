@@ -2653,6 +2653,9 @@ class Sequencer:
             g_dev["obs"].send_to_user("A sky flat script request was rejected as it too dark.")            
             return
         
+        # CHeck roof is shut
+        
+        
         # Moon check.
         if (skip_moon_check==False):
             # Moon current alt/az
@@ -3053,6 +3056,10 @@ class Sequencer:
                                 except:
                                     plog ("patch broken?")
                                     plog(traceback.format_exc())
+                                    plog('I think this is because the roof is shut')
+                                    plog ('need to solve this breakpoint for next time')
+                                    plog (str(fred))
+                                    breakpoint()
                                     
                                 
                                                                 
