@@ -721,9 +721,13 @@ site_config = {       #the NAME "SITE" IS INCONSISTENT  bIG CHANGE TO EFFECT, ob
                 # In that sense, QHY600 NEEDS to be set at GAIN 26 and the only thing to adjust is the offset.....
                 # USB Speed is a tradeoff between speed and banding, min 0, max 60. 60 is least banding. Most of the
                 # readout seems to be dominated by the slow driver (difference is a small fraction of a second), so I've left it at 60 - least banding.
+                #
+                # QHY410C is gain 0, offset 9
+                
                 'direct_qhy_readout_mode': 1,  #These settings may be wrong. WER 20230712
-                'direct_qhy_gain': 26,
-                'direct_qhy_offset': 60,
+                               
+                'direct_qhy_gain': 0,
+                'direct_qhy_offset': 9,
                 'direct_qhy_usb_speed': 60,
 
 
@@ -827,12 +831,12 @@ site_config = {       #the NAME "SITE" IS INCONSISTENT  bIG CHANGE TO EFFECT, ob
                 'crop_preview_ytop': 2,
                 'crop_preview_xleft': 2,
                 'crop_preview_xright': 2,
-                'temp_setpoint': -5,  # Verify we can go colder, this system has a chiller
+                'temp_setpoint': 0,  # Verify we can go colder, this system has a chiller
                 'has_chiller': False,
-                'calib_setpoints': [-5, -5, -5, -5, -5, -5, \
-                                    -5, -5, -5, -5, -5, -5],  # Picked by month-of-year
-                'day_warm': False,
-                'day_warm_degrees': 0,  # Number of degrees to warm during the daytime.
+                'calib_setpoints': [-0, -0, -0, -0, -0, -0, \
+                                    -0, -0, -0, -0, -0, -0],
+                'day_warm': True,
+                'day_warm_degrees': 5,  # Number of degrees to warm during the daytime.
                 'protect_camera_from_overheating' : False,
                 'cooler_on': True,
                 "cam_needs_NumXY_init": True,
