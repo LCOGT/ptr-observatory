@@ -2082,10 +2082,14 @@ class Camera:
                     # If there is no master bias, it will just skip this check
                     if frame_type in ["dark"]:
                         try:
-                            debiaseddarkmedian= np.nanmedian(self.img - self.biasFiles[str(1)])
-                            plog ("Debiased Dark Median is " + str(debiaseddarkmedian))
-                            if debiaseddarkmedian > 20:
+                            debiaseddarkmedian= np.nanmedian(self.img - self.biasFiles[str(1)]) / exposure_time
+                            plog ("Debiased 1s Dark Median is " + str(debiaseddarkmedian))
+                            if debiaseddarkmedian > 1.0:
                                 plog ("Reject!")
+                                self.expresult = {}
+                                self.expresult["error":True]
+                                self.exposure_busy = False
+                                return self.expresult
                                 
                         except:
                             pass
