@@ -415,7 +415,7 @@ class Observatory:
         # Not all who wander are lost.... but those that point below altitude -10 probably are.
         # if self.config["mount"]["mount1"]["permissive_mount_reset"] == "yes":
         g_dev["mnt"].reset_mount_reference()
-        self.warm_report_timer = time.time()
+        self.warm_report_timer = time.time()-600
 
         # set manual mode at startup
         self.scope_in_manual_mode=self.config['scope_in_manual_mode']
@@ -1582,7 +1582,15 @@ sel
                     g_dev['cam']._set_cooler_on()
                     plog("Temp set to " + str(g_dev['cam'].current_setpoint))
                     # pass
-
+                
+                elif g_dev['cam'].day_warm  and (self.too_hot_in_observatory) and (ephem.now() < g_dev['events']['Clock & Auto Focus'] - ephem.hour):
+                    plog("Currently too hot for excess cooling. Keeping it at day_warm until a cool hour long ramping towards clock & autofocus")
+                    g_dev['cam']._set_setpoint(float(g_dev['cam'].setpoint + g_dev['cam'].day_warm_degrees))
+                    # Some cameras need to be sent this to change the temperature also.. e.g. TheSkyX
+                    g_dev['cam']._set_cooler_on()
+                    plog("Temp set to " + str(g_dev['cam'].current_setpoint))
+                    # pass
+                
                 # Ramp heat temperature
                 # Beginning after "End Morn Bias Dark" and taking an hour to ramp
                 elif g_dev['cam'].day_warm and (g_dev['events']['End Morn Bias Dark'] < ephem.now() < g_dev['events']['End Morn Bias Dark'] + ephem.hour):
