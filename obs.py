@@ -1556,7 +1556,25 @@ sel
                 # Daytime... a bit tricky! Two periods... just after biases but before nightly reset OR ... just before eve bias dark
                 # As nightly reset resets the calendar
                 self.warm_report_timer = time.time()
-                if g_dev['cam'].day_warm and (ephem.now() < g_dev['events']['Eve Bias Dark'] - ephem.hour) or \
+                
+                
+                
+                self.too_hot_in_observatory = False
+                focstatus=g_dev['foc'].get_status()
+                foctemp=focstatus["focus_temperature"]
+                if foctemp > 20.0:
+                    self.too_hot_in_observatory=True
+                
+                
+                    
+                    
+                    
+                    
+                
+                
+                
+               
+                if g_dev['cam'].day_warm  and (ephem.now() < g_dev['events']['Eve Bias Dark'] - ephem.hour) or \
                         (g_dev['events']['End Morn Bias Dark'] + ephem.hour < ephem.now() < g_dev['events']['Nightly Reset']):
                     plog("In Daytime: Camera set at warmer temperature")
                     g_dev['cam']._set_setpoint(float(g_dev['cam'].setpoint + g_dev['cam'].day_warm_degrees))
@@ -1584,7 +1602,8 @@ sel
 
                 # Ramp cool temperature
                 # Defined as beginning an hour before "Eve Bias Dark" to ramp to the setpoint.
-                elif g_dev['cam'].day_warm and (g_dev['events']['Eve Bias Dark'] - ephem.hour < ephem.now() < g_dev['events']['Eve Bias Dark']):
+                # If the observatory is not too hot, set up cooling for biases
+                elif g_dev['cam'].day_warm and (not self.too_hot_in_observatory) and (g_dev['events']['Eve Bias Dark'] - ephem.hour < ephem.now() < g_dev['events']['Eve Bias Dark']):
                     plog("In Camera Cooling Ramping cycle of the day")
                     frac_through_warming = 1 - (((g_dev['events']['Eve Bias Dark']) - ephem.now()) / ephem.hour)
                     print("Fraction through cooling cycle: " + str(frac_through_warming))
@@ -1596,10 +1615,47 @@ sel
                             float(g_dev['cam'].setpoint + (1 - frac_through_warming) * g_dev['cam'].day_warm_degrees))
                         g_dev['cam']._set_cooler_on()
 
-                    plog("Temp set to " + str(g_dev['cam'].current_setpoint))
+                    plog("Temp set to " + str(g_dev['cam'].current_setpoint))                    
                     # pass
+                
+                
+                # Don't bother trying to cool for biases if too hot in observatory. 
+                # Don't even bother for flats, it just won't get there. 
+                # Just aim for clock & auto focus
+                elif g_dev['cam'].day_warm and (self.too_hot_in_observatory) and (g_dev['events']['Clock & Auto Focus'] - ephem.hour < ephem.now() < g_dev['events']['Clock & Auto Focus']):
+                    plog("In Camera Cooling Ramping cycle aiming for Clock & Auto Focus")
+                    frac_through_warming = 1 - (((g_dev['events']['Clock & Auto Focus']) - ephem.now()) / ephem.hour)
+                    print("Fraction through cooling cycle: " + str(frac_through_warming))
+                    if frac_through_warming > 0.8:
+                        g_dev['cam']._set_setpoint(float(g_dev['cam'].setpoint))
+                        g_dev['cam']._set_cooler_on()
+                    else:
+                        g_dev['cam']._set_setpoint(
+                            float(g_dev['cam'].setpoint + (1 - frac_through_warming) * g_dev['cam'].day_warm_degrees))
+                        g_dev['cam']._set_cooler_on()
+
+                    plog("Temp set to " + str(g_dev['cam'].current_setpoint))
 
                 # Nighttime temperature
+                elif g_dev['cam'].day_warm and not (self.too_hot_in_observatory) and (g_dev['events']['Eve Bias Dark'] < ephem.now() < g_dev['events']['End Morn Bias Dark']):
+                    g_dev['cam']._set_setpoint(float(g_dev['cam'].setpoint))
+                    g_dev['cam']._set_cooler_on()
+                    # pass
+                
+                elif g_dev['cam'].day_warm and (self.too_hot_in_observatory) and self.open_and_enabled_to_observe and (g_dev['events']['Clock & Auto Focus'] < ephem.now() < g_dev['events']['End Morn Bias Dark']):
+                    g_dev['cam']._set_setpoint(float(g_dev['cam'].setpoint))
+                    g_dev['cam']._set_cooler_on()
+                    # pass
+                
+                elif g_dev['cam'].day_warm and (self.too_hot_in_observatory) and not self.open_and_enabled_to_observe and (g_dev['events']['Clock & Auto Focus'] < ephem.now() < g_dev['events']['End Morn Bias Dark']):
+                    plog ("Focusser reporting too high a temperature in the observatory")
+                    plog ("The roof is also shut, so keeping camera at the day_warm temperature")
+                    
+                    g_dev['cam']._set_setpoint(float(g_dev['cam'].setpoint + g_dev['cam'].day_warm_degrees))
+                    # Some cameras need to be sent this to change the temperature also.. e.g. TheSkyX
+                    g_dev['cam']._set_cooler_on()
+                    plog("Temp set to " + str(g_dev['cam'].current_setpoint))
+                
                 elif (g_dev['events']['Eve Bias Dark'] < ephem.now() < g_dev['events']['End Morn Bias Dark']):
                     g_dev['cam']._set_setpoint(float(g_dev['cam'].setpoint))
                     g_dev['cam']._set_cooler_on()

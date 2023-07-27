@@ -836,7 +836,7 @@ site_config = {       #the NAME "SITE" IS INCONSISTENT  bIG CHANGE TO EFFECT, ob
                 'calib_setpoints': [-0, -0, -0, -0, -0, -0, \
                                     -0, -0, -0, -0, -0, -0],
                 'day_warm': True,
-                'day_warm_degrees': 5,  # Number of degrees to warm during the daytime.
+                'day_warm_degrees': 6,  # Number of degrees to warm during the daytime.
                 'protect_camera_from_overheating' : False,
                 'cooler_on': True,
                 "cam_needs_NumXY_init": True,
