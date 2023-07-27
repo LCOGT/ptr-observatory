@@ -1563,6 +1563,8 @@ class Camera:
                         plog ("stop_all_activity cancelling out of camera exposure")
                         return
 
+                    
+
                     # Check that the block isn't ending during normal observing time (don't check while biasing, flats etc.)
                     if not 'None' in self.blockend: # Only do this check if a block end was provided.
                         
@@ -1605,21 +1607,22 @@ class Camera:
                     # Check that the roof hasn't shut
                     g_dev['obs'].get_enclosure_status_from_aws()
                     if g_dev['obs'].enc_status['shutter_status'] == 'Closed' and (not g_dev['obs'].debug_flag) and imtype not in ['bias', 'dark']:
+                        
+                        plog("Roof shut, exposures cancelled.")
+                        g_dev["obs"].send_to_user("Roof shut, exposures cancelled.")
+                        
+                        self.open_and_enabled_to_observe = False
+                        if not g_dev['seq'].morn_bias_dark_latch and not g_dev['seq'].bias_dark_latch:
+                            g_dev['obs'].cancel_all_activity()  #NB Kills bias dark
                         if not g_dev['mnt'].mount.AtPark:
-                            plog("Roof shut, exposures cancelled.")
-                            g_dev["obs"].send_to_user("Roof shut, exposures cancelled.")
-                            
-                            self.open_and_enabled_to_observe = False
-                            if not g_dev['seq'].morn_bias_dark_latch and not g_dev['seq'].bias_dark_latch:
-                                g_dev['obs'].cancel_all_activity()  #NB Kills bias dark
                             if g_dev['mnt'].home_before_park:
                                 g_dev['mnt'].home_command()
                             g_dev['mnt'].park_command()
-                            self.exposure_busy = False
-                            plog ("And Cancelling SmartStacks.")
-                            Nsmartstack=1
-                            sskcounter=2
-                            return 'roofshut'
+                        self.exposure_busy = False
+                        plog ("And Cancelling SmartStacks.")
+                        Nsmartstack=1
+                        sskcounter=2
+                        return 'roofshut'
                     
                     # NB Here we enter Phase 2
                     try:
