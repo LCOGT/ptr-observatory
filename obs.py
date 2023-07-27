@@ -1836,24 +1836,28 @@ sel
                                             tempPTR = 0
     
                             # If ingester fails, send to default S3 bucket.
-                            if tempPTR == 0:
-                                files = {"file": (filepath, fileobj)}
-                                retryapi=True
-                                while retryapi:
-                                    try:
-                                        aws_resp = g_dev["obs"].api.authenticated_request(
-                                            "POST", "/upload/", {"object_name": filename})
-                                        req_resp = reqs.post(aws_resp["url"], data=aws_resp["fields"], files=files, timeout=600)
-        
-                                        self.aws_queue.task_done()
-                                        one_at_a_time = 0
-                                        retryapi=False
-        
-                                    except:
-                                        plog(traceback.format_exc())
-                                        #breakpoint()
-                                        plog("Connection glitch for the request post, waiting a moment and trying again")
-                                        time.sleep(5)
+                            try:
+                                if tempPTR == 0:
+                                    files = {"file": (filepath, fileobj)}
+                                    retryapi=True
+                                    while retryapi:
+                                        try:
+                                            aws_resp = g_dev["obs"].api.authenticated_request(
+                                                "POST", "/upload/", {"object_name": filename})
+                                            req_resp = reqs.post(aws_resp["url"], data=aws_resp["fields"], files=files, timeout=600)
+            
+                                            self.aws_queue.task_done()
+                                            one_at_a_time = 0
+                                            retryapi=False
+            
+                                        except:
+                                            plog(traceback.format_exc())
+                                            #breakpoint()
+                                            plog("Connection glitch for the request post, waiting a moment and trying again")
+                                            time.sleep(5)
+                            except:
+                                broken=1
+                                retryapi=False
                         
                         if broken == 1:
                         
