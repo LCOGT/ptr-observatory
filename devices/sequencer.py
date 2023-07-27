@@ -4370,7 +4370,11 @@ class Sequencer:
         extensive_focus=trimmed_list
         
         # Find the maximum number of sources detected
-        maxsources=max(np.asarray(extensive_focus)[:,2])
+        # if it fails, it fails.... usually fails because there are no sources detected in any images
+        try:
+            maxsources=max(np.asarray(extensive_focus)[:,2])
+        except:
+            maxsources=1
         
         for focentry in extensive_focus:
             # Has to have detected a FWHM as well as have a lot of sources
