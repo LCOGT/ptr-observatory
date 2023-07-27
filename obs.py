@@ -1840,7 +1840,8 @@ sel
                                 if tempPTR == 0:
                                     files = {"file": (filepath, fileobj)}
                                     retryapi=True
-                                    while retryapi:
+                                    retries=0
+                                    while (retryapi or retries <5):
                                         try:
                                             aws_resp = g_dev["obs"].api.authenticated_request(
                                                 "POST", "/upload/", {"object_name": filename})
@@ -1854,7 +1855,8 @@ sel
                                             plog(traceback.format_exc())
                                             #breakpoint()
                                             plog("Connection glitch for the request post, waiting a moment and trying again")
-                                            time.sleep(5)
+                                            time.sleep(15)
+                                            retries=retries+1
                             except:
                                 broken=1
                                 retryapi=False
