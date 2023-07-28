@@ -390,7 +390,10 @@ class Focuser:
             self.last_known_focus = self.reference
             self.last_source = "Focuser__init__  Calculate Comp references Config"
         else:
-            self.reference = float(self.best_previous_focus_point)
+            try:
+                self.reference = float(self.best_previous_focus_point)
+            except:
+                self.reference = int(self.config["reference"])
             self.last_known_focus = self.reference
             plog("Focus reference updated from best recent focus from Night Shelf:  ", self.reference)
             # Is this of any real value except to persist self.last_known...?

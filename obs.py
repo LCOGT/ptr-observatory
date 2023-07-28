@@ -613,7 +613,7 @@ class Observatory:
                         driver, name, settings, self.config, self.astro_events, tel=True
                     )  # NB this needs to be straightened out.
                 elif dev_type == "telescope":  # order of attaching is sensitive
-                    device = Telescope(driver, name, settings, self.config, tel=True)
+                     device = Telescope(driver, name, settings, self.config, tel=True)
                 elif dev_type == "rotator":
                     device = Rotator(driver, name, self.config)
                 elif dev_type == "focuser":

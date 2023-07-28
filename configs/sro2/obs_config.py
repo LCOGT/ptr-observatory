@@ -152,8 +152,8 @@ site_config = {
     'pointing_calibration_on_startup': False,
     'periodic_focus_time' : 2.0, # This is a time, in hours, over which to bypass automated focussing (e.g. at the start of a project it will not refocus if a new project starts X hours after the last focus)
     'stdev_fwhm' : 0.5, # This is the expected variation in FWHM at a given telescope/camera/site combination. This is used to check if a fwhm is within normal range or the focus has shifted
-    'focus_exposure_time': 15, # Exposure time in seconds for exposure image
-    'pointing_exposure_time': 15, # Exposure time in seconds for exposure image
+    'focus_exposure_time': 25, # Exposure time in seconds for exposure image
+    'pointing_exposure_time': 25, # Exposure time in seconds for exposure image
     
 
     'focus_trigger' : 5.0, # What FWHM increase is needed to trigger an autofocus
@@ -563,7 +563,7 @@ site_config = {
     'camera': {
         'camera_1_1': {
             'parent': 'telescope1',
-            'name': 'sro002sbig6303',      #  Important because this points to a server file structure by that name.
+            'name': 'sro002sbig16803',      #  Important because this points to a server file structure by that name.
             'desc':  'SBIG6303',
             'service_date': '20230701',
             'driver': "CCDSoft2XAdaptor.ccdsoft5Camera",  # "ASCOM.QHYCCD.Camera", ##  'ASCOM.FLI.Kepler.Camera',
@@ -699,8 +699,8 @@ site_config = {
                 'StartX' : 1,
                 'StartY' : 1,
 
-                'x_field_deg': 1.3333,   #   round(4784*1.0481/3600, 4),
-                'y_field_deg': 1.0665,   #  round(3194*1.0481/3600, 4),
+                'x_field_deg': 0.8,   #   round(4784*1.0481/3600, 4),
+                'y_field_deg': 0.8,   #  round(3194*1.0481/3600, 4),
                 #'overscan_x': 24,
                 #'overscan_y': 3,
                 'north_offset': 0.0,    #  These three are normally 0.0 for the primary telescope
@@ -749,8 +749,8 @@ site_config = {
                 #'max_res_bin':  [1, 1, 0.269],    #  Matched to seeing situation by owner
                 #'bin_modes':  [[1, 1, 0.269],[2, 2, 0.538],[3, 3, 0.807],[4, 4, 1.076]], #  , [2, 2, 2.13], [3, 3, 3.21], [4, 4, 4.27]],   #Meaning no binning choice if list has only one entry, default should be first.
                 #'pix_scale': 0.637,
-                '1x1_pix_scale': 0.523,    #  This is the 1x1 binning pixelscale
-                'native_bin': 1, # Needs to be simple, it will recalculate things on the 1x1 binning pixscale above.
+                '1x1_pix_scale': 0.703408,    #  This is the 1x1 binning pixelscale
+                'native_bin': 1, #523 Needs to be simple, it will recalculate things on the 1x1 binning pixscale above.
                 
                 # The drizzle_value is by the new pixelscale
                 # for the new resolution when stacking in the EVA pipeline
