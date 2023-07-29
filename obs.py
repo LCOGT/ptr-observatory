@@ -1123,8 +1123,18 @@ sel
                     if not g_dev['mnt'].mount.AtPark:
                         g_dev['mnt'].park_command()
                     return
-        except:
+        except Exception as e:
+            goog = str(e)
             plog ("Sun check didn't work for some reason")
+            if 'Object reference not set' in str(e) and g_dev['mnt'].theskyx:
+                
+                plog("The SkyX had an error.")
+                plog("Usually this is because of a broken connection.")
+                plog("Killing then waiting 60 seconds then reconnecting")
+                g_dev['seq'].kill_and_reboot_theskyx(g_dev['mnt'].current_icrs_ra,g_dev['mnt'].current_icrs_dec)
+                
+            #plog(traceback.format_exc())
+            #breakpoint()
 
         status["timestamp"] = round((time.time() + t1) / 2.0, 3)
         status["send_heartbeat"] = False
