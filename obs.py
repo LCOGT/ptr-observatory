@@ -1770,8 +1770,9 @@ sel
                 pri_image = self.aws_queue.get(block=False)
                 if pri_image is None:
                     plog("Got an empty entry in aws_queue.")
-                    self.aws_queue.task_done()
                     one_at_a_time = 0
+                    self.aws_queue.task_done()
+                    
                     # time.sleep(0.2)
                     continue
 
@@ -1804,7 +1805,7 @@ sel
                                         #breakpoint()
                                         
                                         upload_file_and_ingest_to_archive(fileobj, file_metadata=headerdict)                                    
-                                        self.aws_queue.task_done()
+                                        
                                         tempPTR = 1
                                         retryarchive = 11
                                         # Only remove file if successfully uploaded
@@ -1814,6 +1815,8 @@ sel
                                             except:
                                                 #plog("Couldn't remove " + str(filepath) + " file after transfer, sending to delete queue")
                                                 self.laterdelete_queue.put(filepath, block=False)
+                                        self.aws_queue.task_done()
+                                        
                                     except ocs_ingester.exceptions.DoNotRetryError:
                                         #plog((traceback.format_exc()))
                                         plog ("Couldn't upload to PTR archive: " + str(filepath))
@@ -1856,10 +1859,11 @@ sel
                                             aws_resp = g_dev["obs"].api.authenticated_request(
                                                 "POST", "/upload/", {"object_name": filename})
                                             req_resp = reqs.post(aws_resp["url"], data=aws_resp["fields"], files=files, timeout=600)
-            
-                                            self.aws_queue.task_done()
                                             one_at_a_time = 0
                                             retryapi=False
+                                            self.aws_queue.task_done()
+                                            
+                                            
             
                                         except Exception as e:
                                             plog(traceback.format_exc())
