@@ -2669,8 +2669,8 @@ class Sequencer:
             if (moondata.alt.deg < -15):
                 plog ("Moon is far below the ground, alt " + str(moondata.alt.deg) + ", sky flats going ahead.")
             
-            elif temp_separation < 105 and (ephem.Moon(datetime.datetime.now()).moon_phase) > 0.05:
-                plog ("Moon is in the sky, more than 5% illuminated and less than 105 degrees ("+str(temp_separation)+") away from the flat spot, skipping this flat time.")
+            elif temp_separation < 90 and (ephem.Moon(datetime.datetime.now()).moon_phase) > 0.05:
+                plog ("Moon is in the sky, more than 5% illuminated and less than 90 degrees ("+str(temp_separation)+") away from the flat spot, skipping this flat time.")
                 return
             #elif
             
