@@ -1124,7 +1124,7 @@ sel
                         g_dev['mnt'].park_command()
                     return
         except Exception as e:
-            goog = str(e)
+            #goog = str(e)
             plog ("Sun check didn't work for some reason")
             if 'Object reference not set' in str(e) and g_dev['mnt'].theskyx:
                 

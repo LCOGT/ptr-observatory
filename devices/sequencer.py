@@ -125,7 +125,7 @@ class Sequencer:
         g_dev['seq'] = self
         self.connected = True
         self.description = "Sequencer for script execution."
-        self.sequencer_hold = False
+        #self.sequencer_hold = False
         self.sequencer_message = '-'
         plog("sequencer connected.")
         #plog(self.description)
@@ -1568,7 +1568,7 @@ class Sequencer:
 
     def bias_dark_script(self, req=None, opt=None, morn=False):
 
-        self.sequencer_hold = True
+        ##self.sequencer_hold = True
         self.current_script = 'Bias Dark'
         if morn:
             ending = g_dev['events']['End Morn Bias Dark']
@@ -1697,7 +1697,7 @@ class Sequencer:
 
             plog(" Bias/Dark acquisition is finished normally.")
 
-            self.sequencer_hold = False
+            #self.sequencer_hold = False
             g_dev['mnt'].park_command({}, {}) # Get there early
             plog("Bias/Dark Phase has passed.")
             self.bias_dark_latch = False
@@ -1880,7 +1880,7 @@ class Sequencer:
         # Resetting sequencer stuff
         self.connected = True
         self.description = "Sequencer for script execution."
-        self.sequencer_hold = False
+        #self.sequencer_hold = False
         self.sequencer_message = '-'
         plog("sequencer reconnected.")
         plog(self.description)
@@ -2800,12 +2800,18 @@ class Sequencer:
                     if g_dev['obs'].open_and_enabled_to_observe == False:
                         plog ("Observatory closed or disabled during flat script. Cancelling out of flat acquisition loop.")
                         filter_throughput_shelf.close()
+                        g_dev['mnt'].park_command({}, {}) # You actually always want it to park, TheSkyX can't stop the telescope tracking, so park is safer... it is before focus anyway.
+                        self.sky_guard = False
+                        self.flats_being_collected = False
                         return
                     
                     # Check that Flat time hasn't ended
                     if ephem.now() > ending:
                         plog ("Flat acquisition time finished. Breaking out of the flat loop.")
                         filter_throughput_shelf.close()
+                        g_dev['mnt'].park_command({}, {}) # You actually always want it to park, TheSkyX can't stop the telescope tracking, so park is safer... it is before focus anyway.
+                        self.sky_guard = False
+                        self.flats_being_collected = False
                         return
                     
                 else:
@@ -2836,12 +2842,18 @@ class Sequencer:
                                 if g_dev['obs'].open_and_enabled_to_observe == False:
                                     plog ("Observatory closed or disabled during flat script. Cancelling out of flat acquisition loop.")
                                     filter_throughput_shelf.close()
+                                    g_dev['mnt'].park_command({}, {}) # You actually always want it to park, TheSkyX can't stop the telescope tracking, so park is safer... it is before focus anyway.
+                                    self.sky_guard = False
+                                    self.flats_being_collected = False
                                     return
                                 
                                 # Check that Flat time hasn't ended
                                 if ephem.now() > ending:
                                     plog ("Flat acquisition time finished. Breaking out of the flat loop.")
                                     filter_throughput_shelf.close()
+                                    g_dev['mnt'].park_command({}, {}) # You actually always want it to park, TheSkyX can't stop the telescope tracking, so park is safer... it is before focus anyway.
+                                    self.sky_guard = False
+                                    self.flats_being_collected = False
                                     return
                                 
                             else:
@@ -2894,12 +2906,18 @@ class Sequencer:
                     if g_dev['obs'].open_and_enabled_to_observe == False:
                         plog ("Observatory closed or disabled during flat script. Cancelling out of flat acquisition loop.")
                         filter_throughput_shelf.close()
+                        g_dev['mnt'].park_command({}, {}) # You actually always want it to park, TheSkyX can't stop the telescope tracking, so park is safer... it is before focus anyway.
+                        self.sky_guard = False
+                        self.flats_being_collected = False
                         return
                     
                     # Check that Flat time hasn't ended
                     if ephem.now() > ending:
                         plog ("Flat acquisition time finished. Breaking out of the flat loop.")
                         filter_throughput_shelf.close()
+                        g_dev['mnt'].park_command({}, {}) # You actually always want it to park, TheSkyX can't stop the telescope tracking, so park is safer... it is before focus anyway.
+                        self.sky_guard = False
+                        self.flats_being_collected = False
                         return
                     
                     
@@ -2946,10 +2964,16 @@ class Sequencer:
                         if self.stop_script_called:
                             g_dev["obs"].send_to_user("Cancelling out of calibration script as stop script has been called.")  
                             filter_throughput_shelf.close()
+                            g_dev['mnt'].park_command({}, {}) # You actually always want it to park, TheSkyX can't stop the telescope tracking, so park is safer... it is before focus anyway.
+                            self.sky_guard = False
+                            self.flats_being_collected = False
                             return
                         if not g_dev['obs'].open_and_enabled_to_observe:
                             g_dev["obs"].send_to_user("Cancelling out of activity as no longer open and enabled to observe.")  
                             filter_throughput_shelf.close()
+                            g_dev['mnt'].park_command({}, {}) # You actually always want it to park, TheSkyX can't stop the telescope tracking, so park is safer... it is before focus anyway.
+                            self.sky_guard = False
+                            self.flats_being_collected = False
                             return
                         
                         # Here it makes four tests and if it doesn't match those tests, then it will attempt a flat. 
@@ -2985,12 +3009,18 @@ class Sequencer:
                                             if g_dev['obs'].open_and_enabled_to_observe == False:
                                                 plog ("Observatory closed or disabled during flat script. Cancelling out of flat acquisition loop.")
                                                 filter_throughput_shelf.close()
+                                                g_dev['mnt'].park_command({}, {}) # You actually always want it to park, TheSkyX can't stop the telescope tracking, so park is safer... it is before focus anyway.
+                                                self.sky_guard = False
+                                                self.flats_being_collected = False
                                                 return
                                             
                                             # Check that Flat time hasn't ended
                                             if ephem.now() > ending:
                                                 plog ("Flat acquisition time finished. Breaking out of the flat loop.")
                                                 filter_throughput_shelf.close()
+                                                g_dev['mnt'].park_command({}, {}) # You actually always want it to park, TheSkyX can't stop the telescope tracking, so park is safer... it is before focus anyway.
+                                                self.sky_guard = False
+                                                self.flats_being_collected = False
                                                 return                                            
                                         else:
                                             not_too_close_to_zenith=True  
@@ -3018,12 +3048,18 @@ class Sequencer:
                                             if g_dev['obs'].open_and_enabled_to_observe == False:
                                                 plog ("Observatory closed or disabled during flat script. Cancelling out of flat acquisition loop.")
                                                 filter_throughput_shelf.close()
+                                                g_dev['mnt'].park_command({}, {}) # You actually always want it to park, TheSkyX can't stop the telescope tracking, so park is safer... it is before focus anyway.
+                                                self.sky_guard = False
+                                                self.flats_being_collected = False
                                                 return
                                             
                                             # Check that Flat time hasn't ended
                                             if ephem.now() > ending:
                                                 plog ("Flat acquisition time finished. Breaking out of the flat loop.")
                                                 filter_throughput_shelf.close()
+                                                g_dev['mnt'].park_command({}, {}) # You actually always want it to park, TheSkyX can't stop the telescope tracking, so park is safer... it is before focus anyway.
+                                                self.sky_guard = False
+                                                self.flats_being_collected = False
                                                 return                                            
                                         else:
                                             not_too_close_to_zenith=True  
@@ -3051,12 +3087,18 @@ class Sequencer:
                                             if g_dev['obs'].open_and_enabled_to_observe == False:
                                                 plog ("Observatory closed or disabled during flat script. Cancelling out of flat acquisition loop.")
                                                 filter_throughput_shelf.close()
+                                                g_dev['mnt'].park_command({}, {}) # You actually always want it to park, TheSkyX can't stop the telescope tracking, so park is safer... it is before focus anyway.
+                                                self.sky_guard = False
+                                                self.flats_being_collected = False
                                                 return
                                             
                                             # Check that Flat time hasn't ended
                                             if ephem.now() > ending:
                                                 plog ("Flat acquisition time finished. Breaking out of the flat loop.")
                                                 filter_throughput_shelf.close()
+                                                g_dev['mnt'].park_command({}, {}) # You actually always want it to park, TheSkyX can't stop the telescope tracking, so park is safer... it is before focus anyway.
+                                                self.sky_guard = False
+                                                self.flats_being_collected = False
                                                 return                                            
                                         else:
                                             not_too_close_to_zenith=True  
@@ -3065,10 +3107,16 @@ class Sequencer:
                             if self.stop_script_called:
                                 g_dev["obs"].send_to_user("Cancelling out of calibration script as stop script has been called.")  
                                 filter_throughput_shelf.close()
+                                g_dev['mnt'].park_command({}, {}) # You actually always want it to park, TheSkyX can't stop the telescope tracking, so park is safer... it is before focus anyway.
+                                self.sky_guard = False
+                                self.flats_being_collected = False
                                 return
                             if not g_dev['obs'].open_and_enabled_to_observe:
                                 g_dev["obs"].send_to_user("Cancelling out of activity as no longer open and enabled to observe.")  
                                 filter_throughput_shelf.close()
+                                g_dev['mnt'].park_command({}, {}) # You actually always want it to park, TheSkyX can't stop the telescope tracking, so park is safer... it is before focus anyway.
+                                self.sky_guard = False
+                                self.flats_being_collected = False
                                 return                                      
                                             
                             req = {'time': float(exp_time),  'alias': camera_name, 'image_type': 'sky flat', 'script': 'On'}
@@ -3086,6 +3134,8 @@ class Sequencer:
                                     except:
                                         plog("Mount did not park at end of morning skyflats.")
                                 filter_throughput_shelf.close()
+                                self.sky_guard = False
+                                self.flats_being_collected = False
                                 return
                             try:
                                 
@@ -3096,22 +3146,50 @@ class Sequencer:
                                     if self.stop_script_called:
                                         g_dev["obs"].send_to_user("Cancelling out of calibration script as stop script has been called.")  
                                         filter_throughput_shelf.close()
+                                        g_dev['mnt'].park_command({}, {}) # You actually always want it to park, TheSkyX can't stop the telescope tracking, so park is safer... it is before focus anyway.
+                                        self.sky_guard = False
+                                        self.flats_being_collected = False
                                         return
                                     if not g_dev['obs'].open_and_enabled_to_observe:
                                         g_dev["obs"].send_to_user("Cancelling out of activity as no longer open and enabled to observe.")  
                                         filter_throughput_shelf.close()
+                                        g_dev['mnt'].park_command({}, {}) # You actually always want it to park, TheSkyX can't stop the telescope tracking, so park is safer... it is before focus anyway.
+                                        self.sky_guard = False
+                                        self.flats_being_collected = False
                                         return
                                 except Exception as e:
                                     plog ('something funny in stop_script still',e)
+                                    
+                                    
+                                    
+                                if fred == 'roofshut' :
+                                    plog ("roof was shut during flat period, cancelling out of flat scripts")
+                                    g_dev["obs"].send_to_user("Roof shut during sky flats. Stopping sky_flats")  
+                                    filter_throughput_shelf.close()
+                                    g_dev['mnt'].park_command({}, {}) # You actually always want it to park, TheSkyX can't stop the telescope tracking, so park is safer... it is before focus anyway.
+                                    self.sky_guard = False
+                                    self.flats_being_collected = False
+                                    return
+                                
+                                
+                                if g_dev["obs"].stop_all_activity:
+                                    plog('stop_all_activity cancelling out of exposure loop')
+                                    filter_throughput_shelf.close()
+                                    g_dev['mnt'].park_command({}, {}) # You actually always want it to park, TheSkyX can't stop the telescope tracking, so park is safer... it is before focus anyway.
+                                    self.sky_guard = False
+                                    self.flats_being_collected = False
+                                    return
+                                    
+                                    
                                 try:
                                     bright = fred['patch']   
                                 except:
                                     plog ("patch broken?")
                                     plog(traceback.format_exc())
-                                    plog('I think this is because the roof is shut')
-                                    plog ('need to solve this breakpoint for next time')
-                                    plog (str(fred))
-                                    breakpoint()
+                                    #plog('I think this is because the roof is shut')
+                                    #plog ('need to solve this breakpoint for next time')
+                                    #plog (str(fred))
+                                    #breakpoint()
                                     
                                 
                                                                 
@@ -3146,22 +3224,34 @@ class Sequencer:
                                         if g_dev['obs'].open_and_enabled_to_observe == False:
                                             plog ("Observatory closed or disabled during flat script. Cancelling out of flat acquisition loop.")
                                             filter_throughput_shelf.close()
+                                            g_dev['mnt'].park_command({}, {}) # You actually always want it to park, TheSkyX can't stop the telescope tracking, so park is safer... it is before focus anyway.
+                                            self.sky_guard = False
+                                            self.flats_being_collected = False
                                             return
                                         
                                         # Check that Flat time hasn't ended
                                         if ephem.now() > ending:
                                             plog ("Flat acquisition time finished. Breaking out of the flat loop.")
                                             filter_throughput_shelf.close()
+                                            g_dev['mnt'].park_command({}, {}) # You actually always want it to park, TheSkyX can't stop the telescope tracking, so park is safer... it is before focus anyway.
+                                            self.sky_guard = False
+                                            self.flats_being_collected = False
                                             return                                            
                                     else:
                                         not_too_close_to_zenith=True
                             if self.stop_script_called:
                                 g_dev["obs"].send_to_user("Cancelling out of calibration script as stop script has been called.")  
                                 filter_throughput_shelf.close()
+                                g_dev['mnt'].park_command({}, {}) # You actually always want it to park, TheSkyX can't stop the telescope tracking, so park is safer... it is before focus anyway.
+                                self.sky_guard = False
+                                self.flats_being_collected = False
                                 return
                             if not g_dev['obs'].open_and_enabled_to_observe:
                                 g_dev["obs"].send_to_user("Cancelling out of activity as no longer open and enabled to observe.")  
                                 filter_throughput_shelf.close()
+                                g_dev['mnt'].park_command({}, {}) # You actually always want it to park, TheSkyX can't stop the telescope tracking, so park is safer... it is before focus anyway.
+                                self.sky_guard = False
+                                self.flats_being_collected = False
                                 return
                             
                             if g_dev["fil"].null_filterwheel == False:
@@ -3433,7 +3523,7 @@ class Sequencer:
         g_dev['foc'].focus_tracker = [np.nan] * 10
 
         throw = g_dev['foc'].throw
-        self.sequencer_hold = False   #Allow comand checks.
+        #self.sequencer_hold = False   #Allow comand checks.
         self.guard = False
         self.af_guard = True
 
@@ -3448,7 +3538,7 @@ class Sequencer:
         # except:
         #     pass
         #plog('AF entered with:  ', req, opt, '\n .. and sim =  ', sim)
-        #self.sequencer_hold = True  #Blocks command checks.
+        ##self.sequencer_hold = True  #Blocks command checks.
         #Here we jump in too  fast and need for mount to settle
 
         
@@ -3691,13 +3781,13 @@ class Sequencer:
             g_dev['obs'].send_to_user("Autofocus was not successful. Returning to original focus setting and pointing.")
             
             g_dev['foc'].guarded_move((focus_start)*g_dev['foc'].micron_to_steps)  #NB NB 20221002 THis unit fix shoudl be in the routine. WER
-            self.sequencer_hold = False   #Allow comand checks.
+            #self.sequencer_hold = False   #Allow comand checks.
             self.af_guard = False
             g_dev["mnt"].last_ra = start_ra
             g_dev["mnt"].last_dec = start_dec
             g_dev['mnt'].mount.SlewToCoordinatesAsync(start_ra, start_dec)  #MAKE sure same style coordinates.
             self.wait_for_slew()
-            self.sequencer_hold = False
+            #self.sequencer_hold = False
             self.guard = False
             self.af_guard = False
             return
@@ -3713,11 +3803,11 @@ class Sequencer:
 
                 g_dev['foc'].guarded_move((focus_start)*g_dev['foc'].micron_to_steps)
                 time.sleep(5)
-                self.sequencer_hold = False   #Allow comand checks.
+                #self.sequencer_hold = False   #Allow comand checks.
                 self.af_guard = False
                 g_dev['mnt'].mount.SlewToCoordinatesAsync(start_ra, start_dec)   #NB NB Does this really take us back to starting point?
                 self.wait_for_slew()
-                self.sequencer_hold = False
+                #self.sequencer_hold = False
                 self.guard = False
                 self.af_guard = False
                 return
@@ -3772,7 +3862,7 @@ class Sequencer:
 
             #  NB NB We may want to consider sending the result image patch to AWS
             # NB NB NB I think we may have spot numbers wrong by 1 count and coarse focs not set up correctly.
-            self.sequencer_hold = False
+            #self.sequencer_hold = False
             self.guard = False
             self.af_guard = False
             g_dev['foc'].last_focus_fwhm = round(spot4, 2)
@@ -3834,7 +3924,7 @@ class Sequencer:
                     
                     g_dev['foc'].guarded_move((extensive_focus)*g_dev['foc'].micron_to_steps)
 
-                    self.sequencer_hold = False   #Allow comand checks.
+                    #self.sequencer_hold = False   #Allow comand checks.
                     self.af_guard = False
                     plog("Returning to RA:  " +str(start_ra) + " Dec: " + str(start_dec))
                     g_dev["obs"].send_to_user("Returning to RA:  " +str(start_ra) + " Dec: " + str(start_dec))
@@ -3842,7 +3932,7 @@ class Sequencer:
                     g_dev["mnt"].last_dec = start_dec
                     g_dev['mnt'].mount.SlewToCoordinatesAsync(start_ra, start_dec)   #NB NB Does this really take us back to starting point?
                     self.wait_for_slew()
-                    self.sequencer_hold = False
+                    #self.sequencer_hold = False
                     self.guard = False
                     self.af_guard = False
                     return
@@ -3897,7 +3987,7 @@ class Sequencer:
 
             #  NB NB We may want to consider sending the result image patch to AWS
             # NB NB NB I think we may have spot numbers wrong by 1 count and coarse focs not set up correctly.
-            self.sequencer_hold = False
+            #self.sequencer_hold = False
             self.guard = False
             self.af_guard = False
             g_dev['foc'].last_focus_fwhm = round(spot4, 2)
@@ -3961,7 +4051,7 @@ class Sequencer:
                     g_dev['foc'].guarded_move((extensive_focus)*g_dev['foc'].micron_to_steps)
                     g_dev['obs'].send_to_user('V-curve focus failed, Moving back to extensive focus:', extensive_focus)
                     
-                    self.sequencer_hold = False   #Allow comand checks.
+                    #self.sequencer_hold = False   #Allow comand checks.
                     self.af_guard = False
                     plog("Returning to RA:  " +str(start_ra) + " Dec: " + str(start_dec))
                     g_dev["obs"].send_to_user("Returning to RA:  " +str(start_ra) + " Dec: " + str(start_dec))
@@ -3969,7 +4059,7 @@ class Sequencer:
                     g_dev["mnt"].last_dec = start_dec
                     g_dev['mnt'].mount.SlewToCoordinatesAsync(start_ra, start_dec)   #NB NB Does this really take us back to starting point?
                     self.wait_for_slew()
-                    self.sequencer_hold = False
+                    #self.sequencer_hold = False
                     self.guard = False
                     self.af_guard = False
                     return
@@ -3977,11 +4067,11 @@ class Sequencer:
 
                 # g_dev['foc'].guarded_move((focus_start)*g_dev['foc'].micron_to_steps)
                 # time.sleep(5)
-                # self.sequencer_hold = False   #Allow comand checks.
+                # #self.sequencer_hold = False   #Allow comand checks.
                 # self.af_guard = False
                 # g_dev['mnt'].mount.SlewToCoordinatesAsync(start_ra, start_dec)   #NB NB Does this really take us back to starting point?
                 # wait_for_slew()
-                # self.sequencer_hold = False
+                # #self.sequencer_hold = False
                 # self.guard = False
                 # self.af_guard = False
                 # return
@@ -4050,7 +4140,7 @@ class Sequencer:
                     g_dev['foc'].guarded_move((extensive_focus)*g_dev['foc'].micron_to_steps)
                     g_dev['obs'].send_to_user('V-curve focus failed, Moving back to extensive focus: ', extensive_focus)
                     
-                    self.sequencer_hold = False   #Allow comand checks.
+                    #self.sequencer_hold = False   #Allow comand checks.
                     self.af_guard = False
                     plog("Returning to RA:  " +str(start_ra) + " Dec: " + str(start_dec))
                     g_dev["obs"].send_to_user("Returning to RA:  " +str(start_ra) + " Dec: " + str(start_dec))
@@ -4058,7 +4148,7 @@ class Sequencer:
                     g_dev["mnt"].last_dec = start_dec
                     g_dev['mnt'].mount.SlewToCoordinatesAsync(start_ra, start_dec)   #NB NB Does this really take us back to starting point?
                     self.wait_for_slew()
-                    self.sequencer_hold = False
+                    #self.sequencer_hold = False
                     self.guard = False
                     self.af_guard = False
                     return
@@ -4071,7 +4161,7 @@ class Sequencer:
 
             #  NB NB We may want to consider sending the result image patch to AWS
             # NB NB NB I think we may have spot numbers wrong by 1 count and coarse focs not set up correctly.
-            self.sequencer_hold = False
+            #self.sequencer_hold = False
             self.guard = False
             self.af_guard = False
 
@@ -4089,7 +4179,7 @@ class Sequencer:
         #     ##  set up.
         #     #plog("It appears camera is too far out; try again with coarse_focus_script.")
         #     #self.coarse_focus_script(req2, opt2, throw=throw + 75, begin_at=min_focus)
-        #     self.sequencer_hold = False
+        #     #self.sequencer_hold = False
         #     self.guard = False
         #     self.af_guard = False
         #     return
@@ -4117,7 +4207,7 @@ class Sequencer:
                 g_dev['foc'].guarded_move((extensive_focus)*g_dev['foc'].micron_to_steps)
                 g_dev['obs'].send_to_user('V-curve focus failed, moving back to extensive focus: ', extensive_focus)
                 
-                self.sequencer_hold = False   #Allow comand checks.
+                #self.sequencer_hold = False   #Allow comand checks.
                 self.af_guard = False
                 plog("Returning to RA:  " +str(start_ra) + " Dec: " + str(start_dec))
                 g_dev["obs"].send_to_user("Returning to RA:  " +str(start_ra) + " Dec: " + str(start_dec))
@@ -4125,7 +4215,7 @@ class Sequencer:
                 g_dev["mnt"].last_dec = start_dec
                 g_dev['mnt'].mount.SlewToCoordinatesAsync(start_ra, start_dec)   #NB NB Does this really take us back to starting point?
                 self.wait_for_slew()
-                self.sequencer_hold = False
+                #self.sequencer_hold = False
                 self.guard = False
                 self.af_guard = False
                 return
@@ -4139,10 +4229,10 @@ class Sequencer:
 
             g_dev['foc'].guarded_move((focus_start)*g_dev['foc'].micron_to_steps)
         #  NB here we could re-solve with the overlay spot just to verify solution is sane.
-        self.sequencer_hold = False   #Allow comand checks.
+        #self.sequencer_hold = False   #Allow comand checks.
         self.af_guard = False
         #  NB NB We may want to consider sending the result image patch to AWS
-        self.sequencer_hold = False
+        #self.sequencer_hold = False
         self.guard = False
         self.af_guard = False
 
@@ -4175,7 +4265,7 @@ class Sequencer:
         
         
         plog('AF entered with:  ', req, opt)
-        self.sequencer_hold = False
+        #self.sequencer_hold = False
         self.guard = False
         self.af_guard = True
         sim = False
@@ -4508,10 +4598,10 @@ class Sequencer:
         #if sim:
         #    g_dev['foc'].guarded_move((focus_start)*g_dev['foc'].micron_to_steps)
         #  NB here we could re-solve with the overlay spot just to verify solution is sane.
-        #self.sequencer_hold = False   #Allow comand checks.
+        ##self.sequencer_hold = False   #Allow comand checks.
         #self.af_guard = False
         #  NB NB We may want to consider sending the result image patch to AWS
-        self.sequencer_hold = False
+        #self.sequencer_hold = False
         self.guard = False
         self.af_guard = False
         
@@ -4541,14 +4631,14 @@ class Sequencer:
             return
         
         plog('AF entered with:  ', req, opt)
-        self.sequencer_hold = False
+        #self.sequencer_hold = False
         self.guard = False
         self.af_guard = True
         # Reset focus tracker
         g_dev['foc'].focus_tracker = [np.nan] * 10
         sim = False 
         plog('AF entered with:  ', req, opt, '\n .. and sim =  ', sim)
-        #self.sequencer_hold = True  #Blocks command checks.
+        ##self.sequencer_hold = True  #Blocks command checks.
         start_ra = g_dev['mnt'].mount.RightAscension
         start_dec = g_dev['mnt'].mount.Declination
         if begin_at is None:  #  ADDED 20120821 WER
@@ -4777,7 +4867,7 @@ class Sequencer:
             plog('Autofocus quadratic equation not converge. Moving back to starting focus:  ', foc_start)
 
             g_dev['foc'].guarded_move((foc_start)*g_dev['foc'].micron_to_steps)
-            self.sequencer_hold = False
+            #self.sequencer_hold = False
             self.guard = False
             self.af_guard = False
             return
@@ -4826,7 +4916,7 @@ class Sequencer:
         self.wait_for_slew()
         if sim:
             g_dev['foc'].guarded_move((foc_start)*g_dev['foc'].micron_to_steps)
-        self.sequencer_hold = False
+        #self.sequencer_hold = False
         self.guard = False
         self.af_guard = False
         return result
