@@ -1774,153 +1774,158 @@ sel
                     self.aws_queue.task_done()
                     
                     # time.sleep(0.2)
-                    continue
-
-                # Here we parse the file, set up and send to AWS
-                filename = pri_image[1][1]
-                filepath = pri_image[1][0] + filename  # Full path to file on disk
-
-                # Only ingest new large fits.fz files to the PTR archive.
-                if filename.endswith("-EX00.fits.fz"):
-                    try:
-                        broken = 0
-                        with open(filepath, "rb") as fileobj:
-                            tempPTR = 0
-
-                            if self.env_exists == True and (not frame_exists(fileobj)):
+                    #continue
+                else:
+                    # Here we parse the file, set up and send to AWS
+                    filename = pri_image[1][1]
+                    filepath = pri_image[1][0] + filename  # Full path to file on disk
     
-                                #plog ("\nstarting ingester")
-                                retryarchive = 0
-                                while retryarchive < 10:
-                                    try:      
-                                        # Get header explicitly out to send up
-                                        tempheader=fits.open(filepath)
-                                        tempheader=tempheader[1].header
-                                        headerdict = {}
-                                        for entry in tempheader.keys():
-                                            headerdict[entry] = tempheader[entry]
-                                            #print (entry)
-                                            #print ("***********")
+                    # Only ingest new large fits.fz files to the PTR archive.
+                    if filename.endswith("-EX00.fits.fz"):
+                        try:
+                            broken = 0
+                            with open(filepath, "rb") as fileobj:
+                                #tempPTR = 0
+    
+                                if self.env_exists == True and (not frame_exists(fileobj)):
+        
+                                    #plog ("\nstarting ingester")
+                                    retryarchive = 0
+                                    while retryarchive < 10:
+                                        try:      
+                                            # Get header explicitly out to send up
+                                            tempheader=fits.open(filepath)
+                                            tempheader=tempheader[1].header
+                                            headerdict = {}
+                                            for entry in tempheader.keys():
+                                                headerdict[entry] = tempheader[entry]
+                                                #print (entry)
+                                                #print ("***********")
+                                                
+                                            #breakpoint()
                                             
-                                        #breakpoint()
-                                        
-                                        upload_file_and_ingest_to_archive(fileobj, file_metadata=headerdict)                                    
-                                        
-                                        tempPTR = 1
-                                        retryarchive = 11
-                                        # Only remove file if successfully uploaded
-                                        if ('calibmasters' not in filepath) or ('ARCHIVE_' in filepath):
-                                            try:
-                                                os.remove(filepath)
-                                            except:
-                                                #plog("Couldn't remove " + str(filepath) + " file after transfer, sending to delete queue")
-                                                self.laterdelete_queue.put(filepath, block=False)
-                                        self.aws_queue.task_done()
-                                        
-                                    except ocs_ingester.exceptions.DoNotRetryError:
-                                        #plog((traceback.format_exc()))
-                                        plog ("Couldn't upload to PTR archive: " + str(filepath))
-
-                                        broken=1
-                                        
-                                        #plog ("Caught filespecification error properly")
-                                        #plog((traceback.format_exc()))
-                                        #breakpoint()
-                                        retryarchive = 11
-                                        tempPTR =0
-                                    except Exception as e:
-                                        if 'list index out of range' in str(e):
-                                            #plog((traceback.format_exc()))
-                                            # This error is thrown when there is a corrupt file
-                                            try:
-                                                os.remove(filepath)
-                                            except:
-                                                #plog("Couldn't remove " + str(filepath) + " file after transfer, sending to delete queue")
-                                                self.laterdelete_queue.put(filepath, block=False)
-                                            retryarchive=11
-                                        else:
-                                            plog("couldn't send to PTR archive for some reason: ", e)
-                                            #plog("Retry " + str(retryarchive))
-                                            #plog(e)
-                                            #plog((traceback.format_exc()))
-                                            time.sleep(pow(retryarchive, 2) + 1)
-                                            if retryarchive < 10:
-                                                retryarchive = retryarchive+1
-                                            if retryarchive == 10:
-                                                tempPTR = 0
-    
-                            # If ingester fails, send to default S3 bucket.
-                            try:
-                                if tempPTR == 0:
-                                    files = {"file": (filepath, fileobj)}
-                                    retryapi=True
-                                    retries=0
-                                    while (retryapi or retries <5):
-                                        try:
-                                            aws_resp = g_dev["obs"].api.authenticated_request(
-                                                "POST", "/upload/", {"object_name": filename})
-                                            req_resp = reqs.post(aws_resp["url"], data=aws_resp["fields"], files=files, timeout=600)
-                                            one_at_a_time = 0
-                                            retryapi=False
+                                            upload_file_and_ingest_to_archive(fileobj, file_metadata=headerdict)                                    
+                                            
+                                            #tempPTR = 1
+                                            retryarchive = 11
+                                            # Only remove file if successfully uploaded
+                                            if ('calibmasters' not in filepath) or ('ARCHIVE_' in filepath):
+                                                try:
+                                                    os.remove(filepath)
+                                                except:
+                                                    #plog("Couldn't remove " + str(filepath) + " file after transfer, sending to delete queue")
+                                                    self.laterdelete_queue.put(filepath, block=False)
                                             self.aws_queue.task_done()
                                             
-                                            
-            
-                                        except Exception as e:
-                                            plog(traceback.format_exc())
-                                            #breakpoint()
-                                            plog("Connection glitch for the request post, waiting a moment and trying again")
-                                            
-                                            if 'OSError' in e:
-                                                plog ("MTF wants to hunt this bug")
-                                                breakpoint()
-                                            
-                                            time.sleep(15)
-                                            retries=retries+1
-                            except:
-                                broken=1
-                                retryapi=False
-                        
-                        if broken == 1:
-                        
-                            #breakpoint()
-                            
-                            try:
-                                shutil.move(filepath, self.broken_path + filename)
-                            except:
-                                plog ("Couldn't move " + str(filepath) + " to broken folder.")
-                    except Exception as e:
-                        plog ("something strange in the AWS uploader", e)
-                # Send all other files to S3.
-                else:
-                    with open(filepath, "rb") as fileobj:
-                        files = {"file": (filepath, fileobj)}
-                        uploaded=False
-                        while not uploaded:                            
-                            try:
-                                aws_resp = g_dev["obs"].api.authenticated_request(
-                                    "POST", "/upload/", {"object_name": filename})
-                                reqs.post(aws_resp["url"], data=aws_resp["fields"], files=files, timeout=600)
-                                
-                                # Only remove file if successfully uploaded
-                                if ('calibmasters' not in filepath) or ('ARCHIVE_' in filepath):
-                                    try:
-                                        os.remove(filepath)
-                                        #plog("not deleting")
-                                    except:
-                                        #plog("Couldn't remove " + str(filepath) + " file after transfer")
-                                        self.laterdelete_queue.put(filepath, block=False)
-                                uploaded=True
-                                self.aws_queue.task_done()
-                               
+                                        except ocs_ingester.exceptions.DoNotRetryError:
+                                            #plog((traceback.format_exc()))
+                                            plog ("Couldn't upload to PTR archive: " + str(filepath))
     
-                            except:
-                                plog(traceback.format_exc())
+                                            broken=1
+                                            
+                                            #plog ("Caught filespecification error properly")
+                                            #plog((traceback.format_exc()))
+                                            #breakpoint()
+                                            retryarchive = 11
+                                            #tempPTR =0
+                                            self.aws_queue.task_done()
+                                        except Exception as e:
+                                            if 'list index out of range' in str(e):
+                                                #plog((traceback.format_exc()))
+                                                # This error is thrown when there is a corrupt file
+                                                try:
+                                                    os.remove(filepath)
+                                                except:
+                                                    #plog("Couldn't remove " + str(filepath) + " file after transfer, sending to delete queue")
+                                                    self.laterdelete_queue.put(filepath, block=False)
+                                                retryarchive=11
+                                                self.aws_queue.task_done()
+                                            else:
+                                                plog("couldn't send to PTR archive for some reason: ", e)
+                                                #plog("Retry " + str(retryarchive))
+                                                #plog(e)
+                                                #plog((traceback.format_exc()))
+                                                time.sleep(pow(retryarchive, 2) + 1)
+                                                if retryarchive < 10:
+                                                    retryarchive = retryarchive+1
+                                                if retryarchive == 10:
+                                                    #tempPTR = 0
+                                                    broken =1
+                                                    self.aws_queue.task_done()
+                                                    
+        
+                                # # If ingester fails, send to default S3 bucket.
+                                # try:
+                                #     if tempPTR == 0:
+                                #         files = {"file": (filepath, fileobj)}
+                                #         retryapi=True
+                                #         retries=0
+                                #         while (retryapi or retries <5):
+                                #             try:
+                                #                 aws_resp = g_dev["obs"].api.authenticated_request(
+                                #                     "POST", "/upload/", {"object_name": filename})
+                                #                 req_resp = reqs.post(aws_resp["url"], data=aws_resp["fields"], files=files, timeout=600)
+                                #                 one_at_a_time = 0
+                                #                 retryapi=False
+                                #                 self.aws_queue.task_done()
+                                                
+                                                
+                
+                                #             except Exception as e:
+                                #                 plog(traceback.format_exc())
+                                #                 #breakpoint()
+                                #                 plog("Connection glitch for the request post, waiting a moment and trying again")
+                                                
+                                #                 if 'OSError' in e:
+                                #                     plog ("MTF wants to hunt this bug")
+                                #                     breakpoint()
+                                                
+                                #                 time.sleep(15)
+                                #                 retries=retries+1
+                                # except:
+                                #     broken=1
+                                #     retryapi=False
+                            
+                            if broken == 1:
+                            
                                 #breakpoint()
-                                plog("Connection glitch for the request post, waiting a moment and trying again")
-                                time.sleep(5)
-
-                one_at_a_time = 0
+                                
+                                try:
+                                    shutil.move(filepath, self.broken_path + filename)
+                                except:
+                                    plog ("Couldn't move " + str(filepath) + " to broken folder.")
+                        except Exception as e:
+                            plog ("something strange in the AWS uploader", e)
+                    # Send all other files to S3.
+                    else:
+                        with open(filepath, "rb") as fileobj:
+                            files = {"file": (filepath, fileobj)}
+                            uploaded=False
+                            while not uploaded:                            
+                                try:
+                                    aws_resp = g_dev["obs"].api.authenticated_request(
+                                        "POST", "/upload/", {"object_name": filename})
+                                    reqs.post(aws_resp["url"], data=aws_resp["fields"], files=files, timeout=600)
+                                    
+                                    # Only remove file if successfully uploaded
+                                    if ('calibmasters' not in filepath) or ('ARCHIVE_' in filepath):
+                                        try:
+                                            os.remove(filepath)
+                                            #plog("not deleting")
+                                        except:
+                                            #plog("Couldn't remove " + str(filepath) + " file after transfer")
+                                            self.laterdelete_queue.put(filepath, block=False)
+                                    uploaded=True
+                                    self.aws_queue.task_done()
+                                   
+        
+                                except:
+                                    plog(traceback.format_exc())
+                                    #breakpoint()
+                                    plog("Connection glitch for the request post, waiting a moment and trying again")
+                                    time.sleep(5)
+    
+                    one_at_a_time = 0
 
                 
             else:
