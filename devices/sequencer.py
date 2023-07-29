@@ -1645,6 +1645,7 @@ class Sequencer:
                 
                 if self.stop_script_called:
                     g_dev["obs"].send_to_user("Cancelling out of calibration script as stop script has been called.")  
+                    self.bias_dark_latch = False
                     return
                 
 
@@ -1652,6 +1653,7 @@ class Sequencer:
                 
 
                 if ephem.now() + (dark_exp_time + cycle_time + 30)/86400 > ending:
+                    self.bias_dark_latch = False
                     break
                 
                 g_dev['obs'].scan_requests()
@@ -1666,11 +1668,13 @@ class Sequencer:
                     result = g_dev['cam'].expose_command(req, opt, user_id='Tobor', user_name='Tobor', user_roles='system', no_AWS=False, \
                                        do_sep=False, quick=False, skip_open_check=True,skip_daytime_check=True)
                     if self.stop_script_called:
-                        g_dev["obs"].send_to_user("Cancelling out of calibration script as stop script has been called.")  
+                        g_dev["obs"].send_to_user("Cancelling out of calibration script as stop script has been called.") 
+                        self.bias_dark_latch = False
                         return
                     b_d_to_do -= 1
                     g_dev['obs'].update()
                     if ephem.now() + (dark_exp_time + cycle_time + 30)/86400 > ending:
+                        self.bias_dark_latch = False
                         break
                 else:
                     plog("Expose 1x1 dark " + str(1) + " of " \
@@ -1681,7 +1685,8 @@ class Sequencer:
                     g_dev['cam'].expose_command(req, opt, user_id='Tobor', user_name='Tobor', user_roles='system', no_AWS=False, \
                                        do_sep=False, quick=False, skip_open_check=True,skip_daytime_check=True)
                     if self.stop_script_called:
-                        g_dev["obs"].send_to_user("Cancelling out of calibration script as stop script has been called.")  
+                        g_dev["obs"].send_to_user("Cancelling out of calibration script as stop script has been called.") 
+                        self.bias_dark_latch = False
                         return
                     b_d_to_do -= 1
                     g_dev['obs'].update()
