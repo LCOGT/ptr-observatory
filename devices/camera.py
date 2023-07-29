@@ -858,7 +858,12 @@ class Camera:
         self.async_exposure_lock=True
         tempcamera = win32com.client.Dispatch(self.driver)
         tempcamera.Connect()
-        tempcamera.TakeImage()
+        try:
+            tempcamera.TakeImage()
+        except:
+            plog(traceback.format_exc()) 
+            plog("MTF hunting this error")
+            breakpoint()
         tempcamera.ShutDownTemperatureRegulationOnDisconnect = False
         self.async_exposure_lock=False
 
@@ -1512,7 +1517,7 @@ class Camera:
                 if g_dev['events']['Observing Ends'] < ephem.Date(ephem.now()+ (exposure_time *ephem.second)) and not g_dev['obs'].debug_flag:
                     plog ("Sorry, exposures are outside of night time.")
                     self.exposure_busy = False
-                    break
+                    return 'outsideofnighttime'
 
             self.pre_mnt = []
             self.pre_rot = []
