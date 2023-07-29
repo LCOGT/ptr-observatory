@@ -1518,6 +1518,23 @@ class Sequencer:
                             exposure['count'] = count
                             left_to_do -= 1
                             plog("Left to do:  ", left_to_do)
+                            
+                            
+                            if result == 'blockend':
+                                left_to_do=0
+                            
+                            if result == 'calendarend':
+                                left_to_do =0
+                            
+                            if result == 'roofshut':
+                                left_to_do =0
+                            
+                            if g_dev["obs"].stop_all_activity:
+                                plog('stop_all_activity cancelling out of exposure loop')
+                                left_to_do =0  
+                            
+                            
+                            
                         pane += 1
 
                     # Check that the observing time hasn't completed or then night has not completed. 
