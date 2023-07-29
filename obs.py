@@ -1851,10 +1851,15 @@ sel
                                             one_at_a_time = 0
                                             retryapi=False
             
-                                        except:
+                                        except Exception as e:
                                             plog(traceback.format_exc())
                                             #breakpoint()
                                             plog("Connection glitch for the request post, waiting a moment and trying again")
+                                            
+                                            if 'OSError' in e:
+                                                plog ("MTF wants to hunt this bug")
+                                                breakpoint()
+                                            
                                             time.sleep(15)
                                             retries=retries+1
                             except:
@@ -1890,9 +1895,9 @@ sel
                                     except:
                                         #plog("Couldn't remove " + str(filepath) + " file after transfer")
                                         self.laterdelete_queue.put(filepath, block=False)
-                                
-                                self.aws_queue.task_done()
                                 uploaded=True
+                                self.aws_queue.task_done()
+                               
     
                             except:
                                 plog(traceback.format_exc())
