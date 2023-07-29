@@ -1846,7 +1846,8 @@ sel
                                             time.sleep(pow(retryarchive, 2) + 1)
                                             if retryarchive < 10:
                                                 retryarchive = retryarchive+1
-                                            tempPTR = 0
+                                            if retryarchive == 10:
+                                                tempPTR = 0
     
                             # If ingester fails, send to default S3 bucket.
                             try:
