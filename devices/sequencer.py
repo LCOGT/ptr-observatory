@@ -2786,7 +2786,7 @@ class Sequencer:
             g_dev['mnt'].unpark_command({}, {})
         
         not_too_close_to_zenith=False
-        while not_too_close_to_zenith:
+        while not not_too_close_to_zenith:
             alt, az = g_dev['mnt'].slewToSkyFlatAsync()  
             if self.config['degrees_to_avoid_zenith_area_for_calibrations'] > 0:
                 #breakpoint()
@@ -2822,7 +2822,7 @@ class Sequencer:
                         g_dev['mnt'].unpark_command({}, {})
                     
                     not_too_close_to_zenith=False
-                    while not_too_close_to_zenith:
+                    while not not_too_close_to_zenith:
                         alt, az = g_dev['mnt'].slewToSkyFlatAsync()  
                         if self.config['degrees_to_avoid_zenith_area_for_calibrations'] > 0:
                             #breakpoint()
@@ -2971,7 +2971,7 @@ class Sequencer:
                              self.estimated_first_flat_exposure = False
                              if time.time() >= self.time_of_next_slew:
                                 not_too_close_to_zenith=False
-                                while not_too_close_to_zenith:
+                                while not not_too_close_to_zenith:
                                     alt, az = g_dev['mnt'].slewToSkyFlatAsync()  
                                     if self.config['degrees_to_avoid_zenith_area_for_calibrations'] > 0:
                                         #breakpoint()
@@ -3004,7 +3004,7 @@ class Sequencer:
                              self.estimated_first_flat_exposure = False
                              if time.time() >= self.time_of_next_slew:
                                 not_too_close_to_zenith=False
-                                while not_too_close_to_zenith:
+                                while not not_too_close_to_zenith:
                                     alt, az = g_dev['mnt'].slewToSkyFlatAsync()  
                                     if self.config['degrees_to_avoid_zenith_area_for_calibrations'] > 0:
                                         #breakpoint()
@@ -3037,7 +3037,7 @@ class Sequencer:
                             if g_dev['mnt'].mount.AtParK:
                                 g_dev['mnt'].unpark_command({}, {})
                                 not_too_close_to_zenith=False
-                                while not_too_close_to_zenith:
+                                while not not_too_close_to_zenith:
                                     alt, az = g_dev['mnt'].slewToSkyFlatAsync()  
                                     if self.config['degrees_to_avoid_zenith_area_for_calibrations'] > 0:
                                         #breakpoint()
@@ -3132,7 +3132,7 @@ class Sequencer:
                             # We only want to move after a successful set of independant binning flats
                             # If we move before we calculate exposure, we are wasting time slewing. 
                             not_too_close_to_zenith=False
-                            while not_too_close_to_zenith:
+                            while not not_too_close_to_zenith:
                                 alt, az = g_dev['mnt'].slewToSkyFlatAsync()  
                                 if self.config['degrees_to_avoid_zenith_area_for_calibrations'] > 0:
                                     #breakpoint()
