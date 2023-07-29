@@ -1571,9 +1571,11 @@ sel
                 
                 self.too_hot_in_observatory = False
                 focstatus=g_dev['foc'].get_status()
-                foctemp=focstatus["focus_temperature"]
-                if foctemp > 20.0:
+                self.temperature_in_observatory_from_focuser=focstatus["focus_temperature"]
+                
+                if self.temperature_in_observatory_from_focuser > 20.0:
                     self.too_hot_in_observatory=True
+                    
                 
                 
                     
@@ -1594,7 +1596,7 @@ sel
                     # pass
                 
                 elif g_dev['cam'].day_warm  and (self.too_hot_in_observatory) and (ephem.now() < g_dev['events']['Clock & Auto Focus'] - ephem.hour):
-                    plog("Currently too hot for excess cooling. Keeping it at day_warm until a cool hour long ramping towards clock & autofocus")
+                    plog("Currently too hot: "+str(self.temperature_in_observatory_from_focuser)+"C for excess cooling. Keeping it at day_warm until a cool hour long ramping towards clock & autofocus")
                     g_dev['cam']._set_setpoint(float(g_dev['cam'].setpoint + g_dev['cam'].day_warm_degrees))
                     # Some cameras need to be sent this to change the temperature also.. e.g. TheSkyX
                     g_dev['cam']._set_cooler_on()
