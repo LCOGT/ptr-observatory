@@ -1528,6 +1528,9 @@ class Sequencer:
                             
                             if result == 'roofshut':
                                 left_to_do =0
+                                
+                            if result == 'outsideofnighttime':
+                                left_to_do =0
                             
                             if g_dev["obs"].stop_all_activity:
                                 plog('stop_all_activity cancelling out of exposure loop')
@@ -2777,6 +2780,38 @@ class Sequencer:
         
         #breakpoint()
         
+        
+        # First pointing towards flatspot
+        if g_dev['mnt'].mount.AtParK:
+            g_dev['mnt'].unpark_command({}, {})
+        
+        not_too_close_to_zenith=False
+        while not_too_close_to_zenith:
+            alt, az = g_dev['mnt'].slewToSkyFlatAsync()  
+            if self.config['degrees_to_avoid_zenith_area_for_calibrations'] > 0:
+                #breakpoint()
+                if (90-alt) < self.config['degrees_to_avoid_zenith_area_for_calibrations']:
+                    alt=90-self.config['degrees_to_avoid_zenith_area_for_calibrations']
+                    #plog ("Requested Flat Spot, az: " + str(az) + " alt: " + str(alt))
+                    #plog ("adjusted altitude to " + str(alt) + "to avoid the zenith region")
+                    plog ("waiting for the flat spot to move through the zenith")
+                    time.sleep(30)
+                    
+                    if g_dev['obs'].open_and_enabled_to_observe == False:
+                        plog ("Observatory closed or disabled during flat script. Cancelling out of flat acquisition loop.")
+                        filter_throughput_shelf.close()
+                        return
+                    
+                    # Check that Flat time hasn't ended
+                    if ephem.now() > ending:
+                        plog ("Flat acquisition time finished. Breaking out of the flat loop.")
+                        filter_throughput_shelf.close()
+                        return
+                    
+                else:
+                    not_too_close_to_zenith=True
+        
+        
         camera_gain_collector=[]
         
         while len(pop_list) > 0  and ephem.now() < ending and g_dev['obs'].open_and_enabled_to_observe:
@@ -2814,7 +2849,7 @@ class Sequencer:
                     
                     
                     
-                    self.time_of_next_slew = time.time() + 600
+                    self.time_of_next_slew = time.time() + 45
                 
                 g_dev['obs'].scan_requests()
                 g_dev['obs'].update() 
@@ -2959,7 +2994,7 @@ class Sequencer:
                                                 return                                            
                                         else:
                                             not_too_close_to_zenith=True  
-                                self.time_of_next_slew = time.time() + 600
+                                self.time_of_next_slew = time.time() + 45
                              self.next_flat_observe = time.time() + 10
                         elif morn and exp_time > max_exposure :  
                              if time.time()-slow_report_timer > 120:                                 
@@ -2992,7 +3027,7 @@ class Sequencer:
                                                 return                                            
                                         else:
                                             not_too_close_to_zenith=True  
-                                self.time_of_next_slew = time.time() + 600
+                                self.time_of_next_slew = time.time() + 45
                              self.next_flat_observe = time.time() + 10
                              exp_time = min_exposure
                         else:
@@ -3025,7 +3060,7 @@ class Sequencer:
                                                 return                                            
                                         else:
                                             not_too_close_to_zenith=True  
-                                self.time_of_next_slew = time.time() + 600
+                                self.time_of_next_slew = time.time() + 45
                             
                             if self.stop_script_called:
                                 g_dev["obs"].send_to_user("Cancelling out of calibration script as stop script has been called.")  
@@ -3053,7 +3088,7 @@ class Sequencer:
                                 filter_throughput_shelf.close()
                                 return
                             try:
-                                self.time_of_next_slew = time.time()
+                                
                                 fred = g_dev['cam'].expose_command(req, opt, user_id='Tobor', user_name='Tobor', user_roles='system', no_AWS=True, do_sep = False,skip_daytime_check=True)
                                 
                                 #breakpoint()
