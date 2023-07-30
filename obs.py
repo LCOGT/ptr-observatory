@@ -748,9 +748,13 @@ sel
                 cmd = {}
                 # Get a list of new jobs to complete (this request
                 # marks the commands as "RECEIVED")
-                unread_commands = reqs.request(
-                    "POST", url_job, data=json.dumps(body), timeout=20
-                ).json()
+                try:
+                    unread_commands = reqs.request(
+                        "POST", url_job, data=json.dumps(body), timeout=20
+                    ).json()
+                except:
+                    plog("problem gathering scan requests. Likely just a connection glitch.")
+                    unread_commands=[]
                 # Make sure the list is sorted in the order the jobs were issued
                 # Note: the ulid for a job is a unique lexicographically-sortable id.
                 if len(unread_commands) > 0:
