@@ -709,7 +709,7 @@ site_config = {
                 'min_exposure': 0.2,
                 'min_flat_exposure' : 1.0, # For certain shutters, short exposures aren't good for flats. Some CMOS have banding in too short an exposure. Largely applies to ccds though.
                 'max_flat_exposure' : 45.0, # Realistically there should be a maximum flat_exposure that makes sure flats are efficient and aren't collecting actual stars.
-                'reject_new_flat_by_known_gain' : False,
+                'reject_new_flat_by_known_gain' : True,
                 'max_exposure': 3600,
                 'max_daytime_exposure': 0.0001,
                 'can_subframe':  True,
@@ -722,8 +722,8 @@ site_config = {
                 'is_color':  False,
                 'bayer_pattern':  None,    #  'RGGB" is a valid string in camera is color.
                 'can_set_gain':  True,
-                'camera_gain':   1.00, #[10., 10., 10., 10.],     #  One val for each binning.
-                'camera_gain_stdev':   0.15, #[10., 10., 10., 10.],     #  One val for each binning.
+                'camera_gain':   1.40, #[10., 10., 10., 10.],     #  One val for each binning.
+                'camera_gain_stdev':   0.5, #[10., 10., 10., 10.],     #  One val for each binning.
                 'read_noise':  1.92, #[9, 9, 9, 9],    #  All SWAGs right now
                 'read_noise_stdev':   0.003, #[10., 10., 10., 10.],     #  One val for each binning.
                 #'reference_dark': [0.0, 0.0, 0.0, 0.0],     #  Might these best be pedastal values?  NO!
