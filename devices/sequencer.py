@@ -1743,7 +1743,8 @@ class Sequencer:
                     try:
                         shutil.move(orphanfile, orphan_path)
                     except:
-                        print ("Couldn't move orphan: " + str(orphanfile))
+                        print ("Couldn't move orphan: " + str(orphanfile) +', deleting.')
+                        g_dev['obs'].laterdelete_queue.put(orphanfile, block=False)
                         
         # Add all fits.fz members to the AWS queue
         bigfzs=glob(orphan_path + '*.fz')
