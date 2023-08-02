@@ -832,11 +832,14 @@ sel
                                 plog("Request rejected as site in admin or owner mode.")
                                 g_dev['obs'].send_to_user("Request rejected as site in admin or owner mode.")
                     except:
-                        plog(traceback.format_exc())
-                        plog("unread commands")
-                        plog (unread_commands)
-                        plog ("MF trying to find whats happening with this relatively rare bug!")
-                        plog ("It is probably an 'internal error' from AWS. If so, we can make this try/except quiet")
+                        if 'Internal server error' in str(unread_commands):
+                            plog ("AWS server glitch reading unread_commands")
+                        else:
+                            plog(traceback.format_exc())
+                            plog("unread commands")
+                            plog (unread_commands)
+                            plog ("MF trying to find whats happening with this relatively rare bug!")
+                            
                         #breakpoint()
                 # NEED TO WAIT UNTIL CURRENT COMMAND IS FINISHED UNTIL MOVING ONTO THE NEXT ONE!
                 # THAT IS WHAT CAUSES THE "CAMERA BUSY" ISSUE. We don't need to wait for the
