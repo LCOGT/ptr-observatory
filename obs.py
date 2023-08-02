@@ -758,79 +758,86 @@ sel
                 # Make sure the list is sorted in the order the jobs were issued
                 # Note: the ulid for a job is a unique lexicographically-sortable id.
                 if len(unread_commands) > 0:
-                    unread_commands.sort(key=lambda x: x["timestamp_ms"])
-                    # Process each job one at a time
-                    for cmd in unread_commands:
-
-                        if not (self.admin_only_flag and (("admin" in cmd['user_roles']) or ("owner" in cmd['user_roles']) or (not self.admin_only_flag))):
-
-                            # breakpoint()
-
-                            if cmd["action"] in ["cancel_all_commands", "stop"] or cmd["action"].lower() in ["stop", "cancel"] or (cmd["action"] == "run" and cmd["required_params"]["script"] == "stopScript"):
-                                
-                                # A stop script command flags to the running scripts that it is time to stop
-                                # activity and return. This period runs for about 30 seconds.
-                                g_dev["obs"].send_to_user(
-                                    "A Cancel/Stop has been called. Cancelling out of running scripts over 30 seconds.")
-                                g_dev['seq'].stop_script_called = True
-                                g_dev['seq'].stop_script_called_time = time.time()
-                                # Cancel out of all running exposures.
-                                g_dev['obs'].cancel_all_activity()
-                            else:
-                                try:
-                                    action = cmd['action']
-                                except:
-                                    action = None
-
-                                try:
-                                    script = cmd['required_params']['script']
-                                except:
-                                    script = None
-
-                                # Check here for admin/owner only functions
-                                if action == "run" and script == 'collectScreenFlats' and not (("admin" in cmd['user_roles']) or ("owner" in cmd['user_roles'])):
-                                    plog("Request rejected as flats can only be commanded by admin user.")
-                                    g_dev['obs'].send_to_user(
-                                        "Request rejected as flats can only be commanded by admin user.")
-                                elif action == "run" and script == 'collectSkyFlats' and not (("admin" in cmd['user_roles']) or ("owner" in cmd['user_roles'])):
-                                    plog("Request rejected as flats can only be commanded by admin user.")
-                                    g_dev['obs'].send_to_user(
-                                        "Request rejected as flats can only be commanded by admin user.")
-
-                                elif action == "run" and script in ['32TargetPointingRun', 'pointingRun', 'makeModel'] and not (("admin" in cmd['user_roles']) or ("owner" in cmd['user_roles'])):
-                                    plog("Request rejected as pointing runs can only be commanded by admin user.")
-                                    g_dev['obs'].send_to_user(
-                                        "Request rejected as pointing runs can only be commanded by admin user.")
-                                elif action == "run" and script in ("collectBiasesAndDarks") and not (("admin" in cmd['user_roles']) or ("owner" in cmd['user_roles'])):
-                                    plog("Request rejected as bias and darks can only be commanded by admin user.")
-                                    g_dev['obs'].send_to_user(
-                                        "Request rejected as bias and darks can only be commanded by admin user.")
-
-                                # Check here for irrelevant commands
-
-                                elif cmd['deviceType'] == 'screen' and self.config['screen']['screen1']['driver'] == None:
-                                    plog("Refusing command as there is no screen")
-                                    g_dev['obs'].send_to_user("Request rejected as site has no flat screen.")
-                                elif cmd['deviceType'] == 'rotator' and self.config['rotator']['rotator1']['driver'] == None:
-                                    plog("Refusing command as there is no rotator")
-                                    g_dev['obs'].send_to_user("Request rejected as site has no rotator.")
-                                # If not irrelevant, queue the command
-                                elif cmd['deviceType'] == 'enclosure' and not ("admin" in cmd['user_roles']) or ("owner" in cmd['user_roles']):
-                                    plog("Refusing command - only admin or owners can send enclosure commands")
-                                    g_dev['obs'].send_to_user(
-                                        "Refusing command - only admin or owners can send enclosure commands")
+                    try:
+                        unread_commands.sort(key=lambda x: x["timestamp_ms"])
+                        # Process each job one at a time
+                        for cmd in unread_commands:
+    
+                            if not (self.admin_only_flag and (("admin" in cmd['user_roles']) or ("owner" in cmd['user_roles']) or (not self.admin_only_flag))):
+    
+                                # breakpoint()
+    
+                                if cmd["action"] in ["cancel_all_commands", "stop"] or cmd["action"].lower() in ["stop", "cancel"] or (cmd["action"] == "run" and cmd["required_params"]["script"] == "stopScript"):
+                                    
+                                    # A stop script command flags to the running scripts that it is time to stop
+                                    # activity and return. This period runs for about 30 seconds.
+                                    g_dev["obs"].send_to_user(
+                                        "A Cancel/Stop has been called. Cancelling out of running scripts over 30 seconds.")
+                                    g_dev['seq'].stop_script_called = True
+                                    g_dev['seq'].stop_script_called_time = time.time()
+                                    # Cancel out of all running exposures.
+                                    g_dev['obs'].cancel_all_activity()
                                 else:
-
-                                    self.cmd_queue.put(cmd)  # SAVE THE COMMAND FOR LATER
-                                    g_dev["obs"].stop_all_activity = False
-                                   
-                            if cancel_check:
-                                result = {'stopped': True}
-                                return  # Note we do not process any commands.
-                        else:
-                            plog("Request rejected as site in admin or owner mode.")
-                            g_dev['obs'].send_to_user("Request rejected as site in admin or owner mode.")
-
+                                    try:
+                                        action = cmd['action']
+                                    except:
+                                        action = None
+    
+                                    try:
+                                        script = cmd['required_params']['script']
+                                    except:
+                                        script = None
+    
+                                    # Check here for admin/owner only functions
+                                    if action == "run" and script == 'collectScreenFlats' and not (("admin" in cmd['user_roles']) or ("owner" in cmd['user_roles'])):
+                                        plog("Request rejected as flats can only be commanded by admin user.")
+                                        g_dev['obs'].send_to_user(
+                                            "Request rejected as flats can only be commanded by admin user.")
+                                    elif action == "run" and script == 'collectSkyFlats' and not (("admin" in cmd['user_roles']) or ("owner" in cmd['user_roles'])):
+                                        plog("Request rejected as flats can only be commanded by admin user.")
+                                        g_dev['obs'].send_to_user(
+                                            "Request rejected as flats can only be commanded by admin user.")
+    
+                                    elif action == "run" and script in ['32TargetPointingRun', 'pointingRun', 'makeModel'] and not (("admin" in cmd['user_roles']) or ("owner" in cmd['user_roles'])):
+                                        plog("Request rejected as pointing runs can only be commanded by admin user.")
+                                        g_dev['obs'].send_to_user(
+                                            "Request rejected as pointing runs can only be commanded by admin user.")
+                                    elif action == "run" and script in ("collectBiasesAndDarks") and not (("admin" in cmd['user_roles']) or ("owner" in cmd['user_roles'])):
+                                        plog("Request rejected as bias and darks can only be commanded by admin user.")
+                                        g_dev['obs'].send_to_user(
+                                            "Request rejected as bias and darks can only be commanded by admin user.")
+    
+                                    # Check here for irrelevant commands
+    
+                                    elif cmd['deviceType'] == 'screen' and self.config['screen']['screen1']['driver'] == None:
+                                        plog("Refusing command as there is no screen")
+                                        g_dev['obs'].send_to_user("Request rejected as site has no flat screen.")
+                                    elif cmd['deviceType'] == 'rotator' and self.config['rotator']['rotator1']['driver'] == None:
+                                        plog("Refusing command as there is no rotator")
+                                        g_dev['obs'].send_to_user("Request rejected as site has no rotator.")
+                                    # If not irrelevant, queue the command
+                                    elif cmd['deviceType'] == 'enclosure' and not ("admin" in cmd['user_roles']) or ("owner" in cmd['user_roles']):
+                                        plog("Refusing command - only admin or owners can send enclosure commands")
+                                        g_dev['obs'].send_to_user(
+                                            "Refusing command - only admin or owners can send enclosure commands")
+                                    else:
+    
+                                        self.cmd_queue.put(cmd)  # SAVE THE COMMAND FOR LATER
+                                        g_dev["obs"].stop_all_activity = False
+                                       
+                                if cancel_check:
+                                    result = {'stopped': True}
+                                    return  # Note we do not process any commands.
+                            else:
+                                plog("Request rejected as site in admin or owner mode.")
+                                g_dev['obs'].send_to_user("Request rejected as site in admin or owner mode.")
+                    except:
+                        plog(traceback.format_exc())
+                        plog("unread commands")
+                        plog (unread_commands)
+                        plog ("MF trying to find whats happening with this relatively rare bug!")
+                        plog ("It is probably an 'internal error' from AWS. If so, we can make this try/except quiet")
+                        #breakpoint()
                 # NEED TO WAIT UNTIL CURRENT COMMAND IS FINISHED UNTIL MOVING ONTO THE NEXT ONE!
                 # THAT IS WHAT CAUSES THE "CAMERA BUSY" ISSUE. We don't need to wait for the
                 # rotator as the exposure routine in camera.py already waits for that.
