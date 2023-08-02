@@ -855,13 +855,17 @@ class Mount:
                 center_image_dec=float(req['header_decdeg'])
 
                 
-                x_pixel_shift = ((float(image_x)-0.5) * g_dev['cam'].camera_x_size)/2
-                y_pixel_shift = ((float(image_y)-0.5) * g_dev['cam'].camera_y_size)/2
+                x_pixel_shift = ((float(image_x)-0.5) * g_dev['cam'].camera_x_size)
+                y_pixel_shift = ((float(image_y)-0.5) * g_dev['cam'].camera_y_size)
                 plog ("X pixel shift: " + str(x_pixel_shift))
                 plog ("Y pixel shift: " + str(y_pixel_shift))                
                 
+                req = {}
+                opt = {}
+                
+                
                 req['ra']=center_image_ra + (x_pixel_shift * pixscale_hours)
-                req['dec']=center_image_dec + (y_pixel_shift * pixscale_degrees)
+                req['dec']=center_image_dec - (y_pixel_shift * pixscale_degrees)
                 
                 plog ("X centre shift: " + str((x_pixel_shift * pixscale_hours)))
                 plog ("Y centre shift: " + str(((y_pixel_shift * pixscale_degrees))))
@@ -871,7 +875,8 @@ class Mount:
                 plog ("New RA - Old RA = "+ str(float(req['ra'])-center_image_ra))
                 plog ("New dec - Old dec = "+ str(float(req['dec'])-center_image_dec))
                 
-
+                #breakpoint()
+                
                 
                 self.go_command(req, {})#, offset=True, calibrate=False)
             except:

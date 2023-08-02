@@ -1679,6 +1679,9 @@ class Camera:
                             g_dev['obs'].time_of_last_exposure = time.time()
                             g_dev['obs'].update()
                             
+                            
+                            # Make sure the latest mount_coordinates are updated. HYPER-IMPORTANT!
+                            g_dev["mnt"].get_mount_coordinates()
                             ra_at_time_of_exposure = g_dev["mnt"].current_icrs_ra
                             dec_at_time_of_exposure = g_dev["mnt"].current_icrs_dec
                             observer_user_name = user_name

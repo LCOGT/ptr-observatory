@@ -255,7 +255,7 @@ class Observatory:
         self.project_call_timer = time.time()
         self.get_new_job_timer = time.time()
         self.status_upload_time = 0.5
-        self.command_busy = False
+        self.stop_processing_command_requests = False
         # Instantiate the helper class for astronomical events
         # Soon the primary event / time values can come from AWS.
         self.astro_events = ptr_events.Events(self.config)
@@ -835,10 +835,10 @@ sel
                 # THAT IS WHAT CAUSES THE "CAMERA BUSY" ISSUE. We don't need to wait for the
                 # rotator as the exposure routine in camera.py already waits for that.
                 # if (not g_dev["cam"].exposure_busy) and (not g_dev['mnt'].mount.Slewing):
-                if (not g_dev["cam"].exposure_busy):
+                if (not g_dev["cam"].exposure_busy) and (not self.stop_processing_command_requests):
                     while self.cmd_queue.qsize() > 0:
-                        if not self.command_busy:  # This is to stop multiple commands running over the top of each other.
-                            self.command_busy = True
+                        if not self.stop_processing_command_requests and not g_dev["cam"].exposure_busy:  # This is to stop multiple commands running over the top of each other.
+                            self.stop_processing_command_requests = True
                             #plog(
                             #    "Number of queued commands:  " + str(self.cmd_queue.qsize())
                             #)
@@ -878,7 +878,9 @@ sel
                                 plog(traceback.format_exc())
 
                                 plog("Exception in obs.scan_requests:  ", e, 'cmd:  ', cmd)
-                            self.command_busy = False
+                            self.stop_processing_command_requests = False
+                        else:
+                            time.sleep(0.2)
 
                 
                 return  # This creates an infinite loop

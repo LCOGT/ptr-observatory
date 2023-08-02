@@ -159,6 +159,8 @@ class Sequencer:
         self.pulse_timer=time.time()
 
 
+        self.reported_on_observing_period_beginning=False
+
         try:
             self.is_in_completes(None)
         except:
@@ -511,103 +513,8 @@ class Sequencer:
         # things when it looks for shutter_status
         if enc_status == None:
             enc_status = {'shutter_status': 'Unknown'}
-            enc_status['enclosure_mode'] = 'Automatic'
-        
-        # Check for delayed opening of the observatory and act accordingly.
-
-        # # If the observatory is simply delayed until opening, then wait until then, then attempt to start up the observatory
-        # if self.weather_report_wait_until_open and not self.cool_down_latch:
-        #     if ephem_now >  self.weather_report_wait_until_open_time:
-                
-        #         self.cool_down_latch=True
-        #         self.weather_report_wait_until_open == False
-        #         # Things may have changed! So re-checking the weather and such
-                
-        #         # Reopening config and resetting all the things.
-        #         # This is necessary just in case a previous weather report was done today
-        #         # That can sometimes change the timing. 
-        #         self.astro_events.compute_day_directory()
-        #         self.astro_events.calculate_events()
-        #         #self.astro_events.display_events()
-        #         g_dev['obs'].astro_events = self.astro_events
-        #         # Run nightly weather report
-        #         self.run_nightly_weather_report()
-                
-                
-                
-        #         if not g_dev['obs'].open_and_enabled_to_observe and self.weather_report_is_acceptable_to_observe==True:
-        #             if (g_dev['events']['Cool Down, Open'] < ephem.now() < g_dev['events']['Observing Ends']):
-        #                 if time.time() > self.enclosure_next_open_time and self.opens_this_evening < self.config['maximum_roof_opens_per_evening']:
-        #                     #self.enclosure_next_open_time = time.time() + 300 # Only try to open the roof every five minutes
-                            
-        #                     #self.weather_report_is_acceptable_to_observe=True
-        #                     self.open_observatory(enc_status, ocn_status)
-                            
-        #                     # If the observatory opens, set clock and auto focus and observing to now
-        #                     if g_dev['obs'].open_and_enabled_to_observe:
-        #                         self.weather_report_is_acceptable_to_observe=False
-        #                         self.night_focus_ready=True
-        #                         obs_win_begin, sunZ88Op, sunZ88Cl, ephem_now = self.astro_events.getSunEvents()
-        #                         #g_dev['events']['Clock & Auto Focus'] = ephem_now - 0.1/24
-        #                         #g_dev['events']['Observing Begins'] = ephem_now + 0.1/24
-        #                         self.weather_report_wait_until_open=False
-        #                         self.weather_report_is_acceptable_to_observe=True
-        #                         if (g_dev['events']['Observing Begins'] < ephem.now() < g_dev['events']['Observing Ends']):
-        #                             # Move to reasonable spot
-        #                             if g_dev['mnt'].mount.Tracking == False:
-        #                                 if g_dev['mnt'].mount.CanSetTracking:   
-        #                                     g_dev['mnt'].mount.Tracking = True
-        #                                 else:
-        #                                     plog("mount is not tracking but this mount doesn't support ASCOM changing tracking")
-    
-        #                             g_dev['mnt'].move_to_azalt(70, 70)
-        #                             g_dev['foc'].time_of_last_focus = datetime.datetime.now() - datetime.timedelta(
-        #                                 days=1
-        #                             )  # Initialise last focus as yesterday
-    
-        #                             # Autofocus
-        #                             req2 = {'target': 'near_tycho_star', 'area': 150}
-        #                             opt = {}
-        #                             plog ("Running initial autofocus upon opening observatory")
-        #                             self.extensive_focus_script(req2, opt)
-        #         self.cool_down_latch = False
-        
-        # # If the observatory is meant to shut during the evening
-        # obs_win_begin, sunZ88Op, sunZ88Cl, ephem_now = self.astro_events.getSunEvents()
-        # if self.weather_report_close_during_evening==True :
-        #     if ephem_now >  self.weather_report_close_during_evening_time and ephem_now < events['Morn Bias Dark']: # Don't want scope to cancel all activity during bias/darks etc.
-        #         if self.config['obsid_roof_control']  and g_dev['enc'].mode == 'Automatic':
-        #             self.weather_report_is_acceptable_to_observe=False
-        #             plog ("End of Observing Period due to weather. Closing up observatory early.")
-        #             g_dev['obs'].cancel_all_activity()
-        #             g_dev['obs'].open_and_enabled_to_observe=False
-        #             g_dev['enc'].enclosure.CloseShutter()
-        #             #while g_dev['enc'].enclosure.ShutterStatus == 3:
-        #             #plog ("closing")
-        #             plog ("Also Parking the Scope")    
-        #             if not g_dev['mnt'].mount.AtPark:  
-        #                 g_dev['mnt'].home_command()
-        #                 g_dev['mnt'].park_command() 
-        #             self.weather_report_close_during_evening=False 
-                                        
-        # Do nightly weather report at cool down open 
-        # if (g_dev['events']['Cool Down, Open']  <= ephem_now < g_dev['events']['Observing Ends']) and not self.nightly_weather_report_complete and not g_dev['debug']:
-
-        #     # Reopening config and resetting all the things.
-        #     # This is necessary just in case a previous weather report was done today
-        #     # That can sometimes change the timing. 
-        #     self.astro_events.compute_day_directory()
-        #     self.astro_events.calculate_events()
-        #     #self.astro_events.display_events()
-        #     g_dev['obs'].astro_events = self.astro_events
-        #     # Run nightly weather report
-        #     self.run_nightly_weather_report()
-        #     self.nightly_weather_report_complete=True
-            
-        #     # Also make sure nightly reset is switched to go off
-        #     self.nightly_reset_complete = False
-        #     # As well as nightly focus routine.
-        #     self.night_focus_ready=True
+            enc_status['enclosure_mode'] = 'Automatic'        
+       
         
         if (events['Nightly Reset'] <= ephem_now < events['End Nightly Reset']): # and g_dev['enc'].mode == 'Automatic' ):
              if self.nightly_reset_complete == False:
@@ -619,6 +526,15 @@ class Sequencer:
                 
         if ((g_dev['events']['Cool Down, Open'] <= ephem_now < g_dev['events']['Observing Ends'])):
             self.nightly_reset_complete = False
+            
+            
+            
+        ###########################################################################
+        # While in this part of the sequencer, we need to have manual UI commands turned off
+        # So that if a sequencer script starts running, we don't get an odd request out 
+        # of nowhere that knocks it out
+        g_dev['obs'].stop_processing_command_requests = True
+        ###########################################################################
         
         # This bit is really to get the scope up and running if the roof opens
         if ((g_dev['events']['Cool Down, Open']  <= ephem_now < g_dev['events']['Observing Ends'])) and not self.cool_down_latch and \
@@ -753,6 +669,9 @@ class Sequencer:
             opt = {'area': 150, 'count': 1, 'bin': 1, 'filter': 'focus'}
             g_dev['cam'].expose_command(req, opt, user_id='Tobor', user_name='Tobor', user_roles='system', no_AWS=False, solve_it=True)
             
+            
+            g_dev['obs'].send_to_user("End of Focus and Pointing Run. Waiting for Observing period to begin.", p_level='INFO')
+            
             self.night_focus_ready=False
             self.clock_focus_latch = False
 
@@ -768,6 +687,10 @@ class Sequencer:
             try:
                 self.nightly_reset_complete = False
                 self.block_guard = True
+                
+                if not self.reported_on_observing_period_beginning:
+                    self.reported_on_observing_period_beginning=True
+                    g_dev['obs'].send_to_user("Observing Period has begun.", p_level='INFO')
                 #try:
                 #    enc_status['enclosure_mode'] in ['Autonomous!', 'Automatic']   and g_dev['obs'].blocks is not None and g_dev['obs'].projects \
                 #is not None
@@ -1102,7 +1025,15 @@ class Sequencer:
                                         # these exposures shouldn't reset these timers
                                         g_dev['obs'].time_of_last_exposure = time.time() - 840
                                         g_dev['obs'].time_of_last_slew = time.time() - 840                                    
-                                    
+        
+        ###########################################################################
+        # While in this part of the sequencer, we need to have manual UI commands turned back on
+        # So that we can process any new manual commands that come in.
+        g_dev['obs'].stop_processing_command_requests = False
+        g_dev['obs'].scan_requests()
+        ###########################################################################                            
+        
+        
         return
     def take_lrgb_stack(self, req_None, opt=None):
         return
@@ -1765,6 +1696,8 @@ class Sequencer:
         # Never hurts to make sure the telescope is parked for the night
         #g_dev['mnt'].park_command({}, {})
         self.park_and_close()
+
+        self.reported_on_observing_period_beginning=False
 
         self.eve_flats_done = False
         self.morn_flats_done = False
@@ -4446,7 +4379,7 @@ class Sequencer:
                 plog ("spot failed on extensive focus script")
                 plog(traceback.format_exc())
 
-            g_dev['obs'].send_to_user("Extensive focus center " + str(foc_pos) + " FWHM: " + str(spot), p_level='INFO')
+            g_dev['obs'].send_to_user("Extensive focus position " + str(foc_pos) + " FWHM: " + str(spot), p_level='INFO')
             
             if spot != False:
                 extensive_focus.append([foc_pos, spot, lsources])
@@ -4501,7 +4434,7 @@ class Sequencer:
                 plog ("spot failed on extensive focus script")
                 plog(traceback.format_exc())
 
-            g_dev['obs'].send_to_user("Extensive focus center " + str(foc_pos) + " FWHM: " + str(spot), p_level='INFO')
+            g_dev['obs'].send_to_user("Extensive focus position " + str(foc_pos) + " FWHM: " + str(spot), p_level='INFO')
             extensive_focus.append([foc_pos, spot, lsources])
             plog(extensive_focus)
         
