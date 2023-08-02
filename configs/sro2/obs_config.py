@@ -430,11 +430,11 @@ site_config = {
             'correct_focus_for_temperature' : False,
             'maximum_good_focus_in_arcsecond': 2.5, # highest value to consider as being in "good focus". Used to select last good focus value
             
-            'reference': 23000,    #  20210313  Nominal at 10C Primary temperature
-            'ref_temp':  6265.0,    #  Update when pinning reference
-            'coef_c': 0,   #  Negative means focus moves out as Primary gets colder
-            'coef_0': 23000,  #  Nominal intercept when Primary is at 0.0 C.
-            'coef_date':  '20220914',    #This appears to be sensible result 44 points -13 to 3C'reference':  6431,    #  Nominal at 10C Primary temperature
+            'reference': 23500,    #  20210313  Nominal at 10C Primary temperature
+            #'ref_temp':  6265.0,    #  Update when pinning reference
+            #'coef_c': 0,   #  Negative means focus moves out as Primary gets colder
+            'coef_0': 23500,  #  Nominal intercept when Primary is at 0.0 C.
+            #'coef_date':  '20220914',    #This appears to be sensible result 44 points -13 to 3C'reference':  6431,    #  Nominal at 10C Primary temperature
             # #F9 setup
             # 'reference': 4375,    #   Guess 20210904  Nominal at 10C Primary temperature
             # 'ref_temp':  27.,    #  Update when pinning reference
