@@ -831,7 +831,7 @@ site_config = {       #the NAME "SITE" IS INCONSISTENT  bIG CHANGE TO EFFECT, ob
                 'crop_preview_ytop': 2,
                 'crop_preview_xleft': 2,
                 'crop_preview_xright': 2,
-                'temp_setpoint': 0,  # Verify we can go colder, this system has a chiller
+                'temp_setpoint': -5,  # Verify we can go colder, this system has a chiller
                 'has_chiller': False,
                 'calib_setpoints': [-0, -0, -0, -0, -0, -0, \
                                     -0, -0, -0, -0, -0, -0],
