@@ -456,14 +456,12 @@ class Focuser:
             adjust = 0.0            
             
             
-            if abs(temp_delta) > 0.1 and self.last_temperature is not None:
+            # adjust for temperature if we have the correct information.
+            if abs(temp_delta) > 0.1 and self.last_temperature is not None and self.focus_temp_slope is not None and self.focus_temp_intercept is not None:
                 adjust = round(temp_delta * float(self.focus_temp_slope), 1)
                 
             adjust += g_dev["fil"].filter_offset
-    
-
-            
-            
+                
             req = {"position": str(self.last_known_focus + adjust)}
             opt = {}
             self.move_absolute_command(req, opt)
@@ -658,9 +656,12 @@ class Focuser:
             self.obsid_path + "ptr_night_shelf/" + self.camera_name + str(g_dev['obs'].name), writeback=True
         )
         try:
-            f_temp = (
-                self.focuser.Temperature
-            )  # NB refering a quantity possibly from WEMA if no focus temp available.
+            if self.theskyx:
+                f_temp= self.focuser.focTemperature
+            else:            
+                f_temp = (
+                    self.focuser.Temperature
+                )  # NB refering a quantity possibly from WEMA if no focus temp available.
         except:  # Note above in temp comp, sro has no temp probe on gemini
             try:
                 f_temp = g_dev["ocn"].status["temperature_C"]
@@ -709,7 +710,7 @@ class Focuser:
             # Cacluate the temperature coefficient and zero point
             tempvalues=[]
             for item in previous_focus:
-                if item[2] < max_arcsecond and item[1] !=False:
+                if item[2] < max_arcsecond and item[2] != 0 and item[1] !=False:
                     tempvalues.append([item[0],item[1]])
             if len(tempvalues) > 10:
                 tempvalues=np.array(tempvalues)
@@ -725,7 +726,7 @@ class Focuser:
             
             # Figure out best last focus position
             for item in previous_focus:
-                if item[2] < max_arcsecond and item[1] !=False:
+                if item[2] < max_arcsecond and item[2] != 0 and item[1] !=False:
                     plog ("Best previous focus is at: " +str(item))
                     return item[1], item[4], focus_temp_slope, focus_temp_intercept
             
