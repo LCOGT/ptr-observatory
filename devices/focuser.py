@@ -128,6 +128,7 @@ class Focuser:
         #return float(self.config["reference"])
 
     def get_status(self):
+        #breakpoint()
         try:
             
             if self.theskyx:
@@ -140,7 +141,7 @@ class Focuser:
                         ),  # THIS occasionally glitches, usually no temp probe on Gemini
                         "focus_temperature": self.focuser.focTemperature,
                         #"focus_moving": False,
-                        "comp": self.config["coef_c"],
+                        "comp": self.focus_temp_slope,
                         "filter_offset": g_dev["fil"].filter_offset,
                     }
                 except Exception as e:
@@ -158,7 +159,7 @@ class Focuser:
                             ),  # THIS occasionally glitches, usually no temp probe on Gemini
                             "focus_temperature": self.focuser.focTemperature,
                             #"focus_moving": False,
-                            "comp": self.config["coef_c"],
+                            "comp": self.focus_temp_slope,
                             "filter_offset": g_dev["fil"].filter_offset,
                         }
                     except Exception as e:
@@ -176,7 +177,7 @@ class Focuser:
                     ),  # THIS occasionally glitches, usually no temp probe on Gemini
                     "focus_temperature": self.focuser.Temperature,
                     "focus_moving": self.focuser.IsMoving,
-                    "comp": self.config["coef_c"],
+                    "comp": self.focus_temp_slope,
                     "filter_offset": g_dev["fil"].filter_offset,
                 }
             else:
@@ -186,7 +187,7 @@ class Focuser:
                     ),  # THIS occasionally glitches, usually no temp probe on Gemini
                     "focus_temperature": self.focuser.Temperature,
                     "focus_moving": self.focuser.IsMoving,
-                    "comp": self.config["coef_c"],
+                    "comp": self.focus_temp_slope,
                     "filter_offset": 0.0,
                 }
         except Exception as e:
