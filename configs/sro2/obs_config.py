@@ -724,8 +724,8 @@ site_config = {
                 'can_set_gain':  True,
                 'camera_gain':   1.40, #[10., 10., 10., 10.],     #  One val for each binning.
                 'camera_gain_stdev':   0.5, #[10., 10., 10., 10.],     #  One val for each binning.
-                'read_noise':  1.92, #[9, 9, 9, 9],    #  All SWAGs right now
-                'read_noise_stdev':   0.003, #[10., 10., 10., 10.],     #  One val for each binning.
+                'read_noise':  5.49, #[9, 9, 9, 9],    #  All SWAGs right now
+                'read_noise_stdev':   0.03, #[10., 10., 10., 10.],     #  One val for each binning.
                 #'reference_dark': [0.0, 0.0, 0.0, 0.0],     #  Might these best be pedastal values?  NO!
                                     #hdu.header['RDMODE'] = (self.config['camera'][self.name]['settings']['read_mode'], 'Camera read mode')
                     #hdu.header['RDOUTM'] = (self.config['camera'][self.name]['readout_mode'], 'Camera readout mode')

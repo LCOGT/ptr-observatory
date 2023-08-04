@@ -2909,7 +2909,7 @@ class Sequencer:
                         elif evening and exp_time < min_exposure:
                              if time.time()-slow_report_timer > 120:
                                  plog("Too bright for " + str(current_filter) + " filter, waiting. Est. Exptime: " + str(exp_time))
-                                 g_dev["obs"].send_to_user("Sky is too bright for " + str(current_filter) + " filter, waiting. Est. Exptime: " + str(exp_time))  
+                                 g_dev["obs"].send_to_user("Sky is too bright for " + str(current_filter) + " filter, waiting for sky to dim. Current estimated Exposure time: " + str(exp_time))  
                                  slow_report_timer=time.time()
                              self.estimated_first_flat_exposure = False
                              if time.time() >= self.time_of_next_slew:
@@ -2920,7 +2920,7 @@ class Sequencer:
                         elif morn and exp_time > max_exposure :  
                              if time.time()-slow_report_timer > 120:                                 
                                  plog("Too dim for " + str(current_filter) + " filter, waiting. Est. Exptime:  " + str(exp_time))
-                                 g_dev["obs"].send_to_user("Sky is too dim for " + str(current_filter) + " filter, waiting. Est. Exptime: " + str(exp_time))  
+                                 g_dev["obs"].send_to_user("Sky is too dim for " + str(current_filter) + " filter, waiting for sky to brighten. Current estimated Exposure time: " + str(exp_time))  
                                  slow_report_timer=time.time()
                              self.estimated_first_flat_exposure = False
                              if time.time() >= self.time_of_next_slew:
