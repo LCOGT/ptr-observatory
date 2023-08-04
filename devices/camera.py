@@ -2262,7 +2262,7 @@ class Camera:
                             # low values SHOULD be ok. 
                             #if (self.camera_known_gain - 3 *self.camera_known_gain_stdev) < cge_gain < (self.camera_known_gain + 3 *self.camera_known_gain_stdev):
                             if cge_gain < (self.camera_known_gain + 3 *self.camera_known_gain_stdev):
-                                g_dev["obs"].send_to_user('Good flat value:  ' +str(central_median) + 'Good Gain: ' + str(cge_gain))
+                                g_dev["obs"].send_to_user('Good flat value:  ' +str(central_median) + ' Good Gain: ' + str(cge_gain))
                                 plog('Good flat value:  ' +str(central_median) + ' Good Gain: ' + str(cge_gain))    
                                 
                             elif (not self.config['camera']['camera_1_1']['settings']['reject_new_flat_by_known_gain']):

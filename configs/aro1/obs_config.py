@@ -543,8 +543,8 @@ site_config = {
                 
 
                 'filter_screen_sort':  [1],   # don't use narrow yet,  8, 10, 9], useless to try.
-                'filter_sky_sort': ['S2','N2','up','HA','CR','O3','zs','zp','Ic','PR','rp','JB','PG', \
-                                    'ip','Rc','JV','NIR','PB','gp','PL','EXO','air'],
+                'filter_sky_sort': ['S2','N2','up','HA','CR','O3','zs','zp','BI','PR','rp','BB','PG', \
+                                    'ip','BR','JV','NIR','PB','gp','PL','EXO','air'],
                 
                 
                 #'filter_sky_sort': [ 27, 26, 25, 28, 12, 7, 24, 18, 23, 10, 20, 17, 9,\
