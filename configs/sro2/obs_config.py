@@ -766,7 +766,7 @@ site_config = {
                 #'dark_length' : 1,
                 'number_of_bias_to_collect' : 32,
                 'number_of_dark_to_collect' : 32,
-                'number_of_flat_to_collect' : 8,
+                'number_of_flat_to_collect' : 10,
                 'number_of_bias_to_store' : 32,
                 'number_of_dark_to_store' : 32,
                 'number_of_flat_to_store' : 32,
