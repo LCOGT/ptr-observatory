@@ -2437,16 +2437,16 @@ sel
                             # break
     
                         # If we are WAY out of range, then reset the mount reference and attempt moving back there.
-                        elif (
-                            err_ha * 15 * 3600 > 3600
-                            or err_dec * 3600 > 3600
-                            or err_ha * 15 * 3600 < -3600
-                            or err_dec * 3600 < -3600
-                        ) and self.config["mount"]["mount1"][
-                            "permissive_mount_reset"
-                        ] == "yes":
-                            g_dev["mnt"].reset_mount_reference()
-                            plog("I've  reset the mount_reference.")
+                        elif (abs(err_ha * 15 * 3600) > 5400) or (abs(err_dec * 3600) > 5400):
+                            #err_ha * 15 * 3600 > 3600
+                            #or err_dec * 3600 > 3600
+                            #or err_ha * 15 * 3600 < -3600
+                            #or err_dec * 3600 < -3600
+                         #and self.config["mount"]["mount1"][
+                         #   "permissive_mount_reset"
+                        #] == "yes":
+                            #g_dev["mnt"].reset_mount_reference()
+                            #plog("I've  reset the mount_reference.")
                             #g_dev["mnt"].current_icrs_ra = solved_ra
                             #    "ra_j2000_hours"
                             # ]
@@ -2459,7 +2459,8 @@ sel
                             plog("Platesolve has found that the current suggested pointing is way off!")
                             plog("This may be a poor pointing estimate.")
                             plog("This is more than a simple nudge, so not nudging the scope.")
-                            
+                            g_dev["mnt"].reset_mount_reference()
+                            plog("I've  reset the mount_reference.")
                             
                             #plog("Platesolve is requesting to move back on target!")
                             #g_dev['mnt'].mount.SlewToCoordinatesAsync(target_ra, target_dec)
