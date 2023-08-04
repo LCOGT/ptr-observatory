@@ -707,7 +707,7 @@ site_config = {
                 'east_offset': 0.0,     #  Not sure why these three are even here.
                 'rotation': 0.0,        #  Probably remove.
                 'min_exposure': 0.2,
-                'min_flat_exposure' : 1.0, # For certain shutters, short exposures aren't good for flats. Some CMOS have banding in too short an exposure. Largely applies to ccds though.
+                'min_flat_exposure' : 3.0, # For certain shutters, short exposures aren't good for flats. Some CMOS have banding in too short an exposure. Largely applies to ccds though.
                 'max_flat_exposure' : 45.0, # Realistically there should be a maximum flat_exposure that makes sure flats are efficient and aren't collecting actual stars.
                 'reject_new_flat_by_known_gain' : True,
                 'max_exposure': 3600,
@@ -724,8 +724,8 @@ site_config = {
                 'can_set_gain':  True,
                 'camera_gain':   1.40, #[10., 10., 10., 10.],     #  One val for each binning.
                 'camera_gain_stdev':   0.5, #[10., 10., 10., 10.],     #  One val for each binning.
-                'read_noise':  1.92, #[9, 9, 9, 9],    #  All SWAGs right now
-                'read_noise_stdev':   0.003, #[10., 10., 10., 10.],     #  One val for each binning.
+                'read_noise':  5.49, #[9, 9, 9, 9],    #  All SWAGs right now
+                'read_noise_stdev':   0.03, #[10., 10., 10., 10.],     #  One val for each binning.
                 #'reference_dark': [0.0, 0.0, 0.0, 0.0],     #  Might these best be pedastal values?  NO!
                                     #hdu.header['RDMODE'] = (self.config['camera'][self.name]['settings']['read_mode'], 'Camera read mode')
                     #hdu.header['RDOUTM'] = (self.config['camera'][self.name]['readout_mode'], 'Camera readout mode')
@@ -766,7 +766,7 @@ site_config = {
                 #'dark_length' : 1,
                 'number_of_bias_to_collect' : 32,
                 'number_of_dark_to_collect' : 32,
-                'number_of_flat_to_collect' : 8,
+                'number_of_flat_to_collect' : 10,
                 'number_of_bias_to_store' : 32,
                 'number_of_dark_to_store' : 32,
                 'number_of_flat_to_store' : 32,
