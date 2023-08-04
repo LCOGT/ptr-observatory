@@ -3136,21 +3136,23 @@ sel
         # This block repeats itself in various locations to try and nudge the scope
         # If the platesolve requests such a thing.
         if g_dev['obs'].pointing_correction_requested_by_platesolve_thread:
-            g_dev['obs'].pointing_correction_requested_by_platesolve_thread = False
+            
             if g_dev['obs'].pointing_correction_request_time > g_dev['obs'].time_of_last_slew:  # Check it hasn't slewed since request
                 
                 if self.auto_centering_off:
                     plog ("Telescope off-center, but auto-centering turned off")
-                elif g_dev['seq'].block_guard == True and self.block_center_in_process == False:
-                    self.block_center_in_process = True
-                    g_dev['seq'].centering_exposure(no_confirmation=True)
-                    self.block_center_in_process = False
+                #elif g_dev['seq'].block_guard == True and self.block_center_in_process == False:
+                #    self.block_center_in_process = True
+                #    g_dev['seq'].centering_exposure(no_confirmation=True)
+                #    self.block_center_in_process = False
                 else:
                     plog("Re-centering Telescope Slightly.")
                     self.send_to_user("Re-centering Telescope Slightly.")
                     g_dev['mnt'].mount.SlewToCoordinatesAsync(g_dev['obs'].pointing_correction_request_ra, g_dev['obs'].pointing_correction_request_dec)
                     g_dev['obs'].time_of_last_slew = time.time()
                     wait_for_slew()
+                    
+            g_dev['obs'].pointing_correction_requested_by_platesolve_thread = False
     
     def get_enclosure_status_from_aws(self):
         

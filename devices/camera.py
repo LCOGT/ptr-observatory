@@ -1750,7 +1750,7 @@ class Camera:
                                     plog ("temperature out of range for calibrations ("+ str(current_camera_temperature)+"), NOT attempting calibration frame")
                                     g_dev['obs'].camera_temperature_in_range_for_calibrations = False
                                     self.expresult = {}
-                                    self.expresult["error":True]
+                                    self.expresult["error"] = True
                                     self.exposure_busy = False
                                     return self.expresult
                                     
@@ -2262,15 +2262,15 @@ class Camera:
                             # low values SHOULD be ok. 
                             #if (self.camera_known_gain - 3 *self.camera_known_gain_stdev) < cge_gain < (self.camera_known_gain + 3 *self.camera_known_gain_stdev):
                             if cge_gain < (self.camera_known_gain + 3 *self.camera_known_gain_stdev):
-                                g_dev["obs"].send_to_user('Good flat value:  ' +str(central_median) + ' Good Gain: ' + str(cge_gain))
+                                g_dev["obs"].send_to_user('Good flat value:  ' +str(int(central_median)) + ' Good Gain: ' + str(round(cge_gain,2)))
                                 plog('Good flat value:  ' +str(central_median) + ' Good Gain: ' + str(cge_gain))    
                                 
                             elif (not self.config['camera']['camera_1_1']['settings']['reject_new_flat_by_known_gain']):
-                                g_dev["obs"].send_to_user('Good flat value:  ' +str(central_median) + ' Bad Gain: ' + str(cge_gain) + ' Flat rejection by gain is off.')    
+                                g_dev["obs"].send_to_user('Good flat value:  ' +str(int(central_median)) + ' Bad Gain: ' + str(round(cge_gain,2)) + ' Flat rejection by gain is off.')    
                                 plog('Good flat value:  ' +str(central_median) + ' Bad Gain: ' + str(cge_gain) + ' Flat rejection by gain is off.')    
                             
                             else:
-                                g_dev["obs"].send_to_user('Good flat value:  ' +str(central_median) + ' Bad Gain: ' + str(cge_gain) + ' Flat rejected.')    
+                                g_dev["obs"].send_to_user('Good flat value:  ' +str(int(central_median)) + ' Bad Gain: ' + str(round(cge_gain,2)) + ' Flat rejected.')    
                                 plog('Good flat value:  ' +str(central_median) + ' Bad Gain: ' + str(cge_gain) + ' Flat rejected.')    
                                 self.expresult["error"] = True
                                 self.expresult["patch"] = central_median

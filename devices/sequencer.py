@@ -1206,7 +1206,7 @@ class Sequencer:
             # Otherwise everyone will get slightly off-pointing images
             # Necessary
             plog ("Taking a quick pointing check and re_seek for new project block")
-            result = self.centering_exposure()
+            result = self.centering_exposure(no_confirmation=True)
             
             
             # This actually replaces the "requested" dest_ra by the actual centered pointing ra and dec. 
@@ -2909,7 +2909,7 @@ class Sequencer:
                         elif evening and exp_time < min_exposure:
                              if time.time()-slow_report_timer > 120:
                                  plog("Too bright for " + str(current_filter) + " filter, waiting. Est. Exptime: " + str(exp_time))
-                                 g_dev["obs"].send_to_user("Sky is too bright for " + str(current_filter) + " filter, waiting. Est. Exptime: " + str(exp_time))  
+                                 g_dev["obs"].send_to_user("Sky is too bright for " + str(current_filter) + " filter, waiting for sky to dim. Current estimated Exposure time: " + str(round(exp_time,2)) +'s')  
                                  slow_report_timer=time.time()
                              self.estimated_first_flat_exposure = False
                              if time.time() >= self.time_of_next_slew:
@@ -2920,7 +2920,7 @@ class Sequencer:
                         elif morn and exp_time > max_exposure :  
                              if time.time()-slow_report_timer > 120:                                 
                                  plog("Too dim for " + str(current_filter) + " filter, waiting. Est. Exptime:  " + str(exp_time))
-                                 g_dev["obs"].send_to_user("Sky is too dim for " + str(current_filter) + " filter, waiting. Est. Exptime: " + str(exp_time))  
+                                 g_dev["obs"].send_to_user("Sky is too dim for " + str(current_filter) + " filter, waiting for sky to brighten. Current estimated Exposure time: " + str(round(exp_time,2))+'s') 
                                  slow_report_timer=time.time()
                              self.estimated_first_flat_exposure = False
                              if time.time() >= self.time_of_next_slew:
@@ -5124,7 +5124,13 @@ class Sequencer:
             g_dev["obs"].send_to_user("Pointing adequate on first slew. Slew & Center complete.") 
             return result
         else:
-            g_dev['obs'].check_platesolve_and_nudge()
+            g_dev['obs'].check_platesolve_and_nudge()        
+            # Wait until pointing correction fixed before moving on
+            while g_dev['obs'].pointing_correction_requested_by_platesolve_thread:
+                plog ("waiting for pointing_correction_to_finish")
+                time.sleep(0.5)
+            
+        
         
         if no_confirmation == True:
             return result
