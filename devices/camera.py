@@ -1750,7 +1750,7 @@ class Camera:
                                     plog ("temperature out of range for calibrations ("+ str(current_camera_temperature)+"), NOT attempting calibration frame")
                                     g_dev['obs'].camera_temperature_in_range_for_calibrations = False
                                     self.expresult = {}
-                                    self.expresult["error":True]
+                                    self.expresult["error"] = True
                                     self.exposure_busy = False
                                     return self.expresult
                                     
