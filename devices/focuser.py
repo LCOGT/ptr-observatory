@@ -669,14 +669,14 @@ class Focuser:
             except:
                 f_temp = None
 
-        if not f_temp == None:
+        if not f_temp == None and (-10 < f_temp < 40):
             #breakpoint()
             if "af_log" in cam_shelf:
                 cam_shelf["af_log"].append(
-                    (f_temp, ref, round(fwhm, 2), round(solved, 2), datetime.datetime.now().isoformat())
+                    (f_temp, ref, round(fwhm, 2), round(solved, 2), datetime.datetime.utcnow().isoformat())
                 )
             else : # create af log if it doesn't exist
-                cam_shelf["af_log"]=[(f_temp, ref, round(fwhm, 2), round(solved, 2), datetime.datetime.now().isoformat())]
+                cam_shelf["af_log"]=[(f_temp, ref, round(fwhm, 2), round(solved, 2), datetime.datetime.utcnow().isoformat())]
         else:
             f_temp=15.0
             plog ("getting f_temp failed, using 15 degrees C")
@@ -711,7 +711,7 @@ class Focuser:
             # Cacluate the temperature coefficient and zero point
             tempvalues=[]
             for item in previous_focus:
-                if item[2] < max_arcsecond and item[2] != 0 and item[1] !=False:
+                if item[2] < max_arcsecond and item[2] != 0 and item[1] !=False and -10 < item[0] < 40 :
                     tempvalues.append([item[0],item[1]])
             if len(tempvalues) > 10:
                 tempvalues=np.array(tempvalues)
@@ -727,7 +727,7 @@ class Focuser:
             
             # Figure out best last focus position
             for item in previous_focus:
-                if item[2] < max_arcsecond and item[2] != 0 and item[1] !=False:
+                if item[2] < max_arcsecond and item[2] != 0 and item[1] !=False and -10 < item[0] < 40 :
                     plog ("Best previous focus is at: " +str(item))
                     return item[1], item[4], focus_temp_slope, focus_temp_intercept
             
