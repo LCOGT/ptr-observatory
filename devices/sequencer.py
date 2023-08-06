@@ -664,9 +664,9 @@ class Sequencer:
             self.extensive_focus_script(req2, opt, throw = g_dev['foc'].throw)
 
             # Pointing
-            req = {'time': self.config['focus_exposure_time'],  'alias':  str(self.config['camera']['camera_1_1']['name']), 'image_type': 'focus'}   #  NB Should pick up filter and constats from config
+            req = {'time': self.config['pointing_exposure_time'],  'alias':  str(self.config['camera']['camera_1_1']['name']), 'image_type': 'focus'}   #  NB Should pick up filter and constats from config
             #opt = {'area': 150, 'count': 1, 'bin': '2, 2', 'filter': 'focus'}
-            opt = {'area': 150, 'count': 1, 'bin': 1, 'filter': 'focus'}
+            opt = {'area': 150, 'count': 1, 'bin': 1, 'filter': 'pointing'}
             g_dev['cam'].expose_command(req, opt, user_id='Tobor', user_name='Tobor', user_roles='system', no_AWS=False, solve_it=True)
             
             
@@ -3401,7 +3401,7 @@ class Sequencer:
 
             req = {'time': self.config['focus_exposure_time'],  'alias':  str(self.config['camera']['camera_1_1']['name']), 'image_type': 'focus'}   #  NB Should pick up filter and constats from config
 
-            opt = {'area': 150, 'count': 1, 'bin': 1, 'filter': 'focus'}
+            opt = {'area': 150, 'count': 1, 'bin': 1, 'filter': 'pointing'}
         else:
             pass   #Just take an image where currently pointed.
             req = {'time': self.config['focus_exposure_time'],  'alias':  str(self.config['camera']['camera_1_1']['name']), 'image_type': 'focus'}   #  NB Should pick up filter and constats from config
@@ -4937,7 +4937,7 @@ class Sequencer:
             #time.sleep(1)  #Give a little extra time for mount to settle.
             g_dev['obs'].update_status()
             req = { 'time': self.config['pointing_exposure_time'],  'alias':  str(self.config['camera']['camera_1_1']['name']), 'image_type': 'light'}
-            opt = { 'area': 100, 'count': 1,  'filter': 'focus'}
+            opt = { 'area': 100, 'count': 1,  'filter': 'pointing'}
             result = g_dev['cam'].expose_command(req, opt)
             
             
@@ -5070,7 +5070,7 @@ class Sequencer:
         
         
         req = {'time': self.config['pointing_exposure_time'],  'alias':  str(self.config['camera']['camera_1_1']['name']), 'image_type': 'pointing'}   #  NB Should pick up filter and constats from config
-        opt = {'area': 100, 'count': 1, 'filter': 'focus'}
+        opt = {'area': 100, 'count': 1, 'filter': 'pointing'}
         
         
         
@@ -5149,7 +5149,7 @@ class Sequencer:
             
             # Taking a confirming shot. 
             req = {'time': self.config['pointing_exposure_time'],  'alias':  str(self.config['camera']['camera_1_1']['name']), 'image_type': 'light'}   #  NB Should pick up filter and constats from config
-            opt = {'area': 100, 'count': 1, 'filter': 'focus'}
+            opt = {'area': 100, 'count': 1, 'filter': 'pointing'}
             result = g_dev['cam'].expose_command(req, opt, user_id='Tobor', user_name='Tobor', user_roles='system', no_AWS=True, solve_it=True)
             
             if self.stop_script_called:
