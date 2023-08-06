@@ -509,6 +509,10 @@ class FilterWheel:
                 ["w", "W", "L", "Lum", "LUM", "PL", "clear", "focus", 'silica'],
                 ["w", "Lum", "PL", "clear", 'silica'],
             ),  # white clear
+            (
+                ["pointing"],
+                ["JV", "BV","PG", "V", "ip", "Ic", "BI", "JB", "BB", "gp", "PB", "EXO", "w", "Lum", "PL", "clear", 'silica'],
+            ),  # filters ordered in least affected by nebula for quality pointing estimates.
         ]
 
         priority_order = []
