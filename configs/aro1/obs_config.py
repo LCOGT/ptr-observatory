@@ -40,7 +40,7 @@ site_config = {
     # The scope will only do what you tell it
     # This DOESN'T turn some safetys off 
     'scope_in_manual_mode' : False,
-    'mount_reference_model_off': False,
+    'mount_reference_model_off': True,
     'sun_checks_off': False,
     'altitude_checks_off': False,    
     'daytime_exposure_time_safety_off': False,
@@ -165,7 +165,7 @@ site_config = {
     'periodic_focus_time' : 2.0, # This is a time, in hours, over which to bypass automated focussing (e.g. at the start of a project it will not refocus if a new project starts X hours after the last focus)
     'stdev_fwhm' : 0.5, # This is the expected variation in FWHM at a given telescope/camera/site combination. This is used to check if a fwhm is within normal range or the focus has shifted
     'focus_exposure_time': 10,  # Exposure time in seconds for exposure image
-    'pointing_exposure_time': 20,  # Exposure time in seconds for pointing run image
+    'pointing_exposure_time': 30,  # Exposure time in seconds for pointing run image
     'pointing_correction_dec_multiplier' : 1,
     'pointing_correction_ra_multiplier' : 1,
     
