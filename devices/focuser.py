@@ -664,10 +664,10 @@ class Focuser:
                     self.focuser.Temperature
                 )  # NB refering a quantity possibly from WEMA if no focus temp available.
         except:  # Note above in temp comp, sro has no temp probe on gemini
-            try:
-                f_temp = g_dev["ocn"].status["temperature_C"]
-            except:
-                f_temp = None
+            #try:
+            #    f_temp = g_dev["ocn"].status["temperature_C"]
+            #except:
+            f_temp = None
 
         if not f_temp == None and (-10 < f_temp < 40):
             #breakpoint()

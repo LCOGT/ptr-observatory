@@ -30,7 +30,7 @@ site_config = {       #the NAME "SITE" IS INCONSISTENT  bIG CHANGE TO EFFECT, ob
     # The scope will only do what you tell it
     # This DOESN'T turn some safetys off 
     'scope_in_manual_mode': False,
-    'mount_reference_model_off': False,
+    'mount_reference_model_off': True,
     'sun_checks_off': False,
     'altitude_checks_off': False,    
     'daytime_exposure_time_safety_off': False,
@@ -870,7 +870,7 @@ site_config = {       #the NAME "SITE" IS INCONSISTENT  bIG CHANGE TO EFFECT, ob
                 'y_pixel':  5.94,
 
                 'pix_scale': 0.478039,    #   bin-2  2* math.degrees(math.atan(3.76/2563000))*3600
-                '1x1_pix_scale': 0.478039,    #  This is the 1x1 binning pixelscale
+                '1x1_pix_scale': 0.4777272,    #  This is the 1x1 binning pixelscale
                 'native_bin': 1, # Needs to be simple, it will recalculate things on the 1x1 binning pixscale above.
                 
                 # The drizzle_value is by the new pixelscale
