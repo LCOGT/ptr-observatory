@@ -1209,10 +1209,12 @@ class Mount:
         #self.object = opt.get("object", "")
         if self.object == "":
            # plog("Go to unamed target.")
-            g_dev['obs'].send_to_user("Slewing telescope to un-named target!  ",  p_level="INFO")
+            if not silent:
+                g_dev['obs'].send_to_user("Slewing telescope to un-named target!  ",  p_level="INFO")
         else:
             #plog("Going to:  ", self.object)   #NB Needs cleaning up.
-            g_dev['obs'].send_to_user("Slewing telescope to:  " + str( self.object),  p_level="INFO")
+            if not silent:
+                g_dev['obs'].send_to_user("Slewing telescope to:  " + str( self.object),  p_level="INFO")
         
         
         #print ("ra sent to go_coord " + str(ra))
@@ -1470,7 +1472,8 @@ class Mount:
         g_dev['obs'].last_solve_time = datetime.datetime.now() - datetime.timedelta(days=1)
         g_dev['obs'].images_since_last_solve = 10000
         wait_for_slew()   
-        g_dev['obs'].send_to_user("Slew Complete.")
+        if not silent:
+            g_dev['obs'].send_to_user("Slew Complete.")
         
         
         # ###  figure out velocity  Apparent place is unchanged.
