@@ -273,11 +273,14 @@ else:
 
     try:
         # Some of these are liberated from BANZAI
-        bkg = sep.Background(focusimg)
+        #bkg = sep.Background(focusimg)
+
+        bkg = sep.Background(focusimg, bw=32, bh=32, fw=3, fh=3)
+        bkg.subfrom(focusimg)
 
         sepsky = (np.nanmedian(bkg), "Sky background estimated by SEP")
 
-        focusimg -= bkg
+        #focusimg -= bkg
         ix, iy = focusimg.shape
         border_x = int(ix * 0.05)
         border_y = int(iy * 0.05)
