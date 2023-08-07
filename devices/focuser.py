@@ -460,8 +460,11 @@ class Focuser:
                 adjust = round(temp_delta * float(self.focus_temp_slope), 1)
                 
             # adjust for filter offset
-                            
-            adjust += (g_dev["fil"].filter_offset)
+            # it is try/excepted because some telescopes don't have filters
+            try:
+                adjust += (g_dev["fil"].filter_offset)
+            except:
+                pass
             
             
             if self.theskyx:
@@ -490,7 +493,9 @@ class Focuser:
                     self.last_temperature = None
             
         except:
+            #plog (traceback.format_exc())
             plog("Focus-adjust: no changes made.")
+            #breakpoint()
         
 
     def guarded_move(self, to_focus):
