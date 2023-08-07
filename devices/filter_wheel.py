@@ -511,7 +511,7 @@ class FilterWheel:
             ),  # white clear
             (
                 ["pointing"],
-                ["JV", "BV" ,"V","PG", "ip", "Ic", "BI", "JB", "BB", "gp", "PB", "EXO", "w", "Lum", "PL", "clear", 'silica'],
+                ["JB", "BB", "gp", "PB", "JV", "BV" ,"V","PG", "ip", "Ic", "BI", "EXO", "w", "Lum", "PL", "clear", 'silica'],
             ),  # filters ordered in least affected by nebula for quality pointing estimates.
         ]
 

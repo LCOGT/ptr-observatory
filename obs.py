@@ -2373,7 +2373,7 @@ sel
                     # Essentially wait until the subprocess is complete
                     platesolve_subprocess.communicate()
                     
-
+                    #breakpoint()
                     if os.path.exists(self.local_calibration_path + 'platesolve.pickle'):
                         solve= pickle.load(open(self.local_calibration_path + 'platesolve.pickle', 'rb'))                    
                     else:

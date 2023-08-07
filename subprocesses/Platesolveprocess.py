@@ -82,11 +82,12 @@ focusimg = np.array(
 
 
 # Some of these are liberated from BANZAI
-bkg = sep.Background(focusimg)
+bkg = sep.Background(focusimg, bw=32, bh=32, fw=3, fh=3)
 
 #sepsky = ( np.nanmedian(bkg), "Sky background estimated by SEP" )
 
-focusimg -= bkg
+#focusimg -= bkg
+bkg.subfrom(focusimg)
 ix, iy = focusimg.shape
 #border_x = int(ix * 0.05)
 #border_y = int(iy * 0.05)
@@ -99,7 +100,7 @@ if minarea < 5:  # There has to be a min minarea though!
     minarea = 5
 
 sources = sep.extract(
-    focusimg, 5.0, err=bkg.globalrms, minarea=minarea
+    focusimg, 3, err=bkg.globalrms, minarea=minarea
 )
 
 #plog ("min_area: " + str(minarea))
@@ -158,25 +159,49 @@ sources['FWHM'], _ = sep.flux_radius(focusimg, sources['x'], sources['y'], sourc
                                      subpix=5)
 
 
+# BANZAI prune nans from table
+nan_in_row = np.zeros(len(sources), dtype=bool)
+for col in sources.colnames:
+    nan_in_row |= np.isnan(sources[col])
+sources = sources[~nan_in_row]
+
 #sources = sources[sources['FWHM'] > (0.6 / (pixscale * platesolve_bin_factor))]
 #sources = sources[sources['FWHM'] > (minimum_realistic_seeing / (pixscale * platesolve_bin_factor))]
 sources = sources[sources['FWHM'] != 0]
 sources = sources[sources['FWHM'] > 0.5] 
-sources = sources[sources['FWHM'] < (np.median(sources['FWHM']) + (4 * np.std(sources['FWHM'])))]
+sources = sources[sources['FWHM'] < (np.nanmedian(sources['FWHM']) + (3 * np.nanstd(sources['FWHM'])))]
 
 sources = sources[sources['flux'] > 0]
 sources = sources[sources['flux'] < 1000000]
 
 
+# hdufocusdata = np.array(focusimg, dtype=np.int32)    
+# hdufocusdata[hdufocusdata < 0] = 200
+# hdufocus = fits.PrimaryHDU()
+# hdufocus.data = hdufocusdata
+# hdufocus.header = hduheader
+# hdufocus.header["NAXIS1"] = hdufocusdata.shape[0]
+# hdufocus.header["NAXIS2"] = hdufocusdata.shape[1]
+# hdufocus.writeto(cal_path + 'platesolvetemp.fits', overwrite=True, output_verify='silentfix')
+
+# breakpoint()
+
+#print (len(sources))
+
+
+#breakpoint()
+
 if len(sources) >= 2000:
     fraction_to_remove = 1-(2000/len(sources))
-    top_cut = fraction_to_remove * 0.25 * 100
-    bottom_cut = fraction_to_remove * 0.75 * 100
+    top_cut = fraction_to_remove * 0.1 * 100
+    bottom_cut = fraction_to_remove * 0.9 * 100
     top_percentile = np.percentile(sources['flux'],100-top_cut)
     bottom_percentile = np.percentile(sources['flux'],bottom_cut)
     #breakpoint()
     sources = sources[sources['flux'] > bottom_percentile]
     sources = sources[sources['flux'] < top_percentile]
+
+#print (len(sources))
 
 if len(sources) >= 15:
     
@@ -193,22 +218,37 @@ if len(sources) >= 15:
     synthetic_image = synthetic_image + 200
 
     #Bullseye Star Shape
-    modelstar = [[ 0.1 , 0.2 , 0.4,  0.2, 0.1], 
-                [ 0.2 , 0.4 , 0.8,  0.4, 0.2],
-                [ 0.4 , 0.8 , 1,  0.8, 0.4],
-                [ 0.2 , 0.4 , 0.8,  0.4, 0.2],
-                [ 0.1 , 0.2 , 0.4,  0.2, 0.1]]
+    # modelstar = [[ 0.1 , 0.2 , 0.4,  0.2, 0.1], 
+    #             [ 0.2 , 0.4 , 0.8,  0.4, 0.2],
+    #             [ 0.4 , 0.8 , 1,  0.8, 0.4],
+    #             [ 0.2 , 0.4 , 0.8,  0.4, 0.2],
+    #             [ 0.1 , 0.2 , 0.4,  0.2, 0.1]]
+    
+    modelstar = [
+                [ .01 , .05 , 0.1 , 0.2,  0.1, .05, .01],
+                [ .05 , 0.1 , 0.2 , 0.4,  0.2, 0.1, .05], 
+                [ 0.1 , 0.2 , 0.4 , 0.8,  0.4, 0.2, 0.1],
+                [ 0.2 , 0.4 , 0.8 , 1.2,  0.8, 0.4, 0.2],
+                [ 0.1 , 0.2 , 0.4 , 0.8,  0.4, 0.2, 0.1],
+                [ .05 , 0.1 , 0.2 , 0.4,  0.2, 0.1, .05],
+                [ .01 , .05 , 0.1 , 0.2,  0.1, .05, .01]
+                
+                ]
+    
+    
+    
     modelstar=np.array(modelstar)
 
     # Add bullseye stars to blank image
     for addingstar in sources:
         x = round(addingstar['x'] -1)
         y = round(addingstar['y'] -1)
-        peak = int(addingstar['peak'])    
+        peak = max(int(addingstar['peak']),int(2000))  
         # Add star to numpy array as a slice
         #print (peak)
         try:
-            synthetic_image[y-2:y+3,x-2:x+3] += peak*modelstar
+            synthetic_image[y-3:y+4,x-3:x+4] += peak*modelstar
+            #synthetic_image[y-3:y+4,x-3:x+4] += 10000*modelstar
         except Exception as e:
             print (e)
             breakpoint()
@@ -245,162 +285,24 @@ if len(sources) >= 15:
         # self.platesolve_queue.task_done()
         # break
     #else:
-
-    try:
+    
+       
+    
+    #try:
         # time.sleep(1) # A simple wait to make sure file is saved
-        solve = platesolve.platesolve(
-            #cal_path + 'platesolvetemp.fits', pixscale*platesolve_bin_factor
-            cal_path + 'platesolvetemp.fits', pixscale*platesolve_bin_factor)
-    except:
-        solve = 'error'
+    solve = platesolve.platesolve(
+        #cal_path + 'platesolvetemp.fits', pixscale*platesolve_bin_factor
+        cal_path + 'platesolvetemp.fits', pixscale*platesolve_bin_factor)
+    #except:
+    #    solve = 'error'
+    
+    #print (solve)
     
     #print (sources)
     #breakpoint()
     
     pickle.dump(solve, open(cal_path + 'platesolve.pickle', 'wb'))
     
-    #breakpoint()
-    #     #plog("Platesolve time to process: " + str(time.time() - psolve_timer_begin))
-
-    #     plog(
-    #         "PW Solves: ",
-    #         solve["ra_j2000_hours"],
-    #         solve["dec_j2000_degrees"],
-    #     )
-    #     # breakpoint()
-    #     #pointing_ra = g_dev['mnt'].mount.RightAscension
-    #     #pointing_dec = g_dev['mnt'].mount.Declination
-    #     #icrs_ra, icrs_dec = g_dev['mnt'].get_mount_coordinates()
-    #     #target_ra = g_dev["mnt"].current_icrs_ra
-    #     #target_dec = g_dev["mnt"].current_icrs_dec
-    #     target_ra = g_dev["mnt"].last_ra
-    #     target_dec = g_dev["mnt"].last_dec
-    #     solved_ra = solve["ra_j2000_hours"]
-    #     solved_dec = solve["dec_j2000_degrees"]
-    #     solved_arcsecperpixel = solve["arcsec_per_pixel"]
-    #     solved_rotangledegs = solve["rot_angle_degs"]
-    #     err_ha = target_ra - solved_ra
-    #     err_dec = target_dec - solved_dec
-    #     solved_arcsecperpixel = solve["arcsec_per_pixel"]
-    #     solved_rotangledegs = solve["rot_angle_degs"]
-    #     plog("Deviation from plate solution in ra: " + str(round(err_ha * 15 * 3600, 2)) + " & dec: " + str (round(err_dec * 3600, 2)) + " asec")
-
-    #     # breakpoint()
-    #     # Reset Solve timers
-    #     g_dev['obs'].last_solve_time = datetime.datetime.now()
-    #     g_dev['obs'].images_since_last_solve = 0
-
-    #     # Test here that there has not been a slew, if there has been a slew, cancel out!
-    #     if self.time_of_last_slew > time_platesolve_requested:
-    #         plog("detected a slew since beginning platesolve... bailing out of platesolve.")
-    #         # if not self.config['keep_focus_images_on_disk']:
-    #         #    os.remove(cal_path + cal_name)
-    #        # one_at_a_time = 0
-    #         # self.platesolve_queue.task_done()
-    #         # break
-
-    #     # If we are WAY out of range, then reset the mount reference and attempt moving back there.
-    #     elif (
-    #         err_ha * 15 * 3600 > 1200
-    #         or err_dec * 3600 > 1200
-    #         or err_ha * 15 * 3600 < -1200
-    #         or err_dec * 3600 < -1200
-    #     ) and self.config["mount"]["mount1"][
-    #         "permissive_mount_reset"
-    #     ] == "yes":
-    #         g_dev["mnt"].reset_mount_reference()
-    #         plog("I've  reset the mount_reference 1")
-    #         g_dev["mnt"].current_icrs_ra = solved_ra
-    #         #    "ra_j2000_hours"
-    #         # ]
-    #         g_dev["mnt"].current_icrs_dec = solved_dec
-    #         #    "dec_j2000_hours"
-    #         # ]
-    #         err_ha = 0
-    #         err_dec = 0
-
-    #         plog("Platesolve is requesting to move back on target!")
-    #         #g_dev['mnt'].mount.SlewToCoordinatesAsync(target_ra, target_dec)
-
-    #         self.pointing_correction_requested_by_platesolve_thread = True
-    #         self.pointing_correction_request_time = time.time()
-    #         self.pointing_correction_request_ra = target_ra
-    #         self.pointing_correction_request_dec = target_dec
-
-    #         # wait_for_slew()
-
-    #     else:
-
-    #         # If the mount has updatable RA and Dec coordinates, then sync that
-    #         # But if not, update the mount reference
-    #         # try:
-    #         #     # If mount has Syncable coordinates
-    #         #     g_dev['mnt'].mount.SyncToCoordinates(solved_ra, solved_dec)
-    #         #     # Reset the mount reference because if the mount has
-    #         #     # syncable coordinates, the mount should already be corrected
-    #         #     g_dev["mnt"].reset_mount_reference()
-
-    #         #     if (
-    #         #          abs(err_ha * 15 * 3600)
-    #         #          > self.config["threshold_mount_update"]
-    #         #          or abs(err_dec * 3600)
-    #         #          > self.config["threshold_mount_update"]
-    #         #      ):
-    #         #         #plog ("I am nudging the telescope slightly!")
-    #         #         #g_dev['mnt'].mount.SlewToCoordinatesAsync(target_ra, target_dec)
-    #         #         #wait_for_slew()
-    #         #         plog ("Platesolve is requesting to move back on target!")
-    #         #         self.pointing_correction_requested_by_platesolve_thread = True
-    #         #         self.pointing_correction_request_time = time.time()
-    #         #         self.pointing_correction_request_ra = target_ra
-    #         #         self.pointing_correction_request_dec = target_dec
-
-    #         # except:
-    #         # If mount doesn't have Syncable coordinates
-
-    #         if (
-    #             abs(err_ha * 15 * 3600)
-    #             > self.config["threshold_mount_update"]
-    #             or abs(err_dec * 3600)
-    #             > self.config["threshold_mount_update"]
-    #         ):
-
-    #             #plog ("I am nudging the telescope slightly!")
-    #             #g_dev['mnt'].mount.SlewToCoordinatesAsync(pointing_ra + err_ha, pointing_dec + err_dec)
-    #             # wait_for_slew()
-    #             #plog("Platesolve is requesting to move back on target!")
-    #             self.pointing_correction_requested_by_platesolve_thread = True
-    #             self.pointing_correction_request_time = time.time()
-    #             self.pointing_correction_request_ra = pointing_ra + err_ha
-    #             self.pointing_correction_request_dec = pointing_dec + err_dec
-
-    #             try:
-    #                 # if g_dev["mnt"].pier_side_str == "Looking West":
-    #                 if g_dev["mnt"].pier_side == 0:
-    #                     try:
-    #                         g_dev["mnt"].adjust_mount_reference(
-    #                             -err_ha, -err_dec
-    #                         )
-    #                     except Exception as e:
-    #                         plog("Something is up in the mount reference adjustment code ", e)
-    #                 else:
-    #                     try:
-    #                         g_dev["mnt"].adjust_flip_reference(
-    #                             -err_ha, -err_dec
-    #                         )  # Need to verify signs
-    #                     except Exception as e:
-    #                         plog("Something is up in the mount reference adjustment code ", e)
-
-    #             except:
-    #                 plog("This mount doesn't report pierside")
-    #                 plog(traceback.format_exc())
-    #     self.platesolve_is_processing = False
-    # except Exception as e:
-    #     plog(
-    #         "Image: did not platesolve; this is usually OK. ", e
-    #     )
-    #     plog(traceback.format_exc())
-
     try:
         os.remove(cal_path + 'platesolvetemp.fits')
     except:

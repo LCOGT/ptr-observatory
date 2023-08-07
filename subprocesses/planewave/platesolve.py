@@ -6,12 +6,17 @@ import glob
 from astropy.io import fits
 from pathlib import Path
 from os import getcwd
+import traceback
+import time
 parentPath = Path(getcwd())
 
 # Point this to the location of the "ps3cli.exe" executable
 #PS3CLI_EXE = 'C:/Users/obs/Documents/GitHub/ptr-observatory/planewave/ps3cli/ps3cli.exe'
 
-PS3CLI_EXE = str(parentPath) +'/subprocesses/planewave/ps3cli/ps3cli.exe'
+PS3CLI_EXE = str(parentPath).replace('\subprocesses','') +'/subprocesses/planewave/ps3cli/ps3cli.exe'
+
+print (PS3CLI_EXE)
+
 # For testing purposes...
 #PS3CLI_EXE = r"C:\Users\kmi\Desktop\Planewave work\Code\PWGit\PWCode\ps3cli\bin\Debug\ps3cli.exe"
 
@@ -55,6 +60,7 @@ def platesolve(image_file, arcsec_per_pixel):
         output_file_path,
         catalog_path
     ]
+    print (args)
 
     if is_linux():
         # Linux systems need to run ps3cli via the mono runtime,
@@ -68,8 +74,59 @@ def platesolve(image_file, arcsec_per_pixel):
             stderr=PIPE
             )
 
-    (stdout, stderr) = process.communicate(timeout=60)  # Obtain stdout and stderr output from the wcs tool
-    exit_code = process.wait() # Wait for process to complete and obtain the exit code
+    # Try with initial pixscale
+    try:
+        process = Popen(
+                args,
+                #stdout=stdout_destination,
+                stdout=None,
+                stderr=PIPE
+                )
+        (stdout, stderr) = process.communicate(timeout=60)  # Obtain stdout and stderr output from the wcs tool
+        exit_code = process.wait() # Wait for process to complete and obtain the exit code
+        failed = False
+        time.sleep(1)
+        process.kill()
+        
+    except:
+        print ('failed')
+        print (traceback.format_exc())
+            
+        failed = True
+        exit_code = 5
+    
+    process.kill()
+    
+    #exit_code = process.wait()
+    
+    if failed:
+        
+        # Try again with a lower pixelscale... yes it makes no sense
+        # But I didn't write PS3.exe ..... (MTF)        
+        args = [
+            PS3CLI_EXE,
+            image_file,
+            str(float(arcsec_per_pixel)/2.0),
+            output_file_path,
+            catalog_path
+        ]
+        
+        print (args)
+        process = Popen(
+                args,
+                #stdout=stdout_destination,
+                stdout=None,
+                stderr=PIPE
+                )
+        (stdout, stderr) = process.communicate(timeout=30)  # Obtain stdout and stderr output from the wcs tool
+        exit_code = process.wait() # Wait for process to complete and obtain the exit code
+        time.sleep(1)
+        process.kill()
+
+    process.kill()
+    # print (exit_code)
+
+    #breakpoint()
 
     if exit_code != 0:
         print ("Exit code: ")
