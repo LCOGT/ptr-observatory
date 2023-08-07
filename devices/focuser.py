@@ -99,8 +99,11 @@ class Focuser:
         
         
         self.set_initial_best_guess_for_focus()
-        
-        
+        try:
+            self.last_filter_offset = g_dev["fil"].filter_offset
+        except:
+            plog ('setting last filter offset to 0')
+            self.last_filter_offset= 0
         
 
         #breakpoint()
@@ -444,13 +447,8 @@ class Focuser:
                 temp_delta = self.focuser.focTemperature - self.last_temperature                
             else:
                 temp_delta = self.focuser.Temperature - self.last_temperature
-        except:
-            try:
-                temp_delta = (
-                    g_dev["ocn"].status["temperature_C"] - self.last_temperature
-                )
-            except:
-                temp_delta = 0.0
+        except:           
+            temp_delta = 0.0
                 
                 
         try:
@@ -461,23 +459,25 @@ class Focuser:
             if abs(temp_delta) > 0.1 and self.last_temperature is not None and self.focus_temp_slope is not None and self.focus_temp_intercept is not None:
                 adjust = round(temp_delta * float(self.focus_temp_slope), 1)
                 
-            adjust += g_dev["fil"].filter_offset
+            # adjust for filter offset
+                            
+            adjust += (g_dev["fil"].filter_offset)
+            
+            if abs(adjust) > 50:
+                plog ('adjusting focus by ' + str(adjust))
+                self.last_filter_offset = g_dev["fil"].filter_offset
                 
-            req = {"position": str(self.last_known_focus + adjust)}
-            opt = {}
-            self.move_absolute_command(req, opt)
-            
-            
-            try:
-                if self.theskyx:
-                    self.last_temperature = self.focuser.focTemperature                 
-                else:
-                    self.last_temperature = self.focuser.Temperature 
-            except:
+                
+                req = {"position": str(self.last_known_focus + adjust)}
+                opt = {}
+                self.move_absolute_command(req, opt)
+                
+                
                 try:
-                    self.last_temperature = (
-                        g_dev["ocn"].status["temperature_C"] 
-                    )
+                    if self.theskyx:
+                        self.last_temperature = self.focuser.focTemperature                 
+                    else:
+                        self.last_temperature = self.focuser.Temperature 
                 except:
                     self.last_temperature = None
             
@@ -589,10 +589,10 @@ class Focuser:
             current_position = self.focuser.focPosition() * self.steps_to_micron
         else:
             current_position = self.focuser.Position * self.steps_to_micron
-        if current_position > position:
-            tag = ">f abs"
-        else:
-            tag = "<f abs"
+        #if current_position > position:
+        #    tag = ">f abs"
+        #else:
+        #    tag = "<f abs"
             
         
         if self.theskyx:
@@ -610,11 +610,11 @@ class Focuser:
             print (self.focuser.focPosition())
         else:
             self.focuser.Move(int(position * self.micron_to_steps))
-            plog(tag)
+            #plog(tag)
             time.sleep(0.3)
             while self.focuser.IsMoving:
                 time.sleep(0.3)
-                plog(tag)
+                #plog(tag)
 
         # Here we could spin until the move is completed, simplifying other devices.
         # Since normally these are short moves,

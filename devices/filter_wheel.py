@@ -446,6 +446,9 @@ class FilterWheel:
             plog ("Waiting " + str(self.wait_time_after_filter_change) + " seconds for filter wheel.")
             time.sleep(self.wait_time_after_filter_change)
 
+        # make sure focusser is adjusted every filter change
+        g_dev['foc'].adjust_focus()
+
         return filter_name, match, self.filter_offset
 
     def home_command(self, opt: dict):

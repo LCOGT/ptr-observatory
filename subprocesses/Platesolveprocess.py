@@ -288,13 +288,13 @@ if len(sources) >= 15:
     
        
     
-    #try:
+    try:
         # time.sleep(1) # A simple wait to make sure file is saved
-    solve = platesolve.platesolve(
-        #cal_path + 'platesolvetemp.fits', pixscale*platesolve_bin_factor
-        cal_path + 'platesolvetemp.fits', pixscale*platesolve_bin_factor)
-    #except:
-    #    solve = 'error'
+        solve = platesolve.platesolve(
+            #cal_path + 'platesolvetemp.fits', pixscale*platesolve_bin_factor
+            cal_path + 'platesolvetemp.fits', pixscale*platesolve_bin_factor)
+    except:
+        solve = 'error'
     
     #print (solve)
     
