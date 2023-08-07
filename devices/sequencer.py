@@ -663,11 +663,12 @@ class Sequencer:
             opt = {}
             self.extensive_focus_script(req2, opt, throw = g_dev['foc'].throw)
 
-            # Pointing
-            req = {'time': self.config['pointing_exposure_time'],  'alias':  str(self.config['camera']['camera_1_1']['name']), 'image_type': 'focus'}   #  NB Should pick up filter and constats from config
-            #opt = {'area': 150, 'count': 1, 'bin': '2, 2', 'filter': 'focus'}
-            opt = {'area': 150, 'count': 1, 'bin': 1, 'filter': 'pointing'}
-            g_dev['cam'].expose_command(req, opt, user_id='Tobor', user_name='Tobor', user_roles='system', no_AWS=False, solve_it=True)
+            # Pointing no longer needed here, will update on the fly.
+            ## Pointing
+            #req = {'time': self.config['pointing_exposure_time'],  'alias':  str(self.config['camera']['camera_1_1']['name']), 'image_type': 'focus'}   #  NB Should pick up filter and constats from config
+            ##opt = {'area': 150, 'count': 1, 'bin': '2, 2', 'filter': 'focus'}
+            #opt = {'area': 150, 'count': 1, 'bin': 1, 'filter': 'pointing'}
+            #g_dev['cam'].expose_command(req, opt, user_id='Tobor', user_name='Tobor', user_roles='system', no_AWS=False, solve_it=True)
             
             
             g_dev['obs'].send_to_user("End of Focus and Pointing Run. Waiting for Observing period to begin.", p_level='INFO')
@@ -3408,7 +3409,7 @@ class Sequencer:
 
             req = {'time': self.config['focus_exposure_time'],  'alias':  str(self.config['camera']['camera_1_1']['name']), 'image_type': 'focus'}   #  NB Should pick up filter and constats from config
 
-            opt = {'area': 150, 'count': 1, 'bin': 1, 'filter': 'pointing'}
+            opt = {'area': 150, 'count': 1, 'bin': 1, 'filter': 'focus'}
         else:
             pass   #Just take an image where currently pointed.
             req = {'time': self.config['focus_exposure_time'],  'alias':  str(self.config['camera']['camera_1_1']['name']), 'image_type': 'focus'}   #  NB Should pick up filter and constats from config
@@ -3433,7 +3434,25 @@ class Sequencer:
         if extensive_focus == None:
             g_dev['obs'].send_to_user("Running a quick platesolve to center the focus field", p_level='INFO')
             
-            self.centering_exposure()
+            result = self.centering_exposure(no_confirmation=True)
+            # Wait for platesolve
+            #queue_clear_time = time.time()
+            reported=0
+            while True:
+                if g_dev['obs'].platesolve_is_processing ==False and g_dev['obs'].platesolve_queue.empty():
+                    #plog ("we are free from platesolving!")
+                    break
+                else:
+                    if reported ==0:
+                        plog ("PLATESOLVE: Waiting for platesolve processing to complete and queue to clear")
+                        reported=1
+                    if self.stop_script_called:
+                        g_dev["obs"].send_to_user("Cancelling out of autofocus script as stop script has been called.")  
+                        return
+                    if not g_dev['obs'].open_and_enabled_to_observe:
+                        g_dev["obs"].send_to_user("Cancelling out of activity as no longer open and enabled to observe.")  
+                        return
+                    pass
             
             g_dev['obs'].send_to_user("Focus Field Centered", p_level='INFO')
         
@@ -4176,7 +4195,25 @@ class Sequencer:
             if no_auto_after_solve == False:            
                 g_dev['obs'].send_to_user("Running a quick platesolve to center the focus field", p_level='INFO')
                 
-                self.centering_exposure()
+                result = self.centering_exposure(no_confirmation=True)
+                # Wait for platesolve
+                #queue_clear_time = time.time()
+                reported=0
+                while True:
+                    if g_dev['obs'].platesolve_is_processing ==False and g_dev['obs'].platesolve_queue.empty():
+                        #plog ("we are free from platesolving!")
+                        break
+                    else:
+                        if reported ==0:
+                            plog ("PLATESOLVE: Waiting for platesolve processing to complete and queue to clear")
+                            reported=1
+                        if self.stop_script_called:
+                            g_dev["obs"].send_to_user("Cancelling out of autofocus script as stop script has been called.")  
+                            return
+                        if not g_dev['obs'].open_and_enabled_to_observe:
+                            g_dev["obs"].send_to_user("Cancelling out of activity as no longer open and enabled to observe.")  
+                            return
+                        pass
                 
                 g_dev['obs'].send_to_user("Focus Field Centered", p_level='INFO')
             
