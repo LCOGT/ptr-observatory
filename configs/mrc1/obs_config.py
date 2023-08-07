@@ -159,7 +159,7 @@ site_config = {       #the NAME "SITE" IS INCONSISTENT  bIG CHANGE TO EFFECT, ob
     'periodic_focus_time': 2.0,
     'stdev_fwhm': 0.5,  # This is the expected variation in FWHM at a given telescope/camera/site combination. This is used to check if a fwhm is within normal range or the focus has shifted
     'focus_exposure_time': 10,  # Exposure time in seconds for exposure image
-    'pointing_exposure_time': 20,  # Exposure time in seconds for exposure image
+    'pointing_exposure_time': 30,  # Exposure time in seconds for exposure image
     'pointing_correction_dec_multiplier' : 1,
     'pointing_correction_ra_multiplier' : 1,
     
