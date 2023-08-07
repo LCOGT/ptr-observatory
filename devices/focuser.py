@@ -463,9 +463,17 @@ class Focuser:
                             
             adjust += (g_dev["fil"].filter_offset)
             
-            if abs(adjust) > 50:
+            
+            if self.theskyx:
+                focPos=self.focuser.focPosition()  * self.steps_to_micron
+            else:
+                focPos=self.focuser.Position * self.steps_to_micron
+                
+            #breakpoint()
+            
+            if abs((self.last_known_focus + adjust) - focPos) > 10:
                 plog ('adjusting focus by ' + str(adjust))
-                self.last_filter_offset = g_dev["fil"].filter_offset
+                #self.last_filter_offset = g_dev["fil"].filter_offset
                 
                 
                 req = {"position": str(self.last_known_focus + adjust)}

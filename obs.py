@@ -942,6 +942,20 @@ sel
             self.check_platesolve_and_nudge()
 
         
+        # Meridian 'pulse'. A lot of mounts will not do a meridian flip unless a 
+        # specific slew command is sent. So this tracks how long it has been since
+        # a slew and sends a slew command to the exact coordinates it is pointing on
+        # at least a 5 minute basis.        
+        if (time.time() - g_dev['obs'].time_of_last_slew) > 300:
+            # Check no other commands or exposures are happening
+            if g_dev['obs'].cmd_queue.empty() and not g_dev["cam"].exposure_busy and not g_dev['mnt'].mount.AtPark:
+                g_dev['mnt'].go_command(ra=g_dev['mnt'].mount.RightAscension, dec=g_dev['mnt'].mount.Declination, silent=True)
+                
+                #self.current_icrs_ra = self.mount.RightAscension
+                #self.current_icrs_dec = self.mount.Declination
+                
+
+
         t1 = time.time()
         status = {}
 
@@ -1248,6 +1262,12 @@ sel
             # Adjust focus on a not-too-frequent period for temperature
             if not g_dev["cam"].exposure_busy:
                 g_dev['foc'].adjust_focus()
+            
+            
+            
+                    
+                    
+            
             
             
             
@@ -2479,78 +2499,52 @@ sel
     
                         else:
     
-                            # If the mount has updatable RA and Dec coordinates, then sync that
-                            # But if not, update the mount reference
-                            # try:
-                            #     # If mount has Syncable coordinates
-                            #     g_dev['mnt'].mount.SyncToCoordinates(solved_ra, solved_dec)
-                            #     # Reset the mount reference because if the mount has
-                            #     # syncable coordinates, the mount should already be corrected
-                            #     g_dev["mnt"].reset_mount_reference()
     
-                            #     if (
-                            #          abs(err_ha * 15 * 3600)
-                            #          > self.config["threshold_mount_update"]
-                            #          or abs(err_dec * 3600)
-                            #          > self.config["threshold_mount_update"]
-                            #      ):
-                            #         #plog ("I am nudging the telescope slightly!")
-                            #         #g_dev['mnt'].mount.SlewToCoordinatesAsync(target_ra, target_dec)
-                            #         #wait_for_slew()
-                            #         plog ("Platesolve is requesting to move back on target!")
-                            #         self.pointing_correction_requested_by_platesolve_thread = True
-                            #         self.pointing_correction_request_time = time.time()
-                            #         self.pointing_correction_request_ra = target_ra
-                            #         self.pointing_correction_request_dec = target_dec
+                                # if (
+                                #     abs(err_ha * 15 * 3600)
+                                #     > self.config["threshold_mount_update"]
+                                #     or abs(err_dec * 3600)
+                                #     > self.config["threshold_mount_update"]
+                                # ):
     
-                            # except:
-                            # If mount doesn't have Syncable coordinates
-    
-                            if (
-                                abs(err_ha * 15 * 3600)
-                                > self.config["threshold_mount_update"]
-                                or abs(err_dec * 3600)
-                                > self.config["threshold_mount_update"]
-                            ):
-    
-                                #plog ("I am nudging the telescope slightly!")
-                                #g_dev['mnt'].mount.SlewToCoordinatesAsync(pointing_ra + err_ha, pointing_dec + err_dec)
-                                # wait_for_slew()
-                                #plog("Platesolve is requesting to move back on target!")
-                                #plog(str(g_dev["mnt"].pier_side) + " <-- pierside TEMP MTF reporting")
-                                #ra_correction_multiplier= self.config['pointing_correction_ra_multiplier']
-                               # dec_correction_multiplier= self.config['pointing_correction_dec_multiplier']
-                                self.pointing_correction_requested_by_platesolve_thread = True
-                                self.pointing_correction_request_time = time.time()
-                                self.pointing_correction_request_ra = pointing_ra + err_ha #* ra_correction_multiplier)
-                                self.pointing_correction_request_dec = pointing_dec + err_dec# * dec_correction_multiplier)
-                                
-                                if not self.config['mount_reference_model_off']:
-                                    if target_dec > -85 and target_dec < 85:
-                                        try:
-                                            #try:
-                                            #    g_dev["mnt"].pier_side=g_dev['mnt'].mount.sideOfPier
-                                            #except:
-                                            #    plog("MTF chase this later")
-                                            # if g_dev["mnt"].pier_side_str == "Looking West":
-                                            if g_dev["mnt"].pier_side == 0:
-                                                try:
-                                                    g_dev["mnt"].adjust_mount_reference(
-                                                        -err_ha, -err_dec
-                                                    )
-                                                except Exception as e:
-                                                    plog("Something is up in the mount reference adjustment code ", e)
-                                            else:
-                                                try:
-                                                    g_dev["mnt"].adjust_flip_reference(
-                                                        -err_ha, -err_dec
-                                                    )  # Need to verify signs
-                                                except Exception as e:
-                                                    plog("Something is up in the mount reference adjustment code ", e)
-            
-                                        except:
-                                            plog("This mount doesn't report pierside")
-                                            plog(traceback.format_exc())
+                             #plog ("I am nudging the telescope slightly!")
+                             #g_dev['mnt'].mount.SlewToCoordinatesAsync(pointing_ra + err_ha, pointing_dec + err_dec)
+                             # wait_for_slew()
+                             #plog("Platesolve is requesting to move back on target!")
+                             #plog(str(g_dev["mnt"].pier_side) + " <-- pierside TEMP MTF reporting")
+                             #ra_correction_multiplier= self.config['pointing_correction_ra_multiplier']
+                            # dec_correction_multiplier= self.config['pointing_correction_dec_multiplier']
+                             self.pointing_correction_requested_by_platesolve_thread = True
+                             self.pointing_correction_request_time = time.time()
+                             self.pointing_correction_request_ra = pointing_ra + err_ha #* ra_correction_multiplier)
+                             self.pointing_correction_request_dec = pointing_dec + err_dec# * dec_correction_multiplier)
+                             
+                             if not self.config['mount_reference_model_off']:
+                                 if target_dec > -85 and target_dec < 85:
+                                     try:
+                                         #try:
+                                         #    g_dev["mnt"].pier_side=g_dev['mnt'].mount.sideOfPier
+                                         #except:
+                                         #    plog("MTF chase this later")
+                                         # if g_dev["mnt"].pier_side_str == "Looking West":
+                                         if g_dev["mnt"].pier_side == 0:
+                                             try:
+                                                 g_dev["mnt"].adjust_mount_reference(
+                                                     -err_ha, -err_dec
+                                                 )
+                                             except Exception as e:
+                                                 plog("Something is up in the mount reference adjustment code ", e)
+                                         else:
+                                             try:
+                                                 g_dev["mnt"].adjust_flip_reference(
+                                                     -err_ha, -err_dec
+                                                 )  # Need to verify signs
+                                             except Exception as e:
+                                                 plog("Something is up in the mount reference adjustment code ", e)
+         
+                                     except:
+                                         plog("This mount doesn't report pierside")
+                                         plog(traceback.format_exc())
                     self.platesolve_is_processing = False
 
                 self.platesolve_is_processing = False

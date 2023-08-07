@@ -814,7 +814,14 @@ class Mount:
             
             #breakpoint()
 
-            self.go_command(req, opt)   #  Entered from Target Explorer or Telescope tabs.
+            #breakpoint()
+            
+            if 'ra' in req:            
+                self.go_command(ra=req['ra'], dec=req['dec'])   #  Entered from Target Explorer or Telescope tabs.
+            elif 'az' in req:
+                self.go_command(az=req['az'], alt=req['alt'])   #  Entered from Target Explorer or Telescope tabs.
+            elif 'ha' in req:
+                self.go_command(ha=req['ha'], dec=req['dec'])   #  Entered from Target Explorer or Telescope tabs.
             
             #if opt['do_centering_rount']
             
@@ -831,10 +838,10 @@ class Mount:
         elif action == "tracking":
             self.tracking_command(req, opt)
         elif action in ["pivot", 'zero', 'ra=sid, dec=0']:
-            req['ra'] =  (Time(datetime.datetime.utcnow(), scale='utc', location=g_dev['mnt'].site_coordinates).sidereal_time('apparent')*u.deg) / u.deg / u.hourangle
+            ra =  (Time(datetime.datetime.utcnow(), scale='utc', location=g_dev['mnt'].site_coordinates).sidereal_time('apparent')*u.deg) / u.deg / u.hourangle
             
-            req['dec'] = 0.0
-            self.go_command(req, opt, offset=False)
+            dec = 0.0
+            self.go_command(ra=ra, dec=dec, offset=False)
         elif action == "park":
             self.park_command(req, opt)
         elif action == "unpark":
@@ -860,12 +867,12 @@ class Mount:
                 plog ("X pixel shift: " + str(x_pixel_shift))
                 plog ("Y pixel shift: " + str(y_pixel_shift))                
                 
-                req = {}
-                opt = {}
+                #req = {}
+                #opt = {}
                 
                 
-                req['ra']=center_image_ra + (x_pixel_shift * pixscale_hours)
-                req['dec']=center_image_dec - (y_pixel_shift * pixscale_degrees)
+                gora=center_image_ra + (x_pixel_shift * pixscale_hours)
+                godec=center_image_dec - (y_pixel_shift * pixscale_degrees)
                 
                 plog ("X centre shift: " + str((x_pixel_shift * pixscale_hours)))
                 plog ("Y centre shift: " + str(((y_pixel_shift * pixscale_degrees))))
@@ -878,12 +885,13 @@ class Mount:
                 #breakpoint()
                 
                 
-                self.go_command(req, {})#, offset=True, calibrate=False)
+                self.go_command(ra=gora, dec=godec)#, offset=True, calibrate=False)
             except:
                 plog ("seems the image header hasn't arrived at the UI yet, wait a moment")
 
         elif action == 'sky_flat_position':
-            self.slewToSkyFlatAsync(skip_open_test=True)
+            #self.slewToSkyFlatAsync(skip_open_test=True)
+            g_dev['mnt'].go_command(skyflatspot=True)
         else:
             plog(f"Command <{action}> not recognized.")
 
@@ -910,29 +918,69 @@ class Mount:
 
     '''
 
-    def go_command(self, req, opt,  offset=False, calibrate=False, auto_center=False):
-        ''' Slew to the given ra/dec coordinates. '''        
+    def go_command(self, skyflatspot=None, ra=None, dec=None, az=None, alt=None, ha=None, objectname=None, offset=False, calibrate=False, auto_center=False, silent=False, skip_open_test=False,tracking_rate_ra = 0, tracking_rate_dec =  0, do_centering_routine=False):
+
+        ''' Slew to the given ra/dec, alt/az or ha/dec or skyflatspot coordinates. '''        
 
         # First thing to do is check the position of the sun and
         # Whether this violates the pointing principle. 
-        sun_coords=get_sun(Time.now())        
-        if 'ra' in req:
-            ra = float(req['ra'])
-            dec = float(req['dec'])
+        sun_coords=get_sun(Time.now())   
+        #breakpoint()
+        if skyflatspot != None:
+            if not skip_open_test:
+            
+                if (not (g_dev['events']['Cool Down, Open'] < ephem.now() < g_dev['events']['Naut Dusk']) and \
+                    not (g_dev['events']['Naut Dawn'] < ephem.now() < g_dev['events']['Close and Park'])):
+                    g_dev['obs'].send_to_user("Refusing skyflat pointing request as it is outside skyflat time")
+                    plog("Refusing pointing request as it is outside of skyflat pointing time.")
+                    return
+                
+                if (g_dev['obs'].open_and_enabled_to_observe==False ) and (not g_dev['obs'].debug_flag):
+                    g_dev['obs'].send_to_user("Refusing skyflat pointing request as the observatory is not enabled to observe.")
+                    plog("Refusing skyflat pointing request as the observatory is not enabled to observe.")
+                    return
+
+            az, alt = self.astro_events.flat_spot_now()
+            temppointing = AltAz(location=self.site_coordinates, obstime=Time.now(), alt=alt*u.deg, az=az*u.deg)          
+            ra = temppointing.ra.hours
+            dec = temppointing.dec.degree
+            plog ("Requested Flat Spot, az: " + str(az) + " alt: " + str(alt))
+            
+            if self.config['degrees_to_avoid_zenith_area_for_calibrations'] > 0:
+                #breakpoint()
+                if (90-alt) < self.config['degrees_to_avoid_zenith_area_for_calibrations']:
+                    g_dev['obs'].send_to_user("Refusing skyflat pointing request as it is too close to the zenith for this scope.")
+                    plog("Refusing skyflat pointing request as it is too close to the zenith for this scope.")
+                    return
+                    #alt=90-self.config['degrees_to_avoid_zenith_area_for_calibrations']
+                    
+                    #plog ("adjusted altitude to " + str(alt) + "to avoid the zenith region")
+            
+        elif ra != None:
+            ra = float(ra)
+            dec = float(dec)
             temppointing=SkyCoord(ra*u.hour, dec*u.degree, frame='icrs')
             temppointingaltaz=temppointing.transform_to(AltAz(location=self.site_coordinates, obstime=Time.now()))
             alt = temppointingaltaz.alt.degree
             az = temppointingaltaz.az.degree
                                                     
-        elif 'az' in req:
-            az = float(req['az'])
-            alt = float(req['alt'])
+        elif az != None:
+            az = float(az)
+            alt = float(alt)
             temppointing = AltAz(location=self.site_coordinates, obstime=Time.now(), alt=alt*u.deg, az=az*u.deg)          
-        elif 'ha' in req:
-            ha = float(req['ha'])
-            dec = float(req['dec'])
+            #breakpoint()
+            altazskycoord=SkyCoord(alt=alt*u.deg, az=az*u.deg, obstime=Time.now(), location=self.site_coordinates, frame='altaz')
+            ra = altazskycoord.icrs.ra.deg /15
+            dec = altazskycoord.icrs.dec.deg 
+        elif ha != None:
+            ha = float(ha)
+            dec = float(dec)
             az, alt = ptr_utility.transform_haDec_to_azAlt(ha, dec, lat=self.config['latitude'])
             temppointing = AltAz(location=self.site_coordinates, obstime=Time.now(), alt=alt*u.deg, az=az*u.deg)    
+            altazskycoord=SkyCoord(alt=alt*u.deg, az=az*u.deg, obstime=Time.now(), location=self.site_coordinates, frame='altaz')
+            ra = altazskycoord.icrs.ra.deg /15
+            dec = altazskycoord.icrs.dec.deg 
+            
         sun_dist = sun_coords.separation(temppointing)
 
         if sun_dist.degree <  self.config['closest_distance_to_the_sun'] and g_dev['obs'].open_and_enabled_to_observe and not g_dev['obs'].sun_checks_off:
@@ -968,28 +1016,28 @@ class Mount:
 
         # Fifth thing, check that the sky flat latch isn't on
         # (I moved the scope during flats once, it wasn't optimal)
-        if g_dev['seq'].morn_sky_flat_latch  or g_dev['seq'].eve_sky_flat_latch or g_dev['seq'].sky_flat_latch or g_dev['seq'].bias_dark_latch:
+        if not skyflatspot and (g_dev['seq'].morn_sky_flat_latch  or g_dev['seq'].eve_sky_flat_latch or g_dev['seq'].sky_flat_latch or g_dev['seq'].bias_dark_latch):
             g_dev['obs'].send_to_user("Refusing pointing request as the observatory is currently undertaking flats or calibration frames.")
             plog("Refusing pointing request as the observatory is currently taking flats or calibration frmaes.")
             return
             
         
-        plog("mount cmd. slewing mount, req, opt:  ", req, opt)
+        #plog("mount cmd. slewing mount, req, opt:  ", req, opt)
 
         ''' unpark the telescope mount '''  #  NB can we check if unparked and save time?
 
-        try:
-            self.object = opt['object']
-        except:
+        if objectname != None:
+            self.object = objectname
+        else:
             self.object = 'unspecified'    #NB could possibly augment with "Near --blah--"
         self.unpark_command()  
         #g_dev['obs'].send_to_user("Slewing Telescope.")
-        try:
-            clutch_ra = g_dev['mnt']['mount1']['east_clutch_ra_correction']
-            clutch_dec = g_dev['mnt']['mount1']['east_clutch_dec_correction']
-        except:
-            clutch_ra = 0.0
-            clutch_dec = 0.0
+        #try:
+        #    clutch_ra = g_dev['mnt']['mount1']['east_clutch_ra_correction']
+        #    clutch_dec = g_dev['mnt']['mount1']['east_clutch_dec_correction']
+        #except:
+        #    clutch_ra = 0.0
+        #    clutch_dec = 0.0
                     
         if self.object in ['Moon', 'moon', 'Lune', 'lune', 'Luna', 'luna',]:
             self.obs.date = ephem.now()
@@ -1113,53 +1161,52 @@ class Mount:
         #             #We could just return but will seek just to be safe
         #     else:   #  NB confusing logic   this is meant to be the simple seek case.
         #             #  Here we DO read the req dictionary ra and dec or appear to also get alt and az,but that is not implemnented WER 20220212
-        try:
-            try:
-                ra = float(req['ra'])
-                dec = float(req['dec'])
-                self.ra_offset = 0  #NB Not adding in self.ra_offset is correct unless a Calibrate occured.
-                self.dec_offset = 0
-                self.offset_received = False
-                ra_dec = True
-                alt_az = False
+        # try:
+        #     try:
+        #         ra = float(req['ra'])
+        #         dec = float(req['dec'])
+        #         self.ra_offset = 0  #NB Not adding in self.ra_offset is correct unless a Calibrate occured.
+        #         self.dec_offset = 0
+        #         self.offset_received = False
+        #         ra_dec = True
+        #         alt_az = False
     
-            except:
-                try:
-                    az = float(req['az'])
-                    alt = float(req['alt'])
-                    self.ra_offset = 0  #NB Not adding in self.ra_offset is correct unless a Calibrate occured.
-                    self.dec_offset = 0
-                    self.offset_received = False
-                    ra_dec = False
-                    alt_az = True
+        #     except:
+        #         try:
+        #             az = float(req['az'])
+        #             alt = float(req['alt'])
+        #             self.ra_offset = 0  #NB Not adding in self.ra_offset is correct unless a Calibrate occured.
+        #             self.dec_offset = 0
+        #             self.offset_received = False
+        #             ra_dec = False
+        #             alt_az = True
     
-                except:
-                    ha = float(req['ha'])
-                    dec = float(req['dec'])
-                    az, alt = ptr_utility.transform_haDec_to_azAlt(ha, dec, lat=self.config['latitude'])
+        #         except:
+        #             ha = float(req['ha'])
+        #             dec = float(req['dec'])
+        #             az, alt = ptr_utility.transform_haDec_to_azAlt(ha, dec, lat=self.config['latitude'])
     
-                    self.ra_offset = 0  #NB Not adding in self.ra_offset is correct unless a Calibrate occured.
-                    self.dec_offset = 0
-                    self.offset_received = False
-                    ra_dec = False
-                    alt_az = True
+        #             self.ra_offset = 0  #NB Not adding in self.ra_offset is correct unless a Calibrate occured.
+        #             self.dec_offset = 0
+        #             self.offset_received = False
+        #             ra_dec = False
+        #             alt_az = True
 
-        except:
-            plog("Bad coordinates supplied.")
-            g_dev['obs'].send_to_user("Bad coordinates supplied! ",  p_level="WARN")
-            self.message = "Bad coordinates supplied, try again."
-            self.offset_received = False
-            self.ra_offset = 0
-            self.dec_offset = 0
-            return
+        # except:
+        #     plog("Bad coordinates supplied.")
+        #     g_dev['obs'].send_to_user("Bad coordinates supplied! ",  p_level="WARN")
+        #     self.message = "Bad coordinates supplied, try again."
+        #     self.offset_received = False
+        #     self.ra_offset = 0
+        #     self.dec_offset = 0
+        #    return
 
         # Tracking rate offsets from sidereal in arcseconds per SI second, default = 0.0
-        tracking_rate_ra = opt.get('tracking_rate_ra', 0)
-        tracking_rate_dec = opt.get('tracking_rate_dec', 0)
+        
 
         self.move_time = time.time()
         
-        self.object = opt.get("object", "")
+        #self.object = opt.get("object", "")
         if self.object == "":
            # plog("Go to unamed target.")
             g_dev['obs'].send_to_user("Slewing telescope to un-named target!  ",  p_level="INFO")
@@ -1173,25 +1220,28 @@ class Mount:
         
         if object_is_moon:
             g_dev['obs'].time_of_last_slew=time.time()
-            self.go_coord(ra1, dec1, tracking_rate_ra=dra_moon, tracking_rate_dec = ddec_moon)
-        elif alt_az == True:
-            g_dev['obs'].time_of_last_slew=time.time()
-            self.move_to_azalt(az, alt)
-            g_dev['obs'].send_to_user("Slew Complete.")
-        elif ra_dec == True:
-            g_dev['obs'].time_of_last_slew=time.time()
-            self.go_coord(ra, dec, tracking_rate_ra=tracking_rate_ra, tracking_rate_dec = tracking_rate_dec)
-            g_dev['obs'].send_to_user("Slew Complete.")
+            #self.go_coord(ra1, dec1, tracking_rate_ra=dra_moon, tracking_rate_dec = ddec_moon)            
+            ra=ra1
+            dec=dec1
+            tracking_rate_ra=dra_moon
+            tracking_rate_dec = ddec_moon
+        #elif alt_az == True:
+        #    g_dev['obs'].time_of_last_slew=time.time()
+        #    self.move_to_azalt(az, alt)
+        #    g_dev['obs'].send_to_user("Slew Complete.")
+        #elif ra_dec == True:
+        #    g_dev['obs'].time_of_last_slew=time.time()
+        #    self.go_coord(ra, dec, tracking_rate_ra=tracking_rate_ra, tracking_rate_dec = tracking_rate_dec)
+        #    g_dev['obs'].send_to_user("Slew Complete.")
             
-        if 'do_centering_routine' in opt:
-            if opt['do_centering_routine']:
-                g_dev['seq'].centering_exposure()
+        if do_centering_routine:
+            g_dev['seq'].centering_exposure()
 
         # On successful movement of telescope reset the solving timer
-        g_dev['obs'].last_solve_time = datetime.datetime.now() - datetime.timedelta(days=1)
-        g_dev['obs'].images_since_last_solve = 10000    
+        #g_dev['obs'].last_solve_time = datetime.datetime.now() - datetime.timedelta(days=1)
+        #g_dev['obs'].images_since_last_solve = 10000    
 
-    def go_coord(self, ra, dec, tracking_rate_ra=0, tracking_rate_dec=0, reset_solve=True):  #Note these rates need a system specification
+    #def go_coord(self, ra, dec, tracking_rate_ra=0, tracking_rate_dec=0, reset_solve=True):  #Note these rates need a system specification
         '''
         Slew to the given ra/dec coordinates, supplied in ICRS
         Note no dependency on current position.
@@ -1203,7 +1253,7 @@ class Mount:
         self.last_tracking_rate_dec = tracking_rate_dec
         self.last_seek_time = time.time() - 5000
 
-        self.unpark_command()  
+        #self.unpark_command()  
         #Note this initiates a mount move.  WE should Evaluate if the destination is on the flip side and pick up the
         #flip offset.  So a GEM could track into positive HA territory without a problem but the next reseek should
         #result in a flip.  So first figure out if there will be a flip:
@@ -1328,6 +1378,8 @@ class Mount:
             except Exception as e:
                 # This catches an occasional ASCOM/TheSkyX glitch and gets it out of being stuck
                 # And back on tracking. 
+                #plog (traceback.format_exc())
+                #breakpoint()
                 try:
                     retry=0
                     while retry <3:
@@ -1388,8 +1440,6 @@ class Mount:
                 #self.can_report_destination_pierside
                 wait_for_slew()
                 successful_move=1
-            
-            
                 
         if self.mount.Tracking == False:
             try:
@@ -1400,7 +1450,7 @@ class Mount:
                 # Tracking when it isn't implemented in the ASCOM driver. But if anyone has any better ideas, I am all ears - MF
                 # It also doesn't want to get into an endless loop of parking and unparking and homing, hence the rescue counter
                 if g_dev['mnt'].theskyx:
-                    
+                    plog (traceback.format_exc())
                     plog("The SkyX had an error.")
                     plog("Usually this is because of a broken connection.")
                     plog("Killing then waiting 60 seconds then reconnecting")
@@ -1414,12 +1464,13 @@ class Mount:
                     plog (traceback.format_exc())
         
         
-        
+        g_dev['obs'].time_of_last_slew=time.time()
         
         g_dev['obs'].time_since_last_slew = time.time()
         g_dev['obs'].last_solve_time = datetime.datetime.now() - datetime.timedelta(days=1)
         g_dev['obs'].images_since_last_solve = 10000
-        wait_for_slew()    
+        wait_for_slew()   
+        g_dev['obs'].send_to_user("Slew Complete.")
         
         
         # ###  figure out velocity  Apparent place is unchanged.
@@ -1459,71 +1510,71 @@ class Mount:
         #     self.mount.DeclinationRate = 0.0#self.prior_pitch_rate
         #     self.DeclinationRate = 0.0 #self.prior_pitch_rate
 
-        self.seek_commanded = True        
+        #self.seek_commanded = True        
 
         # On successful movement of telescope reset the solving timer
-        if reset_solve == True:
-            g_dev['obs'].last_solve_time = datetime.datetime.now() - datetime.timedelta(days=1)
-            g_dev['obs'].images_since_last_solve = 10000
-        wait_for_slew()   
+        #if reset_solve == True:
+        #g_dev['obs'].last_solve_time = datetime.datetime.now() - datetime.timedelta(days=1)
+        #g_dev['obs'].images_since_last_solve = 10000
+        #wait_for_slew()   
 
-    def slewToSkyFlatAsync(self, skip_open_test=False):      
-        # This will only move the scope if the observatory is open
-        # UNLESS it has been sent a command from particular routines
-        # e.g. pointing the telescope in a safe location BEFORE opening the roof
-        if not skip_open_test:
+    # def slewToSkyFlatAsync(self, skip_open_test=False):      
+    #     # This will only move the scope if the observatory is open
+    #     # UNLESS it has been sent a command from particular routines
+    #     # e.g. pointing the telescope in a safe location BEFORE opening the roof
+    #     if not skip_open_test:
         
-            if (not (g_dev['events']['Cool Down, Open'] < ephem.now() < g_dev['events']['Naut Dusk']) and \
-                not (g_dev['events']['Naut Dawn'] < ephem.now() < g_dev['events']['Close and Park'])):
-                g_dev['obs'].send_to_user("Refusing skyflat pointing request as it is outside skyflat time")
-                plog("Refusing pointing request as it is outside of skyflat pointing time.")
-                return
+    #         if (not (g_dev['events']['Cool Down, Open'] < ephem.now() < g_dev['events']['Naut Dusk']) and \
+    #             not (g_dev['events']['Naut Dawn'] < ephem.now() < g_dev['events']['Close and Park'])):
+    #             g_dev['obs'].send_to_user("Refusing skyflat pointing request as it is outside skyflat time")
+    #             plog("Refusing pointing request as it is outside of skyflat pointing time.")
+    #             return
             
-            if (g_dev['obs'].open_and_enabled_to_observe==False ) and (not g_dev['obs'].debug_flag):
-                g_dev['obs'].send_to_user("Refusing skyflat pointing request as the observatory is not enabled to observe.")
-                plog("Refusing skyflat pointing request as the observatory is not enabled to observe.")
-                return
+    #         if (g_dev['obs'].open_and_enabled_to_observe==False ) and (not g_dev['obs'].debug_flag):
+    #             g_dev['obs'].send_to_user("Refusing skyflat pointing request as the observatory is not enabled to observe.")
+    #             plog("Refusing skyflat pointing request as the observatory is not enabled to observe.")
+    #             return
 
-        az, alt = self.astro_events.flat_spot_now()
-        self.unpark_command()        
+    #     az, alt = self.astro_events.flat_spot_now()
+    #     self.unpark_command()        
 
         
 
-        if self.config['degrees_to_avoid_zenith_area_for_calibrations'] > 0:
-            #breakpoint()
-            if (90-alt) < self.config['degrees_to_avoid_zenith_area_for_calibrations']:
-                alt=90-self.config['degrees_to_avoid_zenith_area_for_calibrations']
-                plog ("Requested Flat Spot, az: " + str(az) + " alt: " + str(alt))
-                plog ("adjusted altitude to " + str(alt) + "to avoid the zenith region")
+    #     if self.config['degrees_to_avoid_zenith_area_for_calibrations'] > 0:
+    #         #breakpoint()
+    #         if (90-alt) < self.config['degrees_to_avoid_zenith_area_for_calibrations']:
+    #             alt=90-self.config['degrees_to_avoid_zenith_area_for_calibrations']
+    #             plog ("Requested Flat Spot, az: " + str(az) + " alt: " + str(alt))
+    #             plog ("adjusted altitude to " + str(alt) + "to avoid the zenith region")
                 
 
-        try:
-            self.mount.Tracking = True
-        except:
-            pass
+    #     try:
+    #         self.mount.Tracking = True
+    #     except:
+    #         pass
 
-        #if self.mount.Tracking == True:
-        #    if not self.theskyx:   
-        #        self.mount.Tracking = False
-        #    else:
-        #        pass
+    #     #if self.mount.Tracking == True:
+    #     #    if not self.theskyx:   
+    #     #        self.mount.Tracking = False
+    #     #    else:
+    #     #        pass
 
-        self.move_time = time.time()
-        try:
-            g_dev['obs'].time_of_last_slew=time.time()
-            #self.move_to_azalt(az, max(alt, 35))   #Hack for MRC testing
-            self.move_to_azalt(az, alt)   #Hack for MRC testing
-            g_dev['obs'].time_of_last_slew = time.time()
-            # On successful movement of telescope reset the solving timer
-            g_dev['obs'].last_solve_time = datetime.datetime.now() - datetime.timedelta(days=1)
-            g_dev['obs'].images_since_last_solve = 10000
+    #     self.move_time = time.time()
+    #     try:
+    #         g_dev['obs'].time_of_last_slew=time.time()
+    #         #self.move_to_azalt(az, max(alt, 35))   #Hack for MRC testing
+    #         self.move_to_azalt(az, alt)   #Hack for MRC testing
+    #         g_dev['obs'].time_of_last_slew = time.time()
+    #         # On successful movement of telescope reset the solving timer
+    #         g_dev['obs'].last_solve_time = datetime.datetime.now() - datetime.timedelta(days=1)
+    #         g_dev['obs'].images_since_last_solve = 10000
 
-        except:
-            plog (traceback.format_exc())
-            #plog ("NEED TO POINT TELESCOPE TO RA AND DEC, MOUNT DOES NOT HAVE AN ALTAZ request in the driver")
+    #     except:
+    #         plog (traceback.format_exc())
+    #         #plog ("NEED TO POINT TELESCOPE TO RA AND DEC, MOUNT DOES NOT HAVE AN ALTAZ request in the driver")
 
-        # return alt and az so the sky flat routine knows to wait. 
-        return alt, az
+    #     # return alt and az so the sky flat routine knows to wait. 
+    #     return alt, az
 
 
     def stop_command(self, req, opt):
@@ -1836,47 +1887,47 @@ class Mount:
         mnt_shelf.close()
         return
     
-    def move_to_azalt(self, az, alt):
-        plog ("Moving to Alt " + str(alt) + " Az " + str(az))
-        if self.config['mount']['mount1']['has_ascom_altaz'] == True:
-            wait_for_slew() 
-            g_dev['obs'].time_of_last_slew=time.time()
-            if g_dev['mnt'].mount.AtPark:
-                self.unpark_command()
-            self.mount.SlewToAltAzAsync(az, alt)
-            g_dev['obs'].time_since_last_slew = time.time()
-            g_dev['obs'].last_solve_time = datetime.datetime.now() - datetime.timedelta(days=1)
-            g_dev['obs'].images_since_last_solve = 10000
-            wait_for_slew()
-        else:            
-            aa = AltAz (location=self.site_coordinates, obstime=Time.now())
-            tempcoord= SkyCoord(az=az*u.deg, alt=alt*u.deg, frame=aa)
-            tempcoord=tempcoord.transform_to(frame='icrs')
-            tempRA=tempcoord.ra.deg / 15
-            tempDEC=tempcoord.dec.deg            
-            wait_for_slew() 
-            try:
-                g_dev['obs'].time_of_last_slew=time.time()
-                if g_dev['mnt'].mount.AtPark:
-                    self.unpark_command()
-                self.mount.SlewToCoordinatesAsync(tempRA, tempDEC)
-            except Exception as e:
-                if g_dev['mnt'].theskyx:
+    # def move_to_azalt(self, az, alt):
+    #     plog ("Moving to Alt " + str(alt) + " Az " + str(az))
+    #     if self.config['mount']['mount1']['has_ascom_altaz'] == True:
+    #         wait_for_slew() 
+    #         g_dev['obs'].time_of_last_slew=time.time()
+    #         if g_dev['mnt'].mount.AtPark:
+    #             self.unpark_command()
+    #         self.mount.SlewToAltAzAsync(az, alt)
+    #         g_dev['obs'].time_since_last_slew = time.time()
+    #         g_dev['obs'].last_solve_time = datetime.datetime.now() - datetime.timedelta(days=1)
+    #         g_dev['obs'].images_since_last_solve = 10000
+    #         wait_for_slew()
+    #     else:            
+    #         aa = AltAz (location=self.site_coordinates, obstime=Time.now())
+    #         tempcoord= SkyCoord(az=az*u.deg, alt=alt*u.deg, frame=aa)
+    #         tempcoord=tempcoord.transform_to(frame='icrs')
+    #         tempRA=tempcoord.ra.deg / 15
+    #         tempDEC=tempcoord.dec.deg            
+    #         wait_for_slew() 
+    #         try:
+    #             g_dev['obs'].time_of_last_slew=time.time()
+    #             if g_dev['mnt'].mount.AtPark:
+    #                 self.unpark_command()
+    #             self.mount.SlewToCoordinatesAsync(tempRA, tempDEC)
+    #         except Exception as e:
+    #             if g_dev['mnt'].theskyx:
                     
-                    plog("The SkyX had an error.")
-                    plog("Usually this is because of a broken connection.")
-                    plog("Killing then waiting 60 seconds then reconnecting")
-                    g_dev['seq'].kill_and_reboot_theskyx(-1,-1)
-                    self.unpark_command()
-                    wait_for_slew()
-                    self.mount.SlewToCoordinatesAsync(tempRA, tempDEC)  #Is this needed?
-                else:
-                    plog (traceback.format_exc())
+    #                 plog("The SkyX had an error.")
+    #                 plog("Usually this is because of a broken connection.")
+    #                 plog("Killing then waiting 60 seconds then reconnecting")
+    #                 g_dev['seq'].kill_and_reboot_theskyx(-1,-1)
+    #                 self.unpark_command()
+    #                 wait_for_slew()
+    #                 self.mount.SlewToCoordinatesAsync(tempRA, tempDEC)  #Is this needed?
+    #             else:
+    #                 plog (traceback.format_exc())
             
-            g_dev['obs'].time_since_last_slew = time.time()
-            g_dev['obs'].last_solve_time = datetime.datetime.now() - datetime.timedelta(days=1)
-            g_dev['obs'].images_since_last_solve = 10000
-            wait_for_slew()
+    #         g_dev['obs'].time_since_last_slew = time.time()
+    #         g_dev['obs'].last_solve_time = datetime.datetime.now() - datetime.timedelta(days=1)
+    #         g_dev['obs'].images_since_last_solve = 10000
+    #         wait_for_slew()
         
 
         '''

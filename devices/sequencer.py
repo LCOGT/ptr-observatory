@@ -328,9 +328,9 @@ class Sequencer:
             g_dev['mnt'].home_command()
 
         elif action == 'run' and script == 'findFieldCenter':
-            g_dev['mnt'].go_command(req, opt, calibrate=True, auto_center=True)
+            g_dev['mnt'].go_command(ra=req['ra'], dec=req['dec'], calibrate=True, auto_center=True)
         elif action == 'run' and script == 'calibrateAtFieldCenter':
-            g_dev['mnt'].go_command(req, opt, calibrate=True, auto_center=False)
+            g_dev['mnt'].go_command(ra=req['ra'], dec=req['dec'], calibrate=True, auto_center=False)
         else:
             plog('Sequencer command:  ', command, ' not recognized.')
 
@@ -1188,7 +1188,7 @@ class Sequencer:
                 pass
             
             
-            g_dev['mnt'].go_coord(dest_ra, dest_dec)
+            g_dev['mnt'].go_command(ra=dest_ra, dec=dest_dec)
             
             # Undertake a focus if necessary before starting observing the target
             if g_dev["foc"].last_focus_fwhm == None or g_dev["foc"].focus_needed == True:
@@ -1201,7 +1201,7 @@ class Sequencer:
                 just_focused = True
                 g_dev["foc"].focus_needed = False
                 
-            g_dev['mnt'].go_coord(dest_ra, dest_dec)
+            g_dev['mnt'].go_command(ra=dest_ra, dec=dest_dec)
             
             # Quick pointing check and re_seek at the start of each project block
             # Otherwise everyone will get slightly off-pointing images
@@ -1950,7 +1950,7 @@ class Sequencer:
                 #pass
             else:
                 g_dev['mnt'].park_command({}, {})
-                g_dev['mnt'].go_coord(returnra, returndec)
+                g_dev['mnt'].go_command(ra=returnra, dec=returndec)
         
             time.sleep(10)
         
@@ -2558,10 +2558,10 @@ class Sequencer:
                         return 'cancel'
                     
                 else:
-                    g_dev['mnt'].slewToSkyFlatAsync() 
+                    g_dev['mnt'].go_command(skyflatspot=True) 
                     too_close_to_zenith=False                       
             else:
-                g_dev['mnt'].slewToSkyFlatAsync() 
+                g_dev['mnt'].go_command(skyflatspot=True)
                 too_close_to_zenith=False
 
     def sky_flat_script(self, req, opt, morn=False, skip_moon_check=False):
@@ -3402,7 +3402,7 @@ class Sequencer:
             try:
                 plog("\nGoing to near focus patch of " + str(int(focus_patch_n)) + " 9th to 12th mag stars " + str(d2d.deg[0]) + "  degrees away.\n")
                 #plog("RA " + str(focus_patch_ra) + " DEC " + str(focus_patch_dec) )
-                g_dev['mnt'].go_coord(focus_patch_ra, focus_patch_dec)
+                g_dev['mnt'].go_command(ra=focus_patch_ra, dec=focus_patch_dec)
             except Exception as e:
                 plog ("Issues pointing to a focus patch. Focussing at the current pointing." , e)
                 plog(traceback.format_exc())
@@ -4180,7 +4180,7 @@ class Sequencer:
             #g_dev['mnt'].go_coord(focus_star[0][1][1], focus_star[0][1][0])
             
             g_dev['obs'].send_to_user("Slewing to a focus field", p_level='INFO')
-            g_dev['mnt'].go_coord(focus_patch_ra, focus_patch_dec)            
+            g_dev['mnt'].go_command(ra=focus_patch_ra, dec=focus_patch_dec)            
             g_dev['foc'].guarded_move((foc_start)*g_dev['foc'].micron_to_steps)
             
             
@@ -4566,7 +4566,7 @@ class Sequencer:
             
             
             #g_dev['mnt'].go_coord(focus_star[0][1][1], focus_star[0][1][0])
-            g_dev['mnt'].go_coord(focus_patch_ra, focus_patch_dec)
+            g_dev['mnt'].go_command(ra=focus_patch_ra, dec=focus_patch_dec)
             req = {'time': self.config['focus_exposure_time'],  'alias':  str(self.config['camera']['camera_1_1']['name']), 'image_type': 'auto_focus'}   #  NB Should pick up filter and constats from config
             opt = {'area': 100, 'count': 1, 'filter': 'focus'}
         else:
@@ -4962,12 +4962,12 @@ class Sequencer:
             #last_az = grid_star[0] + 0.01
             
             print("Going to near grid field " + str(grid_star) )
-            req = {'ra':  grid_star[0] / 15,
-                   'dec': grid_star[1]     #Note order is important (dec, ra)
-                   }
-            opt = {}
+            #req = {'ra':  grid_star[0] / 15,
+             #      'dec': grid_star[1]     #Note order is important (dec, ra)
+            #       }
+            #opt = {}
             
-            g_dev['mnt'].go_command(req, opt)
+            g_dev['mnt'].go_command(ra = grid_star[0] / 15 , dec=grid_star[1])
             #time.sleep(0.5)
             st = ''
             while g_dev['mnt'].mount.Slewing:
