@@ -3021,6 +3021,7 @@ class Sequencer:
                                 except:
                                     plog ("patch broken?")
                                     plog(traceback.format_exc())
+                                    plog (fred)
                                     #plog('I think this is because the roof is shut')
                                     #plog ('need to solve this breakpoint for next time')
                                     #plog (str(fred))
@@ -3086,7 +3087,10 @@ class Sequencer:
                                     >= 0.5 * flat_saturation_level
                                 ):
                                     self.filter_throughput_shelf[current_filter]=new_throughput_value
-                                    camera_gain_collector.append(fred["camera_gain"])
+                                    try:
+                                        camera_gain_collector.append(fred["camera_gain"])
+                                    except:
+                                        plog ("camera gain not avails")
                             else:
                                 if (
                                     bright
@@ -3096,8 +3100,11 @@ class Sequencer:
                                     >= 0.25 * flat_saturation_level
                                 ):
                                     self.filter_throughput_shelf[current_filter]=new_throughput_value
-                                    camera_gain_collector.append(fred["camera_gain"])
-            
+                                    try:
+                                        camera_gain_collector.append(fred["camera_gain"])
+                                    except:
+                                        plog ("camera gain not avails")
+                                        
                             acquired_count += 1
                             if acquired_count == flat_count:
                                 pop_list.pop(0)
