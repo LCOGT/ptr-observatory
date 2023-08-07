@@ -2530,6 +2530,7 @@ class Sequencer:
             alt, az = self.astro_events.flat_spot_now()  
             if self.config['degrees_to_avoid_zenith_area_for_calibrations'] > 0:
                 #breakpoint()
+                plog ('zentih distance: ' + str(90-alt))
                 if (90-alt) < self.config['degrees_to_avoid_zenith_area_for_calibrations']:
                     alt=90-self.config['degrees_to_avoid_zenith_area_for_calibrations']
                     #plog ("Requested Flat Spot, az: " + str(az) + " alt: " + str(alt))
