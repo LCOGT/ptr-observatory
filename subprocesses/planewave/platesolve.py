@@ -60,7 +60,7 @@ def platesolve(image_file, arcsec_per_pixel):
         output_file_path,
         catalog_path
     ]
-    print (args)
+    #print (args)
 
     if is_linux():
         # Linux systems need to run ps3cli via the mono runtime,
@@ -89,8 +89,8 @@ def platesolve(image_file, arcsec_per_pixel):
         process.kill()
         
     except:
-        print ('failed')
-        print (traceback.format_exc())
+        #print ('failed')
+        #print (traceback.format_exc())
             
         failed = True
         exit_code = 5
@@ -111,7 +111,7 @@ def platesolve(image_file, arcsec_per_pixel):
             catalog_path
         ]
         
-        print (args)
+        #print (args)
         process = Popen(
                 args,
                 #stdout=stdout_destination,
