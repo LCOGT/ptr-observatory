@@ -1129,6 +1129,10 @@ class Mount:
                 g_dev['obs'].time_of_last_slew=time.time()
                 #self.mount.SlewToCoordinatesAsync(self.ra_mech*RTOH, self.dec_mech*RTOD)  #Is this needed?
                 #plog('actual sent ra: ' + str(ra) + ' dec: ' + str(dec))
+                if ra < 0:
+                    ra=ra+24
+                if ra > 24:
+                    ra=ra-24
                 self.mount.SlewToCoordinatesAsync(ra, dec)  #Is this needed?
                 wait_for_slew() 
             except Exception as e:
@@ -1149,6 +1153,10 @@ class Mount:
                                 self.unpark_command()
                                 wait_for_slew()
                                 #self.mount.SlewToCoordinatesAsync(self.ra_mech*RTOH, self.dec_mech*RTOD)  #Is this needed?
+                                if ra < 0:
+                                    ra=ra+24
+                                if ra > 24:
+                                    ra=ra-24
                                 self.mount.SlewToCoordinatesAsync(ra, dec)
                                 retry=4
                             else:
@@ -1194,6 +1202,8 @@ class Mount:
                 
                 if ra < 0:
                     ra=ra+24
+                if ra > 24:
+                    ra=ra-24
                 plog('actual sent ra: ' + str(ra) + ' dec: ' + str(dec))
                 self.mount.SlewToCoordinatesAsync(ra, dec)
                 #self.can_report_destination_pierside
@@ -1217,6 +1227,10 @@ class Mount:
                     self.unpark_command()
                     wait_for_slew()
                     #self.mount.SlewToCoordinatesAsync(self.ra_mech*RTOH, self.dec_mech*RTOD)  #Is this needed?
+                    if ra < 0:
+                        ra=ra+24
+                    if ra > 24:
+                        ra=ra-24
                     self.mount.SlewToCoordinatesAsync(ra, dec)  #Is this needed?
                     
                 else:

@@ -3166,7 +3166,9 @@ sel
                     ranudge= g_dev['mnt'].mount.RightAscension + g_dev['obs'].pointing_correction_request_ra_err
                     decnudge= g_dev['mnt'].mount.Declination + g_dev['obs'].pointing_correction_request_dec_err
                     if ranudge < 0:
-                        ranudge=ranudge+24
+                        ranudge=ranudge+24                    
+                    if ranudge > 24:
+                        ranudge=ranudge-24
                     g_dev['mnt'].mount.SlewToCoordinatesAsync(ranudge, decnudge)
                     g_dev['obs'].time_of_last_slew = time.time()
                     wait_for_slew()
