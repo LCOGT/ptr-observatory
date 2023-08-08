@@ -942,8 +942,9 @@ class Mount:
 
             az, alt = self.astro_events.flat_spot_now()
             temppointing = AltAz(location=self.site_coordinates, obstime=Time.now(), alt=alt*u.deg, az=az*u.deg)          
-            ra = temppointing.ra.hours
-            dec = temppointing.dec.degree
+            altazskycoord=SkyCoord(alt=alt*u.deg, az=az*u.deg, obstime=Time.now(), location=self.site_coordinates, frame='altaz')
+            ra = altazskycoord.icrs.ra.deg /15
+            dec = altazskycoord.icrs.dec.deg 
             plog ("Requested Flat Spot, az: " + str(az) + " alt: " + str(alt))
             
             if self.config['degrees_to_avoid_zenith_area_for_calibrations'] > 0:
