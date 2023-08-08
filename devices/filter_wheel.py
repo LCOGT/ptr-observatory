@@ -323,11 +323,18 @@ class FilterWheel:
 
     def set_name_command(self, req: dict, opt: dict):
         """Sets the filter position by filter name."""      
-
+        
+        
         try:
             filter_name = str(req["filter"]).lower()
         except:
             filter_name = str(req["filter_name"]).lower()
+
+        if self.previous_filter_name==filter_name:
+            plog ("previous filter, " + str(self.previous_filter_name), " = requested filter, " + str(filter_name) + ". No change necessary.")
+        
+            return self.previous_filter_name, self.previous_filter_match, self.filter_offset
+
 
         filter_identified = 0
 
@@ -442,13 +449,16 @@ class FilterWheel:
 
             self.filter_offset = float(self.filter_data[filt_pointer][2])
 
+        
         if self.wait_time_after_filter_change != 0:
             plog ("Waiting " + str(self.wait_time_after_filter_change) + " seconds for filter wheel.")
             time.sleep(self.wait_time_after_filter_change)
 
         # make sure focusser is adjusted every filter change
         g_dev['foc'].adjust_focus()
-
+        self.previous_filter_name=filter_name
+        self.previous_filter_match=match
+        
         return filter_name, match, self.filter_offset
 
     def home_command(self, opt: dict):

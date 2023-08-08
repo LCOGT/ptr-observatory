@@ -924,7 +924,7 @@ site_config = {       #the NAME "SITE" IS INCONSISTENT  bIG CHANGE TO EFFECT, ob
                 # 'bias_dark_bin_spec':    ['1,1', '2,2', '3,3', '4,4' ],    #Default binning for flats
                 'number_of_bias_to_collect': 33,
                 'number_of_dark_to_collect': 17,
-                'number_of_flat_to_collect': 31,
+                'number_of_flat_to_collect': 10,
                 'number_of_bias_to_store': 63,
                 'number_of_dark_to_store': 31,
                 'number_of_flat_to_store': 31,
