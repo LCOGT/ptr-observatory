@@ -355,9 +355,9 @@ class Mount:
         
         # NEED to initialise these variables here in case the mount isn't slewed
         # before exposures after bootup
-        self.last_ra = self.mount.RightAscension
+        self.last_ra_requested = self.mount.RightAscension
             
-        self.last_dec = self.mount.Declination
+        self.last_dec_requested = self.mount.Declination
         self.last_tracking_rate_ra = 0
         self.last_tracking_rate_dec = 0
         self.last_seek_time = time.time() - 5000
@@ -1066,8 +1066,8 @@ class Mount:
             if not silent:
                 g_dev['obs'].send_to_user("Slewing telescope to:  " + str( self.object),  p_level="INFO")
         
-        self.last_ra = ra
-        self.last_dec = dec
+        self.last_ra_requested = ra
+        self.last_dec_requested = dec
         self.last_tracking_rate_ra = tracking_rate_ra
         self.last_tracking_rate_dec = tracking_rate_dec
         self.last_seek_time = time.time() - 5000
@@ -1192,8 +1192,8 @@ class Mount:
                     pass
                 else:
                     #print ("mount reference turned on")                
-                    ra=self.last_ra + delta_ra
-                    dec=self.last_dec + delta_dec
+                    ra=self.last_ra_requested + delta_ra
+                    dec=self.last_dec_requested + delta_dec
                     #print ("ra with delta " + str(ra))
                     #print ("dec with delta " + str(dec))
                 #ra += delta_ra #NB it takes a restart to pick up a new correction which is also J.now.

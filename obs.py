@@ -2438,8 +2438,8 @@ sel
                         #icrs_ra, icrs_dec = g_dev['mnt'].get_mount_coordinates()
                         #target_ra = g_dev["mnt"].current_icrs_ra
                         #target_dec = g_dev["mnt"].current_icrs_dec
-                        target_ra = g_dev["mnt"].last_ra
-                        target_dec = g_dev["mnt"].last_dec
+                        target_ra = g_dev["mnt"].last_ra_requested
+                        target_dec = g_dev["mnt"].last_dec_requested
                         solved_ra = solve["ra_j2000_hours"]
                         solved_dec = solve["dec_j2000_degrees"]
                         solved_arcsecperpixel = solve["arcsec_per_pixel"]
