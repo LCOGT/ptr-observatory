@@ -332,10 +332,7 @@ class FilterWheel:
         except:
             filter_name = str(req["filter_name"]).lower()
 
-        if self.previous_filter_name==filter_name:
-            #plog ("previous filter, " + str(self.previous_filter_name), " = requested filter, " + str(filter_name) + ". No change necessary.")
         
-            return self.previous_filter_name, self.previous_filter_match, self.filter_offset
 
 
         filter_identified = 0
@@ -364,10 +361,16 @@ class FilterWheel:
                     filt_pointer = match
                     filter_identified = 1
                     break
-        else:
-            plog("Filter name is:  ", self.filter_data[match][0])
+        #else:
+            
+
+        if self.previous_filter_name==filter_name:
+            #plog ("previous filter, " + str(self.previous_filter_name), " = requested filter, " + str(filter_name) + ". No change necessary.")
+        
+            return self.previous_filter_name, self.previous_filter_match, self.filter_offset
 
         try:
+            plog("Filter name is:  ", self.filter_data[match][0])
             g_dev["obs"].send_to_user("Filter set to:  " + str(self.filter_data[match][0]))
         except:
             pass  # This is usually when it is just booting up and obs doesn't exist yet

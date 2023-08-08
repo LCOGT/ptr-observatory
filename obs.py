@@ -27,7 +27,7 @@ import subprocess
 import pickle
 from astropy.io import fits
 from astropy.utils.data import check_download_cache
-from astropy.coordinates import SkyCoord, get_sun
+from astropy.coordinates import SkyCoord, get_sun, AltAz
 from astropy.time import Time
 from astropy import units as u
 from astropy.table import Table
@@ -949,9 +949,17 @@ sel
         if (time.time() - g_dev['obs'].time_of_last_slew) > 300:
             # Check no other commands or exposures are happening
             if g_dev['obs'].cmd_queue.empty() and not g_dev["cam"].exposure_busy and not g_dev['mnt'].mount.AtPark and g_dev['mnt'].mount.Tracking :
-                # Don't do it if the roof isn't open etc.
+                # Don't do it if the roof isn't open etc.                
                 if (g_dev['obs'].open_and_enabled_to_observe==True ) or (g_dev['obs'].debug_flag) or g_dev['obs'].scope_in_manual_mode:                
-                    g_dev['mnt'].go_command(ra=g_dev['mnt'].mount.RightAscension, dec=g_dev['mnt'].mount.Declination, silent=True)
+                    ra = g_dev['mnt'].mount.RightAscension
+                    dec = g_dev['mnt'].mount.Declination
+                    temppointing=SkyCoord(ra*u.hour, dec*u.degree, frame='icrs')
+                    temppointingaltaz=temppointing.transform_to(AltAz(location=self.site_coordinates, obstime=Time.now()))
+                    alt = temppointingaltaz.alt.degree
+                    #az = temppointingaltaz.az.degree
+                    if alt > 25:
+                        g_dev['obs'].time_of_last_slew=time.time()
+                        g_dev['mnt'].go_command(ra=g_dev['mnt'].mount.RightAscension, dec=g_dev['mnt'].mount.Declination, silent=True)
                 
                 
                 
