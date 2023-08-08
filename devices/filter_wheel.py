@@ -27,7 +27,7 @@ class FilterWheel:
         self.name = name
         g_dev["fil"] = self
         self.config = config["filter_wheel"]
-        
+        self.previous_filter_name='none'
         if driver is not None:
             self.null_filterwheel = False
             self.dual_filter = self.config["filter_wheel1"]["dual_wheel"]
@@ -231,7 +231,9 @@ class FilterWheel:
             self.null_filterwheel = True
         
         if self.null_filterwheel == False:
-            self.home_command(None)            
+            self.home_command(None)       
+        
+        
 
     # The patches. Note these are essentially a getter-setter/property constructs.
     # NB we are here talking to Maxim acting only as a filter controller.
@@ -331,7 +333,7 @@ class FilterWheel:
             filter_name = str(req["filter_name"]).lower()
 
         if self.previous_filter_name==filter_name:
-            plog ("previous filter, " + str(self.previous_filter_name), " = requested filter, " + str(filter_name) + ". No change necessary.")
+            #plog ("previous filter, " + str(self.previous_filter_name), " = requested filter, " + str(filter_name) + ". No change necessary.")
         
             return self.previous_filter_name, self.previous_filter_match, self.filter_offset
 
