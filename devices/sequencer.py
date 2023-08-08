@@ -569,7 +569,7 @@ class Sequencer:
                     else:
                         plog("mount is not tracking but this mount doesn't support ASCOM changing tracking")
 
-                g_dev['mnt'].move_to_azalt(70, 70)
+                g_dev['mnt'].go_command(alt=70,az= 70)
                 g_dev['foc'].time_of_last_focus = datetime.datetime.now() - datetime.timedelta(
                     days=1
                 )  # Initialise last focus as yesterday
