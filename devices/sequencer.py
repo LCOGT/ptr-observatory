@@ -2977,9 +2977,12 @@ class Sequencer:
                             try:
                                 # Particularly for AltAz, the slew and rotator rotation must have ended before exposing.
                                 self.wait_for_slew()
-                                while g_dev['rot'].rotator.IsMoving:
-                                    plog("flat rotator wait")
-                                    time.sleep(0.2)
+                                try:
+                                    while g_dev['rot'].rotator.IsMoving:
+                                        plog("flat rotator wait")
+                                        time.sleep(0.2)
+                                except:
+                                    pass
                                 
                                 fred = g_dev['cam'].expose_command(req, opt, user_id='Tobor', user_name='Tobor', user_roles='system', no_AWS=True, do_sep = False,skip_daytime_check=True)
                                 
