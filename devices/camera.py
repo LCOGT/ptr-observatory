@@ -3383,6 +3383,11 @@ class Camera:
                                 
                                 # NEED TO CHECK HERE THAT THERE ISN"T ALREADY A PLATE SOLVE IN THE THREAD!
                                 self.to_platesolve((hdusmalldata, hdusmallheader, cal_path, cal_name, frame_type, time.time(), pixscale, g_dev['mnt'].mount.RightAscension,g_dev['mnt'].mount.Declination))
+                                # If it is the last of a set of smartstacks, we actually want to 
+                                # wait for the platesolve and nudge before starting the next smartstack.
+                                               
+                                    
+                                    
                                 
                            
                     # Now that the jpeg, sep and platesolve has been sent up pronto,
@@ -3438,6 +3443,24 @@ class Camera:
                             pass
                         del hdusmalldata  # remove file from memory now that we are doing with it
 
+                    # If it is the last of a smartstack, we want to wait for the platesolve and nudge.
+                    if Nsmartstack > 1 and (Nsmartstack == sskcounter+1):
+                        reported=0
+                        while True:
+                            if g_dev['obs'].platesolve_is_processing ==False and g_dev['obs'].platesolve_queue.empty():
+                                #plog ("we are free from platesolving!")
+                                break
+                            else:
+                                if reported ==0:
+                                    plog ("PLATESOLVE: Waiting for platesolve processing to complete and queue to clear")
+                                    reported=1
+                                if g_dev['seq'].stop_script_called:
+                                    g_dev["obs"].send_to_user("Cancelling out of autofocus script as stop script has been called.")  
+                                    return
+                                if not g_dev['obs'].open_and_enabled_to_observe:
+                                    g_dev["obs"].send_to_user("Cancelling out of activity as no longer open and enabled to observe.")  
+                                    return
+                                pass  
 
                     # Good spot to check if we need to nudge the telescope
                     g_dev['obs'].check_platesolve_and_nudge(g_dev['obs'].auto_centering_off)                 

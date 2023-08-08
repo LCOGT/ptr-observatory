@@ -1215,6 +1215,7 @@ class Mount:
                 wait_for_slew()
                 self.mount.Tracking = True
             except Exception as e:
+                plog (traceback.format_exc())
                 # Yes, this is an awfully non-elegant way to force a mount to start 
                 # Tracking when it isn't implemented in the ASCOM driver. But if anyone has any better ideas, I am all ears - MF
                 # It also doesn't want to get into an endless loop of parking and unparking and homing, hence the rescue counter
