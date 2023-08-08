@@ -157,7 +157,7 @@ class Sequencer:
         self.reset_completes()  # NB NB Note this is reset each time sequencer is restarted.
 
         self.pulse_timer=time.time()
-
+        self.focussing=False
 
         self.reported_on_observing_period_beginning=False
 
@@ -3301,6 +3301,9 @@ class Sequencer:
                         result['patch'] = cal_result
                         result['temperature'] = avg_foc[2]  This is probably tube not reported by Gemini.
         '''
+        
+        self.focussing=True
+
 
         if throw==None:
             throw= self.config['focuser']['focuser1']['throw']
@@ -3308,7 +3311,8 @@ class Sequencer:
         if (ephem.now() < g_dev['events']['End Eve Bias Dark'] ) or \
             (g_dev['events']['End Morn Bias Dark']  < ephem.now() < g_dev['events']['Nightly Reset']):
             plog ("NOT DOING AUTO FOCUS -- IT IS THE DAYTIME!!")
-            g_dev["obs"].send_to_user("An auto focus was rejected as it is during the daytime.")            
+            g_dev["obs"].send_to_user("An auto focus was rejected as it is during the daytime.")    
+            self.focussing=False
             return
 
         # First check how long it has been since the last focus
@@ -3320,9 +3324,11 @@ class Sequencer:
 
         if self.stop_script_called:
             g_dev["obs"].send_to_user("Cancelling out of autofocus script as stop script has been called.")  
+            self.focussing=False
             return
         if not g_dev['obs'].open_and_enabled_to_observe:
             g_dev["obs"].send_to_user("Cancelling out of activity as no longer open and enabled to observe.")  
+            self.focussing=False
             return
             
 
@@ -3335,6 +3341,7 @@ class Sequencer:
                 
             else:
                 plog ("too soon since last autofacus")
+                self.focussing=False
                 return
         
         
@@ -3429,9 +3436,11 @@ class Sequencer:
         
         if self.stop_script_called:
             g_dev["obs"].send_to_user("Cancelling out of autofocus script as stop script has been called.")  
+            self.focussing=False
             return
         if not g_dev['obs'].open_and_enabled_to_observe:
             g_dev["obs"].send_to_user("Cancelling out of activity as no longer open and enabled to observe.")  
+            self.focussing=False
             return
         
         
@@ -3456,10 +3465,12 @@ class Sequencer:
                         plog ("PLATESOLVE: Waiting for platesolve processing to complete and queue to clear")
                         reported=1
                     if self.stop_script_called:
-                        g_dev["obs"].send_to_user("Cancelling out of autofocus script as stop script has been called.")  
+                        g_dev["obs"].send_to_user("Cancelling out of autofocus script as stop script has been called.")
+                        self.focussing=False
                         return
                     if not g_dev['obs'].open_and_enabled_to_observe:
                         g_dev["obs"].send_to_user("Cancelling out of activity as no longer open and enabled to observe.")  
+                        self.focussing=False
                         return
                     pass
             
@@ -3468,9 +3479,11 @@ class Sequencer:
         
         if self.stop_script_called:
             g_dev["obs"].send_to_user("Cancelling out of autofocus script as stop script has been called.")  
+            self.focussing=False
             return
         if not g_dev['obs'].open_and_enabled_to_observe:
             g_dev["obs"].send_to_user("Cancelling out of activity as no longer open and enabled to observe.")  
+            self.focussing=False
             return
         
         try:
@@ -3529,9 +3542,11 @@ class Sequencer:
                 result = g_dev['cam'].expose_command(req, opt, user_id='Tobor', user_name='Tobor', user_roles='system', no_AWS=True, solve_it=False) ## , script = 'auto_focus_script_0')  #  This is where we start.
                 if self.stop_script_called:
                     g_dev["obs"].send_to_user("Cancelling out of autofocus script as stop script has been called.")  
+                    self.focussing=False
                     return
                 if not g_dev['obs'].open_and_enabled_to_observe:
                     g_dev["obs"].send_to_user("Cancelling out of activity as no longer open and enabled to observe.")  
+                    self.focussing=False
                     return
 
             else:
@@ -3565,9 +3580,11 @@ class Sequencer:
             result = g_dev['cam'].expose_command(req, opt, user_id='Tobor', user_name='Tobor', user_roles='system', no_AWS=True, solve_it=False) ## , script = 'auto_focus_script_1')  #  This is moving in one throw.
             if self.stop_script_called:
                 g_dev["obs"].send_to_user("Cancelling out of autofocus script as stop script has been called.")  
+                self.focussing=False
                 return
             if not g_dev['obs'].open_and_enabled_to_observe:
                 g_dev["obs"].send_to_user("Cancelling out of activity as no longer open and enabled to observe.")  
+                self.focussing=False
                 return
         else:
             result['FWHM'] = 4
@@ -3595,9 +3612,11 @@ class Sequencer:
             result = g_dev['cam'].expose_command(req, opt, user_id='Tobor', user_name='Tobor', user_roles='system', no_AWS=True, solve_it=False) ## , script = 'auto_focus_script_2')  #  This is moving out one throw.
             if self.stop_script_called:
                 g_dev["obs"].send_to_user("Cancelling out of autofocus script as stop script has been called.")  
+                self.focussing=False
                 return
             if not g_dev['obs'].open_and_enabled_to_observe:
                 g_dev["obs"].send_to_user("Cancelling out of activity as no longer open and enabled to observe.")  
+                self.focussing=False
                 return
         else:
             result['FWHM'] = 4.5
@@ -3632,6 +3651,7 @@ class Sequencer:
             #self.sequencer_hold = False
             self.guard = False
             self.af_guard = False
+            self.focussing=False
             return
         elif spot1 < spot2 and spot1 < spot3:
             try:
@@ -3652,6 +3672,7 @@ class Sequencer:
                 #self.sequencer_hold = False
                 self.guard = False
                 self.af_guard = False
+                self.focussing=False
                 return
             if min(x) <= d1 <= max(x):
                 plog ('Moving to Solved focus:  ', round(d1, 2), ' calculated:  ',  new_spot)
@@ -3674,9 +3695,11 @@ class Sequencer:
                     result = g_dev['cam'].expose_command(req, opt, user_id='Tobor', user_name='Tobor', user_roles='system', no_AWS=True, solve_it=False)  #   script = 'auto_focus_script_3')  #  This is verifying the new focus.
                     if self.stop_script_called:
                         g_dev["obs"].send_to_user("Cancelling out of autofocus script as stop script has been called.")  
+                        self.focussing=False
                         return
                     if not g_dev['obs'].open_and_enabled_to_observe:
                         g_dev["obs"].send_to_user("Cancelling out of activity as no longer open and enabled to observe.")  
+                        self.focussing=False
                         return
                 else:
                     result['FWHM'] = new_spot
@@ -3708,6 +3731,7 @@ class Sequencer:
             self.guard = False
             self.af_guard = False
             g_dev['foc'].last_focus_fwhm = round(spot4, 2)
+            self.focussing=False
             return
         elif spot2  <= spot1 < spot3:      #Add to the inside
             pass
@@ -3717,10 +3741,12 @@ class Sequencer:
                 g_dev['obs'].scan_requests()
                 result = g_dev['cam'].expose_command(req, opt, user_id='Tobor', user_name='Tobor', user_roles='system', no_AWS=True, solve_it=False) ## , script = 'auto_focus_script_1')  #  This is moving in one throw.
                 if self.stop_script_called:
-                    g_dev["obs"].send_to_user("Cancelling out of autofocus script as stop script has been called.")  
+                    g_dev["obs"].send_to_user("Cancelling out of autofocus script as stop script has been called.") 
+                    self.focussing=False
                     return
                 if not g_dev['obs'].open_and_enabled_to_observe:
                     g_dev["obs"].send_to_user("Cancelling out of activity as no longer open and enabled to observe.")  
+                    self.focussing=False
                     return
             else:
                 result['FWHM'] = 6
@@ -3759,12 +3785,15 @@ class Sequencer:
                     g_dev["mnt"].last_dec = start_dec
                     g_dev['mnt'].mount.SlewToCoordinatesAsync(start_ra, start_dec)   #Return to pre-focus pointing.
                     self.wait_for_slew()
+                    self.focussing=False
                     return
                 else:
                     plog('Autofocus quadratic equation not converge. Moving back to extensive focus:  ', extensive_focus)
                     g_dev['obs'].send_to_user('V-curve focus failed, Moving back to extensive focus: ' + str(extensive_focus))
                     
                     g_dev['foc'].guarded_move((extensive_focus)*g_dev['foc'].micron_to_steps)
+
+                    g_dev['foc'].last_known_focus=(extensive_focus)*g_dev['foc'].micron_to_steps
 
                     #self.sequencer_hold = False   #Allow comand checks.
                     self.af_guard = False
@@ -3777,6 +3806,7 @@ class Sequencer:
                     #self.sequencer_hold = False
                     self.guard = False
                     self.af_guard = False
+                    self.focussing=False
                     return
             if min(x) <= d1 <= max(x):
                 plog ('Moving to Solved focus:  ', round(d1, 2), ' calculated:  ',  new_spot)
@@ -3798,10 +3828,12 @@ class Sequencer:
                     g_dev['obs'].scan_requests()
                     result = g_dev['cam'].expose_command(req, opt, user_id='Tobor', user_name='Tobor', user_roles='system', no_AWS=True, solve_it=False)  #   script = 'auto_focus_script_3')  #  This is verifying the new focus.
                     if self.stop_script_called:
-                        g_dev["obs"].send_to_user("Cancelling out of autofocus script as stop script has been called.")  
+                        g_dev["obs"].send_to_user("Cancelling out of autofocus script as stop script has been called.")
+                        self.focussing=False
                         return
                     if not g_dev['obs'].open_and_enabled_to_observe:
                         g_dev["obs"].send_to_user("Cancelling out of activity as no longer open and enabled to observe.")  
+                        self.focussing=False
                         return
                 else:
                     result['FWHM'] = new_spot
@@ -3833,6 +3865,7 @@ class Sequencer:
             self.guard = False
             self.af_guard = False
             g_dev['foc'].last_focus_fwhm = round(spot4, 2)
+            self.focussing=False
             return
 
         elif spot2 > spot1 >= spot3:       #Add to the outside
@@ -3845,9 +3878,11 @@ class Sequencer:
                 result = g_dev['cam'].expose_command(req, opt, user_id='Tobor', user_name='Tobor', user_roles='system', no_AWS=True, solve_it=False) ## , script = 'auto_focus_script_2')  #  This is moving out one throw.
                 if self.stop_script_called:
                     g_dev["obs"].send_to_user("Cancelling out of autofocus script as stop script has been called.")  
+                    self.focussing=False
                     return
                 if not g_dev['obs'].open_and_enabled_to_observe:
                     g_dev["obs"].send_to_user("Cancelling out of activity as no longer open and enabled to observe.")  
+                    self.focussing=False
                     return
             else:
                 result['FWHM'] = 5.5
@@ -3887,6 +3922,7 @@ class Sequencer:
                     g_dev["mnt"].last_dec = start_dec
                     g_dev['mnt'].mount.SlewToCoordinatesAsync(start_ra, start_dec)   #Return to pre-focus pointing.
                     self.wait_for_slew()
+                    self.focussing=False
                     return
                 else:
                     plog('Autofocus quadratic equation not converge. Moving back to extensive focus:  ', extensive_focus)
@@ -3904,6 +3940,7 @@ class Sequencer:
                     #self.sequencer_hold = False
                     self.guard = False
                     self.af_guard = False
+                    self.focussing=False
                     return
 
 
@@ -3936,10 +3973,12 @@ class Sequencer:
                     g_dev['obs'].scan_requests()
                     result = g_dev['cam'].expose_command(req, opt, user_id='Tobor', user_name='Tobor', user_roles='system', no_AWS=True, solve_it=False)  #   script = 'auto_focus_script_3')  #  This is verifying the new focus.
                     if self.stop_script_called:
-                        g_dev["obs"].send_to_user("Cancelling out of autofocus script as stop script has been called.")  
+                        g_dev["obs"].send_to_user("Cancelling out of autofocus script as stop script has been called.")
+                        self.focussing=False
                         return
                     if not g_dev['obs'].open_and_enabled_to_observe:
                         g_dev["obs"].send_to_user("Cancelling out of activity as no longer open and enabled to observe.")  
+                        self.focussing=False
                         return
                 else:
                     result['FWHM'] = new_spot
@@ -3976,6 +4015,7 @@ class Sequencer:
                     g_dev["mnt"].last_dec = start_dec
                     g_dev['mnt'].mount.SlewToCoordinatesAsync(start_ra, start_dec)   #Return to pre-focus pointing.
                     self.wait_for_slew()
+                    self.focussing=False
                     return
                 else:
                     plog('Autofocus quadratic equation not converge. Moving back to extensive focus:  ', extensive_focus)
@@ -3993,6 +4033,7 @@ class Sequencer:
                     #self.sequencer_hold = False
                     self.guard = False
                     self.af_guard = False
+                    self.focussing=False
                     return
             
             
@@ -4008,6 +4049,7 @@ class Sequencer:
             self.af_guard = False
 
             g_dev['foc'].last_focus_fwhm = round(spot4, 2)
+            self.focussing=False
             return
         # elif spot2 <= spot1 or spot3 <= spot1:
         #     if spot2 <= spot3:
@@ -4043,6 +4085,7 @@ class Sequencer:
                 g_dev["mnt"].last_dec = start_dec
                 g_dev['mnt'].mount.SlewToCoordinatesAsync(start_ra, start_dec)   #Return to pre-focus pointing.
                 self.wait_for_slew()
+                self.focussing=False
                 return
             else:
                 plog('Autofocus quadratic equation not converge. Moving back to extensive focus:  ', extensive_focus)
@@ -4060,6 +4103,7 @@ class Sequencer:
                 #self.sequencer_hold = False
                 self.guard = False
                 self.af_guard = False
+                self.focussing=False
                 return
         plog("Returning to RA:  " +str(start_ra) + " Dec: " + str(start_dec))
         g_dev["obs"].send_to_user("Returning to RA:  " +str(start_ra) + " Dec: " + str(start_dec))
@@ -4077,7 +4121,7 @@ class Sequencer:
         #self.sequencer_hold = False
         self.guard = False
         self.af_guard = False
-
+        self.focussing=False
         return
 
 
@@ -4093,7 +4137,7 @@ class Sequencer:
         and runs a normal focus
         
         '''
-        
+        self.focussing=True
         if throw==None:
             throw= self.config['focuser']['focuser1']['throw']
         
@@ -4103,6 +4147,7 @@ class Sequencer:
 
             plog ("NOT DOING EXTENSIVE FOCUS -- IT IS THE DAYTIME!!")
             g_dev["obs"].send_to_user("An extensive focus was rejected as it is during the daytime.")
+            self.focussing=False
             return
         
         
@@ -4195,9 +4240,11 @@ class Sequencer:
             
             if self.stop_script_called:
                 g_dev["obs"].send_to_user("Cancelling out of autofocus script as stop script has been called.")  
+                self.focussing=False
                 return
             if not g_dev['obs'].open_and_enabled_to_observe:
                 g_dev["obs"].send_to_user("Cancelling out of activity as no longer open and enabled to observe.")  
+                self.focussing=False
                 return
             
             # If no auto_focus has been done, centre the focus field.
@@ -4218,9 +4265,11 @@ class Sequencer:
                             reported=1
                         if self.stop_script_called:
                             g_dev["obs"].send_to_user("Cancelling out of autofocus script as stop script has been called.")  
+                            self.focussing=False
                             return
                         if not g_dev['obs'].open_and_enabled_to_observe:
                             g_dev["obs"].send_to_user("Cancelling out of activity as no longer open and enabled to observe.")  
+                            self.focussing=False
                             return
                         pass
                 
@@ -4228,9 +4277,11 @@ class Sequencer:
             
             if self.stop_script_called:
                 g_dev["obs"].send_to_user("Cancelling out of autofocus script as stop script has been called.")  
+                self.focussing=False
                 return
             if not g_dev['obs'].open_and_enabled_to_observe:
                 g_dev["obs"].send_to_user("Cancelling out of activity as no longer open and enabled to observe.")  
+                self.focussing=False
                 return
             
             
@@ -4257,9 +4308,11 @@ class Sequencer:
                 result = g_dev['cam'].expose_command(req, opt, user_id='Tobor', user_name='Tobor', user_roles='system', no_AWS=True, solve_it=False)
                 if self.stop_script_called:
                     g_dev["obs"].send_to_user("Cancelling out of autofocus script as stop script has been called.")  
+                    self.focussing=False
                     return
                 if not g_dev['obs'].open_and_enabled_to_observe:
                     g_dev["obs"].send_to_user("Cancelling out of activity as no longer open and enabled to observe.")  
+                    self.focussing=False
                     return
             else:
                 try:
@@ -4318,9 +4371,11 @@ class Sequencer:
                 result = g_dev['cam'].expose_command(req, opt, user_id='Tobor', user_name='Tobor', user_roles='system', no_AWS=True, solve_it=False)
                 if self.stop_script_called:
                     g_dev["obs"].send_to_user("Cancelling out of autofocus script as stop script has been called.")  
+                    self.focussing=False
                     return
                 if not g_dev['obs'].open_and_enabled_to_observe:
                     g_dev["obs"].send_to_user("Cancelling out of activity as no longer open and enabled to observe.")  
+                    self.focussing=False
                     return
             else:
                 result['FWHM'] = 4
@@ -4480,7 +4535,7 @@ class Sequencer:
         Optionally individual images can be multiples of one to average out seeing.
         NBNBNB This code needs to go to known stars to be moe relaible and permit subframes
         '''
-        
+        self.focussing=True
         if throw==None:
             throw= self.config['focuser']['focuser1']['throw']
         
@@ -4488,6 +4543,7 @@ class Sequencer:
             (g_dev['events']['End Morn Bias Dark']  < ephem.now() < g_dev['events']['Nightly Reset']):
             plog ("NOT DOING COARSE FOCUS -- IT IS THE DAYTIME!!")
             g_dev["obs"].send_to_user("A coarse focus was rejected as it is during the daytime.")
+            self.focussing=False
             return
         
         plog('AF entered with:  ', req, opt)
@@ -4593,9 +4649,11 @@ class Sequencer:
             result = g_dev['cam'].expose_command(req, opt, user_id='Tobor', user_name='Tobor', user_roles='system', no_AWS=True, solve_it=False)
             if self.stop_script_called:
                 g_dev["obs"].send_to_user("Cancelling out of autofocus script as stop script has been called.")  
+                self.focussing=False
                 return
             if not g_dev['obs'].open_and_enabled_to_observe:
                 g_dev["obs"].send_to_user("Cancelling out of activity as no longer open and enabled to observe.")  
+                self.focussing=False
                 return
         else:
             result['FWHM'] = 4
@@ -4620,9 +4678,11 @@ class Sequencer:
             result = g_dev['cam'].expose_command(req, opt, user_id='Tobor', user_name='Tobor', user_roles='system', no_AWS=True, solve_it=False)
             if self.stop_script_called:
                 g_dev["obs"].send_to_user("Cancelling out of autofocus script as stop script has been called.")  
+                self.focussing=False
                 return
             if not g_dev['obs'].open_and_enabled_to_observe:
                 g_dev["obs"].send_to_user("Cancelling out of activity as no longer open and enabled to observe.")  
+                self.focussing=False
                 return
         else:
             result['FWHM'] = 5
@@ -4646,9 +4706,11 @@ class Sequencer:
             result = g_dev['cam'].expose_command(req, opt, user_id='Tobor', user_name='Tobor', user_roles='system', no_AWS=True, solve_it=False)
             if self.stop_script_called:
                 g_dev["obs"].send_to_user("Cancelling out of autofocus script as stop script has been called.")  
+                self.focussing=False
                 return
             if not g_dev['obs'].open_and_enabled_to_observe:
                 g_dev["obs"].send_to_user("Cancelling out of activity as no longer open and enabled to observe.")  
+                self.focussing=False
                 return
         else:
             result['FWHM'] = 6
@@ -4673,9 +4735,11 @@ class Sequencer:
             result = g_dev['cam'].expose_command(req, opt, user_id='Tobor', user_name='Tobor', user_roles='system', no_AWS=True, solve_it=False)
             if self.stop_script_called:
                 g_dev["obs"].send_to_user("Cancelling out of autofocus script as stop script has been called.")  
+                self.focussing=False
                 return
             if not g_dev['obs'].open_and_enabled_to_observe:
                 g_dev["obs"].send_to_user("Cancelling out of activity as no longer open and enabled to observe.")  
+                self.focussing=False
                 return
         else:
             result['FWHM'] = 6.5
@@ -4699,9 +4763,11 @@ class Sequencer:
             result = g_dev['cam'].expose_command(req, opt, user_id='Tobor', user_name='Tobor', user_roles='system', no_AWS=True, solve_it=False)
             if self.stop_script_called:
                 g_dev["obs"].send_to_user("Cancelling out of autofocus script as stop script has been called.")  
+                self.focussing=False
                 return
             if not g_dev['obs'].open_and_enabled_to_observe:
                 g_dev["obs"].send_to_user("Cancelling out of activity as no longer open and enabled to observe.")  
+                self.focussing=False
                 return
         else:
             result['FWHM'] = 5.75
@@ -4730,6 +4796,7 @@ class Sequencer:
             #self.sequencer_hold = False
             self.guard = False
             self.af_guard = False
+            self.focussing=False
             return
         if min(x) <= d1 <= max(x):
             plog ('Moving to Solved focus:  ', round(d1, 2), ' calculated:  ',  new_spot)
@@ -4748,9 +4815,11 @@ class Sequencer:
                 result = g_dev['cam'].expose_command(req, opt, user_id='Tobor', user_name='Tobor', user_roles='system', solve_it=False)
                 if self.stop_script_called:
                     g_dev["obs"].send_to_user("Cancelling out of autofocus script as stop script has been called.")  
+                    self.focussing=False
                     return
                 if not g_dev['obs'].open_and_enabled_to_observe:
                     g_dev["obs"].send_to_user("Cancelling out of activity as no longer open and enabled to observe.")  
+                    self.focussing=False
                     return
             else:
                 result['FWHM'] = new_spot
@@ -4779,6 +4848,7 @@ class Sequencer:
         #self.sequencer_hold = False
         self.guard = False
         self.af_guard = False
+        self.focussing=False
         return result
 
     def append_completes(self, block_id):

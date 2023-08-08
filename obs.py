@@ -1269,7 +1269,7 @@ sel
             #plog("Time until Nightly Reset      : " + str(round(( g_dev['events']['Nightly Reset'] - ephem.now()) * 24,2)) + " hours")
             
             # Adjust focus on a not-too-frequent period for temperature
-            if not g_dev["cam"].exposure_busy:
+            if not g_dev["cam"].exposure_busy and not g_dev["seq"].focussing:
                 g_dev['foc'].adjust_focus()
             
             
