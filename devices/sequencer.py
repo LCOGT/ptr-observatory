@@ -4444,6 +4444,8 @@ class Sequencer:
             plog (solved_pos)
             plog (minimumFWHM)
             g_dev['foc'].guarded_move((solved_pos)*g_dev['foc'].micron_to_steps)
+            g_dev['foc'].last_known_focus=(solved_pos)*g_dev['foc'].micron_to_steps
+
             if not no_auto_after_solve:
                 self.auto_focus_script(None,None, skip_timer_check=True, extensive_focus=solved_pos) 
         except:
@@ -4519,6 +4521,7 @@ class Sequencer:
         #self.sequencer_hold = False
         self.guard = False
         self.af_guard = False
+        self.focussing = False
         
         
             
