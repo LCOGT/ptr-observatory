@@ -954,7 +954,7 @@ sel
                     ra = g_dev['mnt'].mount.RightAscension
                     dec = g_dev['mnt'].mount.Declination
                     temppointing=SkyCoord(ra*u.hour, dec*u.degree, frame='icrs')
-                    temppointingaltaz=temppointing.transform_to(AltAz(location=self.site_coordinates, obstime=Time.now()))
+                    temppointingaltaz=temppointing.transform_to(AltAz(location=g_dev['mnt'].site_coordinates, obstime=Time.now()))
                     alt = temppointingaltaz.alt.degree
                     #az = temppointingaltaz.az.degree
                     if alt > 25:
