@@ -461,6 +461,8 @@ class Observatory:
         self.pointing_correction_request_time = time.time()
         self.pointing_correction_request_ra = 0.0
         self.pointing_correction_request_dec = 0.0
+        self.pointing_correction_request_ra_err = 0.0
+        self.pointing_correction_request_dec_err = 0.0
 
         # This variable is simply.... is it open and enabled to observe!
         # This is set when the roof is open and everything is safe
@@ -2527,6 +2529,10 @@ sel
                              self.pointing_correction_request_time = time.time()
                              self.pointing_correction_request_ra = pointing_ra + err_ha #* ra_correction_multiplier)
                              self.pointing_correction_request_dec = pointing_dec + err_dec# * dec_correction_multiplier)
+                             self.pointing_correction_request_ra_err = err_ha #* ra_correction_multiplier)
+                             self.pointing_correction_request_dec_err = err_dec# * dec_correction_multiplier)
+                             
+                             
                              
                              if not self.config['mount_reference_model_off']:
                                  if target_dec > -85 and target_dec < 85:
@@ -3156,7 +3162,12 @@ sel
                 else:
                     plog("Re-centering Telescope Slightly.")
                     self.send_to_user("Re-centering Telescope Slightly.")
-                    g_dev['mnt'].mount.SlewToCoordinatesAsync(g_dev['obs'].pointing_correction_request_ra, g_dev['obs'].pointing_correction_request_dec)
+                    #g_dev['mnt'].mount.SlewToCoordinatesAsync(g_dev['obs'].pointing_correction_request_ra, g_dev['obs'].pointing_correction_request_dec)
+                    ranudge= g_dev['mnt'].mount.RightAscension + g_dev['obs'].pointing_correction_request_ra_err
+                    decnudge= g_dev['mnt'].mount.Declination + g_dev['obs'].pointing_correction_request_dec_err
+                    if ranudge < 0:
+                        ranudge=ranudge+24
+                    g_dev['mnt'].mount.SlewToCoordinatesAsync(ranudge, decnudge)
                     g_dev['obs'].time_of_last_slew = time.time()
                     wait_for_slew()
                     

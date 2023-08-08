@@ -1191,6 +1191,9 @@ class Mount:
                 #ra += delta_ra #NB it takes a restart to pick up a new correction which is also J.now.
                 #dec += delta_dec
                 #self.mount.SlewToCoordinatesAsync(self.ra_mech*RTOH, self.dec_mech*RTOD)
+                
+                if ra < 0:
+                    ra=ra+24
                 plog('actual sent ra: ' + str(ra) + ' dec: ' + str(dec))
                 self.mount.SlewToCoordinatesAsync(ra, dec)
                 #self.can_report_destination_pierside
