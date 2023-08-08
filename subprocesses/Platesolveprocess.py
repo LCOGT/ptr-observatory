@@ -22,7 +22,7 @@ from astropy.utils.exceptions import AstropyUserWarning
 import warnings
 warnings.simplefilter('ignore', category=AstropyUserWarning)
 
-
+import traceback
 
 def parse_platesolve_output(output_file):
     f = open(output_file)
@@ -49,8 +49,8 @@ def parse_platesolve_output(output_file):
 
 
 
-input_psolve_info=pickle.load(sys.stdin.buffer)
-#input_psolve_info=pickle.load(open('testplatesolvepickle','rb'))
+#input_psolve_info=pickle.load(sys.stdin.buffer)
+input_psolve_info=pickle.load(open('testplatesolvepickle','rb'))
 
 
 
@@ -74,7 +74,9 @@ minimum_realistic_seeing=input_psolve_info[14]
 
 
 parentPath = Path(getcwd())
-PS3CLI_EXE = str(parentPath).replace('\subprocesses','') +'/subprocesses/planewave/ps3cli/ps3cli.exe'
+PS3CLI_EXE = str(parentPath).replace('\subprocesses','') +'/subprocesses/ps3cli/ps3cli.exe'
+
+#breakpoint()
 #cal_path + 'platesolvetemp.fits'
 output_file_path = os.path.join(cal_path + "ps3cli_results.txt")
 try:
@@ -349,6 +351,7 @@ if len(sources) >= 15:
     except:
         failed = True
         process.kill()
+     #   traceback.format_exc()
         
     if failed:
         try:
@@ -380,7 +383,7 @@ if len(sources) >= 15:
         except:
             process.kill()
             solve = 'error'
-           
+    #print (solve)
     pickle.dump(solve, open(cal_path + 'platesolve.pickle', 'wb'))
     
     try:
