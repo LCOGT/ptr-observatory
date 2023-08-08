@@ -12,16 +12,48 @@ import numpy as np
 import sep
 from astropy.table import Table
 from astropy.io import fits
-from planewave import platesolve
+#from planewave import platesolve
+from subprocess import Popen, PIPE
 import os
-
-
+from pathlib import Path
+from os import getcwd
+import time
 from astropy.utils.exceptions import AstropyUserWarning
 import warnings
 warnings.simplefilter('ignore', category=AstropyUserWarning)
 
+
+
+def parse_platesolve_output(output_file):
+    f = open(output_file)
+
+    results = {}
+
+    for line in f.readlines():
+        #print (line)
+        line = line.strip()
+        if line == "":
+            continue
+
+        fields = line.split("=")
+        if len(fields) != 2:
+            continue
+
+        keyword, value = fields
+
+        results[keyword] = float(value)
+
+    return results
+
+
+
+
+
 input_psolve_info=pickle.load(sys.stdin.buffer)
 #input_psolve_info=pickle.load(open('testplatesolvepickle','rb'))
+
+
+
 
 
 hdufocusdata=input_psolve_info[0]
@@ -40,6 +72,20 @@ image_saturation_level = input_psolve_info[12]
 readnoise=input_psolve_info[13]
 minimum_realistic_seeing=input_psolve_info[14]
 
+
+parentPath = Path(getcwd())
+PS3CLI_EXE = str(parentPath).replace('\subprocesses','') +'/subprocesses/planewave/ps3cli/ps3cli.exe'
+#cal_path + 'platesolvetemp.fits'
+output_file_path = os.path.join(cal_path + "ps3cli_results.txt")
+try:
+    os.remove(output_file_path)
+except:
+    pass
+try:
+    os.remove(cal_path + 'platesolvetemp.fits')
+except:
+    pass
+catalog_path = os.path.expanduser("~\\Documents\\Kepler")
 # focdate=time.time()
 
 # Crop the image for platesolving
@@ -187,15 +233,15 @@ sources = sources[sources['flux'] < 1000000]
 
 #breakpoint()
 
-if len(sources) >= 2000:
-    fraction_to_remove = 1-(2000/len(sources))
-    top_cut = fraction_to_remove * 0.1 * 100
-    bottom_cut = fraction_to_remove * 0.9 * 100
-    top_percentile = np.percentile(sources['flux'],100-top_cut)
-    bottom_percentile = np.percentile(sources['flux'],bottom_cut)
-    #breakpoint()
-    sources = sources[sources['flux'] > bottom_percentile]
-    sources = sources[sources['flux'] < top_percentile]
+# if len(sources) >= 2000:
+#     fraction_to_remove = 1-(2000/len(sources))
+#     top_cut = fraction_to_remove * 0.1 * 100
+#     bottom_cut = fraction_to_remove * 0.9 * 100
+#     top_percentile = np.percentile(sources['flux'],100-top_cut)
+#     bottom_percentile = np.percentile(sources['flux'],bottom_cut)
+#     #breakpoint()
+#     sources = sources[sources['flux'] > bottom_percentile]
+#     sources = sources[sources['flux'] < top_percentile]
 
 #print (len(sources))
 
@@ -239,7 +285,7 @@ if len(sources) >= 15:
     for addingstar in sources:
         x = round(addingstar['x'] -1)
         y = round(addingstar['y'] -1)
-        peak = max(int(addingstar['peak']),int(2000))  
+        peak = int(addingstar['peak'])
         # Add star to numpy array as a slice
         #print (peak)
         try:
@@ -272,34 +318,76 @@ if len(sources) >= 15:
     del hdufocusdata
     del hdufocus
 
-    # Test here that there has not been a slew, if there has been a slew, cancel out!
-    #if self.time_of_last_slew > time_platesolve_requested:
-    #    plog("detected a slew since beginning platesolve... bailing out of platesolve.")
-        # if not self.config['keep_focus_images_on_disk']:
-        #    os.remove(cal_path + cal_name)
-        #one_at_a_time = 0
-        # self.platesolve_queue.task_done()
-        # break
-    #else:
-    
-       
-    
-    try:
-        # time.sleep(1) # A simple wait to make sure file is saved
-        solve = platesolve.platesolve(
-            #cal_path + 'platesolvetemp.fits', pixscale*platesolve_bin_factor
-            cal_path + 'platesolvetemp.fits', pixscale*platesolve_bin_factor)
-    except:
-        solve = 'error'
-    
-    #print (solve)
-    
-    #print (sources)
+        
     #breakpoint()
     
+    try:
+        args = [
+            PS3CLI_EXE,
+            cal_path + 'platesolvetemp.fits',
+            str(pixscale),
+            output_file_path,
+            catalog_path
+        ]
+        
+        process = Popen(
+                args,
+                #stdout=stdout_destination,
+                stdout=None,
+                stderr=PIPE
+                )
+        #(stdout, stderr) = process.communicate(timeout=60)  # Obtain stdout and stderr output from the wcs tool
+        (stdout, stderr) = process.communicate()  # Obtain stdout and stderr output from the wcs tool
+        exit_code = process.wait() # Wait for process to complete and obtain the exit code
+        failed = False
+        time.sleep(1)
+        process.kill()
+        
+        solve = parse_platesolve_output(output_file_path)
+        #print (solve)
+        #solve = platesolve.platesolve(cal_path + 'platesolvetemp.fits', pixscale*platesolve_bin_factor)
+    except:
+        failed = True
+        process.kill()
+        
+    if failed:
+        try:
+            # Try again with a lower pixelscale... yes it makes no sense
+            # But I didn't write PS3.exe ..... (MTF)        
+            args = [
+                PS3CLI_EXE,
+                cal_path + 'platesolvetemp.fits',
+                str(float(pixscale)/2.0),
+                output_file_path,
+                catalog_path
+            ]
+            
+            #print (args)
+            process = Popen(
+                    args,
+                    #stdout=stdout_destination,
+                    stdout=None,
+                    stderr=PIPE
+                    )
+            #(stdout, stderr) = process.communicate(timeout=60)  # Obtain stdout and stderr output from the wcs tool
+            (stdout, stderr) = process.communicate()  # Obtain stdout and stderr output from the wcs tool
+            exit_code = process.wait() # Wait for process to complete and obtain the exit code
+            time.sleep(1)
+            process.kill()
+            
+            solve = parse_platesolve_output(output_file_path)
+            
+        except:
+            process.kill()
+            solve = 'error'
+           
     pickle.dump(solve, open(cal_path + 'platesolve.pickle', 'wb'))
     
     try:
         os.remove(cal_path + 'platesolvetemp.fits')
+    except:
+        pass
+    try:
+        os.remove(output_file_path)
     except:
         pass

@@ -1022,23 +1022,14 @@ class Mount:
             plog("Refusing pointing request as the observatory is currently taking flats or calibration frmaes.")
             return
             
-        
-        #plog("mount cmd. slewing mount, req, opt:  ", req, opt)
-
-        ''' unpark the telescope mount '''  #  NB can we check if unparked and save time?
-
+       
         if objectname != None:
             self.object = objectname
         else:
             self.object = 'unspecified'    #NB could possibly augment with "Near --blah--"
+       
         self.unpark_command()  
-        #g_dev['obs'].send_to_user("Slewing Telescope.")
-        #try:
-        #    clutch_ra = g_dev['mnt']['mount1']['east_clutch_ra_correction']
-        #    clutch_dec = g_dev['mnt']['mount1']['east_clutch_dec_correction']
-        #except:
-        #    clutch_ra = 0.0
-        #    clutch_dec = 0.0
+       
                     
         if self.object in ['Moon', 'moon', 'Lune', 'lune', 'Luna', 'luna',]:
             self.obs.date = ephem.now()
@@ -1050,166 +1041,24 @@ class Mount:
             ra2, dec2 = moon.ra*RTOH, moon.dec*RTOD
             dra_moon = (ra2 - ra1)*15*3600/600
             ddec_moon = (dec2 - dec1)*3600/600
-            object_is_moon = True
+            #object_is_moon = True
+            ra=ra1
+            dec=dec1
+            tracking_rate_ra=dra_moon
+            tracking_rate_dec = ddec_moon
 
-        else:
-            object_is_moon = False
+        #else:
+            #object_is_moon = False
 
         icrs_ra, icrs_dec = self.get_mount_coordinates()
         
-       # plog ("********")
-        #plog ("mount icrs_ra " + str(icrs_ra))
-        #plog ("mount icrs_dec " + str(icrs_dec))
-
-        # MTF has commented out this section because it is not working. 
-        # Not necessarily deleting it, 
-        #
-        # try:
-        #     icrs_ra, icrs_dec = self.get_mount_coordinates()
-        #     if offset:   #This offset version supplies offsets as a fraction of the Full field.
-        #         #note it is based on mount coordinates.
-        #         #Note we never look up the req dictionary ra or dec.
-        #         if self.offset_received:
-        #             plog("This is a second offset, are you sure you want to do this?")
-        #         #
-        #         offset_x = float(req['image_x']) - 0.5   #Fraction of field.
-        #         offset_y = float(req['image_y']) - 0.5
-        #         x_field_deg = g_dev['cam'].config['camera']['camera_1_1']['settings']['x_field_deg']
-        #         y_field_deg = g_dev['cam'].config['camera']['camera_1_1']['settings']['y_field_deg']
-        #         field_x = x_field_deg/15.   #  /15 for hours.
-        #         field_y = y_field_deg
-        #         #20210317 Changed signs fron Neyle.  NEEDS CONFIG File level or support.
-
-        #         self.ra_offset = -offset_x*field_x/2  #/4   #NB NB 20201230 Signs needs to be verified. 20210904 used to be +=, which did not work.
-        #         self.dec_offset = offset_y*field_y/2 #/4    #NB where the 4 come from?                plog("Offsets:  ", round(self.ra_offset, 5), round(self.dec_offset, 4))
-        #         plog('Offsets:  ', offset_x, self.ra_offset, offset_y, self.dec_offset)
-
-        #         if not self.offset_received:
-        #             self.ra_prior, self.dec_prior = icrs_ra, icrs_dec #Do not let this change.
-        #         self.offset_received = True   # NB Above we are accumulating offsets, but should not need to.
-        #         #NB NB Position angle may need to be taken into account 20201230
-        #         #apply this to the current telescope position(which may already incorporate a calibration)
-        #         #need to get the ICRS telescope position.
-
-        #         #Set up to go to the new position.
-        #         ra, dec = ra_dec_fix_h(icrs_ra + self.ra_offset, icrs_dec + self.dec_offset)
-        #         alt_az = False
-
-        #     elif calibrate:  #Note does not need req or opt
-        #         #breakpoint()
-        #         if self.offset_received:
-        #             ra_cal_offset, dec_cal_offset = self.get_mount_reference()
-        #             plog("Stored calibration offsets:  ",round(ra_cal_offset, 5), round(dec_cal_offset, 4))
-        #             icrs_ra, icrs_dec = self.get_mount_coordinates()
-        #             accum_ra_offset = icrs_ra - self.ra_prior
-        #             accum_dec_offset = icrs_dec - self.dec_prior
-        #             ra_cal_offset += accum_ra_offset #self.ra_offset  #NB WE are adding an already correctly signed offset.The offset is positive to right of screen therefore a smaller numer on the RA line.
-        #             dec_cal_offset += accum_dec_offset #self.dec_offset
-        #             self.set_mount_reference(ra_cal_offset, dec_cal_offset)
-        #             self.ra_offset = 0
-        #             self.dec_offset = 0
-        #             self.offset_received = False
-        #             icrs_ra, icrs_dec = self.get_mount_coordinates()  #20210116 THis is returning some form of apparent
-        #             ra = self.ra_prior #icrs_ra
-        #             dec = self.dec_prior #icrs_dec
-        #             #We could just return but will seek just to be safe
-        #             alt_az = False
-        #         else:
-        #             plog("No outstanding offset available for calibration, reset existing calibration.")
-        #             # NB We currently use this path to clear a calibration.  But should be ad explicit Command instead. 20201230
-        #             # breakpoint()
-        #             self.reset_mount_reference()
-        #             self.ra_offset = 0
-        #             self.dec_offset = 0
-        #             self.offset_received = False
-        #             icrs_ra, icrs_dec = self.get_mount_coordinates()
-        #             ra = self.ra_prior #icrs_ra
-        #             dec = self.dec_prior #icrs_dec
-        #             alt_az = False
-        #             #We could just return but will seek just to be safe
-        #     elif auto_center:  #Note does not need req or opt
-        #     #breakpoint()
-        #         if self.offset_received:
-        #             ra, dec, time_of_last = g_dev['obs'].get_last_reference()
-        #             ra_cal_offset, dec_cal_offset = self.get_mount_reference()
-        #             plog("Stored calibration offsets:  ",round(ra_cal_offset, 5), round(dec_cal_offset, 4))
-        #             icrs_ra, icrs_dec = self.get_mount_coordinates()
-        #             accum_ra_offset = icrs_ra - self.ra_prior
-        #             accum_dec_offset = icrs_dec - self.dec_prior
-        #             ra_cal_offset += accum_ra_offset #self.ra_offset  #NB WE are adding an already correctly signed offset.The offset is positive to right of screen therefore a smaller numer on the RA line.
-        #             dec_cal_offset += accum_dec_offset #self.dec_offset
-        #             self.set_mount_reference(ra_cal_offset, dec_cal_offset)
-        #             self.ra_offset = 0
-        #             self.dec_offset = 0
-        #             self.offset_received = False
-        #             icrs_ra, icrs_dec = self.get_mount_coordinates()  #20210116 THis is returning some form of apparent
-        #             ra = self.ra_prior #icrs_ra
-        #             dec = self.dec_prior #icrs_dec
-        #             #We could just return but will seek just to be safe
-        #             alt_az = False
-        #         else:
-        #             plog("No outstanding offset available for calibration, reset existing calibration.")
-        #             # NB We currently use this path to clear a calibration.  But should be ad explicit Command instead. 20201230
-        #             # breakpoint()
-        #             self.reset_mount_reference()
-        #             self.ra_offset = 0
-        #             self.dec_offset = 0
-        #             self.offset_received = False
-        #             icrs_ra, icrs_dec = self.get_mount_coordinates()
-        #             ra = self.ra_prior #icrs_ra
-        #             dec = self.dec_prior #icrs_dec
-        #             alt_az = False
-        #             #We could just return but will seek just to be safe
-        #     else:   #  NB confusing logic   this is meant to be the simple seek case.
-        #             #  Here we DO read the req dictionary ra and dec or appear to also get alt and az,but that is not implemnented WER 20220212
-        # try:
-        #     try:
-        #         ra = float(req['ra'])
-        #         dec = float(req['dec'])
-        #         self.ra_offset = 0  #NB Not adding in self.ra_offset is correct unless a Calibrate occured.
-        #         self.dec_offset = 0
-        #         self.offset_received = False
-        #         ra_dec = True
-        #         alt_az = False
-    
-        #     except:
-        #         try:
-        #             az = float(req['az'])
-        #             alt = float(req['alt'])
-        #             self.ra_offset = 0  #NB Not adding in self.ra_offset is correct unless a Calibrate occured.
-        #             self.dec_offset = 0
-        #             self.offset_received = False
-        #             ra_dec = False
-        #             alt_az = True
-    
-        #         except:
-        #             ha = float(req['ha'])
-        #             dec = float(req['dec'])
-        #             az, alt = ptr_utility.transform_haDec_to_azAlt(ha, dec, lat=self.config['latitude'])
-    
-        #             self.ra_offset = 0  #NB Not adding in self.ra_offset is correct unless a Calibrate occured.
-        #             self.dec_offset = 0
-        #             self.offset_received = False
-        #             ra_dec = False
-        #             alt_az = True
-
-        # except:
-        #     plog("Bad coordinates supplied.")
-        #     g_dev['obs'].send_to_user("Bad coordinates supplied! ",  p_level="WARN")
-        #     self.message = "Bad coordinates supplied, try again."
-        #     self.offset_received = False
-        #     self.ra_offset = 0
-        #     self.dec_offset = 0
-        #    return
-
-        # Tracking rate offsets from sidereal in arcseconds per SI second, default = 0.0
+       
         
 
-        self.move_time = time.time()
+        #self.move_time = time.time()
         
-        #self.object = opt.get("object", "")
-        if self.object == "":
-           # plog("Go to unamed target.")
+        
+        if self.object == "":        
             if not silent:
                 g_dev['obs'].send_to_user("Slewing telescope to un-named target!  ",  p_level="INFO")
         else:
@@ -1217,39 +1066,6 @@ class Mount:
             if not silent:
                 g_dev['obs'].send_to_user("Slewing telescope to:  " + str( self.object),  p_level="INFO")
         
-        
-        #print ("ra sent to go_coord " + str(ra))
-        #print ("dec sent to go_coord " + str(dec))
-        
-        if object_is_moon:
-            g_dev['obs'].time_of_last_slew=time.time()
-            #self.go_coord(ra1, dec1, tracking_rate_ra=dra_moon, tracking_rate_dec = ddec_moon)            
-            ra=ra1
-            dec=dec1
-            tracking_rate_ra=dra_moon
-            tracking_rate_dec = ddec_moon
-        #elif alt_az == True:
-        #    g_dev['obs'].time_of_last_slew=time.time()
-        #    self.move_to_azalt(az, alt)
-        #    g_dev['obs'].send_to_user("Slew Complete.")
-        #elif ra_dec == True:
-        #    g_dev['obs'].time_of_last_slew=time.time()
-        #    self.go_coord(ra, dec, tracking_rate_ra=tracking_rate_ra, tracking_rate_dec = tracking_rate_dec)
-        #    g_dev['obs'].send_to_user("Slew Complete.")
-            
-        if do_centering_routine:
-            g_dev['seq'].centering_exposure()
-
-        # On successful movement of telescope reset the solving timer
-        #g_dev['obs'].last_solve_time = datetime.datetime.now() - datetime.timedelta(days=1)
-        #g_dev['obs'].images_since_last_solve = 10000    
-
-    #def go_coord(self, ra, dec, tracking_rate_ra=0, tracking_rate_dec=0, reset_solve=True):  #Note these rates need a system specification
-        '''
-        Slew to the given ra/dec coordinates, supplied in ICRS
-        Note no dependency on current position.
-        unpark the telescope mount
-        '''  #  NB can we check if unparked and save time?
         self.last_ra = ra
         self.last_dec = dec
         self.last_tracking_rate_ra = tracking_rate_ra
@@ -1269,106 +1085,43 @@ class Mount:
                 if len(new_pierside) > 1:
                     if new_pierside[0] == 0:
                         delta_ra, delta_dec = self.get_mount_reference()
-                        #pier_east = 1
+                        
                     else:
                         delta_ra, delta_dec = self.get_flip_reference()
-                        #pier_east = 0
+                        
             except:
                 try:
                     new_pierside =  self.mount.DestinationSideOfPier(ra, dec) #  A tuple gets returned: (pierside, Ra.h and dec.d)
                     if new_pierside == 0:
                         delta_ra, delta_dec = self.get_mount_reference()
-                        #pier_east = 1
+                        
                     else:
                         delta_ra, delta_dec = self.get_flip_reference()
-                        #pier_east = 0
+                        
                 except:
                     delta_ra, delta_dec = self.get_mount_reference()
-                    #pier_east = 1
+                    
         
         else:
             if previous_pier_side == 0:
                 delta_ra, delta_dec = self.get_mount_reference()
-                #pier_east = 1
+                
             else:
                 delta_ra, delta_dec = self.get_flip_reference()
-                #pier_east = 0
-        
-        
-            #if self.pier_side == 0:
-            #    pier_east = 1
-            #else:
-            #    pier_east = 0
-         #Update incoming ra and dec with mounting offsets.
-
-        #plog('starting pier side: ' + str(previous_pier_side) + "   Temp reporting")
-
-        #print ("ra without delta " + str(ra))
-        #print ("dec without delta " + str(dec))
-
-
+                
         if g_dev['obs'].mount_reference_model_off:
-            #print ("mount reference turned off")
-            #print ("ra with delta " + str(ra+delta_ra))
-            #print ("dec with delta " + str(dec+delta_dec))
             pass
-        else:
-            #print ("mount reference turned on")
+        else:            
             try:        
                 ra += delta_ra #NB it takes a restart to pick up a new correction which is also J.now.
                 dec += delta_dec
             except:
                 pass
             
-            #print ("ra with delta " + str(ra))
-            #print ("dec with delta " + str(dec))
-        
-        
-        
-        ra, dec = ra_dec_fix_h(ra,dec)
-        #print ('radec post-fixh ' + str(ra) + ' ' + str(dec))
-        
-        
-        
-        if self.EquatorialSystem == 1:    #equTopocentric
-            self.get_current_times()   #  NB We should find a way to refresh this once a day, esp. for status return.
-            #  Input is meant to be IRCS, so change to that Astropy type;
-            icrs_coord = SkyCoord(ra*u.hour, dec*u.degree, frame='icrs')
-            jnow_coord = icrs_coord.transform_to(FK5(equinox=self.equinox_now))
-            ra = jnow_coord.ra.hour
-            dec = jnow_coord.dec.degree
 
-            if self.offset_received:
-                ra += self.ra_offset          #Offsets are J.now and used to get target on Browser Crosshairs.
-                dec += self.dec_offset
-        ra_app_h, dec_app_d = ra_dec_fix_h(ra, dec)
-        #'This is the "Forward" calculation of pointing.
-        #Here we add in refraction and the TPOINT compatible mount model
        
         self.current_sidereal = float((Time(datetime.datetime.utcnow(), scale='utc', location=g_dev['mnt'].site_coordinates).sidereal_time('apparent')*u.deg) / u.deg / u.hourangle)
         
-        self.sid_now_r = self.current_sidereal*HTOR   #NB NB ADDED THIS FOR SRO, WHY IS THIS NEEDED?
-
-        # self.ha_obs_r, self.dec_obs_r, self.refr_asec = ptr_utility.appToObsRaHa(ra_app_h*HTOR, dec_app_d*DTOR, self.sid_now_r)
-        # #ra_obs_r, dec_obs_r = ptr_utility.transformHatoRaDec(ha_obs_r, dec_obs_r, self.sid_now_r)
-        # #Here we would convert to model and calculate tracking rate correction.
-        # self.ha_mech, self.dec_mech = ptr_utility.transform_observed_to_mount_r(self.ha_obs_r, self.dec_obs_r, pier_east, loud=False, enable=True)
-        # self.ra_mech, self.dec_mech = ptr_utility.transform_haDec_to_raDec_r(self.ha_mech, self.dec_mech, self.sid_now_r)
-        # self.ha_corr = ptr_utility.reduce_ha_r(self.ha_mech -self. ha_obs_r)*RTOS
-        # self.dec_corr = ptr_utility.reduce_dec_r(self.dec_mech - self.dec_obs_r)*RTOS
-  
-        # self.move_time = time.time()
-        # az, alt = ptr_utility.transform_haDec_to_azAlt_r(self.ha_mech, self.dec_mech, self.latitude_r)
-        # self.target_az = az*RTOD
-
-        #temppointing=SkyCoord(ra*u.hour, dec*u.degree, frame='icrs')
-        #temppointingaltaz=temppointing.transform_to(AltAz(location=self.site_coordinates, obstime=Time.now()))
-        #alt = temppointingaltaz.alt.degree
-        #az = temppointingaltaz.az.degree
-        
-        wait_for_slew() 
-
-
         # First move, then check the pier side
         successful_move=0
         while successful_move==0:
@@ -1416,12 +1169,12 @@ class Mount:
                 successful_move=1
             else:
                 
-                if g_dev["mnt"].pier_side == 0:
-                    delta_ra, delta_dec = self.get_mount_reference()
-                    #pier_east = 1
-                else:
-                    delta_ra, delta_dec = self.get_flip_reference()
-                    #pier_east = 0
+                # if g_dev["mnt"].pier_side == 0:
+                #     delta_ra, delta_dec = self.get_mount_reference()
+                #     #pier_east = 1
+                # else:
+                #     delta_ra, delta_dec = self.get_flip_reference()
+                #     #pier_east = 0
                 
                 
                 if g_dev['obs'].mount_reference_model_off:
@@ -1475,6 +1228,10 @@ class Mount:
         wait_for_slew()   
         if not silent:
             g_dev['obs'].send_to_user("Slew Complete.")
+        
+        
+        if do_centering_routine:
+            g_dev['seq'].centering_exposure()
         
         
         # ###  figure out velocity  Apparent place is unchanged.
