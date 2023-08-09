@@ -450,6 +450,9 @@ class Observatory:
         self.camera_overheat_safety_timer = time.time()
         # Some things you don't want to check until the camera has been cooling for a while.
         self.camera_time_initialised = time.time()
+        # You want to make sure that the camera has been cooling for a while at the setpoint
+        # Before taking calibrations to ensure the sensor is evenly cooled
+        self.last_time_camera_was_warm = time.time() - 6000
 
         # If there is a pointing correction needed, then it is REQUESTED
         # by the platesolve thread and then the code will interject
@@ -1555,6 +1558,9 @@ sel
                 current_camera_temperature = float(current_camera_temperature)   
                 if abs(float(current_camera_temperature) - float(g_dev['cam'].setpoint)) > 1.5:
                     self.camera_temperature_in_range_for_calibrations = False
+                    self.last_time_camera_was_warm=time.time()
+                elif self.last_time_camera_was_warm-time.time() < 1200:
+                    self.camera_temperature_in_range_for_calibrations = False
                 else:
                     self.camera_temperature_in_range_for_calibrations = True
                 
@@ -1584,8 +1590,16 @@ sel
             if (time.time() - self.last_time_report_to_console) > 600:
                 plog (ephem.now())
                 if self.camera_temperature_in_range_for_calibrations == False:
-                    plog ("Camera currently too warm ("+ str(current_camera_temperature)+") for calibrations.")
-                    plog ("Difference: " + str( (current_camera_temperature - g_dev['cam'].setpoint)))
+                    if (time.time() - self.last_time_camera_was_warm) < 1200:
+                        plog ("Camera was recently too warm for calibrations")
+                        plog ("Waiting for a 20 minute period where camera has been cooled")
+                        plog ("Before continuing calibrations to ensure cooler is evenly cooled")
+                        plog ( str(int(1200 - (time.time() - self.last_time_camera_was_warm))) + " seconds to go.")
+                        plog ("Camera current temperature ("+ str(current_camera_temperature)+").")
+                        plog ("Difference from setpoint: " + str( (current_camera_temperature - g_dev['cam'].setpoint)))
+                    else:
+                        plog ("Camera currently too warm ("+ str(current_camera_temperature)+") for calibrations.")
+                        plog ("Difference from setpoint: " + str( (current_camera_temperature - g_dev['cam'].setpoint)))
                 self.last_time_report_to_console = time.time()
                 
                 
@@ -1612,6 +1626,7 @@ sel
                     plog("Then will reset to normal.")
                     self.camera_overheat_safety_warm_on = True
                     self.camera_overheat_safety_timer = time.time()
+                    self.last_time_camera_was_warm=time.time()
                     #print (float(g_dev['cam'].setpoint +20.0))
                     g_dev['cam']._set_setpoint(float(g_dev['cam'].setpoint + (2 * g_dev['cam'].day_warm_degrees)))
                     # Some cameras need to be sent this to change the temperature also.. e.g. TheSkyX
@@ -1648,6 +1663,7 @@ sel
                     # Some cameras need to be sent this to change the temperature also.. e.g. TheSkyX
                     g_dev['cam']._set_cooler_on()
                     plog("Temp set to " + str(g_dev['cam'].current_setpoint))
+                    self.last_time_camera_was_warm=time.time()
                     # pass
                 
                 elif g_dev['cam'].day_warm  and (self.too_hot_in_observatory) and (ephem.now() < g_dev['events']['Clock & Auto Focus'] - ephem.hour):
@@ -1656,6 +1672,7 @@ sel
                     # Some cameras need to be sent this to change the temperature also.. e.g. TheSkyX
                     g_dev['cam']._set_cooler_on()
                     plog("Temp set to " + str(g_dev['cam'].current_setpoint))
+                    self.last_time_camera_was_warm=time.time()
                     # pass
                 
                 # Ramp heat temperature
@@ -1673,6 +1690,7 @@ sel
                         float(g_dev['cam'].setpoint + (frac_through_warming) * g_dev['cam'].day_warm_degrees))
                     g_dev['cam']._set_cooler_on()
                     plog("Temp set to " + str(g_dev['cam'].current_setpoint))
+                    self.last_time_camera_was_warm=time.time()
                     # pass
 
                 # Ramp cool temperature
@@ -1685,6 +1703,7 @@ sel
                     if frac_through_warming > 0.8:
                         g_dev['cam']._set_setpoint(float(g_dev['cam'].setpoint))
                         g_dev['cam']._set_cooler_on()
+                        self.last_time_camera_was_warm=time.time()
                     else:
                         g_dev['cam']._set_setpoint(
                             float(g_dev['cam'].setpoint + (1 - frac_through_warming) * g_dev['cam'].day_warm_degrees))
@@ -1708,6 +1727,7 @@ sel
                         g_dev['cam']._set_setpoint(
                             float(g_dev['cam'].setpoint + (1 - frac_through_warming) * g_dev['cam'].day_warm_degrees))
                         g_dev['cam']._set_cooler_on()
+                        self.last_time_camera_was_warm=time.time()
 
                     plog("Temp set to " + str(g_dev['cam'].current_setpoint))
 
@@ -1729,6 +1749,7 @@ sel
                     g_dev['cam']._set_setpoint(float(g_dev['cam'].setpoint + g_dev['cam'].day_warm_degrees))
                     # Some cameras need to be sent this to change the temperature also.. e.g. TheSkyX
                     g_dev['cam']._set_cooler_on()
+                    self.last_time_camera_was_warm=time.time()
                     plog("Temp set to " + str(g_dev['cam'].current_setpoint))
                 
                 elif (g_dev['events']['Eve Bias Dark'] < ephem.now() < g_dev['events']['End Morn Bias Dark']):

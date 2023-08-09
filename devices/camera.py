@@ -1675,7 +1675,7 @@ class Camera:
                             )  # Should do this close to the exposure
                 
                             # Good spot to check if we need to nudge the telescope
-                            g_dev['obs'].check_platesolve_and_nudge(g_dev['obs'].auto_centering_off)   
+                            g_dev['obs'].check_platesolve_and_nudge()   
                             g_dev['obs'].time_of_last_exposure = time.time()
                             g_dev['obs'].update()
                             
@@ -3463,7 +3463,7 @@ class Camera:
                                 pass  
 
                     # Good spot to check if we need to nudge the telescope
-                    g_dev['obs'].check_platesolve_and_nudge(g_dev['obs'].auto_centering_off)                 
+                    g_dev['obs'].check_platesolve_and_nudge()                 
                     
                     if not g_dev["cam"].exposure_busy:
                         self.expresult = {"stopped": True}
