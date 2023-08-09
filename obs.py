@@ -184,7 +184,7 @@ class Observatory:
 
             self.debug_lapse_time = time.time() + self.config['debug_duration_sec']
             g_dev['debug'] = True
-            self.camera_temperature_in_range_for_calibrations = True
+            self.camera_sufficiently_cooled_for_calibrations = True
             #g_dev['obs'].open_and_enabled_to_observe = True
         else:
             self.debug_lapse_time = 0.0
@@ -425,7 +425,7 @@ class Observatory:
         self.daytime_exposure_time_safety_off=self.config['daytime_exposure_time_safety_off']
         self.mount_reference_model_off= self.config['mount_reference_model_off'],
         
-        self.camera_temperature_in_range_for_calibrations=True
+        self.camera_sufficiently_cooled_for_calibrations=True
         
         self.last_platesolved_ra = np.nan
         self.last_platesolved_dec =np.nan
@@ -1557,12 +1557,12 @@ sel
                 current_camera_temperature, cur_humidity, cur_pressure = (g_dev['cam']._temperature())
                 current_camera_temperature = float(current_camera_temperature)   
                 if abs(float(current_camera_temperature) - float(g_dev['cam'].setpoint)) > 1.5:
-                    self.camera_temperature_in_range_for_calibrations = False
+                    self.camera_sufficiently_cooled_for_calibrations = False
                     self.last_time_camera_was_warm=time.time()
-                elif self.last_time_camera_was_warm-time.time() < 1200:
-                    self.camera_temperature_in_range_for_calibrations = False
+                elif (time.time()-self.last_time_camera_was_warm) < 1200:
+                    self.camera_sufficiently_cooled_for_calibrations = False
                 else:
-                    self.camera_temperature_in_range_for_calibrations = True
+                    self.camera_sufficiently_cooled_for_calibrations = True
                 
 
             else:
@@ -1589,7 +1589,7 @@ sel
             # Things that only rarely have to be reported go in this block.
             if (time.time() - self.last_time_report_to_console) > 600:
                 plog (ephem.now())
-                if self.camera_temperature_in_range_for_calibrations == False:
+                if self.camera_sufficiently_cooled_for_calibrations == False:
                     if (time.time() - self.last_time_camera_was_warm) < 1200:
                         plog ("Camera was recently too warm for calibrations")
                         plog ("Waiting for a 20 minute period where camera has been cooled")

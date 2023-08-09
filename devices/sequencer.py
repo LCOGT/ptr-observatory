@@ -604,7 +604,7 @@ class Sequencer:
             #    self.park_and_close(enc_status)
             
         if not self.bias_dark_latch and not g_dev['obs'].scope_in_manual_mode and ((events['Eve Bias Dark'] <= ephem_now < events['End Eve Bias Dark']) and \
-             self.config['auto_eve_bias_dark'] and not self.eve_bias_done and g_dev['obs'].camera_temperature_in_range_for_calibrations):   #events['End Eve Bias Dark']) and \
+             self.config['auto_eve_bias_dark'] and not self.eve_bias_done and g_dev['obs'].camera_sufficiently_cooled_for_calibrations):   #events['End Eve Bias Dark']) and \
             
             self.bias_dark_latch = True
             req = {'bin1': True, 'bin2': False, 'bin3': False, 'bin4': False, 'numOfBias': 45, \
@@ -618,7 +618,7 @@ class Sequencer:
             self.bias_dark_latch = False
             
         elif not self.eve_sky_flat_latch and not g_dev['obs'].scope_in_manual_mode and ((events['Eve Sky Flats'] <= ephem_now < events['End Eve Sky Flats'])  \
-               and self.config['auto_eve_sky_flat'] and g_dev['obs'].open_and_enabled_to_observe and not self.eve_flats_done and g_dev['obs'].camera_temperature_in_range_for_calibrations):
+               and self.config['auto_eve_sky_flat'] and g_dev['obs'].open_and_enabled_to_observe and not self.eve_flats_done and g_dev['obs'].camera_sufficiently_cooled_for_calibrations):
 
             self.eve_sky_flat_latch = True
             self.current_script = "Eve Sky Flat script starting"
@@ -925,7 +925,7 @@ class Sequencer:
                 plog("Hang up in sequencer.")
                 
         elif not self.morn_sky_flat_latch and ((events['Morn Sky Flats'] <= ephem_now < events['End Morn Sky Flats']) and \
-               self.config['auto_morn_sky_flat']) and not g_dev['obs'].scope_in_manual_mode and not self.morn_flats_done and g_dev['obs'].camera_temperature_in_range_for_calibrations and g_dev['obs'].open_and_enabled_to_observe:
+               self.config['auto_morn_sky_flat']) and not g_dev['obs'].scope_in_manual_mode and not self.morn_flats_done and g_dev['obs'].camera_sufficiently_cooled_for_calibrations and g_dev['obs'].open_and_enabled_to_observe:
 
             self.morn_sky_flat_latch = True
             
@@ -938,7 +938,7 @@ class Sequencer:
             
         
         elif not self.morn_bias_dark_latch and (events['Morn Bias Dark'] <= ephem_now < events['End Morn Bias Dark']) and \
-                  self.config['auto_morn_bias_dark'] and not g_dev['obs'].scope_in_manual_mode and not  self.morn_bias_done and g_dev['obs'].camera_temperature_in_range_for_calibrations: # and g_dev['enc'].mode == 'Automatic' ):
+                  self.config['auto_morn_bias_dark'] and not g_dev['obs'].scope_in_manual_mode and not  self.morn_bias_done and g_dev['obs'].camera_sufficiently_cooled_for_calibrations: # and g_dev['enc'].mode == 'Automatic' ):
 
             self.morn_bias_dark_latch = True
             req = {'bin1': True, 'bin2': False, 'bin3': False, 'bin4': False, 'numOfBias': 63, \
@@ -998,7 +998,7 @@ class Sequencer:
                             moondata=get_moon(Time.now()).transform_to(currentaltazframe)                        
                             if (moondata.alt.deg < -15):
                                 # If the moon is way below the horizon                        
-                                if g_dev['obs'].camera_temperature_in_range_for_calibrations:
+                                if g_dev['obs'].camera_sufficiently_cooled_for_calibrations:
                                     if self.nightime_bias_counter < self.config['camera']['camera_1_1']['settings']['number_of_bias_to_collect']:
                                         plog ("It is dark and the moon isn't up! Lets do a bias!")  
                                         g_dev['mnt'].park_command({}, {})

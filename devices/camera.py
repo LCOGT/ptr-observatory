@@ -1748,7 +1748,7 @@ class Camera:
                                 current_camera_temperature = float(current_camera_temperature)   
                                 if abs(float(current_camera_temperature) - float(g_dev['cam'].setpoint)) > 1.5:
                                     plog ("temperature out of range for calibrations ("+ str(current_camera_temperature)+"), NOT attempting calibration frame")
-                                    g_dev['obs'].camera_temperature_in_range_for_calibrations = False
+                                    g_dev['obs'].camera_sufficiently_cooled_for_calibrations = False
                                     self.expresult = {}
                                     self.expresult["error"] = True
                                     self.exposure_busy = False
@@ -1756,7 +1756,7 @@ class Camera:
                                     
                                 else:
                                     plog ("temperature in range for calibrations ("+ str(current_camera_temperature)+"), attempting calibration frame")
-                                    g_dev['obs'].camera_temperature_in_range_for_calibrations = True
+                                    g_dev['obs'].camera_sufficiently_cooled_for_calibrations = True
                             
                             self._expose(exposure_time, bias_dark_or_light_type_frame)
                             
@@ -2079,7 +2079,7 @@ class Camera:
                     current_camera_temperature = float(current_camera_temperature)   
                     if abs(float(current_camera_temperature) - float(g_dev['cam'].setpoint)) > 1.5:
                         plog ("temperature out of range for calibrations ("+ str(current_camera_temperature)+"), rejecting calibration frame")
-                        g_dev['obs'].camera_temperature_in_range_for_calibrations = False
+                        g_dev['obs'].camera_sufficiently_cooled_for_calibrations = False
                         self.expresult = {}
                         self.expresult["error":True]
                         self.exposure_busy = False
@@ -2087,7 +2087,7 @@ class Camera:
                         
                     else:
                         plog ("temperature in range for calibrations ("+ str(current_camera_temperature)+"), accepting calibration frame")
-                        g_dev['obs'].camera_temperature_in_range_for_calibrations = True
+                        g_dev['obs'].camera_sufficiently_cooled_for_calibrations = True
                     
                     # For a dark, check that the debiased dark has an adequately low value
                     # If there is no master bias, it will just skip this check
