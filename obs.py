@@ -964,7 +964,10 @@ sel
                     #az = temppointingaltaz.az.degree
                     if alt > 25:
                         g_dev['obs'].time_of_last_slew=time.time()
-                        g_dev['mnt'].go_command(ra=g_dev['mnt'].mount.RightAscension, dec=g_dev['mnt'].mount.Declination, silent=True)
+                        #g_dev['mnt'].go_command(ra=g_dev['mnt'].mount.RightAscension, dec=g_dev['mnt'].mount.Declination, silent=True)
+                        meridianra=g_dev['mnt'].mount.RightAscension
+                        meridiandec=g_dev['mnt'].mount.Declination
+                        g_dev['mnt'].mount.SlewToCoordinatesAsync(meridianra, meridiandec)
                 
                 
                 
