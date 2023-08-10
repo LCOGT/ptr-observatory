@@ -3173,7 +3173,7 @@ sel
 
         # This block repeats itself in various locations to try and nudge the scope
         # If the platesolve requests such a thing.
-        if g_dev['obs'].pointing_correction_requested_by_platesolve_thread:
+        if g_dev['obs'].pointing_correction_requested_by_platesolve_thread and not g_dev['cam'].currently_in_smartstack_loop:
             
             if g_dev['obs'].pointing_correction_request_time > g_dev['obs'].time_of_last_slew:  # Check it hasn't slewed since request
                 

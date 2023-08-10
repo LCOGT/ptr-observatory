@@ -1207,7 +1207,7 @@ class Sequencer:
             # Otherwise everyone will get slightly off-pointing images
             # Necessary
             plog ("Taking a quick pointing check and re_seek for new project block")
-            result = self.centering_exposure(no_confirmation=True)
+            result = self.centering_exposure(no_confirmation=True, try_hard=True)
             
             
             # This actually replaces the "requested" dest_ra by the actual centered pointing ra and dec. 
@@ -5147,7 +5147,7 @@ class Sequencer:
         return
 
 
-    def centering_exposure(self, no_confirmation=False):
+    def centering_exposure(self, no_confirmation=False, try_hard=False):
 
         if not (g_dev['events']['Civil Dusk'] < ephem.now() < g_dev['events']['Civil Dawn']):
             plog("Too bright to consider platesolving!")
@@ -5160,7 +5160,7 @@ class Sequencer:
         req = {'time': self.config['pointing_exposure_time'],  'alias':  str(self.config['camera']['camera_1_1']['name']), 'image_type': 'pointing'}   #  NB Should pick up filter and constats from config
         opt = {'area': 100, 'count': 1, 'filter': 'pointing'}
         
-        
+        successful_platesolve=False
         
         # Make sure platesolve queue is clear
         reported=0
@@ -5187,6 +5187,10 @@ class Sequencer:
         # Take a pointing shot to reposition
         result = g_dev['cam'].expose_command(req, opt, user_id='Tobor', user_name='Tobor', user_roles='system', no_AWS=True, solve_it=True)
         
+        
+        
+        #breakpoint()
+        
         # Wait for platesolve
         queue_clear_time = time.time()
         reported=0
@@ -5207,6 +5211,9 @@ class Sequencer:
                 pass
         plog ("Time Taken for queue to clear post-exposure: " + str(time.time() - queue_clear_time))
         
+        if g_dev['obs'].last_platesolved_ra != np.nan:
+            successful_platesolve=True        
+        
         # Nudge if needed.
         if not g_dev['obs'].pointing_correction_requested_by_platesolve_thread:
             g_dev["obs"].send_to_user("Pointing adequate on first slew. Slew & Center complete.") 
@@ -5218,6 +5225,71 @@ class Sequencer:
                 plog ("waiting for pointing_correction_to_finish")
                 time.sleep(0.5)
             
+        if try_hard and not successful_platesolve:
+            plog("Didn't get a successful platesolve at an important time for pointing, trying a double exposure")
+            
+            req = {'time': float(self.config['pointing_exposure_time']) * 2,  'alias':  str(self.config['camera']['camera_1_1']['name']), 'image_type': 'pointing'}   #  NB Should pick up filter and constats from config
+            opt = {'area': 100, 'count': 1, 'filter': 'pointing'}
+            
+            result = g_dev['cam'].expose_command(req, opt, user_id='Tobor', user_name='Tobor', user_roles='system', no_AWS=True, solve_it=True)
+            
+            queue_clear_time = time.time()
+            reported=0
+            while True:
+                if g_dev['obs'].platesolve_is_processing ==False and g_dev['obs'].platesolve_queue.empty():
+                    #plog ("we are free from platesolving!")
+                    break
+                else:
+                    if reported ==0:
+                        plog ("PLATESOLVE: Waiting for platesolve processing to complete and queue to clear")
+                        reported=1
+                    if self.stop_script_called:
+                        g_dev["obs"].send_to_user("Cancelling out of autofocus script as stop script has been called.")  
+                        return
+                    if not g_dev['obs'].open_and_enabled_to_observe:
+                        g_dev["obs"].send_to_user("Cancelling out of activity as no longer open and enabled to observe.")  
+                        return
+                    pass
+            plog ("Time Taken for queue to clear post-exposure: " + str(time.time() - queue_clear_time))
+            
+            if g_dev['obs'].last_platesolved_ra == np.nan:
+                plog("Didn't get a successful platesolve at an important time for pointing AGAIN, trying a Lum filter")
+                
+                req = {'time': float(self.config['pointing_exposure_time']) * 2.5,  'alias':  str(self.config['camera']['camera_1_1']['name']), 'image_type': 'pointing'}   #  NB Should pick up filter and constats from config
+                opt = {'area': 100, 'count': 1, 'filter': 'Lum'}
+                
+                result = g_dev['cam'].expose_command(req, opt, user_id='Tobor', user_name='Tobor', user_roles='system', no_AWS=True, solve_it=True)
+                
+                queue_clear_time = time.time()
+                reported=0
+                while True:
+                    if g_dev['obs'].platesolve_is_processing ==False and g_dev['obs'].platesolve_queue.empty():
+                        #plog ("we are free from platesolving!")
+                        break
+                    else:
+                        if reported ==0:
+                            plog ("PLATESOLVE: Waiting for platesolve processing to complete and queue to clear")
+                            reported=1
+                        if self.stop_script_called:
+                            g_dev["obs"].send_to_user("Cancelling out of autofocus script as stop script has been called.")  
+                            return
+                        if not g_dev['obs'].open_and_enabled_to_observe:
+                            g_dev["obs"].send_to_user("Cancelling out of activity as no longer open and enabled to observe.")  
+                            return
+                        pass
+                plog ("Time Taken for queue to clear post-exposure: " + str(time.time() - queue_clear_time))
+        
+                
+        # Nudge if needed.
+        if not g_dev['obs'].pointing_correction_requested_by_platesolve_thread:
+            g_dev["obs"].send_to_user("Pointing adequate on first slew. Slew & Center complete.") 
+            return result
+        else:
+            g_dev['obs'].check_platesolve_and_nudge()        
+            # Wait until pointing correction fixed before moving on
+            while g_dev['obs'].pointing_correction_requested_by_platesolve_thread:
+                plog ("waiting for pointing_correction_to_finish")
+                time.sleep(0.5)
         
         
         if no_confirmation == True:
