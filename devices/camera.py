@@ -3387,7 +3387,7 @@ class Camera:
                         # Good spot to check if we need to nudge the telescope
                         # Allowed to on the last loop of a smartstack
                         # We need to clear the nudge before putting another platesolve in the queue
-                        if Nsmartstack > 1 and (Nsmartstack == sskcounter+1):
+                        if (Nsmartstack > 1 and (Nsmartstack == sskcounter+1)) or Nsmartstack ==1 :
                             self.currently_in_smartstack_loop=False                    
                         g_dev['obs'].check_platesolve_and_nudge()
 
