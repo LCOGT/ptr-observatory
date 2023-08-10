@@ -214,7 +214,7 @@ class Sequencer:
         self.last_roof_status = 'Closed'
         self.time_roof_last_opened = time.time() -500
         
-        
+        self.blockend = 'None'
         
         self.end_of_night_token_sent = False
         self.project_call_timer = time.time() -60
@@ -1312,7 +1312,7 @@ class Sequencer:
                         #plog (tempblock['event_id'])
                         if tempblock['event_id'] == calendar_event_id :
                             foundcalendar=True
-                            block['end']=tempblock['end']
+                            g_dev['seq'].blockend=tempblock['end']
                     if not foundcalendar:
                         plog ("could not find calendar entry, cancelling out of block.")
                         g_dev["obs"].send_to_user("Calendar block removed. Stopping project run.")   
@@ -1427,14 +1427,14 @@ class Sequencer:
                                 smartstackswitch='no'
 
                             # Set up options for exposure and take exposure.
-                            req = {'time': exp_time,  'alias':  str(self.config['camera']['camera_1_1']['name']), 'image_type': imtype, 'smartstack' : smartstackswitch, 'longstackswitch' : longstackswitch, 'longstackname' : longstackname, 'block_end' : block['end']}   #  NB Should pick up filter and constants from config
+                            req = {'time': exp_time,  'alias':  str(self.config['camera']['camera_1_1']['name']), 'image_type': imtype, 'smartstack' : smartstackswitch, 'longstackswitch' : longstackswitch, 'longstackname' : longstackname, 'block_end' : g_dev['seq'].blockend}   #  NB Should pick up filter and constants from config
                             opt = {'area': 150, 'count': 1, 'bin': 1, 'filter': color, \
                                    'hint': block['project_id'] + "##" + dest_name, 'object_name': block['project']['project_targets'][0]['name'], 'pane': pane}
                             plog('Seq Blk sent to camera:  ', req, opt)
                             obs_win_begin, sunZ88Op, sunZ88Cl, ephem_now = self.astro_events.getSunEvents()
 
                             now_date_timeZ = datetime.datetime.now().isoformat().split('.')[0] +'Z'
-                            if now_date_timeZ >= block['end'] :
+                            if now_date_timeZ >= g_dev['seq'].blockend :
                                 break
                             g_dev['obs'].update()
                             result = g_dev['cam'].expose_command(req, opt, user_name=user_name, user_id=user_id, user_roles=user_roles, no_AWS=False, solve_it=False, calendar_event_id=calendar_event_id)
@@ -1476,7 +1476,7 @@ class Sequencer:
                     # If so, set ended to True so that it cancels out of the exposure block.
                     now_date_timeZ = datetime.datetime.now().isoformat().split('.')[0] +'Z'
                     events = g_dev['events']
-                    ended = left_to_do <= 0 or now_date_timeZ >= block['end'] \
+                    ended = left_to_do <= 0 or now_date_timeZ >= g_dev['seq'].blockend \
                             or ephem.now() >= events['Observing Ends']
                     #                                                    ]\
                     #         or g_dev['airmass'] > float( block_specification['project']['project_constraints']['max_airmass']) \
