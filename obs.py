@@ -959,7 +959,7 @@ sel
         # at least a 5 minute basis.        
         if (time.time() - g_dev['obs'].time_of_last_slew) > 300:
             # Check no other commands or exposures are happening
-            if g_dev['obs'].cmd_queue.empty() and not g_dev["cam"].exposure_busy and not self.currently_in_smartstack_loop: 
+            if g_dev['obs'].cmd_queue.empty() and not g_dev["cam"].exposure_busy and not g_dev['cam'].currently_in_smartstack_loop and not g_dev["seq"].focussing: 
                 if not g_dev['mnt'].mount.AtPark and not g_dev['mnt'].mount.Slewing and g_dev['mnt'].mount.Tracking :
                     # Don't do it if the roof isn't open etc.                
                     if (g_dev['obs'].open_and_enabled_to_observe==True ) or (g_dev['obs'].debug_flag) or g_dev['obs'].scope_in_manual_mode:                
