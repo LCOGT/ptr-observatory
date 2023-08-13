@@ -672,6 +672,9 @@ class Camera:
             0  # W in Apache Ridge case. #This should come from config, filter section
         )
         self.exposure_busy = False
+        self.currently_in_smartstack_loop=False
+        
+        
         self.cmd_in = None
         self.t7 = None
         self.camera_message = "-"
@@ -1398,7 +1401,7 @@ class Camera:
 
         #breakpoint()
 
-        self.blockend = required_params.get('block_end', "None")
+        g_dev['seq'].blockend = required_params.get('block_end', "None")
         self.pane = optional_params.get("pane", None)
 
         bin_x = 1               
@@ -1550,10 +1553,15 @@ class Camera:
             #The variable Nsmartstacks defaults to 1 - e.g. normal functioning
             #When a smartstack is not requested.
             for sskcounter in range(int(Nsmartstack)):
+                
+                    
                 self.tempStartupExposureTime=time.time()
                 if Nsmartstack > 1 :
+                    self.currently_in_smartstack_loop=True
                     plog ("Smartstack " + str(sskcounter+1) + " out of " + str(Nsmartstack))
                     g_dev['obs'].update_status(cancel_check=False)
+                else:
+                    self.currently_in_smartstack_loop=False
                 self.retry_camera = 3
                 self.retry_camera_start_time = time.time()
                 while self.retry_camera > 0:
@@ -1566,17 +1574,18 @@ class Camera:
                                 self.exposure_busy = False
                         self.exposure_busy = False
                         plog ("stop_all_activity cancelling out of camera exposure")
+                        self.currently_in_smartstack_loop=False
                         return
 
                     
 
                     # Check that the block isn't ending during normal observing time (don't check while biasing, flats etc.)
-                    if not 'None' in self.blockend: # Only do this check if a block end was provided.
+                    if not 'None' in g_dev['seq'].blockend: # Only do this check if a block end was provided.
                         
                     # Check that the exposure doesn't go over the end of a block
                         endOfExposure = datetime.datetime.now() + datetime.timedelta(seconds=exposure_time)
                         now_date_timeZ = endOfExposure.isoformat().split('.')[0] +'Z'
-                        blockended = now_date_timeZ  >= self.blockend
+                        blockended = now_date_timeZ  >= g_dev['seq'].blockend
                         if blockended or ephem.Date(ephem.now()+ (exposure_time *ephem.second)) >= \
                             g_dev['events']['End Morn Bias Dark']:
                             plog ("Exposure overlays the end of a block or the end of observing. Skipping Exposure.")
@@ -1584,6 +1593,7 @@ class Camera:
                             Nsmartstack=1
                             sskcounter=2
                             self.exposure_busy = False
+                            self.currently_in_smartstack_loop=False
                             return 'blockend'
                     
                     # Check that the calendar event that is running the exposure
@@ -1598,6 +1608,8 @@ class Camera:
                             try:
                                 if tempblock['event_id'] == calendar_event_id :
                                     foundcalendar=True
+                                    g_dev['seq'].blockend=tempblock['end']
+                                    #breakpoint()
                             except:
                                 plog("glitch in calendar finder")
                                 plog(str(tempblock))
@@ -1607,6 +1619,7 @@ class Camera:
                             plog ("And Cancelling SmartStacks.")
                             Nsmartstack=1
                             sskcounter=2
+                            self.currently_in_smartstack_loop=False
                             return 'calendarend'
                     
                     # Check that the roof hasn't shut
@@ -1627,6 +1640,7 @@ class Camera:
                         plog ("And Cancelling SmartStacks.")
                         Nsmartstack=1
                         sskcounter=2
+                        self.currently_in_smartstack_loop=False
                         return 'roofshut'
                     
                     # NB Here we enter Phase 2
@@ -1738,6 +1752,7 @@ class Camera:
                                          time.sleep(0.2) 
                                          if g_dev["obs"].stop_all_activity:
                                              plog ("stop_all_activity cancelling out of camera exposure")
+                                             self.currently_in_smartstack_loop=False
                                              return
                             
                             if bias_dark_or_light_type_frame in ["bias", "dark"] or 'flat' in frame_type:
@@ -1752,6 +1767,7 @@ class Camera:
                                     self.expresult = {}
                                     self.expresult["error"] = True
                                     self.exposure_busy = False
+                                    self.currently_in_smartstack_loop=False
                                     return self.expresult
                                     
                                 else:
@@ -1766,6 +1782,7 @@ class Camera:
                             self.expresult = {}
                             self.expresult["error":True]
                             self.exposure_busy = False
+                            self.currently_in_smartstack_loop=False
                             return self.expresult
                         
                         # We call below to keep this subroutine a reasonable length, Basically still in Phase 2
@@ -1802,6 +1819,7 @@ class Camera:
                         )  # NB all these parameters are crazy!
                         self.exposure_busy = False
                         self.retry_camera = 0
+                        self.currently_in_smartstack_loop=False
                         break
                     except Exception as e:
                         plog("Exception in camera retry loop:  ", e)
@@ -1809,9 +1827,11 @@ class Camera:
                         self.retry_camera -= 1
                         num_retries += 1
                         self.exposure_busy = False
+                        self.currently_in_smartstack_loop=False
                         continue
         #  This is the loop point for the seq count loop
         self.exposure_busy = False
+        self.currently_in_smartstack_loop=False
         return self.expresult
 
     def stop_command(self, required_params, optional_params):
@@ -3364,6 +3384,13 @@ class Camera:
                             
                             return self.expresult                        
 
+                        # Good spot to check if we need to nudge the telescope
+                        # Allowed to on the last loop of a smartstack
+                        # We need to clear the nudge before putting another platesolve in the queue
+                        if (Nsmartstack > 1 and (Nsmartstack == sskcounter+1)) or Nsmartstack ==1 :
+                            self.currently_in_smartstack_loop=False                    
+                        g_dev['obs'].check_platesolve_and_nudge()
+
                         if solve_it == True or ((Nsmartstack == sskcounter+1) and Nsmartstack > 1)\
                                                    or g_dev['obs'].images_since_last_solve > g_dev['obs'].config["solve_nth_image"] or (datetime.datetime.now() - g_dev['obs'].last_solve_time)  > datetime.timedelta(minutes=g_dev['obs'].config["solve_timer"]):
                                                        
@@ -3376,6 +3403,7 @@ class Camera:
                             image_during_smartstack=False
                             if Nsmartstack > 1 and not (Nsmartstack == sskcounter+1):
                                 image_during_smartstack=True
+                            
                             
                             
                             if not image_during_smartstack and not g_dev['obs'].pointing_correction_requested_by_platesolve_thread and g_dev['obs'].platesolve_queue.empty() and not g_dev['obs'].platesolve_is_processing:
@@ -3443,27 +3471,26 @@ class Camera:
                             pass
                         del hdusmalldata  # remove file from memory now that we are doing with it
 
-                    # If it is the last of a smartstack, we want to wait for the platesolve and nudge.
-                    if Nsmartstack > 1 and (Nsmartstack == sskcounter+1):
-                        reported=0
-                        while True:
-                            if g_dev['obs'].platesolve_is_processing ==False and g_dev['obs'].platesolve_queue.empty():
-                                #plog ("we are free from platesolving!")
-                                break
-                            else:
-                                if reported ==0:
-                                    plog ("PLATESOLVE: Waiting for platesolve processing to complete and queue to clear")
-                                    reported=1
-                                if g_dev['seq'].stop_script_called:
-                                    g_dev["obs"].send_to_user("Cancelling out of autofocus script as stop script has been called.")  
-                                    return
-                                if not g_dev['obs'].open_and_enabled_to_observe:
-                                    g_dev["obs"].send_to_user("Cancelling out of activity as no longer open and enabled to observe.")  
-                                    return
-                                pass  
+                    # # If it is the last of a smartstack, we want to wait for the platesolve and nudge.
+                    # if Nsmartstack > 1 and (Nsmartstack == sskcounter+1):
+                    #     reported=0
+                    #     while True:
+                    #         if g_dev['obs'].platesolve_is_processing ==False and g_dev['obs'].platesolve_queue.empty():
+                    #             #plog ("we are free from platesolving!")
+                    #             break
+                    #         else:
+                    #             if reported ==0:
+                    #                 plog ("PLATESOLVE: Waiting for platesolve processing to complete and queue to clear")
+                    #                 reported=1
+                    #             if g_dev['seq'].stop_script_called:
+                    #                 g_dev["obs"].send_to_user("Cancelling out of autofocus script as stop script has been called.")  
+                    #                 return
+                    #             if not g_dev['obs'].open_and_enabled_to_observe:
+                    #                 g_dev["obs"].send_to_user("Cancelling out of activity as no longer open and enabled to observe.")  
+                    #                 return
+                    #             pass  
 
-                    # Good spot to check if we need to nudge the telescope
-                    g_dev['obs'].check_platesolve_and_nudge()                 
+                                     
                     
                     if not g_dev["cam"].exposure_busy:
                         self.expresult = {"stopped": True}

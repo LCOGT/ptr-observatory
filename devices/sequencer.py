@@ -214,7 +214,7 @@ class Sequencer:
         self.last_roof_status = 'Closed'
         self.time_roof_last_opened = time.time() -500
         
-        
+        self.blockend = 'None'
         
         self.end_of_night_token_sent = False
         self.project_call_timer = time.time() -60
@@ -1207,7 +1207,7 @@ class Sequencer:
             # Otherwise everyone will get slightly off-pointing images
             # Necessary
             plog ("Taking a quick pointing check and re_seek for new project block")
-            result = self.centering_exposure(no_confirmation=True)
+            result = self.centering_exposure(no_confirmation=True, try_hard=True)
             
             
             # This actually replaces the "requested" dest_ra by the actual centered pointing ra and dec. 
@@ -1312,7 +1312,7 @@ class Sequencer:
                         #plog (tempblock['event_id'])
                         if tempblock['event_id'] == calendar_event_id :
                             foundcalendar=True
-                            block['end']=tempblock['end']
+                            g_dev['seq'].blockend=tempblock['end']
                     if not foundcalendar:
                         plog ("could not find calendar entry, cancelling out of block.")
                         g_dev["obs"].send_to_user("Calendar block removed. Stopping project run.")   
@@ -1427,14 +1427,14 @@ class Sequencer:
                                 smartstackswitch='no'
 
                             # Set up options for exposure and take exposure.
-                            req = {'time': exp_time,  'alias':  str(self.config['camera']['camera_1_1']['name']), 'image_type': imtype, 'smartstack' : smartstackswitch, 'longstackswitch' : longstackswitch, 'longstackname' : longstackname, 'block_end' : block['end']}   #  NB Should pick up filter and constants from config
+                            req = {'time': exp_time,  'alias':  str(self.config['camera']['camera_1_1']['name']), 'image_type': imtype, 'smartstack' : smartstackswitch, 'longstackswitch' : longstackswitch, 'longstackname' : longstackname, 'block_end' : g_dev['seq'].blockend}   #  NB Should pick up filter and constants from config
                             opt = {'area': 150, 'count': 1, 'bin': 1, 'filter': color, \
                                    'hint': block['project_id'] + "##" + dest_name, 'object_name': block['project']['project_targets'][0]['name'], 'pane': pane}
                             plog('Seq Blk sent to camera:  ', req, opt)
                             obs_win_begin, sunZ88Op, sunZ88Cl, ephem_now = self.astro_events.getSunEvents()
 
                             now_date_timeZ = datetime.datetime.now().isoformat().split('.')[0] +'Z'
-                            if now_date_timeZ >= block['end'] :
+                            if now_date_timeZ >= g_dev['seq'].blockend :
                                 break
                             g_dev['obs'].update()
                             result = g_dev['cam'].expose_command(req, opt, user_name=user_name, user_id=user_id, user_roles=user_roles, no_AWS=False, solve_it=False, calendar_event_id=calendar_event_id)
@@ -1476,7 +1476,7 @@ class Sequencer:
                     # If so, set ended to True so that it cancels out of the exposure block.
                     now_date_timeZ = datetime.datetime.now().isoformat().split('.')[0] +'Z'
                     events = g_dev['events']
-                    ended = left_to_do <= 0 or now_date_timeZ >= block['end'] \
+                    ended = left_to_do <= 0 or now_date_timeZ >= g_dev['seq'].blockend \
                             or ephem.now() >= events['Observing Ends']
                     #                                                    ]\
                     #         or g_dev['airmass'] > float( block_specification['project']['project_constraints']['max_airmass']) \
@@ -5147,7 +5147,7 @@ class Sequencer:
         return
 
 
-    def centering_exposure(self, no_confirmation=False):
+    def centering_exposure(self, no_confirmation=False, try_hard=False):
 
         if not (g_dev['events']['Civil Dusk'] < ephem.now() < g_dev['events']['Civil Dawn']):
             plog("Too bright to consider platesolving!")
@@ -5160,7 +5160,7 @@ class Sequencer:
         req = {'time': self.config['pointing_exposure_time'],  'alias':  str(self.config['camera']['camera_1_1']['name']), 'image_type': 'pointing'}   #  NB Should pick up filter and constats from config
         opt = {'area': 100, 'count': 1, 'filter': 'pointing'}
         
-        
+        successful_platesolve=False
         
         # Make sure platesolve queue is clear
         reported=0
@@ -5187,6 +5187,10 @@ class Sequencer:
         # Take a pointing shot to reposition
         result = g_dev['cam'].expose_command(req, opt, user_id='Tobor', user_name='Tobor', user_roles='system', no_AWS=True, solve_it=True)
         
+        
+        
+        #breakpoint()
+        
         # Wait for platesolve
         queue_clear_time = time.time()
         reported=0
@@ -5207,6 +5211,9 @@ class Sequencer:
                 pass
         plog ("Time Taken for queue to clear post-exposure: " + str(time.time() - queue_clear_time))
         
+        if g_dev['obs'].last_platesolved_ra != np.nan:
+            successful_platesolve=True        
+        
         # Nudge if needed.
         if not g_dev['obs'].pointing_correction_requested_by_platesolve_thread:
             g_dev["obs"].send_to_user("Pointing adequate on first slew. Slew & Center complete.") 
@@ -5218,6 +5225,71 @@ class Sequencer:
                 plog ("waiting for pointing_correction_to_finish")
                 time.sleep(0.5)
             
+        if try_hard and not successful_platesolve:
+            plog("Didn't get a successful platesolve at an important time for pointing, trying a double exposure")
+            
+            req = {'time': float(self.config['pointing_exposure_time']) * 2,  'alias':  str(self.config['camera']['camera_1_1']['name']), 'image_type': 'pointing'}   #  NB Should pick up filter and constats from config
+            opt = {'area': 100, 'count': 1, 'filter': 'pointing'}
+            
+            result = g_dev['cam'].expose_command(req, opt, user_id='Tobor', user_name='Tobor', user_roles='system', no_AWS=True, solve_it=True)
+            
+            queue_clear_time = time.time()
+            reported=0
+            while True:
+                if g_dev['obs'].platesolve_is_processing ==False and g_dev['obs'].platesolve_queue.empty():
+                    #plog ("we are free from platesolving!")
+                    break
+                else:
+                    if reported ==0:
+                        plog ("PLATESOLVE: Waiting for platesolve processing to complete and queue to clear")
+                        reported=1
+                    if self.stop_script_called:
+                        g_dev["obs"].send_to_user("Cancelling out of autofocus script as stop script has been called.")  
+                        return
+                    if not g_dev['obs'].open_and_enabled_to_observe:
+                        g_dev["obs"].send_to_user("Cancelling out of activity as no longer open and enabled to observe.")  
+                        return
+                    pass
+            plog ("Time Taken for queue to clear post-exposure: " + str(time.time() - queue_clear_time))
+            
+            if g_dev['obs'].last_platesolved_ra == np.nan:
+                plog("Didn't get a successful platesolve at an important time for pointing AGAIN, trying a Lum filter")
+                
+                req = {'time': float(self.config['pointing_exposure_time']) * 2.5,  'alias':  str(self.config['camera']['camera_1_1']['name']), 'image_type': 'pointing'}   #  NB Should pick up filter and constats from config
+                opt = {'area': 100, 'count': 1, 'filter': 'Lum'}
+                
+                result = g_dev['cam'].expose_command(req, opt, user_id='Tobor', user_name='Tobor', user_roles='system', no_AWS=True, solve_it=True)
+                
+                queue_clear_time = time.time()
+                reported=0
+                while True:
+                    if g_dev['obs'].platesolve_is_processing ==False and g_dev['obs'].platesolve_queue.empty():
+                        #plog ("we are free from platesolving!")
+                        break
+                    else:
+                        if reported ==0:
+                            plog ("PLATESOLVE: Waiting for platesolve processing to complete and queue to clear")
+                            reported=1
+                        if self.stop_script_called:
+                            g_dev["obs"].send_to_user("Cancelling out of autofocus script as stop script has been called.")  
+                            return
+                        if not g_dev['obs'].open_and_enabled_to_observe:
+                            g_dev["obs"].send_to_user("Cancelling out of activity as no longer open and enabled to observe.")  
+                            return
+                        pass
+                plog ("Time Taken for queue to clear post-exposure: " + str(time.time() - queue_clear_time))
+        
+                
+        # Nudge if needed.
+        if not g_dev['obs'].pointing_correction_requested_by_platesolve_thread:
+            g_dev["obs"].send_to_user("Pointing adequate on first slew. Slew & Center complete.") 
+            return result
+        else:
+            g_dev['obs'].check_platesolve_and_nudge()        
+            # Wait until pointing correction fixed before moving on
+            while g_dev['obs'].pointing_correction_requested_by_platesolve_thread:
+                plog ("waiting for pointing_correction_to_finish")
+                time.sleep(0.5)
         
         
         if no_confirmation == True:
