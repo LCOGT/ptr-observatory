@@ -886,16 +886,20 @@ sel
                             plog("obs.scan_request: ", cmd)
 
                             device_type = cmd["deviceType"]
-                            device = self.all_devices[device_type][device_instance]
-                            try:
-                                #plog("Trying to parse:  ", cmd)
-
-                                device.parse_command(cmd)
-                            except Exception as e:
-
-                                plog(traceback.format_exc())
-
-                                plog("Exception in obs.scan_requests:  ", e, 'cmd:  ', cmd)
+                            
+                            if device_type=='enclosure':
+                                plog ('An OBS has mistakenly received an enclosure command! Ignoring.')
+                            else:
+                                device = self.all_devices[device_type][device_instance]
+                                try:
+                                    #plog("Trying to parse:  ", cmd)
+    
+                                    device.parse_command(cmd)
+                                except Exception as e:
+    
+                                    plog(traceback.format_exc())
+    
+                                    plog("Exception in obs.scan_requests:  ", e, 'cmd:  ', cmd)
                             self.stop_processing_command_requests = False
                         else:
                             time.sleep(0.2)
