@@ -198,7 +198,7 @@ site_config = {
         #'enclosure',
         'mount',
         'telescope',
-        # 'screen',
+        #'screen',
         #'rotator',
         'focuser',
         'selector',
@@ -240,39 +240,34 @@ site_config = {
 #         },
 #     },
 
-#     'enclosure': {
-#         'enclosure1': {
-#             'parent': 'site',
+#      'enclosure': {
+#          'enclosure1': {
+#              'name': 'Scope Dome Roll-off Roof',
+#              'enc_is_specific':  False,
+#              'enc_is_proxy':  True,
+#              'hostIP':  '10.0.0.10',
+# #            'driver': 'ASCOM.DigitalDomeWorks.Dome',  #  'ASCOMDome.Dome',  #ASCOMDome.Dome',  # ASCOM.DeviceHub.Dome',  # ASCOM.DigitalDomeWorks.Dome',  #"  ASCOMDome.Dome',
+#              'has_lights':  False,
+#              'controlled_by': 'aro-wema',
+#              'proxied_by': 'aro-0m35',
+#  			 'is_dome': False,
+#              'default_mode': 'Automatic',
 
-#             'name': 'HomeDome',
-#             'enc_is_specific':  False,
-#             'hostIP':  '10.0.0.10',
-#             'driver': 'ASCOM.DigitalDomeWorks.Dome',  #  'ASCOMDome.Dome',  #ASCOMDome.Dome',  # ASCOM.DeviceHub.Dome',  # ASCOM.DigitalDomeWorks.Dome',  #"  ASCOMDome.Dome',
-
-#             'has_lights':  True,
-#             'controlled_by': 'mount1',
-# 			'is_dome': True,
-#             'mode': 'Automatic',
-#             'enc_radius':  70,  #  inches Ok for now.
-#             'common_offset_east': -19.5,  # East is negative.  These will vary per telescope.
-#             'common_offset_south': -8,  # South is negative.   So think of these as default.
-
-#             'cool_down': 89.0,     # Minutes prior to sunset.
-#             'settings': {
-#                 'lights':  ['Auto', 'White', 'Red', 'IR', 'Off'],       #A way to encode possible states or options???
-#                                                                         #First Entry is always default condition.
-#                 'roof_shutter':  ['Auto', 'Open', 'Close', 'Lock Closed', 'Unlock'],
-#             },
-#             'eve_bias_dark_dur':  1.5,   # hours Duration, prior to next.
-#             'eve_screen_flat_dur': 0.0,   # hours Duration, prior to next.
-#             'operations_begin':  -1.0,   # - hours from Sunset
-#             'eve_cooldown_offset': -.99,   # - hours beforeSunset
-#             'eve_sky_flat_offset':  1,   # - hours beforeSunset   Only THis is used in PTR events
-#             'morn_sky_flat_offset':  0.4,   # + hours after Sunrise
-#             'morning_close_offset':  0.41,   # + hours after Sunrise
-#             'operations_end':  0.42,
 #         },
-#     },
+#          'enclosure2': {
+#              'name': 'Scope Dome 2m dome',
+#              'enc_is_specific':  False,
+#              'enc_is_proxy':  True,
+#              'hostIP':  '10.0.0.10',
+# #            'driver': 'ASCOM.DigitalDomeWorks.Dome',  #  'ASCOMDome.Dome',  #ASCOMDome.Dome',  # ASCOM.DeviceHub.Dome',  # ASCOM.DigitalDomeWorks.Dome',  #"  ASCOMDome.Dome',
+#              'has_lights':  True,
+#              'controlled_by': 'aro-wema',
+#              'proxied_by': 'aros-0m152',
+#  			 'is_dome': True,
+#              'default_mode': 'Automatic',
+
+#         },
+     #},
 
 
 

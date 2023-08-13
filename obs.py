@@ -886,6 +886,7 @@ sel
                             plog("obs.scan_request: ", cmd)
 
                             device_type = cmd["deviceType"]
+
                             device = self.all_devices[device_type][device_instance]
                             try:
                                 #plog("Trying to parse:  ", cmd)
