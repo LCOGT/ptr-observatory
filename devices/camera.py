@@ -1182,26 +1182,48 @@ class Camera:
             plog("Target Name:  ", opt["object_name"])
         if self.user_name != self.last_user_name:
             self.last_user_name = self.user_name
-        if action == "expose" and not self.exposure_busy:
+        if action == "expose":# and not self.exposure_busy:            
+            
+            if self.exposure_busy:
+                plog("Cannot expose, camera is currently busy, waiting for exposure to clear")
+                while True:
+                    if self.exposure_busy:
+                        time.sleep(0.5)
+                    else:
+                        break
+            
             if req['longstack'] or req['longstack'] == 'yes':
                 req['longstackname'] = (datetime.datetime.now().strftime("%d%m%y%H%M%S") + 'lngstk')
             print (req)
             #breakpoint()
-            self.expose_command(req, opt, user_id=command['user_id'], user_name=command['user_name'], user_roles=command['user_roles'], do_sep=True, quick=False)
+            #breakpoint()
+            
+            if req['image_type'].lower() in (            
+                "bias",
+                "dark",
+                "screen flat",
+                "sky flat",
+                "near flat",
+                "thor flat",
+                "arc flat",
+                "lamp flat",
+                "solar flat",
+            ):
+                manually_requested_calibration=True
+            else:
+                manually_requested_calibration=False
+            
+            self.expose_command(req, opt, user_id=command['user_id'], user_name=command['user_name'], user_roles=command['user_roles'], quick=False, manually_requested_calibration=manually_requested_calibration)
             self.exposure_busy = False  # Hangup needs to be guarded with a timeout.
             self.active_script = None
 
-        elif action == "expose" and self.exposure_busy:
-            plog("Cannot expose, camera is currently busy, waiting for exposure to clear")
-            while True:
-                if self.exposure_busy:
-                    time.sleep(0.5)
-                else:
-                    break
+        #elif action == "expose" and 
 
-            self.expose_command(req, opt, user_id=command['user_id'], user_name=command['user_name'], user_roles=command['user_roles'], do_sep=True, quick=False)
-            self.exposure_busy = False  # Hangup needs to be guarded with a timeout.
-            self.active_script = None
+            
+
+            #self.expose_command(req, opt, user_id=command['user_id'], user_name=command['user_name'], user_roles=command['user_roles'], do_sep=True, quick=False)
+            #self.exposure_busy = False  # Hangup needs to be guarded with a timeout.
+            #self.active_script = None
 
         elif action == "darkslide_close":
 
@@ -1260,7 +1282,8 @@ class Camera:
         solve_it=False,
         calendar_event_id=None,
         skip_open_check=True,
-        skip_daytime_check=True
+        skip_daytime_check=True,
+        manually_requested_calibration=False
     ):
         """
         This is Phase 1:  Setup the camera.
@@ -1401,7 +1424,7 @@ class Camera:
 
         #breakpoint()
 
-        g_dev['seq'].blockend = required_params.get('block_end', "None")
+        #g_dev['seq'].blockend = required_params.get('block_end', "None")
         self.pane = optional_params.get("pane", None)
 
         bin_x = 1               
@@ -1816,6 +1839,7 @@ class Camera:
                             airmass_of_observation=airmass_of_observation,
                             azimuth_of_observation = azimuth_of_observation,
                             altitude_of_observation = altitude_of_observation,
+                            manually_requested_calibration=manually_requested_calibration
                         )  # NB all these parameters are crazy!
                         self.exposure_busy = False
                         self.retry_camera = 0
@@ -1872,7 +1896,8 @@ class Camera:
         observer_user_id=None,
         airmass_of_observation=None,
         azimuth_of_observation=None,
-        altitude_of_observation=None
+        altitude_of_observation=None,
+        manually_requested_calibration=False
         
     ):
         
@@ -3200,13 +3225,13 @@ class Camera:
 
                     # If the file isn't a calibration frame, then undertake a flash reduction quickly
                     # To make a palatable jpg AS SOON AS POSSIBLE to send to AWS
-                    if not frame_type.lower() in (
+                    if (not frame_type.lower() in (
                         "bias",
                         "dark",
                         "flat",
                         "screenflat",
                         "skyflat",
-                    ):  # Don't process jpgs or small fits for biases and darks
+                    )) or (manually_requested_calibration):  # Don't process jpgs or small fits for biases and darks
 
                         # Make a copy of hdu to use as jpg and small fits as well as a local raw used file for 
                         # planewave solves
@@ -3215,24 +3240,24 @@ class Camera:
                         # Quick flash bias and dark frame                           
                         
                         #flashbinning=1
-                        
-                        try:
-                            hdusmalldata = hdusmalldata - self.biasFiles[str(1)]
-                            hdusmalldata = hdusmalldata - (self.darkFiles[str(1)] * exposure_time)
-                            
-                        except Exception as e:
-                            plog("debias/darking light frame failed: ", e)
-                            
-                        # Quick flat flat frame
-                        try:
-                            if self.config['camera'][self.name]['settings']['hold_flats_in_memory']:
-                                hdusmalldata = np.divide(hdusmalldata, self.flatFiles[self.current_filter])                               
-                            else:
-                                hdusmalldata = np.divide(hdusmalldata, np.load(self.flatFiles[str(self.current_filter + "_bin" + str(1))]))
-                            
-                        except Exception as e:
-                            plog("flatting light frame failed", e)
-                            #plog(traceback.format_exc()) 
+                        if not manually_requested_calibration:
+                            try:
+                                hdusmalldata = hdusmalldata - self.biasFiles[str(1)]
+                                hdusmalldata = hdusmalldata - (self.darkFiles[str(1)] * exposure_time)
+                                
+                            except Exception as e:
+                                plog("debias/darking light frame failed: ", e)
+                                
+                            # Quick flat flat frame
+                            try:
+                                if self.config['camera'][self.name]['settings']['hold_flats_in_memory']:
+                                    hdusmalldata = np.divide(hdusmalldata, self.flatFiles[self.current_filter])                               
+                                else:
+                                    hdusmalldata = np.divide(hdusmalldata, np.load(self.flatFiles[str(self.current_filter + "_bin" + str(1))]))
+                                
+                            except Exception as e:
+                                plog("flatting light frame failed", e)
+                                #plog(traceback.format_exc()) 
                         
                         
                         # This saves the REDUCED file to disk
@@ -3244,45 +3269,45 @@ class Camera:
                             
                             # Set up reduced header
                             hdusmallheader=copy.deepcopy(hdu.header)
-                            
-                            #From the reduced data, crop around the edges of the
-                            #raw 1x1 image to get rid of overscan and crusty edge bits
-                            edge_crop=self.config["camera"][self.name]["settings"]['reduced_image_edge_crop']
-                            hdusmalldata=hdusmalldata[edge_crop:-edge_crop,edge_crop:-edge_crop]
-                            
-                            hdusmallheader['NAXIS1']=float(hdu.header['NAXIS1']) - (edge_crop * 2)
-                            hdusmallheader['NAXIS2']=float(hdu.header['NAXIS2']) - (edge_crop * 2)
-                            hdusmallheader['CRPIX1']=float(hdu.header['CRPIX1']) - (edge_crop * 2)
-                            hdusmallheader['CRPIX2']=float(hdu.header['CRPIX2']) - (edge_crop * 2)
-                            
-                            # bin to native binning
-                            if self.native_bin != 1:
-                                hdusmalldata=(block_reduce(hdusmalldata,self.native_bin))                                 
-                                hdusmallheader['XBINING']=self.native_bin
-                                hdusmallheader['YBINING']=self.native_bin
-                                hdusmallheader['PIXSCALE']=float(hdu.header['PIXSCALE']) * self.native_bin
-                                pixscale=float(hdu.header['PIXSCALE'])
-                                hdusmallheader['NAXIS1']=float(hdu.header['NAXIS1']) / self.native_bin
-                                hdusmallheader['NAXIS2']=float(hdu.header['NAXIS2']) / self.native_bin
-                                hdusmallheader['CRPIX1']=float(hdu.header['CRPIX1']) / self.native_bin
-                                hdusmallheader['CRPIX2']=float(hdu.header['CRPIX2']) / self.native_bin
-                                hdusmallheader['CDELT1']=float(hdu.header['CDELT1']) * self.native_bin
-                                hdusmallheader['CDELT2']=float(hdu.header['CDELT2']) * self.native_bin
-                                hdusmallheader['CCDXPIXE']=float(hdu.header['CCDXPIXE']) * self.native_bin
-                                hdusmallheader['CCDYPIXE']=float(hdu.header['CCDYPIXE']) * self.native_bin
-                                hdusmallheader['XPIXSZ']=float(hdu.header['XPIXSZ']) * self.native_bin
-                                hdusmallheader['YPIXSZ']=float(hdu.header['YPIXSZ']) * self.native_bin
+                            if not manually_requested_calibration:
+                                #From the reduced data, crop around the edges of the
+                                #raw 1x1 image to get rid of overscan and crusty edge bits
+                                edge_crop=self.config["camera"][self.name]["settings"]['reduced_image_edge_crop']
+                                hdusmalldata=hdusmalldata[edge_crop:-edge_crop,edge_crop:-edge_crop]
                                 
-                                hdusmallheader['SATURATE']=float(hdu.header['SATURATE']) * pow( self.native_bin,2)
-                                hdusmallheader['FULLWELL']=float(hdu.header['FULLWELL']) * pow( self.native_bin,2)
-                                hdusmallheader['MAXLIN']=float(hdu.header['MAXLIN']) * pow( self.native_bin,2)
-                           
-                            # Add a pedestal to the reduced data
-                            # This is important for a variety of reasons
-                            # Some functions don't work with arrays with negative values
-                            # 2000 SHOULD be enough.
-                            hdusmalldata=hdusmalldata+200.0
-                            hdusmallheader['PEDESTAL']=200
+                                hdusmallheader['NAXIS1']=float(hdu.header['NAXIS1']) - (edge_crop * 2)
+                                hdusmallheader['NAXIS2']=float(hdu.header['NAXIS2']) - (edge_crop * 2)
+                                hdusmallheader['CRPIX1']=float(hdu.header['CRPIX1']) - (edge_crop * 2)
+                                hdusmallheader['CRPIX2']=float(hdu.header['CRPIX2']) - (edge_crop * 2)
+                                
+                                # bin to native binning
+                                if self.native_bin != 1:
+                                    hdusmalldata=(block_reduce(hdusmalldata,self.native_bin))                                 
+                                    hdusmallheader['XBINING']=self.native_bin
+                                    hdusmallheader['YBINING']=self.native_bin
+                                    hdusmallheader['PIXSCALE']=float(hdu.header['PIXSCALE']) * self.native_bin
+                                    pixscale=float(hdu.header['PIXSCALE'])
+                                    hdusmallheader['NAXIS1']=float(hdu.header['NAXIS1']) / self.native_bin
+                                    hdusmallheader['NAXIS2']=float(hdu.header['NAXIS2']) / self.native_bin
+                                    hdusmallheader['CRPIX1']=float(hdu.header['CRPIX1']) / self.native_bin
+                                    hdusmallheader['CRPIX2']=float(hdu.header['CRPIX2']) / self.native_bin
+                                    hdusmallheader['CDELT1']=float(hdu.header['CDELT1']) * self.native_bin
+                                    hdusmallheader['CDELT2']=float(hdu.header['CDELT2']) * self.native_bin
+                                    hdusmallheader['CCDXPIXE']=float(hdu.header['CCDXPIXE']) * self.native_bin
+                                    hdusmallheader['CCDYPIXE']=float(hdu.header['CCDYPIXE']) * self.native_bin
+                                    hdusmallheader['XPIXSZ']=float(hdu.header['XPIXSZ']) * self.native_bin
+                                    hdusmallheader['YPIXSZ']=float(hdu.header['YPIXSZ']) * self.native_bin
+                                    
+                                    hdusmallheader['SATURATE']=float(hdu.header['SATURATE']) * pow( self.native_bin,2)
+                                    hdusmallheader['FULLWELL']=float(hdu.header['FULLWELL']) * pow( self.native_bin,2)
+                                    hdusmallheader['MAXLIN']=float(hdu.header['MAXLIN']) * pow( self.native_bin,2)
+                               
+                                # Add a pedestal to the reduced data
+                                # This is important for a variety of reasons
+                                # Some functions don't work with arrays with negative values
+                                # 2000 SHOULD be enough.
+                                hdusmalldata=hdusmalldata+200.0
+                                hdusmallheader['PEDESTAL']=200
                             
                             
                             # Every Image gets SEP'd and gets it's catalogue sent up pronto ahead of the big fits
@@ -3391,7 +3416,7 @@ class Camera:
                             self.currently_in_smartstack_loop=False                    
                         g_dev['obs'].check_platesolve_and_nudge()
 
-                        if solve_it == True or ((Nsmartstack == sskcounter+1) and Nsmartstack > 1)\
+                        if not manually_requested_calibration and solve_it == True or ((Nsmartstack == sskcounter+1) and Nsmartstack > 1)\
                                                    or g_dev['obs'].images_since_last_solve > g_dev['obs'].config["solve_nth_image"] or (datetime.datetime.now() - g_dev['obs'].last_solve_time)  > datetime.timedelta(minutes=g_dev['obs'].config["solve_timer"]):
                                                        
                             cal_name = (
@@ -3432,7 +3457,7 @@ class Camera:
 
         
                     # If the files are local calibrations, save them out to the local calibration directory
-                    if ( frame_type.lower() in [
+                    if not manually_requested_calibration and ( frame_type.lower() in [
                         "bias",
                         "dark",
                         "flat",

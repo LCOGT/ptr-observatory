@@ -78,7 +78,7 @@ site_config = {
     # Manual mode turns all automation off. 
     # The scope will only do what you tell it
     # This DOESN'T turn some safetys off 
-    'scope_in_manual_mode' : False,
+    'scope_in_manual_mode' : True,
     'mount_reference_model_off': True,
     'sun_checks_off': False,
     'altitude_checks_off': False,    
@@ -91,7 +91,7 @@ site_config = {
     'turn_auto_centering_off': False,
     'debug_mode' : False,
     'admin_owner_commands_only': False,
-    'debug_duration_sec': 70000,
+    'debug_duration_sec': 3600,
     'owner':  ['google-oauth2|112401903840371673242'],  # Wayne
 
     'owner_alias': ['WER', 'TELOPS'],
@@ -177,15 +177,15 @@ site_config = {
     'obsid_in_automatic_default': "Automatic",   #"Manual", "Shutdown"
     'automatic_detail_default': "Enclosure is initially set to Automatic mode.",
 
-    'auto_eve_bias_dark': True,
+    
 
     'observing_check_period' : 1,    # How many minutes between weather checks
     'enclosure_check_period' : 1,    # How many minutes between enclosure checks
-
-    'auto_midnight_moonless_bias_dark': True,
+    'auto_eve_bias_dark': False,
     'auto_eve_sky_flat': True,
     'eve_sky_flat_sunset_offset': -45.,  #  Minutes  neg means before, + after.
-    'eve_cool_down_open' : False,
+    'eve_cool_down_open' : False,    
+    'auto_midnight_moonless_bias_dark': True,
     'auto_morn_bias_dark': False,
     're-calibrate_on_solve': True,
     'pointing_calibration_on_startup': False,
@@ -682,7 +682,7 @@ site_config = {
     'camera': {
         'camera_1_1': {
             'parent': 'telescope1',
-            'name': 'sq004ms',      #Important because this points to a server file structure by that name.
+            'name': 'sq005ms',      #Important because this points to a server file structure by that name.
             'desc':  'QHY 600Pro Monochrome',
             'service_date': '20230301',
             #'driver':  'ASCOM.QHYCCD.Camera',   #  Maxim.CCDCamera',   #"Maxim.CCDCamera",   #'ASCOM.FLI.Kepler.Camera',  #Code must work withall three
@@ -802,7 +802,7 @@ site_config = {
                 'crop_preview_ytop': 20,
                 'crop_preview_xleft': 20,
                 'crop_preview_xright': 20,
-                'temp_setpoint': 1,
+                'temp_setpoint': -3,
                 'calib_setpoints': [ 3, 5, 7],   #A swag
                 'has_chiller':  True,
                 'chiller_com_port': 'COM1',
