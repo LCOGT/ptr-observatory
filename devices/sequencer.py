@@ -3022,6 +3022,14 @@ class Sequencer:
                                     self.flats_being_collected = False
                                     return
                                 
+                                if fred == 'blockend':
+                                    plog ("blockend detected during flat period, cancelling out of flat scripts")
+                                    g_dev["obs"].send_to_user("Roof shut during sky flats. Stopping sky_flats")  
+                                    self.filter_throughput_shelf.close()
+                                    g_dev['mnt'].park_command({}, {}) # You actually always want it to park, TheSkyX can't stop the telescope tracking, so park is safer... it is before focus anyway.
+                                    self.sky_guard = False
+                                    self.flats_being_collected = False
+                                    return
                                 
                                 if g_dev["obs"].stop_all_activity:
                                     plog('stop_all_activity cancelling out of exposure loop')
@@ -3038,6 +3046,8 @@ class Sequencer:
                                     plog ("patch broken?")
                                     plog(traceback.format_exc())
                                     plog (fred)
+                                    
+                                    
                                     #plog('I think this is because the roof is shut')
                                     #plog ('need to solve this breakpoint for next time')
                                     #plog (str(fred))
