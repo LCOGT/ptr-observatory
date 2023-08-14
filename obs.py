@@ -1653,7 +1653,7 @@ sel
                 focstatus=g_dev['foc'].get_status()
                 self.temperature_in_observatory_from_focuser=focstatus["focus_temperature"]
                 
-                if self.temperature_in_observatory_from_focuser > 20.0:
+                if self.temperature_in_observatory_from_focuser > 23:  #This should be a per obsy config item
                     self.too_hot_in_observatory=True
                     
                 
