@@ -1778,7 +1778,7 @@ class Camera:
                                              self.currently_in_smartstack_loop=False
                                              return
                             
-                            if bias_dark_or_light_type_frame in ["bias", "dark"] or 'flat' in frame_type:
+                            if (bias_dark_or_light_type_frame in ["bias", "dark"] or 'flat' in frame_type) and not manually_requested_calibration:
                                 #plog("Median of full-image area bias, dark or flat:  ", np.median(self.img))
                                 
                                 # Check that the temperature is ok before accepting
@@ -2116,7 +2116,7 @@ class Camera:
                         time.sleep(3)
                         retrycounter = retrycounter + 1          
 
-                if frame_type in ["bias", "dark"] or frame_type[-4:] == ['flat']:
+                if (frame_type in ["bias", "dark"] or frame_type[-4:] == ['flat']) and not manually_requested_calibration:
                     plog("Median of full-image area bias, dark or flat:  ", np.median(self.img))
                     
                     # Check that the temperature is ok before accepting

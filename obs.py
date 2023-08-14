@@ -2739,8 +2739,10 @@ sel
                                 ),
                                 "Date FITS file was written",
                             )
+                            
+                            
                             hdu.writeto(
-                                slow_process[1], overwrite=True, output_verify='silentfix'
+                                slow_process[1].replace('EX00','EX00-'+temphduheader['OBSTYPE']), overwrite=True, output_verify='silentfix'
                             )  # Save full raw file locally
                             try:
                                 hdu.close()
