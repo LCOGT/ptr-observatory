@@ -1269,7 +1269,7 @@ class Camera:
         not the slower File Path.  THe mode used for focusing or other operations where we do not want to save any
         image data.
         """
-        
+
         # First check that it isn't an exposure that doesn't need a check (e.g. bias, darks etc.)
         if not skip_open_check:
         #Second check, if we are not open and available to observe, then .... don't observe!        

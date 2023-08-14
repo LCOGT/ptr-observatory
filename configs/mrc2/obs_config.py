@@ -185,9 +185,8 @@ site_config = {
     'auto_midnight_moonless_bias_dark': True,
     'auto_eve_sky_flat': True,
     'eve_sky_flat_sunset_offset': -45.,  #  Minutes  neg means before, + after.
-    'eve_cool_down_open' : -50.0,
-    'auto_morn_sky_flat': True,
-    'auto_morn_bias_dark': True,
+    'eve_cool_down_open' : False,
+    'auto_morn_bias_dark': False,
     're-calibrate_on_solve': True,
     'pointing_calibration_on_startup': False,
     'periodic_focus_time' : 2.0, # This is a time, in hours, over which to bypass automated focussing (e.g. at the start of a project it will not refocus if a new project starts X hours after the last focus)
@@ -803,11 +802,11 @@ site_config = {
                 'crop_preview_ytop': 20,
                 'crop_preview_xleft': 20,
                 'crop_preview_xright': 20,
-                'temp_setpoint': -5,
+                'temp_setpoint': 1,
                 'calib_setpoints': [ 3, 5, 7],   #A swag
                 'has_chiller':  True,
                 'chiller_com_port': 'COM1',
-                'chiller_ref_temp':  10.0,  # C
+                'chiller_ref_temp':  15.0,  # C
                 'day_warm': False,
                 'day_warm_degrees' : 8, # Number of degrees to warm during the daytime.
                 'protect_camera_from_overheating' : False,
