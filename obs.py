@@ -886,16 +886,22 @@ sel
                             plog("obs.scan_request: ", cmd)
 
                             device_type = cmd["deviceType"]
-                            device = self.all_devices[device_type][device_instance]
-                            try:
-                                #plog("Trying to parse:  ", cmd)
 
-                                device.parse_command(cmd)
-                            except Exception as e:
+                            
+                            if device_type=='enclosure':
+                                plog ('An OBS has mistakenly received an enclosure command! Ignoring.')
+                            else:
+                                device = self.all_devices[device_type][device_instance]
+                                try:
+                                    #plog("Trying to parse:  ", cmd)
+    
+                                    device.parse_command(cmd)
+                                except Exception as e:
+    
+                                    plog(traceback.format_exc())
+    
+                                    plog("Exception in obs.scan_requests:  ", e, 'cmd:  ', cmd)
 
-                                plog(traceback.format_exc())
-
-                                plog("Exception in obs.scan_requests:  ", e, 'cmd:  ', cmd)
                             self.stop_processing_command_requests = False
                         else:
                             time.sleep(0.2)
@@ -953,23 +959,24 @@ sel
         # at least a 5 minute basis.        
         if (time.time() - g_dev['obs'].time_of_last_slew) > 300:
             # Check no other commands or exposures are happening
-            if g_dev['obs'].cmd_queue.empty() and not g_dev["cam"].exposure_busy and not g_dev['mnt'].mount.AtPark and g_dev['mnt'].mount.Tracking :
-                # Don't do it if the roof isn't open etc.                
-                if (g_dev['obs'].open_and_enabled_to_observe==True ) or (g_dev['obs'].debug_flag) or g_dev['obs'].scope_in_manual_mode:                
-                    ra = g_dev['mnt'].mount.RightAscension
-                    dec = g_dev['mnt'].mount.Declination
-                    temppointing=SkyCoord(ra*u.hour, dec*u.degree, frame='icrs')
-                    temppointingaltaz=temppointing.transform_to(AltAz(location=g_dev['mnt'].site_coordinates, obstime=Time.now()))
-                    alt = temppointingaltaz.alt.degree
-                    #az = temppointingaltaz.az.degree
-                    if alt > 25:
-                        g_dev['obs'].time_of_last_slew=time.time()
-                        #g_dev['mnt'].go_command(ra=g_dev['mnt'].mount.RightAscension, dec=g_dev['mnt'].mount.Declination, silent=True)
-                        meridianra=g_dev['mnt'].mount.RightAscension
-                        meridiandec=g_dev['mnt'].mount.Declination
-                        g_dev['mnt'].mount.SlewToCoordinatesAsync(meridianra, meridiandec)
-                
-                
+            if g_dev['obs'].cmd_queue.empty() and not g_dev["cam"].exposure_busy and not g_dev['cam'].currently_in_smartstack_loop and not g_dev["seq"].focussing: 
+                if not g_dev['mnt'].mount.AtPark and not g_dev['mnt'].mount.Slewing and g_dev['mnt'].mount.Tracking :
+                    # Don't do it if the roof isn't open etc.                
+                    if (g_dev['obs'].open_and_enabled_to_observe==True ) or (g_dev['obs'].debug_flag) or g_dev['obs'].scope_in_manual_mode:                
+                        ra = g_dev['mnt'].mount.RightAscension
+                        dec = g_dev['mnt'].mount.Declination
+                        temppointing=SkyCoord(ra*u.hour, dec*u.degree, frame='icrs')
+                        temppointingaltaz=temppointing.transform_to(AltAz(location=g_dev['mnt'].site_coordinates, obstime=Time.now()))
+                        alt = temppointingaltaz.alt.degree
+                        #az = temppointingaltaz.az.degree
+                        if alt > 25:
+                            
+                            #g_dev['mnt'].go_command(ra=g_dev['mnt'].mount.RightAscension, dec=g_dev['mnt'].mount.Declination, silent=True)
+                            meridianra=g_dev['mnt'].mount.RightAscension
+                            meridiandec=g_dev['mnt'].mount.Declination
+                            g_dev['obs'].time_of_last_slew=time.time()
+                            g_dev['mnt'].mount.SlewToCoordinatesAsync(meridianra, meridiandec)                        
+                            wait_for_slew()
                 
 
 
