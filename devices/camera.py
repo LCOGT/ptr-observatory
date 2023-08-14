@@ -1424,7 +1424,7 @@ class Camera:
 
         #breakpoint()
 
-        #g_dev['seq'].blockend = required_params.get('block_end', "None")
+        g_dev['seq'].blockend = required_params.get('block_end', "None")
         self.pane = optional_params.get("pane", None)
 
         bin_x = 1               
