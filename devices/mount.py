@@ -1128,6 +1128,7 @@ class Mount:
         successful_move=0
         while successful_move==0:
             try:
+                wait_for_slew()
                 g_dev['obs'].time_of_last_slew=time.time()
                 #self.mount.SlewToCoordinatesAsync(self.ra_mech*RTOH, self.dec_mech*RTOD)  #Is this needed?
                 #plog('actual sent ra: ' + str(ra) + ' dec: ' + str(dec))
@@ -1160,6 +1161,7 @@ class Mount:
                                 if ra > 24:
                                     ra=ra-24
                                 self.mount.SlewToCoordinatesAsync(ra, dec)
+                                wait_for_slew()
                                 retry=4
                             else:
                                 
@@ -1207,6 +1209,7 @@ class Mount:
                 if ra > 24:
                     ra=ra-24
                 plog('actual sent ra: ' + str(ra) + ' dec: ' + str(dec))
+                wait_for_slew()
                 self.mount.SlewToCoordinatesAsync(ra, dec)
                 #self.can_report_destination_pierside
                 wait_for_slew()
@@ -1235,6 +1238,7 @@ class Mount:
                     if ra > 24:
                         ra=ra-24
                     self.mount.SlewToCoordinatesAsync(ra, dec)  #Is this needed?
+                    wait_for_slew()
                     
                 else:
                     plog (traceback.format_exc())

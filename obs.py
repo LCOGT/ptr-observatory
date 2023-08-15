@@ -977,6 +977,7 @@ sel
                         if alt > 25:
                             
                             #g_dev['mnt'].go_command(ra=g_dev['mnt'].mount.RightAscension, dec=g_dev['mnt'].mount.Declination, silent=True)
+                            wait_for_slew()
                             meridianra=g_dev['mnt'].mount.RightAscension
                             meridiandec=g_dev['mnt'].mount.Declination
                             g_dev['obs'].time_of_last_slew=time.time()
@@ -3204,6 +3205,7 @@ sel
                     plog("Re-centering Telescope Slightly.")
                     self.send_to_user("Re-centering Telescope Slightly.")
                     #g_dev['mnt'].mount.SlewToCoordinatesAsync(g_dev['obs'].pointing_correction_request_ra, g_dev['obs'].pointing_correction_request_dec)
+                    wait_for_slew()
                     ranudge= g_dev['mnt'].mount.RightAscension + g_dev['obs'].pointing_correction_request_ra_err
                     decnudge= g_dev['mnt'].mount.Declination + g_dev['obs'].pointing_correction_request_dec_err
                     if ranudge < 0:
