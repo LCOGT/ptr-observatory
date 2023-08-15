@@ -860,7 +860,7 @@ sel
                 # if (not g_dev["cam"].exposure_busy) and (not g_dev['mnt'].mount.Slewing):
                 if (not g_dev["cam"].exposure_busy) and (not self.stop_processing_command_requests):
                     while self.cmd_queue.qsize() > 0:
-                        if not self.stop_processing_command_requests and not g_dev["cam"].exposure_busy:  # This is to stop multiple commands running over the top of each other.
+                        if not self.stop_processing_command_requests and not g_dev["cam"].exposure_busy and not g_dev['seq'].block_guard:  # This is to stop multiple commands running over the top of each other.
                             self.stop_processing_command_requests = True
                             #plog(
                             #    "Number of queued commands:  " + str(self.cmd_queue.qsize())
