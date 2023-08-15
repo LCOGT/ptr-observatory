@@ -914,6 +914,7 @@ class Sequencer:
                         plog ("block complete append didn't work")
                         plog(traceback.format_exc())
                     self.block_guard=False
+                    g_dev['seq'].blockend = None
                     #block['project_id'] in ['none', 'real_time_slot', 'real_time_block']
                     '''
                     When a scheduled block is completed it is not re-entered or the block needs to
@@ -1427,15 +1428,17 @@ class Sequencer:
                                 smartstackswitch='no'
 
                             # Set up options for exposure and take exposure.
-                            req = {'time': exp_time,  'alias':  str(self.config['camera']['camera_1_1']['name']), 'image_type': imtype, 'smartstack' : smartstackswitch, 'longstackswitch' : longstackswitch, 'longstackname' : longstackname, 'block_end' : g_dev['seq'].blockend}   #  NB Should pick up filter and constants from config
+                            req = {'time': exp_time,  'alias':  str(self.config['camera']['camera_1_1']['name']), 'image_type': imtype, 'smartstack' : smartstackswitch, 'longstackswitch' : longstackswitch, 'longstackname' : longstackname}#, 'block_end' : g_dev['seq'].blockend}   #  NB Should pick up filter and constants from config
                             opt = {'area': 150, 'count': 1, 'bin': 1, 'filter': color, \
                                    'hint': block['project_id'] + "##" + dest_name, 'object_name': block['project']['project_targets'][0]['name'], 'pane': pane}
                             plog('Seq Blk sent to camera:  ', req, opt)
                             obs_win_begin, sunZ88Op, sunZ88Cl, ephem_now = self.astro_events.getSunEvents()
 
                             now_date_timeZ = datetime.datetime.now().isoformat().split('.')[0] +'Z'
-                            if now_date_timeZ >= g_dev['seq'].blockend :
-                                break
+                            if g_dev['seq'].blockend != None:
+                                if now_date_timeZ >= g_dev['seq'].blockend :                                
+                                    left_to_do=0
+                                    return
                             g_dev['obs'].update()
                             result = g_dev['cam'].expose_command(req, opt, user_name=user_name, user_id=user_id, user_roles=user_roles, no_AWS=False, solve_it=False, calendar_event_id=calendar_event_id)
                             g_dev['obs'].update()

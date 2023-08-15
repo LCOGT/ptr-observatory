@@ -1424,7 +1424,7 @@ class Camera:
 
         #breakpoint()
 
-        g_dev['seq'].blockend = required_params.get('block_end', "None")
+        #g_dev['seq'].blockend = required_params.get('block_end', "None")
         self.pane = optional_params.get("pane", None)
 
         bin_x = 1               
@@ -1607,12 +1607,14 @@ class Camera:
                     
 
                     # Check that the block isn't ending during normal observing time (don't check while biasing, flats etc.)
-                    if not 'None' in g_dev['seq'].blockend: # Only do this check if a block end was provided.
+                    if g_dev['seq'].blockend != None: # Only do this check if a block end was provided.
                         
                     # Check that the exposure doesn't go over the end of a block
                         endOfExposure = datetime.datetime.now() + datetime.timedelta(seconds=exposure_time)
                         now_date_timeZ = endOfExposure.isoformat().split('.')[0] +'Z'
+                        
                         blockended = now_date_timeZ  >= g_dev['seq'].blockend
+                        
                         if blockended or ephem.Date(ephem.now()+ (exposure_time *ephem.second)) >= \
                             g_dev['events']['End Morn Bias Dark']:
                             plog ("Exposure overlays the end of a block or the end of observing. Skipping Exposure.")
