@@ -2093,8 +2093,8 @@ class Camera:
                 # Immediately nudge scope to a different point in the smartstack dither                
                 if Nsmartstack > 1 and not (Nsmartstack == sskcounter+1):
                     #breakpoint()
-                    ra_random_dither=((random.randint(0,50) * pixscale / 3600 ) / 15) 
-                    dec_random_dither=(random.randint(0,50) * pixscale /3600 )
+                    ra_random_dither=(((random.randint(0,50)-25) * pixscale / 3600 ) / 15) 
+                    dec_random_dither=((random.randint(0,50)-25) * pixscale /3600 )
                     g_dev['mnt'].mount.SlewToCoordinatesAsync(initial_smartstack_ra + ra_random_dither, initial_smartstack_dec + dec_random_dither)
                 # Otherwise immediately nudge scope back to initial pointing in smartstack
                 elif Nsmartstack > 1 and (Nsmartstack == sskcounter+1):
