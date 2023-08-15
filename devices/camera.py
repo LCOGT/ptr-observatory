@@ -2095,10 +2095,32 @@ class Camera:
                     #breakpoint()
                     ra_random_dither=(((random.randint(0,50)-25) * pixscale / 3600 ) / 15) 
                     dec_random_dither=((random.randint(0,50)-25) * pixscale /3600 )
-                    g_dev['mnt'].mount.SlewToCoordinatesAsync(initial_smartstack_ra + ra_random_dither, initial_smartstack_dec + dec_random_dither)
+                    print(initial_smartstack_ra + ra_random_dither)
+                    print(initial_smartstack_dec + dec_random_dither)
+                    try:
+                        g_dev['mnt'].mount.SlewToCoordinatesAsync(initial_smartstack_ra + ra_random_dither, initial_smartstack_dec + dec_random_dither) 
+                    except Exception as e:
+                        plog (traceback.format_exc())
+                        if 'Object reference not set' in str(e) and g_dev['mnt'].theskyx:
+                            
+                            plog("The SkyX had an error.")
+                            plog("Usually this is because of a broken connection.")
+                            plog("Killing then waiting 60 seconds then reconnecting")
+                            g_dev['seq'].kill_and_reboot_theskyx(g_dev['mnt'].current_icrs_ra,g_dev['mnt'].current_icrs_dec)
+                        
                 # Otherwise immediately nudge scope back to initial pointing in smartstack
                 elif Nsmartstack > 1 and (Nsmartstack == sskcounter+1):
-                    g_dev['mnt'].mount.SlewToCoordinatesAsync(initial_smartstack_ra, initial_smartstack_dec)
+                    try:
+                        g_dev['mnt'].mount.SlewToCoordinatesAsync(initial_smartstack_ra, initial_smartstack_dec)    
+                    except Exception as e:
+                        plog (traceback.format_exc())
+                        if 'Object reference not set' in str(e) and g_dev['mnt'].theskyx:
+                            
+                            plog("The SkyX had an error.")
+                            plog("Usually this is because of a broken connection.")
+                            plog("Killing then waiting 60 seconds then reconnecting")
+                            g_dev['seq'].kill_and_reboot_theskyx(g_dev['mnt'].current_icrs_ra,g_dev['mnt'].current_icrs_dec)
+                        
                     wait_for_slew()
                     g_dev['obs'].check_platesolve_and_nudge()
             

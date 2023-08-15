@@ -3210,7 +3210,11 @@ sel
                         ranudge=ranudge+24                    
                     if ranudge > 24:
                         ranudge=ranudge-24
-                    g_dev['mnt'].mount.SlewToCoordinatesAsync(ranudge, decnudge)
+                    try:
+                        g_dev['mnt'].mount.SlewToCoordinatesAsync(ranudge, decnudge)
+                    except:
+                        plog (traceback.format_exc())
+                        
                     g_dev['obs'].time_of_last_slew = time.time()
                     wait_for_slew()
                     
