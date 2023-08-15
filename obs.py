@@ -248,6 +248,11 @@ class Observatory:
         ]  # How many minutes between enclosure check
 
 
+        self.obs_settings_upload_timer = time.time() - 20
+        self.obs_settings_upload_period = 10
+        
+
+
         self.block_center_in_process = False
 
         self.last_time_report_to_console = time.time()-700
@@ -1004,50 +1009,53 @@ sel
         if mount_only == True:
             device_list = ['mount', 'telescope']
 
-        # Get current enclosure status
-        #send_enc=False
-        #print ("enc status timer: " + str(datetime.datetime.now() - self.enclosure_status_timer))
-        #print (datetime.timedelta(minutes=self.enclosure_check_period))
-        #if (
-        #    datetime.datetime.now() - self.enclosure_status_timer
-        #) > datetime.timedelta(minutes=self.enclosure_check_period):
-            
-        #    g_dev['obs'].enc_status = g_dev['obs'].get_enclosure_status_from_aws()    
-        #    lane = "enclosure"                
-        #    self.enclosure_status_timer = datetime.datetime.now()
-            #self.send_status_queue.put((obsy, lane, g_dev['obs'].enc_status), block=False)
-        #    print ("status sendy!")
-        #    print (g_dev['obs'].enc_status)
         
-        #status['enclosure']['enclosure1'] = g_dev['obs'].enc_status
-        
-        # Get current weather status  
-        #send_ocn=False
-        #plog ("Obs")
-        #plog (datetime.datetime.now() - self.observing_status_timer)
-        #plog (datetime.timedelta(minutes=self.observing_check_period))
         
         if (
             (datetime.datetime.now() - self.observing_status_timer)
         ) > datetime.timedelta(minutes=self.observing_check_period):
-            g_dev['obs'].ocn_status = g_dev['obs'].get_weather_status_from_aws()
-            #lane = "weather"
+            g_dev['obs'].ocn_status = g_dev['obs'].get_weather_status_from_aws()           
             self.observing_status_timer = datetime.datetime.now()
-            #self.send_status_queue.put((obsy, lane, g_dev['obs'].ocn_status), block=False)
-            #plog (g_dev['obs'].ocn_status)
-            #plog ("Ping obs")
             
-        #plog ("end")
-        #plog (datetime.datetime.now() - self.enclosure_status_timer)
-        #plog (datetime.timedelta(minutes=self.enclosure_check_period)) 
         
         if (
             (datetime.datetime.now() - self.enclosure_status_timer)
         ) > datetime.timedelta(minutes=self.enclosure_check_period):
-            #lane = "enclosure"
+            
             g_dev['obs'].enc_status = g_dev['obs'].get_enclosure_status_from_aws()
             self.enclosure_status_timer = datetime.datetime.now()
-            #plog ("Ping end")
+
+        if (time.time() - self.obs_settings_upload_timer) > self.obs_settings_upload_period:
+            self.obs_settings_upload_timer = time.time()
+            
+            #plog("obs settings upload")
+            status = {}
+            status["timestamp"] = round(time.time(), 1)
+            status['obs_settings']={}
+            
+            
+            status['obs_settings']['scope_in_manual_mode']=False
+            status['obs_settings']['sun_safety_mode']=True
+            status['obs_settings']['moon_safety_mode']=True
+            status['obs_settings']['altitude_safety_mode']=True
+            status['obs_settings']['lowest_altitude']=-5
+            status['obs_settings']['daytime_exposure_safety_mode']=True
+            status['obs_settings']['daytime_exposure_time']=0.01
+            status['obs_settings']['admin_owner_commands_only']=False
+            
+            
+            #plog (self.name)
+            lane = "obs_settings"
+            try:
+                # time.sleep(2)
+                send_status(self.name, lane, status)
+            except:
+                plog('could not send obs_settings status')
+                plog(traceback.format_exc())
+                #breakpoint()
+            
+        #self.obs_settings_upload_timer = time.time() - 20
+        #self.obs_settings_upload_period = 10
 
 
         for dev_type in device_list:
