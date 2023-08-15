@@ -1030,7 +1030,7 @@ sel
             
             #plog("obs settings upload")
             status = {}
-            status["timestamp"] = round(time.time(), 1)
+            #status["timestamp"] = round(time.time(), 1)
             status['obs_settings']={}
             
             
