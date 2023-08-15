@@ -823,8 +823,9 @@ class Mount:
             elif 'ha' in req:
                 self.go_command(ha=req['ha'], dec=req['dec'])   #  Entered from Target Explorer or Telescope tabs.
             
-            if opt['do_centering_rountine']:
-                g_dev['seq'].centering_exposure()
+            if 'do_centering_routine' in opt:
+                if opt['do_centering_routine']:
+                    g_dev['seq'].centering_exposure()
             
         elif action == "stop":
             self.stop_command(req, opt)

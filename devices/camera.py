@@ -15,7 +15,7 @@ import traceback
 import ephem
 import copy
 #import json
-
+import random
 from astropy.io import fits#, ascii
 from astropy.time import Time
 from astropy.utils.data import check_download_cache
@@ -1583,7 +1583,11 @@ class Camera:
                     self.currently_in_smartstack_loop=True
                     plog ("Smartstack " + str(sskcounter+1) + " out of " + str(Nsmartstack))
                     g_dev['obs'].update_status(cancel_check=False)
+                    initial_smartstack_ra= g_dev['mnt'].mount.RightAscension
+                    initial_smartstack_dec= g_dev['mnt'].mount.Declination
                 else:
+                    initial_smartstack_ra= None
+                    initial_smartstack_dec= None
                     self.currently_in_smartstack_loop=False
                 self.retry_camera = 3
                 self.retry_camera_start_time = time.time()
@@ -1839,7 +1843,9 @@ class Camera:
                             airmass_of_observation=airmass_of_observation,
                             azimuth_of_observation = azimuth_of_observation,
                             altitude_of_observation = altitude_of_observation,
-                            manually_requested_calibration=manually_requested_calibration
+                            manually_requested_calibration=manually_requested_calibration,
+                            initial_smartstack_ra=initial_smartstack_ra, 
+                            initial_smartstack_dec= initial_smartstack_dec
                         )  # NB all these parameters are crazy!
                         self.exposure_busy = False
                         self.retry_camera = 0
@@ -1897,7 +1903,9 @@ class Camera:
         airmass_of_observation=None,
         azimuth_of_observation=None,
         altitude_of_observation=None,
-        manually_requested_calibration=False
+        manually_requested_calibration=False,
+        initial_smartstack_ra=None, 
+        initial_smartstack_dec=None
         
     ):
         
@@ -2080,6 +2088,20 @@ class Camera:
 
                 continue
             elif self.async_exposure_lock == False and self._imageavailable():   #NB no more file-mode
+                
+                pixscale = float(self.config["camera"][self.name]["settings"]["1x1_pix_scale"])
+                # Immediately nudge scope to a different point in the smartstack dither                
+                if Nsmartstack > 1 and not (Nsmartstack == sskcounter+1):
+                    #breakpoint()
+                    ra_random_dither=((random.randint(0,50) * pixscale / 3600 ) / 15) 
+                    dec_random_dither=(random.randint(0,50) * pixscale /3600 )
+                    g_dev['mnt'].mount.SlewToCoordinatesAsync(initial_smartstack_ra + ra_random_dither, initial_smartstack_dec + dec_random_dither)
+                # Otherwise immediately nudge scope back to initial pointing in smartstack
+                elif Nsmartstack > 1 and (Nsmartstack == sskcounter+1):
+                    g_dev['mnt'].mount.SlewToCoordinatesAsync(initial_smartstack_ra, initial_smartstack_dec)
+                    wait_for_slew()
+                    g_dev['obs'].check_platesolve_and_nudge()
+            
                 incoming_image_list = []    
                 try:
                     g_dev["mnt"].get_rapid_exposure_status(
@@ -2957,10 +2979,10 @@ class Camera:
 
                     #try:
                     hdu.header["PIXSCALE"] = (
-                        float(self.config["camera"][self.name]["settings"]["1x1_pix_scale"]),
+                        float(pixscale),
                         "[arcsec/pixel] Nominal pixel scale on sky",
                     )
-                    pixscale = float(hdu.header["PIXSCALE"])
+                    #pixscale = float(hdu.header["PIXSCALE"])
                     
                     hdu.header["DRZPIXSC"] = (self.config["camera"][self.name]["settings"]['drizzle_value_for_later_stacking'], 'Target pixel scale for drizzling')
                        
@@ -3430,10 +3452,12 @@ class Camera:
                                 image_during_smartstack=True
                             
                             
+                                
                             
                             if not image_during_smartstack and not g_dev['obs'].pointing_correction_requested_by_platesolve_thread and g_dev['obs'].platesolve_queue.empty() and not g_dev['obs'].platesolve_is_processing:
                                 
-                                
+                                # Make sure any dither or return nudge has finished before platesolution
+                                wait_for_slew()
                                 # NEED TO CHECK HERE THAT THERE ISN"T ALREADY A PLATE SOLVE IN THE THREAD!
                                 self.to_platesolve((hdusmalldata, hdusmallheader, cal_path, cal_name, frame_type, time.time(), pixscale, g_dev['mnt'].mount.RightAscension,g_dev['mnt'].mount.Declination))
                                 # If it is the last of a set of smartstacks, we actually want to 
