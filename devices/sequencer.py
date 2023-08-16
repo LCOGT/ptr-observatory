@@ -195,20 +195,8 @@ class Sequencer:
         self.stop_script_called=False
         self.stop_script_called_time=time.time()
 
-        # The weather report has to be at least passable at some time of the night in order to 
-        # allow the observatory to become active and observe. This doesn't mean that it is 
-        # necessarily a GOOD night at all, just that there are patches of feasible
-        # observing during the night.
-        #self.nightly_weather_report_complete = False
-        #self.weather_report_is_acceptable_to_observe = False
-        # If the night is patchy, the weather report can identify a later time to open
-        # or to close the observatory early during the night.
-        obs_win_begin, sunZ88Op, sunZ88Cl, ephem_now = self.astro_events.getSunEvents()
-        #self.weather_report_wait_until_open=False
-        #self.weather_report_wait_until_open_time=ephem_now
-        #self.weather_report_close_during_evening=False
-        #self.weather_report_close_during_evening_time=ephem_now + 86400
-        #self.nightly_weather_report_complete=False
+        #obs_win_begin, sunZ88Op, sunZ88Cl, ephem_now = self.astro_events.getSunEvents()
+
         
         
         self.last_roof_status = 'Closed'
@@ -218,20 +206,7 @@ class Sequencer:
         
         self.end_of_night_token_sent = False
         self.project_call_timer = time.time() -60
-        # Run a weather report on bootup so observatory can run if need be. 
-        #self.global_wx()
-        #breakpoint()
-        #if not g_dev['debug']:
-            #self.global_wx()
-
-        #    self.run_nightly_weather_report()
-        #else:
-        #    self.nightly_weather_report_complete = True
-        #    self.weather_report_is_acceptable_to_observe = True
-        #    self.weather_report_wait_until_open=False
-            #g_dev['obs'].open_and_enabled_to_observe = True
-            
-            #Consider running this once when in debug mode
+        
         
 
     def wait_for_slew(self):    
@@ -261,10 +236,7 @@ class Sequencer:
             "active_script": None,
             "sequencer_busy":  False
         }
-        #20211026   I think this is causing problems.   WER
-        # if not self.sequencer_hold:   #  NB THis should be wrapped in a timeout.
-        #     if g_dev['obs'].status_count > 3:   #Gove syste time to settle.
-        #         self.manager()      #  There be dragons here!  <<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<
+        
         return status
 
 
@@ -314,7 +286,7 @@ class Sequencer:
         elif action == "run" and script == "takeO3HaS2N2Stack":
             self.take_lrgb_stack(req, opt)
         elif action.lower() in ["stop", "cancel"] or ( action == "run" and script == "stopScript"):
-            #self.stop_command(req, opt)
+            
             #A stop script command flags to the running scripts that it is time to stop 
             #activity and return. This period runs for about 30 seconds.
             g_dev["obs"].send_to_user("A Stop Script has been called. Cancelling out of running scripts over 30 seconds.")
@@ -334,120 +306,13 @@ class Sequencer:
         else:
             plog('Sequencer command:  ', command, ' not recognized.')
 
-    # def open_observatory(self,enc_status, ocn_status, no_sky=False):
-        
-    #     if not self.config['obsid_roof_control']:
-    #         #plog("A request to open observatory was made even though this platform has no roof control. Returning.")
-    #         return
-        
-    #     flat_spot, flat_alt = g_dev['evnt'].flat_spot_now()
-    #     obs_win_begin, sunZ88Op, sunZ88Cl, ephem_now = self.astro_events.getSunEvents()
-        
-    #     # Only send an enclosure open command if the weather 
-    #     if g_dev['seq'].weather_report_is_acceptable_to_observe:
-
-    #         if not g_dev['debug'] and not g_dev['obs'].enc_status['enclosure_mode'] in [ 'Manual'] and (ephem.now() < g_dev['events']['Cool Down, Open'] ) or \
-    #             (g_dev['events']['End Morn Bias Dark']  < ephem.now() < g_dev['events']['Nightly Reset']):
-    #             plog ("NOT OPENING THE OBSERVATORY -- IT IS THE DAYTIME!!")
-    #             g_dev["obs"].send_to_user("An open observatory request was rejected as it is during the daytime.")
-    #             return
-    #         else:
-            
-    #             try: 
-    #                 # First unpark and move telescope away from the sun or just to the home position. 
-    #                 plog("Unparking Scope in preparation for observatory opening.")
-    #                 if g_dev['mnt'].mount.AtParK:
-    #                     g_dev['mnt'].unpark_command({}, {})
-                    
-    #                 # If during the flat period, point it away from the sun, otherwise point the telescope at the home position                
-    #                 if (g_dev['events']['Cool Down, Open']  <= ephem_now < g_dev['events']['End Eve Sky Flats']):
-    #                     plog("Unparking Scope and pointing it away from the sun.")
-    #                     g_dev['mnt'].slewToSkyFlatAsync(skip_open_test=True)                
-    #                 elif (g_dev['events']['Morn Sky Flats'] <= ephem_now < g_dev['events']['End Morn Sky Flats']):
-    #                     plog("Unparking Scope and pointing it away from the sun.")
-    #                     g_dev['mnt'].slewToSkyFlatAsync(skip_open_test=True)
-    #                 else:
-    #                     plog("Unparking Scope and pointing it to the home position.")
-    #                     g_dev['mnt'].home_command()
-                    
-                    
-    #                 self.time_of_next_slew = time.time() + 600 
-                    
-    #                 # plog("Attempting to open the roof.")
-
-    #                 # if ocn_status == None:
-    #                 #         if self.config['obsid_roof_control'] and not enc_status['shutter_status'] in ['Open', 'open','Opening', 'opening'] and g_dev['obs'].enc_status['enclosure_mode'] == 'Automatic'\
-    #                 #         and (self.config['obsid_allowed_to_open_roof']) and self.weather_report_is_acceptable_to_observe:
-                                
-    #                 #             self.opens_this_evening= self.opens_this_evening+1                    
-                                
-    #                 #             g_dev['enc'].open_roof_directly({}, {})
-    #                 #             #g_dev['enc'].open_command({}, {})
-                                
-                                
-    #                 # elif self.config['obsid_roof_control']  and not enc_status['shutter_status'] in ['Open', 'open','Opening', 'opening'] and g_dev['enc'].mode == 'Automatic' \
-    #                 #     and ocn_status['hold_duration'] <= 0.1 and self.config['obsid_allowed_to_open_roof'] and self.weather_report_is_acceptable_to_observe:   #NB
-
-    #                 #     self.opens_this_evening= self.opens_this_evening+1                    
-                        
-    #                 #     g_dev['enc'].open_roof_directly({}, {})
-    #                 #     #g_dev['enc'].open_command({}, {})
-         
-                        
-    #                 #plog("Attempting to Open Shutter. Waiting until shutter opens")
-    #                 #if not g_dev['enc'].enclosure.ShutterStatus == 0:
-    #                 #    time.sleep(self.config['period_of_time_to_wait_for_roof_to_open'])
-                    
-    #                 #self.enclosure_next_open_time = time.time() + (self.config['roof_open_safety_base_time']*60) * g_dev['seq'].opens_this_evening
-                    
-    #                 if g_dev['enc'].enclosure.ShutterStatus == 0:                    
-    #                     g_dev['obs'].open_and_enabled_to_observe = True                    
-                        
-    #                     try:
-    #                         plog("Synchronising dome.")
-    #                         g_dev['enc'].sync_mount_command({}, {})
-    #                     except:
-    #                         pass
-    #                     #Prior to skyflats no dome following.
-    #                     self.dome_homed = False
-                        
-    #                     return
-                    
-    #                 else:
-    #                     plog("Failed to open roof, parking telescope again and sending the close command to the roof.")
-    #                     #g_dev['enc'].close_roof_directly()
-    #                     plog ("opens this eve: " + str(g_dev['seq'].opens_this_evening))
-    #                     plog ("minutes until next open attempt ALLOWED: " + str( (g_dev['seq'].enclosure_next_open_time - time.time()) /60))
-    #                     g_dev['enc'].close_roof_directly({}, {})
-                        
-    #                     #g_dev['enc'].close_command({}, {})
-    #                     if not g_dev['mnt'].mount.AtParK:   ###Test comment here
-    #                         g_dev['mnt'].park_command({}, {}) # Get there early
-    #                     return
-                                            
-    #             except Exception as e:
-    #                 plog ("Enclosure opening glitched out: ", e)
-    #                 plog(traceback.format_exc())
-        
-    #     else:
-    #         plog("An enclosure command was rejected because the weather report was not acceptable.")
-        
-    #     return
-
     def park_and_close(self):
         try:
             if not g_dev['mnt'].mount.AtParK:   ###Test comment here
                 g_dev['mnt'].park_command({}, {}) # Get there early
         except:
             plog("Park not executed during Park and Close" )
-        # try:
-        #     if self.config['obsid_roof_control']  and g_dev['enc'].mode == 'Automatic': # and enc_status['shutter_status'] in ['open', ] $ Don't check, just close!
-        #         #g_dev['enc'].close_command( {}, {})
-        #         g_dev['obs'].send_to_user("Closing the Shutter", p_level='INFO')
-        #         plog("Closing the Shutter")
-        #         g_dev['enc'].enclosure.CloseShutter()
-        # except:
-        #     plog('Dome close not executed during Park and Close.')
+
 
 
     ###############################
@@ -461,20 +326,10 @@ class Sequencer:
         going to open the dome or move the telescope at unexpected times.
         Scripts must not block too long or they must provide for periodic calls to check status.
         '''
-        #self.global_wx()
-
-        # NB Need a better way to get all the events.
-        if g_dev['obs'].status_count < 3:
-            return
-        obs_win_begin, sunZ88Op, sunZ88Cl, ephem_now = self.astro_events.getSunEvents()
-        #just to be safe:  Should fix Line 344 Exception.
-        #g_dev['ocn'].status = g_dev['ocn'].get_status()
-        #g_dev['enc'].status = g_dev['enc'].get_status()
-        #try:
-        #    g_dev['obs'].enc_status = g_dev['obs'].get_enclosure_status_from_aws()
-        #except:
-        #    g_dev['obs'].enc_status = None
         
+        #if g_dev['obs'].status_count < 3:
+        #    return
+        obs_win_begin, sunZ88Op, sunZ88Cl, ephem_now = self.astro_events.getSunEvents()
 
         if time.time()-self.pulse_timer >30:
             self.pulse_timer=time.time()
@@ -482,13 +337,6 @@ class Sequencer:
                 plog("~")
             else:
                 plog('.')
-        
-        
-        #try:        
-        #    g_dev['obs'].ocn_status = g_dev['obs'].get_weather_status_from_aws()
-        #except:
-        #    g_dev['obs'].ocn_status = None
-        
         
         if (
             (datetime.datetime.now() - g_dev['obs'].observing_status_timer)
@@ -520,9 +368,6 @@ class Sequencer:
              if self.nightly_reset_complete == False:
                  self.nightly_reset_complete = True
                  self.nightly_reset_script()
-                 
-        
-        
                 
         if ((g_dev['events']['Cool Down, Open'] <= ephem_now < g_dev['events']['Observing Ends'])):
             self.nightly_reset_complete = False
@@ -546,22 +391,10 @@ class Sequencer:
             g_dev['seq'].blockend= None
             self.block_guard=False
             self.clock_focus_latch=False
-            #if not g_dev['obs'].open_and_enabled_to_observe and self.weather_report_is_acceptable_to_observe==True and self.weather_report_wait_until_open==False:
 
-                #if time.time() > self.enclosure_next_open_time and self.opens_this_evening < self.config['maximum_roof_opens_per_evening']:
-                    
-                    #self.enclosure_next_open_time = time.time() + 300 # Only try to open the roof every five minutes maximum
-                    #if self.config['obsid_roof_control']:
-                    #    self.open_observatory(enc_status, ocn_status)
-                    
-                    # If the observatory opens, set clock and auto focus and observing to now
-            #if g_dev['obs'].open_and_enabled_to_observe:
             self.night_focus_ready=False
             obs_win_begin, sunZ88Op, sunZ88Cl, ephem_now = self.astro_events.getSunEvents()
-            #g_dev['events']['Clock & Auto Focus'] = ephem_now - 0.1/24
-            #g_dev['events']['Observing Begins'] = ephem_now + 0.1/24
-            #self.weather_report_wait_until_open=False
-            #self.weather_report_is_acceptable_to_observe=True
+
             if (g_dev['events']['Observing Begins'] < ephem.now() < g_dev['events']['Observing Ends']):
                 # Move to reasonable spot
                 if g_dev['mnt'].mount.Tracking == False:
@@ -587,10 +420,6 @@ class Sequencer:
                    
             self.cool_down_latch = False
 
-        # Check that nightly reset switch is reset at start of observing eve. 
-        #if self.nightly_reset_complete == True:
-        #    if events['Eve Bias Dark'] <= ephem_now :
-        #        self.nightly_reset_complete == False
                 
         # If in post-close and park era of the night, check those two things have happened!       
         if (events['Close and Park'] <= ephem_now < events['End Morn Bias Dark']):
@@ -618,7 +447,7 @@ class Sequencer:
             self.eve_bias_done = True
             self.bias_dark_latch = False
             
-        elif not self.eve_sky_flat_latch and not g_dev['obs'].scope_in_manual_mode and ((events['Eve Sky Flats'] <= ephem_now < events['End Eve Sky Flats'])  \
+        if not self.eve_sky_flat_latch and not g_dev['obs'].scope_in_manual_mode and ((events['Eve Sky Flats'] <= ephem_now < events['End Eve Sky Flats'])  \
                and self.config['auto_eve_sky_flat'] and g_dev['obs'].open_and_enabled_to_observe and not self.eve_flats_done and g_dev['obs'].camera_sufficiently_cooled_for_calibrations):
 
             self.eve_sky_flat_latch = True
@@ -637,7 +466,7 @@ class Sequencer:
             self.eve_flats_done = True
             
 
-        elif ((g_dev['events']['Clock & Auto Focus']  <= ephem_now < g_dev['events']['Observing Begins'])) \
+        if ((g_dev['events']['Clock & Auto Focus']  <= ephem_now < g_dev['events']['Observing Begins'])) \
                 and self.night_focus_ready==True and not g_dev['obs'].scope_in_manual_mode and not g_dev['debug'] and  g_dev['obs'].open_and_enabled_to_observe and not self.clock_focus_latch:
 
             self.nightly_reset_complete = False
@@ -663,26 +492,14 @@ class Sequencer:
             req2 = {'target': 'near_tycho_star', 'area': 150}
             opt = {}
             self.extensive_focus_script(req2, opt, throw = g_dev['foc'].throw)
-
-            # Pointing no longer needed here, will update on the fly.
-            ## Pointing
-            #req = {'time': self.config['pointing_exposure_time'],  'alias':  str(self.config['camera']['camera_1_1']['name']), 'image_type': 'focus'}   #  NB Should pick up filter and constats from config
-            ##opt = {'area': 150, 'count': 1, 'bin': '2, 2', 'filter': 'focus'}
-            #opt = {'area': 150, 'count': 1, 'bin': 1, 'filter': 'pointing'}
-            #g_dev['cam'].expose_command(req, opt, user_id='Tobor', user_name='Tobor', user_roles='system', no_AWS=False, solve_it=True)
-            
             
             g_dev['obs'].send_to_user("End of Focus and Pointing Run. Waiting for Observing period to begin.", p_level='INFO')
             
             self.night_focus_ready=False
             self.clock_focus_latch = False
 
-# =============================================================================
-#         NB NB Note below often faults, should be in a try except instead of this
-#         complex nested if construct.  Enc_status can be None if Wema is not  operating.
-#         Perhaps we should default set enc_status['enclosure_mode'] = 'Shutdown' as a default?
-# =============================================================================
-        elif (events['Observing Begins'] <= ephem_now \
+
+        if (events['Observing Begins'] <= ephem_now \
                                    < events['Observing Ends']) and not self.block_guard and not g_dev["cam"].exposure_busy\
                                    and  (time.time() - self.project_call_timer > 10) and not g_dev['obs'].scope_in_manual_mode  and g_dev['obs'].open_and_enabled_to_observe and self.clock_focus_latch == False:
                                      
@@ -693,21 +510,8 @@ class Sequencer:
                 if not self.reported_on_observing_period_beginning:
                     self.reported_on_observing_period_beginning=True
                     g_dev['obs'].send_to_user("Observing Period has begun.", p_level='INFO')
-                #try:
-                #    enc_status['enclosure_mode'] in ['Autonomous!', 'Automatic']   and g_dev['obs'].blocks is not None and g_dev['obs'].projects \
-                #is not None
-                #except:
-                #    breakpoint()
-                
-                
-                #if enc_status['enclosure_mode'] in ['Autonomous!', 'Automatic']:
-                    
-                # TO KEEP THE REAL-TIME USE A BIT SNAPPIER, POLL FOR NEW PROJECTS ON A MUCH SLOWER TIMESCALE
-                # TO REMOVE UNNECESSARY CALLS FOR PROJECTS.
-                #if time.time() - self.project_call_timer > 30:
+               
                 self.project_call_timer = time.time()
-                
-                    # We print this to stay informed of process on the console.
                 
                 self.update_calendar_blocks()
 
@@ -716,100 +520,15 @@ class Sequencer:
                     self.block_guard=False
                     g_dev['seq'].blockend= None
                 else:
-                    
-                    
-                    
-                    # url_proj = "https://projects.photonranch.org/projects/get-all-projects"
-                
-                    # try:
-                    #     all_projects = reqs.post(url_proj, timeout=20).json()
-                    # except:
-                    #     plog ("connection glitch in picking up projects")
-                    
-                    # self.projects = all_projects 
-                    
-                    
-                    
-                    
-                    # NOTE creating a list with a dict entry as item 0
-                    # Note the above does not load projects if there are no blocks scheduled.
-                    # A sched block may or may not havean associated project.
-    
-                    # Design Note. Blocks relate to scheduled time at a site so we expect AWS to mediate block
-                    # assignments. Priority of blocks is determined by the owner and a 'equipment match' for
-                    # background projects.
-    
-                    # Projects on the other hand can be a very large pool so how to manage becomes an issue.
-                    # To the extent a project is not visible at a site, aws should not present it. If it is
-                    # visible and passes the owners priority it should then be presented to the site.
-    
-                    #if self.events_new is None:
-                    #    url = (
-                    #        "https://api.photonranch.org/api/events?site="
-                    #        + self.obs_id.upper()
-                    #    )
-                    #    self.events_new = reqs.get(url, timeout=20).json()    
-                        
-                        
-                        
-                        
-                    
-                    #blocks = g_dev['obs'].blocks
-                    #projects = g_dev['obs'].projects
-                    #debug = False         
-                    
-                    #if debug:
-                    #    plog("# of Blocks, projects:  ", len(self.blocks),  len(self.projects))
-        
-                    #Note here we could evaluate projects to see which meet observability constraints and place them
-                    #In an observables list, then we could pick one to start.  IF there is no pre-sheduled observing block
-                    #it would just run.  Voila an Opportunistic scheduler.  An observing block may be empty or point to
-                    #a project and if the project is runnable any way, it runs or is marked completed.
-                    # NB without deepcopy decrementing counts in blocks will be local to the machine an subject
-                    # to over_write as the respons from AWS updates. This is particularly important for owner
-                    # and background blocks.
-                    #print (self.projects)
-        
-                    
-                    
-                    now_date_timeZ = datetime.datetime.utcnow().isoformat().split('.')[0] +'Z'
-                    
+                    now_date_timeZ = datetime.datetime.utcnow().isoformat().split('.')[0] +'Z'                    
                     identified_block=None
                     
-                    #if not skip_project_cycle:
-                    #First, sort blocks to be in ascending order, just to promote clarity. Remove expired projects.
                     for block in self.blocks:  #  This merges project spec into the blocks.
-                        #breakpoint()
-                        # Look only in current  incomplete blocks:
-                        #breakpoint()
+                       
                         if (block['start'] <= now_date_timeZ < block['end'])  and not self.is_in_completes(block['event_id']):
-                            
-                            # url_proj = "https://projects.photonranch.org/projects/get-all-projects"
-                        
-                            # try:
-                            #     all_projects = reqs.post(url_proj, timeout=20).json()
-                            # except:
-                            #     plog ("connection glitch in picking up projects")
-                            
-                            # self.projects = all_projects 
-                            
-                            #for project in self.projects:
-                                #if block['project_id'].split("#")[0] == project['project_name']:
-                                    #print("******************************")
-                                    #print (block['project_id'].split("#")[0])
-                                    #print (project['project_name'] )
-                                    
-                                    #breakpoint()
-                                
-                                  
-                                    
+                                                               
                             try:
-                                # Go and fish out the project from AWS
                                 
-                                
-                                
-                                
-                                # url_proj = "https://projects.photonranch.org/projects/get-all-projects"
                                 url_proj = "https://projects.photonranch.org/projects/get-project"
                                 request_body = json.dumps({
                                   "project_name": block['project_id'].split('#')[0],
@@ -818,81 +537,14 @@ class Sequencer:
                                 project_response=requests.post(url_proj, request_body)
                                 
 
-                                
-                                
-                                #print (project_response)
-                                # skip_project_cycle=False
-                                # if 'message' in self.projects:
-                                #     if 'Internal server error' in str(self.projects['message']):
-                                #         plog ("internal server error in self.projects... skippping this round and moving to the next")
-                                #         skip_project_cycle=True
-                                
                                 if project_response.status_code ==200:  
                                     self.block_guard = True
                                     block['project']=project_response.json()
                                     identified_block=copy.deepcopy(block)
-                                # try:
-                                #     all_projects = reqs.post(url_proj, timeout=20).json()
-                                # except:
-                                #     plog ("connection glitch in picking up projects")
-                                #breakpoint()
-                                
-                                
-                                
-                                #project=None
-                                #if block['project_id'] == project['project_name'] + '#' + project['created_at']:
-                                #    block['project'] = project
-                                    
-                                #    break
-                                #else:
-                                #    block['project'] = None  #nb nb nb 20220920   this faults with 'string indices must be integers". WER
                             except:
                                 plog(traceback.format_exc())
                                 breakpoint()
-    
-                        # for project in self.projects:
-                        #     if block['project_id']  != 'none':
                                 
-                        #         try:
-                        #             if block['project_id'] == project['project_name'] + '#' + project['created_at']:
-                        #                 block['project'] = project
-                        #             else:
-                        #                 block['project'] = None
-                        #         except:
-                        #             plog(traceback.format_exc())
-                        #             breakpoint()
-                        #     else:
-                        #         pass
-                            
-                        '''
-                        evaluate supplied projects for observable and mark as same. Discard
-                        unobservable projects.  Projects may be "site" projects or 'ptr' (network wide:
-                        All, Owner, PTR-network, North, South.)
-                            The westernmost project is offered to run unless there is a runnable scheduled block.
-                            for any given time, are the constraints met? Airmass < x, Moon Phaze < y, moon dist > z,
-                            flip rules
-            
-                        '''
-                        # breakpoint()
-                        # #Figure out which are observable.  Currently only supports one target/proj
-                        # NB Observing events without a project are "observable."
-                        # observable = []
-                        # for projects in projects:
-                        #     ra = projects['project_targets']['ra']
-                        #     dec = projects['project_targets']['dec']
-                        #     sid = g_dev['mnt'].mount.SiderealTime
-                        #     ha = tycho.reduceHA(sid - ra)
-                        #     az, alt = transform_haDec_to_azAlt(ha, dec)
-                        #     # Do not start a block within 15 min of end time???
-                        #plog("Initial length:  ", len(blocks))
-        
-                        #for block in self.blocks:
-                        #    if not self.block_guard:
-                               
-                        
-                        #print ("found block: " + str(block))
-                        #breakpoint()
-                        
                     if identified_block == None:
                         self.block_guard = False   # Changed from True WER on 20221011@2:24 UTC
                         g_dev['seq'].blockend= None
@@ -930,7 +582,7 @@ class Sequencer:
                 plog(traceback.format_exc())
                 plog("Hang up in sequencer.")
                 
-        elif not self.morn_sky_flat_latch and ((events['Morn Sky Flats'] <= ephem_now < events['End Morn Sky Flats']) and \
+        if not self.morn_sky_flat_latch and ((events['Morn Sky Flats'] <= ephem_now < events['End Morn Sky Flats']) and \
                self.config['auto_morn_sky_flat']) and not g_dev['obs'].scope_in_manual_mode and not self.morn_flats_done and g_dev['obs'].camera_sufficiently_cooled_for_calibrations and g_dev['obs'].open_and_enabled_to_observe:
 
             self.morn_sky_flat_latch = True
@@ -943,7 +595,7 @@ class Sequencer:
             self.morn_flats_done = True
             
         
-        elif not self.morn_bias_dark_latch and (events['Morn Bias Dark'] <= ephem_now < events['End Morn Bias Dark']) and \
+        if not self.morn_bias_dark_latch and (events['Morn Bias Dark'] <= ephem_now < events['End Morn Bias Dark']) and \
                   self.config['auto_morn_bias_dark'] and not g_dev['obs'].scope_in_manual_mode and not  self.morn_bias_done and g_dev['obs'].camera_sufficiently_cooled_for_calibrations: # and g_dev['enc'].mode == 'Automatic' ):
 
             self.morn_bias_dark_latch = True
@@ -959,16 +611,8 @@ class Sequencer:
             self.park_and_close()
             self.morn_bias_dark_latch = False
             self.morn_bias_done = True
-            
         
         
-        else:
-            self.current_script = "No current script, or site not in Automatic."
-            #try:
-            #    pass
-                #self.park_and_close(enc_status)
-            #except:
-            #    plog("Park and close failed at end of sequencer loop.")
         if events['Sun Rise'] <= ephem_now and not self.end_of_night_token_sent:
             
             self.end_of_night_token_sent = True
