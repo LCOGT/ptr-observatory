@@ -441,6 +441,7 @@ class Focuser:
         # NB NB NB this routine may build up a rounding error so consider making it more
         # absolute.  However if the user adjusted the focus then appling just a delta to their setpoint
         # makes more sense than a full recalcutatin of ax + b...
+        
 
         try:
             if self.theskyx:
