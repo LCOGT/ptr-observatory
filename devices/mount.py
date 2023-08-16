@@ -589,13 +589,13 @@ class Mount:
                            
             status = {
                 'timestamp': round(time.time(), 3),
-                'right_ascension': round(icrs_ra, 5),
+                'right_ascension': round(icrs_ra, 4),
                 'declination': round(icrs_dec, 4),
                 'sidereal_time': round(self.current_sidereal, 5),  #Should we add HA?
                 #'refraction': round(self.refraction_rev, 2),
                 'correction_ra': round(self.ha_corr, 4),  #If mount model = 0, these are very small numbers.
                 'correction_dec': round(self.dec_corr, 4),
-                'hour_angle': round(ha, 4),
+                'hour_angle': round(ha, 3),
                 'demand_right_ascension_rate': round(self.prior_roll_rate, 9),
                 'mount_right_ascension_rate': round(self.RightAscensionRate, 9),   #Will use sec-RA/sid-sec
                 'demand_declination_rate': round(self.prior_pitch_rate, 8),

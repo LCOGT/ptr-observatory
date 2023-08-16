@@ -1157,7 +1157,7 @@ class Camera:
         cam_stat = self.config['camera'][self.name]['name'] + " connected." # self.camera.CameraState
         status[
             "status"
-        ] = cam_stat  # The state could be expanded to be more meaningful.
+        ] = cam_stat  # The state could be expanded to be more meaningful. for instance repport TEC % TEmp, temp setpoint...
         return status
 
     def parse_command(self, command):
