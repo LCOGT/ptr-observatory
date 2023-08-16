@@ -202,7 +202,7 @@ class Sequencer:
         self.last_roof_status = 'Closed'
         self.time_roof_last_opened = time.time() -500
         
-        self.blockend = 'None'
+        self.blockend = None
         
         self.end_of_night_token_sent = False
         self.project_call_timer = time.time() -60
@@ -388,11 +388,11 @@ class Sequencer:
             self.nightly_reset_complete = False
             self.cool_down_latch = True
             self.reset_completes()
-            g_dev['seq'].blockend= None
-            self.block_guard=False
-            self.clock_focus_latch=False
+            #g_dev['seq'].blockend= None
+            #self.block_guard=False
+            #self.clock_focus_latch=False
 
-            self.night_focus_ready=False
+            #self.night_focus_ready=False
             obs_win_begin, sunZ88Op, sunZ88Cl, ephem_now = self.astro_events.getSunEvents()
 
             if (g_dev['events']['Observing Begins'] < ephem.now() < g_dev['events']['Observing Ends']):
@@ -875,16 +875,16 @@ class Sequencer:
                     #g_dev['enc'].close_command({}, {})
                     g_dev['mnt'].park_command({}, {})
                     plog("Auto PARK (not Close) attempted at end of block.")
-                self.block_guard = False
-                g_dev['seq'].blockend = None
+                #self.block_guard = False
+                #g_dev['seq'].blockend = None
                 
                 return block_specification
             
             if result == 'calendarend':
                 plog ("Calendar Item containing block removed from calendar")
                 plog ("Site bailing out of running project")
-                self.block_guard = False    
-                g_dev['seq'].blockend= None
+                #self.block_guard = False    
+                #g_dev['seq'].blockend= None
                 return block_specification
             
             g_dev['obs'].update()
@@ -968,8 +968,8 @@ class Sequencer:
                     if not foundcalendar:
                         plog ("could not find calendar entry, cancelling out of block.")
                         g_dev["obs"].send_to_user("Calendar block removed. Stopping project run.")   
-                        self.block_guard = False
-                        g_dev['seq'].blockend= None
+                        #self.block_guard = False
+                        #g_dev['seq'].blockend= None
                         return block_specification
 
                     just_focused = True
@@ -1080,7 +1080,7 @@ class Sequencer:
                                 smartstackswitch='no'
 
                             # Set up options for exposure and take exposure.
-                            req = {'time': exp_time,  'alias':  str(self.config['camera']['camera_1_1']['name']), 'image_type': imtype, 'smartstack' : smartstackswitch, 'longstackswitch' : longstackswitch, 'longstackname' : longstackname}#, 'block_end' : g_dev['seq'].blockend}   #  NB Should pick up filter and constants from config
+                            req = {'time': exp_time,  'alias':  str(self.config['camera']['camera_1_1']['name']), 'image_type': imtype, 'smartstack' : smartstackswitch, 'longstackswitch' : longstackswitch, 'longstackname' : longstackname, 'block_end' : g_dev['seq'].blockend}   #  NB Should pick up filter and constants from config
                             opt = {'area': 150, 'count': 1, 'bin': 1, 'filter': color, \
                                    'hint': block['project_id'] + "##" + dest_name, 'object_name': block['project']['project_targets'][0]['name'], 'pane': pane}
                             plog('Seq Blk sent to camera:  ', req, opt)
@@ -1148,8 +1148,8 @@ class Sequencer:
             #g_dev['enc'].close_command({}, {})
             g_dev['mnt'].park_command({}, {})
             plog("Auto PARK (not Close) attempted at end of block.")
-        self.block_guard = False
-        g_dev['seq'].blockend= None
+        #self.block_guard = False
+        #g_dev['seq'].blockend= None
         
         return block_specification #used to flush the queue as it completes.
 
