@@ -543,6 +543,7 @@ class Sequencer:
             self.nightly_reset_complete = False
             self.cool_down_latch = True
             self.reset_completes()
+            g_dev['seq'].blockend= None
             self.block_guard=False
             self.clock_focus_latch=False
             #if not g_dev['obs'].open_and_enabled_to_observe and self.weather_report_is_acceptable_to_observe==True and self.weather_report_wait_until_open==False:
@@ -713,6 +714,7 @@ class Sequencer:
                 # only need to bother with the rest if there is more than 0 blocks. 
                 if not len(self.blocks) > 0:
                     self.block_guard=False
+                    g_dev['seq'].blockend= None
                 else:
                     
                     
@@ -893,10 +895,12 @@ class Sequencer:
                         
                     if identified_block == None:
                         self.block_guard = False   # Changed from True WER on 20221011@2:24 UTC
+                        g_dev['seq'].blockend= None
                         return   # Do not try to execute an empty block.
                     
                     if identified_block['project_id'] in ['none', 'real_time_slot', 'real_time_block']:
                         self.block_guard = False   # Changed from True WER on 20221011@2:24 UTC
+                        g_dev['seq'].blockend= None
                         return   # Do not try to execute an empty block.
                     
 
@@ -904,6 +908,7 @@ class Sequencer:
                         plog (identified_block)
                         plog ("Skipping a block that contains an empty project")
                         self.block_guard=False
+                        g_dev['seq'].blockend= None
                         return
 
                     #g_dev['obs'].update()
@@ -1227,13 +1232,15 @@ class Sequencer:
                     g_dev['mnt'].park_command({}, {})
                     plog("Auto PARK (not Close) attempted at end of block.")
                 self.block_guard = False
+                g_dev['seq'].blockend = None
                 
                 return block_specification
             
             if result == 'calendarend':
                 plog ("Calendar Item containing block removed from calendar")
                 plog ("Site bailing out of running project")
-                self.block_guard = False                
+                self.block_guard = False    
+                g_dev['seq'].blockend= None
                 return block_specification
             
             g_dev['obs'].update()
@@ -1318,6 +1325,7 @@ class Sequencer:
                         plog ("could not find calendar entry, cancelling out of block.")
                         g_dev["obs"].send_to_user("Calendar block removed. Stopping project run.")   
                         self.block_guard = False
+                        g_dev['seq'].blockend= None
                         return block_specification
 
                     just_focused = True
@@ -1497,6 +1505,7 @@ class Sequencer:
             g_dev['mnt'].park_command({}, {})
             plog("Auto PARK (not Close) attempted at end of block.")
         self.block_guard = False
+        g_dev['seq'].blockend= None
         
         return block_specification #used to flush the queue as it completes.
 
@@ -1830,6 +1839,7 @@ class Sequencer:
         self.sky_guard = False
         self.af_guard = False
         self.block_guard = False
+        g_dev['seq'].blockend= None
         self.time_of_next_slew = time.time()
         self.bias_dark_latch = False
         self.sky_flat_latch = False
