@@ -432,11 +432,18 @@ class Observatory:
 
         # set manual mode at startup
         self.scope_in_manual_mode=self.config['scope_in_manual_mode']
-        
-        self.sun_checks_off=self.config['sun_checks_off']
-        self.altitude_checks_off=self.config['altitude_checks_off']
-        self.daytime_exposure_time_safety_off=self.config['daytime_exposure_time_safety_off']
+        self.moon_checks_on=self.config['moon_checks_on']
+        self.sun_checks_on=self.config['sun_checks_on']
+        self.altitude_checks_on=self.config['altitude_checks_on']
+        self.daytime_exposure_time_safety_on=self.config['daytime_exposure_time_safety_on']
         self.mount_reference_model_off= self.config['mount_reference_model_off'],
+        self.admin_owner_commands_only = False
+        self.assume_roof_open=False
+        
+        
+        
+        
+        
         
         self.camera_sufficiently_cooled_for_calibrations=True
         
@@ -1043,14 +1050,17 @@ sel
             status['obs_settings']={}
             
             
-            status['obs_settings']['scope_in_manual_mode']=False
-            status['obs_settings']['sun_safety_mode']=True
-            status['obs_settings']['moon_safety_mode']=True
-            status['obs_settings']['altitude_safety_mode']=True
+            status['obs_settings']['scope_in_manual_mode']=self.scope_in_manual_mode
+            status['obs_settings']['sun_safety_mode']=self.sun_checks_on
+            status['obs_settings']['moon_safety_mode']=self.moon_checks_on
+            status['obs_settings']['altitude_safety_mode']=self.altitude_checks_on
             status['obs_settings']['lowest_altitude']=-5
-            status['obs_settings']['daytime_exposure_safety_mode']=True
+            status['obs_settings']['daytime_exposure_safety_mode']=self.daytime_exposure_time_safety_on
             status['obs_settings']['daytime_exposure_time']=0.01
-            status['obs_settings']['admin_owner_commands_only']=False
+            status['obs_settings']['admin_owner_commands_only']=self.admin_owner_commands_only
+            status['obs_settings']['assume_roof_open']=self.assume_roof_open
+            
+            
             
             
             #plog (self.name)
@@ -1168,47 +1178,52 @@ sel
         #try:
 
         if not g_dev['obs'].enc_status == None:
-            if g_dev['obs'].enc_status['shutter_status'] == 'Open' or self.debug_flag:
-                self.open_and_enabled_to_observe = True
+            if 'Open' in g_dev['obs'].enc_status['shutter_status'] or self.debug_flag:
+                if not 'NoObs' in g_dev['obs'].enc_status['shutter_status']:
+                    self.open_and_enabled_to_observe = True
+                else:
+                    self.open_and_enabled_to_observe = False
         #except:
         #    pass
 
         # Check that the mount hasn't slewed too close to the sun
         # If the roof is open and enabled to observe
-        try:
-
-            if not g_dev['mnt'].mount.Slewing and self.open_and_enabled_to_observe and not self.sun_checks_off:
-
-                sun_coords = get_sun(Time.now())
-                temppointing = SkyCoord((g_dev['mnt'].current_icrs_ra)*u.hour,
-                                        (g_dev['mnt'].current_icrs_dec)*u.degree, frame='icrs')
+        # Don't do sun checks at nightime!
+        if not ((g_dev['events']['Observing Begins']  <= ephem.now() < g_dev['events']['Observing Ends'])):
+            try:
+                
+                if not g_dev['mnt'].mount.Slewing and self.open_and_enabled_to_observe and not self.sun_checks_off:
     
-                sun_dist = sun_coords.separation(temppointing)
-                #plog ("sun distance: " + str(sun_dist.degree))
-                if sun_dist.degree < self.config['closest_distance_to_the_sun'] and not g_dev['mnt'].mount.AtPark:
-                    g_dev['obs'].send_to_user("Found telescope pointing too close to the sun: " +
-                                              str(sun_dist.degree) + " degrees.")
-                    plog("Found telescope pointing too close to the sun: " + str(sun_dist.degree) + " degrees.")
-                    g_dev['obs'].send_to_user("Parking scope and cancelling all activity")
-                    plog("Parking scope and cancelling all activity")
+                    sun_coords = get_sun(Time.now())
+                    temppointing = SkyCoord((g_dev['mnt'].current_icrs_ra)*u.hour,
+                                            (g_dev['mnt'].current_icrs_dec)*u.degree, frame='icrs')
+        
+                    sun_dist = sun_coords.separation(temppointing)
+                    #plog ("sun distance: " + str(sun_dist.degree))
+                    if sun_dist.degree < self.config['closest_distance_to_the_sun'] and not g_dev['mnt'].mount.AtPark:
+                        g_dev['obs'].send_to_user("Found telescope pointing too close to the sun: " +
+                                                  str(sun_dist.degree) + " degrees.")
+                        plog("Found telescope pointing too close to the sun: " + str(sun_dist.degree) + " degrees.")
+                        g_dev['obs'].send_to_user("Parking scope and cancelling all activity")
+                        plog("Parking scope and cancelling all activity")
+                        
+                        if not g_dev['seq'].morn_bias_dark_latch and not g_dev['seq'].bias_dark_latch:
+                            self.cancel_all_activity()
+                        if not g_dev['mnt'].mount.AtPark:
+                            g_dev['mnt'].park_command()
+                        return
+            except Exception as e:
+                #goog = str(e)
+                plog ("Sun check didn't work for some reason")
+                if 'Object reference not set' in str(e) and g_dev['mnt'].theskyx:
                     
-                    if not g_dev['seq'].morn_bias_dark_latch and not g_dev['seq'].bias_dark_latch:
-                        self.cancel_all_activity()
-                    if not g_dev['mnt'].mount.AtPark:
-                        g_dev['mnt'].park_command()
-                    return
-        except Exception as e:
-            #goog = str(e)
-            plog ("Sun check didn't work for some reason")
-            if 'Object reference not set' in str(e) and g_dev['mnt'].theskyx:
-                
-                plog("The SkyX had an error.")
-                plog("Usually this is because of a broken connection.")
-                plog("Killing then waiting 60 seconds then reconnecting")
-                g_dev['seq'].kill_and_reboot_theskyx(g_dev['mnt'].current_icrs_ra,g_dev['mnt'].current_icrs_dec)
-                
-            #plog(traceback.format_exc())
-            #breakpoint()
+                    plog("The SkyX had an error.")
+                    plog("Usually this is because of a broken connection.")
+                    plog("Killing then waiting 60 seconds then reconnecting")
+                    g_dev['seq'].kill_and_reboot_theskyx(g_dev['mnt'].current_icrs_ra,g_dev['mnt'].current_icrs_dec)
+                    
+                #plog(traceback.format_exc())
+                #breakpoint()
 
         status["timestamp"] = round((time.time() + t1) / 2.0, 3)
         status["send_heartbeat"] = False
@@ -1308,27 +1323,29 @@ sel
             if ((g_dev['events']['Cool Down, Open']  <= ephem.now() < g_dev['events']['Observing Ends'])):
                 g_dev['seq'].nightly_reset_complete = False
             
-            if not g_dev['mnt'].mount.AtPark and self.open_and_enabled_to_observe and not self.sun_checks_off: # Only do the sun check if scope isn't parked
-                # Check that the mount hasn't slewed too close to the sun
-                sun_coords = get_sun(Time.now())
-                try:
-                    temppointing = SkyCoord((g_dev['mnt'].current_icrs_ra)*u.hour,
-                                            (g_dev['mnt'].current_icrs_dec)*u.degree, frame='icrs')
-                except:
-                    breakpoint()
-                sun_dist = sun_coords.separation(temppointing)
-                #plog ("sun distance: " + str(sun_dist.degree))
-                if sun_dist.degree < self.config['closest_distance_to_the_sun'] and not g_dev['mnt'].mount.AtPark:
-                    g_dev['obs'].send_to_user("Found telescope pointing too close to the sun: " +
-                                              str(sun_dist.degree) + " degrees.")
-                    plog("Found telescope pointing too close to the sun: " + str(sun_dist.degree) + " degrees.")
-                    g_dev['obs'].send_to_user("Parking scope and cancelling all activity")
-                    plog("Parking scope and cancelling all activity")
-                    if not g_dev['seq'].morn_bias_dark_latch and not g_dev['seq'].bias_dark_latch:
-                        self.cancel_all_activity()
-                    if not g_dev['mnt'].mount.AtPark:
-                        g_dev['mnt'].park_command()
-                    return
+            # Don't do sun checks at nightime!
+            if not ((g_dev['events']['Observing Begins']  <= ephem.now() < g_dev['events']['Observing Ends'])):
+                if not g_dev['mnt'].mount.AtPark and self.open_and_enabled_to_observe and not self.sun_checks_off: # Only do the sun check if scope isn't parked
+                    # Check that the mount hasn't slewed too close to the sun
+                    sun_coords = get_sun(Time.now())
+                    try:
+                        temppointing = SkyCoord((g_dev['mnt'].current_icrs_ra)*u.hour,
+                                                (g_dev['mnt'].current_icrs_dec)*u.degree, frame='icrs')
+                    except:
+                        breakpoint()
+                    sun_dist = sun_coords.separation(temppointing)
+                    #plog ("sun distance: " + str(sun_dist.degree))
+                    if sun_dist.degree < self.config['closest_distance_to_the_sun'] and not g_dev['mnt'].mount.AtPark:
+                        g_dev['obs'].send_to_user("Found telescope pointing too close to the sun: " +
+                                                  str(sun_dist.degree) + " degrees.")
+                        plog("Found telescope pointing too close to the sun: " + str(sun_dist.degree) + " degrees.")
+                        g_dev['obs'].send_to_user("Parking scope and cancelling all activity")
+                        plog("Parking scope and cancelling all activity")
+                        if not g_dev['seq'].morn_bias_dark_latch and not g_dev['seq'].bias_dark_latch:
+                            self.cancel_all_activity()
+                        if not g_dev['mnt'].mount.AtPark:
+                            g_dev['mnt'].park_command()
+                        return
 
             # If the shutter is open, check it is meant to be.
             # This is just a brute force overriding safety check.
@@ -1351,7 +1368,7 @@ sel
             # And only check if the scope thinks everything is open and hunky dory
             if not self.debug_flag and self.open_and_enabled_to_observe and not self.scope_in_manual_mode:
                 if g_dev['obs'].enc_status is not None:
-                    if g_dev['obs'].enc_status['shutter_status'] == 'Software Fault':
+                    if  'Software Fault' in g_dev['obs'].enc_status['shutter_status']:
                         plog("Software Fault Detected. Will alert the authorities!")
                         plog("Parking Scope in the meantime")
                         #if self.config['obsid_roof_control'] and g_dev['enc'].mode == 'Automatic':
@@ -1367,7 +1384,7 @@ sel
                         #g_dev['seq'].enclosure_next_open_time = time.time(
                         #) + self.config['roof_open_safety_base_time'] * g_dev['seq'].opens_this_evening
 
-                    if g_dev['obs'].enc_status['shutter_status'] == 'Closing' or g_dev['obs'].enc_status['shutter_status'] == 'Opening':
+                    if 'Closing' in g_dev['obs'].enc_status['shutter_status'] or 'Opening' in g_dev['obs'].enc_status['shutter_status']:
                         #if self.config['obsid_roof_control'] and g_dev['enc'].mode == 'Automatic':
                             plog("Detected Roof Movement.")
                             self.open_and_enabled_to_observe = False
@@ -1382,7 +1399,7 @@ sel
                             #g_dev['seq'].enclosure_next_open_time = time.time(
                             #) + self.config['roof_open_safety_base_time'] * g_dev['seq'].opens_this_evening
 
-                    if g_dev['obs'].enc_status['shutter_status'] == 'Error':
+                    if 'Error' in g_dev['obs'].enc_status['shutter_status']:
                         
                         plog("Detected an Error in the Roof Status. Packing up for safety.")
                         #plog("This is usually because the weather system forced the roof to shut.")
@@ -1453,7 +1470,7 @@ sel
                         self.open_and_enabled_to_observe = False
 
                 try:
-                    if g_dev['obs'].enc_status['shutter_status'] == 'Open':
+                    if 'Open' in g_dev['obs'].enc_status['shutter_status']:
                         if roof_should_be_shut == True:
                             plog("Safety check notices that the roof was open outside of the normal observing period")
                             
@@ -1486,7 +1503,7 @@ sel
     
                     if g_dev['obs'].enc_status is not None:
                         # If the roof IS shut, then the telescope should be shutdown and parked.
-                        if g_dev['obs'].enc_status['shutter_status'] == 'Closed':
+                        if 'Closed' in g_dev['obs'].enc_status['shutter_status']:
     
                             if not g_dev['mnt'].mount.AtPark:
                                 plog("Telescope found not parked when the observatory roof is shut. Parking scope.")
@@ -1510,8 +1527,12 @@ sel
                     #             g_dev['mnt'].park_command()
 
                         # But after all that if everything is ok, then all is ok, it is safe to observe
-                        if g_dev['obs'].enc_status['shutter_status'] == 'Open' and roof_should_be_shut == False:
-                            self.open_and_enabled_to_observe = True
+                        if 'Open' in g_dev['obs'].enc_status['shutter_status'] and roof_should_be_shut == False:
+                            if not 'NoObs' in g_dev['obs'].enc_status['shutter_status']:
+                                self.open_and_enabled_to_observe = True
+                            else:
+                                self.open_and_enabled_to_observe = False
+                            
     
                     else:
                         plog("g_dev['obs'].enc_status not reporting correctly")
@@ -1522,7 +1543,7 @@ sel
             # if got here, mount is connected. NB Plumb in PW startup code
 
             # Check that the mount hasn't tracked too low or an odd slew hasn't sent it pointing to the ground.
-            if not self.altitude_checks_off:
+            if self.altitude_checks_on:
                 try:
                     mount_altitude = g_dev['mnt'].mount.Altitude
                     lowest_acceptable_altitude = self.config['mount']['mount1']['lowest_acceptable_altitude']

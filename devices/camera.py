@@ -1653,7 +1653,7 @@ class Camera:
                     
                     # Check that the roof hasn't shut
                     g_dev['obs'].get_enclosure_status_from_aws()
-                    if g_dev['obs'].enc_status['shutter_status'] == 'Closed' and (not g_dev['obs'].debug_flag) and imtype not in ['bias', 'dark']:
+                    if 'Closed' in g_dev['obs'].enc_status['shutter_status'] and (not g_dev['obs'].debug_flag) and imtype not in ['bias', 'dark']:
                         
                         plog("Roof shut, exposures cancelled.")
                         g_dev["obs"].send_to_user("Roof shut, exposures cancelled.")

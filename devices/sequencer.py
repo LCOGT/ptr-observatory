@@ -642,7 +642,7 @@ class Sequencer:
                     # Check no other commands or exposures are happening
                     if g_dev['obs'].cmd_queue.empty() and not g_dev["cam"].exposure_busy:
                         # If enclosure is shut for maximum darkness
-                        if enc_status['shutter_status'] in ['Closed', 'closed']:
+                        if ['Closed', 'closed'] in enc_status['shutter_status'] :
                             # Check the temperature is in range
                             currentaltazframe = AltAz(location=g_dev['mnt'].site_coordinates, obstime=Time.now())
                             moondata=get_moon(Time.now()).transform_to(currentaltazframe)                        
@@ -1363,6 +1363,18 @@ class Sequencer:
         
         self.nightime_bias_counter = 0
         self.nightime_dark_counter = 0
+
+
+        # set safety defaults at startup
+        g_dev['obs'].scope_in_manual_mode=g_dev['obs'].config['scope_in_manual_mode']        
+        g_dev['obs'].sun_checks_on=g_dev['obs'].config['sun_checks_on']
+        g_dev['obs'].moon_checks_on=g_dev['obs'].config['moon_checks_on']
+        g_dev['obs'].altitude_checks_on=g_dev['obs'].config['altitude_checks_on']
+        g_dev['obs'].daytime_exposure_time_safety_on=g_dev['obs'].config['daytime_exposure_time_safety_on']
+        g_dev['obs'].mount_reference_model_off= g_dev['obs'].config['mount_reference_model_off'],
+        g_dev['obs'].admin_owner_commands_only = False
+        g_dev['obs'].assume_roof_open=False
+
 
         #self.nightly_weather_report_complete=False
         # Set weather report to false because it is daytime anyways.

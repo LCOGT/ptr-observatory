@@ -985,31 +985,33 @@ class Mount:
             dec = altazskycoord.icrs.dec.deg 
             
         sun_dist = sun_coords.separation(temppointing)
-
-        if sun_dist.degree <  self.config['closest_distance_to_the_sun'] and g_dev['obs'].open_and_enabled_to_observe and not g_dev['obs'].sun_checks_off:
-            if not (g_dev['events']['Civil Dusk'] < ephem.now() < g_dev['events']['Civil Dawn']):
-                g_dev['obs'].send_to_user("Refusing pointing request as it is too close to the sun: " + str(sun_dist.degree) + " degrees.")
-                plog("Refusing pointing request as it is too close to the sun: " + str(sun_dist.degree) + " degrees.")
-                return
-        
+        if g_dev['obs'].sun_checks_on:
+            if sun_dist.degree <  self.config['closest_distance_to_the_sun'] and g_dev['obs'].open_and_enabled_to_observe and not g_dev['obs'].sun_checks_off:
+                if not (g_dev['events']['Civil Dusk'] < ephem.now() < g_dev['events']['Civil Dawn']):
+                    g_dev['obs'].send_to_user("Refusing pointing request as it is too close to the sun: " + str(sun_dist.degree) + " degrees.")
+                    plog("Refusing pointing request as it is too close to the sun: " + str(sun_dist.degree) + " degrees.")
+                    return
+            
         # Second thing, check that we aren't pointing at the moon
         # UNLESS we have actually chosen to look at the moon.
-        if self.object in ['Moon', 'moon', 'Lune', 'lune', 'Luna', 'luna',]:
-            plog("Moon Request detected")
-        else:
-            moon_coords=get_moon(Time.now())          
-            moon_dist = moon_coords.separation(temppointing)
-            if moon_dist.degree <  self.config['closest_distance_to_the_moon']:
-                g_dev['obs'].send_to_user("Refusing pointing request as it is too close to the moon: " + str(moon_dist.degree) + " degrees.")
-                plog("Refusing pointing request as it is too close to the moon: " + str(moon_dist.degree) + " degrees.")
-                return
+        if g_dev['obs'].moon_checks_on:
+            if self.object in ['Moon', 'moon', 'Lune', 'lune', 'Luna', 'luna',]:
+                plog("Moon Request detected")
+            else:
+                moon_coords=get_moon(Time.now())          
+                moon_dist = moon_coords.separation(temppointing)
+                if moon_dist.degree <  self.config['closest_distance_to_the_moon']:
+                    g_dev['obs'].send_to_user("Refusing pointing request as it is too close to the moon: " + str(moon_dist.degree) + " degrees.")
+                    plog("Refusing pointing request as it is too close to the moon: " + str(moon_dist.degree) + " degrees.")
+                    return
         
         # Third thing, check that the requested coordinates are not
         # below a reasonable altitude
-        if alt < self.config['lowest_requestable_altitude']:
-            g_dev['obs'].send_to_user("Refusing pointing request as it is too low: " + str(alt) + " degrees.")
-            plog("Refusing pointing request as it is too low: " + str(alt) + " degrees.")
-            return
+        if g_dev['obs'].altitude_checks_on:
+            if alt < self.config['lowest_requestable_altitude']:
+                g_dev['obs'].send_to_user("Refusing pointing request as it is too low: " + str(alt) + " degrees.")
+                plog("Refusing pointing request as it is too low: " + str(alt) + " degrees.")
+                return
         
         # Fourth thing, check that the roof is open and we are enabled to observe
         if (g_dev['obs'].open_and_enabled_to_observe==False ) and (not g_dev['obs'].debug_flag) and not g_dev['obs'].scope_in_manual_mode:

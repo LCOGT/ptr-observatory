@@ -45,12 +45,13 @@ site_config = {
     # Manual mode turns all automation off. 
     # The scope will only do what you tell it
     # This DOESN'T turn some safetys off 
-    'scope_in_manual_mode' : False,
+    'scope_in_manual_mode': False,
     'mount_reference_model_off': True,
-    'sun_checks_off': False,
-    'altitude_checks_off': False,
-    'daytime_exposure_time_safety_off': False,
-    'degrees_to_avoid_zenith_area_for_calibrations': 0, 
+    'sun_checks_on': True,
+    'moon_checks_on': True,
+    'altitude_checks_on': True,    
+    'daytime_exposure_time_safety_on': True,
+    'degrees_to_avoid_zenith_area_for_calibrations': 0,
     
 
     'debug_mode': False,
