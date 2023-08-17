@@ -168,12 +168,13 @@ class Observatory:
             os.makedirs(ptr_config['local_calibration_path'])
         if not os.path.exists(self.local_calibration_path):
             os.makedirs(self.local_calibration_path)
-
-        self.alt_path= ptr_config['alt_path'] + self.config['obs_id'] + '/'
-        if not os.path.exists(ptr_config['alt_path']):
-            os.makedirs(ptr_config['alt_path'])        
-        if not os.path.exists(self.alt_path):
-            os.makedirs(self.alt_path)
+            
+        if self.config["save_to_alt_path"] == "yes":
+            self.alt_path= ptr_config['alt_path'] + self.config['obs_id'] + '/'
+            if not os.path.exists(ptr_config['alt_path']):
+                os.makedirs(ptr_config['alt_path'])        
+            if not os.path.exists(self.alt_path):
+                os.makedirs(self.alt_path)
 
         # Kill rotator softwares on boot-up to resync.
         try:
