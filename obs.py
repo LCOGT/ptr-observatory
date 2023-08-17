@@ -1535,7 +1535,7 @@ sel
             # if got here, mount is connected. NB Plumb in PW startup code
 
             # Check that the mount hasn't tracked too low or an odd slew hasn't sent it pointing to the ground.
-            if not self.altitude_checks_off:
+            if self.altitude_checks_on:
                 try:
                     mount_altitude = g_dev['mnt'].mount.Altitude
                     lowest_acceptable_altitude = self.config['mount']['mount1']['lowest_acceptable_altitude']

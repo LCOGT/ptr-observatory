@@ -38,6 +38,8 @@ site_config = {       #the NAME "SITE" IS INCONSISTENT  bIG CHANGE TO EFFECT, ob
     'degrees_to_avoid_zenith_area_for_calibrations': 0,
     
     #MANY KEYS FOUND HERE REALLY APPLY TO MOUNT, CAMERA, ETC.
+    # MTF - au contraire, many of those above and below involve
+    # multiple devices, so belong outside of a single device.
 
     # Auto-cenering is great .... unless you are polar aligning
     'turn_auto_centering_off': False,
