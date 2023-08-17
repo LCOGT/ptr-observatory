@@ -1364,6 +1364,18 @@ class Sequencer:
         self.nightime_bias_counter = 0
         self.nightime_dark_counter = 0
 
+
+        # set safety defaults at startup
+        g_dev['obs'].scope_in_manual_mode=g_dev['obs'].config['scope_in_manual_mode']        
+        g_dev['obs'].sun_checks_on=g_dev['obs'].config['sun_checks_on']
+        g_dev['obs'].moon_checks_on=g_dev['obs'].config['moon_checks_on']
+        g_dev['obs'].altitude_checks_on=g_dev['obs'].config['altitude_checks_on']
+        g_dev['obs'].daytime_exposure_time_safety_on=g_dev['obs'].config['daytime_exposure_time_safety_on']
+        g_dev['obs'].mount_reference_model_off= g_dev['obs'].config['mount_reference_model_off'],
+        g_dev['obs'].admin_owner_commands_only = False
+        g_dev['obs'].assume_roof_open=False
+
+
         #self.nightly_weather_report_complete=False
         # Set weather report to false because it is daytime anyways.
         #self.weather_report_is_acceptable_to_observe=False

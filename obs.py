@@ -424,11 +424,18 @@ class Observatory:
 
         # set manual mode at startup
         self.scope_in_manual_mode=self.config['scope_in_manual_mode']
-        
-        self.sun_checks_off=self.config['sun_checks_off']
-        self.altitude_checks_off=self.config['altitude_checks_off']
-        self.daytime_exposure_time_safety_off=self.config['daytime_exposure_time_safety_off']
+        self.moon_checks_on=self.config['moon_checks_on']
+        self.sun_checks_on=self.config['sun_checks_on']
+        self.altitude_checks_on=self.config['altitude_checks_on']
+        self.daytime_exposure_time_safety_on=self.config['daytime_exposure_time_safety_on']
         self.mount_reference_model_off= self.config['mount_reference_model_off'],
+        self.admin_owner_commands_only = False
+        self.assume_roof_open=False
+        
+        
+        
+        
+        
         
         self.camera_sufficiently_cooled_for_calibrations=True
         
@@ -1035,15 +1042,17 @@ sel
             status['obs_settings']={}
             
             
-            status['obs_settings']['scope_in_manual_mode']=False
-            status['obs_settings']['sun_safety_mode']=True
-            status['obs_settings']['moon_safety_mode']=True
-            status['obs_settings']['altitude_safety_mode']=True
+            status['obs_settings']['scope_in_manual_mode']=self.scope_in_manual_mode
+            status['obs_settings']['sun_safety_mode']=self.sun_checks_on
+            status['obs_settings']['moon_safety_mode']=self.moon_checks_on
+            status['obs_settings']['altitude_safety_mode']=self.altitude_checks_on
             status['obs_settings']['lowest_altitude']=-5
-            status['obs_settings']['daytime_exposure_safety_mode']=True
+            status['obs_settings']['daytime_exposure_safety_mode']=self.daytime_exposure_time_safety_on
             status['obs_settings']['daytime_exposure_time']=0.01
-            status['obs_settings']['admin_owner_commands_only']=False
-            status['obs_settings']['assume_roof_open']=False
+            status['obs_settings']['admin_owner_commands_only']=self.admin_owner_commands_only
+            status['obs_settings']['assume_roof_open']=self.assume_roof_open
+            
+            
             
             
             #plog (self.name)
