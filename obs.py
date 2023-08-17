@@ -1043,6 +1043,7 @@ sel
             status['obs_settings']['daytime_exposure_safety_mode']=True
             status['obs_settings']['daytime_exposure_time']=0.01
             status['obs_settings']['admin_owner_commands_only']=False
+            status['obs_settings']['assume_roof_open']=False
             
             
             #plog (self.name)
