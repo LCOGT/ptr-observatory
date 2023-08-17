@@ -642,7 +642,7 @@ class Sequencer:
                     # Check no other commands or exposures are happening
                     if g_dev['obs'].cmd_queue.empty() and not g_dev["cam"].exposure_busy:
                         # If enclosure is shut for maximum darkness
-                        if enc_status['shutter_status'] in ['Closed', 'closed']:
+                        if ['Closed', 'closed'] in enc_status['shutter_status'] :
                             # Check the temperature is in range
                             currentaltazframe = AltAz(location=g_dev['mnt'].site_coordinates, obstime=Time.now())
                             moondata=get_moon(Time.now()).transform_to(currentaltazframe)                        

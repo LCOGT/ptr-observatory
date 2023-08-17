@@ -1161,8 +1161,11 @@ sel
         #try:
 
         if not g_dev['obs'].enc_status == None:
-            if g_dev['obs'].enc_status['shutter_status'] == 'Open' or self.debug_flag:
-                self.open_and_enabled_to_observe = True
+            if 'Open' in g_dev['obs'].enc_status['shutter_status'] or self.debug_flag:
+                if not 'NoObs' in g_dev['obs'].enc_status['shutter_status']:
+                    self.open_and_enabled_to_observe = True
+                else:
+                    self.open_and_enabled_to_observe = False
         #except:
         #    pass
 
@@ -1348,7 +1351,7 @@ sel
             # And only check if the scope thinks everything is open and hunky dory
             if not self.debug_flag and self.open_and_enabled_to_observe and not self.scope_in_manual_mode:
                 if g_dev['obs'].enc_status is not None:
-                    if g_dev['obs'].enc_status['shutter_status'] == 'Software Fault':
+                    if  'Software Fault' in g_dev['obs'].enc_status['shutter_status']:
                         plog("Software Fault Detected. Will alert the authorities!")
                         plog("Parking Scope in the meantime")
                         #if self.config['obsid_roof_control'] and g_dev['enc'].mode == 'Automatic':
@@ -1364,7 +1367,7 @@ sel
                         #g_dev['seq'].enclosure_next_open_time = time.time(
                         #) + self.config['roof_open_safety_base_time'] * g_dev['seq'].opens_this_evening
 
-                    if g_dev['obs'].enc_status['shutter_status'] == 'Closing' or g_dev['obs'].enc_status['shutter_status'] == 'Opening':
+                    if 'Closing' in g_dev['obs'].enc_status['shutter_status'] or 'Opening' in g_dev['obs'].enc_status['shutter_status']:
                         #if self.config['obsid_roof_control'] and g_dev['enc'].mode == 'Automatic':
                             plog("Detected Roof Movement.")
                             self.open_and_enabled_to_observe = False
@@ -1379,7 +1382,7 @@ sel
                             #g_dev['seq'].enclosure_next_open_time = time.time(
                             #) + self.config['roof_open_safety_base_time'] * g_dev['seq'].opens_this_evening
 
-                    if g_dev['obs'].enc_status['shutter_status'] == 'Error':
+                    if 'Error' in g_dev['obs'].enc_status['shutter_status']:
                         
                         plog("Detected an Error in the Roof Status. Packing up for safety.")
                         #plog("This is usually because the weather system forced the roof to shut.")
@@ -1450,7 +1453,7 @@ sel
                         self.open_and_enabled_to_observe = False
 
                 try:
-                    if g_dev['obs'].enc_status['shutter_status'] == 'Open':
+                    if 'Open' in g_dev['obs'].enc_status['shutter_status']:
                         if roof_should_be_shut == True:
                             plog("Safety check notices that the roof was open outside of the normal observing period")
                             
@@ -1483,7 +1486,7 @@ sel
     
                     if g_dev['obs'].enc_status is not None:
                         # If the roof IS shut, then the telescope should be shutdown and parked.
-                        if g_dev['obs'].enc_status['shutter_status'] == 'Closed':
+                        if 'Closed' in g_dev['obs'].enc_status['shutter_status']:
     
                             if not g_dev['mnt'].mount.AtPark:
                                 plog("Telescope found not parked when the observatory roof is shut. Parking scope.")
@@ -1507,8 +1510,12 @@ sel
                     #             g_dev['mnt'].park_command()
 
                         # But after all that if everything is ok, then all is ok, it is safe to observe
-                        if g_dev['obs'].enc_status['shutter_status'] == 'Open' and roof_should_be_shut == False:
-                            self.open_and_enabled_to_observe = True
+                        if 'Open' in g_dev['obs'].enc_status['shutter_status'] and roof_should_be_shut == False:
+                            if not 'NoObs' in g_dev['obs'].enc_status['shutter_status']:
+                                self.open_and_enabled_to_observe = True
+                            else:
+                                self.open_and_enabled_to_observe = False
+                            
     
                     else:
                         plog("g_dev['obs'].enc_status not reporting correctly")
