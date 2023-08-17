@@ -169,6 +169,12 @@ class Observatory:
         if not os.path.exists(self.local_calibration_path):
             os.makedirs(self.local_calibration_path)
 
+        self.alt_path= ptr_config['alt_path'] + self.config['obs_id'] + '/'
+        if not os.path.exists(ptr_config['alt_path']):
+            os.makedirs(ptr_config['alt_path'])        
+        if not os.path.exists(self.alt_path):
+            os.makedirs(self.alt_path)
+
         # Kill rotator softwares on boot-up to resync.
         try:
             os.system("taskkill /IM AltAzDSConfig.exe /F")
@@ -326,7 +332,9 @@ class Observatory:
         if not os.path.exists(self.local_calibration_path + "archive/" + camera_name + "/localcalibrations/flats"):
             os.makedirs(self.local_calibration_path + "archive/" + camera_name + "/localcalibrations/flats")
                
-            
+        
+        
+        
         self.calib_masters_folder = self.local_calibration_path + "archive/" + camera_name + "/calibmasters" + '/'
         self.local_dark_folder = self.local_calibration_path + "archive/" + camera_name + "/localcalibrations/darks" + '/'
         self.local_bias_folder = self.local_calibration_path + "archive/" + camera_name + "/localcalibrations/biases" + '/'
