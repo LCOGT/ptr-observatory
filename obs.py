@@ -791,8 +791,7 @@ sel
                         unread_commands.sort(key=lambda x: x["timestamp_ms"])
                         # Process each job one at a time
                         for cmd in unread_commands:
-    
-                            if not (self.admin_owner_commands_only and (("admin" in cmd['user_roles']) or ("owner" in cmd['user_roles']) or (not self.admin_owner_commands_only))):
+                            if (self.admin_owner_commands_only and (("admin" in cmd['user_roles']) or ("owner" in cmd['user_roles']))) or (not self.admin_owner_commands_only):
     
                                 # breakpoint()
     
@@ -858,8 +857,8 @@ sel
                                     result = {'stopped': True}
                                     return  # Note we do not process any commands.
                             else:
-                                plog("Request rejected as site in admin or owner mode.")
-                                g_dev['obs'].send_to_user("Request rejected as site in admin or owner mode.")
+                                plog("Request rejected as obs in admin or owner mode.")
+                                g_dev['obs'].send_to_user("Request rejected as obs in admin or owner mode.")
                     except:
                         if 'Internal server error' in str(unread_commands):
                             plog ("AWS server glitch reading unread_commands")
@@ -910,11 +909,11 @@ sel
 
                             if device_type=='obs':
                                 plog ('received a system wide command')
-                                plog(cmd)
+                                #plog(cmd)
                                 
                                 if cmd['action']=='configure_telescope_mode':
                                     
-                                    if cmd['required_params']['mode'] == 'on':
+                                    if cmd['required_params']['mode'] == 'manual':
                                         self.scope_in_manual_mode = True
                                     else:
                                         self.scope_in_manual_mode = False
@@ -956,14 +955,14 @@ sel
                                         
                                 if cmd['action']=='configure_who_can_send_commands':
                                     
-                                    if cmd['required_params']['mode'] == True:
+                                    if cmd['required_params']['only_accept_admin_or_owner_commands'] == True:
                                         self.admin_owner_commands_only = True
                                     else:
                                         self.admin_owner_commands_only = False       
                                 
                                 self.obs_settings_upload_timer = time.time() - 2*self.obs_settings_upload_period
                              
-                                self.update_status()
+                                self.update_status(dont_wait=True)
 
 
 
