@@ -1252,7 +1252,7 @@ sel
         if not ((g_dev['events']['Observing Begins']  <= ephem.now() < g_dev['events']['Observing Ends'])):
             try:
                 
-                if not g_dev['mnt'].mount.Slewing and self.open_and_enabled_to_observe and not self.sun_checks_off:
+                if not g_dev['mnt'].mount.Slewing and self.open_and_enabled_to_observe and self.sun_checks_on:
     
                     sun_coords = get_sun(Time.now())
                     temppointing = SkyCoord((g_dev['mnt'].current_icrs_ra)*u.hour,
@@ -1385,7 +1385,7 @@ sel
             
             # Don't do sun checks at nightime!
             if not ((g_dev['events']['Observing Begins']  <= ephem.now() < g_dev['events']['Observing Ends'])):
-                if not g_dev['mnt'].mount.AtPark and self.open_and_enabled_to_observe and not self.sun_checks_off: # Only do the sun check if scope isn't parked
+                if not g_dev['mnt'].mount.AtPark and self.open_and_enabled_to_observe and self.sun_checks_on: # Only do the sun check if scope isn't parked
                     # Check that the mount hasn't slewed too close to the sun
                     sun_coords = get_sun(Time.now())
                     try:
