@@ -945,12 +945,11 @@ sel
                                     else:
                                         self.daytime_exposure_time_safety_on = False    
                                         
-                                if cmd['action']=='assume_roof_open':
+                                if cmd['action']=='start_simulating_open_roof':
                                     
-                                    if cmd['required_params']['mode'] == 'on':
-                                        self.assume_roof_open = True
-                                    else:
-                                        self.assume_roof_open = False    
+                                    self.assume_roof_open = True
+                                if cmd['action']=='stop_simulating_open_roof':
+                                    self.assume_roof_open = False    
                                         
                                         
                                 if cmd['action']=='configure_who_can_send_commands':
@@ -1118,7 +1117,7 @@ sel
             status['obs_settings']['daytime_exposure_safety_mode']=self.daytime_exposure_time_safety_on
             status['obs_settings']['daytime_exposure_time']=0.01
             status['obs_settings']['admin_owner_commands_only']=self.admin_owner_commands_only
-            status['obs_settings']['assume_roof_open']=self.assume_roof_open
+            status['obs_settings']['simulating_roof_open']=self.assume_roof_open
             
             
             
