@@ -1330,7 +1330,7 @@ class Camera:
             skip_calibration_check=True
         
         
-        if not skip_daytime_check and not g_dev['obs'].daytime_exposure_time_safety_off:
+        if not skip_daytime_check and not g_dev['obs'].daytime_exposure_time_safety_on:
             sun_az, sun_alt = g_dev['evnt'].sun_az_alt_now()
             if sun_alt > -5:
                 if exposure_time > float(self.config["camera"][self.name]["settings"]['max_daytime_exposure']):
