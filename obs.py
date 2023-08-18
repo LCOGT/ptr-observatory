@@ -157,7 +157,7 @@ class Observatory:
         #self.observatory_location = ptr_config["observatory_location"]
         self.debug_flag = self.config['debug_mode']
 
-        self.admin_only_flag = self.config['admin_owner_commands_only']
+        #self.admin_owner_commands_only = self.config['admin_owner_commands_only']
 
         # Default path
         self.obsid_path = ptr_config["client_path"] + '/' + self.name + '/'
@@ -792,7 +792,7 @@ sel
                         # Process each job one at a time
                         for cmd in unread_commands:
     
-                            if not (self.admin_only_flag and (("admin" in cmd['user_roles']) or ("owner" in cmd['user_roles']) or (not self.admin_only_flag))):
+                            if not (self.admin_owner_commands_only and (("admin" in cmd['user_roles']) or ("owner" in cmd['user_roles']) or (not self.admin_owner_commands_only))):
     
                                 # breakpoint()
     
@@ -908,8 +908,68 @@ sel
 
                             device_type = cmd["deviceType"]
 
+                            if device_type=='obs':
+                                plog ('received a system wide command')
+                                plog(cmd)
+                                
+                                if cmd['action']=='configure_telescope_mode':
+                                    
+                                    if cmd['required_params']['mode'] == 'on':
+                                        self.scope_in_manual_mode = True
+                                    else:
+                                        self.scope_in_manual_mode = False
+                                        
+                                if cmd['action']=='configure_moon_safety':
+                                    
+                                    if cmd['required_params']['mode'] == 'on':
+                                        self.moon_checks_on = True
+                                    else:
+                                        self.moon_checks_on = False
+                                if cmd['action']=='configure_sun_safety':
+                                    
+                                    if cmd['required_params']['mode'] =='on':
+                                        self.sun_checks_on = True
+                                    else:
+                                        self.sun_checks_on = False       
+                                
+                                if cmd['action']=='configure_altitude_safety':
+                                    
+                                    if cmd['required_params']['mode'] == 'on':
+                                        self.altitude_checks_on = True
+                                    else:
+                                        self.altitude_checks_on = False  
+                                        
+                                if cmd['action']=='configure_daytime_exposure_safety':
+                                    
+                                    if cmd['required_params']['mode'] == 'on':
+                                        self.daytime_exposure_time_safety_on = True
+                                    else:
+                                        self.daytime_exposure_time_safety_on = False    
+                                        
+                                if cmd['action']=='assume_roof_open':
+                                    
+                                    if cmd['required_params']['mode'] == 'on':
+                                        self.assume_roof_open = True
+                                    else:
+                                        self.assume_roof_open = False    
+                                        
+                                        
+                                if cmd['action']=='configure_who_can_send_commands':
+                                    
+                                    if cmd['required_params']['mode'] == True:
+                                        self.admin_owner_commands_only = True
+                                    else:
+                                        self.admin_owner_commands_only = False       
+                                
+                                self.obs_settings_upload_timer = time.time() - 2*self.obs_settings_upload_period
+                             
+                                self.update_status()
+
+
+
+
                             
-                            if device_type=='enclosure':
+                            elif device_type=='enclosure':
                                 plog ('An OBS has mistakenly received an enclosure command! Ignoring.')
                             else:
                                 device = self.all_devices[device_type][device_instance]
