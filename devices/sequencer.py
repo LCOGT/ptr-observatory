@@ -4541,7 +4541,7 @@ class Sequencer:
         prev_auto_centering = g_dev['obs'].auto_centering_off
         g_dev['obs'].auto_centering_off = True
         
-        print("Starting pointing run. ")
+        plog("Starting pointing run. ")
         
         g_dev['mnt'].unpark_command({}, {})
         
@@ -4549,7 +4549,9 @@ class Sequencer:
         
         catalogue=self.pointing_catalogue
         
+        g_dev["obs"].send_to_user("Starting pointing run. Constructing catalogue. This can take a while.")
         plog("Constructing sweep catalogue above altitude " + str(alt_minimum))
+        
         sweep_catalogue=[]
         #First remove all entries below given altitude
         for ctr in range(len(catalogue)):
@@ -4561,7 +4563,7 @@ class Sequencer:
                 sweep_catalogue.append([catalogue[ctr][0],catalogue[ctr][1],catalogue[ctr][2]])
             
         
-        print (sweep_catalogue)
+        plog (sweep_catalogue)
 
         del catalogue
         
@@ -4585,7 +4587,7 @@ class Sequencer:
             				finalCatalogue.append(sweep_catalogue[ctr])
             				
             
-            print ("Number of Pointings: " + str(len(finalCatalogue)))
+            plog ("Number of Pointings: " + str(len(finalCatalogue)))
 
             if len(finalCatalogue) > max_pointings:
                 print ("still too many:  ", len(finalCatalogue))
@@ -4599,17 +4601,19 @@ class Sequencer:
                 too_many=False
                     
         length = len(finalCatalogue)
-        print(length, "Targets chosen for grid.")
+        g_dev["obs"].send_to_user(str(length, "Targets chosen for grid."))
+        plog(length, "Targets chosen for grid.")
         
         count = 0
         
         deviation_catalogue_for_tpoint=[]
         
-        print ("Note that mount references and auto-centering are automatically turned off for a tpoint run.")
+        plog ("Note that mount references and auto-centering are automatically turned off for a tpoint run.")
         
         for grid_star in finalCatalogue:
             
-            print("Going to near grid field " + str(grid_star) )
+            g_dev["obs"].send_to_user(str(("Going to near grid field " + str(grid_star) )))
+            plog("Going to near grid field " + str(grid_star) )
             
             # Use the mount RA and Dec to go directly there
             g_dev['mnt'].mount.SlewToCoordinatesAsync(grid_star[0] / 15 , grid_star[1])
@@ -4618,7 +4622,7 @@ class Sequencer:
             while g_dev['mnt'].mount.Slewing:
                 if g_dev['mnt'].mount.Slewing: st += 'm>'
                 if g_dev['enc'].status['dome_slewing']: st += 'd>'
-                print(st)
+                plog(st)
                 st = ''
                 g_dev['obs'].update_status()
                 
@@ -4627,7 +4631,7 @@ class Sequencer:
             opt = { 'area': 100, 'count': 1,  'filter': 'pointing'}
             result = g_dev['cam'].expose_command(req, opt)
             
-            
+            g_dev["obs"].send_to_user("Platesolving image.")
             # Wait for platesolve
             reported=0
             while True:
@@ -4645,7 +4649,8 @@ class Sequencer:
                         return
                     pass
             
-            print ("Finished platesolving")
+            g_dev["obs"].send_to_user("Finished platesolving")
+            plog ("Finished platesolving")
             
             sid = float((Time(datetime.datetime.utcnow(), scale='utc', location=g_dev['mnt'].site_coordinates).sidereal_time('apparent')*u.deg) / u.deg / u.hourangle)
             
@@ -4667,6 +4672,7 @@ class Sequencer:
             count += 1
             plog('\n\nResult:  ', result,   'To go count:  ', length - count,  '\n\n')
 
+        g_dev["obs"].send_to_user("Tpoint collection completed. Happy reducing.")
         plog("Tpoint collection completed. Happy reducing.")
         
         deviation_catalogue_for_tpoint = np.asarray(deviation_catalogue_for_tpoint, dtype=float)
