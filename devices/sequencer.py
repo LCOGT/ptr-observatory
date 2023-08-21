@@ -378,13 +378,15 @@ class Sequencer:
             
             
             
-        ###########################################################################
-        # While in this part of the sequencer, we need to have manual UI commands turned off
-        # So that if a sequencer script starts running, we don't get an odd request out 
-        # of nowhere that knocks it out
-        g_dev['obs'].stop_processing_command_requests = True
-        ###########################################################################
+        
         if not self.total_sequencer_control:
+            ###########################################################################
+            # While in this part of the sequencer, we need to have manual UI commands turned off
+            # So that if a sequencer script starts running, we don't get an odd request out 
+            # of nowhere that knocks it out
+            g_dev['obs'].stop_processing_command_requests = True
+            ###########################################################################
+            
             # This bit is really to get the scope up and running if the roof opens
             if ((g_dev['events']['Cool Down, Open']  <= ephem_now < g_dev['events']['Observing Ends'])) and not self.cool_down_latch and \
                 g_dev['obs'].open_and_enabled_to_observe and not g_dev['obs'].scope_in_manual_mode and g_dev['mnt'].mount.AtPark and ((time.time() - self.time_roof_last_opened) < 300) :
@@ -681,12 +683,12 @@ class Sequencer:
                                             g_dev['obs'].time_of_last_exposure = time.time() - 840
                                             g_dev['obs'].time_of_last_slew = time.time() - 840                                    
             
-        ###########################################################################
-        # While in this part of the sequencer, we need to have manual UI commands turned back on
-        # So that we can process any new manual commands that come in.
-        g_dev['obs'].stop_processing_command_requests = False
-        g_dev['obs'].scan_requests()
-        ###########################################################################                            
+            ###########################################################################
+            # While in this part of the sequencer, we need to have manual UI commands turned back on
+            # So that we can process any new manual commands that come in.
+            g_dev['obs'].stop_processing_command_requests = False
+            g_dev['obs'].scan_requests()
+            ###########################################################################                            
         
         
         return
@@ -4532,47 +4534,19 @@ class Sequencer:
 
     def sky_grid_pointing_run(self, max_pointings=25, vertical=False, grid=False, alt_minimum=25):
         
-        #self.sky_guard = True
         
         self.total_sequencer_control = True
+        g_dev['obs'].stop_processing_command_requests = True
         
         prev_auto_centering = g_dev['obs'].auto_centering_off
         g_dev['obs'].auto_centering_off = True
         
-        #ptr_utility.ModelOn = False
-        print("Starting sky sweep. ")
-        #breakpoint()
+        print("Starting pointing run. ")
+        
         g_dev['mnt'].unpark_command({}, {})
-        #if g_dev['enc'].is_dome:
-        #    g_dev['enc'].Slaved = True  #Bring the dome into the picture.
+        
         g_dev['obs'].update_status()
-        #try:
-        #    g_dev['scr'].screen_dark()
-        #except:
-        #    pass
-        #g_dev['obs'].update_status()
-        #g_dev['mnt'].unpark_command()
-        #cam_name = str(self.config['camera']['camera_1_1']['name'])
         
-        #sid = g_dev['mnt'].mount.SiderealTime
-        #if req['gridType'] == 'medium':  # ~50
-        #    grid = 4
-        #if req['gridType'] == 'coarse':  # ~30
-        #    grid = 7
-        #if req['gridType'] == 'fine':    # ~100
-        #    grid = 2
-
-        #grid_stars = tycho.az_sort_targets(sid, grid)  #4 produces about 50 targets.
-        
-        #tpointcsv=np.genfromtxt('C:/PTR/tpointmodel1687189214d0307853.csv', delimiter=',')
-        #tpointdatafile=[]
-        
-        
-        #breakpoint()
-            
-
-        
-        #print (self.focus_catalogue)
         catalogue=self.pointing_catalogue
         
         plog("Constructing sweep catalogue above altitude " + str(alt_minimum))
@@ -4580,14 +4554,12 @@ class Sequencer:
         #First remove all entries below given altitude
         for ctr in range(len(catalogue)):
             teststar = SkyCoord(ra = catalogue[ctr][0]*u.deg, dec = catalogue[ctr][1]*u.deg)
-			#ra = float(req['ra'])
-            #dec = float(req['dec'])
-            #temppointing=SkyCoord(ra*u.hour, dec*u.degree, frame='icrs')
+			
             temppointingaltaz=teststar.transform_to(AltAz(location=g_dev['mnt'].site_coordinates, obstime=Time.now()))
             alt = temppointingaltaz.alt.degree
             if alt > alt_minimum:
                 sweep_catalogue.append([catalogue[ctr][0],catalogue[ctr][1],catalogue[ctr][2]])
-            #print (alt)
+            
         
         print (sweep_catalogue)
 
@@ -4609,13 +4581,11 @@ class Sequencer:
             			teststar = SkyCoord(ra = sweep_catalogue[ctr][0]*u.deg, dec = sweep_catalogue[ctr][1]*u.deg)
             			
             			idx, d2d, _ = teststar.match_to_catalog_sky(testcat)
-            			#print (d2d.arcsecond)
             			if (d2d.arcsecond > spread):
             				finalCatalogue.append(sweep_catalogue[ctr])
-            				#print (d2d)
-            				#print (sweep_catalogue[ctr])
+            				
             
-            print ("Sweep Size: " + str(len(finalCatalogue)))
+            print ("Number of Pointings: " + str(len(finalCatalogue)))
 
             if len(finalCatalogue) > max_pointings:
                 print ("still too many:  ", len(finalCatalogue))
@@ -4627,40 +4597,23 @@ class Sequencer:
                     spread=spread + 1200
             else:
                 too_many=False
-            
-                        
-        #breakpoint()
-        
-        # Looper that sorts out a skygrid above alt X with particular separations. Keep on minimising
-        # UNtil it has X points. 
-        
-        #sys.exit()
-        
+                    
         length = len(finalCatalogue)
         print(length, "Targets chosen for grid.")
-        #last_az = 0.25
+        
         count = 0
         
         deviation_catalogue_for_tpoint=[]
         
+        print ("Note that mount references and auto-centering are automatically turned off for a tpoint run.")
+        
         for grid_star in finalCatalogue:
-            #if grid_star is None:
-            #    print("No near star, skipping.")   #This should not happen.
-            #    count += 1
-            #    continue
-            #if grid_star[0] < last_az:   #Consider also insisting on a reasonable HA, eg., >= altitude of the Pole.
-            #   count += 1
-            #   continue
-            #last_az = grid_star[0] + 0.01
             
             print("Going to near grid field " + str(grid_star) )
-            #req = {'ra':  grid_star[0] / 15,
-             #      'dec': grid_star[1]     #Note order is important (dec, ra)
-            #       }
-            #opt = {}
             
-            g_dev['mnt'].go_command(ra = grid_star[0] / 15 , dec=grid_star[1])
-            #time.sleep(0.5)
+            # Use the mount RA and Dec to go directly there
+            g_dev['mnt'].mount.SlewToCoordinatesAsync(grid_star[0] / 15 , grid_star[1])
+            
             st = ''
             while g_dev['mnt'].mount.Slewing:
                 if g_dev['mnt'].mount.Slewing: st += 'm>'
@@ -4668,9 +4621,7 @@ class Sequencer:
                 print(st)
                 st = ''
                 g_dev['obs'].update_status()
-                #time.sleep(0.5)
-
-            #time.sleep(1)  #Give a little extra time for mount to settle.
+                
             g_dev['obs'].update_status()
             req = { 'time': self.config['pointing_exposure_time'],  'alias':  str(self.config['camera']['camera_1_1']['name']), 'image_type': 'light'}
             opt = { 'area': 100, 'count': 1,  'filter': 'pointing'}
@@ -4678,11 +4629,9 @@ class Sequencer:
             
             
             # Wait for platesolve
-            #queue_clear_time = time.time()
             reported=0
             while True:
                 if g_dev['obs'].platesolve_is_processing ==False and g_dev['obs'].platesolve_queue.empty():
-                    #plog ("we are free from platesolving!")
                     break
                 else:
                     if reported ==0:
@@ -4696,7 +4645,7 @@ class Sequencer:
                         return
                     pass
             
-            print ("Got out of platesolving")
+            print ("Finished platesolving")
             
             sid = float((Time(datetime.datetime.utcnow(), scale='utc', location=g_dev['mnt'].site_coordinates).sidereal_time('apparent')*u.deg) / u.deg / u.hourangle)
             
@@ -4705,28 +4654,20 @@ class Sequencer:
                 g_dev['mnt'].pier_side = g_dev[
                     "mnt"
                 ].mount.sideOfPier  # 0 == Tel Looking West, is flipped.
-                #self.can_report_pierside = True
+                
             except Exception as e:
-                #plog (e)
                 plog ("Mount cannot report pierside. Setting the code not to ask again, assuming default pointing west.")
-            #result=[grid_star[0] / 15, grid_star[1], g_dev['obs'].last_platesolved_ra, g_dev['obs'].last_platesolved_dec,g_dev['obs'].last_platesolved_ra_err, g_dev['obs'].last_platesolved_dec_err, sid, g_dev["mnt"].pier_side,g_dev['cam'].start_time_of_observation,g_dev['cam'].current_exposure_time]
             ra_mount=g_dev['mnt'].mount.RightAscension
             dec_mount = g_dev['mnt'].mount.Declination    
             result=[ra_mount, dec_mount, g_dev['obs'].last_platesolved_ra, g_dev['obs'].last_platesolved_dec,g_dev['obs'].last_platesolved_ra_err, g_dev['obs'].last_platesolved_dec_err, sid, g_dev["mnt"].pier_side,g_dev['cam'].start_time_of_observation,g_dev['cam'].current_exposure_time]
             deviation_catalogue_for_tpoint.append (result)
             plog(result)
             
-            
-            
-            
             g_dev['obs'].update_status()
-            #result = 'simulated result.'
             count += 1
             plog('\n\nResult:  ', result,   'To go count:  ', length - count,  '\n\n')
 
-        #g_dev['mnt'].park()
         plog("Tpoint collection completed. Happy reducing.")
-        #ptr_utility.ModelOn = True
         
         deviation_catalogue_for_tpoint = np.asarray(deviation_catalogue_for_tpoint, dtype=float)
         np.savetxt(self.config['client_path'] +'/'+'tpointmodel' + str(time.time()).replace('.','d') + '.csv', deviation_catalogue_for_tpoint, delimiter=',')
@@ -4759,8 +4700,7 @@ class Sequencer:
                     if latitude >= 0:
                         dec_got=Angle(180 - entry[3],u.degree).to_string(sep=' ')  # as in 89 90 91 92 when going 'under the pole'.
                     else:
-                        dec_got=Angle(-(180 + entry[3]),u.degree).to_string(sep=' ') 
-                    #plog("Mechanical adjust  Ra, Dec: ", ra_got, dec_got)
+                        dec_got=Angle(-(180 + entry[3]),u.degree).to_string(sep=' ')                     
                 else:
                     pierstring='0  0'
                     ra_got=Angle(entry[2],u.hour).to_string(sep=' ')
@@ -4776,7 +4716,6 @@ class Sequencer:
                         
                 plog(writeline) 
         
-        #breakpoint()
         try:
             os.path.expanduser('~')
             print (os.path.expanduser('~'))
@@ -4790,9 +4729,9 @@ class Sequencer:
         
         
         g_dev['obs'].auto_centering_off = prev_auto_centering
-        
-        #self.sky_guard = False
+
         self.total_sequencer_control = False
+        g_dev['obs'].stop_processing_command_requests = False
         return
 
 
