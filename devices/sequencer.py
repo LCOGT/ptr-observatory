@@ -4660,13 +4660,8 @@ class Sequencer:
                 else:
                     plog(traceback.format_exc())
                     breakpoint()  
-            
-            #st = ''
-            while g_dev['mnt'].mount.Slewing:
-                #if g_dev['mnt'].mount.Slewing: st += 'm>'
-                #plog(st)
-                #st = ''
-                time.sleep(0.2)
+
+            self.wait_for_slew()
                 
                 
             g_dev['obs'].update_status()
