@@ -285,7 +285,7 @@ class Sequencer:
         #        self.sky_grid_pointing_run()  # req, opt)
         elif action == "run" and script in ['pointingRun']:
             #breakpoint()
-            self.sky_grid_pointing_run(max_pointings=req['numPointingRuns'], alt_minimum=25)
+            self.sky_grid_pointing_run(max_pointings=req['numPointingRuns'], alt_minimum=req['minAltitude'])
         
         elif action == "run" and script in ("collectBiasesAndDarks"):
             self.bias_dark_script(req, opt, morn=True)
@@ -4536,8 +4536,13 @@ class Sequencer:
 
 
 
-    def sky_grid_pointing_run(self, max_pointings=25, alt_minimum=25):
+    def sky_grid_pointing_run(self, max_pointings=25, alt_minimum=35):
         
+        g_dev['obs'].get_enclosure_status_from_aws()        
+        if not g_dev['obs'].assume_roof_open and 'Closed' in g_dev['obs'].enc_status['shutter_status'] and (not g_dev['obs'].debug_flag):
+            plog('Roof is shut, so cannot do requested pointing run.')
+            g_dev["obs"].send_to_user('Roof is shut, so cannot do requested pointing run.')
+            return
         
         self.total_sequencer_control = True
         g_dev['obs'].stop_processing_command_requests = True
@@ -4612,6 +4617,8 @@ class Sequencer:
                 print ("still too many:  ", len(finalCatalogue))
                 if len(finalCatalogue) < 20:
                     spread=spread+2400
+                elif len(finalCatalogue) < 10:
+                    spread=spread+4800
                 elif (len(finalCatalogue) / max_pointings) > 4:
                     spread=spread+3600                    
                 else:
@@ -4631,17 +4638,33 @@ class Sequencer:
         
         for grid_star in finalCatalogue:
             
-            g_dev["obs"].send_to_user(str(("Going to near grid field " + str(grid_star) )))
-            plog("Going to near grid field " + str(grid_star) )
+            
+            teststar = SkyCoord(ra = grid_star[0]*u.deg, dec = grid_star[1]*u.deg)
+			
+            temppointingaltaz=teststar.transform_to(AltAz(location=g_dev['mnt'].site_coordinates, obstime=Time.now()))
+            alt = temppointingaltaz.alt.degree
+            az = temppointingaltaz.az.degree
+            
+            g_dev["obs"].send_to_user(str(("Slewing to near grid field, RA: " + str(grid_star[0] / 15) + " DEC: " + str(grid_star[1])+ " AZ: " + str(az)+ " ALT: " + str(alt))))
+            plog("Slewing to near grid field " + str(grid_star) )
             
             # Use the mount RA and Dec to go directly there
-            g_dev['mnt'].mount.SlewToCoordinatesAsync(grid_star[0] / 15 , grid_star[1])
+            try:
+                g_dev['mnt'].mount.SlewToCoordinatesAsync(grid_star[0] / 15 , grid_star[1])
+            except:
+                plog ("Difficulty in directly slewing to object")
+                plog(traceback.format_exc())
+                if g_dev['mnt'].theskyx:
+                    self.kill_and_reboot_theskyx(grid_star[0] / 15, grid_star[1])
+                else:
+                    plog(traceback.format_exc())
+                    breakpoint()  
             
-            st = ''
+            #st = ''
             while g_dev['mnt'].mount.Slewing:
-                if g_dev['mnt'].mount.Slewing: st += 'm>'
-                plog(st)
-                st = ''
+                #if g_dev['mnt'].mount.Slewing: st += 'm>'
+                #plog(st)
+                #st = ''
                 time.sleep(0.2)
                 
                 
@@ -4709,7 +4732,7 @@ class Sequencer:
         with open(tpointnamefile, "a+") as f:            	        
             f.write(":NODA\n")
             f.write(":EQUAT\n")
-            latitude = float(self.config["latitude"])
+            latitude = float(g_dev['evnt'].wema_config['latitude'])
             f.write(Angle(latitude,u.degree).to_string(sep=' ')+ "\n")
         for entry in deviation_catalogue_for_tpoint:
             if not np.isnan(entry[2]):
@@ -4749,6 +4772,10 @@ class Sequencer:
             os.path.expanduser('~')
             print (os.path.expanduser('~'))
             print (os.path.expanduser('~')+ "/Desktop/TPOINT/")
+            
+            if not os.path.exists(os.path.expanduser('~')+ "/Desktop/TPOINT"):
+                os.makedirs(os.path.expanduser('~')+ "/Desktop/TPOINT")
+            
             shutil.copy (tpointnamefile, os.path.expanduser('~') + "/Desktop/TPOINT/" + 'TPOINTDAT'+str(time.time()).replace('.','d')+'.DAT')
         except:
             plog('Could not copy file to tpoint directory... you will have to do it yourself!')
