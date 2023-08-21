@@ -675,6 +675,13 @@ class Camera:
         self.currently_in_smartstack_loop=False
         
         
+        
+        self.start_time_of_observation = time.time()
+        self.current_exposure_time = 20
+        
+        
+        self.expresult=None
+        
         self.cmd_in = None
         self.t7 = None
         self.camera_message = "-"
@@ -1281,8 +1288,8 @@ class Camera:
         quick=False,
         solve_it=False,
         calendar_event_id=None,
-        skip_open_check=True,
-        skip_daytime_check=True,
+        skip_open_check=False,
+        skip_daytime_check=False,
         manually_requested_calibration=False
     ):
         """
@@ -1294,7 +1301,7 @@ class Camera:
         """
 
         # First check that it isn't an exposure that doesn't need a check (e.g. bias, darks etc.)
-        if not skip_open_check:
+        if not g_dev['obs'].assume_roof_open and not skip_open_check:
         #Second check, if we are not open and available to observe, then .... don't observe!        
             if (g_dev['obs'].open_and_enabled_to_observe==False and g_dev['enc'].mode == 'Automatic') and (not g_dev['obs'].debug_flag) :
                 g_dev['obs'].send_to_user("Refusing exposure request as the observatory is not enabled to observe.")
@@ -1330,7 +1337,7 @@ class Camera:
             skip_calibration_check=True
         
         
-        if not skip_daytime_check and not g_dev['obs'].daytime_exposure_time_safety_on:
+        if not skip_daytime_check and g_dev['obs'].daytime_exposure_time_safety_on:
             sun_az, sun_alt = g_dev['evnt'].sun_az_alt_now()
             if sun_alt > -5:
                 if exposure_time > float(self.config["camera"][self.name]["settings"]['max_daytime_exposure']):
@@ -1653,7 +1660,8 @@ class Camera:
                     
                     # Check that the roof hasn't shut
                     g_dev['obs'].get_enclosure_status_from_aws()
-                    if 'Closed' in g_dev['obs'].enc_status['shutter_status'] and (not g_dev['obs'].debug_flag) and imtype not in ['bias', 'dark']:
+                    
+                    if not g_dev['obs'].assume_roof_open and 'Closed' in g_dev['obs'].enc_status['shutter_status'] and (not g_dev['obs'].debug_flag) and imtype not in ['bias', 'dark']:
                         
                         plog("Roof shut, exposures cancelled.")
                         g_dev["obs"].send_to_user("Roof shut, exposures cancelled.")
@@ -3100,7 +3108,11 @@ class Camera:
                         + im_type
                         + "00.fits"
                     )
-                    red_name01 = (self.config["obs_id"] + "-" + str(hdu.header['OBJECT']).replace(':','d').replace('@','at').replace('.','d').replace(' ','').replace('-','') +'-'+str(hdu.header['FILTER']) + "-" + next_seq+ "-" + str(exposure_time).replace('.','d') + "-"+ im_type+ "01.fits")                        
+                    
+                    if self.config['save_reduced_file_numberid_first']:
+                        red_name01 = (next_seq + "-" +self.config["obs_id"] + "-" + str(hdu.header['OBJECT']).replace(':','d').replace('@','at').replace('.','d').replace(' ','').replace('-','') +'-'+str(hdu.header['FILTER']) + "-" +  str(exposure_time).replace('.','d') + "-"+ im_type+ "01.fits")                        
+                    else:
+                        red_name01 = (self.config["obs_id"] + "-" + str(hdu.header['OBJECT']).replace(':','d').replace('@','at').replace('.','d').replace(' ','').replace('-','') +'-'+str(hdu.header['FILTER']) + "-" + next_seq+ "-" + str(exposure_time).replace('.','d') + "-"+ im_type+ "01.fits")                        
                     
                     red_name01_lcl = (
                         red_name01[:-9]
