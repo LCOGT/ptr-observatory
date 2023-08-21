@@ -137,7 +137,7 @@ class Sequencer:
             self.redis_wx_enabled = True
         else:
             self.redis_wx_enabled = False
-        self.sky_guard = False
+        #self.sky_guard = False
         self.af_guard = False
         self.block_guard = False
         self.time_of_next_slew = time.time()
@@ -197,6 +197,10 @@ class Sequencer:
 
         #obs_win_begin, sunZ88Op, sunZ88Cl, ephem_now = self.astro_events.getSunEvents()
 
+
+        # A command so that some scripts can prevent all other scripts  and exposures from occuring.
+        # quite important
+        self.total_sequencer_control = False
         
         
         self.last_roof_status = 'Closed'
@@ -380,303 +384,303 @@ class Sequencer:
         # of nowhere that knocks it out
         g_dev['obs'].stop_processing_command_requests = True
         ###########################################################################
-        
-        # This bit is really to get the scope up and running if the roof opens
-        if ((g_dev['events']['Cool Down, Open']  <= ephem_now < g_dev['events']['Observing Ends'])) and not self.cool_down_latch and \
-            g_dev['obs'].open_and_enabled_to_observe and not g_dev['obs'].scope_in_manual_mode and g_dev['mnt'].mount.AtPark and ((time.time() - self.time_roof_last_opened) < 300) :
-
-            self.nightly_reset_complete = False
-            self.cool_down_latch = True
-            self.reset_completes()
-            #g_dev['seq'].blockend= None
-            #self.block_guard=False
-            #self.clock_focus_latch=False
-
-            #self.night_focus_ready=False
-            obs_win_begin, sunZ88Op, sunZ88Cl, ephem_now = self.astro_events.getSunEvents()
-
-            if (g_dev['events']['Observing Begins'] < ephem.now() < g_dev['events']['Observing Ends']):
+        if not self.total_sequencer_control:
+            # This bit is really to get the scope up and running if the roof opens
+            if ((g_dev['events']['Cool Down, Open']  <= ephem_now < g_dev['events']['Observing Ends'])) and not self.cool_down_latch and \
+                g_dev['obs'].open_and_enabled_to_observe and not g_dev['obs'].scope_in_manual_mode and g_dev['mnt'].mount.AtPark and ((time.time() - self.time_roof_last_opened) < 300) :
+    
+                self.nightly_reset_complete = False
+                self.cool_down_latch = True
+                self.reset_completes()
+                #g_dev['seq'].blockend= None
+                #self.block_guard=False
+                #self.clock_focus_latch=False
+    
+                #self.night_focus_ready=False
+                obs_win_begin, sunZ88Op, sunZ88Cl, ephem_now = self.astro_events.getSunEvents()
+    
+                if (g_dev['events']['Observing Begins'] < ephem.now() < g_dev['events']['Observing Ends']):
+                    # Move to reasonable spot
+                    if g_dev['mnt'].mount.Tracking == False:
+                        if g_dev['mnt'].mount.CanSetTracking:   
+                            g_dev['mnt'].mount.Tracking = True
+                        else:
+                            plog("mount is not tracking but this mount doesn't support ASCOM changing tracking")
+    
+                    g_dev['mnt'].go_command(alt=70,az= 70)
+                    g_dev['foc'].time_of_last_focus = datetime.datetime.now() - datetime.timedelta(
+                        days=1
+                    )  # Initialise last focus as yesterday
+                    g_dev['foc'].set_initial_best_guess_for_focus()
+                    # Autofocus
+                    req2 = {'target': 'near_tycho_star', 'area': 150}
+                    opt = {}
+                    plog ("Running initial autofocus upon opening observatory")
+                    
+                    self.auto_focus_script(req2, opt)
+                else:
+                    self.night_focus_ready=True
+                        
+                       
+                self.cool_down_latch = False
+    
+                    
+            # If in post-close and park era of the night, check those two things have happened!       
+            if (events['Close and Park'] <= ephem_now < events['End Morn Bias Dark']):
+                
+                if not g_dev['mnt'].mount.AtPark:  
+                    plog ("Found telescope unparked after Close and Park, parking the scope")
+                    g_dev['mnt'].home_command()
+                    g_dev['mnt'].park_command()
+                
+                #if g_dev['enc'].status['shutter_status'] in ['Open', 'open']:
+                #    plog ("Found shutter open after Close and Park, shutting up the shutter")
+                #    self.park_and_close(enc_status)
+                
+            if not self.bias_dark_latch and not g_dev['obs'].scope_in_manual_mode and ((events['Eve Bias Dark'] <= ephem_now < events['End Eve Bias Dark']) and \
+                 self.config['auto_eve_bias_dark'] and not self.eve_bias_done and g_dev['obs'].camera_sufficiently_cooled_for_calibrations):   #events['End Eve Bias Dark']) and \
+                
+                self.bias_dark_latch = True
+                req = {'bin1': True, 'bin2': False, 'bin3': False, 'bin4': False, 'numOfBias': 45, \
+                       'numOfDark': 15, 'darkTime': 180, 'numOfDark2': 3, 'dark2Time': 360, \
+                       'hotMap': True, 'coldMap': True, 'script': 'genBiasDarkMaster', }  # NB NB All of the prior is obsolete
+                opt = {}
+                
+             
+                self.bias_dark_script(req, opt, morn=False)
+                self.eve_bias_done = True
+                self.bias_dark_latch = False
+                
+            if not self.eve_sky_flat_latch and not g_dev['obs'].scope_in_manual_mode and ((events['Eve Sky Flats'] <= ephem_now < events['End Eve Sky Flats'])  \
+                   and self.config['auto_eve_sky_flat'] and g_dev['obs'].open_and_enabled_to_observe and not self.eve_flats_done and g_dev['obs'].camera_sufficiently_cooled_for_calibrations):
+    
+                self.eve_sky_flat_latch = True
+                self.current_script = "Eve Sky Flat script starting"
+                
+                g_dev['foc'].set_initial_best_guess_for_focus()
+                
+                self.sky_flat_script({}, {}, morn=False)   #Null command dictionaries
+                
+                if g_dev['mnt'].mount.Tracking == False:
+                    if g_dev['mnt'].mount.CanSetTracking:   
+                        g_dev['mnt'].mount.Tracking = True
+                    else:
+                        plog("mount is not tracking but this mount doesn't support ASCOM changing tracking")
+                self.eve_sky_flat_latch = False
+                self.eve_flats_done = True
+                
+    
+            if ((g_dev['events']['Clock & Auto Focus']  <= ephem_now < g_dev['events']['Observing Begins'])) \
+                    and self.night_focus_ready==True and not g_dev['obs'].scope_in_manual_mode and not g_dev['debug'] and  g_dev['obs'].open_and_enabled_to_observe and not self.clock_focus_latch:
+    
+                self.nightly_reset_complete = False
+                self.clock_focus_latch = True
+    
+                g_dev['obs'].send_to_user("Beginning start of night Focus and Pointing Run", p_level='INFO')
+    
                 # Move to reasonable spot
                 if g_dev['mnt'].mount.Tracking == False:
                     if g_dev['mnt'].mount.CanSetTracking:   
                         g_dev['mnt'].mount.Tracking = True
                     else:
                         plog("mount is not tracking but this mount doesn't support ASCOM changing tracking")
-
+    
                 g_dev['mnt'].go_command(alt=70,az= 70)
                 g_dev['foc'].time_of_last_focus = datetime.datetime.now() - datetime.timedelta(
                     days=1
                 )  # Initialise last focus as yesterday
+                
                 g_dev['foc'].set_initial_best_guess_for_focus()
+    
                 # Autofocus
                 req2 = {'target': 'near_tycho_star', 'area': 150}
                 opt = {}
-                plog ("Running initial autofocus upon opening observatory")
+                self.extensive_focus_script(req2, opt, throw = g_dev['foc'].throw)
                 
-                self.auto_focus_script(req2, opt)
-            else:
-                self.night_focus_ready=True
+                g_dev['obs'].send_to_user("End of Focus and Pointing Run. Waiting for Observing period to begin.", p_level='INFO')
+                
+                self.night_focus_ready=False
+                self.clock_focus_latch = False
+    
+    
+            if (events['Observing Begins'] <= ephem_now \
+                                       < events['Observing Ends']) and not self.block_guard and not g_dev["cam"].exposure_busy\
+                                       and  (time.time() - self.project_call_timer > 10) and not g_dev['obs'].scope_in_manual_mode  and g_dev['obs'].open_and_enabled_to_observe and self.clock_focus_latch == False:
+                                         
+                try:
+                    self.nightly_reset_complete = False
+                    self.block_guard = True
                     
+                    if not self.reported_on_observing_period_beginning:
+                        self.reported_on_observing_period_beginning=True
+                        g_dev['obs'].send_to_user("Observing Period has begun.", p_level='INFO')
                    
-            self.cool_down_latch = False
-
-                
-        # If in post-close and park era of the night, check those two things have happened!       
-        if (events['Close and Park'] <= ephem_now < events['End Morn Bias Dark']):
-            
-            if not g_dev['mnt'].mount.AtPark:  
-                plog ("Found telescope unparked after Close and Park, parking the scope")
-                g_dev['mnt'].home_command()
-                g_dev['mnt'].park_command()
-            
-            #if g_dev['enc'].status['shutter_status'] in ['Open', 'open']:
-            #    plog ("Found shutter open after Close and Park, shutting up the shutter")
-            #    self.park_and_close(enc_status)
-            
-        if not self.bias_dark_latch and not g_dev['obs'].scope_in_manual_mode and ((events['Eve Bias Dark'] <= ephem_now < events['End Eve Bias Dark']) and \
-             self.config['auto_eve_bias_dark'] and not self.eve_bias_done and g_dev['obs'].camera_sufficiently_cooled_for_calibrations):   #events['End Eve Bias Dark']) and \
-            
-            self.bias_dark_latch = True
-            req = {'bin1': True, 'bin2': False, 'bin3': False, 'bin4': False, 'numOfBias': 45, \
-                   'numOfDark': 15, 'darkTime': 180, 'numOfDark2': 3, 'dark2Time': 360, \
-                   'hotMap': True, 'coldMap': True, 'script': 'genBiasDarkMaster', }  # NB NB All of the prior is obsolete
-            opt = {}
-            
-         
-            self.bias_dark_script(req, opt, morn=False)
-            self.eve_bias_done = True
-            self.bias_dark_latch = False
-            
-        if not self.eve_sky_flat_latch and not g_dev['obs'].scope_in_manual_mode and ((events['Eve Sky Flats'] <= ephem_now < events['End Eve Sky Flats'])  \
-               and self.config['auto_eve_sky_flat'] and g_dev['obs'].open_and_enabled_to_observe and not self.eve_flats_done and g_dev['obs'].camera_sufficiently_cooled_for_calibrations):
-
-            self.eve_sky_flat_latch = True
-            self.current_script = "Eve Sky Flat script starting"
-            
-            g_dev['foc'].set_initial_best_guess_for_focus()
-            
-            self.sky_flat_script({}, {}, morn=False)   #Null command dictionaries
-            
-            if g_dev['mnt'].mount.Tracking == False:
-                if g_dev['mnt'].mount.CanSetTracking:   
-                    g_dev['mnt'].mount.Tracking = True
-                else:
-                    plog("mount is not tracking but this mount doesn't support ASCOM changing tracking")
-            self.eve_sky_flat_latch = False
-            self.eve_flats_done = True
-            
-
-        if ((g_dev['events']['Clock & Auto Focus']  <= ephem_now < g_dev['events']['Observing Begins'])) \
-                and self.night_focus_ready==True and not g_dev['obs'].scope_in_manual_mode and not g_dev['debug'] and  g_dev['obs'].open_and_enabled_to_observe and not self.clock_focus_latch:
-
-            self.nightly_reset_complete = False
-            self.clock_focus_latch = True
-
-            g_dev['obs'].send_to_user("Beginning start of night Focus and Pointing Run", p_level='INFO')
-
-            # Move to reasonable spot
-            if g_dev['mnt'].mount.Tracking == False:
-                if g_dev['mnt'].mount.CanSetTracking:   
-                    g_dev['mnt'].mount.Tracking = True
-                else:
-                    plog("mount is not tracking but this mount doesn't support ASCOM changing tracking")
-
-            g_dev['mnt'].go_command(alt=70,az= 70)
-            g_dev['foc'].time_of_last_focus = datetime.datetime.now() - datetime.timedelta(
-                days=1
-            )  # Initialise last focus as yesterday
-            
-            g_dev['foc'].set_initial_best_guess_for_focus()
-
-            # Autofocus
-            req2 = {'target': 'near_tycho_star', 'area': 150}
-            opt = {}
-            self.extensive_focus_script(req2, opt, throw = g_dev['foc'].throw)
-            
-            g_dev['obs'].send_to_user("End of Focus and Pointing Run. Waiting for Observing period to begin.", p_level='INFO')
-            
-            self.night_focus_ready=False
-            self.clock_focus_latch = False
-
-
-        if (events['Observing Begins'] <= ephem_now \
-                                   < events['Observing Ends']) and not self.block_guard and not g_dev["cam"].exposure_busy\
-                                   and  (time.time() - self.project_call_timer > 10) and not g_dev['obs'].scope_in_manual_mode  and g_dev['obs'].open_and_enabled_to_observe and self.clock_focus_latch == False:
-                                     
-            try:
-                self.nightly_reset_complete = False
-                self.block_guard = True
-                
-                if not self.reported_on_observing_period_beginning:
-                    self.reported_on_observing_period_beginning=True
-                    g_dev['obs'].send_to_user("Observing Period has begun.", p_level='INFO')
-               
-                self.project_call_timer = time.time()
-                
-                self.update_calendar_blocks()
-
-                # only need to bother with the rest if there is more than 0 blocks. 
-                if not len(self.blocks) > 0:
-                    self.block_guard=False
-                    g_dev['seq'].blockend= None
-                else:
-                    now_date_timeZ = datetime.datetime.utcnow().isoformat().split('.')[0] +'Z'                    
-                    identified_block=None
+                    self.project_call_timer = time.time()
                     
-                    for block in self.blocks:  #  This merges project spec into the blocks.
-                       
-                        if (block['start'] <= now_date_timeZ < block['end'])  and not self.is_in_completes(block['event_id']):
-                                                               
-                            try:
-                                
-                                url_proj = "https://projects.photonranch.org/projects/get-project"
-                                request_body = json.dumps({
-                                  "project_name": block['project_id'].split('#')[0],
-                                  "created_at": block['project_id'].split('#')[1],
-                                })
-                                project_response=requests.post(url_proj, request_body)
-                                
-
-                                if project_response.status_code ==200:  
-                                    self.block_guard = True
-                                    block['project']=project_response.json()
-                                    identified_block=copy.deepcopy(block)
-                            except:
-                                plog(traceback.format_exc())
-                                breakpoint()
-                                
-                    if identified_block == None:
-                        self.block_guard = False   # Changed from True WER on 20221011@2:24 UTC
-                        g_dev['seq'].blockend= None
-                        return   # Do not try to execute an empty block.
-                    
-                    if identified_block['project_id'] in ['none', 'real_time_slot', 'real_time_block']:
-                        self.block_guard = False   # Changed from True WER on 20221011@2:24 UTC
-                        g_dev['seq'].blockend= None
-                        return   # Do not try to execute an empty block.
-                    
-
-                    if identified_block['project'] == None:
-                        plog (identified_block)
-                        plog ("Skipping a block that contains an empty project")
+                    self.update_calendar_blocks()
+    
+                    # only need to bother with the rest if there is more than 0 blocks. 
+                    if not len(self.blocks) > 0:
                         self.block_guard=False
                         g_dev['seq'].blockend= None
-                        return
-
-                    #g_dev['obs'].update()
-                    completed_block = self.execute_block(identified_block)  #In this we need to ultimately watch for weather holds.
-                    try:
-                        self.append_completes(completed_block['event_id'])
-                    except:
-                        plog ("block complete append didn't work")
-                        plog(traceback.format_exc())
-                    self.block_guard=False
-                    g_dev['seq'].blockend = None
-                    #block['project_id'] in ['none', 'real_time_slot', 'real_time_block']
-                    '''
-                    When a scheduled block is completed it is not re-entered or the block needs to
-                    be restored.  IN the execute block we need to make a deepcopy of the input block
-                    so it does not get modified.
-                    '''                                       
-            except:
-                plog(traceback.format_exc())
-                plog("Hang up in sequencer.")
-                
-        if not self.morn_sky_flat_latch and ((events['Morn Sky Flats'] <= ephem_now < events['End Morn Sky Flats']) and \
-               self.config['auto_morn_sky_flat']) and not g_dev['obs'].scope_in_manual_mode and not self.morn_flats_done and g_dev['obs'].camera_sufficiently_cooled_for_calibrations and g_dev['obs'].open_and_enabled_to_observe:
-
-            self.morn_sky_flat_latch = True
-            
-            self.current_script = "Morn Sky Flat script starting"
-            
-            self.sky_flat_script({}, {}, morn=True)   #Null command dictionaries
+                    else:
+                        now_date_timeZ = datetime.datetime.utcnow().isoformat().split('.')[0] +'Z'                    
+                        identified_block=None
+                        
+                        for block in self.blocks:  #  This merges project spec into the blocks.
+                           
+                            if (block['start'] <= now_date_timeZ < block['end'])  and not self.is_in_completes(block['event_id']):
+                                                                   
+                                try:
                                     
-            self.morn_sky_flat_latch = False
-            self.morn_flats_done = True
+                                    url_proj = "https://projects.photonranch.org/projects/get-project"
+                                    request_body = json.dumps({
+                                      "project_name": block['project_id'].split('#')[0],
+                                      "created_at": block['project_id'].split('#')[1],
+                                    })
+                                    project_response=requests.post(url_proj, request_body)
+                                    
+    
+                                    if project_response.status_code ==200:  
+                                        self.block_guard = True
+                                        block['project']=project_response.json()
+                                        identified_block=copy.deepcopy(block)
+                                except:
+                                    plog(traceback.format_exc())
+                                    breakpoint()
+                                    
+                        if identified_block == None:
+                            self.block_guard = False   # Changed from True WER on 20221011@2:24 UTC
+                            g_dev['seq'].blockend= None
+                            return   # Do not try to execute an empty block.
+                        
+                        if identified_block['project_id'] in ['none', 'real_time_slot', 'real_time_block']:
+                            self.block_guard = False   # Changed from True WER on 20221011@2:24 UTC
+                            g_dev['seq'].blockend= None
+                            return   # Do not try to execute an empty block.
+                        
+    
+                        if identified_block['project'] == None:
+                            plog (identified_block)
+                            plog ("Skipping a block that contains an empty project")
+                            self.block_guard=False
+                            g_dev['seq'].blockend= None
+                            return
+    
+                        #g_dev['obs'].update()
+                        completed_block = self.execute_block(identified_block)  #In this we need to ultimately watch for weather holds.
+                        try:
+                            self.append_completes(completed_block['event_id'])
+                        except:
+                            plog ("block complete append didn't work")
+                            plog(traceback.format_exc())
+                        self.block_guard=False
+                        g_dev['seq'].blockend = None
+                        #block['project_id'] in ['none', 'real_time_slot', 'real_time_block']
+                        '''
+                        When a scheduled block is completed it is not re-entered or the block needs to
+                        be restored.  IN the execute block we need to make a deepcopy of the input block
+                        so it does not get modified.
+                        '''                                       
+                except:
+                    plog(traceback.format_exc())
+                    plog("Hang up in sequencer.")
+                    
+            if not self.morn_sky_flat_latch and ((events['Morn Sky Flats'] <= ephem_now < events['End Morn Sky Flats']) and \
+                   self.config['auto_morn_sky_flat']) and not g_dev['obs'].scope_in_manual_mode and not self.morn_flats_done and g_dev['obs'].camera_sufficiently_cooled_for_calibrations and g_dev['obs'].open_and_enabled_to_observe:
+    
+                self.morn_sky_flat_latch = True
+                
+                self.current_script = "Morn Sky Flat script starting"
+                
+                self.sky_flat_script({}, {}, morn=True)   #Null command dictionaries
+                                        
+                self.morn_sky_flat_latch = False
+                self.morn_flats_done = True
+                
             
-        
-        if not self.morn_bias_dark_latch and (events['Morn Bias Dark'] <= ephem_now < events['End Morn Bias Dark']) and \
-                  self.config['auto_morn_bias_dark'] and not g_dev['obs'].scope_in_manual_mode and not  self.morn_bias_done and g_dev['obs'].camera_sufficiently_cooled_for_calibrations: # and g_dev['enc'].mode == 'Automatic' ):
-
-            self.morn_bias_dark_latch = True
-            req = {'bin1': True, 'bin2': False, 'bin3': False, 'bin4': False, 'numOfBias': 63, \
-                    'numOfDark': 31, 'darkTime': 600, 'numOfDark2': 31, 'dark2Time': 600, \
-                    'hotMap': True, 'coldMap': True, 'script': 'genBiasDarkMaster', }  #This specificatin is obsolete
-            opt = {}
-
-            self.park_and_close()
-            #NB The above put dome closed and telescope at Park, Which is where it should have been upon entry.
-            self.bias_dark_script(req, opt, morn=True)
-
-            self.park_and_close()
-            self.morn_bias_dark_latch = False
-            self.morn_bias_done = True
-        
-        
-        if events['Sun Rise'] <= ephem_now and not self.end_of_night_token_sent:
+            if not self.morn_bias_dark_latch and (events['Morn Bias Dark'] <= ephem_now < events['End Morn Bias Dark']) and \
+                      self.config['auto_morn_bias_dark'] and not g_dev['obs'].scope_in_manual_mode and not  self.morn_bias_done and g_dev['obs'].camera_sufficiently_cooled_for_calibrations: # and g_dev['enc'].mode == 'Automatic' ):
+    
+                self.morn_bias_dark_latch = True
+                req = {'bin1': True, 'bin2': False, 'bin3': False, 'bin4': False, 'numOfBias': 63, \
+                        'numOfDark': 31, 'darkTime': 600, 'numOfDark2': 31, 'dark2Time': 600, \
+                        'hotMap': True, 'coldMap': True, 'script': 'genBiasDarkMaster', }  #This specificatin is obsolete
+                opt = {}
+    
+                self.park_and_close()
+                #NB The above put dome closed and telescope at Park, Which is where it should have been upon entry.
+                self.bias_dark_script(req, opt, morn=True)
+    
+                self.park_and_close()
+                self.morn_bias_dark_latch = False
+                self.morn_bias_done = True
             
-            self.end_of_night_token_sent = True
-            # Sending token to AWS to inform it that all files have been uploaded
-            plog ("sending end of night token to AWS")
-            #g_dev['cam'].enqueue_for_AWS(jpeg_data_size, paths['im_path'], paths['jpeg_name10'])
             
-            isExist = os.path.exists(g_dev['obs'].obsid_path + 'tokens')
-            yesterday = datetime.datetime.now() - timedelta(1)
-            runNight=datetime.datetime.strftime(yesterday, '%Y%m%d') 
-            if not isExist:
-                os.makedirs(g_dev['obs'].obsid_path + 'tokens')
-            runNightToken= g_dev['obs'].obsid_path + 'tokens/' + self.config['obs_id'] + runNight + '.token'
-            with open(runNightToken, 'w') as f:
-                f.write('Night Completed')
-            image = (g_dev['obs'].obsid_path + 'tokens/', self.config['obs_id'] + runNight + '.token')
-            g_dev['obs'].aws_queue.put((30000000000, image), block=False)
-            g_dev['obs'].send_to_user("End of Night Token sent to AWS.", p_level='INFO')
+            if events['Sun Rise'] <= ephem_now and not self.end_of_night_token_sent:
+                
+                self.end_of_night_token_sent = True
+                # Sending token to AWS to inform it that all files have been uploaded
+                plog ("sending end of night token to AWS")
+                #g_dev['cam'].enqueue_for_AWS(jpeg_data_size, paths['im_path'], paths['jpeg_name10'])
+                
+                isExist = os.path.exists(g_dev['obs'].obsid_path + 'tokens')
+                yesterday = datetime.datetime.now() - timedelta(1)
+                runNight=datetime.datetime.strftime(yesterday, '%Y%m%d') 
+                if not isExist:
+                    os.makedirs(g_dev['obs'].obsid_path + 'tokens')
+                runNightToken= g_dev['obs'].obsid_path + 'tokens/' + self.config['obs_id'] + runNight + '.token'
+                with open(runNightToken, 'w') as f:
+                    f.write('Night Completed')
+                image = (g_dev['obs'].obsid_path + 'tokens/', self.config['obs_id'] + runNight + '.token')
+                g_dev['obs'].aws_queue.put((30000000000, image), block=False)
+                g_dev['obs'].send_to_user("End of Night Token sent to AWS.", p_level='INFO')
+                
+            #Here is where observatories who do their biases at night... well.... do their biases!
+            #If it hasn't already been done tonight.        
+            if self.config['auto_midnight_moonless_bias_dark'] and not g_dev['obs'].scope_in_manual_mode:
+                # Check it is in the dark of night
+                if  (events['Astro Dark'] <= ephem_now < events['End Astro Dark']):     
+                    # Check that there isn't any activity indicating someone using it...
+                    if (time.time() - g_dev['obs'].time_of_last_exposure) > 900 and (time.time() - g_dev['obs'].time_of_last_slew) > 900:
+                        # Check no other commands or exposures are happening
+                        if g_dev['obs'].cmd_queue.empty() and not g_dev["cam"].exposure_busy:
+                            # If enclosure is shut for maximum darkness
+                            if 'Closed' in enc_status['shutter_status']  or 'closed' in enc_status['shutter_status']:
+                                # Check the temperature is in range
+                                currentaltazframe = AltAz(location=g_dev['mnt'].site_coordinates, obstime=Time.now())
+                                moondata=get_moon(Time.now()).transform_to(currentaltazframe)                        
+                                if (moondata.alt.deg < -15):
+                                    # If the moon is way below the horizon                        
+                                    if g_dev['obs'].camera_sufficiently_cooled_for_calibrations:
+                                        if self.nightime_bias_counter < self.config['camera']['camera_1_1']['settings']['number_of_bias_to_collect']:
+                                            plog ("It is dark and the moon isn't up! Lets do a bias!")  
+                                            g_dev['mnt'].park_command({}, {})
+                                            plog("Exposing 1x1 bias frame.")
+                                            req = {'time': 0.0,  'script': 'True', 'image_type': 'bias'}
+                                            opt = {'area': "Full", 'count': 1, 'bin': 1 , \
+                                                   'filter': 'dark'}
+                                            self.nightime_bias_counter = self.nightime_bias_counter + 1
+                                            g_dev['cam'].expose_command(req, opt, user_id='Tobor', user_name='Tobor', user_roles='system', no_AWS=False, \
+                                                                do_sep=False, quick=False, skip_open_check=True,skip_daytime_check=True)
+                                            # these exposures shouldn't reset these timers
+                                            g_dev['obs'].time_of_last_exposure = time.time() - 840
+                                            g_dev['obs'].time_of_last_slew = time.time() - 840
+                                        if self.nightime_dark_counter < self.config['camera']['camera_1_1']['settings']['number_of_dark_to_collect']:
+                                            plog ("It is dark and the moon isn't up! Lets do a dark!")  
+                                            g_dev['mnt'].park_command({}, {})
+                                            dark_exp_time = self.config['camera']['camera_1_1']['settings']['dark_exposure']
+                                            plog("Exposing 1x1 dark exposure:  " + str(dark_exp_time) )
+                                            req = {'time': dark_exp_time ,  'script': 'True', 'image_type': 'dark'}
+                                            opt = {'area': "Full", 'count': 1, 'bin': 1, \
+                                                    'filter': 'dark'}
+                                            self.nightime_dark_counter = self.nightime_dark_counter + 1
+                                            g_dev['cam'].expose_command(req, opt, user_id='Tobor', user_name='Tobor', user_roles='system', no_AWS=False, \
+                                                               do_sep=False, quick=False, skip_open_check=True,skip_daytime_check=True)
+                                            # these exposures shouldn't reset these timers
+                                            g_dev['obs'].time_of_last_exposure = time.time() - 840
+                                            g_dev['obs'].time_of_last_slew = time.time() - 840                                    
             
-        #Here is where observatories who do their biases at night... well.... do their biases!
-        #If it hasn't already been done tonight.        
-        if self.config['auto_midnight_moonless_bias_dark'] and not g_dev['obs'].scope_in_manual_mode:
-            # Check it is in the dark of night
-            if  (events['Astro Dark'] <= ephem_now < events['End Astro Dark']):     
-                # Check that there isn't any activity indicating someone using it...
-                if (time.time() - g_dev['obs'].time_of_last_exposure) > 900 and (time.time() - g_dev['obs'].time_of_last_slew) > 900:
-                    # Check no other commands or exposures are happening
-                    if g_dev['obs'].cmd_queue.empty() and not g_dev["cam"].exposure_busy:
-                        # If enclosure is shut for maximum darkness
-                        if 'Closed' in enc_status['shutter_status']  or 'closed' in enc_status['shutter_status']:
-                            # Check the temperature is in range
-                            currentaltazframe = AltAz(location=g_dev['mnt'].site_coordinates, obstime=Time.now())
-                            moondata=get_moon(Time.now()).transform_to(currentaltazframe)                        
-                            if (moondata.alt.deg < -15):
-                                # If the moon is way below the horizon                        
-                                if g_dev['obs'].camera_sufficiently_cooled_for_calibrations:
-                                    if self.nightime_bias_counter < self.config['camera']['camera_1_1']['settings']['number_of_bias_to_collect']:
-                                        plog ("It is dark and the moon isn't up! Lets do a bias!")  
-                                        g_dev['mnt'].park_command({}, {})
-                                        plog("Exposing 1x1 bias frame.")
-                                        req = {'time': 0.0,  'script': 'True', 'image_type': 'bias'}
-                                        opt = {'area': "Full", 'count': 1, 'bin': 1 , \
-                                               'filter': 'dark'}
-                                        self.nightime_bias_counter = self.nightime_bias_counter + 1
-                                        g_dev['cam'].expose_command(req, opt, user_id='Tobor', user_name='Tobor', user_roles='system', no_AWS=False, \
-                                                            do_sep=False, quick=False, skip_open_check=True,skip_daytime_check=True)
-                                        # these exposures shouldn't reset these timers
-                                        g_dev['obs'].time_of_last_exposure = time.time() - 840
-                                        g_dev['obs'].time_of_last_slew = time.time() - 840
-                                    if self.nightime_dark_counter < self.config['camera']['camera_1_1']['settings']['number_of_dark_to_collect']:
-                                        plog ("It is dark and the moon isn't up! Lets do a dark!")  
-                                        g_dev['mnt'].park_command({}, {})
-                                        dark_exp_time = self.config['camera']['camera_1_1']['settings']['dark_exposure']
-                                        plog("Exposing 1x1 dark exposure:  " + str(dark_exp_time) )
-                                        req = {'time': dark_exp_time ,  'script': 'True', 'image_type': 'dark'}
-                                        opt = {'area': "Full", 'count': 1, 'bin': 1, \
-                                                'filter': 'dark'}
-                                        self.nightime_dark_counter = self.nightime_dark_counter + 1
-                                        g_dev['cam'].expose_command(req, opt, user_id='Tobor', user_name='Tobor', user_roles='system', no_AWS=False, \
-                                                           do_sep=False, quick=False, skip_open_check=True,skip_daytime_check=True)
-                                        # these exposures shouldn't reset these timers
-                                        g_dev['obs'].time_of_last_exposure = time.time() - 840
-                                        g_dev['obs'].time_of_last_slew = time.time() - 840                                    
-        
         ###########################################################################
         # While in this part of the sequencer, we need to have manual UI commands turned back on
         # So that we can process any new manual commands that come in.
@@ -1492,7 +1496,7 @@ class Sequencer:
         self.sequencer_message = '-'
         plog("sequencer reconnected.")
         plog(self.description)
-        self.sky_guard = False
+        #self.sky_guard = False
         self.af_guard = False
         self.block_guard = False
         g_dev['seq'].blockend= None
@@ -2220,7 +2224,7 @@ class Sequencer:
                         plog ("Observatory closed or disabled during flat script. Cancelling out of flat acquisition loop.")
                         self.filter_throughput_shelf.close()
                         g_dev['mnt'].park_command({}, {}) # You actually always want it to park, TheSkyX can't stop the telescope tracking, so park is safer... it is before focus anyway.
-                        self.sky_guard = False
+                        #self.sky_guard = False
                         self.flats_being_collected = False
                         return 'cancel'
                     
@@ -2229,7 +2233,7 @@ class Sequencer:
                         plog ("Flat acquisition time finished. Breaking out of the flat loop.")
                         self.filter_throughput_shelf.close()
                         g_dev['mnt'].park_command({}, {}) # You actually always want it to park, TheSkyX can't stop the telescope tracking, so park is safer... it is before focus anyway.
-                        self.sky_guard = False
+                        #self.sky_guard = False
                         self.flats_being_collected = False
                         return 'cancel'
                     
@@ -2356,7 +2360,7 @@ class Sequencer:
         
         
         self.flats_being_collected = True
-        self.sky_guard = True   #20220409 I think this is obsolete or unused.
+        #self.sky_guard = True   #20220409 I think this is obsolete or unused.
         plog('Sky Flat sequence Starting.')
         self.next_flat_observe = time.time()
         g_dev['obs'].send_to_user('Sky Flat sequence Starting.', p_level='INFO')
@@ -2503,7 +2507,7 @@ class Sequencer:
                         plog ("Observatory closed or disabled during flat script. Cancelling out of flat acquisition loop.")
                         self.filter_throughput_shelf.close()
                         g_dev['mnt'].park_command({}, {}) # You actually always want it to park, TheSkyX can't stop the telescope tracking, so park is safer... it is before focus anyway.
-                        self.sky_guard = False
+                        #self.sky_guard = False
                         self.flats_being_collected = False
                         return
                     
@@ -2512,7 +2516,7 @@ class Sequencer:
                         plog ("Flat acquisition time finished. Breaking out of the flat loop.")
                         self.filter_throughput_shelf.close()
                         g_dev['mnt'].park_command({}, {}) # You actually always want it to park, TheSkyX can't stop the telescope tracking, so park is safer... it is before focus anyway.
-                        self.sky_guard = False
+                        #self.sky_guard = False
                         self.flats_being_collected = False
                         return
                     
@@ -2561,14 +2565,14 @@ class Sequencer:
                             g_dev["obs"].send_to_user("Cancelling out of calibration script as stop script has been called.")  
                             self.filter_throughput_shelf.close()
                             g_dev['mnt'].park_command({}, {}) # You actually always want it to park, TheSkyX can't stop the telescope tracking, so park is safer... it is before focus anyway.
-                            self.sky_guard = False
+                            #self.sky_guard = False
                             self.flats_being_collected = False
                             return
                         if not g_dev['obs'].open_and_enabled_to_observe:
                             g_dev["obs"].send_to_user("Cancelling out of activity as no longer open and enabled to observe.")  
                             self.filter_throughput_shelf.close()
                             g_dev['mnt'].park_command({}, {}) # You actually always want it to park, TheSkyX can't stop the telescope tracking, so park is safer... it is before focus anyway.
-                            self.sky_guard = False
+                            #self.sky_guard = False
                             self.flats_being_collected = False
                             return
                         
@@ -2620,14 +2624,14 @@ class Sequencer:
                                 g_dev["obs"].send_to_user("Cancelling out of calibration script as stop script has been called.")  
                                 self.filter_throughput_shelf.close()
                                 g_dev['mnt'].park_command({}, {}) # You actually always want it to park, TheSkyX can't stop the telescope tracking, so park is safer... it is before focus anyway.
-                                self.sky_guard = False
+                                #self.sky_guard = False
                                 self.flats_being_collected = False
                                 return
                             if not g_dev['obs'].open_and_enabled_to_observe:
                                 g_dev["obs"].send_to_user("Cancelling out of activity as no longer open and enabled to observe.")  
                                 self.filter_throughput_shelf.close()
                                 g_dev['mnt'].park_command({}, {}) # You actually always want it to park, TheSkyX can't stop the telescope tracking, so park is safer... it is before focus anyway.
-                                self.sky_guard = False
+                                #self.sky_guard = False
                                 self.flats_being_collected = False
                                 return                                      
                                             
@@ -2646,7 +2650,7 @@ class Sequencer:
                                     except:
                                         plog("Mount did not park at end of morning skyflats.")
                                 self.filter_throughput_shelf.close()
-                                self.sky_guard = False
+                                #self.sky_guard = False
                                 self.flats_being_collected = False
                                 return
                             try:
@@ -2667,14 +2671,14 @@ class Sequencer:
                                         g_dev["obs"].send_to_user("Cancelling out of calibration script as stop script has been called.")  
                                         self.filter_throughput_shelf.close()
                                         g_dev['mnt'].park_command({}, {}) # You actually always want it to park, TheSkyX can't stop the telescope tracking, so park is safer... it is before focus anyway.
-                                        self.sky_guard = False
+                                        #self.sky_guard = False
                                         self.flats_being_collected = False
                                         return
                                     if not g_dev['obs'].open_and_enabled_to_observe:
                                         g_dev["obs"].send_to_user("Cancelling out of activity as no longer open and enabled to observe.")  
                                         self.filter_throughput_shelf.close()
                                         g_dev['mnt'].park_command({}, {}) # You actually always want it to park, TheSkyX can't stop the telescope tracking, so park is safer... it is before focus anyway.
-                                        self.sky_guard = False
+                                        #self.sky_guard = False
                                         self.flats_being_collected = False
                                         return
                                 except Exception as e:
@@ -2687,7 +2691,7 @@ class Sequencer:
                                     g_dev["obs"].send_to_user("Roof shut during sky flats. Stopping sky_flats")  
                                     self.filter_throughput_shelf.close()
                                     g_dev['mnt'].park_command({}, {}) # You actually always want it to park, TheSkyX can't stop the telescope tracking, so park is safer... it is before focus anyway.
-                                    self.sky_guard = False
+                                    #self.sky_guard = False
                                     self.flats_being_collected = False
                                     return
                                 
@@ -2696,7 +2700,7 @@ class Sequencer:
                                     g_dev["obs"].send_to_user("Roof shut during sky flats. Stopping sky_flats")  
                                     self.filter_throughput_shelf.close()
                                     g_dev['mnt'].park_command({}, {}) # You actually always want it to park, TheSkyX can't stop the telescope tracking, so park is safer... it is before focus anyway.
-                                    self.sky_guard = False
+                                    #self.sky_guard = False
                                     self.flats_being_collected = False
                                     return
                                 
@@ -2704,7 +2708,7 @@ class Sequencer:
                                     plog('stop_all_activity cancelling out of exposure loop')
                                     self.filter_throughput_shelf.close()
                                     g_dev['mnt'].park_command({}, {}) # You actually always want it to park, TheSkyX can't stop the telescope tracking, so park is safer... it is before focus anyway.
-                                    self.sky_guard = False
+                                    #self.sky_guard = False
                                     self.flats_being_collected = False
                                     return
                                     
@@ -2746,14 +2750,14 @@ class Sequencer:
                                 g_dev["obs"].send_to_user("Cancelling out of calibration script as stop script has been called.")  
                                 self.filter_throughput_shelf.close()
                                 g_dev['mnt'].park_command({}, {}) # You actually always want it to park, TheSkyX can't stop the telescope tracking, so park is safer... it is before focus anyway.
-                                self.sky_guard = False
+                                #self.sky_guard = False
                                 self.flats_being_collected = False
                                 return
                             if not g_dev['obs'].open_and_enabled_to_observe:
                                 g_dev["obs"].send_to_user("Cancelling out of activity as no longer open and enabled to observe.")  
                                 self.filter_throughput_shelf.close()
                                 g_dev['mnt'].park_command({}, {}) # You actually always want it to park, TheSkyX can't stop the telescope tracking, so park is safer... it is before focus anyway.
-                                self.sky_guard = False
+                                #self.sky_guard = False
                                 self.flats_being_collected = False
                                 return
                             
@@ -2849,7 +2853,7 @@ class Sequencer:
         g_dev["obs"].send_to_user("Sky flat collection complete.")            
         
         g_dev['mnt'].park_command({}, {}) # You actually always want it to park, TheSkyX can't stop the telescope tracking, so park is safer... it is before focus anyway.
-        self.sky_guard = False
+        #self.sky_guard = False
         self.flats_being_collected = False
 
 
@@ -4527,51 +4531,10 @@ class Sequencer:
 
 
     def sky_grid_pointing_run(self, max_pointings=25, vertical=False, grid=False, alt_minimum=25):
-        #camera_name = str(self.config['camera']['camera_1_1']['name'])
-        '''
-        unpark telescope
-        if not open, open dome
-        go to zenith & expose (Consider using Nearest mag 7 grid star.)
-        verify reasonable transparency
-            Ultimately, check focus, find a good exposure level
-        go to -72.5 degrees of ha, 0  expose
-        ha += 10; repeat to Ha = 67.5
-        += 5, expose
-        -= 10 until -67.5
-
-        if vertical go ha = -0.25 and step dec 85 -= 10 to -30 then
-        flip and go other way with offset 5 deg.
-
-        For Grid use Patrick Wallace's Mag 7 Tyco star grid it covers
-        sky equal-area, has a bright star as target and wraps around
-        both axes to better sample the encoders. Choose and load the
-        grid coarseness.
-        '''
-        '''
-        Prompt for ACCP model to be turned off
-        if closed:
-           If WxOk: open
-        if parked:
-             unpark
-
-         pick grid star near zenith in west (no flip)
-              expose 10 s
-              solve
-              Is there a bright object in field?
-              adjust exposure if needed.
-        Go to (-72.5deg HA, dec = 0),
-             Expose, calibrate, save file.  Consider
-             if we can real time solve or just gather.
-        step 10 degrees forward untl ha is 77.5
-        at 77.5 adjust target to (72.5, 0) and step
-        backward.  Stop when you get to -77.5.
-        park
-        Launch reduction
-
-        A variant on this is cover a grid, cover a + sign shape.
-        IF sweep
-        '''
-        self.sky_guard = True
+        
+        #self.sky_guard = True
+        
+        self.total_sequencer_control = True
         
         prev_auto_centering = g_dev['obs'].auto_centering_off
         g_dev['obs'].auto_centering_off = True
@@ -4828,7 +4791,8 @@ class Sequencer:
         
         g_dev['obs'].auto_centering_off = prev_auto_centering
         
-        self.sky_guard = False
+        #self.sky_guard = False
+        self.total_sequencer_control = False
         return
 
 

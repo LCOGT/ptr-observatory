@@ -914,6 +914,15 @@ sel
                                 plog ('received a system wide command')
                                 #plog(cmd)
                                 
+                                if cmd['action']=='configure_pointing_reference_off':
+                                    self.mount_reference_model_off = True
+                                    
+                                
+                                if cmd['action']=='configure_pointing_reference_on':
+                                    self.mount_reference_model_off = False
+                                    
+                                
+                                
                                 if cmd['action']=='configure_telescope_mode':
                                     
                                     if cmd['required_params']['mode'] == 'manual':
@@ -1121,7 +1130,7 @@ sel
             status['obs_settings']['daytime_exposure_time']=0.01
             status['obs_settings']['admin_owner_commands_only']=self.admin_owner_commands_only
             status['obs_settings']['simulating_open_roof']=self.assume_roof_open
-            status['obs_settings']['pointing_reference_on']=True
+            status['obs_settings']['pointing_reference_on']= (not self.mount_reference_model_off)
             
             
             
