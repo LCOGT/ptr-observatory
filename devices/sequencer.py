@@ -306,6 +306,7 @@ class Sequencer:
         else:
             plog('Sequencer command:  ', command, ' not recognized.')
 
+
     def park_and_close(self):
         try:
             if not g_dev['mnt'].mount.AtParK:   ###Test comment here

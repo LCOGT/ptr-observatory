@@ -2666,11 +2666,12 @@ sel
                                          #    plog("MTF chase this later")
                                          # if g_dev["mnt"].pier_side_str == "Looking West":
                                          plog ("updating mount reference")
-                                         plog ("current references: " + str ( g_dev['mnt'].get_mount_reference()))
-                                         plog ("adjustment: " + str(-err_ha) +' ' +str(-err_dec))
+                                         g_dev['mnt'].last_slew_was_pointing_slew = False
+                                         
+                                         plog ("adjustment: " + str(err_ha) +' ' +str(err_dec))
                                          if g_dev["mnt"].pier_side == 0:
                                              try:
-                                                 
+                                                 plog ("current references: " + str ( g_dev['mnt'].get_mount_reference()))
                                                  g_dev["mnt"].adjust_mount_reference(
                                                      #-err_ha, -err_dec
                                                      err_ha, err_dec
@@ -2679,6 +2680,7 @@ sel
                                                  plog("Something is up in the mount reference adjustment code ", e)
                                          else:
                                              try:
+                                                 plog ("current references: " + str ( g_dev['mnt'].get_flip_reference()))
                                                  g_dev["mnt"].adjust_flip_reference(
                                                      #-err_ha, -err_dec
                                                      err_ha, err_dec
