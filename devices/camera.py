@@ -675,6 +675,10 @@ class Camera:
         self.currently_in_smartstack_loop=False
         
         
+        
+        self.start_time_of_observation = time.time()
+        self.current_exposure_time = 20
+        
         self.cmd_in = None
         self.t7 = None
         self.camera_message = "-"
@@ -3100,7 +3104,11 @@ class Camera:
                         + im_type
                         + "00.fits"
                     )
-                    red_name01 = (self.config["obs_id"] + "-" + str(hdu.header['OBJECT']).replace(':','d').replace('@','at').replace('.','d').replace(' ','').replace('-','') +'-'+str(hdu.header['FILTER']) + "-" + next_seq+ "-" + str(exposure_time).replace('.','d') + "-"+ im_type+ "01.fits")                        
+                    
+                    if self.config['save_reduced_file_numberid_first']:
+                        red_name01 = (next_seq + "-" +self.config["obs_id"] + "-" + str(hdu.header['OBJECT']).replace(':','d').replace('@','at').replace('.','d').replace(' ','').replace('-','') +'-'+str(hdu.header['FILTER']) + "-" +  str(exposure_time).replace('.','d') + "-"+ im_type+ "01.fits")                        
+                    else:
+                        red_name01 = (self.config["obs_id"] + "-" + str(hdu.header['OBJECT']).replace(':','d').replace('@','at').replace('.','d').replace(' ','').replace('-','') +'-'+str(hdu.header['FILTER']) + "-" + next_seq+ "-" + str(exposure_time).replace('.','d') + "-"+ im_type+ "01.fits")                        
                     
                     red_name01_lcl = (
                         red_name01[:-9]

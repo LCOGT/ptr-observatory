@@ -1813,13 +1813,13 @@ sel
                     plog("In Camera Cooling Ramping cycle of the day")
                     frac_through_warming = 1 - (((g_dev['events']['Eve Bias Dark']) - ephem.now()) / ephem.hour)
                     print("Fraction through cooling cycle: " + str(frac_through_warming))
-                    if frac_through_warming > 0.8:
+                    if frac_through_warming > 0.66:
                         g_dev['cam']._set_setpoint(float(g_dev['cam'].setpoint))
                         g_dev['cam']._set_cooler_on()
                         self.last_time_camera_was_warm=time.time()
                     else:
                         g_dev['cam']._set_setpoint(
-                            float(g_dev['cam'].setpoint + (1 - frac_through_warming) * g_dev['cam'].day_warm_degrees))
+                            float(g_dev['cam'].setpoint + (1 - (frac_through_warming * 1.5)) * g_dev['cam'].day_warm_degrees))
                         g_dev['cam']._set_cooler_on()
 
                     plog("Temp set to " + str(g_dev['cam'].current_setpoint))                    

@@ -70,7 +70,8 @@ site_config = {       #the NAME "SITE" IS INCONSISTENT  bIG CHANGE TO EFFECT, ob
     # PTR uses the reduced file for some calculations (focus, SEP, etc.). To save space, this file can be removed after usage or not saved.
     'keep_reduced_on_disk': True,
     'keep_focus_images_on_disk': True,  # To save space, the focus file can not be saved.
-
+    
+    'save_reduced_file_numberid_first' : False,
 
     # Minimum realistic seeing at the site.
     # This allows culling of unphysical results in photometry and other things

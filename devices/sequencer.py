@@ -276,13 +276,17 @@ class Sequencer:
             self.screen_flat_script(req, opt)
         elif action == "run" and script == 'collectSkyFlats':
             self.sky_flat_script(req, opt)
-        elif action == "run" and script in ['32TargetPointingRun', 'pointingRun', 'makeModel']:
-            if req['gridType'] == 'sweep':
-               self.equatorial_pointing_run(req, opt)
-            elif req['gridType'] == 'cross':
-                self.cross_pointing_run(req, opt)
-            else:
-                self.sky_grid_pointing_run()  # req, opt)
+        #elif action == "run" and script in ['32TargetPointingRun', 'pointingRun', 'makeModel']:
+        #    if req['gridType'] == 'sweep':
+        #       self.equatorial_pointing_run(req, opt)
+        #    elif req['gridType'] == 'cross':
+        #        self.cross_pointing_run(req, opt)
+        #    else:
+        #        self.sky_grid_pointing_run()  # req, opt)
+        elif action == "run" and script in ['pointingRun']:
+            #breakpoint()
+            self.sky_grid_pointing_run(max_pointings=req['numPointingRuns'], alt_minimum=25)
+        
         elif action == "run" and script in ("collectBiasesAndDarks"):
             self.bias_dark_script(req, opt, morn=True)
         elif action == "run" and script == 'takeLRGBStack':
@@ -4532,7 +4536,7 @@ class Sequencer:
 
 
 
-    def sky_grid_pointing_run(self, max_pointings=25, vertical=False, grid=False, alt_minimum=25):
+    def sky_grid_pointing_run(self, max_pointings=25, alt_minimum=25):
         
         
         self.total_sequencer_control = True
@@ -4542,6 +4546,7 @@ class Sequencer:
         g_dev['obs'].auto_centering_off = True
         
         plog("Starting pointing run. ")
+        time.sleep(0.1)
         
         g_dev['mnt'].unpark_command({}, {})
         
@@ -4549,7 +4554,7 @@ class Sequencer:
         
         catalogue=self.pointing_catalogue
         
-        g_dev["obs"].send_to_user("Starting pointing run. Constructing catalogue. This can take a while.")
+        g_dev["obs"].send_to_user("Starting pointing run. Constructing altitude catalogue. This can take a while.")
         plog("Constructing sweep catalogue above altitude " + str(alt_minimum))
         
         sweep_catalogue=[]
@@ -4570,6 +4575,9 @@ class Sequencer:
         spread =3600.0 # Initial spread is about a degree
         too_many=True
         
+        g_dev["obs"].send_to_user("Constructing grid of pointings. This can take a while.")
+        plog("Finding a good set of pointings")
+        
         while too_many:
         
             finalCatalogue=[]
@@ -4589,6 +4597,17 @@ class Sequencer:
             
             plog ("Number of Pointings: " + str(len(finalCatalogue)))
 
+            if self.stop_script_called:
+                g_dev["obs"].send_to_user("Cancelling out of script as stop script has been called.")  
+                self.total_sequencer_control = False
+                g_dev['obs'].stop_processing_command_requests = False
+                return
+            if not g_dev['obs'].open_and_enabled_to_observe and not g_dev['obs'].scope_in_manual_mode:
+                g_dev["obs"].send_to_user("Cancelling out of activity as no longer open and enabled to observe.")  
+                self.total_sequencer_control = False
+                g_dev['obs'].stop_processing_command_requests = False
+                return
+
             if len(finalCatalogue) > max_pointings:
                 print ("still too many:  ", len(finalCatalogue))
                 if len(finalCatalogue) < 20:
@@ -4601,8 +4620,8 @@ class Sequencer:
                 too_many=False
                     
         length = len(finalCatalogue)
-        g_dev["obs"].send_to_user(str(length, "Targets chosen for grid."))
-        plog(length, "Targets chosen for grid.")
+        g_dev["obs"].send_to_user(str(length) + " Targets chosen for grid.")
+        plog(str(length) + " Targets chosen for grid.")
         
         count = 0
         
@@ -4621,10 +4640,10 @@ class Sequencer:
             st = ''
             while g_dev['mnt'].mount.Slewing:
                 if g_dev['mnt'].mount.Slewing: st += 'm>'
-                if g_dev['enc'].status['dome_slewing']: st += 'd>'
                 plog(st)
                 st = ''
-                g_dev['obs'].update_status()
+                time.sleep(0.2)
+                
                 
             g_dev['obs'].update_status()
             req = { 'time': self.config['pointing_exposure_time'],  'alias':  str(self.config['camera']['camera_1_1']['name']), 'image_type': 'light'}
@@ -4642,10 +4661,14 @@ class Sequencer:
                         plog ("PLATESOLVE: Waiting for platesolve processing to complete and queue to clear")
                         reported=1
                     if self.stop_script_called:
-                        g_dev["obs"].send_to_user("Cancelling out of autofocus script as stop script has been called.")  
+                        g_dev["obs"].send_to_user("Cancelling out of script as stop script has been called.")  
+                        self.total_sequencer_control = False
+                        g_dev['obs'].stop_processing_command_requests = False
                         return
                     if not g_dev['obs'].open_and_enabled_to_observe:
                         g_dev["obs"].send_to_user("Cancelling out of activity as no longer open and enabled to observe.")  
+                        self.total_sequencer_control = False
+                        g_dev['obs'].stop_processing_command_requests = False
                         return
                     pass
             
