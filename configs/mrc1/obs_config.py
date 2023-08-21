@@ -831,12 +831,12 @@ site_config = {       #the NAME "SITE" IS INCONSISTENT  bIG CHANGE TO EFFECT, ob
                 'crop_preview_ytop': 2,
                 'crop_preview_xleft': 2,
                 'crop_preview_xright': 2,
-                'temp_setpoint': -5,  # Verify we can go colder, this system has a chiller
+                'temp_setpoint': -5,  # Verify we can go colder
                 'has_chiller': False,
                 'calib_setpoints': [-0, -0, -0, -0, -0, -0, \
                                     -0, -0, -0, -0, -0, -0],
                 'day_warm': True,
-                'day_warm_degrees': 6,  # Number of degrees to warm during the daytime.
+                'day_warm_degrees': 8,  # Number of degrees to warm during the daytime.
                 'protect_camera_from_overheating' : False,
                 'cooler_on': True,
                 "cam_needs_NumXY_init": True,
