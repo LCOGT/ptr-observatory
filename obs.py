@@ -422,6 +422,9 @@ class Observatory:
 
         # Get initial coordinates into the global system
         g_dev['mnt'].get_mount_coordinates()
+        
+        
+        self.last_slew_was_pointing_slew=False
 
         # If mount is permissively set, reset mount reference
         # This is necessary for SRO and it seems for ECO
@@ -437,7 +440,7 @@ class Observatory:
         self.sun_checks_on=self.config['sun_checks_on']
         self.altitude_checks_on=self.config['altitude_checks_on']
         self.daytime_exposure_time_safety_on=self.config['daytime_exposure_time_safety_on']
-        self.mount_reference_model_off= self.config['mount_reference_model_off'],
+        self.mount_reference_model_off= self.config['mount_reference_model_off']
         self.admin_owner_commands_only = False
         self.assume_roof_open=False
         
@@ -1615,8 +1618,8 @@ sel
                                 g_dev['mnt'].home_command()
                             g_dev['mnt'].park_command()
                             # Reset mount reference because thats how it probably got pointing at the dirt in the first place!
-                            if self.config["mount"]["mount1"]["permissive_mount_reset"] == "yes":
-                                g_dev["mnt"].reset_mount_reference()
+                            #if self.config["mount"]["mount1"]["permissive_mount_reset"] == "yes":
+                            #    g_dev["mnt"].reset_mount_reference()
                 except Exception as e:
                     plog(traceback.format_exc())
                     plog(e)
@@ -2654,36 +2657,46 @@ sel
                              
                              
                              
-                             if not self.config['mount_reference_model_off']:
-                                 if target_dec > -85 and target_dec < 85:
+                             if not g_dev['obs'].mount_reference_model_off:
+                                 if target_dec > -85 and target_dec < 85 and g_dev['mnt'].last_slew_was_pointing_slew:
                                      try:
                                          #try:
                                          #    g_dev["mnt"].pier_side=g_dev['mnt'].mount.sideOfPier
                                          #except:
                                          #    plog("MTF chase this later")
                                          # if g_dev["mnt"].pier_side_str == "Looking West":
+                                         plog ("updating mount reference")
+                                         plog ("current references: " + str ( g_dev['mnt'].get_mount_reference()))
+                                         plog ("adjustment: " + str(-err_ha) +' ' +str(-err_dec))
                                          if g_dev["mnt"].pier_side == 0:
                                              try:
+                                                 
                                                  g_dev["mnt"].adjust_mount_reference(
-                                                     -err_ha, -err_dec
+                                                     #-err_ha, -err_dec
+                                                     err_ha, err_dec
                                                  )
                                              except Exception as e:
                                                  plog("Something is up in the mount reference adjustment code ", e)
                                          else:
                                              try:
                                                  g_dev["mnt"].adjust_flip_reference(
-                                                     -err_ha, -err_dec
+                                                     #-err_ha, -err_dec
+                                                     err_ha, err_dec
                                                  )  # Need to verify signs
                                              except Exception as e:
                                                  plog("Something is up in the mount reference adjustment code ", e)
-         
+                                         plog ("final references: " + str ( g_dev['mnt'].get_mount_reference()))
+                                        
                                      except:
                                          plog("This mount doesn't report pierside")
                                          plog(traceback.format_exc())
+                                        
                     self.platesolve_is_processing = False
 
                 self.platesolve_is_processing = False
                 self.platesolve_queue.task_done()
+
+                g_dev['mnt'].last_slew_was_pointing_slew = False
 
                 one_at_a_time = 0
 

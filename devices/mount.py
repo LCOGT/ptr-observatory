@@ -817,13 +817,13 @@ class Mount:
             #breakpoint()
             
             if 'ra' in req:            
-                self.go_command(ra=req['ra'], dec=req['dec'])   #  Entered from Target Explorer or Telescope tabs.
+                result = self.go_command(ra=req['ra'], dec=req['dec'])   #  Entered from Target Explorer or Telescope tabs.
             elif 'az' in req:
-                self.go_command(az=req['az'], alt=req['alt'])   #  Entered from Target Explorer or Telescope tabs.
+                result = self.go_command(az=req['az'], alt=req['alt'])   #  Entered from Target Explorer or Telescope tabs.
             elif 'ha' in req:
-                self.go_command(ha=req['ha'], dec=req['dec'])   #  Entered from Target Explorer or Telescope tabs.
+                result = self.go_command(ha=req['ha'], dec=req['dec'])   #  Entered from Target Explorer or Telescope tabs.
             
-            if 'do_centering_routine' in opt:
+            if 'do_centering_routine' in opt and result != 'refused':
                 if opt['do_centering_routine']:
                     g_dev['seq'].centering_exposure()
             
@@ -935,12 +935,12 @@ class Mount:
                     not (g_dev['events']['Naut Dawn'] < ephem.now() < g_dev['events']['Close and Park'])):
                     g_dev['obs'].send_to_user("Refusing skyflat pointing request as it is outside skyflat time")
                     plog("Refusing pointing request as it is outside of skyflat pointing time.")
-                    return
+                    return 'refused'
                 
                 if (g_dev['obs'].open_and_enabled_to_observe==False ) and (not g_dev['obs'].debug_flag):
                     g_dev['obs'].send_to_user("Refusing skyflat pointing request as the observatory is not enabled to observe.")
                     plog("Refusing skyflat pointing request as the observatory is not enabled to observe.")
-                    return
+                    return 'refused'
 
             az, alt = self.astro_events.flat_spot_now()
             temppointing = AltAz(location=self.site_coordinates, obstime=Time.now(), alt=alt*u.deg, az=az*u.deg)          
@@ -954,7 +954,7 @@ class Mount:
                 if (90-alt) < self.config['degrees_to_avoid_zenith_area_for_calibrations']:
                     g_dev['obs'].send_to_user("Refusing skyflat pointing request as it is too close to the zenith for this scope.")
                     plog("Refusing skyflat pointing request as it is too close to the zenith for this scope.")
-                    return
+                    return 'refused'
                     #alt=90-self.config['degrees_to_avoid_zenith_area_for_calibrations']
                     
                     #plog ("adjusted altitude to " + str(alt) + "to avoid the zenith region")
@@ -986,11 +986,11 @@ class Mount:
             
         sun_dist = sun_coords.separation(temppointing)
         if g_dev['obs'].sun_checks_on:
-            if sun_dist.degree <  self.config['closest_distance_to_the_sun'] and g_dev['obs'].open_and_enabled_to_observe and not g_dev['obs'].sun_checks_off:
+            if sun_dist.degree <  self.config['closest_distance_to_the_sun'] and g_dev['obs'].open_and_enabled_to_observe:
                 if not (g_dev['events']['Civil Dusk'] < ephem.now() < g_dev['events']['Civil Dawn']):
                     g_dev['obs'].send_to_user("Refusing pointing request as it is too close to the sun: " + str(sun_dist.degree) + " degrees.")
                     plog("Refusing pointing request as it is too close to the sun: " + str(sun_dist.degree) + " degrees.")
-                    return
+                    return 'refused'
             
         # Second thing, check that we aren't pointing at the moon
         # UNLESS we have actually chosen to look at the moon.
@@ -1003,7 +1003,7 @@ class Mount:
                 if moon_dist.degree <  self.config['closest_distance_to_the_moon']:
                     g_dev['obs'].send_to_user("Refusing pointing request as it is too close to the moon: " + str(moon_dist.degree) + " degrees.")
                     plog("Refusing pointing request as it is too close to the moon: " + str(moon_dist.degree) + " degrees.")
-                    return
+                    return 'refused'
         
         # Third thing, check that the requested coordinates are not
         # below a reasonable altitude
@@ -1011,20 +1011,20 @@ class Mount:
             if alt < self.config['lowest_requestable_altitude']:
                 g_dev['obs'].send_to_user("Refusing pointing request as it is too low: " + str(alt) + " degrees.")
                 plog("Refusing pointing request as it is too low: " + str(alt) + " degrees.")
-                return
+                return 'refused'
         
         # Fourth thing, check that the roof is open and we are enabled to observe
         if (g_dev['obs'].open_and_enabled_to_observe==False ) and (not g_dev['obs'].debug_flag) and not g_dev['obs'].scope_in_manual_mode:
             g_dev['obs'].send_to_user("Refusing pointing request as the observatory is not enabled to observe.")
             plog("Refusing pointing request as the observatory is not enabled to observe.")
-            return
+            return 'refused'
 
         # Fifth thing, check that the sky flat latch isn't on
         # (I moved the scope during flats once, it wasn't optimal)
         if not skyflatspot and (g_dev['seq'].morn_sky_flat_latch  or g_dev['seq'].eve_sky_flat_latch or g_dev['seq'].sky_flat_latch or g_dev['seq'].bias_dark_latch):
             g_dev['obs'].send_to_user("Refusing pointing request as the observatory is currently undertaking flats or calibration frames.")
             plog("Refusing pointing request as the observatory is currently taking flats or calibration frmaes.")
-            return
+            return 'refused'
             
        
         if objectname != None:
@@ -1122,7 +1122,9 @@ class Mount:
             except:
                 pass
             
-
+        plog ("mount references in go_command: " + str(delta_ra) + " " + str(delta_dec))
+        plog ("difference between request and pointing: " + str(ra - self.last_ra_requested))
+        
        
         self.current_sidereal = float((Time(datetime.datetime.utcnow(), scale='utc', location=g_dev['mnt'].site_coordinates).sidereal_time('apparent')*u.deg) / u.deg / u.hourangle)
         
@@ -1132,6 +1134,7 @@ class Mount:
             try:
                 wait_for_slew()
                 g_dev['obs'].time_of_last_slew=time.time()
+                g_dev['mnt'].last_slew_was_pointing_slew = True
                 #self.mount.SlewToCoordinatesAsync(self.ra_mech*RTOH, self.dec_mech*RTOD)  #Is this needed?
                 #plog('actual sent ra: ' + str(ra) + ' dec: ' + str(dec))
                 if ra < 0:
@@ -1212,6 +1215,7 @@ class Mount:
                     ra=ra-24
                 plog('actual sent ra: ' + str(ra) + ' dec: ' + str(dec))
                 wait_for_slew()
+                g_dev['mnt'].last_slew_was_pointing_slew = True
                 self.mount.SlewToCoordinatesAsync(ra, dec)
                 #self.can_report_destination_pierside
                 wait_for_slew()

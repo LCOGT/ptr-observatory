@@ -40,7 +40,7 @@ site_config = {
     # The scope will only do what you tell it
     # This DOESN'T turn some safetys off 
     'scope_in_manual_mode': False,
-    'mount_reference_model_off': True,
+    'mount_reference_model_off': False,
     'sun_checks_on': True,
     'moon_checks_on': True,
     'altitude_checks_on': True,    
