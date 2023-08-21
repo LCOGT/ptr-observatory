@@ -679,6 +679,9 @@ class Camera:
         self.start_time_of_observation = time.time()
         self.current_exposure_time = 20
         
+        
+        self.expresult=None
+        
         self.cmd_in = None
         self.t7 = None
         self.camera_message = "-"
