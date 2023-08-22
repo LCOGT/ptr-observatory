@@ -283,6 +283,8 @@ class Sequencer:
         #        self.cross_pointing_run(req, opt)
         #    else:
         #        self.sky_grid_pointing_run()  # req, opt)
+        elif action == "run" and script == 'restackLocalCalibrations':
+            self.regenerate_local_masters()
         elif action == "run" and script in ['pointingRun']:
             #breakpoint()
             self.sky_grid_pointing_run(max_pointings=req['numPointingRuns'], alt_minimum=req['minAltitude'])
@@ -1647,6 +1649,9 @@ class Sequencer:
         
     def regenerate_local_masters(self):
         
+        
+        g_dev["obs"].send_to_user("Currently regenerating local masters. System may be unresponsive during this period.")
+        
         # NOW to get to the business of constructing the local calibrations
         # Start with biases
         # Get list of biases
@@ -1773,6 +1778,10 @@ class Sequencer:
             plog ("WARNING, THIS VALUE IS ONLY TRUE IF YOU HAVE THE CORRECT GAIN IN reference_gain")
             plog ("Final Readnoise: " + str(np.nanmedian(readnoise_array)) + " std: " + str(np.nanstd(readnoise_array)))
     
+    
+            g_dev["obs"].send_to_user("Bias calibration frame created.")
+            
+    
             # NOW we have the master bias, we can move onto the dark frames
             plog (datetime.datetime.now().strftime("%H:%M:%S"))
             plog ("Regenerating dark") 
@@ -1845,6 +1854,8 @@ class Sequencer:
             del PLDrive
             gc.collect()
             os.remove(g_dev['obs'].local_dark_folder  + 'tempfile')    
+            
+            g_dev["obs"].send_to_user("Dark calibration frame created.")
             
             # NOW that we have a master bias and a master dark, time to step through the flat frames!
             tempfilters=glob(g_dev['obs'].local_flat_folder + "*/")
@@ -2100,6 +2111,7 @@ class Sequencer:
 
                         #    hdu1data = np.load(file, mmap_mode='r')
                         
+                    g_dev["obs"].send_to_user(str(filtercode) + " flat calibration frame created.")
                         
                 
                 textfilename= g_dev['obs'].obsid_path + 'ptr_night_shelf/' + 'cameragain' + g_dev['cam'].name + str(g_dev['obs'].name) +'.txt'
@@ -2207,6 +2219,8 @@ class Sequencer:
             except:
                 pass
 
+        g_dev["obs"].send_to_user("All calibration frames completed.")
+          
         return
     
     
