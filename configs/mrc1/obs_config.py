@@ -46,12 +46,10 @@ site_config = {
     # multiple devices, so belong outside of a single device.
 
     # Limits for the given scope    
-    'degrees_to_avoid_zenith_area_for_calibrations': 0,
-        
-
-
-
-
+    'degrees_to_avoid_zenith_area_for_calibrations': 0,       
+    
+    
+    'temperature_at_which_obs_too_hot_for_camera_cooling' : 23,
     #'turn_auto_centering_off': False,
     
     

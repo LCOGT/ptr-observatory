@@ -55,7 +55,7 @@ site_config = {
     
     'debug_mode': False,
     
-    
+    'temperature_at_which_obs_too_hot_for_camera_cooling' : 23,
     #'debug_site_mode': False,
     
     # Auto-cenering is great .... unless you are polar aligning
