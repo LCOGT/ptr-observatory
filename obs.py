@@ -17,7 +17,7 @@ import json
 import os
 import queue
 import shelve
-import socket
+#import socket
 import threading
 import time
 import sys
@@ -43,10 +43,8 @@ import ptr_config
 from devices.camera import Camera
 from devices.filter_wheel import FilterWheel
 from devices.focuser import Focuser
-#from devices.enclosure import Enclosure
 from devices.mount import Mount
 from devices.telescope import Telescope
-#from devices.observing_conditions import ObservingConditions
 from devices.rotator import Rotator
 from devices.selector import Selector
 from devices.screen import Screen
@@ -57,6 +55,7 @@ from ptr_utility import plog
 from astropy.utils.exceptions import AstropyUserWarning
 import warnings
 warnings.simplefilter('ignore', category=AstropyUserWarning)
+
 # Incorporate better request retry strategy
 from requests.adapters import HTTPAdapter, Retry
 reqs = requests.Session()
@@ -64,12 +63,10 @@ retries = Retry(total=3,
                 backoff_factor=0.1,
                 status_forcelist=[500, 502, 503, 504])
 reqs.mount('http://', HTTPAdapter(max_retries=retries))
-#reqs.mount('https://', HTTPAdapter(max_retries=retries))
 
 # The ingester should only be imported after environment variables are loaded in.
 load_dotenv(".env")
 from ocs_ingester.ingester import frame_exists, upload_file_and_ingest_to_archive
-
 import ocs_ingester.exceptions
 
 def test_connect(host='http://google.com'):
@@ -98,28 +95,14 @@ def findProcessIdByName(processName):
     return listOfProcessObjects
 
 
-listOfProcessIds = findProcessIdByName('maxim_dl')
-for pid in listOfProcessIds:
-    pid_num = pid['pid']
-    plog("Terminating existing Maxim process:  ", pid_num)
-    p2k = psutil.Process(pid_num)
-    p2k.terminate()
+
 
 
 def send_status(obsy, column, status_to_send):
     """Sends an update to the status endpoint."""
     uri_status = f"https://status.photonranch.org/status/{obsy}/status/"
-    # None of the strings can be empty. Otherwise this put faults.
     payload = {"statusType": str(column), "status": status_to_send}
-    
-    #if payload['statusType'] == 'weather':
-    #   breakpoint()
-    
-    
-    #print (payload)
-
     try:
-
         data = json.dumps(payload)
     except Exception as e:
         plog("Failed to create status payload. Usually not fatal:  ", e)
@@ -128,23 +111,20 @@ def send_status(obsy, column, status_to_send):
         reqs.post(uri_status, data=data, timeout=20)
     except Exception as e:
         plog("Failed to send_status. Usually not fatal:  ", e)
-        
-    #breakpoint()
-
-
-    
-    
-
-
-debug_flag = None
-debug_lapse_time = None
-
+   
 
 class Observatory:
-    """Docstring here"""
+    """
+    
+    Observatory is the central organising part of a given observatory system.
+    
+    It deals with connecting all the devices together and deals with decisions that
+    involve multiple devices and fundamental operations of the OBS. 
+    
+    """
 
     def __init__(self, name, ptr_config):
-        # This is the main class through which we can make authenticated api calls.
+        
         self.api = API_calls()
         self.command_interval = 0  # seconds between polls for new commands
         self.status_interval = 0  # NOTE THESE IMPLEMENTED AS A DELTA NOT A RATE.
@@ -154,10 +134,6 @@ class Observatory:
         
         self.config = ptr_config
         self.wema_name = self.config['wema_name']
-        #self.observatory_location = ptr_config["observatory_location"]
-        self.debug_flag = self.config['debug_mode']
-
-        #self.admin_owner_commands_only = self.config['admin_owner_commands_only']
 
         # Default path
         self.obsid_path = ptr_config["client_path"] + '/' + self.name + '/'
@@ -176,7 +152,11 @@ class Observatory:
             if not os.path.exists(self.alt_path):
                 os.makedirs(self.alt_path)
 
-        # Kill rotator softwares on boot-up to resync.
+
+        # Software Kills.
+        # There are some software that really benefits from being restarted from 
+        # scratch on Windows, so on bootup of obs.py, the system closes them down
+        # Reconnecting the devices reboots the softwares later on. 
         try:
             os.system("taskkill /IM AltAzDSConfig.exe /F")
         except:
@@ -185,6 +165,14 @@ class Observatory:
             os.system('taskkill /IM "Gemini Software.exe" /F')
         except:
             pass
+        
+        listOfProcessIds = findProcessIdByName('maxim_dl')
+        for pid in listOfProcessIds:
+            pid_num = pid['pid']
+            plog("Terminating existing Maxim process:  ", pid_num)
+            p2k = psutil.Process(pid_num)
+            p2k.terminate()
+        
         #breakpoint()
 
         if self.debug_flag:
