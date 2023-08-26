@@ -192,11 +192,11 @@ class Observatory:
             os.makedirs(self.local_calibration_path + "smartstacks")
         
         # Orphan and Broken paths
-        self.orphan_path=self.config['client_path'] +'/' + g_dev['obs'].name + '/' + 'orphans/'
+        self.orphan_path=self.config['client_path'] +'/' + self.name + '/' + 'orphans/'
         if not os.path.exists(self.orphan_path):
             os.makedirs(self.orphan_path)
         
-        self.broken_path=self.config['client_path'] +'/' + g_dev['obs'].name + '/' + 'broken/'
+        self.broken_path=self.config['client_path'] +'/' + self.name + '/' + 'broken/'
         if not os.path.exists(self.broken_path):
             os.makedirs(self.broken_path)
 
