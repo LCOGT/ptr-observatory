@@ -872,13 +872,13 @@ class Observatory:
                 plog(traceback.format_exc())
 
             
-
+        # Send main bath of devices status
         obsy = self.name
         if mount_only == True:
             device_list = ['mount', 'telescope']
         else:
             device_list = self.device_types
-
+        status={}
         for dev_type in device_list:
             #  The status that we will send is grouped into lists of
             #  devices by dev_type.
@@ -898,7 +898,13 @@ class Observatory:
                     
                 if result is not None:
                     status[dev_type][device_name] = result
+        status["timestamp"] = round((time.time()) / 2.0, 3)
+        status["send_heartbeat"] = False       
 
+        if status is not None:
+            lane = "device"            
+            if self.send_status_queue.qsize() < 7:
+                self.send_status_queue.put((obsy, lane, status), block=False)
        
 
         # If the roof is open, then it is open and enabled to observe
@@ -942,13 +948,7 @@ class Observatory:
                     g_dev['seq'].kill_and_reboot_theskyx(g_dev['mnt'].current_icrs_ra,g_dev['mnt'].current_icrs_dec)
                     
 
-        status["timestamp"] = round((time.time()) / 2.0, 3)
-        status["send_heartbeat"] = False       
-
-        if status is not None:
-            lane = "device"            
-            if self.send_status_queue.qsize() < 7:
-                self.send_status_queue.put((obsy, lane, status), block=False)
+        
 
         self.time_last_status = time.time()
         self.status_count += 1
