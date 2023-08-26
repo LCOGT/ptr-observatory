@@ -95,7 +95,20 @@ def findProcessIdByName(processName):
     return listOfProcessObjects
 
 
+def authenticated_request(method: str, uri: str, payload: dict = None) -> str:
 
+    # Populate the request parameters. Include data only if it was sent.
+    base_url="https://api.photonranch.org/api"
+    request_kwargs = { 
+        "method": method,
+        "timeout" : 10,
+        "url": f"{base_url}/{uri}",
+    }
+    if payload is not None: 
+        request_kwargs["data"] = json.dumps(payload)
+
+    response = requests.request(**request_kwargs)
+    return response.json()
 
 
 def send_status(obsy, column, status_to_send):
@@ -513,7 +526,7 @@ class Observatory:
         retryapi=True
         while retryapi:
             try:
-                response = g_dev["obs"].api.authenticated_request("PUT", uri, self.config)
+                response = authenticated_request("PUT", uri, self.config)
                 retryapi=False
             except:
                 plog ("connection glitch in update config. Waiting 5 seconds.")
@@ -874,7 +887,7 @@ sel
             if g_dev['obs'].cmd_queue.empty() and not g_dev["cam"].exposure_busy and not g_dev['cam'].currently_in_smartstack_loop and not g_dev["seq"].focussing: 
                 if not g_dev['mnt'].mount.AtPark and not g_dev['mnt'].mount.Slewing and g_dev['mnt'].mount.Tracking :
                     # Don't do it if the roof isn't open etc.                
-                    if (g_dev['obs'].open_and_enabled_to_observe==True ) or (g_dev['obs'].debug_flag) or g_dev['obs'].scope_in_manual_mode:                
+                    if (g_dev['obs'].open_and_enabled_to_observe==True ) or g_dev['obs'].scope_in_manual_mode:                
                         ra = g_dev['mnt'].mount.RightAscension
                         dec = g_dev['mnt'].mount.Declination
                         temppointing=SkyCoord(ra*u.hour, dec*u.degree, frame='icrs')
@@ -1072,7 +1085,7 @@ sel
         #try:
 
         if not g_dev['obs'].enc_status == None:
-            if 'Open' in g_dev['obs'].enc_status['shutter_status'] or self.debug_flag:
+            if 'Open' in g_dev['obs'].enc_status['shutter_status']:
                 if not 'NoObs' in g_dev['obs'].enc_status['shutter_status']:
                     self.open_and_enabled_to_observe = True
                 else:
@@ -1197,11 +1210,9 @@ sel
         #
         # Probably we don't want to run these checkes EVERY status update, just every 5 minutes
         
-        #if self.debug_flag:
-        #    safety_check_period *= 4
-        #    self.time_since_safety_checks = time.time() + safety_check_period
+
             
-        if time.time() - self.time_since_safety_checks > self.safety_check_period and not self.debug_flag:
+        if time.time() - self.time_since_safety_checks > self.safety_check_period:
             self.time_since_safety_checks = time.time()
 
             # breakpoint()
@@ -1260,7 +1271,7 @@ sel
 
             # Roof Checks only if not in debug mode
             # And only check if the scope thinks everything is open and hunky dory
-            if not self.debug_flag and self.open_and_enabled_to_observe and not self.scope_in_manual_mode:
+            if self.open_and_enabled_to_observe and not self.scope_in_manual_mode:
                 if g_dev['obs'].enc_status is not None:
                     if  'Software Fault' in g_dev['obs'].enc_status['shutter_status']:
                         plog("Software Fault Detected. Will alert the authorities!")
@@ -1865,38 +1876,7 @@ sel
                                                     broken =1
                                                     self.aws_queue.task_done()
                                                     
-        
-                                # # If ingester fails, send to default S3 bucket.
-                                # try:
-                                #     if tempPTR == 0:
-                                #         files = {"file": (filepath, fileobj)}
-                                #         retryapi=True
-                                #         retries=0
-                                #         while (retryapi or retries <5):
-                                #             try:
-                                #                 aws_resp = g_dev["obs"].api.authenticated_request(
-                                #                     "POST", "/upload/", {"object_name": filename})
-                                #                 req_resp = reqs.post(aws_resp["url"], data=aws_resp["fields"], files=files, timeout=600)
-                                #                 one_at_a_time = 0
-                                #                 retryapi=False
-                                #                 self.aws_queue.task_done()
-                                                
-                                                
-                
-                                #             except Exception as e:
-                                #                 plog(traceback.format_exc())
-                                #                 #breakpoint()
-                                #                 plog("Connection glitch for the request post, waiting a moment and trying again")
-                                                
-                                #                 if 'OSError' in e:
-                                #                     plog ("MTF wants to hunt this bug")
-                                #                     breakpoint()
-                                                
-                                #                 time.sleep(15)
-                                #                 retries=retries+1
-                                # except:
-                                #     broken=1
-                                #     retryapi=False
+
                             
                             if broken == 1:
                             
@@ -1915,7 +1895,7 @@ sel
                             uploaded=False
                             while not uploaded:                            
                                 try:
-                                    aws_resp = g_dev["obs"].api.authenticated_request(
+                                    aws_resp = authenticated_request(
                                         "POST", "/upload/", {"object_name": filename})
                                     reqs.post(aws_resp["url"], data=aws_resp["fields"], files=files, timeout=600)
                                     
@@ -2915,7 +2895,7 @@ sel
                 retryapi=True
                 while retryapi:
                     try:
-                        aws_resp = g_dev["obs"].api.authenticated_request(
+                        aws_resp = authenticated_request(
                             "POST", "/upload/", {"object_name": filename})
                         retryapi=False
                     except:

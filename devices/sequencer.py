@@ -344,10 +344,7 @@ class Sequencer:
 
         if time.time()-self.pulse_timer >30:
             self.pulse_timer=time.time()
-            if g_dev['obs'].debug_flag:
-                plog("~")
-            else:
-                plog('.')
+            plog('.')
         
         if (
             (datetime.datetime.now() - g_dev['obs'].observing_status_timer)
@@ -4554,7 +4551,7 @@ class Sequencer:
     def sky_grid_pointing_run(self, max_pointings=25, alt_minimum=35):
         
         g_dev['obs'].get_enclosure_status_from_aws()        
-        if not g_dev['obs'].assume_roof_open and 'Closed' in g_dev['obs'].enc_status['shutter_status'] and (not g_dev['obs'].debug_flag):
+        if not g_dev['obs'].assume_roof_open and 'Closed' in g_dev['obs'].enc_status['shutter_status']:
             plog('Roof is shut, so cannot do requested pointing run.')
             g_dev["obs"].send_to_user('Roof is shut, so cannot do requested pointing run.')
             return
