@@ -33,12 +33,12 @@ from astropy import units as u
 from astropy.table import Table
 from dotenv import load_dotenv
 import numpy as np
-import redis  
+
 import requests
 import urllib.request
 import traceback
 import psutil
-from api_calls import API_calls
+
 import ptr_config
 from devices.camera import Camera
 from devices.filter_wheel import FilterWheel
@@ -121,13 +121,13 @@ class Observatory:
     It deals with connecting all the devices together and deals with decisions that
     involve multiple devices and fundamental operations of the OBS. 
     
+    It also organises the various queues that process, send, slice and dice data.
+    
     """
 
-    def __init__(self, name, ptr_config):
+    def __init__(self, name, ptr_config):       
+
         
-        self.api = API_calls()
-        self.command_interval = 0  # seconds between polls for new commands
-        self.status_interval = 0  # NOTE THESE IMPLEMENTED AS A DELTA NOT A RATE.
         self.name = name  
         self.obs_id = name
         g_dev['name'] = name
@@ -135,8 +135,9 @@ class Observatory:
         self.config = ptr_config
         self.wema_name = self.config['wema_name']
 
-        # Default path
+        # Creation of directory structures if they do not exist already
         self.obsid_path = ptr_config["client_path"] + '/' + self.name + '/'
+        g_dev["obsid_path"] = self.obsid_path
         if not os.path.exists(self.obsid_path):
             os.makedirs(self.obsid_path)
         self.local_calibration_path = ptr_config['local_calibration_path'] + self.config['obs_id'] + '/'
@@ -151,6 +152,53 @@ class Observatory:
                 os.makedirs(ptr_config['alt_path'])        
             if not os.path.exists(self.alt_path):
                 os.makedirs(self.alt_path)
+        
+        if not os.path.exists(self.obsid_path + "ptr_night_shelf"):
+            os.makedirs(self.obsid_path + "ptr_night_shelf")
+        if not os.path.exists(self.obsid_path + "archive"):
+            os.makedirs(self.obsid_path + "archive")
+        if not os.path.exists(self.obsid_path + "tokens"):
+            os.makedirs(self.obsid_path + "tokens")
+        if not os.path.exists(self.obsid_path + "astropycache"):
+            os.makedirs(self.obsid_path + "astropycache")
+        
+        
+        # Local Calibration Paths
+        #if not os.path.exists(self.local_calibration_path + "calibmasters"):  # retaining for backward compatibility
+        #    os.makedirs(self.local_calibration_path + "calibmasters")
+        camera_name = self.config['camera']['camera_1_1']['name']
+        if not os.path.exists(self.local_calibration_path + "archive/" + camera_name + "/calibmasters"):
+            os.makedirs(self.local_calibration_path + "archive/" + camera_name + "/calibmasters")
+        if not os.path.exists(self.local_calibration_path + "archive/" + camera_name + "/localcalibrations"):
+            os.makedirs(self.local_calibration_path + "archive/" + camera_name + "/localcalibrations")
+        if not os.path.exists(self.local_calibration_path + "archive/" + camera_name + "/localcalibrations/darks"):
+            os.makedirs(self.local_calibration_path + "archive/" + camera_name + "/localcalibrations/darks")
+        if not os.path.exists(self.local_calibration_path + "archive/" + camera_name + "/localcalibrations/biases"):
+            os.makedirs(self.local_calibration_path + "archive/" + camera_name + "/localcalibrations/biases")
+        if not os.path.exists(self.local_calibration_path + "archive/" + camera_name + "/localcalibrations/flats"):
+            os.makedirs(self.local_calibration_path + "archive/" + camera_name + "/localcalibrations/flats")
+        
+        self.calib_masters_folder = self.local_calibration_path + "archive/" + camera_name + "/calibmasters" + '/'
+        self.local_dark_folder = self.local_calibration_path + "archive/" + camera_name + "/localcalibrations/darks" + '/'
+        self.local_bias_folder = self.local_calibration_path + "archive/" + camera_name + "/localcalibrations/biases" + '/'
+        self.local_flat_folder = self.local_calibration_path + "archive/" + camera_name + "/localcalibrations/flats" + '/'
+        
+        # Clear out smartstacks directory        
+        try:
+            shutil.rmtree(self.local_calibration_path + "smartstacks")
+        except:
+            pass
+        if not os.path.exists(self.local_calibration_path + "smartstacks"):
+            os.makedirs(self.local_calibration_path + "smartstacks")
+        
+        # Orphan and Broken paths
+        self.orphan_path=self.config['client_path'] +'/' + g_dev['obs'].name + '/' + 'orphans/'
+        if not os.path.exists(self.orphan_path):
+            os.makedirs(self.orphan_path)
+        
+        self.broken_path=self.config['client_path'] +'/' + g_dev['obs'].name + '/' + 'broken/'
+        if not os.path.exists(self.broken_path):
+            os.makedirs(self.broken_path)
 
 
         # Software Kills.
@@ -171,110 +219,81 @@ class Observatory:
             pid_num = pid['pid']
             plog("Terminating existing Maxim process:  ", pid_num)
             p2k = psutil.Process(pid_num)
-            p2k.terminate()
+            p2k.terminate()        
         
-        #breakpoint()
-
-        if self.debug_flag:
-
-            self.debug_lapse_time = time.time() + self.config['debug_duration_sec']
-            g_dev['debug'] = True
-            self.camera_sufficiently_cooled_for_calibrations = True
-            #g_dev['obs'].open_and_enabled_to_observe = True
-        else:
-            self.debug_lapse_time = 0.0
-            g_dev['debug'] = False
-            #g_dev['obs'].open_and_enabled_to_observe = False
-
-        #if self.config["wema_is_active"]:
-        #    self.hostname = socket.gethostname()
-        #    if self.hostname in self.config["wema_hostname"]:
-        #        self.is_wema = True
-        #        g_dev["wema_share_path"] = ptr_config["wema_write_share_path"]
-        #        self.wema_path = g_dev["wema_share_path"]
-        #    else:
-        # This host is a client
-        self.is_wema = False  # This is a client.
-        self.obsid_path = ptr_config["client_path"] + '/' + self.name + '/'
-        if not os.path.exists(self.obsid_path):
-            os.makedirs(self.obsid_path)
-
-        g_dev["obsid_path"] = self.obsid_path
-        #g_dev["wema_share_path"] = ptr_config[
-        #    "client_write_share_path"
-        #]  # Just to be safe.
-        #self.wema_path = g_dev["wema_share_path"]
-        #else:
-        #    self.is_wema = False  # This is a client.
-        #    self.obsid_path = ptr_config["client_path"] + self.config['obs_id'] + '/'
-        #    g_dev["obsid_path"] = self.obsid_path
-        #    g_dev["wema_share_path"] = self.obsid_path  # Just to be safe.
-        #    self.wema_path = g_dev["wema_share_path"]
-
-        if self.config["obsid_is_specific"]:
-            self.obsid_is_specific = True
-        else:
-            self.obsid_is_specific = False
-
-        self.last_request = None
-        self.stopped = False
+        
+        # Initialisation of variables best explained elsewhere
+        self.status_interval = 0  
         self.status_count = 0
-        self.first_pass= True
-        self.stop_all_activity = False
-        self.obsid_message = "-"
+        self.status_upload_time = 0.5
+        self.time_last_status = time.time() - 3
         self.all_device_types = ptr_config["device_types"]  # May not be needed
         self.device_types = ptr_config["device_types"]  # ptr_config['short_status_devices']
-        # self.wema_types = ptr_config["wema_types"]    >>>>
-        # self.enc_types = None  # config['enc_types']
-        # self.short_status_devices = (
-        #     ptr_config['short_status_devices']  # May not be needed for no wema obsy
-        #)
+       
+        # Timers to only update status at regular specified intervals.
         self.observing_status_timer = datetime.datetime.now() - datetime.timedelta(
             days=1
         )
         self.observing_check_period = self.config[
             "observing_check_period"
-        ]  # How many minutes between observing conditions check
+        ]  
         self.enclosure_status_timer = datetime.datetime.now() - datetime.timedelta(
             days=1
         )
         self.enclosure_check_period = self.config[
             "enclosure_check_period"
-        ]  # How many minutes between enclosure check
-
-
+        ]  
         self.obs_settings_upload_timer = time.time() - 20
-        self.obs_settings_upload_period = 10
-        
-
-
-        self.block_center_in_process = False
+        self.obs_settings_upload_period = 60
 
         self.last_time_report_to_console = time.time()-700
 
+        self.last_solve_time = datetime.datetime.now() - datetime.timedelta(days=1)
+        self.images_since_last_solve = 10000
+
         self.project_call_timer = time.time()
         self.get_new_job_timer = time.time()
-        self.status_upload_time = 0.5
+        self.warm_report_timer = time.time()-600
+        
+        # Keep track of how long it has been since the last activity of slew or exposure
+        # This is useful for various functions... e.g. if telescope idle for an hour, park.
+        self.time_of_last_exposure = time.time()
+        self.time_of_last_slew = time.time()
+        
+        # Only poll the broad safety checks (altitude and inactivity) every 5 minutes
+        self.safety_check_period = self.config['safety_check_period']
+        self.time_since_safety_checks = time.time() - (2* self.safety_check_period)
+        
+        # Keep track of how long it has been since the last live connection to the internet
+        self.time_of_last_live_net_connection = time.time()
+        
+        # Initialising various flags best explained elsewhere    
+        self.env_exists = os.path.exists(os.getcwd() + '\.env')  # Boolean, check if .env present
         self.stop_processing_command_requests = False
+        self.platesolve_is_processing = False
+        self.stop_all_activity = False  # This is used to stop the camera or sequencer
+        self.exposure_halted_indicator = False
+        self.camera_sufficiently_cooled_for_calibrations=True
+        self.last_slew_was_pointing_slew=False
+        self.open_and_enabled_to_observe = False
+        
+        
+        # Set default obs safety settings at bootup
+        self.scope_in_manual_mode=self.config['scope_in_manual_mode']
+        self.moon_checks_on=self.config['moon_checks_on']
+        self.sun_checks_on=self.config['sun_checks_on']
+        self.altitude_checks_on=self.config['altitude_checks_on']
+        self.daytime_exposure_time_safety_on=self.config['daytime_exposure_time_safety_on']
+        self.mount_reference_model_off= self.config['mount_reference_model_off']
+        self.admin_owner_commands_only = False
+        self.assume_roof_open=False
+        
         # Instantiate the helper class for astronomical events
         # Soon the primary event / time values can come from AWS.
         self.astro_events = ptr_events.Events(self.config)
         self.astro_events.compute_day_directory()
-
         self.astro_events.calculate_events()
-        self.astro_events.display_events()
-
-        # Define a redis server if needed.
-        redis_ip = ptr_config["redis_ip"]
-        if redis_ip is not None:
-            self.redis_server = redis.StrictRedis(
-                host=redis_ip, port=6379, db=0, decode_responses=True
-            )
-            self.redis_wx_enabled = True
-            g_dev["redis"] = self.redis_server  # I think IPC needs to be a class.
-        else:
-            self.redis_wx_enabled = False
-            g_dev["redis"] = None  # a placeholder.
+        self.astro_events.display_events()        
 
         g_dev["obs"] = self
         obsid_str = ptr_config["obs_id"]
@@ -283,79 +302,12 @@ class Observatory:
 
         # Use the configuration to instantiate objects for all devices.
         self.create_devices()
-        self.loud_status = False
 
-        self.auto_centering_off=self.config['turn_auto_centering_off']
+        # Reset mount reference for delta_ra and delta_dec on bootup  
+        g_dev["mnt"].reset_mount_reference()
+        g_dev['mnt'].get_mount_coordinates()
 
-        # Check directory system has been constructed
-        # for new sites or changed directories in configs.
-        # NB NB be careful if we have a site with multiple cameras, etc,
-        # some of these directores seem up a level or two. WER
-
-        if not os.path.exists(self.obsid_path + "ptr_night_shelf"):
-            os.makedirs(self.obsid_path + "ptr_night_shelf")
-        if not os.path.exists(self.obsid_path + "archive"):
-            os.makedirs(self.obsid_path + "archive")
-        if not os.path.exists(self.obsid_path + "tokens"):
-            os.makedirs(self.obsid_path + "tokens")
-        if not os.path.exists(self.obsid_path + "astropycache"):
-            os.makedirs(self.obsid_path + "astropycache")
-        
-        
-
-
-        # Local Calibration Paths
-        #self.local_calibration_path = ptr_config['local_calibration_path'] + self.config['obs_id'] + '/'
-        
-        if not os.path.exists(self.local_calibration_path + "calibmasters"):  # retaining for backward compatibility
-            os.makedirs(self.local_calibration_path + "calibmasters")
-        camera_name = self.config['camera']['camera_1_1']['name']
-        if not os.path.exists(self.local_calibration_path + "archive/" + camera_name + "/calibmasters"):
-            os.makedirs(self.local_calibration_path + "archive/" + camera_name + "/calibmasters")
-        if not os.path.exists(self.local_calibration_path + "archive/" + camera_name + "/localcalibrations"):
-            os.makedirs(self.local_calibration_path + "archive/" + camera_name + "/localcalibrations")
-        if not os.path.exists(self.local_calibration_path + "archive/" + camera_name + "/localcalibrations/darks"):
-            os.makedirs(self.local_calibration_path + "archive/" + camera_name + "/localcalibrations/darks")
-        if not os.path.exists(self.local_calibration_path + "archive/" + camera_name + "/localcalibrations/biases"):
-            os.makedirs(self.local_calibration_path + "archive/" + camera_name + "/localcalibrations/biases")
-        if not os.path.exists(self.local_calibration_path + "archive/" + camera_name + "/localcalibrations/flats"):
-            os.makedirs(self.local_calibration_path + "archive/" + camera_name + "/localcalibrations/flats")
-               
-        
-        
-        
-        self.calib_masters_folder = self.local_calibration_path + "archive/" + camera_name + "/calibmasters" + '/'
-        self.local_dark_folder = self.local_calibration_path + "archive/" + camera_name + "/localcalibrations/darks" + '/'
-        self.local_bias_folder = self.local_calibration_path + "archive/" + camera_name + "/localcalibrations/biases" + '/'
-        self.local_flat_folder = self.local_calibration_path + "archive/" + camera_name + "/localcalibrations/flats" + '/'
-
-        # Clear out smartstacks directory
-        #plog ("removing and reconstituting smartstacks directory")
-        try:
-            shutil.rmtree(self.local_calibration_path + "smartstacks")
-        except:
-            plog("problems with removing the smartstacks directory... usually a file is open elsewhere")
-        time.sleep(3)
-        if not os.path.exists(self.local_calibration_path + "smartstacks"):
-            os.makedirs(self.local_calibration_path + "smartstacks")
-        
-        # Orphan and Broken paths
-        self.orphan_path=self.config['client_path'] +'/' + g_dev['obs'].name + '/' + 'orphans/'
-        if not os.path.exists(self.orphan_path):
-            os.makedirs(self.orphan_path)
-        
-        self.broken_path=self.config['client_path'] +'/' + g_dev['obs'].name + '/' + 'broken/'
-        if not os.path.exists(self.broken_path):
-            os.makedirs(self.broken_path)
-
-
-        self.last_solve_time = datetime.datetime.now() - datetime.timedelta(days=1)
-        self.images_since_last_solve = 10000
-
-        self.time_last_status = time.time() - 3
-
-        self.platesolve_is_processing = False
-
+        # Boot up the various queues to process
         self.aws_queue = queue.PriorityQueue(maxsize=0)
         self.aws_queue_thread = threading.Thread(target=self.send_to_aws, args=())
         self.aws_queue_thread.start()
@@ -388,77 +340,22 @@ class Observatory:
         self.laterdelete_queue_thread = threading.Thread(target=self.laterdelete_process, args=())
         self.laterdelete_queue_thread.start()
 
-        # Set up command_queue for incoming jobs
         self.cmd_queue = queue.Queue(
             maxsize=0
-        )  # Note this is not a thread but a FIFO buffer
-        self.stop_all_activity = False  # This is used to stop the camera or sequencer
-        self.exposure_halted_indicator = False
-        # =============================================================================
-        # Here we set up the reduction Queue and Thread:
-        # =============================================================================
+        )
+        
         self.smartstack_queue = queue.Queue(
             maxsize=0
-        )  # Why do we want a maximum size and lose files?
+        ) 
         self.smartstack_queue_thread = threading.Thread(target=self.smartstack_image, args=())
         self.smartstack_queue_thread.start()
-        self.blocks = None
-        self.projects = None
-        #self.events_new = None
-        self.reset_last_reference()
-        self.env_exists = os.path.exists(os.getcwd() + '\.env')  # Boolean, check if .env present
+        
 
-        # Get initial coordinates into the global system
-        g_dev['mnt'].get_mount_coordinates()
         
-        
-        self.last_slew_was_pointing_slew=False
-
-        # If mount is permissively set, reset mount reference
-        # This is necessary for SRO and it seems for ECO
-        # I actually think it may be necessary for all telescopes
-        # Not all who wander are lost.... but those that point below altitude -10 probably are.
-        # if self.config["mount"]["mount1"]["permissive_mount_reset"] == "yes":
-        g_dev["mnt"].reset_mount_reference()
-        self.warm_report_timer = time.time()-600
-
-        # set manual mode at startup
-        self.scope_in_manual_mode=self.config['scope_in_manual_mode']
-        self.moon_checks_on=self.config['moon_checks_on']
-        self.sun_checks_on=self.config['sun_checks_on']
-        self.altitude_checks_on=self.config['altitude_checks_on']
-        self.daytime_exposure_time_safety_on=self.config['daytime_exposure_time_safety_on']
-        self.mount_reference_model_off= self.config['mount_reference_model_off']
-        self.admin_owner_commands_only = False
-        self.assume_roof_open=False
-        
-        
-        
-        
-        
-        
-        self.camera_sufficiently_cooled_for_calibrations=True
-        
-        self.last_platesolved_ra = np.nan
-        self.last_platesolved_dec =np.nan
-        self.last_platesolved_ra_err = np.nan
-        self.last_platesolved_dec_err =np.nan
-        
-        # Keep track of how long it has been since the last activity
-        self.time_of_last_exposure = time.time()
-        self.time_of_last_slew = time.time()
-
-        # Only poll the broad safety checks (altitude and inactivity) every 5 minutes
-        self.safety_check_period = self.config['safety_check_period']
-        self.time_since_safety_checks = time.time() - (2* self.safety_check_period)
-
-        # Keep track of how long it has been since the last live connection to the internet
-        self.time_of_last_live_net_connection = time.time()
-
         # If the camera is detected as substantially (20 degrees) warmer than the setpoint
         # during safety checks, it will keep it warmer for about 20 minutes to make sure
         # the camera isn't overheating, then return it to its usual temperature.
-        self.camera_overheat_safety_warm_on = False   #NB NB should this be initialized from Config? WER
+        self.camera_overheat_safety_warm_on = False  
         self.camera_overheat_safety_timer = time.time()
         # Some things you don't want to check until the camera has been cooling for a while.
         self.camera_time_initialised = time.time()
@@ -478,50 +375,32 @@ class Observatory:
         self.pointing_correction_request_dec = 0.0
         self.pointing_correction_request_ra_err = 0.0
         self.pointing_correction_request_dec_err = 0.0
+        self.last_platesolved_ra = np.nan
+        self.last_platesolved_dec =np.nan
+        self.last_platesolved_ra_err = np.nan
+        self.last_platesolved_dec_err =np.nan
 
-        # This variable is simply.... is it open and enabled to observe!
-        # This is set when the roof is open and everything is safe
-        # This allows sites without roof control or only able to shut
-        # the roof to know it is safe to observe but also ... useful
-        # to observe.... if the roof isn't open, don't get flats!
-        # Off at bootup, but that would quickly change to true after the code
-        # checks the roof status etc. self.weather_report_is_acceptable_to_observe=False
-        if self.debug_flag:
-            self.open_and_enabled_to_observe = True
-        else:
-            self.open_and_enabled_to_observe = False
-
+        
         # On initialisation, there should be no commands heading towards the site
         # So this command reads the commands waiting and just ... ignores them
         # essentially wiping the command queue coming from AWS.
         # This prevents commands from previous nights/runs suddenly running
-        # when obs.py is booted (has happened a bit!)
-        url_job = "https://jobs.photonranch.org/jobs/getnewjobs"
-        body = {"site": self.name}
-        #cmd = {}
-        # Get a list of new jobs to complete (this request
-        # marks the commands as "RECEIVED")
+        # when obs.py is booted (has happened a bit in the past!)        
         reqs.request(
-            "POST", url_job, data=json.dumps(body), timeout=30
+            "POST", "https://jobs.photonranch.org/jobs/getnewjobs", data=json.dumps({"site": self.name}), timeout=30
         ).json()
 
         # On startup, collect orphaned fits files that may have been dropped from the queue
-        # when the site crashed
+        # when the site crashed or was rebooted. 
         g_dev['seq'].collect_and_queue_neglected_fits()
 
         # Inform UI of reboot
         self.send_to_user("Observatory code has been rebooted. Manually queued commands have been flushed.")
+        
+        # Upload the config to the UI
+        self.update_config() 
 
-        # Need to set this for the night log
-        # g_dev['foc'].set_focal_ref_reset_log(self.config["focuser"]["focuser1"]["reference"])
-        # Send the config to AWS. TODO This has faulted.
-        self.update_config()  # This is the never-ending control loop
-
-        if self.debug_flag:
-            g_dev['obs'].open_and_enabled_to_observe=True
-
-
-        # Report Camera Gains as part of bootup
+        # Report previously calculated Camera Gains as part of bootup
         textfilename= g_dev['obs'].obsid_path + 'ptr_night_shelf/' + 'cameragain' + g_dev['cam'].name + str(g_dev['obs'].name) +'.txt'
         if os.path.exists(textfilename):
             try:
@@ -534,13 +413,9 @@ class Observatory:
                 plog ("something wrong with opening camera gain text file")
                 breakpoint()
 
-
-
-                
-        
-        # Report filter Gains as part of bootup
+        # Report filter throughputs as part of bootup
         filter_throughput_shelf = shelve.open(g_dev['obs'].obsid_path + 'ptr_night_shelf/' + 'filterthroughput' + g_dev['cam'].name + str(g_dev['obs'].name))
-        #breakpoint()
+
         if len(filter_throughput_shelf)==0:
             plog ("Looks like there is no filter throughput shelf.")
         else:
@@ -549,34 +424,9 @@ class Observatory:
                 plog (str(filtertempgain) + " " + str(filter_throughput_shelf[filtertempgain]))
         filter_throughput_shelf.close()                
 
-        # breakpoint()
-        #req2 = {'target': 'near_tycho_star', 'area': 150}
-        #opt = {}
-        #g_dev['obs'].open_and_enabled_to_observe = True
-        #g_dev['seq'].sky_flat_script({}, {}, morn=False)
-        #g_dev['seq'].extensive_focus_script(req2,opt)
+        # Initialisation complete!
         
         
-        # req = {'bin1': True, 'bin2': False, 'bin3': False, 'bin4': False, 'numOfBias': 63, \
-        #         'numOfDark': 31, 'darkTime': 75, 'numOfDark2': 31, 'dark2Time': 75, \
-        #         'hotMap': True, 'coldMap': True, 'script': 'genBiasDarkMaster', }  #This specificatin is obsolete
-        # opt = {}        
-        # g_dev['seq'].bias_dark_script(req, opt, morn=True)
-        
-        # Pointing
-        #req = {'time': self.config['focus_exposure_time'],  'alias':  str(self.config['camera']['camera_1_1']['name']), 'image_type': 'focus'}   #  NB Should pick up filter and constats from config
-        #opt = {'area': 150, 'count': 1, 'bin': '2, 2', 'filter': 'focus'}
-        #opt = {'area': 150, 'count': 1, 'bin': 1, 'filter': 'focus'}
-        #result = g_dev['cam'].expose_command(req, opt, no_AWS=False, solve_it=True)
-        # breakpoint()
-        #g_dev['seq'].regenerate_local_masters()
-        
-        #g_dev['seq'].sky_grid_pointing_run(max_pointings=25, alt_minimum=25)
-        
-        #g_dev['mnt'].slewToSkyFlatAsync(skip_open_test=True) 
-        
-        
-        #g_dev['foc'].set_focal_ref_reset_log(23500)
 
     def set_last_reference(self, delta_ra, delta_dec, last_time):
         mnt_shelf = shelve.open(self.obsid_path + "ptr_night_shelf/" + "last" + str(self.name))
@@ -749,248 +599,231 @@ sel
         have parallel mountings or independently controlled cameras.
         """
 
-        # This stopping mechanism allows for threads to close cleanly.
+        url_job = "https://jobs.photonranch.org/jobs/getnewjobs"
+        body = {"site": self.name}
+        cmd = {}
+        # Get a list of new jobs to complete (this request
+        # marks the commands as "RECEIVED")
         try:
-            if self.debug_flag and time.time() > self.debug_lapse_time:
-                #breakpoint()
-                self.debug_flag = False
-                plog("Debug_flag time has lapsed, so disabled. ")
+            unread_commands = reqs.request(
+                "POST", url_job, data=json.dumps(body), timeout=20
+            ).json()
         except:
-            breakpoint()
-            pass
+            plog("problem gathering scan requests. Likely just a connection glitch.")
+            unread_commands=[]
+        # Make sure the list is sorted in the order the jobs were issued
+        # Note: the ulid for a job is a unique lexicographically-sortable id.
+        if len(unread_commands) > 0:
+            try:
+                unread_commands.sort(key=lambda x: x["timestamp_ms"])
+                # Process each job one at a time
+                for cmd in unread_commands:
+                    if (self.admin_owner_commands_only and (("admin" in cmd['user_roles']) or ("owner" in cmd['user_roles']))) or (not self.admin_owner_commands_only):
 
-        while not self.stopped:  # This variable is not used.
+                        # breakpoint()
 
-            if True:  # not g_dev["seq"].sequencer_hold:  THis causes an infinte loope witht he above while
-
-                url_job = "https://jobs.photonranch.org/jobs/getnewjobs"
-                body = {"site": self.name}
-                cmd = {}
-                # Get a list of new jobs to complete (this request
-                # marks the commands as "RECEIVED")
-                try:
-                    unread_commands = reqs.request(
-                        "POST", url_job, data=json.dumps(body), timeout=20
-                    ).json()
-                except:
-                    plog("problem gathering scan requests. Likely just a connection glitch.")
-                    unread_commands=[]
-                # Make sure the list is sorted in the order the jobs were issued
-                # Note: the ulid for a job is a unique lexicographically-sortable id.
-                if len(unread_commands) > 0:
-                    try:
-                        unread_commands.sort(key=lambda x: x["timestamp_ms"])
-                        # Process each job one at a time
-                        for cmd in unread_commands:
-                            if (self.admin_owner_commands_only and (("admin" in cmd['user_roles']) or ("owner" in cmd['user_roles']))) or (not self.admin_owner_commands_only):
-    
-                                # breakpoint()
-    
-                                if cmd["action"] in ["cancel_all_commands", "stop"] or cmd["action"].lower() in ["stop", "cancel"] or (cmd["action"] == "run" and cmd["required_params"]["script"] == "stopScript"):
-                                    
-                                    # A stop script command flags to the running scripts that it is time to stop
-                                    # activity and return. This period runs for about 30 seconds.
-                                    g_dev["obs"].send_to_user(
-                                        "A Cancel/Stop has been called. Cancelling out of running scripts over 30 seconds.")
-                                    g_dev['seq'].stop_script_called = True
-                                    g_dev['seq'].stop_script_called_time = time.time()
-                                    # Cancel out of all running exposures.
-                                    g_dev['obs'].cancel_all_activity()
-                                else:
-                                    try:
-                                        action = cmd['action']
-                                    except:
-                                        action = None
-    
-                                    try:
-                                        script = cmd['required_params']['script']
-                                    except:
-                                        script = None
-    
-                                    # Check here for admin/owner only functions
-                                    if action == "run" and script == 'collectScreenFlats' and not (("admin" in cmd['user_roles']) or ("owner" in cmd['user_roles'])):
-                                        plog("Request rejected as flats can only be commanded by admin user.")
-                                        g_dev['obs'].send_to_user(
-                                            "Request rejected as flats can only be commanded by admin user.")
-                                    elif action == "run" and script == 'collectSkyFlats' and not (("admin" in cmd['user_roles']) or ("owner" in cmd['user_roles'])):
-                                        plog("Request rejected as flats can only be commanded by admin user.")
-                                        g_dev['obs'].send_to_user(
-                                            "Request rejected as flats can only be commanded by admin user.")
-    
-                                    elif action == "run" and script in ['32TargetPointingRun', 'pointingRun', 'makeModel'] and not (("admin" in cmd['user_roles']) or ("owner" in cmd['user_roles'])):
-                                        plog("Request rejected as pointing runs can only be commanded by admin user.")
-                                        g_dev['obs'].send_to_user(
-                                            "Request rejected as pointing runs can only be commanded by admin user.")
-                                    elif action == "run" and script in ("collectBiasesAndDarks") and not (("admin" in cmd['user_roles']) or ("owner" in cmd['user_roles'])):
-                                        plog("Request rejected as bias and darks can only be commanded by admin user.")
-                                        g_dev['obs'].send_to_user(
-                                            "Request rejected as bias and darks can only be commanded by admin user.")
-    
-                                    # Check here for irrelevant commands
-    
-                                    elif cmd['deviceType'] == 'screen' and self.config['screen']['screen1']['driver'] == None:
-                                        plog("Refusing command as there is no screen")
-                                        g_dev['obs'].send_to_user("Request rejected as site has no flat screen.")
-                                    elif cmd['deviceType'] == 'rotator' and self.config['rotator']['rotator1']['driver'] == None:
-                                        plog("Refusing command as there is no rotator")
-                                        g_dev['obs'].send_to_user("Request rejected as site has no rotator.")
-                                    # If not irrelevant, queue the command
-                                    elif cmd['deviceType'] == 'enclosure' and not ("admin" in cmd['user_roles']) or ("owner" in cmd['user_roles']):
-                                        plog("Refusing command - only admin or owners can send enclosure commands")
-                                        g_dev['obs'].send_to_user(
-                                            "Refusing command - only admin or owners can send enclosure commands")
-                                    else:
-    
-                                        self.cmd_queue.put(cmd)  # SAVE THE COMMAND FOR LATER
-                                        g_dev["obs"].stop_all_activity = False
-                                       
-                                if cancel_check:
-                                    result = {'stopped': True}
-                                    return  # Note we do not process any commands.
-                            else:
-                                plog("Request rejected as obs in admin or owner mode.")
-                                g_dev['obs'].send_to_user("Request rejected as obs in admin or owner mode.")
-                    except:
-                        if 'Internal server error' in str(unread_commands):
-                            plog ("AWS server glitch reading unread_commands")
+                        if cmd["action"] in ["cancel_all_commands", "stop"] or cmd["action"].lower() in ["stop", "cancel"] or (cmd["action"] == "run" and cmd["required_params"]["script"] == "stopScript"):
+                            
+                            # A stop script command flags to the running scripts that it is time to stop
+                            # activity and return. This period runs for about 30 seconds.
+                            g_dev["obs"].send_to_user(
+                                "A Cancel/Stop has been called. Cancelling out of running scripts over 30 seconds.")
+                            g_dev['seq'].stop_script_called = True
+                            g_dev['seq'].stop_script_called_time = time.time()
+                            # Cancel out of all running exposures.
+                            g_dev['obs'].cancel_all_activity()
                         else:
-                            plog(traceback.format_exc())
-                            plog("unread commands")
-                            plog (unread_commands)
-                            plog ("MF trying to find whats happening with this relatively rare bug!")
-                            
-                        #breakpoint()
-                # NEED TO WAIT UNTIL CURRENT COMMAND IS FINISHED UNTIL MOVING ONTO THE NEXT ONE!
-                # THAT IS WHAT CAUSES THE "CAMERA BUSY" ISSUE. We don't need to wait for the
-                # rotator as the exposure routine in camera.py already waits for that.
-                # if (not g_dev["cam"].exposure_busy) and (not g_dev['mnt'].mount.Slewing):
-                if (not g_dev["cam"].exposure_busy) and (not self.stop_processing_command_requests):
-                    while self.cmd_queue.qsize() > 0:
-                        if not self.stop_processing_command_requests and not g_dev["cam"].exposure_busy and not g_dev['seq'].block_guard:  # This is to stop multiple commands running over the top of each other.
-                            self.stop_processing_command_requests = True
-                            #plog(
-                            #    "Number of queued commands:  " + str(self.cmd_queue.qsize())
-                            #)
-                            cmd = self.cmd_queue.get()
-                            # This code is redundant
-                            if self.config["selector"]["selector1"]["driver"] is None:
-                                port = cmd["optional_params"]["instrument_selector_position"]
-                                g_dev["mnt"].instrument_port = port
-                                cam_name = self.config["selector"]["selector1"]["cameras"][port]
-                                if cmd["deviceType"][:6] == "camera":
-                                    # Note camelCase is the format of command keys
-                                    cmd["required_params"]["deviceInstance"] = cam_name
-                                    cmd["deviceInstance"] = cam_name
-                                    device_instance = cam_name
-                                else:
-                                    try:
-                                        try:
-                                            device_instance = cmd["deviceInstance"]
-                                        except:
-                                            device_instance = cmd["required_params"][
-                                                "deviceInstance"
-                                            ]
-                                    except:
-                                        pass
+                            try:
+                                action = cmd['action']
+                            except:
+                                action = None
+
+                            try:
+                                script = cmd['required_params']['script']
+                            except:
+                                script = None
+
+                            # Check here for admin/owner only functions
+                            if action == "run" and script == 'collectScreenFlats' and not (("admin" in cmd['user_roles']) or ("owner" in cmd['user_roles'])):
+                                plog("Request rejected as flats can only be commanded by admin user.")
+                                g_dev['obs'].send_to_user(
+                                    "Request rejected as flats can only be commanded by admin user.")
+                            elif action == "run" and script == 'collectSkyFlats' and not (("admin" in cmd['user_roles']) or ("owner" in cmd['user_roles'])):
+                                plog("Request rejected as flats can only be commanded by admin user.")
+                                g_dev['obs'].send_to_user(
+                                    "Request rejected as flats can only be commanded by admin user.")
+
+                            elif action == "run" and script in ['32TargetPointingRun', 'pointingRun', 'makeModel'] and not (("admin" in cmd['user_roles']) or ("owner" in cmd['user_roles'])):
+                                plog("Request rejected as pointing runs can only be commanded by admin user.")
+                                g_dev['obs'].send_to_user(
+                                    "Request rejected as pointing runs can only be commanded by admin user.")
+                            elif action == "run" and script in ("collectBiasesAndDarks") and not (("admin" in cmd['user_roles']) or ("owner" in cmd['user_roles'])):
+                                plog("Request rejected as bias and darks can only be commanded by admin user.")
+                                g_dev['obs'].send_to_user(
+                                    "Request rejected as bias and darks can only be commanded by admin user.")
+
+                            # Check here for irrelevant commands
+
+                            elif cmd['deviceType'] == 'screen' and self.config['screen']['screen1']['driver'] == None:
+                                plog("Refusing command as there is no screen")
+                                g_dev['obs'].send_to_user("Request rejected as site has no flat screen.")
+                            elif cmd['deviceType'] == 'rotator' and self.config['rotator']['rotator1']['driver'] == None:
+                                plog("Refusing command as there is no rotator")
+                                g_dev['obs'].send_to_user("Request rejected as site has no rotator.")
+                            # If not irrelevant, queue the command
+                            elif cmd['deviceType'] == 'enclosure' and not ("admin" in cmd['user_roles']) or ("owner" in cmd['user_roles']):
+                                plog("Refusing command - only admin or owners can send enclosure commands")
+                                g_dev['obs'].send_to_user(
+                                    "Refusing command - only admin or owners can send enclosure commands")
                             else:
-                                device_instance = cmd["deviceInstance"]
-                            plog("obs.scan_request: ", cmd)
 
-                            device_type = cmd["deviceType"]
-
-                            if device_type=='obs':
-                                plog ('received a system wide command')
-                                #plog(cmd)
-                                
-                                if cmd['action']=='configure_pointing_reference_off':
-                                    self.mount_reference_model_off = True
-                                    
-                                
-                                if cmd['action']=='configure_pointing_reference_on':
-                                    self.mount_reference_model_off = False
-                                    
-                                
-                                
-                                if cmd['action']=='configure_telescope_mode':
-                                    
-                                    if cmd['required_params']['mode'] == 'manual':
-                                        self.scope_in_manual_mode = True
-                                    else:
-                                        self.scope_in_manual_mode = False
-                                        
-                                if cmd['action']=='configure_moon_safety':
-                                    
-                                    if cmd['required_params']['mode'] == 'on':
-                                        self.moon_checks_on = True
-                                    else:
-                                        self.moon_checks_on = False
-                                if cmd['action']=='configure_sun_safety':
-                                    
-                                    if cmd['required_params']['mode'] =='on':
-                                        self.sun_checks_on = True
-                                    else:
-                                        self.sun_checks_on = False       
-                                
-                                if cmd['action']=='configure_altitude_safety':
-                                    
-                                    if cmd['required_params']['mode'] == 'on':
-                                        self.altitude_checks_on = True
-                                    else:
-                                        self.altitude_checks_on = False  
-                                        
-                                if cmd['action']=='configure_daytime_exposure_safety':
-                                    
-                                    if cmd['required_params']['mode'] == 'on':
-                                        self.daytime_exposure_time_safety_on = True
-                                    else:
-                                        self.daytime_exposure_time_safety_on = False    
-                                        
-                                if cmd['action']=='start_simulating_open_roof':
-                                    
-                                    self.assume_roof_open = True
-                                if cmd['action']=='stop_simulating_open_roof':
-                                    self.assume_roof_open = False    
-                                        
-                                        
-                                if cmd['action']=='configure_who_can_send_commands':
-                                    
-                                    if cmd['required_params']['only_accept_admin_or_owner_commands'] == True:
-                                        self.admin_owner_commands_only = True
-                                    else:
-                                        self.admin_owner_commands_only = False       
-                                
-                                self.obs_settings_upload_timer = time.time() - 2*self.obs_settings_upload_period
-                             
-                                self.update_status(dont_wait=True)
-
-
-
-
-                            
-                            elif device_type=='enclosure':
-                                plog ('An OBS has mistakenly received an enclosure command! Ignoring.')
-                            else:
-                                device = self.all_devices[device_type][device_instance]
+                                self.cmd_queue.put(cmd)  # SAVE THE COMMAND FOR LATER
+                                g_dev["obs"].stop_all_activity = False
+                               
+                        if cancel_check:
+                            result = {'stopped': True}
+                            return  # Note we do not process any commands.
+                    else:
+                        plog("Request rejected as obs in admin or owner mode.")
+                        g_dev['obs'].send_to_user("Request rejected as obs in admin or owner mode.")
+            except:
+                if 'Internal server error' in str(unread_commands):
+                    plog ("AWS server glitch reading unread_commands")
+                else:
+                    plog(traceback.format_exc())
+                    plog("unread commands")
+                    plog (unread_commands)
+                    plog ("MF trying to find whats happening with this relatively rare bug!")
+                    
+                #breakpoint()
+        # NEED TO WAIT UNTIL CURRENT COMMAND IS FINISHED UNTIL MOVING ONTO THE NEXT ONE!
+        # THAT IS WHAT CAUSES THE "CAMERA BUSY" ISSUE. We don't need to wait for the
+        # rotator as the exposure routine in camera.py already waits for that.
+        # if (not g_dev["cam"].exposure_busy) and (not g_dev['mnt'].mount.Slewing):
+        if (not g_dev["cam"].exposure_busy) and (not self.stop_processing_command_requests):
+            while self.cmd_queue.qsize() > 0:
+                if not self.stop_processing_command_requests and not g_dev["cam"].exposure_busy and not g_dev['seq'].block_guard:  # This is to stop multiple commands running over the top of each other.
+                    self.stop_processing_command_requests = True
+                    #plog(
+                    #    "Number of queued commands:  " + str(self.cmd_queue.qsize())
+                    #)
+                    cmd = self.cmd_queue.get()
+                    # This code is redundant
+                    if self.config["selector"]["selector1"]["driver"] is None:
+                        port = cmd["optional_params"]["instrument_selector_position"]
+                        g_dev["mnt"].instrument_port = port
+                        cam_name = self.config["selector"]["selector1"]["cameras"][port]
+                        if cmd["deviceType"][:6] == "camera":
+                            # Note camelCase is the format of command keys
+                            cmd["required_params"]["deviceInstance"] = cam_name
+                            cmd["deviceInstance"] = cam_name
+                            device_instance = cam_name
+                        else:
+                            try:
                                 try:
-                                    #plog("Trying to parse:  ", cmd)
-    
-                                    device.parse_command(cmd)
-                                except Exception as e:
-    
-                                    plog(traceback.format_exc())
-    
-                                    plog("Exception in obs.scan_requests:  ", e, 'cmd:  ', cmd)
+                                    device_instance = cmd["deviceInstance"]
+                                except:
+                                    device_instance = cmd["required_params"][
+                                        "deviceInstance"
+                                    ]
+                            except:
+                                pass
+                    else:
+                        device_instance = cmd["deviceInstance"]
+                    plog("obs.scan_request: ", cmd)
 
-                            self.stop_processing_command_requests = False
-                        else:
-                            time.sleep(0.2)
+                    device_type = cmd["deviceType"]
 
-                
-                return  # This creates an infinite loop
+                    if device_type=='obs':
+                        plog ('received a system wide command')
+                        #plog(cmd)
+                        
+                        if cmd['action']=='configure_pointing_reference_off':
+                            self.mount_reference_model_off = True
+                            
+                        
+                        if cmd['action']=='configure_pointing_reference_on':
+                            self.mount_reference_model_off = False
+                            
+                        
+                        
+                        if cmd['action']=='configure_telescope_mode':
+                            
+                            if cmd['required_params']['mode'] == 'manual':
+                                self.scope_in_manual_mode = True
+                            else:
+                                self.scope_in_manual_mode = False
+                                
+                        if cmd['action']=='configure_moon_safety':
+                            
+                            if cmd['required_params']['mode'] == 'on':
+                                self.moon_checks_on = True
+                            else:
+                                self.moon_checks_on = False
+                        if cmd['action']=='configure_sun_safety':
+                            
+                            if cmd['required_params']['mode'] =='on':
+                                self.sun_checks_on = True
+                            else:
+                                self.sun_checks_on = False       
+                        
+                        if cmd['action']=='configure_altitude_safety':
+                            
+                            if cmd['required_params']['mode'] == 'on':
+                                self.altitude_checks_on = True
+                            else:
+                                self.altitude_checks_on = False  
+                                
+                        if cmd['action']=='configure_daytime_exposure_safety':
+                            
+                            if cmd['required_params']['mode'] == 'on':
+                                self.daytime_exposure_time_safety_on = True
+                            else:
+                                self.daytime_exposure_time_safety_on = False    
+                                
+                        if cmd['action']=='start_simulating_open_roof':
+                            
+                            self.assume_roof_open = True
+                        if cmd['action']=='stop_simulating_open_roof':
+                            self.assume_roof_open = False    
+                                
+                                
+                        if cmd['action']=='configure_who_can_send_commands':
+                            
+                            if cmd['required_params']['only_accept_admin_or_owner_commands'] == True:
+                                self.admin_owner_commands_only = True
+                            else:
+                                self.admin_owner_commands_only = False       
+                        
+                        self.obs_settings_upload_timer = time.time() - 2*self.obs_settings_upload_period
+                     
+                        self.update_status(dont_wait=True)
 
-            else:
 
-                continue
+
+
+                    
+                    elif device_type=='enclosure':
+                        plog ('An OBS has mistakenly received an enclosure command! Ignoring.')
+                    else:
+                        device = self.all_devices[device_type][device_instance]
+                        try:
+                            #plog("Trying to parse:  ", cmd)
+
+                            device.parse_command(cmd)
+                        except Exception as e:
+
+                            plog(traceback.format_exc())
+
+                            plog("Exception in obs.scan_requests:  ", e, 'cmd:  ', cmd)
+
+                    self.stop_processing_command_requests = False
+                else:
+                    time.sleep(0.2)
+
+            
+        return  # This creates an infinite loop
+            
 
     def update_status(self, bpt=False, cancel_check=False, mount_only=False, dont_wait=False):
         """Collects status from all devices and sends an update to AWS.
@@ -3290,11 +3123,7 @@ sel
             if g_dev['obs'].pointing_correction_request_time > g_dev['obs'].time_of_last_slew:  # Check it hasn't slewed since request
                 
                 if self.auto_centering_off:
-                    plog ("Telescope off-center, but auto-centering turned off")
-                #elif g_dev['seq'].block_guard == True and self.block_center_in_process == False:
-                #    self.block_center_in_process = True
-                #    g_dev['seq'].centering_exposure(no_confirmation=True)
-                #    self.block_center_in_process = False
+                    plog ("Telescope off-center, but auto-centering turned off")                
                 else:
                     plog("Re-centering Telescope Slightly.")
                     self.send_to_user("Re-centering Telescope Slightly.")

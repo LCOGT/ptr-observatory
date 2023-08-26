@@ -19,33 +19,45 @@ degree_symbol = "°"
 
 # instance_type = 'obs' # This is the type of site this is.
 # wema_name = 'mrc' # THIS REFERS TO THE WEMA NOT THE OBS
-# 
+
 obs_id = 'mrc1'  # NB These must be unique across all of PTR. Pre-pend with airport code if needed: 'sba_wmdo'
 
-site_config = {       #the NAME "SITE" IS INCONSISTENT  bIG CHANGE TO EFFECT, obsp_config maybe??  >>>>
+site_config = {      
+    
+    # Instance type specifies whether this is an obs or a wema
     'instance_type' : 'obs',
+    # If this is not a wema, this specifies the wema that this obs is connected to
     'wema_name' : 'mrc',
+    # The unique identifier for this obs
     'obs_id': 'mrc1',
-    # Manual mode turns all automation off. 
-    # The scope will only do what you tell it
-    # This DOESN'T turn some safetys off 
+    
+    # These are the default values that will be set for the obs
+    # on a reboot of obs.py. They are safety checks that 
+    # can be toggled by an admin in the Observe tab.
     'scope_in_manual_mode': False,
     'mount_reference_model_off': True,
     'sun_checks_on': True,
     'moon_checks_on': True,
     'altitude_checks_on': True,    
     'daytime_exposure_time_safety_on': True,
-    'degrees_to_avoid_zenith_area_for_calibrations': 0,
     
     #MANY KEYS FOUND HERE REALLY APPLY TO MOUNT, CAMERA, ETC.
     # MTF - au contraire, many of those above and below involve
     # multiple devices, so belong outside of a single device.
 
-    # Auto-cenering is great .... unless you are polar aligning
-    'turn_auto_centering_off': False,
-    'debug_mode': False,
-    'admin_owner_commands_only': False,
-    'debug_duration_sec': 1800,
+    # Limits for the given scope    
+    'degrees_to_avoid_zenith_area_for_calibrations': 0,
+        
+
+
+
+
+    #'turn_auto_centering_off': False,
+    
+    
+    #'debug_mode': False,
+    #'admin_owner_commands_only': False,
+    #'debug_duration_sec': 1800,
 
     'owner':  ['google-oauth2|112401903840371673242'],  # Wayne
 
