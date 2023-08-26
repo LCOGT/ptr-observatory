@@ -196,6 +196,16 @@ class Observatory:
         self.local_bias_folder = self.local_calibration_path + "archive/" + camera_name + "/localcalibrations/biases" + '/'
         self.local_flat_folder = self.local_calibration_path + "archive/" + camera_name + "/localcalibrations/flats" + '/'
         
+        # Directories for broken and orphaned upload files
+        self.orphan_path=self.config['client_path'] +'/' + self.name + '/' + 'orphans/'
+        if not os.path.exists(self.orphan_path):
+            os.makedirs(self.orphan_path)
+        
+        self.broken_path=self.config['client_path'] +'/' + self.name + '/' + 'broken/'
+        if not os.path.exists(self.broken_path):
+            os.makedirs(self.broken_path)
+        
+        
         # Clear out smartstacks directory        
         try:
             shutil.rmtree(self.local_calibration_path + "smartstacks")
@@ -325,9 +335,9 @@ class Observatory:
         g_dev['mnt'].get_mount_coordinates()
 
         # Boot up the various queues to process
-        self.aws_queue = queue.PriorityQueue(maxsize=0)
-        self.aws_queue_thread = threading.Thread(target=self.send_to_aws, args=())
-        self.aws_queue_thread.start()
+        self.ptrarchive_queue = queue.PriorityQueue(maxsize=0)
+        self.ptrarchive_queue_thread = threading.Thread(target=self.send_to_ptrarchive, args=())
+        self.ptrarchive_queue_thread.start()
 
         self.fast_queue = queue.PriorityQueue(maxsize=0)
         self.fast_queue_thread = threading.Thread(target=self.fast_to_aws, args=())
@@ -1386,14 +1396,12 @@ class Observatory:
             return
 
     # Note this is a thread!
-    def send_to_aws(self):
+    def send_to_ptrarchive(self):
         """Sends queued files to AWS.
 
         Large fpacked fits are uploaded using the ocs-ingester, which
-        adds the image to a dedicated S3 bucket along with a record in
-        the PTR archive database. All other files, including large fpacked
-        fits if archive ingestion fails, will upload to a second S3 bucket.
-
+        adds the image to the PTR archive database. 
+        
         This is intended to transfer slower files not needed for UI responsiveness
 
         The pri_image is a tuple, smaller first item has priority.
@@ -1412,132 +1420,74 @@ class Observatory:
                     one_at_a_time = 0
                     self.aws_queue.task_done()
                     
-                    # time.sleep(0.2)
-                    #continue
                 else:
                     # Here we parse the file, set up and send to AWS
                     filename = pri_image[1][1]
                     filepath = pri_image[1][0] + filename  # Full path to file on disk
     
                     # Only ingest new large fits.fz files to the PTR archive.
-                    if filename.endswith("-EX00.fits.fz"):
-                        try:
-                            broken = 0
-                            with open(filepath, "rb") as fileobj:
-                                #tempPTR = 0
-    
-                                if self.env_exists == True and (not frame_exists(fileobj)):
-        
-                                    #plog ("\nstarting ingester")
-                                    retryarchive = 0
-                                    while retryarchive < 10:
-                                        try:      
-                                            # Get header explicitly out to send up
-                                            tempheader=fits.open(filepath)
-                                            tempheader=tempheader[1].header
-                                            headerdict = {}
-                                            for entry in tempheader.keys():
-                                                headerdict[entry] = tempheader[entry]
-                                                #print (entry)
-                                                #print ("***********")
-                                                
-                                            #breakpoint()
-                                            
-                                            upload_file_and_ingest_to_archive(fileobj, file_metadata=headerdict)                                    
-                                            
-                                            #tempPTR = 1
-                                            retryarchive = 11
-                                            # Only remove file if successfully uploaded
-                                            if ('calibmasters' not in filepath) or ('ARCHIVE_' in filepath):
-                                                try:
-                                                    os.remove(filepath)
-                                                except:
-                                                    #plog("Couldn't remove " + str(filepath) + " file after transfer, sending to delete queue")
-                                                    self.laterdelete_queue.put(filepath, block=False)
-                                            self.aws_queue.task_done()
-                                            
-                                        except ocs_ingester.exceptions.DoNotRetryError:
-                                            #plog((traceback.format_exc()))
-                                            plog ("Couldn't upload to PTR archive: " + str(filepath))
-    
-                                            broken=1
-                                            
-                                            #plog ("Caught filespecification error properly")
-                                            #plog((traceback.format_exc()))
-                                            #breakpoint()
-                                            retryarchive = 11
-                                            #tempPTR =0
-                                            self.aws_queue.task_done()
-                                        except Exception as e:
-                                            if 'list index out of range' in str(e):
-                                                #plog((traceback.format_exc()))
-                                                # This error is thrown when there is a corrupt file
-                                                try:
-                                                    os.remove(filepath)
-                                                except:
-                                                    #plog("Couldn't remove " + str(filepath) + " file after transfer, sending to delete queue")
-                                                    self.laterdelete_queue.put(filepath, block=False)
-                                                retryarchive=11
-                                                self.aws_queue.task_done()
-                                            else:
-                                                plog("couldn't send to PTR archive for some reason: ", e)
-                                                #plog("Retry " + str(retryarchive))
-                                                #plog(e)
-                                                #plog((traceback.format_exc()))
-                                                time.sleep(pow(retryarchive, 2) + 1)
-                                                if retryarchive < 10:
-                                                    retryarchive = retryarchive+1
-                                                if retryarchive == 10:
-                                                    #tempPTR = 0
-                                                    broken =1
-                                                    self.aws_queue.task_done()
-                                                    
-
-                            
-                            if broken == 1:
-                            
-                                #breakpoint()
-                                
-                                try:
-                                    shutil.move(filepath, self.broken_path + filename)
-                                except:
-                                    plog ("Couldn't move " + str(filepath) + " to broken folder.")
-                        except Exception as e:
-                            plog ("something strange in the AWS uploader", e)
-                    # Send all other files to S3.
-                    else:
+                    
+                    try:
+                        broken = 0
                         with open(filepath, "rb") as fileobj:
-                            files = {"file": (filepath, fileobj)}
-                            uploaded=False
-                            while not uploaded:                            
-                                try:
-                                    aws_resp = authenticated_request(
-                                        "POST", "/upload/", {"object_name": filename})
-                                    reqs.post(aws_resp["url"], data=aws_resp["fields"], files=files, timeout=600)
-                                    
-                                    # Only remove file if successfully uploaded
-                                    if ('calibmasters' not in filepath) or ('ARCHIVE_' in filepath):
-                                        try:
-                                            os.remove(filepath)
-                                            #plog("not deleting")
-                                        except:
-                                            #plog("Couldn't remove " + str(filepath) + " file after transfer")
-                                            self.laterdelete_queue.put(filepath, block=False)
-                                    uploaded=True
-                                    self.aws_queue.task_done()
-                                   
-        
-                                except:
-                                    plog(traceback.format_exc())
-                                    #breakpoint()
-                                    plog("Connection glitch for the request post, waiting a moment and trying again")
-                                    time.sleep(5)
+                            if self.env_exists == True and (not frame_exists(fileobj)):        
+                                retryarchive = 0
+                                while retryarchive < 10:
+                                    try:      
+                                        # Get header explicitly out to send up
+                                        # This seems to be necessary
+                                        tempheader=fits.open(filepath)
+                                        tempheader=tempheader[1].header
+                                        headerdict = {}
+                                        for entry in tempheader.keys():
+                                            headerdict[entry] = tempheader[entry]
+                                        upload_file_and_ingest_to_archive(fileobj, file_metadata=headerdict)    
+                                        retryarchive = 11
+                                        # Only remove file if successfully uploaded
+                                        if ('calibmasters' not in filepath) or ('ARCHIVE_' in filepath):
+                                            try:
+                                                os.remove(filepath)
+                                            except:
+                                                self.laterdelete_queue.put(filepath, block=False)                                                    
+                                        self.ptrarchive_queue.task_done()
+                                        
+                                    except ocs_ingester.exceptions.DoNotRetryError:
+                                        plog ("Couldn't upload to PTR archive: " + str(filepath))    
+                                        broken=1
+                                        retryarchive = 11
+                                        self.ptrarchive_queue.task_done()
+                                    except Exception as e:
+                                        if 'list index out of range' in str(e):
+                                            # This error is thrown when there is a corrupt file
+                                            broken=1
+                                            retryarchive=11
+                                            self.ptrarchive_queue.task_done()
+                                        else:
+                                            plog("couldn't send to PTR archive for some reason: ", e)                                                
+                                            time.sleep(pow(retryarchive, 2) + 1)
+                                            if retryarchive < 10:
+                                                retryarchive = retryarchive+1
+                                            if retryarchive == 10:
+                                                #tempPTR = 0
+                                                broken =1
+                                                self.ptrarchive_queue.task_done()
+                        
+                        if broken == 1:
+                            try:
+                                shutil.move(filepath, self.broken_path + filename)
+                            except:
+                                plog ("Couldn't move " + str(filepath) + " to broken folder.")
+                                plog((traceback.format_exc()))
+                                self.laterdelete_queue.put(filepath, block=False)
+                    except Exception as e:
+                        plog ("something strange in the ptrarchive uploader", e)
+                            
     
                     one_at_a_time = 0
 
                 
             else:
-                time.sleep(0.5)
+                time.sleep(0.2)
 
     def send_status_process(self):
         """A place to process non-process dependant images from the camera pile
@@ -1585,7 +1535,7 @@ class Observatory:
                 except:
                     #plog("failed to remove: " + str(deletefilename) + " trying again soon")
                     self.laterdelete_queue.put(deletefilename, block=False)
-                    time.sleep(5)
+                    #time.sleep(5)
                 
                 
                 # one_at_a_time=0
@@ -1774,7 +1724,7 @@ class Observatory:
                             sources = Table.read(im_path + text_name.replace('.txt', '.sep'), format='csv')
                             
                             try:
-                                g_dev['cam'].enqueue_for_fastAWS(200, im_path, text_name.replace('.txt', '.sep'))
+                                self.enqueue_for_fastAWS(200, im_path, text_name.replace('.txt', '.sep'))
                                 #plog("Sent SEP up")
                             except:
                                 plog("Failed to send SEP up for some reason")
@@ -1882,16 +1832,16 @@ class Observatory:
                     
                     if os.path.exists(im_path + text_name.replace('.txt', '.rad')):
                         try:
-                            g_dev['cam'].enqueue_for_fastAWS(250, im_path, text_name.replace('.txt', '.rad'))
+                            self.enqueue_for_fastAWS(250, im_path, text_name.replace('.txt', '.rad'))
                             #plog("Sent SEP up")
                         except:
                             plog("Failed to send RAD up for some reason")
                     
                     if frame_type == 'focus':
-                        g_dev["cam"].enqueue_for_fastAWS(100, im_path, text_name.replace('EX00.txt', 'EX10.jpg'))
+                        self.enqueue_for_fastAWS(100, im_path, text_name.replace('EX00.txt', 'EX10.jpg'))
                     
                     try:
-                        g_dev['cam'].enqueue_for_fastAWS(180, im_path, text_name.replace('.txt', '.his'))
+                        self.enqueue_for_fastAWS(180, im_path, text_name.replace('.txt', '.his'))
                         #plog("Sent SEP up")
                     except:
                         plog("Failed to send HIS up for some reason")
@@ -1906,11 +1856,11 @@ class Observatory:
                             g_dev['cam'].to_slow_process(1000, ('raw_alt_path', self.alt_path + g_dev["day"] + "/calib/" + cal_name, hdufocusdata, hduheader,
                                                                 frame_type, g_dev["mnt"].current_icrs_ra, g_dev["mnt"].current_icrs_dec))
                 
-                g_dev['cam'].enqueue_for_fastAWS(10, im_path, text_name)
+                self.enqueue_for_fastAWS(10, im_path, text_name)
 
                 del hdufocusdata
 
-                g_dev['cam'].sep_processing = False
+                self.sep_processing = False
                 self.sep_queue.task_done()
                 one_at_a_time = 0
 
@@ -2349,9 +2299,9 @@ class Observatory:
                             pass
                         del hdufz  # remove file from memory now that we are doing with it
 
-                        # Send this file up to AWS (THIS WILL BE SENT TO BANZAI INSTEAD, SO THIS IS THE INGESTER POSITION)
+                        # Send this file up to ptrarchive (THIS WILL BE SENT TO BANZAI INSTEAD, SO THIS IS THE INGESTER POSITION)
                         if self.config['send_files_at_end_of_night'] == 'no':
-                            g_dev['cam'].enqueue_for_AWS(
+                            self.enqueue_for_PTRarchive(
                                 26000000, '', slow_process[1]
                             )
 
@@ -2390,7 +2340,7 @@ class Observatory:
                             )  # Save full fz file locally
                             del newhdured
                             if self.config['send_files_at_end_of_night'] == 'no':
-                                g_dev['cam'].enqueue_for_AWS(
+                                self.enqueue_for_PTRarchive(
                                     26000000, '', tempfilename.replace('-EX', 'R1-EX')
                                 )
 
@@ -2405,7 +2355,7 @@ class Observatory:
                             )  # Save full fz file locally
                             del GTRonly
                             if self.config['send_files_at_end_of_night'] == 'no':
-                                g_dev['cam'].enqueue_for_AWS(
+                                self.enqueue_for_PTRarchive(
                                     26000000, '', tempfilename.replace('-EX', 'G1-EX')
                                 )
 
@@ -2420,7 +2370,7 @@ class Observatory:
                             )  # Save full fz file locally
                             del GBLonly
                             if self.config['send_files_at_end_of_night'] == 'no':
-                                g_dev['cam'].enqueue_for_AWS(
+                                self.enqueue_for_PTRarchive(
                                     26000000, '', tempfilename.replace('-EX', 'G2-EX')
                                 )
 
@@ -2435,7 +2385,7 @@ class Observatory:
                             )  # Save full fz file locally
                             del newhdublue
                             if self.config['send_files_at_end_of_night'] == 'no':
-                                g_dev['cam'].enqueue_for_AWS(
+                                self.enqueue_for_PTRarchive(
                                     26000000, '', tempfilename.replace('-EX', 'B1-EX')
                                 )
 
@@ -2766,70 +2716,19 @@ class Observatory:
                 aws_enclosure_status['status']['enclosure']['enclosure1'][enclosurekey]=aws_enclosure_status['status']['enclosure']['enclosure1'][enclosurekey]['val']
         
             
-            # aws_enclosure_status['status']['enclosure']['enclosure1']['enclosure_mode'] = aws_enclosure_status['status']['enclosure']['enclosure1']['enclosure_mode']['val']
-            # aws_enclosure_status['status']['enclosure']['enclosure1']['dome_azimuth'] = aws_enclosure_status['status']['enclosure']['enclosure1']['dome_azimuth']['val']
-            # aws_enclosure_status['status']['enclosure']['enclosure1']['enclosure_synchronized'] = aws_enclosure_status['status']['enclosure']['enclosure1']['enclosure_synchronized']['val']
-            # aws_enclosure_status['status']['enclosure']['enclosure1']['dome_slewing'] = aws_enclosure_status['status']['enclosure']['enclosure1']['dome_slewing']['val']
-            # aws_enclosure_status['status']['enclosure']['enclosure1']['shutter_status'] = aws_enclosure_status['status']['enclosure']['enclosure1']['shutter_status']['val']
-            
-            # #breakpoint()
-            # # New Tim Entries
-            # if aws_enclosure_status['status']['enclosure']['enclosure1']['shutter_status'] =='Open':
-            #     aws_enclosure_status['status']['enclosure']['enclosure1']['observatory_open'] = True
-            #     aws_enclosure_status['status']['enclosure']['enclosure1']['shut_reason_bad_weather'] = False
-            #     aws_enclosure_status['status']['enclosure']['enclosure1']['shut_reason_daytime'] = False
-            #     aws_enclosure_status['status']['enclosure']['enclosure1']['shut_reason_manual_mode'] = False
-            # else:
-            #     aws_enclosure_status['status']['enclosure']['enclosure1']['observatory_open'] = False
-            #     if not aws_enclosure_status['status']['enclosure']['enclosure1']['enclosure_mode'] == 'Automatic':
-            #         aws_enclosure_status['status']['enclosure']['enclosure1']['shut_reason_manual_mode'] = True
-            #     else:
-            #         aws_enclosure_status['status']['enclosure']['enclosure1']['shut_reason_manual_mode'] = False
-            #     if g_dev['obs'].ocn_status['wx_ok'] == 'Unknown':
-            #         aws_enclosure_status['status']['enclosure']['enclosure1']['shut_reason_bad_weather'] = False
-            #     elif g_dev['obs'].ocn_status['wx_ok'] == 'No':
-            #         aws_enclosure_status['status']['enclosure']['enclosure1']['shut_reason_bad_weather'] = True
-            #     else:
-            #         aws_enclosure_status['status']['enclosure']['enclosure1']['shut_reason_bad_weather'] = False
-            #         # NEED TO INCLUDE WEATHER REPORT AND FITZ NUMBER HERE
-            #     if g_dev['events']['Cool Down, Open'] < ephem.now() or ephem.now() < g_dev['events']['Close and Park'] > ephem.now():
-            #         aws_enclosure_status['status']['enclosure']['enclosure1']['shut_reason_daytime'] = True
-            #     else:
-            #         aws_enclosure_status['status']['enclosure']['enclosure1']['shut_reason_daytime'] = False
-                    
-                    
-            
-            
-            # g_dev['obs'].ocn_status 
-            
-            # aws_enclosure_status['status']['enclosure']['enclosure1']['shut_reason_bad_weather']
-            # aws_enclosure_status['status']['enclosure']['enclosure1']['shut_reason_daytime']
-            # aws_enclosure_status['status']['enclosure']['enclosure1']['shut_reason_manual_mode']
-            
-            #aws_enclosure_status['server_timestamp_ms'] = int(time.time())
-            #aws_enclosure_status['site'] = self.obs_id
-            #plog(aws_enclosure_status)
-            #breakpoint()
             try:
                 # To stop status's filling up the queue under poor connection conditions
                 # There is a size limit to the queue
                 if self.send_status_queue.qsize() < 7:
                     self.send_status_queue.put((self.name, 'enclosure', aws_enclosure_status['status']), block=False)
-                #self.send_status_queue.put((self.name, 'enclosure', aws_enclosure_status), block=False)
-                
-            #breakpoint()
+               
             except Exception as e:
-                #breakpoint()
                 plog ("aws enclosure send failed ", e)
-                #pass
-            
+                
             aws_enclosure_status=aws_enclosure_status['status']['enclosure']['enclosure1']
         
         except Exception as e:
             plog("Failed to get aws enclosure status. Usually not fatal:  ", e)
-        
-        #if aws_enclosure_status["shutter_status"] in ['Closed','closed']:
-        #    g_dev['seq'].time_roof_last_shut=time.time()
         
         try:
             if g_dev['seq'].last_roof_status == 'Closed' and aws_enclosure_status["shutter_status"] in ['Open','open']:
@@ -2866,19 +2765,7 @@ class Observatory:
         obsy = self.wema_name
         """Sends an update to the status endpoint."""
         uri_status = f"https://status.photonranch.org/status/{obsy}/weather/"
-        # None of the strings can be empty. Otherwise this put faults.
-        #payload = {"statusType": str(column), "status": status_to_send}
-
-        #try:
-
-        #    data = json.dumps(payload)
-        #except Exception as e:
-        #    plog("Failed to create status payload. Usually not fatal:  ", e)
-
-        #breakpoint()
-
-
-
+        
         try:
             aws_weather_status=reqs.get(uri_status, timeout=20)
             aws_weather_status=aws_weather_status.json()
@@ -2894,7 +2781,6 @@ class Observatory:
             if aws_weather_status['status']['observing_conditions']['observing_conditions1'] == None:
                 aws_weather_status['status']['observing_conditions']['observing_conditions1'] = {'wx_ok': 'Unknown'} 
             else:
-                #breakpoint()
                 for weatherkey in aws_weather_status['status']['observing_conditions']['observing_conditions1'].keys():
                     aws_weather_status['status']['observing_conditions']['observing_conditions1'][weatherkey]=aws_weather_status['status']['observing_conditions']['observing_conditions1'][weatherkey]['val']
         except:
@@ -2909,17 +2795,36 @@ class Observatory:
             # There is a size limit to the queue
             if self.send_status_queue.qsize() < 7:            
                 self.send_status_queue.put((self.name, 'weather', aws_weather_status['status']), block=False)
-            #self.send_status_queue.put((self.name, 'enclosure', aws_enclosure_status), block=False)
             
-        #breakpoint()
         except Exception as e:
-            #breakpoint()
             plog ("aws enclosure send failed ", e)
-            #pass
-        
+            
         aws_weather_status=aws_weather_status['status']['observing_conditions']['observing_conditions1']
                         
         return aws_weather_status
+
+    def enqueue_for_PTRarchive(self, priority, im_path, name):
+        image = (im_path, name)
+        self.ptrarchive_queue.put((priority, image), block=False)
+
+    def enqueue_for_fastAWS(self, priority, im_path, name):
+        image = (im_path, name)
+        self.fast_queue.put((priority, image), block=False)
+
+    def to_smartstack(self, to_red):
+        self.smartstack_queue.put(to_red, block=False)
+        
+    def to_slow_process(self, priority, to_slow):
+        self.slow_camera_queue.put((priority, to_slow), block=False)
+    
+    def to_platesolve(self, to_platesolve):
+        self.platesolve_queue.put( to_platesolve, block=False)
+    
+    def to_sep(self, to_sep):
+        self.sep_queue.put( to_sep, block=False)
+    
+    def to_mainjpeg(self, to_sep):
+        self.mainjpeg_queue.put( to_sep, block=False)
 
 def wait_for_slew():
 

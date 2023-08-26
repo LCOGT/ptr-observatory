@@ -1316,22 +1316,11 @@ class Sequencer:
         plog ('Collecting orphaned fits and tokens to go up to BANZAI')
         dir_path=self.config['client_path'] +'/' + g_dev['obs'].name + '/' + 'archive/'
         
-        orphan_path=self.config['client_path'] +'/' + g_dev['obs'].name + '/' + 'orphans/'
-        if not os.path.exists(orphan_path):
-            os.makedirs(orphan_path)
-        
-        broken_path=self.config['client_path'] +'/' + g_dev['obs'].name + '/' + 'broken/'
-        if not os.path.exists(broken_path):
-            os.makedirs(broken_path)
-        
-        
+        orphan_path=g_dev['obs'].orphan_path 
         cameras=glob(dir_path + "*/")
         
         # Move all fits.fz to the orphan folder
         for camera in cameras:
-            yesterday = datetime.datetime.now() - timedelta(1)
-            runNight=datetime.datetime.strftime(yesterday, '%Y%m%d')     
-
             nights = glob(camera + '*/')
             
             for obsnight in nights:
