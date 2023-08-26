@@ -292,6 +292,7 @@ class Observatory:
         self.camera_sufficiently_cooled_for_calibrations=True
         self.last_slew_was_pointing_slew=False
         self.open_and_enabled_to_observe = False
+        self.net_connection_dead = False
         
         
         # Set default obs safety settings at bootup
@@ -903,7 +904,7 @@ class Observatory:
         # If the roof is open, then it is open and enabled to observe
         if not g_dev['obs'].enc_status == None:
             if 'Open' in g_dev['obs'].enc_status['shutter_status']:
-                if not 'NoObs' in g_dev['obs'].enc_status['shutter_status']:
+                if not 'NoObs' in g_dev['obs'].enc_status['shutter_status'] and not self.net_connection_dead:
                     self.open_and_enabled_to_observe = True
                 else:
                     self.open_and_enabled_to_observe = False       
@@ -1117,7 +1118,7 @@ class Observatory:
 
                         # But after all that if everything is ok, then all is ok, it is safe to observe
                         if 'Open' in g_dev['obs'].enc_status['shutter_status'] and roof_should_be_shut == False:
-                            if not 'NoObs' in g_dev['obs'].enc_status['shutter_status']:
+                            if not 'NoObs' in g_dev['obs'].enc_status['shutter_status'] and not self.net_connection_dead:
                                 self.open_and_enabled_to_observe = True
                             else:
                                 self.open_and_enabled_to_observe = False
@@ -1347,6 +1348,7 @@ class Observatory:
             # Check that the site is still connected to the net.
             if test_connect():
                 self.time_of_last_live_net_connection = time.time()
+                self.net_connection_dead = False
             if (time.time() - self.time_of_last_live_net_connection) > 600:
                 plog("Warning, last live net connection was over ten minutes ago")
             if (time.time() - self.time_of_last_live_net_connection) > 1200:
@@ -1360,6 +1362,7 @@ class Observatory:
                 else:
                     plog("Looks like the net is down, closing up and parking the observatory")
                     self.open_and_enabled_to_observe = False
+                    self.net_connection_dead = True
                     if not g_dev['seq'].morn_bias_dark_latch and not g_dev['seq'].bias_dark_latch:
                         self.cancel_all_activity()
                     if not g_dev['mnt'].mount.AtPark:
