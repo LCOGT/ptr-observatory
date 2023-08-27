@@ -1301,9 +1301,9 @@ class Camera:
         """
 
         # First check that it isn't an exposure that doesn't need a check (e.g. bias, darks etc.)
-        if not g_dev['obs'].assume_roof_open and not skip_open_check:
+        if not g_dev['obs'].assume_roof_open and not skip_open_check and not g_dev['obs'].scope_in_manual_mode:
         #Second check, if we are not open and available to observe, then .... don't observe!        
-            if (g_dev['obs'].open_and_enabled_to_observe==False and g_dev['enc'].mode == 'Automatic') and (not g_dev['obs'].debug_flag) :
+            if g_dev['obs'].open_and_enabled_to_observe==False :
                 g_dev['obs'].send_to_user("Refusing exposure request as the observatory is not enabled to observe.")
                 plog("Refusing exposure request as the observatory is not enabled to observe.")
                 return
