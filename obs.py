@@ -1412,13 +1412,13 @@ class Observatory:
         # This stopping mechanism allows for threads to close cleanly.
         while True:
 
-            if (not self.aws_queue.empty()) and one_at_a_time == 0:
+            if (not self.ptrarchive_queue.empty()) and one_at_a_time == 0:
                 one_at_a_time = 1
-                pri_image = self.aws_queue.get(block=False)
+                pri_image = self.ptrarchive_queue.get(block=False)
                 if pri_image is None:
-                    plog("Got an empty entry in aws_queue.")
+                    plog("Got an empty entry in ptrarchive_queue.")
                     one_at_a_time = 0
-                    self.aws_queue.task_done()
+                    self.ptrarchive_queue.task_done()
                     
                 else:
                     # Here we parse the file, set up and send to AWS
@@ -1633,10 +1633,10 @@ class Observatory:
                     try:
 
                         # if not no_AWS:
-                        g_dev["cam"].enqueue_for_fastAWS(
+                        self.enqueue_for_fastAWS(
                             100, paths["im_path"], paths["jpeg_name10"]
                         )
-                        g_dev["cam"].enqueue_for_fastAWS(
+                        self.enqueue_for_fastAWS(
                             1000, paths["im_path"], paths["jpeg_name10"].replace('EX10', 'EX20')
                         )
                         # g_dev["obs"].send_to_user(
@@ -1645,6 +1645,7 @@ class Observatory:
                         # )
                         plog("JPEG constructed and sent: " +str(time.time() - osc_jpeg_timer_start)+ "s")
                     except:
+                        
                         plog(
                             "there was an issue saving the preview jpg. Pushing on though"
                         )

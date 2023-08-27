@@ -1547,7 +1547,7 @@ class Camera:
             ## Vital Check : Has end of observing occured???
             ## Need to do this, SRO kept taking shots til midday without this
             if imtype.lower() in ["light"] or imtype.lower() in ["expose"]:
-                if g_dev['events']['Observing Ends'] < ephem.Date(ephem.now()+ (exposure_time *ephem.second)) and not g_dev['obs'].debug_flag:
+                if g_dev['events']['Observing Ends'] < ephem.Date(ephem.now()+ (exposure_time *ephem.second)):
                     plog ("Sorry, exposures are outside of night time.")
                     self.exposure_busy = False
                     return 'outsideofnighttime'
@@ -1661,7 +1661,7 @@ class Camera:
                     # Check that the roof hasn't shut
                     g_dev['obs'].get_enclosure_status_from_aws()
                     
-                    if not g_dev['obs'].assume_roof_open and 'Closed' in g_dev['obs'].enc_status['shutter_status'] and (not g_dev['obs'].debug_flag) and imtype not in ['bias', 'dark']:
+                    if not g_dev['obs'].assume_roof_open and not g_dev['obs'].scope_in_manual_mode and 'Closed' in g_dev['obs'].enc_status['shutter_status'] and imtype not in ['bias', 'dark']:
                         
                         plog("Roof shut, exposures cancelled.")
                         g_dev["obs"].send_to_user("Roof shut, exposures cancelled.")
@@ -2786,46 +2786,6 @@ class Camera:
                         hdu.header["OBJECT"] = RAstring + "ra" + DECstring + "dec"
                         hdu.header["OBJSPECF"] = "no"
 
-
-                    # tempRAdeg = float(ra_at_time_of_exposure) * 15
-                    # tempDECdeg = dec_at_time_of_exposure
-                    # tempointing = SkyCoord(tempRAdeg, tempDECdeg, unit='deg')
-                    # tempointing=tempointing.to_string("hmsdms").split(' ')
-
-                    # hdu.header["RA"] = (
-                    #     tempRAdeg,
-                    #     "[deg] Telescope right ascension",
-                    # )
-                    # hdu.header["DEC"] = (
-                    #     tempDECdeg,
-                    #     "[deg] Telescope declination",
-                    # )
-                    # hdu.header["ORIGRA"] = hdu.header["RA"]
-                    # hdu.header["ORIGDEC"] = hdu.header["DEC"]
-                    # hdu.header["RAhrs"] = (
-                    #     ra_at_time_of_exposure,
-                    #     "[hrs] Telescope right ascension",
-                    # )
-                    # hdu.header["RA-hms"] = tempointing[0]
-                    # hdu.header["DEC-dms"] = tempointing[1]
-
-                    # hdu.header["TARG-CHK"] = (
-                    #     (ra_at_time_of_exposure * 15)
-                    #     + dec_at_time_of_exposure,
-                    #     "[deg] Sum of RA and dec",
-                    # )
-                    # hdu.header["CATNAME"] = (g_dev["mnt"].object, "Catalog object name")
-                    # hdu.header["CAT-RA"] = (
-                    #     tempointing[0],
-                    #     "[hms] Catalog RA of object",
-                    # )
-                    # hdu.header["CAT-DEC"] = (
-                    #     tempointing[1],
-                    #     "[dms] Catalog Dec of object",
-                    # )
-
-                    # hdu.header["TARGRA"] = float(ra_at_time_of_exposure) * 15
-                    # hdu.header["TARGDEC"] = dec_at_time_of_exposure
                     try:
                         hdu.header["SID-TIME"] = (
                             self.pre_mnt[3],
@@ -3378,7 +3338,7 @@ class Camera:
                                 focus_position=g_dev['foc'].focuser.focPosition()*g_dev['foc'].steps_to_micron
                             else:
                                 focus_position=g_dev['foc'].focuser.Position*g_dev['foc'].steps_to_micron
-                            self.to_sep((hdusmalldata, pixscale, float(hdu.header["RDNOISE"]), avg_foc[1], focus_image, im_path, text_name, hdusmallheader, cal_path, cal_name, frame_type, focus_position, self.native_bin))
+                            g_dev['obs'].to_sep((hdusmalldata, pixscale, float(hdu.header["RDNOISE"]), avg_foc[1], focus_image, im_path, text_name, hdusmallheader, cal_path, cal_name, frame_type, focus_position, self.native_bin))
                             
                             
                             if smartstackid != 'no':
@@ -3395,7 +3355,7 @@ class Camera:
                             
                             if smartstackid == 'no':
                                 if self.config['keep_reduced_on_disk']:
-                                    self.to_slow_process(1000,('reduced', red_path + red_name01, hdusmalldata, hdusmallheader, \
+                                    g_dev['obs'].to_slow_process(1000,('reduced', red_path + red_name01, hdusmalldata, hdusmallheader, \
                                                            frame_type, g_dev["mnt"].current_icrs_ra, g_dev["mnt"].current_icrs_dec))
                             # else:                            
                             #     saver = 0
@@ -3433,7 +3393,7 @@ class Camera:
                                 "focus",
                                 "pointing"
                             ]) and smartstackid != 'no' :
-                                self.to_smartstack((paths, pixscale, smartstackid, sskcounter, Nsmartstack, g_dev['mnt'].pier_side))
+                                g_dev['obs'].to_smartstack((paths, pixscale, smartstackid, sskcounter, Nsmartstack, g_dev['mnt'].pier_side))
                             else:
                                 if not self.config['keep_reduced_on_disk']:
                                     try:                                
@@ -3444,7 +3404,7 @@ class Camera:
                         # Send data off to process jpeg
                         # This is for a non-focus jpeg
                         if focus_image == False:
-                            self.to_mainjpeg((hdusmalldata, smartstackid, paths, g_dev['mnt'].pier_side))
+                            g_dev['obs'].to_mainjpeg((hdusmalldata, smartstackid, paths, g_dev['mnt'].pier_side))
                                                 
                         # If this is a focus image, we need to wait until the SEP queue is finished and empty to pick up the latest
                         # FWHM. 
@@ -3495,7 +3455,7 @@ class Camera:
                                 # Make sure any dither or return nudge has finished before platesolution
                                 wait_for_slew()
                                 # NEED TO CHECK HERE THAT THERE ISN"T ALREADY A PLATE SOLVE IN THE THREAD!
-                                self.to_platesolve((hdusmalldata, hdusmallheader, cal_path, cal_name, frame_type, time.time(), pixscale, g_dev['mnt'].mount.RightAscension,g_dev['mnt'].mount.Declination))
+                                g_dev['obs'].to_platesolve((hdusmalldata, hdusmallheader, cal_path, cal_name, frame_type, time.time(), pixscale, g_dev['mnt'].mount.RightAscension,g_dev['mnt'].mount.Declination))
                                 # If it is the last of a set of smartstacks, we actually want to 
                                 # wait for the platesolve and nudge before starting the next smartstack.
                                                
@@ -3513,7 +3473,7 @@ class Camera:
                         "skyflat",
                         "pointing"
                         ]):
-                        self.to_slow_process(5,('fz_and_send', raw_path + raw_name00 + ".fz", copy.deepcopy(hdu.data), copy.deepcopy(hdu.header), frame_type, g_dev["mnt"].current_icrs_ra, g_dev["mnt"].current_icrs_dec))                    
+                        g_dev['obs'].to_slow_process(5,('fz_and_send', raw_path + raw_name00 + ".fz", copy.deepcopy(hdu.data), copy.deepcopy(hdu.header), frame_type, g_dev["mnt"].current_icrs_ra, g_dev["mnt"].current_icrs_dec))                    
 
         
                     # If the files are local calibrations, save them out to the local calibration directory
@@ -3523,22 +3483,22 @@ class Camera:
                         "flat",
                         
                         "skyflat"]):
-                        self.to_slow_process(200000000, ('localcalibration', raw_name00, hdu.data, hdu.header, frame_type, g_dev["mnt"].current_icrs_ra, g_dev["mnt"].current_icrs_dec))
+                        g_dev['obs'].to_slow_process(200000000, ('localcalibration', raw_name00, hdu.data, hdu.header, frame_type, g_dev["mnt"].current_icrs_ra, g_dev["mnt"].current_icrs_dec))
 
                     # Similarly to the above. This saves the RAW file to disk
                     # it works 99.9999% of the time.
                    
                     if self.config['save_raw_to_disk']:
-                       self.to_slow_process(1000,('raw', raw_path + raw_name00, hdu.data, hdu.header, frame_type, g_dev["mnt"].current_icrs_ra, g_dev["mnt"].current_icrs_dec))
+                       g_dev['obs'].to_slow_process(1000,('raw', raw_path + raw_name00, hdu.data, hdu.header, frame_type, g_dev["mnt"].current_icrs_ra, g_dev["mnt"].current_icrs_dec))
                     
                     
                     # For sites that have "save_to_alt_path" enabled, this routine
                     # Saves the raw and reduced fits files out to the provided directories
                     if self.config["save_to_alt_path"] == "yes":
-                        self.to_slow_process(1000,('raw_alt_path', self.alt_path + g_dev["day"] + "/raw/" + raw_name00, hdu.data, hdu.header, \
+                        g_dev['obs'].to_slow_process(1000,('raw_alt_path', self.alt_path + g_dev["day"] + "/raw/" + raw_name00, hdu.data, hdu.header, \
                                                        frame_type, g_dev["mnt"].current_icrs_ra, g_dev["mnt"].current_icrs_dec))
                         if "hdusmalldata" in locals():
-                            self.to_slow_process(1000,('reduced_alt_path', self.alt_path + g_dev["day"] + "/reduced/" + red_name01, hdusmalldata, hdusmallheader, \
+                            g_dev['obs'].to_slow_process(1000,('reduced_alt_path', self.alt_path + g_dev["day"] + "/reduced/" + red_name01, hdusmalldata, hdusmallheader, \
                                                                frame_type, g_dev["mnt"].current_icrs_ra, g_dev["mnt"].current_icrs_dec))
                             
                         
