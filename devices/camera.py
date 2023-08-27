@@ -3555,27 +3555,7 @@ class Camera:
                         except:
                             pass
                         del hdusmalldata  # remove file from memory now that we are doing with it
-
-                    # # If it is the last of a smartstack, we want to wait for the platesolve and nudge.
-                    # if Nsmartstack > 1 and (Nsmartstack == sskcounter+1):
-                    #     reported=0
-                    #     while True:
-                    #         if g_dev['obs'].platesolve_is_processing ==False and g_dev['obs'].platesolve_queue.empty():
-                    #             #plog ("we are free from platesolving!")
-                    #             break
-                    #         else:
-                    #             if reported ==0:
-                    #                 plog ("PLATESOLVE: Waiting for platesolve processing to complete and queue to clear")
-                    #                 reported=1
-                    #             if g_dev['seq'].stop_script_called:
-                    #                 g_dev["obs"].send_to_user("Cancelling out of autofocus script as stop script has been called.")  
-                    #                 return
-                    #             if not g_dev['obs'].open_and_enabled_to_observe:
-                    #                 g_dev["obs"].send_to_user("Cancelling out of activity as no longer open and enabled to observe.")  
-                    #                 return
-                    #             pass  
-
-                                     
+                                    
                     
                     if not g_dev["cam"].exposure_busy:
                         self.expresult = {"stopped": True}
@@ -3636,28 +3616,7 @@ class Camera:
                     return self.expresult
             time.sleep(0.1)
 
-    def enqueue_for_AWS(self, priority, im_path, name):
-        image = (im_path, name)
-        g_dev["obs"].aws_queue.put((priority, image), block=False)
-
-    def enqueue_for_fastAWS(self, priority, im_path, name):
-        image = (im_path, name)
-        g_dev["obs"].fast_queue.put((priority, image), block=False)
-
-    def to_smartstack(self, to_red):
-        g_dev["obs"].smartstack_queue.put(to_red, block=False)
-        
-    def to_slow_process(self, priority, to_slow):
-        g_dev["obs"].slow_camera_queue.put((priority, to_slow), block=False)
     
-    def to_platesolve(self, to_platesolve):
-        g_dev["obs"].platesolve_queue.put( to_platesolve, block=False)
-    
-    def to_sep(self, to_sep):
-        g_dev["obs"].sep_queue.put( to_sep, block=False)
-    
-    def to_mainjpeg(self, to_sep):
-        g_dev["obs"].mainjpeg_queue.put( to_sep, block=False)
         
 def wait_for_slew():    
     
