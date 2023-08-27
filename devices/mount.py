@@ -937,7 +937,7 @@ class Mount:
                     plog("Refusing pointing request as it is outside of skyflat pointing time.")
                     return 'refused'
                 
-                if (g_dev['obs'].open_and_enabled_to_observe==False ) and (not g_dev['obs'].debug_flag):
+                if g_dev['obs'].open_and_enabled_to_observe==False :
                     g_dev['obs'].send_to_user("Refusing skyflat pointing request as the observatory is not enabled to observe.")
                     plog("Refusing skyflat pointing request as the observatory is not enabled to observe.")
                     return 'refused'
@@ -1014,7 +1014,7 @@ class Mount:
                 return 'refused'
         
         # Fourth thing, check that the roof is open and we are enabled to observe
-        if (g_dev['obs'].open_and_enabled_to_observe==False ) and (not g_dev['obs'].debug_flag) and not g_dev['obs'].scope_in_manual_mode:
+        if (g_dev['obs'].open_and_enabled_to_observe==False )  and not g_dev['obs'].scope_in_manual_mode:
             g_dev['obs'].send_to_user("Refusing pointing request as the observatory is not enabled to observe.")
             plog("Refusing pointing request as the observatory is not enabled to observe.")
             return 'refused'
@@ -1259,113 +1259,8 @@ class Mount:
         if not silent:
             g_dev['obs'].send_to_user("Slew Complete.")
         
-        
         if do_centering_routine:
-            g_dev['seq'].centering_exposure()
-        
-        
-        # ###  figure out velocity  Apparent place is unchanged.
-        # self.sid_next_r = (self.sid_now_h + self.delta_t_s*STOH)*HTOR    #delta_t_s is five minutes
-        # self.ha_obs_adv, self.dec_obs_adv, self.refr_adv = ptr_utility.appToObsRaHa(ra_app_h*HTOR, dec_app_d*DTOR, self.sid_next_r)   #% minute advance
-        # self.ha_mech_adv, self.dec_mech_adv = ptr_utility.transform_observed_to_mount_r(self.ha_obs_adv, self.dec_obs_adv, pier_east, loud=False)
-        # self.ra_adv, self.dec_adv = ptr_utility.transform_haDec_to_raDec_r(self.ha_mech_adv, self.dec_mech_adv, self.sid_next_r)
-        # self.adv_ha_corr = ptr_utility.reduce_ha_r(self.ha_mech_adv - self.ha_obs_adv)*RTOS     #These are mechanical values, not j.anything
-        # self.adv_dec_corr = ptr_utility.reduce_dec_r(self.dec_mech_adv - self.dec_obs_adv)*RTOS
-        # self.prior_seek_ha_h = self.ha_mech
-        # self.prior_seek_dec_d = self.dec_mech
-        # self.prior_seek_time = time.time()
-        # self.prior_sid_time =  self.sid_now_r
-        '''
-        The units of this property are arcseconds per SI (atomic) second.
-        Please note that for historic reasons the units of the
-        RightAscensionRate property are seconds of RA per sidereal second.
-        '''
-        # if self.CanSetRightAscensionRate:
-        #     self.prior_roll_rate = -((self.ha_mech_adv - self. ha_mech)*RTOS*MOUNTRATE/self.delta_t_s - MOUNTRATE)/(APPTOSID*15)    #Conversion right 20219329
-        #     self.mount.RightAscensionRate = 0.0 # self.prior_roll_rate  #Neg number makes RA decrease
-        #     self.RightAscensionRate = 0.0
-        # else:
-        #     self.prior_roll_rate = 0.0
-        # if self.CanSetDeclinationRate:
-        #    self.prior_pitch_rate = -(self.dec_mech_adv - self.dec_mech)*RTOS/self.delta_t_s    #20210329 OK 1 hour from zenith.  No Appsid correction per ASCOM spec.
-        #    self.mount.DeclinationRate = 0.0 #self.prior_pitch_rate  #Neg sign makes Dec decrease
-        #    self.DeclinationRate = 0.0 #self.prior_pitch_rate
-        #    #plog("Rates, refr are:  ", self.prior_roll_rate, self.prior_pitch_rate, self.refr_asec)
-        # else:
-        #     self.prior_pitch_rate = 0.0
-       
-        # if self.CanSetRightAscensionRate:
-        #     self.mount.RightAscensionRate = 0.0 #self.prior_roll_rate
-        #     self.RightAscensionRate = 0.0
-        # if self.CanSetDeclinationRate:
-        #     self.mount.DeclinationRate = 0.0#self.prior_pitch_rate
-        #     self.DeclinationRate = 0.0 #self.prior_pitch_rate
-
-        #self.seek_commanded = True        
-
-        # On successful movement of telescope reset the solving timer
-        #if reset_solve == True:
-        #g_dev['obs'].last_solve_time = datetime.datetime.now() - datetime.timedelta(days=1)
-        #g_dev['obs'].images_since_last_solve = 10000
-        #wait_for_slew()   
-
-    # def slewToSkyFlatAsync(self, skip_open_test=False):      
-    #     # This will only move the scope if the observatory is open
-    #     # UNLESS it has been sent a command from particular routines
-    #     # e.g. pointing the telescope in a safe location BEFORE opening the roof
-    #     if not skip_open_test:
-        
-    #         if (not (g_dev['events']['Cool Down, Open'] < ephem.now() < g_dev['events']['Naut Dusk']) and \
-    #             not (g_dev['events']['Naut Dawn'] < ephem.now() < g_dev['events']['Close and Park'])):
-    #             g_dev['obs'].send_to_user("Refusing skyflat pointing request as it is outside skyflat time")
-    #             plog("Refusing pointing request as it is outside of skyflat pointing time.")
-    #             return
-            
-    #         if (g_dev['obs'].open_and_enabled_to_observe==False ) and (not g_dev['obs'].debug_flag):
-    #             g_dev['obs'].send_to_user("Refusing skyflat pointing request as the observatory is not enabled to observe.")
-    #             plog("Refusing skyflat pointing request as the observatory is not enabled to observe.")
-    #             return
-
-    #     az, alt = self.astro_events.flat_spot_now()
-    #     self.unpark_command()        
-
-        
-
-    #     if self.config['degrees_to_avoid_zenith_area_for_calibrations'] > 0:
-    #         #breakpoint()
-    #         if (90-alt) < self.config['degrees_to_avoid_zenith_area_for_calibrations']:
-    #             alt=90-self.config['degrees_to_avoid_zenith_area_for_calibrations']
-    #             plog ("Requested Flat Spot, az: " + str(az) + " alt: " + str(alt))
-    #             plog ("adjusted altitude to " + str(alt) + "to avoid the zenith region")
-                
-
-    #     try:
-    #         self.mount.Tracking = True
-    #     except:
-    #         pass
-
-    #     #if self.mount.Tracking == True:
-    #     #    if not self.theskyx:   
-    #     #        self.mount.Tracking = False
-    #     #    else:
-    #     #        pass
-
-    #     self.move_time = time.time()
-    #     try:
-    #         g_dev['obs'].time_of_last_slew=time.time()
-    #         #self.move_to_azalt(az, max(alt, 35))   #Hack for MRC testing
-    #         self.move_to_azalt(az, alt)   #Hack for MRC testing
-    #         g_dev['obs'].time_of_last_slew = time.time()
-    #         # On successful movement of telescope reset the solving timer
-    #         g_dev['obs'].last_solve_time = datetime.datetime.now() - datetime.timedelta(days=1)
-    #         g_dev['obs'].images_since_last_solve = 10000
-
-    #     except:
-    #         plog (traceback.format_exc())
-    #         #plog ("NEED TO POINT TELESCOPE TO RA AND DEC, MOUNT DOES NOT HAVE AN ALTAZ request in the driver")
-
-    #     # return alt and az so the sky flat routine knows to wait. 
-    #     return alt, az
+            g_dev['seq'].centering_exposure() 
 
 
     def stop_command(self, req, opt):
