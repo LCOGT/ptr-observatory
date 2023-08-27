@@ -1276,7 +1276,7 @@ class Sequencer:
     def kill_and_reboot_theskyx(self, returnra, returndec): # Return to a given ra and dec or send -1,-1 to remain at park
         os.system("taskkill /IM TheSkyX.exe /F")
         os.system("taskkill /IM TheSky64.exe /F")
-        time.sleep(30) 
+        time.sleep(16) 
         retries=0
         while retries <5:
             try:
@@ -1872,79 +1872,7 @@ class Sequencer:
 
     def sky_flat_script(self, req, opt, morn=False, skip_moon_check=False):
         """
-        If entered, put up a guard.
-        if open conditions are acceptable then take a dark image of a dark screen, just for
-        reference.
-        Open the dome,
-        GoTo flat spot, expose, rotating through 3 filters pick least sensitive
-        discard overexposures, keep rotating.  once one of the three yeilds a good
-        exposure, repeat four more times, then drop that filter from list, add a new one
-        and proceed to loop.  This should allow us to generate the sensitivity list in
-        the right order and not fill the system up will overexposed files.  Ultimatley
-        we wait for the correct sky condition once we have the calibrations so as to not
-        wear out the shutter.
-        Non photometric shutters need longer exposure times.
-        Note with alt-az mount we could get very near the zenith zone.
-        Note we want Moon at least 30 degrees away
-        20220821  New try at this code
-        Set up parameters for the site, camera, etc.
-        set up 'end-time'.  Calling into this happens elesewhere at the prescribed start time
-        Pick forward or reverse filter list depemnding on Eve or Morn flats. -- "the pop-list"
-        flat count = 3
-        scale = 1, used to drive exposure to ~32500ADU That is the target_flat value
-        prior scale = 1  When changing filters apply this scale so we do not wast time.  This
-        is intended to fix the problem the gain estimates are wrong.
-        while len(pop_list) > 0  and ephem.now() < ending:
-            Get the filter, its 'gain'
-            go the the solar flat spot  (Tel should be there earlier)
-            possibly here if not on flat spot or roof not open:
-                time.sleep(10)
-                continue the loop
-                (Note if SRO roof opens late we are likely behinf the 8-ball and we waste time
-                 on the Narrow Band filters.)
-            calculate exposure (for S2 filter if Night, PL filter if morning.)
-            if evening and exposure > 180 sec sky is too dark for that filter so:
-                pop that filter
-                flat count = 3
-                continue the loop
-            if morning and exposure < 1 sec then sky too bright for that filter so:
-                pop tht tilter
-                flat count = 3
-                continue the loop
-            Here I think we need another loop that gets the number of flats or pops
-            the filter and then continues the above loop.
-            Tries = 6   #basically prevent a spin on one filter from eating up the window.
-            While flatcount > 0 and tries > 0 and ephem.now() < ending:
-                Expose the filter for the computed time.
-                Now lets fix the  convoluted code.
-                The central patch should ideally be ~= target flat, so
-                scale = target_flat/patch, avoiding the obvious divide by zero.  A problem
-                here is if Patch is >> 65,000 we only scale exposure by about half. So it makes
-                some sense to cut it down more so we converge faster.  (Scaling up seems to work
-                on the first pass.)
-                if patch is say 30000 <= patch <= 35000, accept the exposure as a valid flat:
-                    flatcount -= 1
-                    tried =- 1
-                    scale = prior_scale*target_flat/patch    #prior _scale is 1.0
-                elif outside that range
-                    tried =- 1
-                    scale = prior_scale*target_flat/patch as adjusted by the above paragraph.
-                        Next step is a bit subtle.  if the loop is going to fail because with the flat_count
-                        or tries are exceeded we need to set up prior_scale.  The theory is if the session worked
-                        perfect we end with an effective scale on 1.  But the sky fades very fast so to do this
-                        right we need somthing more like an average-scale.  However for now, keep it simple.
-                        So the assumption is is the scale for the s2 filter to expose correctly is 0.9 then
-                        the S2 signal is "bright".  So we put that factor into prior scale so when we move to HA
-                        the system will bias the first HA exposure assuming it will be bright for that band as well.
-                        What I have seen so far is there is variation night to night is the sky transmission in the
-                        red bands. Add that to the fast chages is skybrighness after SRO opens and ... challenging.
-                        Note in old code I try recomputing the "gain".  Ideally a better way to do this would be to
-                        create a persisten gain list of say the last 7 successful nights per filter of course and then
-                        seed the above more accurately.
-                        Now once we get rid of CCD cameras this becomes a bit easier since min exposure can be 0.0001 sec.
-                        But readout time then starts to dominate.  All fine you say but if we have a full wheel of filters
-                        then haveing only 35 or so minutes is still limiting.
-                        I am going to push this to Git right now so MFitz can comment. Then i will get back to the pseudo code.
+        This is the evening and morning sky flat routine.
         """
 
         
@@ -1958,9 +1886,7 @@ class Sequencer:
             plog ("NOT DOING FLATS -- IT IS THE NIGHTIME!!")
             g_dev["obs"].send_to_user("A sky flat script request was rejected as it too dark.")            
             return
-        
-        # CHeck roof is shut
-        
+               
         
         # Moon check.
         if (skip_moon_check==False):
@@ -1975,18 +1901,12 @@ class Sequencer:
             if (moondata.alt.deg < -15):
                 plog ("Moon is far below the ground, alt " + str(moondata.alt.deg) + ", sky flats going ahead.")
             
-            elif temp_separation < 90 and (ephem.Moon(datetime.datetime.now()).moon_phase) > 0.05:
-                plog ("Moon is in the sky, more than 5% illuminated and less than 90 degrees ("+str(temp_separation)+") away from the flat spot, skipping this flat time.")
+            elif temp_separation < self.config['minimum_distance_from_the_moon_when_taking_flats']: #and (ephem.Moon(datetime.datetime.now()).moon_phase) > 0.05:
+                plog ("Moon is in the sky and less than " + str(self.config['minimum_distance_from_the_moon_when_taking_flats']) + " degrees ("+str(temp_separation)+") away from the flat spot, skipping this flat time.")
                 return
-            #elif
-            
-            
-        
-        
-        
+           
         
         self.flats_being_collected = True
-        #self.sky_guard = True   #20220409 I think this is obsolete or unused.
         plog('Sky Flat sequence Starting.')
         self.next_flat_observe = time.time()
         g_dev['obs'].send_to_user('Sky Flat sequence Starting.', p_level='INFO')
@@ -2000,7 +1920,6 @@ class Sequencer:
         
         # Load up the pickled list of gains or start a new one. 
         self.filter_throughput_shelf = shelve.open(g_dev['obs'].obsid_path + 'ptr_night_shelf/' + 'filterthroughput' + g_dev['cam'].name + str(g_dev['obs'].name))
-        #breakpoint()
         
         if self.config['filter_wheel']['filter_wheel1']['override_automatic_filter_throughputs']:
             plog ("Config is set to not use the automatically estimated")
@@ -2010,20 +1929,7 @@ class Sequencer:
         else:
             plog ("Beginning stored filter throughputs")
             for filtertempgain in list(self.filter_throughput_shelf.keys()):
-                plog (str(filtertempgain) + " " + str(self.filter_throughput_shelf[filtertempgain]))
-        
-        #try:
-        #    init_ra = mnt_shelf['ra_cal_offset']
-        #    init_dec = mnt_shelf['dec_cal_offset']     # NB NB THese need to be modulo corrected, maybe limited
-        #except:
-        #    init_ra = 0.0
-        #    init_dec =0.0
-            
-        #plog("initial:  ", init_ra, init_dec)
-        #self.filter_throughput_shelf['ra_cal_offset'] = init_ra + err_ha
-        #self.filter_throughput_shelf['dec_cal_offset'] = init_dec + err_dec
-        
-        
+                plog (str(filtertempgain) + " " + str(self.filter_throughput_shelf[filtertempgain]))       
         
         
         #  Pick up list of filters is sky flat order of lowest to highest transparency.
@@ -2040,10 +1946,9 @@ class Sequencer:
                     len(g_dev['fil'].filter_data)
                 ):  
 
-                    if filter_name.lower() in str(g_dev['fil'].filter_data[match][0]).lower():
-                        #filt_pointer = match                
+                    if filter_name.lower() in str(g_dev['fil'].filter_data[match][0]).lower():                                    
                         filter_identified = 1
-                        #break
+                        
                 if filter_identified == 0:
                     plog ("Could not find filter: "+str(filter_name) +" in main filter list. Removing it from flat filter list.")
                     pop_list.remove(filter_name)
@@ -2059,26 +1964,21 @@ class Sequencer:
         else:            
             ending = g_dev['events']['End Eve Sky Flats']
 
-        obs_win_begin, sunset, sunrise, ephem_now = self.astro_events.getSunEvents()
+        #obs_win_begin, sunset, sunrise, ephem_now = self.astro_events.getSunEvents()
         exp_time = 0
         scale = 1.0
         collecting_area = self.config['telescope']['telescope1']['collecting_area']/31808.   
         
-        #breakpoint()
         
         
         # First pointing towards flatspot
         if g_dev['mnt'].mount.AtParK:
             g_dev['mnt'].unpark_command({}, {})
-        
-        
                 
         self.check_zenith_and_move_to_flat_spot(ending=ending)
         
         camera_gain_collector=[]
-        
-        #breakpoint()
-        
+                
         while len(pop_list) > 0  and ephem.now() < ending and g_dev['obs'].open_and_enabled_to_observe:
             
                 # This is just a very occasional slew to keep it pointing in the same general vicinity                
@@ -2122,9 +2022,8 @@ class Sequencer:
                 scale = 1
                 self.estimated_first_flat_exposure = False
                 
-                slow_report_timer=time.time()-180
+                slow_report_timer=time.time()-180                
                 
-                #if current_filter == 'rp':  breakpoint()
                 while (acquired_count < flat_count):
                     g_dev['obs'].scan_requests()
                     g_dev['obs'].update()                    
@@ -2133,7 +2032,6 @@ class Sequencer:
                         plog ("Observatory closed or disabled during flat script. Cancelling out of flat acquisition loop.")
                         self.filter_throughput_shelf.close()
                         g_dev['mnt'].park_command({}, {}) # You actually always want it to park, TheSkyX can't stop the telescope tracking, so park is safer... it is before focus anyway.
-                        #self.sky_guard = False
                         self.flats_being_collected = False
                         return
                     
@@ -2142,12 +2040,10 @@ class Sequencer:
                         plog ("Flat acquisition time finished. Breaking out of the flat loop.")
                         self.filter_throughput_shelf.close()
                         g_dev['mnt'].park_command({}, {}) # You actually always want it to park, TheSkyX can't stop the telescope tracking, so park is safer... it is before focus anyway.
-                        #self.sky_guard = False
                         self.flats_being_collected = False
                         return
                     
-                    
-                    
+                                        
                     if self.next_flat_observe < time.time():    
                         try:                            
                             sky_lux, _ = g_dev['evnt'].illuminationNow()
@@ -2160,23 +2056,16 @@ class Sequencer:
                         # or given no skylux at all!
                         if self.estimated_first_flat_exposure == False:
                             self.estimated_first_flat_exposure = True
-                            if sky_lux != None:                              
-
-                                # Original line before MTF started fiddling 
-                                #exp_time = target_flat/(collecting_area*sky_lux*float(filter_throughput))  #g_dev['ocn'].calc_HSI_lux)  #meas_sky_lux)
-                                # Factoring in pixel size
+                            if sky_lux != None:     
 
                                 pixel_area=pow(float(g_dev['cam'].config["camera"][g_dev['cam'].name]["settings"]["1x1_pix_scale"]),2)
                                 exp_time = target_flat/(collecting_area*pixel_area*sky_lux*float(filter_throughput))  #g_dev['ocn'].calc_HSI_lux)  #meas_sky_lux)
-                                
-                                #plog('Exposure time:  ', exp_time, scale, sky_lux, float(filter_throughput))
                                 
                             else: 
                                 if morn:
                                     exp_time = 5.0
                                 else:
                                     exp_time = min_exposure
-                                #plog('Exposure time:  ', exp_time, scale)
                         else:
                             exp_time = scale * exp_time
             
@@ -2184,16 +2073,16 @@ class Sequencer:
                             g_dev["obs"].send_to_user("Cancelling out of calibration script as stop script has been called.")  
                             self.filter_throughput_shelf.close()
                             g_dev['mnt'].park_command({}, {}) # You actually always want it to park, TheSkyX can't stop the telescope tracking, so park is safer... it is before focus anyway.
-                            #self.sky_guard = False
                             self.flats_being_collected = False
                             return
+                        
                         if not g_dev['obs'].open_and_enabled_to_observe:
                             g_dev["obs"].send_to_user("Cancelling out of activity as no longer open and enabled to observe.")  
                             self.filter_throughput_shelf.close()
                             g_dev['mnt'].park_command({}, {}) # You actually always want it to park, TheSkyX can't stop the telescope tracking, so park is safer... it is before focus anyway.
-                            #self.sky_guard = False
                             self.flats_being_collected = False
                             return
+                        
                         
                         # Here it makes four tests and if it doesn't match those tests, then it will attempt a flat. 
                         if evening and exp_time > max_exposure:                             
@@ -2243,20 +2132,17 @@ class Sequencer:
                                 g_dev["obs"].send_to_user("Cancelling out of calibration script as stop script has been called.")  
                                 self.filter_throughput_shelf.close()
                                 g_dev['mnt'].park_command({}, {}) # You actually always want it to park, TheSkyX can't stop the telescope tracking, so park is safer... it is before focus anyway.
-                                #self.sky_guard = False
                                 self.flats_being_collected = False
                                 return
                             if not g_dev['obs'].open_and_enabled_to_observe:
                                 g_dev["obs"].send_to_user("Cancelling out of activity as no longer open and enabled to observe.")  
                                 self.filter_throughput_shelf.close()
                                 g_dev['mnt'].park_command({}, {}) # You actually always want it to park, TheSkyX can't stop the telescope tracking, so park is safer... it is before focus anyway.
-                                #self.sky_guard = False
                                 self.flats_being_collected = False
                                 return                                      
                                             
                             req = {'time': float(exp_time),  'alias': camera_name, 'image_type': 'sky flat', 'script': 'On'}
-                            
-                            # FIRST, lets get the highest resolution flat            
+                                      
                             if g_dev["fil"].null_filterwheel == False:
                                 opt = { 'count': 1, 'bin':  1, 'area': 150, 'filter': current_filter}     
                             else:
@@ -2269,7 +2155,6 @@ class Sequencer:
                                     except:
                                         plog("Mount did not park at end of morning skyflats.")
                                 self.filter_throughput_shelf.close()
-                                #self.sky_guard = False
                                 self.flats_being_collected = False
                                 return
                             try:
@@ -2284,22 +2169,21 @@ class Sequencer:
                                 
                                 fred = g_dev['cam'].expose_command(req, opt, user_id='Tobor', user_name='Tobor', user_roles='system', no_AWS=True, do_sep = False,skip_daytime_check=True)
                                 
-                                #breakpoint()
                                 try:
                                     if self.stop_script_called:
                                         g_dev["obs"].send_to_user("Cancelling out of calibration script as stop script has been called.")  
                                         self.filter_throughput_shelf.close()
                                         g_dev['mnt'].park_command({}, {}) # You actually always want it to park, TheSkyX can't stop the telescope tracking, so park is safer... it is before focus anyway.
-                                        #self.sky_guard = False
                                         self.flats_being_collected = False
                                         return
+                                    
                                     if not g_dev['obs'].open_and_enabled_to_observe:
                                         g_dev["obs"].send_to_user("Cancelling out of activity as no longer open and enabled to observe.")  
                                         self.filter_throughput_shelf.close()
                                         g_dev['mnt'].park_command({}, {}) # You actually always want it to park, TheSkyX can't stop the telescope tracking, so park is safer... it is before focus anyway.
-                                        #self.sky_guard = False
                                         self.flats_being_collected = False
                                         return
+                                    
                                 except Exception as e:
                                     plog ('something funny in stop_script still',e)
                                     
@@ -2310,7 +2194,6 @@ class Sequencer:
                                     g_dev["obs"].send_to_user("Roof shut during sky flats. Stopping sky_flats")  
                                     self.filter_throughput_shelf.close()
                                     g_dev['mnt'].park_command({}, {}) # You actually always want it to park, TheSkyX can't stop the telescope tracking, so park is safer... it is before focus anyway.
-                                    #self.sky_guard = False
                                     self.flats_being_collected = False
                                     return
                                 
@@ -2319,7 +2202,6 @@ class Sequencer:
                                     g_dev["obs"].send_to_user("Roof shut during sky flats. Stopping sky_flats")  
                                     self.filter_throughput_shelf.close()
                                     g_dev['mnt'].park_command({}, {}) # You actually always want it to park, TheSkyX can't stop the telescope tracking, so park is safer... it is before focus anyway.
-                                    #self.sky_guard = False
                                     self.flats_being_collected = False
                                     return
                                 
@@ -2327,10 +2209,8 @@ class Sequencer:
                                     plog('stop_all_activity cancelling out of exposure loop')
                                     self.filter_throughput_shelf.close()
                                     g_dev['mnt'].park_command({}, {}) # You actually always want it to park, TheSkyX can't stop the telescope tracking, so park is safer... it is before focus anyway.
-                                    #self.sky_guard = False
                                     self.flats_being_collected = False
-                                    return
-                                    
+                                    return                                    
                                     
                                 try:
                                     bright = fred['patch']   
@@ -2339,14 +2219,7 @@ class Sequencer:
                                     plog(traceback.format_exc())
                                     plog (fred)
                                     
-                                    
-                                    #plog('I think this is because the roof is shut')
-                                    #plog ('need to solve this breakpoint for next time')
-                                    #plog (str(fred))
-                                    #breakpoint()
-                                    
-                                
-                                                                
+                                                                                                    
                             except Exception as e:
                                 plog('Failed to get a flat image: ', e)
                                 plog(traceback.format_exc())                                
@@ -2359,24 +2232,21 @@ class Sequencer:
                             try:
                                 scale = target_flat / bright
                             except:
-                                scale = 1.0
-                                
-                            # We only want to move after a successful set of independant binning flats
-                            # If we move before we calculate exposure, we are wasting time slewing. 
+                                scale = 1.0                                
+                                                    
                             self.check_zenith_and_move_to_flat_spot(ending=ending)
                             
                             if self.stop_script_called:
                                 g_dev["obs"].send_to_user("Cancelling out of calibration script as stop script has been called.")  
                                 self.filter_throughput_shelf.close()
                                 g_dev['mnt'].park_command({}, {}) # You actually always want it to park, TheSkyX can't stop the telescope tracking, so park is safer... it is before focus anyway.
-                                #self.sky_guard = False
                                 self.flats_being_collected = False
                                 return
+                            
                             if not g_dev['obs'].open_and_enabled_to_observe:
                                 g_dev["obs"].send_to_user("Cancelling out of activity as no longer open and enabled to observe.")  
                                 self.filter_throughput_shelf.close()
                                 g_dev['mnt'].park_command({}, {}) # You actually always want it to park, TheSkyX can't stop the telescope tracking, so park is safer... it is before focus anyway.
-                                #self.sky_guard = False
                                 self.flats_being_collected = False
                                 return
                             
@@ -2433,8 +2303,7 @@ class Sequencer:
                         time.sleep(10)
 
         if morn: 
-            self.morn_sky_flat_latch = False
-            #self.park_and_close(enc_status = g_dev['enc'].status)            
+            self.morn_sky_flat_latch = False                 
         else:
             self.eve_sky_flat_latch = False
             
@@ -2463,21 +2332,19 @@ class Sequencer:
         except:
             plog ("hit some snag with reporting gains")
             plog(traceback.format_exc()) 
-            breakpoint()
-        
-        
-        
-        
+                   
+                
         plog('\nSky flat sequence complete.\n')
         g_dev["obs"].send_to_user("Sky flat collection complete.")            
         
         g_dev['mnt'].park_command({}, {}) # You actually always want it to park, TheSkyX can't stop the telescope tracking, so park is safer... it is before focus anyway.
-        #self.sky_guard = False
         self.flats_being_collected = False
 
 
     def screen_flat_script(self, req, opt):
         
+        
+        #### CURRENTLY THIS IS NOT AN IMPLEMENTED FUNCTION.
         
         if self.config['screen']['screen1']['driver'] == None:
             plog ("NOT DOING SCREEN FLATS - SITE HAS NO SCREEN!!")
@@ -2586,7 +2453,7 @@ class Sequencer:
         g_dev['obs'].update()
         g_dev['mnt'].Tracking = False   #park_command({}, {})
         plog('Sky Flat sequence completed, Telescope tracking is off.')
-        self.guard = False
+        
         
         g_dev['mnt'].park_command({}, {})
 
@@ -2652,34 +2519,19 @@ class Sequencer:
                 self.focussing=False
                 return
         
-        
-        
-        
-        
+                
         g_dev['foc'].time_of_last_focus = datetime.datetime.now()
         
         # Reset focus tracker
         g_dev['foc'].focus_tracker = [np.nan] * 10
 
         throw = g_dev['foc'].throw
-        #self.sequencer_hold = False   #Allow comand checks.
-        self.guard = False
+        
         self.af_guard = True
 
         req2 = copy.deepcopy(req)
-        #opt2 = copy.deepcopy(opt)
-
-        sim = False  # g_dev['enc'].status['shutter_status'] in ['Closed', 'Closing', 'closed', 'closing']
-
         
-
-        
-
-# ============================================================================= Save AFTER mount has settled down.
-# =============================================================================
-# =============================================================================
-        #  NB NB NB PLEASE NOTE WE ARE GETTING THE START POSITIONS WE EXPECT TO RETURN TO FROM THE MOUNT AND FOCUSER
-        #  SO this may reult in drift if the return does not go to the mecahnical Ra and DEC.
+        sim = False  
         start_ra = g_dev['mnt'].mount.RightAscension   #Read these to go back.  NB NB Need to cleanly pass these on so we can return to proper target.
         start_dec = g_dev['mnt'].mount.Declination
         focus_start = g_dev['foc'].get_position()
@@ -2688,49 +2540,41 @@ class Sequencer:
 # =============================================================================
 # =============================================================================
         plog("Saved  *mounting* ra, dec, focus:  ", start_ra, start_dec, focus_start)
+        
+       
+        # Trim catalogue so that only fields 45 degrees altitude are in there.
+        self.focus_catalogue_skycoord= SkyCoord(ra = self.focus_catalogue[:,0]*u.deg, dec = self.focus_catalogue[:,1]*u.deg)
+        aa = AltAz (location=g_dev['mnt'].site_coordinates, obstime=Time.now())
+        self.focus_catalogue_altitudes=self.focus_catalogue_skycoord.transform_to(aa)            
+        above_altitude_patches=[]
 
-        if True: #req2['target'] == 'near_tycho_star':   ## 'bin', 'area'  Other parameters
+        for ctr in range(len(self.focus_catalogue_altitudes)):
+            if self.focus_catalogue_altitudes[ctr].alt /u.deg > 45.0:
+                above_altitude_patches.append([self.focus_catalogue[ctr,0], self.focus_catalogue[ctr,1], self.focus_catalogue[ctr,2]])
+        above_altitude_patches=np.asarray(above_altitude_patches)
+        self.focus_catalogue_skycoord= SkyCoord(ra = above_altitude_patches[:,0]*u.deg, dec = above_altitude_patches[:,1]*u.deg)  
+        
+        # d2d of the closest field.
+        teststar = SkyCoord(ra = g_dev['mnt'].current_icrs_ra*15*u.deg, dec = g_dev['mnt'].current_icrs_dec*u.deg)
+        idx, d2d, _ = teststar.match_to_catalog_sky(self.focus_catalogue_skycoord)
+        
+        focus_patch_ra=above_altitude_patches[idx,0] /15
+        focus_patch_dec=above_altitude_patches[idx,1]
+        focus_patch_n=above_altitude_patches[idx,2]                
+        
+        g_dev['obs'].scan_requests()
+        g_dev['obs'].send_to_user("Slewing to a focus field", p_level='INFO')
+        try:
+            plog("\nGoing to near focus patch of " + str(int(focus_patch_n)) + " 9th to 12th mag stars " + str(d2d.deg[0]) + "  degrees away.\n")
+            g_dev['mnt'].go_command(ra=focus_patch_ra, dec=focus_patch_dec)
+        except Exception as e:
+            plog ("Issues pointing to a focus patch. Focussing at the current pointing." , e)
+            plog(traceback.format_exc())
 
-            #  Go to closest Mag 7.5 Tycho * with no flip
-            #focus_star = tycho.dist_sort_targets(g_dev['mnt'].current_icrs_ra, g_dev['mnt'].current_icrs_dec,g_dev['mnt'].current_sidereal)
-            
-            # Trim catalogue so that only fields 45 degrees altitude are in there.
-            self.focus_catalogue_skycoord= SkyCoord(ra = self.focus_catalogue[:,0]*u.deg, dec = self.focus_catalogue[:,1]*u.deg)
-            aa = AltAz (location=g_dev['mnt'].site_coordinates, obstime=Time.now())
-            self.focus_catalogue_altitudes=self.focus_catalogue_skycoord.transform_to(aa)            
-            above_altitude_patches=[]
+        req = {'time': self.config['focus_exposure_time'],  'alias':  str(self.config['camera']['camera_1_1']['name']), 'image_type': 'focus'}   #  NB Should pick up filter and constats from config
 
-            for ctr in range(len(self.focus_catalogue_altitudes)):
-                if self.focus_catalogue_altitudes[ctr].alt /u.deg > 45.0:
-                    above_altitude_patches.append([self.focus_catalogue[ctr,0], self.focus_catalogue[ctr,1], self.focus_catalogue[ctr,2]])
-            above_altitude_patches=np.asarray(above_altitude_patches)
-            self.focus_catalogue_skycoord= SkyCoord(ra = above_altitude_patches[:,0]*u.deg, dec = above_altitude_patches[:,1]*u.deg)  
-            
-            # d2d of the closest field.
-            teststar = SkyCoord(ra = g_dev['mnt'].current_icrs_ra*15*u.deg, dec = g_dev['mnt'].current_icrs_dec*u.deg)
-            idx, d2d, _ = teststar.match_to_catalog_sky(self.focus_catalogue_skycoord)
-            
-            focus_patch_ra=above_altitude_patches[idx,0] /15
-            focus_patch_dec=above_altitude_patches[idx,1]
-            focus_patch_n=above_altitude_patches[idx,2]                
-            
-            g_dev['obs'].scan_requests()
-            g_dev['obs'].send_to_user("Slewing to a focus field", p_level='INFO')
-            try:
-                plog("\nGoing to near focus patch of " + str(int(focus_patch_n)) + " 9th to 12th mag stars " + str(d2d.deg[0]) + "  degrees away.\n")
-                #plog("RA " + str(focus_patch_ra) + " DEC " + str(focus_patch_dec) )
-                g_dev['mnt'].go_command(ra=focus_patch_ra, dec=focus_patch_dec)
-            except Exception as e:
-                plog ("Issues pointing to a focus patch. Focussing at the current pointing." , e)
-                plog(traceback.format_exc())
-
-            req = {'time': self.config['focus_exposure_time'],  'alias':  str(self.config['camera']['camera_1_1']['name']), 'image_type': 'focus'}   #  NB Should pick up filter and constats from config
-
-            opt = {'area': 150, 'count': 1, 'bin': 1, 'filter': 'focus'}
-        else:
-            pass   #Just take an image where currently pointed.
-            req = {'time': self.config['focus_exposure_time'],  'alias':  str(self.config['camera']['camera_1_1']['name']), 'image_type': 'focus'}   #  NB Should pick up filter and constats from config
-            opt = {'area': 150, 'count': 1, 'bin': 1, 'filter': 'focus'}
+        opt = {'area': 150, 'count': 1, 'bin': 1, 'filter': 'focus'}
+       
         foc_pos0 = focus_start
         result = {}
         
@@ -2739,13 +2583,13 @@ class Sequencer:
             g_dev["obs"].send_to_user("Cancelling out of autofocus script as stop script has been called.")  
             self.focussing=False
             return
+        
         if not g_dev['obs'].open_and_enabled_to_observe:
             g_dev["obs"].send_to_user("Cancelling out of activity as no longer open and enabled to observe.")  
             self.focussing=False
             return
-        
-        
-        #g_dev['mnt'].go_coord(focus_patch_ra, focus_patch_dec)            
+                
+                  
         g_dev['foc'].guarded_move((focus_start)*g_dev['foc'].micron_to_steps)
         
         
@@ -2754,12 +2598,10 @@ class Sequencer:
             g_dev['obs'].send_to_user("Running a quick platesolve to center the focus field", p_level='INFO')
             
             result = self.centering_exposure(no_confirmation=True)
-            # Wait for platesolve
-            #queue_clear_time = time.time()
+            # Wait for platesolve            
             reported=0
             while True:
                 if g_dev['obs'].platesolve_is_processing ==False and g_dev['obs'].platesolve_queue.empty():
-                    #plog ("we are free from platesolving!")
                     break
                 else:
                     if reported ==0:
@@ -2787,55 +2629,24 @@ class Sequencer:
             self.focussing=False
             return
         
-        try:
-            #Check here for filter, guider, still moving  THIS IS A CLASSIC
-            #case where a timeout is a smart idea.
-            #Wait for external motion to cease before exposing.  Note this precludes satellite tracking.
-            st = ""
-            
-            rot_report=0
-            while g_dev['foc'].is_moving() or \
-                  g_dev['mnt'].mount.Slewing: 
-                if g_dev['foc'].is_moving(): st += 'Waiting for Focuser to shift.\n'
-                if g_dev['mnt'].mount.Slewing: st += 'Waiting for Mount to Slew\n'
-                
-                if rot_report == 0:
-                    plog(st)
-                    st = ""
-                    rot_report =1
-                time.sleep(0.2)
-                g_dev['obs'].scan_requests()
-                g_dev['obs'].update()
-            
-            
-            # if g_dev['rot']!=None:  
-            #     rot_report=0
-            #     while g_dev['rot'].rotator.IsMoving:                                                           
-            #         #if g_dev['enc'].status['dome_slewing']: st += 'd>'
-            #         if rot_report == 0:
-            #             plog ("Waiting for Rotator to rotation")
-            #             g_dev["obs"].send_to_user("Waiting for camera rotator to catch up before exposing.")
-            #             rot_report =1
-            #         time.sleep(0.2)
-            #         g_dev['obs'].update()
-                
-        except:
-            plog("Motion check faulted.")
-            plog(traceback.format_exc())
-            if g_dev['mnt'].theskyx:
-                self.kill_and_reboot_theskyx(g_dev['mnt'].current_icrs_ra, g_dev['mnt'].current_icrs_dec)
-            else:
-                plog(traceback.format_exc())
-                breakpoint()
         
-        
+                       
+        rot_report=0
+        while g_dev['foc'].is_moving():
+            if rot_report == 0:                    
+                plog('Waiting for Focuser to shift.\n')
+                rot_report =1
+            time.sleep(0.2)
+                
+               
+        g_dev['obs'].scan_requests()
+        g_dev['obs'].update()
         
         plog('Autofocus Starting at:  ', foc_pos0, '\n\n')
 
 
         g_dev['foc'].guarded_move((foc_pos0 - 0* throw)*g_dev['foc'].micron_to_steps)   # NB added 20220209 Nasty bug, varies with prior state
 
-        #throw = throw  # NB again, from config.  Units are microns  Passed as default paramter
         retry = 0
         while retry < 3:
             if not sim:
@@ -2875,7 +2686,7 @@ class Sequencer:
         plog('Autofocus Moving In.\n\n')
 
         g_dev['foc'].guarded_move((foc_pos0 - 1*throw)*g_dev['foc'].micron_to_steps)
-        #opt['fwhm_sim'] = 4.
+        
         if not sim:
             g_dev['obs'].scan_requests()
             result = g_dev['cam'].expose_command(req, opt, user_id='Tobor', user_name='Tobor', user_roles='system', no_AWS=True, solve_it=False) ## , script = 'auto_focus_script_1')  #  This is moving in one throw.
@@ -2902,12 +2713,10 @@ class Sequencer:
         
         plog('Autofocus Overtaveling Out.\n\n')
         g_dev['foc'].guarded_move((foc_pos0 + 2*throw)*g_dev['foc'].micron_to_steps)
-       #time.sleep(10)#It is important to overshoot to overcome any backlash  WE need to be sure Exposure waits.
         plog('Autofocus Moving back in half-way.\n\n')
 
         g_dev['foc'].guarded_move((foc_pos0 + throw)*g_dev['foc'].micron_to_steps)  #NB NB NB THIS IS WRONG!
 
-        #time.sleep(10)#opt['fwhm_sim'] = 5
         if not sim:
             g_dev['obs'].scan_requests()
             result = g_dev['cam'].expose_command(req, opt, user_id='Tobor', user_name='Tobor', user_roles='system', no_AWS=True, solve_it=False) ## , script = 'auto_focus_script_2')  #  This is moving out one throw.
@@ -2943,12 +2752,10 @@ class Sequencer:
             g_dev['obs'].send_to_user("Autofocus was not successful. Returning to original focus setting and pointing.")
             
             g_dev['foc'].guarded_move((focus_start)*g_dev['foc'].micron_to_steps)  #NB NB 20221002 THis unit fix shoudl be in the routine. WER
-            #self.sequencer_hold = False   #Allow comand checks.
-            self.af_guard = False
+                        
             g_dev['mnt'].go_command(ra=start_ra, dec=start_dec)
             self.wait_for_slew()
-            #self.sequencer_hold = False
-            self.guard = False
+            
             self.af_guard = False
             self.focussing=False
             return
@@ -2963,16 +2770,15 @@ class Sequencer:
                 plog('Autofocus quadratic equation not converge. Moving back to starting focus:  ', focus_start)
 
                 g_dev['foc'].guarded_move((focus_start)*g_dev['foc'].micron_to_steps)
-                time.sleep(5)
-                #self.sequencer_hold = False   #Allow comand checks.
+                
                 self.af_guard = False
                 g_dev['mnt'].go_command(ra=start_ra, dec=start_dec)  #NB NB Does this really take us back to starting point?
                 self.wait_for_slew()
-                #self.sequencer_hold = False
-                self.guard = False
+                
                 self.af_guard = False
                 self.focussing=False
                 return
+            
             if min(x) <= d1 <= max(x):
                 plog ('Moving to Solved focus:  ', round(d1, 2), ' calculated:  ',  new_spot)
                 g_dev['obs'].send_to_user('Moving to Solved focus:  ' +str(round(d1, 2)), p_level='INFO')
@@ -2981,7 +2787,7 @@ class Sequencer:
 
 
                 g_dev['foc'].guarded_move(pos)
-                time.sleep(5)
+                
                 g_dev['foc'].last_known_focus = d1
                 try:
                     g_dev['foc'].last_temperature = g_dev['foc'].focuser.Temperature
@@ -3017,19 +2823,15 @@ class Sequencer:
                 g_dev["obs"].send_to_user("Returning to RA:  " +str(start_ra) + " Dec: " + str(start_dec))
                 g_dev['mnt'].go_command(ra=start_ra, dec=start_dec)
                 self.wait_for_slew()
+                
             if sim:
-
                 g_dev['foc'].guarded_move((focus_start)*g_dev['foc'].micron_to_steps)
-            #  NB here we could re-solve with the overlay spot just to verify solution is sane.
-
-            #  NB NB We may want to consider sending the result image patch to AWS
-            # NB NB NB I think we may have spot numbers wrong by 1 count and coarse focs not set up correctly.
-            #self.sequencer_hold = False
-            self.guard = False
+           
             self.af_guard = False
             g_dev['foc'].last_focus_fwhm = round(spot4, 2)
             self.focussing=False
             return
+        
         elif spot2  <= spot1 < spot3:      #Add to the inside
             pass
             plog('Autofocus Moving In 2nd time.\n\n')
@@ -3063,9 +2865,8 @@ class Sequencer:
                 #Digits are to help out pdb commands!
                 a1, b1, c1, d1 = fit_quadratic(x, y)
                 new_spot = round(a1*d1*d1 + b1*d1 + c1, 2)
-                focus_worked=True
-            else:
-                focus_worked=False            
+                
+            else:                          
 
                 if extensive_focus == None:
 
@@ -3090,26 +2891,22 @@ class Sequencer:
 
                     g_dev['foc'].last_known_focus=(extensive_focus)*g_dev['foc'].micron_to_steps
 
-                    #self.sequencer_hold = False   #Allow comand checks.
                     self.af_guard = False
                     plog("Returning to RA:  " +str(start_ra) + " Dec: " + str(start_dec))
                     g_dev["obs"].send_to_user("Returning to RA:  " +str(start_ra) + " Dec: " + str(start_dec))
                     g_dev['mnt'].go_command(ra=start_ra, dec=start_dec)   #NB NB Does this really take us back to starting point?
                     self.wait_for_slew()
-                    #self.sequencer_hold = False
-                    self.guard = False
+                    
                     self.af_guard = False
                     self.focussing=False
                     return
+                
             if min(x) <= d1 <= max(x):
                 plog ('Moving to Solved focus:  ', round(d1, 2), ' calculated:  ',  new_spot)
                 
                 pos = int(d1*g_dev['foc'].micron_to_steps)
-
-
-
                 g_dev['foc'].guarded_move(pos)
-                time.sleep(5)
+                
                 g_dev['foc'].last_known_focus = d1
                 try:
                     g_dev['foc'].last_temperature = g_dev['foc'].focuser.Temperature
@@ -3148,12 +2945,7 @@ class Sequencer:
             if sim:
 
                 g_dev['foc'].guarded_move((focus_start)*g_dev['foc'].micron_to_steps)
-            #  NB here we could re-solve with the overlay spot just to verify solution is sane.
-
-            #  NB NB We may want to consider sending the result image patch to AWS
-            # NB NB NB I think we may have spot numbers wrong by 1 count and coarse focs not set up correctly.
-            #self.sequencer_hold = False
-            self.guard = False
+            
             self.af_guard = False
             g_dev['foc'].last_focus_fwhm = round(spot4, 2)
             self.focussing=False
@@ -3196,14 +2988,10 @@ class Sequencer:
 
             except:
 
-
                 if extensive_focus == None:
-
-
                     plog('Autofocus quadratic equation not converge. Moving back to starting focus:  ', focus_start)
                     plog  ("NORMAL FOCUS UNSUCCESSFUL, TRYING EXTENSIVE FOCUS")
-                    g_dev['obs'].send_to_user('V-curve focus failed, trying extensive focus')
-                    
+                    g_dev['obs'].send_to_user('V-curve focus failed, trying extensive focus')                    
                     req2 = {'target': 'near_tycho_star', 'area': 150}
                     opt = {}
                     g_dev['seq'].extensive_focus_script(req2,opt, no_auto_after_solve=True)
@@ -3224,31 +3012,15 @@ class Sequencer:
                     g_dev["obs"].send_to_user("Returning to RA:  " +str(start_ra) + " Dec: " + str(start_dec))
                     g_dev['mnt'].go_command(ra=start_ra, dec=start_dec)  #NB NB Does this really take us back to starting point?
                     self.wait_for_slew()
-                    #self.sequencer_hold = False
-                    self.guard = False
+                    
                     self.af_guard = False
                     self.focussing=False
                     return
-
-
-                # g_dev['foc'].guarded_move((focus_start)*g_dev['foc'].micron_to_steps)
-                # time.sleep(5)
-                # #self.sequencer_hold = False   #Allow comand checks.
-                # self.af_guard = False
-                # g_dev['mnt'].mount.SlewToCoordinatesAsync(start_ra, start_dec)   #NB NB Does this really take us back to starting point?
-                # wait_for_slew()
-                # #self.sequencer_hold = False
-                # self.guard = False
-                # self.af_guard = False
-                # return
+                
             if min(x) <= d1 <= max(x):
                 plog ('Moving to Solved focus:  ', round(d1, 2), ' calculated:  ',  new_spot)
                 pos = int(d1*g_dev['foc'].micron_to_steps)
-
-
-
                 g_dev['foc'].guarded_move(pos)
-                time.sleep(5)
                 g_dev['foc'].last_known_focus = d1
                 try:
                     g_dev['foc'].last_temperature = g_dev['foc'].focuser.Temperature
@@ -3305,14 +3077,12 @@ class Sequencer:
                     g_dev['foc'].guarded_move((extensive_focus)*g_dev['foc'].micron_to_steps)
                     g_dev['obs'].send_to_user('V-curve focus failed, Moving back to extensive focus: ', extensive_focus)
                     
-                    #self.sequencer_hold = False   #Allow comand checks.
                     self.af_guard = False
                     plog("Returning to RA:  " +str(start_ra) + " Dec: " + str(start_dec))
                     g_dev["obs"].send_to_user("Returning to RA:  " +str(start_ra) + " Dec: " + str(start_dec))
                     g_dev['mnt'].go_command(ra=start_ra, dec=start_dec)
                     self.wait_for_slew()
-                    #self.sequencer_hold = False
-                    self.guard = False
+                   
                     self.af_guard = False
                     self.focussing=False
                     return
@@ -3321,42 +3091,20 @@ class Sequencer:
             if sim:
 
                 g_dev['foc'].guarded_move((focus_start)*g_dev['foc'].micron_to_steps)
-            #  NB here we could re-solve with the overlay spot just to verify solution is sane.
-
-            #  NB NB We may want to consider sending the result image patch to AWS
-            # NB NB NB I think we may have spot numbers wrong by 1 count and coarse focs not set up correctly.
-            #self.sequencer_hold = False
-            self.guard = False
+            
             self.af_guard = False
 
             g_dev['foc'].last_focus_fwhm = round(spot4, 2)
             self.focussing=False
             return
-        # elif spot2 <= spot1 or spot3 <= spot1:
-        #     if spot2 <= spot3:
-        #         min_focus = foc_pos2
-        #     elif spot3 <= spot2:
-        #         min_focus = foc_pos3
-        #     else:
-        #         min_focus = foc_pos0
-
-        #     ##  HERE we could add a fourth or fifth try.  The parabola cannot really invert, nor should we ever be at a wild point after the first focus is
-        #     ##  set up.
-        #     #plog("It appears camera is too far out; try again with coarse_focus_script.")
-        #     #self.coarse_focus_script(req2, opt2, throw=throw + 75, begin_at=min_focus)
-        #     #self.sequencer_hold = False
-        #     self.guard = False
-        #     self.af_guard = False
-        #     return
+        
         else:
-            #plog('Spots are really wrong so moving back to starting focus:  ', focus_start)
-            #g_dev['foc'].focuser.Move((focus_start)*g_dev['foc'].micron_to_steps)
+            
             if extensive_focus == None:
 
                 plog('Autofocus quadratic equation not converge. Moving back to starting focus:  ', focus_start)
                 plog  ("NORMAL FOCUS UNSUCCESSFUL, TRYING EXTENSIVE FOCUS")
-                g_dev['obs'].send_to_user('V-curve focus failed, trying extensive focus')
-                
+                g_dev['obs'].send_to_user('V-curve focus failed, trying extensive focus')                
                 req2 = {'target': 'near_tycho_star', 'area': 150}
                 opt = {}
                 g_dev['seq'].extensive_focus_script(req2,opt, no_auto_after_solve=True)
@@ -3369,16 +3117,12 @@ class Sequencer:
             else:
                 plog('Autofocus quadratic equation not converge. Moving back to extensive focus:  ', extensive_focus)
                 g_dev['foc'].guarded_move((extensive_focus)*g_dev['foc'].micron_to_steps)
-                g_dev['obs'].send_to_user('V-curve focus failed, moving back to extensive focus: ', extensive_focus)
-                
-                #self.sequencer_hold = False   #Allow comand checks.
+                g_dev['obs'].send_to_user('V-curve focus failed, moving back to extensive focus: ', extensive_focus)                
                 self.af_guard = False
                 plog("Returning to RA:  " +str(start_ra) + " Dec: " + str(start_dec))
                 g_dev["obs"].send_to_user("Returning to RA:  " +str(start_ra) + " Dec: " + str(start_dec))
                 g_dev['mnt'].go_command(ra=start_ra, dec=start_dec)  #NB NB Does this really take us back to starting point?
-                self.wait_for_slew()
-                #self.sequencer_hold = False
-                self.guard = False
+                self.wait_for_slew()                
                 self.af_guard = False
                 self.focussing=False
                 return
@@ -3386,15 +3130,11 @@ class Sequencer:
         g_dev["obs"].send_to_user("Returning to RA:  " +str(start_ra) + " Dec: " + str(start_dec))
         g_dev['mnt'].go_command(ra=start_ra, dec=start_dec)
         self.wait_for_slew()
-        if sim:
 
+        if sim:
             g_dev['foc'].guarded_move((focus_start)*g_dev['foc'].micron_to_steps)
-        #  NB here we could re-solve with the overlay spot just to verify solution is sane.
-        #self.sequencer_hold = False   #Allow comand checks.
-        self.af_guard = False
-        #  NB NB We may want to consider sending the result image patch to AWS
-        #self.sequencer_hold = False
-        self.guard = False
+        
+                
         self.af_guard = False
         self.focussing=False
         return
@@ -3427,143 +3167,96 @@ class Sequencer:
         
         
         plog('AF entered with:  ', req, opt)
-        #self.sequencer_hold = False
-        self.guard = False
+        
         self.af_guard = True
         sim = False
         # Reset focus tracker
-        if begin_at is None:  #  ADDED 20120821 WER
+        if begin_at is None:  
             foc_start = g_dev['foc'].get_position()
         else:
-            foc_start = begin_at  #In this case we start at a place close to a 3 point minimum.
+            foc_start = begin_at  #In this case we start at a place close to a 3 point minimum.            
             g_dev['foc'].guarded_move((foc_start)*g_dev['foc'].micron_to_steps)
+            
         start_ra = g_dev['mnt'].mount.RightAscension
         start_dec = g_dev['mnt'].mount.Declination
         plog("Saved ra, dec, focus:  ", start_ra, start_dec, foc_start)
-        try:
-            #Check here for filter, guider, still moving  THIS IS A CLASSIC
-            #case where a timeout is a smart idea.
-            #Wait for external motion to cease before exposing.  Note this precludes satellite tracking.
-            st = ""
+                
            
-            rot_report=0
-            while g_dev['foc'].is_moving() or \
-                  g_dev['mnt'].mount.Slewing: 
-                if g_dev['foc'].is_moving(): st += 'Waiting for Focuser to shift.\n'
-                if g_dev['mnt'].mount.Slewing: st += 'Waiting for Mount to Slew\n'
+        # Trim catalogue so that only fields 45 degrees altitude are in there.
+        self.focus_catalogue_skycoord= SkyCoord(ra = self.focus_catalogue[:,0]*u.deg, dec = self.focus_catalogue[:,1]*u.deg)
+        aa = AltAz (location=g_dev['mnt'].site_coordinates, obstime=Time.now())
+        self.focus_catalogue_altitudes=self.focus_catalogue_skycoord.transform_to(aa)            
+        above_altitude_patches=[]
 
-                if rot_report == 0:
-                    plog(st)
-                    st = ""
-                    rot_report =1
-                time.sleep(0.2)
-                g_dev['obs'].update()
-            
-            
-            # if g_dev['rot']!=None:  
-            #     rot_report=0
-            #     while g_dev['rot'].rotator.IsMoving:                                                           
-            #         #if g_dev['enc'].status['dome_slewing']: st += 'd>'
-            #         if rot_report == 0:
-            #             plog ("Waiting for Rotator to rotation")
-            #             rot_report =1
-            #         time.sleep(0.2)
-            #         g_dev['obs'].update()
-                
-        except:
-            plog("Motion check faulted.")
-            plog(traceback.format_exc())
-            if g_dev['mnt'].theskyx:
-                self.kill_and_reboot_theskyx(g_dev['mnt'].current_icrs_ra, g_dev['mnt'].current_icrs_dec)
-            else:
-                plog(traceback.format_exc())
-                breakpoint()
+        for ctr in range(len(self.focus_catalogue_altitudes)):
+            if self.focus_catalogue_altitudes[ctr].alt /u.deg > 45.0:
+                above_altitude_patches.append([self.focus_catalogue[ctr,0], self.focus_catalogue[ctr,1], self.focus_catalogue[ctr,2]])
+        above_altitude_patches=np.asarray(above_altitude_patches)
+        self.focus_catalogue_skycoord= SkyCoord(ra = above_altitude_patches[:,0]*u.deg, dec = above_altitude_patches[:,1]*u.deg)  
         
-        if req['target'] == 'near_tycho_star':   ## 'bin', 'area'  Other parameters
-            #  Go to closest Mag 7.5 Tycho * with no flip
-            #focus_star = tycho.dist_sort_targets(g_dev['mnt'].current_icrs_ra, g_dev['mnt'].current_icrs_dec, \
-            #                        g_dev['mnt'].current_sidereal)
-            #plog("Going to near focus star " + str(focus_star[0][0]) + "  degrees away.")
+        # d2d of the closest field.
+        teststar = SkyCoord(ra = g_dev['mnt'].current_icrs_ra*15*u.deg, dec = g_dev['mnt'].current_icrs_dec*u.deg)
+        idx, d2d, _ = teststar.match_to_catalog_sky(self.focus_catalogue_skycoord)
+        
+        focus_patch_ra=above_altitude_patches[idx,0] /15
+        focus_patch_dec=above_altitude_patches[idx,1]
+        focus_patch_n=above_altitude_patches[idx,2]   
+        
+        
+        #g_dev['mnt'].go_coord(focus_star[0][1][1], focus_star[0][1][0])
+        
+        g_dev['obs'].send_to_user("Slewing to a focus field", p_level='INFO')
+        g_dev['mnt'].go_command(ra=focus_patch_ra, dec=focus_patch_dec)            
+        g_dev['foc'].guarded_move((foc_start)*g_dev['foc'].micron_to_steps)
+        
+        
+        if self.stop_script_called:
+            g_dev["obs"].send_to_user("Cancelling out of autofocus script as stop script has been called.")  
+            self.focussing=False
+            return
+        if not g_dev['obs'].open_and_enabled_to_observe:
+            g_dev["obs"].send_to_user("Cancelling out of activity as no longer open and enabled to observe.")  
+            self.focussing=False
+            return
+        
+        # If no auto_focus has been done, centre the focus field.
+        if no_auto_after_solve == False:            
+            g_dev['obs'].send_to_user("Running a quick platesolve to center the focus field", p_level='INFO')
             
-            # Trim catalogue so that only fields 45 degrees altitude are in there.
-            self.focus_catalogue_skycoord= SkyCoord(ra = self.focus_catalogue[:,0]*u.deg, dec = self.focus_catalogue[:,1]*u.deg)
-            aa = AltAz (location=g_dev['mnt'].site_coordinates, obstime=Time.now())
-            self.focus_catalogue_altitudes=self.focus_catalogue_skycoord.transform_to(aa)            
-            above_altitude_patches=[]
-
-            for ctr in range(len(self.focus_catalogue_altitudes)):
-                if self.focus_catalogue_altitudes[ctr].alt /u.deg > 45.0:
-                    above_altitude_patches.append([self.focus_catalogue[ctr,0], self.focus_catalogue[ctr,1], self.focus_catalogue[ctr,2]])
-            above_altitude_patches=np.asarray(above_altitude_patches)
-            self.focus_catalogue_skycoord= SkyCoord(ra = above_altitude_patches[:,0]*u.deg, dec = above_altitude_patches[:,1]*u.deg)  
+            result = self.centering_exposure(no_confirmation=True)
+            # Wait for platesolve
+            #queue_clear_time = time.time()
+            reported=0
+            while True:
+                if g_dev['obs'].platesolve_is_processing ==False and g_dev['obs'].platesolve_queue.empty():
+                    #plog ("we are free from platesolving!")
+                    break
+                else:
+                    if reported ==0:
+                        plog ("PLATESOLVE: Waiting for platesolve processing to complete and queue to clear")
+                        reported=1
+                    if self.stop_script_called:
+                        g_dev["obs"].send_to_user("Cancelling out of autofocus script as stop script has been called.")  
+                        self.focussing=False
+                        return
+                    if not g_dev['obs'].open_and_enabled_to_observe:
+                        g_dev["obs"].send_to_user("Cancelling out of activity as no longer open and enabled to observe.")  
+                        self.focussing=False
+                        return
+                    pass
             
-            # d2d of the closest field.
-            teststar = SkyCoord(ra = g_dev['mnt'].current_icrs_ra*15*u.deg, dec = g_dev['mnt'].current_icrs_dec*u.deg)
-            idx, d2d, _ = teststar.match_to_catalog_sky(self.focus_catalogue_skycoord)
+            g_dev['obs'].send_to_user("Focus Field Centered", p_level='INFO')
+        
+        if self.stop_script_called:
+            g_dev["obs"].send_to_user("Cancelling out of autofocus script as stop script has been called.")  
+            self.focussing=False
+            return
+        if not g_dev['obs'].open_and_enabled_to_observe:
+            g_dev["obs"].send_to_user("Cancelling out of activity as no longer open and enabled to observe.")  
+            self.focussing=False
+            return           
             
-            focus_patch_ra=above_altitude_patches[idx,0] /15
-            focus_patch_dec=above_altitude_patches[idx,1]
-            focus_patch_n=above_altitude_patches[idx,2]   
-            
-            
-            #g_dev['mnt'].go_coord(focus_star[0][1][1], focus_star[0][1][0])
-            
-            g_dev['obs'].send_to_user("Slewing to a focus field", p_level='INFO')
-            g_dev['mnt'].go_command(ra=focus_patch_ra, dec=focus_patch_dec)            
-            g_dev['foc'].guarded_move((foc_start)*g_dev['foc'].micron_to_steps)
-            
-            
-            if self.stop_script_called:
-                g_dev["obs"].send_to_user("Cancelling out of autofocus script as stop script has been called.")  
-                self.focussing=False
-                return
-            if not g_dev['obs'].open_and_enabled_to_observe:
-                g_dev["obs"].send_to_user("Cancelling out of activity as no longer open and enabled to observe.")  
-                self.focussing=False
-                return
-            
-            # If no auto_focus has been done, centre the focus field.
-            if no_auto_after_solve == False:            
-                g_dev['obs'].send_to_user("Running a quick platesolve to center the focus field", p_level='INFO')
-                
-                result = self.centering_exposure(no_confirmation=True)
-                # Wait for platesolve
-                #queue_clear_time = time.time()
-                reported=0
-                while True:
-                    if g_dev['obs'].platesolve_is_processing ==False and g_dev['obs'].platesolve_queue.empty():
-                        #plog ("we are free from platesolving!")
-                        break
-                    else:
-                        if reported ==0:
-                            plog ("PLATESOLVE: Waiting for platesolve processing to complete and queue to clear")
-                            reported=1
-                        if self.stop_script_called:
-                            g_dev["obs"].send_to_user("Cancelling out of autofocus script as stop script has been called.")  
-                            self.focussing=False
-                            return
-                        if not g_dev['obs'].open_and_enabled_to_observe:
-                            g_dev["obs"].send_to_user("Cancelling out of activity as no longer open and enabled to observe.")  
-                            self.focussing=False
-                            return
-                        pass
-                
-                g_dev['obs'].send_to_user("Focus Field Centered", p_level='INFO')
-            
-            if self.stop_script_called:
-                g_dev["obs"].send_to_user("Cancelling out of autofocus script as stop script has been called.")  
-                self.focussing=False
-                return
-            if not g_dev['obs'].open_and_enabled_to_observe:
-                g_dev["obs"].send_to_user("Cancelling out of activity as no longer open and enabled to observe.")  
-                self.focussing=False
-                return
-            
-            
-        else:
-            pass   #Just take time image where currently pointed.
-            req = {'time': self.config['focus_exposure_time'],  'alias':  str(self.config['camera']['camera_1_1']['name']), 'image_type': 'focus'}   #  NB Should pick up filter and constats from config
-            opt = {'area': 100, 'count': 1, 'filter': 'focus'}
+        
         foc_pos0 = foc_start
         result = {}
         plog('Autofocus Starting at:  ', foc_pos0, '\n\n')
@@ -3573,9 +3266,8 @@ class Sequencer:
         
         extensive_focus=[]
         for ctr in range(4):
-            g_dev['foc'].guarded_move((foc_pos0 - (ctr+0)*throw)*g_dev['foc'].micron_to_steps)  #Added 20220209! A bit late
-            #g_dev['foc'].guarded_move((foc_pos0 - (ctr+0)*throw))  #Added 20220209! A bit late
-            #throw = 100  # NB again, from config.  Units are microns
+            g_dev['foc'].guarded_move((foc_pos0 - (ctr+0)*throw)*g_dev['foc'].micron_to_steps)  
+           
             if not sim:
                 g_dev['obs'].scan_requests()
                 req = {'time': self.config['focus_exposure_time'],  'alias':  str(self.config['camera']['camera_1_1']['name']), 'image_type': 'focus'}   #  NB Should pick up filter and constats from config
@@ -3600,26 +3292,9 @@ class Sequencer:
                 spot = result['FWHM']
                 lsources = result['No_of_sources']
                 if np.isnan(lsources):
-                    spot=False
+                    spot=False               
                 
-                #foc_pos = result['mean_focus']
-                #foc_pos = (foc_pos0 - (ctr+0)*throw)*g_dev['foc'].micron_to_steps
-                foc_pos = (foc_pos0 - (ctr+0)*throw)
-                # if np.isnan(result['FWHM']):
-                #     req = {'time': 2*float(self.config['focus_exposure_time']),  'alias':  str(self.config['camera']['camera_1_1']['name']), 'image_type': 'focus'}   #  NB Should pick up filter and constats from config
-                #     opt = {'area': 100, 'count': 1, 'filter': 'focus'}
-                #     result = g_dev['cam'].expose_command(req, opt, user_id='Tobor', user_name='Tobor', user_roles='system', no_AWS=True, solve_it=False)
-                #     if self.stop_script_called:
-                #         g_dev["obs"].send_to_user("Cancelling out of autofocus script as stop script has been called.")  
-                #         return
-                #     if not g_dev['obs'].open_and_enabled_to_observe:
-                #         g_dev["obs"].send_to_user("Cancelling out of activity as no longer open and enabled to observe.")  
-                #         return
-                #     spot = result['FWHM']
-                #     if np.isnan(result['FWHM']) or np.isnan(lsources):
-                #         spot = False
-                #         foc_pos = False
-                #         plog ("spot failed on extensive focus script")
+                foc_pos = (foc_pos0 - (ctr+0)*throw)                
                         
             except:
                 spot = False
@@ -3636,9 +3311,7 @@ class Sequencer:
             plog("Extensive focus so far (pos, fwhm, sources): "+ str(extensive_focus))
         
         for ctr in range(3):
-            g_dev['foc'].guarded_move((foc_pos0 + (ctr+1)*throw)*g_dev['foc'].micron_to_steps)  #Added 20220209! A bit late
-            #g_dev['foc'].guarded_move((foc_pos0 + (ctr+1)*throw))  #Added 20220209! A bit late
-            #throw = 100  # NB again, from config.  Units are microns
+            g_dev['foc'].guarded_move((foc_pos0 + (ctr+1)*throw)*g_dev['foc'].micron_to_steps)  
             if not sim:
                 g_dev['obs'].scan_requests()
                 req = {'time': self.config['focus_exposure_time'],  'alias':  str(self.config['camera']['camera_1_1']['name']), 'image_type': 'focus'}   #  NB Should pick up filter and constats from config
@@ -3660,24 +3333,9 @@ class Sequencer:
                 lsources = result['No_of_sources']
                 if np.isnan(lsources):
                     spot=False
-                #foc_pos = result['mean_focus']
-                #foc_pos = (foc_pos0 + (ctr+1)*throw)*g_dev['foc'].micron_to_steps
+                
                 foc_pos = (foc_pos0 + (ctr+1)*throw)
-                # if np.isnan(result['FWHM']):
-                #     req = {'time': 3*float(self.config['focus_exposure_time']),  'alias':  str(self.config['camera']['camera_1_1']['name']), 'image_type': 'focus'}   #  NB Should pick up filter and constats from config
-                #     opt = {'area': 100, 'count': 1, 'filter': 'focus'}
-                #     result = g_dev['cam'].expose_command(req, opt, user_id='Tobor', user_name='Tobor', user_roles='system', no_AWS=True, solve_it=False)
-                #     if self.stop_script_called:
-                #         g_dev["obs"].send_to_user("Cancelling out of autofocus script as stop script has been called.")  
-                #         return
-                #     if not g_dev['obs'].open_and_enabled_to_observe:
-                #         g_dev["obs"].send_to_user("Cancelling out of activity as no longer open and enabled to observe.")  
-                #         return
-                #     spot = result['FWHM']
-                #     if np.isnan(result['FWHM'])  or np.isnan(lsources):
-                #         spot = False
-                #         foc_pos = False
-                #         plog ("spot failed on extensive focus script")
+                
             except:
                 spot = False
                 foc_pos = False
@@ -3690,8 +3348,6 @@ class Sequencer:
             plog(extensive_focus)
         
         minimumFWHM = 100.0
-        #breakpoint()
-        
         
         # Remove Faulty measurements
         trimmed_list=[]
@@ -3729,394 +3385,16 @@ class Sequencer:
             plog ("Moving back to the starting focus")
             g_dev['obs'].send_to_user("Extensive focus attempt failed. Returning to initial focus.")
             g_dev['foc'].guarded_move((foc_start)*g_dev['foc'].micron_to_steps)
-            
-        
-        try:
-            #Check here for filter, guider, still moving  THIS IS A CLASSIC
-            #case where a timeout is a smart idea.
-            #Wait for external motion to cease before exposing.  Note this precludes satellite tracking.
-            st = ""
-            
-            
-            rot_report=0
-            while g_dev['foc'].is_moving() or \
-                  g_dev['mnt'].mount.Slewing:
-                if g_dev['foc'].is_moving(): st += 'Waiting for Focuser to shift.\n'
-                if g_dev['mnt'].mount.Slewing: st += 'Waiting for Mount to Slew\n'
-
-                if rot_report == 0:
-                    plog(st)
-                    st = ""
-                    rot_report =1
-                time.sleep(0.2)
-                g_dev['obs'].update()
-            
-            
-            # if g_dev['rot']!=None:  
-            #     rot_report=0
-            #     while g_dev['rot'].rotator.IsMoving:                                                           
-            #         #if g_dev['enc'].status['dome_slewing']: st += 'd>'
-            #         if rot_report == 0:
-            #             plog ("Waiting for Rotator to rotation")
-            #             rot_report =1
-            #         time.sleep(0.2)
-            #         g_dev['obs'].update()
-                
-        except:
-            plog("Motion check faulted.")
-            plog(traceback.format_exc())
-            if g_dev['mnt'].theskyx:
-                self.kill_and_reboot_theskyx(g_dev['mnt'].current_icrs_ra, g_dev['mnt'].current_icrs_dec)
-            else:
-                plog(traceback.format_exc())
-                breakpoint()           
-            
-        
+                    
         
         plog("Returning to RA:  " +str(start_ra) + " Dec: " + str(start_dec))
         g_dev["obs"].send_to_user("Returning to RA:  " +str(start_ra) + " Dec: " + str(start_dec))
         g_dev['mnt'].go_command(ra=start_ra, dec=start_dec)
         self.wait_for_slew()
-        #if sim:
-        #    g_dev['foc'].guarded_move((focus_start)*g_dev['foc'].micron_to_steps)
-        #  NB here we could re-solve with the overlay spot just to verify solution is sane.
-        ##self.sequencer_hold = False   #Allow comand checks.
-        #self.af_guard = False
-        #  NB NB We may want to consider sending the result image patch to AWS
-        #self.sequencer_hold = False
-        self.guard = False
+        
         self.af_guard = False
         self.focussing = False
         
-        
-            
-            
-        
-
-    def coarse_focus_script(self, req, opt, throw=None, begin_at=None):
-        '''
-        V curve is a big move focus designed to fit two lines adjacent to the more normal focus curve.
-        It finds the approximate focus, particulary for a new instrument. It requires 8 points plus
-        a verify.
-        Auto focus consists of three points plus a verify.
-        Fine focus consists of five points plus a verify.
-        Optionally individual images can be multiples of one to average out seeing.
-        NBNBNB This code needs to go to known stars to be moe relaible and permit subframes
-        '''
-        self.focussing=True
-        if throw==None:
-            throw= self.config['focuser']['focuser1']['throw']
-        
-        if (ephem.now() < g_dev['events']['End Eve Bias Dark'] ) or \
-            (g_dev['events']['End Morn Bias Dark']  < ephem.now() < g_dev['events']['Nightly Reset']):
-            plog ("NOT DOING COARSE FOCUS -- IT IS THE DAYTIME!!")
-            g_dev["obs"].send_to_user("A coarse focus was rejected as it is during the daytime.")
-            self.focussing=False
-            return
-        
-        plog('AF entered with:  ', req, opt)
-        #self.sequencer_hold = False
-        self.guard = False
-        self.af_guard = True
-        # Reset focus tracker
-        g_dev['foc'].focus_tracker = [np.nan] * 10
-        sim = False 
-        plog('AF entered with:  ', req, opt, '\n .. and sim =  ', sim)
-        ##self.sequencer_hold = True  #Blocks command checks.
-        start_ra = g_dev['mnt'].mount.RightAscension
-        start_dec = g_dev['mnt'].mount.Declination
-        if begin_at is None:  #  ADDED 20120821 WER
-            foc_start = g_dev['foc'].get_position()
-        else:
-            foc_start = begin_at  #In this case we start at a place close to a 3 point minimum.
-            g_dev['foc'].guarded_move((foc_start)*g_dev['foc'].micron_to_steps)
-        plog("Saved ra, dec, focus:  ", start_ra, start_dec, foc_start)
-        try:
-            #Check here for filter, guider, still moving  THIS IS A CLASSIC
-            #case where a timeout is a smart idea.
-            #Wait for external motion to cease before exposing.  Note this precludes satellite tracking.
-            st = ""
-            
-            
-            rot_report=0
-            while g_dev['foc'].is_moving() or \
-                  g_dev['mnt'].mount.Slewing:
-                if g_dev['foc'].is_moving(): st += 'Waiting for Focuser to shift.\n'
-                if g_dev['mnt'].mount.Slewing: st += 'Waiting for Mount to Slew\n'
-                
-                if rot_report == 0:
-                    plog(st)
-                    st = ""
-                    rot_report =1
-                time.sleep(0.2)
-                g_dev['obs'].update()
-            
-            
-            if g_dev['rot']!=None:  
-                rot_report=0
-                while g_dev['rot'].rotator.IsMoving:                                                           
-                    
-                    if rot_report == 0:
-                        plog ("Waiting for Rotator to rotation")
-                        rot_report =1
-                    time.sleep(0.2)
-                    g_dev['obs'].update()
-                
-        except:
-            plog("Motion check faulted.")
-            plog(traceback.format_exc())
-            if g_dev['mnt'].theskyx:
-                self.kill_and_reboot_theskyx(g_dev['mnt'].current_icrs_ra, g_dev['mnt'].current_icrs_dec)
-            else:
-                plog(traceback.format_exc())
-                breakpoint()  
-        
-        if True: #req['target'] == 'near_tycho_star':   ## 'bin', 'area'  Other parameters
-            #  Go to closest Mag 7.5 Tycho * with no flip
-            #focus_star = tycho.dist_sort_targets(g_dev['mnt'].current_icrs_ra, g_dev['mnt'].current_icrs_dec, \
-            #                        g_dev['mnt'].current_sidereal)
-            #plog("Going to near focus star " + str(focus_star[0][0]) + "  degrees away.")
-            
-            # Trim catalogue so that only fields 45 degrees altitude are in there.
-            self.focus_catalogue_skycoord= SkyCoord(ra = self.focus_catalogue[:,0]*u.deg, dec = self.focus_catalogue[:,1]*u.deg)
-            aa = AltAz (location=g_dev['mnt'].site_coordinates, obstime=Time.now())
-            self.focus_catalogue_altitudes=self.focus_catalogue_skycoord.transform_to(aa)            
-            above_altitude_patches=[]
-
-            for ctr in range(len(self.focus_catalogue_altitudes)):
-                if self.focus_catalogue_altitudes[ctr].alt /u.deg > 45.0:
-                    above_altitude_patches.append([self.focus_catalogue[ctr,0], self.focus_catalogue[ctr,1], self.focus_catalogue[ctr,2]])
-            above_altitude_patches=np.asarray(above_altitude_patches)
-            self.focus_catalogue_skycoord= SkyCoord(ra = above_altitude_patches[:,0]*u.deg, dec = above_altitude_patches[:,1]*u.deg)  
-            
-            # d2d of the closest field.
-            teststar = SkyCoord(ra = g_dev['mnt'].current_icrs_ra*15*u.deg, dec = g_dev['mnt'].current_icrs_dec*u.deg)
-            idx, d2d, _ = teststar.match_to_catalog_sky(self.focus_catalogue_skycoord)
-            
-            focus_patch_ra=above_altitude_patches[idx,0] /15
-            focus_patch_dec=above_altitude_patches[idx,1]
-            focus_patch_n=above_altitude_patches[idx,2]   
-            
-            
-            #g_dev['mnt'].go_coord(focus_star[0][1][1], focus_star[0][1][0])
-            g_dev['mnt'].go_command(ra=focus_patch_ra, dec=focus_patch_dec)
-            req = {'time': self.config['focus_exposure_time'],  'alias':  str(self.config['camera']['camera_1_1']['name']), 'image_type': 'auto_focus'}   #  NB Should pick up filter and constats from config
-            opt = {'area': 100, 'count': 1, 'filter': 'focus'}
-        else:
-            pass   #Just take time image where currently pointed.
-            req = {'time': self.config['focus_exposure_time'],  'alias':  str(self.config['camera']['camera_1_1']['name']), 'image_type': 'auto_focus'}   #  NB Should pick up filter and constats from config
-            opt = {'area': 100, 'count': 1, 'filter': 'focus'}
-        foc_pos0 = foc_start
-        result = {}
-        plog('Autofocus Starting at:  ', foc_pos0, '\n\n')
-
-        g_dev['foc'].guarded_move((foc_pos0 - 0*throw)*g_dev['foc'].micron_to_steps)  #Added 20220209! A bit late
-        #throw = 100  # NB again, from config.  Units are microns
-        if not sim:
-            g_dev['obs'].scan_requests()
-            result = g_dev['cam'].expose_command(req, opt, user_id='Tobor', user_name='Tobor', user_roles='system', no_AWS=True, solve_it=False)
-            if self.stop_script_called:
-                g_dev["obs"].send_to_user("Cancelling out of autofocus script as stop script has been called.")  
-                self.focussing=False
-                return
-            if not g_dev['obs'].open_and_enabled_to_observe:
-                g_dev["obs"].send_to_user("Cancelling out of activity as no longer open and enabled to observe.")  
-                self.focussing=False
-                return
-        else:
-            result['FWHM'] = 4
-            result['mean_focus'] = g_dev['foc'].get_position()
-        try:
-            spot1 = result['FWHM']
-            foc_pos1 = result['mean_focus']
-        except:
-            spot1 = False
-            foc_pos1 = False
-            plog ("spot1 failed on coarse focus script")
-
-        g_dev['obs'].send_to_user("Coarse focus center FWHM: " + str(spot1), p_level='INFO')
-
-
-        plog('Autofocus Moving In -1x, second time.\n\n')
-
-        g_dev['foc'].guarded_move((foc_pos0 - 1*throw)*g_dev['foc'].micron_to_steps)
-        #opt['fwhm_sim'] = 4.
-        if not sim:
-            g_dev['obs'].scan_requests()
-            result = g_dev['cam'].expose_command(req, opt, user_id='Tobor', user_name='Tobor', user_roles='system', no_AWS=True, solve_it=False)
-            if self.stop_script_called:
-                g_dev["obs"].send_to_user("Cancelling out of autofocus script as stop script has been called.")  
-                self.focussing=False
-                return
-            if not g_dev['obs'].open_and_enabled_to_observe:
-                g_dev["obs"].send_to_user("Cancelling out of activity as no longer open and enabled to observe.")  
-                self.focussing=False
-                return
-        else:
-            result['FWHM'] = 5
-            result['mean_focus'] = g_dev['foc'].get_position()
-        try:
-            spot2 = result['FWHM']
-            foc_pos2 = result['mean_focus']
-        except:
-            spot2 = False
-            foc_pos2 = False
-            plog ("spot2 failed on coarse focus script")
-        g_dev['obs'].send_to_user("First Inward focus center FWHM: " + str(spot2), p_level='INFO')
-        
-        plog('Autofocus Moving In -2x, second time.\n\n')
-        
-
-        g_dev['foc'].guarded_move((foc_pos0 - 2*throw)*g_dev['foc'].micron_to_steps)
-        #opt['fwhm_sim'] = 4.
-        if not sim:
-            g_dev['obs'].scan_requests()
-            result = g_dev['cam'].expose_command(req, opt, user_id='Tobor', user_name='Tobor', user_roles='system', no_AWS=True, solve_it=False)
-            if self.stop_script_called:
-                g_dev["obs"].send_to_user("Cancelling out of autofocus script as stop script has been called.")  
-                self.focussing=False
-                return
-            if not g_dev['obs'].open_and_enabled_to_observe:
-                g_dev["obs"].send_to_user("Cancelling out of activity as no longer open and enabled to observe.")  
-                self.focussing=False
-                return
-        else:
-            result['FWHM'] = 6
-            result['mean_focus'] = g_dev['foc'].get_position()
-        try:
-            spot3 = result['FWHM']
-            foc_pos3 = result['mean_focus']
-        except:
-            spot3 = False
-            foc_pos3 = False
-            plog ("spot3 failed on coarse focus script")
-        g_dev['obs'].send_to_user("Second Inward focus center FWHM: " + str(spot3), p_level='INFO')
-        #Need to check we are not going out too far!
-        plog('Autofocus Moving out +3X.\n\n')
-
-        g_dev['foc'].guarded_move((foc_pos0 + 3*throw)*g_dev['foc'].micron_to_steps)
-        plog('Autofocus back in for backlash to +2X\n\n')#It is important to overshoot to overcome any backlash
-        g_dev['foc'].guarded_move((foc_pos0 + 2*throw)*g_dev['foc'].micron_to_steps)
-        #opt['fwhm_sim'] = 5
-        if not sim:
-            g_dev['obs'].scan_requests()
-            result = g_dev['cam'].expose_command(req, opt, user_id='Tobor', user_name='Tobor', user_roles='system', no_AWS=True, solve_it=False)
-            if self.stop_script_called:
-                g_dev["obs"].send_to_user("Cancelling out of autofocus script as stop script has been called.")  
-                self.focussing=False
-                return
-            if not g_dev['obs'].open_and_enabled_to_observe:
-                g_dev["obs"].send_to_user("Cancelling out of activity as no longer open and enabled to observe.")  
-                self.focussing=False
-                return
-        else:
-            result['FWHM'] = 6.5
-            result['mean_focus'] = g_dev['foc'].get_position()
-        try:
-            spot4 = result['FWHM']
-            foc_pos4 = result['mean_focus']
-        except:
-            spot4 = False
-            foc_pos4 = False
-            plog ("spot4 failed on coarse focus script")
-        
-        g_dev['obs'].send_to_user("First Outward focus center FWHM: " + str(spot4), p_level='INFO')
-            
-        plog('Autofocus back in for backlash to +1X\n\n')
-
-        g_dev['foc'].guarded_move((foc_pos0 + throw)*g_dev['foc'].micron_to_steps)
-        #opt['fwhm_sim'] = 4.
-        if not sim:
-            g_dev['obs'].scan_requests()
-            result = g_dev['cam'].expose_command(req, opt, user_id='Tobor', user_name='Tobor', user_roles='system', no_AWS=True, solve_it=False)
-            if self.stop_script_called:
-                g_dev["obs"].send_to_user("Cancelling out of autofocus script as stop script has been called.")  
-                self.focussing=False
-                return
-            if not g_dev['obs'].open_and_enabled_to_observe:
-                g_dev["obs"].send_to_user("Cancelling out of activity as no longer open and enabled to observe.")  
-                self.focussing=False
-                return
-        else:
-            result['FWHM'] = 5.75
-            result['mean_focus'] = g_dev['foc'].get_position()
-        try:
-            spot5 = result['FWHM']
-            foc_pos5 = result['mean_focus']
-        except:
-            spot5 = False
-            foc_pos5 = False
-            plog ("spot5 failed on coarse focus script")
-        
-        g_dev['obs'].send_to_user("Second Outward focus center FWHM: " + str(spot2), p_level='INFO')
-        
-        x = [foc_pos3, foc_pos2, foc_pos1, foc_pos5, foc_pos4]  # NB NB 20220218 This assigment is bogus!!!!
-        y = [spot3, spot2, spot1, spot5, spot4]
-        plog('X, Y:  ', x, y)
-        try:
-            #Digits are to help out pdb commands!
-            a1, b1, c1, d1 = fit_quadratic(x, y)
-            new_spot = round(a1*d1*d1 + b1*d1 + c1, 2)
-        except:
-            plog('Autofocus quadratic equation not converge. Moving back to starting focus:  ', foc_start)
-
-            g_dev['foc'].guarded_move((foc_start)*g_dev['foc'].micron_to_steps)
-            #self.sequencer_hold = False
-            self.guard = False
-            self.af_guard = False
-            self.focussing=False
-            return
-        if min(x) <= d1 <= max(x):
-            plog ('Moving to Solved focus:  ', round(d1, 2), ' calculated:  ',  new_spot)
-            #Saves a base for relative focus adjusts.
-            pos = int(d1*g_dev['foc'].micron_to_steps)
-
-            g_dev['foc'].guarded_move(pos)
-            g_dev['foc'].last_known_focus = d1
-            try:
-                g_dev['foc'].last_temperature = g_dev['foc'].focuser.Temperature
-            except:
-                g_dev['foc'].last_temperature = 10.0    #NB NB This should be a site monthly default.
-            g_dev['foc'].last_source = "coarse_focus_script"
-            if not sim:
-                g_dev['obs'].scan_requests()
-                result = g_dev['cam'].expose_command(req, opt, user_id='Tobor', user_name='Tobor', user_roles='system', solve_it=False)
-                if self.stop_script_called:
-                    g_dev["obs"].send_to_user("Cancelling out of autofocus script as stop script has been called.")  
-                    self.focussing=False
-                    return
-                if not g_dev['obs'].open_and_enabled_to_observe:
-                    g_dev["obs"].send_to_user("Cancelling out of activity as no longer open and enabled to observe.")  
-                    self.focussing=False
-                    return
-            else:
-                result['FWHM'] = new_spot
-                result['mean_focus'] = g_dev['foc'].get_position()
-            try:
-                spot6 = result['FWHM']
-                foc_pos4 = result['mean_focus']
-                plog('\n\n\nFound best focus position at:  ', foc_pos4,' measured FWHM is:  ',  round(spot6, 2), '\n\n\n')
-                g_dev['obs'].send_to_user("Found best focus position at: " +str(foc_pos4) + ' measured FWHM is: ' + str(round(spot6, 2)), p_level='INFO')
-            except:
-                plog('Known bug, Verifcation did not work. Returing to target using solved focus.')
-        else:
-            plog('Coarse_focus did not converge. Moving back to starting focus:  ', foc_pos0)
-            g_dev['obs'].send_to_user('Coarse_focus did not converge. Moving back to starting focus:  ' + str(foc_pos0), p_level='INFO')
-            g_dev['obs'].send_to_user('Coarse focus failed, moving back to starting focus')
-            
-            g_dev['foc'].guarded_move((foc_start)*g_dev['foc'].micron_to_steps)
-        plog("Returning to RA:  " +str(start_ra) + " Dec: " + str(start_dec))
-        g_dev["obs"].send_to_user("Returning to RA:  " +str(start_ra) + " Dec: " + str(start_dec))
-        g_dev['mnt'].go_command(ra=start_ra, dec=start_dec)
-        self.wait_for_slew()
-        if sim:
-            g_dev['foc'].guarded_move((foc_start)*g_dev['foc'].micron_to_steps)
-        #self.sequencer_hold = False
-        self.guard = False
-        self.af_guard = False
-        self.focussing=False
-        return result
-
     def append_completes(self, block_id):
         camera = self.config['camera']['camera_1_1']['name']
         seq_shelf = shelve.open(g_dev['obs'].obsid_path + 'ptr_night_shelf/' + camera + str(g_dev['obs'].name))
@@ -4131,10 +3409,8 @@ class Sequencer:
     def is_in_completes(self, check_block_id):
         camera = self.config['camera']['camera_1_1']['name']
         seq_shelf = shelve.open(g_dev['obs'].obsid_path + 'ptr_night_shelf/' + camera + str(g_dev['obs'].name))
-        #plog('Completes contains:  ', seq_shelf['completed_blocks'])
         if check_block_id in seq_shelf['completed_blocks']:
-            seq_shelf.close()
-            #plog("Block ID in completed blocks:  ",  check_block_id)
+            seq_shelf.close()            
             return True
         else:
             seq_shelf.close()
@@ -4410,7 +3686,7 @@ class Sequencer:
         # Make sure platesolve queue is clear
         reported=0
         while True:
-            #if g_dev['obs'].platesolve_is_processing ==False and g_dev['obs'].platesolve_queue.empty():
+            
             if g_dev['obs'].platesolve_is_processing ==False and g_dev['obs'].platesolve_queue.empty():
                 break
             else:
@@ -4431,11 +3707,7 @@ class Sequencer:
         )
         # Take a pointing shot to reposition
         result = g_dev['cam'].expose_command(req, opt, user_id='Tobor', user_name='Tobor', user_roles='system', no_AWS=True, solve_it=True)
-        
-        
-        
-        #breakpoint()
-        
+                
         # Wait for platesolve
         queue_clear_time = time.time()
         reported=0
@@ -4454,6 +3726,7 @@ class Sequencer:
                     g_dev["obs"].send_to_user("Cancelling out of activity as no longer open and enabled to observe.")  
                     return
                 pass
+            
         plog ("Time Taken for queue to clear post-exposure: " + str(time.time() - queue_clear_time))
         
         if g_dev['obs'].last_platesolved_ra != np.nan:
@@ -4482,7 +3755,6 @@ class Sequencer:
             reported=0
             while True:
                 if g_dev['obs'].platesolve_is_processing ==False and g_dev['obs'].platesolve_queue.empty():
-                    #plog ("we are free from platesolving!")
                     break
                 else:
                     if reported ==0:

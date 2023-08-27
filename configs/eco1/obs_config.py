@@ -134,7 +134,7 @@ site_config = {
     #'roof_open_safety_base_time' : 15, # How many minutes to use as the default retry time to open roof. This will be progressively multiplied as a back-off function.
     'closest_distance_to_the_sun': 45, # Degrees. For normal pointing requests don't go this close to the sun. 
     'closest_distance_to_the_moon': 10, # Degrees. For normal pointing requests don't go this close to the moon. 
-    
+    'minimum_distance_from_the_moon_when_taking_flats': 45,
     'lowest_requestable_altitude': -5, # Degrees. For normal pointing requests don't allow requests to go this low. 
     
     'observing_check_period' : 1,    # How many minutes between weather checks
