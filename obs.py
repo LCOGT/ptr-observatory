@@ -2507,25 +2507,23 @@ class Observatory:
             
             if g_dev['obs'].pointing_correction_request_time > g_dev['obs'].time_of_last_slew:  # Check it hasn't slewed since request
                 
-                if self.auto_centering_off:
-                    plog ("Telescope off-center, but auto-centering turned off")                
-                else:
-                    plog("Re-centering Telescope Slightly.")
-                    self.send_to_user("Re-centering Telescope Slightly.")
-                    wait_for_slew()
-                    ranudge= g_dev['mnt'].mount.RightAscension + g_dev['obs'].pointing_correction_request_ra_err
-                    decnudge= g_dev['mnt'].mount.Declination + g_dev['obs'].pointing_correction_request_dec_err
-                    if ranudge < 0:
-                        ranudge=ranudge+24                    
-                    if ranudge > 24:
-                        ranudge=ranudge-24
-                    try:
-                        g_dev['mnt'].mount.SlewToCoordinatesAsync(ranudge, decnudge)
-                    except:
-                        plog (traceback.format_exc())
-                        
-                    g_dev['obs'].time_of_last_slew = time.time()
-                    wait_for_slew()
+                
+                plog("Re-centering Telescope Slightly.")
+                self.send_to_user("Re-centering Telescope Slightly.")
+                wait_for_slew()
+                ranudge= g_dev['mnt'].mount.RightAscension + g_dev['obs'].pointing_correction_request_ra_err
+                decnudge= g_dev['mnt'].mount.Declination + g_dev['obs'].pointing_correction_request_dec_err
+                if ranudge < 0:
+                    ranudge=ranudge+24                    
+                if ranudge > 24:
+                    ranudge=ranudge-24
+                try:
+                    g_dev['mnt'].mount.SlewToCoordinatesAsync(ranudge, decnudge)
+                except:
+                    plog (traceback.format_exc())
+                    
+                g_dev['obs'].time_of_last_slew = time.time()
+                wait_for_slew()
                     
             g_dev['obs'].pointing_correction_requested_by_platesolve_thread = False
     

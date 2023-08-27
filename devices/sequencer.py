@@ -147,7 +147,7 @@ class Sequencer:
         self.morn_flats_done = False
         self.eve_sky_flat_latch = False
         self.morn_sky_flat_latch = False
-        self.clock_focus_latch=False
+        self.clock_focus_latch=False        
         # A command so that some scripts can prevent all other scripts  and exposures from occuring.
         # quite important
         self.total_sequencer_control = False
@@ -169,6 +169,8 @@ class Sequencer:
         # once the evening has ended.
         self.end_of_night_token_sent = False
         
+        # Makes sure only one big focus occurs at start of night
+        self.night_focus_ready=False
         
         # This command flushes the list of completed projects,
         # allowing them to be run tongiht
@@ -448,7 +450,7 @@ class Sequencer:
                 
     
             if ((g_dev['events']['Clock & Auto Focus']  <= ephem_now < g_dev['events']['Observing Begins'])) \
-                    and self.night_focus_ready==True and not g_dev['obs'].scope_in_manual_mode and not g_dev['debug'] and  g_dev['obs'].open_and_enabled_to_observe and not self.clock_focus_latch:
+                    and self.night_focus_ready==True and not g_dev['obs'].scope_in_manual_mode and  g_dev['obs'].open_and_enabled_to_observe and not self.clock_focus_latch:
     
                 self.nightly_reset_complete = False
                 self.clock_focus_latch = True
@@ -1085,7 +1087,7 @@ class Sequencer:
         
         self.nightime_bias_counter = 0
         self.nightime_dark_counter = 0
-
+        self.night_focus_ready=False
 
         # set safety defaults at startup
         g_dev['obs'].scope_in_manual_mode=g_dev['obs'].config['scope_in_manual_mode']        
