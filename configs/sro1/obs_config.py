@@ -159,7 +159,16 @@ site_config = {
     'operations_begin':  -1.0,   #  - hours from Sunset
     'eve_sky_flat_sunset_offset': -35,  #  Minutes  neg means before, + after.  OPENING TIME
     'eve_cool_down_open' : -60.0,
-    'morn_sky_flat_sunrise_offset' : +15.0,  #  Minutes  neg means before, + after.  CLOSING TIME
+    
+    # How many minutes after civilDusk to do....
+    'end_eve_sky_flats_offset': -2 , 
+    'clock_and_auto_focus_offset': -1,
+    'observing_begins_offset': 18,
+    
+    # How many minutes before civilDawn
+    'observing_ends_offset': 18,   
+    
+    
 
     'eve_cooldown_offset': -.99,   #  - hours beforeSunset
     'eve_sky_flat_offset':  0.5,   #  - hours beforeSunset

@@ -1489,7 +1489,13 @@ class Observatory:
             else:
                 time.sleep(0.2)
 
-    def send_status_process(self):       
+
+    def send_status_process(self):
+        """
+        
+        This sends statuses through one at a time. 
+
+        """
 
         one_at_a_time = 0
         while True:
@@ -1522,6 +1528,7 @@ class Observatory:
                     os.remove(deletefilename)                    
                 except:
                     self.laterdelete_queue.put(deletefilename, block=False)                   
+
             else:
                 time.sleep(0.1)
 
