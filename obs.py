@@ -2291,8 +2291,8 @@ class Observatory:
     def fast_to_aws(self):
         """Sends small files specifically focussed on UI responsiveness to AWS.
 
-        This is primarily a queue for files that need to get to the UI fast and
-        skip the queue. This allows small files to be uploaded simultaneously
+        This is primarily a queue for files that need to get to the UI FAST. 
+        This allows small files to be uploaded simultaneously
         with bigger files being processed by the ordinary queue.
 
         The pri_image is a tuple, smaller first item has priority.
@@ -2300,7 +2300,6 @@ class Observatory:
         """
 
         one_at_a_time = 0
-        # This stopping mechanism allows for threads to close cleanly.
         while True:
 
             if (not self.fast_queue.empty()) and one_at_a_time == 0:
@@ -2324,20 +2323,20 @@ class Observatory:
                     except:
                         plog ("connection glitch in fast_aws thread. Waiting 5 seconds.")
                         time.sleep(5)
-                # Send all other files to S3.               
+                # # Send all other files to S3.               
 
-                with open(filepath, "rb") as fileobj:
-                    files = {"file": (filepath, fileobj)}
-                    #print('\nfiles;  ', files)
-                    while True:
-                        try:
-                            reqs.post(aws_resp["url"], data=aws_resp["fields"], files=files, timeout=45)
+                # with open(filepath, "rb") as fileobj:
+                #     files = {"file": (filepath, fileobj)}
+                #     #print('\nfiles;  ', files)
+                #     while True:
+                #         try:
+                #             reqs.post(aws_resp["url"], data=aws_resp["fields"], files=files, timeout=45)
 
-                            break
-                        except:
-                            plog("Non-fatal connection glitch for a file posted.")
-                            plog(files)
-                            time.sleep(5)
+                #             break
+                #         except:
+                #             plog("Non-fatal connection glitch for a file posted.")
+                #             plog(files)
+                #             time.sleep(5)
                 self.fast_queue.task_done()
                 one_at_a_time = 0
 
