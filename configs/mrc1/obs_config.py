@@ -910,9 +910,12 @@ site_config = {
                 'StartX': 1,
                 'StartY': 1,
 
-
-                'x_field_deg': 0.8042,  # round(4784*0.605194/3600, 4),   #48 X 32 AMIN  3MIN X 0.5 DEG
-                'y_field_deg': 0.5369,  # round(3194*0.605194/3600, 4),
+                # MTF -WE DO NOT SPECIFY THESE, WE CALCULATE THEM FROM PIXELSCALE AND CAMERASIZE
+                #'x_field_deg': 0.8042,  # round(4784*0.605194/3600, 4),   #48 X 32 AMIN  3MIN X 0.5 DEG
+                #'y_field_deg': 0.5369,  # round(3194*0.605194/3600, 4),
+                
+                
+                
                 'area_sq_deg':  0.4318,
                 'overscan_x': 0,
                 'overscan_y': 0,

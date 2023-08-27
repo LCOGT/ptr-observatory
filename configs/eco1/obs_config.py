@@ -703,8 +703,8 @@ site_config = {
                 'StartX' : 1,
                 'StartY' : 1,
 
-                'x_field_deg': 1.3333,   #   round(4784*1.0481/3600, 4),
-                'y_field_deg': 1.0665,   #  round(3194*1.0481/3600, 4),
+                #'x_field_deg': 1.3333,   #   round(4784*1.0481/3600, 4),
+                #'y_field_deg': 1.0665,   #  round(3194*1.0481/3600, 4),
                 #'overscan_x': 24,
                 #'overscan_y': 3,
                 'north_offset': 0.0,    #  These three are normally 0.0 for the primary telescope
