@@ -872,7 +872,6 @@ class Sequencer:
                             opt = {'area': 150, 'count': 1, 'bin': 1, 'filter': color, \
                                    'hint': block['project_id'] + "##" + dest_name, 'object_name': block['project']['project_targets'][0]['name'], 'pane': pane}
                             plog('Seq Blk sent to camera:  ', req, opt)
-                            obs_win_begin, sunZ88Op, sunZ88Cl, ephem_now = self.astro_events.getSunEvents()
 
                             now_date_timeZ = datetime.datetime.now().isoformat().split('.')[0] +'Z'
                             if g_dev['seq'].blockend != None:
@@ -955,38 +954,9 @@ class Sequencer:
                 stride = bias_count   #Just do all of the biases first.
                 single_dark = False
                 
-            cool_down_opened_already=False
+           
             while b_d_to_do > 0:
                 g_dev['obs'].scan_requests()
-                
-                # The biasdark script can sometimes overrun the time that the roof should open, 
-                # So a check for whether it hits cool down time in this loop is appropriate
-                obs_win_begin, sunZ88Op, sunZ88Cl, ephem_now = self.astro_events.getSunEvents()
-                # if ((g_dev['events']['Cool Down, Open']  <= ephem_now < g_dev['events']['Eve Sky Flats'])) and cool_down_opened_already == False:
-
-                    
-                #     if not self.nightly_weather_report_complete and not g_dev['debug']:
-                #         self.run_nightly_weather_report()
-                #         self.nightly_weather_report_complete=True
-
-                    
-                #     if self.config['obsid_roof_control'] and not g_dev['obs'].open_and_enabled_to_observe and self.weather_report_is_acceptable_to_observe==True and self.weather_report_wait_until_open==False and not self.cool_down_latch:
-                #         if time.time() > self.enclosure_next_open_time and self.opens_this_evening < self.config['maximum_roof_opens_per_evening']:
-                #             #self.enclosure_next_open_time = time.time() + 300 # Only try to open the roof every five minutes
-                #             self.cool_down_latch = True
-                #             #g_dev['ocn'].status = g_dev['ocn'].get_status()
-                #             #g_dev['enc'].status = g_dev['enc'].get_status()
-                #             #ocn_status = g_dev['ocn'].status
-                #             #enc_status = g_dev['enc'].status
-                #             #self.open_observatory(enc_status, ocn_status)    
-                            
-                #             if g_dev['enc'].enclosure.ShutterStatus == 0:                    
-                #                 g_dev['obs'].open_and_enabled_to_observe = True 
-                #                 cool_down_opened_already=True
-                #                 self.night_focus_ready=True
-                #             self.cool_down_latch = False
-                
-                
                 min_to_do = min(b_d_to_do, stride)
                 plog("Expose " + str(stride) +" 1x1 bias frames.")
                 req = {'time': 0.0,  'script': 'True', 'image_type': 'bias'}
@@ -1007,10 +977,8 @@ class Sequencer:
                     self.bias_dark_latch = False
                     return
                 
-
                 g_dev['obs'].update()
                 
-
                 if ephem.now() + (dark_exp_time + cycle_time + 30)/86400 > ending:
                     self.bias_dark_latch = False
                     break
@@ -1061,7 +1029,6 @@ class Sequencer:
 
             plog(" Bias/Dark acquisition is finished normally.")
 
-            #self.sequencer_hold = False
             g_dev['mnt'].park_command({}, {}) # Get there early
             plog("Bias/Dark Phase has passed.")
             self.bias_dark_latch = False
@@ -1072,8 +1039,7 @@ class Sequencer:
     def collect_and_queue_neglected_fits(self):
         # UNDERTAKING END OF NIGHT ROUTINES
         
-        # Go through and add any remaining fz files to the aws queue .... hopefully that is enough? If not, I will make it keep going until it is sure.
-           
+        # Go through and add any remaining fz files to the aws queue 
         plog ('Collecting orphaned fits and tokens to go up to BANZAI')
         dir_path=self.config['client_path'] +'/' + g_dev['obs'].name + '/' + 'archive/'
         
@@ -1097,21 +1063,17 @@ class Sequencer:
         # Add all fits.fz members to the AWS queue
         bigfzs=glob(orphan_path + '*.fz')
 
-        for fzneglect in bigfzs:
-            #plog ("Reattempting upload of " + str(os.path.basename(fzneglect)))            
+        for fzneglect in bigfzs:         
             g_dev['obs'].enqueue_for_PTRarchive(56000000, orphan_path, fzneglect.split('orphans')[-1].replace('\\',''))
            
         bigtokens=glob(g_dev['obs'].obsid_path + 'tokens/*.token')
         for fzneglect in bigtokens:
-            #plog ("Reattempting upload of " + str(os.path.basename(fzneglect)))
             g_dev['obs'].enqueue_for_PTRarchive(56000001, g_dev['obs'].obsid_path + 'tokens/', fzneglect.split('tokens')[-1].replace('\\',''))
    
     
     def nightly_reset_script(self):
         # UNDERTAKING END OF NIGHT ROUTINES
-
-        # Never hurts to make sure the telescope is parked for the night
-        #g_dev['mnt'].park_command({}, {})
+        # Never hurts to make sure the telescope is parked for the night        
         self.park_and_close()
 
         self.reported_on_observing_period_beginning=False
@@ -1135,15 +1097,6 @@ class Sequencer:
         g_dev['obs'].admin_owner_commands_only = False
         g_dev['obs'].assume_roof_open=False
 
-
-        #self.nightly_weather_report_complete=False
-        # Set weather report to false because it is daytime anyways.
-        #self.weather_report_is_acceptable_to_observe=False
-        
-        # Setting runnight for mop up scripts
-        yesterday = datetime.datetime.now() - timedelta(1)
-        runNight=datetime.datetime.strftime(yesterday, '%Y%m%d')
-
         # Check the archive directory and upload any big fits that haven't been uploaded
         # wait until the queue is empty before mopping up
         self.collect_and_queue_neglected_fits()
@@ -1166,12 +1119,11 @@ class Sequencer:
         self.collect_and_queue_neglected_fits()
         
         
-        
-        # Culling the archive
+        # Culling the archive. This removes old files
+        # which allows us to maintain some reasonable harddisk space usage
         if self.config['archive_age'] > 0 :
             plog (g_dev['obs'].obsid_path + 'archive/')
             dir_path=g_dev['obs'].obsid_path + 'archive/'
-            #cameras=[d for d in os.listdir(dir_path) if os.path.isdir(d)]
             cameras=glob(dir_path + "*/")
             plog (cameras)
             for camera in cameras:  # Go through each camera directory
@@ -1215,7 +1167,7 @@ class Sequencer:
         g_dev['obs'].astro_events = self.astro_events
 
 
-        # sending this up to AWS
+        
         '''
         Send the config to aws.
         '''
@@ -1236,8 +1188,6 @@ class Sequencer:
         # Resetting complete projects
         plog ("Nightly reset of complete projects")
         self.reset_completes()
-        #g_dev['obs'].blocks = None
-        #g_dev['obs'].projects = None
         g_dev['obs'].events_new = None
         g_dev['obs'].reset_last_reference()
         if self.config['mount']['mount1']['permissive_mount_reset'] == 'yes':
@@ -1247,12 +1197,10 @@ class Sequencer:
 
         # Resetting sequencer stuff
         self.connected = True
-        self.description = "Sequencer for script execution."
-        #self.sequencer_hold = False
+        self.description = "Sequencer for script execution."        
         self.sequencer_message = '-'
         plog("sequencer reconnected.")
         plog(self.description)
-        #self.sky_guard = False
         self.af_guard = False
         self.block_guard = False
         g_dev['seq'].blockend= None
@@ -1290,9 +1238,6 @@ class Sequencer:
         g_dev["foc"].last_focus_fwhm = None
         g_dev["foc"].focus_tracker = [np.nan] * 10
 
-        # Trying to figure out why sequencer isn't restarting.
-        events = g_dev['events']
-        obs_win_begin, sunZ88Op, sunZ88Cl, ephem_now = self.astro_events.getSunEvents()
 
         # Reopening config and resetting all the things.
         self.astro_events.compute_day_directory()
@@ -1300,24 +1245,14 @@ class Sequencer:
         self.astro_events.display_events()
         g_dev['obs'].astro_events = self.astro_events
 
-        
-        
-        # Allow midnight calibrations
-        #self.midnight_calibration_done = False
+               
+
         self.nightly_reset_complete = True
         
         g_dev['mnt'].theskyx_tracking_rescues = 0
 
         self.opens_this_evening=0
         
-        # Set weather report back to False until ready to check the weather again. 
-        #self.nightly_weather_report_complete=False
-        #self.weather_report_is_acceptable_to_observe=False
-        #self.weather_report_wait_until_open=False
-        #self.weather_report_wait_until_open_time=ephem_now
-        #self.weather_report_close_during_evening=False
-        #self.weather_report_close_during_evening_time=ephem_now + 86400
-        #self.nightly_weather_report_complete=False
         
         self.stop_script_called=False
         self.stop_script_called_time=time.time()
@@ -1334,18 +1269,14 @@ class Sequencer:
         
         # Daily reboot of necessary windows 32 programs *Cough* Theskyx *Cough*
         if g_dev['mnt'].theskyx: # It is only the mount that is the reason theskyx needs to reset
-            #self.kill_and_reboot_theskyx(g_dev['mnt'].current_icrs_ra, g_dev['mnt'].current_icrs_dec)
-            self.kill_and_reboot_theskyx(-1,-1)
-            #g_dev['mnt'].park_command({}, {})
-            
+            self.kill_and_reboot_theskyx(-1,-1)      
         
         return
     
     def kill_and_reboot_theskyx(self, returnra, returndec): # Return to a given ra and dec or send -1,-1 to remain at park
         os.system("taskkill /IM TheSkyX.exe /F")
         os.system("taskkill /IM TheSky64.exe /F")
-        time.sleep(120) # give it time to settle down.
-        #breakpoint()
+        time.sleep(30) 
         retries=0
         while retries <5:
             try:
@@ -1355,7 +1286,6 @@ class Sequencer:
                                g_dev['obs'].config, 
                                g_dev['obs'].astro_events, 
                                tel=True)
-                
                 
                 
                 # If theskyx is controlling the camera and filter wheel, reconnect the camera and filter wheel
@@ -1407,16 +1337,14 @@ class Sequencer:
         darkinputList=(glob(g_dev['obs'].local_dark_folder +'*.n*'))
         inputList=(glob(g_dev['obs'].local_bias_folder +'*.n*'))
         archiveDate=str(datetime.date.today()).replace('-','')
-# =============================================================================
-#        inputList = inputList[-19:] # WER used for speed testing
-# =============================================================================
-        # Test each flat file actually opens
+        # Test each file actually opens
         for file in inputList:
             try:
                 hdu1data = np.load(file, mmap_mode='r')
             except:
                 plog ("corrupt bias skipped: " + str(file))
                 inputList.remove(file)
+                
         # have to remove flats from memory to make room for.... flats!
         try:
             del g_dev['cam'].flatFiles
@@ -1483,7 +1411,7 @@ class Sequencer:
                 filenameaws=tempfrontcalib + 'BIAS_master_bin1.fits'
                 g_dev['cam'].enqueue_for_AWS(50, filepathaws,filenameaws)
                 
-                # Store a version of the dakr for the archive too
+                # Store a version of the bias for the archive too
                 fits.writeto(g_dev['obs'].calib_masters_folder + 'ARCHIVE_' +  archiveDate + '_' + tempfrontcalib + 'BIAS_master_bin1.fits', masterBias, overwrite=True)
                 
                 filepathaws=g_dev['obs'].calib_masters_folder
@@ -1516,7 +1444,6 @@ class Sequencer:
                 
                 est_read_noise= (stddiffimage * g_dev['cam'].config["camera"][g_dev['cam'].name]["settings"]["camera_gain"]) / 1.414
     
-                #plog("Calculated Readnoise for : " + str(file) + " is " + str(est_read_noise))
                 readnoise_array.append(est_read_noise)
                 post_readnoise_array.append(stddiffimage)
             
@@ -1541,10 +1468,7 @@ class Sequencer:
                 except:
                     plog ("corrupt dark skipped: " + str(file))
                     inputList.remove(file)
-            
-# =============================================================================
-#            inputList = inputList[-19:]  # Speed improvement WER 
-# =============================================================================           
+                    
             PLDrive = np.memmap(g_dev['obs'].local_dark_folder  + 'tempfile', dtype='float32', mode= 'w+', shape = (shapeImage[0],shapeImage[1],len(inputList)))
             # Debias dark frames and stick them in the memmap
             i=0
@@ -1656,10 +1580,7 @@ class Sequencer:
                             if not g_dev['cam'].config["camera"][g_dev['cam'].name]["settings"]["is_osc"]:
                                 normalising_factor=np.nanmedian(flatdebiaseddedarked)
                                 flatdebiaseddedarked = flatdebiaseddedarked/normalising_factor
-                            else:
-                                
-                                #temp_is_osc=True
-                                #osc_fits=copy.deepcopy(flatdebiaseddedarked)
+                            else:                                
                                 
                                 debayered=[]
                                 max_median=0                    
@@ -1672,17 +1593,12 @@ class Sequencer:
                                 
                                 osc_normalising_factor=[]
                                 # crop each of the images to the central region
-                                #oscounter=0
+
                                 for oscimage in debayered:
                                     cropx = int( (oscimage.shape[0] -500)/2)
                                     cropy = int((oscimage.shape[1] -500) /2)
                                     oscimage=oscimage[cropx:-cropx, cropy:-cropy]
-                                    #oscimage = sigma_clip(camera_gain_estimate_image, masked=False, axis=None)
-                                    oscmedian=np.nanmedian(oscimage)
-                                    #if oscmedian > max_median:
-                                    #    max_median=oscmedian
-                                        #brightest_bayer=copy.deepcopy(oscounter)
-                                    #oscounter=oscounter+1
+                                    oscmedian=np.nanmedian(oscimage)                                    
                                     osc_normalising_factor.append(oscmedian)
                                 
                                 del debayered
@@ -1692,19 +1608,7 @@ class Sequencer:
                                 flatdebiaseddedarked[1::2, ::2]=flatdebiaseddedarked[1::2, ::2]/osc_normalising_factor[2]
                                 flatdebiaseddedarked[1::2, 1::2]=flatdebiaseddedarked[1::2, 1::2]/osc_normalising_factor[3]
                                 
-                                
-                                #camera_gain_estimate_image=copy.deepcopy(debayered[brightest_bayer])
-                                
-                                #del osc_fits
-                                
-                                
-                                #normalising_factor=max_median
-                            
-                            
-                                 
-                            
-                            
-                            
+                                                           
                             
                             timetaken=datetime.datetime.now() -starttime
                             plog ("Time Taken to load array and debias and dedark and normalise flat: " + str(timetaken))
@@ -1735,8 +1639,6 @@ class Sequencer:
                         # Fix up any glitches in the flat
                         temporaryFlat[temporaryFlat < 0.1] = np.nan
                         temporaryFlat[temporaryFlat > 2.0] = np.nan
-                        #temporaryFlat[temporaryFlat < 0.1] = 0.8
-                        #temporaryFlat[np.isnan(temporaryFlat)] = 0.8
                         
                         temporaryFlat=interpolate_replace_nans(temporaryFlat, kernel)
                         temporaryFlat[temporaryFlat == inf] = np.nan
@@ -1759,20 +1661,15 @@ class Sequencer:
                             filepathaws=g_dev['obs'].calib_masters_folder
                             filenameaws='ARCHIVE_' +  archiveDate + '_' + tempfrontcalib + 'masterFlat_'+ str(filtercode) + '_bin1.fits'
                             g_dev['cam'].enqueue_for_AWS(80, filepathaws,filenameaws)
-                            
-                            #breakpoint()
-                            
+                                                        
                         except Exception as e:
                             plog ("Could not save flat frame: ",e)
                         
                         # Now to estimate gain from flats
-                        for fullflat in inputList:
-                            #breakpoint()
-                            #camera_gain_estimate_image=PLDrive[:,:,fullflat]/temporaryFlat
+                        for fullflat in inputList:                            
                             hdu1data = np.load(fullflat, mmap_mode='r')     
                             hdu1exp=float(file.split('_')[-2])
                             
-                            #camera_gain_estimate_image=((hdu1data-masterBias)-(masterDark*hdu1exp)) /temporaryFlat
                             camera_gain_estimate_image=((hdu1data-masterBias)-(masterDark*hdu1exp))
                             camera_gain_estimate_image[camera_gain_estimate_image == inf] = np.nan
                             camera_gain_estimate_image[camera_gain_estimate_image == -inf] = np.nan
@@ -1780,7 +1677,6 @@ class Sequencer:
                             # If an OSC, just use the brightest bayer bit.
                             if g_dev['cam'].config["camera"][g_dev['cam'].name]["settings"]["is_osc"]:
                                 
-                                #temp_is_osc=True
                                 osc_fits=copy.deepcopy(camera_gain_estimate_image)
                                 
                                 debayered=[]
@@ -1797,7 +1693,6 @@ class Sequencer:
                                     cropx = int( (oscimage.shape[0] -500)/2)
                                     cropy = int((oscimage.shape[1] -500) /2)
                                     oscimage=oscimage[cropx:-cropx, cropy:-cropy]
-                                    #oscimage = sigma_clip(camera_gain_estimate_image, masked=False, axis=None)
                                     oscmedian=np.nanmedian(oscimage)
                                     if oscmedian > max_median:
                                         max_median=oscmedian
@@ -1809,17 +1704,7 @@ class Sequencer:
                                 del osc_fits
                                 del debayered
                                 
-                                #plog ("Brightest Bayer " + str(brightest_bayer))
-                                #central_median=max_median 
-                            
-                                
-                            
-                            
-                            #numpy.seterr(invalid=’ignore’)
-                            
-                            
-                            #camera_gain_estimate_image = camera_gain_estimate_image[500:-500,500:-500]
-                            
+                                                            
                             cropx = int( (camera_gain_estimate_image.shape[0] -500)/2)
                             cropy = int((camera_gain_estimate_image.shape[1] -500) /2)
                             camera_gain_estimate_image=camera_gain_estimate_image[cropx:-cropx, cropy:-cropy]
@@ -1828,18 +1713,14 @@ class Sequencer:
                             
                             cge_median=np.nanmedian(camera_gain_estimate_image)
                             cge_stdev=np.nanstd(camera_gain_estimate_image)
-                            #cge_stdev=mad_std(camera_gain_estimate_image)
                             cge_sqrt=pow(cge_median,0.5)
                             cge_gain=1/pow(cge_sqrt/cge_stdev, 2)
                             print ("Camera gain median: " + str(cge_median) + " stdev: " +str(cge_stdev)+ " sqrt: " + str(cge_sqrt) + " gain: " +str(cge_gain))
-                            #self.expresult["camera_gain"] = cge_gain
+                            
                             estimated_flat_gain.append(cge_gain)
                         
                             single_filter_camera_gains.append(cge_gain)
-                            #breakpoint()
-                        
-                            #fits.writeto(g_dev['obs'].calib_masters_folder + 'DODGY_' + tempfrontcalib + 'masterFlat_'+ str(filtercode) + '_bin1.fits', camera_gain_estimate_image, overwrite=True)
-                            #breakpoint()
+                            
                         single_filter_camera_gains=np.array(single_filter_camera_gains)
                         single_filter_camera_gains = sigma_clip(single_filter_camera_gains, masked=False, axis=None)
                         plog ("Filter Throughput Sigma Clipped Estimates: " + str(np.nanmedian(single_filter_camera_gains)) + " std " + str(np.std(single_filter_camera_gains)) + " N " + str(len(single_filter_camera_gains)))
@@ -1848,15 +1729,7 @@ class Sequencer:
                         PLDrive._mmap.close()
                         del PLDrive
                         gc.collect()
-                        os.remove(g_dev['obs'].local_flat_folder  + 'tempfile')
-                        
-                        #for file in inputList:
-                            #plog (datetime.datetime.now().strftime("%H:%M:%S"))
-
-                            #starttime=datetime.datetime.now() 
-                            
-
-                        #    hdu1data = np.load(file, mmap_mode='r')
+                        os.remove(g_dev['obs'].local_flat_folder  + 'tempfile')       
                         
                     g_dev["obs"].send_to_user(str(filtercode) + " flat calibration frame created.")
                         
@@ -1868,8 +1741,6 @@ class Sequencer:
                     pass
                 
 
-                   
-                
                 # Report on camera estimated gains
                 # Report on camera gain estimation
                 try:
@@ -1888,13 +1759,8 @@ class Sequencer:
                         plog ("Camera Gain Sigma Clipped Estimates: " + str(np.nanmedian(estimated_flat_gain)) + " std " + str(np.std(estimated_flat_gain)) + " N " + str(len(estimated_flat_gain)))
                         f.write ("Camera Gain Sigma Clipped Estimates: " + str(np.nanmedian(estimated_flat_gain)) + " std " + str(np.std(estimated_flat_gain)) + " N " + str(len(estimated_flat_gain))+ "\n")
                         
-                        
-                        #plog("Calculated Readnoise for : " + str(file) + " is " + str(est_read_noise))
-                        #readnoise_array.append(est_read_noise)
                         est_read_noise=[]
-                        for rnentry in post_readnoise_array:
-                        #post_readnoise_array= np.array(post_readnoise_array)
-                        #stddiffimage=np.nanmedian(post_readnoise_array)
+                        for rnentry in post_readnoise_array:                        
                             est_read_noise.append( (rnentry * np.nanmedian(estimated_flat_gain)) / 1.414)
             
                         est_read_noise=np.array(est_read_noise)
@@ -1908,15 +1774,12 @@ class Sequencer:
                         for filterline in flat_gains:                            
                             plog (filterline+ " " + str(flat_gains[filterline]))
                             f.write(filterline + " " + str(flat_gains[filterline]) + "\n") 
-                            #plog (filterline)
-                        
-                        #breakpoint()
+                            
                 except:
                     plog ("hit some snag with reporting gains")
                     plog(traceback.format_exc()) 
                     breakpoint()
-                
-                
+                                
                 
                 # THEN reload them to use for the next night.                
                 # First delete the calibrations out of memory.
@@ -1976,12 +1839,9 @@ class Sequencer:
         while too_close_to_zenith:
             alt, az = self.astro_events.flat_spot_now()  
             if self.config['degrees_to_avoid_zenith_area_for_calibrations'] > 0:
-                #breakpoint()
                 plog ('zentih distance: ' + str(90-alt))
                 if (90-alt) < self.config['degrees_to_avoid_zenith_area_for_calibrations']:
                     alt=90-self.config['degrees_to_avoid_zenith_area_for_calibrations']
-                    #plog ("Requested Flat Spot, az: " + str(az) + " alt: " + str(alt))
-                    #plog ("adjusted altitude to " + str(alt) + "to avoid the zenith region")
                     plog ("waiting for the flat spot to move through the zenith")
                     time.sleep(30)
                     
@@ -1992,7 +1852,6 @@ class Sequencer:
                         plog ("Observatory closed or disabled during flat script. Cancelling out of flat acquisition loop.")
                         self.filter_throughput_shelf.close()
                         g_dev['mnt'].park_command({}, {}) # You actually always want it to park, TheSkyX can't stop the telescope tracking, so park is safer... it is before focus anyway.
-                        #self.sky_guard = False
                         self.flats_being_collected = False
                         return 'cancel'
                     
@@ -2001,7 +1860,6 @@ class Sequencer:
                         plog ("Flat acquisition time finished. Breaking out of the flat loop.")
                         self.filter_throughput_shelf.close()
                         g_dev['mnt'].park_command({}, {}) # You actually always want it to park, TheSkyX can't stop the telescope tracking, so park is safer... it is before focus anyway.
-                        #self.sky_guard = False
                         self.flats_being_collected = False
                         return 'cancel'
                     
