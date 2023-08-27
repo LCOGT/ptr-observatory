@@ -2314,29 +2314,17 @@ class Observatory:
                 # Here we parse the file, set up and send to AWS
                 filename = pri_image[1][1]
                 filepath = pri_image[1][0] + filename  # Full path to file on disk
-                retryapi=True
-                while retryapi:
-                    try:
-                        aws_resp = authenticated_request(
-                            "POST", "/upload/", {"object_name": filename})
-                        retryapi=False
-                    except:
-                        plog ("connection glitch in fast_aws thread. Waiting 5 seconds.")
-                        time.sleep(5)
-                # # Send all other files to S3.               
-
-                # with open(filepath, "rb") as fileobj:
-                #     files = {"file": (filepath, fileobj)}
-                #     #print('\nfiles;  ', files)
-                #     while True:
-                #         try:
-                #             reqs.post(aws_resp["url"], data=aws_resp["fields"], files=files, timeout=45)
-
-                #             break
-                #         except:
-                #             plog("Non-fatal connection glitch for a file posted.")
-                #             plog(files)
-                #             time.sleep(5)
+                aws_resp = authenticated_request("POST", "/upload/", {"object_name": filename})
+                with open(filepath, "rb") as fileobj:
+                    files = {"file": (filepath, fileobj)}
+                    while True:
+                        try:
+                            reqs.post(aws_resp["url"], data=aws_resp["fields"], files=files, timeout=45)
+                            break
+                        except:
+                            plog("Non-fatal connection glitch for a file posted.")
+                            plog(files)
+                            time.sleep(5)
                 self.fast_queue.task_done()
                 one_at_a_time = 0
 
@@ -2355,8 +2343,7 @@ class Observatory:
         )
 
         try:
-            reqs.post(url_log, body, timeout=5)
-        # if not response.ok:
+            reqs.post(url_log, body, timeout=5)        
         except:
             plog("Log did not send, usually not fatal.")
 
@@ -2467,18 +2454,14 @@ class Observatory:
                             ]
                             ]
                     
-                    #print ("pierside")
-                    #print (pier_side)
-                    #print (picklepayload)
-                    #pickle.dump(picklepayload, open('subprocesses/testsmartstackpickle','wb')) 
-                    #sys.exit()
-                    
-                                           
+                                                               
                     smartstack_subprocess=subprocess.Popen(['python','subprocesses/SmartStackprocess.py'],stdin=subprocess.PIPE,stdout=subprocess.PIPE,bufsize=0)
                                      
                     pickle.dump(picklepayload, smartstack_subprocess.stdin)
-                                                                                                                                 
-                    #pickle.dump(picklepayload, open('subprocesses/testsmartstackpickle','wb'))                                                                                                             
+                    
+                    # Another pickle debugger
+                    if False:
+                        pickle.dump(picklepayload, open('subprocesses/testsmartstackpickle','wb'))                                                                                                             
                         
                     # Essentially wait until the subprocess is complete
                     smartstack_subprocess.communicate()
@@ -2511,7 +2494,7 @@ class Observatory:
                     plog(datetime.datetime.now())
 
                 plog("Smartstack round complete. Time taken: " + str(time.time() - sstack_timer))               
-                self.img = None  # Clean up all big objects.
+                
                 self.smartstack_queue.task_done()
             else:
                 time.sleep(0.1)
@@ -2529,7 +2512,6 @@ class Observatory:
                 else:
                     plog("Re-centering Telescope Slightly.")
                     self.send_to_user("Re-centering Telescope Slightly.")
-                    #g_dev['mnt'].mount.SlewToCoordinatesAsync(g_dev['obs'].pointing_correction_request_ra, g_dev['obs'].pointing_correction_request_dec)
                     wait_for_slew()
                     ranudge= g_dev['mnt'].mount.RightAscension + g_dev['obs'].pointing_correction_request_ra_err
                     decnudge= g_dev['mnt'].mount.Declination + g_dev['obs'].pointing_correction_request_dec_err
@@ -2549,19 +2531,14 @@ class Observatory:
     
     def get_enclosure_status_from_aws(self):
         
-        obsy = self.wema_name
-        """Sends an update to the status endpoint."""
-        uri_status = f"https://status.photonranch.org/status/{obsy}/enclosure/"
-        # None of the strings can be empty. Otherwise this put faults.
-        #payload = {"statusType": str(column), "status": status_to_send}
-
-        #try:
-
-        #    data = json.dumps(payload)
-        #except Exception as e:
-        #    plog("Failed to create status payload. Usually not fatal:  ", e)
-
-        #breakpoint()
+        """
+        Requests the current enclosure status from the related WEMA.
+        """
+        
+        
+        wema = self.wema_name        
+        uri_status = f"https://status.photonranch.org/status/{wema}/enclosure/"
+       
 
         try:
             aws_enclosure_status=reqs.get(uri_status, timeout=20)
@@ -2604,8 +2581,7 @@ class Observatory:
                       'enclosure_synchronized': aws_enclosure_status["enclosure_synchronized"],  # self.following, 20220103_0135 WER
                       'dome_azimuth': aws_enclosure_status["dome_azimuth"],
                       'dome_slewing': aws_enclosure_status["dome_slewing"],
-                      'enclosure_mode': aws_enclosure_status["enclosure_mode"]}#,
-                      #'enclosure_message': "No message"}
+                      'enclosure_mode': aws_enclosure_status["enclosure_mode"]}
 
         except:
             try:
@@ -2618,14 +2594,16 @@ class Observatory:
     
     def get_weather_status_from_aws(self):
         
-        obsy = self.wema_name
-        """Sends an update to the status endpoint."""
-        uri_status = f"https://status.photonranch.org/status/{obsy}/weather/"
+        """
+        Requests the current enclosure status from the related WEMA.
+        """
+        
+        wema = self.wema_name        
+        uri_status = f"https://status.photonranch.org/status/{wema}/weather/"
         
         try:
             aws_weather_status=reqs.get(uri_status, timeout=20)
             aws_weather_status=aws_weather_status.json()
-            #breakpoint()
         except Exception as e:
             plog("Failed to get aws enclosure status. Usually not fatal:  ", e)
             aws_weather_status={} 
@@ -2687,13 +2665,10 @@ def wait_for_slew():
     try:
         if not g_dev['mnt'].mount.AtPark:
             movement_reporting_timer = time.time()
-            while g_dev['mnt'].mount.Slewing:  # or g_dev['enc'].status['dome_slewing']:   #Filter is moving??
-                #if g_dev['mnt'].mount.Slewing: plog( 'm>')
-                #if g_dev['enc'].status['dome_slewing']: st += 'd>'
+            while g_dev['mnt'].mount.Slewing:  
                 if time.time() - movement_reporting_timer > 2.0:
                     plog('m>')
                     movement_reporting_timer = time.time()
-                # time.sleep(0.1)
                 g_dev['obs'].update_status(mount_only=True, dont_wait=True)
 
     except Exception as e:
@@ -2703,7 +2678,6 @@ def wait_for_slew():
             plog("Mount disconnected. Recovering.....")
             time.sleep(30)
             g_dev['mnt'].mount.Connected = True
-            # g_dev['mnt'].home_command()
         else:
             breakpoint()
     return
