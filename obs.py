@@ -1490,7 +1490,9 @@ class Observatory:
                 time.sleep(0.2)
 
     def send_status_process(self):
-        """A place to process non-process dependant images from the camera pile
+        """
+        
+        This sends statuses through one at a time. 
 
         """
 
@@ -1517,28 +1519,17 @@ class Observatory:
         deleted from the filesystem go to get deleted later on.
         Usually due to slow or network I/O         
         """
-
-        # This stopping mechanism allows for threads to close cleanly.
-        # one_at_a_time=0
+       
         while True:
-            if (not self.laterdelete_queue.empty()):  # and one_at_a_time==0
+            if (not self.laterdelete_queue.empty()):  
                 (deletefilename) = self.laterdelete_queue.get(block=False)
-                #notdelete=1
-                #while notdelete==1:
-                #plog("Deleting: " +str(deletefilename))
-                    
                 self.laterdelete_queue.task_done()
                 
                 try:
                     os.remove(deletefilename)
-                    #notdelete=0
                 except:
-                    #plog("failed to remove: " + str(deletefilename) + " trying again soon")
                     self.laterdelete_queue.put(deletefilename, block=False)
-                    #time.sleep(5)
-                
-                
-                # one_at_a_time=0
+                    
             else:
                 time.sleep(0.1)
 
@@ -1550,8 +1541,7 @@ class Observatory:
         The camera thread will wait for SEP to finish before moving on.         
         """
 
-        # This stopping mechanism allows for threads to close cleanly.
-        # one_at_a_time=0
+
         while True:
             if (not self.mainjpeg_queue.empty()):  # and one_at_a_time==0
                 # one_at_a_time=1

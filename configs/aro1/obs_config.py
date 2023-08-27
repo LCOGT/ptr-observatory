@@ -163,6 +163,15 @@ site_config = {
     'auto_eve_sky_flat': True,
     'eve_sky_flat_sunset_offset': -45.0,  # Minutes  neg means before, + after.
     #'eve_cool_down_open' : -56.0,
+    
+    # How many minutes after civilDusk to do....
+    'end_eve_sky_flats_offset': 5 , 
+    'clock_and_auto_focus_offset': 8,
+    'observing_begins_offset': 18,
+    
+    # How many minutes before civilDawn
+    'observing_ends_offset': 18,   
+    
     'auto_morn_sky_flat': True,
     'auto_morn_bias_dark': True,
     're-calibrate_on_solve': True,
