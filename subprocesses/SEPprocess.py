@@ -42,8 +42,8 @@ def radial_profile(data, center):
 input_sep_info=pickle.load(sys.stdin.buffer)
 #input_sep_info=pickle.load(open('testSEPpickle','rb'))
 
-print ("HERE IS THE INCOMING. ")
-print (input_sep_info)
+#print ("HERE IS THE INCOMING. ")
+#print (input_sep_info)
 
 #(hdufocusdata, pixscale, readnoise, avg_foc, focus_image, im_path, text_name, hduheader, cal_path, cal_name, frame_type, focus_position)
 
@@ -615,5 +615,89 @@ try:
     
     #plt.plot((radial_profile(hdufocusdata,[503,3823])[:(5*int(rfp))]))
     #breakpoint()
+except:
+    pass
+
+# Constructing the slices and dices
+try:
+    slice_n_dice={}
+    image_size_x, image_size_y = hdufocusdata.shape
+    
+    # row slices
+    slicerow=int(image_size_x * 0.1)
+    slice_n_dice['row10percent']=hdufocusdata[slicerow,:]
+    slice_n_dice['row20percent']=hdufocusdata[slicerow*2,:]
+    slice_n_dice['row30percent']=hdufocusdata[slicerow*3,:]
+    slice_n_dice['row40percent']=hdufocusdata[slicerow*4,:]
+    slice_n_dice['row50percent']=hdufocusdata[slicerow*5,:]
+    slice_n_dice['row60percent']=hdufocusdata[slicerow*6,:]
+    slice_n_dice['row70percent']=hdufocusdata[slicerow*7,:]
+    slice_n_dice['row80percent']=hdufocusdata[slicerow*8,:]
+    slice_n_dice['row90percent']=hdufocusdata[slicerow*9,:]
+    
+    # column slices
+    slicecolumn=int(image_size_y * 0.1)
+    slice_n_dice['column10percent']=hdufocusdata[:,slicecolumn]
+    slice_n_dice['column20percent']=hdufocusdata[:,slicecolumn*2]
+    slice_n_dice['column30percent']=hdufocusdata[:,slicecolumn*3]
+    slice_n_dice['column40percent']=hdufocusdata[:,slicecolumn*4]
+    slice_n_dice['column50percent']=hdufocusdata[:,slicecolumn*5]
+    slice_n_dice['column60percent']=hdufocusdata[:,slicecolumn*6]
+    slice_n_dice['column70percent']=hdufocusdata[:,slicecolumn*7]
+    slice_n_dice['column80percent']=hdufocusdata[:,slicecolumn*8]
+    slice_n_dice['column90percent']=hdufocusdata[:,slicecolumn*9]
+    
+    # diagonals... not so easy as you might think! Easy for square arrays.
+    aspectratio=image_size_x/image_size_y
+    
+    #topleft to bottomright
+    topleftdiag=[]
+    for i in range(image_size_x):
+        topleftdiag.append(hdufocusdata[i,int((image_size_y-i-1)*aspectratio)])
+    slice_n_dice['topleftdiag']=topleftdiag
+    
+    #bottomleft to topright
+    bottomleftdiag=[]
+    for i in range(image_size_x):
+        bottomleftdiag.append(hdufocusdata[i,int(i*aspectratio)])
+    slice_n_dice['bottomleftdiag']=bottomleftdiag
+    
+    # ten percent box area statistics
+    boxshape=(int(0.1*image_size_x),int(0.1*image_size_y))
+    boxstats=[]
+    for x_box in [0,.1,.2,.3,.4,.5,.6,.7,.8,.9]:
+        for y_box in [0,.1,.2,.3,.4,.5,.6,.7,.8,.9]:
+            xboxleft=x_box*image_size_x
+            xboxright=(x_box+0.1) * image_size_x
+            xboxmid=int((xboxleft+xboxright)/2)
+            yboxup=y_box*image_size_y
+            yboxdown=(y_box+0.1) * image_size_y
+            yboxmid=int((yboxup+yboxdown)/2)
+            statistic_area=extract_array(hdufocusdata, boxshape, (xboxmid,yboxmid))
+            
+            # Background clipped
+            imgmin = ( np.nanmin(statistic_area), "Minimum Value of Image Array" )
+            imgmax = ( np.nanmax(statistic_area), "Maximum Value of Image Array" )
+            imgmean = ( np.nanmean(statistic_area), "Mean Value of Image Array" )
+            imgmed = ( np.nanmedian(statistic_area), "Median Value of Image Array" )
+            imgstdev = ( np.nanstd(statistic_area), "Median Value of Image Array" )
+            imgmad = ( median_absolute_deviation(statistic_area, ignore_nan=True), "Median Absolute Deviation of Image Array" )
+            
+            # Get out raw histogram construction data
+            # Get a flattened array with all nans removed
+            int_array_flattened=statistic_area.astype(int).ravel()
+            unique,counts=np.unique(int_array_flattened[~np.isnan(int_array_flattened)], return_counts=True)
+            m=counts.argmax()
+            imageMode=unique[m]
+            
+            imgmode = ( imageMode, "Mode Value of Image Array" )
+            
+            # Collect unique values and counts        
+            histogramdata=np.column_stack([unique,counts]).astype(np.int32)        
+            boxstats.append([x_box,y_box,imgmin,imgmax,imgmean,imgmed,imgstdev,imgmad,imgmode,histogramdata])
+            
+    slice_n_dice['boxstats']=boxstats
+    
+    pickle.dump(slice_n_dice, open(im_path + text_name.replace('.txt', '.box'),'wb'))
 except:
     pass

@@ -341,7 +341,7 @@ class Observatory:
         self.ptrarchive_queue_thread.start()
 
         self.fast_queue = queue.PriorityQueue(maxsize=0)
-        self.fast_queue_thread = threading.Thread(target=self.fast_to_aws, args=())
+        self.fast_queue_thread = threading.Thread(target=self.fast_to_ui, args=())
         self.fast_queue_thread.start()
 
         self.slow_camera_queue = queue.PriorityQueue(maxsize=0)
@@ -1431,7 +1431,21 @@ class Observatory:
                     try:
                         broken = 0
                         with open(filepath, "rb") as fileobj:
-                            if self.env_exists == True and (not frame_exists(fileobj)):        
+                            
+                            if filepath.split('.')[-1] == 'token':
+                                files = {"file": (filepath, fileobj)}                                
+                                aws_resp = authenticated_request("POST", "/upload/", {"object_name": filename})
+                                while True:
+                                    try:
+                                        reqs.post(aws_resp["url"], data=aws_resp["fields"], files=files, timeout=45)
+                                        break
+                                    except:
+                                        plog("Non-fatal connection glitch for a file posted.")
+                                        plog(files)
+                                        time.sleep(5)
+                                self.ptrarchive_queue.task_done()
+                            
+                            elif self.env_exists == True and (not frame_exists(fileobj)):        
                                 retryarchive = 0
                                 while retryarchive < 10:
                                     try:      
@@ -1464,7 +1478,8 @@ class Observatory:
                                             retryarchive=11
                                             self.ptrarchive_queue.task_done()
                                         else:
-                                            plog("couldn't send to PTR archive for some reason: ", e)                                                
+                                            plog("couldn't send to PTR archive for some reason: ", e)   
+                                            breakpoint()                                             
                                             time.sleep(pow(retryarchive, 2) + 1)
                                             if retryarchive < 10:
                                                 retryarchive = retryarchive+1
@@ -1602,10 +1617,10 @@ class Observatory:
                 # Try saving the jpeg to disk and quickly send up to AWS to present for the user
                 if smartstackid == 'no':
                     try:
-                        self.enqueue_for_fastAWS(
+                        self.enqueue_for_fastUI(
                             100, paths["im_path"], paths["jpeg_name10"]
                         )
-                        self.enqueue_for_fastAWS(
+                        self.enqueue_for_fastUI(
                             1000, paths["im_path"], paths["jpeg_name10"].replace('EX10', 'EX20')
                         )
                         plog("JPEG constructed and sent: " +str(time.time() - osc_jpeg_timer_start)+ "s")
@@ -1635,7 +1650,7 @@ class Observatory:
                 
                 (hdufocusdata, pixscale, readnoise, avg_foc, focus_image, im_path, text_name, hduheader, cal_path, cal_name, frame_type, focus_position, nativebin) = self.sep_queue.get(block=False)
 
-                if not (g_dev['events']['Civil Dusk'] < ephem.now() < g_dev['events']['Civil Dawn']) :
+                if (g_dev['events']['Civil Dusk'] < ephem.now() < g_dev['events']['Civil Dawn']) :
                     plog ("Too bright to consider photometry!")
                     # If it doesn't go through SEP then the fits header text file needs to be dumped here
                     text = open(
@@ -1668,9 +1683,9 @@ class Observatory:
                     if False:                                                                                                          
                         pickle.dump([hdufocusdata, pixscale, readnoise, avg_foc, focus_image, im_path, text_name, hduheader, cal_path, cal_name, frame_type, focus_position, g_dev['events'],ephem.now(),self.config["camera"][g_dev['cam']
                                                                   .name]["settings"]['focus_image_crop_width'], self.config["camera"][g_dev['cam']
-                                                                                                            .name]["settings"]['focus_image_crop_height'], is_osc,interpolate_for_focus,bin_for_focus,focus_bin_value,interpolate_for_sep,bin_for_sep,sep_bin_value,focus_jpeg_size,saturate,minimum_realistic_seeing
+                                                                                                            .name]["settings"]['focus_image_crop_height'], is_osc,interpolate_for_focus,bin_for_focus,focus_bin_value,interpolate_for_sep,bin_for_sep,sep_bin_value,focus_jpeg_size,saturate,minimum_realistic_seeing,nativebin
                                                                                                                                                                                    ], open('subprocesses/testSEPpickle','wb'))
-            
+                    #breakpoint()                                                                                                                      
                                                                                                                                         
                                                                                                                                       
                     # Essentially wait until the subprocess is complete
@@ -1682,7 +1697,7 @@ class Observatory:
                             sources = Table.read(im_path + text_name.replace('.txt', '.sep'), format='csv')
                             
                             try:
-                                self.enqueue_for_fastAWS(200, im_path, text_name.replace('.txt', '.sep'))                                
+                                self.enqueue_for_fastUI(200, im_path, text_name.replace('.txt', '.sep'))                                
                             except:
                                 plog("Failed to send SEP up for some reason")
                             
@@ -1780,19 +1795,22 @@ class Observatory:
                     
                     if os.path.exists(im_path + text_name.replace('.txt', '.rad')):
                         try:
-                            self.enqueue_for_fastAWS(250, im_path, text_name.replace('.txt', '.rad'))
+                            self.enqueue_for_fastUI(250, im_path, text_name.replace('.txt', '.rad'))
                         except:
                             plog("Failed to send RAD up for some reason")
                     
                     if frame_type == 'focus':
-                        self.enqueue_for_fastAWS(100, im_path, text_name.replace('EX00.txt', 'EX10.jpg'))
+                        self.enqueue_for_fastUI(100, im_path, text_name.replace('EX00.txt', 'EX10.jpg'))
                     
                     try:
-                        self.enqueue_for_fastAWS(180, im_path, text_name.replace('.txt', '.his'))
+                        self.enqueue_for_fastUI(180, im_path, text_name.replace('.txt', '.his'))
                     except:
                         plog("Failed to send HIS up for some reason")
                     
-                    
+                    try:
+                        self.enqueue_for_fastUI(180, im_path, text_name.replace('.txt', '.box'))
+                    except:
+                        plog("Failed to send BOX up for some reason")
     
                     if self.config['keep_focus_images_on_disk']:
                         g_dev['cam'].to_slow_process(1000, ('focus', cal_path + cal_name, hdufocusdata, hduheader,
@@ -1802,7 +1820,7 @@ class Observatory:
                             g_dev['cam'].to_slow_process(1000, ('raw_alt_path', self.alt_path + g_dev["day"] + "/calib/" + cal_name, hdufocusdata, hduheader,
                                                                 frame_type, g_dev["mnt"].current_icrs_ra, g_dev["mnt"].current_icrs_dec))
                 
-                self.enqueue_for_fastAWS(10, im_path, text_name)
+                self.enqueue_for_fastUI(10, im_path, text_name)
 
                 del hdufocusdata
 
@@ -2289,7 +2307,7 @@ class Observatory:
                 time.sleep(0.5)
 
     # Note this is a thread!
-    def fast_to_aws(self):
+    def fast_to_ui(self):
         """Sends small files specifically focussed on UI responsiveness to AWS.
 
         This is primarily a queue for files that need to get to the UI FAST. 
@@ -2640,7 +2658,7 @@ class Observatory:
         image = (im_path, name)
         self.ptrarchive_queue.put((priority, image), block=False)
 
-    def enqueue_for_fastAWS(self, priority, im_path, name):
+    def enqueue_for_fastUI(self, priority, im_path, name):
         image = (im_path, name)
         self.fast_queue.put((priority, image), block=False)
 

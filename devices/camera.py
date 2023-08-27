@@ -549,6 +549,8 @@ class Camera:
         
         self.expresult=None
         
+        
+        
 
         self.camera_known_gain=self.config["camera"][self.name]["settings"]["camera_gain"]
         self.camera_known_gain_stdev=self.config["camera"][self.name]["settings"]['camera_gain_stdev']
@@ -1284,7 +1286,6 @@ class Camera:
         # Here we set up the filter, and later on possibly rotational composition.
         try:
             if g_dev["fil"].null_filterwheel == False:
-                
                 if imtype in ['bias','dark']:
                     requested_filter_name = 'dark'
                 else:
@@ -1297,8 +1298,9 @@ class Camera:
                         )
                     )  
                 
-                # Check if filter needs changing, if so, change.                
-                if not g_dev['fil'].filter_selected == requested_filter_name:
+                # Check if filter needs changing, if so, change.     
+                self.current_filter= g_dev['fil'].filter_selected
+                if not self.current_filter == requested_filter_name:
                     try:
                         self.current_filter, filt_pointer, filter_offset = g_dev["fil"].set_name_command(
                             {"filter": requested_filter_name}, {}
@@ -1366,7 +1368,7 @@ class Camera:
             ## Vital Check : Has end of observing occured???
             ## Need to do this, SRO kept taking shots til midday without this
             if imtype.lower() in ["light"] or imtype.lower() in ["expose"]:
-                if g_dev['events']['Observing Ends'] < ephem.Date(ephem.now()+ (exposure_time *ephem.second)):
+                if not g_dev['obs'].scope_in_manual_mode and g_dev['events']['Observing Ends'] < ephem.Date(ephem.now()+ (exposure_time *ephem.second)):
                     plog ("Sorry, exposures are outside of night time.")
                     self.exposure_busy = False
                     return 'outsideofnighttime'

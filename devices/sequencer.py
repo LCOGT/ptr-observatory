@@ -605,7 +605,7 @@ class Sequencer:
                 with open(runNightToken, 'w') as f:
                     f.write('Night Completed')
                 image = (g_dev['obs'].obsid_path + 'tokens/', self.config['obs_id'] + runNight + '.token')
-                g_dev['obs'].aws_queue.put((30000000000, image), block=False)
+                g_dev['obs'].ptrarchive_queue.put((30000000000, image), block=False)
                 g_dev['obs'].send_to_user("End of Night Token sent to AWS.", p_level='INFO')
                 
             #Here is where observatories who do their biases at night... well.... do their biases!
@@ -1108,10 +1108,10 @@ class Sequencer:
         # And dump them in the orphans folder so we want the queue
         # cleared to reconstitute it.
         plog ("Emptying AWS Queue To Reconstitute it from the Orphan Directory")
-        with g_dev['obs'].aws_queue.mutex:
-            g_dev['obs'].aws_queue.queue.clear()
+        with g_dev['obs'].ptrarchive_queue.mutex:
+            g_dev['obs'].ptrarchive_queue.queue.clear()
 
-        while (not g_dev['obs'].aws_queue.empty()):
+        while (not g_dev['obs'].ptrarchive_queue.empty()):
             plog ("Waiting for the AWS queue to complete it's last job")
             time.sleep(1)              
 
