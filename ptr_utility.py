@@ -147,32 +147,13 @@ gSimulationStep = 120  # seconds.
 
 
 
-# intDay = int(ephem.now())
-# dayFrac = ephem.now() - intDay
-# if dayFrac < 0.20833:
-#     dayNow = intDay - 0.55
-# else:
-#     dayNow = intDay + 0.45
-# ephem.date = ephem.Date(dayNow)
-# dayStr = str(ephem.date).split()[0]
-# dayStr = dayStr.split("/")
-# #print("Day String", dayStr)
-# if len(dayStr[1]) == 1:
-#     dayStr[1] = "0" + dayStr[1]
-# if len(dayStr[2]) == 1:
-#     dayStr[2] = "0" + dayStr[2]
-
-#DAY_Directory = dayStr[0] + dayStr[1] + dayStr[2]
-
 
 
 DAY_Directory= g_dev['day']
 
 
 now_utc = datetime.now(timezone.utc) # timezone aware UTC, shouldn't depend on clock time.
-#breakpoint()
-#to_zone = tz.gettz(site_config['TZ_database_name'])
-#now_here = now_utc.astimezone(to_zone)
+
 int_sunrise_hour=ephem.Observer().next_rising(ephem.Sun()).datetime().hour + 1
 if int(now_utc.hour) < int_sunrise_hour:
     now_utc = now_utc - timedelta(days=1)
@@ -2626,17 +2607,12 @@ def test_icrs_mount_icrs():
                 if abs(ra_err) > 0.1 or abs(dec_err) > 0.1:
                     print(pRa, pDec, lst, ra_err, dec_err)
 
-#plog('day_directory:  ', '20221105', '\n')
-#ut_now, sid_now, equinox_now, day_of_year = get_current_times()
-#sidTime = round(sid_now.hour, 7)
 
-#plog("Ut, Sid, Jnow:  ", ut_now, sid_now, equinox_now)
 press = 970 * u.hPa
 temp = 10 * u.deg_C
 hum = 0.5  # 50%
 
 plog("Utility module loaded at: ", ephem.now(), round((ephem.now()), 4))
-#plog("Local system Sidereal time is:  ", sidTime)
 
 if __name__ == "__main__":
     print("Welcome to the utility module.")

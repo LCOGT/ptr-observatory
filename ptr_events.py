@@ -68,11 +68,6 @@ class Events:
         except:
             plog ("Failed to get wema_config")
             plog(traceback.format_exc())
-        
-
-        #breakpoint()
-        #api.photonranch.org/api/<site name (abbreviation)/config
-
 
         self.siteLatitude = round(float(self.wema_config['latitude']), 8)  # 34 20 34.569   #34 + (20 + 34.549/60.)/60.
         self.siteLongitude = round(float(self.wema_config['longitude']), 8)  # -(119 + (40 + 52.061/60.)/60.) 119 40 52.061 W
@@ -80,7 +75,6 @@ class Events:
 
         self.siteRefTemp = round(float(self.wema_config['reference_ambient']), 2)  # These should be a monthly average data.
         self.siteRefPress = round(float(self.wema_config['reference_pressure']), 2)
-        #self.flat_offset = self.config['eve_sky_flat_sunset_offset']    # -35 min for SRO
 
     ###############################
     ###    Internal Methods    ####

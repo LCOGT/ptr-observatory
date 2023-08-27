@@ -31,13 +31,9 @@ pathdone = 0
 cwd = str(pathlib.Path().resolve())
 hwd = cwd.replace("ptr-observatory", "")
 hostname_file = glob.glob(hwd + "hostname*")
-#breakpoint()
+
 try:
-    site_name = hostname_file[0].replace('.txt','').split("hostname")[1]
-    # print(
-    #     "Adding new config path: "
-    #     + str(os.path.join(pathlib.Path().resolve(), "configs", site_name))
-    # )
+    site_name = hostname_file[0].replace('.txt','').split("hostname")[1]   
     sys.path.append(os.path.join(pathlib.Path().resolve(), "configs", site_name))
     pathdone = 1
 except OSError:
@@ -48,17 +44,7 @@ except OSError:
 
 if pathdone == 0:
     print("Attempting hostname approach to config file...")
-
-    # NB May be better to split on '-' and use first part of hostname.
     host_site = socket.gethostname()[:3].lower()
-
-    #if host_site == "saf":
-     #   host_site == "aro"  # NB NB THIS is a blatant hack. TODO Remove this
-
-    # print(
-    #     "Adding new config path: "
-    #     + str(os.path.join(pathlib.Path().resolve(), "configs", host_site))
-    # )
     sys.path.append(os.path.join(pathlib.Path().resolve(), "configs", host_site))
 
 try:

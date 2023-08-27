@@ -17,7 +17,6 @@ import json
 import os
 import queue
 import shelve
-#import socket
 import threading
 import time
 import sys
@@ -38,7 +37,7 @@ import requests
 import urllib.request
 import traceback
 import psutil
-
+from global_yard import *
 import ptr_config
 from devices.camera import Camera
 from devices.filter_wheel import FilterWheel
@@ -49,7 +48,7 @@ from devices.rotator import Rotator
 from devices.selector import Selector
 from devices.screen import Screen
 from devices.sequencer import Sequencer
-from global_yard import g_dev
+#from global_yard import g_dev
 import ptr_events
 from ptr_utility import plog
 from astropy.utils.exceptions import AstropyUserWarning
@@ -68,6 +67,8 @@ reqs.mount('http://', HTTPAdapter(max_retries=retries))
 load_dotenv(".env")
 from ocs_ingester.ingester import frame_exists, upload_file_and_ingest_to_archive
 import ocs_ingester.exceptions
+
+
 
 def test_connect(host='http://google.com'):
     try:

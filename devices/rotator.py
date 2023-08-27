@@ -45,13 +45,8 @@ class Rotator:
         except:
             breakpoint()
         
-        
-        
         self.rotator_meant_to_be_rotating = True
         self.check_rotator_is_rotating()       
-        
-       
-
         
     def check_rotator_is_rotating(self):
         
@@ -72,11 +67,9 @@ class Rotator:
         if pos3 < 180:
             pos3=pos3+360
             
-        #plog([pos1,pos2,pos3])
         
         avgpos=((pos1)+(pos2)+(pos3))/3
         
-        #plog("Average rotator position: " + str(avgpos))
 
         if 359 < avgpos < 361 :
             print ("The Rotator is indicating telescope is parked")
@@ -85,32 +78,7 @@ class Rotator:
             print ("The Rotator is not moving, but it isn't meant to be.")
         else:
             print ("THE ROTATOR HAS PERHAPS CRASHED.")
-            #breakpoint()
-            # listOfProcessIds = findProcessIdByName('optec')
-            # for pid in listOfProcessIds:
-            #     pid_num = pid['pid']
-            #     plog("Terminating existing Optec process:  ", pid_num)
-            #     p2k = psutil.Process(pid_num)
-            #     p2k.terminate()
             
-            # listOfProcessIds = findProcessIdByName('altaz')
-            # for pid in listOfProcessIds:
-            #     pid_num = pid['pid']
-            #     plog("Terminating existing Optec process:  ", pid_num)
-            #     p2k = psutil.Process(pid_num)
-            #     p2k.terminate()
-                
-            # time.sleep(10)
-            
-            # win32com.client.pythoncom.CoInitialize()
-            # self.rotator = win32com.client.Dispatch(self.driver)
-            # time.sleep(3)
-            # self.rotator.Connected = True
-            # self.rotator_message = "-"
-            # print("Rotator connected,  at:  ", round(self.rotator.TargetPosition, 4))
-            
-            # self.rotator_meant_to_be_rotating = True
-
     def get_status(self):
         """
         The position is expressed as an angle from 0 up to but not including
