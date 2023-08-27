@@ -48,7 +48,7 @@ from devices.rotator import Rotator
 from devices.selector import Selector
 from devices.screen import Screen
 from devices.sequencer import Sequencer
-#from global_yard import g_dev
+from global_yard import g_dev
 import ptr_events
 from ptr_utility import plog
 from astropy.utils.exceptions import AstropyUserWarning
