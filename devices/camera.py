@@ -1224,14 +1224,6 @@ class Camera:
             self.exposure_busy = False  # Hangup needs to be guarded with a timeout.
             self.active_script = None
 
-        #elif action == "expose" and 
-
-            
-
-            #self.expose_command(req, opt, user_id=command['user_id'], user_name=command['user_name'], user_roles=command['user_roles'], do_sep=True, quick=False)
-            #self.exposure_busy = False  # Hangup needs to be guarded with a timeout.
-            #self.active_script = None
-
         elif action == "darkslide_close":
 
             g_dev["drk"].closeDarkslide()
@@ -3601,19 +3593,4 @@ def wait_for_slew():
             pass
     return 
 
-# def check_platesolve_and_nudge(auto_center_off):
-    
-#     # This block repeats itself in various locations to try and nudge the scope
-#     # If the platesolve requests such a thing.
-#     if g_dev['obs'].pointing_correction_requested_by_platesolve_thread:
-#         g_dev['obs'].pointing_correction_requested_by_platesolve_thread = False
-#         if g_dev['obs'].pointing_correction_request_time > g_dev['obs'].time_of_last_slew: # Check it hasn't slewed since request                        
-            
-#             if auto_center_off:
-#                 plog ("Telescope off-center, but auto-centering turned off")
-#             else:
-#                 plog("Re-centering Telescope Slightly.")
-#                 g_dev['obs'].send_to_user("Re-centering Telescope Slightly.")                           
-#                 g_dev['mnt'].mount.SlewToCoordinatesAsync(g_dev['obs'].pointing_correction_request_ra, g_dev['obs'].pointing_correction_request_dec)
-#                 g_dev['obs'].time_of_last_slew = time.time()
-#                 wait_for_slew()
+

@@ -737,8 +737,8 @@ class Sequencer:
                 g_dev['obs'].send_to_user("Running an initial autofocus run.")
 
                 req2 = {'target': 'near_tycho_star', 'area': 150}
-                if not g_dev['debug']:
-                    self.auto_focus_script(req2, {}, throw = g_dev['foc'].throw)
+                
+                self.auto_focus_script(req2, {}, throw = g_dev['foc'].throw)
                 just_focused = True
                 g_dev["foc"].focus_needed = False
                 
@@ -1879,12 +1879,12 @@ class Sequencer:
 
         
         if  ((ephem.now() < g_dev['events']['Eve Sky Flats']) or \
-            (g_dev['events']['End Morn Sky Flats'] < ephem.now() < g_dev['events']['Nightly Reset'])) and not g_dev['debug']:
+            (g_dev['events']['End Morn Sky Flats'] < ephem.now() < g_dev['events']['Nightly Reset'])):
             plog ("NOT DOING FLATS -- IT IS THE DAYTIME!!")
             g_dev["obs"].send_to_user("A sky flat script request was rejected as it is during the daytime.")            
             return
 
-        if (g_dev['events']['Naut Dusk'] < ephem.now() < g_dev['events']['Naut Dawn']) and not g_dev['debug']:
+        if (g_dev['events']['Naut Dusk'] < ephem.now() < g_dev['events']['Naut Dawn']) :
             plog ("NOT DOING FLATS -- IT IS THE NIGHTIME!!")
             g_dev["obs"].send_to_user("A sky flat script request was rejected as it too dark.")            
             return
