@@ -1489,13 +1489,9 @@ class Observatory:
             else:
                 time.sleep(0.2)
 
-    def send_status_process(self):
-        """A place to process non-process dependant images from the camera pile
-
-        """
+    def send_status_process(self):       
 
         one_at_a_time = 0
-        # This stopping mechanism allows for threads to close cleanly.
         while True:
             if (not self.send_status_queue.empty()) and one_at_a_time == 0:
                 one_at_a_time = 1
@@ -1518,47 +1514,25 @@ class Observatory:
         Usually due to slow or network I/O         
         """
 
-        # This stopping mechanism allows for threads to close cleanly.
-        # one_at_a_time=0
         while True:
-            if (not self.laterdelete_queue.empty()):  # and one_at_a_time==0
-                (deletefilename) = self.laterdelete_queue.get(block=False)
-                #notdelete=1
-                #while notdelete==1:
-                #plog("Deleting: " +str(deletefilename))
-                    
-                self.laterdelete_queue.task_done()
-                
+            if (not self.laterdelete_queue.empty()): 
+                (deletefilename) = self.laterdelete_queue.get(block=False)                
+                self.laterdelete_queue.task_done()                
                 try:
-                    os.remove(deletefilename)
-                    #notdelete=0
+                    os.remove(deletefilename)                    
                 except:
-                    #plog("failed to remove: " + str(deletefilename) + " trying again soon")
-                    self.laterdelete_queue.put(deletefilename, block=False)
-                    #time.sleep(5)
-                
-                
-                # one_at_a_time=0
+                    self.laterdelete_queue.put(deletefilename, block=False)                   
             else:
                 time.sleep(0.1)
 
     def mainjpeg_process(self):
-        """This is the sep queue that happens in a different process
-        than the main camera thread. SEPs can take 5-10, up to 30 seconds sometimes
-        to run, so it is an overhead we can't have hanging around. This thread undertakes
-        the SEP routine while the main camera thread is processing the jpeg image.
-        The camera thread will wait for SEP to finish before moving on.         
+        """
+        This is the main subprocess where jpegs are created for the UI.
         """
 
-        # This stopping mechanism allows for threads to close cleanly.
-        # one_at_a_time=0
         while True:
-            if (not self.mainjpeg_queue.empty()):  # and one_at_a_time==0
-                # one_at_a_time=1
+            if (not self.mainjpeg_queue.empty()):  
                 osc_jpeg_timer_start = time.time()
-                
-                
-                #pickletime=time.time()
                 (hdusmalldata, smartstackid, paths, pier_side) = self.mainjpeg_queue.get(block=False)
                 is_osc = g_dev['cam'].config["camera"][g_dev['cam'].name]["settings"]["is_osc"]
                 osc_bayer= g_dev['cam'].config["camera"][g_dev['cam'].name]["settings"]["osc_bayer"]
@@ -1597,14 +1571,6 @@ class Observatory:
                      "crop_preview_xright"
                  ]
                 squash_on_x_axis=self.config["camera"][g_dev['cam'].name]["settings"]["squash_on_x_axis"]
-
-
-
-                #[hdusmalldata, smartstackid, paths, pier_side, is_osc, osc_bayer, osc_background_cut,osc_brightness_enhance, osc_contrast_enhance,\
-                #     osc_colour_enhance, osc_saturation_enhance, osc_sharpness_enhance, transpose_jpeg, flipx_jpeg, flipy_jpeg, rotate180_jpeg,rotate90_jpeg, \
-                #         rotate270_jpeg, crop_preview, yb, yt, xl, xr, squash_on_x_axis]
-                
-                #pickletime=time.time()
                 
                 jpeg_subprocess=subprocess.Popen(['python','subprocesses/mainjpeg.py'],stdin=subprocess.PIPE,stdout=subprocess.PIPE,bufsize=0)
                               
@@ -1614,45 +1580,34 @@ class Observatory:
                      osc_colour_enhance, osc_saturation_enhance, osc_sharpness_enhance, transpose_jpeg, flipx_jpeg, flipy_jpeg, rotate180_jpeg,rotate90_jpeg, \
                          rotate270_jpeg, crop_preview, yb, yt, xl, xr, squash_on_x_axis], jpeg_subprocess.stdin)
                 
-                #pickle.dump([hdusmalldata, smartstackid, paths, pier_side, is_osc, osc_bayer, osc_background_cut,osc_brightness_enhance, osc_contrast_enhance,\
-                #    osc_colour_enhance, osc_saturation_enhance, osc_sharpness_enhance, transpose_jpeg, flipx_jpeg, flipy_jpeg, rotate180_jpeg,rotate90_jpeg, \
-                #        rotate270_jpeg, crop_preview, yb, yt, xl, xr, squash_on_x_axis], open('testjpegpickle','wb'))
-                    
-                    
-                del hdusmalldata
-                #plog ("pickling time: " + str(time.time()-pickletime))
-                    
+                # Here is a manual debug area which makes a pickle for debug purposes. Default is False, but can be manually set to True for code debugging
+                if False:
+                    pickle.dump([hdusmalldata, smartstackid, paths, pier_side, is_osc, osc_bayer, osc_background_cut,osc_brightness_enhance, osc_contrast_enhance,\
+                        osc_colour_enhance, osc_saturation_enhance, osc_sharpness_enhance, transpose_jpeg, flipx_jpeg, flipy_jpeg, rotate180_jpeg,rotate90_jpeg, \
+                            rotate270_jpeg, crop_preview, yb, yt, xl, xr, squash_on_x_axis], open('testjpegpickle','wb'))
+                 
+                del hdusmalldata # Get big file out of memory
+                
                 # Essentially wait until the subprocess is complete
                 jpeg_subprocess.communicate()
-                    
-                #plog ("jpeg pickle time" + str(time.time()-pickletime))
-
+               
                 # Try saving the jpeg to disk and quickly send up to AWS to present for the user
-                # GUI
                 if smartstackid == 'no':
                     try:
-
-                        # if not no_AWS:
                         self.enqueue_for_fastAWS(
                             100, paths["im_path"], paths["jpeg_name10"]
                         )
                         self.enqueue_for_fastAWS(
                             1000, paths["im_path"], paths["jpeg_name10"].replace('EX10', 'EX20')
                         )
-                        # g_dev["obs"].send_to_user(
-                        #    "A preview image of the single image has been sent to the GUI.",
-                        #    p_level="INFO",
-                        # )
                         plog("JPEG constructed and sent: " +str(time.time() - osc_jpeg_timer_start)+ "s")
-                    except:
-                        
+                    except:                        
                         plog(
                             "there was an issue saving the preview jpg. Pushing on though"
-                        )
-                        
+                        )                        
                     
                 self.mainjpeg_queue.task_done()
-                # one_at_a_time=0
+
             else:
                 time.sleep(0.1)
 
@@ -1662,7 +1617,6 @@ class Observatory:
         to run, so it is an overhead we can't have hanging around.       
         """
 
-        # This stopping mechanism allows for threads to close cleanly.
         one_at_a_time = 0
         while True:
             if (not self.sep_queue.empty()) and one_at_a_time == 0:
@@ -1699,39 +1653,34 @@ class Observatory:
                     
                     pickle.dump([hdufocusdata, pixscale, readnoise, avg_foc, focus_image, im_path, text_name, hduheader, cal_path, cal_name, frame_type, focus_position, g_dev['events'],ephem.now(),self.config["camera"][g_dev['cam']
                                                              .name]["settings"]['focus_image_crop_width'], self.config["camera"][g_dev['cam']
-                                                                                                       .name]["settings"]['focus_image_crop_height'], is_osc,interpolate_for_focus,bin_for_focus,focus_bin_value,interpolate_for_sep,bin_for_sep,sep_bin_value,focus_jpeg_size,saturate,minimum_realistic_seeing,nativebin
-                                                                                                                                                                               ], sep_subprocess.stdin)
+                                                              .name]["settings"]['focus_image_crop_height'], is_osc,interpolate_for_focus,bin_for_focus,focus_bin_value,interpolate_for_sep,bin_for_sep,sep_bin_value,focus_jpeg_size,saturate,minimum_realistic_seeing,nativebin
+                                                               ], sep_subprocess.stdin)
                                                                                                                                  
-                                                                                                                                 
-                    # pickle.dump([hdufocusdata, pixscale, readnoise, avg_foc, focus_image, im_path, text_name, hduheader, cal_path, cal_name, frame_type, focus_position, g_dev['events'],ephem.now(),self.config["camera"][g_dev['cam']
-                    #                                          .name]["settings"]['focus_image_crop_width'], self.config["camera"][g_dev['cam']
-                    #                                                                                    .name]["settings"]['focus_image_crop_height'], is_osc,interpolate_for_focus,bin_for_focus,focus_bin_value,interpolate_for_sep,bin_for_sep,sep_bin_value,focus_jpeg_size,saturate,minimum_realistic_seeing
-                    #                                                                                                                                                           ], open('subprocesses/testSEPpickle','wb'))
-        
-                    #
-                    #plog ("pickling time: " + str(time.time()-pickletime))
-                        
+                    # Here is a manual debug area which makes a pickle for debug purposes. Default is False, but can be manually set to True for code debugging
+                    if False:                                                                                                          
+                        pickle.dump([hdufocusdata, pixscale, readnoise, avg_foc, focus_image, im_path, text_name, hduheader, cal_path, cal_name, frame_type, focus_position, g_dev['events'],ephem.now(),self.config["camera"][g_dev['cam']
+                                                                  .name]["settings"]['focus_image_crop_width'], self.config["camera"][g_dev['cam']
+                                                                                                            .name]["settings"]['focus_image_crop_height'], is_osc,interpolate_for_focus,bin_for_focus,focus_bin_value,interpolate_for_sep,bin_for_sep,sep_bin_value,focus_jpeg_size,saturate,minimum_realistic_seeing
+                                                                                                                                                                                   ], open('subprocesses/testSEPpickle','wb'))
+            
+                                                                                                                                        
+                                                                                                                                      
                     # Essentially wait until the subprocess is complete
-                    sep_subprocess.communicate()
-    
-    
+                    sep_subprocess.communicate()    
                     
-    
                     # LOADING UP THE SEP FILE HERE AGAIN
-                    
-    
                     if os.path.exists(im_path + text_name.replace('.txt', '.sep')):
                         try:
                             sources = Table.read(im_path + text_name.replace('.txt', '.sep'), format='csv')
                             
                             try:
-                                self.enqueue_for_fastAWS(200, im_path, text_name.replace('.txt', '.sep'))
-                                #plog("Sent SEP up")
+                                self.enqueue_for_fastAWS(200, im_path, text_name.replace('.txt', '.sep'))                                
                             except:
                                 plog("Failed to send SEP up for some reason")
                             
-                            #DONUT IMAGE DETECTOR.
-                            #plog ("The Fitzgerald Magical Donut detector")
+                            # DONUT IMAGE DETECTOR.
+                            # The brightest pixel and the centre of flux must be within a few pixels of each other
+                            # If not, it is highly likely to be a donut and hence, FWHM doesn't make sense to calculate                            
                             binfocus=1
                             if frame_type == 'focus' and self.config["camera"][g_dev['cam'].name]["settings"]['bin_for_focus']: 
                                 binfocus=self.config["camera"][g_dev['cam'].name]["settings"]['focus_bin_value']
@@ -1760,12 +1709,9 @@ class Observatory:
                                 sources = sources
                             else:
                                 # Get halflight radii
-                                # breakpoint()
-                                # fwhmcalc=(np.array(sources['FWHM']))
-                                fwhmcalc = sources['FWHM']
-                                #fwhmcalc=fwhmcalc[fwhmcalc > 1.0]
+                                
+                                fwhmcalc = sources['FWHM']                                
                                 fwhmcalc = fwhmcalc[fwhmcalc != 0]  # Remove 0 entries
-                                # fwhmcalc=fwhmcalc[fwhmcalc < 75] # remove stupidly large entries
             
                                 # sigma clipping iterator to reject large variations
                                 templen = len(fwhmcalc)
@@ -1782,7 +1728,6 @@ class Observatory:
                                 rfs = round(np.std(fwhmcalc) * pixscale * g_dev['cam'].native_bin, 3)
                                 plog("\nImage FWHM:  " + str(rfr) + "+/-" + str(rfs) + " arcsecs, " + str(rfp)
                                      + " pixels.")
-                                # breakpoint()
                                 g_dev['cam'].expresult["FWHM"] = rfr
                                 g_dev['cam'].expresult["mean_focus"] = avg_foc
                                 g_dev['cam'].expresult['No_of_sources'] = len(sources)
@@ -1794,12 +1739,7 @@ class Observatory:
                                 g_dev["foc"].focus_tracker.pop(0)
                                 g_dev["foc"].focus_tracker.append(round(rfr, 3))
                                 plog("Last ten FWHM: " + str(g_dev["foc"].focus_tracker) + " Median: " + str(np.nanmedian(g_dev["foc"].focus_tracker)) + " Last Solved: " + str(g_dev["foc"].last_focus_fwhm))
-                                #plog()
-                                #plog("Median last ten FWHM")
-                                #plog(np.nanmedian(g_dev["foc"].focus_tracker))
-                                #plog("Last solved focus FWHM: " + str(g_dev["foc"].last_focus_fwhm))
-                                #plog(g_dev["foc"].last_focus_fwhm)
-            
+                                            
                                 # If there hasn't been a focus yet, then it can't check it,
                                 # so make this image the last solved focus.
                                 if g_dev["foc"].last_focus_fwhm == None:
@@ -1821,12 +1761,11 @@ class Observatory:
                                             p_level="INFO",
                                         )
                         except Exception as e:
-                            plog ("something odd occured in the reinterpretation of the SEP file")
+                            plog ("something odd occured in the reinterpretation of the SEP file", e)
                             plog(traceback.format_exc())
                             
                     else:
                         plog ("Did not find a source list from SEP for this image.")    
-                        #g_dev['cam'].expresult["error"] = True
                         g_dev['cam'].expresult['FWHM'] = np.nan
                         g_dev['cam'].expresult['No_of_sources'] = np.nan
                         
@@ -1834,7 +1773,6 @@ class Observatory:
                     if os.path.exists(im_path + text_name.replace('.txt', '.rad')):
                         try:
                             self.enqueue_for_fastAWS(250, im_path, text_name.replace('.txt', '.rad'))
-                            #plog("Sent SEP up")
                         except:
                             plog("Failed to send RAD up for some reason")
                     
@@ -1843,7 +1781,6 @@ class Observatory:
                     
                     try:
                         self.enqueue_for_fastAWS(180, im_path, text_name.replace('.txt', '.his'))
-                        #plog("Sent SEP up")
                     except:
                         plog("Failed to send HIS up for some reason")
                     
@@ -1885,7 +1822,7 @@ class Observatory:
 
                 one_at_a_time = 1
                 self.platesolve_is_processing = True
-                #psolve_timer_begin = time.time()
+                
                 (hdufocusdata, hduheader, cal_path, cal_name, frame_type, time_platesolve_requested,
                  pixscale, pointing_ra, pointing_dec) = self.platesolve_queue.get(block=False)
 
@@ -1902,12 +1839,14 @@ class Observatory:
                     
                     pickle.dump([hdufocusdata, hduheader, self.local_calibration_path, cal_name, frame_type, time_platesolve_requested, 
                      pixscale, pointing_ra, pointing_dec, platesolve_crop, bin_for_platesolve, platesolve_bin_factor, g_dev['cam'].config["camera"][g_dev['cam'].name]["settings"]["saturate"], g_dev['cam'].camera_known_readnoise, self.config['minimum_realistic_seeing']], platesolve_subprocess.stdin)
-                                                                                                                                 
-                    #pickle.dump([hdufocusdata, hduheader, self.local_calibration_path, cal_name, frame_type, time_platesolve_requested, 
-                    # pixscale, pointing_ra, pointing_dec, platesolve_crop, bin_for_platesolve, platesolve_bin_factor, g_dev['cam'].config["camera"][g_dev['cam'].name]["settings"]["saturate"], g_dev['cam'].camera_known_readnoise, self.config['minimum_realistic_seeing']], open('subprocesses/testplatesolvepickle','wb'))                                                                                                             
+                    
+                    # yet another pickle debugger.
+                    if False:
+                        pickle.dump([hdufocusdata, hduheader, self.local_calibration_path, cal_name, frame_type, time_platesolve_requested, 
+                         pixscale, pointing_ra, pointing_dec, platesolve_crop, bin_for_platesolve, platesolve_bin_factor, g_dev['cam'].config["camera"][g_dev['cam'].name]["settings"]["saturate"], g_dev['cam'].camera_known_readnoise, self.config['minimum_realistic_seeing']], open('subprocesses/testplatesolvepickle','wb'))                                                                                                             
 
                     del hdufocusdata
-                    #breakpoint()
+                    
                     # Essentially wait until the subprocess is complete
                     platesolve_subprocess.communicate()
                     
@@ -1934,116 +1873,52 @@ class Observatory:
                             solve["ra_j2000_hours"],
                             solve["dec_j2000_degrees"],
                         )
-                        # breakpoint()
-                        #pointing_ra = g_dev['mnt'].mount.RightAscension
-                        #pointing_dec = g_dev['mnt'].mount.Declination
-                        #icrs_ra, icrs_dec = g_dev['mnt'].get_mount_coordinates()
-                        #target_ra = g_dev["mnt"].current_icrs_ra
-                        #target_dec = g_dev["mnt"].current_icrs_dec
+                        
                         target_ra = g_dev["mnt"].last_ra_requested
                         target_dec = g_dev["mnt"].last_dec_requested
                         solved_ra = solve["ra_j2000_hours"]
                         solved_dec = solve["dec_j2000_degrees"]
                         solved_arcsecperpixel = solve["arcsec_per_pixel"]
-                        plog("1x1 pixelscale solved: " + str(float(solved_arcsecperpixel / platesolve_bin_factor / g_dev['cam'].native_bin)))
-                        #solved_rotangledegs = solve["rot_angle_degs"]
+                        plog("1x1 pixelscale solved: " + str(float(solved_arcsecperpixel / platesolve_bin_factor / g_dev['cam'].native_bin)))                        
                         err_ha = target_ra - solved_ra
-                        err_dec = target_dec - solved_dec
-                        #solved_arcsecperpixel = solve["arcsec_per_pixel"]
-                        #solved_rotangledegs = solve["rot_angle_degs"]
+                        err_dec = target_dec - solved_dec                        
                         plog("Deviation from plate solution in ra: " + str(round(err_ha * 15 * 3600, 2)) + " & dec: " + str (round(err_dec * 3600, 2)) + " asec")
-                        
-                        #breakpoint()
-                        
+                                                
                         self.last_platesolved_ra = solve["ra_j2000_hours"]
                         self.last_platesolved_dec = solve["dec_j2000_degrees"]
                         self.last_platesolved_ra_err = target_ra - solved_ra
                         self.last_platesolved_dec_err = target_dec - solved_dec
                         
-                        # breakpoint()
                         # Reset Solve timers
                         g_dev['obs'].last_solve_time = datetime.datetime.now()
                         g_dev['obs'].images_since_last_solve = 0
     
                         # Test here that there has not been a slew, if there has been a slew, cancel out!
                         if self.time_of_last_slew > time_platesolve_requested:
-                            plog("detected a slew since beginning platesolve... bailing out of platesolve.")
-                            # if not self.config['keep_focus_images_on_disk']:
-                            #    os.remove(cal_path + cal_name)
-                            # one_at_a_time = 0
-                            # self.platesolve_queue.task_done()
-                            # break
+                            plog("detected a slew since beginning platesolve... bailing out of platesolve.")                            
     
                         # If we are WAY out of range, then reset the mount reference and attempt moving back there.
-                        elif (abs(err_ha * 15 * 3600) > 5400) or (abs(err_dec * 3600) > 5400):
-                            #err_ha * 15 * 3600 > 3600
-                            #or err_dec * 3600 > 3600
-                            #or err_ha * 15 * 3600 < -3600
-                            #or err_dec * 3600 < -3600
-                         #and self.config["mount"]["mount1"][
-                         #   "permissive_mount_reset"
-                        #] == "yes":
-                            #g_dev["mnt"].reset_mount_reference()
-                            #plog("I've  reset the mount_reference.")
-                            #g_dev["mnt"].current_icrs_ra = solved_ra
-                            #    "ra_j2000_hours"
-                            # ]
-                            #g_dev["mnt"].current_icrs_dec = solved_dec
-                            #    "dec_j2000_hours"
-                            # ]
+                        elif (abs(err_ha * 15 * 3600) > 5400) or (abs(err_dec * 3600) > 5400):                            
                             err_ha = 0
-                            err_dec = 0
-    
+                            err_dec = 0    
                             plog("Platesolve has found that the current suggested pointing is way off!")
                             plog("This may be a poor pointing estimate.")
                             plog("This is more than a simple nudge, so not nudging the scope.")
                             g_dev["mnt"].reset_mount_reference()
-                            plog("I've  reset the mount_reference.")
-                            
-                            #plog("Platesolve is requesting to move back on target!")
-                            #g_dev['mnt'].mount.SlewToCoordinatesAsync(target_ra, target_dec)
-    
-                            #self.pointing_correction_requested_by_platesolve_thread = True
-                            #self.pointing_correction_request_time = time.time()
-                            #self.pointing_correction_request_ra = target_ra
-                            #self.pointing_correction_request_dec = target_dec
-    
-                            # wait_for_slew()
+                            plog("I've  reset the mount_reference.")       
     
                         else:
     
-    
-                                # if (
-                                #     abs(err_ha * 15 * 3600)
-                                #     > self.config["threshold_mount_update"]
-                                #     or abs(err_dec * 3600)
-                                #     > self.config["threshold_mount_update"]
-                                # ):
-    
-                             #plog ("I am nudging the telescope slightly!")
-                             #g_dev['mnt'].mount.SlewToCoordinatesAsync(pointing_ra + err_ha, pointing_dec + err_dec)
-                             # wait_for_slew()
-                             #plog("Platesolve is requesting to move back on target!")
-                             #plog(str(g_dev["mnt"].pier_side) + " <-- pierside TEMP MTF reporting")
-                             #ra_correction_multiplier= self.config['pointing_correction_ra_multiplier']
-                            # dec_correction_multiplier= self.config['pointing_correction_dec_multiplier']
                              self.pointing_correction_requested_by_platesolve_thread = True
                              self.pointing_correction_request_time = time.time()
-                             self.pointing_correction_request_ra = pointing_ra + err_ha #* ra_correction_multiplier)
-                             self.pointing_correction_request_dec = pointing_dec + err_dec# * dec_correction_multiplier)
-                             self.pointing_correction_request_ra_err = err_ha #* ra_correction_multiplier)
-                             self.pointing_correction_request_dec_err = err_dec# * dec_correction_multiplier)
-                             
-                             
-                             
+                             self.pointing_correction_request_ra = pointing_ra + err_ha 
+                             self.pointing_correction_request_dec = pointing_dec + err_dec
+                             self.pointing_correction_request_ra_err = err_ha
+                             self.pointing_correction_request_dec_err = err_dec                             
+                                                          
                              if not g_dev['obs'].mount_reference_model_off:
                                  if target_dec > -85 and target_dec < 85 and g_dev['mnt'].last_slew_was_pointing_slew:
-                                     try:
-                                         #try:
-                                         #    g_dev["mnt"].pier_side=g_dev['mnt'].mount.sideOfPier
-                                         #except:
-                                         #    plog("MTF chase this later")
-                                         # if g_dev["mnt"].pier_side_str == "Looking West":
+                                     try:                                         
                                          plog ("updating mount reference")
                                          g_dev['mnt'].last_slew_was_pointing_slew = False
                                          
@@ -2051,8 +1926,7 @@ class Observatory:
                                          if g_dev["mnt"].pier_side == 0:
                                              try:
                                                  plog ("current references: " + str ( g_dev['mnt'].get_mount_reference()))
-                                                 g_dev["mnt"].adjust_mount_reference(
-                                                     #-err_ha, -err_dec
+                                                 g_dev["mnt"].adjust_mount_reference(                                                     
                                                      err_ha, err_dec
                                                  )
                                              except Exception as e:
@@ -2060,10 +1934,9 @@ class Observatory:
                                          else:
                                              try:
                                                  plog ("current references: " + str ( g_dev['mnt'].get_flip_reference()))
-                                                 g_dev["mnt"].adjust_flip_reference(
-                                                     #-err_ha, -err_dec
+                                                 g_dev["mnt"].adjust_flip_reference(                                                     
                                                      err_ha, err_dec
-                                                 )  # Need to verify signs
+                                                 )  
                                              except Exception as e:
                                                  plog("Something is up in the mount reference adjustment code ", e)
                                          plog ("final references: " + str ( g_dev['mnt'].get_mount_reference()))
@@ -2085,7 +1958,9 @@ class Observatory:
                 time.sleep(0.1)
 
     def slow_camera_process(self):
-        """A place to process non-process dependant images from the camera pile
+        """
+        A place to process non-process dependant images from the camera pile.
+        Usually long-term saves to disk and such things
 
         """
 
@@ -2099,11 +1974,10 @@ class Observatory:
 
                 # Set up RA and DEC headers for BANZAI
                 # needs to be done AFTER text file is sent up.
-                # Text file RA and Dec and BANZAI RA and Dec are gormatted different
+                # Text file RA and Dec and BANZAI RA and Dec are formatted different
 
                 temphduheader = slow_process[3]
 
-                #plog ("********** slow queue : " + str(slow_process[0]) )
                 if slow_process[0] == 'focus':
                     hdufocus = fits.PrimaryHDU()
                     hdufocus.data = slow_process[2]
@@ -2133,8 +2007,7 @@ class Observatory:
 
                             # Figure out which folder to send the calibration file to
                             # and delete any old files over the maximum amount to store
-                            if slow_process[4] == 'bias':
-                                #tempfilename=self.local_bias_folder + slow_process[1].replace('.fits','.fits.fz')
+                            if slow_process[4] == 'bias':                                
                                 tempfilename = self.local_bias_folder + slow_process[1].replace('.fits', '.npy')
                                 max_files = self.config['camera']['camera_1_1']['settings']['number_of_bias_to_store']
                                 n_files = len(glob.glob(self.local_bias_folder + '*.n*'))
@@ -2142,8 +2015,7 @@ class Observatory:
                                     list_of_files = glob.glob(self.local_bias_folder + '*.n*')
                                     n_files = len(list_of_files)
                                     oldest_file = min(list_of_files, key=os.path.getctime)
-                                    os.remove(oldest_file)
-                                    #plog("removed old bias. ")# + str(oldest_file))
+                                    os.remove(oldest_file)                                    
 
                             elif slow_process[4] == 'dark':
                                 tempexposure = temphduheader['EXPTIME']
@@ -2155,8 +2027,7 @@ class Observatory:
                                     list_of_files = glob.glob(self.local_dark_folder + '*.n*')
                                     n_files = len(list_of_files)
                                     oldest_file = min(list_of_files, key=os.path.getctime)
-                                    os.remove(oldest_file)
-                                    #plog("removed old dark. ")# + str(oldest_file))
+                                    os.remove(oldest_file)                                    
 
                             elif slow_process[4] == 'flat' or slow_process[4] == 'skyflat' or slow_process[4] == 'screenflat':
                                 tempfilter = temphduheader['FILTER']
@@ -2172,11 +2043,9 @@ class Observatory:
                                     list_of_files = glob.glob(self.local_flat_folder + tempfilter + '/' + '*.n*')
                                     n_files = len(list_of_files)
                                     oldest_file = min(list_of_files, key=os.path.getctime)
-                                    os.remove(oldest_file)
-                                    #plog("removed old flat. ") # + str(oldest_file))
+                                    os.remove(oldest_file)                                    
 
                             # Save the file as an uncompressed numpy binary
-
                             np.save(
                                 tempfilename,
                                 np.array(slow_process[2], dtype=np.float32)
@@ -2221,8 +2090,7 @@ class Observatory:
                                     datetime.datetime.utcfromtimestamp(time.time()), "%Y-%m-%d"
                                 ),
                                 "Date FITS file was written",
-                            )
-                            
+                            )                            
                             
                             hdu.writeto(
                                 slow_process[1].replace('EX00','EX00-'+temphduheader['OBSTYPE']), overwrite=True, output_verify='silentfix'
@@ -2244,30 +2112,15 @@ class Observatory:
 
                 if slow_process[0] == 'fz_and_send':
 
-                    # Create the fz file ready for BANZAI and the AWS/UI
+                    # Create the fz file ready for PTR Archive
                     # Note that even though the raw file is int16,
                     # The compression and a few pieces of software require float32
                     # BUT it actually compresses to the same size either way
                     
                     temphduheader["BZERO"] = 0  # Make sure there is no integer scaling left over
                     temphduheader["BSCALE"] = 1  # Make sure there is no integer scaling left over
-                    
-                    
-                    #hdufz.verify("fix")
-                    
-                    #hdufz.header["DATE"] = (
-                    #    datetime.date.strftime(
-                    #        datetime.datetime.utcfromtimestamp(time.time()), "%Y-%m-%d"
-                    #    ),
-                    #    "Date FITS file was written"
-                    #)
-                    
-                    #breakpoint()
 
                     if not self.config["camera"][g_dev['cam'].name]["settings"]["is_osc"]:
-
-                        
-
                         hdufz = fits.CompImageHDU(
                             np.array(slow_process[2], dtype=np.float32), temphduheader
                         )
@@ -2281,8 +2134,7 @@ class Observatory:
                         saverretries = 0
                         while saver == 0 and saverretries < 10:
                             try:
-                                hdufz.writeto(
-                                    #slow_process[1], overwrite=True, output_verify='silentfix'
+                                hdufz.writeto(                                    
                                     slow_process[1], overwrite=True
                                 )  # Save full fz file locally
                                 saver = 1
@@ -2300,7 +2152,7 @@ class Observatory:
                             pass
                         del hdufz  # remove file from memory now that we are doing with it
 
-                        # Send this file up to ptrarchive (THIS WILL BE SENT TO BANZAI INSTEAD, SO THIS IS THE INGESTER POSITION)
+                        # Send this file up to ptrarchive
                         if self.config['send_files_at_end_of_night'] == 'no':
                             self.enqueue_for_PTRarchive(
                                 26000000, '', slow_process[1]
@@ -2331,7 +2183,6 @@ class Observatory:
 
                             # Save and send R1
                             temphduheader['FILTER'] = tempfilter + '_R1'
-
                             
                             hdufz = fits.CompImageHDU(
                                 np.array(newhdured, dtype=np.float32), temphduheader
@@ -2428,10 +2279,8 @@ class Observatory:
 
             else:
                 time.sleep(0.5)
-                # breakpoint()
 
     # Note this is a thread!
-
     def fast_to_aws(self):
         """Sends small files specifically focussed on UI responsiveness to AWS.
 
