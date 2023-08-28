@@ -385,6 +385,9 @@ class Camera:
             self.qhydirect = False
             plog("ASCOM is connected:  ", self._connect(True))
             plog("Control is ASCOM camera driver.")
+            
+            self.imagesize_x = self.camera.CameraXSize  
+            self.imagesize_y = self.camera.CameraYSize 
 
         elif driver == "CCDSoft2XAdaptor.ccdsoft5Camera":
             plog("Connecting to TheSkyX")
@@ -410,6 +413,28 @@ class Camera:
             self.qhydirect = False
             plog("TheSkyX is connected:  ")
             self.app = win32com.client.Dispatch("CCDSoft2XAdaptor.ccdsoft5Camera")
+            
+            
+            # Initialise Camera Size here
+            # Take a quick cheeky frame to get imagesize
+            tempcamera = win32com.client.Dispatch(self.driver)
+            tempcamera.Connect()
+            tempcamera.Frame=2
+            tempcamera.ExposureTime=0
+            tempcamera.TakeImage()
+            imageTempOpen=fits.open(tempcamera.LastImageFileName, uint=False)[0].data.astype("float32")               
+            del tempcamera
+            
+            try:
+                os.remove(self.camera.LastImageFileName)
+            except Exception as e:
+                plog ("Could not remove theskyx image file: ",e)
+            
+            self.imagesize_x=int(imageTempOpen.shape[0])
+            self.imagesize_y=int(imageTempOpen.shape[1])     
+            del imageTempOpen
+           
+            
         
         elif driver == "QHYCCD_Direct_Control":
             global qhycam
@@ -519,6 +544,9 @@ class Camera:
             self.camera.SetFullFrame()
             self.camera.SetFullFrame
 
+            self.imagesize_x = self.camera.CameraXSize  
+            self.imagesize_y = self.camera.CameraYSize 
+
             plog("Control is via Maxim camera interface, not ASCOM.")
             plog("Please note telescope is NOT connected to Maxim.")
 
@@ -610,54 +638,7 @@ class Camera:
                 self.camera.BinY = 1
             except:
                 plog("Problem setting up 1x1 binning at startup.")
-            
-        try:
-            self.overscan_x = int(
-                self.config["camera"][self.name]["settings"]["overscan_x"]
-            )
-            self.overscan_y = int(
-                self.config["camera"][self.name]["settings"]["overscan_y"]
-            )
-        except:
-            pass
 
-        try:
-            if self.qhydirect:
-                # QHY HAS x and y reversed for width and height
-                self.camera_y_size = qhycam.camera_params[qhycam_id]['image_width'].value
-                self.camera_x_size = qhycam.camera_params[qhycam_id]['image_height'].value
-                self.camera_image_size = i_h * i_w
-            else:
-                self.camera_x_size = self.camera.CameraXSize  
-                self.camera_y_size = self.camera.CameraYSize 
-        except:
-            self.camera_x_size = self.config['camera'][self.name]['settings']['CameraXSize']
-            self.camera_y_size = self.config['camera'][self.name]['settings']['CameraYSize']
-
-        #self.camera_start_x = self.config["camera"][self.name]["settings"]["StartX"]
-        #self.camera_start_y = self.config["camera"][self.name]["settings"]["StartY"]
-        if self.config["camera"][self.name]["settings"]["cam_needs_NumXY_init"] and self.camera is not None:  # WER 20230217
-            try:    
-                self.camera.NumX = self.camera_x_size
-                self.camera.NumY = self.camera_y_size
-            except:
-                plog ('num x,y initialise did not work')
-            try:
-                self.camera.StartX = 0
-                self.camera.StartY = 0
-                self.camera.BinX = 1
-                self.camera.BinY = 1
-            except:
-                plog ("self.camera setup didn't work... may be a QHY")
-            
-        self.camera_num_x = int(1)  #NB I do not recognize this.    WER  Apprently not used.
-
-        #self.af_mode = False
-        #self.af_step = -1
-        #self.f_spot_dia = []
-        #self.f_positions = []
-
-        #self.hint = None
         self.darkslide = False
         self.darkslide_state = "N.A."   #Not Available.
         if self.config["camera"][self.name]["settings"]["has_darkslide"]:
