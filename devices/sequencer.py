@@ -364,6 +364,7 @@ class Sequencer:
                  self.nightly_reset_script()
                 
         if ((g_dev['events']['Cool Down, Open'] <= ephem_now < g_dev['events']['Observing Ends'])):
+
             self.nightly_reset_complete = False            
         
         if not self.total_sequencer_control:
@@ -676,6 +677,9 @@ class Sequencer:
     def execute_block(self, block_specification):
         
         self.block_guard = True
+        
+        #breakpoint()
+        
         if (ephem.now() < g_dev['events']['Civil Dusk'] ) or \
             (g_dev['events']['Civil Dawn']  < ephem.now() < g_dev['events']['Nightly Reset']):
             plog ("NOT RUNNING PROJECT BLOCK -- IT IS THE DAYTIME!!")
