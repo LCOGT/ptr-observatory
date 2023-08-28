@@ -39,9 +39,7 @@ site_config = {
     'admin_aliases': ["ANS", "WER", "TELOPS", "TB", "DH", "KVH", "KC"],    
     
     
-    
-    
-    # Deafult safety settings
+    # Default safety settings
     'safety_check_period': 45,  # MF's original setting.
     'closest_distance_to_the_sun': 45,  # Degrees. For normal pointing requests don't go this close to the sun.
     'closest_distance_to_the_moon': 10,  # Degrees. For normal pointing requests don't go this close to the moon.
@@ -100,39 +98,6 @@ site_config = {
     'observing_begins_offset': 18,    
     # How many minutes before civilDawn to do ....
     'observing_ends_offset': 18,   
-
-
-
-    # 'aux_archive_path':  None,  # NB NB we might want to put Q: here for MRC
-    # 'wema_is_active':  True,          # True if the split computers used at a site.  NB CHANGE THE DAMN NAME!
-    # 'wema_hostname': 'MRC-WEMA',   # Prefer the shorter version
-    # 'wema_path':  'Q:/ptr/',  # '/wema_transfer/',
-    # 'dome_on_wema':   True,
-    # 'site_IPC_mechanism':  'redis',   # ['None', shares', 'shelves', 'redis']  Pick One
-    # 'wema_write_share_path': 'Q:/ptr/',  # Meant to be where Wema puts status data.
-    # 'client_read_share_path':  'Q:/ptr/',  # NB these are all very confusing names.
-    # 'client_write_share_path': 'Q:/ptr/',
-    # 'redis_ip': '10.15.0.109',  # '127.0.0.1', None if no redis path present,
-    # 'obsid_is_generic':  False,   # A simply  single computer ASCOM site.
-    # 'obsid_is_specific':  False,  # Indicates some special code for this site, found at end of config.
-    #'host_wema_site_name':  'mrc',  # The umbrella header for obsys in close geographic proximity,
-    #                                #  under the control of one wema
-    
-    #'site_path': 'Q:/',
-    
-    # 'location_day_allsky':  None,  # Thus ultimately should be a URL, probably a color camera.
-    # 'location_night_allsky':  None,  # Thus ultimately should be a URL, usually Mono camera with filters.
-    # 'location _pole_monitor': None,  # This probably gets us to some sort of image (Polaris in the North)
-    # 'location_seeing_report': None,  # Probably a path to a jpeg or png graph.
-    # 'debug_flag': True,  # Be careful about setting this flag True when pushing up to dev!
-    #'TZ_database_name': 'America/Los_Angeles',
-    #'time_offset': -7,     # NB these two should be derived from Python libs so change is automatic
-    #'timezone': 'PDT',
-    #'latitude': 34.459375,  # Decimal degrees, North is Positive
-    #'longitude': -119.681172,  # Decimal degrees, West is negative
-    #'elevation': 317.75,    # meters above sea level
-    #'reference_ambient':  10.0,  # Degrees Celsius.  Alternately 12 entries, one for every - mid month.
-    #'reference_pressure':  977.83,  # mbar Alternately 12 entries, one for every - mid month.
 
     
     # Exposure times for standard system exposures
@@ -917,7 +882,40 @@ if __name__ == '__main__':
         print('Dictionaries matched.')
 
 
+####################################### RETIRED BELOW THIS POINT
 
+
+
+    # 'aux_archive_path':  None,  # NB NB we might want to put Q: here for MRC
+    # 'wema_is_active':  True,          # True if the split computers used at a site.  NB CHANGE THE DAMN NAME!
+    # 'wema_hostname': 'MRC-WEMA',   # Prefer the shorter version
+    # 'wema_path':  'Q:/ptr/',  # '/wema_transfer/',
+    # 'dome_on_wema':   True,
+    # 'site_IPC_mechanism':  'redis',   # ['None', shares', 'shelves', 'redis']  Pick One
+    # 'wema_write_share_path': 'Q:/ptr/',  # Meant to be where Wema puts status data.
+    # 'client_read_share_path':  'Q:/ptr/',  # NB these are all very confusing names.
+    # 'client_write_share_path': 'Q:/ptr/',
+    # 'redis_ip': '10.15.0.109',  # '127.0.0.1', None if no redis path present,
+    # 'obsid_is_generic':  False,   # A simply  single computer ASCOM site.
+    # 'obsid_is_specific':  False,  # Indicates some special code for this site, found at end of config.
+    #'host_wema_site_name':  'mrc',  # The umbrella header for obsys in close geographic proximity,
+    #                                #  under the control of one wema
+    
+    #'site_path': 'Q:/',
+    
+    # 'location_day_allsky':  None,  # Thus ultimately should be a URL, probably a color camera.
+    # 'location_night_allsky':  None,  # Thus ultimately should be a URL, usually Mono camera with filters.
+    # 'location _pole_monitor': None,  # This probably gets us to some sort of image (Polaris in the North)
+    # 'location_seeing_report': None,  # Probably a path to a jpeg or png graph.
+    # 'debug_flag': True,  # Be careful about setting this flag True when pushing up to dev!
+    #'TZ_database_name': 'America/Los_Angeles',
+    #'time_offset': -7,     # NB these two should be derived from Python libs so change is automatic
+    #'timezone': 'PDT',
+    #'latitude': 34.459375,  # Decimal degrees, North is Positive
+    #'longitude': -119.681172,  # Decimal degrees, West is negative
+    #'elevation': 317.75,    # meters above sea level
+    #'reference_ambient':  10.0,  # Degrees Celsius.  Alternately 12 entries, one for every - mid month.
+    #'reference_pressure':  977.83,  # mbar Alternately 12 entries, one for every - mid month.
 
 
 
