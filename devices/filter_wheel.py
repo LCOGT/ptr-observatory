@@ -37,19 +37,13 @@ class FilterWheel:
                 "filter_screen_sort"
             ]
             self.wait_time_after_filter_change=self.config["filter_wheel1"]["filter_settle_time"]
-            #self.filter_reference = int(
-            #    self.config["filter_wheel1"]["settings"]["filter_reference"]
-            #)
-    
-            # NOTE: THIS CODE DOES NOT implement a filter via the Maxim application
-            # which is passed in as a valid instance of class camera.
+            
             self.filter_message = "-"
             plog("Please NOTE: Filter wheel may block for many seconds while first connecting \
                  & homing.")
             if driver == "LCO.dual":
                 # home the wheel and get responses, which indicates it is connected.
-                # set current_0 and _1 to [0, 0] position to default of w/L filter.
-    
+                # set current_0 and _1 to [0, 0] position to default of w/L filter.    
                 r0 = requests.get(self.ip + "/filterwheel/0/position", timeout=5)
                 r1 = requests.get(self.ip + "/filterwheel/1/position", timeout=5)
                 if str(r0) == str(r1) == "<Response [200]>":
@@ -70,9 +64,7 @@ class FilterWheel:
                 self.ascom = False
                 self.dual = True
                 self.custom = True
-                #self.filter_selected = self.filter_data[self.filter_reference][0]
-                #self.filter_number = self.filter_reference
-                #self.filter_offset = self.filter_data[self.filter_reference][2]
+                
             elif isinstance(driver, list) and self.dual_filter:
                 # TODO: Fix this, THIS IS A FAST KLUDGE TO GET MRC WORKING, NEED TO VERIFY THE FILTER ORDERING
                 self.filter_back = win32com.client.Dispatch(driver[0])  # Closest to Camera
@@ -84,24 +76,20 @@ class FilterWheel:
                 self.filter_back.Position = 0
                 self.dual = True
                 self.custom = False
-                #self.filter_selected = self.filter_data[self.filter_reference][0]
-                #self.filter_number = self.filter_reference
-                #self.filter_offset = self.filter_data[self.filter_reference][2]
-                # First setup:
-                #time.sleep(1)
+               
                 while self.filter_front.Position == -1:
                     time.sleep(0.1)
                 self.filter_front.Position = self.filter_data[self.filter_reference][1][1]
-                #time.sleep(1)
+                
                 while self.filter_back.Position == -1:
                     time.sleep(0.1)
                 self.filter_back.Position = self.filter_data[self.filter_reference][1][0]
-                #time.sleep(1)
+                
                 plog(self.filter_selected, self.filter_offset)
             elif driver == "ASCOM.FLI.FilterWheel" and self.dual_filter:
                 self.maxim = False
                 self.dual = True
-                #breakpoint()
+               
                 fw0 = win32com.client.Dispatch(driver)  # Closest to Camera
                 fw1 = win32com.client.Dispatch(driver)  # Closest to Telescope
                 plog(fw0, fw1)
@@ -146,16 +134,15 @@ class FilterWheel:
                 self.filter_number = self.filter_reference
                 self.filter_offset = self.filter_data[self.filter_reference][2]
     
-                # First setup:
-                #time.sleep(1)
+                
                 while self.filter_front.Position == -1:
                     time.sleep(0.1)
                 self.filter_front.Position = self.filter_data[self.filter_reference][1][1]
-                #time.sleep(1)
+                
                 while self.filter_back.Position == -1:
                     time.sleep(0.1)
                 self.filter_back.Position = self.filter_data[self.filter_reference][1][0]
-                #time.sleep(1)
+                
                 plog(self.filter_selected, self.filter_offset)
     
             elif driver.lower() in ["maxim.ccdcamera", "maxim", "maximdl", "maximdlpro"]:
@@ -180,14 +167,7 @@ class FilterWheel:
                 self.ascom = False
                 self.dual = True
                 self.custom = False
-                # This is the default expected after a home or power-up cycle.
-                #self.filter_selected = self.filter_data[self.filter_reference][0]
-    
-                #self.filter_number = self.filter_reference
-                #self.filter_offset = self.filter_data[self.filter_reference][2]
-                # We assume camera object has been created before the filter object.
-                # Note filter may be commanded directly by AWS or provided in an expose
-                # command as an optional parameter.
+                
             elif "com" in driver.lower():
                 self.custom = True
                 try:
@@ -326,15 +306,10 @@ class FilterWheel:
     def set_name_command(self, req: dict, opt: dict):
         """Sets the filter position by filter name."""      
         
-        
         try:
             filter_name = str(req["filter"]).lower()
         except:
             filter_name = str(req["filter_name"]).lower()
-
-        
-
-
         filter_identified = 0
 
         for match in range(           
@@ -347,10 +322,7 @@ class FilterWheel:
                 break
 
         # If filter was not identified, find a substitute filter
-        if filter_identified == 0:
-            #plog(
-            #    f"Requested filter: {str(filter_name)} does not exist on this filter wheel."
-            #)
+        if filter_identified == 0:           
             filter_name = str(self.substitute_filter(filter_name)).lower()
             if filter_name == "none":
                 return "none"
@@ -361,12 +333,10 @@ class FilterWheel:
                     filt_pointer = match
                     filter_identified = 1
                     break
-        #else:
-            
+        
 
         if self.previous_filter_name==filter_name:
-            #plog ("previous filter, " + str(self.previous_filter_name), " = requested filter, " + str(filter_name) + ". No change necessary.")
-        
+            
             return self.previous_filter_name, self.previous_filter_match, self.filter_offset
 
         try:
@@ -390,9 +360,7 @@ class FilterWheel:
             r1["filterwheel"]["position"] = filter_selections[1]
             r0_pr = requests.put(self.ip + "/filterwheel/0/position", json=r0, timeout=5)
             r1_pr = requests.put(self.ip + "/filterwheel/1/position", json=r1, timeout=5)
-            if str(r0_pr) == str(r1_pr) == "<Response [200]>":
-                #plog("Set up filter configuration;  ", filter_selections)
-                #plog("Status:  ", r0_pr.text, r1_pr.text)
+            if str(r0_pr) == str(r1_pr) == "<Response [200]>":                
                 pass
             while True:
                 r0_t = int(
@@ -404,14 +372,11 @@ class FilterWheel:
                     requests.get(self.ip + "/filterwheel/1/position", timeout=5)
                     .text.split('"position":')[1]
                     .split("}")[0]
-                )
-                #plog(r0_t, r1_t)
-                if r0_t == 808 or r1_t == 808:
-                    #time.sleep(1)
+                )                
+                if r0_t == 808 or r1_t == 808:                    
                     continue
                 else:
-                    pass
-                    #plog("Filters:  ", r0_t, r1_t)
+                    pass                    
                     break
 
         elif self.dual and not self.maxim:
@@ -419,7 +384,7 @@ class FilterWheel:
                 while self.filter_front.Position == -1:
                     time.sleep(0.1)
                 self.filter_front.Position = filter_selections[1]
-                #time.sleep(0.2)
+                
             except:
                 pass
             try:
@@ -433,7 +398,6 @@ class FilterWheel:
         elif self.maxim and self.dual:
             try:
                 self.filter.Filter = filter_selections[0]
-                #time.sleep(0.1)
                 if self.dual_filter:
                     self.filter.GuiderFilter = filter_selections[1]
 

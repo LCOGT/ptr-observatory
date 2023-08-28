@@ -1,8 +1,8 @@
-# -*- coding: utf-8 -*-
 """
-Created on Sun Apr 23 22:10:44 2023
+This is the smartstack process where stacks are .... stacked PURELY for the UI.
 
-@author: observatory
+To make the stacking work, a lot of laziness is accepted to make it fast enough
+to run faster than the exposures being taken. 
 """
 
 import pickle
@@ -69,9 +69,6 @@ imgdata = np.load(paths["red_path"] + paths["red_name01"].replace('.fits','.npy'
 #Make sure there is a smartstack directory!
 if not os.path.exists(obsid_path+ "smartstacks/"):
             os.makedirs(obsid_path+ "smartstacks/")
- 
-
-
 reprojection_failed = False
                    
 # Pick up some header items for smartstacking later
@@ -83,13 +80,6 @@ imgdata=imgdata-float(sspedestal)
 
 img.close()
 del img
-
-#try:
-#    os.remove(paths["red_path"] + paths["red_name01"].replace('.fits','.head'))
-#    os.remove(paths["red_path"] + paths["red_name01"].replace('.fits','.npy'))
-#except:
-#    pass
-    #plog ("couldn't remove smartstack files.")
 
 smartStackFilename = (
     str(ssobject)
@@ -106,18 +96,11 @@ smartStackFilename = (
 if not is_osc:
 
     while not os.path.exists(paths["im_path"] + paths["text_name00"].replace('.txt','.sep')):
-        #plog ("waiting for single frame SEP file to be finished")
         time.sleep(1)                        
     
     #plog("Now to figure out how to get sep into a csv.")
     sstack_process_timer = time.time()
-    sources = Table.read(paths["im_path"] + paths["text_name00"].replace('.txt', '.sep'), format='csv')
-    #breakpoint()
-    
-    
-    #plog("Number of sources just prior to smartstacks: " + str(len(sources)))
-    #if len(sources) < 5:
-    #    plog("skipping stacking as there are not enough sources " + str(len(sources)) + " in this image")
+    sources = Table.read(paths["im_path"] + paths["text_name00"].replace('.txt', '.sep'), format='csv')    
 
     # IF SMARSTACK NPY FILE EXISTS DO STUFF, OTHERWISE THIS IMAGE IS THE START OF A SMARTSTACK
     reprojection_failed = False
@@ -126,7 +109,6 @@ if not is_osc:
     ):
         if len(sources) >= 5:
             # Store original image
-            #plog("Storing First smartstack image and catalogue file")
             np.save(
                 obsid_path
                 + "smartstacks/"
@@ -138,7 +120,6 @@ if not is_osc:
             + smartStackFilename.replace('.npy','.sep'), format='csv', overwrite=True)
 
         else:
-            #plog("Not storing first smartstack image as not enough sources")
             reprojection_failed = True
         storedsStack = imgdata
     else:
@@ -174,15 +155,9 @@ if not is_osc:
                     storedsStack,
                 )
                 reprojection_failed = False
-            #except func_timeout.FunctionTimedOut:
-            #    plog("astroalign timed out")
-            #    reprojection_failed = True
             except aa.MaxIterError:
-                #plog("astroalign could not find a solution in this image")
                 reprojection_failed = True
             except Exception:
-                #plog("astroalign failed")
-                #plog(traceback.format_exc())
                 reprojection_failed = True
         else:
             reprojection_failed = True
@@ -208,6 +183,7 @@ if not is_osc:
 
     iy, ix = stretched_data_uint8.shape
     final_image = Image.fromarray(stretched_data_uint8)
+    
     # These steps flip and rotate the jpeg according to the settings in the site-config for this camera
     if transpose_jpeg:
         final_image = final_image.transpose(Image.Transpose.TRANSPOSE)
@@ -269,8 +245,6 @@ else:
             
         else:
             pass
-            #plog("this bayer grid not implemented yet")
-
 
         # HERE is where to do a simultaneous red, green, blue 
         # multithreaded sep.
@@ -293,20 +267,15 @@ else:
         blue_sep_subprocess=subprocess.Popen(['python','subprocesses/OSC_AA_SEPprocess.py'],stdin=subprocess.PIPE,stdout=subprocess.PIPE,bufsize=0)
         pickle.dump(pickler, blue_sep_subprocess.stdin)
         
-        # Essentially wait until the subprocess is complete
+        # Essentially wait until each subprocess is complete
         red_sep_subprocess.communicate()
         green_sep_subprocess.communicate()
         blue_sep_subprocess.communicate()
         
         redsources=pickle.load(open(im_path + 'oscaasep.picklered', 'rb'))
         greensources=pickle.load(open(im_path + 'oscaasep.picklegreen', 'rb'))
-        bluesources=pickle.load(open(im_path + 'oscaasep.pickleblue', 'rb'))
-        
-        #plog("Number of sources just prior to smartstacks: " + str(len(greensources)))
-        #if len(greensources) < 5:
-        #    plog("skipping stacking as there are not enough sources " + str(len(greensources)) + " in this image")
-        
-        
+        bluesources=pickle.load(open(im_path + 'oscaasep.pickleblue', 'rb'))        
+                
         if len(greensources) > 5:
         # IF SMARSTACK NPY FILE EXISTS DO STUFF, OTHERWISE THIS IMAGE IS THE START OF A SMARTSTACK
             reprojection_failed = False
@@ -356,7 +325,6 @@ else:
                             + smartStackFilename.replace('.npy','red.sep'), format='csv', overwrite=True)
 
                     else:
-                        #plog("Not storing first smartstack image as not enough sources")
                         reprojection_failed = True
 
                 else:
@@ -411,15 +379,9 @@ else:
                                 newhdublue = storedsStack
                             del storedsStack
                             reprojection_failed = False
-                        #except func_timeout.FunctionTimedOut:
-                        #    plog("astroalign timed out")
-                        #    reprojection_failed = True
                         except aa.MaxIterError:
-                            #plog("astroalign could not find a solution in this image")
                             reprojection_failed = True
                         except Exception:
-                           # plog("astroalign failed")
-                           # plog(traceback.format_exc())
                             reprojection_failed = True
                     else:
                         reprojection_failed = True
@@ -447,7 +409,7 @@ else:
         del green_stretched_data_float
         colour_img = Image.fromarray(rgbArray, mode="RGB")
 
-       # adjust brightness
+        # adjust brightness
         brightness = ImageEnhance.Brightness(colour_img)
         brightness_image = brightness.enhance(
             osc_brightness_enhance)
@@ -514,27 +476,12 @@ else:
             crop_preview
             == True
         ):
-        #     yb = self.config["camera"][g_dev['cam'].name]["settings"][
-        #         "crop_preview_ybottom"
-        #     ]
-        #     yt = self.config["camera"][g_dev['cam'].name]["settings"][
-        #         "crop_preview_ytop"
-        #     ]
-        #     xl = self.config["camera"][g_dev['cam'].name]["settings"][
-        #         "crop_preview_xleft"
-        #     ]
-        #     xr = self.config["camera"][g_dev['cam'].name]["settings"][
-        #         "crop_preview_xright"
-        #     ]
-            #hdusmalldata = hdusmalldata[yb:-yt, xl:-xr]
             final_image=final_image.crop((xl,yt,xr,yb))
             iy, ix = final_image.size
             
         if iy == ix:
-            #final_image.resize((1280, 1280))
             final_image = final_image.resize((900, 900))
         else:
-            #final_image.resize((int(1536 * iy / ix), 1536))
             if squash_on_x_axis:
                 final_image = final_image.resize((int(900 * iy / ix), 900))
             else:

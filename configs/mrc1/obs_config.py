@@ -1,9 +1,6 @@
 # -*- coding: utf-8 -*-
 '''
-Created on Fri Aug  2 11:57:41 2019
-Updates 20220107 20:01 WER
-
-@author: wrosing
+Config for MRC1
 '''
 import json
 
@@ -14,63 +11,72 @@ import json
 12345678901234567890123456789012345678901234567890123456789012345678901234567890123456789012345678901234567890123456789012345678
 '''
 
-# NB NB NB json is not bi-directional with tuples (), instead, use lists [], nested if tuples are needed.
-degree_symbol = "°"
-
-# instance_type = 'obs' # This is the type of site this is.
-# wema_name = 'mrc' # THIS REFERS TO THE WEMA NOT THE OBS
-# 
 obs_id = 'mrc1'  # NB These must be unique across all of PTR. Pre-pend with airport code if needed: 'sba_wmdo'
 
-site_config = {       #the NAME "SITE" IS INCONSISTENT  bIG CHANGE TO EFFECT, obsp_config maybe??  >>>>
+site_config = {      
+    
+    # Instance type specifies whether this is an obs or a wema
     'instance_type' : 'obs',
+    # If this is not a wema, this specifies the wema that this obs is connected to
     'wema_name' : 'mrc',
+    # The unique identifier for this obs
     'obs_id': 'mrc1',
-    # Manual mode turns all automation off. 
-    # The scope will only do what you tell it
-    # This DOESN'T turn some safetys off 
+    
+    # Name, local and owner stuff
+    'name': 'Mountain Ranch Camp Observatory 0m35 f7.2',
+    'airport_code': 'SBA',
+    'location': 'Near Santa Barbara CA,  USA',
+    'telescope_description': '0m35 f7.2 Planewave CDK',
+    'observatory_url': 'https://starz-r-us.sky/clearskies',
+    'observatory_logo': None,
+    'mpc_code':  'ZZ23',  # This is made up for now.
+    'description':  '''
+                    Now is the time for all good persons
+                    to get out and vote early and often lest
+                    we lose charge of our democracy.
+                    ''',  # i.e, a multi-line text block supplied by the owner.  Must be careful about the contents for now.    
+    'owner':  ['google-oauth2|112401903840371673242'],  # Wayne
+    'owner_alias': ['WER', 'TELOPS'],
+    'admin_aliases': ["ANS", "WER", "TELOPS", "TB", "DH", "KVH", "KC"],    
+    
+    
+    # Default safety settings
+    'safety_check_period': 45,  # MF's original setting.
+    'closest_distance_to_the_sun': 45,  # Degrees. For normal pointing requests don't go this close to the sun.
+    'closest_distance_to_the_moon': 3,  # Degrees. For normal pointing requests don't go this close to the moon.
+    'minimum_distance_from_the_moon_when_taking_flats': 45,
+    'lowest_requestable_altitude': -5,  # Degrees. For normal pointing requests don't allow requests to go this low.
+    'degrees_to_avoid_zenith_area_for_calibrations': 0, 
+    'temperature_at_which_obs_too_hot_for_camera_cooling' : 23,  
+    
+    # These are the default values that will be set for the obs
+    # on a reboot of obs.py. They are safety checks that 
+    # can be toggled by an admin in the Observe tab.
     'scope_in_manual_mode': False,
     'mount_reference_model_off': True,
     'sun_checks_on': True,
     'moon_checks_on': True,
     'altitude_checks_on': True,    
     'daytime_exposure_time_safety_on': True,
-    'degrees_to_avoid_zenith_area_for_calibrations': 0,
+        
     
-    #MANY KEYS FOUND HERE REALLY APPLY TO MOUNT, CAMERA, ETC.
-    # MTF - au contraire, many of those above and below involve
-    # multiple devices, so belong outside of a single device.
-
-    # Auto-cenering is great .... unless you are polar aligning
-    'turn_auto_centering_off': False,
-    'debug_mode': False,
-    'admin_owner_commands_only': False,
-    'debug_duration_sec': 1800,
-
-    'owner':  ['google-oauth2|112401903840371673242'],  # Wayne
-
-    'owner_alias': ['WER', 'TELOPS'],
-    'admin_aliases': ["ANS", "WER", "TELOPS", "TB", "DH", "KVH", "KC"],
-
-    'client_hostname':  'mrc-0m35',  # This is also the long-name  Client is confusing!
-    # NB NB disk D at mrc may be faster for temp storage
-    'client_path':  'Q:/ptr/',  # Generic place for client host to stash misc stuff
+    # Setup of folders on local and network drives.
+    'client_hostname':  'mrc-0m35',  # This is also the long-name  Client is confusing!    
+    'archive_path':  'D:/ptr/',  # Generic place for client host to stash misc stuff
     'local_calibration_path': 'D:/ptr/', # THIS FOLDER HAS TO BE ON A LOCAL DRIVE, not a network drive due to the necessity of huge memmap files
     'alt_path':  'Q:/ptr/',  # Generic place for this host to stash misc stuff
     'plog_path':  'Q:/ptr/mrc1/',  # place where night logs can be found.
-    'save_to_alt_path': 'no',
-    'archive_path':  'Q:/ptr/',
-
-    'archive_age': -99.9,  # Number of days to keep files in the local archive before deletion. Negative means never delete
+    'save_to_alt_path': 'yes',    
+    'archive_age': -3,  # Number of days to keep files in the local archive before deletion. Negative means never delete
+    
     # For low bandwidth sites, do not send up large files until the end of the night. set to 'no' to disable
     'send_files_at_end_of_night': 'no',
-
     # For low diskspace sites (or just because they aren't needed), don't save a separate raw file to disk after conversion to fz.
     'save_raw_to_disk': True,
     # PTR uses the reduced file for some calculations (focus, SEP, etc.). To save space, this file can be removed after usage or not saved.
     'keep_reduced_on_disk': True,
-    'keep_focus_images_on_disk': True,  # To save space, the focus file can not be saved.
-    
+    'keep_focus_images_on_disk': True,  # To save space, the focus file can not be saved.   
+    # A certain type of naming that sorts filenames by numberid first
     'save_reduced_file_numberid_first' : False,
 
     # Minimum realistic seeing at the site.
@@ -78,100 +84,44 @@ site_config = {       #the NAME "SITE" IS INCONSISTENT  bIG CHANGE TO EFFECT, ob
     # Particularly useful for focus
     'minimum_realistic_seeing': 1.0,
 
-    'aux_archive_path':  None,  # NB NB we might want to put Q: here for MRC
-    'wema_is_active':  True,          # True if the split computers used at a site.  NB CHANGE THE DAMN NAME!
-    'wema_hostname': 'MRC-WEMA',   # Prefer the shorter version
-    'wema_path':  'Q:/ptr/',  # '/wema_transfer/',
-    'dome_on_wema':   True,
-    'site_IPC_mechanism':  'redis',   # ['None', shares', 'shelves', 'redis']  Pick One
-    'wema_write_share_path': 'Q:/ptr/',  # Meant to be where Wema puts status data.
-    'client_read_share_path':  'Q:/ptr/',  # NB these are all very confusing names.
-    'client_write_share_path': 'Q:/ptr/',
-    'redis_ip': '10.15.0.109',  # '127.0.0.1', None if no redis path present,
-    'obsid_is_generic':  False,   # A simply  single computer ASCOM site.
-    'obsid_is_specific':  False,  # Indicates some special code for this site, found at end of config.
+    # TIMING FOR CALENDAR EVENTS
+    # How many minutes with respect to eve sunset start flats
+    'eve_sky_flat_sunset_offset': -45.,  # 40 before Minutes  neg means before, + after.
+    # How many minutes after civilDusk to do....
+    'end_eve_sky_flats_offset': 5 , 
+    'clock_and_auto_focus_offset': 8,
+    'observing_begins_offset': 18,    
+    # How many minutes before civilDawn to do ....
+    'observing_ends_offset': 18,   
 
 
-    'host_wema_site_name':  'mrc',  # The umbrella header for obsys in close geographic proximity,
-                                    #  under the control of one wema
-    'name': 'Mountain Ranch Camp Observatory 0m35 f7.2',
-    'airport_code': 'SBA',
-    'location': 'Near Santa Barbara CA,  USA',
-    'telescope_description': '0m35 f7.2 Planewave CDK',
-    'site_path': 'Q:/',
-    'observatory_url': 'https://starz-r-us.sky/clearskies',
-    'observatory_logo': None,
-    'dedication':  '''
-                    Now is the time for all good persons
-                    to get out and vote early and often lest
-                    we lose charge of our democracy.
-                    ''',  # i.e, a multi-line text block supplied by the owner.  Must be careful about the contents for now.
-    'location_day_allsky':  None,  # Thus ultimately should be a URL, probably a color camera.
-    'location_night_allsky':  None,  # Thus ultimately should be a URL, usually Mono camera with filters.
-    'location _pole_monitor': None,  # This probably gets us to some sort of image (Polaris in the North)
-    'location_seeing_report': None,  # Probably a path to a jpeg or png graph.
-    'debug_flag': True,  # Be careful about setting this flag True when pushing up to dev!
-    #'TZ_database_name': 'America/Los_Angeles',
-    'mpc_code':  'ZZ23',  # This is made up for now.
-    #'time_offset': -7,     # NB these two should be derived from Python libs so change is automatic
-    #'timezone': 'PDT',
-    #'latitude': 34.459375,  # Decimal degrees, North is Positive
-    #'longitude': -119.681172,  # Decimal degrees, West is negative
-    #'elevation': 317.75,    # meters above sea level
-    #'reference_ambient':  10.0,  # Degrees Celsius.  Alternately 12 entries, one for every - mid month.
-    #'reference_pressure':  977.83,  # mbar Alternately 12 entries, one for every - mid month.
+    
+    # Exposure times for standard system exposures
+    'focus_exposure_time': 10,  # Exposure time in seconds for exposure image
+    'pointing_exposure_time': 15,  # Exposure time in seconds for exposure image
 
-    'obsid_roof_control': False,  # MTF entered this in to remove sro specific code  NB 'site_is_specifc' also deals with this
-    'obsid_allowed_to_open_roof': False,
-    'period_of_time_to_wait_for_roof_to_open': 50,  # seconds - needed to check if the roof ACTUALLY opens.
-    'only_scope_that_controls_the_roof': False,  # If multiple scopes control the roof, set this to False
-
-
-    'safety_check_period': 45,  # MF's original setting.
-    'maximum_roof_opens_per_evening': 4,
-    # How many minutes to use as the default retry time to open roof. This will be progressively multiplied as a back-off function.
-    'roof_open_safety_base_time': 15,
-
-
-
-    'obsid_in_automatic_default': "Automatic",  # "Manual", "Shutdown"
-    'automatic_detail_default': "Enclosure is set to Automatic mode.",
-
-
-    'closest_distance_to_the_sun': 45,  # Degrees. For normal pointing requests don't go this close to the sun.
-
-    'closest_distance_to_the_moon': 10,  # Degrees. For normal pointing requests don't go this close to the moon.
-
-    'lowest_requestable_altitude': -5,  # Degrees. For normal pointing requests don't allow requests to go this low.
-
+    # How often to do various checks and such
     'observing_check_period': 1,    # How many minutes between weather checks
     'enclosure_check_period': 1,    # How many minutes between enclosure checks
 
+    # Turn on and off various automated calibrations at different times.
     'auto_eve_bias_dark': True,
     'auto_eve_sky_flat': True,
-    'eve_sky_flat_sunset_offset': -45.,  # 40 before Minutes  neg means before, + after.
-    'eve_cool_down_open': -50.0,
     'auto_midnight_moonless_bias_dark': True,
     'auto_morn_sky_flat': True,
     'auto_morn_bias_dark': True,
-    're-calibrate_on_solve': True,
-    'pointing_calibration_on_startup': False,  # MF I am leaving this alone.
-    # This is a time, in hours, over which to bypass automated focussing (e.g. at the start of a project it will not refocus if a new project starts X hours after the last focus)
-    'periodic_focus_time': 2.0,
-    'stdev_fwhm': 0.5,  # This is the expected variation in FWHM at a given telescope/camera/site combination. This is used to check if a fwhm is within normal range or the focus has shifted
-    'focus_exposure_time': 10,  # Exposure time in seconds for exposure image
-    'pointing_exposure_time': 30,  # Exposure time in seconds for exposure image
-    'pointing_correction_dec_multiplier' : 1,
-    'pointing_correction_ra_multiplier' : 1,
     
+    # FOCUS OPTIONS
+    'periodic_focus_time': 12.0, # This is a time, in hours, over which to bypass automated focussing (e.g. at the start of a project it will not refocus if a new project starts X hours after the last focus)
+    'stdev_fwhm': 0.5,  # This is the expected variation in FWHM at a given telescope/camera/site combination. This is used to check if a fwhm is within normal range or the focus has shifted
     'focus_trigger': 0.75,  # What FWHM increase is needed to trigger an autofocus
+    
+    # PLATESOLVE options
     'solve_nth_image': 1,  # Only solve every nth image
     'solve_timer': 0.05,  # Only solve every X minutes
     'threshold_mount_update': 45,  # only update mount when X arcseconds away
 
-    'defaults': {       # >>>>
-        #'observing_conditions': 'observing_conditions1',
-        #'enclosure': 'enclosure1',
+    'defaults': {       
         'mount': 'mount1',
         'telescope': 'telescope1',
         'focuser': 'focuser1',
@@ -194,89 +144,10 @@ site_config = {       #the NAME "SITE" IS INCONSISTENT  bIG CHANGE TO EFFECT, ob
         'sequencer',    #NB I think we will add "engineering or telops" to the model >>>>
         'telops',       #   >>>>
     ],
-    # 'wema_types': [       #>>>>
-    #     #'observing_conditions',
-    #     #'enclosure',
-    # ],
-    # 'enc_types': [
-    #     #'enclosure'
-    # ],
-    # 'short_status_devices':  [    #  >>>>
-    #     # 'observing_conditions',
-    #     # 'enclosure',
-    #     'mount',
-    #     'telescope',
-    #     # 'screen',
-    #     'rotator',
-    #     'focuser',
-    #     'selector',
-    #     'filter_wheel',
-    #     'camera',
-
-    #     'sequencer',
-    # ],
-
-    # 'observing_conditions': {
-    #     'observing_conditions1': {
-    #         'parent': 'site',
-    #         'ocn_is_specific':  False,  # Indicates some special site code.
-    #         # Intention it is found near bottom of this file.
-    #         'name': 'Weather Station #1',
-    #         'driver': 'ASCOM.SkyAlert.ObservingConditions',
-    #         'share_path_name': None,
-    #         'driver_2': 'ASCOM.SkyAlert.SafetyMonitor',
-    #         'driver_3': None,
-    #         'redis_ip': '10.15.0.109',  # None if no redis path present
-    #         'has_unihedron': False,
-    #         'ocn_has_unihedron':  False,
-    #         'have_local_unihedron': False,  # Need to add these to setups.
-    #         'uni_driver': 'ASCOM.SQM.serial.ObservingConditions',
-    #         'unihedron_port':  10  # False, None or numeric of COM port..
-
-    #     },
-    # },
-
-
-    # 'enclosure': {
-    #     'enclosure1': {
-    #         'parent': 'site',
-    #         'enc_is_specific':  False,  # Indicates some special site code.
-    #         # For ECO and EC2, they connect directly to the enclosure, whereas WEMA are different.
-    #         'directly_connected': False,
-    #         'name': 'Megawan',
-    #         'hostIP':  '10.15.0.65',
-    #         'driver': 'ASCOM.SkyRoofHub.Dome',  # Not really a dome for Skyroof.
-    #         'redis_ip': '10.15.0.109',  # None if no redis path present
-    #         'enc_is_specific':  False,
-    #         'startup_script':  None,
-    #         'recover_script':  None,
-    #         'shutdown_script':  None,
-    #         'has_lights':  True,
-    #         'controlled_by':  ['mnt1', 'mnt2'],
-    #         'is_dome': False,
-    #         'mode':  'Automatic',
-    #         'cool_down': -65,  # Minutes prior to sunset.
-    #         'settings': {
-    #             'lights':  ['Auto', 'White', 'Red', 'IR', 'Off'],
-
-    #             'roof_shutter':  ['Auto', 'Open', 'Close', 'Lock Closed', 'Unlock'],
-    #         },
-    #         'eve_bias_dark_dur':  2.0,  # hours Duration, prior to next.
-    #         'eve_screen_flat_dur': 1.0,  # hours Duration, prior to next.
-    #         'operations_begin': -1.0,  # - hours from Sunset
-    #         'eve_cooldown_offset': -.99,  # - hours beforeSunset
-    #         'eve_sky_flat_offset':  0.5,  # - hours beforeSunset
-    #         'morn_sky_flat_offset':  0.4,  # + hours after Sunrise
-    #         'morning_close_offset':  0.41,  # + hours after Sunrise
-    #         'operations_end':  0.42,
-    #     },
-    # },
-
-
 
     'mount': {
         'mount1': {       # NB There can only be one mount with our new model.  >>>>
-            #parent': 'enclosure1',     #   >>>>
+            
             'tel_id': '0m35',
             'name': 'eastpier',
             'hostIP':  '10.15.0.30',
@@ -287,7 +158,6 @@ site_config = {       #the NAME "SITE" IS INCONSISTENT  bIG CHANGE TO EFFECT, ob
             'recover_script':  None,
             'shutdown_script':  None,
             'alignment': 'Alt-Az',
-            #'default_zenith_avoid': 5.0,  # degrees floating   Removed to test default >>>>
             'west_clutch_ra_correction': 0.0,
             'west_clutch_dec_correction': 0.0,
             'east_flip_ra_correction': 0.0,
@@ -299,9 +169,6 @@ site_config = {       #the NAME "SITE" IS INCONSISTENT  bIG CHANGE TO EFFECT, ob
             'settle_time_after_park' : 0,
             # if this is set to yes, it will reset the mount at startup and when coordinates are out significantly'home_after_unpark' : True,
             'permissive_mount_reset': 'yes',
-            # Below this altitude, it will automatically try to home and park the scope to recover.
-            'lowest_acceptable_altitude': -2,
-
             'time_inactive_until_park': 3600.0,  # How many seconds of inactivity until it will park the telescope
             'has_paddle': False,
             'has_ascom_altaz': True,
@@ -497,14 +364,7 @@ site_config = {       #the NAME "SITE" IS INCONSISTENT  bIG CHANGE TO EFFECT, ob
             'maximum_good_focus_in_arcsecond': 2.5, # highest value to consider as being in "good focus". Used to select last good focus value
             
             'reference': 7250,  # 20221103    #7418,    # Nominal at 15C Primary temperature, in microns not steps. Guess
-            'ref_temp':  10,      # Update when pinning reference  Larger at lower temperatures.
-            'coef_c': -8.583,    # Negative means focus moves out (larger numerically) as Primary gets colder
-            # 'coef_0': 7250,  #20221103# Nominal intercept when Primary is at 0.0 C.
-            'coef_0': 7355,  # 20221103# Nominal intercept when Primary is at 0.0 C.
-            'coef_date':  '20230220',  # A Guess as to coef_c
-            'z_compression': 0.0,  # microns per degree of zenith distance
-            'z_coef_date':  '20221002',   # 'reference': 4375,    #   Guess 20210904  Nominal at 10C Primary temperature
-            'use_local_temp':  True,
+            
             'minimum': 0,    # NB this needs clarifying, we are mixing steps and microns.
             'maximum': 12700,
             'step_size': 1,
@@ -579,21 +439,10 @@ site_config = {       #the NAME "SITE" IS INCONSISTENT  bIG CHANGE TO EFFECT, ob
              
             # WER - if there is no filter wheel, then these two are used, otherwise they are harmless
             "name": "RGGB",
-            # 'flat_sky_gain' : 1148,
-            # 'driver' : None <------ set driver to None for no filter wheel
 
-
-
-
-
-            # "parent": "telescope1",
-            # "alias": "CWL2",
-            # "desc":  'PTR Custom FLI dual wheel.',
-            # "driver": ['ASCOM.FLI.FilterWheel1', 'ASCOM.FLI.FilterWheel2'],   #  'ASCOM.QHYFWRS232.FilterWheel',  #"Maxim",   #['ASCOM.FLI.FilterWheel1', 'ASCOM.FLI.FilterWheel2'],
             'ip_string': "",
             'settings': {
-                # 'filter_count': 23,
-                # 'home_filter':  2,
+               
                 'default_filter':  'PL',
 
                 'auto_color_options': ['OSC'],  # OPtions include 'OSC', 'manual','RGB','NB','RGBHA','RGBNB'
@@ -603,13 +452,7 @@ site_config = {       #the NAME "SITE" IS INCONSISTENT  bIG CHANGE TO EFFECT, ob
                 # ha, o3, s2 filter codes for this camera if it is a monochrome camera with filters
                 'mono_Narrowband_colour_filters': ['ha', 'o3', 's2'],
                 'mono_Narrowband_relative_weights': [1.0, 2, 2.5],
-
-                # 'filter_reference': 2,
-
-
-
-                # 'filter_list': ['PL','PR','PG','PB','HA','O3','S2', 'air','dif','w','CR','N2','up','gp','rp','ip','z', 'difup','difgp','difrp','difip','dark'], # A list of actual physical filters for the substitution function
-
+               
                 'filter_data': [['air',     [0, 0], -1000,  560.00, [2, 17], 'ai'],  # 0 357
                                 # 1  330NB NB NB If this in series should change focus about 1mm more.
                                 ['dif',     [4, 0],     0,  16.00,  [2, 17], 'df'],
@@ -628,7 +471,6 @@ site_config = {       #the NAME "SITE" IS INCONSISTENT  bIG CHANGE TO EFFECT, ob
                                 ['CR',      [1, 0],     0,  5,    [2, 17], 'CR'],  # 14
                                 ['S2',      [8, 0],     0,  3,  [2, 17], 'S2'],  # 15
                                 ['HA',      [6, 0],     0,  3,  [2, 17], 'HA'],  # 16
-                                #['focus',   [2, 0],     0,  16.0,   [2, 17], 'fo'],  # 17
                                 ['dark',    [8, 5],     0,   0.0,   [2, 17], 'dk']],  # 18
                 
                 'focus_filter' : 'w',
@@ -637,12 +479,8 @@ site_config = {       #the NAME "SITE" IS INCONSISTENT  bIG CHANGE TO EFFECT, ob
                 'filter_screen_sort':  ['air', 'w', 'PL', 'gp', 'PB', 'rp', 'PG', 'PR', 'ip', 'O3', 'N2', 'CR', 'S2', 'HA'],  # 9, 21],  # 5, 17], #Most to least throughput, \
                 # so screen brightens, skipping u and zs which really need sky.
 
-                # 'filter_sky_sort':     ['HA', 'S2', 'CR', 'N2', 'O3', 'PR', 'PG', 'PB', 'w', 'air']  #Least to most throughput  \
-                # Temporary MTF filter-sky-sort to get OSC flats ... if after March 23 return to above
                 'filter_sky_sort':     ['S2', 'N2', 'CR', 'O3', 'HA', 'z', 'PR', 'PG', 'PB', 'gp', 'rp', 'ip', 'w', 'PL', 'air'],
-                  # Least to most throughput  \
-                # 'filter_sky_sort':     [  'PB', 'gp','rp','ip', 'w','PL', 'focus', 'air']  #Least to most throughput  \
-
+                 
             },
         },
 # =============================================================================
@@ -723,16 +561,14 @@ site_config = {       #the NAME "SITE" IS INCONSISTENT  bIG CHANGE TO EFFECT, ob
                 # USB Speed is a tradeoff between speed and banding, min 0, max 60. 60 is least banding. Most of the
                 # readout seems to be dominated by the slow driver (difference is a small fraction of a second), so I've left it at 60 - least banding.
                 #
-                # QHY410C is gain 0, offset 9
-                
+                # QHY410C is gain 0, offset 9                
                 'direct_qhy_readout_mode': 1,  #These settings may be wrong. WER 20230712
                                
                 'direct_qhy_gain': 0,
                 'direct_qhy_offset': 9,
                 'direct_qhy_usb_speed': 60,
 
-
-                'squash_on_x_axis': True,
+                
 
 
 
@@ -751,23 +587,14 @@ site_config = {       #the NAME "SITE" IS INCONSISTENT  bIG CHANGE TO EFFECT, ob
                 'bin_for_platesolve': True,
                 'platesolve_bin_value' : 2,
   
-
-
-                # 'osc_brightness_enhance' : 1.0,
-                # 'osc_contrast_enhance' : 1.3,
-                # 'osc_saturation_enhance' : 2.0,
-                # 'osc_colour_enhance' : 1.5,
-                # 'osc_sharpness_enhance' : 1.5,
+                # Colour image tweaks.
                 'osc_brightness_enhance': 1.0,
-                # 'osc_contrast_enhance': 1.5,
-                # 'osc_saturation_enhance': 2.5,
-                # 'osc_colour_enhance': 1.7,
-                # 'osc_sharpness_enhance': 1.5,
                 'osc_contrast_enhance': 1.2,
                 'osc_saturation_enhance': 1.5,
                 'osc_colour_enhance': 1.2,
                 'osc_sharpness_enhance': 1.2,
                 'osc_background_cut': 15.0,
+                
                 # This setting will bin the image for focussing rather than interpolating. Good for 1x1 pixel sizes < 0.6.
                 'bin_for_focus': True,
 
@@ -781,6 +608,7 @@ site_config = {       #the NAME "SITE" IS INCONSISTENT  bIG CHANGE TO EFFECT, ob
                 'rotate180_fits': False,  # This also should be flipxy!
                 'rotate90_fits': False,
                 'rotate270_fits': False,
+                'squash_on_x_axis': True,
                 
                 # What number of pixels to crop around the edges of a REDUCED image
                 # This is primarily to get rid of overscan areas and also all images
@@ -808,11 +636,12 @@ site_config = {       #the NAME "SITE" IS INCONSISTENT  bIG CHANGE TO EFFECT, ob
                 # tens of thousands of sources, but any crop will speed things up. Don't use SEP crop unless
                 # you clearly need to.
                 'focus_image_crop_width': 0.0,  # For excessive fields of view, to speed things up crop the image to a fraction of the full width
-                'focus_image_crop_height': 0.0,  # For excessive fields of view, to speed things up crop the image to a fraction of the full height
-                
+                'focus_image_crop_height': 0.0,  # For excessive fields of view, to speed things up crop the image to a fraction of the full height                
                 'focus_jpeg_size': 750, # How many pixels square to crop the focus image for the UI Jpeg
+
                 # PLATESOLVE CROPS HAVE TO BE EQUAL! OTHERWISE THE PLATE CENTRE IS NOT THE POINTING CENTRE
                 'platesolve_image_crop': 0.0,  # Platesolve crops have to be symmetrical
+                
                 # Really, the SEP image should not be cropped unless your field of view and number of sources
                 # Are taking chunks out of the processing time.
                 # For excessive fields of view, to speed things up crop the processed image area to a fraction of the full width
@@ -824,10 +653,6 @@ site_config = {       #the NAME "SITE" IS INCONSISTENT  bIG CHANGE TO EFFECT, ob
 
                 'osc_bayer': 'RGGB',
                 'crop_preview': False,
-                # 'crop_preview_ybottom': 2,  #  2 needed if Bayer array
-                # 'crop_preview_ytop': 2,
-                # 'crop_preview_xleft': 2,
-                # 'crop_preview_xright': 2,
                 'crop_preview_ybottom': 2,  # 2 needed if Bayer array
                 'crop_preview_ytop': 2,
                 'crop_preview_xleft': 2,
@@ -841,36 +666,10 @@ site_config = {       #the NAME "SITE" IS INCONSISTENT  bIG CHANGE TO EFFECT, ob
                 'protect_camera_from_overheating' : False,
                 'cooler_on': True,
                 "cam_needs_NumXY_init": True,
-                'x_start':  0,
-                # 'x_start':  24,
-                'y_start':  0,
-                'x_width':  6072,  # NB Should be set up with overscan, which this camera is!  20200315 WER
-                'y_width':  4044,
-                'x_chip':  6072,  # NB Should specify the active pixel area.   20200315 WER
-                'y_chip':  4044,
-                'x_trim_offset':  0,  # NB these four entries are guesses.
-                'y_trim_offset':  0,
-                'pre_bias_available': False,  # if so need to specify as below for post_bias.
-                'post_bias_available': True,  # if so need to specify as below for post_bias.
-                'x_bias_start':  6066,
-                'y_bias_start': 4034,
-                'x_bias_end':  None,       # Vert band self.img[-38:-18, 0]
-                'y_bias_send': None,
-                'corner_everlap': None,
-                'x_bias_line': True,
-                'y_bias_line': True,
-                'x_active': 9576,
-                'y_active': 6388,
-                'det_size': '[1:9600, 1:6422]',  # Physical chip data size as returned from driver
-                'ccd_sec': '[1:9600, 1:6422]',
-                'bias_sec': ['[1:22, 1:6388]', '[1:11, 1:3194]', '[1:7, 1:2129]', '[1:5, 1:1597]'],
-                'det_sec': ['[25:9600, 1:6388]', '[13:4800, 1:3194]', '[9:3200, 1:2129]', '[7:2400, 1:1597]'],
-                'data_sec': ['[25:9600, 1:6388]', '[13:4800, 1:3194]', '[9:3200, 1:2129]', '[7:2400, 1:1597]'],
-                'trim_sec': ['[1:9576, 1:6388]', '[1:4788, 1:3194]', '[1:3192, 1:2129]', '[1:2394, 1:1597]'],
-                'x_pixel':  5.94,
-                'y_pixel':  5.94,
-
-                'pix_scale': 0.478039,    #   bin-2  2* math.degrees(math.atan(3.76/2563000))*3600
+                
+                'x_pixel':  5.94, # value in microns?
+                'y_pixel':  5.94, # value in microns?
+                
                 '1x1_pix_scale': 0.4777272,    #  This is the 1x1 binning pixelscale
                 'native_bin': 1, # Needs to be simple, it will recalculate things on the 1x1 binning pixscale above.
                 
@@ -884,17 +683,7 @@ site_config = {       #the NAME "SITE" IS INCONSISTENT  bIG CHANGE TO EFFECT, ob
                 'drizzle_value_for_later_stacking': 0.5,
 
 
-                'CameraXSize': 6072,
-                'CameraYSize': 6422,
-                'StartX': 1,
-                'StartY': 1,
-
-
-                'x_field_deg': 0.8042,  # round(4784*0.605194/3600, 4),   #48 X 32 AMIN  3MIN X 0.5 DEG
-                'y_field_deg': 0.5369,  # round(3194*0.605194/3600, 4),
-                'area_sq_deg':  0.4318,
-                'overscan_x': 0,
-                'overscan_y': 0,
+               
                 'north_offset': 0.0,  # These three are normally 0.0 for the primary telescope
                 'east_offset': 0.0,
                 'rotation': 0.0,
@@ -908,21 +697,15 @@ site_config = {       #the NAME "SITE" IS INCONSISTENT  bIG CHANGE TO EFFECT, ob
                 'max_daytime_exposure': 0.0001,  # NB why this?
                 'can_subframe':  True,
                 'min_subframe': [128, 128],
-                # Meaning fixed binning if list has only one entry
-                'bin_modes':  [['Optimal', 1.42], ['Fine', 0.96], ['Coarse', 1.91], ['Eng', 0.48]],
                 'camera_gain':   8.634, #[10., 10., 10., 10.],     #  One val for each binning.
                 'camera_gain_stdev':   0.4, #[10., 10., 10., 10.],     #  One val for each binning.
                 'read_noise':  47.74, #[9, 9, 9, 9],    #  All SWAGs right now
                 'read_noise_stdev':   0.03, #[10., 10., 10., 10.],     #  One val for each binning.
-                'reference_dark': 0.2,  # NB  Guess
-                'reference_offset': 611,  # NB Guess  ADU vaules not times in sec.
+                
                 'fullwell_capacity': 80000,  # NB Guess
-                'bin-desc':              ['1x1', '2x2', '3x3', '4x4'],
-                'chan_color':            ['col', 'gry', 'gry', 'gry'],
-                # 'cycle_time':            [ 18,    13,    15,    12   ],   # NB somewhat a Guess.
+                'saturate':   65535,
+                'max_linearity':  60000,   # Guess
                 'cycle_time':            0.5,   # Meas 20230219  for a bias
-                # 'enable_bin':            [ True, False,  False,  False],
-                # 'bias_dark_bin_spec':    ['1,1', '2,2', '3,3', '4,4' ],    #Default binning for flats
                 'number_of_bias_to_collect': 33,
                 'number_of_dark_to_collect': 17,
                 'number_of_flat_to_collect': 10,
@@ -931,16 +714,8 @@ site_config = {       #the NAME "SITE" IS INCONSISTENT  bIG CHANGE TO EFFECT, ob
                 'number_of_flat_to_store': 31,
 
                 'dark_exposure': 180,
-                # 'flat_bin_spec':         ['1,1', '2,2', '3,3', '4,4' ],   #Is this necessary?
-
-                # 'flat_count': 5,
-                'optimal_bin': [1, 1],  # This is the optimal bin for MRC
-                'fine_bin':    [1, 1],  # This is the fine bin for MRC
-                'coarse_bin':  [2, 2],  # This is the coarse bin for MRC
-                'eng_bin':     [4, 4],  # This is the eng-only bin for MRC, not useful for users?
-                # Always square and matched to seeing situation by owner  NB Obsolete? NO MF uses to load bias calib
-                'bin_enable':  ['1 1'],
-                #  NB NB inconsistent use of bin string   '1 1', '1x1' , etc.
+               
+                
                 'do_cosmics': False,
 
                 'rbi_delay':  0,  # This being zero says RBI is not available, eg. for SBIG.
@@ -948,27 +723,15 @@ site_config = {       #the NAME "SITE" IS INCONSISTENT  bIG CHANGE TO EFFECT, ob
                 'is_osc': True,
                 'is_color': True,  # NB we also have a is_osc key.
                 'can_set_gain':  True,
-                'max_linearity':  60000,   # Guess
-
-                'flat_count': 5,
-
-                # [[1, 65000], [2,262000], [3,589815], [4, 1048560]] ,   # e-.  This is a close guess, not measured, but taken from data sheet.
-                'saturate':   65535,
-                'fullwell_capacity':  80000,
+                
 
                 'read_mode':  'Normal',
                 'readout_mode': 'Normal',
                 'readout_speed':  50,
                 'readout_seconds': 6,
-                'smart_stack_exposure_time': 30,
-                'square_detector': False,
-                'square_pixels': True,
-                # 0.5*0.5°',  '0.7x0.7°', '1x1°', '1.4x1.4°', '2x2°', '2.8x2.8°', '4x4sq°', '5.6x5.6°'],
-                'areas_implemented': ['Big sq.', 'Full', 'Small sq.', '70.7%', '50%', '35%', '25%', '18%'],
+                'smart_stack_exposure_time': 30,'areas_implemented': ['Big sq.', 'Full', 'Small sq.', '70.7%', '50%', '35%', '25%', '18%'],
                 'default_area':  "Full",
                 'default_rotation': 0.0000,
-
-                # 'flat_bin_spec': ['1 1', '2 2'],    # List of binnings for flats.  NB NB NB Note inconsistent use of '1 1' and '1x1' and '1,1'
 
                 'has_darkslide':  True,
                 'darkslide_com':  'COM15',
@@ -1040,9 +803,4 @@ if __name__ == '__main__':
         print('Strings matched.')
     if site_config == site_unjasoned:
         print('Dictionaries matched.')
-
-
-
-
-
 
