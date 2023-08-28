@@ -1,49 +1,30 @@
-# -*- coding: utf-8 -*-
-"""
-Spyder Editor
-
-This is a temporary script file.
-"""
-# Continuum Analytics Python ver 3.5.2-0.pyEphem __version__ = '3.7.6.0'
-# Computer clock is UTC, Windows Time Zone is UTC, no Daylight slaving.
-'''
-This is also very old code just grafted on. Needs variable renaming, and a good scrub.
 
 '''
+This is the Events organiser utility module
 
-#import shelve
-#import pytz
-# import skyfield
-# from skyfield import api, almanac
-# from skyfield.nutationlib import iau2000b
-# plog('ObsImports:  ', config, '\n\'', config.site_config['site'])
-
-#import sys
-
-#from pprint import pprint
+'''
 
 # NB Change these to hours not fractions of a day.  Should come from site config not be in code here.
-from math import *
+from math import log10, acos, sin, cos, radians, degrees
 import ephem
 from datetime import datetime, timezone, timedelta
 from dateutil import tz
 import time
-from math import degrees
-from global_yard import *
+from global_yard import g_dev
 from astropy.time import Time
 from ptr_utility import plog
-EVESCREENFLATDURATION = 60/1440  # 1.5 hours
-BIASDARKDURATION = 120/1440  # 2.0 hours
-EVESKYFLATDURATION = 105/1440
-MORNSKYFLATDURATION = 0/1440
-MORNBIASDARKDURATION = 0/1440  # 1.5 min
-LONGESTSCREEN = 0/1440  # 1 min
-LONGESTFLAT = 2.5/1440
-LONGESTDARK = 5.5/1440  # 6 min
+# EVESCREENFLATDURATION = 60/1440  # 1.5 hours
+# BIASDARKDURATION = 120/1440  # 2.0 hours
+# EVESKYFLATDURATION = 105/1440
+# MORNSKYFLATDURATION = 0/1440
+# MORNBIASDARKDURATION = 0/1440  # 1.5 min
+# LONGESTSCREEN = 0/1440  # 1 min
+# LONGESTFLAT = 2.5/1440
+# LONGESTDARK = 5.5/1440  # 6 min
 
-DAY_Directory = None  # NB this is an evil use of Globals by WER.  20200408   WER
-Day_tomorrow = None
-dayNow = None
+# DAY_Directory = None  # NB this is an evil use of Globals by WER.  20200408   WER
+# Day_tomorrow = None
+# dayNow = None
 import traceback
 import requests
 from requests.adapters import HTTPAdapter, Retry
@@ -118,10 +99,6 @@ class Events:
         20120911      WER    Clean up more decimal trig. Note Lunar diameter not included.
         '''
 
-        # Enter above with  sunDia, moonDia in degrees., rest are radians
-        #sunElev = degrees(sunElev)
-        #lmoonElev = degrees(moonElev)
-
         if sunElev >= -18:
             if sunElev >= 20:
                 il = (3.74, 3.97, -4.07, 1.47)
@@ -166,8 +143,7 @@ class Events:
             j = 0
         if j < 0:
             j = 0
-        #sunIllum = i
-        #moonIllum = j
+            
         illuminance = i + j + 0.002
         #   0.002 = stars and galaxy -- averaged; rest is Airglow,
         #   2e-3 lux is brightness of stars + airglow. Ratio is relative to that number.
@@ -182,7 +158,6 @@ class Events:
         sun.compute()
         moon = ephem.Moon()
         moon.compute()
-        #if loud: plog('Sun: ', sun.ra, sun.dec, 'Moon: ', moon.ra, moon.dec)
         ptr = ephem.Observer()  # Photon Ranch
         ptr.lat = str(self.siteLatitude)
         ptr.lon = str(self.siteLongitude)
@@ -190,9 +165,7 @@ class Events:
         ptr.compute_pressure()
         ptr.temp = self.siteRefTemp
         sun.compute(ptr)
-        #if loud: plog('Sun Now: ', sun.ra, sun.dec, sun.az, sun.alt, ptr.date)
         moon.compute(ptr)
-        # if loud: plog('Moon Now: ', moon.ra, moon.dec, moon.az, moon.alt, ptr.date)
         return sun.ra, sun.dec, degrees(sun.alt), degrees(sun.az), moon.ra, moon.dec,\
             degrees(moon.alt), moon.size/3600
 
@@ -201,7 +174,6 @@ class Events:
         sun.compute()
         moon = ephem.Moon()
         moon.compute()
-        #if loud: plog('Sun: ', sun.ra, sun.dec, 'Moon: ', moon.ra, moon.dec)
         ptr = ephem.Observer()  # Photon Ranch
         ptr.lat = str(self.siteLatitude)
         ptr.lon = str(self.siteLongitude)
@@ -209,13 +181,10 @@ class Events:
         ptr.compute_pressure()
         ptr.temp = self.siteRefTemp
         sun.compute(ptr)
-        #if loud: plog('Sun Now: ', sun.ra, sun.dec, sun.az, sun.alt, ptr.date)
         moon.compute(ptr)
-        # if loud: plog('Moon Now: ', moon.ra, moon.dec, moon.az, moon.alt, ptr.date)
         return degrees(sun.az)
 
     def _calcEveFlatValues(self, ptr, sun, pWhen, skyFlatEnd, loud=False, now_spot=False):
-        # NB This needs to deal with the Moon being too close!
         ptr.date = pWhen
         sun.compute(ptr)
         if loud:
@@ -313,33 +282,33 @@ class Events:
         return (degrees(FlatStartRa)/15, degrees(FlatStartDec),
                 degrees(FlatEndRa)/15, degrees(FlatEndDec), RaDot, DecDot)
 
-    def _sunPhaseAngle(self, offsetHrs=0.0):
-        dayNow = ephem.now()
-        ptr = ephem.Observer()  # Photon Ranch
-        ptr.lat = str(self.siteLatitude)
-        ptr.lon = str(self.siteLongitude)
-        ptr.elev = self.siteElevation
-        ptr.compute_pressure()
-        ptr.temp = self.siteRefTemp
-        ptr.date = ephem.Date(dayNow + offsetHrs*ephem.hour)
-        sun = ephem.Sun()
-        sun.compute(ptr)
-        moon = ephem.Moon()
-        moon.compute(ptr)
-        saz = reduceAz(degrees(sun.az) + 180)
-        sal = degrees(sun.alt)
-        if sal > 0.5:
-            saz = 0
-            # NBNBNB this needs to be improved to implement sun earth eclipse shadow.
-        maz = degrees(moon.az)
-        mal = degrees(moon.alt)
+    # def _sunPhaseAngle(self, offsetHrs=0.0):
+    #     dayNow = ephem.now()
+    #     ptr = ephem.Observer()  # Photon Ranch
+    #     ptr.lat = str(self.siteLatitude)
+    #     ptr.lon = str(self.siteLongitude)
+    #     ptr.elev = self.siteElevation
+    #     ptr.compute_pressure()
+    #     ptr.temp = self.siteRefTemp
+    #     ptr.date = ephem.Date(dayNow + offsetHrs*ephem.hour)
+    #     sun = ephem.Sun()
+    #     sun.compute(ptr)
+    #     moon = ephem.Moon()
+    #     moon.compute(ptr)
+    #     saz = reduceAz(degrees(sun.az) + 180)
+    #     sal = degrees(sun.alt)
+    #     if sal > 0.5:
+    #         saz = 0
+    #         # NBNBNB this needs to be improved to implement sun earth eclipse shadow.
+    #     maz = degrees(moon.az)
+    #     mal = degrees(moon.alt)
 
-        if loud:
-            plog('Sun Now: ', saz, degrees(sun.alt))
-        moon.compute(ptr)
-        if loud:
-            plog('Moon Now: ', degrees(moon.az), degrees(moon.alt))
-        return round(saz, 2)
+    #     if loud:
+    #         plog('Sun Now: ', saz, degrees(sun.alt))
+    #     moon.compute(ptr)
+    #     if loud:
+    #         plog('Moon Now: ', degrees(moon.az), degrees(moon.alt))
+    #     return round(saz, 2)
 
     #############################
     ###     Public Methods   ####
@@ -351,11 +320,7 @@ class Events:
         of day to open.
         '''
         sun = ephem.Sun()
-        # sun.compute(dayNow)
-        #moon = ephem.Moon()
-        # moon.compute(dayNow)
-        #if loud: plog('Sun: ', sun.ra, sun.dec, 'Moon: ', moon.ra, moon.dec)
-        ptr = ephem.Observer()  # Photon Ranch
+        ptr = ephem.Observer() 
         ptr.date = dayNow
         ptr.lat = str(self.siteLatitude)
         ptr.lon = str(self.siteLongitude)
@@ -364,11 +329,9 @@ class Events:
         ptr.temp = self.siteRefTemp
         ptr.horizon = '-0:34'
         sunset = ptr.next_setting(sun)
-        #middleNight = ptr.next_antitransit(sun)
         sunrise = ptr.next_rising(sun)
         ptr.horizon = '-6'
         sun.compute(ptr)
-        #if loud: plog('Sun -6: ', sun.ra, sun.dec, sun.az, sun.alt)
         civilDusk = ptr.next_setting(sun)
         ops_win_begin = civilDusk - 121/1440
         return (ops_win_begin, sunset, sunrise, ephem.now())
@@ -378,7 +341,6 @@ class Events:
         Return a tuple with the (az, alt) of the flattest part of the sky.
         '''
         ra, dec, sun_alt, sun_az, *other = self._sunNow()
-        #plog('Sun:  ', sun_az, sun_alt)
         sun_az2 = sun_az - 180.  # Opposite az of the Sun
         if sun_az2 < 0:
             sun_az2 += 360.
@@ -395,7 +357,6 @@ class Events:
         Return a tuple with the (az, alt) of the flattest part of the sky.
         '''
         ra, dec, sun_alt, sun_az, *other = self._sunNow()
-        #plog('Sun:  ', sun_az, sun_alt)
         return sun_az, sun_alt
 
     def illuminationNow(self):
@@ -405,7 +366,6 @@ class Events:
         illuminance, skyMag = self._illumination(sunRa, sunDec, sunElev, 0.5,
                                                  moonRa, moonDec, moonElev, moonDia)
         return round(illuminance, 3), round(skyMag, 2)
-        #if loud: plog('Moon Now: ', moon.ra, moon.dec, moon.az, moon.alt, ptr.date)
 
     def compute_day_directory(self, loud=False):
         '''
@@ -502,7 +462,6 @@ class Events:
         moon.compute(ptr)
         sun = ephem.Sun()
         sun.compute(ptr)
-        #if loud: plog('Middle night  Sun:  ', sun.ra, sun.dec, sun.az, sun.alt)
         self.mid_moon_ra = moon.ra
         self.mid_moon_dec = moon.dec
         self.mid_moon_phase = moon.phase
@@ -513,12 +472,9 @@ class Events:
         # as this is when the night ends and the schedule gets reconfigured. So anything scheduled AFTER
         # then needs to be pulled back a day. Primarily because it sometimes does weird things.....
         self.endNightTime = ephem.Date(self.sunrise + 120/1440.)
-        #endNightTime = ephem.Date(nautDawn_minus_half + 10/1440.)
         self.cool_down_open = self.sunset + self.wema_config['eve_cool_down_open']/1440
-        try:
-            self.close_and_park = self.sunrise + self.wema_config['morn_close_and_park']/1440
-        except:
-            self.close_and_park = self.sunrise + 32/1440 # This is a very temporary hack so I didn't have to restart MRC WEMA!
+        
+        self.close_and_park = self.sunrise + self.wema_config['morn_close_and_park']/1440
         self.eve_skyFlatBegin = self.sunset + self.config['eve_sky_flat_sunset_offset']/1440
 
         if endofnightoverride == 'no':
@@ -609,10 +565,6 @@ class Events:
 
         plog('Events module reporting for duty. \n')
         plog('Ephem date     :    ', dayNow)
-        #plog("Julian Day     :    ")
-        #plog("MJD            :    ")
-        #plog('Day_Directory  :    ', DAY_Directory)
-        #plog('Next day       :    ', Day_tomorrow)
         plog('Night Duration :    ', str(round(self.duration, 2)) + ' hr')
         plog('Moon Ra; Dec   :    ', round(self.mid_moon_ra, 2), ";  ", round(self.mid_moon_dec, 1))
         plog('Moon phase %   :    ', round(self.mid_moon_phase, 1), '%\n')
@@ -620,22 +572,3 @@ class Events:
 
         for self.evnt in self.evnt_sort:
             plog(self.evnt[0], 'UTC: ', self.evnt[1], self.timezone, ephem.Date(self.evnt[1] + float(self.offset)/24.))
-            # plog(self.evnt[0], 'UTC: ', self.evnt[1], self.timezone)    # NB Additon of local times would be handy here.
-
-    # def display_events(self, endofnightoverride='no'):
-    #     breakpoint()
-    #     plog('Events module reporting for duty. \n')
-    #     plog('Ephem date     :    ', dayNow)
-    #     #plog("Julian Day     :    ")
-    #     #plog("MJD            :    ")
-    #     #plog('Day_Directory  :    ', DAY_Directory)
-    #     #plog('Next day       :    ', Day_tomorrow)
-    #     plog('Night Duration :    ', str(round(self.duration, 2)) + ' hr')
-    #     plog('Moon Ra; Dec   :    ', round(self.mid_moon_ra, 2), ";  ", round(self.mid_moon_dec, 1))
-    #     plog('Moon phase %   :    ', round(self.mid_moon_phase, 1), '%\n')
-    #     plog("Key events for the evening, presented by the Solar System: \n")
-
-    #     for self.evnt in self.evnt_sort:
-    #         # NB Additon of local times would be handy here.
-    #         plog(self.evnt[0], 'UTC: ', self.evnt[1], self.timezone, ephem.Date(self.evnt[1] + float(self.offset)/24.))
-    #         # plog(self.evnt[0], 'UTC: ', self.evnt[1], self.timezone)    # NB Additon of local times would be handy here.

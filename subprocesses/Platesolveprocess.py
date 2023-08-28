@@ -1,8 +1,24 @@
 # -*- coding: utf-8 -*-
 """
-Created on Sun Apr 23 05:49:37 2023
+This is the main platesolve sub-process for solving frames.
 
-@author: observatory
+Platsolving is relatively costly in time, so we don't solve each frame.
+It is also not necessary - the platesolve we do is FAST (for windows)
+but only spits out RA, Dec, Pixelscale and rotation. Which is actually all
+we need to monitor pointing and keep scopes dead on target.
+
+There is a windswept and interesting way that platesolve frames lead to 
+slight nudges during observing, but they are all triggered from values
+from this subprocess... which actually sub-sub-processes the platesolve3 platesolver from planewave.
+
+However, we have no control over the photometry within platesolve3, hence
+part of the subprocess is to create a 'bullseye' image that is constructed
+from our own SEP source process to present to the platesove3 so that whatever
+photometric algorithm they are using they can't fail to accurately measure positions.
+(The insinuation is that they have previously failed to measure accurate postions,
+ this is true... there have been some crazy alarming false positives prior to the bullseye method.
+ The bullseye method also works better in cloudy patchy conditions as well.)
+
 """
 
 import sys
@@ -12,7 +28,6 @@ import numpy as np
 import sep
 from astropy.table import Table
 from astropy.io import fits
-#from planewave import platesolve
 from subprocess import Popen, PIPE
 import os
 from pathlib import Path
@@ -22,15 +37,12 @@ from astropy.utils.exceptions import AstropyUserWarning
 import warnings
 warnings.simplefilter('ignore', category=AstropyUserWarning)
 
-import traceback
-
 def parse_platesolve_output(output_file):
     f = open(output_file)
 
     results = {}
 
     for line in f.readlines():
-        #print (line)
         line = line.strip()
         if line == "":
             continue
@@ -46,14 +58,8 @@ def parse_platesolve_output(output_file):
     return results
 
 
-
-
-
 input_psolve_info=pickle.load(sys.stdin.buffer)
 #input_psolve_info=pickle.load(open('testplatesolvepickle','rb'))
-
-
-
 
 
 hdufocusdata=input_psolve_info[0]
@@ -76,8 +82,6 @@ minimum_realistic_seeing=input_psolve_info[14]
 parentPath = Path(getcwd())
 PS3CLI_EXE = str(parentPath).replace('\subprocesses','') +'/subprocesses/ps3cli/ps3cli.exe'
 
-#breakpoint()
-#cal_path + 'platesolvetemp.fits'
 output_file_path = os.path.join(cal_path + "ps3cli_results.txt")
 try:
     os.remove(output_file_path)
@@ -88,12 +92,8 @@ try:
 except:
     pass
 catalog_path = os.path.expanduser("~\\Documents\\Kepler")
-# focdate=time.time()
 
 # Crop the image for platesolving
-
-# breakpoint()
-
 fx, fy = hdufocusdata.shape
 
 crop_width = (fx * platesolve_crop) / 2
@@ -108,22 +108,14 @@ if (crop_height % 2) != 0:
 crop_width = int(crop_width)
 crop_height = int(crop_height)
 
-# breakpoint()
 if crop_width > 0 or crop_height > 0:
     hdufocusdata = hdufocusdata[crop_width:-crop_width, crop_height:-crop_height]
-#plog("Platesolve image cropped to " + str(hdufocusdata.shape))
 
 binfocus = 1
-#if self.config["camera"][g_dev['cam'].name]["settings"]["is_osc"]:
 if bin_for_platesolve:
-    #platesolve_bin_factor=self.config["camera"][g_dev['cam'].name]["settings"]['platesolve_bin_value']
     hdufocusdata=block_reduce(hdufocusdata,platesolve_bin_factor)
     binfocus=platesolve_bin_factor                    
 
-#plog("platesolve construction time")
-#plog(time.time() -focdate)
-
-# actseptime=time.time()
 focusimg = np.array(
     hdufocusdata, order="C"
 )
@@ -133,9 +125,9 @@ focusimg = np.array(
 bkg = sep.Background(focusimg, bw=32, bh=32, fw=3, fh=3)
 bkg.subfrom(focusimg)
 ix, iy = focusimg.shape
-#border_x = int(ix * 0.05)
-#border_y = int(iy * 0.05)
+
 sep.set_extract_pixstack(int(ix*iy - 1))
+
 #This minarea is totally fudgetastically emprical comparing a 0.138 pixelscale QHY Mono
 # to a 1.25/2.15 QHY OSC. Seems to work, so thats good enough.
 # Makes the minarea small enough for blocky pixels, makes it large enough for oversampling
@@ -147,21 +139,15 @@ sources = sep.extract(
     focusimg, 3, err=bkg.globalrms, minarea=minarea
 )
 
-#plog ("min_area: " + str(minarea))
 sources = Table(sources)
 sources = sources[sources['flag'] < 8]
-
 sources = sources[sources["peak"] < 0.8 * image_saturation_level * pow(binfocus, 2)]
 sources = sources[sources["cpeak"] < 0.8 * image_saturation_level * pow(binfocus, 2)]
-#sources = sources[sources["peak"] > 150 * pow(binfocus,2)]
-#sources = sources[sources["cpeak"] > 150 * pow(binfocus,2)]
 sources = sources[sources["flux"] > 2000]
 sources = sources[sources["x"] < iy -50]
 sources = sources[sources["x"] > 50]
 sources = sources[sources["y"] < ix - 50]
 sources = sources[sources["y"] > 50]
-
-
 
 # BANZAI prune nans from table
 nan_in_row = np.zeros(len(sources), dtype=bool)
@@ -182,9 +168,6 @@ sources['flag'] |= krflag
 sources['kronrad'] = kronrad
 
 # Calculate uncertainty of image (thanks BANZAI)
-#uncertainty = float(readnoise) * np.ones(hdufocusdata.shape,
-#                                         dtype=hdufocusdata.dtype) / float(readnoise)
-
 uncertainty = float(readnoise) * np.ones(focusimg.shape,
                                          dtype=focusimg.dtype) / float(readnoise)
 
@@ -193,8 +176,6 @@ flux, fluxerr, flag = sep.sum_ellipse(focusimg, sources['x'], sources['y'],
                                   sources['a'], sources['b'],
                                   np.pi / 2.0, 2.5 * kronrad,
                                   subpix=1, err=uncertainty)
-#except:
-#    plog(traceback.format_exc())
     
 sources['flux'] = flux
 sources['fluxerr'] = fluxerr
@@ -202,15 +183,12 @@ sources['flag'] |= flag
 sources['FWHM'], _ = sep.flux_radius(focusimg, sources['x'], sources['y'], sources['a'], 0.5,
                                      subpix=5)
 
-
 # BANZAI prune nans from table
 nan_in_row = np.zeros(len(sources), dtype=bool)
 for col in sources.colnames:
     nan_in_row |= np.isnan(sources[col])
 sources = sources[~nan_in_row]
 
-#sources = sources[sources['FWHM'] > (0.6 / (pixscale * platesolve_bin_factor))]
-#sources = sources[sources['FWHM'] > (minimum_realistic_seeing / (pixscale * platesolve_bin_factor))]
 sources = sources[sources['FWHM'] != 0]
 sources = sources[sources['FWHM'] > 0.5] 
 sources = sources[sources['FWHM'] < (np.nanmedian(sources['FWHM']) + (3 * np.nanstd(sources['FWHM'])))]
@@ -218,34 +196,6 @@ sources = sources[sources['FWHM'] < (np.nanmedian(sources['FWHM']) + (3 * np.nan
 sources = sources[sources['flux'] > 0]
 sources = sources[sources['flux'] < 1000000]
 
-
-# hdufocusdata = np.array(focusimg, dtype=np.int32)    
-# hdufocusdata[hdufocusdata < 0] = 200
-# hdufocus = fits.PrimaryHDU()
-# hdufocus.data = hdufocusdata
-# hdufocus.header = hduheader
-# hdufocus.header["NAXIS1"] = hdufocusdata.shape[0]
-# hdufocus.header["NAXIS2"] = hdufocusdata.shape[1]
-# hdufocus.writeto(cal_path + 'platesolvetemp.fits', overwrite=True, output_verify='silentfix')
-
-# breakpoint()
-
-#print (len(sources))
-
-
-#breakpoint()
-
-# if len(sources) >= 2000:
-#     fraction_to_remove = 1-(2000/len(sources))
-#     top_cut = fraction_to_remove * 0.1 * 100
-#     bottom_cut = fraction_to_remove * 0.9 * 100
-#     top_percentile = np.percentile(sources['flux'],100-top_cut)
-#     bottom_percentile = np.percentile(sources['flux'],bottom_cut)
-#     #breakpoint()
-#     sources = sources[sources['flux'] > bottom_percentile]
-#     sources = sources[sources['flux'] < top_percentile]
-
-#print (len(sources))
 
 if len(sources) >= 15:
     
@@ -255,19 +205,11 @@ if len(sources) >= 15:
     ypixelsize = hdufocusdata.shape[1]
     shape = (xpixelsize, ypixelsize)
     
-
-
     # Make blank synthetic image with a sky background
     synthetic_image = np.zeros([xpixelsize, ypixelsize])
     synthetic_image = synthetic_image + 200
 
-    #Bullseye Star Shape
-    # modelstar = [[ 0.1 , 0.2 , 0.4,  0.2, 0.1], 
-    #             [ 0.2 , 0.4 , 0.8,  0.4, 0.2],
-    #             [ 0.4 , 0.8 , 1,  0.8, 0.4],
-    #             [ 0.2 , 0.4 , 0.8,  0.4, 0.2],
-    #             [ 0.1 , 0.2 , 0.4,  0.2, 0.1]]
-    
+    #Bullseye Star Shape    
     modelstar = [
                 [ .01 , .05 , 0.1 , 0.2,  0.1, .05, .01],
                 [ .05 , 0.1 , 0.2 , 0.4,  0.2, 0.1, .05], 
@@ -280,7 +222,6 @@ if len(sources) >= 15:
                 ]
     
     
-    
     modelstar=np.array(modelstar)
 
     # Add bullseye stars to blank image
@@ -289,10 +230,8 @@ if len(sources) >= 15:
         y = round(addingstar['y'] -1)
         peak = int(addingstar['peak'])
         # Add star to numpy array as a slice
-        #print (peak)
         try:
             synthetic_image[y-3:y+4,x-3:x+4] += peak*modelstar
-            #synthetic_image[y-3:y+4,x-3:x+4] += 10000*modelstar
         except Exception as e:
             print (e)
             breakpoint()
@@ -309,10 +248,7 @@ if len(sources) >= 15:
     hdufocus.header["NAXIS2"] = hdufocusdata.shape[1]
     hdufocus.writeto(cal_path + 'platesolvetemp.fits', overwrite=True, output_verify='silentfix')
     pixscale = (hdufocus.header['PIXSCALE']) 
-    # if self.config["save_to_alt_path"] == "yes":
-    #    self.to_slow_process(1000,('raw_alt_path', self.alt_path + g_dev["day"] + "/calib/" + cal_name, hdufocus.data, hdufocus.header, \
-    #                                   frame_type))
-    #breakpoint()
+    
     try:
         hdufocus.close()
     except:
@@ -320,9 +256,7 @@ if len(sources) >= 15:
     del hdufocusdata
     del hdufocus
 
-        
-    #breakpoint()
-    
+            
     try:
         args = [
             PS3CLI_EXE,
@@ -334,11 +268,9 @@ if len(sources) >= 15:
         
         process = Popen(
                 args,
-                #stdout=stdout_destination,
                 stdout=None,
                 stderr=PIPE
                 )
-        #(stdout, stderr) = process.communicate(timeout=60)  # Obtain stdout and stderr output from the wcs tool
         (stdout, stderr) = process.communicate()  # Obtain stdout and stderr output from the wcs tool
         exit_code = process.wait() # Wait for process to complete and obtain the exit code
         failed = False
@@ -346,17 +278,15 @@ if len(sources) >= 15:
         process.kill()
         
         solve = parse_platesolve_output(output_file_path)
-        #print (solve)
-        #solve = platesolve.platesolve(cal_path + 'platesolvetemp.fits', pixscale*platesolve_bin_factor)
+        
     except:
         failed = True
         process.kill()
-     #   traceback.format_exc()
         
     if failed:
         try:
-            # Try again with a lower pixelscale... yes it makes no sense
-            # But I didn't write PS3.exe ..... (MTF)        
+            # Try again with a lower pixelscale... yes it makes no sense 
+            # But I didn't write PS3.exe ..... but it works (MTF)        
             args = [
                 PS3CLI_EXE,
                 cal_path + 'platesolvetemp.fits',
@@ -365,14 +295,11 @@ if len(sources) >= 15:
                 catalog_path
             ]
             
-            #print (args)
             process = Popen(
                     args,
-                    #stdout=stdout_destination,
                     stdout=None,
                     stderr=PIPE
                     )
-            #(stdout, stderr) = process.communicate(timeout=60)  # Obtain stdout and stderr output from the wcs tool
             (stdout, stderr) = process.communicate()  # Obtain stdout and stderr output from the wcs tool
             exit_code = process.wait() # Wait for process to complete and obtain the exit code
             time.sleep(1)
@@ -383,7 +310,6 @@ if len(sources) >= 15:
         except:
             process.kill()
             solve = 'error'
-    #print (solve)
     pickle.dump(solve, open(cal_path + 'platesolve.pickle', 'wb'))
     
     try:
