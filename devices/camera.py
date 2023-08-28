@@ -515,8 +515,8 @@ class Camera:
             
             
             # Initialise Camera Size here
-            self.imagesize_x=int(i_w)
-            self.imagesize_y=int(i_h)            
+            self.imagesize_x=int(i_h)
+            self.imagesize_y=int(i_w)            
             #breakpoint()
             
         else:
@@ -940,7 +940,7 @@ class Camera:
                                               byref(qhycam.camera_params[qhycam_id]['prev_img_data']))
         
         image = np.ctypeslib.as_array(qhycam.camera_params[qhycam_id]['prev_img_data'])
-        image = np.reshape(image[0:self.camera_image_size], (self.camera_x_size, self.camera_y_size))
+        image = np.reshape(image[0:(self.imagesize_x*self.imagesize_y)], (self.imagesize_x, self.imagesize_y))
         
         return np.asarray(image)
 
