@@ -1426,8 +1426,7 @@ class Observatory:
                     filename = pri_image[1][1]
                     filepath = pri_image[1][0] + filename  # Full path to file on disk
     
-                    # Only ingest new large fits.fz files to the PTR archive.
-                    
+                    # Only ingest new large fits.fz files to the PTR archive.                    
                     try:
                         broken = 0
                         with open(filepath, "rb") as fileobj:
@@ -1443,7 +1442,7 @@ class Observatory:
                                         plog("Non-fatal connection glitch for a file posted.")
                                         plog(files)
                                         time.sleep(5)
-                                self.ptrarchive_queue.task_done()
+                                
                             
                             elif self.env_exists == True and (not frame_exists(fileobj)):        
                                 retryarchive = 0
@@ -1463,30 +1462,26 @@ class Observatory:
                                             try:
                                                 os.remove(filepath)
                                             except:
-                                                self.laterdelete_queue.put(filepath, block=False)                                                    
-                                        self.ptrarchive_queue.task_done()
+                                                self.laterdelete_queue.put(filepath, block=False)                                                   
+                                        
                                         
                                     except ocs_ingester.exceptions.DoNotRetryError:
                                         plog ("Couldn't upload to PTR archive: " + str(filepath))    
                                         broken=1
                                         retryarchive = 11
-                                        self.ptrarchive_queue.task_done()
                                     except Exception as e:
                                         if 'list index out of range' in str(e):
                                             # This error is thrown when there is a corrupt file
                                             broken=1
                                             retryarchive=11
-                                            self.ptrarchive_queue.task_done()
                                         else:
-                                            plog("couldn't send to PTR archive for some reason: ", e)   
-                                            breakpoint()                                             
+                                            plog("couldn't send to PTR archive for some reason: ", e)  
                                             time.sleep(pow(retryarchive, 2) + 1)
                                             if retryarchive < 10:
                                                 retryarchive = retryarchive+1
                                             if retryarchive == 10:
-                                                #tempPTR = 0
                                                 broken =1
-                                                self.ptrarchive_queue.task_done()
+                                                
                         
                         if broken == 1:
                             try:
@@ -1498,7 +1493,7 @@ class Observatory:
                     except Exception as e:
                         plog ("something strange in the ptrarchive uploader", e)
                             
-    
+                    self.ptrarchive_queue.task_done()
                     one_at_a_time = 0
 
                 
