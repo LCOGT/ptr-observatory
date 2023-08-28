@@ -39,9 +39,7 @@ site_config = {
     'admin_aliases': ["ANS", "WER", "TELOPS", "TB", "DH", "KVH", "KC"],    
     
     
-    
-    
-    # Deafult safety settings
+    # Default safety settings
     'safety_check_period': 45,  # MF's original setting.
     'closest_distance_to_the_sun': 45,  # Degrees. For normal pointing requests don't go this close to the sun.
     'closest_distance_to_the_moon': 10,  # Degrees. For normal pointing requests don't go this close to the moon.
@@ -101,7 +99,6 @@ site_config = {
     'observing_begins_offset': 18,    
     # How many minutes before civilDawn to do ....
     'observing_ends_offset': 18,   
-
 
 
     
@@ -887,6 +884,7 @@ if __name__ == '__main__':
         print('Dictionaries matched.')
 
 
+####################################### RETIRED BELOW THIS POINT
 
 
 
@@ -920,5 +918,6 @@ if __name__ == '__main__':
     #'elevation': 317.75,    # meters above sea level
     #'reference_ambient':  10.0,  # Degrees Celsius.  Alternately 12 entries, one for every - mid month.
     #'reference_pressure':  977.83,  # mbar Alternately 12 entries, one for every - mid month.
+
 
 
