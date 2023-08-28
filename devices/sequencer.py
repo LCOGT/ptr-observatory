@@ -774,9 +774,17 @@ class Sequencer:
 
             # Input the global smartstack and longstack request from the project
             # Into the individual exposure requests
-
-            do_long_stack=block['project']['project_constraints']['long_stack']
-            do_smart_stack=block['project']['project_constraints']['smart_stack']
+            try:
+                # This is the "proper" way of doing things.
+                do_long_stack=block['project']['project_constraints']['long_stack']
+            except:
+                # This is the old way for old projects
+                do_long_stack=block['project']['exposures'][0]['longstack']
+            try:                
+                do_smart_stack=block['project']['project_constraints']['smart_stack']
+            except:
+                # This is the old way for old projects
+                do_smart_stack=block['project']['exposures'][0]['smartstack']
 
             #Compute how many to do.
             left_to_do = 0
