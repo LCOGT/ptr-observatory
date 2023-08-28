@@ -198,11 +198,11 @@ class Observatory:
         self.local_flat_folder = self.local_calibration_path + "archive/" + camera_name + "/localcalibrations/flats" + '/'
         
         # Directories for broken and orphaned upload files
-        self.orphan_path=self.config['orphan_path'] +'/' + self.name + '/' + 'orphans/'
+        self.orphan_path=self.config['client_path'] +'/' + self.name + '/' + 'orphans/'
         if not os.path.exists(self.orphan_path):
             os.makedirs(self.orphan_path)
         
-        self.broken_path=self.config['orphan_path'] +'/' + self.name + '/' + 'broken/'
+        self.broken_path=self.config['client_path'] +'/' + self.name + '/' + 'broken/'
         if not os.path.exists(self.broken_path):
             os.makedirs(self.broken_path)
         

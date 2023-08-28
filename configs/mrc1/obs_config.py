@@ -22,6 +22,7 @@ site_config = {
     # The unique identifier for this obs
     'obs_id': 'mrc1',
     
+    # Name, local and owner stuff
     'name': 'Mountain Ranch Camp Observatory 0m35 f7.2',
     'airport_code': 'SBA',
     'location': 'Near Santa Barbara CA,  USA',
@@ -29,7 +30,7 @@ site_config = {
     'observatory_url': 'https://starz-r-us.sky/clearskies',
     'observatory_logo': None,
     'mpc_code':  'ZZ23',  # This is made up for now.
-    'dedication':  '''
+    'description':  '''
                     Now is the time for all good persons
                     to get out and vote early and often lest
                     we lose charge of our democracy.
@@ -42,7 +43,7 @@ site_config = {
     # Default safety settings
     'safety_check_period': 45,  # MF's original setting.
     'closest_distance_to_the_sun': 45,  # Degrees. For normal pointing requests don't go this close to the sun.
-    'closest_distance_to_the_moon': 10,  # Degrees. For normal pointing requests don't go this close to the moon.
+    'closest_distance_to_the_moon': 3,  # Degrees. For normal pointing requests don't go this close to the moon.
     'minimum_distance_from_the_moon_when_taking_flats': 45,
     'lowest_requestable_altitude': -5,  # Degrees. For normal pointing requests don't allow requests to go this low.
     'degrees_to_avoid_zenith_area_for_calibrations': 0, 
@@ -57,22 +58,15 @@ site_config = {
     'moon_checks_on': True,
     'altitude_checks_on': True,    
     'daytime_exposure_time_safety_on': True,
-    
-    #MANY KEYS FOUND HERE REALLY APPLY TO MOUNT, CAMERA, ETC.
-    # MTF - au contraire, many of those above and below involve
-    # multiple devices, so belong outside of a single device.
-
-    
+        
     
     # Setup of folders on local and network drives.
     'client_hostname':  'mrc-0m35',  # This is also the long-name  Client is confusing!    
     'client_path':  'D:/ptr/',  # Generic place for client host to stash misc stuff
     'local_calibration_path': 'D:/ptr/', # THIS FOLDER HAS TO BE ON A LOCAL DRIVE, not a network drive due to the necessity of huge memmap files
-    'orphan_path': 'D:/ptr/',
     'alt_path':  'Q:/ptr/',  # Generic place for this host to stash misc stuff
     'plog_path':  'Q:/ptr/mrc1/',  # place where night logs can be found.
-    'save_to_alt_path': 'yes',
-    'archive_path':  'D:/ptr/',
+    'save_to_alt_path': 'yes',    
     'archive_age': -3,  # Number of days to keep files in the local archive before deletion. Negative means never delete
     
     # For low bandwidth sites, do not send up large files until the end of the night. set to 'no' to disable
@@ -679,32 +673,7 @@ site_config = {
                 'protect_camera_from_overheating' : False,
                 'cooler_on': True,
                 "cam_needs_NumXY_init": True,
-                #'x_start':  0,
-                # 'x_start':  24,
-                #'y_start':  0,
-                #'x_width':  6072,  # NB Should be set up with overscan, which this camera is!  20200315 WER
-                #'y_width':  4044,
-                #'x_chip':  6072,  # NB Should specify the active pixel area.   20200315 WER
-                #'y_chip':  4044,
-                #'x_trim_offset':  0,  # NB these four entries are guesses.
-                #'y_trim_offset':  0,
-                #'pre_bias_available': False,  # if so need to specify as below for post_bias.
-                #'post_bias_available': True,  # if so need to specify as below for post_bias.
-                #'x_bias_start':  6066,
-                #'y_bias_start': 4034,
-                #'x_bias_end':  None,       # Vert band self.img[-38:-18, 0]
-                #'y_bias_send': None,
-                #'corner_everlap': None,
-                #'x_bias_line': True,
-                #'y_bias_line': True,
-                #'x_active': 9576,
-                #'y_active': 6388,
-                #'det_size': '[1:9600, 1:6422]',  # Physical chip data size as returned from driver
-                #'ccd_sec': '[1:9600, 1:6422]',
-                #'bias_sec': ['[1:22, 1:6388]', '[1:11, 1:3194]', '[1:7, 1:2129]', '[1:5, 1:1597]'],
-                #'det_sec': ['[25:9600, 1:6388]', '[13:4800, 1:3194]', '[9:3200, 1:2129]', '[7:2400, 1:1597]'],
-                #'data_sec': ['[25:9600, 1:6388]', '[13:4800, 1:3194]', '[9:3200, 1:2129]', '[7:2400, 1:1597]'],
-                #'trim_sec': ['[1:9576, 1:6388]', '[1:4788, 1:3194]', '[1:3192, 1:2129]', '[1:2394, 1:1597]'],
+                
                 'x_pixel':  5.94, # value in microns?
                 'y_pixel':  5.94, # value in microns?
                 
@@ -721,20 +690,7 @@ site_config = {
                 'drizzle_value_for_later_stacking': 0.5,
 
 
-                #'CameraXSize': 6072,
-                #'CameraYSize': 6422,
-                #'StartX': 1,
-                #'StartY': 1,
-
-                # MTF -WE DO NOT SPECIFY THESE, WE CALCULATE THEM FROM PIXELSCALE AND CAMERASIZE
-                #'x_field_deg': 0.8042,  # round(4784*0.605194/3600, 4),   #48 X 32 AMIN  3MIN X 0.5 DEG
-                #'y_field_deg': 0.5369,  # round(3194*0.605194/3600, 4),
-                
-                
-                
-                #'area_sq_deg':  0.4318,
-                #'overscan_x': 0,
-                #'overscan_y': 0,
+               
                 'north_offset': 0.0,  # These three are normally 0.0 for the primary telescope
                 'east_offset': 0.0,
                 'rotation': 0.0,

@@ -17,186 +17,126 @@ Dragonfly
 #        1         2         3         4         5         6         7         8         9         0         1         2
 #23456789012345678901234567890123456789012345678901234567890123456789012345678901234567890123456789012345678901234567890
 import json
-import time
-#import ptr_events
-from pprint import pprint
 
 
-g_dev = None
 
-
-#THis is branch wer-mrc first entered here 20221029:21:40 on WEMA
-instance_type = 'obs' # This is the type of site this is.
-wema_name = 'aro'
 obs_id = 'aro1'
 
 site_config = {
+    # Instance type specifies whether this is an obs or a wema
     'instance_type' : 'obs',
+    # If this is not a wema, this specifies the wema that this obs is connected to
     'wema_name' : 'aro',
-    'obs_id' : 'aro1',
+    # The unique identifier for this obs
+    'obs_id': 'aro1',
     
     
-    # Manual mode turns all automation off. 
-    # The scope will only do what you tell it
-    # This DOESN'T turn some safetys off 
-    'scope_in_manual_mode': False,
-    'mount_reference_model_off': False,
-    'sun_checks_on': True,
-    'moon_checks_on': True,
-    'altitude_checks_on': True,    
-    'daytime_exposure_time_safety_on': True,
-    'degrees_to_avoid_zenith_area_for_calibrations': 0,
-    # Auto-centering is great.... unless you are polar aligning 
-    'turn_auto_centering_off': False,
-    #'observatory_location': site_name.lower(),
-    'degrees_to_avoid_zenith_area_for_calibrations': 0, 
-    
-    'debug_site_mode': False,
-    
-
-    'debug_mode': False,
-    
-    
-    
-    
-    'admin_owner_commands_only': False,
-
-    'debug_duration_sec': 70200,
-    
-    "version_date": "20230606.wer",
-    'site_desc': "Apache Ridge Observatory, Santa Fe, NM, USA. 2194m",
-    'airport_codes':  ['SAF', 'ABQ', 'LSN'],
-    'obsy_id': 'aro1',
-    'obs_desc': "0m3f4.9/9 Ceravolo Astrograph, AP1600",
-    'debug_site_mode': False,
-    'debug_obsy_mode': False,
-    'owner':  ['google-oauth2|102124071738955888216', \
-               'google-oauth2|112401903840371673242'],  # Neyle,
-    'owner_alias': ['ANS', 'WER'],
-    'admin_aliases': ["ANS", "WER", 'KVH', "TELOPS", "TB", "DH", "KVH", 'KC'],
-
-      # Indicates some special code for a single site.
-                                 # Intention it is found in this file.
-                                 # Fat is intended to be simple since
-                                 # there is so little to control.
-    'client_hostname':"ARO-0m30",     # Generic place for this host to stash.
-    #'client_path': 'Q:/ptr/',
-    'client_path': 'F:/ptr/',
-    #'alt_path': '//house-computer/saf_archive_2/archive/sq01/',
-    #'alt_path': 'Q:/ptraltpath',
-    'alt_path': 'Q:/ptr/',
-    
-    'save_to_alt_path' : 'yes',
-    #'archive_path': 'Q:/ptr/',       # Where images are kept.
-    'archive_path': 'F:/ptr/',       # Where images are kept.
-    
-    'local_calibration_path': 'F:/ptr/', # THIS FOLDER HAS TO BE ON A LOCAL DRIVE, not a network drive due to the necessity of huge memmap files
-    
-    'archive_age' : 10.0, # Number of days to keep files in the local archive before deletion. Negative means never delete
-    'send_files_at_end_of_night' : 'no', # For low bandwidth sites, do not send up large files until the end of the night. set to 'no' to disable
-    'save_raw_to_disk' : True, # For low diskspace sites (or just because they aren't needed), don't save a separate raw file to disk after conversion to fz.
-    'keep_reduced_on_disk' : True, # PTR uses the reduced file for some calculations (focus, SEP, etc.). To save space, this file can be removed after usage or not saved.
-    'keep_focus_images_on_disk' : True, # To save space, the focus file can not be saved.
-    'save_reduced_file_numberid_first' : True,
-    
-    
-    # Minimum realistic seeing at the site.
-    # This allows culling of unphysical results in photometry and other things
-    # Particularly useful for focus
-    'minimum_realistic_seeing' : 1.0,
-    'aux_archive_path':  None,
-    'wema_is_active':  True,     # True if an agent (ie a wema) is used at a site.   # Wemas are split sites -- at least two CPS's sharing the control.
-    'wema_hostname':  'ARO-WEMA',
-    'wema_path': 'C:/ptr/',      #Local storage on Wema disk.
-    'dome_on_wema':  True,       #NB NB NB CHange this confusing name. 'dome_controlled_by_wema'
-    #'site_IPC_mechanism':  'shares',   # ['None', shares', 'shelves', 'redis']
-    'site_IPC_mechanism':  'None',   # ['None', shares', 'shelves', 'redis']
-    'wema_write_share_path':  'C:/ptr/wema_transfer/',  # Meant to be where Wema puts status data.
-    'client_write_share_path':  '//aro-wema/wema_transfer/', #Meant to be a share written to by the TCS computer
-    'redis_ip': None,   # None if no redis path present, localhost if redis iself-contained
-    'obsid_is_generic':  True,   # A simple single computer ASCOM site.
-    'obsid_is_specific':  False,  # Indicates some special code for this site, found at end of config.
-#   'host_wema_site_name':  'ARO',
+    # Name, local and owner stuff
     'name': 'Apache Ridge Observatory 0m3f4.9/9',
 
     'location': 'Santa Fe, New Mexico,  USA',
     'observatory_url': 'https://starz-r-us.sky/clearskies2',   # This is meant to be optional
     'observatory_logo': None,   # I expect
+    'mpc_code':  'ZZ23',    #This is made up for now.
     'dedication':   '''
                     Now is the time for all good persons
                     to get out and vote, lest we lose
                     charge of our democracy.
                     ''',    # i.e, a multi-line text block supplied and formatted by the owner.
-    'location_day_allsky':  None,  #  Thus ultimately should be a URL, probably a color camera.
-    'location_night_allsky':  None,  #  Thus ultimately should be a URL, usually Mono camera with filters.
-    'location _pole_monitor': None,  #This probably gets us to some sort of image (Polaris in the North)
-    'location_seeing_report': None,  # Probably a path to
+    'owner':  ['google-oauth2|102124071738955888216', \
+               'google-oauth2|112401903840371673242'],  # Neyle,
+    'owner_alias': ['ANS', 'WER'],
+    'admin_aliases': ["ANS", "WER", 'KVH', "TELOPS", "TB", "DH", "KVH", 'KC'],
+    
+    
+    
+    # Default safety settings
+    'safety_check_period': 45,  # MF's original setting.
+    'closest_distance_to_the_sun': 45,  # Degrees. For normal pointing requests don't go this close to the sun.
+    'closest_distance_to_the_moon': 3,  # Degrees. For normal pointing requests don't go this close to the moon.
+    'minimum_distance_from_the_moon_when_taking_flats': 45,
+    'lowest_requestable_altitude': -5,  # Degrees. For normal pointing requests don't allow requests to go this low.
+    'degrees_to_avoid_zenith_area_for_calibrations': 0, 
+    'temperature_at_which_obs_too_hot_for_camera_cooling' : 23, 
+    
+    # These are the default values that will be set for the obs
+    # on a reboot of obs.py. They are safety checks that 
+    # can be toggled by an admin in the Observe tab.
+    'scope_in_manual_mode': False,
+    'mount_reference_model_off': True,
+    'sun_checks_on': True,
+    'moon_checks_on': True,
+    'altitude_checks_on': True,    
+    'daytime_exposure_time_safety_on': True,
+    
+    
+    
+    # Setup of folders on local and network drives.
+    'client_hostname':"ARO-0m30",     # Generic place for this host to stash.    
+    'client_path': 'F:/ptr/',
+    'alt_path': 'Q:/ptr/',
+    'save_to_alt_path' : 'yes',    
+    'local_calibration_path': 'F:/ptr/', # THIS FOLDER HAS TO BE ON A LOCAL DRIVE, not a network drive due to the necessity of huge memmap files    
+    'archive_age' : 10.0, # Number of days to keep files in the local archive before deletion. Negative means never delete
+    
+    
+    
+    
+    # For low bandwidth sites, do not send up large files until the end of the night. set to 'no' to disable
+    'send_files_at_end_of_night': 'no',
+    # For low diskspace sites (or just because they aren't needed), don't save a separate raw file to disk after conversion to fz.
+    'save_raw_to_disk': True,
+    # PTR uses the reduced file for some calculations (focus, SEP, etc.). To save space, this file can be removed after usage or not saved.
+    'keep_reduced_on_disk': True,
+    'keep_focus_images_on_disk': True,  # To save space, the focus file can not be saved.   
+    # A certain type of naming that sorts filenames by numberid first
+    'save_reduced_file_numberid_first' : True,
 
-    #'TZ_database_name':  'America/Denver',
-    'mpc_code':  'ZZ24',    # This is made up for now.
-    #'time_offset':  -6.0,   # These two keys may be obsolete give the new TZ stuff
-    #'timezone': 'MDT',      # This was meant to be coloquial Time zone abbreviation, alternate for "TX_data..."
-    #'latitude': 35.554298,     # ARo 35d33m15.472s Decimal degrees, North is Positive
-    #'longitude': -105.870197,   #ARO -105d52m12.7092s Decimal degrees, West is negative
-    #'elevation': 2194,    # meters above sea level
-    #'reference_ambient':  10.0,  # Degrees Celsius.  Alternately 12 entries, one for every - mid month.
-    #'reference_pressure':  794.0,    #mbar   A rough guess 20200315
+    # Minimum realistic seeing at the site.
+    # This allows culling of unphysical results in photometry and other things
+    # Particularly useful for focus
+    'minimum_realistic_seeing': 1.0,
     
-    'safety_check_period': 45,   #MF's original setting.
     
-    'closest_distance_to_the_sun': 45, # Degrees. For normal pointing requests don't go this close to the sun. 
-    'closest_distance_to_the_moon': 10, # Degrees. For normal pointing requests don't go this close to the moon. 
-    'lowest_requestable_altitude': -5, # Degrees. For normal pointing requests don't allow requests to go this low. 
-
-    'site_roof_control': 'yes', #MTF entered this in to remove sro specific code.... Basically do we have control of the roof or not see line 338 sequencer.py
-    'site_allowed_to_open_roof': 'yes',
-    
-    'maximum_roof_opens_per_evening' : 4,
-    'site_in_automatic_default': "Automatic",   # ["Manual", "Shutdown", "Automatic"]
-    
-    'automatic_detail_default': "Enclosure is initially set to Automatic by ARO site_config.",
-    'observing_check_period' : 1,    # How many minutes between weather checks
-    'enclosure_check_period' : 1,    # How many minutes between enclosure checks
-    'auto_eve_bias_dark': True,
-    
-    'auto_midnight_moonless_bias_dark': False,
-    'auto_eve_sky_flat': True,
-    'eve_sky_flat_sunset_offset': -45.0,  # Minutes  neg means before, + after.
-    #'eve_cool_down_open' : -56.0,
-    
+    # TIMING FOR CALENDAR EVENTS
+    # How many minutes with respect to eve sunset start flats
+    'eve_sky_flat_sunset_offset': -45.,  # 40 before Minutes  neg means before, + after.
     # How many minutes after civilDusk to do....
     'end_eve_sky_flats_offset': 5 , 
     'clock_and_auto_focus_offset': 8,
-    'observing_begins_offset': 18,
-    
-    # How many minutes before civilDawn
+    'observing_begins_offset': 18,    
+    # How many minutes before civilDawn to do ....
     'observing_ends_offset': 18,   
+
     
-    'auto_morn_sky_flat': True,
-    'auto_morn_bias_dark': True,
-    're-calibrate_on_solve': True,
-    'pointing_calibration_on_startup': False,
-    'periodic_focus_time' : 2.0, # This is a time, in hours, over which to bypass automated focussing (e.g. at the start of a project it will not refocus if a new project starts X hours after the last focus)
-    'stdev_fwhm' : 0.5, # This is the expected variation in FWHM at a given telescope/camera/site combination. This is used to check if a fwhm is within normal range or the focus has shifted
-    'focus_exposure_time': 10,  # Exposure time in seconds for exposure image
-    'pointing_exposure_time': 30,  # Exposure time in seconds for pointing run image
-    'pointing_correction_dec_multiplier' : 1,
-    'pointing_correction_ra_multiplier' : 1,
-    
-    
-    'focus_trigger' : 0.5, # What FWHM increase is needed to trigger an autofocus
-    'solve_nth_image' : 1, # Only solve every nth image
-    'solve_timer' : 0.1, # Only solve every X minutes
-    'threshold_mount_update' : 10, # only update mount when X arcseconds away
-    'get_ocn_status': None,
-    'get_enc_status': None,
-    'not_used_variable': None,
+     # Exposure times for standard system exposures
+     'focus_exposure_time': 15,  # Exposure time in seconds for exposure image
+     'pointing_exposure_time': 20,  # Exposure time in seconds for exposure image
+
+     # How often to do various checks and such
+     'observing_check_period': 1,    # How many minutes between weather checks
+     'enclosure_check_period': 1,    # How many minutes between enclosure checks
+
+     # Turn on and off various automated calibrations at different times.
+     'auto_eve_bias_dark': True,
+     'auto_eve_sky_flat': True,
+     'auto_midnight_moonless_bias_dark': False,
+     'auto_morn_sky_flat': True,
+     'auto_morn_bias_dark': True,
+     
+     # FOCUS OPTIONS
+     'periodic_focus_time': 12.0, # This is a time, in hours, over which to bypass automated focussing (e.g. at the start of a project it will not refocus if a new project starts X hours after the last focus)
+     'stdev_fwhm': 0.5,  # This is the expected variation in FWHM at a given telescope/camera/site combination. This is used to check if a fwhm is within normal range or the focus has shifted
+     'focus_trigger': 0.75,  # What FWHM increase is needed to trigger an autofocus
+     
+     # PLATESOLVE options
+     'solve_nth_image': 1,  # Only solve every nth image
+     'solve_timer': 0.05,  # Only solve every X minutes
+     'threshold_mount_update': 45,  # only update mount when X arcseconds away
 
 
 
     'defaults': {
-        #'observing_conditions': 'observing_conditions1',  # These are used as keys, may go away.
-        #'enclosure': 'enclosure1',
         'screen': 'screen1',
         'mount': 'mount1',
         'telescope': 'telescope1',     #How do we handle selector here, if at all?
@@ -208,8 +148,6 @@ site_config = {
         'sequencer': 'sequencer1'
         },
     'device_types': [
-        #'observing_conditions',
-        #'enclosure',
         'mount',
         'telescope',
         #'screen',
@@ -220,13 +158,7 @@ site_config = {
         'camera',
         'sequencer',
         ],
-    'wema_types': [
-       'observing_conditions',
-       'enclosure',
-       ],
     'short_status_devices':  [
-       # 'observing_conditions',
-       #'enclosure',
        'mount',
        'telescope',
        # 'screen',
@@ -237,52 +169,6 @@ site_config = {
        'camera',
        'sequencer',
        ],
-
-    'wema_status_span':  ['aro'],
-
-#     'observing_conditions' : {     #for SAF
-#         'observing_conditions1': {
-#             'parent': 'site',
-#             'name': 'Boltwood',
-#             'driver': 'ASCOM.Boltwood.ObservingConditions',
-#             'driver_2':  'ASCOM.Boltwood.OkToOpen.SafetyMonitor',
-#             'driver_3':  'ASCOM.Boltwood.OkToImage.SafetyMonitor',
-#             'redis_ip': '127.0.0.1',   #None if no redis path present
-#             'has_unihedron':  True,
-#             'uni_driver': 'ASCOM.SQM.serial.ObservingConditions',
-#             'unihedron_port':  10    # False, None or numeric of COM port.
-#         },
-#     },
-
-#      'enclosure': {
-#          'enclosure1': {
-#              'name': 'Scope Dome Roll-off Roof',
-#              'enc_is_specific':  False,
-#              'enc_is_proxy':  True,
-#              'hostIP':  '10.0.0.10',
-# #            'driver': 'ASCOM.DigitalDomeWorks.Dome',  #  'ASCOMDome.Dome',  #ASCOMDome.Dome',  # ASCOM.DeviceHub.Dome',  # ASCOM.DigitalDomeWorks.Dome',  #"  ASCOMDome.Dome',
-#              'has_lights':  False,
-#              'controlled_by': 'aro-wema',
-#              'proxied_by': 'aro-0m35',
-#  			 'is_dome': False,
-#              'default_mode': 'Automatic',
-
-#         },
-#          'enclosure2': {
-#              'name': 'Scope Dome 2m dome',
-#              'enc_is_specific':  False,
-#              'enc_is_proxy':  True,
-#              'hostIP':  '10.0.0.10',
-# #            'driver': 'ASCOM.DigitalDomeWorks.Dome',  #  'ASCOMDome.Dome',  #ASCOMDome.Dome',  # ASCOM.DeviceHub.Dome',  # ASCOM.DigitalDomeWorks.Dome',  #"  ASCOMDome.Dome',
-#              'has_lights':  True,
-#              'controlled_by': 'aro-wema',
-#              'proxied_by': 'aros-0m152',
-#  			 'is_dome': True,
-#              'default_mode': 'Automatic',
-
-#         },
-     #},
-
 
 
     'mount': {
@@ -306,7 +192,6 @@ site_config = {
             'settle_time_after_park' : 10,
   #
             'permissive_mount_reset' : 'no', # if this is set to yes, it will reset the mount at startup and when coordinates are out significantly
-            'lowest_acceptable_altitude' : -1.0, # Below this altitude, it will automatically try to home and park the scope to recover.
             'time_inactive_until_park' : 3600.0, # How many seconds of inactivity until it will park the telescope
             'west_clutch_ra_correction': 0.0,  #final:   0.0035776615398219747 -0.1450812805892454
             'west_clutch_dec_correction': 0.0,
@@ -356,10 +241,8 @@ site_config = {
         'telescope1': {
             'parent': 'mount1',
             'name': 'Main OTA',
-            #'ptrtel':  "saf1",
             'telescop': 'aro1',
             'desc':  'Ceravolo 300mm F4.9/F9 convertable',
-            #'telescop': 'cvagr-0m30-f9-f4p9-001',
             'ptrtel': 'cvagr-0m30-f9-f4p9-001',
             'driver': None,                     # Essentially this device is informational.  It is mostly about the optics.
             'collecting_area': 31808,   #This is correct as of 20230420 WER
@@ -449,16 +332,8 @@ site_config = {
             # # F4.9 setup
             # 'reference': 5800,    # 20210313  Nominal at 10C Primary temperature
             # 'ref_temp':  5.1,    # Update when pinning reference
-            # 'coef_c': 0,  # 26.055,   # Negative means focus moves out as Primary gets colder
-            # 'coef_0': 5800,  # Nominal intercept when Primary is at 0.0 C.
-            # 'coef_date':  '20220301',    # This appears to be sensible result 44 points -13 to 3C'reference':  6431,    # Nominal at 10C Primary temperature
             #F9 setup
-            'reference': 5050, #5743,    #  Meas   Nominal at 10C Primary temperature
-            #'ref_temp':  1.6,    # Update when pinning reference
-            #'coef_c': -62.708,  #-77.57,   # negative means focus moves out/in as Primary gets colder/warmer.
-            'coef_c': 0,  #-77.57,   # negative means focus moves out/in as Primary gets colder/warmer.
-            'coef_0': 5050, #6155,   #5675,  20220502 Nominal intercept when Primary is at 0.0 C. f4.9 cONFIGURATION
-            'coef_date':  '20221030',    # TEMP RANGE 12 TO 19, 6 MEASUREMENTS
+            'reference': 5050, #5743,    #  Meas   Nominal at 10C Primary temperature            
             'z_compression': 0.0, #  microns per degree of zenith distance
             'z_coef_date':  '20221002',
             'minimum': 0,     # NB this area is confusing steps and microns, and need fixing.
@@ -551,15 +426,12 @@ site_config = {
 
                 
 
-                'filter_screen_sort':  [1],   # don't use narrow yet,  8, 10, 9], useless to try.
+                'filter_screen_sort':  ['ip'],   # don't use narrow yet,  8, 10, 9], useless to try.
                 'filter_sky_sort': ['S2','N2','up','HA','CR','O3','zs','zp','BI','PR','rp','BB','PG', \
                                     'ip','BR','JV','NIR','PB','gp','PL','EXO','air'],
                 
                 
-                #'filter_sky_sort': [ 27, 26, 25, 28, 12, 7, 24, 18, 23, 10, 20, 17, 9,\
-                #                    21 ,16, 15, 14, 22, 8, 30, 19, 6, 0]    #  No diffuser based filters
-
-
+               
 
             },
 
@@ -695,38 +567,9 @@ site_config = {
                 'cooler_on': True,
                 
                 "cam_needs_NumXY_init": True,
-                'x_start':  0,
-                'y_start':  0,
-                'x_width':  4800,   # NB Should be set up with overscan, which this camera is!  20200315 WER
-                'y_width':  3211,
-                'x_chip':  9576,   # NB Should specify the active pixel area.   20200315 WER
-                'y_chip':  6388,
-                'x_trim_offset':  8,   # NB these four entries are guesses.
-                'y_trim_offset':  8,
-                'x_bias_start':  9577,
-                'y_bias_start' : 6389,
-                'x_active': 4784,
-                'y_active': 3194,
+                
                 'x_pixel':  3.76,
                 'y_pixel':  3.76,
-                
-                'CameraXSize' : 9600,
-                'CameraYSize' : 6422,
-                #'MaxBinX' : 2,
-                #'MaxBinY' : 2,
-                'StartX' : 1,
-                'StartY' : 1,
-
-                'x_field_deg': 1.042,   #  round(4784*1.055/3600, 4),
-                'y_field_deg': 0.7044,   # round(3194*1.055/3600, 4),
-                'detsize': '[1:9600, 1:6422]',  # QHY600Pro Physical chip data size as returned from driver
-                'ccd_sec': '[1:9600, 1:6422]',
-                'bias_sec': ['[1:24, 1:6388]', '[1:12, 1:3194]', '[1:8, 1:2129]', '[1:6, 1:1597]'],
-                'det_sec':  ['[25:9600, 1:6388]', '[13:4800, 1:3194]', '[9:3200, 1:2129]', '[7:2400, 1:1597]'],
-                'data_sec': ['[25:9600, 1:6388]', '[13:4800, 1:3194]', '[9:3200, 1:2129]', '[7:2400, 1:1597]'],
-                'trim_sec': ['[1:9576, 1:6388]', '[1:4788, 1:3194]', '[1:3192, 1:2129]', '[1:2394, 1:1597]'],
-                'overscan_x': 24,
-                'overscan_y': 3,
                 'north_offset': 0.0,    # These three are normally 0.0 for the primary telescope
                 'east_offset': 0.0,     # Not sure why these three are even here.
                 'rotation': 0.0,        # Probably remove.
@@ -749,14 +592,14 @@ site_config = {
                 'read_noise':  10.26, #[9, 9, 9, 9],    #  All SWAGs right now
                 'read_noise_stdev':   0.004, #[10., 10., 10., 10.],     #  One val for each binning.
                 
-                'reference_dark': 0.1, #, .8, 1.8, 3.2],  #  Guess
+                #'reference_dark': 0.1, #, .8, 1.8, 3.2],  #  Guess
                 
                 
                 
                 
                 
-                'ref_dark': 360.0,    #  this needs fixing.
-                'long_dark':600.0,
+                #'ref_dark': 360.0,    #  this needs fixing.
+                #'long_dark':600.0,
                 'max_linearity':  60000,   # Guess  60% of this is max counts for skyflats.  75% rejects the skyflat
                 'saturate':   60000,  #  [2,262000], [3,589815], [4, 1048560]] ,   # e-.  This is a close guess, not measured, but taken from data sheet.
                 'fullwell_capacity': 80000, #  320000, 720000, 1280000],
@@ -781,21 +624,12 @@ site_config = {
                 'number_of_flat_to_store' : 21,
                 
                 'dark_exposure': 360,
-                'flat_bin_spec': '1,1', #'2,2'],    #Default binning for flats
-                'bias_dark_bin_spec': '1,1', #'2,2'],    #Default binning for flats
-                'bin_enable': '1,1', #'2,2'],
                 'dark_length' : 360,
-                #'bias_count' : 10,
-                #'dark_count' : 10,
-                'bin_modes':  [[1, 1, 0.528], [2, 2, 1.055], [3, 3, 1.583], [4, 4, 2.110]],   #Meaning no binning choice if list has only one entry, default should be first.
-                'optimal_bin':  [2, 2, 1.055],
-                'max_res_bin':  [1, 1, 0.528],
-                #'pix_scale': [0.528, 1.055, 1.583, 2.110],    #  1.4506,  bin-2  2* math.degrees(math.atan(9/3962000))*3600
-                
-                
+                                
                 
                 '1x1_pix_scale': 0.528,    #  This is the 1x1 binning pixelscale
                 'native_bin': 2, # Needs to be simple, it will recalculate things on the 1x1 binning pixscale above.
+                
                 # The drizzle_value is by the new pixelscale
                 # for the new resolution when stacking in the EVA pipeline
                 # Realistically you want a resolution of about 0.5 arcseconds per pixel
@@ -840,8 +674,6 @@ site_config = {
         },
     },
 }
-get_ocn_status = None   # NB these are placeholders for site specific routines for in a config file
-get_enc_status = None
 
 if __name__ == '__main__':
     j_dump = json.dumps(site_config)
