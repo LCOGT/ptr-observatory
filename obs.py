@@ -198,11 +198,11 @@ class Observatory:
         self.local_flat_folder = self.local_calibration_path + "archive/" + camera_name + "/localcalibrations/flats" + '/'
         
         # Directories for broken and orphaned upload files
-        self.orphan_path=self.config['client_path'] +'/' + self.name + '/' + 'orphans/'
+        self.orphan_path=self.config['orphan_path'] +'/' + self.name + '/' + 'orphans/'
         if not os.path.exists(self.orphan_path):
             os.makedirs(self.orphan_path)
         
-        self.broken_path=self.config['client_path'] +'/' + self.name + '/' + 'broken/'
+        self.broken_path=self.config['orphan_path'] +'/' + self.name + '/' + 'broken/'
         if not os.path.exists(self.broken_path):
             os.makedirs(self.broken_path)
         
@@ -1146,7 +1146,7 @@ class Observatory:
             if self.altitude_checks_on:
                 try:
                     mount_altitude = g_dev['mnt'].mount.Altitude
-                    lowest_acceptable_altitude = self.config['mount']['mount1']['lowest_acceptable_altitude']
+                    lowest_acceptable_altitude = self.config['lowest_requestable_altitude']
                     if mount_altitude < lowest_acceptable_altitude:
                         plog("Altitude too low! " + str(mount_altitude) + ". Parking scope for safety!")
                         if not g_dev['mnt'].mount.AtPark:
@@ -1493,7 +1493,7 @@ class Observatory:
                                 shutil.move(filepath, self.broken_path + filename)
                             except:
                                 plog ("Couldn't move " + str(filepath) + " to broken folder.")
-                                plog((traceback.format_exc()))
+                                #plog((traceback.format_exc()))
                                 self.laterdelete_queue.put(filepath, block=False)
                     except Exception as e:
                         plog ("something strange in the ptrarchive uploader", e)
@@ -1644,19 +1644,17 @@ class Observatory:
         while True:
             if (not self.sep_queue.empty()) and one_at_a_time == 0:
                 one_at_a_time = 1
-                #print ("In the queue.....")
-
-                #sep_timer_begin=time.time()
+                
                 
                 (hdufocusdata, pixscale, readnoise, avg_foc, focus_image, im_path, text_name, hduheader, cal_path, cal_name, frame_type, focus_position, nativebin) = self.sep_queue.get(block=False)
-
-                if (g_dev['events']['Civil Dusk'] < ephem.now() < g_dev['events']['Civil Dawn']) :
+                
+                if not (g_dev['events']['Civil Dusk'] < ephem.now() < g_dev['events']['Civil Dawn']) :
                     plog ("Too bright to consider photometry!")
                     # If it doesn't go through SEP then the fits header text file needs to be dumped here
                     text = open(
                         im_path + text_name, "w"
-                    )  # This is needed by AWS to set up database.
-                    #breakpoint()
+                    )  
+
                     text.write(str(hduheader))
                     text.close()
                 else:
@@ -1685,11 +1683,12 @@ class Observatory:
                                                                   .name]["settings"]['focus_image_crop_width'], self.config["camera"][g_dev['cam']
                                                                                                             .name]["settings"]['focus_image_crop_height'], is_osc,interpolate_for_focus,bin_for_focus,focus_bin_value,interpolate_for_sep,bin_for_sep,sep_bin_value,focus_jpeg_size,saturate,minimum_realistic_seeing,nativebin
                                                                                                                                                                                    ], open('subprocesses/testSEPpickle','wb'))
-                    #breakpoint()                                                                                                                      
+                                                                                                                                         
                                                                                                                                         
                                                                                                                                       
                     # Essentially wait until the subprocess is complete
                     sep_subprocess.communicate()    
+                    
                     
                     # LOADING UP THE SEP FILE HERE AGAIN
                     if os.path.exists(im_path + text_name.replace('.txt', '.sep')):
@@ -1720,7 +1719,6 @@ class Observatory:
                             
                             
                             if (len(sources) < 2) or ( frame_type == 'focus' and (len(sources) < 10 or len(sources) == np.nan or str(len(sources)) =='nan' or xdonut > 3.0 or ydonut > 3.0 or np.isnan(xdonut) or np.isnan(ydonut))):
-                                #plog ("not enough sources to estimate a reliable focus")
                                 plog ("Did not find an acceptable FWHM for this image.")    
                                 g_dev['cam'].expresult["error"] = True
                                 g_dev['cam'].expresult['FWHM'] = np.nan
@@ -1731,8 +1729,7 @@ class Observatory:
                                 rfs = np.nan
                                 sources = sources
                             else:
-                                # Get halflight radii
-                                
+                                # Get halflight radii                                
                                 fwhmcalc = sources['FWHM']                                
                                 fwhmcalc = fwhmcalc[fwhmcalc != 0]  # Remove 0 entries
             
@@ -1806,18 +1803,18 @@ class Observatory:
                         self.enqueue_for_fastUI(180, im_path, text_name.replace('.txt', '.his'))
                     except:
                         plog("Failed to send HIS up for some reason")
-                    
-                    try:
-                        self.enqueue_for_fastUI(180, im_path, text_name.replace('.txt', '.box'))
-                    except:
-                        plog("Failed to send BOX up for some reason")
+                    if os.path.exists(im_path + text_name.replace('.txt', '.box')):
+                        try:
+                            self.enqueue_for_fastUI(180, im_path, text_name.replace('.txt', '.box'))
+                        except:
+                            plog("Failed to send BOX up for some reason")
     
                     if self.config['keep_focus_images_on_disk']:
-                        g_dev['cam'].to_slow_process(1000, ('focus', cal_path + cal_name, hdufocusdata, hduheader,
+                        g_dev['obs'].to_slow_process(1000, ('focus', cal_path + cal_name, hdufocusdata, hduheader,
                                                             frame_type, g_dev["mnt"].current_icrs_ra, g_dev["mnt"].current_icrs_dec))
     
                         if self.config["save_to_alt_path"] == "yes":
-                            g_dev['cam'].to_slow_process(1000, ('raw_alt_path', self.alt_path + g_dev["day"] + "/calib/" + cal_name, hdufocusdata, hduheader,
+                            g_dev['obs'].to_slow_process(1000, ('raw_alt_path', self.alt_path + g_dev["day"] + "/calib/" + cal_name, hdufocusdata, hduheader,
                                                                 frame_type, g_dev["mnt"].current_icrs_ra, g_dev["mnt"].current_icrs_dec))
                 
                 self.enqueue_for_fastUI(10, im_path, text_name)
@@ -1998,9 +1995,9 @@ class Observatory:
                 slow_process = self.slow_camera_queue.get(block=False)
                 slow_process = slow_process[1]
 
-                # Set up RA and DEC headers for BANZAI
+                # Set up RA and DEC headers 
                 # needs to be done AFTER text file is sent up.
-                # Text file RA and Dec and BANZAI RA and Dec are formatted different
+                # Text file RA and Dec and PTRarchive RA and Dec are formatted different
 
                 temphduheader = slow_process[3]
 
@@ -2395,7 +2392,7 @@ class Observatory:
                         )
                         imgdata = np.load(paths["red_path"] + paths["red_name01"].replace('.fits','.npy'))
                         
-                        g_dev['cam'].to_slow_process(1000,('reduced', paths["red_path"] + paths["red_name01"], imgdata, img[0].header, \
+                        g_dev['obs'].to_slow_process(1000,('reduced', paths["red_path"] + paths["red_name01"], imgdata, img[0].header, \
                                                'EXPOSE', g_dev["mnt"].current_icrs_ra, g_dev["mnt"].current_icrs_dec))
                     
                     if self.config["camera"][g_dev['cam'].name]["settings"]["is_osc"]:

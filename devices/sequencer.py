@@ -831,9 +831,10 @@ class Sequencer:
 
                     for displacement in offset:
 
-                        breakpoint()
-                        x_field_deg = g_dev['cam'].config['camera']['camera_1_1']['settings']['x_field_deg']
-                        y_field_deg = g_dev['cam'].config['camera']['camera_1_1']['settings']['y_field_deg']
+                        # MUCH safer to calculate these from first principles
+                        # Than rely on an owner getting this right!
+                        x_field_deg = (g_dev['cam'].pixscale * g_dev['cam'].imagesize_x) /3600
+                        y_field_deg = (g_dev['cam'].pixscale * g_dev['cam'].imagesize_y) /3600
                         
                         # CURRENTLY NOT USED
                         if pitch == -1:
@@ -1042,7 +1043,7 @@ class Sequencer:
         # UNDERTAKING END OF NIGHT ROUTINES
         
         # Go through and add any remaining fz files to the aws queue 
-        plog ('Collecting orphaned fits and tokens to go up to BANZAI')
+        plog ('Collecting orphaned fits and tokens to go up to PTR archive')
         dir_path=self.config['client_path'] +'/' + g_dev['obs'].name + '/' + 'archive/'
         
         orphan_path=g_dev['obs'].orphan_path 
@@ -1117,7 +1118,7 @@ class Sequencer:
 
         # Before Culling, making sure we go through and harvest
         # all the orphaned and neglected files that actually
-        # do need to get to BANZAI
+        # do need to get to the PTRarchive
         self.collect_and_queue_neglected_fits()
         
         

@@ -68,13 +68,14 @@ site_config = {
     
     # Setup of folders on local and network drives.
     'client_hostname':  'mrc-0m35',  # This is also the long-name  Client is confusing!    
-    'client_path':  'Q:/ptr/',  # Generic place for client host to stash misc stuff
+    'client_path':  'D:/ptr/',  # Generic place for client host to stash misc stuff
     'local_calibration_path': 'D:/ptr/', # THIS FOLDER HAS TO BE ON A LOCAL DRIVE, not a network drive due to the necessity of huge memmap files
+    'orphan_path': 'D:/ptr/',
     'alt_path':  'Q:/ptr/',  # Generic place for this host to stash misc stuff
     'plog_path':  'Q:/ptr/mrc1/',  # place where night logs can be found.
-    'save_to_alt_path': 'no',
-    'archive_path':  'Q:/ptr/',
-    'archive_age': -99.9,  # Number of days to keep files in the local archive before deletion. Negative means never delete
+    'save_to_alt_path': 'yes',
+    'archive_path':  'D:/ptr/',
+    'archive_age': -3,  # Number of days to keep files in the local archive before deletion. Negative means never delete
     
     # For low bandwidth sites, do not send up large files until the end of the night. set to 'no' to disable
     'send_files_at_end_of_night': 'no',
@@ -103,41 +104,10 @@ site_config = {
 
 
 
-    # 'aux_archive_path':  None,  # NB NB we might want to put Q: here for MRC
-    # 'wema_is_active':  True,          # True if the split computers used at a site.  NB CHANGE THE DAMN NAME!
-    # 'wema_hostname': 'MRC-WEMA',   # Prefer the shorter version
-    # 'wema_path':  'Q:/ptr/',  # '/wema_transfer/',
-    # 'dome_on_wema':   True,
-    # 'site_IPC_mechanism':  'redis',   # ['None', shares', 'shelves', 'redis']  Pick One
-    # 'wema_write_share_path': 'Q:/ptr/',  # Meant to be where Wema puts status data.
-    # 'client_read_share_path':  'Q:/ptr/',  # NB these are all very confusing names.
-    # 'client_write_share_path': 'Q:/ptr/',
-    # 'redis_ip': '10.15.0.109',  # '127.0.0.1', None if no redis path present,
-    # 'obsid_is_generic':  False,   # A simply  single computer ASCOM site.
-    # 'obsid_is_specific':  False,  # Indicates some special code for this site, found at end of config.
-    #'host_wema_site_name':  'mrc',  # The umbrella header for obsys in close geographic proximity,
-    #                                #  under the control of one wema
-    
-    #'site_path': 'Q:/',
-    
-    # 'location_day_allsky':  None,  # Thus ultimately should be a URL, probably a color camera.
-    # 'location_night_allsky':  None,  # Thus ultimately should be a URL, usually Mono camera with filters.
-    # 'location _pole_monitor': None,  # This probably gets us to some sort of image (Polaris in the North)
-    # 'location_seeing_report': None,  # Probably a path to a jpeg or png graph.
-    # 'debug_flag': True,  # Be careful about setting this flag True when pushing up to dev!
-    #'TZ_database_name': 'America/Los_Angeles',
-    #'time_offset': -7,     # NB these two should be derived from Python libs so change is automatic
-    #'timezone': 'PDT',
-    #'latitude': 34.459375,  # Decimal degrees, North is Positive
-    #'longitude': -119.681172,  # Decimal degrees, West is negative
-    #'elevation': 317.75,    # meters above sea level
-    #'reference_ambient':  10.0,  # Degrees Celsius.  Alternately 12 entries, one for every - mid month.
-    #'reference_pressure':  977.83,  # mbar Alternately 12 entries, one for every - mid month.
-
     
     # Exposure times for standard system exposures
     'focus_exposure_time': 10,  # Exposure time in seconds for exposure image
-    'pointing_exposure_time': 30,  # Exposure time in seconds for exposure image
+    'pointing_exposure_time': 15,  # Exposure time in seconds for exposure image
 
     # How often to do various checks and such
     'observing_check_period': 1,    # How many minutes between weather checks
@@ -919,5 +889,36 @@ if __name__ == '__main__':
 
 
 
+
+    # 'aux_archive_path':  None,  # NB NB we might want to put Q: here for MRC
+    # 'wema_is_active':  True,          # True if the split computers used at a site.  NB CHANGE THE DAMN NAME!
+    # 'wema_hostname': 'MRC-WEMA',   # Prefer the shorter version
+    # 'wema_path':  'Q:/ptr/',  # '/wema_transfer/',
+    # 'dome_on_wema':   True,
+    # 'site_IPC_mechanism':  'redis',   # ['None', shares', 'shelves', 'redis']  Pick One
+    # 'wema_write_share_path': 'Q:/ptr/',  # Meant to be where Wema puts status data.
+    # 'client_read_share_path':  'Q:/ptr/',  # NB these are all very confusing names.
+    # 'client_write_share_path': 'Q:/ptr/',
+    # 'redis_ip': '10.15.0.109',  # '127.0.0.1', None if no redis path present,
+    # 'obsid_is_generic':  False,   # A simply  single computer ASCOM site.
+    # 'obsid_is_specific':  False,  # Indicates some special code for this site, found at end of config.
+    #'host_wema_site_name':  'mrc',  # The umbrella header for obsys in close geographic proximity,
+    #                                #  under the control of one wema
+    
+    #'site_path': 'Q:/',
+    
+    # 'location_day_allsky':  None,  # Thus ultimately should be a URL, probably a color camera.
+    # 'location_night_allsky':  None,  # Thus ultimately should be a URL, usually Mono camera with filters.
+    # 'location _pole_monitor': None,  # This probably gets us to some sort of image (Polaris in the North)
+    # 'location_seeing_report': None,  # Probably a path to a jpeg or png graph.
+    # 'debug_flag': True,  # Be careful about setting this flag True when pushing up to dev!
+    #'TZ_database_name': 'America/Los_Angeles',
+    #'time_offset': -7,     # NB these two should be derived from Python libs so change is automatic
+    #'timezone': 'PDT',
+    #'latitude': 34.459375,  # Decimal degrees, North is Positive
+    #'longitude': -119.681172,  # Decimal degrees, West is negative
+    #'elevation': 317.75,    # meters above sea level
+    #'reference_ambient':  10.0,  # Degrees Celsius.  Alternately 12 entries, one for every - mid month.
+    #'reference_pressure':  977.83,  # mbar Alternately 12 entries, one for every - mid month.
 
 

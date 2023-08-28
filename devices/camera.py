@@ -479,11 +479,20 @@ class Camera:
             self._imageavailable = self._qhyccd_imageavailable
             self._getImageArray = self._qhyccd_getImageArray
             
+            
+            
+            
             self.description = "QHYDirectControl"
             self.maxim = False
             self.ascom = False
             self.theskyx = False
             self.qhydirect = True
+            
+            
+            # Initialise Camera Size here
+            self.imagesize_x=int(i_w)
+            self.imagesize_y=int(i_h)            
+            #breakpoint()
             
         else:
             plog("Maxim camera is initializing.")
@@ -549,6 +558,7 @@ class Camera:
         
         self.expresult=None
         
+        self.pixscale = float(self.config["camera"][self.name]["settings"]["1x1_pix_scale"])
         
         
 
@@ -624,8 +634,8 @@ class Camera:
             self.camera_x_size = self.config['camera'][self.name]['settings']['CameraXSize']
             self.camera_y_size = self.config['camera'][self.name]['settings']['CameraYSize']
 
-        self.camera_start_x = self.config["camera"][self.name]["settings"]["StartX"]
-        self.camera_start_y = self.config["camera"][self.name]["settings"]["StartY"]
+        #self.camera_start_x = self.config["camera"][self.name]["settings"]["StartX"]
+        #self.camera_start_y = self.config["camera"][self.name]["settings"]["StartY"]
         if self.config["camera"][self.name]["settings"]["cam_needs_NumXY_init"] and self.camera is not None:  # WER 20230217
             try:    
                 self.camera.NumX = self.camera_x_size
@@ -663,12 +673,6 @@ class Camera:
                 self.darkslide_open = True
                 self.darkslide_state = 'Open'
 
-        #breakpoint()
-
-
-        # A flag to tell the camera main queue
-        # whether the separate sep thread has completed yet
-        self.sep_processing=False
         
         try:
             seq = test_sequence(self.alias)
@@ -1910,11 +1914,10 @@ class Camera:
             
             elif self.async_exposure_lock == False and self._imageavailable():   #NB no more file-mode
                 
-                pixscale = float(self.config["camera"][self.name]["settings"]["1x1_pix_scale"])
                 # Immediately nudge scope to a different point in the smartstack dither                
                 if Nsmartstack > 1 and not (Nsmartstack == sskcounter+1):
-                    ra_random_dither=(((random.randint(0,50)-25) * pixscale / 3600 ) / 15) 
-                    dec_random_dither=((random.randint(0,50)-25) * pixscale /3600 )
+                    ra_random_dither=(((random.randint(0,50)-25) * self.pixscale / 3600 ) / 15) 
+                    dec_random_dither=((random.randint(0,50)-25) * self.pixscale /3600 )
                     print(initial_smartstack_ra + ra_random_dither)
                     print(initial_smartstack_dec + dec_random_dither)
                     try:
@@ -2699,7 +2702,7 @@ class Camera:
 
                     
                     hdu.header["PIXSCALE"] = (
-                        float(pixscale),
+                        float(self.pixscale),
                         "[arcsec/pixel] Nominal pixel scale on sky",
                     )
                     
@@ -2723,12 +2726,12 @@ class Camera:
                     ] = central_median # A crude value for the central exposure
                     hdu.header["ERRORVAL"] = 0
                     hdu.header["IMGAREA"] = opt["area"]
-                    hdu.header[
-                        "XORGSUBF"
-                    ] = (
-                        self.camera_start_x
-                    )  # This makes little sense to fix...  NB ALL NEEDS TO COME FROM CONFIG!!
-                    hdu.header["YORGSUBF"] = self.camera_start_y
+                    #hdu.header[
+                    #    "XORGSUBF"
+                    #] = (
+                    #    self.camera_start_x
+                    #)  # This makes little sense to fix...  NB ALL NEEDS TO COME FROM CONFIG!!
+                    #hdu.header["YORGSUBF"] = self.camera_start_y
                     
                     hdu.header["USERNAME"] = observer_user_name
                     hdu.header["USERID"] = (
@@ -2915,8 +2918,8 @@ class Camera:
                     
                     hdu.header["CTYPE1"] = 'RA---TAN'
                     hdu.header["CTYPE2"] = 'DEC--TAN'
-                    hdu.header["CDELT1"] = pixscale / 3600
-                    hdu.header["CDELT2"] = pixscale / 3600
+                    hdu.header["CDELT1"] = self.pixscale / 3600
+                    hdu.header["CDELT2"] = self.pixscale / 3600
                     hdu.header["CRVAL1"] = tempRAdeg
                     hdu.header["CRVAL2"] = tempDECdeg
                     hdu.header["CRPIX1"] = float(hdu.header["NAXIS1"])/2
@@ -3057,13 +3060,13 @@ class Camera:
                             # Focus images use it for focus, Normal images also report their focus.
                             # IMMEDIATELY SEND TO SEP QUEUE
                             # NEEDS to go up as fast as possible ahead of smartstacks to faciliate image matching.
-                            self.sep_processing=True
+                            g_dev['obs'].sep_processing=True
                             
                             if g_dev['foc'].theskyx:
                                 focus_position=g_dev['foc'].focuser.focPosition()*g_dev['foc'].steps_to_micron
                             else:
                                 focus_position=g_dev['foc'].focuser.Position*g_dev['foc'].steps_to_micron
-                            g_dev['obs'].to_sep((hdusmalldata, pixscale, float(hdu.header["RDNOISE"]), avg_foc[1], focus_image, im_path, text_name, hdusmallheader, cal_path, cal_name, frame_type, focus_position, self.native_bin))
+                            g_dev['obs'].to_sep((hdusmalldata, self.pixscale, float(hdu.header["RDNOISE"]), avg_foc[1], focus_image, im_path, text_name, hdusmallheader, cal_path, cal_name, frame_type, focus_position, self.native_bin))
                             
                             
                             if smartstackid != 'no':
@@ -3099,7 +3102,7 @@ class Camera:
                                 "focus",
                                 "pointing"
                             ]) and smartstackid != 'no' :
-                                g_dev['obs'].to_smartstack((paths, pixscale, smartstackid, sskcounter, Nsmartstack, g_dev['mnt'].pier_side))
+                                g_dev['obs'].to_smartstack((paths, self.pixscale, smartstackid, sskcounter, Nsmartstack, g_dev['mnt'].pier_side))
                             else:
                                 if not self.config['keep_reduced_on_disk']:
                                     try:                                
@@ -3120,13 +3123,14 @@ class Camera:
                             plog ("Exposure Complete")
                             g_dev["obs"].send_to_user("Exposure Complete")
                             while True:
-                                if self.sep_processing==False and g_dev['obs'].sep_queue.empty():
+                                if g_dev['obs'].sep_processing==False and g_dev['obs'].sep_queue.empty():
                                     break
                                 else:
                                     if reported ==0:
                                         plog ("FOCUS: Waiting for SEP processing to complete and queue to clear")
                                         reported=1
                                     pass
+                                time.sleep(0.2)
                             focus_image = False
                             
                             return self.expresult                        
@@ -3156,7 +3160,7 @@ class Camera:
                                 # Make sure any dither or return nudge has finished before platesolution
                                 wait_for_slew()
                                 # NEED TO CHECK HERE THAT THERE ISN"T ALREADY A PLATE SOLVE IN THE THREAD!
-                                g_dev['obs'].to_platesolve((hdusmalldata, hdusmallheader, cal_path, cal_name, frame_type, time.time(), pixscale, g_dev['mnt'].mount.RightAscension,g_dev['mnt'].mount.Declination))
+                                g_dev['obs'].to_platesolve((hdusmalldata, hdusmallheader, cal_path, cal_name, frame_type, time.time(), self.pixscale, g_dev['mnt'].mount.RightAscension,g_dev['mnt'].mount.Declination))
                                 # If it is the last of a set of smartstacks, we actually want to 
                                 # wait for the platesolve and nudge before starting the next smartstack.
                                                           
