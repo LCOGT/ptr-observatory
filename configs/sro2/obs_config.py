@@ -64,7 +64,7 @@ site_config = {
     
     # Setup of folders on local and network drives.
     'client_hostname':  'SRO-16inch',
-    'client_path':  'D:/ptr/',  # Generic place for this host to stash misc stuff
+    'archive_path':  'D:/ptr/',  # Generic place for this host to stash misc stuff
     'alt_path':  'D:/ptr/',  # Generic place for this host to stash misc stuff
     'save_to_alt_path' : 'no',
     'local_calibration_path': 'C:/ptr/', # THIS FOLDER HAS TO BE ON A LOCAL DRIVE, not a network drive due to the necessity of huge memmap files

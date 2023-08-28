@@ -150,7 +150,7 @@ class Observatory:
         self.wema_name = self.config['wema_name']
 
         # Creation of directory structures if they do not exist already
-        self.obsid_path = ptr_config["client_path"] + '/' + self.name + '/'
+        self.obsid_path = ptr_config["archive_path"] + '/' + self.name + '/'
         g_dev["obsid_path"] = self.obsid_path
         if not os.path.exists(self.obsid_path):
             os.makedirs(self.obsid_path)
@@ -198,11 +198,11 @@ class Observatory:
         self.local_flat_folder = self.local_calibration_path + "archive/" + camera_name + "/localcalibrations/flats" + '/'
         
         # Directories for broken and orphaned upload files
-        self.orphan_path=self.config['client_path'] +'/' + self.name + '/' + 'orphans/'
+        self.orphan_path=self.config['archive_path'] +'/' + self.name + '/' + 'orphans/'
         if not os.path.exists(self.orphan_path):
             os.makedirs(self.orphan_path)
         
-        self.broken_path=self.config['client_path'] +'/' + self.name + '/' + 'broken/'
+        self.broken_path=self.config['archive_path'] +'/' + self.name + '/' + 'broken/'
         if not os.path.exists(self.broken_path):
             os.makedirs(self.broken_path)
         
@@ -216,11 +216,11 @@ class Observatory:
             os.makedirs(self.local_calibration_path + "smartstacks")
         
         # Orphan and Broken paths
-        self.orphan_path=self.config['client_path'] +'/' + self.name + '/' + 'orphans/'
+        self.orphan_path=self.config['archive_path'] +'/' + self.name + '/' + 'orphans/'
         if not os.path.exists(self.orphan_path):
             os.makedirs(self.orphan_path)
         
-        self.broken_path=self.config['client_path'] +'/' + self.name + '/' + 'broken/'
+        self.broken_path=self.config['archive_path'] +'/' + self.name + '/' + 'broken/'
         if not os.path.exists(self.broken_path):
             os.makedirs(self.broken_path)
 

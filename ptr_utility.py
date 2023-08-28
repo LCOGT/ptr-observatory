@@ -11,31 +11,25 @@ Conversion constants could be CAP-case as in R2D, R2AS, H2S, etc.
 """
 
 from collections import namedtuple
-from datetime import datetime, date
+from datetime import datetime#, date
 import math
 import os
-import shelve
-import time
+#import shelve
+#import time
 
-from astropy.time import Time
-from astropy import units as u
-from astropy.coordinates import SkyCoord, ICRS, EarthLocation
-from astroquery.simbad import Simbad
+#from astropy.time import Time
+#from astropy import units as u
+#from astropy.coordinates import SkyCoord, ICRS, EarthLocation
+#from astroquery.simbad import Simbad
 import ephem
 #from ptr_events import compute_day_directory
 from ptr_config import site_config
 from global_yard import g_dev
 
-from datetime import datetime, timezone, timedelta
-from dateutil import tz
+from datetime import timezone, timedelta #datetime, 
+#from dateutil import tz
 
 
-
-# siteCoordinates = EarthLocation(
-#     lat=site_config["site_latitude"] * u.deg,
-#     lon=site_config["site_longitude"] * u.deg,
-#     height=site_config["site_elevation"] * u.m,
-# )
 
 Target = namedtuple(
     "Target", ["ra", "dec", "name", "simbad", "obj", "mag", "size", "pa", "ly", "cdist"]

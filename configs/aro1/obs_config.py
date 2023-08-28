@@ -73,7 +73,7 @@ site_config = {
     
     # Setup of folders on local and network drives.
     'client_hostname':"ARO-0m30",     # Generic place for this host to stash.    
-    'client_path': 'F:/ptr/',
+    'archive_path': 'F:/ptr/',
     'alt_path': 'Q:/ptr/',
     'save_to_alt_path' : 'yes',    
     'local_calibration_path': 'F:/ptr/', # THIS FOLDER HAS TO BE ON A LOCAL DRIVE, not a network drive due to the necessity of huge memmap files    

@@ -49,7 +49,7 @@ site_config = {
     'closest_distance_to_the_sun': 45,  # Degrees. For normal pointing requests don't go this close to the sun.
     'closest_distance_to_the_moon': 3,  # Degrees. For normal pointing requests don't go this close to the moon.
     'minimum_distance_from_the_moon_when_taking_flats': 45,
-    'lowest_requestable_altitude': -5,  # Degrees. For normal pointing requests don't allow requests to go this low.
+    'lowest_requestable_altitude': -10,  # Degrees. For normal pointing requests don't allow requests to go this low.
     'degrees_to_avoid_zenith_area_for_calibrations': 0, 
     'temperature_at_which_obs_too_hot_for_camera_cooling' : 23, 
     
@@ -67,7 +67,7 @@ site_config = {
     
     # Setup of folders on local and network drives.
     'client_hostname':  'ECO-0m28-OSC',
-    'client_path':  'C:/ptr/',  # Generic place for this host to stash misc stuff
+    'archive_path':  'C:/ptr/',  
     'alt_path':  'C:/ptr/',  # Generic place for this host to stash misc stuff
     'save_to_alt_path' : 'no',
     'local_calibration_path': 'C:/ptr/', # THIS FOLDER HAS TO BE ON A LOCAL DRIVE, not a network drive due to the necessity of huge memmap files    

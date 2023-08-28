@@ -62,7 +62,7 @@ site_config = {
     
     # Setup of folders on local and network drives.
     'client_hostname':  'mrc-0m35',  # This is also the long-name  Client is confusing!    
-    'client_path':  'D:/ptr/',  # Generic place for client host to stash misc stuff
+    'archive_path':  'D:/ptr/',  # Generic place for client host to stash misc stuff
     'local_calibration_path': 'D:/ptr/', # THIS FOLDER HAS TO BE ON A LOCAL DRIVE, not a network drive due to the necessity of huge memmap files
     'alt_path':  'Q:/ptr/',  # Generic place for this host to stash misc stuff
     'plog_path':  'Q:/ptr/mrc1/',  # place where night logs can be found.

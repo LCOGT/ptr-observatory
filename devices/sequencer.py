@@ -1044,7 +1044,7 @@ class Sequencer:
         
         # Go through and add any remaining fz files to the aws queue 
         plog ('Collecting orphaned fits and tokens to go up to PTR archive')
-        dir_path=self.config['client_path'] +'/' + g_dev['obs'].name + '/' + 'archive/'
+        dir_path=self.config['archive_path'] +'/' + g_dev['obs'].name + '/' + 'archive/'
         
         orphan_path=g_dev['obs'].orphan_path 
         cameras=glob(dir_path + "*/")
@@ -3602,10 +3602,10 @@ class Sequencer:
         plog("Tpoint collection completed. Happy reducing.")
         
         deviation_catalogue_for_tpoint = np.asarray(deviation_catalogue_for_tpoint, dtype=float)
-        np.savetxt(self.config['client_path'] +'/'+'tpointmodel' + str(time.time()).replace('.','d') + '.csv', deviation_catalogue_for_tpoint, delimiter=',')
+        np.savetxt(self.config['archive_path'] +'/'+'tpointmodel' + str(time.time()).replace('.','d') + '.csv', deviation_catalogue_for_tpoint, delimiter=',')
         
         
-        tpointnamefile=self.config['client_path'] +'/'+'TPOINTDAT'+str(time.time()).replace('.','d')+'.DAT'
+        tpointnamefile=self.config['archive_path'] +'/'+'TPOINTDAT'+str(time.time()).replace('.','d')+'.DAT'
         
         with open(tpointnamefile, "a+") as f:            	
             	f.write(self.config["name"] +"\n")
