@@ -364,14 +364,7 @@ site_config = {
             'maximum_good_focus_in_arcsecond': 2.5, # highest value to consider as being in "good focus". Used to select last good focus value
             
             'reference': 7250,  # 20221103    #7418,    # Nominal at 15C Primary temperature, in microns not steps. Guess
-            #'ref_temp':  10,      # Update when pinning reference  Larger at lower temperatures.
-            #'coef_c': -8.583,    # Negative means focus moves out (larger numerically) as Primary gets colder
-            # 'coef_0': 7250,  #20221103# Nominal intercept when Primary is at 0.0 C.
-            #'coef_0': 7355,  # 20221103# Nominal intercept when Primary is at 0.0 C.
-            #'coef_date':  '20230220',  # A Guess as to coef_c
-            #'z_compression': 0.0,  # microns per degree of zenith distance
-            #'z_coef_date':  '20221002',   # 'reference': 4375,    #   Guess 20210904  Nominal at 10C Primary temperature
-            #'use_local_temp':  True,
+            
             'minimum': 0,    # NB this needs clarifying, we are mixing steps and microns.
             'maximum': 12700,
             'step_size': 1,
@@ -704,23 +697,15 @@ site_config = {
                 'max_daytime_exposure': 0.0001,  # NB why this?
                 'can_subframe':  True,
                 'min_subframe': [128, 128],
-                # Meaning fixed binning if list has only one entry
-                #'bin_modes':  [['Optimal', 1.42], ['Fine', 0.96], ['Coarse', 1.91], ['Eng', 0.48]],
                 'camera_gain':   8.634, #[10., 10., 10., 10.],     #  One val for each binning.
                 'camera_gain_stdev':   0.4, #[10., 10., 10., 10.],     #  One val for each binning.
                 'read_noise':  47.74, #[9, 9, 9, 9],    #  All SWAGs right now
                 'read_noise_stdev':   0.03, #[10., 10., 10., 10.],     #  One val for each binning.
-                #'reference_dark': 0.2,  # NB  Guess
-                #'reference_offset': 611,  # NB Guess  ADU vaules not times in sec.
+                
                 'fullwell_capacity': 80000,  # NB Guess
                 'saturate':   65535,
                 'max_linearity':  60000,   # Guess
-                #'bin-desc':              ['1x1', '2x2', '3x3', '4x4'],
-                #'chan_color':            ['col', 'gry', 'gry', 'gry'],
-                # 'cycle_time':            [ 18,    13,    15,    12   ],   # NB somewhat a Guess.
                 'cycle_time':            0.5,   # Meas 20230219  for a bias
-                # 'enable_bin':            [ True, False,  False,  False],
-                # 'bias_dark_bin_spec':    ['1,1', '2,2', '3,3', '4,4' ],    #Default binning for flats
                 'number_of_bias_to_collect': 33,
                 'number_of_dark_to_collect': 17,
                 'number_of_flat_to_collect': 10,
@@ -729,16 +714,8 @@ site_config = {
                 'number_of_flat_to_store': 31,
 
                 'dark_exposure': 180,
-                # 'flat_bin_spec':         ['1,1', '2,2', '3,3', '4,4' ],   #Is this necessary?
-
-                # 'flat_count': 5,
-                #'optimal_bin': [1, 1],  # This is the optimal bin for MRC
-                #'fine_bin':    [1, 1],  # This is the fine bin for MRC
-                #'coarse_bin':  [2, 2],  # This is the coarse bin for MRC
-                #'eng_bin':     [4, 4],  # This is the eng-only bin for MRC, not useful for users?
-                # Always square and matched to seeing situation by owner  NB Obsolete? NO MF uses to load bias calib
-                #'bin_enable':  ['1 1'],
-                #  NB NB inconsistent use of bin string   '1 1', '1x1' , etc.
+               
+                
                 'do_cosmics': False,
 
                 'rbi_delay':  0,  # This being zero says RBI is not available, eg. for SBIG.
@@ -748,25 +725,13 @@ site_config = {
                 'can_set_gain':  True,
                 
 
-                #'flat_count': 5,
-
-                # [[1, 65000], [2,262000], [3,589815], [4, 1048560]] ,   # e-.  This is a close guess, not measured, but taken from data sheet.
-                
-                #'fullwell_capacity':  80000,
-
                 'read_mode':  'Normal',
                 'readout_mode': 'Normal',
                 'readout_speed':  50,
                 'readout_seconds': 6,
-                'smart_stack_exposure_time': 30,
-                #'square_detector': False,
-                #'square_pixels': True,
-                # 0.5*0.5°',  '0.7x0.7°', '1x1°', '1.4x1.4°', '2x2°', '2.8x2.8°', '4x4sq°', '5.6x5.6°'],
-                'areas_implemented': ['Big sq.', 'Full', 'Small sq.', '70.7%', '50%', '35%', '25%', '18%'],
+                'smart_stack_exposure_time': 30,'areas_implemented': ['Big sq.', 'Full', 'Small sq.', '70.7%', '50%', '35%', '25%', '18%'],
                 'default_area':  "Full",
                 'default_rotation': 0.0000,
-
-                # 'flat_bin_spec': ['1 1', '2 2'],    # List of binnings for flats.  NB NB NB Note inconsistent use of '1 1' and '1x1' and '1,1'
 
                 'has_darkslide':  True,
                 'darkslide_com':  'COM15',
@@ -838,42 +803,4 @@ if __name__ == '__main__':
         print('Strings matched.')
     if site_config == site_unjasoned:
         print('Dictionaries matched.')
-
-
-####################################### RETIRED BELOW THIS POINT
-
-
-
-    # 'aux_archive_path':  None,  # NB NB we might want to put Q: here for MRC
-    # 'wema_is_active':  True,          # True if the split computers used at a site.  NB CHANGE THE DAMN NAME!
-    # 'wema_hostname': 'MRC-WEMA',   # Prefer the shorter version
-    # 'wema_path':  'Q:/ptr/',  # '/wema_transfer/',
-    # 'dome_on_wema':   True,
-    # 'site_IPC_mechanism':  'redis',   # ['None', shares', 'shelves', 'redis']  Pick One
-    # 'wema_write_share_path': 'Q:/ptr/',  # Meant to be where Wema puts status data.
-    # 'client_read_share_path':  'Q:/ptr/',  # NB these are all very confusing names.
-    # 'client_write_share_path': 'Q:/ptr/',
-    # 'redis_ip': '10.15.0.109',  # '127.0.0.1', None if no redis path present,
-    # 'obsid_is_generic':  False,   # A simply  single computer ASCOM site.
-    # 'obsid_is_specific':  False,  # Indicates some special code for this site, found at end of config.
-    #'host_wema_site_name':  'mrc',  # The umbrella header for obsys in close geographic proximity,
-    #                                #  under the control of one wema
-    
-    #'site_path': 'Q:/',
-    
-    # 'location_day_allsky':  None,  # Thus ultimately should be a URL, probably a color camera.
-    # 'location_night_allsky':  None,  # Thus ultimately should be a URL, usually Mono camera with filters.
-    # 'location _pole_monitor': None,  # This probably gets us to some sort of image (Polaris in the North)
-    # 'location_seeing_report': None,  # Probably a path to a jpeg or png graph.
-    # 'debug_flag': True,  # Be careful about setting this flag True when pushing up to dev!
-    #'TZ_database_name': 'America/Los_Angeles',
-    #'time_offset': -7,     # NB these two should be derived from Python libs so change is automatic
-    #'timezone': 'PDT',
-    #'latitude': 34.459375,  # Decimal degrees, North is Positive
-    #'longitude': -119.681172,  # Decimal degrees, West is negative
-    #'elevation': 317.75,    # meters above sea level
-    #'reference_ambient':  10.0,  # Degrees Celsius.  Alternately 12 entries, one for every - mid month.
-    #'reference_pressure':  977.83,  # mbar Alternately 12 entries, one for every - mid month.
-
-
 
