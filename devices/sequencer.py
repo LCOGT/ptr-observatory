@@ -383,7 +383,8 @@ class Sequencer:
         if ((g_dev['events']['Cool Down, Open'] <= ephem_now < g_dev['events']['Observing Ends'])):
             self.nightly_reset_complete = False
             
-            
+        
+        
             
         
         if not self.total_sequencer_control:
@@ -759,6 +760,9 @@ class Sequencer:
         #ocn_status = eval(self.redis_server.get('ocn_status'))
         #enc_status = eval(self.redis_server.get('enc_status'))
         self.block_guard = True
+        
+        #breakpoint()
+        
         if (ephem.now() < g_dev['events']['Civil Dusk'] ) or \
             (g_dev['events']['Civil Dawn']  < ephem.now() < g_dev['events']['Nightly Reset']):
             plog ("NOT RUNNING PROJECT BLOCK -- IT IS THE DAYTIME!!")

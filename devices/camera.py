@@ -613,6 +613,7 @@ class Camera:
             self.qhydirect = True
             
         else:
+            # NB NB NB Considerputting this up higher.
             plog("Maxim camera is initializing.")
             self._connected = self._maxim_connected
             self._connect = self._maxim_connect
@@ -656,7 +657,9 @@ class Camera:
         self.day_warm = float(self.config["camera"][self.name]["settings"]['day_warm'])
         self.day_warm_degrees = float(self.config["camera"][self.name]["settings"]['day_warm_degrees'])
         self.protect_camera_from_overheating=float(self.config["camera"][self.name]["settings"]['protect_camera_from_overheating'])
-        
+# =============================================================================
+#         # NB NB *** No logic here to manage chillers and water cooling. ***
+# =============================================================================
         plog("Cooler setpoint is now:  ", self.setpoint)
         if self.config["camera"][self.name]["settings"][
             "cooler_on"
@@ -670,7 +673,7 @@ class Camera:
             plog("TEC  % load:  ", self._maxim_cooler_power())
         self.current_filter = (
             0  # W in Apache Ridge case. #This should come from config, filter section
-        )
+        )    ##This seems out of place so a hangnail from the dark past.
         self.exposure_busy = False
         self.currently_in_smartstack_loop=False
         
@@ -716,7 +719,8 @@ class Camera:
         Actually not sure if this is useful anymore if there are no differences 
         between ccds and cmoses? This may just be used for the fits header
         at the end of the day.  Yes I just want to inform the user downstream and or
-        trigger Telegraph noise correction -- all TBD. WER
+        trigger Telegraph noise correction -- all TBD.    We will have CCD 
+        Cameras in the mix.WER
         """                
         if self.config["camera"][self.name]["settings"]["is_cmos"] == True:
             self.is_cmos = True
