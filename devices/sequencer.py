@@ -44,20 +44,6 @@ reqs.mount('http://', HTTPAdapter(max_retries=retries))
 '''
 '''
 
-def authenticated_request(method: str, uri: str, payload: dict = None) -> str:
-
-    # Populate the request parameters. Include data only if it was sent.
-    base_url="https://api.photonranch.org/api"
-    request_kwargs = { 
-        "method": method,
-        "timeout" : 10,
-        "url": f"{base_url}/{uri}",
-    }
-    if payload is not None: 
-        request_kwargs["data"] = json.dumps(payload)
-
-    response = requests.request(**request_kwargs)
-    return response.json()
 
 
 def fit_quadratic(x, y):
@@ -794,7 +780,8 @@ class Sequencer:
             except:
                 # This is the old way for old projects
                 do_long_stack=block['project']['exposures'][0]['longstack']
-            try:                
+            try:                                
+                # This is the "proper" way of doing things.
                 do_smart_stack=block['project']['project_constraints']['smart_stack']
             except:
                 # This is the old way for old projects
@@ -1198,7 +1185,7 @@ class Sequencer:
         '''
         uri = f"{self.config['obs_id']}/config/"
         self.config['events'] = g_dev['events']
-        response = authenticated_request("PUT", uri, self.config)
+        response = g_dev['obs'].api.authenticated_request("PUT", uri, self.config)
         if response:
             plog("Config uploaded successfully.")
 
