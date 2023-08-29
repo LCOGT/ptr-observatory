@@ -1036,11 +1036,10 @@ class Observatory:
                 if not g_dev['mnt'].mount.AtPark and self.open_and_enabled_to_observe and self.sun_checks_on: # Only do the sun check if scope isn't parked
                     # Check that the mount hasn't slewed too close to the sun
                     sun_coords = get_sun(Time.now())
-                    try:
-                        temppointing = SkyCoord((g_dev['mnt'].current_icrs_ra)*u.hour,
-                                                (g_dev['mnt'].current_icrs_dec)*u.degree, frame='icrs')
-                    except:
-                        breakpoint()
+                    
+                    temppointing = SkyCoord((g_dev['mnt'].current_icrs_ra)*u.hour,
+                                            (g_dev['mnt'].current_icrs_dec)*u.degree, frame='icrs')
+
                     sun_dist = sun_coords.separation(temppointing)
                     if sun_dist.degree < self.config['closest_distance_to_the_sun'] and not g_dev['mnt'].mount.AtPark:
                         g_dev['obs'].send_to_user("Found telescope pointing too close to the sun: " +
