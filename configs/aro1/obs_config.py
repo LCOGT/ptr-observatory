@@ -587,9 +587,9 @@ site_config = {
                 'is_color':  False,
                 'can_set_gain':  False,
                 'bayer_pattern':  None,    # Need to verify R as in RGGB is pixel x=0, y=0, B is x=1, y = 1
-                'camera_gain':   2.33, #[10., 10., 10., 10.],     #  One val for each binning.
+                'camera_gain':   2.15, #[10., 10., 10., 10.],     #  One val for each binning.
                 'camera_gain_stdev':   0.16, #[10., 10., 10., 10.],     #  One val for each binning.
-                'read_noise':  10.26, #[9, 9, 9, 9],    #  All SWAGs right now
+                'read_noise':  9.55, #[9, 9, 9, 9],    #  All SWAGs right now
                 'read_noise_stdev':   0.004, #[10., 10., 10., 10.],     #  One val for each binning.
                 
                 #'reference_dark': 0.1, #, .8, 1.8, 3.2],  #  Guess
