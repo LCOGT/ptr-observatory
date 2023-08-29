@@ -999,20 +999,7 @@ class Camera:
             status["darkslide"] = g_dev["drk"].slideStatus
         else:
             status["darkslide"] = "unknown"
-        # if self.exposure_busy:
-        #     status["busy_lock"] = True
-        # else:
-        #     status["busy_lock"] = False
-        #if self.maxim:
-        #    cam_stat = "Not implemented yet"  #
-        #if self.ascom:
-        #    cam_stat = "ASCOM camera not implemented yet"  # self.camera.CameraState
-        #if self.theskyx:
-        #    cam_stat = "TheSkyX camera not implemented yet"  # self.camera.CameraState
-        #if self.qhydirect:
-        #    breakpoint()
-        #    cam_stat = self.config['camera'][self.name]['name'] + " connected. # self.camera.CameraState
-       
+            
         cam_stat = self.config['camera'][self.name]['name'] + " connected." # self.camera.CameraState
         status[
             "status"
@@ -1020,7 +1007,7 @@ class Camera:
         return status
 
     def parse_command(self, command):
-        #plog("Camera Command incoming:  ", command)
+        
         req = command["required_params"]
         opt = command["optional_params"]
         action = command["action"]
@@ -1029,7 +1016,6 @@ class Camera:
             self.last_user_id = self.user_id
         self.user_name = command["user_name"]
 
-        #plog(opt)
         if (
             "object_name" in opt
         ):
@@ -1052,10 +1038,7 @@ class Camera:
                         break
             
             if req['longstack'] or req['longstack'] == 'yes':
-                req['longstackname'] = (datetime.datetime.now().strftime("%d%m%y%H%M%S") + 'lngstk')
-            print (req)
-            #breakpoint()
-            #breakpoint()
+                req['longstackname'] = (datetime.datetime.now().strftime("%d%m%y%H%M%S") + 'lngstk')            
             
             if req['image_type'].lower() in (            
                 "bias",
@@ -1158,10 +1141,8 @@ class Camera:
         ) 
         
         #Third check, check it isn't daytime and institute maximum exposure time 
-        #Unless it is a command from the sequencer flat_scripts or a requested calibration frame
-        
-        imtype = required_params.get("image_type", "light")
-        
+        #Unless it is a command from the sequencer flat_scripts or a requested calibration frame        
+        imtype = required_params.get("image_type", "light")       
         
         skip_daytime_check=False
         skip_calibration_check=False
@@ -1188,9 +1169,9 @@ class Camera:
                     g_dev['obs'].send_to_user("Exposure time reduced to maximum daytime exposure time: " + str(float(self.config["camera"][self.name]["settings"]['max_daytime_exposure'])))
                     plog("Exposure time reduced to maximum daytime exposure time: " + str(float(self.config["camera"][self.name]["settings"]['max_daytime_exposure'])))
                     exposure_time = float(self.config["camera"][self.name]["settings"]['max_daytime_exposure'])
-            #breakpoint()
-            
-        # Need to check that we are not in the middle of flats, biases or darks
+           
+        # Need to check that we are not in the middle of flats, biases or darks        
+        
         
         # Fifth thing, check that the sky flat latch isn't on
         # (I moved the scope during flats once, it wasn't optimal)
@@ -1254,8 +1235,7 @@ class Camera:
             LongStackID = required_params['longstackname']
 
         self.pane = optional_params.get("pane", None)
-
-        bin_x = 1             
+                    
         self.native_bin = self.config["camera"][self.name]["settings"]["native_bin"]
         self.ccd_sum = str(1) + ' ' + str(1)
 
@@ -1418,9 +1398,7 @@ class Camera:
                         self.exposure_busy = False
                         plog ("stop_all_activity cancelling out of camera exposure")
                         self.currently_in_smartstack_loop=False
-                        return
-
-                    
+                        return                    
 
                     # Check that the block isn't ending during normal observing time (don't check while biasing, flats etc.)
                     if g_dev['seq'].blockend != None: # Only do this check if a block end was provided.
@@ -1514,7 +1492,7 @@ class Camera:
                             self.pre_rot = []
                             self.pre_foc = []
                             self.pre_ocn = []
-                            self.t2p1 = time.time()
+                            #self.t2p1 = time.time()
                             
                             
                             g_dev["foc"].get_quick_status(self.pre_foc)
@@ -1644,7 +1622,6 @@ class Camera:
                             longstackid=LongStackID,
                             sskcounter=sskcounter,
                             Nsmartstack=Nsmartstack,
-                            bin_x=bin_x,
                             this_exposure_filter=this_exposure_filter,
                             start_time_of_observation=start_time_of_observation,
                             exposure_filter_offset=exposure_filter_offset,
@@ -1704,7 +1681,6 @@ class Camera:
         longstackid='no',
         sskcounter=0,
         Nsmartstack=1,
-        bin_x=1,
         this_exposure_filter=None,
         start_time_of_observation=None,
         exposure_filter_offset=None,
@@ -1808,7 +1784,7 @@ class Camera:
         
         exposure_scan_request_timer=time.time()
         g_dev["obs"].exposure_halted_indicator =False
-        while True:  # This loop really needs a timeout.
+        while True:  
             self.post_mnt = []
             self.post_rot = []
             self.post_foc = []
@@ -1958,7 +1934,7 @@ class Camera:
                         plog("Retried 8 times and didn't get an image, giving up.")
                         return self.expresult
                     try:
-                        self.img = self._getImageArray()  # As read, this is a Windows Safe Array of longs
+                        self.img = self._getImageArray()
                         imageCollected = 1
                     except Exception as e:
                         plog(e)
@@ -1997,13 +1973,10 @@ class Camera:
                                 self.expresult = {}
                                 self.expresult["error":True]
                                 self.exposure_busy = False
-                                return self.expresult
-                                
+                                return self.expresult                                
                         except:
-                            pass
-                    
+                            pass                    
 
-                self.overscan = 0
                 pier_side = g_dev["mnt"].pier_side  # 0 == Tel Looking West, is flipped.
             
                 ix, iy = self.img.shape
@@ -2092,7 +2065,7 @@ class Camera:
                         
                         # Now estimate camera gain.
                         camera_gain_estimate_image=copy.deepcopy(self.img)
-                        # First we debias,dedark and flatfield the image with the previous master
+                        
                         try:
                                                         
                             # Get the brightest bayer layer for gains
@@ -2710,13 +2683,7 @@ class Camera:
                         "PATCH"
                     ] = central_median # A crude value for the central exposure
                     hdu.header["ERRORVAL"] = 0
-                    hdu.header["IMGAREA"] = opt["area"]
-                    #hdu.header[
-                    #    "XORGSUBF"
-                    #] = (
-                    #    self.camera_start_x
-                    #)  # This makes little sense to fix...  NB ALL NEEDS TO COME FROM CONFIG!!
-                    #hdu.header["YORGSUBF"] = self.camera_start_y
+                    hdu.header["IMGAREA"] = opt["area"]                   
                     
                     hdu.header["USERNAME"] = observer_user_name
                     hdu.header["USERID"] = (
@@ -3144,7 +3111,6 @@ class Camera:
                                 
                                 # Make sure any dither or return nudge has finished before platesolution
                                 wait_for_slew()
-                                # NEED TO CHECK HERE THAT THERE ISN"T ALREADY A PLATE SOLVE IN THE THREAD!
                                 g_dev['obs'].to_platesolve((hdusmalldata, hdusmallheader, cal_path, cal_name, frame_type, time.time(), self.pixscale, g_dev['mnt'].mount.RightAscension,g_dev['mnt'].mount.Declination))
                                 # If it is the last of a set of smartstacks, we actually want to 
                                 # wait for the platesolve and nudge before starting the next smartstack.
@@ -3218,10 +3184,8 @@ class Camera:
                     if not focus_image:
                         self.expresult["FWHM"] = None
                     self.expresult["half_FD"] = None
-                    if self.overscan is not None:
-                        self.expresult["patch"] = central_median- self.overscan
-                    else:
-                        self.expresult["patch"] = central_median
+                    
+                    self.expresult["patch"] = central_median
                     self.expresult["calc_sky"] = 0  # avg_ocn[7]
                     self.expresult["temperature"] = 0  # avg_foc[2]
                     self.expresult["gain"] = 0
@@ -3262,7 +3226,9 @@ class Camera:
     
         
 def wait_for_slew():    
-    
+    """
+    A function called when the code needs to wait for the telescope to stop slewing before undertaking a task.
+    """    
     try:
         if not g_dev['mnt'].mount.AtPark:
             movement_reporting_timer=time.time()

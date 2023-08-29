@@ -80,20 +80,6 @@ def fit_quadratic(x, y):
         plog("Unbalanced coordinate pairs suppied to fit_quadratic()")
         return None
 
-# def bin_to_string(use_bin):
-#     if use_bin == 1:
-#         return '1, 1'
-#     if use_bin == 2:
-#         return '2, 2'
-#     if use_bin == 3:
-#         return '3, 3'
-#     if use_bin == 4:
-#         return '4, 4'
-#     if use_bin == 5:
-#         return'5, 5'
-#     else:
-#         return '1, 1'
-
 def ra_fix(ra):
     while ra >= 24:
         ra -= 24
@@ -126,9 +112,7 @@ class Sequencer:
         self.description = "Sequencer for script execution."
 
         self.sequencer_message = '-'
-        plog("sequencer connected.")
-        
-        
+        plog("sequencer connected.")       
         
         # Various on/off switches that block multiple actions occuring at a single time.
         self.af_guard = False
@@ -213,7 +197,9 @@ class Sequencer:
         
 
     def wait_for_slew(self):    
-        
+        """
+        A function called when the code needs to wait for the telescope to stop slewing before undertaking a task.
+        """    
         try:
             if not g_dev['mnt'].mount.AtPark:              
                 movement_reporting_timer=time.time()
@@ -224,7 +210,7 @@ class Sequencer:
 
                     g_dev['obs'].update_status(mount_only=True, dont_wait=True)            
                 
-        except Exception as e:
+        except Exception:
             plog("Motion check faulted.")
             plog(traceback.format_exc())
             if g_dev['mnt'].theskyx:
@@ -675,10 +661,11 @@ class Sequencer:
         return
 
     def execute_block(self, block_specification):
+        """
+        This function executes an observing block provided by a calendar event.
+        """    
         
-        self.block_guard = True
-        
-        #breakpoint()
+        self.block_guard = True        
         
         if (ephem.now() < g_dev['events']['Civil Dusk'] ) or \
             (g_dev['events']['Civil Dawn']  < ephem.now() < g_dev['events']['Nightly Reset']):
@@ -743,7 +730,6 @@ class Sequencer:
                 req2 = {'target': 'near_tycho_star', 'area': 150}
                 
                 self.auto_focus_script(req2, {}, throw = g_dev['foc'].throw)
-                just_focused = True
                 g_dev["foc"].focus_needed = False
                 
             g_dev['mnt'].go_command(ra=dest_ra, dec=dest_dec)
@@ -942,7 +928,9 @@ class Sequencer:
 
 
     def bias_dark_script(self, req=None, opt=None, morn=False):
-        
+        """
+        This functions runs through automatically collecting bias and darks for the local calibrations.
+        """    
         self.current_script = 'Bias Dark'
         if morn:
             ending = g_dev['events']['End Morn Bias Dark']
@@ -984,7 +972,7 @@ class Sequencer:
                 g_dev['mnt'].park_command({}, {})
                 
                   
-                result = g_dev['cam'].expose_command(req, opt, user_id='Tobor', user_name='Tobor', user_roles='system', no_AWS=False, \
+                g_dev['cam'].expose_command(req, opt, user_id='Tobor', user_name='Tobor', user_roles='system', no_AWS=False, \
                                 do_sep=False, quick=False, skip_open_check=True,skip_daytime_check=True)
                 b_d_to_do -= min_to_do
                 
@@ -1008,7 +996,7 @@ class Sequencer:
                     req = {'time': dark_exp_time ,  'script': 'True', 'image_type': 'dark'}
                     opt = {'area': "Full", 'count': 1, 'bin': 1, \
                             'filter': 'dark'}
-                    result = g_dev['cam'].expose_command(req, opt, user_id='Tobor', user_name='Tobor', user_roles='system', no_AWS=False, \
+                    g_dev['cam'].expose_command(req, opt, user_id='Tobor', user_name='Tobor', user_roles='system', no_AWS=False, \
                                        do_sep=False, quick=False, skip_open_check=True,skip_daytime_check=True)
                     if self.stop_script_called:
                         g_dev["obs"].send_to_user("Cancelling out of calibration script as stop script has been called.") 
@@ -1261,8 +1249,6 @@ class Sequencer:
         self.astro_events.display_events()
         g_dev['obs'].astro_events = self.astro_events
 
-               
-
         self.nightly_reset_complete = True
         
         g_dev['mnt'].theskyx_tracking_rescues = 0
@@ -1448,18 +1434,11 @@ class Sequencer:
             post_readnoise_array=[]
             plog ("Calculating Readnoise. Please Wait.")
             for file in inputList:
-                #plog (datetime.datetime.now().strftime("%H:%M:%S"))
-
-                #starttime=datetime.datetime.now() 
-                
-
                 hdu1data = np.load(file, mmap_mode='r')
                 hdu1data=hdu1data-masterBias
                 hdu1data = hdu1data[500:-500,500:-500]
-                stddiffimage=np.nanstd(pow(pow(hdu1data,2),0.5))
-                
-                est_read_noise= (stddiffimage * g_dev['cam'].config["camera"][g_dev['cam'].name]["settings"]["camera_gain"]) / 1.414
-    
+                stddiffimage=np.nanstd(pow(pow(hdu1data,2),0.5))                
+                est_read_noise= (stddiffimage * g_dev['cam'].config["camera"][g_dev['cam'].name]["settings"]["camera_gain"]) / 1.414    
                 readnoise_array.append(est_read_noise)
                 post_readnoise_array.append(stddiffimage)
             
@@ -1525,13 +1504,12 @@ class Sequencer:
                 filenameaws=tempfrontcalib + 'DARK_master_bin1.fits'
                 g_dev['cam'].enqueue_for_AWS(50, filepathaws,filenameaws)
                 
-                # Store a version of the dakr for the archive too
+                # Store a version of the dark for the archive too
                 fits.writeto(g_dev['obs'].calib_masters_folder + 'ARCHIVE_' +  archiveDate + '_' + tempfrontcalib + 'DARK_master_bin1.fits', masterDark, overwrite=True)
                 
                 filepathaws=g_dev['obs'].calib_masters_folder
                 filenameaws='ARCHIVE_' +  archiveDate + '_' + tempfrontcalib + 'DARK_master_bin1.fits'
                 g_dev['cam'].enqueue_for_AWS(80, filepathaws,filenameaws)
-                
                 
                 
             except Exception as e:
@@ -1570,9 +1548,7 @@ class Sequencer:
                             hdu1data = np.load(file, mmap_mode='r')
                         except:
                             plog ("corrupt flat skipped: " + str(file))
-                            inputList.remove(file)
-                    
-                    
+                            inputList.remove(file)     
                     
                     # Generate temp memmap
                     single_filter_camera_gains=[]
@@ -1604,8 +1580,7 @@ class Sequencer:
                                 debayered.append(flatdebiaseddedarked[::2, ::2])
                                 debayered.append(flatdebiaseddedarked[::2, 1::2])
                                 debayered.append(flatdebiaseddedarked[1::2, ::2])
-                                debayered.append(flatdebiaseddedarked[1::2, 1::2])
-                                
+                                debayered.append(flatdebiaseddedarked[1::2, 1::2])                               
                                 
                                 osc_normalising_factor=[]
                                 # crop each of the images to the central region
@@ -1622,8 +1597,7 @@ class Sequencer:
                                 flatdebiaseddedarked[::2, ::2]=flatdebiaseddedarked[::2, ::2]/osc_normalising_factor[0]
                                 flatdebiaseddedarked[::2, 1::2]=flatdebiaseddedarked[::2, 1::2]/osc_normalising_factor[1]
                                 flatdebiaseddedarked[1::2, ::2]=flatdebiaseddedarked[1::2, ::2]/osc_normalising_factor[2]
-                                flatdebiaseddedarked[1::2, 1::2]=flatdebiaseddedarked[1::2, 1::2]/osc_normalising_factor[3]
-                                
+                                flatdebiaseddedarked[1::2, 1::2]=flatdebiaseddedarked[1::2, 1::2]/osc_normalising_factor[3]                              
                                                            
                             
                             timetaken=datetime.datetime.now() -starttime
@@ -1888,7 +1862,7 @@ class Sequencer:
 
     def sky_flat_script(self, req, opt, morn=False, skip_moon_check=False):
         """
-        This is the evening and morning sky flat routine.
+        This is the evening and morning sky automated skyflat routine.
         """
 
         
@@ -1912,8 +1886,7 @@ class Sequencer:
             # Flatspot position.
             flatspotaz, flatspotalt = self.astro_events.flat_spot_now()
             temp_separation=((ephem.separation( (flatspotaz,flatspotalt), (moondata.az.deg,moondata.alt.deg))))
-            #breakpoint()
-            
+           
             if (moondata.alt.deg < -15):
                 plog ("Moon is far below the ground, alt " + str(moondata.alt.deg) + ", sky flats going ahead.")
             
@@ -3686,6 +3659,13 @@ class Sequencer:
 
     def centering_exposure(self, no_confirmation=False, try_hard=False):
 
+        """
+        A pretty regular occurance - the pointing on the scopes isn't great usually.
+        This gets the image within a few arcseconds usually. Called from a variety of spots,
+        but the most important is centering the requested RA and Dec just prior to starting
+        a longer project block.
+        """         
+
         if not (g_dev['events']['Civil Dusk'] < ephem.now() < g_dev['events']['Civil Dawn']):
             plog("Too bright to consider platesolving!")
             plog("Hence too bright to do a centering exposure.")   
@@ -3858,6 +3838,11 @@ class Sequencer:
 
     def update_calendar_blocks(self):
 
+        """
+        A function called that updates the calendar blocks - both to get new calendar blocks and to
+        check that any running calendar blocks are still there with the same time window.
+        """            
+
         url_blk = "https://calendar.photonranch.org/calendar/siteevents"
         # UTC VERSION
         start_aperture = str(g_dev['events']['Eve Sky Flats']).split()
@@ -3900,6 +3885,11 @@ class Sequencer:
             plog ("glitch out in the blocks reqs post")
             
     def reset_completes(self):
+        
+        """
+        The sequencer keeps track of completed projects, but in certain situations, you want to flush that list (e.g. roof shut then opened again).
+        """    
+        
         try:
             camera = self.config['camera']['camera_1_1']['name']
             seq_shelf = shelve.open(g_dev['obs'].obsid_path + 'ptr_night_shelf/' + str(camera) + str(g_dev['obs'].name))
