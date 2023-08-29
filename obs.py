@@ -644,9 +644,102 @@ class Observatory:
                                 script = cmd['required_params']['script']
                             except:
                                 script = None
+                                
+                            if cmd["deviceType"]=='obs':
+                                plog ('OBS COMMAND: received a system wide command')
+                                
+                                if cmd['action']=='configure_pointing_reference_off':
+                                    self.mount_reference_model_off = True   
+                                    plog ('mount_reference_model_off')
+                                    g_dev["obs"].send_to_user("mount_reference_model_off.")
+                                
+                                if cmd['action']=='configure_pointing_reference_on':
+                                    self.mount_reference_model_off = False
+                                    plog ('mount_reference_model_on')
+                                    g_dev["obs"].send_to_user("mount_reference_model_on.")
+                                    
+                                if cmd['action']=='configure_telescope_mode':
+                                    
+                                    if cmd['required_params']['mode'] == 'manual':
+                                        self.scope_in_manual_mode = True
+                                        plog ('Manual Mode Engaged.')
+                                        g_dev["obs"].send_to_user('Manual Mode Engaged.')
+                                    else:
+                                        self.scope_in_manual_mode = False
+                                        plog ('Manual Mode Turned Off.')
+                                        g_dev["obs"].send_to_user('Manual Mode Turned Off.')
+                                        
+                                if cmd['action']=='configure_moon_safety':
+                                    
+                                    if cmd['required_params']['mode'] == 'on':
+                                        self.moon_checks_on = True
+                                        plog ('Moon Safety On')
+                                        g_dev["obs"].send_to_user('Moon Safety On')
+                                    else:
+                                        self.moon_checks_on = False
+                                        plog ('Moon Safety Off')
+                                        g_dev["obs"].send_to_user('Moon Safety Off')
+                                        
+                                if cmd['action']=='configure_sun_safety':
+                                    
+                                    if cmd['required_params']['mode'] =='on':
+                                        self.sun_checks_on = True
+                                        plog ('Sun Safety On')
+                                        g_dev["obs"].send_to_user('Sun Safety On')
+                                    else:
+                                        self.sun_checks_on = False       
+                                        plog ('Sun Safety Off')
+                                        g_dev["obs"].send_to_user('Sun Safety Off')
+                                
+                                if cmd['action']=='configure_altitude_safety':
+                                    
+                                    if cmd['required_params']['mode'] == 'on':
+                                        self.altitude_checks_on = True
+                                        plog ('Altitude Safety On')
+                                        g_dev["obs"].send_to_user('Altitude Safety On')
+                                    else:
+                                        self.altitude_checks_on = False  
+                                        plog ('Altitude Safety Off')
+                                        g_dev["obs"].send_to_user('Altitude Safety Off')
+                                        
+                                if cmd['action']=='configure_daytime_exposure_safety':
+                                    
+                                    if cmd['required_params']['mode'] == 'on':
+                                        self.daytime_exposure_time_safety_on = True
+                                        plog ('Daytime Exposure Safety On')
+                                        g_dev["obs"].send_to_user('Daytime Exposure Safety On')
+                                    else:
+                                        self.daytime_exposure_time_safety_on = False    
+                                        plog ('Daytime Exposure Safety Off')
+                                        g_dev["obs"].send_to_user('Daytime Exposure Safety Off')
+                                        
+                                if cmd['action']=='start_simulating_open_roof':                            
+                                    self.assume_roof_open = True
+                                    plog ('Roof is now assumed to be open. WEMA shutter status is ignored.')
+                                    g_dev["obs"].send_to_user('Roof is now assumed to be open. WEMA shutter status is ignored.')
+                                    
+                                if cmd['action']=='stop_simulating_open_roof':
+                                    self.assume_roof_open = False    
+                                    plog ('Roof is now NOT assumed to be open. Reading WEMA shutter status.')
+                                    g_dev["obs"].send_to_user('Roof is now NOT assumed to be open. Reading WEMA shutter status.')
+                                        
+                                        
+                                if cmd['action']=='configure_who_can_send_commands':                            
+                                    if cmd['required_params']['only_accept_admin_or_owner_commands'] == True:
+                                        self.admin_owner_commands_only = True
+                                        plog ('Scope set to only accept admin or owner commands')
+                                        g_dev["obs"].send_to_user('Scope set to only accept admin or owner commands')
+                                    else:
+                                        self.admin_owner_commands_only = False       
+                                        plog ('Scope now open to all user commands, not just admin or owner.')
+                                        g_dev["obs"].send_to_user('Scope now open to all user commands, not just admin or owner.')
+                                
+                                self.obs_settings_upload_timer = time.time() - 2*self.obs_settings_upload_period
+                             
+                                self.update_status(dont_wait=True)
 
                             # Check here for admin/owner only functions
-                            if action == "run" and script == 'collectScreenFlats' and not (("admin" in cmd['user_roles']) or ("owner" in cmd['user_roles'])):
+                            elif action == "run" and script == 'collectScreenFlats' and not (("admin" in cmd['user_roles']) or ("owner" in cmd['user_roles'])):
                                 plog("Request rejected as flats can only be commanded by admin user.")
                                 g_dev['obs'].send_to_user(
                                     "Request rejected as flats can only be commanded by admin user.")
@@ -707,100 +800,9 @@ class Observatory:
                     plog("obs.scan_request: ", cmd)
                     device_type = cmd["deviceType"]
 
-                    if device_type=='obs':
-                        plog ('OBS COMMAND: received a system wide command')
-                        
-                        if cmd['action']=='configure_pointing_reference_off':
-                            self.mount_reference_model_off = True   
-                            plog ('mount_reference_model_off')
-                            g_dev["obs"].send_to_user("mount_reference_model_off.")
-                        
-                        if cmd['action']=='configure_pointing_reference_on':
-                            self.mount_reference_model_off = False
-                            plog ('mount_reference_model_on')
-                            g_dev["obs"].send_to_user("mount_reference_model_on.")
-                            
-                        if cmd['action']=='configure_telescope_mode':
-                            
-                            if cmd['required_params']['mode'] == 'manual':
-                                self.scope_in_manual_mode = True
-                                plog ('Manual Mode Engaged.')
-                                g_dev["obs"].send_to_user('Manual Mode Engaged.')
-                            else:
-                                self.scope_in_manual_mode = False
-                                plog ('Manual Mode Turned Off.')
-                                g_dev["obs"].send_to_user('Manual Mode Turned Off.')
-                                
-                        if cmd['action']=='configure_moon_safety':
-                            
-                            if cmd['required_params']['mode'] == 'on':
-                                self.moon_checks_on = True
-                                plog ('Moon Safety On')
-                                g_dev["obs"].send_to_user('Moon Safety On')
-                            else:
-                                self.moon_checks_on = False
-                                plog ('Moon Safety Off')
-                                g_dev["obs"].send_to_user('Moon Safety Off')
-                                
-                        if cmd['action']=='configure_sun_safety':
-                            
-                            if cmd['required_params']['mode'] =='on':
-                                self.sun_checks_on = True
-                                plog ('Sun Safety On')
-                                g_dev["obs"].send_to_user('Sun Safety On')
-                            else:
-                                self.sun_checks_on = False       
-                                plog ('Sun Safety Off')
-                                g_dev["obs"].send_to_user('Sun Safety Off')
-                        
-                        if cmd['action']=='configure_altitude_safety':
-                            
-                            if cmd['required_params']['mode'] == 'on':
-                                self.altitude_checks_on = True
-                                plog ('Altitude Safety On')
-                                g_dev["obs"].send_to_user('Altitude Safety On')
-                            else:
-                                self.altitude_checks_on = False  
-                                plog ('Altitude Safety Off')
-                                g_dev["obs"].send_to_user('Altitude Safety Off')
-                                
-                        if cmd['action']=='configure_daytime_exposure_safety':
-                            
-                            if cmd['required_params']['mode'] == 'on':
-                                self.daytime_exposure_time_safety_on = True
-                                plog ('Daytime Exposure Safety On')
-                                g_dev["obs"].send_to_user('Daytime Exposure Safety On')
-                            else:
-                                self.daytime_exposure_time_safety_on = False    
-                                plog ('Daytime Exposure Safety Off')
-                                g_dev["obs"].send_to_user('Daytime Exposure Safety Off')
-                                
-                        if cmd['action']=='start_simulating_open_roof':                            
-                            self.assume_roof_open = True
-                            plog ('Roof is now assumed to be open. WEMA shutter status is ignored.')
-                            g_dev["obs"].send_to_user('Roof is now assumed to be open. WEMA shutter status is ignored.')
-                            
-                        if cmd['action']=='stop_simulating_open_roof':
-                            self.assume_roof_open = False    
-                            plog ('Roof is now NOT assumed to be open. Reading WEMA shutter status.')
-                            g_dev["obs"].send_to_user('Roof is now NOT assumed to be open. Reading WEMA shutter status.')
-                                
-                                
-                        if cmd['action']=='configure_who_can_send_commands':                            
-                            if cmd['required_params']['only_accept_admin_or_owner_commands'] == True:
-                                self.admin_owner_commands_only = True
-                                plog ('Scope set to only accept admin or owner commands')
-                                g_dev["obs"].send_to_user('Scope set to only accept admin or owner commands')
-                            else:
-                                self.admin_owner_commands_only = False       
-                                plog ('Scope now open to all user commands, not just admin or owner.')
-                                g_dev["obs"].send_to_user('Scope now open to all user commands, not just admin or owner.')
-                        
-                        self.obs_settings_upload_timer = time.time() - 2*self.obs_settings_upload_period
-                     
-                        self.update_status(dont_wait=True)
                     
-                    elif device_type=='enclosure':
+                    
+                    if device_type=='enclosure':
                         plog ('An OBS has mistakenly received an enclosure command! Ignoring.')
                     else:
                         device = self.all_devices[device_type][device_instance]
