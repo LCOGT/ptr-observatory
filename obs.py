@@ -1650,6 +1650,8 @@ class Observatory:
         """This is the sep queue that happens in a different process
         than the main camera thread. SEPs can take 5-10, up to 30 seconds sometimes
         to run, so it is an overhead we can't have hanging around.       
+        
+        It is also the routine that bundles up the quick inspection stuff for the UI.
         """
 
         one_at_a_time = 0
@@ -1663,13 +1665,6 @@ class Observatory:
                 if not (g_dev['events']['Civil Dusk'] < ephem.now() < g_dev['events']['Civil Dawn']) :
                     plog ("Too bright to consider photometry!")
                     do_sep=False
-                    # # If it doesn't go through SEP then the fits header text file needs to be dumped here
-                    # text = open(
-                    #     im_path + text_name, "w"
-                    # )  
-
-                    # text.write(str(hduheader))
-                    # text.close()
                 else:
                     do_sep=True
                     
@@ -1820,6 +1815,7 @@ class Observatory:
                     self.enqueue_for_fastUI(180, im_path, text_name.replace('.txt', '.his'))
                 except:
                     plog("Failed to send HIS up for some reason")
+                    
                 if os.path.exists(im_path + text_name.replace('.txt', '.box')):
                     try:
                         self.enqueue_for_fastUI(180, im_path, text_name.replace('.txt', '.box'))
@@ -1847,7 +1843,7 @@ class Observatory:
 
     def platesolve_process(self):
         """This is the platesolve queue that happens in a different process
-        than the main camera thread. Platesolves can take 5-10, up to 30 seconds sometimes
+        than the main thread. Platesolves can take 5-10, up to 30 seconds sometimes
         to run, so it is an overhead we can't have hanging around. This thread attempts
         a platesolve and uses the solution and requests a telescope nudge/center
         if the telescope has not slewed in the intervening time between beginning
