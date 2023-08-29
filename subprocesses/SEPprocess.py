@@ -72,7 +72,7 @@ focus_jpeg_size= input_sep_info[23]
 saturate= input_sep_info[24]
 minimum_realistic_seeing=input_sep_info[25]
 nativebin=input_sep_info[26]
-
+do_sep=input_sep_info[27]
 
 
 # Background clipped
@@ -119,7 +119,7 @@ np.savetxt(
 )
 
 
-if not (gdevevents['Civil Dusk'] < ephemnow < gdevevents['Civil Dawn']) :
+if not do_sep :
     rfp = np.nan
     rfr = np.nan
     rfs = np.nan
@@ -409,32 +409,33 @@ text.close()
 
 # Create radial profiles for UI
 # Determine radial profiles of top 20 star-ish sources
-try:
-    # Get rid of non-stars
-    sources=sources[sources['FWHM'] < rfr + 2 * rfs]
-
-    # Reverse sort sources on flux
-    sources.sort('flux')
-    sources.reverse()
+if do_sep:
+    try:
+        # Get rid of non-stars
+        sources=sources[sources['FWHM'] < rfr + 2 * rfs]
     
-    radtime=time.time()
-    dodgylist=[]
-    radius_of_radialprofile=(5*math.ceil(rfp))
-    # Round up to nearest odd number to make a symmetrical array
-    radius_of_radialprofile=(radius_of_radialprofile // 2 *2 +1)
-    centre_of_radialprofile=int((radius_of_radialprofile /2)+1)
-    for i in range(min(len(sources),200)):
-        cx= (sources[i]['x'])
-        cy= (sources[i]['y'])
-        temp_array=extract_array(hdufocusdata, (radius_of_radialprofile,radius_of_radialprofile), (cy,cx))
-        crad=radial_profile(np.asarray(temp_array),[centre_of_radialprofile,centre_of_radialprofile])
-        dodgylist.append([cx,cy,crad,temp_array])
+        # Reverse sort sources on flux
+        sources.sort('flux')
+        sources.reverse()
         
-    
-    pickle.dump(dodgylist, open(im_path + text_name.replace('.txt', '.rad'),'wb'))
-    
-except:
-    pass
+        radtime=time.time()
+        dodgylist=[]
+        radius_of_radialprofile=(5*math.ceil(rfp))
+        # Round up to nearest odd number to make a symmetrical array
+        radius_of_radialprofile=(radius_of_radialprofile // 2 *2 +1)
+        centre_of_radialprofile=int((radius_of_radialprofile /2)+1)
+        for i in range(min(len(sources),200)):
+            cx= (sources[i]['x'])
+            cy= (sources[i]['y'])
+            temp_array=extract_array(hdufocusdata, (radius_of_radialprofile,radius_of_radialprofile), (cy,cx))
+            crad=radial_profile(np.asarray(temp_array),[centre_of_radialprofile,centre_of_radialprofile])
+            dodgylist.append([cx,cy,crad,temp_array])
+            
+        
+        pickle.dump(dodgylist, open(im_path + text_name.replace('.txt', '.rad'),'wb'))
+        
+    except:
+        pass
 
 # Constructing the slices and dices
 try:

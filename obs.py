@@ -1,14 +1,11 @@
 
 """
-IMPORTANT TODOs:
+Observatory is the central organising part of a given observatory system.
 
-WER 20211211
+It deals with connecting all the devices together and deals with decisions that
+involve multiple devices and fundamental operations of the OBS. 
 
-Simplify. No site specific if statements in main code if possible.
-Sort out when rotator is not installed and focus temp when no probe
-is in the Gemini.
-
-Abstract away Redis, Memurai, and local shares for IPC.
+It also organises the various queues that process, send, slice and dice data.
 """
 
 import ephem
@@ -178,8 +175,6 @@ class Observatory:
         
         
         # Local Calibration Paths
-        #if not os.path.exists(self.local_calibration_path + "calibmasters"):  # retaining for backward compatibility
-        #    os.makedirs(self.local_calibration_path + "calibmasters")
         camera_name = self.config['camera']['camera_1_1']['name']
         if not os.path.exists(self.local_calibration_path + "archive/" + camera_name + "/calibmasters"):
             os.makedirs(self.local_calibration_path + "archive/" + camera_name + "/calibmasters")
@@ -713,61 +708,93 @@ class Observatory:
                     device_type = cmd["deviceType"]
 
                     if device_type=='obs':
-                        plog ('received a system wide command')
+                        plog ('OBS COMMAND: received a system wide command')
                         
                         if cmd['action']=='configure_pointing_reference_off':
-                            self.mount_reference_model_off = True                            
+                            self.mount_reference_model_off = True   
+                            plog ('mount_reference_model_off')
+                            g_dev["obs"].send_to_user("mount_reference_model_off.")
                         
                         if cmd['action']=='configure_pointing_reference_on':
                             self.mount_reference_model_off = False
+                            plog ('mount_reference_model_on')
+                            g_dev["obs"].send_to_user("mount_reference_model_on.")
                             
                         if cmd['action']=='configure_telescope_mode':
                             
                             if cmd['required_params']['mode'] == 'manual':
                                 self.scope_in_manual_mode = True
+                                plog ('Manual Mode Engaged.')
+                                g_dev["obs"].send_to_user('Manual Mode Engaged.')
                             else:
                                 self.scope_in_manual_mode = False
+                                plog ('Manual Mode Turned Off.')
+                                g_dev["obs"].send_to_user('Manual Mode Turned Off.')
                                 
                         if cmd['action']=='configure_moon_safety':
                             
                             if cmd['required_params']['mode'] == 'on':
                                 self.moon_checks_on = True
+                                plog ('Moon Safety On')
+                                g_dev["obs"].send_to_user('Moon Safety On')
                             else:
                                 self.moon_checks_on = False
+                                plog ('Moon Safety Off')
+                                g_dev["obs"].send_to_user('Moon Safety Off')
                                 
                         if cmd['action']=='configure_sun_safety':
                             
                             if cmd['required_params']['mode'] =='on':
                                 self.sun_checks_on = True
+                                plog ('Sun Safety On')
+                                g_dev["obs"].send_to_user('Sun Safety On')
                             else:
                                 self.sun_checks_on = False       
+                                plog ('Sun Safety Off')
+                                g_dev["obs"].send_to_user('Sun Safety Off')
                         
                         if cmd['action']=='configure_altitude_safety':
                             
                             if cmd['required_params']['mode'] == 'on':
                                 self.altitude_checks_on = True
+                                plog ('Altitude Safety On')
+                                g_dev["obs"].send_to_user('Altitude Safety On')
                             else:
                                 self.altitude_checks_on = False  
+                                plog ('Altitude Safety Off')
+                                g_dev["obs"].send_to_user('Altitude Safety Off')
                                 
                         if cmd['action']=='configure_daytime_exposure_safety':
                             
                             if cmd['required_params']['mode'] == 'on':
                                 self.daytime_exposure_time_safety_on = True
+                                plog ('Daytime Exposure Safety On')
+                                g_dev["obs"].send_to_user('Daytime Exposure Safety On')
                             else:
                                 self.daytime_exposure_time_safety_on = False    
+                                plog ('Daytime Exposure Safety Off')
+                                g_dev["obs"].send_to_user('Daytime Exposure Safety Off')
                                 
                         if cmd['action']=='start_simulating_open_roof':                            
                             self.assume_roof_open = True
+                            plog ('Roof is now assumed to be open. WEMA shutter status is ignored.')
+                            g_dev["obs"].send_to_user('Roof is now assumed to be open. WEMA shutter status is ignored.')
                             
                         if cmd['action']=='stop_simulating_open_roof':
                             self.assume_roof_open = False    
+                            plog ('Roof is now NOT assumed to be open. Reading WEMA shutter status.')
+                            g_dev["obs"].send_to_user('Roof is now NOT assumed to be open. Reading WEMA shutter status.')
                                 
                                 
                         if cmd['action']=='configure_who_can_send_commands':                            
                             if cmd['required_params']['only_accept_admin_or_owner_commands'] == True:
                                 self.admin_owner_commands_only = True
+                                plog ('Scope set to only accept admin or owner commands')
+                                g_dev["obs"].send_to_user('Scope set to only accept admin or owner commands')
                             else:
                                 self.admin_owner_commands_only = False       
+                                plog ('Scope now open to all user commands, not just admin or owner.')
+                                g_dev["obs"].send_to_user('Scope now open to all user commands, not just admin or owner.')
                         
                         self.obs_settings_upload_timer = time.time() - 2*self.obs_settings_upload_period
                      
@@ -957,9 +984,6 @@ class Observatory:
                     plog("Usually this is because of a broken connection.")
                     plog("Killing then waiting 60 seconds then reconnecting")
                     g_dev['seq'].kill_and_reboot_theskyx(g_dev['mnt'].current_icrs_ra,g_dev['mnt'].current_icrs_dec)
-                    
-
-        
 
         self.time_last_status = time.time()
         self.status_count += 1
@@ -969,20 +993,8 @@ class Observatory:
         """
         This compact little function is the heart of the code in the sense this is repeatedly
         called. It first SENDS status for all devices to AWS, then it checks for any new
-        commands from AWS. Then it calls sequencer.monitor() were jobs may get launched. A
-        flaw here is we do not have a Ulid for the 'Job number'.
-
-        Sequences that are self-dispatched primarily relate to biases, darks, screen and sky
-        flats, opening and closing. Status for these jobs is reported via the normal
-        sequencer status mechanism. Guard flags to prevent careless interrupts will be
-        implemented as well as Cancel of a sequence if emitted by the Cancel botton on
-        the AWS Sequence tab.
-
-        Flat acquisition will include automatic rejection of any image that has a mean
-        intensity > camera saturate. The camera will return without further processing and
-        no image will be returned to AWS or stored locally. We should log the Unihedron and
-        calc_illum values where filters first enter non-saturation. Once we know those values
-        we can spend much less effort taking frames that are saturated. Save The Shutter!
+        commands from AWS. If certain timers have reached their point, it will undertake
+        a variety of safety checks as well.
         """
 
         self.update_status()
@@ -990,11 +1002,10 @@ class Observatory:
         if time.time() - self.get_new_job_timer > 3:
             self.get_new_job_timer = time.time()
             try:
-                self.scan_requests(
-                    "mount1"
-                )  # NBNBNB THis has faulted, usually empty input lists.
+                self.scan_requests("mount1")  
             except:
                 pass
+            
         if self.status_count > 1:  # Give time for status to form
             g_dev["seq"].manager()  # Go see if there is something new to do.
 
@@ -1006,7 +1017,7 @@ class Observatory:
         #
         # Also an area to put things to irregularly check if things are still connected, e.g. cooler
         #
-        # Probably we don't want to run these checkes EVERY status update, just every 5 minutes
+        # We don't want to run these checks EVERY status update, just every 5 minutes
         if time.time() - self.time_since_safety_checks > self.safety_check_period:
             self.time_since_safety_checks = time.time()
             
@@ -1227,7 +1238,12 @@ class Observatory:
                         plog ("Difference from setpoint: " + str( (current_camera_temperature - g_dev['cam'].setpoint)))
                 self.last_time_report_to_console = time.time()
                 
-                
+            
+            if (time.time() - g_dev['seq'].time_roof_last_opened < 1200 ):
+                plog ("Roof opened only recently: " + str((time.time() - g_dev['seq'].time_roof_last_opened)/60) +" ago.")
+                plog ("Some functions, particularly flats, won't start until 20 minutes after the roof has opened.")
+            
+            
             # After the observatory and camera have had time to settle....
             if (time.time() - self.camera_time_initialised) > 1200:
                 # Check that the camera is not overheating.
@@ -1385,7 +1401,7 @@ class Observatory:
                         
         # END of safety checks.
 
-    def run(self):  # run is a poor name for this function.
+    def run(self):  
         try:
             # Keep the main thread alive, otherwise signals are ignored
             while True:
@@ -1645,172 +1661,177 @@ class Observatory:
                 
                 if not (g_dev['events']['Civil Dusk'] < ephem.now() < g_dev['events']['Civil Dawn']) :
                     plog ("Too bright to consider photometry!")
-                    # If it doesn't go through SEP then the fits header text file needs to be dumped here
-                    text = open(
-                        im_path + text_name, "w"
-                    )  
+                    do_sep=False
+                    # # If it doesn't go through SEP then the fits header text file needs to be dumped here
+                    # text = open(
+                    #     im_path + text_name, "w"
+                    # )  
 
-                    text.write(str(hduheader))
-                    text.close()
+                    # text.write(str(hduheader))
+                    # text.close()
                 else:
-                    is_osc= self.config["camera"][g_dev['cam'].name]["settings"]["is_osc"]
-                    interpolate_for_focus= self.config["camera"][g_dev['cam'].name]["settings"]['interpolate_for_focus']
-                    bin_for_focus= self.config["camera"][g_dev['cam'].name]["settings"]['bin_for_focus']
-                    focus_bin_value= self.config["camera"][g_dev['cam'].name]["settings"]['focus_bin_value']
-                    interpolate_for_sep=self.config["camera"][g_dev['cam'].name]["settings"]['interpolate_for_sep']
-                    bin_for_sep= self.config["camera"][g_dev['cam'].name]["settings"]['bin_for_sep']
-                    sep_bin_value= self.config["camera"][g_dev['cam'].name]["settings"]['sep_bin_value']
-                    focus_jpeg_size= self.config["camera"][g_dev['cam'].name]["settings"]['focus_jpeg_size']
-                    saturate=g_dev['cam'].config["camera"][g_dev['cam'].name]["settings"]["saturate"]
-                    minimum_realistic_seeing=self.config['minimum_realistic_seeing']
-                    sep_subprocess=subprocess.Popen(['python','subprocesses/SEPprocess.py'],stdin=subprocess.PIPE,stdout=subprocess.PIPE,bufsize=0)
-                                  
+                    do_sep=True
                     
                     
+                    
+                is_osc= self.config["camera"][g_dev['cam'].name]["settings"]["is_osc"]
+                interpolate_for_focus= self.config["camera"][g_dev['cam'].name]["settings"]['interpolate_for_focus']
+                bin_for_focus= self.config["camera"][g_dev['cam'].name]["settings"]['bin_for_focus']
+                focus_bin_value= self.config["camera"][g_dev['cam'].name]["settings"]['focus_bin_value']
+                interpolate_for_sep=self.config["camera"][g_dev['cam'].name]["settings"]['interpolate_for_sep']
+                bin_for_sep= self.config["camera"][g_dev['cam'].name]["settings"]['bin_for_sep']
+                sep_bin_value= self.config["camera"][g_dev['cam'].name]["settings"]['sep_bin_value']
+                focus_jpeg_size= self.config["camera"][g_dev['cam'].name]["settings"]['focus_jpeg_size']
+                saturate=g_dev['cam'].config["camera"][g_dev['cam'].name]["settings"]["saturate"]
+                minimum_realistic_seeing=self.config['minimum_realistic_seeing']
+                sep_subprocess=subprocess.Popen(['python','subprocesses/SEPprocess.py'],stdin=subprocess.PIPE,stdout=subprocess.PIPE,bufsize=0)
+                              
+                
+                
+                pickle.dump([hdufocusdata, pixscale, readnoise, avg_foc, focus_image, im_path, text_name, hduheader, cal_path, cal_name, frame_type, focus_position, g_dev['events'],ephem.now(),self.config["camera"][g_dev['cam']
+                                                         .name]["settings"]['focus_image_crop_width'], self.config["camera"][g_dev['cam']
+                                                          .name]["settings"]['focus_image_crop_height'], is_osc,interpolate_for_focus,bin_for_focus,focus_bin_value,interpolate_for_sep,bin_for_sep,sep_bin_value,focus_jpeg_size,saturate,minimum_realistic_seeing,nativebin,do_sep
+                                                           ], sep_subprocess.stdin)
+                                                                                                                             
+                # Here is a manual debug area which makes a pickle for debug purposes. Default is False, but can be manually set to True for code debugging
+                if False:                                                                                                          
                     pickle.dump([hdufocusdata, pixscale, readnoise, avg_foc, focus_image, im_path, text_name, hduheader, cal_path, cal_name, frame_type, focus_position, g_dev['events'],ephem.now(),self.config["camera"][g_dev['cam']
-                                                             .name]["settings"]['focus_image_crop_width'], self.config["camera"][g_dev['cam']
-                                                              .name]["settings"]['focus_image_crop_height'], is_osc,interpolate_for_focus,bin_for_focus,focus_bin_value,interpolate_for_sep,bin_for_sep,sep_bin_value,focus_jpeg_size,saturate,minimum_realistic_seeing,nativebin
-                                                               ], sep_subprocess.stdin)
-                                                                                                                                 
-                    # Here is a manual debug area which makes a pickle for debug purposes. Default is False, but can be manually set to True for code debugging
-                    if False:                                                                                                          
-                        pickle.dump([hdufocusdata, pixscale, readnoise, avg_foc, focus_image, im_path, text_name, hduheader, cal_path, cal_name, frame_type, focus_position, g_dev['events'],ephem.now(),self.config["camera"][g_dev['cam']
-                                                                  .name]["settings"]['focus_image_crop_width'], self.config["camera"][g_dev['cam']
-                                                                                                            .name]["settings"]['focus_image_crop_height'], is_osc,interpolate_for_focus,bin_for_focus,focus_bin_value,interpolate_for_sep,bin_for_sep,sep_bin_value,focus_jpeg_size,saturate,minimum_realistic_seeing,nativebin
-                                                                                                                                                                                   ], open('subprocesses/testSEPpickle','wb'))
-                                                                                                                                         
-                                                                                                                                        
-                                                                                                                                      
-                    # Essentially wait until the subprocess is complete
-                    sep_subprocess.communicate()    
-                    
-                    
-                    # LOADING UP THE SEP FILE HERE AGAIN
-                    if os.path.exists(im_path + text_name.replace('.txt', '.sep')):
-                        try:
-                            sources = Table.read(im_path + text_name.replace('.txt', '.sep'), format='csv')
-                            
-                            try:
-                                self.enqueue_for_fastUI(200, im_path, text_name.replace('.txt', '.sep'))                                
-                            except:
-                                plog("Failed to send SEP up for some reason")
-                            
-                            # DONUT IMAGE DETECTOR.
-                            # The brightest pixel and the centre of flux must be within a few pixels of each other
-                            # If not, it is highly likely to be a donut and hence, FWHM doesn't make sense to calculate                            
-                            binfocus=1
-                            if frame_type == 'focus' and self.config["camera"][g_dev['cam'].name]["settings"]['bin_for_focus']: 
-                                binfocus=self.config["camera"][g_dev['cam'].name]["settings"]['focus_bin_value']
-                            
-                            if frame_type != 'focus' and self.config["camera"][g_dev['cam'].name]["settings"]['bin_for_sep']:                    
-                                binfocus=self.config["camera"][g_dev['cam'].name]["settings"]['sep_bin_value']
-                                
-                            xdonut=np.median(pow(pow(sources['x'] - sources['xpeak'],2),0.5))*pixscale*binfocus
-                            ydonut=np.median(pow(pow(sources['y'] - sources['ypeak'],2),0.5))*pixscale*binfocus
-                            if xdonut > 3.0 or ydonut > 3.0 or np.isnan(xdonut) or np.isnan(ydonut):
-                                plog ("Possible donut image detected.")    
-                                plog('x ' + str(xdonut))
-                                plog('y ' + str(ydonut))  
-                            
-                            
-                            if (len(sources) < 2) or ( frame_type == 'focus' and (len(sources) < 10 or len(sources) == np.nan or str(len(sources)) =='nan' or xdonut > 3.0 or ydonut > 3.0 or np.isnan(xdonut) or np.isnan(ydonut))):
-                                plog ("Did not find an acceptable FWHM for this image.")    
-                                g_dev['cam'].expresult["error"] = True
-                                g_dev['cam'].expresult['FWHM'] = np.nan
-                                g_dev['cam'].expresult['No_of_sources'] = np.nan
-                                sources['FWHM'] = [np.nan] * len(sources)
-                                rfp = np.nan
-                                rfr = np.nan
-                                rfs = np.nan
-                                sources = sources
-                            else:
-                                # Get halflight radii                                
-                                fwhmcalc = sources['FWHM']                                
-                                fwhmcalc = fwhmcalc[fwhmcalc != 0]  # Remove 0 entries
-            
-                                # sigma clipping iterator to reject large variations
-                                templen = len(fwhmcalc)
-                                while True:
-                                    fwhmcalc = fwhmcalc[fwhmcalc < np.median(fwhmcalc) + 3 * np.std(fwhmcalc)]
-                                    if len(fwhmcalc) == templen:
-                                        break
-                                    else:
-                                        templen = len(fwhmcalc)
-            
-                                fwhmcalc = fwhmcalc[fwhmcalc > np.median(fwhmcalc) - 3 * np.std(fwhmcalc)]
-                                rfp = round(np.median(fwhmcalc), 3)
-                                rfr = round(np.median(fwhmcalc) * pixscale * g_dev['cam'].native_bin, 3)
-                                rfs = round(np.std(fwhmcalc) * pixscale * g_dev['cam'].native_bin, 3)
-                                plog("\nImage FWHM:  " + str(rfr) + "+/-" + str(rfs) + " arcsecs, " + str(rfp)
-                                     + " pixels.")
-                                g_dev['cam'].expresult["FWHM"] = rfr
-                                g_dev['cam'].expresult["mean_focus"] = avg_foc
-                                g_dev['cam'].expresult['No_of_sources'] = len(sources)
-            
-            
-                            if focus_image != True:
-                                # Focus tracker code. This keeps track of the focus and if it drifts
-                                # Then it triggers an autofocus.
-                                g_dev["foc"].focus_tracker.pop(0)
-                                g_dev["foc"].focus_tracker.append(round(rfr, 3))
-                                plog("Last ten FWHM: " + str(g_dev["foc"].focus_tracker) + " Median: " + str(np.nanmedian(g_dev["foc"].focus_tracker)) + " Last Solved: " + str(g_dev["foc"].last_focus_fwhm))
-                                            
-                                # If there hasn't been a focus yet, then it can't check it,
-                                # so make this image the last solved focus.
-                                if g_dev["foc"].last_focus_fwhm == None:
-                                    g_dev["foc"].last_focus_fwhm = rfr
-                                else:
-                                    # Very dumb focus slip deteector
-                                    if (
-                                        np.nanmedian(g_dev["foc"].focus_tracker)
-                                        > g_dev["foc"].last_focus_fwhm
-                                        + self.config["focus_trigger"]
-                                    ):
-                                        g_dev["foc"].focus_needed = True
-                                        g_dev["obs"].send_to_user(
-                                            "Focus has drifted to "
-                                            + str(np.nanmedian(g_dev["foc"].focus_tracker))
-                                            + " from "
-                                            + str(g_dev["foc"].last_focus_fwhm)
-                                            + ".",
-                                            p_level="INFO",
-                                        )
-                        except Exception as e:
-                            plog ("something odd occured in the reinterpretation of the SEP file", e)
-                            plog(traceback.format_exc())
-                            
-                    else:
-                        plog ("Did not find a source list from SEP for this image.")    
-                        g_dev['cam'].expresult['FWHM'] = np.nan
-                        g_dev['cam'].expresult['No_of_sources'] = np.nan
-                        
-                    
-                    if os.path.exists(im_path + text_name.replace('.txt', '.rad')):
-                        try:
-                            self.enqueue_for_fastUI(250, im_path, text_name.replace('.txt', '.rad'))
-                        except:
-                            plog("Failed to send RAD up for some reason")
-                    
-                    if frame_type == 'focus':
-                        self.enqueue_for_fastUI(100, im_path, text_name.replace('EX00.txt', 'EX10.jpg'))
-                    
+                                                              .name]["settings"]['focus_image_crop_width'], self.config["camera"][g_dev['cam']
+                                                                                                        .name]["settings"]['focus_image_crop_height'], is_osc,interpolate_for_focus,bin_for_focus,focus_bin_value,interpolate_for_sep,bin_for_sep,sep_bin_value,focus_jpeg_size,saturate,minimum_realistic_seeing,nativebin,do_sep
+                                                                                                                                                                               ], open('subprocesses/testSEPpickle','wb'))
+                                                                                                                                     
+                                                                                                                                    
+                                                                                                                                  
+                # Essentially wait until the subprocess is complete
+                sep_subprocess.communicate()    
+                
+                
+                # LOADING UP THE SEP FILE HERE AGAIN
+                if os.path.exists(im_path + text_name.replace('.txt', '.sep')):
                     try:
-                        self.enqueue_for_fastUI(180, im_path, text_name.replace('.txt', '.his'))
-                    except:
-                        plog("Failed to send HIS up for some reason")
-                    if os.path.exists(im_path + text_name.replace('.txt', '.box')):
+                        sources = Table.read(im_path + text_name.replace('.txt', '.sep'), format='csv')
+                        
                         try:
-                            self.enqueue_for_fastUI(180, im_path, text_name.replace('.txt', '.box'))
+                            self.enqueue_for_fastUI(200, im_path, text_name.replace('.txt', '.sep'))                                
                         except:
-                            plog("Failed to send BOX up for some reason")
-    
-                    if self.config['keep_focus_images_on_disk']:
-                        g_dev['obs'].to_slow_process(1000, ('focus', cal_path + cal_name, hdufocusdata, hduheader,
+                            plog("Failed to send SEP up for some reason")
+                        
+                        # DONUT IMAGE DETECTOR.
+                        # The brightest pixel and the centre of flux must be within a few pixels of each other
+                        # If not, it is highly likely to be a donut and hence, FWHM doesn't make sense to calculate                            
+                        binfocus=1
+                        if frame_type == 'focus' and self.config["camera"][g_dev['cam'].name]["settings"]['bin_for_focus']: 
+                            binfocus=self.config["camera"][g_dev['cam'].name]["settings"]['focus_bin_value']
+                        
+                        if frame_type != 'focus' and self.config["camera"][g_dev['cam'].name]["settings"]['bin_for_sep']:                    
+                            binfocus=self.config["camera"][g_dev['cam'].name]["settings"]['sep_bin_value']
+                            
+                        xdonut=np.median(pow(pow(sources['x'] - sources['xpeak'],2),0.5))*pixscale*binfocus
+                        ydonut=np.median(pow(pow(sources['y'] - sources['ypeak'],2),0.5))*pixscale*binfocus
+                        if xdonut > 3.0 or ydonut > 3.0 or np.isnan(xdonut) or np.isnan(ydonut):
+                            plog ("Possible donut image detected.")    
+                            plog('x ' + str(xdonut))
+                            plog('y ' + str(ydonut))  
+                        
+                        
+                        if (len(sources) < 2) or ( frame_type == 'focus' and (len(sources) < 10 or len(sources) == np.nan or str(len(sources)) =='nan' or xdonut > 3.0 or ydonut > 3.0 or np.isnan(xdonut) or np.isnan(ydonut))):
+                            plog ("Did not find an acceptable FWHM for this image.")    
+                            g_dev['cam'].expresult["error"] = True
+                            g_dev['cam'].expresult['FWHM'] = np.nan
+                            g_dev['cam'].expresult['No_of_sources'] = np.nan
+                            sources['FWHM'] = [np.nan] * len(sources)
+                            rfp = np.nan
+                            rfr = np.nan
+                            rfs = np.nan
+                            sources = sources
+                        else:
+                            # Get halflight radii                                
+                            fwhmcalc = sources['FWHM']                                
+                            fwhmcalc = fwhmcalc[fwhmcalc != 0]  # Remove 0 entries
+        
+                            # sigma clipping iterator to reject large variations
+                            templen = len(fwhmcalc)
+                            while True:
+                                fwhmcalc = fwhmcalc[fwhmcalc < np.median(fwhmcalc) + 3 * np.std(fwhmcalc)]
+                                if len(fwhmcalc) == templen:
+                                    break
+                                else:
+                                    templen = len(fwhmcalc)
+        
+                            fwhmcalc = fwhmcalc[fwhmcalc > np.median(fwhmcalc) - 3 * np.std(fwhmcalc)]
+                            rfp = round(np.median(fwhmcalc), 3)
+                            rfr = round(np.median(fwhmcalc) * pixscale * g_dev['cam'].native_bin, 3)
+                            rfs = round(np.std(fwhmcalc) * pixscale * g_dev['cam'].native_bin, 3)
+                            plog("\nImage FWHM:  " + str(rfr) + "+/-" + str(rfs) + " arcsecs, " + str(rfp)
+                                 + " pixels.")
+                            g_dev['cam'].expresult["FWHM"] = rfr
+                            g_dev['cam'].expresult["mean_focus"] = avg_foc
+                            g_dev['cam'].expresult['No_of_sources'] = len(sources)
+        
+        
+                        if focus_image != True:
+                            # Focus tracker code. This keeps track of the focus and if it drifts
+                            # Then it triggers an autofocus.
+                            g_dev["foc"].focus_tracker.pop(0)
+                            g_dev["foc"].focus_tracker.append(round(rfr, 3))
+                            plog("Last ten FWHM: " + str(g_dev["foc"].focus_tracker) + " Median: " + str(np.nanmedian(g_dev["foc"].focus_tracker)) + " Last Solved: " + str(g_dev["foc"].last_focus_fwhm))
+                                        
+                            # If there hasn't been a focus yet, then it can't check it,
+                            # so make this image the last solved focus.
+                            if g_dev["foc"].last_focus_fwhm == None:
+                                g_dev["foc"].last_focus_fwhm = rfr
+                            else:
+                                # Very dumb focus slip deteector
+                                if (
+                                    np.nanmedian(g_dev["foc"].focus_tracker)
+                                    > g_dev["foc"].last_focus_fwhm
+                                    + self.config["focus_trigger"]
+                                ):
+                                    g_dev["foc"].focus_needed = True
+                                    g_dev["obs"].send_to_user(
+                                        "Focus has drifted to "
+                                        + str(np.nanmedian(g_dev["foc"].focus_tracker))
+                                        + " from "
+                                        + str(g_dev["foc"].last_focus_fwhm)
+                                        + ".",
+                                        p_level="INFO",
+                                    )
+                    except Exception as e:
+                        plog ("something odd occured in the reinterpretation of the SEP file", e)
+                        plog(traceback.format_exc())
+                        
+                else:
+                    plog ("Did not find a source list from SEP for this image.")    
+                    g_dev['cam'].expresult['FWHM'] = np.nan
+                    g_dev['cam'].expresult['No_of_sources'] = np.nan
+                    
+                
+                if os.path.exists(im_path + text_name.replace('.txt', '.rad')):
+                    try:
+                        self.enqueue_for_fastUI(250, im_path, text_name.replace('.txt', '.rad'))
+                    except:
+                        plog("Failed to send RAD up for some reason")
+                
+                if frame_type == 'focus':
+                    self.enqueue_for_fastUI(100, im_path, text_name.replace('EX00.txt', 'EX10.jpg'))
+                
+                try:
+                    self.enqueue_for_fastUI(180, im_path, text_name.replace('.txt', '.his'))
+                except:
+                    plog("Failed to send HIS up for some reason")
+                if os.path.exists(im_path + text_name.replace('.txt', '.box')):
+                    try:
+                        self.enqueue_for_fastUI(180, im_path, text_name.replace('.txt', '.box'))
+                    except:
+                        plog("Failed to send BOX up for some reason")
+
+                if self.config['keep_focus_images_on_disk']:
+                    g_dev['obs'].to_slow_process(1000, ('focus', cal_path + cal_name, hdufocusdata, hduheader,
+                                                        frame_type, g_dev["mnt"].current_icrs_ra, g_dev["mnt"].current_icrs_dec))
+
+                    if self.config["save_to_alt_path"] == "yes":
+                        g_dev['obs'].to_slow_process(1000, ('raw_alt_path', self.alt_path + g_dev["day"] + "/calib/" + cal_name, hdufocusdata, hduheader,
                                                             frame_type, g_dev["mnt"].current_icrs_ra, g_dev["mnt"].current_icrs_dec))
-    
-                        if self.config["save_to_alt_path"] == "yes":
-                            g_dev['obs'].to_slow_process(1000, ('raw_alt_path', self.alt_path + g_dev["day"] + "/calib/" + cal_name, hdufocusdata, hduheader,
-                                                                frame_type, g_dev["mnt"].current_icrs_ra, g_dev["mnt"].current_icrs_dec))
                 
                 self.enqueue_for_fastUI(10, im_path, text_name)
 
@@ -1868,7 +1889,6 @@ class Observatory:
                     # Essentially wait until the subprocess is complete
                     platesolve_subprocess.communicate()
                     
-                    #breakpoint()
                     if os.path.exists(self.local_calibration_path + 'platesolve.pickle'):
                         solve= pickle.load(open(self.local_calibration_path + 'platesolve.pickle', 'rb'))                    
                     else:
@@ -1979,7 +1999,6 @@ class Observatory:
         """
         A place to process non-process dependant images from the camera pile.
         Usually long-term saves to disk and such things
-
         """
 
         one_at_a_time = 0
@@ -2512,6 +2531,10 @@ class Observatory:
 
     def check_platesolve_and_nudge(self):
 
+        """
+        A function periodically called to check if there is a telescope nudge to re-center to undertake.
+        """        
+
         # This block repeats itself in various locations to try and nudge the scope
         # If the platesolve requests such a thing.
         if g_dev['obs'].pointing_correction_requested_by_platesolve_thread and not g_dev['cam'].currently_in_smartstack_loop:
@@ -2670,6 +2693,10 @@ class Observatory:
         self.mainjpeg_queue.put( to_sep, block=False)
 
 def wait_for_slew():
+
+    """
+    A function called when the code needs to wait for the telescope to stop slewing before undertaking a task.
+    """    
 
     try:
         if not g_dev['mnt'].mount.AtPark:

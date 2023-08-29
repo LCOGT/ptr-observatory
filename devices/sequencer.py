@@ -431,7 +431,7 @@ class Sequencer:
                 self.eve_bias_done = True
                 self.bias_dark_latch = False
                 
-            if not self.eve_sky_flat_latch and not g_dev['obs'].scope_in_manual_mode and ((events['Eve Sky Flats'] <= ephem_now < events['End Eve Sky Flats'])  \
+            if (time.time() - g_dev['seq'].time_roof_last_opened > 1200 ) and not self.eve_sky_flat_latch and not g_dev['obs'].scope_in_manual_mode and ((events['Eve Sky Flats'] <= ephem_now < events['End Eve Sky Flats'])  \
                    and self.config['auto_eve_sky_flat'] and g_dev['obs'].open_and_enabled_to_observe and not self.eve_flats_done and g_dev['obs'].camera_sufficiently_cooled_for_calibrations):
     
                 self.eve_sky_flat_latch = True
@@ -518,7 +518,7 @@ class Sequencer:
                                       "project_name": block['project_id'].split('#')[0],
                                       "created_at": block['project_id'].split('#')[1],
                                     })
-                                    project_response=requests.post(url_proj, request_body)
+                                    project_response=reqs.post(url_proj, request_body, timeout=10)
                                     
     
                                     if project_response.status_code ==200:  
@@ -560,7 +560,7 @@ class Sequencer:
                     plog(traceback.format_exc())
                     plog("Hang up in sequencer.")
                     
-            if not self.morn_sky_flat_latch and ((events['Morn Sky Flats'] <= ephem_now < events['End Morn Sky Flats']) and \
+            if (time.time() - g_dev['seq'].time_roof_last_opened > 1200 ) and not self.morn_sky_flat_latch and ((events['Morn Sky Flats'] <= ephem_now < events['End Morn Sky Flats']) and \
                    self.config['auto_morn_sky_flat']) and not g_dev['obs'].scope_in_manual_mode and not self.morn_flats_done and g_dev['obs'].camera_sufficiently_cooled_for_calibrations and g_dev['obs'].open_and_enabled_to_observe:
     
                 self.morn_sky_flat_latch = True
