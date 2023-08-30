@@ -44,6 +44,20 @@ reqs.mount('http://', HTTPAdapter(max_retries=retries))
 '''
 '''
 
+def authenticated_request(method: str, uri: str, payload: dict = None) -> str:
+
+    # Populate the request parameters. Include data only if it was sent.
+    base_url="https://api.photonranch.org/api"
+    request_kwargs = { 
+        "method": method,
+        "timeout" : 10,
+        "url": f"{base_url}/{uri}",
+    }
+    if payload is not None: 
+        request_kwargs["data"] = json.dumps(payload)
+
+    response = requests.request(**request_kwargs)
+    return response.json()
 
 
 def fit_quadratic(x, y):
