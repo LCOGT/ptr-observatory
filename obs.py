@@ -311,16 +311,41 @@ class Observatory:
         self.admin_owner_commands_only = False
         self.assume_roof_open=False
         
-        # send up obs status immediate;y
-        self.obs_settings_upload_timer = time.time() - 2*self.obs_settings_upload_period
-        self.update_status(dont_wait=True)
-        
+       
         # Instantiate the helper class for astronomical events
         # Soon the primary event / time values can come from AWS.
         self.astro_events = ptr_events.Events(self.config)
         self.astro_events.compute_day_directory()
         self.astro_events.calculate_events()
         self.astro_events.display_events()        
+
+        # If the camera is detected as substantially (20 degrees) warmer than the setpoint
+        # during safety checks, it will keep it warmer for about 20 minutes to make sure
+        # the camera isn't overheating, then return it to its usual temperature.
+        self.camera_overheat_safety_warm_on = False  
+        self.camera_overheat_safety_timer = time.time()
+        # Some things you don't want to check until the camera has been cooling for a while.
+        self.camera_time_initialised = time.time()
+        # You want to make sure that the camera has been cooling for a while at the setpoint
+        # Before taking calibrations to ensure the sensor is evenly cooled
+        self.last_time_camera_was_warm = time.time() - 6000
+
+        # If there is a pointing correction needed, then it is REQUESTED
+        # by the platesolve thread and then the code will interject
+        # a pointing correction at an appropriate stage.
+        # But if the telescope moves in the meantime, this is cancelled.
+        # A telescope move itself should already correct for this pointing in the process of moving.
+        # This is sort of a more elaborate and time-efficient version of the previous "re-seek"
+        self.pointing_correction_requested_by_platesolve_thread = False
+        self.pointing_correction_request_time = time.time()
+        self.pointing_correction_request_ra = 0.0
+        self.pointing_correction_request_dec = 0.0
+        self.pointing_correction_request_ra_err = 0.0
+        self.pointing_correction_request_dec_err = 0.0
+        self.last_platesolved_ra = np.nan
+        self.last_platesolved_dec =np.nan
+        self.last_platesolved_ra_err = np.nan
+        self.last_platesolved_dec_err =np.nan
 
         g_dev["obs"] = self
         obsid_str = ptr_config["obs_id"]
@@ -329,6 +354,8 @@ class Observatory:
 
         # Use the configuration to instantiate objects for all devices.
         self.create_devices()
+
+         
 
         # Reset mount reference for delta_ra and delta_dec on bootup  
         g_dev["mnt"].reset_mount_reference()
@@ -379,33 +406,10 @@ class Observatory:
         
 
         
-        # If the camera is detected as substantially (20 degrees) warmer than the setpoint
-        # during safety checks, it will keep it warmer for about 20 minutes to make sure
-        # the camera isn't overheating, then return it to its usual temperature.
-        self.camera_overheat_safety_warm_on = False  
-        self.camera_overheat_safety_timer = time.time()
-        # Some things you don't want to check until the camera has been cooling for a while.
-        self.camera_time_initialised = time.time()
-        # You want to make sure that the camera has been cooling for a while at the setpoint
-        # Before taking calibrations to ensure the sensor is evenly cooled
-        self.last_time_camera_was_warm = time.time() - 6000
-
-        # If there is a pointing correction needed, then it is REQUESTED
-        # by the platesolve thread and then the code will interject
-        # a pointing correction at an appropriate stage.
-        # But if the telescope moves in the meantime, this is cancelled.
-        # A telescope move itself should already correct for this pointing in the process of moving.
-        # This is sort of a more elaborate and time-efficient version of the previous "re-seek"
-        self.pointing_correction_requested_by_platesolve_thread = False
-        self.pointing_correction_request_time = time.time()
-        self.pointing_correction_request_ra = 0.0
-        self.pointing_correction_request_dec = 0.0
-        self.pointing_correction_request_ra_err = 0.0
-        self.pointing_correction_request_dec_err = 0.0
-        self.last_platesolved_ra = np.nan
-        self.last_platesolved_dec =np.nan
-        self.last_platesolved_ra_err = np.nan
-        self.last_platesolved_dec_err =np.nan
+        # send up obs status immediately
+        self.obs_settings_upload_timer = time.time() - 2*self.obs_settings_upload_period
+        self.update_status(dont_wait=True)
+        
 
         
         # On initialisation, there should be no commands heading towards the site
@@ -1657,8 +1661,6 @@ class Observatory:
         """This is the sep queue that happens in a different process
         than the main camera thread. SEPs can take 5-10, up to 30 seconds sometimes
         to run, so it is an overhead we can't have hanging around.       
-        
-        It is also the routine that bundles up the quick inspection stuff for the UI.
         """
 
         one_at_a_time = 0
@@ -1822,7 +1824,6 @@ class Observatory:
                     self.enqueue_for_fastUI(180, im_path, text_name.replace('.txt', '.his'))
                 except:
                     plog("Failed to send HIS up for some reason")
-                    
                 if os.path.exists(im_path + text_name.replace('.txt', '.box')):
                     try:
                         self.enqueue_for_fastUI(180, im_path, text_name.replace('.txt', '.box'))
