@@ -917,6 +917,7 @@ class Mount:
         # Fourth thing, check that the roof is open and we are enabled to observe
         if (g_dev['obs'].open_and_enabled_to_observe==False )  and not g_dev['obs'].scope_in_manual_mode:
             g_dev['obs'].send_to_user("Refusing pointing request as the observatory is not enabled to observe.")
+            plog(g_dev['obs'].open_and_enabled_to_observe)
             plog("Refusing pointing request as the observatory is not enabled to observe.")
             return 'refused'
 

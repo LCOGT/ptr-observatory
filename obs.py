@@ -311,6 +311,10 @@ class Observatory:
         self.admin_owner_commands_only = False
         self.assume_roof_open=False
         
+        # send up obs status immediate;y
+        self.obs_settings_upload_timer = time.time() - 2*self.obs_settings_upload_period
+        self.update_status(dont_wait=True)
+        
         # Instantiate the helper class for astronomical events
         # Soon the primary event / time values can come from AWS.
         self.astro_events = ptr_events.Events(self.config)
@@ -715,6 +719,7 @@ class Observatory:
                                         
                                 if cmd['action']=='start_simulating_open_roof':                            
                                     self.assume_roof_open = True
+                                    self.open_and_enabled_to_observe==True
                                     plog ('Roof is now assumed to be open. WEMA shutter status is ignored.')
                                     g_dev["obs"].send_to_user('Roof is now assumed to be open. WEMA shutter status is ignored.')
                                     
@@ -950,7 +955,7 @@ class Observatory:
         # If the roof is open, then it is open and enabled to observe
         if not g_dev['obs'].enc_status == None:
             if 'Open' in g_dev['obs'].enc_status['shutter_status']:
-                if not 'NoObs' in g_dev['obs'].enc_status['shutter_status'] and not self.net_connection_dead:
+                if (not 'NoObs' in g_dev['obs'].enc_status['shutter_status'] and not self.net_connection_dead) or self.assume_roof_open:
                     self.open_and_enabled_to_observe = True
                 else:
                     self.open_and_enabled_to_observe = False       
@@ -1055,8 +1060,8 @@ class Observatory:
 
             # Roof Checks only if not in debug mode
             # And only check if the scope thinks everything is open and hunky dory
-            if self.open_and_enabled_to_observe and not self.scope_in_manual_mode:
-                if g_dev['obs'].enc_status is not None:
+            if self.open_and_enabled_to_observe and not self.scope_in_manual_mode and not self.assume_roof_open:
+                if g_dev['obs'].enc_status is not None :
                     if  'Software Fault' in g_dev['obs'].enc_status['shutter_status']:
                         plog("Software Fault Detected. Will alert the authorities!")
                         plog("Parking Scope in the meantime")
@@ -1093,7 +1098,7 @@ class Observatory:
 
                 roof_should_be_shut = False
 
-                if not self.scope_in_manual_mode and not g_dev['seq'].flats_being_collected:
+                if not self.scope_in_manual_mode and not g_dev['seq'].flats_being_collected and not self.assume_roof_open:
                     if (g_dev['events']['End Morn Sky Flats'] < ephem.now() < g_dev['events']['End Morn Bias Dark']):
                         roof_should_be_shut = True
                         self.open_and_enabled_to_observe = False
@@ -1113,7 +1118,7 @@ class Observatory:
                         plog("Safety check notices that the roof was open outside of the normal observing period")
 
 
-                if not self.scope_in_manual_mode and not g_dev['seq'].flats_being_collected :
+                if not self.scope_in_manual_mode and not g_dev['seq'].flats_being_collected and not self.assume_roof_open:
                     # If the roof should be shut, then the telescope should be parked.
                     if roof_should_be_shut == True:
                         if not g_dev['mnt'].mount.AtPark:
@@ -1142,6 +1147,8 @@ class Observatory:
                         # But after all that if everything is ok, then all is ok, it is safe to observe
                         if 'Open' in g_dev['obs'].enc_status['shutter_status'] and roof_should_be_shut == False:
                             if not 'NoObs' in g_dev['obs'].enc_status['shutter_status'] and not self.net_connection_dead:
+                                self.open_and_enabled_to_observe = True
+                            elif self.assume_roof_open:
                                 self.open_and_enabled_to_observe = True
                             else:
                                 self.open_and_enabled_to_observe = False
