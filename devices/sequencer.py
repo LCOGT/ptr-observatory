@@ -1177,7 +1177,7 @@ class Sequencer:
         '''
         uri = f"{self.config['obs_id']}/config/"
         self.config['events'] = g_dev['events']
-        response = g_dev['obs'].api.authenticated_request("PUT", uri, self.config)
+        response = authenticated_request("PUT", uri, self.config)
         if response:
             plog("Config uploaded successfully.")
 
