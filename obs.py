@@ -719,7 +719,7 @@ class Observatory:
                                         
                                 if cmd['action']=='start_simulating_open_roof':                            
                                     self.assume_roof_open = True
-                                    self.open_and_enabled_to_observe==True
+                                    self.open_and_enabled_to_observe=True
                                     plog ('Roof is now assumed to be open. WEMA shutter status is ignored.')
                                     g_dev["obs"].send_to_user('Roof is now assumed to be open. WEMA shutter status is ignored.')
                                     
