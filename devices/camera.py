@@ -665,13 +665,10 @@ class Camera:
                 self.filter_camera_gain_shelf = shelve.open(g_dev['obs'].obsid_path + 'ptr_night_shelf/' + 'filtercameragain' + g_dev['cam'].name + str(g_dev['obs'].name))
                 
                 for entry in self.filter_camera_gain_shelf:
-                    plog ('entry')
                     if entry != 'readnoise':
-                        #breakpoint()
                         singlentry=self.filter_camera_gain_shelf[entry]
                         if singlentry[2] > int(0.8 * self.config['camera'][self.name]['settings']['number_of_flat_to_store']):
                             if singlentry[0] < self.camera_known_gain:
-                                plog ("new one! " + str(singlentry[0]))
                                 self.camera_known_gain=singlentry[0]
                                 self.camera_known_gain_stdev=singlentry[1]
                                 
@@ -691,7 +688,8 @@ class Camera:
             self.camera_known_readnoise=self.config["camera"][self.name]["settings"]['read_noise']
             self.camera_known_readnoise_stdev=self.config["camera"][self.name]["settings"]['read_noise_stdev']
         
-        
+        plog ("Used Camera Gain: " + str(self.camera_known_gain))
+        plog ("Used Readnoise  : "+ str(self.camera_known_readnoise))
 
         try:
             seq = test_sequence(self.alias)
@@ -2297,11 +2295,11 @@ class Camera:
                     hdu.header['SHUTTYPE'] = (self.config["camera"][self.name]["settings"]["shutter_type"], 
                                               'Type of shutter')
                     hdu.header["GAIN"] = (
-                        self.config["camera"][self.name]["settings"]["camera_gain"],
+                        self.camera_known_gain,
                         "[e-/ADU] Pixel gain",
                     )
                     hdu.header["RDNOISE"] = (
-                        self.config["camera"][self.name]["settings"]["read_noise"],
+                        self.camera_known_readnoise,
                         "[e-/pixel] Read noise",
                     )
                     hdu.header["CMOSCAM"] = (self.is_cmos, "Is CMOS camera")

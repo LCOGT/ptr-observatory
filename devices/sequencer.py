@@ -182,7 +182,7 @@ class Sequencer:
         # There are some automations that start up when a roof recently opens
         # that need to respond to that.         
         self.last_roof_status = 'Closed'
-        self.time_roof_last_opened = time.time() -500
+        self.time_roof_last_opened = time.time() - 1300
         
         # Sequencer keeps track of the endtime of a
         # currently running block so that seq and others
