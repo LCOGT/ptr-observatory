@@ -447,6 +447,9 @@ class Observatory:
                 plog (str(filtertempgain) + " " + str(filter_throughput_shelf[filtertempgain]))
         filter_throughput_shelf.close()                
 
+
+        
+
         # Initialisation complete!
         
         
@@ -1915,6 +1918,28 @@ class Observatory:
                         solved_dec = solve["dec_j2000_degrees"]
                         solved_arcsecperpixel = solve["arcsec_per_pixel"]
                         plog("1x1 pixelscale solved: " + str(float(solved_arcsecperpixel / platesolve_bin_factor / g_dev['cam'].native_bin)))                        
+                        
+                        self.pixelscale_shelf = shelve.open(g_dev['obs'].obsid_path + 'ptr_night_shelf/' + 'pixelscale' + g_dev['cam'].name + str(g_dev['obs'].name))
+                        try:
+                            pixelscale_list=self.pixelscale_shelf['pixelscale_list']
+                        except:
+                            pixelscale_list=[]
+                        
+                        pixelscale_list.append(float(solved_arcsecperpixel / platesolve_bin_factor / g_dev['cam'].native_bin))
+                        
+                        too_long=True
+                        while too_long:
+                            if len(pixelscale_list) > 100:
+                                pixelscale_list.pop[-1]
+                            else:
+                                too_long = False
+                                
+                        self.pixelscale_shelf['pixelscale_list'] = pixelscale_list
+                        plog (pixelscale_list)
+                        self.pixelscale_shelf.close()
+                        
+                        
+                        
                         err_ha = target_ra - solved_ra
                         err_dec = target_dec - solved_dec                        
                         plog("Deviation from plate solution in ra: " + str(round(err_ha * 15 * 3600, 2)) + " & dec: " + str (round(err_dec * 3600, 2)) + " asec")

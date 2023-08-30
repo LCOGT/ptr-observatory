@@ -1331,6 +1331,17 @@ class Sequencer:
         
         g_dev["obs"].send_to_user("Currently regenerating local masters. System may be unresponsive during this period.")
         
+        
+        # for every filter hold onto an estimate of the current camera gain.
+        # Each filter will have a different flat field and variation in the flat.
+        # The 'true' camera gain is very likely to be the filter with the least
+        # variation, so we go with that as the true camera gain...... but ONLY after we have a full set of flats
+        # with which to calculate the gain. This is the shelf to hold this data. 
+        # There is no hope for individual owners with a multitude of telescopes to keep up with
+        # this estimate, so we need to automate it with a first best guess given in the config.        
+        self.filter_camera_gain_shelf = shelve.open(g_dev['obs'].obsid_path + 'ptr_night_shelf/' + 'filtercameragain' + g_dev['cam'].name + str(g_dev['obs'].name))
+        
+        
         # NOW to get to the business of constructing the local calibrations
         # Start with biases
         # Get list of biases
@@ -1347,6 +1358,8 @@ class Sequencer:
                 plog ("corrupt bias skipped: " + str(file))
                 inputList.remove(file)
                 
+        
+        
         # have to remove flats from memory to make room for.... flats!
         try:
             del g_dev['cam'].flatFiles
@@ -1411,14 +1424,14 @@ class Sequencer:
                 fits.writeto(g_dev['obs'].calib_masters_folder + tempfrontcalib + 'BIAS_master_bin1.fits', masterBias,  overwrite=True)                
                 filepathaws=g_dev['obs'].calib_masters_folder
                 filenameaws=tempfrontcalib + 'BIAS_master_bin1.fits'
-                g_dev['cam'].enqueue_for_AWS(50, filepathaws,filenameaws)
+                g_dev['obs'].enqueue_for_AWS(50, filepathaws,filenameaws)
                 
                 # Store a version of the bias for the archive too
                 fits.writeto(g_dev['obs'].calib_masters_folder + 'ARCHIVE_' +  archiveDate + '_' + tempfrontcalib + 'BIAS_master_bin1.fits', masterBias, overwrite=True)
                 
                 filepathaws=g_dev['obs'].calib_masters_folder
                 filenameaws='ARCHIVE_' +  archiveDate + '_' + tempfrontcalib + 'BIAS_master_bin1.fits'
-                g_dev['cam'].enqueue_for_AWS(80, filepathaws,filenameaws)
+                g_dev['obs'].enqueue_for_AWS(80, filepathaws,filenameaws)
                 
             except Exception as e:
                 plog ("Could not save bias frame: ",e)
@@ -1502,14 +1515,14 @@ class Sequencer:
                 fits.writeto(g_dev['obs'].calib_masters_folder + tempfrontcalib + 'DARK_master_bin1.fits', masterDark,  overwrite=True)                
                 filepathaws=g_dev['obs'].calib_masters_folder
                 filenameaws=tempfrontcalib + 'DARK_master_bin1.fits'
-                g_dev['cam'].enqueue_for_AWS(50, filepathaws,filenameaws)
+                g_dev['obs'].enqueue_for_AWS(50, filepathaws,filenameaws)
                 
                 # Store a version of the dark for the archive too
                 fits.writeto(g_dev['obs'].calib_masters_folder + 'ARCHIVE_' +  archiveDate + '_' + tempfrontcalib + 'DARK_master_bin1.fits', masterDark, overwrite=True)
                 
                 filepathaws=g_dev['obs'].calib_masters_folder
                 filenameaws='ARCHIVE_' +  archiveDate + '_' + tempfrontcalib + 'DARK_master_bin1.fits'
-                g_dev['cam'].enqueue_for_AWS(80, filepathaws,filenameaws)
+                g_dev['obs'].enqueue_for_AWS(80, filepathaws,filenameaws)
                 
                 
             except Exception as e:
@@ -1643,14 +1656,14 @@ class Sequencer:
                             
                             filepathaws=g_dev['obs'].calib_masters_folder
                             filenameaws=tempfrontcalib + 'masterFlat_'+ str(filtercode) + '_bin1.fits'
-                            g_dev['cam'].enqueue_for_AWS(50, filepathaws,filenameaws)
+                            g_dev['obs'].enqueue_for_AWS(50, filepathaws,filenameaws)
                             
                             # Store a version of the flat for the archive too
                             fits.writeto(g_dev['obs'].calib_masters_folder + 'ARCHIVE_' +  archiveDate + '_' + tempfrontcalib + 'masterFlat_'+ str(filtercode) + '_bin1.fits', temporaryFlat, overwrite=True)
                             
                             filepathaws=g_dev['obs'].calib_masters_folder
                             filenameaws='ARCHIVE_' +  archiveDate + '_' + tempfrontcalib + 'masterFlat_'+ str(filtercode) + '_bin1.fits'
-                            g_dev['cam'].enqueue_for_AWS(80, filepathaws,filenameaws)
+                            g_dev['obs'].enqueue_for_AWS(80, filepathaws,filenameaws)
                                                         
                         except Exception as e:
                             plog ("Could not save flat frame: ",e)
@@ -1713,8 +1726,12 @@ class Sequencer:
                             
                         single_filter_camera_gains=np.array(single_filter_camera_gains)
                         single_filter_camera_gains = sigma_clip(single_filter_camera_gains, masked=False, axis=None)
-                        plog ("Filter Throughput Sigma Clipped Estimates: " + str(np.nanmedian(single_filter_camera_gains)) + " std " + str(np.std(single_filter_camera_gains)) + " N " + str(len(single_filter_camera_gains)))
+                        plog ("Filter Gain Sigma Clipped Estimates: " + str(np.nanmedian(single_filter_camera_gains)) + " std " + str(np.std(single_filter_camera_gains)) + " N " + str(len(single_filter_camera_gains)))
                         flat_gains[filtercode]=[np.nanmedian(single_filter_camera_gains), np.std(single_filter_camera_gains),len(single_filter_camera_gains)]
+                        
+                        # Chuck camera gain and number of images into the shelf
+                        self.filter_camera_gain_shelf[filtercode]=[np.nanmedian(single_filter_camera_gains), np.std(single_filter_camera_gains),len(single_filter_camera_gains)]
+                        
                         
                         PLDrive._mmap.close()
                         del PLDrive
@@ -1723,6 +1740,10 @@ class Sequencer:
                         
                     g_dev["obs"].send_to_user(str(filtercode) + " flat calibration frame created.")
                         
+                # Bung in the readnoise estimates and then
+                # Close up the filter camera gain shelf.
+                self.filter_camera_gain_shelf['readnoise']=[np.nanmedian(post_readnoise_array) , np.nanstd(post_readnoise_array), len(post_readnoise_array)]
+                self.filter_camera_gain_shelf.close()
                 
                 textfilename= g_dev['obs'].obsid_path + 'ptr_night_shelf/' + 'cameragain' + g_dev['cam'].name + str(g_dev['obs'].name) +'.txt'
                 try:

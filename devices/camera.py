@@ -593,10 +593,6 @@ class Camera:
         
         
 
-        self.camera_known_gain=self.config["camera"][self.name]["settings"]["camera_gain"]
-        self.camera_known_gain_stdev=self.config["camera"][self.name]["settings"]['camera_gain_stdev']
-        self.camera_known_readnoise=self.config["camera"][self.name]["settings"]['read_noise']
-        self.camera_known_readnoise_stdev=self.config["camera"][self.name]["settings"]['read_noise_stdev']
         
         """
         TheSkyX runs on a file mode approach to images rather 
@@ -659,6 +655,44 @@ class Camera:
                 self.darkslide_state = 'Open'
 
         
+        
+        if True:
+            try:
+                self.camera_known_gain=70000.0
+                self.camera_known_gain_stdev=70000.0
+                self.camera_known_readnoise=70000.0
+                self.camera_known_readnoise_stdev=70000.0
+                self.filter_camera_gain_shelf = shelve.open(g_dev['obs'].obsid_path + 'ptr_night_shelf/' + 'filtercameragain' + g_dev['cam'].name + str(g_dev['obs'].name))
+                
+                for entry in self.filter_camera_gain_shelf:
+                    plog ('entry')
+                    if entry != 'readnoise':
+                        #breakpoint()
+                        singlentry=self.filter_camera_gain_shelf[entry]
+                        if singlentry[2] > int(0.8 * self.config['camera'][self.name]['settings']['number_of_flat_to_store']):
+                            if singlentry[0] < self.camera_known_gain:
+                                plog ("new one! " + str(singlentry[0]))
+                                self.camera_known_gain=singlentry[0]
+                                self.camera_known_gain_stdev=singlentry[1]
+                                
+                singlentry=self.filter_camera_gain_shelf['readnoise']                
+                self.camera_known_readnoise= (singlentry[0] * self.camera_known_gain) / 1.414    
+                self.camera_known_readnoise_stdev = (singlentry[1] * self.camera_known_gain) / 1.414    
+            except:
+                plog('failed to estimate gain and readnoise from flats and such')
+                self.camera_known_gain=self.config["camera"][self.name]["settings"]["camera_gain"]
+                self.camera_known_gain_stdev=self.config["camera"][self.name]["settings"]['camera_gain_stdev']
+                self.camera_known_readnoise=self.config["camera"][self.name]["settings"]['read_noise']
+                self.camera_known_readnoise_stdev=self.config["camera"][self.name]["settings"]['read_noise_stdev']
+           
+        else:
+            self.camera_known_gain=self.config["camera"][self.name]["settings"]["camera_gain"]
+            self.camera_known_gain_stdev=self.config["camera"][self.name]["settings"]['camera_gain_stdev']
+            self.camera_known_readnoise=self.config["camera"][self.name]["settings"]['read_noise']
+            self.camera_known_readnoise_stdev=self.config["camera"][self.name]["settings"]['read_noise_stdev']
+        
+        
+
         try:
             seq = test_sequence(self.alias)
         except:
