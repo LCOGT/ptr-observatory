@@ -220,7 +220,7 @@ class FilterWheel:
     def _maxim_connected(self):
         return self.filter.LinkEnabled
 
-    def _maxim_connect(self, p_connect):
+    def _maxim_connect(self, p_connect):        
         self.filter.LinkEnabled = p_connect
         return self.filter.LinkEnabled
 

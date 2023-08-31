@@ -230,9 +230,14 @@ class Observatory:
             pass
         try:
             os.system('taskkill /IM "Gemini Software.exe" /F')
+            
         except:
             pass
-        
+        try:
+            os.system("taskkill /IM ASCOM.AltAzDS.exe /F")            
+        except:
+            pass
+
         listOfProcessIds = findProcessIdByName('maxim_dl')
         for pid in listOfProcessIds:
             pid_num = pid['pid']
@@ -1947,7 +1952,6 @@ class Observatory:
                                 too_long = False
                                 
                         self.pixelscale_shelf['pixelscale_list'] = pixelscale_list
-                        plog (pixelscale_list)
                         self.pixelscale_shelf.close()
                         
                         

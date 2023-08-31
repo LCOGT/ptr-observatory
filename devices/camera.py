@@ -589,9 +589,23 @@ class Camera:
         
         self.expresult=None
         
-        self.pixscale = float(self.config["camera"][self.name]["settings"]["1x1_pix_scale"])
+        # Figure out pixelscale from own observations
+        # Or use the config value if there hasn't been enough
+        # observations yet.
+        self.pixelscale_shelf = shelve.open(g_dev['obs'].obsid_path + 'ptr_night_shelf/' + 'pixelscale' + g_dev['cam'].name + str(g_dev['obs'].name))
+        try:
+            pixelscale_list=self.pixelscale_shelf['pixelscale_list']
+        except:
+            pixelscale_list=[]
         
-        
+        self.pixelscale_shelf.close()
+
+        if len(pixelscale_list) > 25:
+            self.pixscale = np.nanmedian(pixelscale_list)
+        else:
+            self.pixscale = float(self.config["camera"][self.name]["settings"]["1x1_pix_scale"])
+            
+        plog('1x1 pixel scale: ' + str(self.pixscale))
 
         
         """
@@ -1596,7 +1610,7 @@ class Camera:
                                         #if g_dev['rot'].rotator.IsMoving:                                       
                                          if rot_report == 0 :
                                              plog("Waiting for camera rotator to catch up. ")
-                                             g_dev["obs"].send_to_user("Waiting for camera rotator to catch up before exposing.")
+                                             g_dev["obs"].send_to_user("Waiting for instrument rotator to catch up before exposing.")
                                                          
                                              rot_report=1
                                          time.sleep(0.2) 
@@ -1911,8 +1925,6 @@ class Camera:
                 if Nsmartstack > 1 and not (Nsmartstack == sskcounter+1):
                     ra_random_dither=(((random.randint(0,50)-25) * self.pixscale / 3600 ) / 15) 
                     dec_random_dither=((random.randint(0,50)-25) * self.pixscale /3600 )
-                    print(initial_smartstack_ra + ra_random_dither)
-                    print(initial_smartstack_dec + dec_random_dither)
                     try:
                         g_dev['mnt'].mount.SlewToCoordinatesAsync(initial_smartstack_ra + ra_random_dither, initial_smartstack_dec + dec_random_dither) 
                     except Exception as e:
