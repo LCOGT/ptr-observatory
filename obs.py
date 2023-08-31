@@ -1984,7 +1984,8 @@ class Observatory:
                             plog("I've  reset the mount_reference.")  
                             
                             plog ("reattempting to get back on target on next attempt")                            
-                            self.pointing_correction_requested_by_platesolve_thread = True
+                            #self.pointing_correction_requested_by_platesolve_thread = True
+                            self.pointing_recentering_requested_by_platesolve_thread = True
                             self.pointing_correction_request_time = time.time()
                             self.pointing_correction_request_ra = target_ra 
                             self.pointing_correction_request_dec = target_dec
@@ -2581,11 +2582,20 @@ class Observatory:
         A function periodically called to check if there is a telescope nudge to re-center to undertake.
         """        
 
+        # Sometimes the pointing is so far off platesolve requests a new slew and recenter
+        if self.pointing_recentering_requested_by_platesolve_thread:
+            
+            g_dev['mnt'].go_command(ra=self.pointing_correction_request_ra, dec=self.pointing_correction_request_dec) 
+            g_dev['seq'].centering_exposure(no_confirmation=True, try_hard=True)
+            
+            self.pointing_recentering_requested_by_platesolve_thread
+
+
         # This block repeats itself in various locations to try and nudge the scope
         # If the platesolve requests such a thing.
-        if g_dev['obs'].pointing_correction_requested_by_platesolve_thread and not g_dev['cam'].currently_in_smartstack_loop:
+        if self.pointing_correction_requested_by_platesolve_thread and not g_dev['cam'].currently_in_smartstack_loop:
             
-            if g_dev['obs'].pointing_correction_request_time > g_dev['obs'].time_of_last_slew:  # Check it hasn't slewed since request
+            if self.pointing_correction_request_time > self.time_of_last_slew:  # Check it hasn't slewed since request
                 
                 
                 plog("Re-centering Telescope Slightly.")
@@ -2605,7 +2615,7 @@ class Observatory:
                 g_dev['obs'].time_of_last_slew = time.time()
                 wait_for_slew()
                     
-            g_dev['obs'].pointing_correction_requested_by_platesolve_thread = False
+            self.pointing_correction_requested_by_platesolve_thread = False
     
     def get_enclosure_status_from_aws(self):
         
