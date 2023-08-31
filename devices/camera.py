@@ -1596,7 +1596,7 @@ class Camera:
                                         #if g_dev['rot'].rotator.IsMoving:                                       
                                          if rot_report == 0 :
                                              plog("Waiting for camera rotator to catch up. ")
-                                             g_dev["obs"].send_to_user("Waiting for camera rotator to catch up before exposing.")
+                                             g_dev["obs"].send_to_user("Waiting for instrument rotator to catch up before exposing.")
                                                          
                                              rot_report=1
                                          time.sleep(0.2) 

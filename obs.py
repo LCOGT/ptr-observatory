@@ -230,9 +230,14 @@ class Observatory:
             pass
         try:
             os.system('taskkill /IM "Gemini Software.exe" /F')
+            
         except:
             pass
-        
+        try:
+            os.system("taskkill /IM ASCOMAltAzDS.exe /F")            
+        except:
+            pass
+
         listOfProcessIds = findProcessIdByName('maxim_dl')
         for pid in listOfProcessIds:
             pid_num = pid['pid']

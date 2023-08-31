@@ -208,7 +208,7 @@ class Sequencer:
         # It doesn't have to be quite as swift as real-time.
         self.project_call_timer = time.time() -60
         
-        
+        self.rotator_has_been_homed_this_evening=False
 
     def wait_for_slew(self):    
         """
@@ -466,6 +466,27 @@ class Sequencer:
                         plog("mount is not tracking but this mount doesn't support ASCOM changing tracking")
     
                 g_dev['mnt'].go_command(alt=70,az= 70)
+                
+                self.wait_for_slew()
+                
+                # Homing Rotator for the evening.
+                try:
+                    while g_dev['rot'].rotator.IsMoving:
+                        plog("home rotator wait")
+                        time.sleep(1)
+                    g_dev['obs'].send_to_user("Rotator being homed at beginning of night.", p_level='INFO')
+                    time.sleep(0.5)
+                    g_dev['rot'].home_command()
+                    g_dev['mnt'].go_command(alt=70,az= 70)
+                    self.wait_for_slew()
+                    while g_dev['rot'].rotator.IsMoving:
+                        plog("home rotator wait")
+                        time.sleep(1)
+                    self.rotator_has_been_homed_this_evening=True
+                except:
+                    plog ("no rotator to home or wait for.")
+                
+                
                 g_dev['foc'].time_of_last_focus = datetime.datetime.now() - datetime.timedelta(
                     days=1
                 )  # Initialise last focus as yesterday
@@ -735,6 +756,26 @@ class Sequencer:
                 pass            
             
             g_dev['mnt'].go_command(ra=dest_ra, dec=dest_dec)
+            
+            
+            if not self.rotator_has_been_homed_this_evening:
+                plog ("rotator hasn't been homed this evening, doing that now")
+                # Homing Rotator for the evening.
+                try:
+                    while g_dev['rot'].rotator.IsMoving:
+                        plog("home rotator wait")
+                        time.sleep(1)
+                    g_dev['obs'].send_to_user("Rotator being homed as this has not been done this evening.", p_level='INFO')
+                    time.sleep(0.5)
+                    g_dev['rot'].home_command()
+                    g_dev['mnt'].go_command(ra=dest_ra, dec=dest_dec)
+                    self.wait_for_slew()
+                    while g_dev['rot'].rotator.IsMoving:
+                        plog("home rotator wait")
+                        time.sleep(1)
+                    self.rotator_has_been_homed_this_evening=True
+                except:
+                    plog ("no rotator to home or wait for.")
             
             # Undertake a focus if necessary before starting observing the target
             if g_dev["foc"].last_focus_fwhm == None or g_dev["foc"].focus_needed == True:
@@ -1095,6 +1136,8 @@ class Sequencer:
         self.park_and_close()
 
         self.reported_on_observing_period_beginning=False
+
+        self.rotator_has_been_homed_this_evening=False
 
         self.eve_flats_done = False
         self.morn_flats_done = False
@@ -2000,6 +2043,23 @@ class Sequencer:
             g_dev['mnt'].unpark_command({}, {})
                 
         self.check_zenith_and_move_to_flat_spot(ending=ending)
+        
+        # Homing Rotator for the evening.
+        try:
+            while g_dev['rot'].rotator.IsMoving:
+                plog("home rotator wait")
+                time.sleep(1)
+            g_dev['obs'].send_to_user("Rotator being homed to be certain of appropriate skyflat positioning.", p_level='INFO')
+            time.sleep(0.5)
+            g_dev['rot'].home_command()
+            self.check_zenith_and_move_to_flat_spot(ending=ending)
+            self.wait_for_slew()
+            while g_dev['rot'].rotator.IsMoving:
+                plog("home rotator wait")
+                time.sleep(1)
+            self.rotator_has_been_homed_this_evening=True
+        except:
+            plog ("no rotator to home or wait for.")
         
         camera_gain_collector=[]
                 

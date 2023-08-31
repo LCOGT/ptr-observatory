@@ -44,6 +44,7 @@ class Rotator:
             self.rotator_telescope.Connected = True
         except:
             breakpoint()
+            
         
         self.rotator_meant_to_be_rotating = True
         self.check_rotator_is_rotating()       
@@ -171,4 +172,5 @@ class Rotator:
     def home_command(self, req: dict, opt: dict):
         """Sets the rotator to the home position."""
         print("rotator cmd: home")
-        pass
+        self.rotator.Action('HomeDevice',1)
+        
