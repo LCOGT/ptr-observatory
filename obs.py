@@ -342,6 +342,7 @@ class Observatory:
         # A telescope move itself should already correct for this pointing in the process of moving.
         # This is sort of a more elaborate and time-efficient version of the previous "re-seek"
         self.pointing_correction_requested_by_platesolve_thread = False
+        self.pointing_recentering_requested_by_platesolve_thread = False
         self.pointing_correction_request_time = time.time()
         self.pointing_correction_request_ra = 0.0
         self.pointing_correction_request_dec = 0.0
