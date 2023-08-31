@@ -1925,8 +1925,6 @@ class Camera:
                 if Nsmartstack > 1 and not (Nsmartstack == sskcounter+1):
                     ra_random_dither=(((random.randint(0,50)-25) * self.pixscale / 3600 ) / 15) 
                     dec_random_dither=((random.randint(0,50)-25) * self.pixscale /3600 )
-                    print(initial_smartstack_ra + ra_random_dither)
-                    print(initial_smartstack_dec + dec_random_dither)
                     try:
                         g_dev['mnt'].mount.SlewToCoordinatesAsync(initial_smartstack_ra + ra_random_dither, initial_smartstack_dec + dec_random_dither) 
                     except Exception as e:
