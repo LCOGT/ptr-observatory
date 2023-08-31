@@ -34,7 +34,7 @@ import requests
 import urllib.request
 import traceback
 import psutil
-from global_yard import *
+from global_yard import g_dev
 import ptr_config
 from devices.camera import Camera
 from devices.filter_wheel import FilterWheel
@@ -45,7 +45,6 @@ from devices.rotator import Rotator
 from devices.selector import Selector
 from devices.screen import Screen
 from devices.sequencer import Sequencer
-from global_yard import g_dev
 import ptr_events
 from ptr_utility import plog
 from astropy.utils.exceptions import AstropyUserWarning
@@ -794,7 +793,6 @@ class Observatory:
                                 
                                
                         if cancel_check:
-                            result = {'stopped': True}
                             return  # Note we do not process any commands.
                     else:
                         plog("Request rejected as obs in admin or owner mode.")

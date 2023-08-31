@@ -298,7 +298,7 @@ class Mount:
                 "mnt"
             ].mount.sideOfPier  # 0 == Tel Looking West, is flipped.
             self.can_report_pierside = True
-        except Exception as e:            
+        except Exception:            
             plog ("Mount cannot report pierside. Setting the code not to ask again, assuming default pointing west.")
             self.can_report_pierside = False
             self.pier_side = 0
@@ -311,7 +311,7 @@ class Mount:
                 "mnt"
             ].mount.DestinationSideOfPier(0,0)  # 0 == Tel Looking West, is flipped.
             self.can_report_destination_pierside = True
-        except Exception as e:
+        except Exception:
             plog ("Mount cannot report destination pierside. Setting the code not to ask again.")
             self.can_report_destination_pierside = False
             self.pier_side = 0
@@ -380,13 +380,13 @@ class Mount:
                 self.mount.Connected = True
                 if self.mount.Connected:
                     return
-            except Exception as e:
+            except Exception:
                 plog (traceback.format_exc())
                 plog ("mount full scale reboot failed.")
                 
 
     def get_mount_coordinates(self):
-        global loop_count
+        #global loop_count
         '''
         Build up an ICRS coordinate from mount reported coordinates,
         removing offset and pierside calibrations.  From either flip
@@ -401,93 +401,7 @@ class Mount:
         dec : TYPE
             DESCRIPTION.
 
-        '''
-        
-
-        look_west = 0    #  NO NO NO!self.flip_correction_needed
-        look_east = 1    #  This in not the stow side so flip needed.
-        # if self. mount.EquatorialSystem == 1:
-        #     loop_count += 1
-        #     if loop_count == 5:
-        #        # breakpoint()
-        #         pass
-        #     self.get_current_times()
-            
-        #     try:
-        #         if self.can_report_pierside == True:
-        #             if self.mount.sideOfPier == 1:
-        #                 self.pier_side = 1    #West (flip) side so Looking East   #Make this assignment a code-wide convention.
-        #             else:
-        #                 self.pier_side = 0   #East side so Looking West
-        #     except:
-        #         self.pier_side=0
-                
-        #     # Replaced mount call above with much faster more accurate astropy calculation below
-        #     self.current_sidereal = float((Time(datetime.datetime.utcnow(), scale='utc', location=g_dev['mnt'].site_coordinates).sidereal_time('apparent')*u.deg) / u.deg / u.hourangle)
-
-        #     uncorr_mech_ra_h = self.mount.RightAscension
-        #     uncorr_mech_dec_d = self.mount.Declination
-        #     self.sid_now_r = self.current_sidereal*HTOR   # NB NB NB  Using Mount sidereal time might be problematic. THis this through carefully.
-
-        #     uncorr_mech_ha_r, uncorr_mech_dec_r = ptr_utility.transform_raDec_to_haDec_r(uncorr_mech_ra_h*HTOR, uncorr_mech_dec_d*DTOR, self.sid_now_r)
-        #     self.hour_angle = uncorr_mech_ha_r*RTOH
-        #     roll_obs_r, pitch_obs_r = ptr_utility.transform_mount_to_observed_r(uncorr_mech_ha_r, uncorr_mech_dec_r, self.pier_side, loud=False)
-
-        #     app_ra_r, app_dec_r, refr_asec = ptr_utility.obsToAppHaRa(roll_obs_r, pitch_obs_r, self.sid_now_r)
-        #     self.refraction_rev = refr_asec
-        #     '''
-        #     # NB NB Read status could be used to recalculate and apply more accurate and current roll and pitch rates.
-        #     '''
-        #     #jnow_ra_r = ptr_utility.reduce_ra_r(app_ra_r - ra_cal_offset*HTOR)    # NB the mnt_refs are subtracted here.  Units are correct.
-        #    # jnow_dec_r = ptr_utility.reduce_dec_r( app_dec_r - dec_cal_offset*DTOR)
-
-        #     # try:
-        #     #     if not self.mount.AtPark:   #Applying rates while parked faults.
-        #     #         if self.mount.CanSetRightAscensionRate and self.prior_roll_rate != 0 :
-        #     #             self.mount.RightAscensionRate =self.prior_roll_rate
-        #     #         if self.mount.CanSetDeclinationRate and self.prior_pitch_rate != 0:
-        #     #             self.mount.DeclinationRate = self.prior_pitch_rate
-        #     #             #plog("Rate found:  ", self.prior_roll_rate, self.prior_pitch_rate, self.ha_corr, self.dec_corr)
-        #     # except:
-        #     #     plog("mount status rate adjust exception.")
-
-        #     try:
-        #         if self.can_report_pierside == True:
-        #             if self.pier_side == 1:
-        #                 ra_cal_offset, dec_cal_offset = self.get_mount_reference()
-        #             else:
-        #                 ra_cal_offset, dec_cal_offset = self.get_flip_reference()
-        #         else:
-        #             ra_cal_offset, dec_cal_offset = self.get_mount_reference()
-        #             #ra_cal_offset=0
-        #             #dec_cal_offset=0
-        #     except:
-        #         try:
-        #             ra_cal_offset, dec_cal_offset = self.get_mount_reference()
-        #         except:
-        #             plog ("couldn't get mount offset")
-        #             #self.reset_mount_reference()
-        #             ra_cal_offset=0
-        #             dec_cal_offset=0
-
-        #     jnow_ra_r = ptr_utility.reduce_ra_r(app_ra_r - ra_cal_offset*HTOR)    # NB the mnt_refs are subtracted here.  Units are correct.
-        #     jnow_dec_r = ptr_utility.reduce_dec_r( app_dec_r - dec_cal_offset*DTOR)
-        #     jnow_ra_r, jnow_dec_r = ra_dec_fix_r(jnow_ra_r, jnow_dec_r)
-        #     jnow_coord = SkyCoord(jnow_ra_r*RTOH*u.hour, jnow_dec_r*RTOD*u.degree, frame='fk5', equinox=self.equinox_now)   # NB NB 'fk5' ????
-        #     icrs_coord = jnow_coord.transform_to(ICRS)
-        #     self.current_icrs_ra = icrs_coord.ra.hour
-        #     self.current_icrs_dec = icrs_coord.dec.degree
-        # else:
-
-        #     try:
-        #         ra_cal_offset, dec_cal_offset = self.get_mount_reference()
-        #     except:
-        #         plog ("couldn't get offset")
-        #         ra_cal_offset=0
-        #         dec_cal_offset=0
-
-        #     self.current_icrs_ra = ra_fix_r(self.mount.RightAscension - ra_cal_offset)    #May not be applied in positioning
-        #     self.current_icrs_dec = self.mount.Declination - dec_cal_offset
+        '''               
         
         self.current_icrs_ra = self.mount.RightAscension    #May not be applied in positioning
         self.current_icrs_dec = self.mount.Declination
@@ -565,14 +479,8 @@ class Mount:
                 'zenith_distance': round(zen, 3),
                 'airmass': round(airmass,4),
                 'coordinate_system': str(self.rdsys),
-                #'equinox':  self.equinox_now,
-                'pointing_instrument': str(self.inst),  # needs fixing
-                #'is_parked': self.mount.AtPark,     #  Send strings to AWS so JSON does not change case  Wrong. 20211202 'False' evaluates to True
-                #'is_tracking': self.mount.Tracking,
-                #'is_slewing': self.mount.Slewing,
+                'pointing_instrument': str(self.inst),
                 'message': str(self.mount_message[:54]),
-                #'site_in_automatic': self.obsid_in_automatic,
-                #'automatic_detail': str(self.automatic_detail),
                 'move_time': self.move_time
             }
            
@@ -971,7 +879,7 @@ class Mount:
         #Note this initiates a mount move.  WE should Evaluate if the destination is on the flip side and pick up the
         #flip offset.  So a GEM could track into positive HA territory without a problem but the next reseek should
         #result in a flip.  So first figure out if there will be a flip:
-        previous_pier_side=self.mount.sideOfPier
+        self.previous_pier_side=self.mount.sideOfPier
         
         if self.can_report_destination_pierside == True:   
             try:                          #  NB NB Might be good to log is flipping on a re-seek.                
@@ -997,7 +905,7 @@ class Mount:
                     
         
         else:
-            if previous_pier_side == 0:
+            if self.previous_pier_side == 0:
                 delta_ra, delta_dec = self.get_mount_reference()
                 
             else:
@@ -1031,7 +939,7 @@ class Mount:
                     ra=ra-24
                 self.mount.SlewToCoordinatesAsync(ra, dec)  #Is this needed?
                 wait_for_slew() 
-            except Exception as e:
+            except Exception:
                 # This catches an occasional ASCOM/TheSkyX glitch and gets it out of being stuck
                 # And back on tracking.                
                 try:
@@ -1067,7 +975,7 @@ class Mount:
             
             # Make sure the current pier_side variable is set
             g_dev["mnt"].pier_side=self.mount.sideOfPier
-            if previous_pier_side == g_dev["mnt"].pier_side or self.can_report_destination_pierside:
+            if self.previous_pier_side == g_dev["mnt"].pier_side or self.can_report_destination_pierside:
                 successful_move=1
             else:
                 
@@ -1094,7 +1002,7 @@ class Mount:
             try:
                 wait_for_slew()
                 self.mount.Tracking = True
-            except Exception as e:
+            except Exception:
                 plog (traceback.format_exc())
                 # Yes, this is an awfully non-elegant way to force a mount to start 
                 # Tracking when it isn't implemented in the ASCOM driver. But if anyone has any better ideas, I am all ears - MF
@@ -1107,7 +1015,6 @@ class Mount:
                     g_dev['seq'].kill_and_reboot_theskyx(-1,-1)
                     self.unpark_command()
                     wait_for_slew()
-                    #self.mount.SlewToCoordinatesAsync(self.ra_mech*RTOH, self.dec_mech*RTOD)  #Is this needed?
                     if ra < 0:
                         ra=ra+24
                     if ra > 24:
@@ -1130,6 +1037,9 @@ class Mount:
         
         if do_centering_routine:
             g_dev['seq'].centering_exposure() 
+            
+        # Continue to keep track of pierside
+        self.previous_pier_side=self.mount.sideOfPier
 
 
     def stop_command(self, req, opt):

@@ -3677,7 +3677,7 @@ class Sequencer:
                     "mnt"
                 ].mount.sideOfPier  # 0 == Tel Looking West, is flipped.
                 
-            except Exception as e:
+            except Exception:
                 plog ("Mount cannot report pierside. Setting the code not to ask again, assuming default pointing west.")
             ra_mount=g_dev['mnt'].mount.RightAscension
             dec_mount = g_dev['mnt'].mount.Declination    

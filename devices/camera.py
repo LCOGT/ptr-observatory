@@ -1418,8 +1418,23 @@ class Camera:
             #Repeat camera acquisition loop to collect all smartstacks necessary
             #The variable Nsmartstacks defaults to 1 - e.g. normal functioning
             #When a smartstack is not requested.
-            for sskcounter in range(int(Nsmartstack)):                
-                    
+            for sskcounter in range(int(Nsmartstack)):       
+                
+                # If the pier just flipped, trigger a recentering exposure.                
+                if not (g_dev['mnt'].previous_pier_side==g_dev['mnt'].mount.sideOfPier) :
+                    plog ("PIERFLIP DETECTED, RECENTERING.")
+                    g_dev["obs"].send_to_user("Pier Flip detected, recentering.")                    
+                    g_dev['obs'].pointing_recentering_requested_by_platesolve_thread = True
+                    g_dev['obs'].pointing_correction_request_time = time.time()
+                    g_dev['obs'].pointing_correction_request_ra = g_dev["mnt"].last_ra_requested 
+                    g_dev['obs'].pointing_correction_request_dec = g_dev["mnt"].last_dec_requested
+                    g_dev['obs'].pointing_correction_request_ra_err = 0
+                    g_dev['obs'].pointing_correction_request_dec_err = 0                    
+                    g_dev['obs'].check_platesolve_and_nudge()                
+                else:
+                    plog ("MTF temp reporting. No pierflip.")                     
+                g_dev['mnt'].previous_pier_side=g_dev['mnt'].mount.sideOfPier
+                
                 self.tempStartupExposureTime=time.time()
                 if Nsmartstack > 1 :
                     self.currently_in_smartstack_loop=True
