@@ -732,11 +732,15 @@ class Observatory:
                                 if cmd['action']=='start_simulating_open_roof':                            
                                     self.assume_roof_open = True
                                     self.open_and_enabled_to_observe=True
+                                    g_dev['obs'].enc_status = g_dev['obs'].get_enclosure_status_from_aws()
+                                    self.enclosure_status_timer = datetime.datetime.now()
                                     plog ('Roof is now assumed to be open. WEMA shutter status is ignored.')
                                     g_dev["obs"].send_to_user('Roof is now assumed to be open. WEMA shutter status is ignored.')
                                     
                                 if cmd['action']=='stop_simulating_open_roof':
                                     self.assume_roof_open = False    
+                                    g_dev['obs'].enc_status = g_dev['obs'].get_enclosure_status_from_aws()
+                                    self.enclosure_status_timer = datetime.datetime.now()
                                     plog ('Roof is now NOT assumed to be open. Reading WEMA shutter status.')
                                     g_dev["obs"].send_to_user('Roof is now NOT assumed to be open. Reading WEMA shutter status.')
                                         
@@ -2615,6 +2619,9 @@ class Observatory:
             for enclosurekey in aws_enclosure_status['status']['enclosure']['enclosure1'].keys():
                 aws_enclosure_status['status']['enclosure']['enclosure1'][enclosurekey]=aws_enclosure_status['status']['enclosure']['enclosure1'][enclosurekey]['val']
         
+            if self.assume_roof_open:
+                aws_enclosure_status['status']['enclosure']['enclosure1']["shutter_status"] = 'Sim. Open'
+                aws_enclosure_status['status']['enclosure']['enclosure1']["enclosure_mode"] = "Simulated"
             
             try:
                 # To stop status's filling up the queue under poor connection conditions
@@ -2641,6 +2648,12 @@ class Observatory:
                 g_dev['seq'].last_roof_status = 'Closed'
         except:
             plog("Glitch on getting shutter status in aws call.")
+        
+        
+        
+        if self.assume_roof_open:
+            aws_enclosure_status["shutter_status"] = 'Sim. Open'
+            aws_enclosure_status["enclosure_mode"] = "Simulated"
         
         try:
         
