@@ -234,7 +234,7 @@ class Observatory:
         except:
             pass
         try:
-            os.system("taskkill /IM ASCOMAltAzDS.exe /F")            
+            os.system("taskkill /IM ASCOM.AltAzDS.exe /F")            
         except:
             pass
 
@@ -1952,7 +1952,6 @@ class Observatory:
                                 too_long = False
                                 
                         self.pixelscale_shelf['pixelscale_list'] = pixelscale_list
-                        plog (pixelscale_list)
                         self.pixelscale_shelf.close()
                         
                         

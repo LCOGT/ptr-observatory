@@ -589,9 +589,23 @@ class Camera:
         
         self.expresult=None
         
-        self.pixscale = float(self.config["camera"][self.name]["settings"]["1x1_pix_scale"])
+        # Figure out pixelscale from own observations
+        # Or use the config value if there hasn't been enough
+        # observations yet.
+        self.pixelscale_shelf = shelve.open(g_dev['obs'].obsid_path + 'ptr_night_shelf/' + 'pixelscale' + g_dev['cam'].name + str(g_dev['obs'].name))
+        try:
+            pixelscale_list=self.pixelscale_shelf['pixelscale_list']
+        except:
+            pixelscale_list=[]
         
-        
+        self.pixelscale_shelf.close()
+
+        if len(pixelscale_list) > 25:
+            self.pixscale = np.nanmedian(pixelscale_list)
+        else:
+            self.pixscale = float(self.config["camera"][self.name]["settings"]["1x1_pix_scale"])
+            
+        plog('1x1 pixel scale: ' + str(self.pixscale))
 
         
         """
