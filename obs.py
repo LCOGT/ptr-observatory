@@ -2614,6 +2614,9 @@ class Observatory:
             for enclosurekey in aws_enclosure_status['status']['enclosure']['enclosure1'].keys():
                 aws_enclosure_status['status']['enclosure']['enclosure1'][enclosurekey]=aws_enclosure_status['status']['enclosure']['enclosure1'][enclosurekey]['val']
         
+            if self.assume_roof_open:
+                aws_enclosure_status['status']['enclosure']['enclosure1']["shutter_status"] = 'Sim. Open'
+                aws_enclosure_status['status']['enclosure']['enclosure1']["enclosure_mode"] = "Simulated"
             
             try:
                 # To stop status's filling up the queue under poor connection conditions
