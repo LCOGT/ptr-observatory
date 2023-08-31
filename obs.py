@@ -1977,8 +1977,16 @@ class Observatory:
                             plog("This may be a poor pointing estimate.")
                             plog("This is more than a simple nudge, so not nudging the scope.")
                             g_dev["mnt"].reset_mount_reference()
-                            plog("I've  reset the mount_reference.")       
-    
+                            plog("I've  reset the mount_reference.")  
+                            
+                            plog ("reattempting to get back on target on next attempt")                            
+                            self.pointing_correction_requested_by_platesolve_thread = True
+                            self.pointing_correction_request_time = time.time()
+                            self.pointing_correction_request_ra = target_ra 
+                            self.pointing_correction_request_dec = target_dec
+                            self.pointing_correction_request_ra_err = err_ha
+                            self.pointing_correction_request_dec_err = err_dec 
+                            
                         else:
     
                              self.pointing_correction_requested_by_platesolve_thread = True
@@ -2611,12 +2619,16 @@ class Observatory:
             
             aws_enclosure_status=aws_enclosure_status.json()
             
+            aws_enclosure_status['site']=self.name
+            
             for enclosurekey in aws_enclosure_status['status']['enclosure']['enclosure1'].keys():
                 aws_enclosure_status['status']['enclosure']['enclosure1'][enclosurekey]=aws_enclosure_status['status']['enclosure']['enclosure1'][enclosurekey]['val']
         
             if self.assume_roof_open:
                 aws_enclosure_status['status']['enclosure']['enclosure1']["shutter_status"] = 'Sim. Open'
                 aws_enclosure_status['status']['enclosure']['enclosure1']["enclosure_mode"] = "Simulated"
+            
+           
             
             try:
                 # To stop status's filling up the queue under poor connection conditions
@@ -2663,7 +2675,7 @@ class Observatory:
                 status = {'shutter_status': aws_enclosure_status["shutter_status"]}
             except:
                 plog ('failed enclosure status!')
-                status = {'shutter_status': 'Unknown'}
+                status = {'shutter_status': 'Unknown'}        
 
         return status
     
@@ -2679,8 +2691,10 @@ class Observatory:
         try:
             aws_weather_status=reqs.get(uri_status, timeout=20)
             aws_weather_status=aws_weather_status.json()
+            
+            aws_weather_status['site']=self.name
         except Exception as e:
-            plog("Failed to get aws enclosure status. Usually not fatal:  ", e)
+            plog("Failed to get aws weather status. Usually not fatal:  ", e)
             aws_weather_status={} 
             aws_weather_status['status']={}
             aws_weather_status['status']['observing_conditions']={}
