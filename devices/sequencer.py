@@ -476,7 +476,10 @@ class Sequencer:
                         time.sleep(1)
                     g_dev['obs'].send_to_user("Rotator being homed at beginning of night.", p_level='INFO')
                     time.sleep(0.5)
-                    g_dev['rot'].home_command()
+                    g_dev['rot'].home_command({},{})
+                    while g_dev['rot'].rotator.IsMoving:
+                        plog("home rotator wait")
+                        time.sleep(1)
                     g_dev['mnt'].go_command(alt=70,az= 70)
                     self.wait_for_slew()
                     while g_dev['rot'].rotator.IsMoving:
@@ -767,7 +770,10 @@ class Sequencer:
                         time.sleep(1)
                     g_dev['obs'].send_to_user("Rotator being homed as this has not been done this evening.", p_level='INFO')
                     time.sleep(0.5)
-                    g_dev['rot'].home_command()
+                    g_dev['rot'].home_command({},{})
+                    while g_dev['rot'].rotator.IsMoving:
+                        plog("home rotator wait")
+                        time.sleep(1)
                     g_dev['mnt'].go_command(ra=dest_ra, dec=dest_dec)
                     self.wait_for_slew()
                     while g_dev['rot'].rotator.IsMoving:
@@ -776,6 +782,7 @@ class Sequencer:
                     self.rotator_has_been_homed_this_evening=True
                 except:
                     plog ("no rotator to home or wait for.")
+
             
             # Undertake a focus if necessary before starting observing the target
             if g_dev["foc"].last_focus_fwhm == None or g_dev["foc"].focus_needed == True:
@@ -2051,7 +2058,10 @@ class Sequencer:
                 time.sleep(1)
             g_dev['obs'].send_to_user("Rotator being homed to be certain of appropriate skyflat positioning.", p_level='INFO')
             time.sleep(0.5)
-            g_dev['rot'].home_command()
+            g_dev['rot'].home_command({},{})
+            while g_dev['rot'].rotator.IsMoving:
+                plog("home rotator wait")
+                time.sleep(1)
             self.check_zenith_and_move_to_flat_spot(ending=ending)
             self.wait_for_slew()
             while g_dev['rot'].rotator.IsMoving:
