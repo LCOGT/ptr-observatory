@@ -1914,10 +1914,13 @@ class Sequencer:
         while too_close_to_zenith:
             alt, az = self.astro_events.flat_spot_now()  
             if self.config['degrees_to_avoid_zenith_area_for_calibrations'] > 0:
-                plog ('zentih distance: ' + str(90-alt))
+                plog ('zenith distance: ' + str(90-alt))
                 if (90-alt) < self.config['degrees_to_avoid_zenith_area_for_calibrations']:
-                    alt=90-self.config['degrees_to_avoid_zenith_area_for_calibrations']
+                    parkalt=90-self.config['degrees_to_avoid_zenith_area_for_calibrations']
                     plog ("waiting for the flat spot to move through the zenith")
+                    
+                    plog ("Moving the scope ahead of the zenith spot and keeping it there and waiting for the sun to set a little more.")
+                    g_dev['mnt'].go_command(alt=parkalt, az=270) 
                     time.sleep(30)
                     
                     g_dev['obs'].scan_requests()
@@ -1941,7 +1944,7 @@ class Sequencer:
                 else:
                     g_dev['mnt'].go_command(skyflatspot=True) 
                     too_close_to_zenith=False                       
-            else:
+            else:                
                 g_dev['mnt'].go_command(skyflatspot=True)
                 too_close_to_zenith=False
 

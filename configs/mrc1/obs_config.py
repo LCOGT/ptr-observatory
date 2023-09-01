@@ -46,7 +46,7 @@ site_config = {
     'closest_distance_to_the_moon': 3,  # Degrees. For normal pointing requests don't go this close to the moon.
     'minimum_distance_from_the_moon_when_taking_flats': 45,
     'lowest_requestable_altitude': -5,  # Degrees. For normal pointing requests don't allow requests to go this low.
-    'degrees_to_avoid_zenith_area_for_calibrations': 0, 
+    'degrees_to_avoid_zenith_area_for_calibrations': 5, 
     'temperature_at_which_obs_too_hot_for_camera_cooling' : 23,  
     
     # These are the default values that will be set for the obs
