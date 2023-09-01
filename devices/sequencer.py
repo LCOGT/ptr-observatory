@@ -468,6 +468,13 @@ class Sequencer:
                 g_dev['mnt'].go_command(alt=70,az= 70)
                 
                 self.wait_for_slew()
+                
+                # Check it hasn't actually been homed this evening from the rotatorhome shelf
+                homerotator_time_shelf = shelve.open(g_dev['obs'].obsid_path + 'ptr_night_shelf/' + 'homerotatortime' + g_dev['cam'].name + str(g_dev['obs'].name))
+                if 'lasthome' in homerotator_time_shelf:
+                    if time.time() - homerotator_time_shelf['lasthome'] <  43200: # A home in the last twelve hours
+                        self.rotator_has_been_homed_this_evening=True
+                homerotator_time_shelf.close()
                 if not self.rotator_has_been_homed_this_evening:
                     # Homing Rotator for the evening.
                     try:
@@ -480,6 +487,11 @@ class Sequencer:
                         while g_dev['rot'].rotator.IsMoving:
                             plog("home rotator wait")
                             time.sleep(1)
+                        # Store last home time. 
+                        homerotator_time_shelf = shelve.open(g_dev['obs'].obsid_path + 'ptr_night_shelf/' + 'homerotatortime' + g_dev['cam'].name + str(g_dev['obs'].name))
+                        homerotator_time_shelf['lasthome'] = time.time()
+                        homerotator_time_shelf.close()
+                        
                         g_dev['mnt'].go_command(alt=70,az= 70)
                         self.wait_for_slew()
                         while g_dev['rot'].rotator.IsMoving:
@@ -760,7 +772,12 @@ class Sequencer:
             
             g_dev['mnt'].go_command(ra=dest_ra, dec=dest_dec)
             
-            
+            # Check it hasn't actually been homed this evening from the rotatorhome shelf
+            homerotator_time_shelf = shelve.open(g_dev['obs'].obsid_path + 'ptr_night_shelf/' + 'homerotatortime' + g_dev['cam'].name + str(g_dev['obs'].name))
+            if 'lasthome' in homerotator_time_shelf:
+                if time.time() - homerotator_time_shelf['lasthome'] <  43200: # A home in the last twelve hours
+                    self.rotator_has_been_homed_this_evening=True
+            homerotator_time_shelf.close()
             if not self.rotator_has_been_homed_this_evening:
                 plog ("rotator hasn't been homed this evening, doing that now")
                 # Homing Rotator for the evening.
@@ -774,6 +791,11 @@ class Sequencer:
                     while g_dev['rot'].rotator.IsMoving:
                         plog("home rotator wait")
                         time.sleep(1)
+                    # Store last home time. 
+                    homerotator_time_shelf = shelve.open(g_dev['obs'].obsid_path + 'ptr_night_shelf/' + 'homerotatortime' + g_dev['cam'].name + str(g_dev['obs'].name))
+                    homerotator_time_shelf['lasthome'] = time.time()
+                    homerotator_time_shelf.close()
+                        
                     g_dev['mnt'].go_command(ra=dest_ra, dec=dest_dec)
                     self.wait_for_slew()
                     while g_dev['rot'].rotator.IsMoving:
@@ -842,8 +864,7 @@ class Sequencer:
             #Compute how many to do.
             left_to_do = 0
             ended = False
-            #  NB NB NB Any mosaic larger than +SQ should be specified in degrees and be square
-            #  NB NB NB NB this is the source of a big error$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$!!!! WER 20220814
+
             for exposure in block['project']['exposures']:
                 
                 exposure['longstack'] = do_long_stack
@@ -1922,6 +1943,12 @@ class Sequencer:
                     plog ("Moving the scope ahead of the zenith spot and keeping it there and waiting for the sun to set a little more.")
                     g_dev['mnt'].go_command(alt=parkalt, az=270) 
                     
+                    # Check it hasn't actually been homed this evening from the rotatorhome shelf
+                    homerotator_time_shelf = shelve.open(g_dev['obs'].obsid_path + 'ptr_night_shelf/' + 'homerotatortime' + g_dev['cam'].name + str(g_dev['obs'].name))
+                    if 'lasthome' in homerotator_time_shelf:
+                        if time.time() - homerotator_time_shelf['lasthome'] <  43200: # A home in the last twelve hours
+                            self.rotator_has_been_homed_this_evening=True
+                    homerotator_time_shelf.close()
                     # Homing Rotator for the evening.
                     if not self.rotator_has_been_homed_this_evening:
                         plog ("If rotator isn't homed, waiting for the zenith is a great time to do this!")
@@ -1935,6 +1962,11 @@ class Sequencer:
                             while g_dev['rot'].rotator.IsMoving:
                                 plog("home rotator wait")
                                 time.sleep(1)
+                            # Store last home time. 
+                            homerotator_time_shelf = shelve.open(g_dev['obs'].obsid_path + 'ptr_night_shelf/' + 'homerotatortime' + g_dev['cam'].name + str(g_dev['obs'].name))
+                            homerotator_time_shelf['lasthome'] = time.time()
+                            homerotator_time_shelf.close()
+                            
                             self.check_zenith_and_move_to_flat_spot(ending=ending)
                             self.wait_for_slew()
                             while g_dev['rot'].rotator.IsMoving:
@@ -1997,11 +2029,11 @@ class Sequencer:
             # Flatspot position.
             flatspotaz, flatspotalt = self.astro_events.flat_spot_now()
             temp_separation=((ephem.separation( (flatspotaz,flatspotalt), (moondata.az.deg,moondata.alt.deg))))
-           
+
             if (moondata.alt.deg < -15):
                 plog ("Moon is far below the ground, alt " + str(moondata.alt.deg) + ", sky flats going ahead.")
-            
-            elif temp_separation < self.config['minimum_distance_from_the_moon_when_taking_flats']: #and (ephem.Moon(datetime.datetime.now()).moon_phase) > 0.05:
+
+            elif temp_separation < math.radians(self.config['minimum_distance_from_the_moon_when_taking_flats']): #and (ephem.Moon(datetime.datetime.now()).moon_phase) > 0.05:
                 plog ("Moon is in the sky and less than " + str(self.config['minimum_distance_from_the_moon_when_taking_flats']) + " degrees ("+str(temp_separation)+") away from the flat spot, skipping this flat time.")
                 return
            
@@ -2077,6 +2109,15 @@ class Sequencer:
                 
         self.check_zenith_and_move_to_flat_spot(ending=ending)
         
+        
+        
+        # Check it hasn't actually been homed this evening from the rotatorhome shelf
+        homerotator_time_shelf = shelve.open(g_dev['obs'].obsid_path + 'ptr_night_shelf/' + 'homerotatortime' + g_dev['cam'].name + str(g_dev['obs'].name))
+        if 'lasthome' in homerotator_time_shelf:
+            if time.time() - homerotator_time_shelf['lasthome'] <  43200: # A home in the last twelve hours
+                self.rotator_has_been_homed_this_evening=True
+        homerotator_time_shelf.close()
+
         if not self.rotator_has_been_homed_this_evening:
             # Homing Rotator for the evening.
             try:
@@ -2089,6 +2130,11 @@ class Sequencer:
                 while g_dev['rot'].rotator.IsMoving:
                     plog("home rotator wait")
                     time.sleep(1)
+                # Store last home time. 
+                homerotator_time_shelf = shelve.open(g_dev['obs'].obsid_path + 'ptr_night_shelf/' + 'homerotatortime' + g_dev['cam'].name + str(g_dev['obs'].name))
+                homerotator_time_shelf['lasthome'] = time.time()
+                homerotator_time_shelf.close()
+                
                 self.check_zenith_and_move_to_flat_spot(ending=ending)
                 self.wait_for_slew()
                 while g_dev['rot'].rotator.IsMoving:
@@ -2131,6 +2177,12 @@ class Sequencer:
                         filter_throughput = float(self.config['filter_wheel']['filter_wheel1']['flat_sky_gain'])
                     plog ("Using initial gain from config : "+ str(filter_throughput))
                 
+                
+                # Pick up previous camera_gain specific for this filter
+                self.filter_camera_gain_shelf = shelve.open(g_dev['obs'].obsid_path + 'ptr_night_shelf/' + 'filtercameragain' + g_dev['cam'].name + str(g_dev['obs'].name))
+                self.current_filter_last_camera_gain=self.filter_camera_gain_shelf[current_filter.lower()][0]
+                self.current_filter_last_camera_gain_stdev=self.filter_camera_gain_shelf[current_filter.lower()][1]
+                self.filter_camera_gain_shelf.close()
                         
                 acquired_count = 0                
                 flat_saturation_level = g_dev['cam'].config["camera"][g_dev['cam'].name]["settings"]["saturate"]

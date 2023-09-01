@@ -2148,8 +2148,10 @@ class Camera:
                             cge_sqrt=pow(cge_median,0.5)
                             cge_gain=1/pow(cge_sqrt/cge_stdev, 2)
                             
+                            
+                            plog( g_dev['seq'].current_filter_last_camera_gain)
                             # low values SHOULD be ok. 
-                            if cge_gain < (self.camera_known_gain + 3 *self.camera_known_gain_stdev):
+                            if cge_gain < (g_dev['seq'].current_filter_last_camera_gain + 3 *g_dev['seq'].current_filter_last_camera_gain_stdev):
                                 g_dev["obs"].send_to_user('Good flat value:  ' +str(int(central_median)) + ' Good Gain: ' + str(round(cge_gain,2)))
                                 plog('Good flat value:  ' +str(central_median) + ' Good Gain: ' + str(cge_gain))    
                                 
