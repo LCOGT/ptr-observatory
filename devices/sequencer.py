@@ -2180,8 +2180,12 @@ class Sequencer:
                 
                 # Pick up previous camera_gain specific for this filter
                 self.filter_camera_gain_shelf = shelve.open(g_dev['obs'].obsid_path + 'ptr_night_shelf/' + 'filtercameragain' + g_dev['cam'].name + str(g_dev['obs'].name))
-                self.current_filter_last_camera_gain=self.filter_camera_gain_shelf[current_filter.lower()][0]
-                self.current_filter_last_camera_gain_stdev=self.filter_camera_gain_shelf[current_filter.lower()][1]
+                try:
+                    self.current_filter_last_camera_gain=self.filter_camera_gain_shelf[current_filter.lower()][0]
+                    self.current_filter_last_camera_gain_stdev=self.filter_camera_gain_shelf[current_filter.lower()][1]
+                except:
+                    self.current_filter_last_camera_gain=200
+                    self.current_filter_last_camera_gain_stdev=200
                 self.filter_camera_gain_shelf.close()
                         
                 acquired_count = 0                
