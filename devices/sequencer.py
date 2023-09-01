@@ -1915,12 +1915,35 @@ class Sequencer:
             alt, az = self.astro_events.flat_spot_now()  
             if self.config['degrees_to_avoid_zenith_area_for_calibrations'] > 0:
                 plog ('zenith distance: ' + str(90-alt))
-                if (90-alt) < self.config['degrees_to_avoid_zenith_area_for_calibrations']:
+                if abs(90-alt) < self.config['degrees_to_avoid_zenith_area_for_calibrations']:
                     parkalt=90-self.config['degrees_to_avoid_zenith_area_for_calibrations']
                     plog ("waiting for the flat spot to move through the zenith")
                     
                     plog ("Moving the scope ahead of the zenith spot and keeping it there and waiting for the sun to set a little more.")
                     g_dev['mnt'].go_command(alt=parkalt, az=270) 
+                    
+                    # Homing Rotator for the evening.
+                    if not self.rotator_has_been_homed_this_evening:
+                        plog ("If rotator isn't homed, waiting for the zenith is a great time to do this!")
+                        try:
+                            while g_dev['rot'].rotator.IsMoving:
+                                plog("home rotator wait")
+                                time.sleep(1)
+                            g_dev['obs'].send_to_user("Rotator being homed to be certain of appropriate skyflat positioning.", p_level='INFO')
+                            time.sleep(0.5)
+                            g_dev['rot'].home_command({},{})
+                            while g_dev['rot'].rotator.IsMoving:
+                                plog("home rotator wait")
+                                time.sleep(1)
+                            self.check_zenith_and_move_to_flat_spot(ending=ending)
+                            self.wait_for_slew()
+                            while g_dev['rot'].rotator.IsMoving:
+                                plog("home rotator wait")
+                                time.sleep(1)
+                            self.rotator_has_been_homed_this_evening=True
+                        except:
+                            plog ("no rotator to home or wait for.")
+                    
                     time.sleep(30)
                     
                     g_dev['obs'].scan_requests()
