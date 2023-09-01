@@ -1956,7 +1956,20 @@ class Observatory:
                         
                         
                         err_ha = target_ra - solved_ra
-                        err_dec = target_dec - solved_dec                        
+                        err_dec = target_dec - solved_dec       
+                        
+                        # Check that the RA doesn't cross over zero, if so, bring it back around
+                        if err_ha > 12:
+                            plog ("BIG CHANGE ERR_HA")
+                            plog(err_ha)
+                            err_ha = err_ha - 24
+                            plog(err_ha)
+                        elif err_ha < -12:
+                            plog ("BIG CHANGE ERR_HA")
+                            plog(err_ha)
+                            err_ha = err_ha + 24
+                            plog(err_ha)
+                        
                         plog("Deviation from plate solution in ra: " + str(round(err_ha * 15 * 3600, 2)) + " & dec: " + str (round(err_dec * 3600, 2)) + " asec")
                                                 
                         self.last_platesolved_ra = solve["ra_j2000_hours"]
@@ -1967,6 +1980,9 @@ class Observatory:
                         # Reset Solve timers
                         g_dev['obs'].last_solve_time = datetime.datetime.now()
                         g_dev['obs'].images_since_last_solve = 0
+    
+                
+    
     
                         # Test here that there has not been a slew, if there has been a slew, cancel out!
                         if self.time_of_last_slew > time_platesolve_requested:
@@ -2583,11 +2599,11 @@ class Observatory:
 
         # Sometimes the pointing is so far off platesolve requests a new slew and recenter
         if self.pointing_recentering_requested_by_platesolve_thread:
-            
+            self.pointing_recentering_requested_by_platesolve_thread = False
+            self.pointing_correction_requested_by_platesolve_thread = False
             g_dev['mnt'].go_command(ra=self.pointing_correction_request_ra, dec=self.pointing_correction_request_dec) 
             g_dev['seq'].centering_exposure(no_confirmation=True, try_hard=True)
             
-            self.pointing_recentering_requested_by_platesolve_thread
 
 
         # This block repeats itself in various locations to try and nudge the scope
@@ -2596,10 +2612,10 @@ class Observatory:
             
             if self.pointing_correction_request_time > self.time_of_last_slew:  # Check it hasn't slewed since request
                 
-                
                 plog("Re-centering Telescope Slightly.")
                 self.send_to_user("Re-centering Telescope Slightly.")
                 wait_for_slew()
+                g_dev['mnt'].previous_pier_side=g_dev['mnt'].mount.sideOfPier
                 ranudge= g_dev['mnt'].mount.RightAscension + g_dev['obs'].pointing_correction_request_ra_err
                 decnudge= g_dev['mnt'].mount.Declination + g_dev['obs'].pointing_correction_request_dec_err
                 if ranudge < 0:
@@ -2610,7 +2626,10 @@ class Observatory:
                     g_dev['mnt'].mount.SlewToCoordinatesAsync(ranudge, decnudge)
                 except:
                     plog (traceback.format_exc())
-                    
+                if not g_dev['mnt'].previous_pier_side==g_dev['mnt'].mount.sideOfPier:
+                    self.send_to_user("Detected pier flip in re-centering. Re-centering telescope again.")
+                    g_dev['mnt'].go_command(ra=self.pointing_correction_request_ra, dec=self.pointing_correction_request_dec) 
+                    g_dev['seq'].centering_exposure(no_confirmation=True, try_hard=True)                    
                 g_dev['obs'].time_of_last_slew = time.time()
                 wait_for_slew()
                     
