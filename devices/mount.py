@@ -346,6 +346,7 @@ class Mount:
         
         self.EquatorialSystem=self.mount.EquatorialSystem
         
+        self.previous_pier_side=self.mount.sideOfPier
               
 
     def check_connect(self):
