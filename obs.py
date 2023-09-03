@@ -236,6 +236,14 @@ class Observatory:
             os.system("taskkill /IM ASCOM.AltAzDS.exe /F")            
         except:
             pass
+        try:
+            os.system("taskkill /IM TheSkyX.exe /F")
+        except:
+            pass    
+        try:
+            os.system("taskkill /IM TheSky64.exe /F")
+        except:
+            pass    
 
         listOfProcessIds = findProcessIdByName('maxim_dl')
         for pid in listOfProcessIds:
