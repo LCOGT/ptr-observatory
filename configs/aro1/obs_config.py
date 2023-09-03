@@ -201,8 +201,8 @@ site_config = {
                 'latitude_offset': 0.0,     # Decimal degrees, North is Positive   These *could* be slightly different than site.
                 'longitude_offset': 0.0,   # Decimal degrees, West is negative  #NB This could be an eval( <<site config data>>))
                 'elevation_offset': 0.0,  # meters above sea level
-                'home_park_altitude': 0.0,
-                'home_park_azimuth': 0.0,
+                'home_altitude': 0.0,
+                'home_azimuth': 0.0,     
                 'horizon':  25.,    # Meant to be a circular horizon. Or set to None if below is filled in.
                 'horizon_detail': {  # Meant to be something to draw on the Skymap with a spline fit.
                     '0.0': 25.,
