@@ -3132,7 +3132,7 @@ class Camera:
                         # FWHM. 
                         if focus_image == True:
                             reported=0
-                        
+                            temptimer=time.time()
                             plog ("Exposure Complete")
                             g_dev["obs"].send_to_user("Exposure Complete")
                             while True:
@@ -3143,6 +3143,14 @@ class Camera:
                                         plog ("FOCUS: Waiting for SEP processing to complete and queue to clear")
                                         reported=1
                                     pass
+                                
+                                    if g_dev['obs'].open_and_enabled_to_observe==False:
+                                        plog ("No longer open and enabled to observe, cancelling out of waiting for SEP.")
+                                        break
+                                if (time.time() - temptimer) > 20:                                    
+                                    g_dev['obs'].update()
+                                    temptimer=time.time()
+                                    
                                 time.sleep(0.2)
                             focus_image = False
                             

@@ -1959,9 +1959,13 @@ class Sequencer:
                             g_dev['obs'].send_to_user("Rotator being homed to be certain of appropriate skyflat positioning.", p_level='INFO')
                             time.sleep(0.5)
                             g_dev['rot'].home_command({},{})
+                            temptimer=time.time()
                             while g_dev['rot'].rotator.IsMoving:
                                 plog("home rotator wait")
                                 time.sleep(1)
+                                if (time.time() - temptimer) > 20:                                    
+                                    g_dev['obs'].update()
+                                    temptimer=time.time()
                             # Store last home time. 
                             homerotator_time_shelf = shelve.open(g_dev['obs'].obsid_path + 'ptr_night_shelf/' + 'homerotatortime' + g_dev['cam'].name + str(g_dev['obs'].name))
                             homerotator_time_shelf['lasthome'] = time.time()
@@ -2777,6 +2781,7 @@ class Sequencer:
             result = self.centering_exposure(no_confirmation=True)
             # Wait for platesolve            
             reported=0
+            temptimer=time.time()
             while True:
                 if g_dev['obs'].platesolve_is_processing ==False and g_dev['obs'].platesolve_queue.empty():
                     break
@@ -2784,6 +2789,9 @@ class Sequencer:
                     if reported ==0:
                         plog ("PLATESOLVE: Waiting for platesolve processing to complete and queue to clear")
                         reported=1
+                    if (time.time() - temptimer) > 20:                                    
+                        g_dev['obs'].update()
+                        temptimer=time.time()                    
                     if self.stop_script_called:
                         g_dev["obs"].send_to_user("Cancelling out of autofocus script as stop script has been called.")
                         self.focussing=False
@@ -3404,6 +3412,7 @@ class Sequencer:
             # Wait for platesolve
             #queue_clear_time = time.time()
             reported=0
+            temptimer=time.time()
             while True:
                 if g_dev['obs'].platesolve_is_processing ==False and g_dev['obs'].platesolve_queue.empty():
                     #plog ("we are free from platesolving!")
@@ -3411,7 +3420,10 @@ class Sequencer:
                 else:
                     if reported ==0:
                         plog ("PLATESOLVE: Waiting for platesolve processing to complete and queue to clear")
-                        reported=1
+                        reported=1                    
+                    if (time.time() - temptimer) > 20:                                    
+                        g_dev['obs'].update()
+                        temptimer=time.time()
                     if self.stop_script_called:
                         g_dev["obs"].send_to_user("Cancelling out of autofocus script as stop script has been called.")  
                         self.focussing=False
@@ -3730,6 +3742,7 @@ class Sequencer:
             g_dev["obs"].send_to_user("Platesolving image.")
             # Wait for platesolve
             reported=0
+            temptimer=time.time()
             while True:
                 if g_dev['obs'].platesolve_is_processing ==False and g_dev['obs'].platesolve_queue.empty():
                     break
@@ -3737,6 +3750,9 @@ class Sequencer:
                     if reported ==0:
                         plog ("PLATESOLVE: Waiting for platesolve processing to complete and queue to clear")
                         reported=1
+                    if (time.time() - temptimer) > 20:                                    
+                        g_dev['obs'].update()
+                        temptimer=time.time()
                     if self.stop_script_called:
                         g_dev["obs"].send_to_user("Cancelling out of script as stop script has been called.")  
                         self.total_sequencer_control = False
@@ -3869,6 +3885,7 @@ class Sequencer:
         
         # Make sure platesolve queue is clear
         reported=0
+        temptimer=time.time()
         while True:
             
             if g_dev['obs'].platesolve_is_processing ==False and g_dev['obs'].platesolve_queue.empty():
@@ -3877,6 +3894,9 @@ class Sequencer:
                 if reported ==0:
                     plog ("PLATESOLVE: Waiting for platesolve processing to complete and queue to clear")
                     reported=1
+                if (time.time() - temptimer) > 20:                                    
+                    g_dev['obs'].update()
+                    temptimer=time.time()
                 if self.stop_script_called:
                     g_dev["obs"].send_to_user("Cancelling out of autofocus script as stop script has been called.")  
                     return
@@ -3895,6 +3915,7 @@ class Sequencer:
         # Wait for platesolve
         queue_clear_time = time.time()
         reported=0
+        temptimer=time.time()
         while True:
             if g_dev['obs'].platesolve_is_processing ==False and g_dev['obs'].platesolve_queue.empty():
                 #plog ("we are free from platesolving!")
@@ -3903,6 +3924,9 @@ class Sequencer:
                 if reported ==0:
                     plog ("PLATESOLVE: Waiting for platesolve processing to complete and queue to clear")
                     reported=1
+                if (time.time() - temptimer) > 20:                                    
+                    g_dev['obs'].update()
+                    temptimer=time.time()
                 if self.stop_script_called:
                     g_dev["obs"].send_to_user("Cancelling out of autofocus script as stop script has been called.")  
                     return
@@ -3937,6 +3961,7 @@ class Sequencer:
             
             queue_clear_time = time.time()
             reported=0
+            temptimer=time.time()
             while True:
                 if g_dev['obs'].platesolve_is_processing ==False and g_dev['obs'].platesolve_queue.empty():
                     break
@@ -3944,6 +3969,9 @@ class Sequencer:
                     if reported ==0:
                         plog ("PLATESOLVE: Waiting for platesolve processing to complete and queue to clear")
                         reported=1
+                    if (time.time() - temptimer) > 20:                                    
+                        g_dev['obs'].update()
+                        temptimer=time.time()
                     if self.stop_script_called:
                         g_dev["obs"].send_to_user("Cancelling out of autofocus script as stop script has been called.")  
                         return
@@ -3963,6 +3991,7 @@ class Sequencer:
                 
                 queue_clear_time = time.time()
                 reported=0
+                temptimer=time.time()
                 while True:
                     if g_dev['obs'].platesolve_is_processing ==False and g_dev['obs'].platesolve_queue.empty():
                         #plog ("we are free from platesolving!")
@@ -3971,6 +4000,9 @@ class Sequencer:
                         if reported ==0:
                             plog ("PLATESOLVE: Waiting for platesolve processing to complete and queue to clear")
                             reported=1
+                        if (time.time() - temptimer) > 20:                                    
+                            g_dev['obs'].update()
+                            temptimer=time.time()
                         if self.stop_script_called:
                             g_dev["obs"].send_to_user("Cancelling out of autofocus script as stop script has been called.")  
                             return
