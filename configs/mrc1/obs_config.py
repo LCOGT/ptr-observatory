@@ -186,10 +186,7 @@ site_config = {
                 'latitude_offset': 0.0,
                 'longitude_offset': 0.0,  # Decimal degrees, West is negative
                 'elevation_offset': 0.0,    # meters above sea level
-                # Having these settings is important for PWI4 where it can easily be messed up.
-                'home_park_altitude': 0,
-                'home_park_azimuth': 180,
-                'home_altitude': 60,  # Having these settings is important for PWI4 where it can easily be messed up.
+                'home_altitude': 60, 
                 'home_azimuth': 359,
                 'fixed_screen_azimuth': 167.25,
                 'fixed_screen _altitude': 0.54,

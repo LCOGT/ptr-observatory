@@ -201,8 +201,6 @@ site_config = {
 			    'latitude_offset': 0.0,     #Decimal degrees, North is Positive   These *could* be slightly different than site.
 			    'longitude_offset': 0.0,   #Decimal degrees, West is negative  #NB This could be an eval( <<site config data>>))
 			    'elevation_offset': 0.0,    # meters above sea level
-                'home_park_altitude': 0.0,
-                'home_park_azimuth': 270.,
 
                 'home_altitude' : 70,
                 'home_azimuth' : 160,

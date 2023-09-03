@@ -253,8 +253,6 @@ site_config = {
  			    'latitude_offset': 0.025,     #Meters North is Positive   These *could* be slightly different than site.
  			    'longitude_offset': 0.25,   #meters West is negative  #NB This could be an eval( <<site config data>>))
  			    'elevation_offset': 0.5,    # meters above sea level
-                'home_park_altitude': 0,   #Having this setting is important for PWI4 where it can easily be messed up.
-                'home_park_azimuth': 195.0,
                 'fixed_screen _altitude': 0.54,
                 'horizon':  15.,    #  Meant to be a circular horizon. Or set to None if below is filled in.
                 'horizon_detail': {
