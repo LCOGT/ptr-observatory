@@ -307,6 +307,7 @@ class Focuser:
 
             if self.best_previous_focus_point==None:
                 self.best_previous_focus_point=self.config["reference"]
+                
         except:
             self.set_focal_ref_reset_log(self.config["reference"])
 
@@ -576,7 +577,16 @@ class Focuser:
         return
 
     def set_focal_ref_reset_log(self, ref):
-        cam_shelf = shelve.open(self.obsid_path + "ptr_night_shelf/" + self.camera_name + str(g_dev['obs'].name))
+        try:
+            cam_shelf = shelve.open(self.obsid_path + "ptr_night_shelf/" + self.camera_name + str(g_dev['obs'].name))
+        except:
+            plog ("Focus log file corrupt, creating new ones")
+            import os
+            os.remove(self.obsid_path + "ptr_night_shelf/" + self.camera_name + g_dev['obs'].name +".dat")
+            os.remove(self.obsid_path + "ptr_night_shelf/" + self.camera_name + g_dev['obs'].name +".bak")
+            os.remove(self.obsid_path + "ptr_night_shelf/" + self.camera_name + g_dev['obs'].name +".dir")
+            cam_shelf = shelve.open(self.obsid_path + "ptr_night_shelf/" + self.camera_name + str(g_dev['obs'].name))
+            
         cam_shelf["focus_ref"] = ref
         cam_shelf["af_log"] = []
         cam_shelf.close()

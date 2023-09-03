@@ -146,7 +146,7 @@ class Observatory:
         self.wema_name = self.config['wema_name']
 
         # Creation of directory structures if they do not exist already
-        self.obsid_path = ptr_config["archive_path"] + '/' + self.name + '/'
+        self.obsid_path = str(ptr_config["archive_path"] + '/' + self.name + '/').replace('//','/')
         g_dev["obsid_path"] = self.obsid_path
         if not os.path.exists(self.obsid_path):
             os.makedirs(self.obsid_path)
@@ -1728,8 +1728,7 @@ class Observatory:
                                                                                                                                   
                 # Essentially wait until the subprocess is complete
                 sep_subprocess.communicate()    
-                
-                
+                                
                 # LOADING UP THE SEP FILE HERE AGAIN
                 if os.path.exists(im_path + text_name.replace('.txt', '.sep')):
                     try:

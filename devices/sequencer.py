@@ -897,7 +897,10 @@ class Sequencer:
                     plog ("Observing " + str(block['project']['project_targets'][0]['name']))
 
                     plog("Executing: ", exposure, left_to_do)
-                    color = exposure['filter']
+                    try:
+                        filter_requested = exposure['filter']
+                    except:
+                        filter_requested = 'None'
                     exp_time =  float(exposure['exposure'])
                     count = int(exposure['count'])
                     #  We should add a frame repeat count
@@ -954,7 +957,7 @@ class Sequencer:
 
                             # Set up options for exposure and take exposure.
                             req = {'time': exp_time,  'alias':  str(self.config['camera']['camera_1_1']['name']), 'image_type': imtype, 'smartstack' : smartstackswitch, 'longstackswitch' : longstackswitch, 'longstackname' : longstackname, 'block_end' : g_dev['seq'].blockend}   #  NB Should pick up filter and constants from config
-                            opt = {'area': 150, 'count': 1, 'bin': 1, 'filter': color, \
+                            opt = {'area': 150, 'count': 1, 'bin': 1, 'filter': filter_requested, \
                                    'hint': block['project_id'] + "##" + dest_name, 'object_name': block['project']['project_targets'][0]['name'], 'pane': pane}
                             plog('Seq Blk sent to camera:  ', req, opt)
 
