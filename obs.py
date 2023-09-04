@@ -1953,7 +1953,7 @@ class Observatory:
                         too_long=True
                         while too_long:
                             if len(pixelscale_list) > 100:
-                                pixelscale_list.pop(-1)
+                                pixelscale_list.pop(0)
                             else:
                                 too_long = False
                                 
