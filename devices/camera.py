@@ -1644,6 +1644,7 @@ class Camera:
                                     g_dev['obs'].camera_sufficiently_cooled_for_calibrations = False
                                     self.expresult = {}
                                     self.expresult["error"] = True
+                                    self.expresult["patch"] = None
                                     self.exposure_busy = False
                                     self.currently_in_smartstack_loop=False
                                     return self.expresult
