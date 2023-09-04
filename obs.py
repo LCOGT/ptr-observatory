@@ -602,7 +602,7 @@ class Observatory:
         try:            
             g_dev["cam"]._stop_expose()               
             g_dev["cam"].exposure_busy = False
-            g_dev['cam'].expresult["stopped"] = {}
+            g_dev['cam'].expresult = {}
             g_dev['cam'].expresult["stopped"] = True            
                 
         except Exception as e:

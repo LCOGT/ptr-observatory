@@ -587,7 +587,7 @@ class Camera:
         self.start_time_of_observation = time.time()
         self.current_exposure_time = 20
         
-        self.expresult=None
+        self.expresult={}
         
         # Figure out pixelscale from own observations
         # Or use the config value if there hasn't been enough
@@ -788,6 +788,7 @@ class Camera:
 
     def _theskyx_stop_expose(self):
         self.camera.AbortExposure()
+        g_dev['cam'].expresult = {}
         g_dev['cam'].expresult["stopped"] = True
 
     def _theskyx_imageavailable(self):
@@ -846,6 +847,7 @@ class Camera:
 
     def _maxim_stop_expose(self):
         self.camera.AbortExposure()
+        g_dev['cam'].expresult = {}
         g_dev['cam'].expresult["stopped"] = True
 
     def _maxim_imageavailable(self):
@@ -908,6 +910,7 @@ class Camera:
 
     def _ascom_stop_expose(self):
         self.camera.StopExposure()  # ASCOM also has an AbortExposure method.
+        g_dev['cam'].expresult = {}
         g_dev['cam'].expresult["stopped"] = True
 
     def _ascom_getImageArray(self):
@@ -969,7 +972,8 @@ class Camera:
         qhycam.so.ExpQHYCCDSingleFrame(qhycam.camera_params[qhycam_id]['handle'])
        
     def _qhyccd_stop_expose(self):
-        g_dev['cam'].expresult["stopped"] = True
+        self.expresult = {}
+        self.expresult["stopped"] = True
         try:
             qhycam.so.CancelQHYCCDExposingAndReadout(qhycam.camera_params[qhycam_id]['handle'])
         except:
@@ -1660,7 +1664,7 @@ class Camera:
                         else:
                             plog("Something terribly wrong, driver not recognized.!")
                             self.expresult = {}
-                            self.expresult["error":True]
+                            self.expresult["error"] = True
                             self.exposure_busy = False
                             self.currently_in_smartstack_loop=False
                             return self.expresult
@@ -1719,6 +1723,7 @@ class Camera:
     def stop_command(self, required_params, optional_params):
         """Stop the current exposure and return the camera to Idle state."""
         self._stop_expose()
+        g_dev['cam'].expresult = {}
         g_dev['cam'].expresult["stopped"] = True
         self.exposure_busy = False
         self.exposure_halted = True
