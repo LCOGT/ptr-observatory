@@ -125,9 +125,9 @@ site_config = {
      'auto_morn_bias_dark': True,
      
      # FOCUS OPTIONS
-     'periodic_focus_time': 12.0, # This is a time, in hours, over which to bypass automated focussing (e.g. at the start of a project it will not refocus if a new project starts X hours after the last focus)
+     'periodic_focus_time': 4.0, # This is a time, in hours, over which to bypass automated focussing (e.g. at the start of a project it will not refocus if a new project starts X hours after the last focus)
      'stdev_fwhm': 0.5,  # This is the expected variation in FWHM at a given telescope/camera/site combination. This is used to check if a fwhm is within normal range or the focus has shifted
-     'focus_trigger': 0.75,  # What FWHM increase is needed to trigger an autofocus
+     'focus_trigger': 0.6,  # What FWHM increase is needed to trigger an autofocus
      
      # PLATESOLVE options
      'solve_nth_image': 1,  # Only solve every nth image
