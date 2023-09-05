@@ -158,41 +158,41 @@ site_config = {
             'recover_script':  None,
             'shutdown_script':  None,
             'alignment': 'Alt-Az',
+            'has_paddle': False,            
+            'pointing_tel': 'tel1',
+            
+            # Standard offsets to pointings
             'west_clutch_ra_correction': 0.0,
             'west_clutch_dec_correction': 0.0,
             'east_flip_ra_correction': 0.0,
             'east_flip_dec_correction': 0.0,  #
-            'home_after_unpark': True,
-            'home_before_park': True,
             
+            # Activity before and after parking
+            'home_after_unpark': True,
+            'home_before_park': True,            
             'settle_time_after_unpark' : 0,
             'settle_time_after_park' : 0,
-            # if this is set to yes, it will reset the mount at startup and when coordinates are out significantly'home_after_unpark' : True,
-            'permissive_mount_reset': 'yes',
             'time_inactive_until_park': 3600.0,  # How many seconds of inactivity until it will park the telescope
-            'has_paddle': False,
-            'has_ascom_altaz': True,
-            'pointing_tel': 'tel1',
-            # 'Selector': {     # This does not belong here but in the repective OTA  >>>>
-            #     'available': False,  # If True add these lines;
-            #     # 'positions': 4,
-            #     # 'inst 1': 'camera_1_1',      #inst_1 is always the default until status reports different
-            #     # 'inst 2': 'echelle1',     #These are all types od cameras.
-            #     # 'inst 3': 'camera3',
-            #     # 'inst 4': 'lowres1',
-            # },
+            
+            # if this is set to yes, it will reset the mount at startup and when coordinates are out significantly'
+            'permissive_mount_reset': 'yes',
+            
             'settings': {
                 # Decimal degrees, North is Positive. These *could* be slightly different than site.
                 'latitude_offset': 0.0,
                 'longitude_offset': 0.0,  # Decimal degrees, West is negative
                 'elevation_offset': 0.0,    # meters above sea level
+                
+                # For scopes that don't have a home postion in ASCOM,
+                # These values are where to point on a home command.
                 'home_altitude': 60, 
                 'home_azimuth': 359,
+                
+                # If there is a screen, where do I point at it?
                 'fixed_screen_azimuth': 167.25,
                 'fixed_screen _altitude': 0.54,
-                'refraction_on': True,
-                'model_on': True,
-                'rates_on': True,
+                
+                # Information about the horizon around the scope.
                 'horizon':  20,
                 'horizon_detail': {  #In principle there can be slightly different Horizons for a multiple OTA obsp. >>>>
                     '0': 32,
@@ -222,6 +222,9 @@ site_config = {
                     '315': 32,
                     '360': 32,
                 },
+                
+                # What is the TPOINT model for those scopes where
+                # the mount software does not integrate these values.
                 'model': {          #In principle different OTA's could have offsets.
                     'IH': 0,
                     'ID': 0.,
@@ -356,12 +359,19 @@ site_config = {
             'name': 'focuser',
             'desc':  'Optec Gemini',
             'driver': 'ASCOM.OptecGemini.Focuser',
+            
+            # Override the estimated best focus and start at the provided config value
             'start_at_config_reference': False,
-            'correct_focus_for_temperature' : True,
-            'maximum_good_focus_in_arcsecond': 2.5, # highest value to consider as being in "good focus". Used to select last good focus value
+            # Use previous best focus information to correct focuser for temperature change
+            'correct_focus_for_temperature' : True,            
+            # highest value to consider as being in "good focus". Used to select last good focus value
+            'maximum_good_focus_in_arcsecond': 2.5, 
             
-            'reference': 7250,  # 20221103    #7418,    # Nominal at 15C Primary temperature, in microns not steps. Guess
+            # When the focusser has no previous best focus values
+            # start from this reference position
+            'reference': 7250,  
             
+            # Limits and steps for the focuser.
             'minimum': 0,    # NB this needs clarifying, we are mixing steps and microns.
             'maximum': 12700,
             'step_size': 1,
@@ -369,7 +379,6 @@ site_config = {
             'throw': 250,
             'unit': 'micron',
             'unit_conversion':  9.09090909091,  # Taken from Gemini at mid-range.
-            'has_dial_indicator': False
         },
 # =============================================================================
 #         'focuser2': {         # >>>>
@@ -430,10 +439,12 @@ site_config = {
             "driver": "Maxim.CCDCamera",
             # "driver":   'ASCOM.FLI.FilterWheel',   #  NB THIS IS THE NEW DRIVER FROM peter.oleynikov@gmail.com  Found in Kepler ASCOM section
             "dual_wheel": True,
-            "filter_settle_time": 1, #how long to wait for the filter to settle after a filter change(seconds)
-
-            'override_automatic_filter_throughputs': False, # This ignores the automatically estimated filter gains and starts with the values from the config file
-             
+            
+            #how long to wait for the filter to settle after a filter change(seconds)
+            "filter_settle_time": 1, 
+            
+            # This ignores the automatically estimated filter gains and starts with the values from the config file             
+            'override_automatic_filter_throughputs': False, 
             # WER - if there is no filter wheel, then these two are used, otherwise they are harmless
             "name": "RGGB",
 
@@ -783,17 +794,17 @@ site_config = {
 
 
 
-    # AWS does not need this, but my configuration code might make use of it. 
-    'server': {
-        'server1': {
-            'name': 'QNAP',
-            'win_url': 'archive (\\10.15.0.82) (Q:)',
-            'redis':  '(host=10.15.0.15, port=6379, db=0, decode_responses=True)',
-            'startup_script':  None,
-            'recover_script':  None,
-            'shutdown_script':  None,
-        },
-    },
+    # # AWS does not need this, but my configuration code might make use of it. 
+    # 'server': {
+    #     'server1': {
+    #         'name': 'QNAP',
+    #         'win_url': 'archive (\\10.15.0.82) (Q:)',
+    #         'redis':  '(host=10.15.0.15, port=6379, db=0, decode_responses=True)',
+    #         'startup_script':  None,
+    #         'recover_script':  None,
+    #         'shutdown_script':  None,
+    #     },
+    # },
 }  # This brace closes the whole configuration dictionary. Match found up top at:  obs_config = {
 
 
