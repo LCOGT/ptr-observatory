@@ -2272,19 +2272,7 @@ class Camera:
                     )
 
                     hdu.header["CCDSUM"] = (self.ccd_sum, "Sum of chip binning")
-
-                    # hdu.header["RDMODE"] = (
-                    #     self.config["camera"][self.name]["settings"]["read_mode"],
-                    #     "Camera read mode",
-                    # )
-                    # hdu.header["RDOUTM"] = (
-                    #     self.config["camera"][self.name]["settings"]["readout_mode"],
-                    #     "Camera readout mode",
-                    # )
-                    # hdu.header["RDOUTSP"] = (
-                    #     self.config["camera"][self.name]["settings"]["readout_speed"],
-                    #     "[FPS] Readout speed",
-                    # )
+                    
                     tempccdtemp, ccd_humidity, ccd_pressure = (g_dev['cam']._temperature())
                     hdu.header["CCDSTEMP"] = (
                         round(self.setpoint, 2),     #WER fixed.
