@@ -25,6 +25,8 @@ from ptr_utility import plog
 # DAY_Directory = None  # NB this is an evil use of Globals by WER.  20200408   WER
 # Day_tomorrow = None
 # dayNow = None
+from astropy.coordinates import SkyCoord, EarthLocation, AltAz, get_sun, get_moon #\ #FK5, ICRS,  \
+from astropy import units as u
 import traceback
 import requests
 from requests.adapters import HTTPAdapter, Retry
@@ -49,10 +51,16 @@ class Events:
         except:
             plog ("Failed to get wema_config")
             plog(traceback.format_exc())
+            
+        
 
         self.siteLatitude = round(float(self.wema_config['latitude']), 8)  # 34 20 34.569   #34 + (20 + 34.549/60.)/60.
         self.siteLongitude = round(float(self.wema_config['longitude']), 8)  # -(119 + (40 + 52.061/60.)/60.) 119 40 52.061 W
         self.siteElevation = round(float(self.wema_config['elevation']), 3)
+
+        self.site_coordinates = EarthLocation(lat=float(g_dev['evnt'].wema_config['latitude'])*u.deg, \
+                                lon=float(g_dev['evnt'].wema_config['longitude'])*u.deg,
+                                height=float(g_dev['evnt'].wema_config['elevation'])*u.m)
 
         self.siteRefTemp = round(float(self.wema_config['reference_ambient']), 2)  # These should be a monthly average data.
         self.siteRefPress = round(float(self.wema_config['reference_pressure']), 2)
@@ -314,27 +322,27 @@ class Events:
     ###     Public Methods   ####
     #############################
 
-    # def getSunEvents(self):
-    #     '''
-    #     This is used in the enclosure module to determine if is a good time
-    #     of day to open.
-    #     '''
-    #     sun = ephem.Sun()
-    #     ptr = ephem.Observer() 
-    #     ptr.date = dayNow
-    #     ptr.lat = str(self.siteLatitude)
-    #     ptr.lon = str(self.siteLongitude)
-    #     ptr.elev = self.siteElevation
-    #     ptr.compute_pressure()
-    #     ptr.temp = self.siteRefTemp
-    #     ptr.horizon = '-0:34'
-    #     sunset = ptr.next_setting(sun)
-    #     sunrise = ptr.next_rising(sun)
-    #     ptr.horizon = '-6'
-    #     sun.compute(ptr)
-    #     civilDusk = ptr.next_setting(sun)
-    #     ops_win_begin = civilDusk - 121/1440
-    #     return (ops_win_begin, sunset, sunrise, ephem.now())
+    def getSunEvents(self):
+        '''
+        This is used in the enclosure module to determine if is a good time
+        of day to open.
+        '''
+        sun = ephem.Sun()
+        ptr = ephem.Observer() 
+        ptr.date = dayNow
+        ptr.lat = str(self.siteLatitude)
+        ptr.lon = str(self.siteLongitude)
+        ptr.elev = self.siteElevation
+        ptr.compute_pressure()
+        ptr.temp = self.siteRefTemp
+        ptr.horizon = '-0:34'
+        sunset = ptr.next_setting(sun)
+        sunrise = ptr.next_rising(sun)
+        ptr.horizon = '-6'
+        sun.compute(ptr)
+        civilDusk = ptr.next_setting(sun)
+        ops_win_begin = civilDusk - 121/1440
+        return (ops_win_begin, sunset, sunrise, ephem.now())
 
     # def flat_spot_now(self):
     #     '''
@@ -351,6 +359,14 @@ class Events:
     #         sun_az2 = sun_az  # The sun is >15 degrees below horizon, use its az
 
     #     return(sun_az2, sun_alt2)
+
+
+    def sun_az_alt_now(self):
+        
+        altazframe=AltAz(obstime=Time.now(), location=self.site_coordinates)        
+        sun_coords=get_sun(Time.now()).transform_to(altazframe)
+        return sun_coords.az.degree, sun_coords.alt.degree
+        
 
     # def sun_az_alt_now(self):
     #     '''
