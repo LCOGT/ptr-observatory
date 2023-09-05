@@ -530,7 +530,7 @@ site_config = {
                 #'filter_sky_sort':     ['S2', 'HA', 'N2', 'O3', 'ip', 'rp', 'Red', 'JV',\
                 #                        'Green','JB', 'gp',   'Blue', 'EXO',  'w','Lum',  'air']  #Least to most throughput
                 'filter_sky_sort':     ['S2', 'HA', 'N2', 'O3', 'ip', 'rp', 'JV',\
-                                        'JB', 'gp', 'EXO', 'Lum',  'air'],
+                                        'JB', 'gp', 'EXO', 'Lum', 'w', 'air'],
                  #Least to most throughput
 
             },
