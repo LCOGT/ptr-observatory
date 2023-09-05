@@ -531,7 +531,11 @@ site_config = {
                 # If there is sufficient memory ... OR .... not many flats, it is faster to keep the flats in memory.
                 'hold_flats_in_memory': True,
 
-
+                # Simple Camera Properties
+                'is_cmos':  True,
+                'is_osc': True,
+                'is_color': True,  # NB we also have a is_osc key.
+                
 
                 # For direct QHY usage we need to set the appropriate gain.
                 # This changes from site to site. "Fast" scopes like the RASA need lower gain then "slow".
@@ -681,67 +685,71 @@ site_config = {
 
 
                
+                # These are the offsets in degrees of the actual telescope from the latitude and longitude of the WEMA settings
                 'north_offset': 0.0,  # These three are normally 0.0 for the primary telescope
                 'east_offset': 0.0,
-                'rotation': 0.0,
-                'min_exposure': 0.0001,  # NB possibly these are gated by is_cmos
+                
+                
+                # This is the absolute minimum and maximum exposure for the camera
+                'min_exposure': 0.0001,
+                'max_exposure': 360.,
                 # For certain shutters, short exposures aren't good for flats. Some CMOS have banding in too short an exposure. Largely applies to ccds though.
                 'min_flat_exposure': 0.0001,                
-                # Realistically there should be a maximum flat_exposure that makes sure flats are efficient and aren't collecting actual stars.
+                # Realistically there is maximum flat_exposure that makes sure flats are efficient and aren't collecting actual stars.
                 'max_flat_exposure': 20.0,
+                # During the daytime with the daytime safety mode on, exposures will be limited to this maximum exposure
+                'max_daytime_exposure': 0.0001,
+                
+                # One of the best cloud detections is to estimate the gain of the camera from the image
+                # If the variation, and hence gain, is too high according to gain + stdev, the flat can be easily rejected.
+                # Should be off for new observatories coming online until a real gain is known.
                 'reject_new_flat_by_known_gain' : True,
-                'max_exposure': 360.,
-                'max_daytime_exposure': 0.0001,  # NB why this?
-                'can_subframe':  True,
-                'min_subframe': [128, 128],
+                # These values are just the STARTING values. Once the software has been
+                # through a few nights of calibration images, it should automatically calculate these gains.
                 'camera_gain':   8.634, #[10., 10., 10., 10.],     #  One val for each binning.
                 'camera_gain_stdev':   0.4, #[10., 10., 10., 10.],     #  One val for each binning.
                 'read_noise':  47.74, #[9, 9, 9, 9],    #  All SWAGs right now
-                'read_noise_stdev':   0.03, #[10., 10., 10., 10.],     #  One val for each binning.
-                
+                'read_noise_stdev':   0.03, #[10., 10., 10., 10.],     #  One val for each binning.              
+                # Saturate is the important one. Others are informational only.
                 'fullwell_capacity': 80000,  # NB Guess
                 'saturate':   65535,
                 'max_linearity':  60000,   # Guess
-                'cycle_time':            0.5,   # Meas 20230219  for a bias
+                # How long does it take to readout an image after exposure
+                'cycle_time':            0.5,
+                # What is the base smartstack exposure time?
+                # It will vary from scope to scope and computer to computer.
+                # 30s is a good default.
+                'smart_stack_exposure_time': 30,
+                
+                
+                # As simple as it states, how many calibration frames to collect and how many to store.                
                 'number_of_bias_to_collect': 33,
                 'number_of_dark_to_collect': 17,
                 'number_of_flat_to_collect': 10,
                 'number_of_bias_to_store': 63,
                 'number_of_dark_to_store': 31,
                 'number_of_flat_to_store': 31,
-
+                # Default dark exposure time.
                 'dark_exposure': 180,
                
                 
+                # In the EVA Pipeline, whether to run cosmic ray detection on individual images
                 'do_cosmics': False,
 
-                'rbi_delay':  0,  # This being zero says RBI is not available, eg. for SBIG.
-                'is_cmos':  True,
-                'is_osc': True,
-                'is_color': True,  # NB we also have a is_osc key.
-                'can_set_gain':  True,
-                
-
-                'read_mode':  'Normal',
-                'readout_mode': 'Normal',
-                'readout_speed':  50,
-                'readout_seconds': 6,
-                'smart_stack_exposure_time': 30,'areas_implemented': ['Big sq.', 'Full', 'Small sq.', '70.7%', '50%', '35%', '25%', '18%'],
-                'default_area':  "Full",
-                'default_rotation': 0.0000,
-
+                # Does this camera have a darkslide, if so, what are the settings?
                 'has_darkslide':  True,
                 'darkslide_com':  'COM15',
                 'shutter_type': "Electronic",
-                'has_screen': True,
-                'screen_settings':  {
-                    'screen_saturation':  157.0,
-                    'screen_x4': -4E-12,  # 'y = -4E-12x4 + 3E-08x3 - 9E-05x2 + 0.1285x + 8.683     20190731'
-                    'screen_x3':  3E-08,
-                    'screen_x2': -9E-05,
-                    'screen_x1':  .1258,
-                    'screen_x0':  8.683
-                },
+                
+                # 'has_screen': True,
+                # 'screen_settings':  {
+                #     'screen_saturation':  157.0,
+                #     'screen_x4': -4E-12,  # 'y = -4E-12x4 + 3E-08x3 - 9E-05x2 + 0.1285x + 8.683     20190731'
+                #     'screen_x3':  3E-08,
+                #     'screen_x2': -9E-05,
+                #     'screen_x1':  .1258,
+                #     'screen_x0':  8.683
+                # },
             },
 
         },

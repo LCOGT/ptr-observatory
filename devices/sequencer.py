@@ -467,6 +467,14 @@ class Sequencer:
     
                 g_dev['mnt'].go_command(alt=70,az= 70)
                 
+                # Super-duper double check that darkslide is open
+                if g_dev['cam'].darkslide:
+                    g_dev['cam'].darkslide_instance.openDarkslide()
+                    g_dev['cam'].darkslide_open = True
+                    g_dev['cam'].darkslide_state = 'Open'
+                    
+                
+                
                 self.wait_for_slew()
                 
                 # Check it hasn't actually been homed this evening from the rotatorhome shelf
@@ -1022,6 +1030,12 @@ class Sequencer:
             ending = g_dev['events']['End Morn Bias Dark']
         else:
             ending = g_dev['events']['End Eve Bias Dark']
+            
+        if g_dev['cam'].darkslide and ephem.now() < ending:    
+            g_dev['cam'].darkslide_instance.closeDarkslide()
+            g_dev['cam'].darkslide_open = False
+            g_dev['cam'].darkslide_state = 'Closed'
+            
         while ephem.now() < ending :   #Do not overrun the window end
   
             bias_count = self.config['camera']['camera_1_1']['settings']['number_of_bias_to_collect']
@@ -1165,6 +1179,11 @@ class Sequencer:
         # UNDERTAKING END OF NIGHT ROUTINES
         # Never hurts to make sure the telescope is parked for the night        
         self.park_and_close()
+        
+        if g_dev['cam'].darkslide:    
+            g_dev['cam'].darkslide_instance.closeDarkslide()
+            g_dev['cam'].darkslide_open = False
+            g_dev['cam'].darkslide_state = 'Closed'
 
         self.reported_on_observing_period_beginning=False
 
@@ -2152,7 +2171,14 @@ class Sequencer:
                 plog ("no rotator to home or wait for.")
             
         camera_gain_collector=[]
-                
+        
+        # Super-duper double check that darkslide is open
+        if g_dev['cam'].darkslide:
+            g_dev['cam'].darkslide_instance.openDarkslide()
+            g_dev['cam'].darkslide_open = True
+            g_dev['cam'].darkslide_state = 'Open'
+
+        
         while len(pop_list) > 0  and ephem.now() < ending and g_dev['obs'].open_and_enabled_to_observe:
             
                 # This is just a very occasional slew to keep it pointing in the same general vicinity                
