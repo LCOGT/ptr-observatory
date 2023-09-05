@@ -727,6 +727,9 @@ class Mount:
         '''
         Return a tuple with the (az, alt) of the flattest part of the sky.
         '''
+        # Current Frame
+        altazframe=AltAz(obstime=Time.now(), location=self.site_coordinates)
+        
         sun_coords=get_sun(Time.now())
         breakpoint()
         ra, dec, sun_alt, sun_az, *other = self._sunNow()
@@ -780,12 +783,7 @@ class Mount:
             ra = altazskycoord.icrs.ra.deg /15
             dec = altazskycoord.icrs.dec.deg 
             
-            
-            
-            
             plog ("Requested Flat Spot, az: " + str(az) + " alt: " + str(alt))
-            
-            breakpoint()
             
             if self.config['degrees_to_avoid_zenith_area_for_calibrations'] > 0:
                 #breakpoint()
