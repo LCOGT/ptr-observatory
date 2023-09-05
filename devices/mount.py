@@ -1137,8 +1137,14 @@ class Mount:
                 plog("mount cmd: unparking mount")
                 g_dev['obs'].send_to_user("Unparking Mount. This can take a moment.")
                 g_dev['obs'].time_of_last_slew=time.time()
-                self.mount.Unpark()
-                wait_for_slew()
+                
+                try:
+                    self.mount.Unpark()
+                    wait_for_slew()
+                except:
+                    if g_dev['mnt'].theskyx:
+                        g_dev['seq'].kill_and_reboot_theskyx(-1,-1)
+                        self.mount.Unpark()
 
                 if self.settle_time_after_unpark > 0:
                     time.sleep(self.settle_time_after_unpark)
@@ -1159,7 +1165,7 @@ class Mount:
                                 plog("Usually this is because of a broken connection.")
                                 plog("Killing then waiting 60 seconds then reconnecting")
                                 g_dev['seq'].kill_and_reboot_theskyx(-1,-1)
-                                self.unpark_command()
+                                self.mount.Unpark()
                                 wait_for_slew()
                                 home_alt = self.settings["home_altitude"]
                                 home_az = self.settings["home_azimuth"]                                
