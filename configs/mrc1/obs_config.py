@@ -539,6 +539,11 @@ site_config = {
             'manufacturer':  "QHY",
             'settings': {
 
+                # These are the offsets in degrees of the actual telescope from the latitude and longitude of the WEMA settings
+                'north_offset': 0.0,  # These three are normally 0.0 for the primary telescope
+                'east_offset': 0.0,
+                                
+
                 # If there is sufficient memory ... OR .... not many flats, it is faster to keep the flats in memory.
                 'hold_flats_in_memory': True,
 
@@ -546,7 +551,7 @@ site_config = {
                 'is_cmos':  True,
                 'is_osc': True,
                 'is_color': True,  # NB we also have a is_osc key.
-                
+                'osc_bayer': 'RGGB',
 
                 # For direct QHY usage we need to set the appropriate gain.
                 # This changes from site to site. "Fast" scopes like the RASA need lower gain then "slow".
@@ -607,9 +612,6 @@ site_config = {
                 'osc_sharpness_enhance': 1.2,
                 'osc_background_cut': 15.0,
                 
-                # This setting will bin the image for focussing rather than interpolating. Good for 1x1 pixel sizes < 0.6.
-                'bin_for_focus': True,
-
                 # ONLY TRANSFORM THE FITS IF YOU HAVE
                 # A DATA-BASED REASON TO DO SO.....
                 # USUALLY TO GET A BAYER GRID ORIENTATED CORRECTLY
@@ -639,6 +641,12 @@ site_config = {
                 'rotate90_jpeg': False,
                 'rotate270_jpeg': False,
 
+                # This is purely to crop the preview jpeg for the UI                
+                'crop_preview': False,
+                'crop_preview_ybottom': 2,  # 2 needed if Bayer array
+                'crop_preview_ytop': 2,
+                'crop_preview_xleft': 2,
+                'crop_preview_xright': 2,
 
                 # For large fields of view, crop the images down to solve faster.
                 # Realistically the "focus fields" have a size of 0.2 degrees, so anything larger than 0.5 degrees is unnecesary
@@ -663,28 +671,23 @@ site_config = {
 
 
 
-                'osc_bayer': 'RGGB',
-                'crop_preview': False,
-                'crop_preview_ybottom': 2,  # 2 needed if Bayer array
-                'crop_preview_ytop': 2,
-                'crop_preview_xleft': 2,
-                'crop_preview_xright': 2,
+                
+                # This is the area for cooling related settings
+                'cooler_on': True,
                 'temp_setpoint': -5,  # Verify we can go colder
                 'has_chiller': False,
-                'calib_setpoints': [-0, -0, -0, -0, -0, -0, \
-                                    -0, -0, -0, -0, -0, -0],
-                'day_warm': True,
+                                'day_warm': True,
                 'day_warm_degrees': 8,  # Number of degrees to warm during the daytime.
                 'protect_camera_from_overheating' : False,
-                'cooler_on': True,
-                "cam_needs_NumXY_init": True,
+                                
                 
-                'x_pixel':  5.94, # value in microns?
-                'y_pixel':  5.94, # value in microns?
-                
+                # These are the physical values for the camera
+                # related to pixelscale. Binning only applies to single
+                # images. Stacks will always be drizzled to to drizzle value from 1x1.
                 '1x1_pix_scale': 0.4777272,    #  This is the 1x1 binning pixelscale
                 'native_bin': 1, # Needs to be simple, it will recalculate things on the 1x1 binning pixscale above.
-                
+                'x_pixel':  5.94, # pixel size in microns
+                'y_pixel':  5.94, # pixel size in microns
                 # The drizzle_value is by the new pixelscale
                 # for the new resolution when stacking in the EVA pipeline
                 # Realistically you want a resolution of about 0.5 arcseconds per pixel
@@ -694,12 +697,6 @@ site_config = {
                 # observatories.... unless you have a large field of view.                
                 'drizzle_value_for_later_stacking': 0.5,
 
-
-               
-                # These are the offsets in degrees of the actual telescope from the latitude and longitude of the WEMA settings
-                'north_offset': 0.0,  # These three are normally 0.0 for the primary telescope
-                'east_offset': 0.0,
-                
                 
                 # This is the absolute minimum and maximum exposure for the camera
                 'min_exposure': 0.0001,

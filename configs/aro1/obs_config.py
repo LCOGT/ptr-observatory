@@ -468,10 +468,20 @@ site_config = {
 
 
             'settings': {
+                
+                # These are the offsets in degrees of the actual telescope from the latitude and longitude of the WEMA settings
+                'north_offset': 0.0,  # These three are normally 0.0 for the primary telescope
+                'east_offset': 0.0,
+                # If there is sufficient memory ... OR .... not many flats, it is faster to keep the flats in memory.
                 'hold_flats_in_memory': True, # If there is sufficient memory ... OR .... not many flats, it is faster to keep the flats in memory.
-                'min_flat_exposure': 0.01,
-                'max_flat_exposure' : 20,
-                'reject_new_flat_by_known_gain' : True,
+                
+                # Simple Camera Properties
+                'is_cmos':  True,
+                'is_osc': False,
+                'is_color': False,  # NB we also have a is_osc key.
+                'osc_bayer': 'RGGB',
+                
+                
                 
                 # For direct QHY usage we need to set the appropriate gain.
                 # This changes from site to site. "Fast" scopes like the RASA need lower gain then "slow".
@@ -501,43 +511,103 @@ site_config = {
                 'direct_qhy_gain' : 26,
                 'direct_qhy_offset' : 60,  
                 'direct_qhy_usb_speed' : 60,
-                'is_osc' : False,
-                
-                #These options set whether an OSC gets binned or interpolated for different functions
+                                
+                # These options set whether an OSC gets binned or interpolated for different functions
                 # If the pixel scale is well-sampled (e.g. 0.6 arcsec per RGGB pixel or 0.3 arcsec per individual debayer pixel)
                 # Then binning is probably fine for all three. For understampled pixel scales - which are likely with OSCs
-                # then binning for focus is recommended. SEP and Platesolve can generally always be binned.                
+                # then binning for focus is recommended. SEP and Platesolve can generally always be binned.
                 'interpolate_for_focus': False,
-                'bin_for_focus' : True, # This setting will bin the image for focussing rather than interpolating. Good for 1x1 pixel sizes < 0.6.
+                # This setting will bin the image for focussing rather than interpolating. Good for 1x1 pixel sizes < 0.6.
+                'bin_for_focus': True,
                 'focus_bin_value' : 2,
-                'interpolate_for_sep' : False,
-                'bin_for_sep' : True, # This setting will bin the image for SEP photometry.
+                'interpolate_for_sep': False,
+                'bin_for_sep': True,  # This setting will bin the image for SEP photometry rather than interpolating.
                 'sep_bin_value' : 2,
-                'bin_for_platesolve' : False, # This setting will bin the image for platesolving.
+                # This setting will bin the image for platesolving rather than interpolating.
+                'bin_for_platesolve': False,
                 'platesolve_bin_value' : 1,
                 
-                'transpose_fits' : False,
+                # Colour image tweaks.
+                'osc_brightness_enhance': 1.0,
+                'osc_contrast_enhance': 1.2,
+                'osc_saturation_enhance': 1.5,
+                'osc_colour_enhance': 1.2,
+                'osc_sharpness_enhance': 1.2,
+                'osc_background_cut': 15.0,               
+                
+            
+                # ONLY TRANSFORM THE FITS IF YOU HAVE
+                # A DATA-BASED REASON TO DO SO.....
+                # USUALLY TO GET A BAYER GRID ORIENTATED CORRECTLY
+                # ***** ONLY ONE OF THESE SHOULD BE ON! *********
+                'transpose_fits': False,
                 'flipx_fits': False,
                 'flipy_fits': False,
+                'rotate180_fits': False,  # This also should be flipxy!
                 'rotate90_fits': False,
-                'rotate180_fits': False,
                 'rotate270_fits': False,
-                'transpose_jpeg' : False,
                 'squash_on_x_axis': False,
+                
+                # What number of pixels to crop around the edges of a REDUCED image
+                # This is primarily to get rid of overscan areas and also all images
+                # Do tend to be a bit dodgy around the edges, so perhaps a standard
+                # value of 30 is good. Increase this if your camera has particularly bad
+                # edges.
+                'reduced_image_edge_crop': 30,
+
+                # HERE YOU CAN FLIP THE IMAGE TO YOUR HEARTS DESIRE
+                # HOPEFULLY YOUR HEARTS DESIRE IS SIMILAR TO THE
+                # RECOMMENDED DEFAULT DESIRE OF PTR
+                'transpose_jpeg': False,
                 'flipx_jpeg': False,
                 'flipy_jpeg': False,
-                'rotate90_jpeg': False,
                 'rotate180_jpeg': False,
+                'rotate90_jpeg': False,
                 'rotate270_jpeg': False,
-                'reduced_image_edge_crop': 30,
-                'focus_image_crop_width': 0.0,
-                'focus_image_crop_height': 0.0,
-                'focus_jpeg_size': 1500,
-                'platesolve_image_crop': 0.0,
-                'sep_image_crop_width': 0.0,
-                'sep_image_crop_Height': 0.0,
-                'do_cosmics':  False,
+
+                # This is purely to crop the preview jpeg for the UI                
+                'crop_preview': False,
+                'crop_preview_ybottom': 2,  # 2 needed if Bayer array
+                'crop_preview_ytop': 2,
+                'crop_preview_xleft': 2,
+                'crop_preview_xright': 2,
+            
+                # For large fields of view, crop the images down to solve faster.
+                # Realistically the "focus fields" have a size of 0.2 degrees, so anything larger than 0.5 degrees is unnecesary
+                # Probably also similar for platesolving.
+                # for either pointing or platesolving even on more modest size fields of view.
+                # These were originally inspired by the RASA+QHY which is 3.3 degrees on a side and regularly detects
+                # tens of thousands of sources, but any crop will speed things up. Don't use SEP crop unless
+                # you clearly need to.
+                'focus_image_crop_width': 0.0,  # For excessive fields of view, to speed things up crop the image to a fraction of the full width
+                'focus_image_crop_height': 0.0,  # For excessive fields of view, to speed things up crop the image to a fraction of the full height                
+                'focus_jpeg_size': 1500, # How many pixels square to crop the focus image for the UI Jpeg
+
+                # PLATESOLVE CROPS HAVE TO BE EQUAL! OTHERWISE THE PLATE CENTRE IS NOT THE POINTING CENTRE
+                'platesolve_image_crop': 0.0,  # Platesolve crops have to be symmetrical
                 
+                # Really, the SEP image should not be cropped unless your field of view and number of sources
+                # Are taking chunks out of the processing time.
+                # For excessive fields of view, to speed things up crop the processed image area to a fraction of the full width
+                'sep_image_crop_width': 0.0,
+                # For excessive fields of view, to speed things up crop the processed image area to a fraction of the full width
+                'sep_image_crop_height': 0.0,
+
+                # This is the area for cooling related settings
+                'cooler_on': True,
+                'temp_setpoint': -5,  # Verify we can go colder
+                'has_chiller': False,
+                                'day_warm': True,
+                'day_warm_degrees': 8,  # Number of degrees to warm during the daytime.
+                'protect_camera_from_overheating' : False,
+
+                # These are the physical values for the camera
+                # related to pixelscale. Binning only applies to single
+                # images. Stacks will always be drizzled to to drizzle value from 1x1.
+                '1x1_pix_scale': 0.528,    #  This is the 1x1 binning pixelscale
+                'native_bin': 2, # Needs to be simple, it will recalculate things on the 1x1 binning pixscale above.
+                'x_pixel':  3.76, # pixel size in microns
+                'y_pixel':  3.76, # pixel size in microns
                 # The drizzle_value is by the new pixelscale
                 # for the new resolution when stacking in the EVA pipeline
                 # Realistically you want a resolution of about 0.5 arcseconds per pixel
@@ -548,106 +618,68 @@ site_config = {
                 'drizzle_value_for_later_stacking': 0.5,
                
                
-                'do_cosmics' : False,
-                #'dark_length' : 1,
-                
-                
-                
-                'osc_bayer' : 'RGGB',
-                'crop_preview': False,
-                'crop_preview_ybottom': 1,
-                'crop_preview_ytop': 1,
-                'crop_preview_xleft': 1,
-                'crop_preview_xright': 1,
-                'temp_setpoint': -5,
-                'calib_setpoints': [-7.5, -5, 0],  # Should vary with season? by day-of-year mod len(list)
-                'day_warm': False,
-                'day_warm_degrees' : 6, # Number of degrees to warm during the daytime.
-                'protect_camera_from_overheating' : False,
-                'cooler_on': True,
-                
-                "cam_needs_NumXY_init": True,
-                
-                'x_pixel':  3.76,
-                'y_pixel':  3.76,
-                'north_offset': 0.0,    # These three are normally 0.0 for the primary telescope
-                'east_offset': 0.0,     # Not sure why these three are even here.
-                'rotation': 0.0,        # Probably remove.
-                'min_exposure': 0.00001,
-                'max_exposure': 360,
+                # This is the absolute minimum and maximum exposure for the camera
+                'min_exposure': 0.0001,
+                'max_exposure': 360.,
+                # For certain shutters, short exposures aren't good for flats. Some CMOS have banding in too short an exposure. Largely applies to ccds though.
+                'min_flat_exposure': 0.01,                
+                # Realistically there is maximum flat_exposure that makes sure flats are efficient and aren't collecting actual stars.
+                'max_flat_exposure': 20.0,
+                # During the daytime with the daytime safety mode on, exposures will be limited to this maximum exposure
                 'max_daytime_exposure': 0.5,
-                'can_subframe':  True,
-                'min_subframe':  [128, 128],
-                
-                'cosmics_at_default' : 'yes',
-                'cosmics_at_maximum' : 'yes',
-                'cycle_time':  0.5,  # 3x3 requires a 1, 1 reaout then a software bin, so slower.
-                'rbi_delay':  0.,      # This being zero says RBI is not available, eg. for SBIG.
-                'is_cmos':  True,
-                'is_color':  False,
-                'can_set_gain':  False,
-                'bayer_pattern':  None,    # Need to verify R as in RGGB is pixel x=0, y=0, B is x=1, y = 1
+               
+               
+                # One of the best cloud detections is to estimate the gain of the camera from the image
+                # If the variation, and hence gain, is too high according to gain + stdev, the flat can be easily rejected.
+                # Should be off for new observatories coming online until a real gain is known.
+                'reject_new_flat_by_known_gain' : True,
+                # These values are just the STARTING values. Once the software has been
+                # through a few nights of calibration images, it should automatically calculate these gains.
                 'camera_gain':   2.15, #[10., 10., 10., 10.],     #  One val for each binning.
                 'camera_gain_stdev':   0.16, #[10., 10., 10., 10.],     #  One val for each binning.
                 'read_noise':  9.55, #[9, 9, 9, 9],    #  All SWAGs right now
-                'read_noise_stdev':   0.004, #[10., 10., 10., 10.],     #  One val for each binning.
-                
-                #'reference_dark': 0.1, #, .8, 1.8, 3.2],  #  Guess
-                
-                
-                
-                
-                
-                #'ref_dark': 360.0,    #  this needs fixing.
-                #'long_dark':600.0,
-                'max_linearity':  60000,   # Guess  60% of this is max counts for skyflats.  75% rejects the skyflat
-                'saturate':   60000,  #  [2,262000], [3,589815], [4, 1048560]] ,   # e-.  This is a close guess, not measured, but taken from data sheet.
-                'fullwell_capacity': 80000, #  320000, 720000, 1280000],
-                                    #hdu.header['RDMODE'] = (self.config['camera'][self.name]['settings']['read_mode'], 'Camera read mode')
-                    #hdu.header['RDOUTM'] = (self.config['camera'][self.name]['readout_mode'], 'Camera readout mode')
-                    #hdu.header['RDOUTSP'] = (self.config['camera'][self.name]['settings']['readout_speed'], '[FPS] Readout speed')
-                'read_mode':  'Normal',
-                'readout_mode':  'Normal',
-                'readout_speed': 0.6,
-                'readout_seconds': 12,
+                'read_noise_stdev':   0.004, #[10., 10., 10., 10.],     #  One val for each binning.              
+                # Saturate is the important one. Others are informational only.
+                'fullwell_capacity': 80000,  # NB Guess
+                'saturate':   65535,
+                'max_linearity':  60000,   # Guess
+                # How long does it take to readout an image after exposure
+                'cycle_time':            0.5,
+                # What is the base smartstack exposure time?
+                # It will vary from scope to scope and computer to computer.
+                # 30s is a good default.
                 'smart_stack_exposure_time': 30,
-                'areas_implemented': ["Full", '2x2', '4x4',"600%", "500%", "450%", "300%", "220%", "150%", "133%", "100%", "Sqr", '71%', '50%',  '35%', '25%', '12%'],
-                'default_area':  "Full",
-                'has_darkslide':  True,
-                'darkslide_com': 'COM10',  #old controller COM10, new one 9a COM17
-                'shutter_type': "Electronic",
-                'number_of_bias_to_collect': 31,
+               
+               
+                # As simple as it states, how many calibration frames to collect and how many to store.                
+                'number_of_bias_to_collect': 33,
                 'number_of_dark_to_collect': 15,
-                'number_of_bias_to_store': 45,   #SWAGS by Wayne 20230613
-                'number_of_dark_to_store': 45,                
-                'number_of_flat_to_collect': 7,                
-                'number_of_flat_to_store' : 21,
-                
+                'number_of_flat_to_collect': 10,
+                'number_of_bias_to_store': 45,
+                'number_of_dark_to_store': 45,
+                'number_of_flat_to_store': 31,
+                # Default dark exposure time.
                 'dark_exposure': 360,
-                'dark_length' : 360,
-                                
+               
+                # In the EVA Pipeline, whether to run cosmic ray detection on individual images
+                'do_cosmics': False,
+
+                # Does this camera have a darkslide, if so, what are the settings?
+                'has_darkslide':  True,
+                'darkslide_com':  'COM10',
+                'shutter_type': "Electronic",
+               
+
                 
-                '1x1_pix_scale': 0.528,    #  This is the 1x1 binning pixelscale
-                'native_bin': 2, # Needs to be simple, it will recalculate things on the 1x1 binning pixscale above.
-                
-                # The drizzle_value is by the new pixelscale
-                # for the new resolution when stacking in the EVA pipeline
-                # Realistically you want a resolution of about 0.5 arcseconds per pixel
-                # Unless you are at a very poor quality site.
-                # If you have a higher resolution pixelscale it will use that instead.
-                # Generally leave this at 0.5 - the optimal value for ground based
-                # observatories.... unless you have a large field of view.                
-                'drizzle_value_for_later_stacking': 0.5,
-                
-                'has_screen': False,
-                'screen_settings':  {
-                    'screen_saturation':  157.0,   # This reflects WMD setting and needs proper values.
-                    'screen_x4':  -4E-12,  # 'y = -4E-12x4 + 3E-08x3 - 9E-05x2 + 0.1285x + 8.683     20190731'
-                    'screen_x3':  3E-08,
-                    'screen_x2':  -9E-05,
-                    'screen_x1':  .1258,
-                    'screen_x0':  8.683
-                },
+                # 'has_screen': False,
+                # 'screen_settings':  {
+                #     'screen_saturation':  157.0,   # This reflects WMD setting and needs proper values.
+                #     'screen_x4':  -4E-12,  # 'y = -4E-12x4 + 3E-08x3 - 9E-05x2 + 0.1285x + 8.683     20190731'
+                #     'screen_x3':  3E-08,
+                #     'screen_x2':  -9E-05,
+                #     'screen_x1':  .1258,
+                #     'screen_x0':  8.683
+                # },
             },
         },
 
