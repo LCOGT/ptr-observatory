@@ -676,7 +676,9 @@ site_config = {
                 'cooler_on': True,
                 'temp_setpoint': -5,  # Verify we can go colder
                 'has_chiller': False,
-                                'day_warm': True,
+                'chiller_com_port': 'COM1',
+                'chiller_ref_temp':  15.0,  # C
+                'day_warm': True,
                 'day_warm_degrees': 8,  # Number of degrees to warm during the daytime.
                 'protect_camera_from_overheating' : False,
                                 
