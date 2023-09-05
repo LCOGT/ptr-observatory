@@ -1407,7 +1407,7 @@ class Camera:
                 Nsmartstack=1
                 SmartStackID='no'
                 exposure_time=incoming_exposure_time
-            elif (self.smartstack == 'yes' or self.smartstack == True) and (incoming_exposure_time >= 3*ssExp):
+            elif (self.smartstack == 'yes' or self.smartstack == True) and (incoming_exposure_time > ssExp):
                 Nsmartstack=np.ceil(incoming_exposure_time / ssExp)
                 exposure_time=ssExp
                 SmartStackID=(datetime.datetime.now().strftime("%d%m%y%H%M%S"))
