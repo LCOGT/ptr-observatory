@@ -314,50 +314,50 @@ class Events:
     ###     Public Methods   ####
     #############################
 
-    def getSunEvents(self):
-        '''
-        This is used in the enclosure module to determine if is a good time
-        of day to open.
-        '''
-        sun = ephem.Sun()
-        ptr = ephem.Observer() 
-        ptr.date = dayNow
-        ptr.lat = str(self.siteLatitude)
-        ptr.lon = str(self.siteLongitude)
-        ptr.elev = self.siteElevation
-        ptr.compute_pressure()
-        ptr.temp = self.siteRefTemp
-        ptr.horizon = '-0:34'
-        sunset = ptr.next_setting(sun)
-        sunrise = ptr.next_rising(sun)
-        ptr.horizon = '-6'
-        sun.compute(ptr)
-        civilDusk = ptr.next_setting(sun)
-        ops_win_begin = civilDusk - 121/1440
-        return (ops_win_begin, sunset, sunrise, ephem.now())
+    # def getSunEvents(self):
+    #     '''
+    #     This is used in the enclosure module to determine if is a good time
+    #     of day to open.
+    #     '''
+    #     sun = ephem.Sun()
+    #     ptr = ephem.Observer() 
+    #     ptr.date = dayNow
+    #     ptr.lat = str(self.siteLatitude)
+    #     ptr.lon = str(self.siteLongitude)
+    #     ptr.elev = self.siteElevation
+    #     ptr.compute_pressure()
+    #     ptr.temp = self.siteRefTemp
+    #     ptr.horizon = '-0:34'
+    #     sunset = ptr.next_setting(sun)
+    #     sunrise = ptr.next_rising(sun)
+    #     ptr.horizon = '-6'
+    #     sun.compute(ptr)
+    #     civilDusk = ptr.next_setting(sun)
+    #     ops_win_begin = civilDusk - 121/1440
+    #     return (ops_win_begin, sunset, sunrise, ephem.now())
 
-    def flat_spot_now(self):
-        '''
-        Return a tuple with the (az, alt) of the flattest part of the sky.
-        '''
-        ra, dec, sun_alt, sun_az, *other = self._sunNow()
-        sun_az2 = sun_az - 180.  # Opposite az of the Sun
-        if sun_az2 < 0:
-            sun_az2 += 360.
-        sun_alt2 = sun_alt + 105  # 105 degrees along great circle through zenith
-        if sun_alt2 > 90:   # Over the zenith so specify alt at above azimuth
-            sun_alt2 = 180 - sun_alt2
-        else:
-            sun_az2 = sun_az  # The sun is >15 degrees below horizon, use its az
+    # def flat_spot_now(self):
+    #     '''
+    #     Return a tuple with the (az, alt) of the flattest part of the sky.
+    #     '''
+    #     ra, dec, sun_alt, sun_az, *other = self._sunNow()
+    #     sun_az2 = sun_az - 180.  # Opposite az of the Sun
+    #     if sun_az2 < 0:
+    #         sun_az2 += 360.
+    #     sun_alt2 = sun_alt + 105  # 105 degrees along great circle through zenith
+    #     if sun_alt2 > 90:   # Over the zenith so specify alt at above azimuth
+    #         sun_alt2 = 180 - sun_alt2
+    #     else:
+    #         sun_az2 = sun_az  # The sun is >15 degrees below horizon, use its az
 
-        return(sun_az2, sun_alt2)
+    #     return(sun_az2, sun_alt2)
 
-    def sun_az_alt_now(self):
-        '''
-        Return a tuple with the (az, alt) of the flattest part of the sky.
-        '''
-        ra, dec, sun_alt, sun_az, *other = self._sunNow()
-        return sun_az, sun_alt
+    # def sun_az_alt_now(self):
+    #     '''
+    #     Return a tuple with the (az, alt) of the flattest part of the sky.
+    #     '''
+    #     ra, dec, sun_alt, sun_az, *other = self._sunNow()
+    #     return sun_az, sun_alt
 
     def illuminationNow(self):
 
