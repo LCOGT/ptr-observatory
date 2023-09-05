@@ -896,6 +896,13 @@ class Sequencer:
                         if tempblock['event_id'] == calendar_event_id :
                             foundcalendar=True
                             g_dev['seq'].blockend=tempblock['end']
+                            now_date_timeZ = datetime.datetime.now().isoformat().split('.')[0] +'Z'
+                            if g_dev['seq'].blockend != None:
+                                if now_date_timeZ >= g_dev['seq'].blockend :  
+                                    plog ("Block ended.")
+                                    g_dev["obs"].send_to_user("Calendar Block Ended. Stopping project run.")
+                                    left_to_do=0
+                                    return block_specification
                     if not foundcalendar:
                         plog ("could not find calendar entry, cancelling out of block.")
                         g_dev["obs"].send_to_user("Calendar block removed. Stopping project run.")   

@@ -1502,11 +1502,13 @@ class Camera:
                                 if tempblock['event_id'] == calendar_event_id :
                                     foundcalendar=True
                                     g_dev['seq'].blockend=tempblock['end']
+                                    
                                     #breakpoint()
                             except:
                                 plog("glitch in calendar finder")
                                 plog(str(tempblock))
-                        if foundcalendar == False:
+                        now_date_timeZ = datetime.datetime.now().isoformat().split('.')[0] +'Z'                        
+                        if foundcalendar == False or now_date_timeZ >= g_dev['seq'].blockend:
                             plog ("could not find calendar entry, cancelling out of block.")
                             self.exposure_busy = False
                             plog ("And Cancelling SmartStacks.")
