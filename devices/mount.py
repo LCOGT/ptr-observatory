@@ -723,6 +723,24 @@ class Mount:
         self.equinox_now = 'J' +str(round((iso_day[0] + ((iso_day[1]-1)*7 + (iso_day[2] ))/365), 2))
         return
     
+    def flat_spot_now(self):
+        '''
+        Return a tuple with the (az, alt) of the flattest part of the sky.
+        '''
+        sun_coords=get_sun(Time.now())
+        breakpoint()
+        ra, dec, sun_alt, sun_az, *other = self._sunNow()
+        sun_az2 = sun_az - 180.  # Opposite az of the Sun
+        if sun_az2 < 0:
+            sun_az2 += 360.
+        sun_alt2 = sun_alt + 105  # 105 degrees along great circle through zenith
+        if sun_alt2 > 90:   # Over the zenith so specify alt at above azimuth
+            sun_alt2 = 180 - sun_alt2
+        else:
+            sun_az2 = sun_az  # The sun is >15 degrees below horizon, use its az
+
+        return(sun_az2, sun_alt2)
+    
     ###############################
     #        Mount Commands       #
     ###############################
@@ -756,12 +774,18 @@ class Mount:
                     plog("Refusing skyflat pointing request as the observatory is not enabled to observe.")
                     return 'refused'
 
-            az, alt = self.astro_events.flat_spot_now()
+            az, alt = self.flat_spot_now()
             temppointing = AltAz(location=self.site_coordinates, obstime=Time.now(), alt=alt*u.deg, az=az*u.deg)          
             altazskycoord=SkyCoord(alt=alt*u.deg, az=az*u.deg, obstime=Time.now(), location=self.site_coordinates, frame='altaz')
             ra = altazskycoord.icrs.ra.deg /15
             dec = altazskycoord.icrs.dec.deg 
+            
+            
+            
+            
             plog ("Requested Flat Spot, az: " + str(az) + " alt: " + str(alt))
+            
+            breakpoint()
             
             if self.config['degrees_to_avoid_zenith_area_for_calibrations'] > 0:
                 #breakpoint()

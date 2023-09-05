@@ -1955,7 +1955,7 @@ class Sequencer:
     def check_zenith_and_move_to_flat_spot(self, ending=None):
         too_close_to_zenith=True
         while too_close_to_zenith:
-            alt, az = self.astro_events.flat_spot_now()  
+            alt, az = g_dev['mnt'].flat_spot_now()  
             if self.config['degrees_to_avoid_zenith_area_for_calibrations'] > 0:
                 plog ('zenith distance: ' + str(90-alt))
                 if abs(90-alt) < self.config['degrees_to_avoid_zenith_area_for_calibrations']:
@@ -2053,7 +2053,7 @@ class Sequencer:
             currentaltazframe = AltAz(location=g_dev['mnt'].site_coordinates, obstime=Time.now())
             moondata=get_moon(Time.now()).transform_to(currentaltazframe)
             # Flatspot position.
-            flatspotaz, flatspotalt = self.astro_events.flat_spot_now()
+            flatspotaz, flatspotalt = g_dev['mnt'].flat_spot_now()
             temp_separation=((ephem.separation( (flatspotaz,flatspotalt), (moondata.az.deg,moondata.alt.deg))))
 
             if (moondata.alt.deg < -15):
@@ -4147,5 +4147,6 @@ class Sequencer:
         except:
             plog('Found an empty shelf.  Reset_(block)completes for:  ', camera)
         return
+    
     
     
