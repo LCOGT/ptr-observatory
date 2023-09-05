@@ -728,21 +728,24 @@ class Mount:
         Return a tuple with the (az, alt) of the flattest part of the sky.
         '''
         # Current Frame
-        altazframe=AltAz(obstime=Time.now(), location=self.site_coordinates)
+        altazframe=AltAz(obstime=Time.now(), location=self.site_coordinates)        
+        sun_coords=get_sun(Time.now()).transform_to(altazframe)
         
-        sun_coords=get_sun(Time.now())
-        breakpoint()
-        ra, dec, sun_alt, sun_az, *other = self._sunNow()
-        sun_az2 = sun_az - 180.  # Opposite az of the Sun
-        if sun_az2 < 0:
-            sun_az2 += 360.
-        sun_alt2 = sun_alt + 105  # 105 degrees along great circle through zenith
-        if sun_alt2 > 90:   # Over the zenith so specify alt at above azimuth
-            sun_alt2 = 180 - sun_alt2
-        else:
-            sun_az2 = sun_az  # The sun is >15 degrees below horizon, use its az
-
-        return(sun_az2, sun_alt2)
+        sun_alt=sun_coords.alt.degree
+        sun_az=sun_coords.az.degree
+        plog ('sun alt: ' + str(sun_alt) + " sun az: " + str(sun_az))
+        flatspot_az = sun_az - 180.  # Opposite az of the Sun
+        if flatspot_az < 0:
+            flatspot_az += 360.
+            
+        flatspot_alt = sun_alt + 105  # 105 degrees along great circle through zenith
+        if flatspot_alt > 90:   # Over the zenith so specify alt at above azimuth
+            flatspot_alt = 180 - flatspot_alt
+        
+        if flatspot_alt < 90 and sun_alt < -15:
+            flatspot_az = sun_az        
+        
+        return(flatspot_alt, flatspot_az)
     
     ###############################
     #        Mount Commands       #
@@ -777,7 +780,7 @@ class Mount:
                     plog("Refusing skyflat pointing request as the observatory is not enabled to observe.")
                     return 'refused'
 
-            az, alt = self.flat_spot_now()
+            alt, az = self.flat_spot_now()
             temppointing = AltAz(location=self.site_coordinates, obstime=Time.now(), alt=alt*u.deg, az=az*u.deg)          
             altazskycoord=SkyCoord(alt=alt*u.deg, az=az*u.deg, obstime=Time.now(), location=self.site_coordinates, frame='altaz')
             ra = altazskycoord.icrs.ra.deg /15

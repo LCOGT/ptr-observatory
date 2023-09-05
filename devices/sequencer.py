@@ -2053,7 +2053,7 @@ class Sequencer:
             currentaltazframe = AltAz(location=g_dev['mnt'].site_coordinates, obstime=Time.now())
             moondata=get_moon(Time.now()).transform_to(currentaltazframe)
             # Flatspot position.
-            flatspotaz, flatspotalt = g_dev['mnt'].flat_spot_now()
+            flatspotalt, flatspotaz = g_dev['mnt'].flat_spot_now()
             temp_separation=((ephem.separation( (flatspotaz,flatspotalt), (moondata.az.deg,moondata.alt.deg))))
 
             if (moondata.alt.deg < -15):
