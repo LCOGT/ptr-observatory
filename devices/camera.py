@@ -20,7 +20,6 @@ from astropy.io import fits
 from astropy.time import Time
 from astropy.coordinates import SkyCoord, AltAz
 from astropy.nddata import block_reduce
-from astropy import units as u
 import glob
 import numpy as np
 import win32com.client
@@ -1439,6 +1438,9 @@ class Camera:
                     else:
                         plog ("MTF temp reporting. No pierflip.")                     
                 g_dev['mnt'].previous_pier_side=g_dev['mnt'].mount.sideOfPier
+                
+                if g_dev['obs'].pointing_recentering_requested_by_platesolve_thread:
+                    g_dev['obs'].check_platesolve_and_nudge()  
                 
                 self.tempStartupExposureTime=time.time()
                 if Nsmartstack > 1 :

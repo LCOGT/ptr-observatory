@@ -1995,11 +1995,10 @@ class Observatory:
     
     
                         # Test here that there has not been a slew, if there has been a slew, cancel out!
-                        if self.time_of_last_slew > time_platesolve_requested:
-                            plog("detected a slew since beginning platesolve... bailing out of platesolve.")                            
+                                                   
     
                         # If we are WAY out of range, then reset the mount reference and attempt moving back there.
-                        elif (abs(err_ha * 15 * 3600) > 5400) or (abs(err_dec * 3600) > 5400):                            
+                        if (abs(err_ha * 15 * 3600) > 5400) or (abs(err_dec * 3600) > 5400):                            
                             err_ha = 0
                             err_dec = 0    
                             plog("Platesolve has found that the current suggested pointing is way off!")
@@ -2016,7 +2015,10 @@ class Observatory:
                             self.pointing_correction_request_dec = target_dec
                             self.pointing_correction_request_ra_err = err_ha
                             self.pointing_correction_request_dec_err = err_dec 
-                            
+                        
+                        elif self.time_of_last_slew > time_platesolve_requested:
+                            plog("detected a slew since beginning platesolve... bailing out of platesolve.") 
+                        
                         else:
     
                              self.pointing_correction_requested_by_platesolve_thread = True
