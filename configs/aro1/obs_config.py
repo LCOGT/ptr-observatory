@@ -428,7 +428,7 @@ site_config = {
 
                 'filter_screen_sort':  ['ip'],   # don't use narrow yet,  8, 10, 9], useless to try.
                 'filter_sky_sort': ['S2','N2','up','HA','CR','O3','zs','zp','BI','PR','rp','BB','PG', \
-                                    'ip','BR','JV','NIR','PB','gp','PL','EXO','air'],
+                                    'ip','BR','BV','NIR','PB','gp','PL','EXO','air'],
                 
                 
                
