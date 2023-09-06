@@ -1036,7 +1036,8 @@ class Sequencer:
                             new_dec= mosaic_center_dec + displacement[1] 
                             new_ra, new_dec = ra_dec_fix_hd(new_ra, new_dec)                            
                             #g_dev['mnt'].go_command(ra=new_ra, dec=new_dec)
-                            g_dev['mnt'].mount.SlewToCoordinatesAsync(new_ra, new_dec)
+                            g_dev['mnt'].mount.SlewToCoordinatesAsync(new_ra, new_dec)                            
+                            self.wait_for_slew()
                            
                             
                             if result == 'blockend':
