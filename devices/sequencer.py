@@ -180,6 +180,8 @@ class Sequencer:
         # Pulse timer is set to send a simple '.' every 30 seconds so the console knows it is alive
         self.pulse_timer=time.time()
                 
+        # A flag to remove some platesolves during mosaicing e.g. at the end of smartstacks.
+        self.currently_mosaicing = False
         
         # Load up focus and pointing catalogues
         # slight differences. Focus has more clumped bright stars but pointing catalogue contains a larger range
@@ -920,13 +922,14 @@ class Sequencer:
                     # Than rely on an owner getting this right!
                     x_field_deg = (g_dev['cam'].pixscale * g_dev['cam'].imagesize_x) /3600
                     y_field_deg = (g_dev['cam'].pixscale * g_dev['cam'].imagesize_y) /3600
-                    
+                    self.currently_mosaicing = False
                     if exposure['area'] == "Full":
                         # These are waiting for a mosaic approach
                         offset = [(0., 0.)] #Zero(no) mosaic offset
                         pitch = 0.
                         pane = 0
                     else:
+                        self.currently_mosaicing = True
                         # To be deprecated once we replace "Area" with actual values
                         # to go in mosaic_length_ra etc.
                         # here it just makes a multiple so we can get it going.
@@ -4028,9 +4031,7 @@ class Sequencer:
         while (not g_dev['obs'].platesolve_queue.empty()):
             plog ("Waiting for the platesolve queue to complete it's last job")
             print ( g_dev['obs'].platesolve_queue.empty())
-            time.sleep(1)              
-        
-        g_dev['obs'].platesolve_is_processing=False
+            time.sleep(1)                      
         
         # Make sure platesolve queue is clear
         reported=0

@@ -3171,7 +3171,7 @@ class Camera:
                             if Nsmartstack > 1 and not (Nsmartstack == sskcounter+1):
                                 image_during_smartstack=True
                             
-                            if not image_during_smartstack and not g_dev['obs'].pointing_correction_requested_by_platesolve_thread and g_dev['obs'].platesolve_queue.empty() and not g_dev['obs'].platesolve_is_processing:
+                            if not image_during_smartstack and not self.currently_mosaicing and not g_dev['obs'].pointing_correction_requested_by_platesolve_thread and g_dev['obs'].platesolve_queue.empty() and not g_dev['obs'].platesolve_is_processing:
                                 
                                 # Make sure any dither or return nudge has finished before platesolution
                                 wait_for_slew()
