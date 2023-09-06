@@ -2742,8 +2742,7 @@ class Camera:
                     hdu.header[
                         "PATCH"
                     ] = central_median # A crude value for the central exposure
-                    hdu.header["ERRORVAL"] = 0
-                    hdu.header["IMGAREA"] = opt["area"]                   
+                    hdu.header["ERRORVAL"] = 0               
                     
                     hdu.header["USERNAME"] = observer_user_name
                     hdu.header["USERID"] = (
