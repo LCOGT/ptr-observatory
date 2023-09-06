@@ -792,7 +792,7 @@ site_config = {
                 #     'screen_x1':  .1258,
                 #     'screen_x0':  8.683,
                 #     },
-                # },
+                },
 
             },
         },
@@ -1007,16 +1007,16 @@ site_config = {
             'shutdown_script':  None,
         },
     },
-}  
+}
 
-if __name__ == '__main__':
-    '''
-    This is a simple test to send and receive via json.
-    '''
+# if __name__ == '__main__':
+#     '''
+#     This is a simple test to send and receive via json.
+#     '''
 
-    j_dump = json.dumps(site_config)
-    site_unjasoned = json.loads(j_dump)
-    if str(site_config)  == str(site_unjasoned):
-        print('Strings matched.')
-    if site_config == site_unjasoned:
-        print('Dictionaries matched.')
+#     j_dump = json.dumps(site_config)
+#     site_unjasoned = json.loads(j_dump)
+#     if str(site_config)  == str(site_unjasoned):
+#         print('Strings matched.')
+#     if site_config == site_unjasoned:
+#         print('Dictionaries matched.')
