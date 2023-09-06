@@ -419,6 +419,7 @@ class Camera:
             # Take a quick cheeky frame to get imagesize
             tempcamera = win32com.client.Dispatch(self.driver)
             tempcamera.Connect()
+            self._stop_expose()
             tempcamera.Frame=2
             tempcamera.ExposureTime=0
             tempcamera.TakeImage()
