@@ -714,6 +714,10 @@ class Camera:
         except:
             pass
         
+        
+        
+        
+        
     # Patchable methods   NB These could be default ASCOM
     def _connected(self):
         plog("This is un-patched _connected method")
@@ -788,7 +792,7 @@ class Camera:
 
     def _theskyx_stop_expose(self):
         try:
-            self.camera.AbortExposure()
+            self.camera.Abort()
         except:
             plog(traceback.format_exc())
         g_dev['cam'].expresult = {}
