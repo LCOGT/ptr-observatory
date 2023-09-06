@@ -1009,8 +1009,6 @@ class Camera:
         readout_mode="Normal",
         filter_name="W",
         enabled=1,
-        binning=1,
-        binmode=0,
         column=1,
     ):
         # Creates a valid Maxium Autosave file.
@@ -2999,7 +2997,6 @@ class Camera:
                             
                         # Quick flash bias and dark frame                           
                         
-                        #flashbinning=1
                         if not manually_requested_calibration:
                             try:
                                 hdusmalldata = hdusmalldata - self.biasFiles[str(1)]

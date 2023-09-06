@@ -257,7 +257,7 @@ class Sequencer:
             self.auto_focus_script(req, opt, skip_timer_check=True)
         elif action == "run" and script == 'focusExtensive':   
              # Autofocus
-            req2 = {'target': 'near_tycho_star', 'area': 150}
+            req2 = {'target': 'near_tycho_star'}
             opt = {}
             self.extensive_focus_script(req2, opt, throw = g_dev['foc'].throw)
         elif action == "fixpointingscript":
@@ -397,7 +397,7 @@ class Sequencer:
                     )  # Initialise last focus as yesterday
                     g_dev['foc'].set_initial_best_guess_for_focus()
                     # Autofocus
-                    req2 = {'target': 'near_tycho_star', 'area': 150}
+                    req2 = {'target': 'near_tycho_star'}
                     opt = {}
                     plog ("Running initial autofocus upon opening observatory")
                     
@@ -421,7 +421,7 @@ class Sequencer:
                  self.config['auto_eve_bias_dark'] and not self.eve_bias_done and g_dev['obs'].camera_sufficiently_cooled_for_calibrations):   #events['End Eve Bias Dark']) and \
                 
                 self.bias_dark_latch = True
-                req = {'bin1': True, 'bin2': False, 'bin3': False, 'bin4': False, 'numOfBias': 45, \
+                req = {'numOfBias': 45, \
                        'numOfDark': 15, 'darkTime': 180, 'numOfDark2': 3, 'dark2Time': 360, \
                        'hotMap': True, 'coldMap': True, 'script': 'genBiasDarkMaster', }  # NB NB All of the prior is obsolete
                 opt = {}
@@ -517,7 +517,7 @@ class Sequencer:
                 g_dev['foc'].set_initial_best_guess_for_focus()
     
                 # Autofocus
-                req2 = {'target': 'near_tycho_star', 'area': 150}
+                req2 = {'target': 'near_tycho_star'}
                 opt = {}
                 self.extensive_focus_script(req2, opt, throw = g_dev['foc'].throw)
                 
@@ -528,9 +528,9 @@ class Sequencer:
     
     
             if (events['Observing Begins'] <= ephem_now \
-                                       < events['Observing Ends']) and not self.block_guard and not g_dev["cam"].exposure_busy\
-                                       and  (time.time() - self.project_call_timer > 10) and not g_dev['obs'].scope_in_manual_mode  and g_dev['obs'].open_and_enabled_to_observe and self.clock_focus_latch == False:
-                                         
+                                        < events['Observing Ends']) and not self.block_guard and not g_dev["cam"].exposure_busy\
+                                        and  (time.time() - self.project_call_timer > 10) and not g_dev['obs'].scope_in_manual_mode  and g_dev['obs'].open_and_enabled_to_observe and self.clock_focus_latch == False:
+                                       
                 try:
                     self.nightly_reset_complete = False
                     self.block_guard = True
@@ -621,7 +621,7 @@ class Sequencer:
                       self.config['auto_morn_bias_dark'] and not g_dev['obs'].scope_in_manual_mode and not  self.morn_bias_done and g_dev['obs'].camera_sufficiently_cooled_for_calibrations: # and g_dev['enc'].mode == 'Automatic' ):
     
                 self.morn_bias_dark_latch = True
-                req = {'bin1': True, 'bin2': False, 'bin3': False, 'bin4': False, 'numOfBias': 63, \
+                req = {'numOfBias': 63, \
                         'numOfDark': 31, 'darkTime': 600, 'numOfDark2': 31, 'dark2Time': 600, \
                         'hotMap': True, 'coldMap': True, 'script': 'genBiasDarkMaster', }  #This specificatin is obsolete
                 opt = {}
@@ -675,7 +675,7 @@ class Sequencer:
                                             g_dev['mnt'].park_command({}, {})
                                             plog("Exposing 1x1 bias frame.")
                                             req = {'time': 0.0,  'script': 'True', 'image_type': 'bias'}
-                                            opt = {'area': "Full", 'count': 1, 'bin': 1 , \
+                                            opt = { 'count': 1,  \
                                                    'filter': 'dark'}
                                             self.nightime_bias_counter = self.nightime_bias_counter + 1
                                             g_dev['cam'].expose_command(req, opt, user_id='Tobor', user_name='Tobor', user_roles='system', no_AWS=False, \
@@ -689,7 +689,7 @@ class Sequencer:
                                             dark_exp_time = self.config['camera']['camera_1_1']['settings']['dark_exposure']
                                             plog("Exposing 1x1 dark exposure:  " + str(dark_exp_time) )
                                             req = {'time': dark_exp_time ,  'script': 'True', 'image_type': 'dark'}
-                                            opt = {'area': "Full", 'count': 1, 'bin': 1, \
+                                            opt = { 'count': 1,  \
                                                     'filter': 'dark'}
                                             self.nightime_dark_counter = self.nightime_dark_counter + 1
                                             g_dev['cam'].expose_command(req, opt, user_id='Tobor', user_name='Tobor', user_roles='system', no_AWS=False, \
@@ -819,7 +819,7 @@ class Sequencer:
 
                 g_dev['obs'].send_to_user("Running an initial autofocus run.")
 
-                req2 = {'target': 'near_tycho_star', 'area': 150}
+                req2 = {'target': 'near_tycho_star'}
                 
                 self.auto_focus_script(req2, {}, throw = g_dev['foc'].throw)
                 g_dev["foc"].focus_needed = False
@@ -924,17 +924,92 @@ class Sequencer:
                     if count <= 0:
                          continue
                     
-                    # These are waiting for a mosaic approach
-                    offset = [(0., 0.)] #Zero(no) mosaic offset
-                    pitch = 0.
-                    pane = 0
+                    
+                    # MUCH safer to calculate these from first principles
+                    # Than rely on an owner getting this right!
+                    x_field_deg = (g_dev['cam'].pixscale * g_dev['cam'].imagesize_x) /3600
+                    y_field_deg = (g_dev['cam'].pixscale * g_dev['cam'].imagesize_y) /3600
+                    
+                    if exposure['area'] == "Full":
+                        # These are waiting for a mosaic approach
+                        offset = [(0., 0.)] #Zero(no) mosaic offset
+                        pitch = 0.
+                        pane = 0
+                    else:
+                        # To be deprecated once we replace "Area" with actual values
+                        # to go in mosaic_length_ra etc.
+                        # here it just makes a multiple so we can get it going.
+                        tempmultiplier = float(exposure['area'].replace('%',''))/100
+                        requested_mosaic_length_ra = tempmultiplier * x_field_deg
+                        requested_mosaic_length_dec = tempmultiplier * y_field_deg
+                        
+                        
+                        # Ok here we take the provided (eventually) mosaic lengths
+                        # And assume a 10% overlap -- maybe an option in future but
+                        # lets just set it as that for now.
+                        # Then calculate the central coordinate offsets.
+                        mosaic_length_fields_ra = requested_mosaic_length_ra / x_field_deg
+                        mosaic_length_fields_dec = requested_mosaic_length_dec / y_field_deg
+                        if mosaic_length_fields_ra % 1 > 0.8:
+                            mosaic_length_fields_ra += 1
+                        if mosaic_length_fields_dec % 1 > 0.8:
+                            mosaic_length_fields_dec += 1
+                        mosaic_length_fields_ra = np.ceil(mosaic_length_fields_ra)
+                        mosaic_length_fields_dec = np.ceil(mosaic_length_fields_dec)
+                        
+                        actual_mosaic_length_ra = mosaic_length_fields_ra * x_field_deg
+                        actual_mosaic_length_dec = mosaic_length_fields_dec * x_field_deg
+                        
+                        # Ok, so now we get the offset in degrees from the centre
+                        # For the given number of frames. The frames should by
+                        # definition already overlap.
+                        ra_offsets=[]
+                        ra_step=actual_mosaic_length_ra / (2 * mosaic_length_fields_ra)                    
+                        for fieldnumber in range(int(mosaic_length_fields_ra)):
+                            # offset is field spot minus the central spot 
+                            ra_offsets.append( (ra_step * ((fieldnumber*2)+1)) - (mosaic_length_fields_ra * ra_step) )
+                        dec_offsets=[]
+                        dec_step=actual_mosaic_length_dec / (2 * mosaic_length_fields_dec)                    
+                        for fieldnumber in range(int(mosaic_length_fields_dec)):
+                            dec_offsets.append((dec_step * ((fieldnumber*2)+1)) - (mosaic_length_fields_dec * dec_step)    )
+                                
+                        
+                        # To get the overlap, we need to reduce the offsets by 10%
+                        # I THINK this is the way to do it, but I dunno....
+                        offset = []
+                        for offsetra in range(len(ra_offsets)):
+                            for offsetdec in range(len(dec_offsets)):
+                                offset.append((ra_offsets[offsetra] * 0.1 ,dec_offsets[offsetdec] * 0.1))
+                                
+                        plog ("Mosaic grid calculated")
+                        plog ("Number of frames in RA: " + str(mosaic_length_fields_ra))
+                        plog ("Number of frames in DEC: " + str(mosaic_length_fields_dec))
+                        plog ("offset positions:  " + str(offset))
+                        
+                        pitch = 0.
+                        pane = 0
+                        
+                        
 
-                    for displacement in offset:
+                    # Longstacks need to be defined out here for mosaicing purposes.
+                    if exposure['longstack'] == False:
+                        longstackswitch='no'
+                        longstackname='no'
+                    elif exposure['longstack'] == True:
+                        longstackswitch='yes'
+                        longstackname=block_specification['project']['created_at'].replace('-','').replace(':','')
+                    else:
+                        longstackswitch='no'
+                        longstackname='no'
 
-                        # MUCH safer to calculate these from first principles
-                        # Than rely on an owner getting this right!
-                        x_field_deg = (g_dev['cam'].pixscale * g_dev['cam'].imagesize_x) /3600
-                        y_field_deg = (g_dev['cam'].pixscale * g_dev['cam'].imagesize_y) /3600
+
+                    for displacement in offset:                        
+                        
+                        if not exposure['area'] == "Full":
+                        
+                            plog ("Moving to new position of mosaic")
+                            plog (displacement)
+                        
                         
                         # CURRENTLY NOT USED
                         if pitch == -1:
@@ -948,21 +1023,12 @@ class Sequencer:
                         new_ra = dest_ra + d_ra
                         new_dec= dest_dec + d_dec
                         new_ra, new_dec = ra_dec_fix_hd(new_ra, new_dec)
-                        # CURRENTLY NOT USED
                         
                         
                         if imtype in ['light'] and count > 0:                            
 
                             # Sort out Longstack and Smartstack names and switches
-                            if exposure['longstack'] == False:
-                                longstackswitch='no'
-                                longstackname='no'
-                            elif exposure['longstack'] == True:
-                                longstackswitch='yes'
-                                longstackname=block_specification['project']['created_at'].replace('-','').replace(':','')
-                            else:
-                                longstackswitch='no'
-                                longstackname='no'
+                            
                             if exposure['smartstack'] == False:
                                 smartstackswitch='no'
                             elif exposure['smartstack'] == True:
@@ -972,7 +1038,7 @@ class Sequencer:
 
                             # Set up options for exposure and take exposure.
                             req = {'time': exp_time,  'alias':  str(self.config['camera']['camera_1_1']['name']), 'image_type': imtype, 'smartstack' : smartstackswitch, 'longstackswitch' : longstackswitch, 'longstackname' : longstackname, 'block_end' : g_dev['seq'].blockend}   #  NB Should pick up filter and constants from config
-                            opt = {'area': 150, 'count': 1, 'bin': 1, 'filter': filter_requested, \
+                            opt = {'count': 1, 'filter': filter_requested, \
                                    'hint': block['project_id'] + "##" + dest_name, 'object_name': block['project']['project_targets'][0]['name'], 'pane': pane}
                             plog('Seq Blk sent to camera:  ', req, opt)
 
@@ -1071,7 +1137,7 @@ class Sequencer:
                 min_to_do = min(b_d_to_do, stride)
                 plog("Expose " + str(stride) +" 1x1 bias frames.")
                 req = {'time': 0.0,  'script': 'True', 'image_type': 'bias'}
-                opt = {'area': "Full", 'count': min_to_do, 'bin': 1 , \
+                opt = {'count': min_to_do,  \
                        'filter': 'dark'}                    
                     
                 # Check it is in the park position and not pointing at the sky.
@@ -1101,8 +1167,7 @@ class Sequencer:
                     plog("Expose 1x1 dark of " \
                          + str(dark_count) + " using exposure:  " + str(dark_exp_time) )
                     req = {'time': dark_exp_time ,  'script': 'True', 'image_type': 'dark'}
-                    opt = {'area': "Full", 'count': 1, 'bin': 1, \
-                            'filter': 'dark'}
+                    opt = {'count': 1, 'filter': 'dark'}
                     g_dev['cam'].expose_command(req, opt, user_id='Tobor', user_name='Tobor', user_roles='system', no_AWS=False, \
                                        do_sep=False, quick=False, skip_open_check=True,skip_daytime_check=True)
                     if self.stop_script_called:
@@ -1118,8 +1183,7 @@ class Sequencer:
                     plog("Expose 1x1 dark " + str(1) + " of " \
                              + str(dark_count) + " using exposure:  " + str(dark_exp_time) )
                     req = {'time': dark_exp_time,  'script': 'True', 'image_type': 'dark'}
-                    opt = {'area': "Full", 'count': 1, 'bin': 1, \
-                            'filter': 'dark'}
+                    opt = {'count': 1, 'filter': 'dark'}
                     g_dev['cam'].expose_command(req, opt, user_id='Tobor', user_name='Tobor', user_roles='system', no_AWS=False, \
                                        do_sep=False, quick=False, skip_open_check=True,skip_daytime_check=True)
                     if self.stop_script_called:
@@ -2361,9 +2425,9 @@ class Sequencer:
                             req = {'time': float(exp_time),  'alias': camera_name, 'image_type': 'sky flat', 'script': 'On'}
                                       
                             if g_dev["fil"].null_filterwheel == False:
-                                opt = { 'count': 1, 'bin':  1, 'area': 150, 'filter': current_filter}     
+                                opt = { 'count': 1, 'filter': current_filter}     
                             else:
-                                opt = { 'count': 1, 'bin':  1, 'area': 150}   
+                                opt = { 'count': 1, }   
                             
                             if ephem.now() >= ending:
                                 if morn: # This needs to be here because some scopes do not do morning bias and darks
@@ -2599,7 +2663,7 @@ class Sequencer:
         #Take a 10 s dark screen air flat to record ambient
         # Park Telescope
         req = {'time': exp_time,  'alias': camera_name, 'image_type': 'screen flat'}
-        opt = {'area': 100, 'count': dark_count, 'filter': 'dark', 'hint': 'screen dark'}  #  air has highest throughput
+        opt = {'count': dark_count, 'filter': 'dark', 'hint': 'screen dark'}  #  air has highest throughput
 
         result = g_dev['cam'].expose_command(req, opt, user_id='Tobor', user_name='Tobor', user_roles='system', no_AWS=True, skip_open_check=True,skip_daytime_check=True)
         if self.stop_script_called:
@@ -2622,7 +2686,7 @@ class Sequencer:
             g_dev['obs'].update()
             plog('Dark Screen; filter, bright:  ', filter_number, 0)
             req = {'time': float(exp_time),  'alias': camera_name, 'image_type': 'screen flat'}
-            opt = {'area': 100, 'count': 1, 'filter': g_dev['fil'].filter_data[filter_number][0], 'hint': 'screen pre-filter dark'}
+            opt = {'count': 1, 'filter': g_dev['fil'].filter_data[filter_number][0], 'hint': 'screen pre-filter dark'}
             result = g_dev['cam'].expose_command(req, opt, user_id='Tobor', user_name='Tobor', user_roles='system', no_AWS=True, skip_open_check=True,skip_daytime_check=True)
             if self.stop_script_called:
                 g_dev["obs"].send_to_user("Cancelling out of calibration script as stop script has been called.")  
@@ -2640,7 +2704,7 @@ class Sequencer:
             g_dev['obs'].scan_requests()
             g_dev['obs'].update()
             req = {'time': float(exp_time),  'alias': camera_name, 'image_type': 'screen flat'}
-            opt = {'area': 100, 'count': flat_count, 'filter': g_dev['fil'].filter_data[filter_number][0], 'hint': 'screen filter light'}
+            opt = {'count': flat_count, 'filter': g_dev['fil'].filter_data[filter_number][0], 'hint': 'screen filter light'}
             result = g_dev['cam'].expose_command(req, opt, user_id='Tobor', user_name='Tobor', user_roles='system', no_AWS=True, skip_open_check=True,skip_daytime_check=True)
             if self.stop_script_called:
                 g_dev["obs"].send_to_user("Cancelling out of calibration script as stop script has been called.")  
@@ -2656,7 +2720,7 @@ class Sequencer:
             g_dev['obs'].update()
             plog('Dark Screen; filter, bright:  ', filter_number, 0)
             req = {'time': float(exp_time),  'alias': camera_name, 'image_type': 'screen flat'}
-            opt = {'area': 100, 'count': 1, 'filter': g_dev['fil'].filter_data[filter_number][0], 'hint': 'screen post-filter dark'}
+            opt = { 'count': 1, 'filter': g_dev['fil'].filter_data[filter_number][0], 'hint': 'screen post-filter dark'}
             result = g_dev['cam'].expose_command(req, opt, user_id='Tobor', user_name='Tobor', user_roles='system', no_AWS=True, skip_open_check=True,skip_daytime_check=True)
             if self.stop_script_called:
                 g_dev["obs"].send_to_user("Cancelling out of calibration script as stop script has been called.")  
@@ -2790,7 +2854,7 @@ class Sequencer:
 
         req = {'time': self.config['focus_exposure_time'],  'alias':  str(self.config['camera']['camera_1_1']['name']), 'image_type': 'focus'}   #  NB Should pick up filter and constats from config
 
-        opt = {'area': 150, 'count': 1, 'bin': 1, 'filter': 'focus'}
+        opt = { 'count': 1, 'filter': 'focus'}
        
         foc_pos0 = focus_start
         result = {}
@@ -3095,7 +3159,7 @@ class Sequencer:
                     plog  ("NORMAL FOCUS UNSUCCESSFUL, TRYING EXTENSIVE FOCUS")
                     g_dev['obs'].send_to_user('V-curve focus failed, trying extensive focus routine')
                     
-                    req2 = {'target': 'near_tycho_star', 'area': 150, 'image_type': 'focus'}
+                    req2 = {'target': 'near_tycho_star', 'image_type': 'focus'}
                     opt = {'filter': 'focus'}
                     g_dev['seq'].extensive_focus_script(req2,opt, no_auto_after_solve=True)
                     plog("Returning to RA:  " +str(start_ra) + " Dec: " + str(start_dec))
@@ -3213,7 +3277,7 @@ class Sequencer:
                     plog('Autofocus quadratic equation not converge. Moving back to starting focus:  ', focus_start)
                     plog  ("NORMAL FOCUS UNSUCCESSFUL, TRYING EXTENSIVE FOCUS")
                     g_dev['obs'].send_to_user('V-curve focus failed, trying extensive focus')                    
-                    req2 = {'target': 'near_tycho_star', 'area': 150}
+                    req2 = {'target': 'near_tycho_star'}
                     opt = {}
                     g_dev['seq'].extensive_focus_script(req2,opt, no_auto_after_solve=True)
                     plog("Returning to RA:  " +str(start_ra) + " Dec: " + str(start_dec))
@@ -3284,7 +3348,7 @@ class Sequencer:
                     plog  ("NORMAL FOCUS UNSUCCESSFUL, TRYING EXTENSIVE FOCUS")
                     g_dev['obs'].send_to_user('V-curve focus failed, trying extensive focus')
                     
-                    req2 = {'target': 'near_tycho_star', 'area': 150}
+                    req2 = {'target': 'near_tycho_star'}
                     opt = {}
                     g_dev['seq'].extensive_focus_script(req2,opt, no_auto_after_solve=True)
                     plog("Returning to RA:  " +str(start_ra) + " Dec: " + str(start_dec))
@@ -3326,7 +3390,7 @@ class Sequencer:
                 plog('Autofocus quadratic equation not converge. Moving back to starting focus:  ', focus_start)
                 plog  ("NORMAL FOCUS UNSUCCESSFUL, TRYING EXTENSIVE FOCUS")
                 g_dev['obs'].send_to_user('V-curve focus failed, trying extensive focus')                
-                req2 = {'target': 'near_tycho_star', 'area': 150}
+                req2 = {'target': 'near_tycho_star'}
                 opt = {}
                 g_dev['seq'].extensive_focus_script(req2,opt, no_auto_after_solve=True)
                 plog("Returning to RA:  " +str(start_ra) + " Dec: " + str(start_dec))
@@ -3496,7 +3560,7 @@ class Sequencer:
             if not sim:
                 g_dev['obs'].scan_requests()
                 req = {'time': self.config['focus_exposure_time'],  'alias':  str(self.config['camera']['camera_1_1']['name']), 'image_type': 'focus'}   #  NB Should pick up filter and constats from config
-                opt = {'area': 100, 'count': 1, 'filter': 'focus'}
+                opt = {'count': 1, 'filter': 'focus'}
                 result = g_dev['cam'].expose_command(req, opt, user_id='Tobor', user_name='Tobor', user_roles='system', no_AWS=True, solve_it=False)
                 if self.stop_script_called:
                     g_dev["obs"].send_to_user("Cancelling out of autofocus script as stop script has been called.")  
@@ -3540,7 +3604,7 @@ class Sequencer:
             if not sim:
                 g_dev['obs'].scan_requests()
                 req = {'time': self.config['focus_exposure_time'],  'alias':  str(self.config['camera']['camera_1_1']['name']), 'image_type': 'focus'}   #  NB Should pick up filter and constats from config
-                opt = {'area': 100, 'count': 1, 'filter': 'focus'}
+                opt = { 'count': 1, 'filter': 'focus'}
                 result = g_dev['cam'].expose_command(req, opt, user_id='Tobor', user_name='Tobor', user_roles='system', no_AWS=True, solve_it=False)
                 if self.stop_script_called:
                     g_dev["obs"].send_to_user("Cancelling out of autofocus script as stop script has been called.")  
@@ -3772,7 +3836,7 @@ class Sequencer:
                 
             g_dev['obs'].update_status()
             req = { 'time': self.config['pointing_exposure_time'],  'alias':  str(self.config['camera']['camera_1_1']['name']), 'image_type': 'light'}
-            opt = { 'area': 100, 'count': 1,  'filter': 'pointing'}
+            opt = { 'count': 1,  'filter': 'pointing'}
             result = g_dev['cam'].expose_command(req, opt)
             
             g_dev["obs"].send_to_user("Platesolving image.")
@@ -3915,7 +3979,7 @@ class Sequencer:
         
         
         req = {'time': self.config['pointing_exposure_time'],  'alias':  str(self.config['camera']['camera_1_1']['name']), 'image_type': 'pointing'}   #  NB Should pick up filter and constats from config
-        opt = {'area': 100, 'count': 1, 'filter': 'pointing'}
+        opt = {'count': 1, 'filter': 'pointing'}
         
         successful_platesolve=False
         
@@ -3991,7 +4055,7 @@ class Sequencer:
             plog("Didn't get a successful platesolve at an important time for pointing, trying a double exposure")
             
             req = {'time': float(self.config['pointing_exposure_time']) * 2,  'alias':  str(self.config['camera']['camera_1_1']['name']), 'image_type': 'pointing'}   #  NB Should pick up filter and constats from config
-            opt = {'area': 100, 'count': 1, 'filter': 'pointing'}
+            opt = {'count': 1, 'filter': 'pointing'}
             
             result = g_dev['cam'].expose_command(req, opt, user_id='Tobor', user_name='Tobor', user_roles='system', no_AWS=True, solve_it=True)
             
@@ -4021,7 +4085,7 @@ class Sequencer:
                 plog("Didn't get a successful platesolve at an important time for pointing AGAIN, trying a Lum filter")
                 
                 req = {'time': float(self.config['pointing_exposure_time']) * 2.5,  'alias':  str(self.config['camera']['camera_1_1']['name']), 'image_type': 'pointing'}   #  NB Should pick up filter and constats from config
-                opt = {'area': 100, 'count': 1, 'filter': 'Lum'}
+                opt = {'count': 1, 'filter': 'Lum'}
                 
                 result = g_dev['cam'].expose_command(req, opt, user_id='Tobor', user_name='Tobor', user_roles='system', no_AWS=True, solve_it=True)
                 
@@ -4078,7 +4142,7 @@ class Sequencer:
             
             # Taking a confirming shot. 
             req = {'time': self.config['pointing_exposure_time'],  'alias':  str(self.config['camera']['camera_1_1']['name']), 'image_type': 'light'}   #  NB Should pick up filter and constats from config
-            opt = {'area': 100, 'count': 1, 'filter': 'pointing'}
+            opt = {'count': 1, 'filter': 'pointing'}
             result = g_dev['cam'].expose_command(req, opt, user_id='Tobor', user_name='Tobor', user_roles='system', no_AWS=True, solve_it=True)
             
             if self.stop_script_called:
@@ -4101,7 +4165,8 @@ class Sequencer:
 
         url_blk = "https://calendar.photonranch.org/calendar/siteevents"
         # UTC VERSION
-        start_aperture = str(g_dev['events']['Eve Sky Flats']).split()
+        start_aperture = str(g_dev['events']['Prior Moon Transit']).split()
+        #start_aperture = str(g_dev['events']['Eve Sky Flats']).split()
         close_aperture = str(g_dev['events']['End Morn Sky Flats']).split()
 
         # Reformat ephem.Date into format required by the UI
