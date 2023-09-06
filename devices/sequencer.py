@@ -956,6 +956,7 @@ class Sequencer:
                         # definition already overlap.
                         ra_offsets=[]
                         ra_step=actual_mosaic_length_ra / (2 * mosaic_length_fields_ra)                    
+
                         for fieldnumber in range(int(mosaic_length_fields_ra)):
                             # offset is field spot minus the central spot 
                             ra_offsets.append( (ra_step * ((fieldnumber*2)+1)) - (mosaic_length_fields_ra * ra_step) )
@@ -970,7 +971,7 @@ class Sequencer:
                         offset = []
                         for offsetra in range(len(ra_offsets)):
                             for offsetdec in range(len(dec_offsets)):
-                                offset.append((ra_offsets[offsetra] * 0.1 ,dec_offsets[offsetdec] * 0.1))
+                                offset.append((ra_offsets[offsetra] * 0.9 ,dec_offsets[offsetdec] * 0.9))
                                 
                         plog ("Mosaic grid calculated")
                         plog ("Number of frames in RA: " + str(mosaic_length_fields_ra))
