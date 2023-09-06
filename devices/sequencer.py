@@ -951,20 +951,23 @@ class Sequencer:
                         mosaic_length_fields_ra = np.ceil(mosaic_length_fields_ra)
                         mosaic_length_fields_dec = np.ceil(mosaic_length_fields_dec)
                         
-                        actual_mosaic_length_ra = mosaic_length_fields_ra * x_field_deg
-                        actual_mosaic_length_dec = mosaic_length_fields_dec * x_field_deg
+                        #actual_mosaic_length_ra = mosaic_length_fields_ra * x_field_deg
+                        #actual_mosaic_length_dec = mosaic_length_fields_dec * x_field_deg
+                        
+                        #actual_mosaic_length_ra = mosaic_length_fields_ra * x_field_deg
+                        #actual_mosaic_length_dec = mosaic_length_fields_dec * x_field_deg
+                        
                         
                         # Ok, so now we get the offset in degrees from the centre
                         # For the given number of frames. The frames should by
                         # definition already overlap.
                         ra_offsets=[]
-                        ra_step=actual_mosaic_length_ra / (2 * mosaic_length_fields_ra)                    
-
+                        ra_step=requested_mosaic_length_ra / (2 * mosaic_length_fields_ra)   
                         for fieldnumber in range(int(mosaic_length_fields_ra)):
                             # offset is field spot minus the central spot 
                             ra_offsets.append( (ra_step * ((fieldnumber*2)+1)) - (mosaic_length_fields_ra * ra_step) )
                         dec_offsets=[]
-                        dec_step=actual_mosaic_length_dec / (2 * mosaic_length_fields_dec)                    
+                        dec_step=requested_mosaic_length_dec / (2 * mosaic_length_fields_dec)                    
                         for fieldnumber in range(int(mosaic_length_fields_dec)):
                             dec_offsets.append((dec_step * ((fieldnumber*2)+1)) - (mosaic_length_fields_dec * dec_step)    )
                                 
@@ -981,7 +984,6 @@ class Sequencer:
                         plog ("Number of frames in DEC: " + str(mosaic_length_fields_dec))
                         plog ("offset positions:  " + str(offset))
                         
-                        pitch = 0.
                         pane = 0
                         
                         
