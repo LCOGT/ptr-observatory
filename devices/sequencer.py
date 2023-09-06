@@ -834,14 +834,7 @@ class Sequencer:
             #dest_ra = g_dev['mnt'].mount.RightAscension   #Read these to go back.  NB NB Need to cleanly pass these on so we can return to proper target.
             #dest_dec = g_dev['mnt'].mount.Declination
             
-            if result == 'blockend':
-                plog ("End of Block, exiting project block.")      
-                return block_specification
             
-            if result == 'calendarend':
-                plog ("Calendar Item containing block removed from calendar")
-                plog ("Site bailing out of running project")
-                return block_specification
             
             g_dev['obs'].update()
             
@@ -1010,6 +1003,15 @@ class Sequencer:
                         # Necessary
                         plog ("Taking a quick pointing check and re_seek for new project block")
                         result = self.centering_exposure(no_confirmation=True, try_hard=True)
+                        
+                        if result == 'blockend':
+                            plog ("End of Block, exiting project block.")      
+                            return block_specification
+                        
+                        if result == 'calendarend':
+                            plog ("Calendar Item containing block removed from calendar")
+                            plog ("Site bailing out of running project")
+                            return block_specification
 
                     for displacement in offset:                        
                         
@@ -1040,6 +1042,15 @@ class Sequencer:
                             # Necessary
                             plog ("Taking a quick pointing check and re_seek for new project block")
                             result = self.centering_exposure(no_confirmation=True, try_hard=True)
+                            
+                            if result == 'blockend':
+                                plog ("End of Block, exiting project block.")      
+                                return block_specification
+                            
+                            if result == 'calendarend':
+                                plog ("Calendar Item containing block removed from calendar")
+                                plog ("Site bailing out of running project")
+                                return block_specification
                         
                         
                         if imtype in ['light'] and count > 0:                            
@@ -1068,6 +1079,15 @@ class Sequencer:
                             result = g_dev['cam'].expose_command(req, opt, user_name=user_name, user_id=user_id, user_roles=user_roles, no_AWS=False, solve_it=False, calendar_event_id=calendar_event_id)
                             g_dev['obs'].update()
                             try:
+                                if result == 'blockend':
+                                    plog ("End of Block, exiting project block.")      
+                                    return block_specification
+                                
+                                if result == 'calendarend':
+                                    plog ("Calendar Item containing block removed from calendar")
+                                    plog ("Site bailing out of running project")
+                                    return block_specification
+                                
                                 if result['stopped'] is True:
                                     g_dev['obs'].send_to_user("Project Stopped because Exposure cancelled")
                                     return block_specification
