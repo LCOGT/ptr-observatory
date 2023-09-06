@@ -4030,6 +4030,8 @@ class Sequencer:
             print ( g_dev['obs'].platesolve_queue.empty())
             time.sleep(1)              
         
+        g_dev['obs'].platesolve_is_processing=False
+        
         # Make sure platesolve queue is clear
         reported=0
         temptimer=time.time()
