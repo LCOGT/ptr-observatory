@@ -827,14 +827,8 @@ class Sequencer:
                 
                 self.auto_focus_script(req2, {}, throw = g_dev['foc'].throw)
                 g_dev["foc"].focus_needed = False
-                
-            g_dev['mnt'].go_command(ra=dest_ra, dec=dest_dec)
             
-            # Quick pointing check and re_seek at the start of each project block
-            # Otherwise everyone will get slightly off-pointing images
-            # Necessary
-            plog ("Taking a quick pointing check and re_seek for new project block")
-            result = self.centering_exposure(no_confirmation=True, try_hard=True)
+            
                         
             # This actually replaces the "requested" dest_ra by the actual centered pointing ra and dec. 
             #dest_ra = g_dev['mnt'].mount.RightAscension   #Read these to go back.  NB NB Need to cleanly pass these on so we can return to proper target.
@@ -1006,6 +1000,16 @@ class Sequencer:
                         longstackswitch='no'
                         longstackname='no'
 
+
+                    if exposure['area'] == "Full":
+                    
+                        g_dev['mnt'].go_command(ra=dest_ra, dec=dest_dec)
+                        
+                        # Quick pointing check and re_seek at the start of each project block
+                        # Otherwise everyone will get slightly off-pointing images
+                        # Necessary
+                        plog ("Taking a quick pointing check and re_seek for new project block")
+                        result = self.centering_exposure(no_confirmation=True, try_hard=True)
 
                     for displacement in offset:                        
                         
