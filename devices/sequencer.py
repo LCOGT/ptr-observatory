@@ -1097,33 +1097,46 @@ class Sequencer:
                             plog("Left to do:  ", left_to_do)
                             
                             
+                            # Check that the observing time hasn't completed or then night has not completed. 
+                            # If so, set ended to True so that it cancels out of the exposure block.
+                            now_date_timeZ = datetime.datetime.now().isoformat().split('.')[0] +'Z'
+                            events = g_dev['events']
+                            ended = left_to_do <= 0 or now_date_timeZ >= g_dev['seq'].blockend \
+                                    or ephem.now() >= events['Observing Ends']
+                            
+                            if ephem.now() >= events['Observing Ends']:
+                                return block_specification 
+                            
+                            if now_date_timeZ >= g_dev['seq'].blockend:
+                                return block_specification 
+                            
                             if result == 'blockend':
-                                left_to_do=0
+                                #left_to_do=0
+                                return block_specification 
                             
                             if result == 'calendarend':
-                                left_to_do =0
+                                #left_to_do =0
+                                return block_specification 
                             
                             if result == 'roofshut':
-                                left_to_do =0
+                                #left_to_do =0
+                                return block_specification 
                                 
                             if result == 'outsideofnighttime':
-                                left_to_do =0
+                                #left_to_do =0
+                                return block_specification 
                             
                             if g_dev["obs"].stop_all_activity:
                                 plog('stop_all_activity cancelling out of exposure loop')
-                                left_to_do =0  
+                                #left_to_do =0  
+                                return block_specification 
                             
                             
                             
                         pane += 1
 
-                    # Check that the observing time hasn't completed or then night has not completed. 
-                    # If so, set ended to True so that it cancels out of the exposure block.
-                    now_date_timeZ = datetime.datetime.now().isoformat().split('.')[0] +'Z'
-                    events = g_dev['events']
-                    ended = left_to_do <= 0 or now_date_timeZ >= g_dev['seq'].blockend \
-                            or ephem.now() >= events['Observing Ends']
-                            
+                        
+        self.currently_mosaicing = False
         plog("Project block has finished!")   
         return block_specification 
 
