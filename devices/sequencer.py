@@ -1011,8 +1011,8 @@ class Sequencer:
                     plog ("Taking a quick pointing check and re_seek for new project block")
                     result = self.centering_exposure(no_confirmation=True, try_hard=True)
                     
-                    mosaic_center_ra=g_dev['mnt'].mount.RightAscension
-                    mosaic_center_dec=g_dev['mnt'].mount.Declination
+                    self.mosaic_center_ra=g_dev['mnt'].mount.RightAscension
+                    self.mosaic_center_dec=g_dev['mnt'].mount.Declination
                     
 
                     if result == 'blockend':
@@ -1029,11 +1029,12 @@ class Sequencer:
                         if not exposure['area'].lower() == "full":
                         
                             plog ("Moving to new position of mosaic")
-                            plog (displacement)            
-
+                            plog (displacement) 
+                            self.current_mosaic_displacement_ra= displacement[0]/15
+                            self.current_mosaic_displacement_dec= displacement[1]
                             # Slew to new mosaic pane location.
-                            new_ra = mosaic_center_ra + displacement[0]/15
-                            new_dec= mosaic_center_dec + displacement[1] 
+                            new_ra = self.mosaic_center_ra + self.current_mosaic_displacement_ra
+                            new_dec= self.mosaic_center_dec + self.current_mosaic_displacement_dec 
                             new_ra, new_dec = ra_dec_fix_hd(new_ra, new_dec)                            
                             #g_dev['mnt'].go_command(ra=new_ra, dec=new_dec)
                             g_dev['mnt'].mount.SlewToCoordinatesAsync(new_ra, new_dec)                            
@@ -4101,6 +4102,8 @@ class Sequencer:
         # Nudge if needed.
         if not g_dev['obs'].pointing_correction_requested_by_platesolve_thread:
             g_dev["obs"].send_to_user("Pointing adequate on first slew. Slew & Center complete.") 
+            self.mosaic_center_ra=g_dev['mnt'].mount.RightAscension
+            self.mosaic_center_dec=g_dev['mnt'].mount.Declination
             return result
         else:
             g_dev['obs'].check_platesolve_and_nudge()        
@@ -4174,6 +4177,8 @@ class Sequencer:
         # Nudge if needed.
         if not g_dev['obs'].pointing_correction_requested_by_platesolve_thread:
             g_dev["obs"].send_to_user("Pointing adequate on first slew. Slew & Center complete.") 
+            self.mosaic_center_ra=g_dev['mnt'].mount.RightAscension
+            self.mosaic_center_dec=g_dev['mnt'].mount.Declination
             return result
         else:
             g_dev['obs'].check_platesolve_and_nudge()        
@@ -4184,6 +4189,8 @@ class Sequencer:
         
         
         if no_confirmation == True:
+            self.mosaic_center_ra=g_dev['mnt'].mount.RightAscension
+            self.mosaic_center_dec=g_dev['mnt'].mount.Declination
             return result
         else:
             if self.stop_script_called:
@@ -4211,7 +4218,8 @@ class Sequencer:
                 return
             
             g_dev["obs"].send_to_user("Pointing confirmation exposure complete. Slew & Center complete.") 
-            
+            self.mosaic_center_ra=g_dev['mnt'].mount.RightAscension
+            self.mosaic_center_dec=g_dev['mnt'].mount.Declination
             return result
 
     def update_calendar_blocks(self):

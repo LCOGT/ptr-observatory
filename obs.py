@@ -72,7 +72,19 @@ def test_connect(host='http://google.com'):
         return True
     except:
         return False
-
+    
+def ra_dec_fix_hd(ra, dec):
+    if dec > 90:
+        dec = 180 - dec
+        ra -= 12
+    if dec < -90:
+        dec = -180 - dec
+        ra += 12
+    while ra >= 24:
+        ra -= 24
+    while ra < 0:
+        ra += 24
+    return ra, dec
 
 def findProcessIdByName(processName):
     '''
@@ -2615,6 +2627,12 @@ class Observatory:
             self.pointing_correction_requested_by_platesolve_thread = False
             g_dev['mnt'].go_command(ra=self.pointing_correction_request_ra, dec=self.pointing_correction_request_dec) 
             g_dev['seq'].centering_exposure(no_confirmation=True, try_hard=True)
+            if g_dev['seq'].currently_mosaicing:
+                # Slew to new mosaic pane location.
+                new_ra = g_dev['seq'].mosaic_center_ra + g_dev['seq'].current_mosaic_displacement_ra
+                new_dec= g_dev['seq'].mosaic_center_dec + g_dev['seq'].current_mosaic_displacement_dec 
+                new_ra, new_dec = ra_dec_fix_hd(new_ra, new_dec)    
+                g_dev['mnt'].mount.SlewToCoordinatesAsync(new_ra, new_dec)   
             
 
 
