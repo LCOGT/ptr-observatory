@@ -998,24 +998,29 @@ class Sequencer:
                         longstackname='no'
 
 
-                    if exposure['area'] == "Full":
+                    #if exposure['area'] == "Full":
                     
-                        g_dev['mnt'].go_command(ra=dest_ra, dec=dest_dec)
-                        
-                        # Quick pointing check and re_seek at the start of each project block
-                        # Otherwise everyone will get slightly off-pointing images
-                        # Necessary
-                        plog ("Taking a quick pointing check and re_seek for new project block")
-                        result = self.centering_exposure(no_confirmation=True, try_hard=True)
-                        
-                        if result == 'blockend':
-                            plog ("End of Block, exiting project block.")      
-                            return block_specification
-                        
-                        if result == 'calendarend':
-                            plog ("Calendar Item containing block removed from calendar")
-                            plog ("Site bailing out of running project")
-                            return block_specification
+                    # Get the pointing / central position of the 
+                    g_dev['mnt'].go_command(ra=dest_ra, dec=dest_dec)
+                    
+                    # Quick pointing check and re_seek at the start of each project block
+                    # Otherwise everyone will get slightly off-pointing images
+                    # Necessary
+                    plog ("Taking a quick pointing check and re_seek for new project block")
+                    result = self.centering_exposure(no_confirmation=True, try_hard=True)
+                    
+                    mosaic_center_ra=g_dev['mnt'].mount.RightAscension
+                    mosaic_center_dec=g_dev['mnt'].mount.Declination
+                    
+
+                    if result == 'blockend':
+                        plog ("End of Block, exiting project block.")      
+                        return block_specification
+                    
+                    if result == 'calendarend':
+                        plog ("Calendar Item containing block removed from calendar")
+                        plog ("Site bailing out of running project")
+                        return block_specification
 
                     for displacement in offset:                        
                         
@@ -1025,16 +1030,12 @@ class Sequencer:
                             plog (displacement)            
 
                             # Slew to new mosaic pane location.
-                            new_ra = dest_ra + displacement[0]/15
-                            new_dec= dest_dec + displacement[1] 
+                            new_ra = mosaic_center_ra + displacement[0]/15
+                            new_dec= mosaic_center_dec + displacement[1] 
                             new_ra, new_dec = ra_dec_fix_hd(new_ra, new_dec)                            
-                            g_dev['mnt'].go_command(ra=new_ra, dec=new_dec)
-                            
-                            # Quick pointing check and re_seek at the start of each project block
-                            # Otherwise everyone will get slightly off-pointing images
-                            # Necessary
-                            plog ("Taking a quick pointing check and re_seek for new project block")
-                            result = self.centering_exposure(no_confirmation=True, try_hard=True)
+                            #g_dev['mnt'].go_command(ra=new_ra, dec=new_dec)
+                            g_dev['mnt'].mount.SlewToCoordinatesAsync(new_ra, new_dec)
+                           
                             
                             if result == 'blockend':
                                 plog ("End of Block, exiting project block.")      
