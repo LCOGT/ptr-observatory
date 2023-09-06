@@ -787,9 +787,13 @@ class Camera:
         thread.start()
 
     def _theskyx_stop_expose(self):
-        self.camera.AbortExposure()
+        try:
+            self.camera.AbortExposure()
+        except:
+            plog(traceback.format_exc())
         g_dev['cam'].expresult = {}
         g_dev['cam'].expresult["stopped"] = True
+        return
 
     def _theskyx_imageavailable(self):
         #plog(self.camera.IsExposureComplete)
