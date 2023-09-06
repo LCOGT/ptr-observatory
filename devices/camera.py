@@ -2762,9 +2762,7 @@ class Camera:
                         "solarflat",
                         "arc",
                     ):
-                        f_ext = "-"
-                        if opt["area"] == 150:
-                            f_ext += "f"
+                        f_ext = "-"                        
                         if frame_type[0:4] in ("bias", "dark"):
                             f_ext += frame_type[0] + "_" + str(1)
                         if frame_type in (
