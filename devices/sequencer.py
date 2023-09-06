@@ -837,8 +837,8 @@ class Sequencer:
             result = self.centering_exposure(no_confirmation=True, try_hard=True)
                         
             # This actually replaces the "requested" dest_ra by the actual centered pointing ra and dec. 
-            dest_ra = g_dev['mnt'].mount.RightAscension   #Read these to go back.  NB NB Need to cleanly pass these on so we can return to proper target.
-            dest_dec = g_dev['mnt'].mount.Declination
+            #dest_ra = g_dev['mnt'].mount.RightAscension   #Read these to go back.  NB NB Need to cleanly pass these on so we can return to proper target.
+            #dest_dec = g_dev['mnt'].mount.Declination
             
             if result == 'blockend':
                 plog ("End of Block, exiting project block.")      
@@ -1015,18 +1015,27 @@ class Sequencer:
                             plog (displacement)
                         
                         
-                        # CURRENTLY NOT USED
-                        if pitch == -1:
-                            #Note positive offset means a negative displacement in RA for spiral to wrap CCW.
-                            #Note offsets are absolute degrees.
-                            d_ra = -displacement[0]/15.
-                            d_dec = displacement[1]
-                        else:
-                            d_ra = displacement[0]*(pitch)*(x_field_deg/15.)  # 0.764243 deg = 0.0509496 Hours  These and pixscale should be computed in config.
-                            d_dec = displacement[1]*( pitch)*(y_field_deg)  # = 0.5102414999999999   #Deg
-                        new_ra = dest_ra + d_ra
-                        new_dec= dest_dec + d_dec
-                        new_ra, new_dec = ra_dec_fix_hd(new_ra, new_dec)
+                            # CURRENTLY NOT USED
+                            if pitch == -1:
+                                #Note positive offset means a negative displacement in RA for spiral to wrap CCW.
+                                #Note offsets are absolute degrees.
+                                d_ra = -displacement[0]/15.
+                                d_dec = displacement[1]
+                            else:
+                                d_ra = displacement[0]*(pitch)*(x_field_deg/15.)  # 0.764243 deg = 0.0509496 Hours  These and pixscale should be computed in config.
+                                d_dec = displacement[1]*( pitch)*(y_field_deg)  # = 0.5102414999999999   #Deg
+                                
+                            new_ra = dest_ra + d_ra
+                            new_dec= dest_dec + d_dec
+                            new_ra, new_dec = ra_dec_fix_hd(new_ra, new_dec)
+                            
+                            g_dev['mnt'].go_command(ra=new_ra, dec=new_dec)
+                            
+                            # Quick pointing check and re_seek at the start of each project block
+                            # Otherwise everyone will get slightly off-pointing images
+                            # Necessary
+                            plog ("Taking a quick pointing check and re_seek for new project block")
+                            result = self.centering_exposure(no_confirmation=True, try_hard=True)
                         
                         
                         if imtype in ['light'] and count > 0:                            
