@@ -3158,8 +3158,8 @@ class Camera:
                             self.currently_in_smartstack_loop=False                    
                         g_dev['obs'].check_platesolve_and_nudge()
 
-                        if not manually_requested_calibration and solve_it == True or ((Nsmartstack == sskcounter+1) and Nsmartstack > 1)\
-                                                   or g_dev['obs'].images_since_last_solve > g_dev['obs'].config["solve_nth_image"] or (datetime.datetime.now() - g_dev['obs'].last_solve_time)  > datetime.timedelta(minutes=g_dev['obs'].config["solve_timer"]):
+                        if solve_it == True or (not manually_requested_calibration or ((Nsmartstack == sskcounter+1) and Nsmartstack > 1)\
+                                                   or g_dev['obs'].images_since_last_solve > g_dev['obs'].config["solve_nth_image"] or (datetime.datetime.now() - g_dev['obs'].last_solve_time)  > datetime.timedelta(minutes=g_dev['obs'].config["solve_timer"])):
                                                        
                             cal_name = (
                                 cal_name[:-9] + "F012" + cal_name[-7:]
@@ -3171,7 +3171,7 @@ class Camera:
                             if Nsmartstack > 1 and not (Nsmartstack == sskcounter+1):
                                 image_during_smartstack=True
                             
-                            if not image_during_smartstack and not g_dev['seq'].currently_mosaicing and not g_dev['obs'].pointing_correction_requested_by_platesolve_thread and g_dev['obs'].platesolve_queue.empty() and not g_dev['obs'].platesolve_is_processing:
+                            if solve_it == True or (not image_during_smartstack and not g_dev['seq'].currently_mosaicing and not g_dev['obs'].pointing_correction_requested_by_platesolve_thread and g_dev['obs'].platesolve_queue.empty() and not g_dev['obs'].platesolve_is_processing):
                                 
                                 # Make sure any dither or return nudge has finished before platesolution
                                 wait_for_slew()
