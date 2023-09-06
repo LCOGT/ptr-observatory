@@ -1022,23 +1022,12 @@ class Sequencer:
                         if not exposure['area'] == "Full":
                         
                             plog ("Moving to new position of mosaic")
-                            plog (displacement)
-                        
-                        
-                            # CURRENTLY NOT USED
-                            if pitch == -1:
-                                #Note positive offset means a negative displacement in RA for spiral to wrap CCW.
-                                #Note offsets are absolute degrees.
-                                d_ra = -displacement[0]/15.
-                                d_dec = displacement[1]
-                            else:
-                                d_ra = displacement[0]*(pitch)*(x_field_deg/15.)  # 0.764243 deg = 0.0509496 Hours  These and pixscale should be computed in config.
-                                d_dec = displacement[1]*( pitch)*(y_field_deg)  # = 0.5102414999999999   #Deg
-                                
-                            new_ra = dest_ra + d_ra
-                            new_dec= dest_dec + d_dec
-                            new_ra, new_dec = ra_dec_fix_hd(new_ra, new_dec)
-                            
+                            plog (displacement)            
+
+                            # Slew to new mosaic pane location.
+                            new_ra = dest_ra + displacement[0]/15
+                            new_dec= dest_dec + displacement[1] 
+                            new_ra, new_dec = ra_dec_fix_hd(new_ra, new_dec)                            
                             g_dev['mnt'].go_command(ra=new_ra, dec=new_dec)
                             
                             # Quick pointing check and re_seek at the start of each project block
@@ -4024,14 +4013,14 @@ class Sequencer:
         
         successful_platesolve=False
         
-        # Completely clear platesolve thread
-        with g_dev['obs'].platesolve_queue.mutex:
-            g_dev['obs'].platesolve_queue.queue.clear()
+        # # Completely clear platesolve thread
+        # with g_dev['obs'].platesolve_queue.mutex:
+        #     g_dev['obs'].platesolve_queue.queue.clear()
 
-        while (not g_dev['obs'].platesolve_queue.empty()):
-            plog ("Waiting for the platesolve queue to complete it's last job")
-            print ( g_dev['obs'].platesolve_queue.empty())
-            time.sleep(1)                      
+        # while (not g_dev['obs'].platesolve_queue.empty()):
+        #     plog ("Waiting for the platesolve queue to complete it's last job")
+        #     print ( g_dev['obs'].platesolve_queue.empty())
+        #     time.sleep(1)                      
         
         # Make sure platesolve queue is clear
         reported=0
