@@ -4020,6 +4020,15 @@ class Sequencer:
         
         successful_platesolve=False
         
+        # Completely clear platesolve thread
+        with g_dev['obs'].platesolve_queue.mutex:
+            g_dev['obs'].platesolve_queue.queue.clear()
+
+        while (not g_dev['obs'].platesolve_queue.empty()):
+            plog ("Waiting for the platesolve queue to complete it's last job")
+            print ( g_dev['obs'].platesolve_queue.empty())
+            time.sleep(1)              
+        
         # Make sure platesolve queue is clear
         reported=0
         temptimer=time.time()
@@ -4034,6 +4043,8 @@ class Sequencer:
                 if (time.time() - temptimer) > 20:                                    
                     g_dev['obs'].update()
                     temptimer=time.time()
+                    print (g_dev['obs'].platesolve_is_processing)
+                    print (g_dev['obs'].platesolve_queue.empty())
                 if self.stop_script_called:
                     g_dev["obs"].send_to_user("Cancelling out of autofocus script as stop script has been called.")  
                     return
