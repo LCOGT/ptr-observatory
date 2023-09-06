@@ -2702,10 +2702,8 @@ class Observatory:
         
         
         
-        if self.assume_roof_open:
-            aws_enclosure_status["shutter_status"] = 'Sim. Open'
-            aws_enclosure_status["enclosure_mode"] = "Simulated"
         
+            
         try:
         
             status = {'shutter_status': aws_enclosure_status["shutter_status"],
@@ -2720,6 +2718,11 @@ class Observatory:
             except:
                 plog ('failed enclosure status!')
                 status = {'shutter_status': 'Unknown'}        
+
+        if self.assume_roof_open:
+
+            status = {'shutter_status': 'Sim. Open',
+            "enclosure_mode": "Simulated"}
 
         return status
     

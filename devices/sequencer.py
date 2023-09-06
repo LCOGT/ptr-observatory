@@ -267,7 +267,7 @@ class Sequencer:
             self.centering_exposure()
         elif action == "autofocus": # this action is the front button on Camera, so FORCES an autofocus
             g_dev["obs"].send_to_user("Starting up the autofocus procedure.")
-            g_dev['foc'].time_of_last_focus = datetime.datetime.now() - datetime.timedelta(
+            g_dev['foc'].time_of_last_focus = datetime.datetime.utcnow() - datetime.timedelta(
                 days=1
             )  # Initialise last focus as yesterday
             self.auto_focus_script(req, opt, skip_timer_check=True)
@@ -398,7 +398,7 @@ class Sequencer:
                             plog("mount is not tracking but this mount doesn't support ASCOM changing tracking")
     
                     g_dev['mnt'].go_command(alt=70,az= 70)
-                    g_dev['foc'].time_of_last_focus = datetime.datetime.now() - datetime.timedelta(
+                    g_dev['foc'].time_of_last_focus = datetime.datetime.utcnow() - datetime.timedelta(
                         days=1
                     )  # Initialise last focus as yesterday
                     g_dev['foc'].set_initial_best_guess_for_focus()
@@ -516,7 +516,7 @@ class Sequencer:
                         plog ("no rotator to home or wait for.")
                     
                 
-                g_dev['foc'].time_of_last_focus = datetime.datetime.now() - datetime.timedelta(
+                g_dev['foc'].time_of_last_focus = datetime.datetime.utcnow() - datetime.timedelta(
                     days=1
                 )  # Initialise last focus as yesterday
                 
@@ -889,7 +889,7 @@ class Sequencer:
                         if tempblock['event_id'] == calendar_event_id :
                             foundcalendar=True
                             g_dev['seq'].blockend=tempblock['end']
-                            now_date_timeZ = datetime.datetime.now().isoformat().split('.')[0] +'Z'
+                            now_date_timeZ = datetime.datetime.utcnow().isoformat().split('.')[0] +'Z'
                             if g_dev['seq'].blockend != None:
                                 if now_date_timeZ >= g_dev['seq'].blockend :  
                                     plog ("Block ended.")
@@ -1026,7 +1026,7 @@ class Sequencer:
 
                     for displacement in offset:                        
                         
-                        if not exposure['area'] == "Full":
+                        if not exposure['area'].lower() == "full":
                         
                             plog ("Moving to new position of mosaic")
                             plog (displacement)            
@@ -1067,7 +1067,7 @@ class Sequencer:
                                    'hint': block['project_id'] + "##" + dest_name, 'object_name': block['project']['project_targets'][0]['name'], 'pane': pane}
                             plog('Seq Blk sent to camera:  ', req, opt)
 
-                            now_date_timeZ = datetime.datetime.now().isoformat().split('.')[0] +'Z'
+                            now_date_timeZ = datetime.datetime.utcnow().isoformat().split('.')[0] +'Z'
                             if g_dev['seq'].blockend != None:
                                 if now_date_timeZ >= g_dev['seq'].blockend :                                
                                     left_to_do=0
@@ -1099,7 +1099,7 @@ class Sequencer:
                             
                             # Check that the observing time hasn't completed or then night has not completed. 
                             # If so, set ended to True so that it cancels out of the exposure block.
-                            now_date_timeZ = datetime.datetime.now().isoformat().split('.')[0] +'Z'
+                            now_date_timeZ = datetime.datetime.utcnow().isoformat().split('.')[0] +'Z'
                             events = g_dev['events']
                             ended = left_to_do <= 0 or now_date_timeZ >= g_dev['seq'].blockend \
                                     or ephem.now() >= events['Observing Ends']
@@ -1421,7 +1421,7 @@ class Sequencer:
         g_dev['obs'].reset_last_reference()
         if self.config['mount']['mount1']['permissive_mount_reset'] == 'yes':
            g_dev['mnt'].reset_mount_reference()
-        g_dev['obs'].last_solve_time = datetime.datetime.now() - datetime.timedelta(days=1)
+        g_dev['obs'].last_solve_time = datetime.datetime.utcnow() - datetime.timedelta(days=1)
         g_dev['obs'].images_since_last_solve = 10000
 
         # Resetting sequencer stuff
@@ -1458,7 +1458,7 @@ class Sequencer:
         
         # Reset focus tracker
         g_dev["foc"].focus_needed = True
-        g_dev["foc"].time_of_last_focus = datetime.datetime.now() - datetime.timedelta(
+        g_dev["foc"].time_of_last_focus = datetime.datetime.utcnow() - datetime.timedelta(
             days=1
         )  # Initialise last focus as yesterday
         g_dev["foc"].images_since_last_focus = (
@@ -2839,7 +2839,7 @@ class Sequencer:
         plog (self.config['periodic_focus_time'])
         
         if skip_timer_check == False:
-            if ((datetime.datetime.now() - g_dev['foc'].time_of_last_focus)) > datetime.timedelta(hours=self.config['periodic_focus_time']):
+            if ((datetime.datetime.utcnow() - g_dev['foc'].time_of_last_focus)) > datetime.timedelta(hours=self.config['periodic_focus_time']):
                 plog ("Sufficient time has passed since last focus to do auto_focus")
                 
             else:
@@ -2848,7 +2848,7 @@ class Sequencer:
                 return
         
                 
-        g_dev['foc'].time_of_last_focus = datetime.datetime.now()
+        g_dev['foc'].time_of_last_focus = datetime.datetime.utcnow()
         
         # Reset focus tracker
         g_dev['foc'].focus_tracker = [np.nan] * 10
