@@ -1472,7 +1472,7 @@ class Camera:
                     if g_dev['seq'].blockend != None: # Only do this check if a block end was provided.
                         
                     # Check that the exposure doesn't go over the end of a block
-                        endOfExposure = datetime.datetime.now() + datetime.timedelta(seconds=exposure_time)
+                        endOfExposure = datetime.datetime.utcnow() + datetime.timedelta(seconds=exposure_time)
                         now_date_timeZ = endOfExposure.isoformat().split('.')[0] +'Z'
                         
                         plog (now_date_timeZ)
@@ -1510,7 +1510,7 @@ class Camera:
                             except:
                                 plog("glitch in calendar finder")
                                 plog(str(tempblock))
-                        now_date_timeZ = datetime.datetime.now().isoformat().split('.')[0] +'Z'                        
+                        now_date_timeZ = datetime.datetime.utcnow().isoformat().split('.')[0] +'Z'                        
                         if foundcalendar == False or now_date_timeZ >= g_dev['seq'].blockend:
                             plog ("could not find calendar entry, cancelling out of block.")
                             self.exposure_busy = False
@@ -3156,33 +3156,60 @@ class Camera:
                             
                             return self.expresult                        
 
+
+                        # Check that the block isn't ending during normal observing time (don't check while biasing, flats etc.)
+                        if g_dev['seq'].blockend != None: # Only do this check if a block end was provided.
+                            
+                        # Check that the exposure doesn't go over the end of a block
+                            endOfExposure = datetime.datetime.utcnow() + datetime.timedelta(seconds=exposure_time)
+                            now_date_timeZ = endOfExposure.isoformat().split('.')[0] +'Z'
+                            
+                            plog (now_date_timeZ)
+                            plog (g_dev['seq'].blockend)
+                            
+                            blockended = now_date_timeZ  >= g_dev['seq'].blockend
+                            
+                            plog (blockended)
+                            
+                            if blockended or ephem.Date(ephem.now()+ (exposure_time *ephem.second)) >= \
+                                g_dev['events']['End Morn Bias Dark']:
+                                plog ("Exposure overlays the end of a block or the end of observing. Skipping Exposure.")
+                                plog ("And Cancelling SmartStacks.")
+                                Nsmartstack=1
+                                sskcounter=2
+                                self.exposure_busy = False
+                                self.currently_in_smartstack_loop=False
+                                
+
                         # Good spot to check if we need to nudge the telescope
                         # Allowed to on the last loop of a smartstack
                         # We need to clear the nudge before putting another platesolve in the queue
                         if (Nsmartstack > 1 and (Nsmartstack == sskcounter+1))  :
                             self.currently_in_smartstack_loop=False                    
                         g_dev['obs'].check_platesolve_and_nudge()
+                        
+                        if not blockended:
 
-                        if solve_it == True or (not manually_requested_calibration or ((Nsmartstack == sskcounter+1) and Nsmartstack > 1)\
-                                                   or g_dev['obs'].images_since_last_solve > g_dev['obs'].config["solve_nth_image"] or (datetime.datetime.now() - g_dev['obs'].last_solve_time)  > datetime.timedelta(minutes=g_dev['obs'].config["solve_timer"])):
-                                                       
-                            cal_name = (
-                                cal_name[:-9] + "F012" + cal_name[-7:]
-                            )                            
-                            
-                            # Check this is not an image in a smartstack set.
-                            # No shifts in pointing are wanted in a smartstack set!
-                            image_during_smartstack=False
-                            if Nsmartstack > 1 and not (Nsmartstack == sskcounter+1):
-                                image_during_smartstack=True
-                            
-                            if solve_it == True or (not image_during_smartstack and not g_dev['seq'].currently_mosaicing and not g_dev['obs'].pointing_correction_requested_by_platesolve_thread and g_dev['obs'].platesolve_queue.empty() and not g_dev['obs'].platesolve_is_processing):
+                            if solve_it == True or (not manually_requested_calibration or ((Nsmartstack == sskcounter+1) and Nsmartstack > 1)\
+                                                       or g_dev['obs'].images_since_last_solve > g_dev['obs'].config["solve_nth_image"] or (datetime.datetime.utcnow() - g_dev['obs'].last_solve_time)  > datetime.timedelta(minutes=g_dev['obs'].config["solve_timer"])):
+                                                           
+                                cal_name = (
+                                    cal_name[:-9] + "F012" + cal_name[-7:]
+                                )                            
                                 
-                                # Make sure any dither or return nudge has finished before platesolution
-                                wait_for_slew()
-                                g_dev['obs'].to_platesolve((hdusmalldata, hdusmallheader, cal_path, cal_name, frame_type, time.time(), self.pixscale, g_dev['mnt'].mount.RightAscension,g_dev['mnt'].mount.Declination))
-                                # If it is the last of a set of smartstacks, we actually want to 
-                                # wait for the platesolve and nudge before starting the next smartstack.
+                                # Check this is not an image in a smartstack set.
+                                # No shifts in pointing are wanted in a smartstack set!
+                                image_during_smartstack=False
+                                if Nsmartstack > 1 and not (Nsmartstack == sskcounter+1):
+                                    image_during_smartstack=True
+                                
+                                if solve_it == True or (not image_during_smartstack and not g_dev['seq'].currently_mosaicing and not g_dev['obs'].pointing_correction_requested_by_platesolve_thread and g_dev['obs'].platesolve_queue.empty() and not g_dev['obs'].platesolve_is_processing):
+                                    
+                                    # Make sure any dither or return nudge has finished before platesolution
+                                    wait_for_slew()
+                                    g_dev['obs'].to_platesolve((hdusmalldata, hdusmallheader, cal_path, cal_name, frame_type, time.time(), self.pixscale, g_dev['mnt'].mount.RightAscension,g_dev['mnt'].mount.Declination))
+                                    # If it is the last of a set of smartstacks, we actually want to 
+                                    # wait for the platesolve and nudge before starting the next smartstack.
                                                           
                     # Now that the jpeg, sep and platesolve has been sent up pronto,
                     # We turn back to getting the bigger raw, reduced and fz files dealt with
