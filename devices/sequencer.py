@@ -1057,7 +1057,7 @@ class Sequencer:
                                 return block_specification
                         
                         
-                        if imtype in ['light'] and count > 0:                            
+                        if imtype in ['light']:                            
 
                             # Sort out Longstack and Smartstack names and switches
                             
