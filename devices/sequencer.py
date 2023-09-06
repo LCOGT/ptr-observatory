@@ -920,13 +920,12 @@ class Sequencer:
                     
                     # MUCH safer to calculate these from first principles
                     # Than rely on an owner getting this right!
-                    x_field_deg = (g_dev['cam'].pixscale * g_dev['cam'].imagesize_x) /3600
-                    y_field_deg = (g_dev['cam'].pixscale * g_dev['cam'].imagesize_y) /3600
+                    dec_field_deg = (g_dev['cam'].pixscale * g_dev['cam'].imagesize_x) /3600
+                    ra_field_deg = (g_dev['cam'].pixscale * g_dev['cam'].imagesize_y) /3600
                     self.currently_mosaicing = False
                     if exposure['area'] == "Full":
                         # These are waiting for a mosaic approach
                         offset = [(0., 0.)] #Zero(no) mosaic offset
-                        pitch = 0.
                         pane = 0
                     else:
                         self.currently_mosaicing = True
@@ -934,16 +933,17 @@ class Sequencer:
                         # to go in mosaic_length_ra etc.
                         # here it just makes a multiple so we can get it going.
                         tempmultiplier = float(exposure['area'].replace('%',''))/100
-                        requested_mosaic_length_ra = tempmultiplier * x_field_deg
-                        requested_mosaic_length_dec = tempmultiplier * y_field_deg
-                        
+                        requested_mosaic_length_ra = tempmultiplier * ra_field_deg
+                        requested_mosaic_length_dec = tempmultiplier * dec_field_deg
+                        print ("ra field: " + str(ra_field_deg))
+                        print ("dec field: " + str(dec_field_deg))
                         
                         # Ok here we take the provided (eventually) mosaic lengths
                         # And assume a 10% overlap -- maybe an option in future but
                         # lets just set it as that for now.
                         # Then calculate the central coordinate offsets.
-                        mosaic_length_fields_ra = requested_mosaic_length_ra / x_field_deg
-                        mosaic_length_fields_dec = requested_mosaic_length_dec / y_field_deg
+                        mosaic_length_fields_ra = requested_mosaic_length_ra / ra_field_deg
+                        mosaic_length_fields_dec = requested_mosaic_length_dec / dec_field_deg
                         if mosaic_length_fields_ra % 1 > 0.8:
                             mosaic_length_fields_ra += 1
                         if mosaic_length_fields_dec % 1 > 0.8:
