@@ -2101,7 +2101,7 @@ class Camera:
                     
                     if (
                         central_median
-                        >= 0.70* image_saturation_level
+                        >= 0.80* image_saturation_level
                     ):
                         plog("Flat rejected, center is too bright:  ", central_median)
                         g_dev["obs"].send_to_user(
