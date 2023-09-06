@@ -375,6 +375,10 @@ class Sequencer:
             g_dev['obs'].stop_processing_command_requests = True
             ###########################################################################
             
+            # A little switch flip to make sure focus goes off when roof is simulated
+            if  ephem_now <g_dev['events']['Clock & Auto Focus'] : 
+                self.night_focus_ready=True
+            
             # This bit is really to get the scope up and running if the roof opens
             if ((g_dev['events']['Cool Down, Open']  <= ephem_now < g_dev['events']['Observing Ends'])) and not self.cool_down_latch and \
                 g_dev['obs'].open_and_enabled_to_observe and not g_dev['obs'].scope_in_manual_mode and g_dev['mnt'].mount.AtPark and ((time.time() - self.time_roof_last_opened) < 300) :
