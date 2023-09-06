@@ -582,12 +582,12 @@ class Sequencer:
                         if identified_block == None:
                             self.block_guard = False   # Changed from True WER on 20221011@2:24 UTC
                             g_dev['seq'].blockend= None
-                            return   # Do not try to execute an empty block.
+                            pointing_good=False   # Do not try to execute an empty block.
                         
                         if identified_block['project_id'] in ['none', 'real_time_slot', 'real_time_block']:
                             self.block_guard = False   # Changed from True WER on 20221011@2:24 UTC
                             g_dev['seq'].blockend= None
-                            return   # Do not try to execute an empty block.
+                            pointing_good=False   # Do not try to execute an empty block.
                         
     
                         if identified_block['project'] == None:
@@ -595,16 +595,37 @@ class Sequencer:
                             plog ("Skipping a block that contains an empty project")
                             self.block_guard=False
                             g_dev['seq'].blockend= None
-                            return
-    
-                        completed_block = self.execute_block(identified_block)  #In this we need to ultimately watch for weather holds.
-                        try:
-                            self.append_completes(completed_block['event_id'])
-                        except:
-                            plog ("block complete append didn't work")
-                            plog(traceback.format_exc())
-                        self.block_guard=False
-                        g_dev['seq'].blockend = None                        
+                            pointing_good=False
+                        
+                        pointing_good=True
+                        # If a block is identified, check it is in the sky and not in a poor location
+                        target=block['project']['project_targets']
+                        ra = float(target['ra'])
+                        dec = float(target['dec'])
+                        temppointing=SkyCoord(ra*u.hour, dec*u.degree, frame='icrs')
+                        temppointingaltaz=temppointing.transform_to(AltAz(location=self.site_coordinates, obstime=Time.now()))
+                        alt = temppointingaltaz.alt.degree                        
+                        # Check the moon isn't right in front of the project target
+                        moon_coords=get_moon(Time.now())          
+                        moon_dist = moon_coords.separation(temppointing)
+                        if moon_dist.degree <  self.config['closest_distance_to_the_moon']:
+                            g_dev['obs'].send_to_user("Not running project as it is too close to the moon: " + str(moon_dist.degree) + " degrees.")
+                            plog("Not running project as it is too close to the moon: " + str(moon_dist.degree) + " degrees.")
+                            pointing_good=False
+                        if alt < self.config['lowest_requestable_altitude']:
+                            g_dev['obs'].send_to_user("Not running project as it is too low: " + str(alt) + " degrees.")
+                            plog("Not running project as it is too low: " + str(alt) + " degrees.")
+                            pointing_good=False
+                        
+                        if pointing_good:
+                            completed_block = self.execute_block(identified_block)  #In this we need to ultimately watch for weather holds.
+                            try:
+                                self.append_completes(completed_block['event_id'])
+                            except:
+                                plog ("block complete append didn't work")
+                                plog(traceback.format_exc())
+                            self.block_guard=False
+                            g_dev['seq'].blockend = None                        
                                                              
                 except:
                     plog(traceback.format_exc())
