@@ -329,7 +329,7 @@ class Sequencer:
         Scripts must not block too long or they must provide for periodic calls to check status.
         '''
         
-        g_dev['seq'].blockend= None
+        #g_dev['seq'].blockend= None
 
         obs_win_begin, sunZ88Op, sunZ88Cl, ephem_now = self.astro_events.getSunEvents()
 
@@ -1135,8 +1135,8 @@ class Sequencer:
                             if ephem.now() >= events['Observing Ends']:
                                 return block_specification 
                             
-                            if now_date_timeZ >= g_dev['seq'].blockend:
-                                return block_specification 
+                            #if now_date_timeZ >= g_dev['seq'].blockend:
+                            #    return block_specification 
                             
                             if result == 'blockend':
                                 #left_to_do=0
