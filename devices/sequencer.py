@@ -2519,6 +2519,11 @@ class Sequencer:
                                 except:
                                     pass
                                 
+                                # If there is a rotator, give it a second
+                                # to settle down after rotation complete
+                                if g_dev['rot'] != None:
+                                    time.sleep(1)
+                                    
                                 fred = g_dev['cam'].expose_command(req, opt, user_id='Tobor', user_name='Tobor', user_roles='system', no_AWS=True, do_sep = False,skip_daytime_check=True)
                                 
                                 try:
