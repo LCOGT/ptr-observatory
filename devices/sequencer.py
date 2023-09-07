@@ -598,25 +598,27 @@ class Sequencer:
                             g_dev['seq'].blockend= None
                             pointing_good=False
                         
-                        pointing_good=True
-                        # If a block is identified, check it is in the sky and not in a poor location
-                        target=block['project']['project_targets']
-                        ra = float(target['ra'])
-                        dec = float(target['dec'])
-                        temppointing=SkyCoord(ra*u.hour, dec*u.degree, frame='icrs')
-                        temppointingaltaz=temppointing.transform_to(AltAz(location=self.site_coordinates, obstime=Time.now()))
-                        alt = temppointingaltaz.alt.degree                        
-                        # Check the moon isn't right in front of the project target
-                        moon_coords=get_moon(Time.now())          
-                        moon_dist = moon_coords.separation(temppointing)
-                        if moon_dist.degree <  self.config['closest_distance_to_the_moon']:
-                            g_dev['obs'].send_to_user("Not running project as it is too close to the moon: " + str(moon_dist.degree) + " degrees.")
-                            plog("Not running project as it is too close to the moon: " + str(moon_dist.degree) + " degrees.")
-                            pointing_good=False
-                        if alt < self.config['lowest_requestable_altitude']:
-                            g_dev['obs'].send_to_user("Not running project as it is too low: " + str(alt) + " degrees.")
-                            plog("Not running project as it is too low: " + str(alt) + " degrees.")
-                            pointing_good=False
+                        if identified_block['project'] != None:
+                            pointing_good=True
+                            # If a block is identified, check it is in the sky and not in a poor location
+                            target=identified_block['project']['project_targets'][0]
+
+                            ra = float(target['ra'])
+                            dec = float(target['dec'])
+                            temppointing=SkyCoord(ra*u.hour, dec*u.degree, frame='icrs')
+                            temppointingaltaz=temppointing.transform_to(AltAz(location=g_dev['mnt'].site_coordinates, obstime=Time.now()))
+                            alt = temppointingaltaz.alt.degree                        
+                            # Check the moon isn't right in front of the project target
+                            moon_coords=get_moon(Time.now())          
+                            moon_dist = moon_coords.separation(temppointing)
+                            if moon_dist.degree <  self.config['closest_distance_to_the_moon']:
+                                g_dev['obs'].send_to_user("Not running project as it is too close to the moon: " + str(moon_dist.degree) + " degrees.")
+                                plog("Not running project as it is too close to the moon: " + str(moon_dist.degree) + " degrees.")
+                                pointing_good=False
+                            if alt < self.config['lowest_requestable_altitude']:
+                                g_dev['obs'].send_to_user("Not running project as it is too low: " + str(alt) + " degrees.")
+                                plog("Not running project as it is too low: " + str(alt) + " degrees.")
+                                pointing_good=False
                         
                         if pointing_good:
                             completed_block = self.execute_block(identified_block)  #In this we need to ultimately watch for weather holds.
@@ -1124,9 +1126,12 @@ class Sequencer:
                             # If so, set ended to True so that it cancels out of the exposure block.
                             now_date_timeZ = datetime.datetime.utcnow().isoformat().split('.')[0] +'Z'
                             events = g_dev['events']
-                            ended = left_to_do <= 0 or now_date_timeZ >= g_dev['seq'].blockend \
+                            blockended=False
+                            if g_dev['seq'].blockend != None:
+                                blockended = now_date_timeZ >= g_dev['seq'].blockend
+                            ended = left_to_do <= 0 or blockended \
                                     or ephem.now() >= events['Observing Ends']
-                            
+                            print ('gdev seq blockend: ' + str(g_dev['seq'].blockend))
                             if ephem.now() >= events['Observing Ends']:
                                 return block_specification 
                             
