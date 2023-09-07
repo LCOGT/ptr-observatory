@@ -628,12 +628,14 @@ class Sequencer:
                                 plog ("block complete append didn't work")
                                 plog(traceback.format_exc())
                             self.block_guard=False
-                            g_dev['seq'].blockend = None                        
+                            self.currently_mosaicing = False
+                            self.blockend = None                        
                                                              
                 except:
                     plog(traceback.format_exc())
                     plog("Hang up in sequencer.")
                     self.blockend = None
+                    self.block_guard=False
                     
             if (time.time() - g_dev['seq'].time_roof_last_opened > 1200 ) and not self.morn_sky_flat_latch and ((events['Morn Sky Flats'] <= ephem_now < events['End Morn Sky Flats']) and \
                    self.config['auto_morn_sky_flat']) and not g_dev['obs'].scope_in_manual_mode and not self.morn_flats_done and g_dev['obs'].camera_sufficiently_cooled_for_calibrations and g_dev['obs'].open_and_enabled_to_observe:
@@ -1120,10 +1122,7 @@ class Sequencer:
                             except:
                                 pass
                            
-                            count -= 1
-                            exposure['count'] = count
-                            left_to_do -= 1
-                            plog("Left to do:  ", left_to_do)
+                            
                             
                             
                             # Check that the observing time hasn't completed or then night has not completed. 
@@ -1179,10 +1178,15 @@ class Sequencer:
                             
                             
                         pane += 1
-
+                        
+                count -= 1
+                exposure['count'] = count
+                left_to_do -= 1
+                plog("Left to do:  ", left_to_do)
                         
         self.currently_mosaicing = False
         plog("Project block has finished!")   
+        self.blockend = None
         return block_specification 
 
 
