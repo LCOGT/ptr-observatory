@@ -633,6 +633,7 @@ class Sequencer:
                 except:
                     plog(traceback.format_exc())
                     plog("Hang up in sequencer.")
+                    self.blockend = None
                     
             if (time.time() - g_dev['seq'].time_roof_last_opened > 1200 ) and not self.morn_sky_flat_latch and ((events['Morn Sky Flats'] <= ephem_now < events['End Morn Sky Flats']) and \
                    self.config['auto_morn_sky_flat']) and not g_dev['obs'].scope_in_manual_mode and not self.morn_flats_done and g_dev['obs'].camera_sufficiently_cooled_for_calibrations and g_dev['obs'].open_and_enabled_to_observe:
@@ -801,6 +802,7 @@ class Sequencer:
                 plog ("Could not execute project due to poorly formatted or corrupt project")
                 plog (e)
                 g_dev['obs'].send_to_user("Could not execute project due to poorly formatted or corrupt project", p_level='INFO')
+                self.blockend = None
                 continue
 
             try:
@@ -919,11 +921,12 @@ class Sequencer:
                                     plog ("Block ended.")
                                     g_dev["obs"].send_to_user("Calendar Block Ended. Stopping project run.")
                                     left_to_do=0
+                                    self.blockend = None
                                     return block_specification
                     if not foundcalendar:
                         plog ("could not find calendar entry, cancelling out of block.")
                         g_dev["obs"].send_to_user("Calendar block removed. Stopping project run.")   
-                        
+                        self.blockend = None
                         return block_specification
                     
                     plog ("Observing " + str(block['project']['project_targets'][0]['name']))
@@ -974,14 +977,7 @@ class Sequencer:
                             mosaic_length_fields_dec += 1
                         mosaic_length_fields_ra = np.ceil(mosaic_length_fields_ra)
                         mosaic_length_fields_dec = np.ceil(mosaic_length_fields_dec)
-                        
-                        #actual_mosaic_length_ra = mosaic_length_fields_ra * x_field_deg
-                        #actual_mosaic_length_dec = mosaic_length_fields_dec * x_field_deg
-                        
-                        #actual_mosaic_length_ra = mosaic_length_fields_ra * x_field_deg
-                        #actual_mosaic_length_dec = mosaic_length_fields_dec * x_field_deg
-                        
-                        
+                                                
                         # Ok, so now we get the offset in degrees from the centre
                         # For the given number of frames. The frames should by
                         # definition already overlap.
@@ -1041,11 +1037,13 @@ class Sequencer:
 
                     if result == 'blockend':
                         plog ("End of Block, exiting project block.")      
+                        self.blockend = None
                         return block_specification
                     
                     if result == 'calendarend':
                         plog ("Calendar Item containing block removed from calendar")
                         plog ("Site bailing out of running project")
+                        self.blockend = None
                         return block_specification
 
                     for displacement in offset:                        
@@ -1067,11 +1065,13 @@ class Sequencer:
                             
                             if result == 'blockend':
                                 plog ("End of Block, exiting project block.")      
+                                self.blockend = None
                                 return block_specification
                             
                             if result == 'calendarend':
                                 plog ("Calendar Item containing block removed from calendar")
                                 plog ("Site bailing out of running project")
+                                self.blockend = None
                                 return block_specification
                         
                         
@@ -1096,6 +1096,7 @@ class Sequencer:
                             if g_dev['seq'].blockend != None:
                                 if now_date_timeZ >= g_dev['seq'].blockend :                                
                                     left_to_do=0
+                                    self.blockend = None
                                     return
                             g_dev['obs'].update()
                             result = g_dev['cam'].expose_command(req, opt, user_name=user_name, user_id=user_id, user_roles=user_roles, no_AWS=False, solve_it=False, calendar_event_id=calendar_event_id)
@@ -1103,15 +1104,18 @@ class Sequencer:
                             try:
                                 if result == 'blockend':
                                     plog ("End of Block, exiting project block.")      
+                                    self.blockend = None
                                     return block_specification
                                 
                                 if result == 'calendarend':
                                     plog ("Calendar Item containing block removed from calendar")
                                     plog ("Site bailing out of running project")
+                                    self.blockend = None
                                     return block_specification
                                 
                                 if result['stopped'] is True:
                                     g_dev['obs'].send_to_user("Project Stopped because Exposure cancelled")
+                                    self.blockend = None
                                     return block_specification
                             except:
                                 pass
@@ -1133,6 +1137,7 @@ class Sequencer:
                                     or ephem.now() >= events['Observing Ends']
                             print ('gdev seq blockend: ' + str(g_dev['seq'].blockend))
                             if ephem.now() >= events['Observing Ends']:
+                                self.blockend = None
                                 return block_specification 
                             
                             #if now_date_timeZ >= g_dev['seq'].blockend:
@@ -1140,23 +1145,35 @@ class Sequencer:
                             
                             if result == 'blockend':
                                 #left_to_do=0
+                                self.blockend = None
                                 return block_specification 
+                            
+                            
+                            if blockended:
+                                #left_to_do=0
+                                self.blockend = None
+                                return block_specification 
+                            
                             
                             if result == 'calendarend':
                                 #left_to_do =0
+                                self.blockend = None
                                 return block_specification 
                             
                             if result == 'roofshut':
                                 #left_to_do =0
+                                self.blockend = None
                                 return block_specification 
                                 
                             if result == 'outsideofnighttime':
                                 #left_to_do =0
+                                self.blockend = None
                                 return block_specification 
                             
                             if g_dev["obs"].stop_all_activity:
                                 plog('stop_all_activity cancelling out of exposure loop')
                                 #left_to_do =0  
+                                self.blockend = None
                                 return block_specification 
                             
                             
