@@ -585,20 +585,20 @@ class Sequencer:
                             g_dev['seq'].blockend= None
                             pointing_good=False   # Do not try to execute an empty block.
                         
-                        if identified_block['project_id'] in ['none', 'real_time_slot', 'real_time_block']:
+                        elif identified_block['project_id'] in ['none', 'real_time_slot', 'real_time_block']:
                             self.block_guard = False   # Changed from True WER on 20221011@2:24 UTC
                             g_dev['seq'].blockend= None
                             pointing_good=False   # Do not try to execute an empty block.
                         
     
-                        if identified_block['project'] == None:
+                        elif identified_block['project'] == None:
                             plog (identified_block)
                             plog ("Skipping a block that contains an empty project")
                             self.block_guard=False
                             g_dev['seq'].blockend= None
                             pointing_good=False
                         
-                        if identified_block['project'] != None:
+                        elif identified_block['project'] != None:
                             pointing_good=True
                             # If a block is identified, check it is in the sky and not in a poor location
                             target=identified_block['project']['project_targets'][0]
