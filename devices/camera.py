@@ -3165,7 +3165,7 @@ class Camera:
                             
                             return self.expresult                        
 
-
+                        blockended=False
                         # Check that the block isn't ending during normal observing time (don't check while biasing, flats etc.)
                         if g_dev['seq'].blockend != None: # Only do this check if a block end was provided.
                             
