@@ -774,9 +774,13 @@ class Camera:
         try:
             tempcamera.TakeImage()
         except:
-            plog(traceback.format_exc()) 
-            plog("MTF hunting this error")
-            breakpoint()
+            if 'Process aborted.' in str(traceback.format_exc()):
+                plog ("Image aborted. This functioning is ok. Traceback just for checks that it is working.")
+                plog(traceback.format_exc()) 
+            else:
+                plog(traceback.format_exc()) 
+                plog("MTF hunting this error")
+                breakpoint()
         tempcamera.ShutDownTemperatureRegulationOnDisconnect = False
         self.async_exposure_lock=False
 
