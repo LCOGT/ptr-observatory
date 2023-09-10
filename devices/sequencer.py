@@ -1031,7 +1031,7 @@ class Sequencer:
                     # Otherwise everyone will get slightly off-pointing images
                     # Necessary
                     plog ("Taking a quick pointing check and re_seek for new project block")
-                    result = self.centering_exposure(no_confirmation=True, try_hard=True)
+                    result = self.centering_exposure(no_confirmation=True, try_hard=True, try_forever=True)
                     
                     self.mosaic_center_ra=g_dev['mnt'].mount.RightAscension
                     self.mosaic_center_dec=g_dev['mnt'].mount.Declination
@@ -2980,7 +2980,7 @@ class Sequencer:
         if extensive_focus == None:
             g_dev['obs'].send_to_user("Running a quick platesolve to center the focus field", p_level='INFO')
             
-            result = self.centering_exposure(no_confirmation=True)
+            result = self.centering_exposure(no_confirmation=True, try_hard=True, try_forever=True)
             # Wait for platesolve            
             reported=0
             temptimer=time.time()
@@ -3610,7 +3610,7 @@ class Sequencer:
         if no_auto_after_solve == False:            
             g_dev['obs'].send_to_user("Running a quick platesolve to center the focus field", p_level='INFO')
             
-            result = self.centering_exposure(no_confirmation=True)
+            result = self.centering_exposure(no_confirmation=True, try_hard=True, try_forever=True)
             # Wait for platesolve
             #queue_clear_time = time.time()
             reported=0
@@ -4063,7 +4063,7 @@ class Sequencer:
         return
 
 
-    def centering_exposure(self, no_confirmation=False, try_hard=False):
+    def centering_exposure(self, no_confirmation=False, try_hard=False, try_forever=False):
 
         """
         A pretty regular occurance - the pointing on the scopes isn't great usually.
@@ -4227,6 +4227,48 @@ class Sequencer:
                         pass
                 plog ("Time Taken for queue to clear post-exposure: " + str(time.time() - queue_clear_time))
         
+        if try_forever and g_dev['obs'].last_platesolved_ra == np.nan:
+            while g_dev['obs'].last_platesolved_ra == np.nan:
+                
+                plog ("Still haven't got a pointing lock at an important time. Waiting then trying again.")
+                g_dev["obs"].send_to_user("Still haven't got a pointing lock at an important time. Waiting then trying again.")  
+                
+                wait_a_minute=time.time()
+                while (time.time() - wait_a_minute < 60):
+                    if (time.time() - temptimer) > 20:                                    
+                        g_dev['obs'].update()
+                        temptimer=time.time()
+                    if self.stop_script_called:
+                        g_dev["obs"].send_to_user("Cancelling out of autofocus script as stop script has been called.")  
+                        return
+                    if not g_dev['obs'].open_and_enabled_to_observe:
+                        g_dev["obs"].send_to_user("Cancelling out of activity as no longer open and enabled to observe.")  
+                        return
+                    time.sleep(1)                
+                
+                req = {'time': float(self.config['pointing_exposure_time']) * 3,  'alias':  str(self.config['camera']['camera_1_1']['name']), 'image_type': 'pointing'}   #  NB Should pick up filter and constats from config
+                opt = {'count': 1, 'filter': 'pointing'}
+                result = g_dev['cam'].expose_command(req, opt, user_id='Tobor', user_name='Tobor', user_roles='system', no_AWS=True, solve_it=True)
+                
+                while True:
+                    if g_dev['obs'].platesolve_is_processing ==False and g_dev['obs'].platesolve_queue.empty():
+                        #plog ("we are free from platesolving!")
+                        break
+                    else:
+                        if reported ==0:
+                            plog ("PLATESOLVE: Waiting for platesolve processing to complete and queue to clear")
+                            reported=1
+                        if (time.time() - temptimer) > 20:                                    
+                            g_dev['obs'].update()
+                            temptimer=time.time()
+                        if self.stop_script_called:
+                            g_dev["obs"].send_to_user("Cancelling out of autofocus script as stop script has been called.")  
+                            return
+                        if not g_dev['obs'].open_and_enabled_to_observe:
+                            g_dev["obs"].send_to_user("Cancelling out of activity as no longer open and enabled to observe.")  
+                            return
+                        pass
+                
                 
         # Nudge if needed.
         if not g_dev['obs'].pointing_correction_requested_by_platesolve_thread:

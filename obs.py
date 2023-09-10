@@ -2652,7 +2652,7 @@ class Observatory:
             self.pointing_recentering_requested_by_platesolve_thread = False
             self.pointing_correction_requested_by_platesolve_thread = False
             g_dev['mnt'].go_command(ra=self.pointing_correction_request_ra, dec=self.pointing_correction_request_dec) 
-            g_dev['seq'].centering_exposure(no_confirmation=True, try_hard=True)
+            g_dev['seq'].centering_exposure(no_confirmation=True, try_hard=True, try_forever=True)
             if g_dev['seq'].currently_mosaicing:
                 # Slew to new mosaic pane location.
                 new_ra = g_dev['seq'].mosaic_center_ra + g_dev['seq'].current_mosaic_displacement_ra
@@ -2685,7 +2685,7 @@ class Observatory:
                 if not g_dev['mnt'].previous_pier_side==g_dev['mnt'].mount.sideOfPier:
                     self.send_to_user("Detected pier flip in re-centering. Re-centering telescope again.")
                     g_dev['mnt'].go_command(ra=self.pointing_correction_request_ra, dec=self.pointing_correction_request_dec) 
-                    g_dev['seq'].centering_exposure(no_confirmation=True, try_hard=True)                    
+                    g_dev['seq'].centering_exposure(no_confirmation=True, try_hard=True, try_forever=True)                    
                 g_dev['obs'].time_of_last_slew = time.time()
                 wait_for_slew()
                     
