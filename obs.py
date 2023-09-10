@@ -27,6 +27,8 @@ from astropy.coordinates import SkyCoord, get_sun, AltAz
 from astropy.time import Time
 from astropy import units as u
 from astropy.table import Table
+
+from astropy.nddata import block_reduce
 from dotenv import load_dotenv
 import numpy as np
 
@@ -2289,6 +2291,7 @@ class Observatory:
                             GTRonly = slow_process[2][::2, 1::2]
                             GBLonly = slow_process[2][1::2, ::2]
                             newhdublue = slow_process[2][1::2, 1::2]
+                            clearV = (block_reduce(slow_process[2],2))
 
                             oscmatchcode = (datetime.datetime.now().strftime("%d%m%y%H%M%S"))
 
@@ -2303,6 +2306,21 @@ class Observatory:
                             temphduheader['CDELT2'] = float(temphduheader['CDELT2'])*2
                             tempfilter = temphduheader['FILTER']
                             tempfilename = slow_process[1]
+
+                            # Save and send clearV
+                            temphduheader['FILTER'] = tempfilter + '_clearV'
+                            
+                            hdufz = fits.CompImageHDU(
+                                np.array(clearV, dtype=np.float32), temphduheader
+                            )
+                            hdufz.writeto(
+                                tempfilename.replace('-EX', 'CV-EX'), overwrite=True#, output_verify='silentfix'
+                            )  # Save full fz file locally
+                            del clearV
+                            if self.config['send_files_at_end_of_night'] == 'no':
+                                self.enqueue_for_PTRarchive(
+                                    26000000, '', tempfilename.replace('-EX', 'CV-EX')
+                                )
 
                             # Save and send R1
                             temphduheader['FILTER'] = tempfilter + '_R1'
