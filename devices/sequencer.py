@@ -4228,8 +4228,9 @@ class Sequencer:
                 plog ("Time Taken for queue to clear post-exposure: " + str(time.time() - queue_clear_time))
         
         if try_forever and g_dev['obs'].last_platesolved_ra == np.nan:
+
             while g_dev['obs'].last_platesolved_ra == np.nan:
-                
+                                
                 plog ("Still haven't got a pointing lock at an important time. Waiting then trying again.")
                 g_dev["obs"].send_to_user("Still haven't got a pointing lock at an important time. Waiting then trying again.")  
                 
