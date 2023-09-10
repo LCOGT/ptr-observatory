@@ -931,6 +931,19 @@ class Sequencer:
                         self.blockend = None
                         return block_specification
                     
+                    if g_dev["obs"].stop_all_activity:
+                        plog('stop_all_activity cancelling out of exposure loop')
+                        #left_to_do =0  
+                        self.blockend = None
+                        return block_specification 
+                    
+                    if g_dev['obs'].open_and_enabled_to_observe == False:
+                        plog ("Obs not longer open and enabled to observe. Cancelling out.")
+                        self.blockend = None
+                        return block_specification 
+                    
+                    
+                    
                     plog ("Observing " + str(block['project']['project_targets'][0]['name']))
 
                     plog("Executing: ", exposure, left_to_do)
@@ -4232,6 +4245,16 @@ class Sequencer:
                 
                 plog ("Still haven't got a pointing lock at an important time. Waiting then trying again.")
                 g_dev["obs"].send_to_user("Still haven't got a pointing lock at an important time. Waiting then trying again.")  
+                
+                
+                #A stop script command flags to the running scripts that it is time to stop 
+                #activity and return. This period runs for about 30 seconds.
+                g_dev["obs"].send_to_user("A Stop Script has been called. Cancelling out of running scripts over 30 seconds.")
+                self.stop_script_called=True
+                self.stop_script_called_time=time.time()
+                # Cancel out of all running exposures. 
+                g_dev['obs'].cancel_all_activity()  
+                
                 
                 wait_a_minute=time.time()
                 while (time.time() - wait_a_minute < 60):
