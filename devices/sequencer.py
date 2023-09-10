@@ -526,7 +526,7 @@ class Sequencer:
                 # Autofocus
                 req2 = {'target': 'near_tycho_star'}
                 opt = {}
-                self.extensive_focus_script(req2, opt, throw = g_dev['foc'].throw)
+                self.auto_focus_script(req2, opt, throw = g_dev['foc'].throw)
                 
                 g_dev['obs'].send_to_user("End of Focus and Pointing Run. Waiting for Observing period to begin.", p_level='INFO')
                 
