@@ -776,7 +776,7 @@ class Camera:
         except:
             if 'Process aborted.' in str(traceback.format_exc()):
                 plog ("Image aborted. This functioning is ok. Traceback just for checks that it is working.")
-                plog(traceback.format_exc()) 
+                #plog(traceback.format_exc()) 
             else:
                 plog(traceback.format_exc()) 
                 plog("MTF hunting this error")
@@ -806,7 +806,13 @@ class Camera:
 
     def _theskyx_imageavailable(self):
         #plog(self.camera.IsExposureComplete)
-        return self.camera.IsExposureComplete
+        try:
+            return self.camera.IsExposureComplete
+        except:
+            if 'Process aborted.' in str(traceback.format_exc()):
+                plog ("Image isn't available because the command was aborted.")
+            else:
+                plog(traceback.format_exc())
 
     def _theskyx_getImageArray(self): 
         imageTempOpen=fits.open(self.camera.LastImageFileName, uint=False)[0].data.astype("float32")
