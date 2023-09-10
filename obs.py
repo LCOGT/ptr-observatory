@@ -2307,20 +2307,7 @@ class Observatory:
                             tempfilter = temphduheader['FILTER']
                             tempfilename = slow_process[1]
 
-                            # Save and send clearV
-                            temphduheader['FILTER'] = tempfilter + '_clearV'
                             
-                            hdufz = fits.CompImageHDU(
-                                np.array(clearV, dtype=np.float32), temphduheader
-                            )
-                            hdufz.writeto(
-                                tempfilename.replace('-EX', 'CV-EX'), overwrite=True#, output_verify='silentfix'
-                            )  # Save full fz file locally
-                            del clearV
-                            if self.config['send_files_at_end_of_night'] == 'no':
-                                self.enqueue_for_PTRarchive(
-                                    26000000, '', tempfilename.replace('-EX', 'CV-EX')
-                                )
 
                             # Save and send R1
                             temphduheader['FILTER'] = tempfilter + '_R1'
@@ -2381,6 +2368,27 @@ class Observatory:
                                 self.enqueue_for_PTRarchive(
                                     26000000, '', tempfilename.replace('-EX', 'B1-EX')
                                 )
+                                
+                            
+                            # Save and send clearV
+                            temphduheader['FILTER'] = tempfilter + '_clearV'                            
+                            temphduheader['SATURATE']=float(hdu.header['SATURATE']) * 4
+                            temphduheader['FULLWELL']=float(hdu.header['FULLWELL']) * 4
+                            temphduheader['MAXLIN']=float(hdu.header['MAXLIN']) * 4
+                            
+                            
+                            hdufz = fits.CompImageHDU(
+                                np.array(clearV, dtype=np.float32), temphduheader
+                            )
+                            hdufz.writeto(
+                                tempfilename.replace('-EX', 'CV-EX'), overwrite=True#, output_verify='silentfix'
+                            )  # Save full fz file locally
+                            del clearV
+                            if self.config['send_files_at_end_of_night'] == 'no':
+                                self.enqueue_for_PTRarchive(
+                                    26000000, '', tempfilename.replace('-EX', 'CV-EX')
+                                )
+                            
 
                         else:
                             plog("this bayer grid not implemented yet")
