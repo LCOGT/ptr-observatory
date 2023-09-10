@@ -1061,7 +1061,17 @@ class Sequencer:
                             new_dec= self.mosaic_center_dec + self.current_mosaic_displacement_dec 
                             new_ra, new_dec = ra_dec_fix_hd(new_ra, new_dec)                            
                             #g_dev['mnt'].go_command(ra=new_ra, dec=new_dec)
-                            g_dev['mnt'].mount.SlewToCoordinatesAsync(new_ra, new_dec)                            
+                            try:
+                                g_dev['mnt'].mount.SlewToCoordinatesAsync(new_ra, new_dec)                            
+                            except Exception as e:
+                                plog (traceback.format_exc())
+                                if 'Object reference not set' in str(e) and g_dev['mnt'].theskyx:                                    
+                                    plog("The SkyX had an error.")
+                                    plog("Usually this is because of a broken connection.")
+                                    plog("Killing then waiting 60 seconds then reconnecting")
+                                    g_dev['seq'].kill_and_reboot_theskyx(new_ra,new_dec)
+                                
+                                
                             self.wait_for_slew()
                            
                             
