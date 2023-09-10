@@ -526,7 +526,7 @@ class Sequencer:
                 # Autofocus
                 req2 = {'target': 'near_tycho_star'}
                 opt = {}
-                self.extensive_focus_script(req2, opt, throw = g_dev['foc'].throw)
+                self.auto_focus_script(req2, opt, throw = g_dev['foc'].throw)
                 
                 g_dev['obs'].send_to_user("End of Focus and Pointing Run. Waiting for Observing period to begin.", p_level='INFO')
                 
@@ -4241,8 +4241,9 @@ class Sequencer:
                 plog ("Time Taken for queue to clear post-exposure: " + str(time.time() - queue_clear_time))
         
         if try_forever and g_dev['obs'].last_platesolved_ra == np.nan:
+
             while g_dev['obs'].last_platesolved_ra == np.nan:
-                
+                                
                 plog ("Still haven't got a pointing lock at an important time. Waiting then trying again.")
                 g_dev["obs"].send_to_user("Still haven't got a pointing lock at an important time. Waiting then trying again.")  
                 

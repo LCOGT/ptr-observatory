@@ -2372,9 +2372,9 @@ class Observatory:
                             
                             # Save and send clearV
                             temphduheader['FILTER'] = tempfilter + '_clearV'                            
-                            temphduheader['SATURATE']=float(hdu.header['SATURATE']) * 4
-                            temphduheader['FULLWELL']=float(hdu.header['FULLWELL']) * 4
-                            temphduheader['MAXLIN']=float(hdu.header['MAXLIN']) * 4
+                            temphduheader['SATURATE']=float(temphduheader['SATURATE']) * 4
+                            temphduheader['FULLWELL']=float(temphduheader['FULLWELL']) * 4
+                            temphduheader['MAXLIN']=float(temphduheader['MAXLIN']) * 4
                             
                             
                             hdufz = fits.CompImageHDU(
