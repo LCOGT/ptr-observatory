@@ -298,6 +298,7 @@ class Observatory:
 
         self.project_call_timer = time.time()
         self.get_new_job_timer = time.time()
+        self.scan_request_timer = time.time()
         
         
         self.too_hot_temperature=self.config['temperature_at_which_obs_too_hot_for_camera_cooling']
@@ -642,17 +643,23 @@ class Observatory:
         have parallel mountings or independently controlled cameras.
         """
 
-        url_job = "https://jobs.photonranch.org/jobs/getnewjobs"
-        body = {"site": self.name}
-        cmd = {}
-        # Get a list of new jobs to complete (this request
-        # marks the commands as "RECEIVED")
-        try:
-            unread_commands = reqs.request(
-                "POST", url_job, data=json.dumps(body), timeout=20
-            ).json()
-        except:
-            plog("problem gathering scan requests. Likely just a connection glitch.")
+        # To stop the scan requests getting hammered unnecessarily.
+        # Which is has sometimes on net disconnections.
+        if (time.time() - self.scan_request_timer) > 0.5:
+            self.scan_request_timer = time.time()
+            url_job = "https://jobs.photonranch.org/jobs/getnewjobs"
+            body = {"site": self.name}
+            cmd = {}
+            # Get a list of new jobs to complete (this request
+            # marks the commands as "RECEIVED")
+            try:
+                unread_commands = reqs.request(
+                    "POST", url_job, data=json.dumps(body), timeout=20
+                ).json()
+            except:
+                plog("problem gathering scan requests. Likely just a connection glitch.")
+                unread_commands=[]
+        else:
             unread_commands=[]
             
         # Make sure the list is sorted in the order the jobs were issued
