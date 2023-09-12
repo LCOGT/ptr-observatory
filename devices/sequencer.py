@@ -4209,7 +4209,7 @@ class Sequencer:
                 pass
             
         plog ("Time Taken for queue to clear post-exposure: " + str(time.time() - queue_clear_time))
-        
+        breakpoint()
         if g_dev['obs'].last_platesolved_ra != np.nan:
             successful_platesolve=True        
         
