@@ -3270,7 +3270,12 @@ class Sequencer:
                 g_dev['foc'].guarded_move((focus_start)*g_dev['foc'].micron_to_steps)
            
             self.af_guard = False
-            g_dev['foc'].last_focus_fwhm = round(spot4, 2)
+            try:
+                g_dev['foc'].last_focus_fwhm = round(spot4, 2)
+            except:
+                plog("MTF hunting this bug")
+                plog(traceback.format_exc())
+                breakpoint()
             self.focussing=False
             return
         
