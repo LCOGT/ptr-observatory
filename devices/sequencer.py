@@ -1053,12 +1053,14 @@ class Sequencer:
                     if result == 'blockend':
                         plog ("End of Block, exiting project block.")      
                         self.blockend = None
+                        self.currently_mosaicing = False
                         return block_specification
                     
                     if result == 'calendarend':
                         plog ("Calendar Item containing block removed from calendar")
                         plog ("Site bailing out of running project")
                         self.blockend = None
+                        self.currently_mosaicing = False
                         return block_specification
 
                     for displacement in offset:                        
@@ -1091,12 +1093,14 @@ class Sequencer:
                             if result == 'blockend':
                                 plog ("End of Block, exiting project block.")      
                                 self.blockend = None
+                                self.currently_mosaicing = False
                                 return block_specification
                             
                             if result == 'calendarend':
                                 plog ("Calendar Item containing block removed from calendar")
                                 plog ("Site bailing out of running project")
                                 self.blockend = None
+                                self.currently_mosaicing = False
                                 return block_specification
                         
                         
@@ -1122,6 +1126,7 @@ class Sequencer:
                                 if now_date_timeZ >= g_dev['seq'].blockend :                                
                                     left_to_do=0
                                     self.blockend = None
+                                    self.currently_mosaicing = False
                                     return
                             g_dev['obs'].update()
                             result = g_dev['cam'].expose_command(req, opt, user_name=user_name, user_id=user_id, user_roles=user_roles, no_AWS=False, solve_it=False, calendar_event_id=calendar_event_id)
@@ -1130,17 +1135,20 @@ class Sequencer:
                                 if result == 'blockend':
                                     plog ("End of Block, exiting project block.")      
                                     self.blockend = None
+                                    self.currently_mosaicing = False
                                     return block_specification
                                 
                                 if result == 'calendarend':
                                     plog ("Calendar Item containing block removed from calendar")
                                     plog ("Site bailing out of running project")
                                     self.blockend = None
+                                    self.currently_mosaicing = False
                                     return block_specification
                                 
                                 if result['stopped'] is True:
                                     g_dev['obs'].send_to_user("Project Stopped because Exposure cancelled")
                                     self.blockend = None
+                                    self.currently_mosaicing = False
                                     return block_specification
                             except:
                                 pass
@@ -1160,6 +1168,7 @@ class Sequencer:
                             print ('gdev seq blockend: ' + str(g_dev['seq'].blockend))
                             if ephem.now() >= events['Observing Ends']:
                                 self.blockend = None
+                                self.currently_mosaicing = False
                                 return block_specification 
                             
                             #if now_date_timeZ >= g_dev['seq'].blockend:
@@ -1168,34 +1177,40 @@ class Sequencer:
                             if result == 'blockend':
                                 #left_to_do=0
                                 self.blockend = None
+                                self.currently_mosaicing = False
                                 return block_specification 
                             
                             
                             if blockended:
                                 #left_to_do=0
                                 self.blockend = None
+                                self.currently_mosaicing = False
                                 return block_specification 
                             
                             
                             if result == 'calendarend':
                                 #left_to_do =0
                                 self.blockend = None
+                                self.currently_mosaicing = False
                                 return block_specification 
                             
                             if result == 'roofshut':
                                 #left_to_do =0
                                 self.blockend = None
+                                self.currently_mosaicing = False
                                 return block_specification 
                                 
                             if result == 'outsideofnighttime':
                                 #left_to_do =0
                                 self.blockend = None
+                                self.currently_mosaicing = False
                                 return block_specification 
                             
                             if g_dev["obs"].stop_all_activity:
                                 plog('stop_all_activity cancelling out of exposure loop')
                                 #left_to_do =0  
                                 self.blockend = None
+                                self.currently_mosaicing = False
                                 return block_specification 
                             
                             
