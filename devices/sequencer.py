@@ -3270,7 +3270,12 @@ class Sequencer:
                 g_dev['foc'].guarded_move((focus_start)*g_dev['foc'].micron_to_steps)
            
             self.af_guard = False
-            g_dev['foc'].last_focus_fwhm = round(spot4, 2)
+            try:
+                g_dev['foc'].last_focus_fwhm = round(spot4, 2)
+            except:
+                plog("MTF hunting this bug")
+                plog(traceback.format_exc())
+                breakpoint()
             self.focussing=False
             return
         
@@ -4204,24 +4209,30 @@ class Sequencer:
                 pass
             
         plog ("Time Taken for queue to clear post-exposure: " + str(time.time() - queue_clear_time))
+        #breakpoint()
         
-        if g_dev['obs'].last_platesolved_ra != np.nan:
+        
+        if g_dev['obs'].last_platesolved_ra != np.nan and str(g_dev['obs'].last_platesolved_ra) != 'nan':
             successful_platesolve=True        
         
         # Nudge if needed.
-        if not g_dev['obs'].pointing_correction_requested_by_platesolve_thread:
-            g_dev["obs"].send_to_user("Pointing adequate on first slew. Slew & Center complete.") 
+        if not g_dev['obs'].pointing_correction_requested_by_platesolve_thread and successful_platesolve:
+            g_dev["obs"].send_to_user("Slew & Center complete.") 
             self.mosaic_center_ra=g_dev['mnt'].mount.RightAscension
             self.mosaic_center_dec=g_dev['mnt'].mount.Declination
             return result
-        else:
+        elif successful_platesolve:
             g_dev['obs'].check_platesolve_and_nudge()        
             # Wait until pointing correction fixed before moving on
             while g_dev['obs'].pointing_correction_requested_by_platesolve_thread:
-                plog ("waiting for pointing_correction_to_finish")
-                time.sleep(0.5)
+                plog ("waiting for pointing_correction_to_finish")                
+                self.wait_for_slew()
+                time.sleep(1)
+            self.mosaic_center_ra=g_dev['mnt'].mount.RightAscension
+            self.mosaic_center_dec=g_dev['mnt'].mount.Declination
+            return result
             
-        if try_hard and not successful_platesolve:
+        if (try_hard or try_forever) and not successful_platesolve:
             plog("Didn't get a successful platesolve at an important time for pointing, trying a double exposure")
             
             req = {'time': float(self.config['pointing_exposure_time']) * 2,  'alias':  str(self.config['camera']['camera_1_1']['name']), 'image_type': 'pointing'}   #  NB Should pick up filter and constats from config
@@ -4251,7 +4262,8 @@ class Sequencer:
                     pass
             plog ("Time Taken for queue to clear post-exposure: " + str(time.time() - queue_clear_time))
             
-            if g_dev['obs'].last_platesolved_ra == np.nan:
+            if not (g_dev['obs'].last_platesolved_ra != np.nan and str(g_dev['obs'].last_platesolved_ra) != 'nan'):
+
                 plog("Didn't get a successful platesolve at an important time for pointing AGAIN, trying a Lum filter")
                 
                 req = {'time': float(self.config['pointing_exposure_time']) * 2.5,  'alias':  str(self.config['camera']['camera_1_1']['name']), 'image_type': 'pointing'}   #  NB Should pick up filter and constats from config
@@ -4282,21 +4294,12 @@ class Sequencer:
                         pass
                 plog ("Time Taken for queue to clear post-exposure: " + str(time.time() - queue_clear_time))
         
-        if try_forever and g_dev['obs'].last_platesolved_ra == np.nan:
+        if try_forever and (g_dev['obs'].last_platesolved_ra == np.nan or str(g_dev['obs'].last_platesolved_ra) == 'nan'):
 
-            while g_dev['obs'].last_platesolved_ra == np.nan:
+            while g_dev['obs'].last_platesolved_ra == np.nan or str(g_dev['obs'].last_platesolved_ra) == 'nan':
                                 
                 plog ("Still haven't got a pointing lock at an important time. Waiting then trying again.")
                 g_dev["obs"].send_to_user("Still haven't got a pointing lock at an important time. Waiting then trying again.")  
-                
-                
-                #A stop script command flags to the running scripts that it is time to stop 
-                #activity and return. This period runs for about 30 seconds.
-                g_dev["obs"].send_to_user("A Stop Script has been called. Cancelling out of running scripts over 30 seconds.")
-                self.stop_script_called=True
-                self.stop_script_called_time=time.time()
-                # Cancel out of all running exposures. 
-                g_dev['obs'].cancel_all_activity()  
                 
                 
                 wait_a_minute=time.time()
@@ -4348,7 +4351,7 @@ class Sequencer:
             while g_dev['obs'].pointing_correction_requested_by_platesolve_thread:
                 plog ("waiting for pointing_correction_to_finish")
                 time.sleep(0.5)
-        
+            
         
         if no_confirmation == True:
             self.mosaic_center_ra=g_dev['mnt'].mount.RightAscension
