@@ -4209,8 +4209,10 @@ class Sequencer:
                 pass
             
         plog ("Time Taken for queue to clear post-exposure: " + str(time.time() - queue_clear_time))
-        breakpoint()
-        if g_dev['obs'].last_platesolved_ra != np.nan:
+        #breakpoint()
+        
+        
+        if g_dev['obs'].last_platesolved_ra != np.nan and str(g_dev['obs'].last_platesolved_ra) != 'nan':
             successful_platesolve=True        
         
         # Nudge if needed.
@@ -4260,7 +4262,8 @@ class Sequencer:
                     pass
             plog ("Time Taken for queue to clear post-exposure: " + str(time.time() - queue_clear_time))
             
-            if g_dev['obs'].last_platesolved_ra == np.nan:
+            if not (g_dev['obs'].last_platesolved_ra != np.nan and str(g_dev['obs'].last_platesolved_ra) != 'nan'):
+
                 plog("Didn't get a successful platesolve at an important time for pointing AGAIN, trying a Lum filter")
                 
                 req = {'time': float(self.config['pointing_exposure_time']) * 2.5,  'alias':  str(self.config['camera']['camera_1_1']['name']), 'image_type': 'pointing'}   #  NB Should pick up filter and constats from config
@@ -4291,9 +4294,9 @@ class Sequencer:
                         pass
                 plog ("Time Taken for queue to clear post-exposure: " + str(time.time() - queue_clear_time))
         
-        if try_forever and g_dev['obs'].last_platesolved_ra == np.nan:
+        if try_forever and (g_dev['obs'].last_platesolved_ra == np.nan or str(g_dev['obs'].last_platesolved_ra) == 'nan'):
 
-            while g_dev['obs'].last_platesolved_ra == np.nan:
+            while g_dev['obs'].last_platesolved_ra == np.nan or str(g_dev['obs'].last_platesolved_ra) == 'nan':
                                 
                 plog ("Still haven't got a pointing lock at an important time. Waiting then trying again.")
                 g_dev["obs"].send_to_user("Still haven't got a pointing lock at an important time. Waiting then trying again.")  

@@ -2077,8 +2077,14 @@ class Observatory:
                                      except:
                                          plog("This mount doesn't report pierside")
                                          plog(traceback.format_exc())
-                                        
+                    
+                    if str(self.last_platesolved_ra) == 'nan':
+                        self.last_platesolved_ra= np.nan
+                    
                     self.platesolve_is_processing = False
+
+                if str(self.last_platesolved_ra) == 'nan':
+                    self.last_platesolved_ra= np.nan
 
                 self.platesolve_is_processing = False
                 self.platesolve_queue.task_done()
