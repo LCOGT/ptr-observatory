@@ -374,6 +374,7 @@ class Observatory:
         self.last_platesolved_dec =np.nan
         self.last_platesolved_ra_err = np.nan
         self.last_platesolved_dec_err =np.nan
+        self.platesolve_errors_in_a_row=0
 
         g_dev["obs"] = self
         obsid_str = ptr_config["obs_id"]
@@ -1951,7 +1952,7 @@ class Observatory:
                         self.last_platesolved_dec = np.nan
                         self.last_platesolved_ra_err = np.nan
                         self.last_platesolved_dec_err = np.nan
-                        
+                        self.platesolve_errors_in_a_row=self.platesolve_errors_in_a_row+1
                     else:
                         plog(
                             "PW Solves: ",
@@ -2007,6 +2008,7 @@ class Observatory:
                         self.last_platesolved_dec = solve["dec_j2000_degrees"]
                         self.last_platesolved_ra_err = target_ra - solved_ra
                         self.last_platesolved_dec_err = target_dec - solved_dec
+                        self.platesolve_errors_in_a_row=0
                         
                         # Reset Solve timers
                         g_dev['obs'].last_solve_time = datetime.datetime.now()
@@ -2078,13 +2080,9 @@ class Observatory:
                                          plog("This mount doesn't report pierside")
                                          plog(traceback.format_exc())
                     
-                    if str(self.last_platesolved_ra) == 'nan':
-                        self.last_platesolved_ra= np.nan
                     
                     self.platesolve_is_processing = False
 
-                if str(self.last_platesolved_ra) == 'nan':
-                    self.last_platesolved_ra= np.nan
 
                 self.platesolve_is_processing = False
                 self.platesolve_queue.task_done()
