@@ -1552,6 +1552,7 @@ class Observatory:
                                             if retryarchive < 10:
                                                 retryarchive = retryarchive+1
                                             if retryarchive == 10:
+                                                plog ("Finally gave up.")
                                                 broken =1
                                                 
                         
