@@ -1033,7 +1033,10 @@ class Mount:
                 # Yes, this is an awfully non-elegant way to force a mount to start 
                 # Tracking when it isn't implemented in the ASCOM driver. But if anyone has any better ideas, I am all ears - MF
                 # It also doesn't want to get into an endless loop of parking and unparking and homing, hence the rescue counter
-                if g_dev['mnt'].theskyx:
+                
+                if "Property write Tracking is not implemented in this driver" in str(traceback.format_exc()):
+                    plog ("Driver doesn't have write tracking, moving on.")
+                elif g_dev['mnt'].theskyx:
                     plog (traceback.format_exc())
                     plog("The SkyX had an error.")
                     plog("Usually this is because of a broken connection.")
