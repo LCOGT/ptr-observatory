@@ -1054,7 +1054,7 @@ class Sequencer:
                     
                     if mosaic_pointing_already_done:
                         mosaic_pointing_already_done = False
-                    elif self.currently_mosaicing or self.platesolve_errors_in_a_row > 4:
+                    elif self.currently_mosaicing or g_dev['obs'].platesolve_errors_in_a_row > 4:
                         # Get the pointing / central position of the 
                         g_dev['mnt'].go_command(ra=dest_ra, dec=dest_dec)
                         
