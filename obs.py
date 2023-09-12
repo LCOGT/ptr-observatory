@@ -964,7 +964,7 @@ class Observatory:
                 plog(traceback.format_exc())
 
             
-        # Send main bath of devices status
+        # Send main batch of devices status
         obsy = self.name
         if mount_only == True:
             device_list = ['mount', 'telescope']
