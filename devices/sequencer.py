@@ -902,7 +902,23 @@ class Sequencer:
 
             plog("Left to do initial value:  ", left_to_do)
             req = {'target': 'near_tycho_star'}
-
+            
+            # Do first pointing exposure for all images
+            # mosaics or not
+            ################################
+            # Get the pointing / central position of the 
+            g_dev['mnt'].go_command(ra=dest_ra, dec=dest_dec)            
+            # Quick pointing check and re_seek at the start of each project block
+            # Otherwise everyone will get slightly off-pointing images
+            # Necessary
+            plog ("Taking a quick pointing check and re_seek for new project block")
+            result = self.centering_exposure(no_confirmation=True, try_hard=True, try_forever=True)            
+            self.mosaic_center_ra=g_dev['mnt'].mount.RightAscension
+            self.mosaic_center_dec=g_dev['mnt'].mount.Declination            
+            # Don't do a second repointing in the first pane of a mosaic
+            # considering we just did that.
+            mosaic_pointing_already_done=True
+            
             while left_to_do > 0 and not ended:                
                 
                 #cycle through exposures decrementing counts    MAY want to double check left-to do but do nut remultiply by 4
@@ -1035,19 +1051,20 @@ class Sequencer:
                         longstackname='no'
 
 
-                    #if exposure['area'] == "Full":
                     
-                    # Get the pointing / central position of the 
-                    g_dev['mnt'].go_command(ra=dest_ra, dec=dest_dec)
-                    
-                    # Quick pointing check and re_seek at the start of each project block
-                    # Otherwise everyone will get slightly off-pointing images
-                    # Necessary
-                    plog ("Taking a quick pointing check and re_seek for new project block")
-                    result = self.centering_exposure(no_confirmation=True, try_hard=True, try_forever=True)
-                    
-                    self.mosaic_center_ra=g_dev['mnt'].mount.RightAscension
-                    self.mosaic_center_dec=g_dev['mnt'].mount.Declination
+                    if mosaic_pointing_already_done:
+                        mosaic_pointing_already_done = False
+                    elif self.currently_mosaicing:
+                        # Get the pointing / central position of the 
+                        g_dev['mnt'].go_command(ra=dest_ra, dec=dest_dec)
+                        
+                        # Quick pointing check and re_seek at the start of each project block
+                        # Otherwise everyone will get slightly off-pointing images
+                        # Necessary
+                        plog ("Taking a quick pointing check and re_seek for new mosaic block")
+                        result = self.centering_exposure(no_confirmation=True, try_hard=True, try_forever=True)                        
+                        self.mosaic_center_ra=g_dev['mnt'].mount.RightAscension
+                        self.mosaic_center_dec=g_dev['mnt'].mount.Declination
                     
 
                     if result == 'blockend':
