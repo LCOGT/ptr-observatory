@@ -1119,6 +1119,7 @@ class Mount:
                 if g_dev['obs'] is not None:  #THis gets called before obs is created
                     g_dev['obs'].send_to_user("Parking Mount. This can take a moment.")
                 g_dev['obs'].time_of_last_slew=time.time()
+                wait_for_slew()
                 self.mount.Park()
                 
                 wait_for_slew()
@@ -1141,25 +1142,32 @@ class Mount:
                 g_dev['obs'].time_of_last_slew=time.time()
                 
                 try:
+                    wait_for_slew()
                     self.mount.Unpark()
                     wait_for_slew()
                 except:
                     if g_dev['mnt'].theskyx:
                         g_dev['seq'].kill_and_reboot_theskyx(-1,-1)
+                        wait_for_slew()
                         self.mount.Unpark()
+                        wait_for_slew()
 
                 if self.settle_time_after_unpark > 0:
                     time.sleep(self.settle_time_after_unpark)
                     plog("Waiting " + str(self.settle_time_after_unpark) + " seconds for mount to settle.")
 
                 if self.home_after_unpark:
-                    try: 
+                    try:
+                        wait_for_slew()
                         self.mount.FindHome()
+                        wait_for_slew()
                     except:
                         try:
                             home_alt = self.settings["home_altitude"]
-                            home_az = self.settings["home_azimuth"]                            
+                            home_az = self.settings["home_azimuth"]   
+                            wait_for_slew()
                             g_dev['mnt'].go_command(alt=home_alt,az= home_az)
+                            wait_for_slew()
                         except:
                             if g_dev['mnt'].theskyx:
                                 
