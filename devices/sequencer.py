@@ -1094,7 +1094,9 @@ class Sequencer:
                             new_ra, new_dec = ra_dec_fix_hd(new_ra, new_dec)                            
                             #g_dev['mnt'].go_command(ra=new_ra, dec=new_dec)
                             try:
+                                self.wait_for_slew()
                                 g_dev['mnt'].mount.SlewToCoordinatesAsync(new_ra, new_dec)                            
+                                self.wait_for_slew()
                             except Exception as e:
                                 plog (traceback.format_exc())
                                 if 'Object reference not set' in str(e) and g_dev['mnt'].theskyx:                                    
@@ -4314,6 +4316,13 @@ class Sequencer:
                         g_dev["obs"].send_to_user("Cancelling out of activity as no longer open and enabled to observe.")  
                         return
                     time.sleep(1)                
+                
+                # Try shifting to where it is meant to be pointing
+                # This can sometimes rescue a lost mount.
+                # But most of the time doesn't do anything.              
+                self.wait_for_slew()
+                g_dev['mnt'].mount.SlewToCoordinatesAsync(g_dev["mnt"].last_ra_requested, g_dev["mnt"].last_dec_requested)                            
+                self.wait_for_slew()
                 
                 req = {'time': float(self.config['pointing_exposure_time']) * 3,  'alias':  str(self.config['camera']['camera_1_1']['name']), 'image_type': 'pointing'}   #  NB Should pick up filter and constats from config
                 opt = {'count': 1, 'filter': 'pointing'}
