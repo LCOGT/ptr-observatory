@@ -15,6 +15,7 @@ import os
 import queue
 import shelve
 import threading
+from multiprocessing.pool import ThreadPool
 import time
 import sys
 import shutil
@@ -1468,6 +1469,96 @@ class Observatory:
             self.stopped = True
             return
 
+
+    def ptrarchive_uploader(self, pri_image):
+        
+        upload_timer=time.time()
+        if pri_image is None:
+            plog("Got an empty entry in ptrarchive_queue.")
+            #one_at_a_time = 0
+            #self.ptrarchive_queue.task_done()
+            
+        else:
+            # Here we parse the file, set up and send to AWS
+            filename = pri_image[1][1]
+            filepath = pri_image[1][0] + filename  # Full path to file on disk
+
+            # Only ingest new large fits.fz files to the PTR archive.                    
+            try:
+                broken = 0
+                with open(filepath, "rb") as fileobj:
+                    
+                    if filepath.split('.')[-1] == 'token':
+                        files = {"file": (filepath, fileobj)}                                
+                        aws_resp = authenticated_request("POST", "/upload/", {"object_name": filename})
+                        while True:
+                            try:
+                                reqs.post(aws_resp["url"], data=aws_resp["fields"], files=files, timeout=45)
+                                break
+                            except:
+                                plog("Non-fatal connection glitch for a file posted.")
+                                plog(files)
+                                time.sleep(5)
+                        
+                    
+                    elif self.env_exists == True and (not frame_exists(fileobj)):        
+                        retryarchive = 0
+                        while retryarchive < 10:
+                            try:      
+                                # Get header explicitly out to send up
+                                # This seems to be necessary
+                                tempheader=fits.open(filepath)
+                                tempheader=tempheader[1].header
+                                headerdict = {}
+                                for entry in tempheader.keys():
+                                    headerdict[entry] = tempheader[entry]
+                                upload_file_and_ingest_to_archive(fileobj, file_metadata=headerdict)    
+                                retryarchive = 11
+                                # Only remove file if successfully uploaded
+                                if ('calibmasters' not in filepath) or ('ARCHIVE_' in filepath):
+                                    try:
+                                        os.remove(filepath)
+                                    except:
+                                        self.laterdelete_queue.put(filepath, block=False)                                                   
+                                
+                                
+                            except ocs_ingester.exceptions.DoNotRetryError:
+                                plog ("Couldn't upload to PTR archive: " + str(filepath))    
+                                broken=1
+                                retryarchive = 11
+                            except Exception as e:
+                                if 'list index out of range' in str(e):
+                                    # This error is thrown when there is a corrupt file
+                                    broken=1
+                                    retryarchive=11
+                                else:
+                                    plog("couldn't send to PTR archive for some reason: ", e)  
+                                    
+                                    #plog((traceback.format_exc()))
+                                    #breakpoint()
+                                    time.sleep(pow(retryarchive, 2) + 1)
+                                    if retryarchive < 10:
+                                        retryarchive = retryarchive+1
+                                    if retryarchive == 10:
+                                        plog ("Finally gave up.")
+                                        broken =1
+                                        
+                
+                if broken == 1:
+                    try:
+                        shutil.move(filepath, self.broken_path + filename)
+                    except:
+                        plog ("Couldn't move " + str(filepath) + " to broken folder.")
+                        #plog((traceback.format_exc()))
+                        self.laterdelete_queue.put(filepath, block=False)
+            except Exception as e:
+                plog ("something strange in the ptrarchive uploader", e)
+                    
+            
+            upload_timer=time.time() - upload_timer
+            hours_to_go = (self.ptrarchive_queue.qsize() * upload_timer/60/60) / int(self.config['number_of_simultaneous_archive_streams'])
+            return ( str(filepath.split('/')[-1]) + " sent to archive. Queue Size: " + str(self.ptrarchive_queue.qsize())+ ". " + str(round(hours_to_go,1)) +" hours to go.")
+
     # Note this is a thread!
     def send_to_ptrarchive(self):
         """Sends queued files to AWS.
@@ -1482,92 +1573,27 @@ class Observatory:
         """
 
         one_at_a_time = 0
+        
+        number_of_simultaneous_uploads= self.config['number_of_simultaneous_archive_streams']
+        
         # This stopping mechanism allows for threads to close cleanly.
         while True:
 
             if (not self.ptrarchive_queue.empty()) and one_at_a_time == 0:
+                
+                
                 one_at_a_time = 1
-                pri_image = self.ptrarchive_queue.get(block=False)
-                if pri_image is None:
-                    plog("Got an empty entry in ptrarchive_queue.")
-                    one_at_a_time = 0
-                    self.ptrarchive_queue.task_done()
+                
+                items=[]
+                for q in range(min(number_of_simultaneous_uploads,self.ptrarchive_queue.qsize()) ):
+                    items.append(self.ptrarchive_queue.get(block=False))
+
+                with ThreadPool(processes=number_of_simultaneous_uploads) as pool:
+                    for result in pool.map(self.ptrarchive_uploader, items):                        
+                        self.ptrarchive_queue.task_done()
+                        plog (result)
                     
-                else:
-                    # Here we parse the file, set up and send to AWS
-                    filename = pri_image[1][1]
-                    filepath = pri_image[1][0] + filename  # Full path to file on disk
-    
-                    # Only ingest new large fits.fz files to the PTR archive.                    
-                    try:
-                        broken = 0
-                        with open(filepath, "rb") as fileobj:
-                            
-                            if filepath.split('.')[-1] == 'token':
-                                files = {"file": (filepath, fileobj)}                                
-                                aws_resp = authenticated_request("POST", "/upload/", {"object_name": filename})
-                                while True:
-                                    try:
-                                        reqs.post(aws_resp["url"], data=aws_resp["fields"], files=files, timeout=45)
-                                        break
-                                    except:
-                                        plog("Non-fatal connection glitch for a file posted.")
-                                        plog(files)
-                                        time.sleep(5)
-                                
-                            
-                            elif self.env_exists == True and (not frame_exists(fileobj)):        
-                                retryarchive = 0
-                                while retryarchive < 10:
-                                    try:      
-                                        # Get header explicitly out to send up
-                                        # This seems to be necessary
-                                        tempheader=fits.open(filepath)
-                                        tempheader=tempheader[1].header
-                                        headerdict = {}
-                                        for entry in tempheader.keys():
-                                            headerdict[entry] = tempheader[entry]
-                                        upload_file_and_ingest_to_archive(fileobj, file_metadata=headerdict)    
-                                        retryarchive = 11
-                                        # Only remove file if successfully uploaded
-                                        if ('calibmasters' not in filepath) or ('ARCHIVE_' in filepath):
-                                            try:
-                                                os.remove(filepath)
-                                            except:
-                                                self.laterdelete_queue.put(filepath, block=False)                                                   
-                                        
-                                        
-                                    except ocs_ingester.exceptions.DoNotRetryError:
-                                        plog ("Couldn't upload to PTR archive: " + str(filepath))    
-                                        broken=1
-                                        retryarchive = 11
-                                    except Exception as e:
-                                        if 'list index out of range' in str(e):
-                                            # This error is thrown when there is a corrupt file
-                                            broken=1
-                                            retryarchive=11
-                                        else:
-                                            plog("couldn't send to PTR archive for some reason: ", e)  
-                                            time.sleep(pow(retryarchive, 2) + 1)
-                                            if retryarchive < 10:
-                                                retryarchive = retryarchive+1
-                                            if retryarchive == 10:
-                                                plog ("Finally gave up.")
-                                                broken =1
-                                                
-                        
-                        if broken == 1:
-                            try:
-                                shutil.move(filepath, self.broken_path + filename)
-                            except:
-                                plog ("Couldn't move " + str(filepath) + " to broken folder.")
-                                #plog((traceback.format_exc()))
-                                self.laterdelete_queue.put(filepath, block=False)
-                    except Exception as e:
-                        plog ("something strange in the ptrarchive uploader", e)
-                            
-                    self.ptrarchive_queue.task_done()
-                    one_at_a_time = 0
+                one_at_a_time = 0
 
                 
             else:

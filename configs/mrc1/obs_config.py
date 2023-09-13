@@ -77,7 +77,9 @@ site_config = {
     'keep_reduced_on_disk': True,
     'keep_focus_images_on_disk': True,  # To save space, the focus file can not be saved.   
     # A certain type of naming that sorts filenames by numberid first
-    'save_reduced_file_numberid_first' : False,
+    'save_reduced_file_numberid_first' : False,   
+    # Number of files to send up to the archive simultaneously.
+    'number_of_simultaneous_archive_streams' : 4,
 
     # Minimum realistic seeing at the site.
     # This allows culling of unphysical results in photometry and other things
