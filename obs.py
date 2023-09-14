@@ -1494,6 +1494,10 @@ class Observatory:
                         while True:
                             try:
                                 reqs.post(aws_resp["url"], data=aws_resp["fields"], files=files, timeout=45)
+                                try:
+                                    os.remove(filepath)
+                                except:
+                                    self.laterdelete_queue.put(filepath, block=False) 
                                 break
                             except:
                                 plog("Non-fatal connection glitch for a file posted.")
@@ -1502,46 +1506,50 @@ class Observatory:
                         
                     
                     elif self.env_exists == True and (not frame_exists(fileobj)):        
-                        retryarchive = 0
-                        while retryarchive < 10:
-                            try:      
-                                # Get header explicitly out to send up
-                                # This seems to be necessary
-                                tempheader=fits.open(filepath)
-                                tempheader=tempheader[1].header
-                                headerdict = {}
-                                for entry in tempheader.keys():
-                                    headerdict[entry] = tempheader[entry]
-                                upload_file_and_ingest_to_archive(fileobj, file_metadata=headerdict)    
-                                retryarchive = 11
-                                # Only remove file if successfully uploaded
-                                if ('calibmasters' not in filepath) or ('ARCHIVE_' in filepath):
-                                    try:
-                                        os.remove(filepath)
-                                    except:
-                                        self.laterdelete_queue.put(filepath, block=False)                                                   
-                                
-                                
-                            except ocs_ingester.exceptions.DoNotRetryError:
-                                plog ("Couldn't upload to PTR archive: " + str(filepath))    
+                        #retryarchive = 0
+                        #while retryarchive < 3:
+                        try:      
+                            # Get header explicitly out to send up
+                            # This seems to be necessary
+                            tempheader=fits.open(filepath)
+                            tempheader=tempheader[1].header
+                            headerdict = {}
+                            for entry in tempheader.keys():
+                                headerdict[entry] = tempheader[entry]
+                            upload_file_and_ingest_to_archive(fileobj, file_metadata=headerdict)    
+                            retryarchive = 11
+                            # Only remove file if successfully uploaded
+                            if ('calibmasters' not in filepath) or ('ARCHIVE_' in filepath):
+                                try:
+                                    os.remove(filepath)
+                                except:
+                                    self.laterdelete_queue.put(filepath, block=False)                                                   
+                            
+                            
+                        except ocs_ingester.exceptions.DoNotRetryError:
+                            plog ("Couldn't upload to PTR archive: " + str(filepath))    
+                            broken=1
+                        except Exception as e:
+                            if 'list index out of range' in str(e):
+                                # This error is thrown when there is a corrupt file
                                 broken=1
-                                retryarchive = 11
-                            except Exception as e:
-                                if 'list index out of range' in str(e):
-                                    # This error is thrown when there is a corrupt file
-                                    broken=1
-                                    retryarchive=11
-                                else:
-                                    plog("couldn't send to PTR archive for some reason: ", e)  
-                                    
-                                    #plog((traceback.format_exc()))
-                                    #breakpoint()
-                                    time.sleep(pow(retryarchive, 2) + 1)
-                                    if retryarchive < 10:
-                                        retryarchive = retryarchive+1
-                                    if retryarchive == 10:
-                                        plog ("Finally gave up.")
-                                        broken =1
+                                
+                            elif 'timed out.' in str(e):
+                                # Not broken, just bung it back in the queue for later
+                                self.ptrarchive_queue.put(pri_image, block=False)
+                                # And give it a little sleep
+                                time.sleep(10)    
+                                #retryarchive = 3
+                            else:
+                                plog("couldn't send to PTR archive for some reason: ", e)  
+                                
+                                #plog((traceback.format_exc()))
+                                #breakpoint()
+                                #time.sleep(10)
+                                #if retryarchive < 10:
+                                #retryarchive = retryarchive+1
+                                #if retryarchive > 2:
+                                broken =1
                                         
                 
                 if broken == 1:

@@ -1095,7 +1095,15 @@ class Sequencer:
                             #g_dev['mnt'].go_command(ra=new_ra, dec=new_dec)
                             try:
                                 self.wait_for_slew()
-                                g_dev['mnt'].mount.SlewToCoordinatesAsync(new_ra, new_dec)                            
+                                try:
+                                    g_dev['mnt'].mount.SlewToCoordinatesAsync(new_ra, new_dec)                            
+                                except:
+                                    plog(traceback.format_exc())
+                                    if g_dev['mnt'].theskyx:
+                                        self.kill_and_reboot_theskyx(new_ra, new_dec)
+                                    else:
+                                        plog(traceback.format_exc())
+                                        breakpoint() 
                                 self.wait_for_slew()
                             except Exception as e:
                                 plog (traceback.format_exc())
@@ -4186,7 +4194,20 @@ class Sequencer:
         )
         # Take a pointing shot to reposition
         result = g_dev['cam'].expose_command(req, opt, user_id='Tobor', user_name='Tobor', user_roles='system', no_AWS=True, solve_it=True)
-                
+        
+        if result == 'blockend':
+            plog ("End of Block, exiting Centering.")                          
+            return 
+        
+        if result == 'calendarend':
+            plog ("Calendar Item containing block removed from calendar")
+            plog ("Site bailing out of Centering")                    
+            return 
+        
+        if result['stopped'] is True:
+            g_dev['obs'].send_to_user("Centering Stopped because Exposure cancelled")                    
+            return 
+        
         # Wait for platesolve
         queue_clear_time = time.time()
         reported=0
@@ -4242,6 +4263,19 @@ class Sequencer:
             
             result = g_dev['cam'].expose_command(req, opt, user_id='Tobor', user_name='Tobor', user_roles='system', no_AWS=True, solve_it=True)
             
+            if result == 'blockend':
+                plog ("End of Block, exiting Centering.")                          
+                return 
+            
+            if result == 'calendarend':
+                plog ("Calendar Item containing block removed from calendar")
+                plog ("Site bailing out of Centering")                    
+                return 
+            
+            if result['stopped'] is True:
+                g_dev['obs'].send_to_user("Centering Stopped because Exposure cancelled")                    
+                return 
+            
             queue_clear_time = time.time()
             reported=0
             temptimer=time.time()
@@ -4272,6 +4306,19 @@ class Sequencer:
                 opt = {'count': 1, 'filter': 'Lum'}
                 
                 result = g_dev['cam'].expose_command(req, opt, user_id='Tobor', user_name='Tobor', user_roles='system', no_AWS=True, solve_it=True)
+                
+                if result == 'blockend':
+                    plog ("End of Block, exiting Centering.")                          
+                    return 
+                
+                if result == 'calendarend':
+                    plog ("Calendar Item containing block removed from calendar")
+                    plog ("Site bailing out of Centering")                    
+                    return 
+                
+                if result['stopped'] is True:
+                    g_dev['obs'].send_to_user("Centering Stopped because Exposure cancelled")                    
+                    return 
                 
                 queue_clear_time = time.time()
                 reported=0
@@ -4321,12 +4368,36 @@ class Sequencer:
                 # This can sometimes rescue a lost mount.
                 # But most of the time doesn't do anything.              
                 self.wait_for_slew()
-                g_dev['mnt'].mount.SlewToCoordinatesAsync(g_dev["mnt"].last_ra_requested, g_dev["mnt"].last_dec_requested)                            
+                try:
+                    g_dev['mnt'].mount.SlewToCoordinatesAsync(g_dev["mnt"].last_ra_requested, g_dev["mnt"].last_dec_requested)                            
+                except:
+                    plog(traceback.format_exc())
+                    if g_dev['mnt'].theskyx:
+                        self.kill_and_reboot_theskyx(g_dev["mnt"].last_ra_requested, g_dev["mnt"].last_dec_requested)
+                    else:
+                        plog(traceback.format_exc())
+                        breakpoint() 
                 self.wait_for_slew()
                 
                 req = {'time': float(self.config['pointing_exposure_time']) * 3,  'alias':  str(self.config['camera']['camera_1_1']['name']), 'image_type': 'pointing'}   #  NB Should pick up filter and constats from config
                 opt = {'count': 1, 'filter': 'pointing'}
                 result = g_dev['cam'].expose_command(req, opt, user_id='Tobor', user_name='Tobor', user_roles='system', no_AWS=True, solve_it=True)
+                
+                
+                if result == 'blockend':
+                    plog ("End of Block, exiting Centering.")                          
+                    return 
+                
+                if result == 'calendarend':
+                    plog ("Calendar Item containing block removed from calendar")
+                    plog ("Site bailing out of Centering")                    
+                    return 
+                
+                if result['stopped'] is True:
+                    g_dev['obs'].send_to_user("Centering Stopped because Exposure cancelled")                    
+                    return 
+                
+                
                 
                 while True:
                     if g_dev['obs'].platesolve_is_processing ==False and g_dev['obs'].platesolve_queue.empty():
@@ -4383,6 +4454,19 @@ class Sequencer:
             req = {'time': self.config['pointing_exposure_time'],  'alias':  str(self.config['camera']['camera_1_1']['name']), 'image_type': 'light'}   #  NB Should pick up filter and constats from config
             opt = {'count': 1, 'filter': 'pointing'}
             result = g_dev['cam'].expose_command(req, opt, user_id='Tobor', user_name='Tobor', user_roles='system', no_AWS=True, solve_it=True)
+            
+            if result == 'blockend':
+                plog ("End of Block, exiting Centering.")                          
+                return 
+            
+            if result == 'calendarend':
+                plog ("Calendar Item containing block removed from calendar")
+                plog ("Site bailing out of Centering")                    
+                return 
+            
+            if result['stopped'] is True:
+                g_dev['obs'].send_to_user("Centering Stopped because Exposure cancelled")                    
+                return 
             
             if self.stop_script_called:
                 g_dev["obs"].send_to_user("Cancelling out of autofocus script as stop script has been called.")  
