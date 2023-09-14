@@ -1079,6 +1079,28 @@ class Sequencer:
                         self.blockend = None
                         self.currently_mosaicing = False
                         return block_specification
+                    
+                    
+                    if result == 'roofshut':
+                        plog ("Roof Shut, Site bailing out of Project")
+                        self.blockend = None
+                        self.currently_mosaicing = False
+                        return block_specification 
+                        
+                    if result == 'outsideofnighttime':
+                        plog ("Outside of Night Time. Site bailing out of Project")
+                        self.blockend = None
+                        self.currently_mosaicing = False
+                        return block_specification 
+                    
+                    if g_dev["obs"].stop_all_activity:
+                        plog('stop_all_activity cancelling out of Project')                    
+                        self.blockend = None
+                        self.currently_mosaicing = False
+                        return block_specification  
+                    
+                    
+                    
 
                     for displacement in offset:                        
                         
@@ -1130,7 +1152,23 @@ class Sequencer:
                                 self.blockend = None
                                 self.currently_mosaicing = False
                                 return block_specification
-                        
+                            if result == 'roofshut':
+                                plog ("Roof Shut, Site bailing out of Project")
+                                self.blockend = None
+                                self.currently_mosaicing = False
+                                return block_specification 
+                                
+                            if result == 'outsideofnighttime':
+                                plog ("Outside of Night Time. Site bailing out of Project")
+                                self.blockend = None
+                                self.currently_mosaicing = False
+                                return block_specification 
+                            
+                            if g_dev["obs"].stop_all_activity:
+                                plog('stop_all_activity cancelling out of Project')                    
+                                self.blockend = None
+                                self.currently_mosaicing = False
+                                return block_specification 
                         
                         if imtype in ['light']:                            
 
@@ -1171,13 +1209,26 @@ class Sequencer:
                                     plog ("Site bailing out of running project")
                                     self.blockend = None
                                     self.currently_mosaicing = False
-                                    return block_specification
-                                
-                                if result['stopped'] is True:
-                                    g_dev['obs'].send_to_user("Project Stopped because Exposure cancelled")
+                                    return block_specification    
+                            
+                                if result == 'roofshut':
+                                    plog ("Roof Shut, Site bailing out of Project")
                                     self.blockend = None
                                     self.currently_mosaicing = False
-                                    return block_specification
+                                    return block_specification 
+                                    
+                                if result == 'outsideofnighttime':
+                                    plog ("Outside of Night Time. Site bailing out of Project")
+                                    self.blockend = None
+                                    self.currently_mosaicing = False
+                                    return block_specification 
+                                
+                                if g_dev["obs"].stop_all_activity:
+                                    plog('stop_all_activity cancelling out of Project')                    
+                                    self.blockend = None
+                                    self.currently_mosaicing = False
+                                    return block_specification 
+
                             except:
                                 pass
                            
@@ -4206,9 +4257,17 @@ class Sequencer:
             plog ("Site bailing out of Centering")                    
             return 
         
-        if result['stopped'] is True:
-            g_dev['obs'].send_to_user("Centering Stopped because Exposure cancelled")                    
+        if result == 'roofshut':
+            plog ("Roof Shut, Site bailing out of Centering")
             return 
+            
+        if result == 'outsideofnighttime':
+            plog ("Outside of Night Time. Site bailing out of Centering")
+            return 
+        
+        if g_dev["obs"].stop_all_activity:
+            plog('stop_all_activity cancelling out of centering')                    
+            return  
         
         # Wait for platesolve
         queue_clear_time = time.time()
@@ -4274,9 +4333,17 @@ class Sequencer:
                 plog ("Site bailing out of Centering")                    
                 return 
             
-            if result['stopped'] is True:
-                g_dev['obs'].send_to_user("Centering Stopped because Exposure cancelled")                    
+            if result == 'roofshut':
+                plog ("Roof Shut, Site bailing out of Centering")
                 return 
+                
+            if result == 'outsideofnighttime':
+                plog ("Outside of Night Time. Site bailing out of Centering")
+                return 
+            
+            if g_dev["obs"].stop_all_activity:
+                plog('stop_all_activity cancelling out of centering')                    
+                return  
             
             queue_clear_time = time.time()
             reported=0
@@ -4317,10 +4384,19 @@ class Sequencer:
                     plog ("Calendar Item containing block removed from calendar")
                     plog ("Site bailing out of Centering")                    
                     return 
-                
-                if result['stopped'] is True:
-                    g_dev['obs'].send_to_user("Centering Stopped because Exposure cancelled")                    
+
+                if result == 'roofshut':
+                    plog ("Roof Shut, Site bailing out of Centering")
                     return 
+                    
+                if result == 'outsideofnighttime':
+                    plog ("Outside of Night Time. Site bailing out of Centering")
+                    return 
+                
+                if g_dev["obs"].stop_all_activity:
+                    plog('stop_all_activity cancelling out of centering')                    
+                    return  
+
                 
                 queue_clear_time = time.time()
                 reported=0
@@ -4397,10 +4473,17 @@ class Sequencer:
                     plog ("Site bailing out of Centering")                    
                     return 
                 
-                if result['stopped'] is True:
-                    g_dev['obs'].send_to_user("Centering Stopped because Exposure cancelled")                    
+                if result == 'roofshut':
+                    plog ("Roof Shut, Site bailing out of Centering")
+                    return 
+                    
+                if result == 'outsideofnighttime':
+                    plog ("Outside of Night Time. Site bailing out of Centering")
                     return 
                 
+                if g_dev["obs"].stop_all_activity:
+                    plog('stop_all_activity cancelling out of centering')                    
+                    return  
                 
                 
                 while True:
@@ -4467,10 +4550,18 @@ class Sequencer:
                 plog ("Calendar Item containing block removed from calendar")
                 plog ("Site bailing out of Centering")                    
                 return 
-            
-            if result['stopped'] is True:
-                g_dev['obs'].send_to_user("Centering Stopped because Exposure cancelled")                    
+        
+            if result == 'roofshut':
+                plog ("Roof Shut, Site bailing out of Centering")
                 return 
+                
+            if result == 'outsideofnighttime':
+                plog ("Outside of Night Time. Site bailing out of Centering")
+                return 
+            
+            if g_dev["obs"].stop_all_activity:
+                plog('stop_all_activity cancelling out of centering')                    
+                return  
             
             if self.stop_script_called:
                 g_dev["obs"].send_to_user("Cancelling out of autofocus script as stop script has been called.")  
