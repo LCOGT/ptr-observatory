@@ -1537,6 +1537,7 @@ class Observatory:
                                 
                             elif 'timed out.' in str(e):
                                 # Not broken, just bung it back in the queue for later
+                                plog("Timeout glitch, trying again: ", e)
                                 self.ptrarchive_queue.put(pri_image, block=False)
                                 # And give it a little sleep
                                 time.sleep(10)    
