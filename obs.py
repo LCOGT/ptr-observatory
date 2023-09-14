@@ -927,6 +927,7 @@ class Observatory:
                             g_dev['obs'].time_of_last_slew=time.time()
                             g_dev['mnt'].mount.SlewToCoordinatesAsync(meridianra, meridiandec)                        
                             wait_for_slew()
+                            self.time_of_last_slew=time.time()
         
         # Send up the obs settings status - basically the current safety settings
         if (
@@ -2704,7 +2705,11 @@ class Observatory:
                 new_ra = g_dev['seq'].mosaic_center_ra + g_dev['seq'].current_mosaic_displacement_ra
                 new_dec= g_dev['seq'].mosaic_center_dec + g_dev['seq'].current_mosaic_displacement_dec 
                 new_ra, new_dec = ra_dec_fix_hd(new_ra, new_dec)    
+                wait_for_slew()
                 g_dev['mnt'].mount.SlewToCoordinatesAsync(new_ra, new_dec)   
+                wait_for_slew()
+                
+                self.time_of_last_slew=time.time()
             
 
 
@@ -2724,8 +2729,11 @@ class Observatory:
                     ranudge=ranudge+24                    
                 if ranudge > 24:
                     ranudge=ranudge-24
+                self.time_of_last_slew=time.time()
                 try:
+                    wait_for_slew()
                     g_dev['mnt'].mount.SlewToCoordinatesAsync(ranudge, decnudge)
+                    wait_for_slew()
                 except:
                     plog (traceback.format_exc())
                 if not g_dev['mnt'].previous_pier_side==g_dev['mnt'].mount.sideOfPier:

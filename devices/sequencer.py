@@ -1095,6 +1095,7 @@ class Sequencer:
                             #g_dev['mnt'].go_command(ra=new_ra, dec=new_dec)
                             try:
                                 self.wait_for_slew()
+                                self.time_of_last_slew=time.time()
                                 try:
                                     g_dev['mnt'].mount.SlewToCoordinatesAsync(new_ra, new_dec)                            
                                 except:
@@ -3993,6 +3994,7 @@ class Sequencer:
             
             # Use the mount RA and Dec to go directly there
             try:
+                self.time_of_last_slew=time.time()
                 g_dev['mnt'].mount.SlewToCoordinatesAsync(grid_star[0] / 15 , grid_star[1])
             except:
                 plog ("Difficulty in directly slewing to object")
@@ -4350,6 +4352,7 @@ class Sequencer:
                 plog ("Still haven't got a pointing lock at an important time. Waiting then trying again.")
                 g_dev["obs"].send_to_user("Still haven't got a pointing lock at an important time. Waiting then trying again.")  
                 
+                self.time_of_last_slew=time.time()
                 
                 wait_a_minute=time.time()
                 while (time.time() - wait_a_minute < 60):
@@ -4368,7 +4371,8 @@ class Sequencer:
                 # This can sometimes rescue a lost mount.
                 # But most of the time doesn't do anything.              
                 self.wait_for_slew()
-                try:
+                self.time_of_last_slew=time.time()
+                try:                    
                     g_dev['mnt'].mount.SlewToCoordinatesAsync(g_dev["mnt"].last_ra_requested, g_dev["mnt"].last_dec_requested)                            
                 except:
                     plog(traceback.format_exc())
