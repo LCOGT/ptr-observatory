@@ -981,7 +981,9 @@ class Sequencer:
                     dec_field_deg = (g_dev['cam'].pixscale * g_dev['cam'].imagesize_x) /3600
                     ra_field_deg = (g_dev['cam'].pixscale * g_dev['cam'].imagesize_y) /3600
                     self.currently_mosaicing = False
+
                     if exposure['zoom'].lower() in ["full", 'Full']:
+
                         # These are waiting for a mosaic approach
                         offset = [(0., 0.)] #Zero(no) mosaic offset
                         pane = 0
