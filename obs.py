@@ -1297,9 +1297,9 @@ class Observatory:
                 self.last_time_report_to_console = time.time()
                 
             
-            if (time.time() - g_dev['seq'].time_roof_last_opened < 1200 ):
+            if (time.time() - g_dev['seq'].time_roof_last_opened < 120 ):
                 plog ("Roof opened only recently: " + str(round((time.time() - g_dev['seq'].time_roof_last_opened)/60,1)) +" minutes ago.")
-                plog ("Some functions, particularly flats, won't start until 20 minutes after the roof has opened.")
+                plog ("Some functions, particularly flats, won't start until 2 minutes after the roof has opened.")
             
             
             # After the observatory and camera have had time to settle....

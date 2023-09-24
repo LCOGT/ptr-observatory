@@ -481,19 +481,19 @@ class FilterWheel:
             (["dark"], ["S2", "O3", "HA", "up", "U", "JU"]),  # generic C
             (
                 ["Air, air, AIR"],
-                ['air', 'clear', "w", "Lum", "PL",  'silica'],
-            ),  # exoplanet
+                ['air', 'clear', "w",'lum', "Lum", "PL",  'silica'],
+            ),  # Nothing in the way!
             (
                 ["EXO",  "Exo", "exo"],
                 ["EXO", "ip", "Ic", "rp", "Rc", "PR", "w", "Lum", "clear"],
             ),  # exoplanet
             (
-                ["w", "W", "L", "Lum", "LUM", "PL", "clear", "focus", 'silica'],
-                ["w", "Lum", "PL", "clear", 'silica'],
+                ["w", "W", "L", "lum", "Lum", "LUM", "PL", "clear", "focus", 'silica'],
+                ["w", 'lum', "Lum", "PL", "clear", 'silica'],
             ),  # white clear
             (
                 ["pointing"],
-                [ "ip", "Ic", "BI","JV", "BV" ,"V", "JB", "BB", "gp", "PG", "PB", "EXO", "w", "Lum", "PL", "clear", 'silica'],
+                [ "ip", "Ic", "BI","JV", "BV" ,"V", "JB", "BB", "gp", "PG", "PB", "EXO", "w", "lum", "Lum", "PL", "clear", 'silica'],
             ),  # filters ordered in least affected by nebula for quality pointing estimates.
         ]
 
@@ -514,9 +514,9 @@ class FilterWheel:
         return "none", None, None
 
 
-if __name__ == "__main__":
-    filt = FilterWheel(
-        ["ASCOM.FLI.FilterWheel", "ASCOM.FLI.FilterWheel1"],
-        "Dual filter wheel",
-        config.site_config,
-    )
+# if __name__ == "__main__":
+#     filt = FilterWheel(
+#         ["ASCOM.FLI.FilterWheel", "ASCOM.FLI.FilterWheel1"],
+#         "Dual filter wheel",
+#         config.site_config,
+#     )

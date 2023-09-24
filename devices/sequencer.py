@@ -981,7 +981,7 @@ class Sequencer:
                     dec_field_deg = (g_dev['cam'].pixscale * g_dev['cam'].imagesize_x) /3600
                     ra_field_deg = (g_dev['cam'].pixscale * g_dev['cam'].imagesize_y) /3600
                     self.currently_mosaicing = False
-                    if exposure['area'].lower() == "full":
+                    if exposure['zoom'].lower() in ["full", 'Full']:
                         # These are waiting for a mosaic approach
                         offset = [(0., 0.)] #Zero(no) mosaic offset
                         pane = 0
@@ -990,7 +990,7 @@ class Sequencer:
                         # To be deprecated once we replace "Area" with actual values
                         # to go in mosaic_length_ra etc.
                         # here it just makes a multiple so we can get it going.
-                        tempmultiplier = float(exposure['area'].replace('%',''))/100
+                        tempmultiplier = float(exposure['zoom'].replace('%',''))/100
                         requested_mosaic_length_ra = tempmultiplier * ra_field_deg
                         requested_mosaic_length_dec = tempmultiplier * dec_field_deg
                         print ("ra field: " + str(ra_field_deg))
@@ -1104,7 +1104,7 @@ class Sequencer:
 
                     for displacement in offset:                        
                         
-                        if not exposure['area'].lower() == "full":
+                        if not exposure['zoom'].lower() in ["full", 'Full']:
                         
                             plog ("Moving to new position of mosaic")
                             plog (displacement) 
@@ -2240,9 +2240,9 @@ class Sequencer:
         too_close_to_zenith=True
         while too_close_to_zenith:
             alt, az = g_dev['mnt'].flat_spot_now()  
-            if self.config['degrees_to_avoid_zenith_area_for_calibrations'] > 0:
+            if self.config['degrees_to_avoid_zenith_zoom_for_calibrations'] > 0:
                 plog ('zenith distance: ' + str(90-alt))
-                if abs(90-alt) < self.config['degrees_to_avoid_zenith_area_for_calibrations']:
+                if abs(90-alt) < self.config['degrees_to_avoid_zenith_zoom_for_calibrations']:
                     parkalt=90-self.config['degrees_to_avoid_zenith_area_for_calibrations']
                     plog ("waiting for the flat spot to move through the zenith")
                     
