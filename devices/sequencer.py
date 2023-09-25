@@ -2242,9 +2242,9 @@ class Sequencer:
         too_close_to_zenith=True
         while too_close_to_zenith:
             alt, az = g_dev['mnt'].flat_spot_now()  
-            if self.config['degrees_to_avoid_zenith_zoom_for_calibrations'] > 0:
+            if self.config['degrees_to_avoid_zenith_area_for_calibrations'] > 0:
                 plog ('zenith distance: ' + str(90-alt))
-                if abs(90-alt) < self.config['degrees_to_avoid_zenith_zoom_for_calibrations']:
+                if abs(90-alt) < self.config['degrees_to_avoid_zenith_area_for_calibrations']:
                     parkalt=90-self.config['degrees_to_avoid_zenith_area_for_calibrations']
                     plog ("waiting for the flat spot to move through the zenith")
                     
