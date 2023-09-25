@@ -437,7 +437,7 @@ class Sequencer:
                 self.bias_dark_script(req, opt, morn=False)
                 self.eve_bias_done = True
                 self.bias_dark_latch = False
-                
+
             if (time.time() - g_dev['seq'].time_roof_last_opened > 1200 ) and not self.eve_sky_flat_latch and not g_dev['obs'].scope_in_manual_mode and ((events['Eve Sky Flats'] <= ephem_now < events['End Eve Sky Flats'])  \
                    and self.config['auto_eve_sky_flat'] and g_dev['obs'].open_and_enabled_to_observe and not self.eve_flats_done and g_dev['obs'].camera_sufficiently_cooled_for_calibrations):
     
@@ -981,7 +981,7 @@ class Sequencer:
                     dec_field_deg = (g_dev['cam'].pixscale * g_dev['cam'].imagesize_x) /3600
                     ra_field_deg = (g_dev['cam'].pixscale * g_dev['cam'].imagesize_y) /3600
                     self.currently_mosaicing = False
-
+                    #breakpoint()
                     if exposure['zoom'].lower() in ["full", 'Full']:
 
                         # These are waiting for a mosaic approach
@@ -2241,10 +2241,11 @@ class Sequencer:
     def check_zenith_and_move_to_flat_spot(self, ending=None):
         too_close_to_zenith=True
         while too_close_to_zenith:
-            alt, az = g_dev['mnt'].flat_spot_now()  
-            if self.config['degrees_to_avoid_zenith_zoom_for_calibrations'] > 0:
+            alt, az = g_dev['mnt'].flat_spot_now()
+
+            if self.config['degrees_to_avoid_zenith_area_for_calibrations'] > 0:
                 plog ('zenith distance: ' + str(90-alt))
-                if abs(90-alt) < self.config['degrees_to_avoid_zenith_zoom_for_calibrations']:
+                if abs(90-alt) < self.config['degrees_to_avoid_zenith_area_for_calibrations']:
                     parkalt=90-self.config['degrees_to_avoid_zenith_area_for_calibrations']
                     plog ("waiting for the flat spot to move through the zenith")
                     
@@ -2319,6 +2320,7 @@ class Sequencer:
         """
         This is the evening and morning sky automated skyflat routine.
         """
+
 
         
         if  ((ephem.now() < g_dev['events']['Eve Sky Flats']) or \
