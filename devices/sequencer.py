@@ -2241,8 +2241,7 @@ class Sequencer:
     def check_zenith_and_move_to_flat_spot(self, ending=None):
         too_close_to_zenith=True
         while too_close_to_zenith:
-            alt, az = g_dev['mnt'].flat_spot_now()
-
+            alt, az = g_dev['mnt'].flat_spot_now()  
             if self.config['degrees_to_avoid_zenith_area_for_calibrations'] > 0:
                 plog ('zenith distance: ' + str(90-alt))
                 if abs(90-alt) < self.config['degrees_to_avoid_zenith_area_for_calibrations']:
