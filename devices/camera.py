@@ -956,6 +956,9 @@ class Camera:
             temptemp=qhycam.so.GetQHYCCDParam(qhycam.camera_params[qhycam_id]['handle'], qhycam.CONTROL_CURTEMP)
             humidity = qhycam.so.GetQHYCCDParam(qhycam.camera_params[qhycam_id]['handle'], qhycam.CAM_HUMIDITY)
             pressure = qhycam.so.GetQHYCCDParam(qhycam.camera_params[qhycam_id]['handle'], qhycam.CAM_PRESSURE)
+            pwm = qhycam.so.GetQHYCCDParam(qhycam.camera_params[qhycam_id]['handle'],     qhycam.CONTROL_CURPWM)
+            manual_pwm = qhycam.so.GetQHYCCDParam(qhycam.camera_params[qhycam_id]['handle'], qhycam.CONTROL_MANULPWM)
+            print(' QHY pwm:  ', pwm)
         except:
             print ("failed at getting the CCD temperature, humidity or pressure.")
             temptemp=999.9
@@ -3091,7 +3094,7 @@ class Camera:
                                 hdusmalldata=hdusmalldata+200.0
                                 hdusmallheader['PEDESTAL']=200
                             
-                            
+
                             # Every Image gets SEP'd and gets it's catalogue sent up pronto ahead of the big fits
                             # Focus images use it for focus, Normal images also report their focus.
                             # IMMEDIATELY SEND TO SEP QUEUE
