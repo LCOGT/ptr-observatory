@@ -2658,6 +2658,7 @@ class Observatory:
                         
                     # Essentially wait until the subprocess is complete
                     smartstack_subprocess.communicate()
+                    
 
                     self.fast_queue.put((15, (paths["im_path"], paths["jpeg_name10"])), block=False)
                     self.fast_queue.put(

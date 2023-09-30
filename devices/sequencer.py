@@ -280,6 +280,7 @@ class Sequencer:
         elif action == "run" and script == 'restackLocalCalibrations':
             self.regenerate_local_masters()
         elif action == "run" and script in ['pointingRun']:
+            breakpoint()
             self.sky_grid_pointing_run(max_pointings=req['numPointingRuns'], alt_minimum=req['minAltitude'])
         elif action == "run" and script in ("collectBiasesAndDarks"):
             self.bias_dark_script(req, opt, morn=True)
@@ -2056,7 +2057,7 @@ class Sequencer:
                             
                             filepathaws=g_dev['obs'].calib_masters_folder
                             filenameaws='ARCHIVE_' +  archiveDate + '_' + tempfrontcalib + 'masterFlat_'+ str(filtercode) + '_bin1.fits'
-                            g_dev['obs']l(80, filepathaws,filenameaws)
+                            g_dev['obs'](80, filepathaws,filenameaws)
                                                         
                         except Exception as e:
                             plog ("Could not save flat frame: ",e)
