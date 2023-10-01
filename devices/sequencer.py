@@ -187,7 +187,7 @@ class Sequencer:
         # slight differences. Focus has more clumped bright stars but pointing catalogue contains a larger range
         # of stars and has full sky coverage, wheras focus does not.
         self.focus_catalogue = np.genfromtxt('support_info/focusCatalogue.csv', delimiter=',')
-        self.pointing_catalogue = np.genfromtxt('support_info/pointingCatalogue.csv', delimiter=',')
+        self.pointing_catalogue = np.genfromtxt('support_info/pointingCatalogueTpoint.csv', delimiter=',')
 
        
         # The stop script flag sends a signal to all running threads to break out
@@ -280,7 +280,6 @@ class Sequencer:
         elif action == "run" and script == 'restackLocalCalibrations':
             self.regenerate_local_masters()
         elif action == "run" and script in ['pointingRun']:
-            breakpoint()
             self.sky_grid_pointing_run(max_pointings=req['numPointingRuns'], alt_minimum=req['minAltitude'])
         elif action == "run" and script in ("collectBiasesAndDarks"):
             self.bias_dark_script(req, opt, morn=True)
@@ -1818,14 +1817,14 @@ class Sequencer:
                 fits.writeto(g_dev['obs'].calib_masters_folder + tempfrontcalib + 'BIAS_master_bin1.fits', masterBias,  overwrite=True)                
                 filepathaws=g_dev['obs'].calib_masters_folder
                 filenameaws=tempfrontcalib + 'BIAS_master_bin1.fits'
-                g_dev['obs'].enqueue_for_AWS(50, filepathaws,filenameaws)
+                g_dev['obs'].enqueue_for_PTRarchive(50, filepathaws,filenameaws)
                 
                 # Store a version of the bias for the archive too
                 fits.writeto(g_dev['obs'].calib_masters_folder + 'ARCHIVE_' +  archiveDate + '_' + tempfrontcalib + 'BIAS_master_bin1.fits', masterBias, overwrite=True)
                 
                 filepathaws=g_dev['obs'].calib_masters_folder
                 filenameaws='ARCHIVE_' +  archiveDate + '_' + tempfrontcalib + 'BIAS_master_bin1.fits'
-                g_dev['obs'].enqueue_for_AWS(80, filepathaws,filenameaws)
+                g_dev['obs'].enqueue_for_PTRarchive(80, filepathaws,filenameaws)
                 
             except Exception as e:
                 plog ("Could not save bias frame: ",e)
@@ -1909,14 +1908,14 @@ class Sequencer:
                 fits.writeto(g_dev['obs'].calib_masters_folder + tempfrontcalib + 'DARK_master_bin1.fits', masterDark,  overwrite=True)                
                 filepathaws=g_dev['obs'].calib_masters_folder
                 filenameaws=tempfrontcalib + 'DARK_master_bin1.fits'
-                g_dev['obs'].enqueue_for_AWS(50, filepathaws,filenameaws)
+                g_dev['obs'].enqueue_for_PTRarchive(50, filepathaws,filenameaws)
                 
                 # Store a version of the dark for the archive too
                 fits.writeto(g_dev['obs'].calib_masters_folder + 'ARCHIVE_' +  archiveDate + '_' + tempfrontcalib + 'DARK_master_bin1.fits', masterDark, overwrite=True)
                 
                 filepathaws=g_dev['obs'].calib_masters_folder
                 filenameaws='ARCHIVE_' +  archiveDate + '_' + tempfrontcalib + 'DARK_master_bin1.fits'
-                g_dev['obs'].enqueue_for_AWS(80, filepathaws,filenameaws)
+                g_dev['obs'].enqueue_for_PTRarchive(80, filepathaws,filenameaws)
                 
                 
             except Exception as e:
@@ -2050,7 +2049,7 @@ class Sequencer:
                             
                             filepathaws=g_dev['obs'].calib_masters_folder
                             filenameaws=tempfrontcalib + 'masterFlat_'+ str(filtercode) + '_bin1.fits'
-                            g_dev['obs'].enqueue_for_AWS(50, filepathaws,filenameaws)
+                            g_dev['obs'].enqueue_for_PTRarchive(50, filepathaws,filenameaws)
                             
                             # Store a version of the flat for the archive too
                             fits.writeto(g_dev['obs'].calib_masters_folder + 'ARCHIVE_' +  archiveDate + '_' + tempfrontcalib + 'masterFlat_'+ str(filtercode) + '_bin1.fits', temporaryFlat, overwrite=True)
@@ -3946,6 +3945,7 @@ class Sequencer:
         self.total_sequencer_control = True
         g_dev['obs'].stop_processing_command_requests = True
         
+        g_dev['obs'].auto_centering_off = True  #NB NB NB Added this Temporarily --WER
         prev_auto_centering = g_dev['obs'].auto_centering_off
         g_dev['obs'].auto_centering_off = True
         
@@ -3960,7 +3960,7 @@ class Sequencer:
         
         g_dev["obs"].send_to_user("Starting pointing run. Constructing altitude catalogue. This can take a while.")
         plog("Constructing sweep catalogue above altitude " + str(alt_minimum))
-        
+
         sweep_catalogue=[]
         #First remove all entries below given altitude
         for ctr in range(len(catalogue)):
@@ -3969,12 +3969,13 @@ class Sequencer:
             temppointingaltaz=teststar.transform_to(AltAz(location=g_dev['mnt'].site_coordinates, obstime=Time.now()))
             alt = temppointingaltaz.alt.degree
             if alt > alt_minimum:
-                sweep_catalogue.append([catalogue[ctr][0],catalogue[ctr][1],catalogue[ctr][2]])
+                sweep_catalogue.append([catalogue[ctr][0],catalogue[ctr][1],catalogue[ctr][2],temppointingaltaz.alt.degree, temppointingaltaz.az.degree  ])
             
-        
+        sweep_catalogue = sorted(sweep_catalogue, key= lambda az: az[4])
         plog (sweep_catalogue)
 
         del catalogue
+        breakpoint()
         
         spread =3600.0 # Initial spread is about a degree
         too_many=True
