@@ -1096,7 +1096,7 @@ class Mount:
             home_alt = self.settings["home_altitude"]
             home_az = self.settings["home_azimuth"]
             g_dev['obs'].time_of_last_slew=time.time()
-            g_dev['mnt'].go_command(alt=home_alt,az= home_az)
+            g_dev['mnt'].go_command(alt=home_alt,az= home_az, skip_open_test=True)
             
             wait_for_slew()
         wait_for_slew()
@@ -1166,7 +1166,7 @@ class Mount:
                             home_alt = self.settings["home_altitude"]
                             home_az = self.settings["home_azimuth"]   
                             wait_for_slew()
-                            g_dev['mnt'].go_command(alt=home_alt,az= home_az)
+                            g_dev['mnt'].go_command(alt=home_alt,az= home_az, skip_open_test=True)
                             wait_for_slew()
                         except:
                             if g_dev['mnt'].theskyx:
@@ -1179,7 +1179,7 @@ class Mount:
                                 wait_for_slew()
                                 home_alt = self.settings["home_altitude"]
                                 home_az = self.settings["home_azimuth"]                                
-                                g_dev['mnt'].go_command(alt=home_alt,az= home_az)
+                                g_dev['mnt'].go_command(alt=home_alt,az= home_az, skip_open_test=True)
                             else:
                                 plog (traceback.format_exc())
                     wait_for_slew()
