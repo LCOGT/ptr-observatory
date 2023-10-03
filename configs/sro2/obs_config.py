@@ -45,7 +45,7 @@ site_config = {
     'safety_check_period': 45,  # MF's original setting.
     'closest_distance_to_the_sun': 45,  # Degrees. For normal pointing requests don't go this close to the sun.
     'closest_distance_to_the_moon': 3,  # Degrees. For normal pointing requests don't go this close to the moon.
-    'minimum_distance_from_the_moon_when_taking_flats': 45,
+    'minimum_distance_from_the_moon_when_taking_flats': 15,
     'lowest_requestable_altitude': -5,  # Degrees. For normal pointing requests don't allow requests to go this low.
     'degrees_to_avoid_zenith_area_for_calibrations': 0, 
     'temperature_at_which_obs_too_hot_for_camera_cooling' : 23, 
