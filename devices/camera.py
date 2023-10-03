@@ -1494,8 +1494,8 @@ class Camera:
                         endOfExposure = datetime.datetime.utcnow() + datetime.timedelta(seconds=exposure_time)
                         now_date_timeZ = endOfExposure.isoformat().split('.')[0] +'Z'
                         
-                        plog (now_date_timeZ)
-                        plog (g_dev['seq'].blockend)
+                        #plog (now_date_timeZ)
+                        #plog (g_dev['seq'].blockend)
                         
                         blockended = now_date_timeZ  >= g_dev['seq'].blockend
                         
