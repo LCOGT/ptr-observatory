@@ -981,6 +981,12 @@ class Sequencer:
                     dec_field_deg = (g_dev['cam'].pixscale * g_dev['cam'].imagesize_x) /3600
                     ra_field_deg = (g_dev['cam'].pixscale * g_dev['cam'].imagesize_y) /3600
                     self.currently_mosaicing = False
+                    
+                    # A hack to get older projects working. should be deleted at some point.
+                    try:
+                        exposure['zoom']=exposure['area']
+                    except:
+                        pass
 
                     if exposure['zoom'].lower() in ["full", 'Full']:
 
