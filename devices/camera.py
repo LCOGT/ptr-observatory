@@ -967,7 +967,7 @@ class Camera:
             pressure = qhycam.so.GetQHYCCDParam(qhycam.camera_params[qhycam_id]['handle'], qhycam.CAM_PRESSURE)
             pwm = qhycam.so.GetQHYCCDParam(qhycam.camera_params[qhycam_id]['handle'],     qhycam.CONTROL_CURPWM)
             manual_pwm = qhycam.so.GetQHYCCDParam(qhycam.camera_params[qhycam_id]['handle'], qhycam.CONTROL_MANULPWM)
-            print(' QHY pwm:  ', pwm)
+            #print(' QHY pwm:  ', pwm)
         except:
             print ("failed at getting the CCD temperature, humidity or pressure.")
             temptemp=999.9
