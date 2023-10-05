@@ -971,8 +971,8 @@ class Sequencer:
                     #  We should add a frame repeat count
                     imtype = exposure['imtype']
 
-                    if count <= 0:
-                         continue
+                    #if count <= 0:
+                    #     continue
                     
                     
                     # MUCH safer to calculate these from first principles
@@ -986,8 +986,9 @@ class Sequencer:
                         exposure['zoom']=exposure['area']
                     except:
                         pass
+                    
 
-                    if exposure['zoom'].lower() in ["full", 'Full']:
+                    if exposure['zoom'].lower() in ["full", 'Full'] and float(exposure['height']) == 0 and float(exposure['width']) == 0:
 
                         # These are waiting for a mosaic approach
                         offset = [(0., 0.)] #Zero(no) mosaic offset
@@ -997,9 +998,13 @@ class Sequencer:
                         # To be deprecated once we replace "Area" with actual values
                         # to go in mosaic_length_ra etc.
                         # here it just makes a multiple so we can get it going.
-                        tempmultiplier = float(exposure['zoom'].replace('%',''))/100
-                        requested_mosaic_length_ra = tempmultiplier * ra_field_deg
-                        requested_mosaic_length_dec = tempmultiplier * dec_field_deg
+                        #tempmultiplier = float(exposure['zoom'].replace('%',''))/100
+                        #requested_mosaic_length_ra = tempmultiplier * ra_field_deg
+                        #requested_mosaic_length_dec = tempmultiplier * dec_field_deg
+                        requested_mosaic_length_ra = float(exposure['width'])
+                        requested_mosaic_length_dec = float(exposure['height'])
+                        
+                        
                         print ("ra field: " + str(ra_field_deg))
                         print ("dec field: " + str(dec_field_deg))
                         
@@ -1303,8 +1308,8 @@ class Sequencer:
                             
                         pane += 1
                         
-                count -= 1
-                exposure['count'] = count
+                #count -= 1
+                #exposure['count'] = count
                 left_to_do -= 1
                 plog("Left to do:  ", left_to_do)
                         

@@ -549,7 +549,7 @@ site_config = {
                 'rotate180_fits': False,  # This also should be flipxy!
                 'rotate90_fits': False,
                 'rotate270_fits': False,
-                'squash_on_x_axis': True,
+                'squash_on_x_axis': False,
                 
                 # What number of pixels to crop around the edges of a REDUCED image
                 # This is primarily to get rid of overscan areas and also all images
