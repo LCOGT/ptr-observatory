@@ -981,7 +981,13 @@ class Sequencer:
                     dec_field_deg = (g_dev['cam'].pixscale * g_dev['cam'].imagesize_x) /3600
                     ra_field_deg = (g_dev['cam'].pixscale * g_dev['cam'].imagesize_y) /3600
                     self.currently_mosaicing = False
-                    #breakpoint()
+
+                    # A hack to get older projects working. should be deleted at some point.
+                    try:
+                        exposure['zoom']=exposure['area']
+                    except:
+                        pass
+
                     if exposure['zoom'].lower() in ["full", 'Full']:
 
                         # These are waiting for a mosaic approach
@@ -1246,7 +1252,7 @@ class Sequencer:
                                 blockended = now_date_timeZ >= g_dev['seq'].blockend
                             ended = left_to_do <= 0 or blockended \
                                     or ephem.now() >= events['Observing Ends']
-                            print ('gdev seq blockend: ' + str(g_dev['seq'].blockend))
+                            #print ('gdev seq blockend: ' + str(g_dev['seq'].blockend))
                             if ephem.now() >= events['Observing Ends']:
                                 self.blockend = None
                                 self.currently_mosaicing = False
@@ -2111,7 +2117,7 @@ class Sequencer:
                             cge_stdev=np.nanstd(camera_gain_estimate_image)
                             cge_sqrt=pow(cge_median,0.5)
                             cge_gain=1/pow(cge_sqrt/cge_stdev, 2)
-                            print ("Camera gain median: " + str(cge_median) + " stdev: " +str(cge_stdev)+ " sqrt: " + str(cge_sqrt) + " gain: " +str(cge_gain))
+                            plog ("Camera gain median: " + str(cge_median) + " stdev: " +str(cge_stdev)+ " sqrt: " + str(cge_sqrt) + " gain: " +str(cge_gain))
                             
                             estimated_flat_gain.append(cge_gain)
                         
@@ -4236,8 +4242,8 @@ class Sequencer:
                 if (time.time() - temptimer) > 20:                                    
                     g_dev['obs'].update()
                     temptimer=time.time()
-                    print (g_dev['obs'].platesolve_is_processing)
-                    print (g_dev['obs'].platesolve_queue.empty())
+                    #print (g_dev['obs'].platesolve_is_processing)
+                    #print (g_dev['obs'].platesolve_queue.empty())
                 if self.stop_script_called:
                     g_dev["obs"].send_to_user("Cancelling out of autofocus script as stop script has been called.")  
                     return

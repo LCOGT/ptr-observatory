@@ -526,8 +526,8 @@ site_config = {
     'camera': {
         'camera_1_1': {
             'parent': 'telescope1',
-            'name': 'sq002cs',  # Important because this points to a server file structure by that name.
-            'desc':  'QHY 410C',
+            'name': 'sq005mm',  # Important because this points to a server file structure by that name.
+            'desc':  'QHY 600Pro Mono',
             #'driver':  "ASCOM.QHYCCD_CAM2.Camera", # NB Be careful this is not QHY Camera2 or Guider  "Maxim.CCDCamera",   #'ASCOM.FLI.Kepler.Camera', "ASCOM.QHYCCD.Camera",   #
             # NB Be careful this is not QHY Camera2 or Guider  "Maxim.CCDCamera",   #'ASCOM.FLI.Kepler.Camera', "ASCOM.QHYCCD.Camera",   #
             'driver':  "QHYCCD_Direct_Control",
@@ -535,7 +535,7 @@ site_config = {
 
 
 
-            'detector':  'Sony IMX441 Color',  # It would be good to build out a table of chip characteristics
+            'detector':  'Sony IMX441 Mono',  # It would be good to build out a table of chip characteristics
             'use_file_mode':  False,   # NB we should clean out all file mode stuff.
             'file_mode_path':  'Q:/archive/sq01/maxim/',  # NB NB all file_mode Maxim stuff should go!
             'manufacturer':  "QHY",
@@ -551,8 +551,8 @@ site_config = {
 
                 # Simple Camera Properties
                 'is_cmos':  True,
-                'is_osc': True,
-                'is_color': True,  # NB we also have a is_osc key.
+                'is_osc': False,
+                'is_color': False,  # NB we also have a is_osc key.
                 'osc_bayer': 'RGGB',
 
                 # For direct QHY usage we need to set the appropriate gain.
@@ -580,11 +580,11 @@ site_config = {
                 # USB Speed is a tradeoff between speed and banding, min 0, max 60. 60 is least banding. Most of the
                 # readout seems to be dominated by the slow driver (difference is a small fraction of a second), so I've left it at 60 - least banding.
                 #
-                # QHY410C is gain 0, offset 9                
-                'direct_qhy_readout_mode': 1,  #These settings may be wrong. WER 20230712
+                # QHY410C is gain 0, offset 9, mode 1              
+                'direct_qhy_readout_mode': 3,  #These settings may be wrong. WER 20230712
                                
-                'direct_qhy_gain': 0,
-                'direct_qhy_offset': 9,
+                'direct_qhy_gain': 26,
+                'direct_qhy_offset': 60,
                 'direct_qhy_usb_speed': 60,
 
                 
@@ -624,7 +624,7 @@ site_config = {
                 'rotate180_fits': False,  # This also should be flipxy!
                 'rotate90_fits': False,
                 'rotate270_fits': False,
-                'squash_on_x_axis': True,
+                'squash_on_x_axis': False,
                 
                 # What number of pixels to crop around the edges of a REDUCED image
                 # This is primarily to get rid of overscan areas and also all images
@@ -677,10 +677,10 @@ site_config = {
                 # This is the area for cooling related settings
                 'cooler_on': True,
                 'temp_setpoint': -5,  # Verify we can go colder
-                'has_chiller': False,
+                'has_chiller': True,
                 'chiller_com_port': 'COM1',
                 'chiller_ref_temp':  15.0,  # C
-                'day_warm': True,
+                'day_warm': False,
                 'day_warm_degrees': 8,  # Number of degrees to warm during the daytime.
                 'protect_camera_from_overheating' : False,
                                 
@@ -688,7 +688,7 @@ site_config = {
                 # These are the physical values for the camera
                 # related to pixelscale. Binning only applies to single
                 # images. Stacks will always be drizzled to to drizzle value from 1x1.
-                '1x1_pix_scale': 0.4777272,    #  This is the 1x1 binning pixelscale
+                '1x1_pix_scale': 0.302,    #  This is the 1x1 binning pixelscale
                 'native_bin': 1, # Needs to be simple, it will recalculate things on the 1x1 binning pixscale above.
                 'x_pixel':  5.94, # pixel size in microns
                 'y_pixel':  5.94, # pixel size in microns

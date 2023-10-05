@@ -777,6 +777,15 @@ class Camera:
             if 'Process aborted.' in str(traceback.format_exc()):
                 plog ("Image aborted. This functioning is ok. Traceback just for checks that it is working.")
                 #plog(traceback.format_exc()) 
+            elif 'SBIG driver' in str(traceback.format_exc()):
+                plog(traceback.format_exc())
+                g_dev['seq'].kill_and_reboot_theskyx(g_dev['mnt'].mount.RightAscension,g_dev['mnt'].mount.Declination)
+                try:
+                    tempcamera.TakeImage()
+                except:
+                    plog(traceback.format_exc()) 
+                    plog("MTF hunting this error")
+                    breakpoint()
             else:
                 plog(traceback.format_exc()) 
                 plog("MTF hunting this error")
@@ -1497,8 +1506,8 @@ class Camera:
                         endOfExposure = datetime.datetime.utcnow() + datetime.timedelta(seconds=exposure_time)
                         now_date_timeZ = endOfExposure.isoformat().split('.')[0] +'Z'
                         
-                        plog (now_date_timeZ)
-                        plog (g_dev['seq'].blockend)
+                        #plog (now_date_timeZ)
+                        #plog (g_dev['seq'].blockend)
                         
                         blockended = now_date_timeZ  >= g_dev['seq'].blockend
                         

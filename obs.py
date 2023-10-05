@@ -587,10 +587,13 @@ class Observatory:
         elif 'ResponseMetadata' in response:
             if response['ResponseMetadata']['HTTPStatusCode'] == 200:
                 plog("Config uploaded successfully.")
+                #breakpoint()
+                #g_dev['seq'].nightly_reset_script()
 
             else:
                 plog("Response to obsid config upload unclear. Here is the response")
                 plog(response)
+
         else:
             plog("Response to obsid config upload unclear. Here is the response")
             plog(response)
