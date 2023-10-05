@@ -63,7 +63,7 @@ site_config = {
     # These are the default values that will be set for the obs
     # on a reboot of obs.py. They are safety checks that 
     # can be toggled by an admin in the Observe tab.
-    'scope_in_manual_mode': True,
+    'scope_in_manual_mode': False,
     'mount_reference_model_off': True,
     'sun_checks_on': True,
     'moon_checks_on': False,
@@ -549,7 +549,7 @@ site_config = {
                 'rotate180_fits': False,  # This also should be flipxy!
                 'rotate90_fits': False,
                 'rotate270_fits': False,
-                'squash_on_x_axis': False,
+                'squash_on_x_axis': True,
                 
                 # What number of pixels to crop around the edges of a REDUCED image
                 # This is primarily to get rid of overscan areas and also all images
