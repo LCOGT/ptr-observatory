@@ -988,7 +988,7 @@ class Sequencer:
                         pass
                     
 
-                    if exposure['zoom'].lower() in ["full", 'Full'] and float(exposure['height']) == 0 and float(exposure['width']) == 0:
+                    if exposure['zoom'].lower() in ["full", 'Full'] or '%' in exposure['zoom'] or ( exposure['zoom'].lower() == 'big sq.' and dec_field_deg == ra_field_deg):
 
                         # These are waiting for a mosaic approach
                         offset = [(0., 0.)] #Zero(no) mosaic offset
@@ -1001,9 +1001,19 @@ class Sequencer:
                         #tempmultiplier = float(exposure['zoom'].replace('%',''))/100
                         #requested_mosaic_length_ra = tempmultiplier * ra_field_deg
                         #requested_mosaic_length_dec = tempmultiplier * dec_field_deg
-                        requested_mosaic_length_ra = float(exposure['width'])
-                        requested_mosaic_length_dec = float(exposure['height'])
-                        
+                        if exposure['zoom'].lower() == 'mosaic deg.':
+                            requested_mosaic_length_ra = float(exposure['width'])
+                            requested_mosaic_length_dec = float(exposure['height'])
+                        elif exposure['zoom'].lower() == 'mosaic arcmin.':
+                            requested_mosaic_length_ra = float(exposure['width']) /60
+                            requested_mosaic_length_dec = float(exposure['height']) /60
+                        elif exposure['zoom'].lower() == 'big sq.':
+                            if dec_field_deg > ra_field_deg:
+                                requested_mosaic_length_ra = dec_field_deg
+                                requested_mosaic_length_dec = dec_field_deg
+                            else:
+                                requested_mosaic_length_ra = ra_field_deg
+                                requested_mosaic_length_dec = ra_field_deg
                         
                         print ("ra field: " + str(ra_field_deg))
                         print ("dec field: " + str(dec_field_deg))
@@ -1116,7 +1126,7 @@ class Sequencer:
 
                     for displacement in offset:                        
                         
-                        if not exposure['zoom'].lower() in ["full", 'Full'] or not float(exposure['height']) == 0 or not float(exposure['width']) == 0:
+                        if self.currently_mosaicing:
                         
                             plog ("Moving to new position of mosaic")
                             plog (displacement) 
