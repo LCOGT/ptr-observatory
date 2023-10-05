@@ -54,20 +54,20 @@ site_config = {
     'safety_check_period': 45,  # MF's original setting.
     'closest_distance_to_the_sun': 45,  # Degrees. For normal pointing requests don't go this close to the sun.
     'closest_distance_to_the_moon': 3,  # Degrees. For normal pointing requests don't go this close to the moon.
-    'minimum_distance_from_the_moon_when_taking_flats': 45,
-    'lowest_requestable_altitude': -5,  # Degrees. For normal pointing requests don't allow requests to go this low.
+    'minimum_distance_from_the_moon_when_taking_flats': 10,
+    'lowest_requestable_altitude': -1,  # Degrees. For normal pointing requests don't allow requests to go this low.
     'degrees_to_avoid_zenith_area_for_calibrations': 0, 
-    'temperature_at_which_obs_too_hot_for_camera_cooling' : 23, # NB NB WER ARO Obs has a chiller
+    'temperature_at_which_obs_too_hot_for_camera_cooling' : 31, # NB NB WER ARO Obs has a chiller
 
     # These are the default values that will be set for the obs
     # on a reboot of obs.py. They are safety checks that 
     # can be toggled by an admin in the Observe tab.
-    'scope_in_manual_mode': False,
+    'scope_in_manual_mode': True,
     'mount_reference_model_off': True,
     'sun_checks_on': True,
-    'moon_checks_on': True,
-    'altitude_checks_on': True,    
-    'daytime_exposure_time_safety_on': True,
+    'moon_checks_on': False,
+    'altitude_checks_on': False,    
+    'daytime_exposure_time_safety_on': False,
     
     
     
@@ -127,7 +127,7 @@ site_config = {
      'auto_morn_bias_dark': True,
      
      # FOCUS OPTIONS
-     'periodic_focus_time': 12.0, # This is a time, in hours, over which to bypass automated focussing (e.g. at the start of a project it will not refocus if a new project starts X hours after the last focus)
+     'periodic_focus_time': 3.0, # This is a time, in hours, over which to bypass automated focussing (e.g. at the start of a project it will not refocus if a new project starts X hours after the last focus)
      'stdev_fwhm': 0.5,  # This is the expected variation in FWHM at a given telescope/camera/site combination. This is used to check if a fwhm is within normal range or the focus has shifted
      'focus_trigger': 0.6,  # What FWHM increase is needed to trigger an autofocus
      
@@ -597,12 +597,12 @@ site_config = {
 
                 # This is the area for cooling related settings
                 'cooler_on': True,
-                'temp_setpoint': -5,  # Verify we can go colder
-                'has_chiller': False,                
+                'temp_setpoint': -7.5,  # Verify we can go colder
+                'has_chiller': True,                
                 'chiller_com_port': 'COM1',
                 'chiller_ref_temp':  15.0,  # C
-                'day_warm': True,
-                'day_warm_degrees': 8,  # Number of degrees to warm during the daytime.
+                'day_warm': False,   #This is converted to a 0 or 1 depending ont he Boolean value
+                'day_warm_degrees': 0,  # Assuming the Chiller is working.
                 'protect_camera_from_overheating' : False,
 
                 # These are the physical values for the camera

@@ -341,7 +341,7 @@ class Observatory:
         
        
         # Instantiate the helper class for astronomical events
-        # Soon the primary event / time values can come from AWS.
+        # Soon the primary event / time values can come from AWS.  NB NB   I send them there! Why do we want to put that code in AWS???
         self.astro_events = ptr_events.Events(self.config)
         self.astro_events.compute_day_directory()
         self.astro_events.calculate_events()
@@ -1254,7 +1254,8 @@ class Observatory:
             # Check that cooler is alive
             if g_dev['cam']._cooler_on():
                 current_camera_temperature, cur_humidity, cur_pressure = (g_dev['cam']._temperature())
-                current_camera_temperature = float(current_camera_temperature)   
+                current_camera_temperature = float(current_camera_temperature)
+
                 if abs(float(current_camera_temperature) - float(g_dev['cam'].setpoint)) > 1.5:
                     self.camera_sufficiently_cooled_for_calibrations = False
                     self.last_time_camera_was_warm=time.time()
@@ -2660,6 +2661,7 @@ class Observatory:
                         
                     # Essentially wait until the subprocess is complete
                     smartstack_subprocess.communicate()
+                    
 
                     self.fast_queue.put((15, (paths["im_path"], paths["jpeg_name10"])), block=False)
                     self.fast_queue.put(
