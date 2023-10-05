@@ -52,12 +52,13 @@ site_config = {
     
     # Default safety settings
     'safety_check_period': 45,  # MF's original setting.
-    'closest_distance_to_the_sun': 45,  # Degrees. For normal pointing requests don't go this close to the sun.
-    'closest_distance_to_the_moon': 3,  # Degrees. For normal pointing requests don't go this close to the moon.
-    'minimum_distance_from_the_moon_when_taking_flats': 10,
+
+    'closest_distance_to_the_sun': 30,  # Degrees. For normal pointing requests don't go this close to the sun.
+    'closest_distance_to_the_moon': 5,  # Degrees. For normal pointing requests don't go this close to the moon.
+    'minimum_distance_from_the_moon_when_taking_flats': 30,
     'lowest_requestable_altitude': -1,  # Degrees. For normal pointing requests don't allow requests to go this low.
     'degrees_to_avoid_zenith_area_for_calibrations': 0, 
-    'temperature_at_which_obs_too_hot_for_camera_cooling' : 31, # NB NB WER ARO Obs has a chiller
+    'temperature_at_which_obs_too_hot_for_camera_cooling' : 30, # NB NB WER ARO Obs has a chiller
 
     # These are the default values that will be set for the obs
     # on a reboot of obs.py. They are safety checks that 
@@ -116,12 +117,12 @@ site_config = {
      'pointing_exposure_time': 20,  # Exposure time in seconds for exposure image
 
      # How often to do various checks and such
-     'observing_check_period': 1,    # How many minutes between weather checks
-     'enclosure_check_period': 1,    # How many minutes between enclosure checks
+     'observing_check_period': 3,    # How many minutes between weather checks
+     'enclosure_check_period': 3,    # How many minutes between enclosure checks
 
      # Turn on and off various automated calibrations at different times.
-     'auto_eve_bias_dark': True,
-     'auto_eve_sky_flat': True,
+     'auto_eve_bias_dark': False,
+     'auto_eve_sky_flat': False,
      'auto_midnight_moonless_bias_dark': False,
      'auto_morn_sky_flat': True,
      'auto_morn_bias_dark': True,
@@ -133,7 +134,7 @@ site_config = {
      
      # PLATESOLVE options
      'solve_nth_image': 1,  # Only solve every nth image
-     'solve_timer': 0.05,  # Only solve every X minutes
+     'solve_timer': 0.05,  # Only solve every X minutes    NB WER  3 seconds????
      'threshold_mount_update': 45,  # only update mount when X arcseconds away
 
 
@@ -421,7 +422,7 @@ site_config = {
                         ['BI',   [12, 0],    0, 415.,  [360 , 170], 'Bessell I'],     #19
                         ['zp',   [0,  9],    0, 107.6, [360 , 170], "Sloan z'"],     #20    # NB I think these may be backward labeled,
                         ['zs',   [5,  0],    0, 107.4, [1.0 ,  20], "Sloan z-short"],     #21    # NB ZP is a broader filter than zs.
-                        ['Y',    [6,  0],    0, 7.28,  [360 , 170], "Rubin Y - low throughput "],     #22
+                        ['Y',    [6,  0],    0, 7.28,  [360 , 170], "Rubin Y - low throughput, defective filter in top area "],     #22
                         
   
                         ['dark', [5,  6],    0, 0.00,  [360 , 170], 'dk']],    #23     #Not a real filter.

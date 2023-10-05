@@ -8,6 +8,7 @@ from auto_stretch.stretch import Stretch
 from PIL import Image, ImageEnhance
 import sys
 import pickle
+from math import sqrt
 
 from astropy.utils.exceptions import AstropyUserWarning
 import warnings
@@ -15,10 +16,11 @@ warnings.simplefilter('ignore', category=AstropyUserWarning)
 
 # Pick up the pickled array
 input_jpeg_info=pickle.load(sys.stdin.buffer)
-#input_jpeg_info=pickle.load(open('testjpegpickle','rb'))
+#input_jpeg_info=pickle.load(open('C://Users//user//Documents//GitHub//ptr-observatory//testjpegpickle','rb'))
 
 print ("HERE IS THE INCOMING. ")
 print (input_jpeg_info)
+
 
 
 hdusmalldata=input_jpeg_info[0]
@@ -45,6 +47,11 @@ yt=input_jpeg_info[20]
 xl=input_jpeg_info[21]
 xr=input_jpeg_info[22]
 squash_on_x_axis=input_jpeg_info[23]
+try:
+    zoom_factor = input_jpeg_info[24]
+    print("Mainjpeg:", zoom_factor)
+except:
+    print("Zoom_factor parmater faulted.")
 
 # If this a bayer image, then we need to make an appropriate image that is monochrome
 # That gives the best chance of finding a focus AND for pointing while maintaining resolution.
@@ -240,6 +247,52 @@ if smartstackid == 'no':
         )
 
         # Resizing the array to an appropriate shape for the jpg and the small fits
+        ix, iy = final_image.size
+
+        if zoom_factor is not False:
+            #breakpoint()
+            if zoom_factor in ['full', 'Full', '100%']:
+                zoom = (0.0, 0.0, 0.0, 0.0)   #  Trim nothing  
+            elif zoom_factor in ['square', 'Sqr.']:
+                zoom = ((ix/iy -1)/2, 0.0, (ix/iy -1)/2, 0.00,)    #  3:2 ->> 2:2, QHY600 sides trim.
+            elif zoom_factor in ['71%']:
+                r_sq2 = (1 - 1/sqrt(2))/2
+                zoom = (r_sq2, r_sq2, r_sq2, r_sq2,)    #  0.14644, sides trim.
+            elif zoom_factor in ['50%']:
+                r_sq2 = (1 - 0.5)/2
+                zoom = (r_sq2, r_sq2, r_sq2, r_sq2,)    #  0.14644, sides trim.                   
+            elif zoom_factor in ['35%']:
+                r_sq2 = (1 - 0.5/sqrt(2))/2
+                zoom = (r_sq2, r_sq2, r_sq2, r_sq2,)    #  0.14644, sides trim.  
+            elif zoom_factor in ['25%']:
+                r_sq2 = (1 - 0.25)/2
+                zoom = (r_sq2, r_sq2, r_sq2, r_sq2,)    #  0.14644, sides trim.  
+            elif zoom_factor in ['18%']:
+                r_sq2 = (1 - 0.25/sqrt(2))/2
+                zoom = (r_sq2, r_sq2, r_sq2, r_sq2,)    #  0.14644, sides trim.  
+            elif zoom_factor in ['12.5%']:
+                r_sq2 = (1 - 0.125)/2
+                zoom = (r_sq2, r_sq2, r_sq2, r_sq2,)    #  0.14644, sides trim.
+            elif zoom_factor in ['9%']:
+                r_sq2 = (1 - 0.125/sqrt(2))/2
+                zoom = (r_sq2, r_sq2, r_sq2, r_sq2,)    #  0.14644, sides trim.
+            elif zoom_factor in ['600%', "Sel.", "Sub Frame"]:
+                zoom = (.2, .2725, .2, .2725)
+            else:
+                zoom = (0.0, 0.0, 0.0, 0.0)
+            
+ 
+            
+            #breakpoint()
+            xl, yt, xr, yb = zoom
+            xl *= ix
+            yt *= iy
+            xr *= ix
+            yb *= iy
+            trial_image=final_image.crop((int(xl),int(yt),int(ix-xr),int(iy-yb)))
+            iy, ix = trial_image.size
+            print("Zoomed Image size:", ix, iy)
+            final_image = trial_image
 
         if iy == ix:            
             final_image = final_image.resize(

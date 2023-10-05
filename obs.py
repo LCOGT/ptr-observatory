@@ -22,6 +22,7 @@ import shutil
 import glob
 import subprocess
 import pickle
+from math import sqrt
 from astropy.io import fits
 from astropy.utils.data import check_download_cache
 from astropy.coordinates import SkyCoord, get_sun, AltAz
@@ -1705,19 +1706,28 @@ class Observatory:
                  ]
                 squash_on_x_axis=self.config["camera"][g_dev['cam'].name]["settings"]["squash_on_x_axis"]
                 
+                ##  Here WER adds Zoom prototype code:
+                zoom_factor = 'full'   #This still needs to be passed in as a parameter.
+
+                
                 jpeg_subprocess=subprocess.Popen(['python','subprocesses/mainjpeg.py'],stdin=subprocess.PIPE,stdout=subprocess.PIPE,bufsize=0)
+               
                               
                 
-                
-                pickle.dump([hdusmalldata, smartstackid, paths, pier_side, is_osc, osc_bayer, osc_background_cut,osc_brightness_enhance, osc_contrast_enhance,\
-                     osc_colour_enhance, osc_saturation_enhance, osc_sharpness_enhance, transpose_jpeg, flipx_jpeg, flipy_jpeg, rotate180_jpeg,rotate90_jpeg, \
-                         rotate270_jpeg, crop_preview, yb, yt, xl, xr, squash_on_x_axis], jpeg_subprocess.stdin)
+                if True:
+                    pickle.dump([hdusmalldata, smartstackid, paths, pier_side, is_osc, osc_bayer, osc_background_cut,osc_brightness_enhance, osc_contrast_enhance,\
+                          osc_colour_enhance, osc_saturation_enhance, osc_sharpness_enhance, transpose_jpeg, flipx_jpeg, flipy_jpeg, rotate180_jpeg,rotate90_jpeg, \
+                              rotate270_jpeg, crop_preview, yb, yt, xl, xr, squash_on_x_axis, zoom_factor], jpeg_subprocess.stdin)
                 
                 # Here is a manual debug area which makes a pickle for debug purposes. Default is False, but can be manually set to True for code debugging
-                if False:
+                else:
+                    breakpoint()
                     pickle.dump([hdusmalldata, smartstackid, paths, pier_side, is_osc, osc_bayer, osc_background_cut,osc_brightness_enhance, osc_contrast_enhance,\
                         osc_colour_enhance, osc_saturation_enhance, osc_sharpness_enhance, transpose_jpeg, flipx_jpeg, flipy_jpeg, rotate180_jpeg,rotate90_jpeg, \
-                            rotate270_jpeg, crop_preview, yb, yt, xl, xr, squash_on_x_axis], open('testjpegpickle','wb'))
+                            rotate270_jpeg, crop_preview, yb, yt, xl, xr, squash_on_x_axis, zoom_factor], open('testjpegpickle','wb'))
+                
+                
+                 
                  
                 del hdusmalldata # Get big file out of memory
                 
