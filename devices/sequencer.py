@@ -1824,7 +1824,7 @@ class Sequencer:
                 
                 filepathaws=g_dev['obs'].calib_masters_folder
                 filenameaws='ARCHIVE_' +  archiveDate + '_' + tempfrontcalib + 'BIAS_master_bin1.fits'
-                g_dev['obs'].enqueue_for_PTRarchive(80, filepathaws,filenameaws)
+                g_dev['obs'].enqueue_for_AWS(80, filepathaws,filenameaws)
                 
             except Exception as e:
                 plog ("Could not save bias frame: ",e)
@@ -1908,14 +1908,14 @@ class Sequencer:
                 fits.writeto(g_dev['obs'].calib_masters_folder + tempfrontcalib + 'DARK_master_bin1.fits', masterDark,  overwrite=True)                
                 filepathaws=g_dev['obs'].calib_masters_folder
                 filenameaws=tempfrontcalib + 'DARK_master_bin1.fits'
-                g_dev['obs'].enqueue_for_PTRarchive(50, filepathaws,filenameaws)
+                g_dev['obs'].enqueue_for_AWS(50, filepathaws,filenameaws)
                 
                 # Store a version of the dark for the archive too
                 fits.writeto(g_dev['obs'].calib_masters_folder + 'ARCHIVE_' +  archiveDate + '_' + tempfrontcalib + 'DARK_master_bin1.fits', masterDark, overwrite=True)
                 
                 filepathaws=g_dev['obs'].calib_masters_folder
                 filenameaws='ARCHIVE_' +  archiveDate + '_' + tempfrontcalib + 'DARK_master_bin1.fits'
-                g_dev['obs'].enqueue_for_PTRarchive(80, filepathaws,filenameaws)
+                g_dev['obs'].enqueue_for_AWS(80, filepathaws,filenameaws)
                 
                 
             except Exception as e:
@@ -2049,14 +2049,14 @@ class Sequencer:
                             
                             filepathaws=g_dev['obs'].calib_masters_folder
                             filenameaws=tempfrontcalib + 'masterFlat_'+ str(filtercode) + '_bin1.fits'
-                            g_dev['obs'].enqueue_for_PTRarchive(50, filepathaws,filenameaws)
+                            g_dev['obs'].enqueue_for_AWS(50, filepathaws,filenameaws)
                             
                             # Store a version of the flat for the archive too
                             fits.writeto(g_dev['obs'].calib_masters_folder + 'ARCHIVE_' +  archiveDate + '_' + tempfrontcalib + 'masterFlat_'+ str(filtercode) + '_bin1.fits', temporaryFlat, overwrite=True)
                             
                             filepathaws=g_dev['obs'].calib_masters_folder
                             filenameaws='ARCHIVE_' +  archiveDate + '_' + tempfrontcalib + 'masterFlat_'+ str(filtercode) + '_bin1.fits'
-                            g_dev['obs'](80, filepathaws,filenameaws)
+                            g_dev['obs'].enqueue_for_AWS(80, filepathaws,filenameaws)
                                                         
                         except Exception as e:
                             plog ("Could not save flat frame: ",e)
@@ -3972,13 +3972,13 @@ class Sequencer:
                 sweep_catalogue.append([catalogue[ctr][0],catalogue[ctr][1],catalogue[ctr][2],temppointingaltaz.alt.degree, temppointingaltaz.az.degree  ])
             
         sweep_catalogue = sorted(sweep_catalogue, key= lambda az: az[4])
-        plog (sweep_catalogue)
+        plog (len(sweep_catalogue), sweep_catalogue)
 
         del catalogue
-        breakpoint()
+        
         
         spread =3600.0 # Initial spread is about a degree
-        too_many=True
+        too_many=False
         
         g_dev["obs"].send_to_user("Constructing grid of pointings. This can take a while.")
         plog("Finding a good set of pointings")
