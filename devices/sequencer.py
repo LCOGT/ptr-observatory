@@ -1116,7 +1116,7 @@ class Sequencer:
 
                     for displacement in offset:                        
                         
-                        if not exposure['zoom'].lower() in ["full", 'Full']:
+                        if not exposure['zoom'].lower() in ["full", 'Full'] or not float(exposure['height']) == 0 or not float(exposure['width']) == 0:
                         
                             plog ("Moving to new position of mosaic")
                             plog (displacement) 
