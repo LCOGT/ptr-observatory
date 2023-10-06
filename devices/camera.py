@@ -779,13 +779,8 @@ class Camera:
                 #plog(traceback.format_exc()) 
             elif 'SBIG driver' in str(traceback.format_exc()):
                 plog(traceback.format_exc())
-                g_dev['seq'].kill_and_reboot_theskyx(g_dev['mnt'].mount.RightAscension,g_dev['mnt'].mount.Declination)
-                try:
-                    tempcamera.TakeImage()
-                except:
-                    plog(traceback.format_exc()) 
-                    plog("MTF hunting this error")
-                    breakpoint()
+                plog ("Killing and rebooting TheSKYx and seeing if it will continue on after SBIG fail")
+                g_dev['seq'].kill_and_reboot_theskyx(g_dev['mnt'].mount.RightAscension,g_dev['mnt'].mount.Declination)                
             else:
                 plog(traceback.format_exc()) 
                 plog("MTF hunting this error")

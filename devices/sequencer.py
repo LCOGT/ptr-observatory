@@ -1679,6 +1679,7 @@ class Sequencer:
         os.system("taskkill /IM TheSky64.exe /F")
         time.sleep(16) 
         retries=0
+        g_dev["cam"].exposure_busy=False
         while retries <5:
             try:
                 Mount(self.config['mount']['mount1']['driver'], 
@@ -1695,6 +1696,8 @@ class Sequencer:
                                     g_dev['cam'].name, 
                                     self.config)
                     time.sleep(10)
+                    g_dev["cam"].exposure_busy=False
+                    
                 if self.config['filter_wheel']['filter_wheel1']['driver'] == 'CCDSoft2XAdaptor.ccdsoft5Camera':
                     FilterWheel('CCDSoft2XAdaptor.ccdsoft5Camera', 
                                          g_dev['obs'].name, 
