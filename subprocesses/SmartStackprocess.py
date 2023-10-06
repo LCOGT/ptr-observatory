@@ -102,12 +102,12 @@ if not is_osc:
     sstack_process_timer = time.time()
     sources = Table.read(paths["im_path"] + paths["text_name00"].replace('.txt', '.sep'), format='csv')    
 
-    # IF SMARSTACK NPY FILE EXISTS DO STUFF, OTHERWISE THIS IMAGE IS THE START OF A SMARTSTACK
+    # IF SMARSTACK NPY FILE EXISTS ADD next image to the stack, OTHERWISE THIS IMAGE IS THE START OF A SMARTSTACK
     reprojection_failed = False
     if not os.path.exists(
         obsid_path + "smartstacks/" + smartStackFilename
     ):
-        if len(sources) >= 5:
+        if len(sources) >= 5:    #IF image has at least five sources
             # Store original image
             np.save(
                 obsid_path

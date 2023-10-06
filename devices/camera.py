@@ -960,6 +960,9 @@ class Camera:
             temptemp=qhycam.so.GetQHYCCDParam(qhycam.camera_params[qhycam_id]['handle'], qhycam.CONTROL_CURTEMP)
             humidity = qhycam.so.GetQHYCCDParam(qhycam.camera_params[qhycam_id]['handle'], qhycam.CAM_HUMIDITY)
             pressure = qhycam.so.GetQHYCCDParam(qhycam.camera_params[qhycam_id]['handle'], qhycam.CAM_PRESSURE)
+            pwm = qhycam.so.GetQHYCCDParam(qhycam.camera_params[qhycam_id]['handle'],     qhycam.CONTROL_CURPWM)
+            manual_pwm = qhycam.so.GetQHYCCDParam(qhycam.camera_params[qhycam_id]['handle'], qhycam.CONTROL_MANULPWM)
+            #print(' QHY pwm:  ', pwm)
         except:
             print ("failed at getting the CCD temperature, humidity or pressure.")
             temptemp=999.9
@@ -1498,8 +1501,8 @@ class Camera:
                         endOfExposure = datetime.datetime.utcnow() + datetime.timedelta(seconds=exposure_time)
                         now_date_timeZ = endOfExposure.isoformat().split('.')[0] +'Z'
                         
-                        plog (now_date_timeZ)
-                        plog (g_dev['seq'].blockend)
+                        #plog (now_date_timeZ)
+                        #plog (g_dev['seq'].blockend)
                         
                         blockended = now_date_timeZ  >= g_dev['seq'].blockend
                         
@@ -3095,7 +3098,7 @@ class Camera:
                                 hdusmalldata=hdusmalldata+200.0
                                 hdusmallheader['PEDESTAL']=200
                             
-                            
+
                             # Every Image gets SEP'd and gets it's catalogue sent up pronto ahead of the big fits
                             # Focus images use it for focus, Normal images also report their focus.
                             # IMMEDIATELY SEND TO SEP QUEUE

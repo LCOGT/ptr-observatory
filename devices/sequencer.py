@@ -187,7 +187,7 @@ class Sequencer:
         # slight differences. Focus has more clumped bright stars but pointing catalogue contains a larger range
         # of stars and has full sky coverage, wheras focus does not.
         self.focus_catalogue = np.genfromtxt('support_info/focusCatalogue.csv', delimiter=',')
-        self.pointing_catalogue = np.genfromtxt('support_info/pointingCatalogue.csv', delimiter=',')
+        self.pointing_catalogue = np.genfromtxt('support_info/pointingCatalogueTpoint.csv', delimiter=',')
 
        
         # The stop script flag sends a signal to all running threads to break out
@@ -423,7 +423,7 @@ class Sequencer:
                     plog ("Found telescope unparked after Close and Park, parking the scope")
                     g_dev['mnt'].home_command()
                     g_dev['mnt'].park_command()                
-                
+    
             if not self.bias_dark_latch and not g_dev['obs'].scope_in_manual_mode and ((events['Eve Bias Dark'] <= ephem_now < events['End Eve Bias Dark']) and \
                  self.config['auto_eve_bias_dark'] and not self.eve_bias_done and g_dev['obs'].camera_sufficiently_cooled_for_calibrations):   #events['End Eve Bias Dark']) and \
                 
@@ -437,7 +437,7 @@ class Sequencer:
                 self.bias_dark_script(req, opt, morn=False)
                 self.eve_bias_done = True
                 self.bias_dark_latch = False
-                
+
             if (time.time() - g_dev['seq'].time_roof_last_opened > 1200 ) and not self.eve_sky_flat_latch and not g_dev['obs'].scope_in_manual_mode and ((events['Eve Sky Flats'] <= ephem_now < events['End Eve Sky Flats'])  \
                    and self.config['auto_eve_sky_flat'] and g_dev['obs'].open_and_enabled_to_observe and not self.eve_flats_done and g_dev['obs'].camera_sufficiently_cooled_for_calibrations):
     
@@ -456,7 +456,7 @@ class Sequencer:
                 self.eve_sky_flat_latch = False
                 self.eve_flats_done = True
                 
-    
+
             if ((g_dev['events']['Clock & Auto Focus']  <= ephem_now < g_dev['events']['Observing Begins'])) \
                     and self.night_focus_ready==True and not g_dev['obs'].scope_in_manual_mode and  g_dev['obs'].open_and_enabled_to_observe and not self.clock_focus_latch:
     
@@ -533,7 +533,6 @@ class Sequencer:
                 self.night_focus_ready=False
                 self.clock_focus_latch = False
     
-    
             if (events['Observing Begins'] <= ephem_now \
                                         < events['Observing Ends']) and not self.block_guard and not g_dev["cam"].exposure_busy\
                                         and  (time.time() - self.project_call_timer > 10) and not g_dev['obs'].scope_in_manual_mode  and g_dev['obs'].open_and_enabled_to_observe and self.clock_focus_latch == False:
@@ -559,7 +558,7 @@ class Sequencer:
                         identified_block=None
                         
                         for block in self.blocks:  #  This merges project spec into the blocks.
-                           
+                            
                             if (block['start'] <= now_date_timeZ < block['end'])  and not self.is_in_completes(block['event_id']):
                                                                    
                                 try:
@@ -972,8 +971,8 @@ class Sequencer:
                     #  We should add a frame repeat count
                     imtype = exposure['imtype']
 
-                    if count <= 0:
-                         continue
+                    #if count <= 0:
+                    #     continue
                     
                     
                     # MUCH safer to calculate these from first principles
@@ -981,14 +980,15 @@ class Sequencer:
                     dec_field_deg = (g_dev['cam'].pixscale * g_dev['cam'].imagesize_x) /3600
                     ra_field_deg = (g_dev['cam'].pixscale * g_dev['cam'].imagesize_y) /3600
                     self.currently_mosaicing = False
-                    
+
                     # A hack to get older projects working. should be deleted at some point.
                     try:
                         exposure['zoom']=exposure['area']
                     except:
                         pass
+                    
 
-                    if exposure['zoom'].lower() in ["full", 'Full']:
+                    if exposure['zoom'].lower() in ["full", 'Full'] or '%' in exposure['zoom'] or ( exposure['zoom'].lower() == 'big sq.' and dec_field_deg == ra_field_deg):
 
                         # These are waiting for a mosaic approach
                         offset = [(0., 0.)] #Zero(no) mosaic offset
@@ -998,9 +998,23 @@ class Sequencer:
                         # To be deprecated once we replace "Area" with actual values
                         # to go in mosaic_length_ra etc.
                         # here it just makes a multiple so we can get it going.
-                        tempmultiplier = float(exposure['zoom'].replace('%',''))/100
-                        requested_mosaic_length_ra = tempmultiplier * ra_field_deg
-                        requested_mosaic_length_dec = tempmultiplier * dec_field_deg
+                        #tempmultiplier = float(exposure['zoom'].replace('%',''))/100
+                        #requested_mosaic_length_ra = tempmultiplier * ra_field_deg
+                        #requested_mosaic_length_dec = tempmultiplier * dec_field_deg
+                        if exposure['zoom'].lower() == 'mosaic deg.':
+                            requested_mosaic_length_ra = float(exposure['width'])
+                            requested_mosaic_length_dec = float(exposure['height'])
+                        elif exposure['zoom'].lower() == 'mosaic arcmin.':
+                            requested_mosaic_length_ra = float(exposure['width']) /60
+                            requested_mosaic_length_dec = float(exposure['height']) /60
+                        elif exposure['zoom'].lower() == 'big sq.':
+                            if dec_field_deg > ra_field_deg:
+                                requested_mosaic_length_ra = dec_field_deg
+                                requested_mosaic_length_dec = dec_field_deg
+                            else:
+                                requested_mosaic_length_ra = ra_field_deg
+                                requested_mosaic_length_dec = ra_field_deg
+                        
                         print ("ra field: " + str(ra_field_deg))
                         print ("dec field: " + str(dec_field_deg))
                         
@@ -1112,7 +1126,7 @@ class Sequencer:
 
                     for displacement in offset:                        
                         
-                        if not exposure['zoom'].lower() in ["full", 'Full']:
+                        if self.currently_mosaicing:
                         
                             plog ("Moving to new position of mosaic")
                             plog (displacement) 
@@ -1252,7 +1266,7 @@ class Sequencer:
                                 blockended = now_date_timeZ >= g_dev['seq'].blockend
                             ended = left_to_do <= 0 or blockended \
                                     or ephem.now() >= events['Observing Ends']
-                            print ('gdev seq blockend: ' + str(g_dev['seq'].blockend))
+                            #print ('gdev seq blockend: ' + str(g_dev['seq'].blockend))
                             if ephem.now() >= events['Observing Ends']:
                                 self.blockend = None
                                 self.currently_mosaicing = False
@@ -1304,8 +1318,8 @@ class Sequencer:
                             
                         pane += 1
                         
-                count -= 1
-                exposure['count'] = count
+                #count -= 1
+                #exposure['count'] = count
                 left_to_do -= 1
                 plog("Left to do:  ", left_to_do)
                         
@@ -1826,14 +1840,14 @@ class Sequencer:
                 fits.writeto(g_dev['obs'].calib_masters_folder + tempfrontcalib + 'BIAS_master_bin1.fits', masterBias,  overwrite=True)                
                 filepathaws=g_dev['obs'].calib_masters_folder
                 filenameaws=tempfrontcalib + 'BIAS_master_bin1.fits'
-                g_dev['obs'].enqueue_for_AWS(50, filepathaws,filenameaws)
+                g_dev['obs'].enqueue_for_fastUI(50, filepathaws,filenameaws)
                 
                 # Store a version of the bias for the archive too
                 fits.writeto(g_dev['obs'].calib_masters_folder + 'ARCHIVE_' +  archiveDate + '_' + tempfrontcalib + 'BIAS_master_bin1.fits', masterBias, overwrite=True)
                 
                 filepathaws=g_dev['obs'].calib_masters_folder
                 filenameaws='ARCHIVE_' +  archiveDate + '_' + tempfrontcalib + 'BIAS_master_bin1.fits'
-                g_dev['obs'].enqueue_for_AWS(80, filepathaws,filenameaws)
+                g_dev['obs'].enqueue_for_fastUI(80, filepathaws,filenameaws)
                 
             except Exception as e:
                 plog ("Could not save bias frame: ",e)
@@ -1880,7 +1894,7 @@ class Sequencer:
                     inputList.remove(file)
                     
             PLDrive = np.memmap(g_dev['obs'].local_dark_folder  + 'tempfile', dtype='float32', mode= 'w+', shape = (shapeImage[0],shapeImage[1],len(inputList)))
-            # Debias dark frames and stick them in the memmap
+            # D  frames and stick them in the memmap
             i=0
             for file in inputList:   
                 plog (datetime.datetime.now().strftime("%H:%M:%S"))                
@@ -1917,14 +1931,14 @@ class Sequencer:
                 fits.writeto(g_dev['obs'].calib_masters_folder + tempfrontcalib + 'DARK_master_bin1.fits', masterDark,  overwrite=True)                
                 filepathaws=g_dev['obs'].calib_masters_folder
                 filenameaws=tempfrontcalib + 'DARK_master_bin1.fits'
-                g_dev['obs'].enqueue_for_AWS(50, filepathaws,filenameaws)
+                g_dev['obs'].enqueue_for_fastUI(50, filepathaws,filenameaws)
                 
                 # Store a version of the dark for the archive too
                 fits.writeto(g_dev['obs'].calib_masters_folder + 'ARCHIVE_' +  archiveDate + '_' + tempfrontcalib + 'DARK_master_bin1.fits', masterDark, overwrite=True)
                 
                 filepathaws=g_dev['obs'].calib_masters_folder
                 filenameaws='ARCHIVE_' +  archiveDate + '_' + tempfrontcalib + 'DARK_master_bin1.fits'
-                g_dev['obs'].enqueue_for_AWS(80, filepathaws,filenameaws)
+                g_dev['obs'].enqueue_for_fastUI(80, filepathaws,filenameaws)
                 
                 
             except Exception as e:
@@ -2058,14 +2072,14 @@ class Sequencer:
                             
                             filepathaws=g_dev['obs'].calib_masters_folder
                             filenameaws=tempfrontcalib + 'masterFlat_'+ str(filtercode) + '_bin1.fits'
-                            g_dev['obs'].enqueue_for_AWS(50, filepathaws,filenameaws)
+                            g_dev['obs'].enqueue_for_fastUI(50, filepathaws,filenameaws)
                             
                             # Store a version of the flat for the archive too
                             fits.writeto(g_dev['obs'].calib_masters_folder + 'ARCHIVE_' +  archiveDate + '_' + tempfrontcalib + 'masterFlat_'+ str(filtercode) + '_bin1.fits', temporaryFlat, overwrite=True)
                             
                             filepathaws=g_dev['obs'].calib_masters_folder
                             filenameaws='ARCHIVE_' +  archiveDate + '_' + tempfrontcalib + 'masterFlat_'+ str(filtercode) + '_bin1.fits'
-                            g_dev['obs'].enqueue_for_AWS(80, filepathaws,filenameaws)
+                            g_dev['obs'].enqueue_for_fastUI(80, filepathaws,filenameaws)
                                                         
                         except Exception as e:
                             plog ("Could not save flat frame: ",e)
@@ -2120,7 +2134,7 @@ class Sequencer:
                             cge_stdev=np.nanstd(camera_gain_estimate_image)
                             cge_sqrt=pow(cge_median,0.5)
                             cge_gain=1/pow(cge_sqrt/cge_stdev, 2)
-                            print ("Camera gain median: " + str(cge_median) + " stdev: " +str(cge_stdev)+ " sqrt: " + str(cge_sqrt) + " gain: " +str(cge_gain))
+                            plog ("Camera gain median: " + str(cge_median) + " stdev: " +str(cge_stdev)+ " sqrt: " + str(cge_sqrt) + " gain: " +str(cge_gain))
                             
                             estimated_flat_gain.append(cge_gain)
                         
@@ -2162,25 +2176,25 @@ class Sequencer:
                         
                             
                         estimated_flat_gain=np.array(estimated_flat_gain)
-                        plog ("Raw List of Gains: " +str(estimated_flat_gain))
-                        f.write ("Raw List of Gains: " +str(estimated_flat_gain)+ "\n"+ "\n")
+                        #plog ("Raw List of Gains: " +str(estimated_flat_gain))
+                        #f.write ("Raw List of Gains: " +str(estimated_flat_gain)+ "\n"+ "\n")
                         
-                        plog ("Camera Gain Non-Sigma Clipped Estimates: " + str(np.nanmedian(estimated_flat_gain)) + " std " + str(np.std(estimated_flat_gain)) + " N " + str(len(estimated_flat_gain)))
-                        f.write ("Camera Gain Non-Sigma Clipped Estimates: " + str(np.nanmedian(estimated_flat_gain)) + " std " + str(np.std(estimated_flat_gain)) + " N " + str(len(estimated_flat_gain))+ "\n")
+                        #plog ("Camera Gain Non-Sigma Clipped Estimates: " + str(np.nanmedian(estimated_flat_gain)) + " std " + str(np.std(estimated_flat_gain)) + " N " + str(len(estimated_flat_gain)))
+                        #f.write ("Camera Gain Non-Sigma Clipped Estimates: " + str(np.nanmedian(estimated_flat_gain)) + " std " + str(np.std(estimated_flat_gain)) + " N " + str(len(estimated_flat_gain))+ "\n")
                         
                         estimated_flat_gain = sigma_clip(estimated_flat_gain, masked=False, axis=None)
-                        plog ("Camera Gain Sigma Clipped Estimates: " + str(np.nanmedian(estimated_flat_gain)) + " std " + str(np.std(estimated_flat_gain)) + " N " + str(len(estimated_flat_gain)))
-                        f.write ("Camera Gain Sigma Clipped Estimates: " + str(np.nanmedian(estimated_flat_gain)) + " std " + str(np.std(estimated_flat_gain)) + " N " + str(len(estimated_flat_gain))+ "\n")
+                       # plog ("Camera Gain Sigma Clipped Estimates: " + str(np.nanmedian(estimated_flat_gain)) + " std " + str(np.std(estimated_flat_gain)) + " N " + str(len(estimated_flat_gain)))
+                        #f.write ("Camera Gain Sigma Clipped Estimates: " + str(np.nanmedian(estimated_flat_gain)) + " std " + str(np.std(estimated_flat_gain)) + " N " + str(len(estimated_flat_gain))+ "\n")
                         
                         est_read_noise=[]
                         for rnentry in post_readnoise_array:                        
                             est_read_noise.append( (rnentry * np.nanmedian(estimated_flat_gain)) / 1.414)
             
                         est_read_noise=np.array(est_read_noise)
-                        plog ("Non Sigma Clipped Readnoise with this gain: " + str(np.nanmedian(est_read_noise)) + " std: " + str(np.nanstd(est_read_noise)))
+                        #plog ("Non Sigma Clipped Readnoise with this gain: " + str(np.nanmedian(est_read_noise)) + " std: " + str(np.nanstd(est_read_noise)))
                         f.write ("Non Sigma Clipped Readnoise with this gain: " + str(np.nanmedian(est_read_noise)) + " std: " + str(np.nanstd(est_read_noise))+ "\n")
                         est_read_noise = sigma_clip(est_read_noise, masked=False, axis=None)
-                        plog ("Non Sigma Clipped Readnoise with this gain: " + str(np.nanmedian(est_read_noise)) + " std: " + str(np.nanstd(est_read_noise)))
+                        #plog ("Non Sigma Clipped Readnoise with this gain: " + str(np.nanmedian(est_read_noise)) + " std: " + str(np.nanstd(est_read_noise)))
                         f.write ("Non Sigma Clipped Readnoise with this gain: " + str(np.nanmedian(est_read_noise)) + " std: " + str(np.nanstd(est_read_noise))+ "\n")
                         
                         plog ("Gains by filter")
@@ -2328,6 +2342,7 @@ class Sequencer:
         """
         This is the evening and morning sky automated skyflat routine.
         """
+
 
         
         if  ((ephem.now() < g_dev['events']['Eve Sky Flats']) or \
@@ -3953,6 +3968,7 @@ class Sequencer:
         self.total_sequencer_control = True
         g_dev['obs'].stop_processing_command_requests = True
         
+        g_dev['obs'].auto_centering_off = True  #NB NB NB Added this Temporarily --WER
         prev_auto_centering = g_dev['obs'].auto_centering_off
         g_dev['obs'].auto_centering_off = True
         
@@ -3967,7 +3983,7 @@ class Sequencer:
         
         g_dev["obs"].send_to_user("Starting pointing run. Constructing altitude catalogue. This can take a while.")
         plog("Constructing sweep catalogue above altitude " + str(alt_minimum))
-        
+
         sweep_catalogue=[]
         #First remove all entries below given altitude
         for ctr in range(len(catalogue)):
@@ -3976,15 +3992,16 @@ class Sequencer:
             temppointingaltaz=teststar.transform_to(AltAz(location=g_dev['mnt'].site_coordinates, obstime=Time.now()))
             alt = temppointingaltaz.alt.degree
             if alt > alt_minimum:
-                sweep_catalogue.append([catalogue[ctr][0],catalogue[ctr][1],catalogue[ctr][2]])
+                sweep_catalogue.append([catalogue[ctr][0],catalogue[ctr][1],catalogue[ctr][2],temppointingaltaz.alt.degree, temppointingaltaz.az.degree  ])
             
-        
-        plog (sweep_catalogue)
+        sweep_catalogue = sorted(sweep_catalogue, key= lambda az: az[4])
+        plog (len(sweep_catalogue), sweep_catalogue)
 
         del catalogue
         
+        
         spread =3600.0 # Initial spread is about a degree
-        too_many=True
+        too_many=False
         
         g_dev["obs"].send_to_user("Constructing grid of pointings. This can take a while.")
         plog("Finding a good set of pointings")
@@ -4242,8 +4259,8 @@ class Sequencer:
                 if (time.time() - temptimer) > 20:                                    
                     g_dev['obs'].update()
                     temptimer=time.time()
-                    print (g_dev['obs'].platesolve_is_processing)
-                    print (g_dev['obs'].platesolve_queue.empty())
+                    #print (g_dev['obs'].platesolve_is_processing)
+                    #print (g_dev['obs'].platesolve_queue.empty())
                 if self.stop_script_called:
                     g_dev["obs"].send_to_user("Cancelling out of autofocus script as stop script has been called.")  
                     return

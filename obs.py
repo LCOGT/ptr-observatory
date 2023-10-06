@@ -22,6 +22,7 @@ import shutil
 import glob
 import subprocess
 import pickle
+from math import sqrt
 from astropy.io import fits
 from astropy.utils.data import check_download_cache
 from astropy.coordinates import SkyCoord, get_sun, AltAz
@@ -341,7 +342,7 @@ class Observatory:
         
        
         # Instantiate the helper class for astronomical events
-        # Soon the primary event / time values can come from AWS.
+        # Soon the primary event / time values can come from AWS.  NB NB   I send them there! Why do we want to put that code in AWS???
         self.astro_events = ptr_events.Events(self.config)
         self.astro_events.compute_day_directory()
         self.astro_events.calculate_events()
@@ -587,10 +588,13 @@ class Observatory:
         elif 'ResponseMetadata' in response:
             if response['ResponseMetadata']['HTTPStatusCode'] == 200:
                 plog("Config uploaded successfully.")
+                #breakpoint()
+                #g_dev['seq'].nightly_reset_script()
 
             else:
                 plog("Response to obsid config upload unclear. Here is the response")
                 plog(response)
+
         else:
             plog("Response to obsid config upload unclear. Here is the response")
             plog(response)
@@ -1251,7 +1255,8 @@ class Observatory:
             # Check that cooler is alive
             if g_dev['cam']._cooler_on():
                 current_camera_temperature, cur_humidity, cur_pressure = (g_dev['cam']._temperature())
-                current_camera_temperature = float(current_camera_temperature)   
+                current_camera_temperature = float(current_camera_temperature)
+
                 if abs(float(current_camera_temperature) - float(g_dev['cam'].setpoint)) > 1.5:
                     self.camera_sufficiently_cooled_for_calibrations = False
                     self.last_time_camera_was_warm=time.time()
@@ -1701,19 +1706,28 @@ class Observatory:
                  ]
                 squash_on_x_axis=self.config["camera"][g_dev['cam'].name]["settings"]["squash_on_x_axis"]
                 
+                ##  Here WER adds Zoom prototype code:
+                zoom_factor = 'full'   #This still needs to be passed in as a parameter.
+
+                
                 jpeg_subprocess=subprocess.Popen(['python','subprocesses/mainjpeg.py'],stdin=subprocess.PIPE,stdout=subprocess.PIPE,bufsize=0)
+               
                               
                 
-                
-                pickle.dump([hdusmalldata, smartstackid, paths, pier_side, is_osc, osc_bayer, osc_background_cut,osc_brightness_enhance, osc_contrast_enhance,\
-                     osc_colour_enhance, osc_saturation_enhance, osc_sharpness_enhance, transpose_jpeg, flipx_jpeg, flipy_jpeg, rotate180_jpeg,rotate90_jpeg, \
-                         rotate270_jpeg, crop_preview, yb, yt, xl, xr, squash_on_x_axis], jpeg_subprocess.stdin)
+                if True:
+                    pickle.dump([hdusmalldata, smartstackid, paths, pier_side, is_osc, osc_bayer, osc_background_cut,osc_brightness_enhance, osc_contrast_enhance,\
+                          osc_colour_enhance, osc_saturation_enhance, osc_sharpness_enhance, transpose_jpeg, flipx_jpeg, flipy_jpeg, rotate180_jpeg,rotate90_jpeg, \
+                              rotate270_jpeg, crop_preview, yb, yt, xl, xr, squash_on_x_axis, zoom_factor], jpeg_subprocess.stdin)
                 
                 # Here is a manual debug area which makes a pickle for debug purposes. Default is False, but can be manually set to True for code debugging
-                if False:
+                else:
+                    breakpoint()
                     pickle.dump([hdusmalldata, smartstackid, paths, pier_side, is_osc, osc_bayer, osc_background_cut,osc_brightness_enhance, osc_contrast_enhance,\
                         osc_colour_enhance, osc_saturation_enhance, osc_sharpness_enhance, transpose_jpeg, flipx_jpeg, flipy_jpeg, rotate180_jpeg,rotate90_jpeg, \
-                            rotate270_jpeg, crop_preview, yb, yt, xl, xr, squash_on_x_axis], open('testjpegpickle','wb'))
+                            rotate270_jpeg, crop_preview, yb, yt, xl, xr, squash_on_x_axis, zoom_factor], open('testjpegpickle','wb'))
+                
+                
+                 
                  
                 del hdusmalldata # Get big file out of memory
                 
@@ -2657,6 +2671,7 @@ class Observatory:
                         
                     # Essentially wait until the subprocess is complete
                     smartstack_subprocess.communicate()
+                    
 
                     self.fast_queue.put((15, (paths["im_path"], paths["jpeg_name10"])), block=False)
                     self.fast_queue.put(
