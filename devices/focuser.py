@@ -123,6 +123,11 @@ class Focuser:
     def get_status(self):
 
         try:
+            reported_focus_temp_slope = round(self.focus_temp_slope, 2)
+        except:
+            reported_focus_temp_slope = None
+
+        try:
             
             if self.theskyx:            
                 try:
@@ -131,7 +136,7 @@ class Focuser:
                             self.focuser.focPosition() * self.steps_to_micron, 1
                         ),  
                         "focus_temperature": self.focuser.focTemperature,
-                        "comp": round(self.focus_temp_slope, 2),
+                        "comp": reported_focus_temp_slope,
                         "filter_offset": g_dev["fil"].filter_offset,
                     }
                 except Exception as e:
@@ -148,7 +153,7 @@ class Focuser:
                                 self.focuser.focPosition() * self.steps_to_micron, 1
                             ),  # THIS occasionally glitches, usually no temp probe on Gemini
                             "focus_temperature": self.focuser.focTemperature,
-                            "comp": round(self.focus_temp_slope, 2),
+                            "comp": reported_focus_temp_slope,
                             "filter_offset": g_dev["fil"].filter_offset,
                         }
                     except Exception as e:
@@ -166,7 +171,7 @@ class Focuser:
                     ),  
                     "focus_temperature": self.focuser.Temperature,
                     "focus_moving": self.focuser.IsMoving,
-                    "comp": round(self.focus_temp_slope, 2),
+                    "comp": reported_focus_temp_slope,
                     "filter_offset": g_dev["fil"].filter_offset,
                 }
             else:
@@ -176,7 +181,7 @@ class Focuser:
                     ),  
                     "focus_temperature": self.focuser.Temperature,
                     "focus_moving": self.focuser.IsMoving,
-                    "comp": round(self.focus_temp_slope, 2),
+                    "comp": reported_focus_temp_slope,
                     "filter_offset": 0.0,
                 }
         except Exception as e:
