@@ -779,13 +779,8 @@ class Camera:
                 #plog(traceback.format_exc()) 
             elif 'SBIG driver' in str(traceback.format_exc()):
                 plog(traceback.format_exc())
-                g_dev['seq'].kill_and_reboot_theskyx(g_dev['mnt'].mount.RightAscension,g_dev['mnt'].mount.Declination)
-                try:
-                    tempcamera.TakeImage()
-                except:
-                    plog(traceback.format_exc()) 
-                    plog("MTF hunting this error")
-                    breakpoint()
+                plog ("Killing and rebooting TheSKYx and seeing if it will continue on after SBIG fail")
+                g_dev['seq'].kill_and_reboot_theskyx(g_dev['mnt'].mount.RightAscension,g_dev['mnt'].mount.Declination)                
             else:
                 plog(traceback.format_exc()) 
                 plog("MTF hunting this error")
@@ -965,6 +960,9 @@ class Camera:
             temptemp=qhycam.so.GetQHYCCDParam(qhycam.camera_params[qhycam_id]['handle'], qhycam.CONTROL_CURTEMP)
             humidity = qhycam.so.GetQHYCCDParam(qhycam.camera_params[qhycam_id]['handle'], qhycam.CAM_HUMIDITY)
             pressure = qhycam.so.GetQHYCCDParam(qhycam.camera_params[qhycam_id]['handle'], qhycam.CAM_PRESSURE)
+            pwm = qhycam.so.GetQHYCCDParam(qhycam.camera_params[qhycam_id]['handle'],     qhycam.CONTROL_CURPWM)
+            manual_pwm = qhycam.so.GetQHYCCDParam(qhycam.camera_params[qhycam_id]['handle'], qhycam.CONTROL_MANULPWM)
+            #print(' QHY pwm:  ', pwm)
         except:
             print ("failed at getting the CCD temperature, humidity or pressure.")
             temptemp=999.9
@@ -3100,7 +3098,7 @@ class Camera:
                                 hdusmalldata=hdusmalldata+200.0
                                 hdusmallheader['PEDESTAL']=200
                             
-                            
+
                             # Every Image gets SEP'd and gets it's catalogue sent up pronto ahead of the big fits
                             # Focus images use it for focus, Normal images also report their focus.
                             # IMMEDIATELY SEND TO SEP QUEUE

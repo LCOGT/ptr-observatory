@@ -52,12 +52,13 @@ site_config = {
     
     # Default safety settings
     'safety_check_period': 45,  # MF's original setting.
-    'closest_distance_to_the_sun': 45,  # Degrees. For normal pointing requests don't go this close to the sun.
-    'closest_distance_to_the_moon': 3,  # Degrees. For normal pointing requests don't go this close to the moon.
-    'minimum_distance_from_the_moon_when_taking_flats': 45,
-    'lowest_requestable_altitude': -5,  # Degrees. For normal pointing requests don't allow requests to go this low.
+
+    'closest_distance_to_the_sun': 30,  # Degrees. For normal pointing requests don't go this close to the sun.
+    'closest_distance_to_the_moon': 5,  # Degrees. For normal pointing requests don't go this close to the moon.
+    'minimum_distance_from_the_moon_when_taking_flats': 30,
+    'lowest_requestable_altitude': -1,  # Degrees. For normal pointing requests don't allow requests to go this low.
     'degrees_to_avoid_zenith_area_for_calibrations': 0, 
-    'temperature_at_which_obs_too_hot_for_camera_cooling' : 23, # NB NB WER ARO Obs has a chiller
+    'temperature_at_which_obs_too_hot_for_camera_cooling' : 30, # NB NB WER ARO Obs has a chiller
 
     # These are the default values that will be set for the obs
     # on a reboot of obs.py. They are safety checks that 
@@ -65,9 +66,9 @@ site_config = {
     'scope_in_manual_mode': False,
     'mount_reference_model_off': True,
     'sun_checks_on': True,
-    'moon_checks_on': True,
-    'altitude_checks_on': True,    
-    'daytime_exposure_time_safety_on': True,
+    'moon_checks_on': False,
+    'altitude_checks_on': False,    
+    'daytime_exposure_time_safety_on': False,
     
     
     
@@ -116,24 +117,24 @@ site_config = {
      'pointing_exposure_time': 20,  # Exposure time in seconds for exposure image
 
      # How often to do various checks and such
-     'observing_check_period': 1,    # How many minutes between weather checks
-     'enclosure_check_period': 1,    # How many minutes between enclosure checks
+     'observing_check_period': 3,    # How many minutes between weather checks
+     'enclosure_check_period': 3,    # How many minutes between enclosure checks
 
      # Turn on and off various automated calibrations at different times.
-     'auto_eve_bias_dark': True,
-     'auto_eve_sky_flat': True,
+     'auto_eve_bias_dark': False,
+     'auto_eve_sky_flat': False,
      'auto_midnight_moonless_bias_dark': False,
      'auto_morn_sky_flat': True,
      'auto_morn_bias_dark': True,
      
      # FOCUS OPTIONS
-     'periodic_focus_time': 12.0, # This is a time, in hours, over which to bypass automated focussing (e.g. at the start of a project it will not refocus if a new project starts X hours after the last focus)
+     'periodic_focus_time': 3.0, # This is a time, in hours, over which to bypass automated focussing (e.g. at the start of a project it will not refocus if a new project starts X hours after the last focus)
      'stdev_fwhm': 0.5,  # This is the expected variation in FWHM at a given telescope/camera/site combination. This is used to check if a fwhm is within normal range or the focus has shifted
      'focus_trigger': 0.6,  # What FWHM increase is needed to trigger an autofocus
      
      # PLATESOLVE options
      'solve_nth_image': 1,  # Only solve every nth image
-     'solve_timer': 0.05,  # Only solve every X minutes
+     'solve_timer': 0.05,  # Only solve every X minutes    NB WER  3 seconds????
      'threshold_mount_update': 45,  # only update mount when X arcseconds away
 
 
@@ -421,7 +422,7 @@ site_config = {
                         ['BI',   [12, 0],    0, 415.,  [360 , 170], 'Bessell I'],     #19
                         ['zp',   [0,  9],    0, 107.6, [360 , 170], "Sloan z'"],     #20    # NB I think these may be backward labeled,
                         ['zs',   [5,  0],    0, 107.4, [1.0 ,  20], "Sloan z-short"],     #21    # NB ZP is a broader filter than zs.
-                        ['Y',    [6,  0],    0, 7.28,  [360 , 170], "Rubin Y - low throughput "],     #22
+                        ['Y',    [6,  0],    0, 7.28,  [360 , 170], "Rubin Y - low throughput, defective filter in top area "],     #22
                         
   
                         ['dark', [5,  6],    0, 0.00,  [360 , 170], 'dk']],    #23     #Not a real filter.
@@ -597,12 +598,12 @@ site_config = {
 
                 # This is the area for cooling related settings
                 'cooler_on': True,
-                'temp_setpoint': -5,  # Verify we can go colder
-                'has_chiller': False,                
+                'temp_setpoint': -7.5,  # Verify we can go colder
+                'has_chiller': True,                
                 'chiller_com_port': 'COM1',
                 'chiller_ref_temp':  15.0,  # C
-                'day_warm': True,
-                'day_warm_degrees': 8,  # Number of degrees to warm during the daytime.
+                'day_warm': False,   #This is converted to a 0 or 1 depending ont he Boolean value
+                'day_warm_degrees': 0,  # Assuming the Chiller is working.
                 'protect_camera_from_overheating' : False,
 
                 # These are the physical values for the camera
