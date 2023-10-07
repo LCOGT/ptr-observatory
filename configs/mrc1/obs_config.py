@@ -535,7 +535,7 @@ site_config = {
 
 
 
-            'detector':  'Sony IMX441 Mono',  # It would be good to build out a table of chip characteristics
+            'detector':  'Sony IMX455 BI Mono',  # It would be good to build out a table of chip characteristics
             'use_file_mode':  False,   # NB we should clean out all file mode stuff.
             'file_mode_path':  'Q:/archive/sq01/maxim/',  # NB NB all file_mode Maxim stuff should go!
             'manufacturer':  "QHY",
@@ -688,10 +688,10 @@ site_config = {
                 # These are the physical values for the camera
                 # related to pixelscale. Binning only applies to single
                 # images. Stacks will always be drizzled to to drizzle value from 1x1.
-                '1x1_pix_scale': 0.302,    #  This is the 1x1 binning pixelscale
-                'native_bin': 1, # Needs to be simple, it will recalculate things on the 1x1 binning pixscale above.
-                'x_pixel':  5.94, # pixel size in microns
-                'y_pixel':  5.94, # pixel size in microns
+                '1x1_pix_scale': 0.30258,    #  This is the 1x1 binning pixelscale
+                'native_bin': 2, # Needs to be simple, it will recalculate things on the 1x1 binning pixscale above.
+                'x_pixel':  3.76, # pixel size in microns
+                'y_pixel':  3.76, # pixel size in microns
                 # The drizzle_value is by the new pixelscale
                 # for the new resolution when stacking in the EVA pipeline
                 # Realistically you want a resolution of about 0.5 arcseconds per pixel
