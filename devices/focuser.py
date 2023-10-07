@@ -121,7 +121,7 @@ class Focuser:
             return int(self.config["reference"])        
 
     def get_status(self):
-        
+
         try:
             
             if self.theskyx:            
