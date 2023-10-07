@@ -1542,12 +1542,13 @@ class Observatory:
                                 # This error is thrown when there is a corrupt file
                                 broken=1
                                 
-                            elif 'timed out.' in str(e):
+                            elif 'timed out.' in str(e) or 'TimeoutError' in str(e):
                                 # Not broken, just bung it back in the queue for later
                                 plog("Timeout glitch, trying again: ", e)
                                 self.ptrarchive_queue.put(pri_image, block=False)
                                 # And give it a little sleep
                                 time.sleep(10)    
+                                retryarchive = 11
                                 #retryarchive = 3
                             else:
                                 plog("couldn't send to PTR archive for some reason: ", e)  
@@ -1564,10 +1565,12 @@ class Observatory:
                 if broken == 1:
                     try:
                         shutil.move(filepath, self.broken_path + filename)
+                        retryarchive = 11
                     except:
                         plog ("Couldn't move " + str(filepath) + " to broken folder.")
                         #plog((traceback.format_exc()))
                         self.laterdelete_queue.put(filepath, block=False)
+                        retryarchive = 11
             except Exception as e:
                 plog ("something strange in the ptrarchive uploader", e)
                     
