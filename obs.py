@@ -1513,9 +1513,7 @@ class Observatory:
                                 time.sleep(5)
                         
                     
-                    elif self.env_exists == True and (not frame_exists(fileobj)):        
-                        #retryarchive = 0
-                        #while retryarchive < 3:
+                    elif self.env_exists == True and (not frame_exists(fileobj)):     
                         try:      
                             # Get header explicitly out to send up
                             # This seems to be necessary
@@ -1525,7 +1523,7 @@ class Observatory:
                             for entry in tempheader.keys():
                                 headerdict[entry] = tempheader[entry]
                             upload_file_and_ingest_to_archive(fileobj, file_metadata=headerdict)    
-                            retryarchive = 11
+                           
                             # Only remove file if successfully uploaded
                             if ('calibmasters' not in filepath) or ('ARCHIVE_' in filepath):
                                 try:
@@ -1544,33 +1542,32 @@ class Observatory:
                                 
                             elif 'timed out.' in str(e) or 'TimeoutError' in str(e):
                                 # Not broken, just bung it back in the queue for later
-                                plog("Timeout glitch, trying again: ", e)
+                                plog("Timeout glitch, trying again later: ", e)
+                                time.sleep(10)
                                 self.ptrarchive_queue.put(pri_image, block=False)
                                 # And give it a little sleep
-                                time.sleep(10)    
-                                retryarchive = 11
-                                #retryarchive = 3
+                                return str(filepath.split('/')[-1]) + " timed out."
+                                   
                             else:
                                 plog("couldn't send to PTR archive for some reason: ", e)  
                                 
                                 #plog((traceback.format_exc()))
-                                #breakpoint()
-                                #time.sleep(10)
-                                #if retryarchive < 10:
-                                #retryarchive = retryarchive+1
-                                #if retryarchive > 2:
+                                
+                                # And give it a little sleep
+                                time.sleep(10)
+                                
                                 broken =1
+                                return str(filepath.split('/')[-1]) + " failed."
                                         
                 
                 if broken == 1:
                     try:
                         shutil.move(filepath, self.broken_path + filename)
-                        retryarchive = 11
                     except:
                         plog ("Couldn't move " + str(filepath) + " to broken folder.")
-                        #plog((traceback.format_exc()))
+
                         self.laterdelete_queue.put(filepath, block=False)
-                        retryarchive = 11
+                    return
             except Exception as e:
                 plog ("something strange in the ptrarchive uploader", e)
                     
