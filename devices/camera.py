@@ -2831,7 +2831,7 @@ class Camera:
                     raw_name00 = (
                         self.config["obs_id"]
                         + "-"
-                        + current_camera_name
+                        + current_camera_name + '_' + str(frame_type) + '_' + str(this_exposure_filter)
                         + "-"
                         + g_dev["day"]
                         + "-"
