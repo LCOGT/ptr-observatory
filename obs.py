@@ -1557,7 +1557,7 @@ class Observatory:
                                 time.sleep(10)
                                 
                                 broken =1
-                                return str(filepath.split('/')[-1]) + " failed."
+                                # return str(filepath.split('/')[-1]) + " failed."
                                         
                 
                 if broken == 1:
@@ -1567,9 +1567,10 @@ class Observatory:
                         plog ("Couldn't move " + str(filepath) + " to broken folder.")
 
                         self.laterdelete_queue.put(filepath, block=False)
-                    return
+                    return str(filepath.split('/')[-1]) + " broken."
             except Exception as e:
                 plog ("something strange in the ptrarchive uploader", e)
+                return 'something strange in the ptrarchive uploader'
                     
             
             upload_timer=time.time() - upload_timer
