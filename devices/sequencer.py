@@ -3359,7 +3359,7 @@ class Sequencer:
            
             self.af_guard = False
             try:
-                g_dev['foc'].last_focus_fwhm = round(spot4, 2)
+                g_dev['foc'].last_focus_fwhm = round(spot1, 2)
             except:
                 plog("MTF hunting this bug")
                 plog(traceback.format_exc())
