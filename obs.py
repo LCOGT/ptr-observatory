@@ -1547,7 +1547,15 @@ class Observatory:
                                 self.ptrarchive_queue.put(pri_image, block=False)
                                 # And give it a little sleep
                                 return str(filepath.split('/')[-1]) + " timed out."
-                                   
+                            
+                            elif 'credential_provider' in str(e) or 'endpoint_resolver' in str(e):
+                                plog((traceback.format_exc()))
+                                plog ("This seems to be a nonfatal error, but MTF is tracebacking to try and catch what this is. Probably it is just an exception that triggers a retry... but we shall see.")
+                                time.sleep(10)
+                                self.ptrarchive_queue.put(pri_image, block=False)
+                                
+                                return str(filepath.split('/')[-1]) + " got an odd error, but retrying."
+                                
                             else:
                                 plog("couldn't send to PTR archive for some reason: ", e)  
                                 
