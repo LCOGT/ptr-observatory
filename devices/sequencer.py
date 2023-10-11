@@ -1840,14 +1840,14 @@ class Sequencer:
                 fits.writeto(g_dev['obs'].calib_masters_folder + tempfrontcalib + 'BIAS_master_bin1.fits', masterBias,  overwrite=True)                
                 filepathaws=g_dev['obs'].calib_masters_folder
                 filenameaws=tempfrontcalib + 'BIAS_master_bin1.fits'
-                g_dev['obs'].enqueue_for_fastUI(50, filepathaws,filenameaws)
+                g_dev['obs'].enqueue_for_calibrationUI(50, filepathaws,filenameaws)
                 
                 # Store a version of the bias for the archive too
                 fits.writeto(g_dev['obs'].calib_masters_folder + 'ARCHIVE_' +  archiveDate + '_' + tempfrontcalib + 'BIAS_master_bin1.fits', masterBias, overwrite=True)
                 
                 filepathaws=g_dev['obs'].calib_masters_folder
                 filenameaws='ARCHIVE_' +  archiveDate + '_' + tempfrontcalib + 'BIAS_master_bin1.fits'
-                g_dev['obs'].enqueue_for_fastUI(80, filepathaws,filenameaws)
+                g_dev['obs'].enqueue_for_calibrationUI(80, filepathaws,filenameaws)
                 
             except Exception as e:
                 plog ("Could not save bias frame: ",e)
@@ -1931,14 +1931,14 @@ class Sequencer:
                 fits.writeto(g_dev['obs'].calib_masters_folder + tempfrontcalib + 'DARK_master_bin1.fits', masterDark,  overwrite=True)                
                 filepathaws=g_dev['obs'].calib_masters_folder
                 filenameaws=tempfrontcalib + 'DARK_master_bin1.fits'
-                g_dev['obs'].enqueue_for_fastUI(50, filepathaws,filenameaws)
+                g_dev['obs'].enqueue_for_calibrationUI(50, filepathaws,filenameaws)
                 
                 # Store a version of the dark for the archive too
                 fits.writeto(g_dev['obs'].calib_masters_folder + 'ARCHIVE_' +  archiveDate + '_' + tempfrontcalib + 'DARK_master_bin1.fits', masterDark, overwrite=True)
                 
                 filepathaws=g_dev['obs'].calib_masters_folder
                 filenameaws='ARCHIVE_' +  archiveDate + '_' + tempfrontcalib + 'DARK_master_bin1.fits'
-                g_dev['obs'].enqueue_for_fastUI(80, filepathaws,filenameaws)
+                g_dev['obs'].enqueue_for_calibrationUI(80, filepathaws,filenameaws)
                 
                 
             except Exception as e:
@@ -2072,14 +2072,14 @@ class Sequencer:
                             
                             filepathaws=g_dev['obs'].calib_masters_folder
                             filenameaws=tempfrontcalib + 'masterFlat_'+ str(filtercode) + '_bin1.fits'
-                            g_dev['obs'].enqueue_for_fastUI(50, filepathaws,filenameaws)
+                            g_dev['obs'].enqueue_for_calibrationUI(50, filepathaws,filenameaws)
                             
                             # Store a version of the flat for the archive too
                             fits.writeto(g_dev['obs'].calib_masters_folder + 'ARCHIVE_' +  archiveDate + '_' + tempfrontcalib + 'masterFlat_'+ str(filtercode) + '_bin1.fits', temporaryFlat, overwrite=True)
                             
                             filepathaws=g_dev['obs'].calib_masters_folder
                             filenameaws='ARCHIVE_' +  archiveDate + '_' + tempfrontcalib + 'masterFlat_'+ str(filtercode) + '_bin1.fits'
-                            g_dev['obs'].enqueue_for_fastUI(80, filepathaws,filenameaws)
+                            g_dev['obs'].enqueue_for_calibrationUI(80, filepathaws,filenameaws)
                                                         
                         except Exception as e:
                             plog ("Could not save flat frame: ",e)
