@@ -2536,10 +2536,13 @@ class Observatory:
                     #while True:
                     try:
                         # Different timeouts for different filesizes.
+                        # Large filesizes are usually calibration files during the daytime
+                        # So need and can have longer timeouts to get it up the pipe.
                         if os.path.getsize(filepath) > 50000000:
-                            reqs.post(aws_resp["url"], data=aws_resp["fields"], files=files, timeout=(45,600))
+                            reqs.post(aws_resp["url"], data=aws_resp["fields"], files=files, timeout=1200)
                         else:
-                            reqs.post(aws_resp["url"], data=aws_resp["fields"], files=files, timeout=(10,30))                            
+                            reqs.post(aws_resp["url"], data=aws_resp["fields"], files=files, timeout=45)  
+                        plog("SUCCESS FOR:" + filename)
                     except Exception as e:
                         if 'timeout' in str(e).lower() or 'SSLWantWriteError' in str(e):
                             plog("Seems to have been a timeout on the file posted: " + str(e) + "Putting it back in the queue.")                           
@@ -2547,10 +2550,10 @@ class Observatory:
                             #breakpoint()
                             self.fast_queue.put((100, pri_image[1]), block=False)
                         else:
-                            plog("Non-fatal connection glitch for a file posted: " + str(e))                            
+                            plog("Fatal connection glitch for a file posted: " + str(e))                            
                             plog(files)
                             plog((traceback.format_exc()))
-                            breakpoint()
+                            #breakpoint()
                         #time.sleep(5)
                 self.fast_queue.task_done()
                 one_at_a_time = 0
