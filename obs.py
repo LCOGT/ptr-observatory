@@ -2604,7 +2604,7 @@ class Observatory:
                         # and have a reasonable timeout so the UI doesn't glitch out.
                         reqs.post(aws_resp["url"], data=aws_resp["fields"], files=files, timeout=1800)
 
-                        plog("SUCCESS FOR:" + filename)
+                        #plog("SUCCESS FOR:" + filename)
                     except Exception as e:
                         if 'timeout' in str(e).lower() or 'SSLWantWriteError' in str(e):
                             plog("Seems to have been a timeout on the file posted: " + str(e) + "Putting it back in the queue.")                           
