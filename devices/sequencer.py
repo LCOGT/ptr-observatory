@@ -423,7 +423,7 @@ class Sequencer:
                     plog ("Found telescope unparked after Close and Park, parking the scope")
                     g_dev['mnt'].home_command()
                     g_dev['mnt'].park_command()                
-    
+
             if not self.bias_dark_latch and not g_dev['obs'].scope_in_manual_mode and ((events['Eve Bias Dark'] <= ephem_now < events['End Eve Bias Dark']) and \
                  self.config['auto_eve_bias_dark'] and not self.eve_bias_done and g_dev['obs'].camera_sufficiently_cooled_for_calibrations):   #events['End Eve Bias Dark']) and \
                 

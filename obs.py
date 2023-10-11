@@ -3089,6 +3089,8 @@ def wait_for_slew():
 
 if __name__ == "__main__":
 
+   
     
+    #DO NOT RUN CODE until we sort the blocking of the HA filter.
     o = Observatory(ptr_config.obs_id, ptr_config.site_config)
     o.run()  # This is meant to be a never ending loop.
