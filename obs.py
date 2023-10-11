@@ -1510,6 +1510,7 @@ class Observatory:
                             except:
                                 plog("Non-fatal connection glitch for a file posted.")
                                 plog(files)
+                                
                                 time.sleep(5)
                         
                     
@@ -2532,14 +2533,25 @@ class Observatory:
                 aws_resp = authenticated_request("POST", "/upload/", {"object_name": filename})
                 with open(filepath, "rb") as fileobj:
                     files = {"file": (filepath, fileobj)}
-                    while True:
-                        try:
-                            reqs.post(aws_resp["url"], data=aws_resp["fields"], files=files, timeout=45)
-                            break
-                        except:
-                            plog("Non-fatal connection glitch for a file posted.")
+                    #while True:
+                    try:
+                        # Different timeouts for different filesizes.
+                        if os.path.getsize(filepath) > 50000000:
+                            reqs.post(aws_resp["url"], data=aws_resp["fields"], files=files, timeout=(45,600))
+                        else:
+                            reqs.post(aws_resp["url"], data=aws_resp["fields"], files=files, timeout=(10,30))                            
+                    except Exception as e:
+                        if 'timeout' in str(e).lower() or 'SSLWantWriteError' in str(e):
+                            plog("Seems to have been a timeout on the file posted: " + str(e) + "Putting it back in the queue.")                           
+                            plog(filename)
+                            #breakpoint()
+                            self.fast_queue.put((100, pri_image[1]), block=False)
+                        else:
+                            plog("Non-fatal connection glitch for a file posted: " + str(e))                            
                             plog(files)
-                            time.sleep(5)
+                            plog((traceback.format_exc()))
+                            breakpoint()
+                        #time.sleep(5)
                 self.fast_queue.task_done()
                 one_at_a_time = 0
 
