@@ -401,6 +401,14 @@ class Observatory:
         self.fast_queue_thread = threading.Thread(target=self.fast_to_ui, args=())
         self.fast_queue_thread.start()
 
+        self.mediumui_queue = queue.PriorityQueue(maxsize=0)
+        self.mediumui_thread = threading.Thread(target=self.medium_to_ui, args=())
+        self.mediumui_thread.start()
+
+        self.calibrationui_queue = queue.PriorityQueue(maxsize=0)
+        self.calibrationui_thread = threading.Thread(target=self.calibration_to_ui, args=())
+        self.calibrationui_thread.start()
+
         self.slow_camera_queue = queue.PriorityQueue(maxsize=0)
         self.slow_camera_queue_thread = threading.Thread(target=self.slow_camera_process, args=())
         self.slow_camera_queue_thread.start()
@@ -1510,12 +1518,11 @@ class Observatory:
                             except:
                                 plog("Non-fatal connection glitch for a file posted.")
                                 plog(files)
+                                
                                 time.sleep(5)
                         
                     
-                    elif self.env_exists == True and (not frame_exists(fileobj)):        
-                        #retryarchive = 0
-                        #while retryarchive < 3:
+                    elif self.env_exists == True and (not frame_exists(fileobj)):     
                         try:      
                             # Get header explicitly out to send up
                             # This seems to be necessary
@@ -1525,7 +1532,7 @@ class Observatory:
                             for entry in tempheader.keys():
                                 headerdict[entry] = tempheader[entry]
                             upload_file_and_ingest_to_archive(fileobj, file_metadata=headerdict)    
-                            retryarchive = 11
+                           
                             # Only remove file if successfully uploaded
                             if ('calibmasters' not in filepath) or ('ARCHIVE_' in filepath):
                                 try:
@@ -1544,35 +1551,43 @@ class Observatory:
                                 
                             elif 'timed out.' in str(e) or 'TimeoutError' in str(e):
                                 # Not broken, just bung it back in the queue for later
-                                plog("Timeout glitch, trying again: ", e)
+                                plog("Timeout glitch, trying again later: ", e)
+                                time.sleep(10)
                                 self.ptrarchive_queue.put(pri_image, block=False)
                                 # And give it a little sleep
-                                time.sleep(10)    
-                                retryarchive = 11
-                                #retryarchive = 3
+                                return str(filepath.split('/')[-1]) + " timed out."
+                            
+                            elif 'credential_provider' in str(e) or 'endpoint_resolver' in str(e):
+                                plog((traceback.format_exc()))
+                                plog ("This seems to be a nonfatal error, but MTF is tracebacking to try and catch what this is. Probably it is just an exception that triggers a retry... but we shall see.")
+                                time.sleep(10)
+                                self.ptrarchive_queue.put(pri_image, block=False)
+                                
+                                return str(filepath.split('/')[-1]) + " got an odd error, but retrying."
+                                
                             else:
                                 plog("couldn't send to PTR archive for some reason: ", e)  
                                 
                                 #plog((traceback.format_exc()))
-                                #breakpoint()
-                                #time.sleep(10)
-                                #if retryarchive < 10:
-                                #retryarchive = retryarchive+1
-                                #if retryarchive > 2:
+                                
+                                # And give it a little sleep
+                                time.sleep(10)
+                                
                                 broken =1
+                                # return str(filepath.split('/')[-1]) + " failed."
                                         
                 
                 if broken == 1:
                     try:
                         shutil.move(filepath, self.broken_path + filename)
-                        retryarchive = 11
                     except:
                         plog ("Couldn't move " + str(filepath) + " to broken folder.")
-                        #plog((traceback.format_exc()))
+
                         self.laterdelete_queue.put(filepath, block=False)
-                        retryarchive = 11
+                    return str(filepath.split('/')[-1]) + " broken."
             except Exception as e:
                 plog ("something strange in the ptrarchive uploader", e)
+                return 'something strange in the ptrarchive uploader'
                     
             
             upload_timer=time.time() - upload_timer
@@ -1743,7 +1758,7 @@ class Observatory:
                         self.enqueue_for_fastUI(
                             100, paths["im_path"], paths["jpeg_name10"]
                         )
-                        self.enqueue_for_fastUI(
+                        self.enqueue_for_mediumUI(
                             1000, paths["im_path"], paths["jpeg_name10"].replace('EX10', 'EX20')
                         )
                         plog("JPEG constructed and sent: " +str(time.time() - osc_jpeg_timer_start)+ "s")
@@ -1816,7 +1831,7 @@ class Observatory:
                         sources = Table.read(im_path + text_name.replace('.txt', '.sep'), format='csv')
                         
                         try:
-                            self.enqueue_for_fastUI(200, im_path, text_name.replace('.txt', '.sep'))                                
+                            self.enqueue_for_mediumUI(200, im_path, text_name.replace('.txt', '.sep'))                                
                         except:
                             plog("Failed to send SEP up for some reason")
                         
@@ -1912,7 +1927,7 @@ class Observatory:
                 
                 if os.path.exists(im_path + text_name.replace('.txt', '.rad')):
                     try:
-                        self.enqueue_for_fastUI(250, im_path, text_name.replace('.txt', '.rad'))
+                        self.enqueue_for_mediumUI(250, im_path, text_name.replace('.txt', '.rad'))
                     except:
                         plog("Failed to send RAD up for some reason")
                 
@@ -1920,12 +1935,12 @@ class Observatory:
                     self.enqueue_for_fastUI(100, im_path, text_name.replace('EX00.txt', 'EX10.jpg'))
                 
                 try:
-                    self.enqueue_for_fastUI(180, im_path, text_name.replace('.txt', '.his'))
+                    self.enqueue_for_mediumUI(180, im_path, text_name.replace('.txt', '.his'))
                 except:
                     plog("Failed to send HIS up for some reason")
                 if os.path.exists(im_path + text_name.replace('.txt', '.box')):
                     try:
-                        self.enqueue_for_fastUI(180, im_path, text_name.replace('.txt', '.box'))
+                        self.enqueue_for_mediumUI(180, im_path, text_name.replace('.txt', '.box'))
                     except:
                         plog("Failed to send BOX up for some reason")
 
@@ -2526,19 +2541,142 @@ class Observatory:
                 aws_resp = authenticated_request("POST", "/upload/", {"object_name": filename})
                 with open(filepath, "rb") as fileobj:
                     files = {"file": (filepath, fileobj)}
-                    while True:
-                        try:
-                            reqs.post(aws_resp["url"], data=aws_resp["fields"], files=files, timeout=45)
-                            break
-                        except:
-                            plog("Non-fatal connection glitch for a file posted.")
+                    #while True:
+                    try:                        
+                        reqs.post(aws_resp["url"], data=aws_resp["fields"], files=files, timeout=10)  
+                        #plog("SUCCESS FOR:" + filename)
+                    except Exception as e:
+                        if 'timeout' in str(e).lower() or 'SSLWantWriteError' in str(e):
+                            plog("Seems to have been a timeout on the file posted: " + str(e) + "Putting it back in the queue.")                           
+                            plog(filename)
+                            #breakpoint()
+                            self.fast_queue.put((100, pri_image[1]), block=False)
+                        else:
+                            plog("Fatal connection glitch for a file posted: " + str(e))                            
                             plog(files)
-                            time.sleep(5)
+                            plog((traceback.format_exc()))
+                            #breakpoint()
+                        #time.sleep(5)
                 self.fast_queue.task_done()
                 one_at_a_time = 0
 
             else:
                 time.sleep(0.05)
+
+    # Note this is a thread!
+    def calibration_to_ui(self):
+        """Sends large calibrations files to AWS.
+
+        This is primarily a queue for calibration masters to the UI so 
+        they don't slow down the other UI queues. 
+        
+        This allows small files to be uploaded simultaneously
+        with bigger files being processed by the ordinary queue.
+
+        The pri_image is a tuple, smaller first item has priority.
+        The second item is also a tuple containing im_path and name.
+        """
+
+        one_at_a_time = 0
+        while True:
+
+            if (not self.calibrationui_queue.empty()) and one_at_a_time == 0:
+                one_at_a_time = 1
+                pri_image = self.calibrationui_queue.get(block=False)
+                if pri_image is None:
+                    plog("Got an empty entry in fast_queue.")
+                    self.calibrationui_queue.task_done()
+                    one_at_a_time = 0
+                    continue
+
+                # Here we parse the file, set up and send to AWS
+                filename = pri_image[1][1]
+                filepath = pri_image[1][0] + filename  # Full path to file on disk
+                aws_resp = authenticated_request("POST", "/upload/", {"object_name": filename})
+                with open(filepath, "rb") as fileobj:
+                    files = {"file": (filepath, fileobj)}
+                    #while True:
+                    try:
+                        # Different timeouts for different filesizes.
+                        # Large filesizes are usually calibration files during the daytime
+                        # So need and can have longer timeouts to get it up the pipe.
+                        # However small UI files need to get up in some reasonable amount of time
+                        # and have a reasonable timeout so the UI doesn't glitch out.
+                        reqs.post(aws_resp["url"], data=aws_resp["fields"], files=files, timeout=1800)
+
+                        #plog("SUCCESS FOR:" + filename)
+                    except Exception as e:
+                        if 'timeout' in str(e).lower() or 'SSLWantWriteError' in str(e):
+                            plog("Seems to have been a timeout on the file posted: " + str(e) + "Putting it back in the queue.")                           
+                            plog(filename)
+                            #breakpoint()
+                            self.calibrationui_queue.put((100, pri_image[1]), block=False)
+                        else:
+                            plog("Fatal connection glitch for a file posted: " + str(e))                            
+                            plog(files)
+                            plog((traceback.format_exc()))
+                            #breakpoint()
+                        #time.sleep(5)
+                self.calibrationui_queue.task_done()
+                one_at_a_time = 0
+
+            else:
+                time.sleep(0.05)
+
+    # Note this is a thread!
+    def medium_to_ui(self):
+        """Sends medium files needed for the inspection tab to the UI.
+
+        This is primarily a queue for files that need to get to the UI fairly quickly
+        but not as rapidly needed as the fast queue. 
+        
+        This allows small files to be uploaded simultaneously
+        with bigger files being processed by the ordinary queue.
+
+        The pri_image is a tuple, smaller first item has priority.
+        The second item is also a tuple containing im_path and name.
+        """
+
+        one_at_a_time = 0
+        while True:
+
+            if (not self.mediumui_queue.empty()) and one_at_a_time == 0:
+                one_at_a_time = 1
+                pri_image = self.mediumui_queue.get(block=False)
+                if pri_image is None:
+                    plog("Got an empty entry in mediumui_queue.")
+                    self.mediumui_queue.task_done()
+                    one_at_a_time = 0
+                    continue
+
+                # Here we parse the file, set up and send to AWS
+                filename = pri_image[1][1]
+                filepath = pri_image[1][0] + filename  # Full path to file on disk
+                aws_resp = authenticated_request("POST", "/upload/", {"object_name": filename})
+                with open(filepath, "rb") as fileobj:
+                    files = {"file": (filepath, fileobj)}
+                    #while True:
+                    try:                        
+                        reqs.post(aws_resp["url"], data=aws_resp["fields"], files=files, timeout=300)  
+                        #plog("SUCCESS FOR:" + filename)
+                    except Exception as e:
+                        if 'timeout' in str(e).lower() or 'SSLWantWriteError' in str(e):
+                            plog("Seems to have been a timeout on the file posted: " + str(e) + "Putting it back in the queue.")                           
+                            plog(filename)
+                            #breakpoint()
+                            self.mediumui_queue.put((100, pri_image[1]), block=False)
+                        else:
+                            plog("Fatal connection glitch for a file posted: " + str(e))                            
+                            plog(files)
+                            plog((traceback.format_exc()))
+                            #breakpoint()
+                        #time.sleep(5)
+                self.mediumui_queue.task_done()
+                one_at_a_time = 0
+
+            else:
+                time.sleep(0.05)
+
 
     def send_to_user(self, p_log, p_level="INFO"):
         url_log = "https://logs.photonranch.org/logs/newlog"
@@ -2899,6 +3037,14 @@ class Observatory:
     def enqueue_for_fastUI(self, priority, im_path, name):
         image = (im_path, name)
         self.fast_queue.put((priority, image), block=False)
+        
+    def enqueue_for_mediumUI(self, priority, im_path, name):
+        image = (im_path, name)
+        self.mediumui_queue.put((priority, image), block=False)
+    
+    def enqueue_for_calibrationUI(self, priority, im_path, name):
+        image = (im_path, name)
+        self.calibrationui_queue.put((priority, image), block=False)
 
     def to_smartstack(self, to_red):
         self.smartstack_queue.put(to_red, block=False)
@@ -2943,6 +3089,8 @@ def wait_for_slew():
 
 if __name__ == "__main__":
 
+   
     
+    #DO NOT RUN CODE until we sort the blocking of the HA filter.
     o = Observatory(ptr_config.obs_id, ptr_config.site_config)
     o.run()  # This is meant to be a never ending loop.
