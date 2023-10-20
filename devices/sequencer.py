@@ -3424,7 +3424,7 @@ class Sequencer:
                     
                     g_dev['foc'].guarded_move((extensive_focus)*g_dev['foc'].micron_to_steps)
 
-                    g_dev['foc'].last_known_focus=(extensive_focus)*g_dev['foc'].micron_to_steps
+                    g_dev['foc'].last_known_focus=(extensive_focus)
 
                     self.af_guard = False
                     plog("Returning to RA:  " +str(start_ra) + " Dec: " + str(start_dec))
@@ -3914,7 +3914,7 @@ class Sequencer:
             plog (solved_pos)
             plog (minimumFWHM)
             g_dev['foc'].guarded_move((solved_pos)*g_dev['foc'].micron_to_steps)
-            g_dev['foc'].last_known_focus=(solved_pos)*g_dev['foc'].micron_to_steps
+            g_dev['foc'].last_known_focus=(solved_pos)
 
             if not no_auto_after_solve:
                 self.auto_focus_script(None,None, skip_timer_check=True, extensive_focus=solved_pos) 
