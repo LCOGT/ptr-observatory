@@ -1289,13 +1289,21 @@ class Camera:
             frame_type = "focus"
             bias_dark_or_light_type_frame = 'light'
             lamps = None
+        elif imtype.lower() == "pointing":
+            frame_type = "pointing"
+            bias_dark_or_light_type_frame = 'light'
+            lamps = None
         else:  # 'light', 'experimental', 'autofocus probe', 'quick', 'test image', or any other image type
             bias_dark_or_light_type_frame = 'light'
             lamps = None
             if imtype.lower() in ("experimental", "autofocus probe", "auto_focus"):
                 frame_type = "experimental"
+                bias_dark_or_light_type_frame = 'light'
+                lamps = None
             else:
                 frame_type = "expose"
+                bias_dark_or_light_type_frame = 'light'
+                lamps = None
         
         self.smartstack = required_params.get('smartstack', True)
         self.longstack = required_params.get('longstackswitch', False)
