@@ -577,6 +577,10 @@ class Observatory:
 
         uri = f"{self.config['obs_id']}/config/"
         self.config["events"] = g_dev["events"]
+        # Insert camera size into config
+        self.config['camera']['camera_1_1']['camera_size_x'] = g_dev['cam'].imagesize_x
+        self.config['camera']['camera_1_1']['camera_size_y'] = g_dev['cam'].imagesize_y
+        #breakpoint()
 
         retryapi=True
         while retryapi:
