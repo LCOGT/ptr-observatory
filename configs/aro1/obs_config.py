@@ -58,7 +58,7 @@ site_config = {
     'minimum_distance_from_the_moon_when_taking_flats': 30,
     'lowest_requestable_altitude': -1,  # Degrees. For normal pointing requests don't allow requests to go this low.
     'degrees_to_avoid_zenith_area_for_calibrations': 0, 
-    'temperature_at_which_obs_too_hot_for_camera_cooling' : 30, # NB NB WER ARO Obs has a chiller
+    'temperature_at_which_obs_too_hot_for_camera_cooling' : 32, # NB NB WER ARO Obs has a chiller
 
     # These are the default values that will be set for the obs
     # on a reboot of obs.py. They are safety checks that 
@@ -103,7 +103,7 @@ site_config = {
     
     # TIMING FOR CALENDAR EVENTS
     # How many minutes with respect to eve sunset start flats
-    'eve_sky_flat_sunset_offset': -45.,  # 40 before Minutes  neg means before, + after.
+    'eve_sky_flat_sunset_offset': -65.,  # 40 before Minutes  neg means before, + after.
     # How many minutes after civilDusk to do....
     'end_eve_sky_flats_offset': 5 , 
     'clock_and_auto_focus_offset': 8,
@@ -404,7 +404,7 @@ site_config = {
                         ['PR',   [0,  8],    0, 437.,  [.32 ,  20], 'Photo Blue'],     #3
                         ['PG',   [0,  7],    0, 487.,  [30  , 170], 'Photo Green'],     #4
                         ['PB',   [0,  6],    0, 844,   [360 , 170], 'Photo Blue'],     #5
-                        ['NIR',  [0, 10],    0, 614.,  [0.65,  20], 'Near IR - redward of PR'],     #6
+                        ['NIR',  [0, 10],    0, 52.,  [0.65,  20], 'Near IR - redward of PR'],     #6
                         
                         ['O3',   [0,  2],    0, 80.0,  [360 , 170], 'Oxygen III'],     #7    #guess
                         ['HA',   [0,  3],    0, 41.7,  [360 , 170], 'Hydrogen Alpha - aka II'],     #8
@@ -513,7 +513,7 @@ site_config = {
                 'direct_qhy_readout_mode' : 3,        
                 'direct_qhy_gain' : 26,
                 'direct_qhy_offset' : 60,  
-                'direct_qhy_usb_speed' : 60,
+                'direct_qhy_usb_speed' : 50,
                                 
                 # These options set whether an OSC gets binned or interpolated for different functions
                 # If the pixel scale is well-sampled (e.g. 0.6 arcsec per RGGB pixel or 0.3 arcsec per individual debayer pixel)
@@ -659,10 +659,10 @@ site_config = {
                 # As simple as it states, how many calibration frames to collect and how many to store.                
                 'number_of_bias_to_collect': 33,
                 'number_of_dark_to_collect': 15,
-                'number_of_flat_to_collect': 10,
-                'number_of_bias_to_store': 45,
-                'number_of_dark_to_store': 45,
-                'number_of_flat_to_store': 31,
+                'number_of_flat_to_collect': 9,
+                'number_of_bias_to_store': 63,
+                'number_of_dark_to_store': 31,
+                'number_of_flat_to_store': 17,
                 # Default dark exposure time.
                 'dark_exposure': 360,
                

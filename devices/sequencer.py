@@ -4484,7 +4484,7 @@ class Sequencer:
                         self.kill_and_reboot_theskyx(g_dev["mnt"].last_ra_requested, g_dev["mnt"].last_dec_requested)
                     else:
                         plog(traceback.format_exc())
-                        breakpoint() 
+                        
                 self.wait_for_slew()
                 
                 req = {'time': float(self.config['pointing_exposure_time']) * 3,  'alias':  str(self.config['camera']['camera_1_1']['name']), 'image_type': 'pointing'}   #  NB Should pick up filter and constats from config
