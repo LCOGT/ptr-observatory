@@ -5,7 +5,7 @@ from ocs_archive.settings import settings
 class PtrHeaderData(HeaderData):
     def get_archive_frame_data(self):
         archive_frame_data = super().get_archive_frame_data()
-        # add additional metadata as neeeded
+        # add additional metadata as needed
         archive_frame_data['user_id'] = self.get_user_id()
         return archive_frame_data
     
