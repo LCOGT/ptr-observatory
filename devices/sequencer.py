@@ -628,7 +628,14 @@ class Sequencer:
                                 plog(traceback.format_exc())
                             self.block_guard=False
                             self.currently_mosaicing = False
-                            self.blockend = None                        
+                            self.blockend = None        
+                        else:
+                            plog ("Something didn't work, cancelling out of doing projects and putting it in the completes pile.")
+                            self.append_completes(completed_block['event_id'])
+                            self.block_guard=False
+                            self.currently_mosaicing = False
+                            self.blockend = None        
+                            
                                                              
                 except:
                     plog(traceback.format_exc())
