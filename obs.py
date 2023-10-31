@@ -326,7 +326,7 @@ class Observatory:
         self.exposure_halted_indicator = False
         self.camera_sufficiently_cooled_for_calibrations=True
         self.last_slew_was_pointing_slew=False
-        self.open_and_enabled_to_observe = False
+        self.open_and_enabled_to_observe = True
         self.net_connection_dead = False
         
         
@@ -2929,9 +2929,9 @@ class Observatory:
             for enclosurekey in aws_enclosure_status['status']['enclosure']['enclosure1'].keys():
                 aws_enclosure_status['status']['enclosure']['enclosure1'][enclosurekey]=aws_enclosure_status['status']['enclosure']['enclosure1'][enclosurekey]['val']
         
-            if self.assume_roof_open:
-                aws_enclosure_status['status']['enclosure']['enclosure1']["shutter_status"] = 'Sim. Open'
-                aws_enclosure_status['status']['enclosure']['enclosure1']["enclosure_mode"] = "Simulated"
+            # if self.assume_roof_open:
+            #     aws_enclosure_status['status']['enclosure']['enclosure1']["shutter_status"] = 'Sim. Open'
+            #     aws_enclosure_status['status']['enclosure']['enclosure1']["enclosure_mode"] = "Simulated"
             
            
             
