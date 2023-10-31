@@ -103,13 +103,15 @@ site_config = {
     
     # TIMING FOR CALENDAR EVENTS
     # How many minutes with respect to eve sunset start flats
-    'eve_sky_flat_sunset_offset': -65.,  # 40 before Minutes  neg means before, + after.
-    # How many minutes after civilDusk to do....
-    'end_eve_sky_flats_offset': 5 , 
-    'clock_and_auto_focus_offset': 8,
-    'observing_begins_offset': 18,    
+    'bias_dark interval':  105.,   #minutes
+    'eve_sky_flat_sunset_offset': -45.,  # Before Sunset Minutes  neg means before, + after.
+    'end_eve_sky_flats_offset': -1 ,      # How many minutes after civilDusk to do....
+    'morn_flat_start_offset': -10,       #min from Sunrise
+    'morn_flat_end_offset':  +40,        #min from Sunrise
+    'clock_and_auto_focus_offset':-15,   #min from AstroDark   
+    #'observing_begins_offset': -1,       #min from AstroDark  
     # How many minutes before civilDawn to do ....
-    'observing_ends_offset': 18,   
+    'astro_dark_buffer': 30,   #Min before and after AD to extend observing window
 
     
      # Exposure times for standard system exposures
@@ -123,6 +125,7 @@ site_config = {
      # Turn on and off various automated calibrations at different times.
      'auto_eve_bias_dark': True,
      'auto_eve_sky_flat': True,
+     'time_to_wait_after_roof_opens_to_take_flats': 120,
      'auto_midnight_moonless_bias_dark': False,
      'auto_morn_sky_flat': True,
      'auto_morn_bias_dark': True,
@@ -268,7 +271,7 @@ site_config = {
             'filter_wheel_name':  'filter_wheel1',
             'has_fans':  True,
             'has_cover':  False,
-            'axis_offset_east': -19.5,  # East is negative  THese will vary per telescope.
+            'axis_offset_east': -19.5,  # East is negative  These will vary per telescope.
             'axis_offset_south': -8,  # South is negative
 
             'settings': {
@@ -387,42 +390,42 @@ site_config = {
             "dual_wheel": True,
             'filter_reference': 'PL',
             'settings': {
-                'filter_count': 43,
+                'filter_count': 23,
                 "filter_type": "50mm_sq.",
                 "filter_manuf": "Astrodon",
                 'home_filter':  1,
                 'default_filter': "PL",
                 'focus_filter' : 'PL',
-                'filter_reference': 1,   # We choose to use W as the default filter.  Gains taken at F9, Ceravolo 300mm
+                'filter_reference': 1,   # We choose to use PL as the default filter.  Gains taken at F9, Ceravolo 300mm
                 # Columns for filter data are : ['filter', 'filter_index', 'filter_offset', 'sky_gain', 'screen_gain', 'alias']
                 #NB NB Note to WER please add cwl, bw and 'shape'
                 'filter_data': [
-                        ['Air',  [0,  0], -800, 1050., [2   ,  20], 'AIR'],    #0  Gains 20230703 
+                        ['Air',  [0,  0], -800, 1970., [2   ,  20], 'AIR'],    #0  Gains 20230703 
                         ['Exo',  [8,  0],    0, 1015., [360 , 170], 'Exoplanet - yellow, no UV or NIR'],     #1
                         
-                        ['PL',   [7,  0],    0, 988.,  [360 , 170], 'Photo Luminance - does not pass NIR'],     #2
+                        ['PL',   [7,  0],    0, 1800., [360 , 170], 'Photo Luminance - does not pass NIR'],     #2
                         ['PR',   [0,  8],    0, 437.,  [.32 ,  20], 'Photo Blue'],     #3
-                        ['PG',   [0,  7],    0, 487.,  [30  , 170], 'Photo Green'],     #4
-                        ['PB',   [0,  6],    0, 844,   [360 , 170], 'Photo Blue'],     #5
-                        ['NIR',  [0, 10],    0, 52.,  [0.65,  20], 'Near IR - redward of PR'],     #6
+                        ['PG',   [0,  7],    0, 445.,  [30  , 170], 'Photo Green'],     #4
+                        ['PB',   [0,  6],    0, 545,   [360 , 170], 'Photo Blue'],     #5
+                        ['NIR',  [0, 10],    0, 184.,  [0.65,  20], 'Near IR - redward of PR'],     #6  Value suspect 2023/10/23 WER
                         
-                        ['O3',   [0,  2],    0, 80.0,  [360 , 170], 'Oxygen III'],     #7    #guess
-                        ['HA',   [0,  3],    0, 41.7,  [360 , 170], 'Hydrogen Alpha - aka II'],     #8
-                        ['N2',   [13, 0],    0, 20.67, [360 , 170], 'Nitrogen II'],     #9
-                        ['S2',   [0,  4],    0, 20.11, [0.65,  20], 'Sulphur II'],     #10
-                        ['CR',   [0,  5],    0, 45.0,  [360 , 170], 'Continuum Red - for Star subtraction'],     #11
+                        ['O3',   [0,  2],    0, 45.0,  [360 , 170], 'Oxygen III'],     #7    #guess
+                        ['HA',   [0,  3],    0, 13.8,  [360 , 170], 'Hydrogen Alpha - aka II'],     #8
+                        ['N2',   [13, 0],    0, 7.04,  [360 , 170], 'Nitrogen II'],     #9
+                        ['S2',   [0,  4],    0, 6.53,  [0.65,  20], 'Sulphur II'],     #10
+                        ['CR',   [0,  5],    0, 15.0,  [360 , 170], 'Continuum Red - for Star subtraction'],     #11
                         
-                        ['up',   [1,  0],    0, 25.61, [2   ,  20], "Sloan u'"],     #12
-                        ['BB',   [9,  0],    0, 469.,  [0.65,  20], 'Bessell B'],     #13
-                        ['gp',   [2,  0],    0, 913.,  [.77 ,  20], "Sloan g'"],     #14
-                        ['BV',   [10, 0],    0, 613.,  [.32 ,  20], 'Bessell V'],     #15
-                        ['BR',   [11, 0],    0, 609.,  [10  , 170], 'Bessell R'],     #16
-                        ['rp',   [3,  0],    0, 469.,  [1.2 ,  20], "Sloan r'"],     #17
-                        ['ip',   [4,  0],    0, 491.,  [.65 ,  20], "Sloan i'"],     #18
-                        ['BI',   [12, 0],    0, 415.,  [360 , 170], 'Bessell I'],     #19
-                        ['zp',   [0,  9],    0, 107.6, [360 , 170], "Sloan z'"],     #20    # NB I think these may be backward labeled,
-                        ['zs',   [5,  0],    0, 107.4, [1.0 ,  20], "Sloan z-short"],     #21    # NB ZP is a broader filter than zs.
-                        ['Y',    [6,  0],    0, 7.28,  [360 , 170], "Rubin Y - low throughput, defective filter in top area "],     #22
+                        ['up',   [1,  0],    0, 32.5,  [2   ,  20], "Sloan u'"],     #12
+                        ['BB',   [9,  0],    0, 522.,  [0.65,  20], 'Bessell B'],     #13
+                        ['gp',   [2,  0],    0, 650.,  [.77 ,  20], "Sloan g'"],     #14
+                        ['BV',   [10, 0],    0, 435.,  [.32 ,  20], 'Bessell V'],     #15
+                        ['BR',   [11, 0],    0, 450.,  [10  , 170], 'Bessell R'],     #16
+                        ['rp',   [3,  0],    0, 499.,  [1.2 ,  20], "Sloan r'"],     #17
+                        ['ip',   [4,  0],    0, 217.,  [.65 ,  20], "Sloan i'"],     #18
+                        ['BI',   [12, 0],    0, 142.,  [360 , 170], 'Bessell I'],     #19
+                        ['zp',   [0,  9],    0,  33.,  [360 , 170], "Sloan z'"],     #20    # NB I think these may be backward labeled,
+                        ['zs',   [5,  0],    0, 23.88, [1.0 ,  20], "Sloan z-short"],     #21    # NB ZP is a broader filter than zs.
+                        ['Y',    [6,  0],    0, 7.3,   [360 , 170], "Rubin Y - low throughput, defective filter in top area "],     #22
                         
   
                         ['dark', [5,  6],    0, 0.00,  [360 , 170], 'dk']],    #23     #Not a real filter.
@@ -430,8 +433,8 @@ site_config = {
                 
 
                 'filter_screen_sort':  ['ip'],   # don't use narrow yet,  8, 10, 9], useless to try.
-                'filter_sky_sort': ['S2','N2','up','HA','CR','O3','zs','zp','BI','PR','rp','BB','PG', \
-                                    'ip','BR','BV','NIR','PB','gp','PL','EXO','air'],
+                'filter_sky_sort': ['N2','S2','HA','CR','up','zs','zp','O3','BI','NIR','ip','PG', 'BV', 'BR', \
+                                    'PB','BB','PR','rp','gp','EXO','PL','air'],
                 
                 
                
@@ -613,6 +616,9 @@ site_config = {
                 'native_bin': 2, # Needs to be simple, it will recalculate things on the 1x1 binning pixscale above.
                 'x_pixel':  3.76, # pixel size in microns
                 'y_pixel':  3.76, # pixel size in microns
+                'field_x':  1.3992,   #4770*2*0.528/3600
+                'field_y':  0.9331,    #3181*2*0.528/3600
+                'field_sq_deg':  1.3056, 
                 # The drizzle_value is by the new pixelscale
                 # for the new resolution when stacking in the EVA pipeline
                 # Realistically you want a resolution of about 0.5 arcseconds per pixel

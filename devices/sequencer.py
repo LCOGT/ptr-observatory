@@ -438,7 +438,7 @@ class Sequencer:
                 self.eve_bias_done = True
                 self.bias_dark_latch = False
 
-            if (time.time() - g_dev['seq'].time_roof_last_opened > 1200 ) and not self.eve_sky_flat_latch and not g_dev['obs'].scope_in_manual_mode and ((events['Eve Sky Flats'] <= ephem_now < events['End Eve Sky Flats'])  \
+            if (time.time() - g_dev['seq'].time_roof_last_opened > self.config['time_to_wait_after_roof_opens_to_take_flats'] ) and not self.eve_sky_flat_latch and not g_dev['obs'].scope_in_manual_mode and ((events['Eve Sky Flats'] <= ephem_now < events['End Eve Sky Flats'])  \
                    and self.config['auto_eve_sky_flat'] and g_dev['obs'].open_and_enabled_to_observe and not self.eve_flats_done and g_dev['obs'].camera_sufficiently_cooled_for_calibrations):
     
                 self.eve_sky_flat_latch = True
@@ -532,7 +532,7 @@ class Sequencer:
                 
                 self.night_focus_ready=False
                 self.clock_focus_latch = False
-    
+                
             if (events['Observing Begins'] <= ephem_now \
                                         < events['Observing Ends']) and not self.block_guard and not g_dev["cam"].exposure_busy\
                                         and  (time.time() - self.project_call_timer > 10) and not g_dev['obs'].scope_in_manual_mode  and g_dev['obs'].open_and_enabled_to_observe and self.clock_focus_latch == False:
@@ -2374,7 +2374,7 @@ class Sequencer:
             flatspotalt, flatspotaz = g_dev['mnt'].flat_spot_now()
             temp_separation=((ephem.separation( (flatspotaz,flatspotalt), (moondata.az.deg,moondata.alt.deg))))
 
-            if (moondata.alt.deg < -15):
+            if (moondata.alt.deg < -5):
                 plog ("Moon is far below the ground, alt " + str(moondata.alt.deg) + ", sky flats going ahead.")
 
             elif temp_separation < math.radians(self.config['minimum_distance_from_the_moon_when_taking_flats']): #and (ephem.Moon(datetime.datetime.now()).moon_phase) > 0.05:

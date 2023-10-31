@@ -482,14 +482,13 @@ class Events:
         self.mid_moon_dec = moon.dec
         self.mid_moon_phase = moon.phase
         if loud:
-            plog('Middle night Moon Ra Dec Phase:  ', moon.ra, moon.dec, moon.phase)  # , moon.az, moon.alt)
+            plog('Middle night,  Moon Ra Dec Phase:  ', moon.ra, moon.dec, moon.phase)  # , moon.az, moon.alt)
 
         # The end of the night is when "End Morn Bias Dark" occurs. All timings must end with that
         # as this is when the night ends and the schedule gets reconfigured. So anything scheduled AFTER
         # then needs to be pulled back a day. Primarily because it sometimes does weird things.....
         self.endNightTime = ephem.Date(self.sunrise + 120/1440.)
         self.cool_down_open = self.sunset + self.wema_config['eve_cool_down_open']/1440
-        
         self.close_and_park = self.sunrise + self.wema_config['morn_close_and_park']/1440
         self.eve_skyFlatBegin = self.sunset + self.config['eve_sky_flat_sunset_offset']/1440
 
@@ -523,38 +522,44 @@ class Events:
                 
         # we want the end of eve bias dark to be at least 2* dark exposure before the roof opens
         dark_exposure_in_minutes = self.config['camera']['camera_1_1']['settings']['dark_exposure'] /60
+        self.endNightTime = ephem.Date(self.sunrise + 120/1440.)
 
-        self.evnt = [('Eve Bias Dark      ', ephem.Date(self.cool_down_open- 125/1440)),
+        self.cool_down_open = self.sunset + self.wema_config['eve_cool_down_open']/1440
+        self.close_and_park = self.sunrise + self.wema_config['morn_close_and_park']/1440
+        #******************  NB NB Cool down and open comes from the WEMA Config.
+        #***** Code in this computer has to verify open was not delayed or close is early.
+
+        self.evnt = [('Eve Bias Dark      ', ephem.Date(self.cool_down_open - self.config['bias_dark interval']/1440)),
                      ('End Eve Bias Dark  ', ephem.Date(self.cool_down_open - (2*dark_exposure_in_minutes)/1440)),
-                     ('Ops Window Start   ', ephem.Date(self.eve_skyFlatBegin)),  # Enclosure may open.
+                     ('Ops Window Start   ', ephem.Date(self.cool_down_open)),  # Enclosure may open.
                      ('Cool Down, Open    ', ephem.Date(self.cool_down_open)),
-                     ('Eve Sky Flats      ', ephem.Date(self.eve_skyFlatBegin)),  # Nominally -35 for SRO
+                     ('Eve Sky Flats      ', ephem.Date(self.sunset + self.config['eve_sky_flat_sunset_offset']/1440)),  # Nominally -35 for SRO
                      ('Sun Set            ', ephem.Date(self.sunset)),
                      ('Civil Dusk         ', ephem.Date(self.civilDusk)),
-                     ('Naut Dusk          ', ephem.Date(self.nauticalDusk)),
                      #('End Eve Sky Flats  ', ephem.Date(self.nauticalDusk - 10/1440)),
                      ('End Eve Sky Flats  ', ephem.Date(self.civilDusk + self.config['end_eve_sky_flats_offset']/1440)),
                      #('Clock & Auto Focus ', ephem.Date(self.nautDusk_plus_half - 8/1440.)),
-                     ('Clock & Auto Focus ', ephem.Date(self.civilDusk + self.config['clock_and_auto_focus_offset']/1440)),
+                     ('Clock & Auto Focus ', ephem.Date(self.astroDark + self.config['clock_and_auto_focus_offset']/1440)),
                      #('Observing Begins   ', ephem.Date(self.nautDusk_plus_half)),
-                     ('Observing Begins   ', ephem.Date(self.civilDusk + self.config['observing_begins_offset']/1440)),
+                     ('Observing Begins   ', ephem.Date(self.astroDark - self.config['astro_dark_buffer']/1440)),
+                     ('Naut Dusk          ', ephem.Date(self.nauticalDusk)),
                      ('Astro Dark         ', ephem.Date(self.astroDark)),
                      ('Middle of Night    ', ephem.Date(self.middleNight)),
                      ('End Astro Dark     ', ephem.Date(self.astroEnd)),
                      #('Observing Ends     ', ephem.Date(self.nautDawn_minus_half)),
-                     ('Observing Ends     ', ephem.Date(self.civilDawn - self.config['observing_ends_offset']/1440)),
+                     ('Observing Ends     ', ephem.Date(self.astroEnd + self.config['astro_dark_buffer']/1440)),
                      ('Naut Dawn          ', ephem.Date(self.nauticalDawn)),
-                     ('Morn Sky Flats     ', ephem.Date(self.nauticalDawn + 30/1440.)),
                      ('Civil Dawn         ', ephem.Date(self.civilDawn)),
-                     ('End Morn Sky Flats ', ephem.Date(self.close_and_park - 5/1440.)),  # SRO drving this
-                     # Enclosure must close 5 min after sunrise
+                     ('Morn Sky Flats     ', ephem.Date(self.sunrise + self.config['morn_flat_start_offset']/1440.)),
+                     ('Sun Rise           ', ephem.Date(self.sunrise)), 
+                     ('End Morn Sky Flats ', ephem.Date(self.sunrise  + self.config['morn_flat_end_offset']/1440.)),                    # Enclosure must close 5 min after sunrise
                      ('Ops Window Closes  ', ephem.Date(self.close_and_park - 2/1440.)),
                      ('Close and Park     ', ephem.Date(self.close_and_park)),
-                     ('Sun Rise           ', ephem.Date(self.sunrise)),
-                     ('Morn Bias Dark     ', ephem.Date(self.close_and_park + 10/1440.)),
-                     ('End Morn Bias Dark ', ephem.Date(self.close_and_park + 120/1440.)),
-                     ('Nightly Reset      ', ephem.Date(self.close_and_park + 150/1440.)),
-                     ('End Nightly Reset  ', ephem.Date(self.close_and_park + 200/1440.)),
+
+                     ('Morn Bias Dark     ', ephem.Date(self.close_and_park + 1/1440.)),  #I guess this is warm-up time!
+                     ('End Morn Bias Dark ', ephem.Date(night_reset := self.close_and_park +  self.config['bias_dark interval']/1440.)),
+                     ('Nightly Reset      ', ephem.Date(night_reset + 15/1440.)),
+                     ('End Nightly Reset  ', ephem.Date(night_reset + 90/1440.)),  #Just a Guess
                      ('Prior Moon Rise    ', ephem.Date(self.last_moonrise)),
                      ('Prior Moon Transit ', ephem.Date(self.last_moontransit)),
                      ('Prior Moon Set     ', ephem.Date(self.last_moonset)),
