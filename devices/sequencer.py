@@ -384,7 +384,7 @@ class Sequencer:
             
             # This bit is really to get the scope up and running if the roof opens
             if ((g_dev['events']['Cool Down, Open']  <= ephem_now < g_dev['events']['Observing Ends'])) and not self.cool_down_latch and \
-                g_dev['obs'].open_and_enabled_to_observe and not g_dev['obs'].scope_in_manual_mode and g_dev['mnt'].mount.AtPark and ((time.time() - self.time_roof_last_opened) < 300) :
+                g_dev['obs'].open_and_enabled_to_observe and not g_dev['obs'].scope_in_manual_mode and g_dev['mnt'].mount.AtPark and ((time.time() - self.time_roof_last_opened) < 10) :
     
                 self.nightly_reset_complete = False
                 self.cool_down_latch = True
@@ -631,7 +631,7 @@ class Sequencer:
                             self.blockend = None        
                         else:
                             plog ("Something didn't work, cancelling out of doing projects and putting it in the completes pile.")
-                            self.append_completes(completed_block['event_id'])
+                            self.append_completes(block['event_id'])
                             self.block_guard=False
                             self.currently_mosaicing = False
                             self.blockend = None        
