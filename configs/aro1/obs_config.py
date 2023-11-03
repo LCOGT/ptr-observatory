@@ -3,14 +3,18 @@
 
 Created on Fri Feb 07,  11:57:41 2020
 Updated 20220914 WER   This version does not support color camera channel.
+Updates 20231102 WER   This is meant to clean up and refactor wema/obsp architecture
 
 @author: wrosing
 
 NB NB NB  If we have one config file then paths need to change depending upon which host does what job.
 
-aro-0m35   10.0.0.73
-aro_wema   10.0.0.50
-Dragonfly  
+aro-0m30      10.0.0.73
+aro-wema      10.0.0.50
+Power Control 10.0.0.100   admin arot******
+Roff Control  10.0.0.200   admin arot******
+Redis         10.0.0.73:6379
+Dragonfly   Obsolete.
 '''
 
 #                                                                                                  1         1         1
@@ -402,7 +406,7 @@ site_config = {
                 # Columns for filter data are : ['filter', 'filter_index', 'filter_offset', 'sky_gain', 'screen_gain', 'alias']
                 #NB NB Note to WER please add cwl, bw and 'shape'
                 'filter_data': [
-                        ['Air',  [0,  0], -800, 1307., [2   ,  20], 'AIR'],    #0  Gains 20230703 
+                        ['Air',  [0,  0], -800, 1850., [2   ,  20], 'AIR'],    #0  Gains 20230703 
                         ['Exo',  [8,  0],    0,  945., [360 , 170], 'Exoplanet - yellow, no UV or NIR'],     #1
                         
                         ['PL',   [7,  0],    0, 1330., [360 , 170], 'Photo Luminance - does not pass NIR'],     #2
