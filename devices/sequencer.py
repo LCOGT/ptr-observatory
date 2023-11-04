@@ -158,7 +158,6 @@ class Sequencer:
         self.nightime_bias_counter = 0
         self.nightime_dark_counter = 0
         
-        
         # Nightly_reset resets all the values back to normal at the end of the night
         # In preparation for the next one.
         self.nightly_reset_complete = False
@@ -208,7 +207,7 @@ class Sequencer:
         
         # We keep track on when we poll for projects
         # It doesn't have to be quite as swift as real-time.
-        self.project_call_timer = time.time() -60
+        self.project_call_timer = time.time() - 120
         
         self.rotator_has_been_homed_this_evening=False
 
@@ -233,7 +232,7 @@ class Sequencer:
                 self.kill_and_reboot_theskyx(g_dev['mnt'].current_icrs_ra, g_dev['mnt'].current_icrs_dec)
             else:
                 plog(traceback.format_exc())
-                breakpoint() 
+                # 
         return 
 
     def get_status(self):
@@ -372,9 +371,9 @@ class Sequencer:
         
         if not self.total_sequencer_control:
             ###########################################################################
-            # While in this part of the sequencer, we need to have manual UI commands turned off
-            # So that if a sequencer script starts running, we don't get an odd request out 
-            # of nowhere that knocks it out
+            # While in this part of the sequencer, we need to have manual UI commands 
+            # turned off.  So that if a sequencer script starts running, we don't get 
+            # an odd request out of nowhere that knocks it out
             g_dev['obs'].stop_processing_command_requests = True
             ###########################################################################
             
@@ -383,8 +382,10 @@ class Sequencer:
                 self.night_focus_ready=True
             
             # This bit is really to get the scope up and running if the roof opens
-            if ((g_dev['events']['Cool Down, Open']  <= ephem_now < g_dev['events']['Observing Ends'])) and not self.cool_down_latch and \
-                g_dev['obs'].open_and_enabled_to_observe and not g_dev['obs'].scope_in_manual_mode and g_dev['mnt'].mount.AtPark and ((time.time() - self.time_roof_last_opened) < 10) :
+            if ((g_dev['events']['Cool Down, Open']  <= ephem_now < g_dev['events']['Observing Ends'])) \
+                and not self.cool_down_latch and g_dev['obs'].open_and_enabled_to_observe \
+                and not g_dev['obs'].scope_in_manual_mode and g_dev['mnt'].mount.AtPark \
+                and ((time.time() - self.time_roof_last_opened) < 10) :
     
                 self.nightly_reset_complete = False
                 self.cool_down_latch = True
@@ -428,8 +429,8 @@ class Sequencer:
                  self.config['auto_eve_bias_dark'] and not self.eve_bias_done and g_dev['obs'].camera_sufficiently_cooled_for_calibrations):   #events['End Eve Bias Dark']) and \
                 
                 self.bias_dark_latch = True
-                req = {'numOfBias': 45, \
-                       'numOfDark': 15, 'darkTime': 180, 'numOfDark2': 3, 'dark2Time': 360, \
+                req = {'numOfBias': 33, \
+                       'numOfDark': 11, 'darkTime': 180, 'numOfDark2': 0, 'dark2Time': 360, \
                        'hotMap': True, 'coldMap': True, 'script': 'genBiasDarkMaster', }  # NB NB All of the prior is obsolete
                 opt = {}
                 
@@ -533,10 +534,10 @@ class Sequencer:
                 self.night_focus_ready=False
                 self.clock_focus_latch = False
                 
-            if (events['Observing Begins'] <= ephem_now \
-                                        < events['Observing Ends']) and not self.block_guard and not g_dev["cam"].exposure_busy\
-                                        and  (time.time() - self.project_call_timer > 10) and not g_dev['obs'].scope_in_manual_mode  and g_dev['obs'].open_and_enabled_to_observe and self.clock_focus_latch == False:
-                                       
+            if  (events['Observing Begins'] <= ephem_now \
+                                       < events['Observing Ends']) and not self.block_guard and not g_dev["cam"].exposure_busy\
+                                       and  (time.time() - self.project_call_timer > 10) and not g_dev['obs'].scope_in_manual_mode  and g_dev['obs'].open_and_enabled_to_observe and self.clock_focus_latch == False:
+                       
                 try:
                     self.nightly_reset_complete = False
                     self.block_guard = True
@@ -550,16 +551,17 @@ class Sequencer:
                     self.update_calendar_blocks()
     
                     # only need to bother with the rest if there is more than 0 blocks. 
+                    self.block_guard=False
                     if not len(self.blocks) > 0:
                         self.block_guard=False
                         g_dev['seq'].blockend= None
                     else:
                         now_date_timeZ = datetime.datetime.utcnow().isoformat().split('.')[0] +'Z'                    
                         identified_block=None
-                        
+                        #breakpoint()
                         for block in self.blocks:  #  This merges project spec into the blocks.
-                            
-                            if (block['start'] <= now_date_timeZ < block['end'])  and not self.is_in_completes(block['event_id']):
+                                   #(block['start'] <= now_date_timeZ < block['end'])
+                            if (block['start'] <= now_date_timeZ < block['end']) and not self.is_in_completes(block['event_id']):
                                                                    
                                 try:
                                     
@@ -577,7 +579,7 @@ class Sequencer:
                                         identified_block=copy.deepcopy(block)
                                 except:
                                     plog(traceback.format_exc())
-                                    breakpoint()
+                                    #
                                     
                         if identified_block == None:
                             self.block_guard = False   # Changed from True WER on 20221011@2:24 UTC
@@ -621,6 +623,7 @@ class Sequencer:
                         
                         if pointing_good:
                             completed_block = self.execute_block(identified_block)  #In this we need to ultimately watch for weather holds.
+                            #
                             try:
                                 self.append_completes(completed_block['event_id'])
                             except:
@@ -629,8 +632,12 @@ class Sequencer:
                             self.block_guard=False
                             self.currently_mosaicing = False
                             self.blockend = None        
+                        elif identified_block is None:
+                            self.block_guard=False
+                            self.currently_mosaicing = False
+                            self.blockend = None
                         else:
-                            plog ("Something didn't work, cancelling out of doing projects and putting it in the completes pile.")
+                            plog ("Something didn't work, cancelling out of doing this project and putting it in the completes pile.")
                             self.append_completes(block['event_id'])
                             self.block_guard=False
                             self.currently_mosaicing = False
@@ -746,6 +753,51 @@ class Sequencer:
         
         
         return
+    
+    
+    def reset_completes(self):
+        
+        """
+        The sequencer keeps track of completed projects, but in certain situations, 
+        you want to flush that list (e.g. roof shut then opened again).
+        """    
+        
+        try:
+            camera = self.config['camera']['camera_1_1']['name']
+            seq_shelf = shelve.open(g_dev['obs'].obsid_path + 'ptr_night_shelf/' + str(camera) + '_completes_' + str(g_dev['obs'].name))
+            seq_shelf['completed_blocks'] = []
+            seq_shelf.close()
+        except:
+            plog('Found an empty shelf.  Reset_(block)completes for:  ', camera)
+        return
+    def append_completes(self, block_id):
+        #
+        camera = self.config['camera']['camera_1_1']['name']
+        seq_shelf = shelve.open(g_dev['obs'].obsid_path + 'ptr_night_shelf/' + str(camera) +'_completes_' + str(g_dev['obs'].name))
+        #plog("block_id:  ", block_id)
+        lcl_list = seq_shelf['completed_blocks']
+        if block_id in lcl_list:
+            plog('Duplicate storage of block_id in pended completes blocked.')
+            seq_shelf.close()
+            return False
+        lcl_list.append(block_id)   #NB NB an in-line append did not work!
+        seq_shelf['completed_blocks']= lcl_list
+        plog('Appended completes contains:  ', seq_shelf['completed_blocks'])
+        seq_shelf.close()
+        return True
+
+    def is_in_completes(self, block_id):
+
+        camera = self.config['camera']['camera_1_1']['name']
+        seq_shelf = shelve.open(g_dev['obs'].obsid_path + 'ptr_night_shelf/' + str(camera) + '_completes_' + str(g_dev['obs'].name))
+        if block_id in seq_shelf['completed_blocks']:
+            seq_shelf.close()            
+            return True
+        else:
+            seq_shelf.close()
+            return False
+    
+    
     def take_lrgb_stack(self, req_None, opt=None):
         return
     def take_wugriz_stack(self, req_None, opt=None):
@@ -768,9 +820,9 @@ class Sequencer:
             (g_dev['events']['Civil Dawn']  < ephem.now() < g_dev['events']['Nightly Reset']):
             plog ("NOT RUNNING PROJECT BLOCK -- IT IS THE DAYTIME!!")
             g_dev["obs"].send_to_user("A project block was rejected as it is during the daytime.")            
-            return
+            return block_specification     #Added wer 20231103
         
-        g_dev['obs'].update()
+        #g_dev['obs'].update()   <<<<<<this is the call that creates at lease one loop
         
         plog('|n|n Starting a new project!  \n')
         plog(block_specification, ' \n\n\n')
@@ -954,7 +1006,8 @@ class Sequencer:
                         return block_specification
                     
                     if g_dev["obs"].stop_all_activity:
-                        plog('stop_all_activity cancelling out of exposure loop')
+                        plog('stop_all_activity cancelling out of exposure loop in seq:blk execute')
+                        
                         #left_to_do =0  
                         self.blockend = None
                         return block_specification 
@@ -1155,7 +1208,7 @@ class Sequencer:
                                         self.kill_and_reboot_theskyx(new_ra, new_dec)
                                     else:
                                         plog(traceback.format_exc())
-                                        breakpoint() 
+                                        # 
                                 self.wait_for_slew()
                             except Exception as e:
                                 plog (traceback.format_exc())
@@ -1745,7 +1798,7 @@ class Sequencer:
                 time.sleep(60)
                 if retries ==4:
                     plog(traceback.format_exc())
-                    breakpoint()
+                    #
         
         return
         
@@ -2212,7 +2265,7 @@ class Sequencer:
                 except:
                     plog ("hit some snag with reporting gains")
                     plog(traceback.format_exc()) 
-                    breakpoint()
+                    #
                                 
                 
                 # THEN reload them to use for the next night.                
@@ -2225,7 +2278,7 @@ class Sequencer:
                     for file in fileList:
                         if self.config['camera'][g_dev['cam'].name]['settings']['hold_flats_in_memory']:
                             tempflatframe=np.load(file)
-                            #breakpoint()
+                            #
                             g_dev['cam'].flatFiles.update({file.split('_')[-2]: np.array(tempflatframe)})
                             del tempflatframe
                         else:
@@ -2980,7 +3033,7 @@ class Sequencer:
             plog("Dark Screen flat, ending:  ",result['patch'], g_dev['fil'].filter_data[filter_number][0], '\n\n')
 
 
-            #breakpoint()
+            #
         g_dev['scr'].set_screen_bright(0)
         g_dev['scr'].screen_dark()
         g_dev['obs'].update()
@@ -3068,7 +3121,7 @@ class Sequencer:
         start_ra = g_dev['mnt'].mount.RightAscension   #Read these to go back.  NB NB Need to cleanly pass these on so we can return to proper target.
         start_dec = g_dev['mnt'].mount.Declination
         focus_start = g_dev['foc'].get_position()
-        #breakpoint()
+        #
 # =============================================================================
 # =============================================================================
 # =============================================================================
@@ -3370,7 +3423,7 @@ class Sequencer:
             except:
                 plog("MTF hunting this bug")
                 plog(traceback.format_exc())
-                breakpoint()
+                #
             self.focussing=False
             return
         
@@ -3833,7 +3886,7 @@ class Sequencer:
                     result['mean_focus'] = g_dev['foc'].get_position()
                 except:
                     plog(traceback.format_exc())
-                    breakpoint()
+                    #
             try:
                 spot = result['FWHM']
                 lsources = result['No_of_sources']
@@ -3941,26 +3994,6 @@ class Sequencer:
         self.af_guard = False
         self.focussing = False
         
-    def append_completes(self, block_id):
-        camera = self.config['camera']['camera_1_1']['name']
-        seq_shelf = shelve.open(g_dev['obs'].obsid_path + 'ptr_night_shelf/' + camera + str(g_dev['obs'].name))
-        plog("block_id:  ", block_id)
-        lcl_list = seq_shelf['completed_blocks']
-        lcl_list.append(block_id)   #NB NB an in-line append did not work!
-        seq_shelf['completed_blocks']= lcl_list
-        plog('Appended completes contains:  ', seq_shelf['completed_blocks'])
-        seq_shelf.close()
-        return
-
-    def is_in_completes(self, check_block_id):
-        camera = self.config['camera']['camera_1_1']['name']
-        seq_shelf = shelve.open(g_dev['obs'].obsid_path + 'ptr_night_shelf/' + camera + str(g_dev['obs'].name))
-        if check_block_id in seq_shelf['completed_blocks']:
-            seq_shelf.close()            
-            return True
-        else:
-            seq_shelf.close()
-            return False
 
 
 
@@ -4089,7 +4122,7 @@ class Sequencer:
                     self.kill_and_reboot_theskyx(grid_star[0] / 15, grid_star[1])
                 else:
                     plog(traceback.format_exc())
-                    breakpoint()  
+                    #  
 
             self.wait_for_slew()
                 
@@ -4328,7 +4361,7 @@ class Sequencer:
                 pass
             
         plog ("Time Taken for queue to clear post-exposure: " + str(time.time() - queue_clear_time))
-        #breakpoint()
+        #
         
         
         if g_dev['obs'].last_platesolved_ra != np.nan and str(g_dev['obs'].last_platesolved_ra) != 'nan':
@@ -4619,8 +4652,8 @@ class Sequencer:
 
         url_blk = "https://calendar.photonranch.org/calendar/siteevents"
         # UTC VERSION
-        start_aperture = str(g_dev['events']['Prior Moon Transit']).split()
-        #start_aperture = str(g_dev['events']['Eve Sky Flats']).split()
+        #start_aperture = str(g_dev['events']['Prior Moon Transit']).split()
+        start_aperture = str(g_dev['events']['Eve Sky Flats']).split()
         close_aperture = str(g_dev['events']['End Morn Sky Flats']).split()
 
         # Reformat ephem.Date into format required by the UI
@@ -4657,22 +4690,9 @@ class Sequencer:
         try:
             self.blocks = reqs.post(url_blk, body, timeout=20).json()
         except:
-            plog ("glitch out in the blocks reqs post")
+            plog ("A glitch found in the blocks reqs post, probably date format")
             
-    def reset_completes(self):
-        
-        """
-        The sequencer keeps track of completed projects, but in certain situations, you want to flush that list (e.g. roof shut then opened again).
-        """    
-        
-        try:
-            camera = self.config['camera']['camera_1_1']['name']
-            seq_shelf = shelve.open(g_dev['obs'].obsid_path + 'ptr_night_shelf/' + str(camera) + str(g_dev['obs'].name))
-            seq_shelf['completed_blocks'] = []
-            seq_shelf.close()
-        except:
-            plog('Found an empty shelf.  Reset_(block)completes for:  ', camera)
-        return
+
     
     
     

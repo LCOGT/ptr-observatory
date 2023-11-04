@@ -68,11 +68,11 @@ site_config = {
     # on a reboot of obs.py. They are safety checks that 
     # can be toggled by an admin in the Observe tab.
     'scope_in_manual_mode': False,
-    'mount_reference_model_off': True,
+    'mount_reference_model_off': False,
     'sun_checks_on': True,
-    'moon_checks_on': False,
-    'altitude_checks_on': False,    
-    'daytime_exposure_time_safety_on': False,
+    'moon_checks_on': True,
+    'altitude_checks_on': True,    
+    'daytime_exposure_time_safety_on': True,
     
     
     
@@ -345,7 +345,7 @@ site_config = {
             # 'reference': 5800,    # 20210313  Nominal at 10C Primary temperature
             # 'ref_temp':  5.1,    # Update when pinning reference
             #F9 setup
-            'reference': 5050, #5743,    #  Meas   Nominal at 10C Primary temperature            
+            'reference': 5524, #5743,    #  Meas   Nominal at 10C Primary temperature            
             'z_compression': 0.0, #  microns per degree of zenith distance
             'z_coef_date':  '20221002',
             'minimum': 0,     # NB this area is confusing steps and microns, and need fixing.
