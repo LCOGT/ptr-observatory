@@ -324,21 +324,21 @@ class Observatory:
         self.platesolve_is_processing = False
         self.stop_all_activity = False  # This is used to stop the camera or sequencer
         self.exposure_halted_indicator = False
-        self.camera_sufficiently_cooled_for_calibrations=True
-        self.last_slew_was_pointing_slew=False
+        self.camera_sufficiently_cooled_for_calibrations = True
+        self.last_slew_was_pointing_slew = False
         self.open_and_enabled_to_observe = True
         self.net_connection_dead = False
         
         
         # Set default obs safety settings at bootup
-        self.scope_in_manual_mode=self.config['scope_in_manual_mode']
-        self.moon_checks_on=self.config['moon_checks_on']
-        self.sun_checks_on=self.config['sun_checks_on']
-        self.altitude_checks_on=self.config['altitude_checks_on']
-        self.daytime_exposure_time_safety_on=self.config['daytime_exposure_time_safety_on']
-        self.mount_reference_model_off= self.config['mount_reference_model_off']
+        self.scope_in_manual_mode = self.config['scope_in_manual_mode']
+        self.moon_checks_on = self.config['moon_checks_on']
+        self.sun_checks_on = self.config['sun_checks_on']
+        self.altitude_checks_on = self.config['altitude_checks_on']
+        self.daytime_exposure_time_safety_on = self.config['daytime_exposure_time_safety_on']
+        self.mount_reference_model_off = self.config['mount_reference_model_off']
         self.admin_owner_commands_only = False
-        self.assume_roof_open=False
+        self.assume_roof_open = False
         
        
         # Instantiate the helper class for astronomical events
@@ -1129,8 +1129,8 @@ class Observatory:
             if self.open_and_enabled_to_observe and not self.scope_in_manual_mode and not self.assume_roof_open:
                 if g_dev['obs'].enc_status is not None :
                     if  'Software Fault' in g_dev['obs'].enc_status['shutter_status']:
-                        plog("Software Fault Detected. Will alert the authorities!")
-                        plog("Parking Scope in the meantime")
+                        plog("Software Fault Detected.") #  " Will alert the authorities!")
+                        plog("Parking Scope in the meantime.")
                         self.open_and_enabled_to_observe = False
                         if not g_dev['seq'].morn_bias_dark_latch and not g_dev['seq'].bias_dark_latch:
                             self.cancel_all_activity()   
@@ -1315,9 +1315,9 @@ class Observatory:
                 
             
 
-            if (time.time() - g_dev['seq'].time_roof_last_opened < 180 ):
+            if (time.time() - g_dev['seq'].time_roof_last_opened < 10 ):
                 plog ("Roof opened only recently: " + str(round((time.time() - g_dev['seq'].time_roof_last_opened)/60,1)) +" minutes ago.")
-                plog ("Some functions, particularly flats, won't start until 3 minutes after the roof has opened.")
+                plog ("Some functions, particularly flats, won't start until 10 seconds after the roof has opened.")
 
             
             
@@ -2929,9 +2929,9 @@ class Observatory:
             for enclosurekey in aws_enclosure_status['status']['enclosure']['enclosure1'].keys():
                 aws_enclosure_status['status']['enclosure']['enclosure1'][enclosurekey]=aws_enclosure_status['status']['enclosure']['enclosure1'][enclosurekey]['val']
         
-            # if self.assume_roof_open:
-            #     aws_enclosure_status['status']['enclosure']['enclosure1']["shutter_status"] = 'Sim. Open'
-            #     aws_enclosure_status['status']['enclosure']['enclosure1']["enclosure_mode"] = "Simulated"
+            if self.assume_roof_open:
+                aws_enclosure_status['status']['enclosure']['enclosure1']["shutter_status"] = 'Sim. Open'
+                aws_enclosure_status['status']['enclosure']['enclosure1']["enclosure_mode"] = "Simulated"
             
            
             
@@ -2982,6 +2982,7 @@ class Observatory:
 
         if self.assume_roof_open:
 
+            
             status = {'shutter_status': 'Sim. Open',
             "enclosure_mode": "Simulated"}
 
