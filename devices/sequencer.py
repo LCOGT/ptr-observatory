@@ -186,7 +186,7 @@ class Sequencer:
         # slight differences. Focus has more clumped bright stars but pointing catalogue contains a larger range
         # of stars and has full sky coverage, wheras focus does not.
         self.focus_catalogue = np.genfromtxt('support_info/focusCatalogue.csv', delimiter=',')
-        self.pointing_catalogue = np.genfromtxt('support_info/pointingCatalogueTpoint.csv', delimiter=',')
+        self.pointing_catalogue = np.genfromtxt('support_info/pointingCatalogue.csv', delimiter=',')
 
        
         # The stop script flag sends a signal to all running threads to break out
@@ -279,6 +279,7 @@ class Sequencer:
         elif action == "run" and script == 'restackLocalCalibrations':
             self.regenerate_local_masters()
         elif action == "run" and script in ['pointingRun']:
+            #breakpoint()
             self.sky_grid_pointing_run(max_pointings=req['numPointingRuns'], alt_minimum=req['minAltitude'])
         elif action == "run" and script in ("collectBiasesAndDarks"):
             self.bias_dark_script(req, opt, morn=True)
@@ -4008,7 +4009,6 @@ class Sequencer:
         self.total_sequencer_control = True
         g_dev['obs'].stop_processing_command_requests = True
         
-        g_dev['obs'].auto_centering_off = True  #NB NB NB Added this Temporarily --WER
         prev_auto_centering = g_dev['obs'].auto_centering_off
         g_dev['obs'].auto_centering_off = True
         
@@ -4041,27 +4041,29 @@ class Sequencer:
         
         
         spread =3600.0 # Initial spread is about a degree
-        too_many=False
+        too_many=True
         
         g_dev["obs"].send_to_user("Constructing grid of pointings. This can take a while.")
         plog("Finding a good set of pointings")
+        #breakpoint()
         
         while too_many:
         
             finalCatalogue=[]
             for ctr in range(len(sweep_catalogue)):
             	if sweep_catalogue[ctr][2] < 20:
-            		if len(finalCatalogue) == 0 or len(finalCatalogue) == 1:
-            			finalCatalogue.append(sweep_catalogue[ctr])
-            		else:
-            
-            			testcat= SkyCoord(ra = np.asarray(finalCatalogue)[:,0]*u.deg, dec = np.asarray(finalCatalogue)[:,1]*u.deg)
-            			teststar = SkyCoord(ra = sweep_catalogue[ctr][0]*u.deg, dec = sweep_catalogue[ctr][1]*u.deg)
-            			
-            			idx, d2d, _ = teststar.match_to_catalog_sky(testcat)
-            			if (d2d.arcsecond > spread):
-            				finalCatalogue.append(sweep_catalogue[ctr])
-            				
+                    if len(finalCatalogue) == 0 or len(finalCatalogue) == 1:
+                    
+                        finalCatalogue.append(sweep_catalogue[ctr])
+                    else:
+                        idx=(np.abs(np.asarray(finalCatalogue)[:,0] - sweep_catalogue[ctr][0]) + np.abs(np.asarray(finalCatalogue)[:,1] - sweep_catalogue[ctr][1])).argmin()
+                        d2d=pow(pow(np.asarray(finalCatalogue)[idx,0] - sweep_catalogue[ctr][0],2) + pow(np.asarray(finalCatalogue)[idx,1] - sweep_catalogue[ctr][1],2),0.5) * 3600
+                        
+
+                        if (d2d.arcsecond > spread):
+                            finalCatalogue.append(sweep_catalogue[ctr])
+                        
+                        
             
             plog ("Number of Pointings: " + str(len(finalCatalogue)))
 
@@ -4114,6 +4116,8 @@ class Sequencer:
             # Use the mount RA and Dec to go directly there
             try:
                 g_dev['obs'].time_of_last_slew=time.time()
+                g_dev["mnt"].last_ra_requested = grid_star[0] / 15
+                g_dev["mnt"].last_dec_requested = grid_star[1]
                 g_dev['mnt'].mount.SlewToCoordinatesAsync(grid_star[0] / 15 , grid_star[1])
             except:
                 plog ("Difficulty in directly slewing to object")

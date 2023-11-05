@@ -339,7 +339,7 @@ class Observatory:
         self.mount_reference_model_off = self.config['mount_reference_model_off']
         self.admin_owner_commands_only = False
         self.assume_roof_open = False
-        
+        self.auto_centering_off = False
        
         # Instantiate the helper class for astronomical events
         # Soon the primary event / time values can come from AWS.  NB NB   I send them there! Why do we want to put that code in AWS???
@@ -2096,67 +2096,68 @@ class Observatory:
                                                    
     
                         # If we are WAY out of range, then reset the mount reference and attempt moving back there.
-                        if (abs(err_ha * 15 * 3600) > 5400) or (abs(err_dec * 3600) > 5400):                            
-                            err_ha = 0
-                            err_dec = 0    
-                            plog("Platesolve has found that the current suggested pointing is way off!")
-                            plog("This may be a poor pointing estimate.")
-                            plog("This is more than a simple nudge, so not nudging the scope.")
-                            g_dev["mnt"].reset_mount_reference()
-                            plog("I've  reset the mount_reference.")  
+                        if not self.auto_centering_off:
+                            if (abs(err_ha * 15 * 3600) > 5400) or (abs(err_dec * 3600) > 5400):                            
+                                err_ha = 0
+                                err_dec = 0    
+                                plog("Platesolve has found that the current suggested pointing is way off!")
+                                plog("This may be a poor pointing estimate.")
+                                plog("This is more than a simple nudge, so not nudging the scope.")
+                                g_dev["mnt"].reset_mount_reference()
+                                plog("I've  reset the mount_reference.")  
+                                
+                                plog ("reattempting to get back on target on next attempt")                            
+                                #self.pointing_correction_requested_by_platesolve_thread = True
+                                self.pointing_recentering_requested_by_platesolve_thread = True
+                                self.pointing_correction_request_time = time.time()
+                                self.pointing_correction_request_ra = target_ra 
+                                self.pointing_correction_request_dec = target_dec
+                                self.pointing_correction_request_ra_err = err_ha
+                                self.pointing_correction_request_dec_err = err_dec 
                             
-                            plog ("reattempting to get back on target on next attempt")                            
-                            #self.pointing_correction_requested_by_platesolve_thread = True
-                            self.pointing_recentering_requested_by_platesolve_thread = True
-                            self.pointing_correction_request_time = time.time()
-                            self.pointing_correction_request_ra = target_ra 
-                            self.pointing_correction_request_dec = target_dec
-                            self.pointing_correction_request_ra_err = err_ha
-                            self.pointing_correction_request_dec_err = err_dec 
+                            elif self.time_of_last_slew > time_platesolve_requested:
+                                plog("detected a slew since beginning platesolve... bailing out of platesolve.") 
+                            
+                            else:
+        
+                                 self.pointing_correction_requested_by_platesolve_thread = True
+                                 self.pointing_correction_request_time = time.time()
+                                 self.pointing_correction_request_ra = pointing_ra + err_ha 
+                                 self.pointing_correction_request_dec = pointing_dec + err_dec
+                                 self.pointing_correction_request_ra_err = err_ha
+                                 self.pointing_correction_request_dec_err = err_dec                             
+                                                              
+                                 if not g_dev['obs'].mount_reference_model_off:
+                                     if target_dec > -85 and target_dec < 85 and g_dev['mnt'].last_slew_was_pointing_slew:
+                                         try:                                         
+                                             plog ("updating mount reference")
+                                             g_dev['mnt'].last_slew_was_pointing_slew = False
+                                             
+                                             plog ("adjustment: " + str(err_ha) +' ' +str(err_dec))
+                                             if g_dev["mnt"].pier_side == 0:
+                                                 try:
+                                                     plog ("current references: " + str ( g_dev['mnt'].get_mount_reference()))
+                                                     g_dev["mnt"].adjust_mount_reference(                                                     
+                                                         err_ha, err_dec
+                                                     )
+                                                 except Exception as e:
+                                                     plog("Something is up in the mount reference adjustment code ", e)
+                                             else:
+                                                 try:
+                                                     plog ("current references: " + str ( g_dev['mnt'].get_flip_reference()))
+                                                     g_dev["mnt"].adjust_flip_reference(                                                     
+                                                         err_ha, err_dec
+                                                     )  
+                                                 except Exception as e:
+                                                     plog("Something is up in the mount reference adjustment code ", e)
+                                             plog ("final references: " + str ( g_dev['mnt'].get_mount_reference()))
+                                            
+                                         except:
+                                             plog("This mount doesn't report pierside")
+                                             plog(traceback.format_exc())
                         
-                        elif self.time_of_last_slew > time_platesolve_requested:
-                            plog("detected a slew since beginning platesolve... bailing out of platesolve.") 
                         
-                        else:
-    
-                             self.pointing_correction_requested_by_platesolve_thread = True
-                             self.pointing_correction_request_time = time.time()
-                             self.pointing_correction_request_ra = pointing_ra + err_ha 
-                             self.pointing_correction_request_dec = pointing_dec + err_dec
-                             self.pointing_correction_request_ra_err = err_ha
-                             self.pointing_correction_request_dec_err = err_dec                             
-                                                          
-                             if not g_dev['obs'].mount_reference_model_off:
-                                 if target_dec > -85 and target_dec < 85 and g_dev['mnt'].last_slew_was_pointing_slew:
-                                     try:                                         
-                                         plog ("updating mount reference")
-                                         g_dev['mnt'].last_slew_was_pointing_slew = False
-                                         
-                                         plog ("adjustment: " + str(err_ha) +' ' +str(err_dec))
-                                         if g_dev["mnt"].pier_side == 0:
-                                             try:
-                                                 plog ("current references: " + str ( g_dev['mnt'].get_mount_reference()))
-                                                 g_dev["mnt"].adjust_mount_reference(                                                     
-                                                     err_ha, err_dec
-                                                 )
-                                             except Exception as e:
-                                                 plog("Something is up in the mount reference adjustment code ", e)
-                                         else:
-                                             try:
-                                                 plog ("current references: " + str ( g_dev['mnt'].get_flip_reference()))
-                                                 g_dev["mnt"].adjust_flip_reference(                                                     
-                                                     err_ha, err_dec
-                                                 )  
-                                             except Exception as e:
-                                                 plog("Something is up in the mount reference adjustment code ", e)
-                                         plog ("final references: " + str ( g_dev['mnt'].get_mount_reference()))
-                                        
-                                     except:
-                                         plog("This mount doesn't report pierside")
-                                         plog(traceback.format_exc())
-                    
-                    
-                    self.platesolve_is_processing = False
+                        self.platesolve_is_processing = False
 
 
                 self.platesolve_is_processing = False
@@ -2856,58 +2857,58 @@ class Observatory:
         """
         A function periodically called to check if there is a telescope nudge to re-center to undertake.
         """        
-
-        # Sometimes the pointing is so far off platesolve requests a new slew and recenter
-        if self.pointing_recentering_requested_by_platesolve_thread:
-            self.pointing_recentering_requested_by_platesolve_thread = False
-            self.pointing_correction_requested_by_platesolve_thread = False
-            g_dev['mnt'].go_command(ra=self.pointing_correction_request_ra, dec=self.pointing_correction_request_dec) 
-            g_dev['seq'].centering_exposure(no_confirmation=True, try_hard=True, try_forever=True)
-            if g_dev['seq'].currently_mosaicing:
-                # Slew to new mosaic pane location.
-                new_ra = g_dev['seq'].mosaic_center_ra + g_dev['seq'].current_mosaic_displacement_ra
-                new_dec= g_dev['seq'].mosaic_center_dec + g_dev['seq'].current_mosaic_displacement_dec 
-                new_ra, new_dec = ra_dec_fix_hd(new_ra, new_dec)    
-                wait_for_slew()
-                g_dev['mnt'].mount.SlewToCoordinatesAsync(new_ra, new_dec)   
-                wait_for_slew()
-                
-                self.time_of_last_slew=time.time()
-            
-
-
-        # This block repeats itself in various locations to try and nudge the scope
-        # If the platesolve requests such a thing.
-        if self.pointing_correction_requested_by_platesolve_thread and not g_dev['cam'].currently_in_smartstack_loop:
-            
-            if self.pointing_correction_request_time > self.time_of_last_slew:  # Check it hasn't slewed since request
-                
-                plog("Re-centering Telescope Slightly.")
-                self.send_to_user("Re-centering Telescope Slightly.")
-                wait_for_slew()
-                g_dev['mnt'].previous_pier_side=g_dev['mnt'].mount.sideOfPier
-                ranudge= g_dev['mnt'].mount.RightAscension + g_dev['obs'].pointing_correction_request_ra_err
-                decnudge= g_dev['mnt'].mount.Declination + g_dev['obs'].pointing_correction_request_dec_err
-                if ranudge < 0:
-                    ranudge=ranudge+24                    
-                if ranudge > 24:
-                    ranudge=ranudge-24
-                self.time_of_last_slew=time.time()
-                try:
+        if not g_dev['obs'].auto_centering_off:
+            # Sometimes the pointing is so far off platesolve requests a new slew and recenter
+            if self.pointing_recentering_requested_by_platesolve_thread:
+                self.pointing_recentering_requested_by_platesolve_thread = False
+                self.pointing_correction_requested_by_platesolve_thread = False
+                g_dev['mnt'].go_command(ra=self.pointing_correction_request_ra, dec=self.pointing_correction_request_dec) 
+                g_dev['seq'].centering_exposure(no_confirmation=True, try_hard=True, try_forever=True)
+                if g_dev['seq'].currently_mosaicing:
+                    # Slew to new mosaic pane location.
+                    new_ra = g_dev['seq'].mosaic_center_ra + g_dev['seq'].current_mosaic_displacement_ra
+                    new_dec= g_dev['seq'].mosaic_center_dec + g_dev['seq'].current_mosaic_displacement_dec 
+                    new_ra, new_dec = ra_dec_fix_hd(new_ra, new_dec)    
                     wait_for_slew()
-                    g_dev['mnt'].mount.SlewToCoordinatesAsync(ranudge, decnudge)
+                    g_dev['mnt'].mount.SlewToCoordinatesAsync(new_ra, new_dec)   
                     wait_for_slew()
-                except:
-                    plog (traceback.format_exc())
-                if not g_dev['mnt'].previous_pier_side==g_dev['mnt'].mount.sideOfPier:
-                    self.send_to_user("Detected pier flip in re-centering. Re-centering telescope again.")
-                    g_dev['mnt'].go_command(ra=self.pointing_correction_request_ra, dec=self.pointing_correction_request_dec) 
-                    g_dev['seq'].centering_exposure(no_confirmation=True, try_hard=True, try_forever=True)                    
-                g_dev['obs'].time_of_last_slew = time.time()
-                wait_for_slew()
                     
-            self.pointing_correction_requested_by_platesolve_thread = False
+                    self.time_of_last_slew=time.time()
+                
     
+    
+            # This block repeats itself in various locations to try and nudge the scope
+            # If the platesolve requests such a thing.
+            if self.pointing_correction_requested_by_platesolve_thread and not g_dev['cam'].currently_in_smartstack_loop:
+                
+                if self.pointing_correction_request_time > self.time_of_last_slew:  # Check it hasn't slewed since request
+                    
+                    plog("Re-centering Telescope Slightly.")
+                    self.send_to_user("Re-centering Telescope Slightly.")
+                    wait_for_slew()
+                    g_dev['mnt'].previous_pier_side=g_dev['mnt'].mount.sideOfPier
+                    ranudge= g_dev['mnt'].mount.RightAscension + g_dev['obs'].pointing_correction_request_ra_err
+                    decnudge= g_dev['mnt'].mount.Declination + g_dev['obs'].pointing_correction_request_dec_err
+                    if ranudge < 0:
+                        ranudge=ranudge+24                    
+                    if ranudge > 24:
+                        ranudge=ranudge-24
+                    self.time_of_last_slew=time.time()
+                    try:
+                        wait_for_slew()
+                        g_dev['mnt'].mount.SlewToCoordinatesAsync(ranudge, decnudge)
+                        wait_for_slew()
+                    except:
+                        plog (traceback.format_exc())
+                    if not g_dev['mnt'].previous_pier_side==g_dev['mnt'].mount.sideOfPier:
+                        self.send_to_user("Detected pier flip in re-centering. Re-centering telescope again.")
+                        g_dev['mnt'].go_command(ra=self.pointing_correction_request_ra, dec=self.pointing_correction_request_dec) 
+                        g_dev['seq'].centering_exposure(no_confirmation=True, try_hard=True, try_forever=True)                    
+                    g_dev['obs'].time_of_last_slew = time.time()
+                    wait_for_slew()
+                        
+                self.pointing_correction_requested_by_platesolve_thread = False
+        
     def get_enclosure_status_from_aws(self):
         
         """
