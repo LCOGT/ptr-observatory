@@ -182,11 +182,14 @@ class Sequencer:
         # A flag to remove some platesolves during mosaicing e.g. at the end of smartstacks.
         self.currently_mosaicing = False
         
-        # Load up focus and pointing catalogues
+        # Load up focus and pointing catalogues -- note all are all-sky in scope.
         # slight differences. Focus has more clumped bright stars but pointing catalogue contains a larger range
         # of stars and has full sky coverage, wheras focus does not.
+        # TPOINT catalog is on a more strict spiraled grid, about 102 stars and there is amag 7.5 star center of the field.
         self.focus_catalogue = np.genfromtxt('support_info/focusCatalogue.csv', delimiter=',')
-        self.pointing_catalogue = np.genfromtxt('support_info/pointingCatalogue.csv', delimiter=',')
+# =============================================================================
+        self.pointing_catalogue = np.genfromtxt('support_info/pointingCatalogueTpoint.csv', delimiter=',')
+# =============================================================================
 
        
         # The stop script flag sends a signal to all running threads to break out
@@ -550,7 +553,7 @@ class Sequencer:
                     self.project_call_timer = time.time()
                     
                     self.update_calendar_blocks()
-    
+                    
                     # only need to bother with the rest if there is more than 0 blocks. 
                     self.block_guard=False
                     if not len(self.blocks) > 0:
@@ -823,7 +826,7 @@ class Sequencer:
             g_dev["obs"].send_to_user("A project block was rejected as it is during the daytime.")            
             return block_specification     #Added wer 20231103
         
-        #g_dev['obs'].update()   <<<<<<this is the call that creates at lease one loop
+        g_dev['obs'].update()   
         
         plog('|n|n Starting a new project!  \n')
         plog(block_specification, ' \n\n\n')
@@ -980,7 +983,7 @@ class Sequencer:
             
             while left_to_do > 0 and not ended:                
                 
-                #cycle through exposures decrementing counts    MAY want to double check left-to do but do nut remultiply by 4
+                #cycle through exposures decrementing counts    MAY want to double check left-to do but do not remultiply by 4
                 for exposure in block['project']['exposures']:
                                         
                     # Check whether calendar entry is still existant.
@@ -2640,7 +2643,7 @@ class Sequencer:
                             self.estimated_first_flat_exposure = True
                             if sky_lux != None:     
 
-                                pixel_area=pow(float(g_dev['cam'].config["camera"][g_dev['cam'].name]["settings"]["1x1_pix_scale"]),2)
+                                pixel_area=pow(float(g_dev['cam'].config["camera"][g_dev['cam'].name]["settings"]["onebyone_pix_scale"]),2)
                                 exp_time = target_flat/(collecting_area*pixel_area*sky_lux*float(filter_throughput))  #g_dev['ocn'].calc_HSI_lux)  #meas_sky_lux)
                                 
                             else: 
@@ -4000,11 +4003,13 @@ class Sequencer:
 
     def sky_grid_pointing_run(self, max_pointings=25, alt_minimum=35):
         
+
         g_dev['obs'].get_enclosure_status_from_aws()        
         if not g_dev['obs'].assume_roof_open and 'Closed' in g_dev['obs'].enc_status['shutter_status']:
             plog('Roof is shut, so cannot do requested pointing run.')
             g_dev["obs"].send_to_user('Roof is shut, so cannot do requested pointing run.')
             return
+
         
         self.total_sequencer_control = True
         g_dev['obs'].stop_processing_command_requests = True
@@ -4016,7 +4021,7 @@ class Sequencer:
         time.sleep(0.1)
         
         g_dev['mnt'].unpark_command({}, {})
-        
+    
         g_dev['obs'].update_status()
         
         catalogue=self.pointing_catalogue
@@ -4060,12 +4065,13 @@ class Sequencer:
                         d2d=pow(pow(np.asarray(finalCatalogue)[idx,0] - sweep_catalogue[ctr][0],2) + pow(np.asarray(finalCatalogue)[idx,1] - sweep_catalogue[ctr][1],2),0.5) * 3600
                         
 
-                        if (d2d.arcsecond > spread):
+                        if (d2d > spread):
                             finalCatalogue.append(sweep_catalogue[ctr])
                         
                         
             
             plog ("Number of Pointings: " + str(len(finalCatalogue)))
+
 
             if self.stop_script_called:
                 g_dev["obs"].send_to_user("Cancelling out of script as stop script has been called.")  
@@ -4094,7 +4100,7 @@ class Sequencer:
         length = len(finalCatalogue)
         g_dev["obs"].send_to_user(str(length) + " Targets chosen for grid.")
         plog(str(length) + " Targets chosen for grid.")
-        
+
         count = 0
         
         deviation_catalogue_for_tpoint=[]
@@ -4110,7 +4116,8 @@ class Sequencer:
             alt = temppointingaltaz.alt.degree
             az = temppointingaltaz.az.degree
             
-            g_dev["obs"].send_to_user(str(("Slewing to near grid field, RA: " + str(grid_star[0] / 15) + " DEC: " + str(grid_star[1])+ " AZ: " + str(az)+ " ALT: " + str(alt))))
+            g_dev["obs"].send_to_user(str(("Slewing to near grid field, RA: " + str(round(grid_star[0] / 15, 2)) + " DEC: " + str(round(grid_star[1], 2))+ " AZ: " + str(round(az, 2))+ " ALT: " + str(round(alt,2)))))
+                                      
             plog("Slewing to near grid field " + str(grid_star) )
             
             # Use the mount RA and Dec to go directly there

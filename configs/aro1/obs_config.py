@@ -77,6 +77,11 @@ site_config = {
     
     
     # Setup of folders on local and network drives.
+    'ingest_raws_directly_to_archive': True,
+    # LINKS TO PIPE FOLDER
+    'save_raws_to_pipe_folder_for_nightly_processing': True,
+    'pipe_folder_path': 'Z:/',
+    # LINKS FOR OBS FOLDERS
     'client_hostname':"ARO-0m30",     # Generic place for this host to stash.    
     'archive_path': 'F:/ptr/',
     'alt_path': 'Q:/ptr/',
@@ -210,9 +215,9 @@ site_config = {
             'east_flip_ra_correction':   0.0, # Initially -0.039505313212952586,
             'east_flip_dec_correction':  0.0,  #initially  -0.39607711292257797,
             'settings': {
-                'latitude_offset': 0.0,     # Decimal degrees, North is Positive   These *could* be slightly different than site.
-                'longitude_offset': 0.0,   # Decimal degrees, West is negative  #NB This could be an eval( <<site config data>>))
-                'elevation_offset': 0.0,  # meters above sea level
+                'latitude_offset': 0.0,    #  Decimal degrees, North is Positive   These *could* be slightly different than site.
+                'longitude_offset': 0.0,   #  Decimal degrees, West is negative  #NB This could be an eval( <<site config data>>))
+                'elevation_offset': 0.0,   #  meters above sea level
                 'home_altitude': 0.0,
                 'home_azimuth': 0.0,     
                 'horizon':  25.,    # Meant to be a circular horizon. Or set to None if below is filled in.
@@ -222,19 +227,19 @@ site_config = {
                     '180': 25.,
                     '270': 25.,
                     '359': 25.
-                    },  # We use a dict because of fragmented azimuth measurements.
+                    },  #  We use a dict because of fragmented azimuth measurements.
                 'refraction_on': True,
-                'model_on': True,
-                'rates_on': True,
+                'model_on': True,  #  Model is applied during pointing.
+                'rates_on': True,  #  Rates implied by model and refraction applie during tracking.
                 'model': {
-                    'IH': 0.00, #-0.04386235467059052 ,  #new 20220201    ###-0.04372704281702999,  #20211203
-                    'ID': 0.00, #-0.2099090362415872,  # -0.5326099734267764,
+                    'IH': 0.00, #
+                    'ID': 0.00, #
                     'WIH': 0.0,
                     'WID': 0.0,
-                    'CH': 0.0,
-                    'NP': 0.0,
                     'MA': 0.0,
                     'ME': 0.0,
+                    'CH': 0.0,
+                    'NP': 0.0,
                     'TF': 0.0,
                     'TX': 0.0,
                     'HCES': 0.0,
@@ -618,7 +623,7 @@ site_config = {
                 # These are the physical values for the camera
                 # related to pixelscale. Binning only applies to single
                 # images. Stacks will always be drizzled to to drizzle value from 1x1.
-                '1x1_pix_scale': 0.528,    #  This is the 1x1 binning pixelscale
+                'onebyone_pix_scale': 0.528,    #  This is the 1x1 binning pixelscale
                 'native_bin': 2, # Needs to be simple, it will recalculate things on the 1x1 binning pixscale above.
                 'x_pixel':  3.76, # pixel size in microns
                 'y_pixel':  3.76, # pixel size in microns

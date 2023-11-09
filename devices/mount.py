@@ -258,7 +258,6 @@ class Mount:
         self.ra_offset = 0.0
         self.dec_offset = 0.0  
         self.move_time = 0
-
         try:
             ra1, dec1 = self.get_mount_reference()
             ra2, dec2 = self.get_flip_reference()

@@ -604,7 +604,7 @@ class Camera:
         if len(pixelscale_list) > 25:
             self.pixscale = np.nanmedian(pixelscale_list)
         else:
-            self.pixscale = float(self.config["camera"][self.name]["settings"]["1x1_pix_scale"])
+            self.pixscale = float(self.config["camera"][self.name]["settings"]["onebyone_pix_scale"])
             
         plog('1x1 pixel scale: ' + str(self.pixscale))
 
@@ -784,7 +784,7 @@ class Camera:
             else:
                 plog(traceback.format_exc()) 
                 plog("MTF hunting this error")
-                breakpoint()
+                # breakpoint()
         tempcamera.ShutDownTemperatureRegulationOnDisconnect = False
         self.async_exposure_lock=False
 
@@ -1365,7 +1365,7 @@ class Camera:
                         ##DEBUG Error on 20230703  System halted here. putting in
                         ##a breakpoint to catch this path next time.  WER
                         plog(traceback.format_exc())  
-                        breakpoint()
+                        #breakpoint()
                         return 
                     
                 
