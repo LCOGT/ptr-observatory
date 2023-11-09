@@ -2347,9 +2347,7 @@ class Observatory:
                     
 
                     if not self.config["camera"][g_dev['cam'].name]["settings"]["is_osc"]:
-                        hdufz = fits.CompImageHDU(
-                            np.array(slow_process[2], dtype=np.float32), temphduheader
-                        )
+                        
 
                         # This routine saves the file ready for uploading to AWS
                         # It usually works perfectly 99.9999% of the time except
@@ -2361,17 +2359,35 @@ class Observatory:
                         while saver == 0 and saverretries < 10:
                             try:
                                 if self.config['ingest_raws_directly_to_archive']:
+                                    hdufz = fits.CompImageHDU(
+                                        np.array(slow_process[2], dtype=np.float32), temphduheader
+                                    )
                                     hdufz.writeto(                                    
                                         slow_process[1], overwrite=True
                                     )  # Save full fz file locally
                                     #print (slow_process[1])
+                                    try:
+                                        hdufz.close()
+                                    except:
+                                        pass
+                                    del hdufz  # remove file from memory now that we are doing with it
+
                                 if self.config['save_raws_to_pipe_folder_for_nightly_processing']:
+                                    
+                                    hdu = fits.PrimaryHDU(np.array(slow_process[2], dtype=np.float32), temphduheader)
+                                    
                                     
                                     #plog ("gonna pipe folder")
                                     #plog (pipefolder + '/' + str(temphduheader['ORIGNAME']))
-                                    hdufz.writeto(                                    
-                                        pipefolder + '/' + str(temphduheader['ORIGNAME']), overwrite=True
-                                    )                
+                                    hdu.writeto(                                    
+                                        pipefolder + '/' + str(temphduheader['ORIGNAME']).replace('.fits.fz','.fits'), overwrite=True
+                                    )      
+                                    try:
+                                        hdu.close()
+                                    except:
+                                        pass
+                                    del hdu  # remove file from memory now that we are doing with it
+
                                     
                                     #hdufz.writeto(                                    
                                     #    slow_process[1], overwrite=True
@@ -2385,12 +2401,7 @@ class Observatory:
                                 time.sleep(10)
                                 saverretries = saverretries + 1
 
-                        try:
-                            hdufz.close()
-                        except:
-                            pass
-                        del hdufz  # remove file from memory now that we are doing with it
-
+                        
                         # Send this file up to ptrarchive
                         if self.config['send_files_at_end_of_night'] == 'no' and self.config['ingest_raws_directly_to_archive']:
                             self.enqueue_for_PTRarchive(
@@ -2427,11 +2438,12 @@ class Observatory:
                             temphduheader['FILTER'] = tempfilter + '_R1'
                             temphduheader['ORIGNAME'] = temphduheader['ORIGNAME'].replace('-EX', 'R1-EX')
                             
-                            hdufz = fits.CompImageHDU(
-                                np.array(newhdured, dtype=np.float32), temphduheader
-                            )
+                            
                             
                             if self.config['send_files_at_end_of_night'] == 'no' and self.config['ingest_raws_directly_to_archive']:
+                                hdufz = fits.CompImageHDU(
+                                    np.array(newhdured, dtype=np.float32), temphduheader
+                                )
                                 hdufz.writeto(
                                     tempfilename.replace('-EX', 'R1-EX'), overwrite=True#, output_verify='silentfix'
                                 )  # Save full fz file locally
@@ -2440,10 +2452,11 @@ class Observatory:
                                 )
                             
                             if self.config['save_raws_to_pipe_folder_for_nightly_processing']:
-                                
+                                hdu = fits.PrimaryHDU(np.array(newhdured, dtype=np.float32), temphduheader)
+                                temphduheader['ORIGNAME']=temphduheader['ORIGNAME'].replace('.fits.fz','.fits')
                                 #plog ("gonna pipe folder")
                                 #plog (pipefolder + '/' + str(temphduheader['ORIGNAME']))
-                                hdufz.writeto(                                    
+                                hdu.writeto(                                    
                                     pipefolder + '/' + str(temphduheader['ORIGNAME']), overwrite=True
                                 )
                             
@@ -2453,11 +2466,12 @@ class Observatory:
                             temphduheader['FILTER'] = tempfilter + '_G1'
                             temphduheader['ORIGNAME'] = temphduheader['ORIGNAME'].replace('-EX', 'G1-EX')
                             
-                            hdufz = fits.CompImageHDU(
-                                np.array(GTRonly, dtype=np.float32), temphduheader
-                            )
+                            
                             
                             if self.config['send_files_at_end_of_night'] == 'no' and self.config['ingest_raws_directly_to_archive']:
+                                hdufz = fits.CompImageHDU(
+                                    np.array(GTRonly, dtype=np.float32), temphduheader
+                                )
                                 hdufz.writeto(
                                     tempfilename.replace('-EX', 'G1-EX'), overwrite=True#, output_verify='silentfix'
                                 )  # Save full fz file locally
@@ -2465,10 +2479,12 @@ class Observatory:
                                     26000000, '', tempfilename.replace('-EX', 'G1-EX')
                                 )
                             if self.config['save_raws_to_pipe_folder_for_nightly_processing']:
+                                hdu = fits.PrimaryHDU(np.array(GTRonly, dtype=np.float32), temphduheader)
+                                temphduheader['ORIGNAME']=temphduheader['ORIGNAME'].replace('.fits.fz','.fits')
                                 
                                 #plog ("gonna pipe folder")
                                 #plog (pipefolder + '/' + str(temphduheader['ORIGNAME']))
-                                hdufz.writeto(                                    
+                                hdu.writeto(                                    
                                     pipefolder + '/' + str(temphduheader['ORIGNAME']), overwrite=True
                                 )  
                             del GTRonly
@@ -2478,11 +2494,12 @@ class Observatory:
                             temphduheader['ORIGNAME'] = temphduheader['ORIGNAME'].replace('-EX', 'G2-EX')
                             
                            
-                            hdufz = fits.CompImageHDU(
-                                np.array(GBLonly, dtype=np.float32), temphduheader
-                            )
+                            
                             
                             if self.config['send_files_at_end_of_night'] == 'no' and self.config['ingest_raws_directly_to_archive']:
+                                hdufz = fits.CompImageHDU(
+                                    np.array(GBLonly, dtype=np.float32), temphduheader
+                                )
                                 hdufz.writeto(
                                     tempfilename.replace('-EX', 'G2-EX'), overwrite=True#, output_verify='silentfix'
                                 )  # Save full fz file locally
@@ -2490,10 +2507,12 @@ class Observatory:
                                     26000000, '', tempfilename.replace('-EX', 'G2-EX')
                                 )
                             if self.config['save_raws_to_pipe_folder_for_nightly_processing']:
+                                hdu = fits.PrimaryHDU(np.array(GBLonly, dtype=np.float32), temphduheader)
+                                temphduheader['ORIGNAME']=temphduheader['ORIGNAME'].replace('.fits.fz','.fits')
                                 
                                 #plog ("gonna pipe folder")
                                 #plog (pipefolder + '/' + str(temphduheader['ORIGNAME']))
-                                hdufz.writeto(                                    
+                                hdu.writeto(                                    
                                     pipefolder + '/' + str(temphduheader['ORIGNAME']), overwrite=True
                                 )
                             
@@ -2504,11 +2523,12 @@ class Observatory:
                             temphduheader['ORIGNAME'] = temphduheader['ORIGNAME'].replace('-EX', 'B1-EX')
                             
                             
-                            hdufz = fits.CompImageHDU(
-                                np.array(newhdublue, dtype=np.float32), temphduheader
-                            )
+                            
                             
                             if self.config['send_files_at_end_of_night'] == 'no' and self.config['ingest_raws_directly_to_archive']:
+                                hdufz = fits.CompImageHDU(
+                                    np.array(newhdublue, dtype=np.float32), temphduheader
+                                )
                                 hdufz.writeto(
                                     tempfilename.replace('-EX', 'B1-EX'), overwrite=True#, output_verify='silentfix'
                                 )  # Save full fz file locally
@@ -2516,10 +2536,12 @@ class Observatory:
                                     26000000, '', tempfilename.replace('-EX', 'B1-EX')
                                 )
                             if self.config['save_raws_to_pipe_folder_for_nightly_processing']:
+                                hdu = fits.PrimaryHDU(np.array(newhdublue, dtype=np.float32), temphduheader)
+                                temphduheader['ORIGNAME']=temphduheader['ORIGNAME'].replace('.fits.fz','.fits')
                                 
                                 #plog ("gonna pipe folder")
                                 #plog (pipefolder + '/' + str(temphduheader['ORIGNAME']))
-                                hdufz.writeto(                                    
+                                hdu.writeto(                                    
                                     pipefolder + '/' + str(temphduheader['ORIGNAME']), overwrite=True
                                 )
                             del newhdublue  
@@ -2533,12 +2555,13 @@ class Observatory:
                             temphduheader['MAXLIN']=float(temphduheader['MAXLIN']) * 4
                             
                             
-                            hdufz = fits.CompImageHDU(
-                                np.array(clearV, dtype=np.float32), temphduheader
-                            )
+                            
                             
                             
                             if self.config['send_files_at_end_of_night'] == 'no' and self.config['ingest_raws_directly_to_archive']:
+                                hdufz = fits.CompImageHDU(
+                                    np.array(clearV, dtype=np.float32), temphduheader
+                                )
                                 hdufz.writeto(
                                     tempfilename.replace('-EX', 'CV-EX'), overwrite=True#, output_verify='silentfix'
                                 ) 
@@ -2546,10 +2569,12 @@ class Observatory:
                                     26000000, '', tempfilename.replace('-EX', 'CV-EX')
                                 )
                             if self.config['save_raws_to_pipe_folder_for_nightly_processing']:
+                                hdu = fits.PrimaryHDU(np.array(clearV, dtype=np.float32), temphduheader)
+                                temphduheader['ORIGNAME']=temphduheader['ORIGNAME'].replace('.fits.fz','.fits')
                                 
                                 #plog ("gonna pipe folder")
                                 #plog (pipefolder + '/' + str(temphduheader['ORIGNAME']))
-                                hdufz.writeto(                                    
+                                hdu.writeto(                                    
                                     pipefolder + '/' + str(temphduheader['ORIGNAME']), overwrite=True
                                 )
                             del clearV

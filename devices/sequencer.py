@@ -581,6 +581,11 @@ class Sequencer:
                                         self.block_guard = True
                                         block['project']=project_response.json()
                                         identified_block=copy.deepcopy(block)
+                                    else:
+                                        plog("Project response status code not 200")
+                                        plog (str(project_response))
+                                        plog (str(project_response.status_code))
+                                        plog ("Project failed to be downloaded from Aws")
                                 except:
                                     plog(traceback.format_exc())
                                     #
