@@ -1617,12 +1617,12 @@ class Observatory:
 
         # Check folder exists
 
-        pipefolder = self.config['pipe_archive_folder_path'] + str(dayobs) +'/'+ str(instrume)
-        if not os.path.exists(self.config['pipe_archive_folder_path'] + str(dayobs)):
-            os.makedirs(self.config['pipe_archive_folder_path'] + str(dayobs))
+        pipefolder = self.config['pipe_archive_folder_path'] + str(instrume) +'/'+ str(dayobs)
+        if not os.path.exists(self.config['pipe_archive_folder_path'] + str(instrume)):
+            os.makedirs(self.config['pipe_archive_folder_path'] + str(instrume))
 
-        if not os.path.exists(self.config['pipe_archive_folder_path'] + str(dayobs) +'/'+ str(instrume)):
-            os.makedirs(self.config['pipe_archive_folder_path'] + str(dayobs) +'/'+ str(instrume))
+        if not os.path.exists(self.config['pipe_archive_folder_path'] + str(instrume) +'/'+ str(dayobs)):
+            os.makedirs(self.config['pipe_archive_folder_path'] + str(instrume) +'/'+ str(dayobs))
 
 
         if filename is None:
