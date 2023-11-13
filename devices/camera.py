@@ -3003,7 +3003,6 @@ class Camera:
                         "red_path_aux": None,
                         "cal_name": cal_name,
                         "raw_name00": raw_name00,
-                        #'fzraw_name00': fzraw_name00,
                         "red_name01": red_name01,
                         "red_name01_lcl": red_name01_lcl,
                         "i768sq_name10": i768sq_name,
