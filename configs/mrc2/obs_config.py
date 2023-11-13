@@ -106,7 +106,12 @@ site_config = {
     
     
     
-    
+    # Setup of folders on local and network drives.
+    'ingest_raws_directly_to_archive': True,
+    # LINKS TO PIPE FOLDER
+    'save_raws_to_pipe_folder_for_nightly_processing': False,
+    'pipe_archive_folder_path': 'X:/localptrarchive/',  #WER changed Z to X 20231113 @1:16 UTC
+    'temporary_local_pipe_archive_to_hold_files_while_copying' : 'F:/tempfolderforpipeline',
     # Setup of folders on local and network drives.
     'client_hostname':  'mr2-0m60',
     'archive_path':  'C:/ptr/',  # Generic place for client host to stash misc stuff
@@ -125,8 +130,10 @@ site_config = {
     'keep_focus_images_on_disk': True,  # To save space, the focus file can not be saved.   
     # A certain type of naming that sorts filenames by numberid first
     'save_reduced_file_numberid_first' : False,   
-    # Number of files to send up to the archive simultaneously.
-    'number_of_simultaneous_archive_streams' : 4,
+   # Number of files to send up to the ptrarchive simultaneously.
+   'number_of_simultaneous_ptrarchive_streams' : 4,
+   # Number of files to send over to the pipearchive simultaneously.
+   'number_of_simultaneous_pipearchive_streams' : 4,
 
     # Minimum realistic seeing at the site.
     # This allows culling of unphysical results in photometry and other things
@@ -136,11 +143,19 @@ site_config = {
 
     
     # TIMING FOR CALENDAR EVENTS
+    
     # How many minutes with respect to eve sunset start flats
+    
+    'bias_dark interval':  105.,   #minutes
     'eve_sky_flat_sunset_offset': -45.,  # 40 before Minutes  neg means before, + after.
     # How many minutes after civilDusk to do....
     'end_eve_sky_flats_offset': 5 , 
     'clock_and_auto_focus_offset': 8,
+    
+    'astro_dark_buffer': 30,   #Min before and after AD to extend observing window
+    'morn_flat_start_offset': -10,       #min from Sunrise
+    'morn_flat_end_offset':  +45,        #min from Sunrise
+    'end_night_processing_time':  90,   #  A guess
     'observing_begins_offset': 18,    
     # How many minutes before civilDawn to do ....
     'observing_ends_offset': 18,   
@@ -157,6 +172,8 @@ site_config = {
     # Turn on and off various automated calibrations at different times.
     'auto_eve_bias_dark': True,
     'auto_eve_sky_flat': True,
+    
+     'time_to_wait_after_roof_opens_to_take_flats': 120,   #Just imposing a minimum in case of a restart.
     'auto_midnight_moonless_bias_dark': True,
     'auto_morn_sky_flat': True,
     'auto_morn_bias_dark': True,
