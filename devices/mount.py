@@ -164,7 +164,8 @@ def wait_for_slew():
                     plog("recovery didn't work")
                     plog(traceback.format_exc())
                     if q > 15:
-                        breakpoint()                        
+                        pass
+                        ######breakpoint()                        
                     
     return 
 
@@ -196,7 +197,7 @@ class Mount:
                 os.system('"C:\Program Files (x86)\PlaneWave Instruments\PlaneWave Interface 4\PWI4.exe"')
             else:
                 plog(traceback.format_exc())
-                breakpoint()
+                ######breakpoint()
         
         self.driver = driver        
         
@@ -257,7 +258,6 @@ class Mount:
         self.ra_offset = 0.0
         self.dec_offset = 0.0  
         self.move_time = 0
-
         try:
             ra1, dec1 = self.get_mount_reference()
             ra2, dec2 = self.get_flip_reference()
@@ -789,7 +789,7 @@ class Mount:
             plog ("Requested Flat Spot, az: " + str(az) + " alt: " + str(alt))
             
             if self.config['degrees_to_avoid_zenith_area_for_calibrations'] > 0:
-                #breakpoint()
+                #######breakpoint()
                 if (90-alt) < self.config['degrees_to_avoid_zenith_area_for_calibrations']:
                     g_dev['obs'].send_to_user("Refusing skyflat pointing request as it is too close to the zenith for this scope.")
                     plog("Refusing skyflat pointing request as it is too close to the zenith for this scope.")
@@ -941,6 +941,7 @@ class Mount:
             pass
         else:            
             try:        
+                
                 ra += delta_ra #NB it takes a restart to pick up a new correction which is also J.now.
                 dec += delta_dec
             except:
@@ -991,13 +992,13 @@ class Mount:
                             else:
                                 
                                 plog (traceback.format_exc())
-                                breakpoint()
+                                ######breakpoint()
                         except:
                             time.sleep(120)
                             retry=retry+1
                 except:
                     plog (traceback.format_exc())
-                    breakpoint()
+                    #######breakpoint()
             
             # Make sure the current pier_side variable is set
             g_dev["mnt"].pier_side=self.mount.sideOfPier
@@ -1009,9 +1010,11 @@ class Mount:
                 
                 if g_dev['obs'].mount_reference_model_off:
                     pass
+                    
                 else:          
                     ra=self.last_ra_requested + delta_ra
                     dec=self.last_dec_requested + delta_dec
+                    
                                    
                 if ra < 0:
                     ra=ra+24

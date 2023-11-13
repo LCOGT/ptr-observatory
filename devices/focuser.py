@@ -161,7 +161,7 @@ class Focuser:
                         plog ("usually the focusser program has crashed. This breakpoint is to help catch and code in a fix - MTF")
                         plog ("possibly just institute a full reboot")
                         plog (traceback.format_exc())
-                        breakpoint()
+                        # breakpoint()
                         
                         
             elif g_dev['fil'].null_filterwheel == False:
@@ -189,7 +189,7 @@ class Focuser:
             plog ("usually the focusser program has crashed. This breakpoint is to help catch and code in a fix - MTF")
             plog ("possibly just institute a full reboot")
             plog (traceback.format_exc())
-            breakpoint()
+            # breakpoint()
         return status
 
     def get_quick_status(self, quick):

@@ -234,7 +234,7 @@ if len(sources) >= 15:
             synthetic_image[y-3:y+4,x-3:x+4] += peak*modelstar
         except Exception as e:
             print (e)
-            breakpoint()
+            # breakpoint()
     
     
     
