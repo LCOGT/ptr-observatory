@@ -62,6 +62,8 @@ site_config = {
     'minimum_distance_from_the_moon_when_taking_flats': 30,
     'lowest_requestable_altitude': -1,  # Degrees. For normal pointing requests don't allow requests to go this low.
     'degrees_to_avoid_zenith_area_for_calibrations': 0,
+    'degrees_to_avoid_zenith_area_in_general' : 0,
+    'maximum_hour_angle_requestable' : 12,
     'temperature_at_which_obs_too_hot_for_camera_cooling' : 32, # NB NB WER ARO Obs has a chiller
 
     # These are the default values that will be set for the obs
