@@ -501,6 +501,9 @@ class Observatory:
         filter_throughput_shelf.close()
 
 
+        # Temporary toggle to turn auto-centering off
+        self.auto_centering_off = True
+
 
 
         # Initialisation complete!

@@ -35,7 +35,7 @@ def radial_profile(data, center):
     tbin = np.bincount(r.ravel(), data.ravel())
     nr = np.bincount(r.ravel())
     radialprofile = tbin / nr
-    return radialprofile 
+    return radialprofile
 
 
 
@@ -100,14 +100,14 @@ hduheader["IMGMODE"] = ( imageMode, "Mode Value of Image Array" )
 
 histogramdata=np.column_stack([unique,counts]).astype(np.int32)
 
-#Do some fiddle faddling to figure out the value that goes to zero less 
+#Do some fiddle faddling to figure out the value that goes to zero less
 zeroValueArray=histogramdata[histogramdata[:,0] < imageMode]
 breaker=1
 counter=0
 while (breaker != 0):
     counter=counter+1
     if not (imageMode-counter) in zeroValueArray[:,0]:
-    
+
         zeroValue=(imageMode-counter)
         breaker =0
 hdufocusdata[hdufocusdata < zeroValue] = imageMode
@@ -127,7 +127,7 @@ if not do_sep :
 else:
 
     if frame_type == 'focus':
-        
+
         fx, fy = hdufocusdata.shape
 
         crop_width = (fx * focus_crop_width) / 2
@@ -141,10 +141,10 @@ else:
 
         crop_width = int(crop_width)
         crop_height = int(crop_height)
-        
+
         if crop_width > 0 or crop_height > 0:
             hdufocusdata = hdufocusdata[crop_width:-crop_width, crop_height:-crop_height]
-            
+
     binfocus = 1
     if is_osc:
 
@@ -152,12 +152,12 @@ else:
             hdufocusdata=demosaicing_CFA_Bayer_Menon2007(hdufocusdata, 'RGGB')[:,:,1]
             hdufocusdata=hdufocusdata.astype("float32")
             binfocus=1
-        if frame_type == 'focus' and bin_for_focus: 
+        if frame_type == 'focus' and bin_for_focus:
             focus_bin_factor=focus_bin_value
             hdufocusdata=block_reduce(hdufocusdata,focus_bin_factor)
-            binfocus=focus_bin_factor        
-        
-        if frame_type != 'focus' and interpolate_for_sep: 
+            binfocus=focus_bin_factor
+
+        if frame_type != 'focus' and interpolate_for_sep:
             hdufocusdata=demosaicing_CFA_Bayer_Menon2007(hdufocusdata, 'RGGB')[:,:,1]
             hdufocusdata=hdufocusdata.astype("float32")
             binfocus=1
@@ -165,7 +165,7 @@ else:
             sep_bin_factor=sep_bin_value
             hdufocusdata=block_reduce(hdufocusdata,sep_bin_factor)
             binfocus=sep_bin_factor
-            
+
 
     # If it is a focus image then it will get sent in a different manner to the UI for a jpeg
     if frame_type == 'focus':
@@ -173,7 +173,7 @@ else:
         fx, fy = hdusmalldata.shape
         aspect_ratio= fx/fy
         crop_width = (fx - focus_jpeg_size) / 2
-        crop_height = (fy - (focus_jpeg_size / aspect_ratio) ) / 2   
+        crop_height = (fy - (focus_jpeg_size / aspect_ratio) ) / 2
 
         # Make sure it is an even number for OSCs
         if (crop_width % 2) != 0:
@@ -183,7 +183,7 @@ else:
 
         crop_width = int(crop_width)
         crop_height = int(crop_height)
-        
+
         if crop_width > 0 or crop_height > 0:
             hdusmalldata = hdusmalldata[crop_width:-crop_width, crop_height:-crop_height]
 
@@ -204,13 +204,13 @@ else:
         iy, ix = stretched_data_uint8.shape
         final_image = Image.fromarray(stretched_data_uint8)
         draw = ImageDraw.Draw(final_image)
-       
+
         draw.text((0, 0), str(focus_position), (255))
 
         final_image.save(im_path + text_name.replace('EX00.txt', 'EX10.jpg'))
 
 
-    
+
 
     actseptime = time.time()
     focusimg = np.array(
@@ -219,7 +219,7 @@ else:
 
     try:
         # Some of these are liberated from BANZAI
-        
+
         bkg = sep.Background(focusimg, bw=32, bh=32, fw=3, fh=3)
         bkg.subfrom(focusimg)
 
@@ -229,7 +229,7 @@ else:
         border_x = int(ix * 0.05)
         border_y = int(iy * 0.05)
         sep.set_extract_pixstack(int(ix*iy - 1))
-        
+
         #This minarea is totally fudgetastically emprical comparing a 0.138 pixelscale QHY Mono
         # to a 1.25/2.15 QHY OSC. Seems to work, so thats good enough.
         # Makes the minarea small enough for blocky pixels, makes it large enough for oversampling
@@ -258,7 +258,7 @@ else:
         sources = sources[~nan_in_row]
 
         # Calculate the ellipticity (Thanks BANZAI)
-        
+
         sources['ellipticity'] = 1.0 - (sources['b'] / sources['a'])
 
         if frame_type == 'focus':
@@ -274,23 +274,23 @@ else:
         sources['kronrad'] = kronrad
 
         # Calculate uncertainty of image (thanks BANZAI)
-        
+
         uncertainty = float(readnoise) * np.ones(focusimg.shape,
                                                  dtype=focusimg.dtype) / float(readnoise)
 
 
-        # DONUT IMAGE DETECTOR.        
+        # DONUT IMAGE DETECTOR.
         xdonut=np.median(pow(pow(sources['x'] - sources['xpeak'],2),0.5))*pixscale*binfocus
         ydonut=np.median(pow(pow(sources['y'] - sources['ypeak'],2),0.5))*pixscale*binfocus
-        
+
         # Calcuate the equivilent of flux_auto (Thanks BANZAI)
-        # This is the preferred best photometry SEP can do.        
+        # This is the preferred best photometry SEP can do.
         flux, fluxerr, flag = sep.sum_ellipse(focusimg, sources['x'], sources['y'],
                                           sources['a'], sources['b'],
                                           np.pi / 2.0, 2.5 * kronrad,
                                           subpix=1, err=uncertainty)
-        
-            
+
+
         sources['flux'] = flux
         sources['fluxerr'] = fluxerr
         sources['flag'] |= flag
@@ -298,7 +298,7 @@ else:
                                              subpix=5)
         # If image has been binned for focus we need to multiply some of these things by the binning
         # To represent the original image
-        sources['FWHM'] = (sources['FWHM'] * 2) * binfocus 
+        sources['FWHM'] = (sources['FWHM'] * 2) * binfocus
         sources['x'] = (sources['x']) * binfocus
         sources['y'] = (sources['y']) * binfocus
         sources['xpeak'] = (sources['xpeak']) * binfocus
@@ -324,11 +324,11 @@ else:
 
         source_delete = ['thresh', 'npix', 'tnpix', 'xmin', 'xmax', 'ymin', 'ymax', 'x2', 'y2', 'xy', 'errx2',
                          'erry2', 'errxy', 'a', 'b', 'theta', 'cxx', 'cyy', 'cxy', 'cflux', 'cpeak', 'xcpeak', 'ycpeak']
-        
+
         sources.remove_columns(source_delete)
 
         sources.write(im_path + text_name.replace('.txt', '.sep'), format='csv', overwrite=True)
-        
+
         if (len(sources) < 2) or ( frame_type == 'focus' and (len(sources) < 10 or len(sources) == np.nan or str(len(sources)) =='nan' or xdonut > 3.0 or ydonut > 3.0 or np.isnan(xdonut) or np.isnan(ydonut))):
             sources['FWHM'] = [np.nan] * len(sources)
             rfp = np.nan
@@ -338,9 +338,9 @@ else:
 
         else:
             # Get halflight radii
-            
+
             fwhmcalc = sources['FWHM']
-            fwhmcalc = fwhmcalc[fwhmcalc != 0]  
+            fwhmcalc = fwhmcalc[fwhmcalc != 0]
 
             # sigma clipping iterator to reject large variations
             templen = len(fwhmcalc)
@@ -353,12 +353,12 @@ else:
 
             fwhmcalc = fwhmcalc[fwhmcalc > np.median(fwhmcalc) - 3 * np.std(fwhmcalc)]
             rfp = round(np.median(fwhmcalc), 3)
-            rfr = round(np.median(fwhmcalc) * pixscale * nativebin, 3) 
+            rfr = round(np.median(fwhmcalc) * pixscale * nativebin, 3)
             rfs = round(np.std(fwhmcalc) * pixscale * nativebin, 3)
-            
 
 
-        
+
+
 
     except:
         sources = [0]
@@ -368,9 +368,9 @@ else:
         sepsky = np.nan
 
 #breakpoint()
-   
 
-# Value-added header items for the UI 
+
+# Value-added header items for the UI
 
 
 try:
@@ -399,11 +399,11 @@ try:
     hduheader["NSTARS"] = ( len(sources), 'Number of star-like sources in image')
 except:
     hduheader["NSTARS"] = ( -99, 'Number of star-like sources in image')
-    
 
+hduheader['PIXSCALE']=float(input_sep_info[1])
 text = open(
     im_path + text_name, "w"
-)  
+)
 text.write(str(hduheader))
 text.close()
 
@@ -414,11 +414,11 @@ if do_sep:
     try:
         # Get rid of non-stars
         sources=sources[sources['FWHM'] < rfr + 2 * rfs]
-    
+
         # Reverse sort sources on flux
         sources.sort('flux')
         sources.reverse()
-        
+
         radtime=time.time()
         dodgylist=[]
         radius_of_radialprofile=(5*math.ceil(rfp))
@@ -431,10 +431,10 @@ if do_sep:
             temp_array=extract_array(hdufocusdata, (radius_of_radialprofile,radius_of_radialprofile), (cy,cx))
             crad=radial_profile(np.asarray(temp_array),[centre_of_radialprofile,centre_of_radialprofile])
             dodgylist.append([cx,cy,crad,temp_array])
-            
-        
+
+
         pickle.dump(dodgylist, open(im_path + text_name.replace('.txt', '.rad'),'wb'))
-        
+
     except:
         pass
 
@@ -442,7 +442,7 @@ if do_sep:
 try:
     slice_n_dice={}
     image_size_x, image_size_y = hdufocusdata.shape
-    
+
     # row slices
     slicerow=int(image_size_x * 0.1)
     slice_n_dice['row10percent']=hdufocusdata[slicerow,:]
@@ -454,7 +454,7 @@ try:
     slice_n_dice['row70percent']=hdufocusdata[slicerow*7,:]
     slice_n_dice['row80percent']=hdufocusdata[slicerow*8,:]
     slice_n_dice['row90percent']=hdufocusdata[slicerow*9,:]
-    
+
     # column slices
     slicecolumn=int(image_size_y * 0.1)
     slice_n_dice['column10percent']=hdufocusdata[:,slicecolumn]
@@ -466,22 +466,22 @@ try:
     slice_n_dice['column70percent']=hdufocusdata[:,slicecolumn*7]
     slice_n_dice['column80percent']=hdufocusdata[:,slicecolumn*8]
     slice_n_dice['column90percent']=hdufocusdata[:,slicecolumn*9]
-    
+
     # diagonals... not so easy as you might think! Easy for square arrays.
     aspectratio=image_size_x/image_size_y
-    
+
     #topleft to bottomright
     topleftdiag=[]
     for i in range(image_size_x):
         topleftdiag.append(hdufocusdata[i,int((image_size_y-i-1)*aspectratio)])
     slice_n_dice['topleftdiag']=topleftdiag
-    
+
     #bottomleft to topright
     bottomleftdiag=[]
     for i in range(image_size_x):
         bottomleftdiag.append(hdufocusdata[i,int(i*aspectratio)])
     slice_n_dice['bottomleftdiag']=bottomleftdiag
-    
+
     # ten percent box area statistics
     boxshape=(int(0.1*image_size_x),int(0.1*image_size_y))
     boxstats=[]
@@ -494,7 +494,7 @@ try:
             yboxdown=(y_box+0.1) * image_size_y
             yboxmid=int((yboxup+yboxdown)/2)
             statistic_area=extract_array(hdufocusdata, boxshape, (xboxmid,yboxmid))
-            
+
             # Background clipped
             imgmin = ( np.nanmin(statistic_area), "Minimum Value of Image Array" )
             imgmax = ( np.nanmax(statistic_area), "Maximum Value of Image Array" )
@@ -502,22 +502,22 @@ try:
             imgmed = ( np.nanmedian(statistic_area), "Median Value of Image Array" )
             imgstdev = ( np.nanstd(statistic_area), "Median Value of Image Array" )
             imgmad = ( median_absolute_deviation(statistic_area, ignore_nan=True), "Median Absolute Deviation of Image Array" )
-            
+
             # Get out raw histogram construction data
             # Get a flattened array with all nans removed
             int_array_flattened=statistic_area.astype(int).ravel()
             unique,counts=np.unique(int_array_flattened[~np.isnan(int_array_flattened)], return_counts=True)
             m=counts.argmax()
             imageMode=unique[m]
-            
+
             imgmode = ( imageMode, "Mode Value of Image Array" )
-            
-            # Collect unique values and counts        
-            histogramdata=np.column_stack([unique,counts]).astype(np.int32)        
+
+            # Collect unique values and counts
+            histogramdata=np.column_stack([unique,counts]).astype(np.int32)
             boxstats.append([x_box,y_box,imgmin,imgmax,imgmean,imgmed,imgstdev,imgmad,imgmode,histogramdata])
-            
+
     slice_n_dice['boxstats']=boxstats
-    
+
     pickle.dump(slice_n_dice, open(im_path + text_name.replace('.txt', '.box'),'wb'))
 except:
     pass
