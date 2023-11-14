@@ -2370,6 +2370,10 @@ class Camera:
                         self.camera_known_gain,
                         "[e-/ADU] Pixel gain",
                     )
+                    hdu.header["ORIGGAIN"] = (
+                        self.camera_known_gain,
+                        "[e-/ADU] Original Pixel gain",
+                    )
                     hdu.header["RDNOISE"] = (
                         self.camera_known_readnoise,
                         "[e-/pixel] Read noise",

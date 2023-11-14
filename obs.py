@@ -502,7 +502,7 @@ class Observatory:
 
 
         # Temporary toggle to turn auto-centering off
-        self.auto_centering_off = True
+        #self.auto_centering_off = True
 
 
 
