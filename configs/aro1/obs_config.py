@@ -442,7 +442,7 @@ site_config = {
                         ['Y',    [6,  0],    0, 7.3,   [360 , 170], "Rubin Y - low throughput, defective filter in top area "],     #22
 
 
-                        ['dark', [5,  6],    0, 0.00,  [360 , 170], 'dk']],    #23     #Not a real filter.
+                        ['dark', [1,  3],    0, 0.00,  [360 , 170], 'dk']],    #23     #Not a real filter.
 
 
 
