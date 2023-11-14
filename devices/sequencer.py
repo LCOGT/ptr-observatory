@@ -1809,6 +1809,16 @@ class Sequencer:
     def regenerate_local_masters(self):
 
 
+
+        plog ("killing local problem programs")
+
+
+        try:
+            os.system("taskkill /IM FitsLiberator.exe /F")
+            os.system("taskkill /IM Mira_Pro_x64_8.exe /F")
+            os.system("taskkill /IM Aladin.exe /F")
+        except:
+            pass
         g_dev["obs"].send_to_user("Currently regenerating local masters. System may be unresponsive during this period.")
 
 
