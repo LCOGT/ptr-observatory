@@ -679,8 +679,8 @@ class Mount:
             try:
 
                 # Need to convert image fraction into offset
-                image_x = req['image_x']
-                image_y = req['image_y']
+                image_y = req['image_x']
+                image_x = req['image_y']
                 # And the current pixel scale
                 pixscale=float(req['header_pixscale'])
                 pixscale_hours=(pixscale/60/60) / 15
@@ -696,6 +696,8 @@ class Mount:
                 x_center= int(g_dev['cam'].imagesize_x/2)
                 y_center= int(g_dev['cam'].imagesize_y/2)
 
+                #x_pixel_shift = x_center- ((float(image_x)) * g_dev['cam'].imagesize_x)
+                #y_pixel_shift = y_center- ((float(image_y)) * g_dev['cam'].imagesize_y)
                 x_pixel_shift = x_center- ((float(image_x)) * g_dev['cam'].imagesize_x)
                 y_pixel_shift = y_center- ((float(image_y)) * g_dev['cam'].imagesize_y)
                 plog ("X pixel shift: " + str(x_pixel_shift))
