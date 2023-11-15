@@ -231,7 +231,7 @@ site_config = {
                     '270': 25.,
                     '359': 25.
                     },  #  We use a dict because of fragmented azimuth measurements.
-                'refraction_on': True,
+                'refraction_on': True,  #  Refraction is applied during pointing.
                 'model_on': True,  #  Model is applied during pointing.
                 'rates_on': True,  #  Rates implied by model and refraction applie during tracking.
                 'model': {

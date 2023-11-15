@@ -77,10 +77,8 @@ HTOSec = 3600
 APPTOSID = 1.00273811906 #USNO Supplement
 MOUNTRATE = 15*APPTOSID  #15.0410717859
 KINGRATE = 15.029
-RefrOn = True
 
-ModelOn = True
-RatesOn = True
+
 tzOffset = -7
 loop_count = 0
 
@@ -224,7 +222,14 @@ class Mount:
             plog ("Failed to get the current sidereal time from the mount.")
         self.current_icrs_ra = self.mount.RightAscension
         self.current_icrs_dec = self.mount.Declination
-
+        try:
+            self.refr_on = config["mount"]["mount1"]["settings"]["refraction_on"]
+            self.model_on = config["mount"]["mount1"]["settings"]["model_on"]
+            self.rates_on = config["mount"]["mount1"]["settings"]["rates_on"]
+        except:
+            self.refr_on = False
+            self.model_on = False
+            self.rates_on = False
 
         self.delta_t_s = HTOSec/12   #5 minutes
         self.prior_roll_rate = 0
@@ -1092,6 +1097,10 @@ class Mount:
 
     def go_w_model_and_velocity(self, ra, dec, tracking_rate_ra=0, tracking_rate_dec=0, reset_solve=True):  #Note these rates need a system specification
         '''
+        NB NB NB THis is new-old code having to do with supporting velocity and pointing
+        correction for refraction and the installed mount model.  IF Model_on and
+        refr_on are False this code defaults to use the go-command routine above.
+
         Slew to the given ra/dec coordinates, supplied in ICRS
         Note no dependency on current position.
         unpark the telescope mount

@@ -2449,6 +2449,10 @@ class Camera:
                         exposure_time,
                         "[s] Requested exposure length",
                     )  # This is the exposure in seconds specified by the user
+                    hdu.header["EFFEXPT"] = (
+                        exposure_time,
+                        "[s] Integrated exposure length",
+                    )
                     hdu.header["BUNIT"] = "adu"
                     hdu.header[
                         "EXPTIME"
