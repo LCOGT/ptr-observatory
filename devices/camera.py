@@ -2453,6 +2453,10 @@ class Camera:
                         exposure_time,
                         "[s] Integrated exposure length",
                     )
+                    hdu.header["EFFEXPN"] = (
+                        1,
+                        "[s] Number of integrated exposures",
+                    )
                     hdu.header["BUNIT"] = "adu"
                     hdu.header[
                         "EXPTIME"
