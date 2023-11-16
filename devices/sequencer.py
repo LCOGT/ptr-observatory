@@ -1821,6 +1821,14 @@ class Sequencer:
             pass
         g_dev["obs"].send_to_user("Currently regenerating local masters. System may be unresponsive during this period.")
 
+        if g_dev['obs'].config['save_raws_to_pipe_folder_for_nightly_processing']:
+            pipefolder = g_dev['obs'].config['pipe_archive_folder_path'] +'/calibrations/'+ g_dev['cam'].alias
+            if not os.path.exists(g_dev['obs'].config['pipe_archive_folder_path']+'/calibrations'):
+                os.makedirs(g_dev['obs'].config['pipe_archive_folder_path'] + '/calibrations')
+
+            if not os.path.exists(g_dev['obs'].config['pipe_archive_folder_path'] +'/calibrations/'+ g_dev['cam'].alias):
+                os.makedirs(g_dev['obs'].config['pipe_archive_folder_path'] +'/calibrations/'+ g_dev['cam'].alias)
+
 
         # for every filter hold onto an estimate of the current camera gain.
         # Each filter will have a different flat field and variation in the flat.
@@ -1922,7 +1930,9 @@ class Sequencer:
                 filepathaws=g_dev['obs'].calib_masters_folder
                 filenameaws='ARCHIVE_' +  archiveDate + '_' + tempfrontcalib + 'BIAS_master_bin1.fits'
                 g_dev['obs'].enqueue_for_calibrationUI(80, filepathaws,filenameaws)
-
+                if g_dev['obs'].config['save_raws_to_pipe_folder_for_nightly_processing']:
+                    fits.writeto(pipefolder + '/' +tempfrontcalib + 'BIAS_master_bin1.fits', masterBias,  overwrite=True)
+                    fits.writeto(pipefolder + '/' + 'ARCHIVE_' +  archiveDate + '_' +tempfrontcalib + 'BIAS_master_bin1.fits', masterBias,  overwrite=True)
             except Exception as e:
                 plog ("Could not save bias frame: ",e)
 
@@ -2013,7 +2023,9 @@ class Sequencer:
                 filepathaws=g_dev['obs'].calib_masters_folder
                 filenameaws='ARCHIVE_' +  archiveDate + '_' + tempfrontcalib + 'DARK_master_bin1.fits'
                 g_dev['obs'].enqueue_for_calibrationUI(80, filepathaws,filenameaws)
-
+                if g_dev['obs'].config['save_raws_to_pipe_folder_for_nightly_processing']:
+                    fits.writeto(pipefolder + '/' + tempfrontcalib + 'DARK_master_bin1.fits', masterDark,  overwrite=True)
+                    fits.writeto(pipefolder + '/' + 'ARCHIVE_' +  archiveDate + '_' + tempfrontcalib + 'DARK_master_bin1.fits', masterDark,  overwrite=True)
 
             except Exception as e:
                 plog ("Could not save dark frame: ",e)
@@ -2154,6 +2166,9 @@ class Sequencer:
                             filepathaws=g_dev['obs'].calib_masters_folder
                             filenameaws='ARCHIVE_' +  archiveDate + '_' + tempfrontcalib + 'masterFlat_'+ str(filtercode) + '_bin1.fits'
                             g_dev['obs'].enqueue_for_calibrationUI(80, filepathaws,filenameaws)
+                            if g_dev['obs'].config['save_raws_to_pipe_folder_for_nightly_processing']:
+                                fits.writeto(pipefolder + '/' + tempfrontcalib + 'masterFlat_'+ str(filtercode) + '_bin1.fits', temporaryFlat,  overwrite=True)
+                                fits.writeto(pipefolder + '/' + 'ARCHIVE_' +  archiveDate + '_' + tempfrontcalib + 'masterFlat_'+ str(filtercode) + '_bin1.fits', temporaryFlat,  overwrite=True)
 
                         except Exception as e:
                             plog ("Could not save flat frame: ",e)

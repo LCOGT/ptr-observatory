@@ -673,7 +673,7 @@ site_config = {
                 # What is the base smartstack exposure time?
                 # It will vary from scope to scope and computer to computer.
                 # 30s is a good default.
-                'smart_stack_exposure_time': 30,
+                'smart_stack_exposure_time': 15,
 
 
                 # As simple as it states, how many calibration frames to collect and how many to store.
