@@ -1393,7 +1393,7 @@ class Camera:
          # this give rot moving report during bia darks
         rot_report=0
         if g_dev['rot']!=None:
-            if not g_dev['mnt'].mount.AtPark:
+            if not g_dev['mnt'].rapid_park_indicator:
                 while g_dev['rot'].rotator.IsMoving:
                         if rot_report == 0 and imtype not in ['bias', 'dark']:
                             plog("Waiting for camera rotator to catch up. ")
@@ -1411,10 +1411,16 @@ class Camera:
         incoming_exposure_time=exposure_time
         for seq in range(count):
 
+            pre_exposure_overhead_timer=time.time()
+
             # SEQ is the outer repeat loop and takes count images; those individual exposures are wrapped in a
             # retry-3-times framework with an additional timeout included in it.
-            if seq > 0:
-                g_dev["obs"].update_status(cancel_check=False)
+
+            if seq > 0 and not  g_dev["obs"].currently_updating_status:
+                g_dev["obs"].update_status_thread.start()
+
+            #if seq > 0:
+            #    g_dev["obs"].update_status()
 
             ## Vital Check : Has end of observing occured???
             ## Need to do this, SRO kept taking shots til midday without this
@@ -1457,8 +1463,8 @@ class Camera:
             for sskcounter in range(int(Nsmartstack)):
 
                 # If the pier just flipped, trigger a recentering exposure.
-                if not g_dev['mnt'].mount.AtPark and not (g_dev['events']['Civil Dusk'] < ephem.now() < g_dev['events']['Civil Dawn']):
-                    if not (g_dev['mnt'].previous_pier_side==g_dev['mnt'].mount.sideOfPier) :
+                if not g_dev['mnt'].rapid_park_indicator and not (g_dev['events']['Civil Dusk'] < ephem.now() < g_dev['events']['Civil Dawn']):
+                    if not (g_dev['mnt'].previous_pier_side==g_dev['mnt'].rapid_pier_indicator) :
                         plog ("PIERFLIP DETECTED, RECENTERING.")
                         g_dev["obs"].send_to_user("Pier Flip detected, recentering.")
                         g_dev['obs'].pointing_recentering_requested_by_platesolve_thread = True
@@ -1470,7 +1476,7 @@ class Camera:
                         g_dev['obs'].check_platesolve_and_nudge()
                     else:
                         plog ("MTF temp reporting. No pierflip.")
-                g_dev['mnt'].previous_pier_side=g_dev['mnt'].mount.sideOfPier
+                g_dev['mnt'].previous_pier_side=g_dev['mnt'].rapid_pier_indicator
 
                 if g_dev['obs'].pointing_recentering_requested_by_platesolve_thread:
                     plog ("Major shift detected, recentering.")
@@ -1480,7 +1486,8 @@ class Camera:
                 if Nsmartstack > 1 :
                     self.currently_in_smartstack_loop=True
                     plog ("Smartstack " + str(sskcounter+1) + " out of " + str(Nsmartstack))
-                    g_dev['obs'].update_status(cancel_check=False)
+                    if not  g_dev["obs"].currently_updating_status:
+                        g_dev["obs"].update_status_thread.start()
                     initial_smartstack_ra= g_dev['mnt'].mount.RightAscension
                     initial_smartstack_dec= g_dev['mnt'].mount.Declination
                 else:
@@ -1554,8 +1561,8 @@ class Camera:
                             self.currently_in_smartstack_loop=False
                             return 'calendarend'
 
-                    # Check that the roof hasn't shut
-                    g_dev['obs'].get_enclosure_status_from_aws()
+                    # # Check that the roof hasn't shut
+                    # g_dev['obs'].get_enclosure_status_from_aws()
 
                     if not g_dev['obs'].assume_roof_open and not g_dev['obs'].scope_in_manual_mode and 'Closed' in g_dev['obs'].enc_status['shutter_status'] and imtype not in ['bias', 'dark']:
 
@@ -1565,7 +1572,7 @@ class Camera:
                         self.open_and_enabled_to_observe = False
                         if not g_dev['seq'].morn_bias_dark_latch and not g_dev['seq'].bias_dark_latch:
                             g_dev['obs'].cancel_all_activity()  #NB Kills bias dark
-                        if not g_dev['mnt'].mount.AtPark:
+                        if not g_dev['mnt'].rapid_park_indicator:
                             if g_dev['mnt'].home_before_park:
                                 g_dev['mnt'].home_command()
                             g_dev['mnt'].park_command()
@@ -1597,31 +1604,22 @@ class Camera:
                                     self.darkslide_state = 'Closed'
 
 
-                            self.pre_mnt = []
-                            self.pre_rot = []
-                            self.pre_foc = []
-                            self.pre_ocn = []
-                            #self.t2p1 = time.time()
 
-
-                            g_dev["foc"].get_quick_status(self.pre_foc)
-                            try:
-                                g_dev["rot"].get_quick_status(self.pre_rot)
-                            except:
-                                pass
-
-                            g_dev["mnt"].get_rapid_exposure_status(
-                                self.pre_mnt
-                            )  # Should do this close to the exposure
 
                             # Good spot to check if we need to nudge the telescope
                             g_dev['obs'].check_platesolve_and_nudge()
                             g_dev['obs'].time_of_last_exposure = time.time()
-                            g_dev['obs'].update()
+
+                            # During a pre-exposure, we don't want the update to be
+                            # syncronous!
+                            if not g_dev["obs"].currently_updating_FULL:
+                                g_dev["obs"].FULL_update_thread.start()
+                            #g_dev['obs'].update()
 
 
                             # Make sure the latest mount_coordinates are updated. HYPER-IMPORTANT!
-                            g_dev["mnt"].get_mount_coordinates()
+                            # This is now done in async update_status thread
+                            #g_dev["mnt"].get_mount_coordinates()
                             ra_at_time_of_exposure = g_dev["mnt"].current_icrs_ra
                             dec_at_time_of_exposure = g_dev["mnt"].current_icrs_dec
                             observer_user_name = user_name
@@ -1635,40 +1633,15 @@ class Camera:
                                 observer_user_id= 'Tobor'
                                 plog("Failed user_id")
 
-                            # Calculate current airmass now
-                            try:
-                                rd = SkyCoord(ra=ra_at_time_of_exposure*u.hour, dec=dec_at_time_of_exposure*u.deg)
-                            except:
-                                icrs_ra, icrs_dec = g_dev['mnt'].get_mount_coordinates()
-                                rd = SkyCoord(ra=icrs_ra*u.hour, dec=icrs_dec*u.deg)
-                            aa = AltAz (location=g_dev['mnt'].site_coordinates, obstime=Time.now())
-                            rd = rd.transform_to(aa)
-                            alt = float(rd.alt/u.deg)
-                            az = float(rd.az/u.deg)
-                            zen = round((90 - alt), 3)
-                            if zen > 90:
-                                zen = 90.0
-                            if zen < 0.1:    #This can blow up when zen <=0!
-                                new_z = 0.1
-                            else:
-                                new_z = zen
-                            sec_z = 1/math.cos(math.radians(new_z))
-                            airmass = abs(round(sec_z - 0.0018167*(sec_z - 1) - 0.002875*((sec_z - 1)**2) - 0.0008083*((sec_z - 1)**3),3))
-                            if airmass > 10: airmass = 10
-                            airmass = round(airmass, 4)
 
-                            airmass_of_observation = airmass
-                            azimuth_of_observation = az
-                            altitude_of_observation = alt
-                            start_time_of_observation=time.time()
-                            self.start_time_of_observation=time.time()
+
                             self.current_exposure_time=exposure_time
 
                             # Always check rotator just before exposure  The Rot jitters wehn parked so
                             # this give rot moving report during bia darks
                             rot_report=0
                             if g_dev['rot']!=None:
-                                if not g_dev['mnt'].mount.AtPark:
+                                if not g_dev['mnt'].rapid_park_indicator:
                                     while g_dev['rot'].rotator.IsMoving:    #This signal fibrulates!
                                         #if g_dev['rot'].rotator.IsMoving:
                                          if rot_report == 0 :
@@ -1701,7 +1674,38 @@ class Camera:
                                     plog ("temperature in range for calibrations ("+ str(current_camera_temperature)+"), attempting calibration frame")
                                     g_dev['obs'].camera_sufficiently_cooled_for_calibrations = True
 
+
+                            plog ("pre-exposure overhead: " + str(time.time() -pre_exposure_overhead_timer) +"s.")
+                            start_time_of_observation=time.time()
+                            self.start_time_of_observation=time.time()
                             self._expose(exposure_time, bias_dark_or_light_type_frame)
+
+                            # Calculate current airmass now
+                            #try:
+                            rd = SkyCoord(ra=ra_at_time_of_exposure*u.hour, dec=dec_at_time_of_exposure*u.deg)
+                            #except:
+                            #    icrs_ra, icrs_dec = g_dev['mnt'].get_mount_coordinates()
+                            #    rd = SkyCoord(ra=icrs_ra*u.hour, dec=icrs_dec*u.deg)
+                            aa = AltAz (location=g_dev['mnt'].site_coordinates, obstime=Time.now())
+                            rd = rd.transform_to(aa)
+                            alt = float(rd.alt/u.deg)
+                            az = float(rd.az/u.deg)
+                            zen = round((90 - alt), 3)
+                            if zen > 90:
+                                zen = 90.0
+                            if zen < 0.1:    #This can blow up when zen <=0!
+                                new_z = 0.1
+                            else:
+                                new_z = zen
+                            sec_z = 1/math.cos(math.radians(new_z))
+                            airmass = abs(round(sec_z - 0.0018167*(sec_z - 1) - 0.002875*((sec_z - 1)**2) - 0.0008083*((sec_z - 1)**3),3))
+                            if airmass > 10: airmass = 10
+                            airmass = round(airmass, 4)
+
+                            airmass_of_observation = airmass
+                            azimuth_of_observation = az
+                            altitude_of_observation = alt
+
 
 
                         else:
@@ -1711,6 +1715,22 @@ class Camera:
                             self.exposure_busy = False
                             self.currently_in_smartstack_loop=False
                             return self.expresult
+
+                        self.pre_mnt = []
+                        self.pre_rot = []
+                        self.pre_foc = []
+                        self.pre_ocn = []
+
+                        g_dev["foc"].get_quick_status(self.pre_foc)
+                        try:
+                            g_dev["rot"].get_quick_status(self.pre_rot)
+                        except:
+                            pass
+
+                        g_dev["mnt"].get_rapid_exposure_status(
+                            self.pre_mnt
+                        )  # Should do this close to the exposure
+
 
                         # We call below to keep this subroutine a reasonable length, Basically still in Phase 2
                         self.expresult = self.finish_exposure(
@@ -1895,6 +1915,12 @@ class Camera:
 
         exposure_scan_request_timer=time.time()
         g_dev["obs"].exposure_halted_indicator =False
+
+        # try:
+        #     g_dev["ocn"].get_quick_status(self.post_ocn)
+        # except:
+        #     pass
+
         while True:
             self.post_mnt = []
             self.post_rot = []
@@ -1986,6 +2012,7 @@ class Camera:
 
             elif self.async_exposure_lock == False and self._imageavailable():   #NB no more file-mode
 
+                self.post_exposure_overhead_timer=time.time()
                 # Immediately nudge scope to a different point in the smartstack dither
                 if Nsmartstack > 1 and not (Nsmartstack == sskcounter+1):
                     ra_random_dither=(((random.randint(0,50)-25) * self.pixscale / 3600 ) / 15)
@@ -2022,21 +2049,29 @@ class Camera:
                     g_dev['obs'].check_platesolve_and_nudge()
 
                 incoming_image_list = []
-                try:
-                    g_dev["mnt"].get_rapid_exposure_status(
-                        self.post_mnt
-                    )  # Need to pick which pass was closest to image completion
-                except:
-                    pass
-                try:
-                    g_dev["rot"].get_quick_status(self.post_rot)
-                except:
-                    pass
-                g_dev["foc"].get_quick_status(self.post_foc)
-                try:
-                    g_dev["ocn"].get_quick_status(self.post_ocn)
-                except:
-                    pass
+
+
+                # If you are shooting for short exposure times, the overhead
+                # becomes a large fraction of the actual exposure time,
+                # sometimes more. So if it is a short exposure, assume nothing changed
+                # much since the beginning.
+                if exposure_time > 5:
+                    try:
+                        g_dev["rot"].get_quick_status(self.post_rot)
+                    except:
+                        pass
+                    g_dev["foc"].get_quick_status(self.post_foc)
+                    try:
+                        g_dev["mnt"].get_rapid_exposure_status(
+                            self.post_mnt
+                        )  # Need to pick which pass was closest to image completion
+                    except:
+                        pass
+                else:
+                    self.post_rot = self.pre_rot
+                    self.post_foc = self.pre_foc
+                    self.post_mnt = self.pre_mnt
+
 
 
                 imageCollected = 0
@@ -3341,6 +3376,7 @@ class Camera:
 
                     plog("Exposure Complete")
                     g_dev["obs"].send_to_user("Exposure Complete")
+                    plog ("Post-exposure overhead: " + str( time.time() - self.post_exposure_overhead_timer))
 
                     return self.expresult
                 except Exception as e:
@@ -3376,7 +3412,7 @@ def wait_for_slew():
     A function called when the code needs to wait for the telescope to stop slewing before undertaking a task.
     """
     try:
-        if not g_dev['mnt'].mount.AtPark:
+        if not g_dev['mnt'].rapid_park_indicator:
             movement_reporting_timer=time.time()
             while g_dev['mnt'].mount.Slewing: #or g_dev['enc'].status['dome_slewing']:   #Filter is moving??
                 if time.time() - movement_reporting_timer > 2.0:

@@ -354,6 +354,14 @@ class Mount:
         self.previous_pier_side=self.mount.sideOfPier
 
 
+        # The update_status routine collects the current atpark status and pier status.
+        # This is a slow command, so unless the code needs to know IMMEDIATELY
+        # whether the scope is parked, then this is polled rather than directly
+        # asking ASCOM/MOUNT
+        self.rapid_park_indicator=self.mount.AtPark
+        self.rapid_pier_indicator=self.mount.sideOfPier
+
+
     def check_connect(self):
         try:
             if self.mount.Connected:

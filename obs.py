@@ -303,6 +303,14 @@ class Observatory:
         self.get_new_job_timer = time.time()
         self.scan_request_timer = time.time()
 
+        # Sometimes we update the status in a thread. This variable prevents multiple status updates occuring simultaneously
+        self.currently_updating_status=False
+        # Create this actual thread
+        self.update_status_thread=threading.Thread(target=self.update_status)
+        # Also this is true for the FULL update.
+        self.currently_updating_FULL=False
+        self.FULL_update_thread=threading.Thread(target=self.update)
+
 
         self.too_hot_temperature=self.config['temperature_at_which_obs_too_hot_for_camera_cooling']
         self.warm_report_timer = time.time()-600
@@ -916,12 +924,25 @@ class Observatory:
         `get_status`, which returns a dictionary.
         """
 
+        if self.currently_updating_status==True:
+            return
+
+        self.currently_updating_status=True
+        #g_dev["mnt"].get_mount_coordinates()
+        g_dev['mnt'].rapid_pier_indicator=g_dev['mnt'].mount.sideOfPier
+        g_dev['mnt'].rapid_park_indicator=g_dev['mnt'].mount.AtPark
+
+
+
+
         # Wait a bit between status updates otherwise
         # status updates bank up in the queue
         if dont_wait == True:
             self.status_interval = self.status_upload_time + 0.25
         while time.time() < self.time_last_status + self.status_interval:
             return  # Note we are just not sending status, too soon.
+
+
 
         # Keep an eye on the stop-script and exposure halt time to reset those timers.
         if g_dev['seq'].stop_script_called and ((time.time() - g_dev['seq'].stop_script_called_time) > 35):
@@ -1083,6 +1104,8 @@ class Observatory:
         self.time_last_status = time.time()
         self.status_count += 1
 
+        self.currently_updating_status=False
+
 
     def update(self):
         """
@@ -1092,7 +1115,13 @@ class Observatory:
         a variety of safety checks as well.
         """
 
-        self.update_status()
+        if self.currently_updating_FULL:
+            return
+
+        self.currently_updating_FULL=True
+
+        if not self.currently_updating_status:
+            self.update_status()
 
         if time.time() - self.get_new_job_timer > 3:
             self.get_new_job_timer = time.time()
@@ -1499,6 +1528,7 @@ class Observatory:
                         g_dev['mnt'].park_command()
                         self.time_of_last_slew = time.time()
 
+        self.currently_updating_FULL=False
         # END of safety checks.
 
     def run(self):
