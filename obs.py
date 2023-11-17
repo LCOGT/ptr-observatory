@@ -728,12 +728,12 @@ class Observatory:
                                     plog ('mount_reference_model_off')
                                     g_dev["obs"].send_to_user("mount_reference_model_off.")
 
-                                if cmd['action']=='configure_pointing_reference_on':
+                                elif cmd['action']=='configure_pointing_reference_on':
                                     self.mount_reference_model_off = False
                                     plog ('mount_reference_model_on')
                                     g_dev["obs"].send_to_user("mount_reference_model_on.")
 
-                                if cmd['action']=='configure_telescope_mode':
+                                elif cmd['action']=='configure_telescope_mode':
 
                                     if cmd['required_params']['mode'] == 'manual':
                                         self.scope_in_manual_mode = True
@@ -744,7 +744,7 @@ class Observatory:
                                         plog ('Manual Mode Turned Off.')
                                         g_dev["obs"].send_to_user('Manual Mode Turned Off.')
 
-                                if cmd['action']=='configure_moon_safety':
+                                elif cmd['action']=='configure_moon_safety':
 
                                     if cmd['required_params']['mode'] == 'on':
                                         self.moon_checks_on = True
@@ -755,7 +755,7 @@ class Observatory:
                                         plog ('Moon Safety Off')
                                         g_dev["obs"].send_to_user('Moon Safety Off')
 
-                                if cmd['action']=='configure_sun_safety':
+                                elif cmd['action']=='configure_sun_safety':
 
                                     if cmd['required_params']['mode'] =='on':
                                         self.sun_checks_on = True
@@ -766,7 +766,7 @@ class Observatory:
                                         plog ('Sun Safety Off')
                                         g_dev["obs"].send_to_user('Sun Safety Off')
 
-                                if cmd['action']=='configure_altitude_safety':
+                                elif cmd['action']=='configure_altitude_safety':
 
                                     if cmd['required_params']['mode'] == 'on':
                                         self.altitude_checks_on = True
@@ -777,7 +777,7 @@ class Observatory:
                                         plog ('Altitude Safety Off')
                                         g_dev["obs"].send_to_user('Altitude Safety Off')
 
-                                if cmd['action']=='configure_daytime_exposure_safety':
+                                elif cmd['action']=='configure_daytime_exposure_safety':
 
                                     if cmd['required_params']['mode'] == 'on':
                                         self.daytime_exposure_time_safety_on = True
@@ -788,7 +788,7 @@ class Observatory:
                                         plog ('Daytime Exposure Safety Off')
                                         g_dev["obs"].send_to_user('Daytime Exposure Safety Off')
 
-                                if cmd['action']=='start_simulating_open_roof':
+                                elif cmd['action']=='start_simulating_open_roof':
                                     self.assume_roof_open = True
                                     self.open_and_enabled_to_observe=True
                                     g_dev['obs'].enc_status = g_dev['obs'].get_enclosure_status_from_aws()
@@ -796,7 +796,7 @@ class Observatory:
                                     plog ('Roof is now assumed to be open. WEMA shutter status is ignored.')
                                     g_dev["obs"].send_to_user('Roof is now assumed to be open. WEMA shutter status is ignored.')
 
-                                if cmd['action']=='stop_simulating_open_roof':
+                                elif cmd['action']=='stop_simulating_open_roof':
                                     self.assume_roof_open = False
                                     g_dev['obs'].enc_status = g_dev['obs'].get_enclosure_status_from_aws()
                                     self.enclosure_status_timer = datetime.datetime.now()
@@ -804,7 +804,7 @@ class Observatory:
                                     g_dev["obs"].send_to_user('Roof is now NOT assumed to be open. Reading WEMA shutter status.')
 
 
-                                if cmd['action']=='configure_who_can_send_commands':
+                                elif cmd['action']=='configure_who_can_send_commands':
                                     if cmd['required_params']['only_accept_admin_or_owner_commands'] == True:
                                         self.admin_owner_commands_only = True
                                         plog ('Scope set to only accept admin or owner commands')
@@ -813,6 +813,17 @@ class Observatory:
                                         self.admin_owner_commands_only = False
                                         plog ('Scope now open to all user commands, not just admin or owner.')
                                         g_dev["obs"].send_to_user('Scope now open to all user commands, not just admin or owner.')
+                                elif cmd['action']=='obs_configure_auto_center_on':
+                                    self.auto_centering_off = False
+                                    plog ('Scope set to automatically center.')
+                                    g_dev["obs"].send_to_user('Scope set to automatically center.')
+                                elif cmd['action']=='obs_configure_auto_center_off':
+                                    self.auto_centering_off = True
+                                    plog ('Scope set to not automatically center.')
+                                    g_dev["obs"].send_to_user('Scope set to not automatically center.')
+                                else:
+                                    print ("Unknown command: " + str(cmd))
+
 
                                 self.obs_settings_upload_timer = time.time() - 2*self.obs_settings_upload_period
 
@@ -980,6 +991,8 @@ class Observatory:
             status['obs_settings']['lowest_altitude']=-5
             status['obs_settings']['daytime_exposure_safety_mode']=self.daytime_exposure_time_safety_on
             status['obs_settings']['daytime_exposure_time']=0.01
+
+            status['obs_settings']['auto_center_on']= not self.auto_centering_off
             status['obs_settings']['admin_owner_commands_only']=self.admin_owner_commands_only
             status['obs_settings']['simulating_open_roof']=self.assume_roof_open
             status['obs_settings']['pointing_reference_on']= (not self.mount_reference_model_off)
