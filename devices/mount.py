@@ -371,17 +371,17 @@ class Mount:
         # asking ASCOM/MOUNT
         self.rapid_park_indicator=copy.deepcopy(self.mount.AtPark)
         self.rapid_pier_indicator=copy.deepcopy(self.mount.sideOfPier)
-        
+
         self.right_ascension_directly_from_mount = copy.deepcopy(self.mount.RightAscension)
         self.declination_directly_from_mount = copy.deepcopy(self.mount.Declination)
-        
-        
-        
+
+
+
         self.current_tracking_state=copy.deepcopy(self.mount.Tracking)
 
 
 
-    
+
 
     def return_side_of_pier(self):
         return copy.deepcopy(self.mount.sideOfPier)
@@ -393,13 +393,13 @@ class Mount:
     def return_declination(self):
         #return copy.deepcopy(self.mount.Declination)
         return self.declination_directly_from_mount
-    
+
     def return_slewing(self):
         return copy.deepcopy(self.mount.Slewing)
-    
+
     def return_tracking(self):
         return copy.deepcopy(self.mount.Tracking)
-    
+
     def set_tracking_on(self):
         if self.return_slewing() == False:
             if self.can_set_tracking:
@@ -408,7 +408,7 @@ class Mount:
             else:
                 plog("mount is not tracking but this mount doesn't support ASCOM changing tracking")
         return
-    
+
     def set_tracking_off(self):
         if self.return_slewing() == False:
             if self.can_set_tracking:
@@ -419,7 +419,7 @@ class Mount:
         return
 
     def mount_reboot(self):
-        
+
         win32com.client.pythoncom.CoInitialize()
         self.mount = win32com.client.Dispatch(self.driver)
         self.mount.Connected = True
@@ -478,7 +478,7 @@ class Mount:
             DESCRIPTION.
 
         '''
-        
+
         self.right_ascension_directly_from_mount = copy.deepcopy(self.mount.RightAscension)
         self.declination_directly_from_mount = copy.deepcopy(self.mount.Declination)
 
@@ -494,12 +494,12 @@ class Mount:
         self.get_mount_coordinates()
 
     # def get_status(self):
-    
+
     #     if self.currently_creating_status:
     #         return copy.deepcopy(self.previous_status)
-    
+
     #     self.currently_creating_status = True
-    
+
     #     try:
     #         self.rapid_park_indicator=copy.deepcopy(self.mount.AtPark)
     #         self.rapid_pier_indicator=copy.deepcopy(self.mount.sideOfPier)
@@ -514,7 +514,7 @@ class Mount:
     #             self.rapid_pier_indicator=copy.deepcopy(self.mount.sideOfPier)
     #         else:
     #             print (e)
-    
+
     #     if self.tel == False:
     #         status = {
     #             'timestamp': round(time.time(), 3),
@@ -532,13 +532,13 @@ class Mount:
     #             icrs_ra=self.current_icrs_ra
     #             icrs_dec=self.current_icrs_dec
     #             rd = SkyCoord(ra=self.current_icrs_ra*u.hour, dec=self.current_icrs_dec*u.deg)
-    
+
     #         aa = AltAz(location=self.site_coordinates, obstime=Time.now())
     #         rd = rd.transform_to(aa)
     #         alt = float(rd.alt/u.deg)
     #         az = float(rd.az/u.deg)
     #         zen = round((90 - alt), 3)
-    
+
     #         if zen > 90:
     #             zen = 90.0
     #         if zen < 0.1:    #This can blow up when zen <=0!
@@ -549,12 +549,12 @@ class Mount:
     #         airmass = abs(round(sec_z - 0.0018167*(sec_z - 1) - 0.002875*((sec_z - 1)**2) - 0.0008083*((sec_z - 1)**3),3))
     #         if airmass > 10: airmass = 10.0   # We should caution the user if AM > 2, and alert them if >3
     #         airmass = round(airmass, 4)
-    
+
     #         try:
     #             self.current_sidereal = float((Time(datetime.datetime.utcnow(), scale='utc', location=g_dev['mnt'].site_coordinates).sidereal_time('apparent')*u.deg) / u.deg / u.hourangle)
     #         except:
     #             plog ("Mount didn't accept request for sidereal time. Need to make a calculation for this.")
-    
+
     #         if self.prior_roll_rate == 0:
     #             pass
     #         ha = icrs_ra - self.current_sidereal
@@ -562,7 +562,7 @@ class Mount:
     #             ha  += 24
     #         if ha > 12:
     #             ha -= 24
-    
+
     #         status = {
     #             'timestamp': round(time.time(), 3),
     #             'right_ascension': round(icrs_ra, 4),
@@ -588,7 +588,7 @@ class Mount:
     #             'message': str(self.mount_message[:54]),
     #             'move_time': self.move_time
     #         }
-    
+
     #     else:
     #         plog('Proper device_name is missing, or tel == None')
     #         status = {'defective':  'status'}
@@ -993,7 +993,7 @@ class Mount:
 
         ''' Slew to the given ra/dec, alt/az or ha/dec or skyflatspot coordinates. '''
 
-        
+
 
         # First thing to do is check the position of the sun and
         # Whether this violates the pointing principle.
@@ -1094,7 +1094,7 @@ class Mount:
             plog("Refusing pointing request as the observatory is currently taking flats or calibration frmaes.")
             return 'refused'
 
-        
+
 
         if objectname != None:
             self.object = objectname
@@ -1120,9 +1120,9 @@ class Mount:
             tracking_rate_dec = ddec_moon
 
         #
-        breakpoint()
+        #breakpoint()
         icrs_ra, icrs_dec = self.get_mount_coordinates()   #Does not appear to be used
-
+        breakpoint()
         if self.object == "":
             if not silent:
                 g_dev['obs'].send_to_user("Slewing telescope to un-named target!  ",  p_level="INFO")
@@ -1594,7 +1594,7 @@ class Mount:
 
     def unpark_command(self, req=None, opt=None):
         ''' unpark the telescope mount '''
-        
+
         if self.can_park:
             if g_dev['mnt'].rapid_park_indicator:
                 plog("mount cmd: unparking mount")
