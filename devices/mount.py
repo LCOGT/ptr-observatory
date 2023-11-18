@@ -42,6 +42,7 @@ import time, json
 import datetime
 import traceback
 import os
+import copy
 import shelve
 from math import cos, radians    #"What plan do we have for making some imports be done this way, elg, import numpy as np...?"
 from global_yard import g_dev    #"Ditto guestion we are importing a single object instance."
@@ -129,7 +130,7 @@ def ra_fix_h(ra):
 def wait_for_slew():
 
     try:
-        if not g_dev['mnt'].mount.AtPark:
+        if not g_dev['mnt'].rapid_park_indicator:
             movement_reporting_timer=time.time()
             while g_dev['mnt'].mount.Slewing:
                 if time.time() - movement_reporting_timer > 2.0:
@@ -185,6 +186,7 @@ class Mount:
         self.config = config
         self.device_name = name
         self.settings = settings
+
         win32com.client.pythoncom.CoInitialize()
         self.mount = win32com.client.Dispatch(driver)
         try:
@@ -337,6 +339,12 @@ class Mount:
         self.last_tracking_rate_dec = 0
         self.last_seek_time = time.time() - 5000
 
+        #self.check_connect()
+
+
+        self.previous_status = {}
+        self.currently_creating_status = False
+
         # Minimising ASCOM calls by holding these as internal variables
         if self.mount.CanSetRightAscensionRate:
             self.CanSetRightAscensionRate=True
@@ -352,6 +360,7 @@ class Mount:
         self.EquatorialSystem=self.mount.EquatorialSystem
 
         self.previous_pier_side=self.mount.sideOfPier
+
 
 
         # The update_status routine collects the current atpark status and pier status.
@@ -373,12 +382,12 @@ class Mount:
                     if self.mount.Connected:
                         return
                 except Exception as e:
-                    plog (traceback.format_exc())
+                    #plog (traceback.format_exc())
                     plog ("mount reconnection failed.")
 
         except:
             plog('Found mount not connected via try: block fail, reconnecting.')
-            time.sleep(5)
+            #time.sleep(5)
             try:
                 self.mount.Connected = True
                 if self.mount.Connected:
@@ -424,11 +433,29 @@ class Mount:
 
     def get_status(self):
 
+        if self.currently_creating_status:
+            return self.previous_status
+
+        self.currently_creating_status = True
+
+        try:
+            self.rapid_park_indicator=copy.deepcopy(self.mount.AtPark)
+            self.rapid_pier_indicator=copy.deepcopy(self.mount.sideOfPier)
+        except Exception as e:
+            #print (e)
+            #breakpoint()
+            if 'CoInitialize has not been called.' in str(e):
+                print ("rbooting mount?")
+                win32com.client.pythoncom.CoInitialize()
+                self.mount = win32com.client.Dispatch(self.driver)
+                self.rapid_park_indicator=copy.deepcopy(self.mount.AtPark)
+                self.rapid_pier_indicator=copy.deepcopy(self.mount.sideOfPier)
+
         if self.tel == False:
             status = {
                 'timestamp': round(time.time(), 3),
                 'pointing_telescope': self.inst,
-                'is_parked': self.mount.AtPark,
+                'is_parked': self.rapid_park_indicator,
                 'is_tracking': self.mount.Tracking,
                 'is_slewing': self.mount.Slewing,
                 'message': self.mount_message[:32]
@@ -502,6 +529,8 @@ class Mount:
             plog('Proper device_name is missing, or tel == None')
             status = {'defective':  'status'}
         #plog("Mount Status:  ", status)
+        self.previous_status = status
+        self.currently_creating_status = False
         return status
 
     def get_quick_status(self, pre):
@@ -541,7 +570,7 @@ class Mount:
         pre.append(alt)
         pre.append(zen)
         pre.append(airmass)
-        pre.append(self.mount.AtPark)
+        pre.append(self.rapid_park_indicator)
         pre.append(self.mount.Tracking)
         pre.append(self.mount.Slewing)
         return pre
@@ -653,7 +682,6 @@ class Mount:
         req = command['required_params']
         opt = command['optional_params']
         action = command['action']
-        self.check_connect()
         if action == "go":
             if 'ra' in req:
                 result = self.go_command(ra=req['ra'], dec=req['dec'])   #  Entered from Target Explorer or Telescope tabs.
@@ -1360,7 +1388,7 @@ class Mount:
     def park_command(self, req=None, opt=None):
         ''' park the telescope mount '''
         if self.mount.CanPark:
-            if not g_dev['mnt'].mount.AtPark:
+            if not self.mount.AtPark:
                 plog("mount cmd: parking mount")
                 if g_dev['obs'] is not None:  #THis gets called before obs is created
                     g_dev['obs'].send_to_user("Parking Mount. This can take a moment.")
