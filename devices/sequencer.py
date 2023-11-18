@@ -3283,16 +3283,18 @@ class Sequencer:
 
             else:
 
-                result['FWHM'] = 3
-                result['mean_focus'] = g_dev['foc'].get_position()
+                g_dev['obs'].fwhmresult['FWHM'] = 3
+                g_dev['obs'].fwhmresult['mean_focus'] = g_dev['foc'].get_position()
 
             try:
-                spot1 = result['FWHM']
-                foc_pos1 = result['mean_focus']
+                spot1 = g_dev['obs'].fwhmresult['FWHM']
+                foc_pos1 = g_dev['obs'].fwhmresult['mean_focus']
             except:
                 spot1 = False
                 foc_pos1 = False
                 plog ("spot1 failed in autofocus script")
+                plog(traceback.format_exc())
+                breakpoint()
 
             plog (spot1)
             g_dev['obs'].send_to_user("Central focus FWHM: " + str(spot1), p_level='INFO')
@@ -3319,11 +3321,11 @@ class Sequencer:
                 self.focussing=False
                 return
         else:
-            result['FWHM'] = 4
-            result['mean_focus'] = g_dev['foc'].get_position()
+            g_dev['obs'].fwhmresult['FWHM'] = 4
+            g_dev['obs'].fwhmresult['mean_focus'] = g_dev['foc'].get_position()
         try:
-            spot2 = result['FWHM']
-            foc_pos2 = result['mean_focus']
+            spot2 = g_dev['obs'].fwhmresult['FWHM']
+            foc_pos2 = g_dev['obs'].fwhmresult['mean_focus']
         except:
             spot2 = False
             foc_pos2 = False
@@ -3349,11 +3351,11 @@ class Sequencer:
                 self.focussing=False
                 return
         else:
-            result['FWHM'] = 4.5
-            result['mean_focus'] = g_dev['foc'].get_position()
+            g_dev['obs'].fwhmresult['FWHM'] = 4.5
+            g_dev['obs'].fwhmresult['mean_focus'] = g_dev['foc'].get_position()
         try:
-            spot3 = result['FWHM']
-            foc_pos3 = result['mean_focus']
+            spot3 = g_dev['obs'].fwhmresult['FWHM']
+            foc_pos3 = g_dev['obs'].fwhmresult['mean_focus']
         except:
             spot3 = False
             foc_pos3 = False
@@ -3427,11 +3429,11 @@ class Sequencer:
                         self.focussing=False
                         return
                 else:
-                    result['FWHM'] = new_spot
-                    result['mean_focus'] = g_dev['foc'].get_position()
+                    g_dev['obs'].fwhmresult['FWHM'] = new_spot
+                    g_dev['obs'].fwhmresult['mean_focus'] = g_dev['foc'].get_position()
                 try:
-                    spot4 = result['FWHM']
-                    foc_pos4 = result['mean_focus']
+                    spot4 = g_dev['obs'].fwhmresult['FWHM']
+                    foc_pos4 = g_dev['obs'].fwhmresult['mean_focus']
                 except:
                     spot4 = False
                     foc_pos4 = False
@@ -3473,11 +3475,11 @@ class Sequencer:
                     self.focussing=False
                     return
             else:
-                result['FWHM'] = 6
-                result['mean_focus'] = g_dev['foc'].get_position()
+                g_dev['obs'].fwhmresult['FWHM'] = 6
+                g_dev['obs'].fwhmresult['mean_focus'] = g_dev['foc'].get_position()
             try:
-                spot4 = result['FWHM']
-                foc_pos4 = result['mean_focus']
+                spot4 = g_dev['obs'].fwhmresult['FWHM']
+                foc_pos4 = g_dev['obs'].fwhmresult['mean_focus']
             except:
                 spot4 = False
                 foc_pos4 = False
@@ -3551,11 +3553,11 @@ class Sequencer:
                         self.focussing=False
                         return
                 else:
-                    result['FWHM'] = new_spot
-                    result['mean_focus'] = g_dev['foc'].get_position()
+                    g_dev['obs'].fwhmresult['FWHM'] = new_spot
+                    g_dev['obs'].fwhmresult['mean_focus'] = g_dev['foc'].get_position()
                 try:
-                    spot4 = result['FWHM']
-                    foc_pos4 = result['mean_focus']
+                    spot4 = g_dev['obs'].fwhmresult['FWHM']
+                    foc_pos4 = g_dev['obs'].fwhmresult['mean_focus']
                 except:
                     spot4 = False
                     foc_pos4 = False
@@ -3593,11 +3595,11 @@ class Sequencer:
                     self.focussing=False
                     return
             else:
-                result['FWHM'] = 5.5
-                result['mean_focus'] = g_dev['foc'].get_position()
+                g_dev['obs'].fwhmresult['FWHM'] = 5.5
+                g_dev['obs'].fwhmresult['mean_focus'] = g_dev['foc'].get_position()
             try:
-                spot4 = result['FWHM']
-                foc_pos4 = result['mean_focus']
+                spot4 = g_dev['obs'].fwhmresult['FWHM']
+                foc_pos4 = g_dev['obs'].fwhmresult['mean_focus']
             except:
                 spot4 = False
                 foc_pos4 = False
@@ -3665,11 +3667,11 @@ class Sequencer:
                         self.focussing=False
                         return
                 else:
-                    result['FWHM'] = new_spot
-                    result['mean_focus'] = g_dev['foc'].get_position()
+                    g_dev['obs'].fwhmresult['FWHM'] = new_spot
+                    g_dev['obs'].fwhmresult['mean_focus'] = g_dev['foc'].get_position()
                 try:
-                    spot4 = result['FWHM']
-                    foc_pos4 = result['mean_focus']
+                    spot4 = g_dev['obs'].fwhmresult['FWHM']
+                    foc_pos4 = g_dev['obs'].fwhmresult['mean_focus']
                 except:
                     spot4 = False
                     foc_pos4 = False
@@ -3912,14 +3914,14 @@ class Sequencer:
                     return
             else:
                 try:
-                    result['FWHM'] = 4
-                    result['mean_focus'] = g_dev['foc'].get_position()
+                    g_dev['obs'].fwhmresult['FWHM'] = 4
+                    g_dev['obs'].fwhmresult['mean_focus'] = g_dev['foc'].get_position()
                 except:
                     plog(traceback.format_exc())
                     #
             try:
-                spot = result['FWHM']
-                lsources = result['No_of_sources']
+                spot = g_dev['obs'].fwhmresult['FWHM']
+                lsources = g_dev['obs'].fwhmresult['No_of_sources']
                 if np.isnan(lsources):
                     spot=False
 
@@ -3955,11 +3957,11 @@ class Sequencer:
                     self.focussing=False
                     return
             else:
-                result['FWHM'] = 4
-                result['mean_focus'] = g_dev['foc'].get_position()
+                g_dev['obs'].fwhmresult['FWHM'] = 4
+                g_dev['obs'].fwhmresult['mean_focus'] = g_dev['foc'].get_position()
             try:
-                spot = result['FWHM']
-                lsources = result['No_of_sources']
+                spot = g_dev['obs'].fwhmresult['FWHM']
+                lsources = g_dev['obs'].fwhmresult['No_of_sources']
                 if np.isnan(lsources):
                     spot=False
 

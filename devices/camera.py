@@ -1875,7 +1875,7 @@ class Camera:
     ):
 
 
-        self.expresult={}
+        #self.expresult={}
         plog(
             "Exposure Started:  " + str(exposure_time) + "s ",
             frame_type
@@ -2261,7 +2261,7 @@ class Camera:
                 #post_exposure_process(payload=payload)
 
                 #deep_copy_timer=time.time()
-                if not frame_type[-4:] == "flat":
+                if not frame_type[-4:] == "flat" and not focus_image == True and not frame_type=='pointing':
                     self.post_processing_queue.put(copy.deepcopy((outputimg, g_dev["mnt"].pier_side, self.config["camera"][self.name]["settings"]['is_osc'], frame_type, self.config['camera']['camera_1_1']['settings']['reject_new_flat_by_known_gain'], avg_mnt, avg_foc, avg_rot, self.setpoint, tempccdtemp, ccd_humidity, ccd_pressure, self.darkslide_state, exposure_time, this_exposure_filter, exposure_filter_offset, self.pane,opt , observer_user_name, self.hint, azimuth_of_observation, altitude_of_observation, airmass_of_observation, self.pixscale, smartstackid,sskcounter,Nsmartstack, longstackid, ra_at_time_of_exposure, dec_at_time_of_exposure, manually_requested_calibration, object_name, object_specf, g_dev["mnt"].ha_corr, g_dev["mnt"].dec_corr, focus_position, self.config, self.name, self.camera_known_gain, self.camera_known_readnoise, start_time_of_observation, observer_user_id, self.camera_path,  solve_it)), block=False)
                 #print ("Deep copy timer: " +str(time.time()-deep_copy_timer))
 
@@ -2269,11 +2269,115 @@ class Camera:
                 #self.post_deepcopy_overhead_timer=time.time()
                 #post_exposure_thread=threading.Thread(target=post_exposure_process,args=(payload,))
                 #post_exposure_thread.start()
+                #breakpoint()
+                
+                
+                
+                
+                # If this is a pointing or a focus frame, we need to do an
+                # in-line flash reduction
+                if frame_type=='pointing' or focus_image == True:
+                    # Make sure any dither or return nudge has finished before platesolution
+                    try:
+                        outputimg = outputimg - g_dev['cam'].biasFiles[str(1)]
+                        outputimg = outputimg - (g_dev['cam'].darkFiles[str(1)] * exposure_time)
 
+                    except Exception as e:
+                        plog("debias/darking light frame failed: ", e)
+
+                    # Quick flat flat frame
+                    try:
+                        if self.config['camera'][self.name]['settings']['hold_flats_in_memory']:
+                            outputimg = np.divide(outputimg, g_dev['cam'].flatFiles[g_dev['cam'].current_filter])
+                        else:
+                            outputimg = np.divide(outputimg, np.load(g_dev['cam'].flatFiles[str(g_dev['cam'].current_filter + "_bin" + str(1))]))
+
+                    except Exception as e:
+                        plog("flatting light frame failed", e)
+                        #plog(traceback.format_exc())
+
+                if frame_type=='pointing':
+
+                    #cal_name = (
+                    #    cal_name[:-9] + "F012" + cal_name[-7:]
+                    #)
+                    im_path_r = self.camera_path
+                    im_type = "EX" 
+                    next_seq = next_sequence(self.config["camera"][self.name]["name"])
+                    f_ext = "-"
+                    cal_name = (
+                        self.config["obs_id"]
+                        + "-"
+                        + self.config["camera"][self.name]["name"]
+                        + "-"
+                        + g_dev["day"]
+                        + "-"
+                        + next_seq
+                        + f_ext
+                        + "-"
+                        + im_type
+                        + "00.fits"
+                    )
+                    cal_path = im_path_r + g_dev["day"] + "/calib/"
+                    
+                    hdu = fits.PrimaryHDU()
+                    hdu.header['PIXSCALE']=self.pixscale
+                    hdusmallheader=copy.deepcopy(hdu.header)
+                    del hdu
+                    
+                    
+                    wait_for_slew()
+                    g_dev['obs'].platesolve_is_processing =True
+                    g_dev['obs'].to_platesolve((outputimg, hdusmallheader, cal_path, cal_name, frame_type, time.time(), self.pixscale, ra_at_time_of_exposure,dec_at_time_of_exposure))
+                    # If it is the last of a set of smartstacks, we actually want to
+                    # wait for the platesolve and nudge before starting the next smartstack.
+                    
 
                 # If this is a focus image, we need to wait until the SEP queue is finished and empty to pick up the latest
                 # FWHM.
                 if focus_image == True:
+                    im_path_r = self.camera_path
+                    im_type = "EX" 
+                    f_ext = "-"
+                    next_seq = next_sequence(self.config["camera"][self.name]["name"])
+                    text_name = (
+                        self.config["obs_id"]
+                        + "-"
+                        + self.config["camera"][self.name]["name"]
+                        + "-"
+                        + g_dev["day"]
+                        + "-"
+                        + next_seq
+                        + "-"
+                        + im_type
+                        + "00.txt"
+                    )
+                    im_path = im_path_r + g_dev["day"] + "/to_AWS/"
+                    cal_name = (
+                        self.config["obs_id"]
+                        + "-"
+                        + self.config["camera"][self.name]["name"]
+                        + "-"
+                        + g_dev["day"]
+                        + "-"
+                        + next_seq
+                        + f_ext
+                        + "-"
+                        + im_type
+                        + "00.fits"
+                    )
+                    cal_path = im_path_r + g_dev["day"] + "/calib/"
+                    
+                    hdu = fits.PrimaryHDU()
+                    hdu.header['PIXSCALE']=self.pixscale
+                    hdu.header['EXPTIME']=exposure_time
+                    hdusmallheader=copy.deepcopy(hdu.header)
+                    del hdu
+                    
+                    g_dev['obs'].sep_processing=True
+                    g_dev['obs'].to_sep((outputimg, self.pixscale, self.camera_known_readnoise, avg_foc[1], focus_image, im_path, text_name, hdusmallheader, cal_path, cal_name, frame_type, focus_position, self.native_bin))
+
+                    
                     reported=0
                     temptimer=time.time()
                     plog ("Exposure Complete")
@@ -3385,7 +3489,10 @@ def post_exposure_process(payload):
             + dec_at_time_of_exposure,
             "[deg] Sum of RA and dec",
         )
-        hdu.header["CATNAME"] = (object_name, "Catalog object name")
+        try:
+            hdu.header["CATNAME"] = (object_name, "Catalog object name")
+        except:
+            hdu.header["CATNAME"] = ('Unknown', "Catalog object name")
         hdu.header["CAT-RA"] = (
             tempointing[0],
             "[hms] Catalog RA of object",

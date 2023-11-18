@@ -674,8 +674,8 @@ class Observatory:
         try:
             g_dev["cam"]._stop_expose()
             g_dev["cam"].exposure_busy = False
-            g_dev['cam'].expresult = {}
-            g_dev['cam'].expresult["stopped"] = True
+            expresult = {}
+            expresult["stopped"] = True
 
         except Exception as e:
             plog("Camera is not busy.", e)
@@ -2235,9 +2235,11 @@ class Observatory:
 
                         if (len(sources) < 2) or ( frame_type == 'focus' and (len(sources) < 10 or len(sources) == np.nan or str(len(sources)) =='nan' or xdonut > 3.0 or ydonut > 3.0 or np.isnan(xdonut) or np.isnan(ydonut))):
                             plog ("Did not find an acceptable FWHM for this image.")
-                            g_dev['cam'].expresult["error"] = True
-                            g_dev['cam'].expresult['FWHM'] = np.nan
-                            g_dev['cam'].expresult['No_of_sources'] = np.nan
+                            self.fwhmresult={}
+                            self.fwhmresult["error"] = True
+                            self.fwhmresult['FWHM'] = np.nan
+                            self.fwhmresult["mean_focus"] = avg_foc
+                            self.fwhmresult['No_of_sources'] = np.nan
                             sources['FWHM'] = [np.nan] * len(sources)
                             rfp = np.nan
                             rfr = np.nan
@@ -2263,9 +2265,10 @@ class Observatory:
                             rfs = round(np.std(fwhmcalc) * pixscale * g_dev['cam'].native_bin, 3)
                             plog("\nImage FWHM:  " + str(rfr) + "+/-" + str(rfs) + " arcsecs, " + str(rfp)
                                  + " pixels.")
-                            g_dev['cam'].expresult["FWHM"] = rfr
-                            g_dev['cam'].expresult["mean_focus"] = avg_foc
-                            g_dev['cam'].expresult['No_of_sources'] = len(sources)
+                            self.fwhmresult={}
+                            self.fwhmresult["FWHM"] = rfr
+                            self.fwhmresult["mean_focus"] = avg_foc
+                            self.fwhmresult['No_of_sources'] = len(sources)
 
 
                         if focus_image != True:
@@ -2301,8 +2304,9 @@ class Observatory:
 
                 else:
                     #plog ("Did not find a source list from SEP for this image.")
-                    g_dev['cam'].expresult['FWHM'] = np.nan
-                    g_dev['cam'].expresult['No_of_sources'] = np.nan
+                    self.fwhmresult={}
+                    self.fwhmresult['FWHM'] = np.nan
+                    self.fwhmresult['No_of_sources'] = np.nan
 
 
                 if os.path.exists(im_path + text_name.replace('.txt', '.rad')):
