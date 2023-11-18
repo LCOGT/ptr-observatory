@@ -1100,7 +1100,7 @@ class Observatory:
                     status['telescope'] = status['mount']
                 else:
                     #breakpoint()
-                    if 'mount1' in device_name and self.mount_reboot_on_first_status:
+                    if 'mount' in device_name and self.mount_reboot_on_first_status:
                         plog ("rebooting mount on first status update. Need to chase why, it is a collision I can't see yet - MTF")
                         g_dev['mnt'].mount_reboot()
                         self.mount_reboot_on_first_status = False
