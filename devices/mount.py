@@ -367,9 +367,14 @@ class Mount:
         # This is a slow command, so unless the code needs to know IMMEDIATELY
         # whether the scope is parked, then this is polled rather than directly
         # asking ASCOM/MOUNT
-        self.rapid_park_indicator=self.mount.AtPark
-        self.rapid_pier_indicator=self.mount.sideOfPier
+        self.rapid_park_indicator=copy.deepcopy(self.mount.AtPark)
+        self.rapid_pier_indicator=copy.deepcopy(self.mount.sideOfPier)
 
+    def mount_reboot(self):
+        
+        win32com.client.pythoncom.CoInitialize()
+        self.mount = win32com.client.Dispatch(self.driver)
+        self.mount.Connected = True
 
     def check_connect(self):
         try:

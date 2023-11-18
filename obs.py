@@ -545,7 +545,10 @@ class Observatory:
 
         # Temporary toggle to turn auto-centering off
         #self.auto_centering_off = True
-
+        
+        
+        #MTF -TEMP
+        self.mount_reboot_on_first_status = True
 
 
         # Initialisation complete!
@@ -977,7 +980,7 @@ class Observatory:
         #     except Exception as e:
         #         plog (e)
         #         plog ("astrophysics doesn't report side of pier at park? MTF hunting this bug.")
-
+        #breakpoint()
 
         g_dev['foc'].update_focuser_temperature
 
@@ -1096,6 +1099,12 @@ class Observatory:
                 if 'telescope' in device_name:
                     status['telescope'] = status['mount']
                 else:
+                    #breakpoint()
+                    if 'mount1' in device_name and self.mount_reboot_on_first_status:
+                        plog ("rebooting mount on first status update. Need to chase why, it is a collision I can't see yet - MTF")
+                        g_dev['mnt'].mount_reboot()
+                        self.mount_reboot_on_first_status = False
+                    
                     result = device.get_status()
 
                 if result is not None:
@@ -1185,7 +1194,7 @@ class Observatory:
 
         self.full_update_lock=True
         while self.currently_updating_status:
-            print ('w')
+            #print ('w')
             time.sleep(0.5)
 
         if self.status_count > 1:  # Give time for status to form
