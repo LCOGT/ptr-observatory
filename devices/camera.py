@@ -1719,7 +1719,7 @@ class Camera:
                             #plog ("pre-exposure overhead: " + str(time.time() -pre_exposure_overhead_timer) +"s.")
                             start_time_of_observation=time.time()
                             self.start_time_of_observation=time.time()
-                            plog ("Time between end of last exposure and start of next minus exposure time: " + str(time.time() -  self.end_of_last_exposure_time - exposure_time))
+                            #plog ("Time between end of last exposure and start of next minus exposure time: " + str(time.time() -  self.end_of_last_exposure_time - exposure_time))
                             self._expose(exposure_time, bias_dark_or_light_type_frame)
                             self.end_of_last_exposure_time=time.time()
 
@@ -3835,8 +3835,8 @@ def post_exposure_process(payload):
                 except:
                     pass
                 del hdusmalldata  # remove file from memory now that we are doing with it
-                
-            print ("Post-exposure process length: " + str(time.time() -post_exposure_process_timer))
+
+            #print ("Post-exposure process length: " + str(time.time() -post_exposure_process_timer))
         #del img
 
     except:
@@ -3855,7 +3855,7 @@ def wait_for_slew():
                 if time.time() - movement_reporting_timer > 2.0:
                     plog( 'm>')
                     movement_reporting_timer=time.time()
-                if not g_dev['obs'].currently_updating_status:
+                if not g_dev['obs'].currently_updating_status and g_dev['obs'].update_status_queue.empty():
                     g_dev['obs'].update_status(mount_only=True, dont_wait=True)
 
     except Exception as e:

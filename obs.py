@@ -864,7 +864,7 @@ class Observatory:
 
                                 self.obs_settings_upload_timer = time.time() - 2*self.obs_settings_upload_period
 
-                                self.update_status(dont_wait=True)
+                                self.request_update_status() #self.update_status(dont_wait=True)
 
                             # Check here for admin/owner only functions
                             elif action == "run" and script == 'collectScreenFlats' and not (("admin" in cmd['user_roles']) or ("owner" in cmd['user_roles'])):
@@ -958,8 +958,14 @@ class Observatory:
 
         self.currently_updating_status=True
         #g_dev["mnt"].get_mount_coordinates()
-        g_dev['mnt'].rapid_pier_indicator=g_dev['mnt'].mount.sideOfPier
+
         g_dev['mnt'].rapid_park_indicator=g_dev['mnt'].mount.AtPark
+        if not g_dev['mnt'].rapid_park_indicator:
+            try:
+                g_dev['mnt'].rapid_pier_indicator=g_dev['mnt'].mount.sideOfPier
+            except Exception as e:
+                plog (e)
+                plog ("astrophysics doesn't report side of pier at park? MTF hunting this bug.")
 
 
         g_dev['foc'].update_focuser_temperature
@@ -1155,7 +1161,7 @@ class Observatory:
         #print ("full update")
 
         if not self.currently_updating_status:
-            self.update_status()
+            self.request_update_status()
 
         if time.time() - self.get_new_job_timer > 3:
             self.get_new_job_timer = time.time()
@@ -2174,7 +2180,7 @@ class Observatory:
                 (hdufocusdata, pixscale, readnoise, avg_foc, focus_image, im_path, text_name, hduheader, cal_path, cal_name, frame_type, focus_position, nativebin) = self.sep_queue.get(block=False)
 
                 if not (g_dev['events']['Civil Dusk'] < ephem.now() < g_dev['events']['Civil Dawn']) :
-                    plog ("Too bright to consider photometry!")
+                    #plog ("Too bright to consider photometry!")
                     do_sep=False
                 else:
                     do_sep=True
@@ -3596,7 +3602,8 @@ def wait_for_slew():
                 if time.time() - movement_reporting_timer > 2.0:
                     plog('m>')
                     movement_reporting_timer = time.time()
-                g_dev['obs'].update_status(mount_only=True, dont_wait=True)
+                if not g_dev['obs'].currently_updating_status and g_dev['obs'].update_status_queue.empty():
+                    g_dev['obs'].update_status(mount_only=True, dont_wait=True)
 
     except Exception as e:
         plog("Motion check faulted.")

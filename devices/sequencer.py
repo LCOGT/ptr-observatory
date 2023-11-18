@@ -226,7 +226,9 @@ class Sequencer:
                         plog( 'm>')
                         movement_reporting_timer=time.time()
 
-                    g_dev['obs'].update_status(mount_only=True, dont_wait=True)
+                    if not g_dev['obs'].currently_updating_status and g_dev['obs'].update_status_queue.empty():
+                        g_dev['obs'].update_status(mount_only=True, dont_wait=True)
+
 
         except Exception:
             plog("Motion check faulted.")
