@@ -489,7 +489,7 @@ class Observatory:
         # send up obs status immediately
         self.obs_settings_upload_timer = time.time() - 2*self.obs_settings_upload_period
         #self.update_status(dont_wait=True)
-        self.request_update_status()
+        #self.request_update_status()
 
 
         # A dictionary that holds focusresults for the SEP queue.
@@ -1082,7 +1082,7 @@ class Observatory:
         # Send main batch of devices status
         obsy = self.name
         if mount_only == True:
-            device_list = ['mount', 'telescope']
+            device_list = ['mount']
         else:
             device_list = self.device_types
         status={}
@@ -1108,6 +1108,9 @@ class Observatory:
                         self.mount_reboot_on_first_status = False
                     
                     result = device.get_status()
+
+                    if 'mount' in device_name:
+                        print (result)
 
                 if result is not None:
                     status[dev_type][device_name] = result
@@ -1616,6 +1619,7 @@ class Observatory:
                 if self.currently_updating_FULL==False:
                     if (time.time() - self.last_update_complete) > 1.0:
                         self.update()
+                        #self.request_full_update()
                         self.last_update_complete=time.time()
                 else:
                     time.sleep(0.05)

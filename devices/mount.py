@@ -372,6 +372,10 @@ class Mount:
         
         self.right_ascension_directly_from_mount = copy.deepcopy(self.mount.RightAscension)
         self.declination_directly_from_mount = copy.deepcopy(self.mount.Declination)
+        
+        
+        
+        self.current_tracking_state=copy.deepcopy(self.mount.Tracking)
 
 
 
@@ -398,6 +402,7 @@ class Mount:
         if self.return_slewing() == False:
             if self.can_set_tracking:
                 self.mount.Tracking = True
+                self.current_tracking_state=True
             else:
                 plog("mount is not tracking but this mount doesn't support ASCOM changing tracking")
         return
@@ -406,6 +411,7 @@ class Mount:
         if self.return_slewing() == False:
             if self.can_set_tracking:
                 self.mount.Tracking = False
+                self.current_tracking_state=False
             else:
                 plog("mount is not tracking but this mount doesn't support ASCOM changing tracking")
         return
@@ -485,6 +491,111 @@ class Mount:
         wait_for_slew()
         self.get_mount_coordinates()
 
+    # def get_status(self):
+    
+    #     if self.currently_creating_status:
+    #         return copy.deepcopy(self.previous_status)
+    
+    #     self.currently_creating_status = True
+    
+    #     try:
+    #         self.rapid_park_indicator=copy.deepcopy(self.mount.AtPark)
+    #         self.rapid_pier_indicator=copy.deepcopy(self.mount.sideOfPier)
+    #     except Exception as e:
+    #         #print (e)
+    #         #breakpoint()
+    #         if 'CoInitialize has not been called.' in str(e):
+    #             print ("rbooting mount?")
+    #             win32com.client.pythoncom.CoInitialize()
+    #             self.mount = win32com.client.Dispatch(self.driver)
+    #             self.rapid_park_indicator=copy.deepcopy(self.mount.AtPark)
+    #             self.rapid_pier_indicator=copy.deepcopy(self.mount.sideOfPier)
+    #         else:
+    #             print (e)
+    
+    #     if self.tel == False:
+    #         status = {
+    #             'timestamp': round(time.time(), 3),
+    #             'pointing_telescope': self.inst,
+    #             'is_parked': self.rapid_park_indicator,
+    #             'is_tracking': self.mount.Tracking,
+    #             'is_slewing': self.mount.Slewing,
+    #             'message': self.mount_message[:32]
+    #         }
+    #     elif self.tel == True:
+    #         try:
+    #             icrs_ra, icrs_dec = self.get_mount_coordinates()
+    #             rd = SkyCoord(ra=icrs_ra*u.hour, dec=icrs_dec*u.deg)
+    #         except:
+    #             icrs_ra=self.current_icrs_ra
+    #             icrs_dec=self.current_icrs_dec
+    #             rd = SkyCoord(ra=self.current_icrs_ra*u.hour, dec=self.current_icrs_dec*u.deg)
+    
+    #         aa = AltAz(location=self.site_coordinates, obstime=Time.now())
+    #         rd = rd.transform_to(aa)
+    #         alt = float(rd.alt/u.deg)
+    #         az = float(rd.az/u.deg)
+    #         zen = round((90 - alt), 3)
+    
+    #         if zen > 90:
+    #             zen = 90.0
+    #         if zen < 0.1:    #This can blow up when zen <=0!
+    #             new_z = 0.1
+    #         else:
+    #             new_z = zen
+    #         sec_z = 1/cos(radians(new_z))
+    #         airmass = abs(round(sec_z - 0.0018167*(sec_z - 1) - 0.002875*((sec_z - 1)**2) - 0.0008083*((sec_z - 1)**3),3))
+    #         if airmass > 10: airmass = 10.0   # We should caution the user if AM > 2, and alert them if >3
+    #         airmass = round(airmass, 4)
+    
+    #         try:
+    #             self.current_sidereal = float((Time(datetime.datetime.utcnow(), scale='utc', location=g_dev['mnt'].site_coordinates).sidereal_time('apparent')*u.deg) / u.deg / u.hourangle)
+    #         except:
+    #             plog ("Mount didn't accept request for sidereal time. Need to make a calculation for this.")
+    
+    #         if self.prior_roll_rate == 0:
+    #             pass
+    #         ha = icrs_ra - self.current_sidereal
+    #         if ha < 12:
+    #             ha  += 24
+    #         if ha > 12:
+    #             ha -= 24
+    
+    #         status = {
+    #             'timestamp': round(time.time(), 3),
+    #             'right_ascension': round(icrs_ra, 4),
+    #             'declination': round(icrs_dec, 4),
+    #             'sidereal_time': round(self.current_sidereal, 5),  #Should we add HA?
+    #             #'refraction': round(self.refraction_rev, 2),
+    #             'correction_ra': round(self.ha_corr, 4),  #If mount model = 0, these are very small numbers.
+    #             'correction_dec': round(self.dec_corr, 4),
+    #             'hour_angle': round(ha, 3),
+    #             'demand_right_ascension_rate': round(self.prior_roll_rate, 9),   #NB as on 20231113 these rates are basically fixed and static. WER
+    #             'mount_right_ascension_rate': round(self.RightAscensionRate, 9),   #Will use sec-RA/sid-sec
+    #             'demand_declination_rate': round(self.prior_pitch_rate, 8),
+    #             'mount_declination_rate': round(self.DeclinationRate, 8),
+    #             'pier_side':self.pier_side,
+    #             'pier_side_str': self.pier_side_str,
+    #             'azimuth': round(az, 3),
+    #             'target_az': round(self.target_az, 3),
+    #             'altitude': round(alt, 3),
+    #             'zenith_distance': round(zen, 3),
+    #             'airmass': round(airmass,4),
+    #             'coordinate_system': str(self.rdsys),
+    #             'pointing_instrument': str(self.inst),
+    #             'message': str(self.mount_message[:54]),
+    #             'move_time': self.move_time
+    #         }
+    
+    #     else:
+    #         plog('Proper device_name is missing, or tel == None')
+    #         status = {'defective':  'status'}
+    #     #plog("Mount Status:  ", status)
+    #     self.previous_status = status
+    #     self.currently_creating_status = False
+    #     return copy.deepcopy(status)
+
+
     def get_status(self):
 
         if self.currently_creating_status:
@@ -492,38 +603,38 @@ class Mount:
 
         self.currently_creating_status = True
 
-        try:
-            self.rapid_park_indicator=copy.deepcopy(self.mount.AtPark)
-            self.rapid_pier_indicator=copy.deepcopy(self.mount.sideOfPier)
-        except Exception as e:
-            #print (e)
-            #breakpoint()
-            if 'CoInitialize has not been called.' in str(e):
-                print ("rbooting mount?")
-                win32com.client.pythoncom.CoInitialize()
-                self.mount = win32com.client.Dispatch(self.driver)
-                self.rapid_park_indicator=copy.deepcopy(self.mount.AtPark)
-                self.rapid_pier_indicator=copy.deepcopy(self.mount.sideOfPier)
-            else:
-                print (e)
+        # try:
+        #     self.rapid_park_indicator=copy.deepcopy(self.mount.AtPark)
+        #     self.rapid_pier_indicator=copy.deepcopy(self.mount.sideOfPier)
+        # except Exception as e:
+        #     #print (e)
+        #     #breakpoint()
+        #     if 'CoInitialize has not been called.' in str(e):
+        #         print ("rbooting mount?")
+        #         win32com.client.pythoncom.CoInitialize()
+        #         self.mount = win32com.client.Dispatch(self.driver)
+        #         self.rapid_park_indicator=copy.deepcopy(self.mount.AtPark)
+        #         self.rapid_pier_indicator=copy.deepcopy(self.mount.sideOfPier)
+        #     else:
+        #         print (e)
 
         if self.tel == False:
             status = {
                 'timestamp': round(time.time(), 3),
                 'pointing_telescope': self.inst,
                 'is_parked': self.rapid_park_indicator,
-                'is_tracking': self.mount.Tracking,
-                'is_slewing': self.mount.Slewing,
+                'is_tracking': self.current_tracking_state,
+                #'is_slewing': self.mount.Slewing,
                 'message': self.mount_message[:32]
             }
         elif self.tel == True:
-            try:
-                icrs_ra, icrs_dec = self.get_mount_coordinates()
-                rd = SkyCoord(ra=icrs_ra*u.hour, dec=icrs_dec*u.deg)
-            except:
-                icrs_ra=self.current_icrs_ra
-                icrs_dec=self.current_icrs_dec
-                rd = SkyCoord(ra=self.current_icrs_ra*u.hour, dec=self.current_icrs_dec*u.deg)
+            #try:
+            #icrs_ra, icrs_dec = self.get_mount_coordinates()
+            rd = SkyCoord(ra=self.right_ascension_directly_from_mount*u.hour, dec=self.declination_directly_from_mount*u.deg)
+            # except:
+            #     icrs_ra=self.current_icrs_ra
+            #     icrs_dec=self.current_icrs_dec
+            #     rd = SkyCoord(ra=self.current_icrs_ra*u.hour, dec=self.current_icrs_dec*u.deg)
 
             aa = AltAz(location=self.site_coordinates, obstime=Time.now())
             rd = rd.transform_to(aa)
@@ -549,7 +660,7 @@ class Mount:
 
             if self.prior_roll_rate == 0:
                 pass
-            ha = icrs_ra - self.current_sidereal
+            ha = self.right_ascension_directly_from_mount - self.current_sidereal
             if ha < 12:
                 ha  += 24
             if ha > 12:
@@ -557,8 +668,8 @@ class Mount:
 
             status = {
                 'timestamp': round(time.time(), 3),
-                'right_ascension': round(icrs_ra, 4),
-                'declination': round(icrs_dec, 4),
+                'right_ascension': round(self.right_ascension_directly_from_mount, 4),
+                'declination': round(self.declination_directly_from_mount, 4),
                 'sidereal_time': round(self.current_sidereal, 5),  #Should we add HA?
                 #'refraction': round(self.refraction_rev, 2),
                 'correction_ra': round(self.ha_corr, 4),  #If mount model = 0, these are very small numbers.
@@ -589,47 +700,47 @@ class Mount:
         self.currently_creating_status = False
         return copy.deepcopy(status)
 
-    def get_quick_status(self, pre):
+    # def get_quick_status(self, pre):
 
-        try:
-            icrs_ra, icrs_dec = self.get_mount_coordinates()
-            rd = SkyCoord(ra=icrs_ra*u.hour, dec=icrs_dec*u.deg)
-        except:
-            icrs_ra=self.current_icrs_ra
-            icrs_dec=self.current_icrs_dec
-            rd = SkyCoord(ra=self.current_icrs_ra*u.hour, dec=self.current_icrs_dec*u.deg)
+    #     try:
+    #         icrs_ra, icrs_dec = self.get_mount_coordinates()
+    #         rd = SkyCoord(ra=icrs_ra*u.hour, dec=icrs_dec*u.deg)
+    #     except:
+    #         icrs_ra=self.current_icrs_ra
+    #         icrs_dec=self.current_icrs_dec
+    #         rd = SkyCoord(ra=self.current_icrs_ra*u.hour, dec=self.current_icrs_dec*u.deg)
 
-        aa = AltAz (location=self.site_coordinates, obstime=Time.now())
-        rd = rd.transform_to(aa)
-        alt = float(rd.alt/u.deg)
-        az = float(rd.az/u.deg)
-        zen = round((90 - alt), 3)
-        if zen > 90:
-            zen = 90.0
-        if zen < 0.1:    #This can blow up when zen <=0!
-            new_z = 0.1
-        else:
-            new_z = zen
-        sec_z = 1/cos(radians(new_z))
-        airmass = abs(round(sec_z - 0.0018167*(sec_z - 1) - 0.002875*((sec_z - 1)**2) - 0.0008083*((sec_z - 1)**3),3))
-        if airmass > 10: airmass = 10
-        airmass = round(airmass, 4)
+    #     aa = AltAz (location=self.site_coordinates, obstime=Time.now())
+    #     rd = rd.transform_to(aa)
+    #     alt = float(rd.alt/u.deg)
+    #     az = float(rd.az/u.deg)
+    #     zen = round((90 - alt), 3)
+    #     if zen > 90:
+    #         zen = 90.0
+    #     if zen < 0.1:    #This can blow up when zen <=0!
+    #         new_z = 0.1
+    #     else:
+    #         new_z = zen
+    #     sec_z = 1/cos(radians(new_z))
+    #     airmass = abs(round(sec_z - 0.0018167*(sec_z - 1) - 0.002875*((sec_z - 1)**2) - 0.0008083*((sec_z - 1)**3),3))
+    #     if airmass > 10: airmass = 10
+    #     airmass = round(airmass, 4)
 
-        # NB NB THis code would be safer as a dict or other explicity named structure
-        pre.append(time.time())
-        pre.append(icrs_ra)
-        pre.append(icrs_dec)
-        pre.append(float((Time(datetime.datetime.utcnow(), scale='utc', location=g_dev['mnt'].site_coordinates).sidereal_time('apparent')*u.deg) / u.deg / u.hourangle))
-        pre.append(self.RightAscensionRate)
-        pre.append(self.DeclinationRate)
-        pre.append(az)
-        pre.append(alt)
-        pre.append(zen)
-        pre.append(airmass)
-        pre.append(self.rapid_park_indicator)
-        pre.append(self.mount.Tracking)
-        pre.append(self.mount.Slewing)
-        return copy.deepcopy(pre)
+    #     # NB NB THis code would be safer as a dict or other explicity named structure
+    #     pre.append(time.time())
+    #     pre.append(icrs_ra)
+    #     pre.append(icrs_dec)
+    #     pre.append(float((Time(datetime.datetime.utcnow(), scale='utc', location=g_dev['mnt'].site_coordinates).sidereal_time('apparent')*u.deg) / u.deg / u.hourangle))
+    #     pre.append(self.RightAscensionRate)
+    #     pre.append(self.DeclinationRate)
+    #     pre.append(az)
+    #     pre.append(alt)
+    #     pre.append(zen)
+    #     pre.append(airmass)
+    #     pre.append(self.rapid_park_indicator)
+    #     pre.append(self.mount.Tracking)
+    #     pre.append(self.mount.Slewing)
+    #     return copy.deepcopy(pre)
 
 
     def get_rapid_exposure_status(self, pre):
@@ -1452,10 +1563,10 @@ class Mount:
         plog("mount cmd: slewing to flat panel")
         pass
 
-    def tracking_command(self, req, opt):
-        ''' set the tracking rates, or turn tracking off '''
-        plog("mount cmd: tracking changed")
-        pass
+    #def tracking_command(self, req, opt):
+    #    ''' set the tracking rates, or turn tracking off '''
+    ##    plog("mount cmd: tracking changed")
+    #    pass
 
     def park_command(self, req=None, opt=None):
         ''' park the telescope mount '''
