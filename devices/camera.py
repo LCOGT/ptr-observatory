@@ -1060,11 +1060,12 @@ class Camera:
 
         image = np.ctypeslib.as_array(qhycam.camera_params[qhycam_id]['prev_img_data'])
 
-        npreshaprecommand=time.time()
-        image = np.reshape(image[0:(self.imagesize_x*self.imagesize_y)], (self.imagesize_x, self.imagesize_y))
+        #npreshaprecommand=time.time()
+        #image = np.reshape(image[0:(self.imagesize_x*self.imagesize_y)], (self.imagesize_x, self.imagesize_y))
 
-
-        return np.asarray(image)
+        return np.reshape(image[0:(self.imagesize_x*self.imagesize_y)], (self.imagesize_x, self.imagesize_y))
+        #return np.asarray(image)
+        #return image
 
 
     def create_simple_autosave(
