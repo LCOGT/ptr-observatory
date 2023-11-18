@@ -1576,7 +1576,7 @@ class Observatory:
             # Keep the main thread alive, otherwise signals are ignored
             while True:
                 if self.currently_updating_FULL==False:
-                    if (time.time() - self.last_update_complete) > 0.5:
+                    if (time.time() - self.last_update_complete) > 1.0:
                         self.update()
                         self.last_update_complete=time.time()
                 else:
