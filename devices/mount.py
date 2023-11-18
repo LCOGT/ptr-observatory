@@ -682,6 +682,7 @@ class Mount:
         req = command['required_params']
         opt = command['optional_params']
         action = command['action']
+        #self.check_connect()
         if action == "go":
             if 'ra' in req:
                 result = self.go_command(ra=req['ra'], dec=req['dec'])   #  Entered from Target Explorer or Telescope tabs.
