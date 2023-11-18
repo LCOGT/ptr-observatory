@@ -279,6 +279,8 @@ class Observatory:
         self.device_types = ptr_config["device_types"]  # ptr_config['short_status_devices']
 
 
+        # VERY TEMPORARY UNTIL MOUNT IS FIXED - MTF
+        self.mount_reboot_on_first_status = True
         # This prevents ascom calls from update_status colliding with the full_update section
         self.full_update_lock = False
 
@@ -548,7 +550,7 @@ class Observatory:
         
         
         #MTF -TEMP
-        self.mount_reboot_on_first_status = True
+        
 
 
         # Initialisation complete!
