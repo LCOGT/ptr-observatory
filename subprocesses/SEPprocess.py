@@ -120,7 +120,7 @@ np.savetxt(
 )
 
 
-if not do_sep :
+if not do_sep or (float(hduheader["EXPTIME"]) < 1.0):
     rfp = np.nan
     rfr = np.nan
     rfs = np.nan

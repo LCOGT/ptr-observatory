@@ -93,7 +93,7 @@ class Focuser:
         self.focus_temp_intercept = None
         self.best_previous_focus_point = None
 
-
+        self.update_focuser_temperature()
 
         self.set_initial_best_guess_for_focus()
         try:
@@ -119,6 +119,12 @@ class Focuser:
             return int(self.best_previous_focus_point)
         else:
             return int(self.config["reference"])
+    
+    def update_focuser_temperature(self):
+        if self.theskyx:
+            self.current_focus_temperature=self.focuser.focTemperature
+        else:
+            self.current_focus_temperature=self.focuser.Temperature
 
     def get_status(self):
 
@@ -133,9 +139,9 @@ class Focuser:
                 try:
                         status = {
                         "focus_position": round(
-                            self.focuser.focPosition() * self.steps_to_micron, 1
+                            self.current_focus_position, 1
                         ),
-                        "focus_temperature": self.focuser.focTemperature,
+                        "focus_temperature": self.current_focus_temperature,
                         "comp": reported_focus_temp_slope,
                         "filter_offset": g_dev["fil"].filter_offset,
                     }
@@ -152,7 +158,7 @@ class Focuser:
                             "focus_position": round(
                                 self.focuser.focPosition() * self.steps_to_micron, 1
                             ),  # THIS occasionally glitches, usually no temp probe on Gemini
-                            "focus_temperature": self.focuser.focTemperature,
+                            "focus_temperature": self.current_focus_temperature,
                             "comp": reported_focus_temp_slope,
                             "filter_offset": g_dev["fil"].filter_offset,
                         }
@@ -167,20 +173,20 @@ class Focuser:
             elif g_dev['fil'].null_filterwheel == False:
                 status = {
                     "focus_position": round(
-                        self.focuser.Position * self.steps_to_micron, 1
+                        self.current_focus_position, 1
                     ),
-                    "focus_temperature": self.focuser.Temperature,
-                    "focus_moving": self.focuser.IsMoving,
+                    "focus_temperature": self.current_focus_temperature,
+                    #"focus_moving": self.focuser.IsMoving,
                     "comp": reported_focus_temp_slope,
                     "filter_offset": g_dev["fil"].filter_offset,
                 }
             else:
                 status = {
                     "focus_position": round(
-                        self.focuser.Position * self.steps_to_micron, 1
+                        self.current_focus_position, 1
                     ),
-                    "focus_temperature": self.focuser.Temperature,
-                    "focus_moving": self.focuser.IsMoving,
+                    "focus_temperature": self.current_focus_temperature,
+                    #"focus_moving": self.focuser.IsMoving,
                     "comp": reported_focus_temp_slope,
                     "filter_offset": 0.0,
                 }

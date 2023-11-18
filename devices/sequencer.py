@@ -831,7 +831,7 @@ class Sequencer:
             g_dev["obs"].send_to_user("A project block was rejected as it is during the daytime.")
             return block_specification     #Added wer 20231103
 
-        g_dev['obs'].update()
+        g_dev["obs"].request_full_update()
 
         plog('|n|n Starting a new project!  \n')
         plog(block_specification, ' \n\n\n')
@@ -853,7 +853,7 @@ class Sequencer:
 
         for target in block['project']['project_targets']:   #  NB NB NB Do multi-target projects make sense???
             try:
-                g_dev['obs'].update()
+                g_dev["obs"].request_full_update()
                 dest_ra = float(target['ra']) - \
                     float(block_specification['project']['project_constraints']['ra_offset'])/15.
 
@@ -933,7 +933,7 @@ class Sequencer:
 
 
 
-            g_dev['obs'].update()
+            g_dev["obs"].request_full_update()
 
             pa = float(block_specification['project']['project_constraints']['position_angle'])
             if abs(pa) > 0.01:
@@ -1280,9 +1280,9 @@ class Sequencer:
                                     self.blockend = None
                                     self.currently_mosaicing = False
                                     return
-                            g_dev['obs'].update()
+                            g_dev["obs"].request_full_update()
                             result = g_dev['cam'].expose_command(req, opt, user_name=user_name, user_id=user_id, user_roles=user_roles, no_AWS=False, solve_it=False, calendar_event_id=calendar_event_id)
-                            g_dev['obs'].update()
+                            g_dev["obs"].request_full_update()
                             try:
                                 if result == 'blockend':
                                     plog ("End of Block, exiting project block.")
@@ -1453,7 +1453,7 @@ class Sequencer:
                     self.bias_dark_latch = False
                     return
 
-                g_dev['obs'].update()
+                g_dev["obs"].request_full_update()
 
                 if ephem.now() + (dark_exp_time + cycle_time + 30)/86400 > ending:
                     self.bias_dark_latch = False
@@ -1474,7 +1474,7 @@ class Sequencer:
                         self.bias_dark_latch = False
                         return
                     b_d_to_do -= 1
-                    g_dev['obs'].update()
+                    g_dev["obs"].request_full_update()
                     if ephem.now() + (dark_exp_time + cycle_time + 30)/86400 > ending:
                         self.bias_dark_latch = False
                         break
@@ -1490,13 +1490,13 @@ class Sequencer:
                         self.bias_dark_latch = False
                         return
                     b_d_to_do -= 1
-                    g_dev['obs'].update()
+                    g_dev["obs"].request_full_update()
                     if ephem.now() + (dark_exp_time + cycle_time + 30)/86400 > ending:
                         self.bias_dark_latch = False
                         break
 
                 g_dev['obs'].scan_requests()
-                g_dev['obs'].update()
+                g_dev["obs"].request_full_update()
                 if ephem.now() + 30/86400 >= ending:
                     self.bias_dark_latch = False
                     break
@@ -2384,7 +2384,7 @@ class Sequencer:
                                 plog("home rotator wait")
                                 time.sleep(1)
                                 if (time.time() - temptimer) > 20:
-                                    g_dev['obs'].update()
+                                    g_dev["obs"].request_full_update()
                                     temptimer=time.time()
                             # Store last home time.
                             homerotator_time_shelf = shelve.open(g_dev['obs'].obsid_path + 'ptr_night_shelf/' + 'homerotatortime' + g_dev['cam'].name + str(g_dev['obs'].name))
@@ -2403,7 +2403,7 @@ class Sequencer:
                     time.sleep(30)
 
                     g_dev['obs'].scan_requests()
-                    g_dev['obs'].update()
+                    g_dev["obs"].request_full_update()
 
                     if g_dev['obs'].open_and_enabled_to_observe == False:
                         plog ("Observatory closed or disabled during flat script. Cancelling out of flat acquisition loop.")
@@ -2590,7 +2590,7 @@ class Sequencer:
                     self.time_of_next_slew = time.time() + 45
 
                 g_dev['obs'].scan_requests()
-                g_dev['obs'].update()
+                g_dev["obs"].request_full_update()
 
                 if g_dev["fil"].null_filterwheel == False:
                     current_filter = pop_list[0]
@@ -2636,7 +2636,7 @@ class Sequencer:
 
                 while (acquired_count < flat_count):
                     g_dev['obs'].scan_requests()
-                    g_dev['obs'].update()
+                    g_dev["obs"].request_full_update()
 
                     if g_dev['obs'].open_and_enabled_to_observe == False:
                         plog ("Observatory closed or disabled during flat script. Cancelling out of flat acquisition loop.")
@@ -2838,11 +2838,11 @@ class Sequencer:
                             except Exception as e:
                                 plog('Failed to get a flat image: ', e)
                                 plog(traceback.format_exc())
-                                g_dev['obs'].update()
+                                g_dev["obs"].request_full_update()
                                 continue
 
                             g_dev['obs'].scan_requests()
-                            g_dev['obs'].update()
+                            g_dev["obs"].request_full_update()
 
                             try:
                                 scale = target_flat / bright
@@ -2986,12 +2986,12 @@ class Sequencer:
         if flat_count < 1: flat_count = 1
         g_dev['mnt'].park_command({}, {})
         #  NB:  g_dev['enc'].close
-        g_dev['obs'].update()
+        g_dev["obs"].request_full_update()
         g_dev['obs'].scan_requests()
         g_dev['scr'].set_screen_bright(0)
         g_dev['scr'].screen_dark()
         time.sleep(5)
-        g_dev['obs'].update()
+        g_dev["obs"].request_full_update()
         g_dev['obs'].scan_requests()
         #Here we need to switch off any IR or dome lighting.
         #Take a 10 s dark screen air flat to record ambient
@@ -3017,7 +3017,7 @@ class Sequencer:
             time.sleep(5)
             exp_time  = g_dev['fil'].filter_data[filter_number][4][0]
             g_dev['obs'].scan_requests()
-            g_dev['obs'].update()
+            g_dev["obs"].request_full_update()
             plog('Dark Screen; filter, bright:  ', filter_number, 0)
             req = {'time': float(exp_time),  'alias': camera_name, 'image_type': 'screen flat'}
             opt = {'count': 1, 'filter': g_dev['fil'].filter_data[filter_number][0], 'hint': 'screen pre-filter dark'}
@@ -3026,17 +3026,17 @@ class Sequencer:
                 g_dev["obs"].send_to_user("Cancelling out of calibration script as stop script has been called.")
                 return
             plog("Dark Screen flat, starting:  ", result['patch'], g_dev['fil'].filter_data[filter_number][0], '\n\n')
-            g_dev['obs'].update()
+            g_dev["obs"].request_full_update()
             plog('Lighted Screen; filter, bright:  ', filter_number, screen_setting)
             g_dev['scr'].set_screen_bright(int(screen_setting))
             g_dev['scr'].screen_light_on()
             time.sleep(10)
-            # g_dev['obs'].update()
+            # g_dev["obs"].request_full_update()
             # time.sleep(10)
-            # g_dev['obs'].update()
+            # g_dev["obs"].request_full_update()
             # time.sleep(10)
             g_dev['obs'].scan_requests()
-            g_dev['obs'].update()
+            g_dev["obs"].request_full_update()
             req = {'time': float(exp_time),  'alias': camera_name, 'image_type': 'screen flat'}
             opt = {'count': flat_count, 'filter': g_dev['fil'].filter_data[filter_number][0], 'hint': 'screen filter light'}
             result = g_dev['cam'].expose_command(req, opt, user_id='Tobor', user_name='Tobor', user_roles='system', no_AWS=True, skip_open_check=True,skip_daytime_check=True)
@@ -3046,12 +3046,12 @@ class Sequencer:
             # if no exposure, wait 10 sec
             plog("Lighted Screen flat:  ", result['patch'], g_dev['fil'].filter_data[filter_number][0], '\n\n')
             g_dev['obs'].scan_requests()
-            g_dev['obs'].update()
+            g_dev["obs"].request_full_update()
             g_dev['scr'].set_screen_bright(0)
             g_dev['scr'].screen_dark()
             time.sleep(5)
             g_dev['obs'].scan_requests()
-            g_dev['obs'].update()
+            g_dev["obs"].request_full_update()
             plog('Dark Screen; filter, bright:  ', filter_number, 0)
             req = {'time': float(exp_time),  'alias': camera_name, 'image_type': 'screen flat'}
             opt = { 'count': 1, 'filter': g_dev['fil'].filter_data[filter_number][0], 'hint': 'screen post-filter dark'}
@@ -3065,7 +3065,7 @@ class Sequencer:
             #
         g_dev['scr'].set_screen_bright(0)
         g_dev['scr'].screen_dark()
-        g_dev['obs'].update()
+        g_dev["obs"].request_full_update()
         g_dev['mnt'].Tracking = False   #park_command({}, {})
         plog('Sky Flat sequence completed, Telescope tracking is off.')
 
@@ -3224,7 +3224,7 @@ class Sequencer:
                         plog ("PLATESOLVE: Waiting for platesolve processing to complete and queue to clear")
                         reported=1
                     if (time.time() - temptimer) > 20:
-                        g_dev['obs'].update()
+                        g_dev["obs"].request_full_update()
                         temptimer=time.time()
                     if self.stop_script_called:
                         g_dev["obs"].send_to_user("Cancelling out of autofocus script as stop script has been called.")
@@ -3259,7 +3259,7 @@ class Sequencer:
 
 
         g_dev['obs'].scan_requests()
-        g_dev['obs'].update()
+        g_dev["obs"].request_full_update()
 
         plog('Autofocus Starting at:  ', foc_pos0, '\n\n')
 
@@ -3861,7 +3861,7 @@ class Sequencer:
                         plog ("PLATESOLVE: Waiting for platesolve processing to complete and queue to clear")
                         reported=1
                     if (time.time() - temptimer) > 20:
-                        g_dev['obs'].update()
+                        g_dev["obs"].request_full_update()
                         temptimer=time.time()
                     if self.stop_script_called:
                         g_dev["obs"].send_to_user("Cancelling out of autofocus script as stop script has been called.")
@@ -4047,7 +4047,7 @@ class Sequencer:
 
         g_dev['mnt'].unpark_command({}, {})
 
-        g_dev['obs'].update_status()
+        g_dev["obs"].request_update_status()
 
         catalogue=self.pointing_catalogue
 
@@ -4163,7 +4163,7 @@ class Sequencer:
             self.wait_for_slew()
 
 
-            g_dev['obs'].update_status()
+            g_dev["obs"].request_update_status()
             req = { 'time': self.config['pointing_exposure_time'],  'alias':  str(self.config['camera']['camera_1_1']['name']), 'image_type': 'light'}
             opt = { 'count': 1,  'filter': 'pointing'}
             result = g_dev['cam'].expose_command(req, opt)
@@ -4180,7 +4180,7 @@ class Sequencer:
                         plog ("PLATESOLVE: Waiting for platesolve processing to complete and queue to clear")
                         reported=1
                     if (time.time() - temptimer) > 20:
-                        g_dev['obs'].update()
+                        g_dev["obs"].request_full_update()
                         temptimer=time.time()
                     if self.stop_script_called:
                         g_dev["obs"].send_to_user("Cancelling out of script as stop script has been called.")
@@ -4213,7 +4213,7 @@ class Sequencer:
             deviation_catalogue_for_tpoint.append (result)
             plog(result)
 
-            g_dev['obs'].update_status()
+            g_dev["obs"].request_update_status()
             count += 1
             plog('\n\nResult:  ', result,   'To go count:  ', length - count,  '\n\n')
 
@@ -4333,7 +4333,7 @@ class Sequencer:
                     plog ("PLATESOLVE: Waiting for platesolve processing to complete and queue to clear")
                     reported=1
                 if (time.time() - temptimer) > 20:
-                    g_dev['obs'].update()
+                    g_dev["obs"].request_full_update()
                     temptimer=time.time()
                     #print (g_dev['obs'].platesolve_is_processing)
                     #print (g_dev['obs'].platesolve_queue.empty())
@@ -4386,7 +4386,7 @@ class Sequencer:
                     plog ("PLATESOLVE: Waiting for platesolve processing to complete and queue to clear")
                     reported=1
                 if (time.time() - temptimer) > 20:
-                    g_dev['obs'].update()
+                    g_dev["obs"].request_full_update()
                     temptimer=time.time()
                 if self.stop_script_called:
                     g_dev["obs"].send_to_user("Cancelling out of autofocus script as stop script has been called.")
@@ -4460,7 +4460,7 @@ class Sequencer:
                         plog ("PLATESOLVE: Waiting for platesolve processing to complete and queue to clear")
                         reported=1
                     if (time.time() - temptimer) > 20:
-                        g_dev['obs'].update()
+                        g_dev["obs"].request_full_update()
                         temptimer=time.time()
                     if self.stop_script_called:
                         g_dev["obs"].send_to_user("Cancelling out of autofocus script as stop script has been called.")
@@ -4514,7 +4514,7 @@ class Sequencer:
                             plog ("PLATESOLVE: Waiting for platesolve processing to complete and queue to clear")
                             reported=1
                         if (time.time() - temptimer) > 20:
-                            g_dev['obs'].update()
+                            g_dev["obs"].request_full_update()
                             temptimer=time.time()
                         if self.stop_script_called:
                             g_dev["obs"].send_to_user("Cancelling out of autofocus script as stop script has been called.")
@@ -4537,7 +4537,7 @@ class Sequencer:
                 wait_a_minute=time.time()
                 while (time.time() - wait_a_minute < 60):
                     if (time.time() - temptimer) > 20:
-                        g_dev['obs'].update()
+                        g_dev["obs"].request_full_update()
                         temptimer=time.time()
                     if self.stop_script_called:
                         g_dev["obs"].send_to_user("Cancelling out of autofocus script as stop script has been called.")
@@ -4599,7 +4599,7 @@ class Sequencer:
                             plog ("PLATESOLVE: Waiting for platesolve processing to complete and queue to clear")
                             reported=1
                         if (time.time() - temptimer) > 20:
-                            g_dev['obs'].update()
+                            g_dev["obs"].request_full_update()
                             temptimer=time.time()
                         if self.stop_script_called:
                             g_dev["obs"].send_to_user("Cancelling out of autofocus script as stop script has been called.")

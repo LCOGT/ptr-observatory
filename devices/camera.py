@@ -1458,8 +1458,7 @@ class Camera:
             # SEQ is the outer repeat loop and takes count images; those individual exposures are wrapped in a
             # retry-3-times framework with an additional timeout included in it.
 
-            if seq > 0 and not  g_dev["obs"].currently_updating_status:
-                g_dev["obs"].request_update_status()
+            g_dev["obs"].request_update_status()
 
             #if seq > 0:
             #    g_dev["obs"].update_status()
@@ -1528,8 +1527,7 @@ class Camera:
                 if Nsmartstack > 1 :
                     self.currently_in_smartstack_loop=True
                     plog ("Smartstack " + str(sskcounter+1) + " out of " + str(Nsmartstack))
-                    if not  g_dev["obs"].currently_updating_status:
-                        g_dev["obs"].request_update_status()
+                    g_dev["obs"].request_update_status()
                     initial_smartstack_ra= g_dev['mnt'].mount.RightAscension
                     initial_smartstack_dec= g_dev['mnt'].mount.Declination
                 else:
@@ -1655,8 +1653,7 @@ class Camera:
 
                             # During a pre-exposure, we don't want the update to be
                             # syncronous!
-                            if not g_dev["obs"].currently_updating_FULL:
-                                g_dev["obs"].request_full_update()
+                            g_dev["obs"].request_full_update()
                             #g_dev['obs'].update()
 
 
@@ -2006,8 +2003,7 @@ class Camera:
                         # Here scan for requests
                         # During a pre-exposure, we don't want the update to be
                         # syncronous!
-                        if not g_dev["obs"].currently_updating_FULL:
-                            g_dev["obs"].request_full_update()
+                        g_dev["obs"].request_full_update()
                         #g_dev['obs'].update()
 
 
@@ -2029,7 +2025,7 @@ class Camera:
                             p_level="INFO",
                         )
                         if (exposure_time > 120):
-                            g_dev["obs"].update_status(cancel_check=False)
+                            g_dev["obs"].request_update_status()
 
                     if (
                         quartileExposureReport == 2
@@ -2044,7 +2040,7 @@ class Camera:
                             p_level="INFO",
                         )
                         if (exposure_time > 60):
-                            g_dev["obs"].update_status(cancel_check=False)
+                            g_dev["obs"].request_update_status()
 
                     if (
                         quartileExposureReport == 3
@@ -2295,8 +2291,7 @@ class Camera:
                         if (time.time() - temptimer) > 20:
                             # During a pre-exposure, we don't want the update to be
                             # syncronous!
-                            if not g_dev["obs"].currently_updating_FULL:
-                                g_dev["obs"].request_full_update()
+                            g_dev["obs"].request_full_update()
                             #g_dev['obs'].update()
                             temptimer=time.time()
 
@@ -3417,11 +3412,11 @@ def post_exposure_process(payload):
                 # NEEDS to go up as fast as possible ahead of smartstacks to faciliate image matching.
 
 
-                if exposure_time < 1.0:
-                    plog ("Not doing SEP for sub-second exposures.")
-                else:
-                    g_dev['obs'].sep_processing=True
-                    g_dev['obs'].to_sep((hdusmalldata, pixscale, float(hdu.header["RDNOISE"]), avg_foc[1], focus_image, im_path, text_name, hdusmallheader, cal_path, cal_name, frame_type, focus_position, selfnative_bin))
+                # if exposure_time < 1.0:
+                #     plog ("Not doing SEP for sub-second exposures.")
+                # else:
+                g_dev['obs'].sep_processing=True
+                g_dev['obs'].to_sep((hdusmalldata, pixscale, float(hdu.header["RDNOISE"]), avg_foc[1], focus_image, im_path, text_name, hdusmallheader, cal_path, cal_name, frame_type, focus_position, selfnative_bin))
 
 
                 if smartstackid != 'no':
@@ -3492,8 +3487,7 @@ def post_exposure_process(payload):
                     if (time.time() - temptimer) > 20:
                         # During a pre-exposure, we don't want the update to be
                         # syncronous!
-                        if not g_dev["obs"].currently_updating_FULL:
-                            g_dev["obs"].request_full_update()
+                        g_dev["obs"].request_full_update()
                         #g_dev['obs'].update()
                         temptimer=time.time()
 
@@ -3602,7 +3596,8 @@ def wait_for_slew():
                 if time.time() - movement_reporting_timer > 2.0:
                     plog( 'm>')
                     movement_reporting_timer=time.time()
-                g_dev['obs'].update_status(mount_only=True, dont_wait=True)
+                if not g_dev['obs'].currently_updating_status:                    
+                    g_dev['obs'].update_status(mount_only=True, dont_wait=True)
 
     except Exception as e:
         plog("Motion check faulted.")

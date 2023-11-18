@@ -702,7 +702,7 @@ class Observatory:
 
         # To stop the scan requests getting hammered unnecessarily.
         # Which is has sometimes on net disconnections.
-        if (time.time() - self.scan_request_timer) > 0.5:
+        if (time.time() - self.scan_request_timer) > 1.0:
             self.scan_request_timer = time.time()
             url_job = "https://jobs.photonranch.org/jobs/getnewjobs"
             body = {"site": self.name}
@@ -955,7 +955,7 @@ class Observatory:
         g_dev['mnt'].rapid_park_indicator=g_dev['mnt'].mount.AtPark
 
 
-        
+        g_dev['foc'].update_focuser_temperature
 
         # Wait a bit between status updates otherwise
         # status updates bank up in the queue
@@ -1159,6 +1159,10 @@ class Observatory:
 
         if self.status_count > 1:  # Give time for status to form
             g_dev["seq"].manager()  # Go see if there is something new to do.
+
+
+        
+
 
         # An important check to make sure equatorial telescopes are pointed appropriately
         # above the horizon. SRO and ECO have shown that it is possible to get entirely
@@ -1652,8 +1656,8 @@ class Observatory:
                                 return str(filepath.split('/')[-1]) + " timed out."
 
                             elif 'credential_provider' in str(e) or 'endpoint_resolver' in str(e):
-                                plog((traceback.format_exc()))
-                                plog ("This seems to be a nonfatal error, but MTF is tracebacking to try and catch what this is. Probably it is just an exception that triggers a retry... but we shall see.")
+                                #plog((traceback.format_exc()))
+                                plog ("Credential provider error for the ptrarchive, bunging a file back in the queue.")
                                 time.sleep(10)
                                 self.ptrarchive_queue.put(pri_image, block=False)
 
@@ -2296,7 +2300,7 @@ class Observatory:
                         plog(traceback.format_exc())
 
                 else:
-                    plog ("Did not find a source list from SEP for this image.")
+                    #plog ("Did not find a source list from SEP for this image.")
                     g_dev['cam'].expresult['FWHM'] = np.nan
                     g_dev['cam'].expresult['No_of_sources'] = np.nan
 
@@ -3561,10 +3565,12 @@ class Observatory:
         self.mainjpeg_queue.put( to_sep, block=False)
         
     def request_update_status(self):
-        self.update_status_queue.put( 'dummy', block=False)
+        if not self.currently_updating_status:
+            self.update_status_queue.put( 'dummy', block=False)
 
     def request_full_update(self):
-        self.FULL_update_thread_queue.put( 'dummy', block=False)
+        if not g_dev["obs"].currently_updating_FULL:
+            self.FULL_update_thread_queue.put( 'dummy', block=False)
 
 def wait_for_slew():
 
