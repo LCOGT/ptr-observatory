@@ -136,6 +136,8 @@ site_config = {
    'number_of_simultaneous_ptrarchive_streams' : 4,
    # Number of files to send over to the pipearchive simultaneously.
    'number_of_simultaneous_pipearchive_streams' : 4,
+   # Number of files to send over to the altarchive simultaneously.
+   'number_of_simultaneous_altarchive_streams' : 4,
 
     # Minimum realistic seeing at the site.
     # This allows culling of unphysical results in photometry and other things
@@ -639,7 +641,9 @@ site_config = {
                 'direct_qhy_readout_mode' : 3,        
                 'direct_qhy_gain' : 26,
                 'direct_qhy_offset' : 60,
-                'direct_qhy_usb_speed' : 60,
+                
+                'direct_qhy_usb_traffic' : 60,
+                'direct_qhy_usb_speed' : 4,
                 
                 
                 # These options set whether an OSC gets binned or interpolated for different functions

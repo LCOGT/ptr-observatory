@@ -1459,7 +1459,7 @@ class Camera:
             # retry-3-times framework with an additional timeout included in it.
 
             if seq > 0 and not  g_dev["obs"].currently_updating_status:
-                g_dev["obs"].update_status_thread.start()
+                g_dev["obs"].request_update_status()
 
             #if seq > 0:
             #    g_dev["obs"].update_status()
@@ -1529,7 +1529,7 @@ class Camera:
                     self.currently_in_smartstack_loop=True
                     plog ("Smartstack " + str(sskcounter+1) + " out of " + str(Nsmartstack))
                     if not  g_dev["obs"].currently_updating_status:
-                        g_dev["obs"].update_status_thread.start()
+                        g_dev["obs"].request_update_status()
                     initial_smartstack_ra= g_dev['mnt'].mount.RightAscension
                     initial_smartstack_dec= g_dev['mnt'].mount.Declination
                 else:
@@ -1580,6 +1580,7 @@ class Camera:
                     # Check whether calendar entry is still existant.
                     # If not, stop running block
                     if not calendar_event_id == None:
+                        print ("ccccccc")
                         g_dev['obs'].scan_requests()
                         foundcalendar=False
                         g_dev['seq'].update_calendar_blocks()
@@ -1655,7 +1656,7 @@ class Camera:
                             # During a pre-exposure, we don't want the update to be
                             # syncronous!
                             if not g_dev["obs"].currently_updating_FULL:
-                                g_dev["obs"].FULL_update_thread.start()
+                                g_dev["obs"].request_full_update()
                             #g_dev['obs'].update()
 
 
@@ -1980,7 +1981,7 @@ class Camera:
             ):
 
                 # Scan requests every 4 seconds... primarily hunting for a "Cancel/Stop"
-                if time.time() - exposure_scan_request_timer > 4:
+                if time.time() - exposure_scan_request_timer > 4 and (time.time() - self.completion_time) > 4:
                     exposure_scan_request_timer=time.time()
 
                     g_dev['obs'].scan_requests()
@@ -2003,7 +2004,11 @@ class Camera:
                         )  #|| used to flag this line in plog().
 
                         # Here scan for requests
-                        g_dev['obs'].update()
+                        # During a pre-exposure, we don't want the update to be
+                        # syncronous!
+                        if not g_dev["obs"].currently_updating_FULL:
+                            g_dev["obs"].request_full_update()
+                        #g_dev['obs'].update()
 
 
                     if (
@@ -2288,7 +2293,11 @@ class Camera:
                                 plog ("No longer open and enabled to observe, cancelling out of waiting for SEP.")
                                 break
                         if (time.time() - temptimer) > 20:
-                            g_dev['obs'].update()
+                            # During a pre-exposure, we don't want the update to be
+                            # syncronous!
+                            if not g_dev["obs"].currently_updating_FULL:
+                                g_dev["obs"].request_full_update()
+                            #g_dev['obs'].update()
                             temptimer=time.time()
 
                         time.sleep(0.2)
@@ -3481,7 +3490,11 @@ def post_exposure_process(payload):
                             plog ("No longer open and enabled to observe, cancelling out of waiting for SEP.")
                             break
                     if (time.time() - temptimer) > 20:
-                        g_dev['obs'].update()
+                        # During a pre-exposure, we don't want the update to be
+                        # syncronous!
+                        if not g_dev["obs"].currently_updating_FULL:
+                            g_dev["obs"].request_full_update()
+                        #g_dev['obs'].update()
                         temptimer=time.time()
 
                     time.sleep(0.2)

@@ -97,6 +97,8 @@ site_config = {
     'number_of_simultaneous_ptrarchive_streams' : 4,
     # Number of files to send over to the pipearchive simultaneously.
     'number_of_simultaneous_pipearchive_streams' : 4,
+    # Number of files to send over to the altarchive simultaneously.
+    'number_of_simultaneous_altarchive_streams' : 4,
     
     
     

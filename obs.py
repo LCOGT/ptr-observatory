@@ -305,12 +305,19 @@ class Observatory:
 
         # Sometimes we update the status in a thread. This variable prevents multiple status updates occuring simultaneously
         self.currently_updating_status=False
+        
+        
+        
         # Create this actual thread
-        self.update_status_thread=threading.Thread(target=self.update_status)
+        self.update_status_queue = queue.Queue(maxsize=0)
+        self.update_status_thread=threading.Thread(target=self.update_status_thread)
+        self.update_status_thread.start()
         # Also this is true for the FULL update.
         self.currently_updating_FULL=False
-        self.FULL_update_thread=threading.Thread(target=self.update)
-
+        
+        self.FULL_update_thread_queue = queue.Queue(maxsize=0)
+        self.FULL_update_thread=threading.Thread(target=self.full_update_thread)
+        self.FULL_update_thread.start()
 
         self.too_hot_temperature=self.config['temperature_at_which_obs_too_hot_for_camera_cooling']
         self.warm_report_timer = time.time()-600
@@ -410,9 +417,11 @@ class Observatory:
         self.pipearchive_queue_thread = threading.Thread(target=self.copy_to_pipearchive, args=())
         self.pipearchive_queue_thread.start()
 
-        self.altarchive_queue = queue.Queue(maxsize=0)
-        self.altarchive_queue_thread = threading.Thread(target=self.copy_to_altarchive, args=())
-        self.altarchive_queue_thread.start()
+        if self.config['save_to_alt_path'] == 'yes':
+
+            self.altarchive_queue = queue.Queue(maxsize=0)
+            self.altarchive_queue_thread = threading.Thread(target=self.copy_to_altarchive, args=())
+            self.altarchive_queue_thread.start()
 
         self.fast_queue = queue.PriorityQueue(maxsize=0)
         self.fast_queue_thread = threading.Thread(target=self.fast_to_ui, args=())
@@ -1865,6 +1874,54 @@ class Observatory:
 
             else:
                 time.sleep(0.2)
+
+
+
+
+    # Note this is a thread!
+    def update_status_thread(self):
+        
+
+        one_at_a_time = 0
+
+        # This stopping mechanism allows for threads to close cleanly.
+        while True:
+
+            if (not self.update_status_queue.empty()) and one_at_a_time == 0:
+
+
+                one_at_a_time = 1
+                self.update_status_queue.get(block=False)
+                self.update_status()
+                self.update_status_queue.task_done()
+                one_at_a_time = 0
+
+
+            else:
+                time.sleep(0.05)
+
+    # Note this is a thread!
+    def full_update_thread(self):
+        
+
+        one_at_a_time = 0
+
+        # This stopping mechanism allows for threads to close cleanly.
+        while True:
+
+            if (not self.FULL_update_thread_queue.empty()) and one_at_a_time == 0:
+
+
+                one_at_a_time = 1
+                self.FULL_update_thread_queue.get(block=False)
+                self.update()
+                self.FULL_update_thread_queue.task_done()
+                one_at_a_time = 0
+
+
+            else:
+                time.sleep(0.05)
+
 
     # Note this is a thread!
     def send_to_ptrarchive(self):
@@ -3486,6 +3543,12 @@ class Observatory:
 
     def to_mainjpeg(self, to_sep):
         self.mainjpeg_queue.put( to_sep, block=False)
+        
+    def request_update_status(self):
+        self.update_status_queue.put( 'dummy', block=False)
+
+    def request_full_update(self):
+        self.FULL_update_thread_queue.put( 'dummy', block=False)
 
 def wait_for_slew():
 

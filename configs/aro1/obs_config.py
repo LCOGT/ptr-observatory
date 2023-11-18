@@ -537,7 +537,7 @@ site_config = {
                 'direct_qhy_gain' : 26,
                 'direct_qhy_offset' : 60,
                 #'direct_qhy_usb_speed' : 50,
-                'direct_qhy_usb_traffic' : 50,
+                'direct_qhy_usb_traffic' : 60,
                 'direct_qhy_usb_speed' : 4,
 
                 # These options set whether an OSC gets binned or interpolated for different functions
