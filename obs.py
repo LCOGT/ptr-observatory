@@ -1194,7 +1194,7 @@ class Observatory:
 
         self.full_update_lock=True
         while self.currently_updating_status:
-            #print ('w')
+            print ('w')
             time.sleep(0.5)
 
         if self.status_count > 1:  # Give time for status to form
