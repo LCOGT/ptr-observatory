@@ -744,7 +744,7 @@ site_config = {
                 # These are the physical values for the camera
                 # related to pixelscale. Binning only applies to single
                 # images. Stacks will always be drizzled to to drizzle value from 1x1.
-                '1x1_pix_scale': 0.198,    #  This is the 1x1 binning pixelscale
+                'onebyone_pix_scale': 0.198,    #  This is the 1x1 binning pixelscale
                 'native_bin': 2, # Needs to be simple, it will recalculate things on the 1x1 binning pixscale above.
                 'x_pixel':  3.76, # pixel size in microns
                 'y_pixel':  3.76, # pixel size in microns
