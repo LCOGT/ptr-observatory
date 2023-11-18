@@ -486,7 +486,8 @@ class Observatory:
 
         # send up obs status immediately
         self.obs_settings_upload_timer = time.time() - 2*self.obs_settings_upload_period
-        self.update_status(dont_wait=True)
+        #self.update_status(dont_wait=True)
+        self.request_update_status()
 
 
         # A dictionary that holds focusresults for the SEP queue.
