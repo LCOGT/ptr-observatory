@@ -693,20 +693,21 @@ class Sequencer:
             if events['Sun Rise'] <= ephem_now and not self.end_of_night_token_sent:
 
                 self.end_of_night_token_sent = True
-                # Sending token to AWS to inform it that all files have been uploaded
-                plog ("sending end of night token to AWS")
+                if self.config['ingest_raws_directly_to_archive']:
+                    # Sending token to AWS to inform it that all files have been uploaded
+                    plog ("sending end of night token to AWS")
 
-                isExist = os.path.exists(g_dev['obs'].obsid_path + 'tokens')
-                yesterday = datetime.datetime.now() - timedelta(1)
-                runNight=datetime.datetime.strftime(yesterday, '%Y%m%d')
-                if not isExist:
-                    os.makedirs(g_dev['obs'].obsid_path + 'tokens')
-                runNightToken= g_dev['obs'].obsid_path + 'tokens/' + self.config['obs_id'] + runNight + '.token'
-                with open(runNightToken, 'w') as f:
-                    f.write('Night Completed')
-                image = (g_dev['obs'].obsid_path + 'tokens/', self.config['obs_id'] + runNight + '.token')
-                g_dev['obs'].ptrarchive_queue.put((30000000000, image), block=False)
-                g_dev['obs'].send_to_user("End of Night Token sent to AWS.", p_level='INFO')
+                    isExist = os.path.exists(g_dev['obs'].obsid_path + 'tokens')
+                    yesterday = datetime.datetime.now() - timedelta(1)
+                    runNight=datetime.datetime.strftime(yesterday, '%Y%m%d')
+                    if not isExist:
+                        os.makedirs(g_dev['obs'].obsid_path + 'tokens')
+                    runNightToken= g_dev['obs'].obsid_path + 'tokens/' + self.config['obs_id'] + runNight + '.token'
+                    with open(runNightToken, 'w') as f:
+                        f.write('Night Completed')
+                    image = (g_dev['obs'].obsid_path + 'tokens/', self.config['obs_id'] + runNight + '.token')
+                    g_dev['obs'].ptrarchive_queue.put((30000000000, image), block=False)
+                    g_dev['obs'].send_to_user("End of Night Token sent to AWS.", p_level='INFO')
 
             #Here is where observatories who do their biases at night... well.... do their biases!
             #If it hasn't already been done tonight.
