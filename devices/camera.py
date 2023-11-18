@@ -1454,7 +1454,7 @@ class Camera:
         incoming_exposure_time=exposure_time
         for seq in range(count):
 
-            pre_exposure_overhead_timer=time.time()
+            #pre_exposure_overhead_timer=time.time()
 
             # SEQ is the outer repeat loop and takes count images; those individual exposures are wrapped in a
             # retry-3-times framework with an additional timeout included in it.
@@ -2653,6 +2653,8 @@ def post_exposure_process(payload):
 
     (img, pier_side, is_osc, frame_type, reject_flat_by_known_gain, avg_mnt, avg_foc, avg_rot, setpoint, tempccdtemp, ccd_humidity, ccd_pressure, darkslide_state, exposure_time, this_exposure_filter, exposure_filter_offset, pane,opt, observer_user_name, hint, azimuth_of_observation, altitude_of_observation, airmass_of_observation, pixscale, smartstackid,sskcounter,Nsmartstack, longstackid, ra_at_time_of_exposure, dec_at_time_of_exposure, manually_requested_calibration, object_name, object_specf, ha_corr, dec_corr, focus_position, selfconfig, selfname, camera_known_gain, camera_known_readnoise, start_time_of_observation, observer_user_id, selfcamera_path,  solve_it ) = payload
 
+    post_exposure_process_timer=time.time()
+
     ix, iy = img.shape
 
     image_saturation_level = g_dev['cam'].config["camera"][g_dev['cam'].name]["settings"]["saturate"]
@@ -3833,6 +3835,8 @@ def post_exposure_process(payload):
                 except:
                     pass
                 del hdusmalldata  # remove file from memory now that we are doing with it
+                
+            print ("Post-exposure process length: " + str(time.time() -post_exposure_process_timer))
         #del img
 
     except:
