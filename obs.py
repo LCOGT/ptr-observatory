@@ -410,6 +410,10 @@ class Observatory:
         self.pipearchive_queue_thread = threading.Thread(target=self.copy_to_pipearchive, args=())
         self.pipearchive_queue_thread.start()
 
+        self.altarchive_queue = queue.Queue(maxsize=0)
+        self.altarchive_queue_thread = threading.Thread(target=self.copy_to_altarchive, args=())
+        self.altarchive_queue_thread.start()
+
         self.fast_queue = queue.PriorityQueue(maxsize=0)
         self.fast_queue_thread = threading.Thread(target=self.fast_to_ui, args=())
         self.fast_queue_thread.start()
@@ -1719,6 +1723,108 @@ class Observatory:
             hours_to_go = (self.pipearchive_queue.qsize() * upload_timer/60/60) / int(self.config['number_of_simultaneous_pipearchive_streams'])
             return ( str(filename.split('/')[-1]) + " sent to local pipe archive. Queue Size: " + str(self.pipearchive_queue.qsize())+ ". " + str(round(hours_to_go,1)) +" hours to go.")
 
+    def altarchive_copier(self, fileinfo):
+
+        upload_timer=time.time()
+
+        (fromfile,tofile) = fileinfo
+
+
+        # Check folder exists
+
+        # pipefolder = self.config['pipe_archive_folder_path'] + str(instrume) +'/'+ str(dayobs)
+        # if not os.path.exists(self.config['pipe_archive_folder_path'] + str(instrume)):
+        #     os.makedirs(self.config['pipe_archive_folder_path'] + str(instrume))
+
+        # if not os.path.exists(self.config['pipe_archive_folder_path'] + str(instrume) +'/'+ str(dayobs)):
+        #     os.makedirs(self.config['pipe_archive_folder_path'] + str(instrume) +'/'+ str(dayobs))
+
+
+        # if filename is None:
+        #     plog("Got an empty entry in pipearchive_queue.")
+        #     #one_at_a_time = 0
+        #     #self.ptrarchive_queue.task_done()
+
+        # else:
+        # Here we parse the file, set up and send to AWS
+        #filename = pri_image[1][1]
+        #filepath = pri_image[1][0] + filename  # Full path to file on disk
+
+        # Only ingest new large fits.fz files to the PTR archive.
+        try:
+            broken = 0
+            try:
+                shutil.copy(fromfile,tofile)
+            except:
+                plog ("Couldn't copy " + str(fromfile) + ". Broken.")
+                broken =1
+
+            try:
+                os.remove(fromfile)
+            except:
+                self.laterdelete_queue.put(fromfile, block=False)
+
+
+            if broken == 1:
+                try:
+                    shutil.move(fromfile, self.broken_path + fromfile.split('/')[-1])
+                except:
+                    plog ("Couldn't move " + str(fromfile) + " to broken folder.")
+
+                    self.laterdelete_queue.put(fromfile, block=False)
+                return str(fromfile) + " broken."
+        except Exception as e:
+            plog(traceback.format_exc())
+            plog ("something strange in the pipearchive copier", e)
+            return 'something strange in the pipearchive copier'
+
+
+        upload_timer=time.time() - upload_timer
+        hours_to_go = (self.pipearchive_queue.qsize() * upload_timer/60/60) / int(self.config['number_of_simultaneous_altarchive_streams'])
+        return ( str(fromfile.split('/')[-1]) + " sent to altpath archive. Queue Size: " + str(self.altarchive_queue.qsize())+ ". " + str(round(hours_to_go,1)) +" hours to go.")
+
+
+
+    # Note this is a thread!
+    def copy_to_altarchive(self):
+        """Sends queued files to AWS.
+
+        Large fpacked fits are uploaded using the ocs-ingester, which
+        adds the image to the PTR archive database.
+
+        This is intended to transfer slower files not needed for UI responsiveness
+
+        The pri_image is a tuple, smaller first item has priority.
+        The second item is also a tuple containing im_path and name.
+        """
+
+        one_at_a_time = 0
+
+        number_of_simultaneous_uploads= self.config['number_of_simultaneous_altarchive_streams']
+
+        # This stopping mechanism allows for threads to close cleanly.
+        while True:
+
+            if (not self.altarchive_queue.empty()) and one_at_a_time == 0:
+
+
+                one_at_a_time = 1
+
+                items=[]
+                for q in range(min(number_of_simultaneous_uploads,self.altarchive_queue.qsize()) ):
+                    items.append(self.altarchive_queue.get(block=False))
+
+                with ThreadPool(processes=number_of_simultaneous_uploads) as pool:
+                    for result in pool.map(self.altarchive_copier, items):
+                        self.altarchive_queue.task_done()
+                        #plog (result)
+
+                one_at_a_time = 0
+
+
+            else:
+                time.sleep(0.2)
+
 
     # Note this is a thread!
     def copy_to_pipearchive(self):
@@ -1869,6 +1975,7 @@ class Observatory:
                     plog("Log did not send, usually not fatal.")
 
                 self.sendtouser_queue.task_done()
+                time.sleep(0.1)
 
             else:
                 time.sleep(0.1)
@@ -2482,6 +2589,11 @@ class Observatory:
                             os.makedirs(
                                 self.alt_path + g_dev["day"] + "/calib/", exist_ok=True)
 
+                    altfolder = self.config['temporary_local_alt_archive_to_hold_files_while_copying']
+                    if not os.path.exists(self.config['temporary_local_alt_archive_to_hold_files_while_copying']):
+                        os.makedirs(self.config['temporary_local_alt_archive_to_hold_files_while_copying'] )
+
+
                     saver = 0
                     saverretries = 0
                     while saver == 0 and saverretries < 10:
@@ -2495,10 +2607,15 @@ class Observatory:
                                 ),
                                 "Date FITS file was written",
                             )
-
-                            hdu.writeto(
-                                slow_process[1].replace('EX00','EX00-'+temphduheader['OBSTYPE']), overwrite=True, output_verify='silentfix'
-                            )  # Save full raw file locally
+                            if 'alt_path' in slow_process[0]:
+                                #breakpoint()
+                                hdu.writeto( altfolder +'/' + slow_process[1].split('/')[-1].replace('EX00','EX00-'+temphduheader['OBSTYPE']), overwrite=True, output_verify='silentfix'
+                                )  # Save full raw file locally
+                                self.altarchive_queue.put((copy.deepcopy(altfolder +'/' + slow_process[1].split('/')[-1].replace('EX00','EX00-'+temphduheader['OBSTYPE'])),copy.deepcopy(slow_process[1])), block=False)
+                            else:
+                                hdu.writeto(
+                                    slow_process[1].replace('EX00','EX00-'+temphduheader['OBSTYPE']), overwrite=True, output_verify='silentfix'
+                                )  # Save full raw file locally
                             try:
                                 hdu.close()
                             except:

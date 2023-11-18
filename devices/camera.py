@@ -1496,7 +1496,7 @@ class Camera:
                 SmartStackID='no'
                 exposure_time=incoming_exposure_time
 
-            self.retry_camera = 3
+            self.retry_camera = 1
             self.retry_camera_start_time = time.time()
 
             #Repeat camera acquisition loop to collect all smartstacks necessary
@@ -2439,6 +2439,7 @@ def post_exposure_process(payload):
         cropy = int((osc_fits.shape[1] -500) /2)
         osc_fits=osc_fits[cropx:-cropx, cropy:-cropy]
         central_median=np.nanmedian(osc_fits)
+        del osc_fits
 
     if frame_type[-4:] == "flat":
 
@@ -2534,7 +2535,7 @@ def post_exposure_process(payload):
                 plog("Could not estimate the camera gain from this flat.")
                 plog(e)
                 expresult["camera_gain"] = np.nan
-
+            del camera_gain_estimate_image
             expresult["error"] = False
             expresult["patch"] = central_median
 
@@ -2582,7 +2583,7 @@ def post_exposure_process(payload):
             hdu = fits.PrimaryHDU(
                 img.astype('float32')
             )
-
+        del img
 
         # assign the keyword values and comment of the keyword as a tuple to write both to header.
 
@@ -3325,7 +3326,7 @@ def post_exposure_process(payload):
             "skyflat",
         )) or (manually_requested_calibration):  # Don't process jpgs or small fits for biases and darks
 
-            hdusmalldata=copy.deepcopy(img)
+            hdusmalldata=copy.deepcopy(hdu.data)
             # Quick flash bias and dark frame
 
             if not manually_requested_calibration:
@@ -3405,9 +3406,13 @@ def post_exposure_process(payload):
                 # Focus images use it for focus, Normal images also report their focus.
                 # IMMEDIATELY SEND TO SEP QUEUE
                 # NEEDS to go up as fast as possible ahead of smartstacks to faciliate image matching.
-                g_dev['obs'].sep_processing=True
 
-                g_dev['obs'].to_sep((hdusmalldata, pixscale, float(hdu.header["RDNOISE"]), avg_foc[1], focus_image, im_path, text_name, hdusmallheader, cal_path, cal_name, frame_type, focus_position, selfnative_bin))
+
+                if exposure_time < 1.0:
+                    plog ("Not doing SEP for sub-second exposures.")
+                else:
+                    g_dev['obs'].sep_processing=True
+                    g_dev['obs'].to_sep((hdusmalldata, pixscale, float(hdu.header["RDNOISE"]), avg_foc[1], focus_image, im_path, text_name, hdusmallheader, cal_path, cal_name, frame_type, focus_position, selfnative_bin))
 
 
                 if smartstackid != 'no':
@@ -3500,14 +3505,16 @@ def post_exposure_process(payload):
                 image_during_smartstack=False
                 if Nsmartstack > 1 and not (Nsmartstack == sskcounter+1):
                     image_during_smartstack=True
+                if exposure_time < 1.0:
+                    plog ("Not doing Platesolve for sub-second exposures.")
+                else:
+                    if solve_it == True or (not image_during_smartstack and not g_dev['seq'].currently_mosaicing and not g_dev['obs'].pointing_correction_requested_by_platesolve_thread and g_dev['obs'].platesolve_queue.empty() and not g_dev['obs'].platesolve_is_processing):
 
-                if solve_it == True or (not image_during_smartstack and not g_dev['seq'].currently_mosaicing and not g_dev['obs'].pointing_correction_requested_by_platesolve_thread and g_dev['obs'].platesolve_queue.empty() and not g_dev['obs'].platesolve_is_processing):
-
-                    # Make sure any dither or return nudge has finished before platesolution
-                    wait_for_slew()
-                    g_dev['obs'].to_platesolve((hdusmalldata, hdusmallheader, cal_path, cal_name, frame_type, time.time(), pixscale, ra_at_time_of_exposure,dec_at_time_of_exposure))
-                    # If it is the last of a set of smartstacks, we actually want to
-                    # wait for the platesolve and nudge before starting the next smartstack.
+                        # Make sure any dither or return nudge has finished before platesolution
+                        wait_for_slew()
+                        g_dev['obs'].to_platesolve((hdusmalldata, hdusmallheader, cal_path, cal_name, frame_type, time.time(), pixscale, ra_at_time_of_exposure,dec_at_time_of_exposure))
+                        # If it is the last of a set of smartstacks, we actually want to
+                        # wait for the platesolve and nudge before starting the next smartstack.
 
             # Now that the jpeg, sep and platesolve has been sent up pronto,
             # We turn back to getting the bigger raw, reduced and fz files dealt with
@@ -3564,7 +3571,7 @@ def post_exposure_process(payload):
                 except:
                     pass
                 del hdusmalldata  # remove file from memory now that we are doing with it
-        del img
+        #del img
 
     except:
         plog(traceback.format_exc())

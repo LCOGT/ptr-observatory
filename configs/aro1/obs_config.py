@@ -86,6 +86,8 @@ site_config = {
     'client_hostname':"ARO-0m30",     # Generic place for this host to stash.
     'archive_path': 'F:/ptr/',
     'alt_path': 'Q:/ptr/',
+    'temporary_local_alt_archive_to_hold_files_while_copying' : 'F:/tempfolderforaltpath',
+
     'save_to_alt_path' : 'yes',
     'local_calibration_path': 'F:/ptr/', # THIS FOLDER HAS TO BE ON A LOCAL DRIVE, not a network drive due to the necessity of huge memmap files
     'archive_age' : 10.0, # Number of days to keep files in the local archive before deletion. Negative means never delete
@@ -106,6 +108,8 @@ site_config = {
     'number_of_simultaneous_ptrarchive_streams' : 4,
     # Number of files to send over to the pipearchive simultaneously.
     'number_of_simultaneous_pipearchive_streams' : 4,
+    # Number of files to send over to the altarchive simultaneously.
+    'number_of_simultaneous_altarchive_streams' : 4,
 
     # Minimum realistic seeing at the site.
     # This allows culling of unphysical results in photometry and other things
