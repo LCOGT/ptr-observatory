@@ -1019,18 +1019,18 @@ class Observatory:
         if (time.time() - g_dev['obs'].time_of_last_slew) > 300:
             # Check no other commands or exposures are happening
             if g_dev['obs'].cmd_queue.empty() and not g_dev["cam"].exposure_busy and not g_dev['cam'].currently_in_smartstack_loop and not g_dev["seq"].focussing:
-                if not g_dev['mnt'].rapid_park_indicator and not g_dev['mnt'].mount.Slewing and g_dev['mnt'].mount.Tracking :
+                if not g_dev['mnt'].rapid_park_indicator and not g_dev['mnt'].return_slewing() and g_dev['mnt'].return_tracking() :
                     # Don't do it if the roof isn't open etc.
                     if (g_dev['obs'].open_and_enabled_to_observe==True ) or g_dev['obs'].scope_in_manual_mode:
-                        ra = g_dev['mnt'].mount.RightAscension
-                        dec = g_dev['mnt'].mount.Declination
+                        ra = g_dev['mnt'].return_right_ascension()
+                        dec = g_dev['mnt'].return_declination()
                         temppointing=SkyCoord(ra*u.hour, dec*u.degree, frame='icrs')
                         temppointingaltaz=temppointing.transform_to(AltAz(location=g_dev['mnt'].site_coordinates, obstime=Time.now()))
                         alt = temppointingaltaz.alt.degree
                         if alt > 25:
                             wait_for_slew()
-                            meridianra=g_dev['mnt'].mount.RightAscension
-                            meridiandec=g_dev['mnt'].mount.Declination
+                            meridianra=g_dev['mnt'].return_right_ascension()
+                            meridiandec=g_dev['mnt'].return_declination()
                             g_dev['obs'].time_of_last_slew=time.time()
                             #g_dev['mnt'].mount.SlewToCoordinatesAsync(meridianra, meridiandec)
                             g_dev['mnt'].slew_async_directly(ra=meridianra, dec=meridiandec)
@@ -1131,7 +1131,7 @@ class Observatory:
         # Don't do sun checks at nightime!
         if not ((g_dev['events']['Observing Begins']  <= ephem.now() < g_dev['events']['Observing Ends'])):
             try:
-                if not g_dev['mnt'].mount.Slewing and self.open_and_enabled_to_observe and self.sun_checks_on:
+                if not g_dev['mnt'].return_slewing() and self.open_and_enabled_to_observe and self.sun_checks_on:
 
                     sun_coords = get_sun(Time.now())
                     temppointing = SkyCoord((g_dev['mnt'].current_icrs_ra)*u.hour,
@@ -3435,9 +3435,14 @@ class Observatory:
                     plog("Re-centering Telescope Slightly.")
                     self.send_to_user("Re-centering Telescope Slightly.")
                     wait_for_slew()
-                    g_dev['mnt'].previous_pier_side=g_dev['mnt'].mount.sideOfPier
-                    ranudge= g_dev['mnt'].mount.RightAscension + g_dev['obs'].pointing_correction_request_ra_err
-                    decnudge= g_dev['mnt'].mount.Declination + g_dev['obs'].pointing_correction_request_dec_err
+                    #g_dev['mnt'].previous_pier_side=g_dev['mnt'].mount.sideOfPier
+                    g_dev['mnt'].previous_pier_side=g_dev['mnt'].return_side_of_pier()
+                    
+                    
+                    #ranudge= g_dev['mnt'].mount.RightAscension + g_dev['obs'].pointing_correction_request_ra_err
+                    #decnudge= g_dev['mnt'].mount.Declination + g_dev['obs'].pointing_correction_request_dec_err
+                    ranudge= g_dev['mnt'].return_right_ascension() + g_dev['obs'].pointing_correction_request_ra_err
+                    decnudge= g_dev['mnt'].return_declination() + g_dev['obs'].pointing_correction_request_dec_err
                     if ranudge < 0:
                         ranudge=ranudge+24
                     if ranudge > 24:
@@ -3450,7 +3455,7 @@ class Observatory:
                         wait_for_slew()
                     except:
                         plog (traceback.format_exc())
-                    if not g_dev['mnt'].previous_pier_side==g_dev['mnt'].mount.sideOfPier:
+                    if not g_dev['mnt'].previous_pier_side==g_dev['mnt'].return_side_of_pier():
                         self.send_to_user("Detected pier flip in re-centering. Re-centering telescope again.")
                         g_dev['mnt'].go_command(ra=self.pointing_correction_request_ra, dec=self.pointing_correction_request_dec)
                         g_dev['seq'].centering_exposure(no_confirmation=True, try_hard=True, try_forever=True)
@@ -3636,7 +3641,7 @@ def wait_for_slew():
     try:
         if not g_dev['mnt'].rapid_park_indicator:
             movement_reporting_timer = time.time()
-            while g_dev['mnt'].mount.Slewing:
+            while g_dev['mnt'].return_slewing():
                 if time.time() - movement_reporting_timer > 2.0:
                     plog('m>')
                     movement_reporting_timer = time.time()
@@ -3648,8 +3653,8 @@ def wait_for_slew():
         plog(traceback.format_exc())
         if 'pywintypes.com_error' in str(e):
             plog("Mount disconnected. Recovering.....")
-            time.sleep(30)
-            g_dev['mnt'].mount.Connected = True
+            time.sleep(5)
+            g_dev['mnt'].mount_reboot()
         else:
             # breakpoint()
             pass

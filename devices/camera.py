@@ -814,7 +814,7 @@ class Camera:
             elif 'SBIG driver' in str(traceback.format_exc()):
                 plog(traceback.format_exc())
                 plog ("Killing and rebooting TheSKYx and seeing if it will continue on after SBIG fail")
-                g_dev['seq'].kill_and_reboot_theskyx(g_dev['mnt'].mount.RightAscension,g_dev['mnt'].mount.Declination)
+                g_dev['seq'].kill_and_reboot_theskyx(g_dev['mnt'].return_right_ascension(),g_dev['mnt'].return_declination())
             else:
                 plog(traceback.format_exc())
                 plog("MTF hunting this error")
@@ -1529,8 +1529,8 @@ class Camera:
                     self.currently_in_smartstack_loop=True
                     plog ("Smartstack " + str(sskcounter+1) + " out of " + str(Nsmartstack))
                     g_dev["obs"].request_update_status()
-                    initial_smartstack_ra= g_dev['mnt'].mount.RightAscension
-                    initial_smartstack_dec= g_dev['mnt'].mount.Declination
+                    initial_smartstack_ra= g_dev['mnt'].return_right_ascension()
+                    initial_smartstack_dec= g_dev['mnt'].return_declination()
                 else:
                     initial_smartstack_ra= None
                     initial_smartstack_dec= None
@@ -2068,7 +2068,7 @@ class Camera:
                     dec_random_dither=((random.randint(0,50)-25) * self.pixscale /3600 )
                     try:
                         wait_for_slew()
-                        g_dev['mnt'].mount.SlewToCoordinatesAsync(initial_smartstack_ra + ra_random_dither, initial_smartstack_dec + dec_random_dither)
+                        g_dev['mnt'].slew_async_directly(ra=initial_smartstack_ra + ra_random_dither, dec=initial_smartstack_dec + dec_random_dither)
                         wait_for_slew()
                     except Exception as e:
                         plog (traceback.format_exc())
@@ -2083,7 +2083,7 @@ class Camera:
                 elif Nsmartstack > 1 and (Nsmartstack == sskcounter+1):
                     try:
                         wait_for_slew()
-                        g_dev['mnt'].mount.SlewToCoordinatesAsync(initial_smartstack_ra, initial_smartstack_dec)
+                        g_dev['mnt'].slew_async_directly(ra=initial_smartstack_ra, dec=initial_smartstack_dec)
                         wait_for_slew()
                     except Exception as e:
                         plog (traceback.format_exc())
@@ -3851,7 +3851,7 @@ def wait_for_slew():
     try:
         if not g_dev['mnt'].rapid_park_indicator:
             movement_reporting_timer=time.time()
-            while g_dev['mnt'].mount.Slewing: #or g_dev['enc'].status['dome_slewing']:   #Filter is moving??
+            while g_dev['mnt'].return_slewing(): #or g_dev['enc'].status['dome_slewing']:   #Filter is moving??
                 if time.time() - movement_reporting_timer > 2.0:
                     plog( 'm>')
                     movement_reporting_timer=time.time()
@@ -3863,8 +3863,8 @@ def wait_for_slew():
         plog(traceback.format_exc())
         if 'pywintypes.com_error' in str(e):
             plog ("Mount disconnected. Recovering.....")
-            time.sleep(30)
-            g_dev['mnt'].mount.Connected = True
+            time.sleep(5)
+            g_dev['mnt'].reboot_mount()
         else:
             pass
     return

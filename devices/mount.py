@@ -362,13 +362,45 @@ class Mount:
         self.previous_pier_side=self.mount.sideOfPier
 
 
-
+        self.can_set_tracking = self.mount.CanSetTracking
         # The update_status routine collects the current atpark status and pier status.
         # This is a slow command, so unless the code needs to know IMMEDIATELY
         # whether the scope is parked, then this is polled rather than directly
         # asking ASCOM/MOUNT
         self.rapid_park_indicator=copy.deepcopy(self.mount.AtPark)
         self.rapid_pier_indicator=copy.deepcopy(self.mount.sideOfPier)
+
+
+    def return_side_of_pier(self):
+        return copy.deepcopy(self.mount.sideOfPier)
+
+    def return_right_ascension(self):
+        return copy.deepcopy(self.mount.RightAscension)
+
+    def return_declination(self):
+        return copy.deepcopy(self.mount.Declination)
+    
+    def return_slewing(self):
+        return copy.deepcopy(self.mount.Slewing)
+    
+    def return_tracking(self):
+        return copy.deepcopy(self.mount.Tracking)
+    
+    def set_tracking_on(self):
+        if self.return_slewing() == False:
+            if self.can_set_tracking:
+                self.mount.Tracking = True
+            else:
+                plog("mount is not tracking but this mount doesn't support ASCOM changing tracking")
+        return
+    
+    def set_tracking_off(self):
+        if self.return_slewing() == False:
+            if self.can_set_tracking:
+                self.mount.Tracking = False
+            else:
+                plog("mount is not tracking but this mount doesn't support ASCOM changing tracking")
+        return
 
     def mount_reboot(self):
         

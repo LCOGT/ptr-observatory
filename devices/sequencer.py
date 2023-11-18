@@ -219,9 +219,9 @@ class Sequencer:
         A function called when the code needs to wait for the telescope to stop slewing before undertaking a task.
         """
         try:
-            if not g_dev['mnt'].mount.AtPark:
+            if not g_dev['mnt'].rapid_park_indicator:
                 movement_reporting_timer=time.time()
-                while g_dev['mnt'].mount.Slewing:
+                while g_dev['mnt'].return_slewing():
                     if time.time() - movement_reporting_timer > 2.0:
                         plog( 'm>')
                         movement_reporting_timer=time.time()
@@ -316,7 +316,7 @@ class Sequencer:
 
     def park_and_close(self):
         try:
-            if not g_dev['mnt'].mount.AtParK:   ###Test comment here
+            if not g_dev['mnt'].rapid_park_indicator:   ###Test comment here
                 g_dev['mnt'].park_command({}, {}) # Get there early
         except:
             plog("Park not executed during Park and Close" )
@@ -390,7 +390,7 @@ class Sequencer:
             # This bit is really to get the scope up and running if the roof opens
             if ((g_dev['events']['Cool Down, Open']  <= ephem_now < g_dev['events']['Observing Ends'])) \
                 and not self.cool_down_latch and g_dev['obs'].open_and_enabled_to_observe \
-                and not g_dev['obs'].scope_in_manual_mode and g_dev['mnt'].mount.AtPark \
+                and not g_dev['obs'].scope_in_manual_mode and g_dev['mnt'].rapid_park_indicator \
                 and ((time.time() - self.time_roof_last_opened) < 10) :
 
                 self.nightly_reset_complete = False
@@ -399,11 +399,8 @@ class Sequencer:
 
                 if (g_dev['events']['Observing Begins'] < ephem_now < g_dev['events']['Observing Ends']):
                     # Move to reasonable spot
-                    if g_dev['mnt'].mount.Tracking == False:
-                        if g_dev['mnt'].mount.CanSetTracking:
-                            g_dev['mnt'].mount.Tracking = True
-                        else:
-                            plog("mount is not tracking but this mount doesn't support ASCOM changing tracking")
+                    g_dev['mnt'].set_tracking_on()
+                    
 
                     g_dev['mnt'].go_command(alt=70,az= 70)
                     g_dev['foc'].time_of_last_focus = datetime.datetime.utcnow() - datetime.timedelta(
@@ -426,7 +423,7 @@ class Sequencer:
             # If in post-close and park era of the night, check those two things have happened!
             if (events['Close and Park'] <= ephem_now < events['End Morn Bias Dark']) and not g_dev['obs'].scope_in_manual_mode:
 
-                if not g_dev['mnt'].mount.AtPark:
+                if not g_dev['mnt'].rapid_park_indicator:
                     plog ("Found telescope unparked after Close and Park, parking the scope")
                     g_dev['mnt'].home_command()
                     g_dev['mnt'].park_command()
@@ -455,11 +452,8 @@ class Sequencer:
 
                 self.sky_flat_script({}, {}, morn=False)   #Null command dictionaries
 
-                if g_dev['mnt'].mount.Tracking == False:
-                    if g_dev['mnt'].mount.CanSetTracking:
-                        g_dev['mnt'].mount.Tracking = True
-                    else:
-                        plog("mount is not tracking but this mount doesn't support ASCOM changing tracking")
+                g_dev['mnt'].set_tracking_on()
+                
                 self.eve_sky_flat_latch = False
                 self.eve_flats_done = True
 
@@ -472,12 +466,7 @@ class Sequencer:
 
                 g_dev['obs'].send_to_user("Beginning start of night Focus and Pointing Run", p_level='INFO')
 
-                # Move to reasonable spot
-                if g_dev['mnt'].mount.Tracking == False:
-                    if g_dev['mnt'].mount.CanSetTracking:
-                        g_dev['mnt'].mount.Tracking = True
-                    else:
-                        plog("mount is not tracking but this mount doesn't support ASCOM changing tracking")
+                g_dev['mnt'].set_tracking_on()
 
                 g_dev['mnt'].go_command(alt=70,az= 70)
 
@@ -846,7 +835,7 @@ class Sequencer:
         block = copy.deepcopy(block_specification)
 
         g_dev['mnt'].unpark_command({}, {})
-        g_dev['mnt'].Tracking = True
+        g_dev['mnt'].set_tracking_on()
 
 
         # this variable is what we check to see if the calendar
@@ -983,8 +972,8 @@ class Sequencer:
             # Necessary
             plog ("Taking a quick pointing check and re_seek for new project block")
             result = self.centering_exposure(no_confirmation=True, try_hard=True, try_forever=True)
-            self.mosaic_center_ra=g_dev['mnt'].mount.RightAscension
-            self.mosaic_center_dec=g_dev['mnt'].mount.Declination
+            self.mosaic_center_ra=g_dev['mnt'].return_right_ascension()
+            self.mosaic_center_dec=g_dev['mnt'].return_declination()
             # Don't do a second repointing in the first pane of a mosaic
             # considering we just did that.
             mosaic_pointing_already_done=True
@@ -1152,8 +1141,8 @@ class Sequencer:
                         # Necessary
                         plog ("Taking a quick pointing check and re_seek for new mosaic block")
                         result = self.centering_exposure(no_confirmation=True, try_hard=True, try_forever=True)
-                        self.mosaic_center_ra=g_dev['mnt'].mount.RightAscension
-                        self.mosaic_center_dec=g_dev['mnt'].mount.Declination
+                        self.mosaic_center_ra=g_dev['mnt'].return_right_ascension()
+                        self.mosaic_center_dec=g_dev['mnt'].return_declination()
 
 
                     if result == 'blockend':
@@ -1208,7 +1197,8 @@ class Sequencer:
                                 self.wait_for_slew()
                                 g_dev['obs'].time_of_last_slew=time.time()
                                 try:
-                                    g_dev['mnt'].mount.SlewToCoordinatesAsync(new_ra, new_dec)
+                                    g_dev['mnt'].slew_async_directly(ra=new_ra, dec=new_dec)
+                                    #g_dev['mnt'].mount.SlewToCoordinatesAsync(new_ra, new_dec)
                                 except:
                                     plog(traceback.format_exc())
                                     if g_dev['mnt'].theskyx:
@@ -2533,7 +2523,7 @@ class Sequencer:
 
 
         # First pointing towards flatspot
-        if g_dev['mnt'].mount.AtParK:
+        if g_dev['mnt'].rapid_park_indicator:
             g_dev['mnt'].unpark_command({}, {})
 
         self.check_zenith_and_move_to_flat_spot(ending=ending)
@@ -2586,7 +2576,7 @@ class Sequencer:
 
                 # This is just a very occasional slew to keep it pointing in the same general vicinity
                 if time.time() >= self.time_of_next_slew:
-                    if g_dev['mnt'].mount.AtParK:
+                    if g_dev['mnt'].rapid_park_indicator:
                         g_dev['mnt'].unpark_command({}, {})
 
                     self.check_zenith_and_move_to_flat_spot(ending=ending)
@@ -2735,7 +2725,7 @@ class Sequencer:
                             exp_time = round(exp_time, 5)
 
                             # If scope has gone to bed due to inactivity, wake it up!
-                            if g_dev['mnt'].mount.AtParK:
+                            if g_dev['mnt'].rapid_park_indicator:
                                 g_dev['mnt'].unpark_command({}, {})
                                 self.check_zenith_and_move_to_flat_spot(ending=ending)
 
@@ -3070,7 +3060,7 @@ class Sequencer:
         g_dev['scr'].set_screen_bright(0)
         g_dev['scr'].screen_dark()
         g_dev["obs"].request_full_update()
-        g_dev['mnt'].Tracking = False   #park_command({}, {})
+        g_dev['mnt'].set_tracking_off()   #park_command({}, {})
         plog('Sky Flat sequence completed, Telescope tracking is off.')
 
 
@@ -3151,8 +3141,8 @@ class Sequencer:
         req2 = copy.deepcopy(req)
 
         sim = False
-        start_ra = g_dev['mnt'].mount.RightAscension   #Read these to go back.  NB NB Need to cleanly pass these on so we can return to proper target.
-        start_dec = g_dev['mnt'].mount.Declination
+        start_ra = g_dev['mnt'].return_right_ascension()   #Read these to go back.  NB NB Need to cleanly pass these on so we can return to proper target.
+        start_dec = g_dev['mnt'].return_declination() 
         focus_start = g_dev['foc'].get_position()
         #
 # =============================================================================
@@ -3807,8 +3797,8 @@ class Sequencer:
             foc_start = begin_at  #In this case we start at a place close to a 3 point minimum.
             g_dev['foc'].guarded_move((foc_start)*g_dev['foc'].micron_to_steps)
 
-        start_ra = g_dev['mnt'].mount.RightAscension
-        start_dec = g_dev['mnt'].mount.Declination
+        start_ra = g_dev['mnt'].return_right_ascension() 
+        start_dec = g_dev['mnt'].return_declination() 
         plog("Saved ra, dec, focus:  ", start_ra, start_dec, foc_start)
 
 
@@ -4156,7 +4146,8 @@ class Sequencer:
                 g_dev['obs'].time_of_last_slew=time.time()
                 g_dev["mnt"].last_ra_requested = grid_star[0] / 15
                 g_dev["mnt"].last_dec_requested = grid_star[1]
-                g_dev['mnt'].mount.SlewToCoordinatesAsync(grid_star[0] / 15 , grid_star[1])
+                g_dev['mnt'].slew_async_directly(ra=grid_star[0] /15, dec=grid_star[1])
+                #g_dev['mnt'].mount.SlewToCoordinatesAsync(grid_star[0] / 15 , grid_star[1])
             except:
                 plog ("Difficulty in directly slewing to object")
                 plog(traceback.format_exc())
@@ -4209,12 +4200,12 @@ class Sequencer:
             try:
                 g_dev['mnt'].pier_side = g_dev[
                     "mnt"
-                ].mount.sideOfPier  # 0 == Tel Looking West, is flipped.
+                ].return_side_of_pier()  # 0 == Tel Looking West, is flipped.
 
             except Exception:
                 plog ("Mount cannot report pierside. Setting the code not to ask again, assuming default pointing west.")
-            ra_mount=g_dev['mnt'].mount.RightAscension
-            dec_mount = g_dev['mnt'].mount.Declination
+            ra_mount=g_dev['mnt'].return_right_ascension()
+            dec_mount = g_dev['mnt'].return_declination()
             result=[ra_mount, dec_mount, g_dev['obs'].last_platesolved_ra, g_dev['obs'].last_platesolved_dec,g_dev['obs'].last_platesolved_ra_err, g_dev['obs'].last_platesolved_dec_err, sid, g_dev["mnt"].pier_side,g_dev['cam'].start_time_of_observation,g_dev['cam'].current_exposure_time]
             deviation_catalogue_for_tpoint.append (result)
             plog(result)
@@ -4412,8 +4403,8 @@ class Sequencer:
         # Nudge if needed.
         if not g_dev['obs'].pointing_correction_requested_by_platesolve_thread and successful_platesolve:
             g_dev["obs"].send_to_user("Slew & Center complete.")
-            self.mosaic_center_ra=g_dev['mnt'].mount.RightAscension
-            self.mosaic_center_dec=g_dev['mnt'].mount.Declination
+            self.mosaic_center_ra=g_dev['mnt'].return_right_ascension()
+            self.mosaic_center_dec=g_dev['mnt'].return_declination()
             return result
         elif successful_platesolve:
             g_dev['obs'].check_platesolve_and_nudge()
@@ -4422,8 +4413,8 @@ class Sequencer:
                 plog ("waiting for pointing_correction_to_finish")
                 self.wait_for_slew()
                 time.sleep(1)
-            self.mosaic_center_ra=g_dev['mnt'].mount.RightAscension
-            self.mosaic_center_dec=g_dev['mnt'].mount.Declination
+            self.mosaic_center_ra=g_dev['mnt'].return_right_ascension()
+            self.mosaic_center_dec=g_dev['mnt'].return_declination()
             return result
 
         if (try_hard or try_forever) and not successful_platesolve:
@@ -4559,7 +4550,8 @@ class Sequencer:
                 self.wait_for_slew()
                 g_dev['obs'].time_of_last_slew=time.time()
                 try:
-                    g_dev['mnt'].mount.SlewToCoordinatesAsync(g_dev["mnt"].last_ra_requested, g_dev["mnt"].last_dec_requested)
+                    g_dev['mnt'].slew_async_directly(ra=g_dev["mnt"].last_ra_requested, dec=g_dev["mnt"].last_dec_requested)
+                    #g_dev['mnt'].mount.SlewToCoordinatesAsync(g_dev["mnt"].last_ra_requested, g_dev["mnt"].last_dec_requested)
                 except:
                     plog(traceback.format_exc())
                     if g_dev['mnt'].theskyx:
@@ -4619,8 +4611,8 @@ class Sequencer:
         # Nudge if needed.
         if not g_dev['obs'].pointing_correction_requested_by_platesolve_thread:
             g_dev["obs"].send_to_user("Pointing adequate on first slew. Slew & Center complete.")
-            self.mosaic_center_ra=g_dev['mnt'].mount.RightAscension
-            self.mosaic_center_dec=g_dev['mnt'].mount.Declination
+            self.mosaic_center_ra=g_dev['mnt'].return_right_ascension()
+            self.mosaic_center_dec=g_dev['mnt'].return_declination()
             return result
         else:
             g_dev['obs'].check_platesolve_and_nudge()
@@ -4631,8 +4623,8 @@ class Sequencer:
 
 
         if no_confirmation == True:
-            self.mosaic_center_ra=g_dev['mnt'].mount.RightAscension
-            self.mosaic_center_dec=g_dev['mnt'].mount.Declination
+            self.mosaic_center_ra=g_dev['mnt'].return_right_ascension()
+            self.mosaic_center_dec=g_dev['mnt'].return_declination()
             return result
         else:
             if self.stop_script_called:
@@ -4681,8 +4673,8 @@ class Sequencer:
                 return
 
             g_dev["obs"].send_to_user("Pointing confirmation exposure complete. Slew & Center complete.")
-            self.mosaic_center_ra=g_dev['mnt'].mount.RightAscension
-            self.mosaic_center_dec=g_dev['mnt'].mount.Declination
+            self.mosaic_center_ra=g_dev['mnt'].return_right_ascension()
+            self.mosaic_center_dec=g_dev['mnt'].return_declination()
             return result
 
     def update_calendar_blocks(self):
