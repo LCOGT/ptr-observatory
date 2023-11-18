@@ -590,7 +590,7 @@ site_config = {
                 'default_area':  "Full",
                 'default_rotation': 0.0000,
                
-                '1x1_pix_scale': 0.637,    #  This is the 1x1 binning pixelscale
+                'onebyone_pix_scale': 0.637,    #  This is the 1x1 binning pixelscale
                 'native_bin': 1, # Needs to be simple, it will recalculate things on the 1x1 binning pixscale above.
                 
                 # The drizzle_value is by the new pixelscale
