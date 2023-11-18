@@ -51,6 +51,7 @@ from devices.selector import Selector
 from devices.screen import Screen
 from devices.sequencer import Sequencer
 import ptr_events
+import win32com.client
 from ptr_utility import plog
 from astropy.utils.exceptions import AstropyUserWarning
 import warnings
@@ -321,9 +322,9 @@ class Observatory:
         # Also this is true for the FULL update.
         self.currently_updating_FULL=False
 
-        self.FULL_update_thread_queue = queue.Queue(maxsize=0)
-        self.FULL_update_thread=threading.Thread(target=self.full_update_thread)
-        self.FULL_update_thread.start()
+        # self.FULL_update_thread_queue = queue.Queue(maxsize=0)
+        # self.FULL_update_thread=threading.Thread(target=self.full_update_thread)
+        # self.FULL_update_thread.start()
 
         self.too_hot_temperature=self.config['temperature_at_which_obs_too_hot_for_camera_cooling']
         self.warm_report_timer = time.time()-600
@@ -626,6 +627,14 @@ class Observatory:
                     plog(f"Unknown device: {name}")
                 # Add the instantiated device to the collection of all devices.
                 self.all_devices[dev_type][name] = device
+        
+        # Hooking up obs connection to win32 com mount
+        win32com.client.pythoncom.CoInitialize()
+        xl = win32com.client.Dispatch(
+            win32com.client.pythoncom.CoGetInterfaceAndReleaseStream(g_dev['mnt'].mount_id, win32com.client.pythoncom.IID_IDispatch)
+    )
+        
+        
         plog("Finished creating devices.")
 
     def update_config(self):
@@ -3638,7 +3647,8 @@ class Observatory:
 
     def request_full_update(self):
         if not g_dev["obs"].currently_updating_FULL:
-            self.FULL_update_thread_queue.put( 'dummy', block=False)
+            #self.FULL_update_thread_queue.put( 'dummy', block=False)
+            self.update()
 
 def wait_for_slew():
 

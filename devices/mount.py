@@ -189,6 +189,8 @@ class Mount:
 
         win32com.client.pythoncom.CoInitialize()
         self.mount = win32com.client.Dispatch(driver)
+        self.mount_id = win32com.client.pythoncom.CoMarshalInterThreadInterfaceInStream(win32com.client.pythoncom.IID_IDispatch, self.mount)
+        
         try:
             self.mount.Connected = True
         except Exception as e:
@@ -422,41 +424,41 @@ class Mount:
         self.mount = win32com.client.Dispatch(self.driver)
         self.mount.Connected = True
 
-    def check_connect(self):
-        try:
-            if self.mount.Connected:
-                return
-            else:
-                plog('Found mount not connected, reconnecting.')
-                try:
-                    self.mount.Connected = True
-                    if self.mount.Connected:
-                        return
-                except Exception as e:
-                    #plog (traceback.format_exc())
-                    plog ("mount reconnection failed.")
+    # def check_connect(self):
+    #     try:
+    #         if self.mount.Connected:
+    #             return
+    #         else:
+    #             plog('Found mount not connected, reconnecting.')
+    #             try:
+    #                 self.mount.Connected = True
+    #                 if self.mount.Connected:
+    #                     return
+    #             except Exception as e:
+    #                 #plog (traceback.format_exc())
+    #                 plog ("mount reconnection failed.")
 
-        except:
-            plog('Found mount not connected via try: block fail, reconnecting.')
-            #time.sleep(5)
-            try:
-                self.mount.Connected = True
-                if self.mount.Connected:
-                    return
-            except Exception as e:
-                plog (traceback.format_exc())
-                plog ("mount reconnection failed.")
+    #     except:
+    #         plog('Found mount not connected via try: block fail, reconnecting.')
+    #         #time.sleep(5)
+    #         try:
+    #             self.mount.Connected = True
+    #             if self.mount.Connected:
+    #                 return
+    #         except Exception as e:
+    #             plog (traceback.format_exc())
+    #             plog ("mount reconnection failed.")
 
-            plog ("Trying full-scale reboot")
-            try:
-                win32com.client.pythoncom.CoInitialize()
-                self.mount = win32com.client.Dispatch(self.driver)
-                self.mount.Connected = True
-                if self.mount.Connected:
-                    return
-            except Exception:
-                plog (traceback.format_exc())
-                plog ("mount full scale reboot failed.")
+    #         plog ("Trying full-scale reboot")
+    #         try:
+    #             win32com.client.pythoncom.CoInitialize()
+    #             self.mount = win32com.client.Dispatch(self.driver)
+    #             self.mount.Connected = True
+    #             if self.mount.Connected:
+    #                 return
+    #         except Exception:
+    #             plog (traceback.format_exc())
+    #             plog ("mount full scale reboot failed.")
 
 
     def get_mount_coordinates(self):
