@@ -1827,7 +1827,7 @@ class Camera:
         self.exposure_busy = False
         self.currently_in_smartstack_loop=False
         print ("finished exposure finish loop")
-        return
+        return expresult 
 
     def stop_command(self, required_params, optional_params):
         """Stop the current exposure and return the camera to Idle state."""
