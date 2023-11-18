@@ -2342,7 +2342,7 @@ class Camera:
                     plog ("exposure busy cancelling out of camera")
                     print ("expresult")
                     print (expresult)
-                    return expresult
+                    return copy.deepcopy(expresult)
 
 
                 if frame_type[-4:] == "flat":
@@ -2401,7 +2401,7 @@ class Camera:
                         expresult["camera_gain"] = np.nan
                         print ("expresult")
                         print (expresult)
-                        return expresult  # signals to flat routine image was rejected, prompt return
+                        return copy.deepcopy(expresult) # signals to flat routine image was rejected, prompt return
             
                     elif (
                         central_median
@@ -2417,7 +2417,7 @@ class Camera:
                         expresult["camera_gain"] = np.nan
                         print ("expresult")
                         print (expresult)
-                        return expresult  # signals to flat routine image was rejected, prompt return
+                        return copy.deepcopy(expresult)  # signals to flat routine image was rejected, prompt return
                     elif (
                         central_median
                         <= 0.5 * image_saturation_level
@@ -2432,7 +2432,7 @@ class Camera:
                         expresult["camera_gain"] = np.nan
                         print ("expresult")
                         print (expresult)
-                        return expresult  # signals to flat routine image was rejected, prompt return
+                        return copy.deepcopy(expresult) # signals to flat routine image was rejected, prompt return
                     else:
                         expresult={}
                         # Now estimate camera gain.
@@ -2481,7 +2481,7 @@ class Camera:
                                 expresult["camera_gain"] = np.nan
                                 print ("expresult")
                                 print (expresult)
-                                return expresult  # signals to flat routine image was rejected, prompt return
+                                return copy.deepcopy(expresult) # signals to flat routine image was rejected, prompt return
             
                             expresult["camera_gain"] = cge_gain
             
@@ -2497,7 +2497,7 @@ class Camera:
                         plog("Exposure Complete")
                         g_dev["obs"].send_to_user("Exposure Complete")
                         breakpoint()
-                        return expresult
+                        return copy.deepcopy(expresult)
 
 
                 #expresult["patch"] = central_median
@@ -2512,7 +2512,7 @@ class Camera:
                 g_dev["obs"].send_to_user("Exposure Complete")
                 #plog ("Post-deepcopy overhead: " + str( time.time() - self.post_deepcopy_overhead_timer))
 
-                return expresult
+                return copy.deepcopy(expresult)
                 # #except Exception as e:
                 # #    plog("Header assembly block failed: ", e)
                 # #    plog(traceback.format_exc())
