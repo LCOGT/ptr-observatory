@@ -137,7 +137,7 @@ def wait_for_slew():
                     plog( 'm>')
                     movement_reporting_timer=time.time()
                     g_dev['obs'].time_of_last_slew=time.time()
-                g_dev['obs'].update_status(mount_only=True, dont_wait=True)
+                g_dev['obs'].request_update_status(mount_only=True)
 
     except Exception as e:
         plog("Motion check faulted.")
@@ -154,7 +154,7 @@ def wait_for_slew():
                 time.sleep(10)
                 plog ("recovery attempt " + str(q+1))
                 q=q+1
-                g_dev['obs'].update_status()
+                g_dev['obs'].request_update_status(mount_only=True)
                 try:
                     g_dev['mnt'].mount.Connected = True
 
@@ -477,7 +477,7 @@ class Mount:
         self.current_icrs_ra = self.right_ascension_directly_from_mount    #May not be applied in positioning
         self.current_icrs_dec = self.declination_directly_from_mount
 
-        return self.current_icrs_ra, self.current_icrs_dec
+        return copy.deepcopy(self.current_icrs_ra, self.current_icrs_dec)
 
     def slew_async_directly(self, ra, dec):
         wait_for_slew()
@@ -488,7 +488,7 @@ class Mount:
     def get_status(self):
 
         if self.currently_creating_status:
-            return self.previous_status
+            return copy.deepcopy(self.previous_status)
 
         self.currently_creating_status = True
 
@@ -587,7 +587,7 @@ class Mount:
         #plog("Mount Status:  ", status)
         self.previous_status = status
         self.currently_creating_status = False
-        return status
+        return copy.deepcopy(status)
 
     def get_quick_status(self, pre):
 
@@ -629,7 +629,7 @@ class Mount:
         pre.append(self.rapid_park_indicator)
         pre.append(self.mount.Tracking)
         pre.append(self.mount.Slewing)
-        return pre
+        return copy.deepcopy(pre)
 
 
     def get_rapid_exposure_status(self, pre):
@@ -667,7 +667,7 @@ class Mount:
         pre.append(False)
         pre.append(True)
         pre.append(False)
-        return pre
+        return copy.deepcopy(pre)
 
     @classmethod
     def two_pi_avg(cls, pre, post, half):
@@ -731,7 +731,7 @@ class Mount:
             'move_time': self.move_time
 
         }
-        return status
+        return copy.deepcopy(status)
 
     def parse_command(self, command):
 
@@ -880,6 +880,8 @@ class Mount:
 
         ''' Slew to the given ra/dec, alt/az or ha/dec or skyflatspot coordinates. '''
 
+        
+
         # First thing to do is check the position of the sun and
         # Whether this violates the pointing principle.
         sun_coords=get_sun(Time.now())
@@ -979,6 +981,7 @@ class Mount:
             plog("Refusing pointing request as the observatory is currently taking flats or calibration frmaes.")
             return 'refused'
 
+        
 
         if objectname != None:
             self.object = objectname
@@ -1003,6 +1006,8 @@ class Mount:
             tracking_rate_ra=dra_moon
             tracking_rate_dec = ddec_moon
 
+        #
+        breakpoint()
         icrs_ra, icrs_dec = self.get_mount_coordinates()   #Does not appear to be used
 
         if self.object == "":
@@ -1017,6 +1022,7 @@ class Mount:
         self.last_tracking_rate_ra = tracking_rate_ra
         self.last_tracking_rate_dec = tracking_rate_dec
         self.last_seek_time = time.time() - 5000
+
 
 
         #Note this initiates a mount move.  WE should Evaluate if the destination is on the flip side and pick up the
@@ -1475,6 +1481,7 @@ class Mount:
 
     def unpark_command(self, req=None, opt=None):
         ''' unpark the telescope mount '''
+        
         if self.can_park:
             if g_dev['mnt'].rapid_park_indicator:
                 plog("mount cmd: unparking mount")

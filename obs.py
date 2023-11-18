@@ -45,7 +45,7 @@ from devices.camera import Camera
 from devices.filter_wheel import FilterWheel
 from devices.focuser import Focuser
 from devices.mount import Mount
-from devices.telescope import Telescope
+#from devices.telescope import Telescope
 from devices.rotator import Rotator
 from devices.selector import Selector
 from devices.screen import Screen
@@ -606,8 +606,8 @@ class Observatory:
                     device = Mount(
                         driver, name, settings, self.config, self.astro_events, tel=True
                     )  # NB this needs to be straightened out.
-                elif dev_type == "telescope":  # order of attaching is sensitive
-                     device = Telescope(driver, name, settings, self.config, tel=True)
+                #elif dev_type == "telescope":  # order of attaching is sensitive
+                #     device = Telescope(driver, name, settings, self.config, tel=True)
                 elif dev_type == "rotator":
                     device = Rotator(driver, name, self.config)
                 elif dev_type == "focuser":
@@ -937,7 +937,7 @@ class Observatory:
                     plog("obs.scan_request: ", cmd)
                     device_type = cmd["deviceType"]
 
-
+                    #breakpoint()
 
                     if device_type=='enclosure':
                         plog ('An OBS has mistakenly received an enclosure command! Ignoring.')
@@ -1099,7 +1099,7 @@ class Observatory:
                 device = devices_of_type[device_name]
                 # Currently the telescope and mount devices are the same... this will change.
                 if 'telescope' in device_name:
-                    status['telescope'] = status['mount']
+                    status['telescope'] = copy.deepcopy(status['mount'])
                 else:
                     #breakpoint()
                     if 'mount' in device_name and self.mount_reboot_on_first_status:
