@@ -548,10 +548,10 @@ class Observatory:
 
         # Temporary toggle to turn auto-centering off
         #self.auto_centering_off = True
-        
-        
+
+
         #MTF -TEMP
-        
+        g_dev['obs'].enc_status = g_dev['obs'].get_enclosure_status_from_aws()
 
 
         # Initialisation complete!
@@ -627,14 +627,14 @@ class Observatory:
                     plog(f"Unknown device: {name}")
                 # Add the instantiated device to the collection of all devices.
                 self.all_devices[dev_type][name] = device
-        
+
         # Hooking up obs connection to win32 com mount
         win32com.client.pythoncom.CoInitialize()
         xl = win32com.client.Dispatch(
             win32com.client.pythoncom.CoGetInterfaceAndReleaseStream(g_dev['mnt'].mount_id, win32com.client.pythoncom.IID_IDispatch)
     )
-        
-        
+
+
         plog("Finished creating devices.")
 
     def update_config(self):
@@ -977,7 +977,7 @@ class Observatory:
 
 
         self.currently_updating_status=True
-        
+
         # Wait a bit between status updates otherwise
         # status updates bank up in the queue
         if dont_wait == True:
@@ -1014,7 +1014,7 @@ class Observatory:
                         plog ("rebooting mount on first status update. Need to chase why, it is a collision I can't see yet - MTF")
                         g_dev['mnt'].mount_reboot()
                         self.mount_reboot_on_first_status = False
-                    
+
                     result = device.get_status()
 
                     if 'mount' in device_name:
@@ -1031,7 +1031,7 @@ class Observatory:
                 self.send_status_queue.put((obsy, lane, status), block=False)
 
 
-        
+
 
         self.time_last_status = time.time()
         self.status_count += 1
@@ -3454,8 +3454,8 @@ class Observatory:
                     wait_for_slew()
                     #g_dev['mnt'].previous_pier_side=g_dev['mnt'].mount.sideOfPier
                     g_dev['mnt'].previous_pier_side=g_dev['mnt'].return_side_of_pier()
-                    
-                    
+
+
                     #ranudge= g_dev['mnt'].mount.RightAscension + g_dev['obs'].pointing_correction_request_ra_err
                     #decnudge= g_dev['mnt'].mount.Declination + g_dev['obs'].pointing_correction_request_dec_err
                     ranudge= g_dev['mnt'].return_right_ascension() + g_dev['obs'].pointing_correction_request_ra_err
