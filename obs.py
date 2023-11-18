@@ -305,16 +305,16 @@ class Observatory:
 
         # Sometimes we update the status in a thread. This variable prevents multiple status updates occuring simultaneously
         self.currently_updating_status=False
-        
-        
-        
+
+
+
         # Create this actual thread
         self.update_status_queue = queue.Queue(maxsize=0)
         self.update_status_thread=threading.Thread(target=self.update_status_thread)
         self.update_status_thread.start()
         # Also this is true for the FULL update.
         self.currently_updating_FULL=False
-        
+
         self.FULL_update_thread_queue = queue.Queue(maxsize=0)
         self.FULL_update_thread=threading.Thread(target=self.full_update_thread)
         self.FULL_update_thread.start()
@@ -409,7 +409,7 @@ class Observatory:
         g_dev['mnt'].get_mount_coordinates()
 
         # Boot up the various queues to process
-        
+
         if self.config['ingest_raws_directly_to_archive']:
             self.ptrarchive_queue = queue.PriorityQueue(maxsize=0)
             self.ptrarchive_queue_thread = threading.Thread(target=self.send_to_ptrarchive, args=())
@@ -497,7 +497,8 @@ class Observatory:
 
         # On startup, collect orphaned fits files that may have been dropped from the queue
         # when the site crashed or was rebooted.
-        g_dev['seq'].collect_and_queue_neglected_fits()
+        if self.config['ingest_raws_directly_to_archive']:
+            g_dev['seq'].collect_and_queue_neglected_fits()
 
         # Inform UI of reboot
         self.send_to_user("Observatory code has been rebooted. Manually queued commands have been flushed.")
@@ -1114,7 +1115,7 @@ class Observatory:
                             self.cancel_all_activity()
                         if not g_dev['mnt'].mount.AtPark:
                             g_dev['mnt'].park_command()
-                            
+
                         self.currently_updating_status=False
                         return
             except Exception as e:
@@ -1161,7 +1162,7 @@ class Observatory:
             g_dev["seq"].manager()  # Go see if there is something new to do.
 
 
-        
+
 
 
         # An important check to make sure equatorial telescopes are pointed appropriately
@@ -1204,7 +1205,7 @@ class Observatory:
                             self.cancel_all_activity()
                         if not g_dev['mnt'].mount.AtPark:
                             g_dev['mnt'].park_command()
-                        
+
                         self.currently_updating_FULL=False
                         return
 
@@ -1900,7 +1901,7 @@ class Observatory:
 
     # Note this is a thread!
     def update_status_thread(self):
-        
+
 
         one_at_a_time = 0
 
@@ -1922,7 +1923,7 @@ class Observatory:
 
     # Note this is a thread!
     def full_update_thread(self):
-        
+
 
         one_at_a_time = 0
 
@@ -3567,7 +3568,7 @@ class Observatory:
 
     def to_mainjpeg(self, to_sep):
         self.mainjpeg_queue.put( to_sep, block=False)
-        
+
     def request_update_status(self):
         if not self.currently_updating_status:
             self.update_status_queue.put( 'dummy', block=False)
