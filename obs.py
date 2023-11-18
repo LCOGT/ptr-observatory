@@ -3054,7 +3054,7 @@ class Observatory:
                         reqs.post(aws_resp["url"], data=aws_resp["fields"], files=files, timeout=10)
                         #plog("SUCCESS FOR:" + filename)
                     except Exception as e:
-                        if 'timeout' in str(e).lower() or 'SSLWantWriteError' in str(e):
+                        if 'timeout' in str(e).lower() or 'SSLWantWriteError' or 'RemoteDisconnected' in str(e):
                             plog("Seems to have been a timeout on the file posted: " + str(e) + "Putting it back in the queue.")
                             plog(filename)
                             #breakpoint()
@@ -3114,7 +3114,7 @@ class Observatory:
 
                         #plog("SUCCESS FOR:" + filename)
                     except Exception as e:
-                        if 'timeout' in str(e).lower() or 'SSLWantWriteError' in str(e):
+                        if 'timeout' in str(e).lower() or 'SSLWantWriteError' or 'RemoteDisconnected' in str(e):
                             plog("Seems to have been a timeout on the file posted: " + str(e) + "Putting it back in the queue.")
                             plog(filename)
                             #breakpoint()
@@ -3168,7 +3168,7 @@ class Observatory:
                         reqs.post(aws_resp["url"], data=aws_resp["fields"], files=files, timeout=300)
                         #plog("SUCCESS FOR:" + filename)
                     except Exception as e:
-                        if 'timeout' in str(e).lower() or 'SSLWantWriteError' in str(e):
+                        if 'timeout' in str(e).lower() or 'SSLWantWriteError' or 'RemoteDisconnected' in str(e):
                             plog("Seems to have been a timeout on the file posted: " + str(e) + "Putting it back in the queue.")
                             plog(filename)
                             #breakpoint()
