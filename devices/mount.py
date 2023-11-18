@@ -361,7 +361,7 @@ class Mount:
 
         self.previous_pier_side=self.mount.sideOfPier
 
-
+        self.can_park = self.mount.CanPark
         self.can_set_tracking = self.mount.CanSetTracking
         # The update_status routine collects the current atpark status and pier status.
         # This is a slow command, so unless the code needs to know IMMEDIATELY
@@ -369,16 +369,24 @@ class Mount:
         # asking ASCOM/MOUNT
         self.rapid_park_indicator=copy.deepcopy(self.mount.AtPark)
         self.rapid_pier_indicator=copy.deepcopy(self.mount.sideOfPier)
+        
+        self.right_ascension_directly_from_mount = copy.deepcopy(self.mount.RightAscension)
+        self.declination_directly_from_mount = copy.deepcopy(self.mount.Declination)
 
+
+
+    
 
     def return_side_of_pier(self):
         return copy.deepcopy(self.mount.sideOfPier)
 
     def return_right_ascension(self):
-        return copy.deepcopy(self.mount.RightAscension)
+        #return copy.deepcopy(self.mount.RightAscension)
+        return self.right_ascension_directly_from_mount
 
     def return_declination(self):
-        return copy.deepcopy(self.mount.Declination)
+        #return copy.deepcopy(self.mount.Declination)
+        return self.declination_directly_from_mount
     
     def return_slewing(self):
         return copy.deepcopy(self.mount.Slewing)
@@ -462,9 +470,12 @@ class Mount:
             DESCRIPTION.
 
         '''
+        
+        self.right_ascension_directly_from_mount = copy.deepcopy(self.mount.RightAscension)
+        self.declination_directly_from_mount = copy.deepcopy(self.mount.Declination)
 
-        self.current_icrs_ra = self.mount.RightAscension    #May not be applied in positioning
-        self.current_icrs_dec = self.mount.Declination
+        self.current_icrs_ra = self.right_ascension_directly_from_mount    #May not be applied in positioning
+        self.current_icrs_dec = self.declination_directly_from_mount
 
         return self.current_icrs_ra, self.current_icrs_dec
 
@@ -472,7 +483,7 @@ class Mount:
         wait_for_slew()
         self.mount.SlewToCoordinatesAsync(ra, dec)
         wait_for_slew()
-
+        self.get_mount_coordinates()
 
     def get_status(self):
 
@@ -493,6 +504,8 @@ class Mount:
                 self.mount = win32com.client.Dispatch(self.driver)
                 self.rapid_park_indicator=copy.deepcopy(self.mount.AtPark)
                 self.rapid_pier_indicator=copy.deepcopy(self.mount.sideOfPier)
+            else:
+                print (e)
 
         if self.tel == False:
             status = {
@@ -805,6 +818,7 @@ class Mount:
                 wait_for_slew()
                 self.mount.SlewToCoordinatesAsync(gora, godec)
                 wait_for_slew()
+                self.get_mount_coordinates()
 
                 #breakpoint()
                 #self.go_command(ra=gora, dec=godec)#, offset=True, calibrate=False)
@@ -1069,6 +1083,7 @@ class Mount:
                     ra=ra-24
                 self.mount.SlewToCoordinatesAsync(ra, dec)  #Is this needed?
                 wait_for_slew()
+                self.get_mount_coordinates()
             except Exception:
                 # This catches an occasional ASCOM/TheSkyX glitch and gets it out of being stuck
                 # And back on tracking.
@@ -1091,6 +1106,7 @@ class Mount:
                                     ra=ra-24
                                 self.mount.SlewToCoordinatesAsync(ra, dec)
                                 wait_for_slew()
+                                self.get_mount_coordinates()
                                 retry=4
                             else:
 
@@ -1128,6 +1144,7 @@ class Mount:
                 g_dev['mnt'].last_slew_was_pointing_slew = True
                 self.mount.SlewToCoordinatesAsync(ra, dec)
                 wait_for_slew()
+                self.get_mount_coordinates()
                 successful_move=1
 
         if self.mount.Tracking == False:
@@ -1155,6 +1172,7 @@ class Mount:
                         ra=ra-24
                     self.mount.SlewToCoordinatesAsync(ra, dec)  #Is this needed?
                     wait_for_slew()
+                    self.get_mount_coordinates()
 
                 else:
                     plog (traceback.format_exc())
@@ -1273,7 +1291,7 @@ class Mount:
                     wait_for_slew()
                     self.mount.SlewToCoordinatesAsync(self.ra_mech*RTOH, self.dec_mech*RTOD)  #Is this needed?
                     wait_for_slew()
-
+                    self.get_mount_coordinates()
                     print ("this mount may not accept tracking commands")
                 elif ('Property write Tracking is not implemented in this driver.' in str(e)) and self.theskyx_tracking_rescues >= 5:
                     print ("theskyx has been rescued one too many times. Just sending it to park.")
@@ -1293,6 +1311,7 @@ class Mount:
         try:
             self.mount.SlewToCoordinatesAsync(self.ra_mech*RTOH, self.dec_mech*RTOD)  #Is this needed?
             wait_for_slew()
+            self.get_mount_coordinates()
         except Exception as e:
             # This catches an occasional ASCOM/TheSkyX glitch and gets it out of being stuck
             # And back on tracking.
@@ -1304,6 +1323,7 @@ class Mount:
                 wait_for_slew()
                 self.mount.SlewToCoordinatesAsync(self.ra_mech*RTOH, self.dec_mech*RTOD)  #Is this needed?
                 wait_for_slew()
+                self.get_mount_coordinates()
 
         if self.mount.Tracking == False:
             try:
@@ -1321,6 +1341,7 @@ class Mount:
                     wait_for_slew()
                     self.mount.SlewToCoordinatesAsync(self.ra_mech*RTOH, self.dec_mech*RTOD)  #Is this needed?
                     wait_for_slew()
+                    self.get_mount_coordinates()
 
                     print ("this mount may not accept tracking commands")
                 elif ('Property write Tracking is not implemented in this driver.' in str(e)) and self.theskyx_tracking_rescues >= 5:
@@ -1367,7 +1388,7 @@ class Mount:
         #plog(self.prior_roll_rate, self.prior_pitch_rate, refr_asec)
         # time.sleep(.5)
         # self.mount.SlewToCoordinatesAsync(ra_mech*RTOH, dec_mech*RTOD)
-        time.sleep(1)   #fOR SOME REASON REPEATING THIS HELPS!
+        #time.sleep(1)   #fOR SOME REASON REPEATING THIS HELPS!
         if self.mount.CanSetRightAscensionRate:
             self.mount.RightAscensionRate = 0.0 #self.prior_roll_rate
 
@@ -1408,6 +1429,7 @@ class Mount:
                 self.move_time = time.time()
                 self.mount.FindHome()
                 wait_for_slew()
+                self.get_mount_coordinates()
         else:
             plog("Mount is not capable of finding home. Slewing to home_alt and home_az")
             self.move_time = time.time()
@@ -1431,8 +1453,8 @@ class Mount:
 
     def park_command(self, req=None, opt=None):
         ''' park the telescope mount '''
-        if self.mount.CanPark:
-            if not self.mount.AtPark:
+        if self.can_park:
+            if not g_dev['mnt'].rapid_park_indicator:
                 plog("mount cmd: parking mount")
                 if g_dev['obs'] is not None:  #THis gets called before obs is created
                     g_dev['obs'].send_to_user("Parking Mount. This can take a moment.")
@@ -1453,8 +1475,8 @@ class Mount:
 
     def unpark_command(self, req=None, opt=None):
         ''' unpark the telescope mount '''
-        if self.mount.CanPark:
-            if self.mount.AtPark:
+        if self.can_park:
+            if g_dev['mnt'].rapid_park_indicator:
                 plog("mount cmd: unparking mount")
                 g_dev['obs'].send_to_user("Unparking Mount. This can take a moment.")
                 g_dev['obs'].time_of_last_slew=time.time()

@@ -410,7 +410,7 @@ class Observatory:
 
         # Reset mount reference for delta_ra and delta_dec on bootup
         g_dev["mnt"].reset_mount_reference()
-        g_dev['mnt'].get_mount_coordinates()
+        #g_dev['mnt'].get_mount_coordinates()
 
         # Boot up the various queues to process
 
