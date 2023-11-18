@@ -1028,7 +1028,8 @@ class Observatory:
                             meridianra=g_dev['mnt'].mount.RightAscension
                             meridiandec=g_dev['mnt'].mount.Declination
                             g_dev['obs'].time_of_last_slew=time.time()
-                            g_dev['mnt'].mount.SlewToCoordinatesAsync(meridianra, meridiandec)
+                            #g_dev['mnt'].mount.SlewToCoordinatesAsync(meridianra, meridiandec)
+                            g_dev['mnt'].slew_async_directly(ra=meridianra, dec=meridiandec)
                             wait_for_slew()
                             self.time_of_last_slew=time.time()
 
@@ -3407,7 +3408,8 @@ class Observatory:
                     new_dec= g_dev['seq'].mosaic_center_dec + g_dev['seq'].current_mosaic_displacement_dec
                     new_ra, new_dec = ra_dec_fix_hd(new_ra, new_dec)
                     wait_for_slew()
-                    g_dev['mnt'].mount.SlewToCoordinatesAsync(new_ra, new_dec)
+                    #g_dev['mnt'].mount.SlewToCoordinatesAsync(new_ra, new_dec)
+                    g_dev['mnt'].slew_async_directly(ra=new_ra, dec=new_dec)
                     wait_for_slew()
 
                     self.time_of_last_slew=time.time()
@@ -3433,7 +3435,8 @@ class Observatory:
                     self.time_of_last_slew=time.time()
                     try:
                         wait_for_slew()
-                        g_dev['mnt'].mount.SlewToCoordinatesAsync(ranudge, decnudge)
+                        #g_dev['mnt'].mount.SlewToCoordinatesAsync(ranudge, decnudge)
+                        g_dev['mnt'].slew_async_directly(ra=ranudge, dec=decnudge)
                         wait_for_slew()
                     except:
                         plog (traceback.format_exc())

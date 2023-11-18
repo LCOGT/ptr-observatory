@@ -431,6 +431,12 @@ class Mount:
 
         return self.current_icrs_ra, self.current_icrs_dec
 
+    def slew_async_directly(self, ra, dec):
+        wait_for_slew()
+        self.mount.SlewToCoordinatesAsync(ra, dec)
+        wait_for_slew()
+
+
     def get_status(self):
 
         if self.currently_creating_status:
