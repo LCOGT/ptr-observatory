@@ -24,6 +24,7 @@ from astropy.table import Table
 from astropy.utils.exceptions import AstropyUserWarning
 import warnings
 warnings.simplefilter('ignore', category=AstropyUserWarning)
+warnings.simplefilter("ignore", category=RuntimeWarning)
 #import matplotlib.pyplot as plt
 
 

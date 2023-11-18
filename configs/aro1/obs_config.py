@@ -530,7 +530,9 @@ site_config = {
                 'direct_qhy_readout_mode' : 3,
                 'direct_qhy_gain' : 26,
                 'direct_qhy_offset' : 60,
-                'direct_qhy_usb_speed' : 50,
+                #'direct_qhy_usb_speed' : 50,
+                'direct_qhy_usb_traffic' : 50,
+                'direct_qhy_usb_speed' : 4,
 
                 # These options set whether an OSC gets binned or interpolated for different functions
                 # If the pixel scale is well-sampled (e.g. 0.6 arcsec per RGGB pixel or 0.3 arcsec per individual debayer pixel)
@@ -669,7 +671,7 @@ site_config = {
                 'saturate':   65535,
                 'max_linearity':  60000,   # Guess
                 # How long does it take to readout an image after exposure
-                'cycle_time':            0.5,
+                'cycle_time':            0.0,
                 # What is the base smartstack exposure time?
                 # It will vary from scope to scope and computer to computer.
                 # 30s is a good default.

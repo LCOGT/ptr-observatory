@@ -14,6 +14,8 @@ from astropy.utils.exceptions import AstropyUserWarning
 import warnings
 warnings.simplefilter('ignore', category=AstropyUserWarning)
 
+warnings.simplefilter("ignore", category=RuntimeWarning)
+
 # Pick up the pickled array
 input_jpeg_info=pickle.load(sys.stdin.buffer)
 #input_jpeg_info=pickle.load(open('testjpegpickle','rb'))
@@ -56,7 +58,7 @@ if is_osc:
         # Only separate colours if needed for colour jpeg
         # Only use one green channel, otherwise the green channel will have half the noise of other channels
         # and won't make a relatively balanced image (in terms of noise anyway)
-        if smartstackid == 'no':            
+        if smartstackid == 'no':
             hdured = hdusmalldata[::2, ::2]
             hdugreen = hdusmalldata[::2, 1::2]
             hdublue = hdusmalldata[1::2, 1::2]
@@ -73,7 +75,7 @@ if smartstackid == 'no':
         yshape = hdugreen.shape[1]
 
         blue_stretched_data_float = Stretch().stretch(hdublue)*256
-        ceil = np.percentile(blue_stretched_data_float, 100)  
+        ceil = np.percentile(blue_stretched_data_float, 100)
         floor = np.percentile(blue_stretched_data_float,
                               osc_background_cut)
         blue_stretched_data_float[blue_stretched_data_float < floor] = floor
@@ -82,7 +84,7 @@ if smartstackid == 'no':
         del hdublue
 
         green_stretched_data_float = Stretch().stretch(hdugreen)*256
-        ceil = np.percentile(green_stretched_data_float, 100) 
+        ceil = np.percentile(green_stretched_data_float, 100)
         floor = np.percentile(green_stretched_data_float,
                               osc_background_cut)
         green_stretched_data_float[green_stretched_data_float < floor] = floor
@@ -92,13 +94,13 @@ if smartstackid == 'no':
         del hdugreen
 
         red_stretched_data_float = Stretch().stretch(hdured)*256
-        ceil = np.percentile(red_stretched_data_float, 100)  
+        ceil = np.percentile(red_stretched_data_float, 100)
         floor = np.percentile(red_stretched_data_float,
                               osc_background_cut)
         red_stretched_data_float[red_stretched_data_float < floor] = floor
         red_stretched_data_float = red_stretched_data_float-floor
         red_stretched_data_float = red_stretched_data_float * (255/np.max(red_stretched_data_float))
-        del hdured       
+        del hdured
 
         rgbArray = np.empty((xshape, yshape, 3), 'uint8')
         rgbArray[..., 0] = red_stretched_data_float  # *256
@@ -109,7 +111,7 @@ if smartstackid == 'no':
         del blue_stretched_data_float
         del green_stretched_data_float
         colour_img = Image.fromarray(rgbArray, mode="RGB")
-        
+
         if osc_brightness_enhance != 1.0:
             brightness = ImageEnhance.Brightness(colour_img)
             brightness_image = brightness.enhance(
@@ -146,7 +148,7 @@ if smartstackid == 'no':
             osc_sharpness_enhance)
         del satur_image
         del sharpness
-        
+
 
         # These steps flip and rotate the jpeg according to the settings in the site-config for this camera
         if transpose_jpeg:
@@ -168,7 +170,7 @@ if smartstackid == 'no':
         # set it appropriately and leave this alone.
         if pier_side == 1:
             final_image = final_image.transpose(Image.Transpose.ROTATE_180)
-        
+
         # Save BIG version of JPEG.
         final_image.save(
             paths["im_path"] + paths['jpeg_name10'].replace('EX10', 'EX20')
@@ -182,7 +184,7 @@ if smartstackid == 'no':
         ):
             final_image=final_image.crop((xl,yt,xr,yb))
             iy, ix = final_image.size
-        
+
         if iy == ix:
             final_image = final_image.resize((900, 900))
         else:
@@ -197,7 +199,7 @@ if smartstackid == 'no':
         del final_image
 
     else:
-        # Making cosmetic adjustments to the image array ready for jpg stretching        
+        # Making cosmetic adjustments to the image array ready for jpg stretching
         hdusmalldata = hdusmalldata - np.min(hdusmalldata)
 
         stretched_data_float = Stretch().stretch(hdusmalldata+1000)
@@ -242,11 +244,11 @@ if smartstackid == 'no':
 
         # Resizing the array to an appropriate shape for the jpg and the small fits
 
-        if iy == ix:            
+        if iy == ix:
             final_image = final_image.resize(
                 (900, 900)
             )
-        else:            
+        else:
             if squash_on_x_axis:
                 final_image = final_image.resize(
 
@@ -332,7 +334,7 @@ del hdusmalldata
 #         # Only separate colours if needed for colour jpeg
 #         # Only use one green channel, otherwise the green channel will have half the noise of other channels
 #         # and won't make a relatively balanced image (in terms of noise anyway)
-#         if smartstackid == 'no':            
+#         if smartstackid == 'no':
 #             hdured = hdusmalldata[::2, ::2]
 #             hdugreen = hdusmalldata[::2, 1::2]
 #             hdublue = hdusmalldata[1::2, 1::2]
@@ -349,7 +351,7 @@ del hdusmalldata
 #         yshape = hdugreen.shape[1]
 
 #         blue_stretched_data_float = Stretch().stretch(hdublue)*256
-#         ceil = np.percentile(blue_stretched_data_float, 100)  
+#         ceil = np.percentile(blue_stretched_data_float, 100)
 #         floor = np.percentile(blue_stretched_data_float,
 #                               osc_background_cut)
 #         blue_stretched_data_float[blue_stretched_data_float < floor] = floor
@@ -358,7 +360,7 @@ del hdusmalldata
 #         del hdublue
 
 #         green_stretched_data_float = Stretch().stretch(hdugreen)*256
-#         ceil = np.percentile(green_stretched_data_float, 100) 
+#         ceil = np.percentile(green_stretched_data_float, 100)
 #         floor = np.percentile(green_stretched_data_float,
 #                               osc_background_cut)
 #         green_stretched_data_float[green_stretched_data_float < floor] = floor
@@ -368,13 +370,13 @@ del hdusmalldata
 #         del hdugreen
 
 #         red_stretched_data_float = Stretch().stretch(hdured)*256
-#         ceil = np.percentile(red_stretched_data_float, 100)  
+#         ceil = np.percentile(red_stretched_data_float, 100)
 #         floor = np.percentile(red_stretched_data_float,
 #                               osc_background_cut)
 #         red_stretched_data_float[red_stretched_data_float < floor] = floor
 #         red_stretched_data_float = red_stretched_data_float-floor
 #         red_stretched_data_float = red_stretched_data_float * (255/np.max(red_stretched_data_float))
-#         del hdured       
+#         del hdured
 
 #         rgbArray = np.empty((xshape, yshape, 3), 'uint8')
 #         rgbArray[..., 0] = red_stretched_data_float  # *256
@@ -385,7 +387,7 @@ del hdusmalldata
 #         del blue_stretched_data_float
 #         del green_stretched_data_float
 #         colour_img = Image.fromarray(rgbArray, mode="RGB")
-        
+
 #         if osc_brightness_enhance != 1.0:
 #             brightness = ImageEnhance.Brightness(colour_img)
 #             brightness_image = brightness.enhance(
@@ -422,7 +424,7 @@ del hdusmalldata
 #             osc_sharpness_enhance)
 #         del satur_image
 #         del sharpness
-        
+
 
 #         # These steps flip and rotate the jpeg according to the settings in the site-config for this camera
 #         if transpose_jpeg:
@@ -444,7 +446,7 @@ del hdusmalldata
 #         # set it appropriately and leave this alone.
 #         if pier_side == 1:
 #             final_image = final_image.transpose(Image.Transpose.ROTATE_180)
-        
+
 #         # Save BIG version of JPEG.
 #         final_image.save(
 #             paths["im_path"] + paths['jpeg_name10'].replace('EX10', 'EX20')
@@ -458,7 +460,7 @@ del hdusmalldata
 #         ):
 #             final_image=final_image.crop((xl,yt,xr,yb))
 #             iy, ix = final_image.size
-        
+
 #         if iy == ix:
 #             final_image = final_image.resize((900, 900))
 #         else:
@@ -473,7 +475,7 @@ del hdusmalldata
 #         del final_image
 
 #     else:
-#         # Making cosmetic adjustments to the image array ready for jpg stretching        
+#         # Making cosmetic adjustments to the image array ready for jpg stretching
 #         hdusmalldata = hdusmalldata - np.min(hdusmalldata)
 
 #         stretched_data_float = Stretch().stretch(hdusmalldata+1000)
@@ -522,7 +524,7 @@ del hdusmalldata
 #         if zoom_factor is not False:
 #             #breakpoint()
 #             if zoom_factor in ['full', 'Full', '100%']:
-#                 zoom = (0.0, 0.0, 0.0, 0.0)   #  Trim nothing  
+#                 zoom = (0.0, 0.0, 0.0, 0.0)   #  Trim nothing
 #             elif zoom_factor in ['square', 'Sqr.']:
 #                 zoom = ((ix/iy -1)/2, 0.0, (ix/iy -1)/2, 0.00,)    #  3:2 ->> 2:2, QHY600 sides trim.
 #             elif zoom_factor in ['71%']:
@@ -530,16 +532,16 @@ del hdusmalldata
 #                 zoom = (r_sq2, r_sq2, r_sq2, r_sq2,)    #  0.14644, sides trim.
 #             elif zoom_factor in ['50%']:
 #                 r_sq2 = (1 - 0.5)/2
-#                 zoom = (r_sq2, r_sq2, r_sq2, r_sq2,)    #  0.14644, sides trim.                   
+#                 zoom = (r_sq2, r_sq2, r_sq2, r_sq2,)    #  0.14644, sides trim.
 #             elif zoom_factor in ['35%']:
 #                 r_sq2 = (1 - 0.5/sqrt(2))/2
-#                 zoom = (r_sq2, r_sq2, r_sq2, r_sq2,)    #  0.14644, sides trim.  
+#                 zoom = (r_sq2, r_sq2, r_sq2, r_sq2,)    #  0.14644, sides trim.
 #             elif zoom_factor in ['25%']:
 #                 r_sq2 = (1 - 0.25)/2
-#                 zoom = (r_sq2, r_sq2, r_sq2, r_sq2,)    #  0.14644, sides trim.  
+#                 zoom = (r_sq2, r_sq2, r_sq2, r_sq2,)    #  0.14644, sides trim.
 #             elif zoom_factor in ['18%']:
 #                 r_sq2 = (1 - 0.25/sqrt(2))/2
-#                 zoom = (r_sq2, r_sq2, r_sq2, r_sq2,)    #  0.14644, sides trim.  
+#                 zoom = (r_sq2, r_sq2, r_sq2, r_sq2,)    #  0.14644, sides trim.
 #             elif zoom_factor in ['12.5%']:
 #                 r_sq2 = (1 - 0.125)/2
 #                 zoom = (r_sq2, r_sq2, r_sq2, r_sq2,)    #  0.14644, sides trim.
@@ -550,9 +552,9 @@ del hdusmalldata
 #                 zoom = (.2, .2725, .2, .2725)
 #             else:
 #                 zoom = (0.0, 0.0, 0.0, 0.0)
-            
- 
-            
+
+
+
 #             #breakpoint()
 #             xl, yt, xr, yb = zoom
 #             xl *= ix
@@ -564,11 +566,11 @@ del hdusmalldata
 #             print("Zoomed Image size:", ix, iy)
 #             final_image = trial_image
 
-#         if iy == ix:            
+#         if iy == ix:
 #             final_image = final_image.resize(
 #                 (900, 900)
 #             )
-#         else:            
+#         else:
 #             if squash_on_x_axis:
 #                 final_image = final_image.resize(
 

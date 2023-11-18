@@ -446,6 +446,11 @@ class Observatory:
         self.laterdelete_queue_thread = threading.Thread(target=self.laterdelete_process, args=())
         self.laterdelete_queue_thread.start()
 
+
+        self.sendtouser_queue = queue.Queue(maxsize=0)
+        self.sendtouser_queue_thread = threading.Thread(target=self.sendtouser_process, args=())
+        self.sendtouser_queue_thread.start()
+
         self.cmd_queue = queue.Queue(
             maxsize=0
         )
@@ -1838,6 +1843,36 @@ class Observatory:
             else:
                 time.sleep(0.1)
 
+    def sendtouser_process(self):
+        """This is a thread where things that fail to get
+        deleted from the filesystem go to get deleted later on.
+        Usually due to slow or network I/O
+        """
+
+        while True:
+            if (not self.sendtouser_queue.empty()):
+
+                (p_log, p_level) = self.sendtouser_queue.get(block=False)
+                url_log = "https://logs.photonranch.org/logs/newlog"
+                body = json.dumps(
+                    {
+                        "site": self.config["obs_id"],
+                        "log_message": str(p_log),
+                        "log_level": str(p_level),
+                        "timestamp": time.time(),
+                    }
+                )
+
+                try:
+                    reqs.post(url_log, body, timeout=5)
+                except:
+                    plog("Log did not send, usually not fatal.")
+
+                self.sendtouser_queue.task_done()
+
+            else:
+                time.sleep(0.1)
+
     def mainjpeg_process(self):
         """
         This is the main subprocess where jpegs are created for the UI.
@@ -2947,20 +2982,25 @@ class Observatory:
 
 
     def send_to_user(self, p_log, p_level="INFO"):
-        url_log = "https://logs.photonranch.org/logs/newlog"
-        body = json.dumps(
-            {
-                "site": self.config["obs_id"],
-                "log_message": str(p_log),
-                "log_level": str(p_level),
-                "timestamp": time.time(),
-            }
-        )
 
-        try:
-            reqs.post(url_log, body, timeout=5)
-        except:
-            plog("Log did not send, usually not fatal.")
+        # This is now a queue--- it was actually slowing
+        # everything down each time this was called!
+
+        self.sendtouser_queue.put((p_log, p_level),block=False)
+        # url_log = "https://logs.photonranch.org/logs/newlog"
+        # body = json.dumps(
+        #     {
+        #         "site": self.config["obs_id"],
+        #         "log_message": str(p_log),
+        #         "log_level": str(p_level),
+        #         "timestamp": time.time(),
+        #     }
+        # )
+
+        # try:
+        #     reqs.post(url_log, body, timeout=5)
+        # except:
+        #     plog("Log did not send, usually not fatal.")
 
     # Note this is another thread!
 

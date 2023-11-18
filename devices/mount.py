@@ -601,7 +601,7 @@ class Mount:
 
     def get_average_status(self, pre, post):    #Add HA to this calculation.
 
-        self.check_connect()
+        #self.check_connect()
         t_avg = round((pre[0] + post[0])/2, 3)
         ra_avg = round(Mount.two_pi_avg(pre[1],  post[1], 12), 6)
         dec_avg = round((pre[2] + post[2])/2, 4)
