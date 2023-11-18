@@ -402,20 +402,24 @@ class Observatory:
         # Use the configuration to instantiate objects for all devices.
         self.create_devices()
 
-
+        self.last_update_complete = time.time() -5
 
         # Reset mount reference for delta_ra and delta_dec on bootup
         g_dev["mnt"].reset_mount_reference()
         g_dev['mnt'].get_mount_coordinates()
 
         # Boot up the various queues to process
-        self.ptrarchive_queue = queue.PriorityQueue(maxsize=0)
-        self.ptrarchive_queue_thread = threading.Thread(target=self.send_to_ptrarchive, args=())
-        self.ptrarchive_queue_thread.start()
+        
+        if self.config['ingest_raws_directly_to_archive']:
+            self.ptrarchive_queue = queue.PriorityQueue(maxsize=0)
+            self.ptrarchive_queue_thread = threading.Thread(target=self.send_to_ptrarchive, args=())
+            self.ptrarchive_queue_thread.start()
 
-        self.pipearchive_queue = queue.Queue(maxsize=0)
-        self.pipearchive_queue_thread = threading.Thread(target=self.copy_to_pipearchive, args=())
-        self.pipearchive_queue_thread.start()
+
+        if self.config['save_raws_to_pipe_folder_for_nightly_processing']:
+            self.pipearchive_queue = queue.Queue(maxsize=0)
+            self.pipearchive_queue_thread = threading.Thread(target=self.copy_to_pipearchive, args=())
+            self.pipearchive_queue_thread.start()
 
         if self.config['save_to_alt_path'] == 'yes':
 
@@ -951,16 +955,17 @@ class Observatory:
         g_dev['mnt'].rapid_park_indicator=g_dev['mnt'].mount.AtPark
 
 
-
+        
 
         # Wait a bit between status updates otherwise
         # status updates bank up in the queue
         if dont_wait == True:
             self.status_interval = self.status_upload_time + 0.25
         while time.time() < self.time_last_status + self.status_interval:
+            self.currently_updating_status=False
             return  # Note we are just not sending status, too soon.
 
-
+        #print ("update_status")
 
         # Keep an eye on the stop-script and exposure halt time to reset those timers.
         if g_dev['seq'].stop_script_called and ((time.time() - g_dev['seq'].stop_script_called_time) > 35):
@@ -1109,6 +1114,8 @@ class Observatory:
                             self.cancel_all_activity()
                         if not g_dev['mnt'].mount.AtPark:
                             g_dev['mnt'].park_command()
+                            
+                        self.currently_updating_status=False
                         return
             except Exception as e:
                 plog ("Sun check didn't work for some reason")
@@ -1137,6 +1144,8 @@ class Observatory:
             return
 
         self.currently_updating_FULL=True
+
+        #print ("full update")
 
         if not self.currently_updating_status:
             self.update_status()
@@ -1191,6 +1200,8 @@ class Observatory:
                             self.cancel_all_activity()
                         if not g_dev['mnt'].mount.AtPark:
                             g_dev['mnt'].park_command()
+                        
+                        self.currently_updating_FULL=False
                         return
 
             # Roof Checks only if not in debug mode
@@ -1553,7 +1564,12 @@ class Observatory:
         try:
             # Keep the main thread alive, otherwise signals are ignored
             while True:
-                self.update()
+                if self.currently_updating_FULL==False:
+                    if (time.time() - self.last_update_complete) > 0.5:
+                        self.update()
+                        self.last_update_complete=time.time()
+                else:
+                    time.sleep(0.05)
                 # `Ctrl-C` will exit the program.
         except KeyboardInterrupt:
             plog("Finishing loops and exiting...")
