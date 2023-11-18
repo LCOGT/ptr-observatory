@@ -966,7 +966,105 @@ class Observatory:
         if self.currently_updating_status==True:
             return
 
+
         self.currently_updating_status=True
+        
+        # Wait a bit between status updates otherwise
+        # status updates bank up in the queue
+        if dont_wait == True:
+            self.status_interval = self.status_upload_time + 0.25
+        while time.time() < self.time_last_status + self.status_interval:
+            self.currently_updating_status=False
+            return  # Note we are just not sending status, too soon.
+
+
+        # Send main batch of devices status
+        obsy = self.name
+        if mount_only == True:
+            device_list = ['mount']
+        else:
+            device_list = self.device_types
+        status={}
+        for dev_type in device_list:
+            #  The status that we will send is grouped into lists of
+            #  devices by dev_type.
+            status[dev_type] = {}
+            devices_of_type = self.all_devices.get(dev_type, {})
+            device_names = devices_of_type.keys()
+
+            for device_name in device_names:
+
+                # Get the actual device object...
+                device = devices_of_type[device_name]
+                # Currently the telescope and mount devices are the same... this will change.
+                if 'telescope' in device_name:
+                    status['telescope'] = copy.deepcopy(status['mount'])
+                else:
+                    #breakpoint()
+                    if 'mount' in device_name and self.mount_reboot_on_first_status:
+                        plog ("rebooting mount on first status update. Need to chase why, it is a collision I can't see yet - MTF")
+                        g_dev['mnt'].mount_reboot()
+                        self.mount_reboot_on_first_status = False
+                    
+                    result = device.get_status()
+
+                    if 'mount' in device_name:
+                        print (result)
+
+                if result is not None:
+                    status[dev_type][device_name] = result
+        status["timestamp"] = round((time.time()) / 2.0, 3)
+        status["send_heartbeat"] = False
+
+        if status is not None:
+            lane = "device"
+            if self.send_status_queue.qsize() < 7:
+                self.send_status_queue.put((obsy, lane, status), block=False)
+
+
+        
+
+        self.time_last_status = time.time()
+        self.status_count += 1
+
+        self.currently_updating_status=False
+
+
+    def update(self):
+        """
+        This compact little function is the heart of the code in the sense this is repeatedly
+        called. It first SENDS status for all devices to AWS, then it checks for any new
+        commands from AWS. If certain timers have reached their point, it will undertake
+        a variety of safety checks as well.
+        """
+
+        if self.currently_updating_FULL:
+            return
+
+        self.currently_updating_FULL=True
+
+        #print ("full update")
+
+        if not self.currently_updating_status:
+            self.request_update_status()
+
+        if time.time() - self.get_new_job_timer > 3:
+            self.get_new_job_timer = time.time()
+            try:
+                self.scan_requests("mount1")
+            except:
+                pass
+
+
+        self.full_update_lock=True
+        while self.currently_updating_status:
+            print ('w')
+            time.sleep(0.5)
+
+        if self.status_count > 1:  # Give time for status to form
+            g_dev["seq"].manager()  # Go see if there is something new to do.
+
+
         #g_dev["mnt"].get_mount_coordinates()
         # try:
         #     g_dev['mnt'].rapid_park_indicator=g_dev['mnt'].mount.AtPark
@@ -986,13 +1084,47 @@ class Observatory:
 
         g_dev['foc'].update_focuser_temperature
 
-        # Wait a bit between status updates otherwise
-        # status updates bank up in the queue
-        if dont_wait == True:
-            self.status_interval = self.status_upload_time + 0.25
-        while time.time() < self.time_last_status + self.status_interval:
-            self.currently_updating_status=False
-            return  # Note we are just not sending status, too soon.
+        # If the roof is open, then it is open and enabled to observe
+        if not g_dev['obs'].enc_status == None:
+            if 'Open' in g_dev['obs'].enc_status['shutter_status']:
+                if (not 'NoObs' in g_dev['obs'].enc_status['shutter_status'] and not self.net_connection_dead) or self.assume_roof_open:
+                    self.open_and_enabled_to_observe = True
+                else:
+                    self.open_and_enabled_to_observe = False
+
+        # Check that the mount hasn't slewed too close to the sun
+        # If the roof is open and enabled to observe
+        # Don't do sun checks at nightime!
+        if not ((g_dev['events']['Observing Begins']  <= ephem.now() < g_dev['events']['Observing Ends'])):
+            try:
+                if not g_dev['mnt'].return_slewing() and self.open_and_enabled_to_observe and self.sun_checks_on:
+
+                    sun_coords = get_sun(Time.now())
+                    temppointing = SkyCoord((g_dev['mnt'].current_icrs_ra)*u.hour,
+                                            (g_dev['mnt'].current_icrs_dec)*u.degree, frame='icrs')
+                    sun_dist = sun_coords.separation(temppointing)
+                    if sun_dist.degree < self.config['closest_distance_to_the_sun'] and not g_dev['mnt'].rapid_park_indicator:
+                        g_dev['obs'].send_to_user("Found telescope pointing too close to the sun: " +
+                                                  str(sun_dist.degree) + " degrees.")
+                        plog("Found telescope pointing too close to the sun: " + str(sun_dist.degree) + " degrees.")
+                        g_dev['obs'].send_to_user("Parking scope and cancelling all activity")
+                        plog("Parking scope and cancelling all activity")
+
+                        if not g_dev['seq'].morn_bias_dark_latch and not g_dev['seq'].bias_dark_latch:
+                            self.cancel_all_activity()
+                        if not g_dev['mnt'].rapid_park_indicator:
+                            g_dev['mnt'].park_command()
+
+                        self.currently_updating_status=False
+                        return
+            except Exception as e:
+                plog ("Sun check didn't work for some reason")
+                if 'Object reference not set' in str(e) and g_dev['mnt'].theskyx:
+
+                    plog("The SkyX had an error.")
+                    plog("Usually this is because of a broken connection.")
+                    plog("Killing then waiting 60 seconds then reconnecting")
+                    g_dev['seq'].kill_and_reboot_theskyx(g_dev['mnt'].current_icrs_ra,g_dev['mnt'].current_icrs_dec)
 
         #print ("update_status")
 
@@ -1077,136 +1209,6 @@ class Observatory:
             except:
                 plog('could not send obs_settings status')
                 plog(traceback.format_exc())
-
-
-        # Send main batch of devices status
-        obsy = self.name
-        if mount_only == True:
-            device_list = ['mount']
-        else:
-            device_list = self.device_types
-        status={}
-        for dev_type in device_list:
-            #  The status that we will send is grouped into lists of
-            #  devices by dev_type.
-            status[dev_type] = {}
-            devices_of_type = self.all_devices.get(dev_type, {})
-            device_names = devices_of_type.keys()
-
-            for device_name in device_names:
-
-                # Get the actual device object...
-                device = devices_of_type[device_name]
-                # Currently the telescope and mount devices are the same... this will change.
-                if 'telescope' in device_name:
-                    status['telescope'] = copy.deepcopy(status['mount'])
-                else:
-                    #breakpoint()
-                    if 'mount' in device_name and self.mount_reboot_on_first_status:
-                        plog ("rebooting mount on first status update. Need to chase why, it is a collision I can't see yet - MTF")
-                        g_dev['mnt'].mount_reboot()
-                        self.mount_reboot_on_first_status = False
-                    
-                    result = device.get_status()
-
-                    if 'mount' in device_name:
-                        print (result)
-
-                if result is not None:
-                    status[dev_type][device_name] = result
-        status["timestamp"] = round((time.time()) / 2.0, 3)
-        status["send_heartbeat"] = False
-
-        if status is not None:
-            lane = "device"
-            if self.send_status_queue.qsize() < 7:
-                self.send_status_queue.put((obsy, lane, status), block=False)
-
-
-        # If the roof is open, then it is open and enabled to observe
-        if not g_dev['obs'].enc_status == None:
-            if 'Open' in g_dev['obs'].enc_status['shutter_status']:
-                if (not 'NoObs' in g_dev['obs'].enc_status['shutter_status'] and not self.net_connection_dead) or self.assume_roof_open:
-                    self.open_and_enabled_to_observe = True
-                else:
-                    self.open_and_enabled_to_observe = False
-
-        # Check that the mount hasn't slewed too close to the sun
-        # If the roof is open and enabled to observe
-        # Don't do sun checks at nightime!
-        if not ((g_dev['events']['Observing Begins']  <= ephem.now() < g_dev['events']['Observing Ends'])):
-            try:
-                if not g_dev['mnt'].return_slewing() and self.open_and_enabled_to_observe and self.sun_checks_on:
-
-                    sun_coords = get_sun(Time.now())
-                    temppointing = SkyCoord((g_dev['mnt'].current_icrs_ra)*u.hour,
-                                            (g_dev['mnt'].current_icrs_dec)*u.degree, frame='icrs')
-                    sun_dist = sun_coords.separation(temppointing)
-                    if sun_dist.degree < self.config['closest_distance_to_the_sun'] and not g_dev['mnt'].rapid_park_indicator:
-                        g_dev['obs'].send_to_user("Found telescope pointing too close to the sun: " +
-                                                  str(sun_dist.degree) + " degrees.")
-                        plog("Found telescope pointing too close to the sun: " + str(sun_dist.degree) + " degrees.")
-                        g_dev['obs'].send_to_user("Parking scope and cancelling all activity")
-                        plog("Parking scope and cancelling all activity")
-
-                        if not g_dev['seq'].morn_bias_dark_latch and not g_dev['seq'].bias_dark_latch:
-                            self.cancel_all_activity()
-                        if not g_dev['mnt'].rapid_park_indicator:
-                            g_dev['mnt'].park_command()
-
-                        self.currently_updating_status=False
-                        return
-            except Exception as e:
-                plog ("Sun check didn't work for some reason")
-                if 'Object reference not set' in str(e) and g_dev['mnt'].theskyx:
-
-                    plog("The SkyX had an error.")
-                    plog("Usually this is because of a broken connection.")
-                    plog("Killing then waiting 60 seconds then reconnecting")
-                    g_dev['seq'].kill_and_reboot_theskyx(g_dev['mnt'].current_icrs_ra,g_dev['mnt'].current_icrs_dec)
-
-        self.time_last_status = time.time()
-        self.status_count += 1
-
-        self.currently_updating_status=False
-
-
-    def update(self):
-        """
-        This compact little function is the heart of the code in the sense this is repeatedly
-        called. It first SENDS status for all devices to AWS, then it checks for any new
-        commands from AWS. If certain timers have reached their point, it will undertake
-        a variety of safety checks as well.
-        """
-
-        if self.currently_updating_FULL:
-            return
-
-        self.currently_updating_FULL=True
-
-        #print ("full update")
-
-        if not self.currently_updating_status:
-            self.request_update_status()
-
-        if time.time() - self.get_new_job_timer > 3:
-            self.get_new_job_timer = time.time()
-            try:
-                self.scan_requests("mount1")
-            except:
-                pass
-
-
-        self.full_update_lock=True
-        while self.currently_updating_status:
-            print ('w')
-            time.sleep(0.5)
-
-        if self.status_count > 1:  # Give time for status to form
-            g_dev["seq"].manager()  # Go see if there is something new to do.
-
-
-
 
 
         # An important check to make sure equatorial telescopes are pointed appropriately
