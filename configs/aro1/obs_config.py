@@ -79,7 +79,7 @@ site_config = {
 
 
     # Setup of folders on local and network drives.
-    'ingest_raws_directly_to_archive': True,
+    'ingest_raws_directly_to_archive': False,
     # LINKS TO PIPE FOLDER
     'save_raws_to_pipe_folder_for_nightly_processing': True,
     'pipe_archive_folder_path': 'X:/localptrarchive/',  #WER changed Z to X 20231113 @1:16 UTC
@@ -88,6 +88,8 @@ site_config = {
     'client_hostname':"ARO-0m30",     # Generic place for this host to stash.
     'archive_path': 'F:/ptr/',
     'alt_path': 'Q:/ptr/',
+    'temporary_local_alt_archive_to_hold_files_while_copying' : 'F:/tempfolderforaltpath',
+
     'save_to_alt_path' : 'yes',
     'local_calibration_path': 'F:/ptr/', # THIS FOLDER HAS TO BE ON A LOCAL DRIVE, not a network drive due to the necessity of huge memmap files
     'archive_age' : 10.0, # Number of days to keep files in the local archive before deletion. Negative means never delete
@@ -108,6 +110,8 @@ site_config = {
     'number_of_simultaneous_ptrarchive_streams' : 4,
     # Number of files to send over to the pipearchive simultaneously.
     'number_of_simultaneous_pipearchive_streams' : 4,
+    # Number of files to send over to the altarchive simultaneously.
+    'number_of_simultaneous_altarchive_streams' : 4,
 
     # Minimum realistic seeing at the site.
     # This allows culling of unphysical results in photometry and other things
@@ -233,7 +237,7 @@ site_config = {
                     '270': 25.,
                     '359': 25.
                     },  #  We use a dict because of fragmented azimuth measurements.
-                'refraction_on': True,
+                'refraction_on': True,  #  Refraction is applied during pointing.
                 'model_on': True,  #  Model is applied during pointing.
                 'rates_on': True,  #  Rates implied by model and refraction applie during tracking.
                 'model': {
@@ -444,7 +448,7 @@ site_config = {
                         ['Y',    [6,  0],    0, 7.3,   [360 , 170], "Rubin Y - low throughput, defective filter in top area "],     #22
 
 
-                        ['dark', [5,  6],    0, 0.00,  [360 , 170], 'dk']],    #23     #Not a real filter.
+                        ['dark', [1,  3],    0, 0.00,  [360 , 170], 'dk']],    #23     #Not a real filter.
 
 
 
@@ -532,7 +536,9 @@ site_config = {
                 'direct_qhy_readout_mode' : 3,
                 'direct_qhy_gain' : 26,
                 'direct_qhy_offset' : 60,
-                'direct_qhy_usb_speed' : 50,
+                #'direct_qhy_usb_speed' : 50,
+                'direct_qhy_usb_traffic' : 50,
+                'direct_qhy_usb_speed' : 4,
 
                 # These options set whether an OSC gets binned or interpolated for different functions
                 # If the pixel scale is well-sampled (e.g. 0.6 arcsec per RGGB pixel or 0.3 arcsec per individual debayer pixel)
@@ -671,11 +677,11 @@ site_config = {
                 'saturate':   65535,
                 'max_linearity':  60000,   # Guess
                 # How long does it take to readout an image after exposure
-                'cycle_time':            0.5,
+                'cycle_time':            0.0,
                 # What is the base smartstack exposure time?
                 # It will vary from scope to scope and computer to computer.
                 # 30s is a good default.
-                'smart_stack_exposure_time': 30,
+                'smart_stack_exposure_time': 15,
 
 
                 # As simple as it states, how many calibration frames to collect and how many to store.

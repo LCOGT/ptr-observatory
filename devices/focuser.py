@@ -29,21 +29,21 @@ class Focuser:
         self.name = name
         self.obsid_path = g_dev['obs'].obsid_path
         self.camera_name = config["camera"]["camera_1_1"]["name"]
-        
+
         g_dev["foc"] = self
         self.config = config["focuser"]["focuser1"]
         self.throw = int(config["focuser"]["focuser1"]["throw"])
 
         win32com.client.pythoncom.CoInitialize()
-        
+
         self.focuser = win32com.client.Dispatch(driver)
-        
+
         if driver == "CCDSoft2XAdaptor.ccdsoft5Camera":
             self.theskyx=True
         else:
             self.theskyx=False
 
-        try:        
+        try:
             self.focuser.Connected = True
         except:
             try:
@@ -57,8 +57,8 @@ class Focuser:
                         plog ("focuser doesn't have ASCOM Connected keyword, attempted to send a positive Link")
                     except:
                         plog ("focuser doesn't have ASCOM Connected keyword, also crashed on focuser.Link")
-                        
-        
+
+
         self.micron_to_steps = float(
             config["focuser"]["focuser1"]["unit_conversion"]
         )  #  Note this can be a bogus value
@@ -69,7 +69,7 @@ class Focuser:
             plog(
                 "Focuser connected, at:  ",
                 round(self.focuser.focPosition() * self.steps_to_micron, 1),
-            )    
+            )
         else:
             plog(
                 "Focuser connected, at:  ",
@@ -92,16 +92,16 @@ class Focuser:
         self.focus_temp_slope = None
         self.focus_temp_intercept = None
         self.best_previous_focus_point = None
-        
-        
-        
+
+
+
         self.set_initial_best_guess_for_focus()
         try:
             self.last_filter_offset = g_dev["fil"].filter_offset
         except:
             plog ('setting last filter offset to 0')
             self.last_filter_offset= 0
-        
+
 
 
     def calculate_compensation(self, temp_primary):
@@ -113,12 +113,12 @@ class Focuser:
                 ),
                 1,
             )
-            
+
             return int(trial)
         elif self.best_previous_focus_point != None:
             return int(self.best_previous_focus_point)
         else:
-            return int(self.config["reference"])        
+            return int(self.config["reference"])
 
     def get_status(self):
 
@@ -128,13 +128,13 @@ class Focuser:
             reported_focus_temp_slope = None
 
         try:
-            
-            if self.theskyx:            
+
+            if self.theskyx:
                 try:
                         status = {
                         "focus_position": round(
                             self.focuser.focPosition() * self.steps_to_micron, 1
-                        ),  
+                        ),
                         "focus_temperature": self.focuser.focTemperature,
                         "comp": reported_focus_temp_slope,
                         "filter_offset": g_dev["fil"].filter_offset,
@@ -162,13 +162,13 @@ class Focuser:
                         plog ("possibly just institute a full reboot")
                         plog (traceback.format_exc())
                         # breakpoint()
-                        
-                        
+
+
             elif g_dev['fil'].null_filterwheel == False:
                 status = {
                     "focus_position": round(
                         self.focuser.Position * self.steps_to_micron, 1
-                    ),  
+                    ),
                     "focus_temperature": self.focuser.Temperature,
                     "focus_moving": self.focuser.IsMoving,
                     "comp": reported_focus_temp_slope,
@@ -178,7 +178,7 @@ class Focuser:
                 status = {
                     "focus_position": round(
                         self.focuser.Position * self.steps_to_micron, 1
-                    ),  
+                    ),
                     "focus_temperature": self.focuser.Temperature,
                     "focus_moving": self.focuser.IsMoving,
                     "comp": reported_focus_temp_slope,
@@ -196,17 +196,19 @@ class Focuser:
 
         if self.theskyx:
             quick.append(time.time())
-            quick.append(self.focuser.focPosition() * self.steps_to_micron)
+            self.current_focus_position=self.focuser.focPosition() * self.steps_to_micron
+            quick.append(self.current_focus_position)
             try:
                 quick.append(self.focuser.focTemperature())
             except:
                 quick.append(10.0)
             quick.append(False)
         else:
-            
+
 
             quick.append(time.time())
-            quick.append(self.focuser.Position * self.steps_to_micron)
+            self.current_focus_position=self.focuser.Position * self.steps_to_micron
+            quick.append(self.current_focus_position)
             try:
                 quick.append(self.focuser.Temperature)
             except:
@@ -286,7 +288,7 @@ class Focuser:
         elif action == "save_as_reference":
             self.set_focal_ref(
                 self.focuser.Position * self.steps_to_micron
-            )  
+            )
         else:
             plog(f"Command <{action}> not recognized:", command)
 
@@ -297,13 +299,17 @@ class Focuser:
     def get_position(self, counts=False):
         if not counts:
             if not self.theskyx:
-                return int(self.focuser.Position * self.steps_to_micron)
-            else:
-                return int(self.focuser.focPosition() * self.steps_to_micron)               
+                self.current_focus_position=self.focuser.Position * self.steps_to_micron
 
-       
+                return int(self.current_focus_position)
+            else:
+                self.current_focus_position=self.focuser.focPosition() * self.steps_to_micron
+
+                return int(self.current_focus_position)
+
+
     def set_initial_best_guess_for_focus(self):
-        
+
         try:
             self.best_previous_focus_point, last_successful_focus_time, self.focus_temp_slope, self.focus_temp_intercept=self.get_af_log()
 
@@ -312,7 +318,7 @@ class Focuser:
 
             if self.best_previous_focus_point==None:
                 self.best_previous_focus_point=self.config["reference"]
-                
+
         except:
             self.set_focal_ref_reset_log(self.config["reference"])
 
@@ -328,12 +334,12 @@ class Focuser:
                 "Focus reference derived from supplied config file for 10C:  ",
                 self.reference,
             )
-        elif self.config['correct_focus_for_temperature']:            
+        elif self.config['correct_focus_for_temperature']:
             # Get temperature
             try:
                 if self.theskyx:
                     self.last_temperature = self.focuser.focTemperature
-                    
+
                 else:
                     self.last_temperature = self.focuser.Temperature
                 self.reference = self.calculate_compensation(
@@ -351,15 +357,15 @@ class Focuser:
                     self.reference = self.calculate_compensation(
                         g_dev["ocn"].temperature
                     )
-        
-                    
+
+
             plog(
                 "Focus position set from temp compensated value:  ",
                 self.reference,
                 ".  Temp used:  ",
                 self.last_temperature,
             )
-            
+
             self.last_known_focus = self.reference
             self.last_source = "Focuser__init__  Calculate Comp references Config"
         else:
@@ -369,8 +375,8 @@ class Focuser:
                 self.reference = int(self.config["reference"])
             self.last_known_focus = self.reference
             plog("Focus reference updated from best recent focus from Night Shelf:  ", self.reference)
-            
-        
+
+
         if self.theskyx:
             requestedPosition=int(float(self.reference) * self.micron_to_steps)
             difference_in_position=self.focuser.focPosition() - requestedPosition
@@ -382,9 +388,11 @@ class Focuser:
             else:
                 self.focuser.focMoveIn(absdifference_in_position)
             print (self.focuser.focPosition())
+            self.current_focus_position=self.focuser.focPosition() * self.micron_to_steps
 
         else:
             self.focuser.Move(int(float(self.reference) * self.micron_to_steps))
+            self.current_focus_position=self.focuser.Position * self.micron_to_steps
 
 
     def adjust_focus(self):
@@ -395,56 +403,57 @@ class Focuser:
 
         try:
             if self.theskyx:
-                temp_delta = self.focuser.focTemperature - self.last_temperature                
+                temp_delta = self.focuser.focTemperature - self.last_temperature
             else:
                 temp_delta = self.focuser.Temperature - self.last_temperature
-        except:           
+        except:
             temp_delta = 0.0
-                
-                
+
+
         try:
-            adjust = 0.0            
-            
-            
+            adjust = 0.0
+
+
             # adjust for temperature if we have the correct information.
             if abs(temp_delta) > 0.1 and self.last_temperature is not None and self.focus_temp_slope is not None and self.focus_temp_intercept is not None:
                 adjust = round(temp_delta * float(self.focus_temp_slope), 1)
-                
+
             # adjust for filter offset
             # it is try/excepted because some telescopes don't have filters
             try:
                 adjust += (g_dev["fil"].filter_offset)
             except:
                 pass
-            
-            
+
+
             if self.theskyx:
-                focPos=self.focuser.focPosition()  * self.steps_to_micron
+                self.current_focus_position=self.focuser.focPosition() * self.micron_to_steps
+
             else:
-                focPos=self.focuser.Position * self.steps_to_micron
-                
-            
-            if abs((self.last_known_focus + adjust) - focPos) > 10:
+                self.current_focus_position=self.focuser.Position * self.micron_to_steps
+
+
+            if abs((self.last_known_focus + adjust) - self.current_focus_position) > 10:
                 plog ('adjusting focus by ' + str(adjust))
                 #self.last_filter_offset = g_dev["fil"].filter_offset
-                
-                
+
+
                 req = {"position": str(self.last_known_focus + adjust)}
                 opt = {}
                 self.move_absolute_command(req, opt)
-                
-                
+
+
                 try:
                     if self.theskyx:
-                        self.last_temperature = self.focuser.focTemperature                 
+                        self.last_temperature = self.focuser.focTemperature
                     else:
-                        self.last_temperature = self.focuser.Temperature 
+                        self.last_temperature = self.focuser.Temperature
                 except:
                     self.last_temperature = None
-            
+
         except:
             plog("Focus-adjust: no changes made.")
-            
+
 
     def guarded_move(self, to_focus):
         try:
@@ -459,18 +468,22 @@ class Focuser:
                 else:
                     self.focuser.focMoveIn(absdifference_in_position)
                 print (self.focuser.focPosition())
-    
+                self.current_focus_position=self.focuser.focPosition()  * self.micron_to_steps
+
              else:
-            
+
                 self.focuser.Move(int(to_focus))
                 time.sleep(0.1)
                 movement_report=0
+
                 while self.focuser.IsMoving:
                     if movement_report==0:
                         plog("Focuser is moving.....")
                         movement_report=1
                     time.sleep(0.3)
-                    
+                self.current_focus_position=self.focuser.Position  * self.micron_to_steps
+
+
                     #plog(">f")
         except:
             plog("AF Guarded move failed.")
@@ -482,7 +495,7 @@ class Focuser:
         if self.theskyx:
             return False
         else:
-            return self.focuser.IsMoving 
+            return self.focuser.IsMoving
 
 
     def move_relative_command(self, req: dict, opt: dict):
@@ -490,30 +503,32 @@ class Focuser:
         # The string must start with a + or a - sign, otherwise treated as zero and no action.
 
         position_string = req["position"]
-        
+
         if self.theskyx:
             position = self.focuser.focPosition() * self.steps_to_micron
         else:
             position = self.focuser.Position * self.steps_to_micron
-        
-        
+
+
         if self.theskyx:
             difference_in_position=int(position_string)
-            absdifference_in_position=abs(int(position_string))            
+            absdifference_in_position=abs(int(position_string))
             if difference_in_position < 0 :
                 self.focuser.focMoveOut(absdifference_in_position)
             else:
                 self.focuser.focMoveIn(absdifference_in_position)
             print (self.focuser.focPosition())
+            self.current_focus_position=self.focuser.focPosition()  * self.micron_to_steps
+
         else:
-        
+
             movement_report=0
             if position_string[0] != "-":
                 relative = int(position_string)
                 position += relative
                 self.focuser.Move(int(position * self.micron_to_steps))
                 time.sleep(0.1)
-                while self.focuser.IsMoving:                
+                while self.focuser.IsMoving:
                     if movement_report==0:
                         plog("Focuser is moving ++ .....")
                         movement_report=1
@@ -530,21 +545,23 @@ class Focuser:
                     time.sleep(0.2)
             else:
                 plog("Supplied relative move is lacking a sign; ignoring.")
+            self.current_focus_position=self.focuser.Position  * self.micron_to_steps
+
 
     def move_absolute_command(self, req: dict, opt: dict):
         """Sets the focus position by moving to an absolute position."""
 
         position = int(float(req["position"]))
-        
-        
-        
+
+
+
         if self.theskyx:
             current_position = self.focuser.focPosition() * self.steps_to_micron
         else:
             current_position = self.focuser.Position * self.steps_to_micron
-        
-            
-        
+
+
+
         if self.theskyx:
             requestedPosition=int(float(position) * self.micron_to_steps)
             difference_in_position=self.focuser.focPosition() - requestedPosition
@@ -556,12 +573,16 @@ class Focuser:
             else:
                 self.focuser.focMoveIn(absdifference_in_position)
             print (self.focuser.focPosition())
+            self.current_focus_position=self.focuser.focPosition()  * self.micron_to_steps
+
         else:
             self.focuser.Move(int(position * self.micron_to_steps))
             time.sleep(0.3)
             while self.focuser.IsMoving:
                 time.sleep(0.3)
-       
+            self.current_focus_position=self.focuser.Position  * self.micron_to_steps
+
+
 
     def stop_command(self, req: dict, opt: dict):
         """stop focuser movement"""
@@ -591,7 +612,7 @@ class Focuser:
             os.remove(self.obsid_path + "ptr_night_shelf/" + self.camera_name + g_dev['obs'].name +".bak")
             os.remove(self.obsid_path + "ptr_night_shelf/" + self.camera_name + g_dev['obs'].name +".dir")
             cam_shelf = shelve.open(self.obsid_path + "ptr_night_shelf/" + self.camera_name + str(g_dev['obs'].name))
-            
+
         cam_shelf["focus_ref"] = ref
         cam_shelf["af_log"] = []
         cam_shelf.close()
@@ -608,12 +629,12 @@ class Focuser:
         try:
             if self.theskyx:
                 f_temp= self.focuser.focTemperature
-            else:            
+            else:
                 f_temp = (
                     self.focuser.Temperature
                 )  # NB refering a quantity possibly from WEMA if no focus temp available.
-        except:  
-            
+        except:
+
             f_temp = None
 
         if not f_temp == None and (-10 < f_temp < 40):
@@ -636,20 +657,20 @@ class Focuser:
             cam_shelf = shelve.open(
                 self.obsid_path + "ptr_night_shelf/" + self.camera_name + str(g_dev['obs'].name), writeback=True
             )
-            
+
             max_arcsecond=self.config['maximum_good_focus_in_arcsecond']
-                        
+
             # Load last focuses and order from most recent to oldest
             previous_focus=[]
             for item in cam_shelf["af_log"]:
                 previous_focus.append(item)
-                        
+
             # Print focus log and sort in order of date
             for item in previous_focus:
                 plog(str(item))
-            
-            previous_focus.reverse()          
-            
+
+            previous_focus.reverse()
+
             # Cacluate the temperature coefficient and zero point
             tempvalues=[]
             for item in previous_focus:
@@ -664,15 +685,15 @@ class Focuser:
             else:
                 focus_temp_slope = None
                 focus_temp_intercept = None
-            
+
             # Figure out best last focus position
             for item in previous_focus:
                 if item[2] < max_arcsecond and item[2] != 0 and item[1] !=False and -10 < item[0] < 40 :
                     plog ("Best previous focus is at: " +str(item))
                     return item[1], item[4], focus_temp_slope, focus_temp_intercept
-            
+
             return None, None, focus_temp_slope, focus_temp_intercept
-            
+
         except:
             plog("There is no focus log on the night shelf.")
 

@@ -303,6 +303,14 @@ class Observatory:
         self.get_new_job_timer = time.time()
         self.scan_request_timer = time.time()
 
+        # Sometimes we update the status in a thread. This variable prevents multiple status updates occuring simultaneously
+        self.currently_updating_status=False
+        # Create this actual thread
+        self.update_status_thread=threading.Thread(target=self.update_status)
+        # Also this is true for the FULL update.
+        self.currently_updating_FULL=False
+        self.FULL_update_thread=threading.Thread(target=self.update)
+
 
         self.too_hot_temperature=self.config['temperature_at_which_obs_too_hot_for_camera_cooling']
         self.warm_report_timer = time.time()-600
@@ -402,6 +410,10 @@ class Observatory:
         self.pipearchive_queue_thread = threading.Thread(target=self.copy_to_pipearchive, args=())
         self.pipearchive_queue_thread.start()
 
+        self.altarchive_queue = queue.Queue(maxsize=0)
+        self.altarchive_queue_thread = threading.Thread(target=self.copy_to_altarchive, args=())
+        self.altarchive_queue_thread.start()
+
         self.fast_queue = queue.PriorityQueue(maxsize=0)
         self.fast_queue_thread = threading.Thread(target=self.fast_to_ui, args=())
         self.fast_queue_thread.start()
@@ -437,6 +449,11 @@ class Observatory:
         self.laterdelete_queue = queue.Queue(maxsize=0)
         self.laterdelete_queue_thread = threading.Thread(target=self.laterdelete_process, args=())
         self.laterdelete_queue_thread.start()
+
+
+        self.sendtouser_queue = queue.Queue(maxsize=0)
+        self.sendtouser_queue_thread = threading.Thread(target=self.sendtouser_process, args=())
+        self.sendtouser_queue_thread.start()
 
         self.cmd_queue = queue.Queue(
             maxsize=0
@@ -500,6 +517,9 @@ class Observatory:
                 plog (str(filtertempgain) + " " + str(filter_throughput_shelf[filtertempgain]))
         filter_throughput_shelf.close()
 
+
+        # Temporary toggle to turn auto-centering off
+        #self.auto_centering_off = True
 
 
 
@@ -725,12 +745,12 @@ class Observatory:
                                     plog ('mount_reference_model_off')
                                     g_dev["obs"].send_to_user("mount_reference_model_off.")
 
-                                if cmd['action']=='configure_pointing_reference_on':
+                                elif cmd['action']=='configure_pointing_reference_on':
                                     self.mount_reference_model_off = False
                                     plog ('mount_reference_model_on')
                                     g_dev["obs"].send_to_user("mount_reference_model_on.")
 
-                                if cmd['action']=='configure_telescope_mode':
+                                elif cmd['action']=='configure_telescope_mode':
 
                                     if cmd['required_params']['mode'] == 'manual':
                                         self.scope_in_manual_mode = True
@@ -741,7 +761,7 @@ class Observatory:
                                         plog ('Manual Mode Turned Off.')
                                         g_dev["obs"].send_to_user('Manual Mode Turned Off.')
 
-                                if cmd['action']=='configure_moon_safety':
+                                elif cmd['action']=='configure_moon_safety':
 
                                     if cmd['required_params']['mode'] == 'on':
                                         self.moon_checks_on = True
@@ -752,7 +772,7 @@ class Observatory:
                                         plog ('Moon Safety Off')
                                         g_dev["obs"].send_to_user('Moon Safety Off')
 
-                                if cmd['action']=='configure_sun_safety':
+                                elif cmd['action']=='configure_sun_safety':
 
                                     if cmd['required_params']['mode'] =='on':
                                         self.sun_checks_on = True
@@ -763,7 +783,7 @@ class Observatory:
                                         plog ('Sun Safety Off')
                                         g_dev["obs"].send_to_user('Sun Safety Off')
 
-                                if cmd['action']=='configure_altitude_safety':
+                                elif cmd['action']=='configure_altitude_safety':
 
                                     if cmd['required_params']['mode'] == 'on':
                                         self.altitude_checks_on = True
@@ -774,7 +794,7 @@ class Observatory:
                                         plog ('Altitude Safety Off')
                                         g_dev["obs"].send_to_user('Altitude Safety Off')
 
-                                if cmd['action']=='configure_daytime_exposure_safety':
+                                elif cmd['action']=='configure_daytime_exposure_safety':
 
                                     if cmd['required_params']['mode'] == 'on':
                                         self.daytime_exposure_time_safety_on = True
@@ -785,7 +805,7 @@ class Observatory:
                                         plog ('Daytime Exposure Safety Off')
                                         g_dev["obs"].send_to_user('Daytime Exposure Safety Off')
 
-                                if cmd['action']=='start_simulating_open_roof':
+                                elif cmd['action']=='start_simulating_open_roof':
                                     self.assume_roof_open = True
                                     self.open_and_enabled_to_observe=True
                                     g_dev['obs'].enc_status = g_dev['obs'].get_enclosure_status_from_aws()
@@ -793,7 +813,7 @@ class Observatory:
                                     plog ('Roof is now assumed to be open. WEMA shutter status is ignored.')
                                     g_dev["obs"].send_to_user('Roof is now assumed to be open. WEMA shutter status is ignored.')
 
-                                if cmd['action']=='stop_simulating_open_roof':
+                                elif cmd['action']=='stop_simulating_open_roof':
                                     self.assume_roof_open = False
                                     g_dev['obs'].enc_status = g_dev['obs'].get_enclosure_status_from_aws()
                                     self.enclosure_status_timer = datetime.datetime.now()
@@ -801,7 +821,7 @@ class Observatory:
                                     g_dev["obs"].send_to_user('Roof is now NOT assumed to be open. Reading WEMA shutter status.')
 
 
-                                if cmd['action']=='configure_who_can_send_commands':
+                                elif cmd['action']=='configure_who_can_send_commands':
                                     if cmd['required_params']['only_accept_admin_or_owner_commands'] == True:
                                         self.admin_owner_commands_only = True
                                         plog ('Scope set to only accept admin or owner commands')
@@ -810,6 +830,17 @@ class Observatory:
                                         self.admin_owner_commands_only = False
                                         plog ('Scope now open to all user commands, not just admin or owner.')
                                         g_dev["obs"].send_to_user('Scope now open to all user commands, not just admin or owner.')
+                                elif cmd['action']=='obs_configure_auto_center_on':
+                                    self.auto_centering_off = False
+                                    plog ('Scope set to automatically center.')
+                                    g_dev["obs"].send_to_user('Scope set to automatically center.')
+                                elif cmd['action']=='obs_configure_auto_center_off':
+                                    self.auto_centering_off = True
+                                    plog ('Scope set to not automatically center.')
+                                    g_dev["obs"].send_to_user('Scope set to not automatically center.')
+                                else:
+                                    print ("Unknown command: " + str(cmd))
+
 
                                 self.obs_settings_upload_timer = time.time() - 2*self.obs_settings_upload_period
 
@@ -902,12 +933,25 @@ class Observatory:
         `get_status`, which returns a dictionary.
         """
 
+        if self.currently_updating_status==True:
+            return
+
+        self.currently_updating_status=True
+        #g_dev["mnt"].get_mount_coordinates()
+        g_dev['mnt'].rapid_pier_indicator=g_dev['mnt'].mount.sideOfPier
+        g_dev['mnt'].rapid_park_indicator=g_dev['mnt'].mount.AtPark
+
+
+
+
         # Wait a bit between status updates otherwise
         # status updates bank up in the queue
         if dont_wait == True:
             self.status_interval = self.status_upload_time + 0.25
         while time.time() < self.time_last_status + self.status_interval:
             return  # Note we are just not sending status, too soon.
+
+
 
         # Keep an eye on the stop-script and exposure halt time to reset those timers.
         if g_dev['seq'].stop_script_called and ((time.time() - g_dev['seq'].stop_script_called_time) > 35):
@@ -977,6 +1021,8 @@ class Observatory:
             status['obs_settings']['lowest_altitude']=-5
             status['obs_settings']['daytime_exposure_safety_mode']=self.daytime_exposure_time_safety_on
             status['obs_settings']['daytime_exposure_time']=0.01
+
+            status['obs_settings']['auto_center_on']= not self.auto_centering_off
             status['obs_settings']['admin_owner_commands_only']=self.admin_owner_commands_only
             status['obs_settings']['simulating_open_roof']=self.assume_roof_open
             status['obs_settings']['pointing_reference_on']= (not self.mount_reference_model_off)
@@ -1067,6 +1113,8 @@ class Observatory:
         self.time_last_status = time.time()
         self.status_count += 1
 
+        self.currently_updating_status=False
+
 
     def update(self):
         """
@@ -1076,7 +1124,13 @@ class Observatory:
         a variety of safety checks as well.
         """
 
-        self.update_status()
+        if self.currently_updating_FULL:
+            return
+
+        self.currently_updating_FULL=True
+
+        if not self.currently_updating_status:
+            self.update_status()
 
         if time.time() - self.get_new_job_timer > 3:
             self.get_new_job_timer = time.time()
@@ -1483,6 +1537,7 @@ class Observatory:
                         g_dev['mnt'].park_command()
                         self.time_of_last_slew = time.time()
 
+        self.currently_updating_FULL=False
         # END of safety checks.
 
     def run(self):
@@ -1668,6 +1723,108 @@ class Observatory:
             hours_to_go = (self.pipearchive_queue.qsize() * upload_timer/60/60) / int(self.config['number_of_simultaneous_pipearchive_streams'])
             return ( str(filename.split('/')[-1]) + " sent to local pipe archive. Queue Size: " + str(self.pipearchive_queue.qsize())+ ". " + str(round(hours_to_go,1)) +" hours to go.")
 
+    def altarchive_copier(self, fileinfo):
+
+        upload_timer=time.time()
+
+        (fromfile,tofile) = fileinfo
+
+
+        # Check folder exists
+
+        # pipefolder = self.config['pipe_archive_folder_path'] + str(instrume) +'/'+ str(dayobs)
+        # if not os.path.exists(self.config['pipe_archive_folder_path'] + str(instrume)):
+        #     os.makedirs(self.config['pipe_archive_folder_path'] + str(instrume))
+
+        # if not os.path.exists(self.config['pipe_archive_folder_path'] + str(instrume) +'/'+ str(dayobs)):
+        #     os.makedirs(self.config['pipe_archive_folder_path'] + str(instrume) +'/'+ str(dayobs))
+
+
+        # if filename is None:
+        #     plog("Got an empty entry in pipearchive_queue.")
+        #     #one_at_a_time = 0
+        #     #self.ptrarchive_queue.task_done()
+
+        # else:
+        # Here we parse the file, set up and send to AWS
+        #filename = pri_image[1][1]
+        #filepath = pri_image[1][0] + filename  # Full path to file on disk
+
+        # Only ingest new large fits.fz files to the PTR archive.
+        try:
+            broken = 0
+            try:
+                shutil.copy(fromfile,tofile)
+            except:
+                plog ("Couldn't copy " + str(fromfile) + ". Broken.")
+                broken =1
+
+            try:
+                os.remove(fromfile)
+            except:
+                self.laterdelete_queue.put(fromfile, block=False)
+
+
+            if broken == 1:
+                try:
+                    shutil.move(fromfile, self.broken_path + fromfile.split('/')[-1])
+                except:
+                    plog ("Couldn't move " + str(fromfile) + " to broken folder.")
+
+                    self.laterdelete_queue.put(fromfile, block=False)
+                return str(fromfile) + " broken."
+        except Exception as e:
+            plog(traceback.format_exc())
+            plog ("something strange in the pipearchive copier", e)
+            return 'something strange in the pipearchive copier'
+
+
+        upload_timer=time.time() - upload_timer
+        hours_to_go = (self.pipearchive_queue.qsize() * upload_timer/60/60) / int(self.config['number_of_simultaneous_altarchive_streams'])
+        return ( str(fromfile.split('/')[-1]) + " sent to altpath archive. Queue Size: " + str(self.altarchive_queue.qsize())+ ". " + str(round(hours_to_go,1)) +" hours to go.")
+
+
+
+    # Note this is a thread!
+    def copy_to_altarchive(self):
+        """Sends queued files to AWS.
+
+        Large fpacked fits are uploaded using the ocs-ingester, which
+        adds the image to the PTR archive database.
+
+        This is intended to transfer slower files not needed for UI responsiveness
+
+        The pri_image is a tuple, smaller first item has priority.
+        The second item is also a tuple containing im_path and name.
+        """
+
+        one_at_a_time = 0
+
+        number_of_simultaneous_uploads= self.config['number_of_simultaneous_altarchive_streams']
+
+        # This stopping mechanism allows for threads to close cleanly.
+        while True:
+
+            if (not self.altarchive_queue.empty()) and one_at_a_time == 0:
+
+
+                one_at_a_time = 1
+
+                items=[]
+                for q in range(min(number_of_simultaneous_uploads,self.altarchive_queue.qsize()) ):
+                    items.append(self.altarchive_queue.get(block=False))
+
+                with ThreadPool(processes=number_of_simultaneous_uploads) as pool:
+                    for result in pool.map(self.altarchive_copier, items):
+                        self.altarchive_queue.task_done()
+                        #plog (result)
+
+                one_at_a_time = 0
+
+
+            else:
+                time.sleep(0.2)
+
 
     # Note this is a thread!
     def copy_to_pipearchive(self):
@@ -1788,6 +1945,37 @@ class Observatory:
                     os.remove(deletefilename)
                 except:
                     self.laterdelete_queue.put(deletefilename, block=False)
+
+            else:
+                time.sleep(0.1)
+
+    def sendtouser_process(self):
+        """This is a thread where things that fail to get
+        deleted from the filesystem go to get deleted later on.
+        Usually due to slow or network I/O
+        """
+
+        while True:
+            if (not self.sendtouser_queue.empty()):
+
+                (p_log, p_level) = self.sendtouser_queue.get(block=False)
+                url_log = "https://logs.photonranch.org/logs/newlog"
+                body = json.dumps(
+                    {
+                        "site": self.config["obs_id"],
+                        "log_message": str(p_log),
+                        "log_level": str(p_level),
+                        "timestamp": time.time(),
+                    }
+                )
+
+                try:
+                    reqs.post(url_log, body, timeout=5)
+                except:
+                    plog("Log did not send, usually not fatal.")
+
+                self.sendtouser_queue.task_done()
+                time.sleep(0.1)
 
             else:
                 time.sleep(0.1)
@@ -2401,6 +2589,11 @@ class Observatory:
                             os.makedirs(
                                 self.alt_path + g_dev["day"] + "/calib/", exist_ok=True)
 
+                    altfolder = self.config['temporary_local_alt_archive_to_hold_files_while_copying']
+                    if not os.path.exists(self.config['temporary_local_alt_archive_to_hold_files_while_copying']):
+                        os.makedirs(self.config['temporary_local_alt_archive_to_hold_files_while_copying'] )
+
+
                     saver = 0
                     saverretries = 0
                     while saver == 0 and saverretries < 10:
@@ -2414,10 +2607,15 @@ class Observatory:
                                 ),
                                 "Date FITS file was written",
                             )
-
-                            hdu.writeto(
-                                slow_process[1].replace('EX00','EX00-'+temphduheader['OBSTYPE']), overwrite=True, output_verify='silentfix'
-                            )  # Save full raw file locally
+                            if 'alt_path' in slow_process[0]:
+                                #breakpoint()
+                                hdu.writeto( altfolder +'/' + slow_process[1].split('/')[-1].replace('EX00','EX00-'+temphduheader['OBSTYPE']), overwrite=True, output_verify='silentfix'
+                                )  # Save full raw file locally
+                                self.altarchive_queue.put((copy.deepcopy(altfolder +'/' + slow_process[1].split('/')[-1].replace('EX00','EX00-'+temphduheader['OBSTYPE'])),copy.deepcopy(slow_process[1])), block=False)
+                            else:
+                                hdu.writeto(
+                                    slow_process[1].replace('EX00','EX00-'+temphduheader['OBSTYPE']), overwrite=True, output_verify='silentfix'
+                                )  # Save full raw file locally
                             try:
                                 hdu.close()
                             except:
@@ -2901,20 +3099,25 @@ class Observatory:
 
 
     def send_to_user(self, p_log, p_level="INFO"):
-        url_log = "https://logs.photonranch.org/logs/newlog"
-        body = json.dumps(
-            {
-                "site": self.config["obs_id"],
-                "log_message": str(p_log),
-                "log_level": str(p_level),
-                "timestamp": time.time(),
-            }
-        )
 
-        try:
-            reqs.post(url_log, body, timeout=5)
-        except:
-            plog("Log did not send, usually not fatal.")
+        # This is now a queue--- it was actually slowing
+        # everything down each time this was called!
+
+        self.sendtouser_queue.put((p_log, p_level),block=False)
+        # url_log = "https://logs.photonranch.org/logs/newlog"
+        # body = json.dumps(
+        #     {
+        #         "site": self.config["obs_id"],
+        #         "log_message": str(p_log),
+        #         "log_level": str(p_level),
+        #         "timestamp": time.time(),
+        #     }
+        # )
+
+        # try:
+        #     reqs.post(url_log, body, timeout=5)
+        # except:
+        #     plog("Log did not send, usually not fatal.")
 
     # Note this is another thread!
 
