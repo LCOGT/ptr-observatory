@@ -3293,8 +3293,8 @@ class Sequencer:
                 spot1 = False
                 foc_pos1 = False
                 plog ("spot1 failed in autofocus script")
-                plog(traceback.format_exc())
-                breakpoint()
+                #plog(traceback.format_exc())
+                #breakpoint()
 
             plog (spot1)
             g_dev['obs'].send_to_user("Central focus FWHM: " + str(spot1), p_level='INFO')

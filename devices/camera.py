@@ -1540,13 +1540,13 @@ class Camera:
                 while self.retry_camera > 0:
                     if g_dev["obs"].stop_all_activity:
 
-                        if expresult != None and expresult != {}:
-                            if expresult["stopped"] is True:
-                                g_dev["obs"].stop_all_activity = False
-                                plog("Camera retry loop stopped by Cancel Exposure")
-                                self.exposure_busy = False
+                        # if expresult != None and expresult != {}:
+                        #     if expresult["stopped"] is True:
+                        g_dev["obs"].stop_all_activity = False
+                        plog("Camera retry loop stopped by Cancel Exposure")
                         self.exposure_busy = False
-                        plog ("stop_all_activity cancelling out of camera exposure")
+                        self.exposure_busy = False
+                        #plog ("stop_all_activity cancelling out of camera exposure")
                         self.currently_in_smartstack_loop=False
                         return
 
@@ -1827,7 +1827,7 @@ class Camera:
         self.exposure_busy = False
         self.currently_in_smartstack_loop=False
         print ("finished exposure finish loop")
-        return expresult 
+        return expresult
 
     def stop_command(self, required_params, optional_params):
         """Stop the current exposure and return the camera to Idle state."""
@@ -2270,10 +2270,10 @@ class Camera:
                 #post_exposure_thread=threading.Thread(target=post_exposure_process,args=(payload,))
                 #post_exposure_thread.start()
                 #breakpoint()
-                
-                
-                
-                
+
+
+
+
                 # If this is a pointing or a focus frame, we need to do an
                 # in-line flash reduction
                 if frame_type=='pointing' or focus_image == True:
@@ -2302,7 +2302,7 @@ class Camera:
                     #    cal_name[:-9] + "F012" + cal_name[-7:]
                     #)
                     im_path_r = self.camera_path
-                    im_type = "EX" 
+                    im_type = "EX"
                     next_seq = next_sequence(self.config["camera"][self.name]["name"])
                     f_ext = "-"
                     cal_name = (
@@ -2319,25 +2319,25 @@ class Camera:
                         + "00.fits"
                     )
                     cal_path = im_path_r + g_dev["day"] + "/calib/"
-                    
+
                     hdu = fits.PrimaryHDU()
                     hdu.header['PIXSCALE']=self.pixscale
                     hdusmallheader=copy.deepcopy(hdu.header)
                     del hdu
-                    
-                    
+
+
                     wait_for_slew()
                     g_dev['obs'].platesolve_is_processing =True
                     g_dev['obs'].to_platesolve((outputimg, hdusmallheader, cal_path, cal_name, frame_type, time.time(), self.pixscale, ra_at_time_of_exposure,dec_at_time_of_exposure))
                     # If it is the last of a set of smartstacks, we actually want to
                     # wait for the platesolve and nudge before starting the next smartstack.
-                    
+
 
                 # If this is a focus image, we need to wait until the SEP queue is finished and empty to pick up the latest
                 # FWHM.
                 if focus_image == True:
                     im_path_r = self.camera_path
-                    im_type = "EX" 
+                    im_type = "EX"
                     f_ext = "-"
                     next_seq = next_sequence(self.config["camera"][self.name]["name"])
                     text_name = (
@@ -2367,17 +2367,17 @@ class Camera:
                         + "00.fits"
                     )
                     cal_path = im_path_r + g_dev["day"] + "/calib/"
-                    
+
                     hdu = fits.PrimaryHDU()
                     hdu.header['PIXSCALE']=self.pixscale
                     hdu.header['EXPTIME']=exposure_time
                     hdusmallheader=copy.deepcopy(hdu.header)
                     del hdu
-                    
+
                     g_dev['obs'].sep_processing=True
                     g_dev['obs'].to_sep((outputimg, self.pixscale, self.camera_known_readnoise, avg_foc[1], focus_image, im_path, text_name, hdusmallheader, cal_path, cal_name, frame_type, focus_position, self.native_bin))
 
-                    
+
                     reported=0
                     temptimer=time.time()
                     plog ("Exposure Complete")
@@ -2454,15 +2454,15 @@ class Camera:
                     if self.config["camera"][self.name]["settings"]['is_osc']:
                         temp_is_osc=True
                         osc_fits=copy.deepcopy(outputimg)
-                
+
                         debayered=[]
                         max_median=0
-                
+
                         debayered.append(osc_fits[::2, ::2])
                         debayered.append(osc_fits[::2, 1::2])
                         debayered.append(osc_fits[1::2, ::2])
                         debayered.append(osc_fits[1::2, 1::2])
-                
+
                         # crop each of the images to the central region
                         oscounter=0
                         for oscimage in debayered:
@@ -2474,12 +2474,12 @@ class Camera:
                                 max_median=copy.deepcopy(oscmedian)
                                 brightest_bayer=copy.deepcopy(oscounter)
                             oscounter=oscounter+1
-                
+
                         del osc_fits
                         del debayered
-                
+
                         central_median=max_median
-                
+
                     else:
                         temp_is_osc=False
                         osc_fits=copy.deepcopy(outputimg)
@@ -2488,9 +2488,9 @@ class Camera:
                         osc_fits=osc_fits[cropx:-cropx, cropy:-cropy]
                         central_median=np.nanmedian(osc_fits)
                         del osc_fits
-            
+
                 if frame_type[-4:] == "flat":
-            
+
                     if (
                         central_median
                         >= 0.80* image_saturation_level
@@ -2506,7 +2506,7 @@ class Camera:
                         print ("expresult")
                         print (expresult)
                         return copy.deepcopy(expresult) # signals to flat routine image was rejected, prompt return
-            
+
                     elif (
                         central_median
                         <= 0.25 * image_saturation_level
@@ -2541,9 +2541,9 @@ class Camera:
                         expresult={}
                         # Now estimate camera gain.
                         camera_gain_estimate_image=copy.deepcopy(outputimg)
-            
+
                         try:
-            
+
                             # Get the brightest bayer layer for gains
                             if self.config["camera"][self.name]["settings"]['is_osc']:
                                 if brightest_bayer == 0:
@@ -2554,28 +2554,28 @@ class Camera:
                                     camera_gain_estimate_image=camera_gain_estimate_image[1::2, ::2]
                                 elif brightest_bayer == 3:
                                     camera_gain_estimate_image=camera_gain_estimate_image[1::2, 1::2]
-            
+
                             cropx = int( (camera_gain_estimate_image.shape[0] -500)/2)
                             cropy = int((camera_gain_estimate_image.shape[1] -500) /2)
                             camera_gain_estimate_image=camera_gain_estimate_image[cropx:-cropx, cropy:-cropy]
                             camera_gain_estimate_image = sigma_clip(camera_gain_estimate_image, masked=False, axis=None)
-            
+
                             cge_median=np.nanmedian(camera_gain_estimate_image)
                             cge_stdev=np.nanstd(camera_gain_estimate_image)
                             cge_sqrt=pow(cge_median,0.5)
                             cge_gain=1/pow(cge_sqrt/cge_stdev, 2)
-            
-            
+
+
                             plog( g_dev['seq'].current_filter_last_camera_gain)
                             # low values SHOULD be ok.
                             if cge_gain < (g_dev['seq'].current_filter_last_camera_gain + 3 *g_dev['seq'].current_filter_last_camera_gain_stdev):
                                 g_dev["obs"].send_to_user('Good flat value:  ' +str(int(central_median)) + ' Good Gain: ' + str(round(cge_gain,2)))
                                 plog('Good flat value:  ' +str(central_median) + ' Good Gain: ' + str(cge_gain))
-            
+
                             elif (not self.config['camera']['camera_1_1']['settings']['reject_new_flat_by_known_gain']):
                                 g_dev["obs"].send_to_user('Good flat value:  ' +str(int(central_median)) + ' Bad Gain: ' + str(round(cge_gain,2)) + ' Flat rejection by gain is off.')
                                 plog('Good flat value:  ' +str(central_median) + ' Bad Gain: ' + str(cge_gain) + ' Flat rejection by gain is off.')
-            
+
                             else:
                                 g_dev["obs"].send_to_user('Good flat value:  ' +str(int(central_median)) + ' Bad Gain: ' + str(round(cge_gain,2)) + ' Flat rejected.')
                                 plog('Good flat value:  ' +str(central_median) + ' Bad Gain: ' + str(cge_gain) + ' Flat rejected.')
@@ -2586,10 +2586,10 @@ class Camera:
                                 print ("expresult")
                                 print (expresult)
                                 return copy.deepcopy(expresult) # signals to flat routine image was rejected, prompt return
-            
+
                             expresult["camera_gain"] = cge_gain
-            
-            
+
+
                         except Exception as e:
                             plog("Could not estimate the camera gain from this flat.")
                             plog(e)
@@ -2707,7 +2707,7 @@ def post_exposure_process(payload):
             g_dev["obs"].send_to_user(
                 "Flat rejected, too bright.", p_level="INFO"
             )
-            
+
             expresult["error"] = True
             expresult["patch"] = central_median
             expresult["camera_gain"] = np.nan
@@ -3851,7 +3851,7 @@ def wait_for_slew():
                 if time.time() - movement_reporting_timer > 2.0:
                     plog( 'm>')
                     movement_reporting_timer=time.time()
-                if not g_dev['obs'].currently_updating_status:                    
+                if not g_dev['obs'].currently_updating_status:
                     g_dev['obs'].update_status(mount_only=True, dont_wait=True)
 
     except Exception as e:

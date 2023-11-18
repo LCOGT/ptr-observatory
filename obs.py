@@ -342,7 +342,7 @@ class Observatory:
         self.exposure_halted_indicator = False
         self.camera_sufficiently_cooled_for_calibrations = True
         self.last_slew_was_pointing_slew = False
-        self.open_and_enabled_to_observe = True
+        self.open_and_enabled_to_observe = False
         self.net_connection_dead = False
 
 
@@ -485,6 +485,12 @@ class Observatory:
         self.update_status(dont_wait=True)
 
 
+        # A dictionary that holds focusresults for the SEP queue.
+        self.fwhmresult={}
+        self.fwhmresult["error"] = True
+        self.fwhmresult['FWHM'] = np.nan
+        self.fwhmresult["mean_focus"] = np.nan
+        self.fwhmresult['No_of_sources'] = np.nan
 
         # On initialisation, there should be no commands heading towards the site
         # So this command reads the commands waiting and just ... ignores them
