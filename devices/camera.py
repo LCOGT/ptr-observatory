@@ -1717,7 +1717,7 @@ class Camera:
                                     g_dev['obs'].camera_sufficiently_cooled_for_calibrations = True
 
 
-                            plog ("pre-exposure overhead: " + str(time.time() -pre_exposure_overhead_timer) +"s.")
+                            #plog ("pre-exposure overhead: " + str(time.time() -pre_exposure_overhead_timer) +"s.")
                             start_time_of_observation=time.time()
                             self.start_time_of_observation=time.time()
                             plog ("Time between end of last exposure and start of next minus exposure time: " + str(time.time() -  self.end_of_last_exposure_time - exposure_time))
@@ -2179,7 +2179,7 @@ class Camera:
                     focus_image = False
 
                 # HERE IS WHERE WE SPIT OUT THE FILES INTO A MULTIPROCESSING FUNCTION
-                mini_inline_process_timer=time.time()
+                #mini_inline_process_timer=time.time()
 
                 avg_mnt = g_dev["mnt"].get_average_status(self.pre_mnt, self.post_mnt)
                 avg_foc = g_dev["foc"].get_average_status(self.pre_foc, self.post_foc)
@@ -2255,15 +2255,15 @@ class Camera:
 
 
                 #payload=copy.deepcopy((outputimg, g_dev["mnt"].pier_side, self.config["camera"][self.name]["settings"]['is_osc'], frame_type, self.config['camera']['camera_1_1']['settings']['reject_new_flat_by_known_gain'], avg_mnt, avg_foc, avg_rot, self.setpoint, tempccdtemp, ccd_humidity, ccd_pressure, self.darkslide_state, exposure_time, this_exposure_filter, exposure_filter_offset, self.pane,opt , observer_user_name, self.hint, azimuth_of_observation, altitude_of_observation, airmass_of_observation, self.pixscale, smartstackid,sskcounter,Nsmartstack, longstackid, ra_at_time_of_exposure, dec_at_time_of_exposure, manually_requested_calibration, object_name, object_specf, g_dev["mnt"].ha_corr, g_dev["mnt"].dec_corr, focus_position, self.config, self.name, self.camera_known_gain, self.camera_known_readnoise, start_time_of_observation, observer_user_id, self.camera_path,  solve_it))
-                print ("mini_inline_process_timer: " +str(time.time() -mini_inline_process_timer))
+                #print ("mini_inline_process_timer: " +str(time.time() -mini_inline_process_timer))
                 #post_exposure_process(payload=payload)
 
-                deep_copy_timer=time.time()
+                #deep_copy_timer=time.time()
                 self.post_processing_queue.put(copy.deepcopy((outputimg, g_dev["mnt"].pier_side, self.config["camera"][self.name]["settings"]['is_osc'], frame_type, self.config['camera']['camera_1_1']['settings']['reject_new_flat_by_known_gain'], avg_mnt, avg_foc, avg_rot, self.setpoint, tempccdtemp, ccd_humidity, ccd_pressure, self.darkslide_state, exposure_time, this_exposure_filter, exposure_filter_offset, self.pane,opt , observer_user_name, self.hint, azimuth_of_observation, altitude_of_observation, airmass_of_observation, self.pixscale, smartstackid,sskcounter,Nsmartstack, longstackid, ra_at_time_of_exposure, dec_at_time_of_exposure, manually_requested_calibration, object_name, object_specf, g_dev["mnt"].ha_corr, g_dev["mnt"].dec_corr, focus_position, self.config, self.name, self.camera_known_gain, self.camera_known_readnoise, start_time_of_observation, observer_user_id, self.camera_path,  solve_it)), block=False)
-                print ("Deep copy timer: " +str(time.time()-deep_copy_timer))
+                #print ("Deep copy timer: " +str(time.time()-deep_copy_timer))
 
 
-                self.post_deepcopy_overhead_timer=time.time()
+                #self.post_deepcopy_overhead_timer=time.time()
                 #post_exposure_thread=threading.Thread(target=post_exposure_process,args=(payload,))
                 #post_exposure_thread.start()
 
@@ -2358,7 +2358,7 @@ class Camera:
 
                 plog("Exposure Complete")
                 g_dev["obs"].send_to_user("Exposure Complete")
-                plog ("Post-deepcopy overhead: " + str( time.time() - self.post_deepcopy_overhead_timer))
+                #plog ("Post-deepcopy overhead: " + str( time.time() - self.post_deepcopy_overhead_timer))
 
                 return expresult
                 # #except Exception as e:
