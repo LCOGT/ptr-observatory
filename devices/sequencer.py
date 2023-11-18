@@ -227,7 +227,7 @@ class Sequencer:
                         movement_reporting_timer=time.time()
 
                     if not g_dev['obs'].currently_updating_status and g_dev['obs'].update_status_queue.empty():
-                        g_dev['obs'].update_status(mount_only=True, dont_wait=True)
+                        g_dev['obs'].request_update_status(mount_only=True, dont_wait=True)
 
 
         except Exception:
