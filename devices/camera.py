@@ -1521,7 +1521,8 @@ class Camera:
                         g_dev['obs'].pointing_correction_request_dec_err = 0
                         g_dev['obs'].check_platesolve_and_nudge()
                     else:
-                        plog ("MTF temp reporting. No pierflip.")
+                        #plog ("MTF temp reporting. No pierflip.")
+                        pass
                 g_dev['mnt'].previous_pier_side=g_dev['mnt'].rapid_pier_indicator
 
                 if g_dev['obs'].pointing_recentering_requested_by_platesolve_thread:
@@ -1716,7 +1717,7 @@ class Camera:
                                     return expresult
 
                                 else:
-                                    plog ("temperature in range for calibrations ("+ str(current_camera_temperature)+"), attempting calibration frame")
+                                    #plog ("temperature in range for calibrations ("+ str(current_camera_temperature)+"), attempting calibration frame")
                                     g_dev['obs'].camera_sufficiently_cooled_for_calibrations = True
 
 
@@ -1748,10 +1749,7 @@ class Camera:
                             # airmass = abs(round(sec_z - 0.0018167*(sec_z - 1) - 0.002875*((sec_z - 1)**2) - 0.0008083*((sec_z - 1)**3),3))
                             # if airmass > 10: airmass = 10
                             
-                            # A few things to keep updated on a quicker timescale that aren't done in status
-                            titime=time.time()
-                            
-                            print ('camtemptime:' + str(time.time()-titime))
+                           
                             airmass = round(g_dev['mnt'].airmass, 4)
 
                             airmass_of_observation = airmass
@@ -2590,7 +2588,7 @@ class Camera:
                             cge_gain=1/pow(cge_sqrt/cge_stdev, 2)
 
 
-                            plog( g_dev['seq'].current_filter_last_camera_gain)
+                            #plog( g_dev['seq'].current_filter_last_camera_gain)
                             # low values SHOULD be ok.
                             if cge_gain < (g_dev['seq'].current_filter_last_camera_gain + 3 *g_dev['seq'].current_filter_last_camera_gain_stdev):
                                 g_dev["obs"].send_to_user('Good flat value:  ' +str(int(central_median)) + ' Good Gain: ' + str(round(cge_gain,2)))
@@ -2607,8 +2605,6 @@ class Camera:
                                 expresult["error"] = True
                                 expresult["patch"] = central_median
                                 expresult["camera_gain"] = np.nan
-                                print ("expresult")
-                                print (expresult)
                                 return copy.deepcopy(expresult) # signals to flat routine image was rejected, prompt return
 
                             expresult["camera_gain"] = cge_gain
