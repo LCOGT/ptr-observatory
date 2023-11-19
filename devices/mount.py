@@ -137,8 +137,10 @@ def wait_for_slew():
                     plog( 'm>')
                     movement_reporting_timer=time.time()
                     g_dev['obs'].time_of_last_slew=time.time()
-                g_dev['mnt'].get_mount_coordinates()
-                g_dev['obs'].request_update_status(mount_only=True)
+                if not g_dev['obs'].currently_updating_status and g_dev['obs'].update_status_queue.empty():
+                    g_dev['mnt'].get_mount_coordinates()
+                    #g_dev['obs'].request_update_status(mount_only=True, dont_wait=True)
+                    g_dev['obs'].update_status(mount_only=True, dont_wait=True)
 
     except Exception as e:
         plog("Motion check faulted.")
