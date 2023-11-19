@@ -493,14 +493,14 @@ site_config = {
                                 ['rp',      [0, 7],     0,  180.853,  [2, 17], 'rp'],  # 6
                                 ['PG',      [0, 2],     0,  120.048, [2, 17], 'PG'],  # 7
                                 ['PR',      [0, 3],     0,  70.336,  [2, 17], 'PR'],  # 8
-                                ['ip',      [0, 8],     0,  80.741,  [2, 17], 'ip'],  # 9
-                                ['z',       [5, 0],     0,  10,  [2, 17], 'z'],  # 10
-                                ['O3',      [7, 0],     0,  5,  [2, 17], '03'],  # 11
-                                ['up',      [0, 5],     0,  7,  [1, 17], 'up'],  # 12
-                                ['N2',      [3, 0],     0,  3,  [2, 17], 'N2'],  # 13
-                                ['CR',      [1, 0],     0,  5,    [2, 17], 'CR'],  # 14
-                                ['S2',      [8, 0],     0,  3,  [2, 17], 'S2'],  # 15
-                                ['HA',      [6, 0],     0,  3,  [2, 17], 'HA'],  # 16
+                                ['ip',      [0, 8],     0,  100.741,  [2, 17], 'ip'],  # 9
+                                ['z',       [5, 0],     0,  31,  [2, 17], 'z'],  # 10
+                                ['O3',      [7, 0],     0,  20,  [2, 17], '03'],  # 11
+                                ['up',      [0, 5],     0,  31,  [1, 17], 'up'],  # 12
+                                ['N2',      [3, 0],     0,  9,  [2, 17], 'N2'],  # 13
+                                ['CR',      [1, 0],     0,  15,    [2, 17], 'CR'],  # 14
+                                ['S2',      [8, 0],     0,  8,  [2, 17], 'S2'],  # 15
+                                ['HA',      [6, 0],     0,  8,  [2, 17], 'HA'],  # 16
                                 ['dark',    [8, 5],     0,   0.0,   [2, 17], 'dk']],  # 18
                 
                 'focus_filter' : 'w',
@@ -509,7 +509,7 @@ site_config = {
                 'filter_screen_sort':  ['air', 'w', 'PL', 'gp', 'PB', 'rp', 'PG', 'PR', 'ip', 'O3', 'N2', 'CR', 'S2', 'HA'],  # 9, 21],  # 5, 17], #Most to least throughput, \
                 # so screen brightens, skipping u and zs which really need sky.
 
-                'filter_sky_sort':     ['S2', 'N2', 'CR', 'O3', 'HA', 'z', 'PR', 'PG', 'PB', 'gp', 'rp', 'ip', 'w', 'PL', 'air'],
+                'filter_sky_sort':     ['S2', 'N2', 'CR', 'O3', 'HA', 'z', 'up', 'ip', 'PR', 'PG', 'PB', 'gp', 'rp', 'w', 'PL', 'air'],
                  
             },
         },
@@ -732,12 +732,12 @@ site_config = {
                 # Realistically there is maximum flat_exposure that makes sure flats are efficient and aren't collecting actual stars.
                 'max_flat_exposure': 20.0,
                 # During the daytime with the daytime safety mode on, exposures will be limited to this maximum exposure
-                'max_daytime_exposure': 0.0001,
+                'max_daytime_exposure': 0.001,
                 
                 # One of the best cloud detections is to estimate the gain of the camera from the image
                 # If the variation, and hence gain, is too high according to gain + stdev, the flat can be easily rejected.
                 # Should be off for new observatories coming online until a real gain is known.
-                'reject_new_flat_by_known_gain' : True,
+                'reject_new_flat_by_known_gain' : False,
                 # These values are just the STARTING values. Once the software has been
                 # through a few nights of calibration images, it should automatically calculate these gains.
                 'camera_gain':   8.634, #[10., 10., 10., 10.],     #  One val for each binning.
@@ -759,10 +759,10 @@ site_config = {
                 # As simple as it states, how many calibration frames to collect and how many to store.                
                 'number_of_bias_to_collect': 33,
                 'number_of_dark_to_collect': 17,
-                'number_of_flat_to_collect': 10,
+                'number_of_flat_to_collect': 7,
                 'number_of_bias_to_store': 63,
                 'number_of_dark_to_store': 31,
-                'number_of_flat_to_store': 31,
+                'number_of_flat_to_store': 15,
                 # Default dark exposure time.
                 'dark_exposure': 180,
                
