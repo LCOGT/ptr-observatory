@@ -1096,7 +1096,7 @@ class Observatory:
         #         plog ("astrophysics doesn't report side of pier at park? MTF hunting this bug.")
         #breakpoint()
 
-        g_dev['foc'].update_focuser_temperature
+        g_dev['foc'].update_focuser_temperature()
 
         # If the roof is open, then it is open and enabled to observe
         if not g_dev['obs'].enc_status == None:
