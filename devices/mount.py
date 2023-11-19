@@ -378,7 +378,11 @@ class Mount:
         self.right_ascension_directly_from_mount = copy.deepcopy(self.mount.RightAscension)
         self.declination_directly_from_mount = copy.deepcopy(self.mount.Declination)
 
-
+        # initialisation values
+        self.altitude= 45
+        self.airmass = 1.5
+        self.az = 160
+        self.zen = 45
 
         self.current_tracking_state=copy.deepcopy(self.mount.Tracking)
 
@@ -659,6 +663,11 @@ class Mount:
             if airmass > 10: airmass = 10.0   # We should caution the user if AM > 2, and alert them if >3
             airmass = round(airmass, 4)
 
+            self.altitude= alt
+            self.airmass = airmass
+            self.az = az
+            self.zen = zen
+
             try:
                 self.current_sidereal = float((Time(datetime.datetime.utcnow(), scale='utc', location=g_dev['mnt'].site_coordinates).sidereal_time('apparent')*u.deg) / u.deg / u.hourangle)
             except:
@@ -751,36 +760,36 @@ class Mount:
 
     def get_rapid_exposure_status(self, pre):
 
-        try:
-            rd = SkyCoord(ra=self.current_icrs_ra*u.hour, dec=self.current_icrs_dec*u.deg)
-        except:
-            icrs_ra, icrs_dec = self.get_mount_coordinates()
-            rd = SkyCoord(ra=icrs_ra*u.hour, dec=icrs_dec*u.deg)
-        aa = AltAz (location=self.site_coordinates, obstime=Time.now())
-        rd = rd.transform_to(aa)
-        alt = float(rd.alt/u.deg)
-        az = float(rd.az/u.deg)
-        zen = round((90 - alt), 3)
-        if zen > 90:
-            zen = 90.0
-        if zen < 0.1:    #This can blow up when zen <=0!
-            new_z = 0.1
-        else:
-            new_z = zen
-        sec_z = 1/cos(radians(new_z))
-        airmass = abs(round(sec_z - 0.0018167*(sec_z - 1) - 0.002875*((sec_z - 1)**2) - 0.0008083*((sec_z - 1)**3),3))
-        if airmass > 10: airmass = 10
-        airmass = round(airmass, 4)
+        # try:
+        #     rd = SkyCoord(ra=self.current_icrs_ra*u.hour, dec=self.current_icrs_dec*u.deg)
+        # except:
+        #     icrs_ra, icrs_dec = self.get_mount_coordinates()
+        #     rd = SkyCoord(ra=icrs_ra*u.hour, dec=icrs_dec*u.deg)
+        # aa = AltAz (location=self.site_coordinates, obstime=Time.now())
+        # rd = rd.transform_to(aa)
+        # alt = float(rd.alt/u.deg)
+        # az = float(rd.az/u.deg)
+        # zen = round((90 - alt), 3)
+        # if zen > 90:
+        #     zen = 90.0
+        # if zen < 0.1:    #This can blow up when zen <=0!
+        #     new_z = 0.1
+        # else:
+        #     new_z = zen
+        # sec_z = 1/cos(radians(new_z))
+        # airmass = abs(round(sec_z - 0.0018167*(sec_z - 1) - 0.002875*((sec_z - 1)**2) - 0.0008083*((sec_z - 1)**3),3))
+        # if airmass > 10: airmass = 10
+        # airmass = round(airmass, 4)
         pre.append(time.time())
         pre.append(self.current_icrs_ra)
         pre.append(self.current_icrs_dec)
         pre.append(float((Time(datetime.datetime.utcnow(), scale='utc', location=g_dev['mnt'].site_coordinates).sidereal_time('apparent')*u.deg) / u.deg / u.hourangle))
         pre.append(0.0)
         pre.append(0.0)
-        pre.append(az)
-        pre.append(alt)
-        pre.append(zen)
-        pre.append(airmass)
+        pre.append(self.az)
+        pre.append(self.alt)
+        pre.append(self.zen)
+        pre.append(self.airmass)
         pre.append(False)
         pre.append(True)
         pre.append(False)

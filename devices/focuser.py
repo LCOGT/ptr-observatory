@@ -200,26 +200,26 @@ class Focuser:
 
     def get_quick_status(self, quick):
 
-        if self.theskyx:
-            quick.append(time.time())
-            self.current_focus_position=self.focuser.focPosition() * self.steps_to_micron
-            quick.append(self.current_focus_position)
-            try:
-                quick.append(self.focuser.focTemperature())
-            except:
-                quick.append(10.0)
-            quick.append(False)
-        else:
+        #if self.theskyx:
+        quick.append(time.time())
+        #self.current_focus_position=self.focuser.focPosition() * self.steps_to_micron
+        quick.append(self.current_focus_position)
+        try:
+            quick.append(self.last_temperature)
+        except:
+            quick.append(10.0)
+        quick.append(False)
+        # else:
 
 
-            quick.append(time.time())
-            self.current_focus_position=self.focuser.Position * self.steps_to_micron
-            quick.append(self.current_focus_position)
-            try:
-                quick.append(self.focuser.Temperature)
-            except:
-                quick.append(10.0)
-            quick.append(self.focuser.IsMoving)
+        #     quick.append(time.time())
+        #     self.current_focus_position=self.focuser.Position * self.steps_to_micron
+        #     quick.append(self.current_focus_position)
+        #     try:
+        #         quick.append(self.focuser.Temperature)
+        #     except:
+        #         quick.append(10.0)
+        #     quick.append(self.focuser.IsMoving)
         return quick
 
     def get_average_status(self, pre, post):

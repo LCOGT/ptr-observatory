@@ -1035,6 +1035,8 @@ class Observatory:
                 self.send_status_queue.put((obsy, lane, status), block=False)
 
 
+        # A few things to keep updated on a quicker timescale that aren't done in status
+        g_dev['cam'].tempccdtemp, g_dev['cam'].ccd_humidity, g_dev['cam'].ccd_pressure = (g_dev['cam']._temperature())
 
 
         self.time_last_status = time.time()

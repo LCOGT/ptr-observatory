@@ -1452,6 +1452,8 @@ class Camera:
         #expresult = {}  #  This is a default return just in case
         num_retries = 0
         incoming_exposure_time=exposure_time
+        g_dev['obs'].scan_requests()
+        g_dev['seq'].update_calendar_blocks()
         for seq in range(count):
 
             #pre_exposure_overhead_timer=time.time()
@@ -1498,6 +1500,8 @@ class Camera:
 
             self.retry_camera = 1
             self.retry_camera_start_time = time.time()
+
+            
 
             #Repeat camera acquisition loop to collect all smartstacks necessary
             #The variable Nsmartstacks defaults to 1 - e.g. normal functioning
@@ -1579,10 +1583,10 @@ class Camera:
                     # Check whether calendar entry is still existant.
                     # If not, stop running block
                     if not calendar_event_id == None:
-                        print ("ccccccc")
-                        g_dev['obs'].scan_requests()
+                        #print ("ccccccc")
+                        
                         foundcalendar=False
-                        g_dev['seq'].update_calendar_blocks()
+                        
                         for tempblock in g_dev['seq'].blocks:
                             try:
                                 if tempblock['event_id'] == calendar_event_id :
@@ -1723,33 +1727,33 @@ class Camera:
                             self._expose(exposure_time, bias_dark_or_light_type_frame)
                             self.end_of_last_exposure_time=time.time()
 
-                            # Calculate current airmass now
-                            #try:
-                            rd = SkyCoord(ra=ra_at_time_of_exposure*u.hour, dec=dec_at_time_of_exposure*u.deg)
-                            #except:
-                            #    icrs_ra, icrs_dec = g_dev['mnt'].get_mount_coordinates()
-                            #    rd = SkyCoord(ra=icrs_ra*u.hour, dec=icrs_dec*u.deg)
-                            aa = AltAz (location=g_dev['mnt'].site_coordinates, obstime=Time.now())
-                            rd = rd.transform_to(aa)
-                            alt = float(rd.alt/u.deg)
-                            az = float(rd.az/u.deg)
-                            zen = round((90 - alt), 3)
-                            if zen > 90:
-                                zen = 90.0
-                            if zen < 0.1:    #This can blow up when zen <=0!
-                                new_z = 0.1
-                            else:
-                                new_z = zen
-                            sec_z = 1/math.cos(math.radians(new_z))
-                            airmass = abs(round(sec_z - 0.0018167*(sec_z - 1) - 0.002875*((sec_z - 1)**2) - 0.0008083*((sec_z - 1)**3),3))
-                            if airmass > 10: airmass = 10
-                            airmass = round(airmass, 4)
+                            # # Calculate current airmass now
+                            # #try:
+                            # rd = SkyCoord(ra=ra_at_time_of_exposure*u.hour, dec=dec_at_time_of_exposure*u.deg)
+                            # #except:
+                            # #    icrs_ra, icrs_dec = g_dev['mnt'].get_mount_coordinates()
+                            # #    rd = SkyCoord(ra=icrs_ra*u.hour, dec=icrs_dec*u.deg)
+                            # aa = AltAz (location=g_dev['mnt'].site_coordinates, obstime=Time.now())
+                            # rd = rd.transform_to(aa)
+                            # alt = float(rd.alt/u.deg)
+                            # az = float(rd.az/u.deg)
+                            # zen = round((90 - alt), 3)
+                            # if zen > 90:
+                            #     zen = 90.0
+                            # if zen < 0.1:    #This can blow up when zen <=0!
+                            #     new_z = 0.1
+                            # else:
+                            #     new_z = zen
+                            # sec_z = 1/math.cos(math.radians(new_z))
+                            # airmass = abs(round(sec_z - 0.0018167*(sec_z - 1) - 0.002875*((sec_z - 1)**2) - 0.0008083*((sec_z - 1)**3),3))
+                            # if airmass > 10: airmass = 10
+                            airmass = round(g_dev['mnt'].airmass, 4)
 
                             airmass_of_observation = airmass
                             g_dev["airmass"] = float(airmass_of_observation)
 
-                            azimuth_of_observation = az
-                            altitude_of_observation = alt
+                            azimuth_of_observation = g_dev['mnt'].az
+                            altitude_of_observation = g_dev['mnt'].alt
 
 
 
@@ -1966,17 +1970,22 @@ class Camera:
         #     g_dev["ocn"].get_quick_status(self.post_ocn)
         # except:
         #     pass
-
+        self.post_mnt = []
+        self.post_rot = []
+        self.post_foc = []
+        self.post_ocn = []
+        
         while True:
-            self.post_mnt = []
-            self.post_rot = []
-            self.post_foc = []
-            self.post_ocn = []
+            
 
 
             if (
                 time.time() < self.completion_time or self.async_exposure_lock==True
             ):
+
+                if exposure_time < 4.1:                    
+                    g_dev['obs'].scan_requests()
+                    g_dev['seq'].update_calendar_blocks()
 
                 # Scan requests every 4 seconds... primarily hunting for a "Cancel/Stop"
                 if time.time() - exposure_scan_request_timer > 4 and (time.time() - self.completion_time) > 4:
@@ -2055,6 +2064,8 @@ class Camera:
                             + " sec.",
                             p_level="INFO",
                         )
+                        if remaining > 5:
+                            g_dev['seq'].update_calendar_blocks()
 
 
                 continue
@@ -2192,7 +2203,7 @@ class Camera:
                 except:
                     avg_rot = None
 
-                tempccdtemp, ccd_humidity, ccd_pressure = (g_dev['cam']._temperature())
+                
 
                 object_name='Unknown'
                 object_specf='no'
@@ -2262,7 +2273,7 @@ class Camera:
 
                 #deep_copy_timer=time.time()
                 if not frame_type[-4:] == "flat" and not focus_image == True and not frame_type=='pointing':
-                    self.post_processing_queue.put(copy.deepcopy((outputimg, g_dev["mnt"].pier_side, self.config["camera"][self.name]["settings"]['is_osc'], frame_type, self.config['camera']['camera_1_1']['settings']['reject_new_flat_by_known_gain'], avg_mnt, avg_foc, avg_rot, self.setpoint, tempccdtemp, ccd_humidity, ccd_pressure, self.darkslide_state, exposure_time, this_exposure_filter, exposure_filter_offset, self.pane,opt , observer_user_name, self.hint, azimuth_of_observation, altitude_of_observation, airmass_of_observation, self.pixscale, smartstackid,sskcounter,Nsmartstack, longstackid, ra_at_time_of_exposure, dec_at_time_of_exposure, manually_requested_calibration, object_name, object_specf, g_dev["mnt"].ha_corr, g_dev["mnt"].dec_corr, focus_position, self.config, self.name, self.camera_known_gain, self.camera_known_readnoise, start_time_of_observation, observer_user_id, self.camera_path,  solve_it)), block=False)
+                    self.post_processing_queue.put(copy.deepcopy((outputimg, g_dev["mnt"].pier_side, self.config["camera"][self.name]["settings"]['is_osc'], frame_type, self.config['camera']['camera_1_1']['settings']['reject_new_flat_by_known_gain'], avg_mnt, avg_foc, avg_rot, self.setpoint, self.tempccdtemp, self.ccd_humidity, self.ccd_pressure, self.darkslide_state, exposure_time, this_exposure_filter, exposure_filter_offset, self.pane,opt , observer_user_name, self.hint, azimuth_of_observation, altitude_of_observation, airmass_of_observation, self.pixscale, smartstackid,sskcounter,Nsmartstack, longstackid, ra_at_time_of_exposure, dec_at_time_of_exposure, manually_requested_calibration, object_name, object_specf, g_dev["mnt"].ha_corr, g_dev["mnt"].dec_corr, focus_position, self.config, self.name, self.camera_known_gain, self.camera_known_readnoise, start_time_of_observation, observer_user_id, self.camera_path,  solve_it)), block=False)
                 #print ("Deep copy timer: " +str(time.time()-deep_copy_timer))
 
 
