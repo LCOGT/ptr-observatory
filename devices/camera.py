@@ -1750,7 +1750,7 @@ class Camera:
                             
                             # A few things to keep updated on a quicker timescale that aren't done in status
                             titime=time.time()
-                            g_dev['cam'].tempccdtemp, g_dev['cam'].ccd_humidity, g_dev['cam'].ccd_pressure = (g_dev['cam']._temperature())                            
+                            
                             print ('camtemptime:' + str(time.time()-titime))
                             airmass = round(g_dev['mnt'].airmass, 4)
 
@@ -1834,8 +1834,7 @@ class Camera:
                         continue
         #  This is the loop point for the seq count loop
         self.exposure_busy = False
-        self.currently_in_smartstack_loop=False
-        print ("finished exposure finish loop")
+        self.currently_in_smartstack_loop=False        
         return expresult
 
     def stop_command(self, required_params, optional_params):
@@ -1979,6 +1978,9 @@ class Camera:
         # self.post_rot = []
         # self.post_foc = []
         # self.post_ocn = []
+        
+        # This command takes 0.1s to do, so happens just during the start of exposures
+        g_dev['cam'].tempccdtemp, g_dev['cam'].ccd_humidity, g_dev['cam'].ccd_pressure = (g_dev['cam']._temperature())                            
         
         while True:
             

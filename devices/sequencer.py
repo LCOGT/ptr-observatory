@@ -512,7 +512,8 @@ class Sequencer:
                             time.sleep(1)
                         self.rotator_has_been_homed_this_evening=True
                     except:
-                        plog ("no rotator to home or wait for.")
+                        #plog ("no rotator to home or wait for.")
+                        pass
 
 
                 g_dev['foc'].time_of_last_focus = datetime.datetime.utcnow() - datetime.timedelta(
@@ -906,7 +907,8 @@ class Sequencer:
                         time.sleep(1)
                     self.rotator_has_been_homed_this_evening=True
                 except:
-                    plog ("no rotator to home or wait for.")
+                    #plog ("no rotator to home or wait for.")
+                    pass
 
 
             # Undertake a focus if necessary before starting observing the target
@@ -2348,7 +2350,9 @@ class Sequencer:
     def check_zenith_and_move_to_flat_spot(self, ending=None):
         too_close_to_zenith=True
         while too_close_to_zenith:
-            alt, az = g_dev['mnt'].flat_spot_now()
+            #alt, az = g_dev['mnt'].flat_spot_now()
+            alt=g_dev['mnt'].flatspot_alt
+            #az=g_dev['mnt'].flatspot_az
             if self.config['degrees_to_avoid_zenith_area_for_calibrations'] > 0:
                 plog ('zenith distance: ' + str(90-alt))
                 if abs(90-alt) < self.config['degrees_to_avoid_zenith_area_for_calibrations']:
@@ -2393,7 +2397,8 @@ class Sequencer:
                                 time.sleep(1)
                             self.rotator_has_been_homed_this_evening=True
                         except:
-                            plog ("no rotator to home or wait for.")
+                            #plog ("no rotator to home or wait for.")
+                            pass
 
                     time.sleep(30)
 
@@ -2563,7 +2568,8 @@ class Sequencer:
                     time.sleep(1)
                 self.rotator_has_been_homed_this_evening=True
             except:
-                plog ("no rotator to home or wait for.")
+                #plog ("no rotator to home or wait for.")
+                g_dev['mnt']
 
         camera_gain_collector=[]
 
@@ -2777,8 +2783,8 @@ class Sequencer:
                                 if g_dev['rot'] != None:
                                     time.sleep(1)
 
-                                returnedresult = g_dev['cam'].expose_command(req, opt, user_id='Tobor', user_name='Tobor', user_roles='system', no_AWS=True, do_sep = False,skip_daytime_check=True)
-                                breakpoint()
+                                fred = g_dev['cam'].expose_command(req, opt, user_id='Tobor', user_name='Tobor', user_roles='system', no_AWS=True, do_sep = False,skip_daytime_check=True)
+                                #breakpoint()
                                 try:
                                     if self.stop_script_called:
                                         g_dev["obs"].send_to_user("Cancelling out of calibration script as stop script has been called.")

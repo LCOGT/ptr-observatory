@@ -379,7 +379,7 @@ class Mount:
         self.declination_directly_from_mount = copy.deepcopy(self.mount.Declination)
 
         # initialisation values
-        self.altitude= 45
+        self.alt= 45
         self.airmass = 1.5
         self.az = 160
         self.zen = 45
@@ -663,7 +663,7 @@ class Mount:
             if airmass > 10: airmass = 10.0   # We should caution the user if AM > 2, and alert them if >3
             airmass = round(airmass, 4)
 
-            self.altitude= alt
+            self.alt= alt
             self.airmass = airmass
             self.az = az
             self.zen = zen
@@ -989,6 +989,9 @@ class Mount:
 
         if flatspot_alt < 90 and sun_alt < -15:
             flatspot_az = sun_az
+        
+        self.flatspot_alt=flatspot_alt
+        self.flatspot_az=flatspot_az
 
         return(flatspot_alt, flatspot_az)
 
@@ -1196,8 +1199,8 @@ class Mount:
             except:
                 pass
 
-        plog ("mount references in go_command: " + str(delta_ra) + " " + str(delta_dec))
-        plog ("difference between request and pointing: " + str(ra - self.last_ra_requested))
+        #plog ("mount references in go_command: " + str(delta_ra) + " " + str(delta_dec))
+        #plog ("difference between request and pointing: " + str(ra - self.last_ra_requested))
 
 
         self.current_sidereal = float((Time(datetime.datetime.utcnow(), scale='utc', location=g_dev['mnt'].site_coordinates).sidereal_time('apparent')*u.deg) / u.deg / u.hourangle)
