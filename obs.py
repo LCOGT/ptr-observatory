@@ -1019,12 +1019,16 @@ class Observatory:
        
 
         # If the roof is open, then it is open and enabled to observe
+        #This is presumably the GOPOINT for SRO
+
         if not g_dev['obs'].enc_status == None:
             if 'Open' in g_dev['obs'].enc_status['shutter_status']:
                 if (not 'NoObs' in g_dev['obs'].enc_status['shutter_status'] and not self.net_connection_dead) or self.assume_roof_open:
                     self.open_and_enabled_to_observe = True
                 else:
-                    self.open_and_enabled_to_observe = False       
+                    self.open_and_enabled_to_observe = False
+            else:
+                self.open_and_enabled_to_observe = False 
 
         # Check that the mount hasn't slewed too close to the sun
         # If the roof is open and enabled to observe
@@ -1032,7 +1036,7 @@ class Observatory:
         if not ((g_dev['events']['Observing Begins']  <= ephem.now() < g_dev['events']['Observing Ends'])):
             try:
                 if not g_dev['mnt'].mount.Slewing and self.open_and_enabled_to_observe and self.sun_checks_on:
-    
+
                     sun_coords = get_sun(Time.now())
                     temppointing = SkyCoord((g_dev['mnt'].current_icrs_ra)*u.hour,
                                             (g_dev['mnt'].current_icrs_dec)*u.degree, frame='icrs')        

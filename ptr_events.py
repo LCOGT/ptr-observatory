@@ -529,7 +529,7 @@ class Events:
         #******************  NB NB Cool down and open comes from the WEMA Config.
         #***** Code in this computer has to verify open was not delayed or close is early.
 
-        self.evnt = [('Eve Bias Dark      ', ephem.Date(self.cool_down_open - self.config['bias_dark interval']/1440)),
+        self.evnt = [('Eve Bias Dark      ', ephem.Date(self.cool_down_open - self.config['bias_dark_interval']/1440)),
                      ('End Eve Bias Dark  ', ephem.Date(self.cool_down_open - (1.25*6)/1440)),
                      ('Ops Window Start   ', ephem.Date(self.cool_down_open)),  # Enclosure may open.
                      ('Cool Down, Open    ', ephem.Date(self.cool_down_open)),
@@ -558,7 +558,7 @@ class Events:
                      ('Close and Park     ', ephem.Date(self.close_and_park)),
 
                      ('Morn Bias Dark     ', ephem.Date(self.close_and_park + 2/1440.)),  #I guess this is warm-up time!
-                     ('End Morn Bias Dark ', ephem.Date(night_reset := self.close_and_park +  self.config['bias_dark interval']/1440.)),
+                     ('End Morn Bias Dark ', ephem.Date(night_reset := self.close_and_park +  self.config['bias_dark_interval']/1440.)),
                      ('Nightly Reset      ', ephem.Date(night_reset + 2/1440.)),
                      ('End Nightly Reset  ', ephem.Date(night_reset + self.config['end_night_processing_time']/1440.)),  #Just a Guess
                      ('Prior Moon Rise    ', ephem.Date(self.last_moonrise)),

@@ -1426,7 +1426,7 @@ class Sequencer:
                 stride = bias_count   #Just do all of the biases first.
                 single_dark = False
                 
-           
+
             while b_d_to_do > 0:
                 g_dev['obs'].scan_requests()
                 min_to_do = min(b_d_to_do, stride)

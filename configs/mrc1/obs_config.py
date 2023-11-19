@@ -88,13 +88,22 @@ site_config = {
 
     # TIMING FOR CALENDAR EVENTS
     # How many minutes with respect to eve sunset start flats
-    'eve_sky_flat_sunset_offset': -45.,  # 40 before Minutes  neg means before, + after.
-    # How many minutes after civilDusk to do....
-    'end_eve_sky_flats_offset': 5 , 
-    'clock_and_auto_focus_offset': 8,
-    'observing_begins_offset': 18,    
-    # How many minutes before civilDawn to do ....
-    'observing_ends_offset': 18,   
+    'bias_dark_interval':  105.,   # Takes 102 minutes as of 11/1/23 @ ARO
+    'eve_sky_flat_sunset_offset': -40.,  # Before Sunset Minutes  neg means before, + after. Takes about 33 min @ ARO 110123
+    'end_eve_sky_flats_offset': -1 ,      # How many minutes after civilDusk to do....
+    'clock_and_auto_focus_offset':-10,   #min before start of observing
+    'astro_dark_buffer': 30,   #Min before and after AD to extend observing window
+    'morn_flat_start_offset': -10,       #min from Sunrise
+    'morn_flat_end_offset':  +40,        #min from Sunrise
+    'end_night_processing_time':  90,
+    
+    # 'eve_sky_flat_sunset_offset': -45.,  # 40 before Minutes  neg means before, + after.
+    # # How many minutes after civilDusk to do....
+    # 'end_eve_sky_flats_offset': 5 , 
+    # 'clock_and_auto_focus_offset': 8,
+    # 'observing_begins_offset': 18,    
+    # # How many minutes before civilDawn to do ....
+    # 'observing_ends_offset': 18,   
 
 
     
@@ -109,6 +118,7 @@ site_config = {
     # Turn on and off various automated calibrations at different times.
     'auto_eve_bias_dark': True,
     'auto_eve_sky_flat': True,
+    'time_to_wait_after_roof_opens_to_take_flats': 180, 
     'auto_midnight_moonless_bias_dark': True,
     'auto_morn_sky_flat': True,
     'auto_morn_bias_dark': True,
@@ -489,7 +499,7 @@ site_config = {
                 'filter_screen_sort':  ['air', 'w', 'PL', 'gp', 'PB', 'rp', 'PG', 'PR', 'ip', 'O3', 'N2', 'CR', 'S2', 'HA'],  # 9, 21],  # 5, 17], #Most to least throughput, \
                 # so screen brightens, skipping u and zs which really need sky.
 
-                'filter_sky_sort':     ['S2', 'N2', 'CR', 'O3', 'HA', 'z', 'PR', 'PG', 'PB', 'gp', 'rp', 'ip', 'w', 'PL', 'air'],
+                'filter_sky_sort':     [  'PR', 'PG', 'PB', 'gp', 'rp', 'w', 'PL', 'air'], #['S2', 'N2', 'HA', 'CR','O3', 'up', 'z', 'ip',]
                  
             },
         },
