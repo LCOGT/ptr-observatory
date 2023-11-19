@@ -1747,6 +1747,11 @@ class Camera:
                             # sec_z = 1/math.cos(math.radians(new_z))
                             # airmass = abs(round(sec_z - 0.0018167*(sec_z - 1) - 0.002875*((sec_z - 1)**2) - 0.0008083*((sec_z - 1)**3),3))
                             # if airmass > 10: airmass = 10
+                            
+                            # A few things to keep updated on a quicker timescale that aren't done in status
+                            titime=time.time()
+                            g_dev['cam'].tempccdtemp, g_dev['cam'].ccd_humidity, g_dev['cam'].ccd_pressure = (g_dev['cam']._temperature())                            
+                            print ('camtemptime:' + str(time.time()-titime))
                             airmass = round(g_dev['mnt'].airmass, 4)
 
                             airmass_of_observation = airmass
