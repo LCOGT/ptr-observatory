@@ -413,7 +413,8 @@ class Mount:
                 self.mount.Tracking = True
                 self.current_tracking_state=True
             else:
-                plog("mount is not tracking but this mount doesn't support ASCOM changing tracking")
+                #plog("mount is not tracking but this mount doesn't support ASCOM changing tracking")
+                pass
         return
 
     def set_tracking_off(self):
