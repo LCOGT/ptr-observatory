@@ -1015,9 +1015,12 @@ class Observatory:
                         g_dev['mnt'].mount_reboot()
                         self.mount_reboot_on_first_status = False
 
-                    result = device.get_status()
+                    if not 'mount' in device_name:
+                        result = device.get_status()
+                    else:
+                        result = None
 
-                    if 'mount' in device_name:
+                    
                         print (result)
 
                 if result is not None:
