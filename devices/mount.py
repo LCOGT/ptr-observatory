@@ -137,6 +137,7 @@ def wait_for_slew():
                     plog( 'm>')
                     movement_reporting_timer=time.time()
                     g_dev['obs'].time_of_last_slew=time.time()
+                g_dev['mnt'].get_mount_coordinates()
                 g_dev['obs'].request_update_status(mount_only=True)
 
     except Exception as e:

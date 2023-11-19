@@ -227,6 +227,7 @@ class Sequencer:
                         movement_reporting_timer=time.time()
 
                     if not g_dev['obs'].currently_updating_status and g_dev['obs'].update_status_queue.empty():
+                        g_dev['mnt'].get_mount_coordinates()
                         g_dev['obs'].request_update_status(mount_only=True, dont_wait=True)
 
 
@@ -400,7 +401,7 @@ class Sequencer:
                 if (g_dev['events']['Observing Begins'] < ephem_now < g_dev['events']['Observing Ends']):
                     # Move to reasonable spot
                     g_dev['mnt'].set_tracking_on()
-                    
+
 
                     g_dev['mnt'].go_command(alt=70,az= 70)
                     g_dev['foc'].time_of_last_focus = datetime.datetime.utcnow() - datetime.timedelta(
@@ -453,7 +454,7 @@ class Sequencer:
                 self.sky_flat_script({}, {}, morn=False)   #Null command dictionaries
 
                 g_dev['mnt'].set_tracking_on()
-                
+
                 self.eve_sky_flat_latch = False
                 self.eve_flats_done = True
 
@@ -3142,7 +3143,7 @@ class Sequencer:
 
         sim = False
         start_ra = g_dev['mnt'].return_right_ascension()   #Read these to go back.  NB NB Need to cleanly pass these on so we can return to proper target.
-        start_dec = g_dev['mnt'].return_declination() 
+        start_dec = g_dev['mnt'].return_declination()
         focus_start = g_dev['foc'].get_position()
         #
 # =============================================================================
@@ -3797,8 +3798,8 @@ class Sequencer:
             foc_start = begin_at  #In this case we start at a place close to a 3 point minimum.
             g_dev['foc'].guarded_move((foc_start)*g_dev['foc'].micron_to_steps)
 
-        start_ra = g_dev['mnt'].return_right_ascension() 
-        start_dec = g_dev['mnt'].return_declination() 
+        start_ra = g_dev['mnt'].return_right_ascension()
+        start_dec = g_dev['mnt'].return_declination()
         plog("Saved ra, dec, focus:  ", start_ra, start_dec, foc_start)
 
 

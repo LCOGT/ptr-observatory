@@ -990,8 +990,9 @@ class Observatory:
         # Send main batch of devices status
         obsy = self.name
         if mount_only == True:
-            device_list = ['mount']
+            device_list = ['mount','telescope']
         else:
+            self.device_types.append('telescope')
             device_list = self.device_types
         status={}
         for dev_type in device_list:
@@ -1015,13 +1016,13 @@ class Observatory:
                     #     g_dev['mnt'].mount_reboot()
                     #     self.mount_reboot_on_first_status = False
 
-                    if not 'mount' in device_name:
-                        result = device.get_status()
-                    else:
-                        result = None
+                    #if not 'mount' in device_name:
+                    result = device.get_status()
+                    #else:
+                    #    result = None
 
 
-                        print (result)
+                        #print (result)
 
                 if result is not None:
                     status[dev_type][device_name] = result
@@ -1978,8 +1979,8 @@ class Observatory:
                 one_at_a_time = 1
                 request = self.update_status_queue.get(block=False)
                 if request == 'mountonly':
-                    print ("mount only")
-                    self.update_status(mount_only=True)
+                    #print ("mount only")
+                    self.update_status(mount_only=True, dont_wait=True)
                 else:
                     self.update_status()
                 self.update_status_queue.task_done()
@@ -3669,6 +3670,7 @@ def wait_for_slew():
                     plog('m>')
                     movement_reporting_timer = time.time()
                 if not g_dev['obs'].currently_updating_status and g_dev['obs'].update_status_queue.empty():
+                    g_dev['mnt'].get_mount_coordinates()
                     g_dev['obs'].request_update_status(mount_only=True, dont_wait=True)
 
     except Exception as e:
