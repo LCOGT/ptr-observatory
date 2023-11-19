@@ -2590,7 +2590,7 @@ class Sequencer:
                     self.check_zenith_and_move_to_flat_spot(ending=ending)
                     self.time_of_next_slew = time.time() + 45
 
-                g_dev['obs'].scan_requests()
+                #g_dev['obs'].scan_requests()
                 g_dev["obs"].request_full_update()
 
                 if g_dev["fil"].null_filterwheel == False:
@@ -2636,7 +2636,7 @@ class Sequencer:
                 slow_report_timer=time.time()-180
 
                 while (acquired_count < flat_count):
-                    g_dev['obs'].scan_requests()
+                    #g_dev['obs'].scan_requests()
                     g_dev["obs"].request_full_update()
 
                     if g_dev['obs'].open_and_enabled_to_observe == False:
@@ -2843,7 +2843,7 @@ class Sequencer:
                                 g_dev["obs"].request_full_update()
                                 continue
 
-                            g_dev['obs'].scan_requests()
+                            #g_dev['obs'].scan_requests()
                             g_dev["obs"].request_full_update()
 
                             try:
