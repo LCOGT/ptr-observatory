@@ -1127,6 +1127,8 @@ class Observatory:
                         self.currently_updating_status=False
                         return
             except Exception as e:
+                plog(traceback.format_exc())
+                breakpoint()
                 plog ("Sun check didn't work for some reason")
                 if 'Object reference not set' in str(e) and g_dev['mnt'].theskyx:
 
