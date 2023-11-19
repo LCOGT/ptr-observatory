@@ -1010,17 +1010,17 @@ class Observatory:
                     status['telescope'] = copy.deepcopy(status['mount'])
                 else:
                     #breakpoint()
-                    if 'mount' in device_name and self.mount_reboot_on_first_status:
-                        plog ("rebooting mount on first status update. Need to chase why, it is a collision I can't see yet - MTF")
-                        g_dev['mnt'].mount_reboot()
-                        self.mount_reboot_on_first_status = False
+                    # if 'mount' in device_name and self.mount_reboot_on_first_status:
+                    #     plog ("rebooting mount on first status update. Need to chase why, it is a collision I can't see yet - MTF")
+                    #     g_dev['mnt'].mount_reboot()
+                    #     self.mount_reboot_on_first_status = False
 
                     if not 'mount' in device_name:
                         result = device.get_status()
                     else:
                         result = None
 
-                    
+
                         print (result)
 
                 if result is not None:

@@ -190,7 +190,7 @@ class Mount:
         win32com.client.pythoncom.CoInitialize()
         self.mount = win32com.client.Dispatch(driver)
         self.mount_id = win32com.client.pythoncom.CoMarshalInterThreadInterfaceInStream(win32com.client.pythoncom.IID_IDispatch, self.mount)
-        
+
         try:
             self.mount.Connected = True
         except Exception as e:
@@ -344,7 +344,7 @@ class Mount:
         #self.check_connect()
 
 
-        self.previous_status = {}
+
         self.currently_creating_status = False
 
         # Minimising ASCOM calls by holding these as internal variables
@@ -379,7 +379,7 @@ class Mount:
 
         self.current_tracking_state=copy.deepcopy(self.mount.Tracking)
 
-
+        self.get_status()
 
 
 
@@ -485,7 +485,8 @@ class Mount:
         self.current_icrs_ra = self.right_ascension_directly_from_mount    #May not be applied in positioning
         self.current_icrs_dec = self.declination_directly_from_mount
 
-        return copy.deepcopy(self.current_icrs_ra, self.current_icrs_dec)
+        #return copy.deepcopy(self.current_icrs_ra, self.current_icrs_dec)
+        return self.current_icrs_ra, self.current_icrs_dec
 
     def slew_async_directly(self, ra, dec):
         wait_for_slew()
@@ -698,7 +699,7 @@ class Mount:
             plog('Proper device_name is missing, or tel == None')
             status = {'defective':  'status'}
         #plog("Mount Status:  ", status)
-        self.previous_status = status
+        self.previous_status = copy.deepcopy(status)
         self.currently_creating_status = False
         return copy.deepcopy(status)
 
@@ -1122,7 +1123,7 @@ class Mount:
         #
         #breakpoint()
         icrs_ra, icrs_dec = self.get_mount_coordinates()   #Does not appear to be used
-        breakpoint()
+        #breakpoint()
         if self.object == "":
             if not silent:
                 g_dev['obs'].send_to_user("Slewing telescope to un-named target!  ",  p_level="INFO")
