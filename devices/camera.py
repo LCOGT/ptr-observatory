@@ -1968,17 +1968,17 @@ class Camera:
         quartileExposureReport = 0
         self.plog_exposure_time_counter_timer=time.time() -3.0
 
-        exposure_scan_request_timer=time.time()
+        exposure_scan_request_timer=time.time() - 8
         g_dev["obs"].exposure_halted_indicator =False
 
         # try:
         #     g_dev["ocn"].get_quick_status(self.post_ocn)
         # except:
         #     pass
-        self.post_mnt = []
-        self.post_rot = []
-        self.post_foc = []
-        self.post_ocn = []
+        # self.post_mnt = []
+        # self.post_rot = []
+        # self.post_foc = []
+        # self.post_ocn = []
         
         while True:
             
@@ -2085,7 +2085,8 @@ class Camera:
                     try:
                         wait_for_slew()
                         g_dev['mnt'].slew_async_directly(ra=initial_smartstack_ra + ra_random_dither, dec=initial_smartstack_dec + dec_random_dither)
-                        wait_for_slew()
+                        # no wait for slew here as we start downloading the image. the wait_for_slew is after that
+                        
                     except Exception as e:
                         plog (traceback.format_exc())
                         if 'Object reference not set' in str(e) and g_dev['mnt'].theskyx:
@@ -2100,7 +2101,8 @@ class Camera:
                     try:
                         wait_for_slew()
                         g_dev['mnt'].slew_async_directly(ra=initial_smartstack_ra, dec=initial_smartstack_dec)
-                        wait_for_slew()
+                        # no wait for slew here as we start downloading the image. the wait_for_slew is after that
+                        
                     except Exception as e:
                         plog (traceback.format_exc())
                         if 'Object reference not set' in str(e) and g_dev['mnt'].theskyx:
@@ -2110,8 +2112,7 @@ class Camera:
                             plog("Killing then waiting 60 seconds then reconnecting")
                             g_dev['seq'].kill_and_reboot_theskyx(g_dev['mnt'].current_icrs_ra,g_dev['mnt'].current_icrs_dec)
 
-                    wait_for_slew()
-                    g_dev['obs'].check_platesolve_and_nudge()
+                    
 
                 #incoming_image_list = []
 
@@ -2156,6 +2157,11 @@ class Camera:
                             plog("Still waiting for file to arrive: ", e)
                         time.sleep(3)
                         retrycounter = retrycounter + 1
+                        
+                # Here is where we wait for any slew left over while async'ing and grabbing image
+                if Nsmartstack > 1:
+                    wait_for_slew()
+                    g_dev['obs'].check_platesolve_and_nudge()
 
                 if (frame_type in ["bias", "dark"] or frame_type[-4:] == ['flat']) and not manually_requested_calibration:
                     plog("Median of full-image area bias, dark or flat:  ", np.median(outputimg))
@@ -2505,7 +2511,7 @@ class Camera:
                         central_median=np.nanmedian(osc_fits)
                         del osc_fits
 
-                if frame_type[-4:] == "flat":
+                #if frame_type[-4:] == "flat":
 
                     if (
                         central_median
@@ -2616,7 +2622,7 @@ class Camera:
                         self.exposure_busy = False
                         plog("Exposure Complete")
                         g_dev["obs"].send_to_user("Exposure Complete")
-                        breakpoint()
+                        #breakpoint()
                         return copy.deepcopy(expresult)
 
 
