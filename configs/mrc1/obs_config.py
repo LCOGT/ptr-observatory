@@ -145,7 +145,7 @@ site_config = {
 
     'defaults': {       
         'mount': 'mount1',
-        'telescope': 'telescope1',
+        #'telescope': 'telescope1',
         'focuser': 'focuser1',
         'rotator': 'rotator1',
         'selector':  None,
@@ -156,7 +156,7 @@ site_config = {
     },
     'device_types': [
         'mount',
-        'telescope',
+        #'telescope',
         'screen',    #  We do have one!  >>>>
         'rotator',
         'focuser',

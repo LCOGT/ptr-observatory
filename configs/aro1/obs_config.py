@@ -165,7 +165,7 @@ site_config = {
     'defaults': {
         'screen': 'screen1',
         'mount': 'mount1',
-        'telescope': 'telescope1',     #How do we handle selector here, if at all?
+        #'telescope': 'telescope1',     #How do we handle selector here, if at all?
         'focuser': 'focuser1',
         #'rotator': 'rotator1',
         'selector': None,
@@ -175,7 +175,7 @@ site_config = {
         },
     'device_types': [
         'mount',
-        'telescope',
+        #'telescope',
         #'screen',
         #'rotator',
         'focuser',
@@ -186,7 +186,7 @@ site_config = {
         ],
     'short_status_devices':  [
        'mount',
-       'telescope',
+       #'telescope',
        # 'screen',
        'rotator',
        'focuser',
