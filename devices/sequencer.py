@@ -2434,7 +2434,7 @@ class Sequencer:
 
 
 
-        if  ((ephem.now() < g_dev['events']['Eve Sky Flats']) or \
+        if  ((ephem.now() < g_dev['events']['Cool Down, Open']) or \
             (g_dev['events']['End Morn Sky Flats'] < ephem.now() < g_dev['events']['Nightly Reset'])):
             plog ("NOT DOING FLATS -- IT IS THE DAYTIME!!")
             g_dev["obs"].send_to_user("A sky flat script request was rejected as it is during the daytime.")
