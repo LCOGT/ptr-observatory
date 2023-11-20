@@ -554,12 +554,12 @@ class Mount:
         '''
 
         # mount command #
-        while self.mount_busy:
-            time.sleep(0.05)
-        self.mount_busy=True
+        # while self.mount_busy:
+        #     time.sleep(0.05)
+        # self.mount_busy=True
         self.right_ascension_directly_from_mount = copy.deepcopy(self.mount.RightAscension)
         self.declination_directly_from_mount = copy.deepcopy(self.mount.Declination)
-        self.mount_busy=False
+        #self.mount_busy=False
         # end mount command #
         self.current_icrs_ra = self.right_ascension_directly_from_mount    #May not be applied in positioning
         self.current_icrs_dec = self.declination_directly_from_mount
