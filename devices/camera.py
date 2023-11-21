@@ -2466,8 +2466,8 @@ class Camera:
                 if not g_dev["cam"].exposure_busy:
                     expresult = {"stopped": True}
                     plog ("exposure busy cancelling out of camera")
-                    print ("expresult")
-                    print (expresult)
+                    #print ("expresult")
+                    #print (expresult)
                     return copy.deepcopy(expresult)
 
 
@@ -2525,8 +2525,8 @@ class Camera:
                         expresult["error"] = True
                         expresult["patch"] = central_median
                         expresult["camera_gain"] = np.nan
-                        print ("expresult")
-                        print (expresult)
+                        #print ("expresult")
+                        #print (expresult)
                         return copy.deepcopy(expresult) # signals to flat routine image was rejected, prompt return
 
                     elif (
@@ -2541,8 +2541,8 @@ class Camera:
                         expresult["error"] = True
                         expresult["patch"] = central_median
                         expresult["camera_gain"] = np.nan
-                        print ("expresult")
-                        print (expresult)
+                        #print ("expresult")
+                        #print (expresult)
                         return copy.deepcopy(expresult)  # signals to flat routine image was rejected, prompt return
                     elif (
                         central_median
@@ -2556,8 +2556,8 @@ class Camera:
                         expresult["error"] = True
                         expresult["patch"] = central_median
                         expresult["camera_gain"] = np.nan
-                        print ("expresult")
-                        print (expresult)
+                        #print ("expresult")
+                        #print (expresult)
                         return copy.deepcopy(expresult) # signals to flat routine image was rejected, prompt return
                     else:
                         expresult={}
