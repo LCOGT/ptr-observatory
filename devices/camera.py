@@ -2341,6 +2341,15 @@ class Camera:
                         + "00.fits"
                     )
                     cal_path = im_path_r + g_dev["day"] + "/calib/"
+                    
+                    if not os.path.exists(im_path_r):
+                        os.makedirs(im_path_r)
+                    if not os.path.exists(im_path_r+ g_dev["day"]):
+                        os.makedirs(im_path_r+ g_dev["day"])
+                    if not os.path.exists(im_path_r+ g_dev["day"]+ "/calib"):
+                        os.makedirs(im_path_r+ g_dev["day"]+ "/calib")
+                    if not os.path.exists(im_path_r+ g_dev["day"] + "/to_AWS"):
+                        os.makedirs(im_path_r+ g_dev["day"]+ "/to_AWS")
 
                     hdu = fits.PrimaryHDU()
                     hdu.header['PIXSCALE']=self.pixscale
@@ -2389,6 +2398,17 @@ class Camera:
                         + "00.fits"
                     )
                     cal_path = im_path_r + g_dev["day"] + "/calib/"
+                    
+                    if not os.path.exists(im_path_r):
+                        os.makedirs(im_path_r)
+                    if not os.path.exists(im_path_r+ g_dev["day"]):
+                        os.makedirs(im_path_r+ g_dev["day"])
+                    if not os.path.exists(im_path_r+ g_dev["day"]+ "/calib"):
+                        os.makedirs(im_path_r+ g_dev["day"]+ "/calib")
+                    if not os.path.exists(im_path_r+ g_dev["day"] + "/to_AWS"):
+                        os.makedirs(im_path_r+ g_dev["day"]+ "/to_AWS")
+
+
 
                     hdu = fits.PrimaryHDU()
                     hdu.header['PIXSCALE']=self.pixscale
@@ -2466,8 +2486,8 @@ class Camera:
                 if not g_dev["cam"].exposure_busy:
                     expresult = {"stopped": True}
                     plog ("exposure busy cancelling out of camera")
-                    print ("expresult")
-                    print (expresult)
+                    #print ("expresult")
+                    #print (expresult)
                     return copy.deepcopy(expresult)
 
 
@@ -2525,8 +2545,8 @@ class Camera:
                         expresult["error"] = True
                         expresult["patch"] = central_median
                         expresult["camera_gain"] = np.nan
-                        print ("expresult")
-                        print (expresult)
+                        #print ("expresult")
+                        #print (expresult)
                         return copy.deepcopy(expresult) # signals to flat routine image was rejected, prompt return
 
                     elif (
@@ -2541,8 +2561,8 @@ class Camera:
                         expresult["error"] = True
                         expresult["patch"] = central_median
                         expresult["camera_gain"] = np.nan
-                        print ("expresult")
-                        print (expresult)
+                        #print ("expresult")
+                        #print (expresult)
                         return copy.deepcopy(expresult)  # signals to flat routine image was rejected, prompt return
                     elif (
                         central_median
@@ -2556,8 +2576,8 @@ class Camera:
                         expresult["error"] = True
                         expresult["patch"] = central_median
                         expresult["camera_gain"] = np.nan
-                        print ("expresult")
-                        print (expresult)
+                        #print ("expresult")
+                        #print (expresult)
                         return copy.deepcopy(expresult) # signals to flat routine image was rejected, prompt return
                     else:
                         expresult={}

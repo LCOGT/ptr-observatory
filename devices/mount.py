@@ -127,49 +127,7 @@ def ra_fix_h(ra):
         ra = 24
     return ra
 
-def wait_for_slew():
 
-    try:
-        if not g_dev['mnt'].rapid_park_indicator:
-            movement_reporting_timer=time.time()
-            while g_dev['mnt'].mount.Slewing:
-                if time.time() - movement_reporting_timer > 2.0:
-                    plog( 'm>')
-                    movement_reporting_timer=time.time()
-                    g_dev['obs'].time_of_last_slew=time.time()
-                if not g_dev['obs'].currently_updating_status and g_dev['obs'].update_status_queue.empty():
-                    g_dev['mnt'].get_mount_coordinates()
-                    #g_dev['obs'].request_update_status(mount_only=True, dont_wait=True)
-                    g_dev['obs'].update_status(mount_only=True, dont_wait=True)
-
-    except Exception as e:
-        plog("Motion check faulted.")
-        plog(traceback.format_exc())
-        if 'pywintypes.com_error' in str(e):
-            plog ("Mount disconnected. Recovering.....")
-            time.sleep(30)
-            g_dev['mnt'].mount.Connected = True
-            #g_dev['mnt'].home_command()
-        else:
-            print ("trying recovery routine")
-            q=0
-            while True:
-                time.sleep(10)
-                plog ("recovery attempt " + str(q+1))
-                q=q+1
-                g_dev['obs'].request_update_status(mount_only=True)
-                try:
-                    g_dev['mnt'].mount.Connected = True
-
-                    break
-                except:
-                    plog("recovery didn't work")
-                    plog(traceback.format_exc())
-                    if q > 15:
-                        pass
-                        ######breakpoint()
-
-    return
 
 class Mount:
     '''
@@ -302,38 +260,10 @@ class Mount:
 
         self.theskyx_tracking_rescues = 0
 
-        # Here we figure out if it can report pierside. If it cannot, we need
-        # not keep calling the mount to ask for it, which is slow and prone
-        # to an ascom crash.
-        try:
-            self.pier_side = g_dev[
-                "mnt"
-            ].mount.sideOfPier  # 0 == Tel Looking West, is flipped.
-            self.can_report_pierside = True
-        except Exception:
-            plog ("Mount cannot report pierside. Setting the code not to ask again, assuming default pointing west.")
-            self.can_report_pierside = False
-            self.pier_side = 0
 
-            pass
+        
 
-        # Similarly for DestinationSideOfPier
-        try:
-            g_dev[
-                "mnt"
-            ].mount.DestinationSideOfPier(0,0)  # 0 == Tel Looking West, is flipped.
-            self.can_report_destination_pierside = True
-        except Exception:
-            plog ("Mount cannot report destination pierside. Setting the code not to ask again.")
-            self.can_report_destination_pierside = False
-            self.pier_side = 0
-
-            pass
-
-        if self.pier_side == 0:
-            self.pier_side_str ="Looking West"
-        else:
-            self.pier_side_str = "Looking East"
+        
 
         # NEED to initialise these variables here in case the mount isn't slewed
         # before exposures after bootup
@@ -386,31 +316,161 @@ class Mount:
 
         self.current_tracking_state=copy.deepcopy(self.mount.Tracking)
 
+        
+        
+        # This is a latch to prevent multiple commands being sent to latch at the same time. 
+        self.mount_busy=False
+        
+        
+        tempunparked=False
+        # if mount is parked, temporarily unpark it quickly to test pierside functions.
+        if self.mount.AtPark:
+            self.mount.Unpark()
+            tempunparked=True
+            self.rapid_park_indicator=False
+            
+        
+        
+        # Here we figure out if it can report pierside. If it cannot, we need
+        # not keep calling the mount to ask for it, which is slow and prone
+        # to an ascom crash.
+        try:
+            self.pier_side = g_dev[
+                "mnt"
+            ].mount.sideOfPier  # 0 == Tel Looking West, is flipped.
+            self.can_report_pierside = True
+        except Exception:
+            plog ("Mount cannot report pierside. Setting the code not to ask again, assuming default pointing west.")
+            self.can_report_pierside = False
+            self.pier_side = 0
+
+            pass
+
+        # Similarly for DestinationSideOfPier
+        try:
+            g_dev[
+                "mnt"
+            ].mount.DestinationSideOfPier(0,0)  # 0 == Tel Looking West, is flipped.
+            self.can_report_destination_pierside = True
+        except Exception:
+            plog ("Mount cannot report destination pierside. Setting the code not to ask again.")
+            self.can_report_destination_pierside = False
+            self.pier_side = 0
+
+            pass
+
+        if self.pier_side == 0:
+            self.pier_side_str ="Looking West"
+        else:
+            self.pier_side_str = "Looking East"
+        
+        if tempunparked:
+            self.mount.Park()
+            self.rapid_park_indicator=True
+        
         self.get_status()
+        # # mount command #
+        # while self.mount_busy:
+        #     time.sleep(0.05)
+        # self.mount_busy=True
+        
+        # self.mount_busy=False
 
+    def wait_for_slew(self):
 
+        try:
+            if not g_dev['mnt'].rapid_park_indicator:
+                movement_reporting_timer=time.time()
+                while self.return_slewing():
+                    if time.time() - movement_reporting_timer > 2.0:
+                        plog( 'm>')
+                        movement_reporting_timer=time.time()
+                        g_dev['obs'].time_of_last_slew=time.time()
+                    if not g_dev['obs'].currently_updating_status and g_dev['obs'].update_status_queue.empty():
+                        g_dev['mnt'].get_mount_coordinates()
+                        #g_dev['obs'].request_update_status(mount_only=True, dont_wait=True)
+                        g_dev['obs'].update_status(mount_only=True, dont_wait=True)
+
+        except Exception as e:
+            plog("Motion check faulted.")
+            plog(traceback.format_exc())
+            if 'pywintypes.com_error' in str(e):
+                plog ("Mount disconnected. Recovering.....")
+                time.sleep(30)
+                
+                g_dev['mnt'].mount.Connected = True
+                #g_dev['mnt'].home_command()
+            else:
+                print ("trying recovery routine")
+                q=0
+                while True:
+                    time.sleep(10)
+                    plog ("recovery attempt " + str(q+1))
+                    q=q+1
+                    g_dev['obs'].request_update_status(mount_only=True)
+                    try:
+                        g_dev['mnt'].mount.Connected = True
+
+                        break
+                    except:
+                        plog("recovery didn't work")
+                        plog(traceback.format_exc())
+                        if q > 15:
+                            pass
+                            ######breakpoint()
+
+        return
 
     def return_side_of_pier(self):
-        return copy.deepcopy(self.mount.sideOfPier)
+        # mount command #
+        while self.mount_busy:
+            time.sleep(0.05)
+        self.mount_busy=True
+        tempvalue = copy.deepcopy(self.mount.sideOfPier)
+        self.mount_busy=False
+        # end mount command #
+        return tempvalue
+        
 
     def return_right_ascension(self):
-        #return copy.deepcopy(self.mount.RightAscension)
+
         return self.right_ascension_directly_from_mount
+    
 
     def return_declination(self):
-        #return copy.deepcopy(self.mount.Declination)
+        
         return self.declination_directly_from_mount
 
     def return_slewing(self):
-        return copy.deepcopy(self.mount.Slewing)
+        # mount command #
+        while self.mount_busy:
+            time.sleep(0.05)
+        self.mount_busy=True
+        tempvalue = copy.deepcopy(self.mount.Slewing)
+        self.mount_busy=False
+        # end mount command #
+        return tempvalue
 
     def return_tracking(self):
-        return copy.deepcopy(self.mount.Tracking)
+        # mount command #
+        while self.mount_busy:
+            time.sleep(0.05)
+        self.mount_busy=True
+        tempvalue = copy.deepcopy(self.mount.Tracking)
+        self.mount_busy=False
+        # end mount command #
+        return tempvalue
 
-    def set_tracking_on(self):
+    def set_tracking_on(self):        
         if self.return_slewing() == False:
             if self.can_set_tracking:
+                # mount command #
+                while self.mount_busy:
+                    time.sleep(0.05)
+                self.mount_busy=True
                 self.mount.Tracking = True
+                self.mount_busy=False
+                # end mount command #
                 self.current_tracking_state=True
             else:
                 #plog("mount is not tracking but this mount doesn't support ASCOM changing tracking")
@@ -420,17 +480,24 @@ class Mount:
     def set_tracking_off(self):
         if self.return_slewing() == False:
             if self.can_set_tracking:
+                # mount command #
+                while self.mount_busy:
+                    time.sleep(0.05)
+                self.mount_busy=True
                 self.mount.Tracking = False
+                self.mount_busy=False
+                # end mount command #
                 self.current_tracking_state=False
             else:
-                plog("mount is not tracking but this mount doesn't support ASCOM changing tracking")
+                pass
+                #plog("mount is not tracking but this mount doesn't support ASCOM changing tracking")
         return
 
-    def mount_reboot(self):
+    # def mount_reboot(self):
 
-        win32com.client.pythoncom.CoInitialize()
-        self.mount = win32com.client.Dispatch(self.driver)
-        self.mount.Connected = True
+    #     win32com.client.pythoncom.CoInitialize()
+    #     self.mount = win32com.client.Dispatch(self.driver)
+    #     self.mount.Connected = True
 
     # def check_connect(self):
     #     try:
@@ -487,9 +554,14 @@ class Mount:
 
         '''
 
+        # mount command #
+        while self.mount_busy:
+            time.sleep(0.05)
+        self.mount_busy=True
         self.right_ascension_directly_from_mount = copy.deepcopy(self.mount.RightAscension)
         self.declination_directly_from_mount = copy.deepcopy(self.mount.Declination)
-
+        self.mount_busy=False
+        # end mount command #
         self.current_icrs_ra = self.right_ascension_directly_from_mount    #May not be applied in positioning
         self.current_icrs_dec = self.declination_directly_from_mount
 
@@ -497,9 +569,15 @@ class Mount:
         return self.current_icrs_ra, self.current_icrs_dec
 
     def slew_async_directly(self, ra, dec):
-        wait_for_slew()
+        self.wait_for_slew()
+        # mount command #
+        while self.mount_busy:
+            time.sleep(0.05)
+        self.mount_busy=True
         self.mount.SlewToCoordinatesAsync(ra, dec)
-        wait_for_slew()
+        self.mount_busy=False
+        # end mount command #
+        self.wait_for_slew()
         self.get_mount_coordinates()
 
     # def get_status(self):
@@ -942,9 +1020,15 @@ class Mount:
                 #plog ("New RA - Old RA = "+ str(float(req['ra'])-center_image_ra))
                 #plog ("New dec - Old dec = "+ str(float(req['dec'])-center_image_dec))
 
-                wait_for_slew()
+                self.wait_for_slew()
+                # mount command #
+                while self.mount_busy:
+                    time.sleep(0.05)
+                self.mount_busy=True
                 self.mount.SlewToCoordinatesAsync(gora, godec)
-                wait_for_slew()
+                self.mount_busy=False
+                # end mount command #
+                self.wait_for_slew()
                 self.get_mount_coordinates()
 
                 #breakpoint()
@@ -1158,11 +1242,23 @@ class Mount:
         #Note this initiates a mount move.  WE should Evaluate if the destination is on the flip side and pick up the
         #flip offset.  So a GEM could track into positive HA territory without a problem but the next reseek should
         #result in a flip.  So first figure out if there will be a flip:
+        # mount command #
+        while self.mount_busy:
+            time.sleep(0.05)
+        self.mount_busy=True
         self.previous_pier_side=self.mount.sideOfPier
+        self.mount_busy=False
+        # end mount command #
 
         if self.can_report_destination_pierside == True:
             try:                          #  NB NB Might be good to log is flipping on a re-seek.
+                # mount command #
+                while self.mount_busy:
+                    time.sleep(0.05)
+                self.mount_busy=True
                 new_pierside =  self.mount.DestinationSideOfPier(ra, dec) #  A tuple gets returned: (pierside, Ra.h and dec.d)
+                self.mount_busy=False
+                # end mount command #
                 if len(new_pierside) > 1:
                     if new_pierside[0] == 0:
                         delta_ra, delta_dec = self.get_mount_reference()
@@ -1172,7 +1268,13 @@ class Mount:
 
             except:
                 try:
+                    # mount command #
+                    while self.mount_busy:
+                        time.sleep(0.05)
+                    self.mount_busy=True
                     new_pierside =  self.mount.DestinationSideOfPier(ra, dec) #  A tuple gets returned: (pierside, Ra.h and dec.d)
+                    self.mount_busy=False
+                    # end mount command #
                     if new_pierside == 0:
                         delta_ra, delta_dec = self.get_mount_reference()
 
@@ -1210,15 +1312,21 @@ class Mount:
         successful_move=0
         while successful_move==0:
             try:
-                wait_for_slew()
+                self.wait_for_slew()
                 g_dev['obs'].time_of_last_slew=time.time()
                 g_dev['mnt'].last_slew_was_pointing_slew = True
                 if ra < 0:
                     ra=ra+24
                 if ra > 24:
                     ra=ra-24
+                # mount command #
+                while self.mount_busy:
+                    time.sleep(0.05)
+                self.mount_busy=True
                 self.mount.SlewToCoordinatesAsync(ra, dec)  #Is this needed?
-                wait_for_slew()
+                self.mount_busy=False
+                # end mount command #
+                self.wait_for_slew()
                 self.get_mount_coordinates()
             except Exception:
                 # This catches an occasional ASCOM/TheSkyX glitch and gets it out of being stuck
@@ -1234,14 +1342,20 @@ class Mount:
                                 plog("Killing then waiting 60 seconds then reconnecting")
                                 g_dev['seq'].kill_and_reboot_theskyx(-1,-1)
                                 self.unpark_command()
-                                wait_for_slew()
+                                self.wait_for_slew()
                                 #self.mount.SlewToCoordinatesAsync(self.ra_mech*RTOH, self.dec_mech*RTOD)  #Is this needed?
                                 if ra < 0:
                                     ra=ra+24
                                 if ra > 24:
                                     ra=ra-24
+                                # mount command #
+                                while self.mount_busy:
+                                    time.sleep(0.05)
+                                self.mount_busy=True
                                 self.mount.SlewToCoordinatesAsync(ra, dec)
-                                wait_for_slew()
+                                self.mount_busy=False
+                                # end mount command #
+                                self.wait_for_slew()
                                 self.get_mount_coordinates()
                                 retry=4
                             else:
@@ -1256,7 +1370,13 @@ class Mount:
                     #######breakpoint()
 
             # Make sure the current pier_side variable is set
+            # mount command #
+            while self.mount_busy:
+                time.sleep(0.05)
+            self.mount_busy=True
             g_dev["mnt"].pier_side=self.mount.sideOfPier
+            self.mount_busy=False
+            # end mount command #
             if self.previous_pier_side == g_dev["mnt"].pier_side or self.can_report_destination_pierside:
                 successful_move=1
             else:
@@ -1276,17 +1396,24 @@ class Mount:
                 if ra > 24:
                     ra=ra-24
                 plog('actual sent ra: ' + str(ra) + ' dec: ' + str(dec))
-                wait_for_slew()
+                self.wait_for_slew()
                 g_dev['mnt'].last_slew_was_pointing_slew = True
+                # mount command #
+                while self.mount_busy:
+                    time.sleep(0.05)
+                self.mount_busy=True
                 self.mount.SlewToCoordinatesAsync(ra, dec)
-                wait_for_slew()
+                self.mount_busy=False
+                # end mount command #
+                self.wait_for_slew()
                 self.get_mount_coordinates()
                 successful_move=1
 
-        if self.mount.Tracking == False:
+
+        if not self.current_tracking_state:
             try:
-                wait_for_slew()
-                self.mount.Tracking = True
+                self.wait_for_slew()
+                self.set_tracking_on()                
             except Exception:
                 # Yes, this is an awfully non-elegant way to force a mount to start
                 # Tracking when it isn't implemented in the ASCOM driver. But if anyone has any better ideas, I am all ears - MF
@@ -1301,13 +1428,19 @@ class Mount:
                     plog("Killing then waiting 60 seconds then reconnecting")
                     g_dev['seq'].kill_and_reboot_theskyx(-1,-1)
                     self.unpark_command()
-                    wait_for_slew()
+                    self.wait_for_slew()
                     if ra < 0:
                         ra=ra+24
                     if ra > 24:
                         ra=ra-24
+                    # mount command #
+                    while self.mount_busy:
+                        time.sleep(0.05)
+                    self.mount_busy=True
                     self.mount.SlewToCoordinatesAsync(ra, dec)  #Is this needed?
-                    wait_for_slew()
+                    self.mount_busy=False
+                    # end mount command #
+                    self.wait_for_slew()
                     self.get_mount_coordinates()
 
                 else:
@@ -1319,7 +1452,7 @@ class Mount:
         g_dev['obs'].time_since_last_slew = time.time()
         g_dev['obs'].last_solve_time = datetime.datetime.now() - datetime.timedelta(days=1)
         g_dev['obs'].images_since_last_solve = 10000
-        wait_for_slew()
+        self.wait_for_slew()
         if not silent:
             g_dev['obs'].send_to_user("Slew Complete.")
 
@@ -1327,7 +1460,13 @@ class Mount:
             g_dev['seq'].centering_exposure()
 
         # Continue to keep track of pierside
+        # mount command #
+        while self.mount_busy:
+            time.sleep(0.05)
+        self.mount_busy=True
         self.previous_pier_side=self.mount.sideOfPier
+        self.mount_busy=False
+        # end mount command #
 
     def go_w_model_and_velocity(self, ra, dec, tracking_rate_ra=0, tracking_rate_dec=0, reset_solve=True):  #Note these rates need a system specification
         '''
@@ -1353,7 +1492,13 @@ class Mount:
         try:
 
             try:                          #  NB NB Might be good to log is flipping on a re-seek.
+                # mount command #
+                while self.mount_busy:
+                    time.sleep(0.05)
+                self.mount_busy=True
                 new_pierside =  self.mount.DestinationSideOfPier(ra, dec) #  A tuple gets returned: (pierside, Ra.h and dec.d)
+                self.mount_busy=False
+                # end mount command #
                 if len(new_pierside) > 1:
                     if new_pierside[0] == 0:
                         delta_ra, delta_dec = self.get_mount_reference()
@@ -1363,7 +1508,13 @@ class Mount:
                         pier_east = 0
             except:
                 try:
+                    # mount command #
+                    while self.mount_busy:
+                        time.sleep(0.05)
+                    self.mount_busy=True
                     new_pierside =  self.mount.DestinationSideOfPier(ra, dec) #  A tuple gets returned: (pierside, Ra.h and dec.d)
+                    self.mount_busy=False
+                    # end mount command #
                     if new_pierside == 0:
                         delta_ra, delta_dec = self.get_mount_reference()
                         pier_east = 1
@@ -1382,7 +1533,8 @@ class Mount:
         ra += delta_ra #NB it takes a restart to pick up a new correction which is also J.now.
         dec += delta_dec
         ra, dec = ra_dec_fix_h(ra,dec)
-        if self.mount.EquatorialSystem == 1:    #equTopocentric
+        #if self.mount.EquatorialSystem == 1:    #equTopocentric
+        if self.EquatorialSystem == 1:
             self.get_current_times()   #  NB We should find a way to refresh this once a day, esp. for status return.
             #  Input is meant to be IRCS, so change to that Astropy type;
             icrs_coord = SkyCoord(ra*u.hour, dec*u.degree, frame='icrs')
@@ -1410,10 +1562,10 @@ class Mount:
         self.dec_corr = ptr_utility.reduce_dec_r(self.dec_mech - self.dec_obs_r)*RTOS
 
 
-        if self.mount.Tracking == False:
+        if not self.current_tracking_state:
             try:
-                wait_for_slew()
-                self.mount.Tracking = True
+                self.wait_for_slew()
+                self.set_tracking_on()  
             except Exception as e:
                 # Yes, this is an awfully non-elegant way to force a mount to start
                 # Tracking when it isn't implemented in the ASCOM driver. But if anyone has any better ideas, I am all ears - MF
@@ -1422,17 +1574,23 @@ class Mount:
                     self.theskyx_tracking_rescues=self.theskyx_tracking_rescues + 1
                     self.home_command()
                     self.park_command()
-                    wait_for_slew()
+                    self.wait_for_slew()
                     self.unpark_command()
-                    wait_for_slew()
+                    self.wait_for_slew()
+                    # mount command #
+                    while self.mount_busy:
+                        time.sleep(0.05)
+                    self.mount_busy=True
                     self.mount.SlewToCoordinatesAsync(self.ra_mech*RTOH, self.dec_mech*RTOD)  #Is this needed?
-                    wait_for_slew()
+                    self.mount_busy=False
+                    # end mount command #
+                    self.wait_for_slew()
                     self.get_mount_coordinates()
                     print ("this mount may not accept tracking commands")
                 elif ('Property write Tracking is not implemented in this driver.' in str(e)) and self.theskyx_tracking_rescues >= 5:
                     print ("theskyx has been rescued one too many times. Just sending it to park.")
                     self.park_command()
-                    wait_for_slew()
+                    self.wait_for_slew()
                     return
                 else:
                     print ("problem with setting tracking: ", e)
@@ -1443,10 +1601,16 @@ class Mount:
         plog('MODEL HA, DEC, AZ, Refraction:  (asec)  ', self.ha_corr, self.dec_corr, az*RTOD, self.refr_asec)
         self.target_az = az*RTOD
 
-        wait_for_slew()
+        self.wait_for_slew()
         try:
+            # mount command #
+            while self.mount_busy:
+                time.sleep(0.05)
+            self.mount_busy=True
             self.mount.SlewToCoordinatesAsync(self.ra_mech*RTOH, self.dec_mech*RTOD)  #Is this needed?
-            wait_for_slew()
+            self.mount_busy=False
+            # end mount command #
+            self.wait_for_slew()
             self.get_mount_coordinates()
         except Exception as e:
             # This catches an occasional ASCOM/TheSkyX glitch and gets it out of being stuck
@@ -1454,17 +1618,23 @@ class Mount:
             if ('Object reference not set to an instance of an object.' in str(e)):
                 self.home_command()
                 self.park_command()
-                wait_for_slew()
+                self.wait_for_slew()
                 self.unpark_command()
-                wait_for_slew()
+                self.wait_for_slew()
+                # mount command #
+                while self.mount_busy:
+                    time.sleep(0.05)
+                self.mount_busy=True
                 self.mount.SlewToCoordinatesAsync(self.ra_mech*RTOH, self.dec_mech*RTOD)  #Is this needed?
-                wait_for_slew()
+                self.mount_busy=False
+                # end mount command #
+                self.wait_for_slew()
                 self.get_mount_coordinates()
 
-        if self.mount.Tracking == False:
+        if not self.current_tracking_state:
             try:
-                wait_for_slew()
-                self.mount.Tracking = True
+                self.wait_for_slew()
+                self.set_tracking_on()
             except Exception as e:
                 # Yes, this is an awfully non-elegant way to force a mount to start
                 # Tracking when it isn't implemented in the ASCOM driver. But if anyone has any better ideas, I am all ears - MF
@@ -1472,18 +1642,24 @@ class Mount:
                 if ('Property write Tracking is not implemented in this driver.' in str(e)) and self.theskyx_tracking_rescues < 5:
                     self.theskyx_tracking_rescues=self.theskyx_tracking_rescues + 1
                     self.park_command()
-                    wait_for_slew()
+                    self.wait_for_slew()
                     self.unpark_command()
-                    wait_for_slew()
+                    self.wait_for_slew()
+                    # mount command #
+                    while self.mount_busy:
+                        time.sleep(0.05)
+                    self.mount_busy=True
                     self.mount.SlewToCoordinatesAsync(self.ra_mech*RTOH, self.dec_mech*RTOD)  #Is this needed?
-                    wait_for_slew()
+                    self.mount_busy=False
+                    # end mount command #
+                    self.wait_for_slew()
                     self.get_mount_coordinates()
 
                     print ("this mount may not accept tracking commands")
                 elif ('Property write Tracking is not implemented in this driver.' in str(e)) and self.theskyx_tracking_rescues >= 5:
                     print ("theskyx has been rescued one too many times. Just sending it to park.")
                     self.park_command()
-                    wait_for_slew()
+                    self.wait_for_slew()
                     return
                 else:
                     print ("problem with setting tracking: ", e)
@@ -1491,7 +1667,7 @@ class Mount:
         g_dev['obs'].time_since_last_slew_or_exposure = time.time()
         g_dev['obs'].last_solve_time = datetime.datetime.now() - datetime.timedelta(days=1)
         g_dev['obs'].images_since_last_solve = 10000
-        wait_for_slew()
+        self.wait_for_slew()
 
 
         ###  figure out velocity  Apparent place is unchanged.
@@ -1510,14 +1686,27 @@ class Mount:
         Please note that for historic reasons the units of the
         RightAscensionRate property are seconds of RA per sidereal second.
         '''
-        if self.mount.CanSetRightAscensionRate:
+        if self.CanSetRightAscensionRate:
             self.prior_roll_rate = -((self.ha_mech_adv - self. ha_mech)*RTOS*MOUNTRATE/self.delta_t_s - MOUNTRATE)/(APPTOSID*15)    #Conversion right 20219329
+            # mount command #
+            while self.mount_busy:
+                time.sleep(0.05)
+            self.mount_busy=True
             self.mount.RightAscensionRate = 0.0 # self.prior_roll_rate  #Neg number makes RA decrease
+            self.mount_busy=False
+            # end mount command #
+            
         else:
             self.prior_roll_rate = 0.0
-        if self.mount.CanSetDeclinationRate:
+        if self.CanSetDeclinationRate:
            self.prior_pitch_rate = -(self.dec_mech_adv - self.dec_mech)*RTOS/self.delta_t_s    #20210329 OK 1 hour from zenith.  No Appsid correction per ASCOM spec.
+           # mount command #
+           while self.mount_busy:
+               time.sleep(0.05)
+           self.mount_busy=True
            self.mount.DeclinationRate = self.prior_pitch_rate  #Neg sign makes Dec decrease
+           self.mount_busy=False
+           # end mount command #
            #plog("Rates, refr are:  ", self.prior_roll_rate, self.prior_pitch_rate, self.refr_asec)
         else:
             self.prior_pitch_rate = 0.0
@@ -1525,11 +1714,23 @@ class Mount:
         # time.sleep(.5)
         # self.mount.SlewToCoordinatesAsync(ra_mech*RTOH, dec_mech*RTOD)
         #time.sleep(1)   #fOR SOME REASON REPEATING THIS HELPS!
-        if self.mount.CanSetRightAscensionRate:
+        if self.CanSetRightAscensionRate:
+            # mount command #
+            while self.mount_busy:
+                time.sleep(0.05)
+            self.mount_busy=True
             self.mount.RightAscensionRate = 0.0 #self.prior_roll_rate
+            self.mount_busy=False
+            # end mount command #
 
-        if self.mount.CanSetDeclinationRate:
+        if self.CanSetDeclinationRate:
+            # mount command #
+            while self.mount_busy:
+                time.sleep(0.05)
+            self.mount_busy=True
             self.mount.DeclinationRate = self.prior_pitch_rate
+            self.mount_busy=False
+            # end mount command #
 
         plog("Rates set:  ", self.prior_roll_rate, self.prior_pitch_rate, self.refr_adv)
         self.seek_commanded = True
@@ -1543,7 +1744,7 @@ class Mount:
         if reset_solve == True:
             g_dev['obs'].last_solve_time = datetime.datetime.now() - datetime.timedelta(days=1)
             g_dev['obs'].images_since_last_solve = 10000
-        wait_for_slew()
+        self.wait_for_slew()
 
     def stop_command(self, req, opt):
         plog("mount cmd: stopping mount")
@@ -1552,19 +1753,32 @@ class Mount:
     def home_command(self, req=None, opt=None):
         ''' slew to the home position '''
         plog("mount cmd: homing mount")
-        if self.mount.CanFindHome:
+        if self.CanFindHome:
+            # mount command #
+            while self.mount_busy:
+                time.sleep(0.05)
+            self.mount_busy=True
             mount_at_home = self.mount.AtHome
+            self.mount_busy=False
+            # end mount command #
+            
             if mount_at_home:
                 plog("Mount is at home.")
             elif not mount_at_home:
                 g_dev['obs'].time_of_last_slew=time.time()
                 plog(f"can find home: {self.mount.CanFindHome}")
                 self.unpark_command()
-                wait_for_slew()
+                self.wait_for_slew()
 
-                self.move_time = time.time()
+                self.move_time = time.time()                
+                # mount command #
+                while self.mount_busy:
+                    time.sleep(0.05)
+                self.mount_busy=True
                 self.mount.FindHome()
-                wait_for_slew()
+                self.mount_busy=False
+                # end mount command #
+                self.wait_for_slew()
                 self.get_mount_coordinates()
         else:
             plog("Mount is not capable of finding home. Slewing to home_alt and home_az")
@@ -1574,8 +1788,8 @@ class Mount:
             g_dev['obs'].time_of_last_slew=time.time()
             g_dev['mnt'].go_command(alt=home_alt,az= home_az, skip_open_test=True)
 
-            wait_for_slew()
-        wait_for_slew()
+            self.wait_for_slew()
+        self.wait_for_slew()
 
     def flat_panel_command(self, req, opt):
         ''' slew to the flat panel if it exists '''
@@ -1590,15 +1804,30 @@ class Mount:
     def park_command(self, req=None, opt=None):
         ''' park the telescope mount '''
         if self.can_park:
-            if not g_dev['mnt'].rapid_park_indicator:
+            # mount command #
+            while self.mount_busy:
+                time.sleep(0.05)
+            self.mount_busy=True
+            tempatpark=self.mount.AtPark
+            self.mount_busy=False
+            # end mount command #
+            
+            if not tempatpark:
                 plog("mount cmd: parking mount")
                 if g_dev['obs'] is not None:  #THis gets called before obs is created
                     g_dev['obs'].send_to_user("Parking Mount. This can take a moment.")
                 g_dev['obs'].time_of_last_slew=time.time()
-                wait_for_slew()
+                self.wait_for_slew()
+                # mount command #
+                while self.mount_busy:
+                    time.sleep(0.05)
+                self.mount_busy=True
                 self.mount.Park()
+                self.mount_busy=False
+                # end mount command #
+                self.rapid_park_indicator=True
 
-                wait_for_slew()
+                self.wait_for_slew()
             if self.settle_time_after_park > 0:
                 time.sleep(self.settle_time_after_park)
                 plog("Waiting " + str(self.settle_time_after_park) + " seconds for mount to settle.")
@@ -1613,21 +1842,42 @@ class Mount:
         ''' unpark the telescope mount '''
 
         if self.can_park:
-            if g_dev['mnt'].rapid_park_indicator:
+            # mount command #
+            while self.mount_busy:
+                time.sleep(0.05)
+            self.mount_busy=True
+            tempatpark=self.mount.AtPark
+            self.mount_busy=False
+            # end mount command #
+            if tempatpark:
                 plog("mount cmd: unparking mount")
                 g_dev['obs'].send_to_user("Unparking Mount. This can take a moment.")
                 g_dev['obs'].time_of_last_slew=time.time()
-
+                #breakpoint()
                 try:
-                    wait_for_slew()
+                    self.wait_for_slew()
+                    # mount command #
+                    while self.mount_busy:
+                        time.sleep(0.05)
+                    self.mount_busy=True
                     self.mount.Unpark()
-                    wait_for_slew()
+                    self.mount_busy=False
+                    # end mount command #
+                    self.rapid_park_indicator=False
+                    self.wait_for_slew()
                 except:
                     if g_dev['mnt'].theskyx:
                         g_dev['seq'].kill_and_reboot_theskyx(-1,-1)
-                        wait_for_slew()
+                        self.wait_for_slew()
+                        # mount command #
+                        while self.mount_busy:
+                            time.sleep(0.05)
+                        self.mount_busy=True
                         self.mount.Unpark()
-                        wait_for_slew()
+                        self.mount_busy=False
+                        # end mount command #
+                        self.rapid_park_indicator=False
+                        self.wait_for_slew()
 
                 if self.settle_time_after_unpark > 0:
                     time.sleep(self.settle_time_after_unpark)
@@ -1635,16 +1885,22 @@ class Mount:
 
                 if self.home_after_unpark:
                     try:
-                        wait_for_slew()
+                        self.wait_for_slew()
+                        # mount command #
+                        while self.mount_busy:
+                            time.sleep(0.05)
+                        self.mount_busy=True
                         self.mount.FindHome()
-                        wait_for_slew()
+                        self.mount_busy=False
+                        # end mount command #
+                        self.wait_for_slew()
                     except:
                         try:
                             home_alt = self.settings["home_altitude"]
                             home_az = self.settings["home_azimuth"]
-                            wait_for_slew()
+                            self.wait_for_slew()
                             g_dev['mnt'].go_command(alt=home_alt,az= home_az, skip_open_test=True)
-                            wait_for_slew()
+                            self.wait_for_slew()
                         except:
                             if g_dev['mnt'].theskyx:
 
@@ -1652,14 +1908,21 @@ class Mount:
                                 plog("Usually this is because of a broken connection.")
                                 plog("Killing then waiting 60 seconds then reconnecting")
                                 g_dev['seq'].kill_and_reboot_theskyx(-1,-1)
+                                # mount command #
+                                while self.mount_busy:
+                                    time.sleep(0.05)
+                                self.mount_busy=True
                                 self.mount.Unpark()
-                                wait_for_slew()
+                                self.mount_busy=False
+                                # end mount command #
+                                self.rapid_park_indicator=False
+                                self.wait_for_slew()
                                 home_alt = self.settings["home_altitude"]
                                 home_az = self.settings["home_azimuth"]
                                 g_dev['mnt'].go_command(alt=home_alt,az= home_az, skip_open_test=True)
                             else:
                                 plog (traceback.format_exc())
-                    wait_for_slew()
+                    self.wait_for_slew()
 
 
     def paddle(self):
