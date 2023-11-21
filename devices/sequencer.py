@@ -1577,7 +1577,9 @@ class Sequencer:
 
         # Check the archive directory and upload any big fits that haven't been uploaded
         # wait until the queue is empty before mopping up
-        self.collect_and_queue_neglected_fits()
+        if g_dev['obs'].config['ingest_raws_directly_to_archive']:
+
+            self.collect_and_queue_neglected_fits()
 
         # At this stage, we want to empty the AWS Queue!
         # We are about to pull all the fits.fz out from their folders
