@@ -359,7 +359,7 @@ class Mount:
 
         self.current_tracking_state=copy.deepcopy(self.mount.Tracking)
 
-        self.get_status()
+        
         
         # This is a latch to prevent multiple commands being sent to latch at the same time. 
         self.mount_busy=False
@@ -411,7 +411,7 @@ class Mount:
             self.mount.Park()
             self.rapid_park_indicator=True
         
-        
+        self.get_status()
         # # mount command #
         # while self.mount_busy:
         #     time.sleep(0.05)
