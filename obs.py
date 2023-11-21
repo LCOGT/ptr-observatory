@@ -513,8 +513,8 @@ class Observatory:
         # when the site crashed or was rebooted.
         if self.config['ingest_raws_directly_to_archive']:
             g_dev['seq'].collect_and_queue_neglected_fits()
-        if self.config['save_raws_to_pipe_folder_for_nightly_processing']:   
-            self.reconstitute_pipe_copy_queue_on_boot()
+        if self.config['save_raws_to_pipe_folder_for_nightly_processing']:
+            self.reconstitute_pipe_copy_queue()
 
         # Inform UI of reboot
         self.send_to_user("Observatory code has been rebooted. Manually queued commands have been flushed.")
@@ -1037,7 +1037,7 @@ class Observatory:
                 self.send_status_queue.put((obsy, lane, status), block=False)
 
 
-        
+
 
 
         self.time_last_status = time.time()
@@ -3274,25 +3274,35 @@ class Observatory:
         #     plog("Log did not send, usually not fatal.")
 
     # Note this is another thread!
-    
-    
-    def reconstitute_pipe_copy_queue_on_boot(self):
-        
-        fileList=glob.glob(self.config['temporary_local_pipe_archive_to_hold_files_while_copying'] +'/*.fi*')
-        print (fileList)
-        for file in fileList:
-            dayobs=file.split('-')[2]
-            instrume=file.split('-')[1].split('_')[0]
-            print (dayobs)
-            print (instrume)
-            pipefolder = self.config['temporary_local_pipe_archive_to_hold_files_while_copying'] +'/'+ dayobs +'/'+ instrume
-            if not os.path.exists(self.config['temporary_local_pipe_archive_to_hold_files_while_copying']+'/'+dayobs):
-                os.makedirs(self.config['temporary_local_pipe_archive_to_hold_files_while_copying'] +'/'+ dayobs)
 
-            if not os.path.exists(self.config['temporary_local_pipe_archive_to_hold_files_while_copying'] +'/'+ dayobs +'/'+ instrume):
-                os.makedirs(self.config['temporary_local_pipe_archive_to_hold_files_while_copying'] +'/'+ dayobs +'/'+ instrume)
 
-            
+    def reconstitute_pipe_copy_queue(self):
+
+
+        copydirectories = [d for d in os.listdir(self.config['temporary_local_pipe_archive_to_hold_files_while_copying']) if os.path.isdir(os.path.join(self.config['temporary_local_pipe_archive_to_hold_files_while_copying'], d))]
+
+        instrume = g_dev['cam'].alias
+
+        for copydir in copydirectories:
+
+            fileList=glob.glob(self.config['temporary_local_pipe_archive_to_hold_files_while_copying'] +'/' +copydir + '/' + instrume +'/*.fi*')
+
+            if len(fileList) == 0:
+                try:
+                    os.rmdir(self.config['temporary_local_pipe_archive_to_hold_files_while_copying'] +'/' +copydir + '/' + instrume)
+                except:
+                    pass
+
+                # Check parent directory isn't empty, if empty remove
+                if len(os.listdir(self.config['temporary_local_pipe_archive_to_hold_files_while_copying'] +'/' +copydir)) == 0:
+                    os.rmdir(self.config['temporary_local_pipe_archive_to_hold_files_while_copying'] +'/' +copydir)
+            else:
+
+                # Put file back into copy queue
+                for file in fileList:
+                    dayobs=file.split('-')[2]
+                    self.pipearchive_queue.put((copy.deepcopy(file),copy.deepcopy(dayobs),copy.deepcopy(instrume)), block=False)
+
 
     def smartstack_image(self):
 
