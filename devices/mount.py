@@ -1853,7 +1853,7 @@ class Mount:
                 plog("mount cmd: unparking mount")
                 g_dev['obs'].send_to_user("Unparking Mount. This can take a moment.")
                 g_dev['obs'].time_of_last_slew=time.time()
-                breakpoint()
+                #breakpoint()
                 try:
                     self.wait_for_slew()
                     # mount command #
