@@ -513,6 +513,8 @@ class Observatory:
         # when the site crashed or was rebooted.
         if self.config['ingest_raws_directly_to_archive']:
             g_dev['seq'].collect_and_queue_neglected_fits()
+        if self.config['save_raws_to_pipe_folder_for_nightly_processing']:   
+            self.reconstitute_pipe_copy_queue_on_boot()
 
         # Inform UI of reboot
         self.send_to_user("Observatory code has been rebooted. Manually queued commands have been flushed.")
@@ -3272,6 +3274,25 @@ class Observatory:
         #     plog("Log did not send, usually not fatal.")
 
     # Note this is another thread!
+    
+    
+    def reconstitute_pipe_copy_queue_on_boot(self):
+        
+        fileList=glob.glob(self.config['temporary_local_pipe_archive_to_hold_files_while_copying'] +'/*.fi*')
+        print (fileList)
+        for file in fileList:
+            dayobs=file.split('-')[2]
+            instrume=file.split('-')[1].split('_')[0]
+            print (dayobs)
+            print (instrume)
+            pipefolder = self.config['temporary_local_pipe_archive_to_hold_files_while_copying'] +'/'+ dayobs +'/'+ instrume
+            if not os.path.exists(self.config['temporary_local_pipe_archive_to_hold_files_while_copying']+'/'+dayobs):
+                os.makedirs(self.config['temporary_local_pipe_archive_to_hold_files_while_copying'] +'/'+ dayobs)
+
+            if not os.path.exists(self.config['temporary_local_pipe_archive_to_hold_files_while_copying'] +'/'+ dayobs +'/'+ instrume):
+                os.makedirs(self.config['temporary_local_pipe_archive_to_hold_files_while_copying'] +'/'+ dayobs +'/'+ instrume)
+
+            
 
     def smartstack_image(self):
 
