@@ -1594,7 +1594,9 @@ class Sequencer:
         # Before Culling, making sure we go through and harvest
         # all the orphaned and neglected files that actually
         # do need to get to the PTRarchive
-        self.collect_and_queue_neglected_fits()
+        if g_dev['obs'].config['ingest_raws_directly_to_archive']:
+
+            self.collect_and_queue_neglected_fits()
 
 
         # Culling the archive. This removes old files
