@@ -316,7 +316,7 @@ class Mount:
 
         self.current_tracking_state=copy.deepcopy(self.mount.Tracking)
 
-        
+        self.CanFindHome = self.mount.CanFindHome
         
         # This is a latch to prevent multiple commands being sent to latch at the same time. 
         self.mount_busy=False
