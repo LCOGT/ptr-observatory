@@ -2341,6 +2341,15 @@ class Camera:
                         + "00.fits"
                     )
                     cal_path = im_path_r + g_dev["day"] + "/calib/"
+                    
+                    if not os.path.exists(im_path_r):
+                        os.makedirs(im_path_r)
+                    if not os.path.exists(im_path_r+ g_dev["day"]):
+                        os.makedirs(im_path_r+ g_dev["day"])
+                    if not os.path.exists(im_path_r+ g_dev["day"]+ "/calib"):
+                        os.makedirs(im_path_r+ g_dev["day"]+ "/calib")
+                    if not os.path.exists(im_path_r+ g_dev["day"] + "/to_AWS"):
+                        os.makedirs(im_path_r+ g_dev["day"]+ "/to_AWS")
 
                     hdu = fits.PrimaryHDU()
                     hdu.header['PIXSCALE']=self.pixscale
@@ -2389,6 +2398,17 @@ class Camera:
                         + "00.fits"
                     )
                     cal_path = im_path_r + g_dev["day"] + "/calib/"
+                    
+                    if not os.path.exists(im_path_r):
+                        os.makedirs(im_path_r)
+                    if not os.path.exists(im_path_r+ g_dev["day"]):
+                        os.makedirs(im_path_r+ g_dev["day"])
+                    if not os.path.exists(im_path_r+ g_dev["day"]+ "/calib"):
+                        os.makedirs(im_path_r+ g_dev["day"]+ "/calib")
+                    if not os.path.exists(im_path_r+ g_dev["day"] + "/to_AWS"):
+                        os.makedirs(im_path_r+ g_dev["day"]+ "/to_AWS")
+
+
 
                     hdu = fits.PrimaryHDU()
                     hdu.header['PIXSCALE']=self.pixscale
