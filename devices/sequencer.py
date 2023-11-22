@@ -3156,6 +3156,7 @@ class Sequencer:
         start_ra = g_dev['mnt'].return_right_ascension()   #Read these to go back.  NB NB Need to cleanly pass these on so we can return to proper target.
         start_dec = g_dev['mnt'].return_declination()
         focus_start = g_dev['foc'].get_position()
+        #breakpoint()
         #
 # =============================================================================
 # =============================================================================
@@ -3293,14 +3294,15 @@ class Sequencer:
 
             try:
                 spot1 = g_dev['obs'].fwhmresult['FWHM']
-                foc_pos1 = g_dev['obs'].fwhmresult['mean_focus']
+                #foc_pos1 = g_dev['obs'].fwhmresult['mean_focus']
+                foc_pos1=g_dev['foc'].get_position()
             except:
                 spot1 = False
                 foc_pos1 = False
                 plog ("spot1 failed in autofocus script")
                 #plog(traceback.format_exc())
                 #breakpoint()
-
+            #breakpoint()
             plog (spot1)
             g_dev['obs'].send_to_user("Central focus FWHM: " + str(spot1), p_level='INFO')
 
@@ -3330,7 +3332,7 @@ class Sequencer:
             g_dev['obs'].fwhmresult['mean_focus'] = g_dev['foc'].get_position()
         try:
             spot2 = g_dev['obs'].fwhmresult['FWHM']
-            foc_pos2 = g_dev['obs'].fwhmresult['mean_focus']
+            foc_pos2 = g_dev['foc'].get_position()
         except:
             spot2 = False
             foc_pos2 = False
@@ -3360,7 +3362,7 @@ class Sequencer:
             g_dev['obs'].fwhmresult['mean_focus'] = g_dev['foc'].get_position()
         try:
             spot3 = g_dev['obs'].fwhmresult['FWHM']
-            foc_pos3 = g_dev['obs'].fwhmresult['mean_focus']
+            foc_pos3 = g_dev['foc'].get_position()
         except:
             spot3 = False
             foc_pos3 = False
@@ -3438,7 +3440,7 @@ class Sequencer:
                     g_dev['obs'].fwhmresult['mean_focus'] = g_dev['foc'].get_position()
                 try:
                     spot4 = g_dev['obs'].fwhmresult['FWHM']
-                    foc_pos4 = g_dev['obs'].fwhmresult['mean_focus']
+                    foc_pos4 = g_dev['foc'].get_position()
                 except:
                     spot4 = False
                     foc_pos4 = False
@@ -3484,7 +3486,7 @@ class Sequencer:
                 g_dev['obs'].fwhmresult['mean_focus'] = g_dev['foc'].get_position()
             try:
                 spot4 = g_dev['obs'].fwhmresult['FWHM']
-                foc_pos4 = g_dev['obs'].fwhmresult['mean_focus']
+                foc_pos4 = g_dev['foc'].get_position()
             except:
                 spot4 = False
                 foc_pos4 = False
@@ -3562,7 +3564,7 @@ class Sequencer:
                     g_dev['obs'].fwhmresult['mean_focus'] = g_dev['foc'].get_position()
                 try:
                     spot4 = g_dev['obs'].fwhmresult['FWHM']
-                    foc_pos4 = g_dev['obs'].fwhmresult['mean_focus']
+                    foc_pos4 = g_dev['foc'].get_position()
                 except:
                     spot4 = False
                     foc_pos4 = False
@@ -3604,7 +3606,7 @@ class Sequencer:
                 g_dev['obs'].fwhmresult['mean_focus'] = g_dev['foc'].get_position()
             try:
                 spot4 = g_dev['obs'].fwhmresult['FWHM']
-                foc_pos4 = g_dev['obs'].fwhmresult['mean_focus']
+                foc_pos4 = g_dev['foc'].get_position()
             except:
                 spot4 = False
                 foc_pos4 = False
@@ -3676,7 +3678,7 @@ class Sequencer:
                     g_dev['obs'].fwhmresult['mean_focus'] = g_dev['foc'].get_position()
                 try:
                     spot4 = g_dev['obs'].fwhmresult['FWHM']
-                    foc_pos4 = g_dev['obs'].fwhmresult['mean_focus']
+                    foc_pos4 = g_dev['foc'].get_position()
                 except:
                     spot4 = False
                     foc_pos4 = False
@@ -3758,10 +3760,15 @@ class Sequencer:
                 self.af_guard = False
                 self.focussing=False
                 return
+
+        breakpoint()
+
         plog("Returning to RA:  " +str(start_ra) + " Dec: " + str(start_dec))
         g_dev["obs"].send_to_user("Returning to RA:  " +str(start_ra) + " Dec: " + str(start_dec))
         g_dev['mnt'].go_command(ra=start_ra, dec=start_dec)
         self.wait_for_slew()
+
+        breakpoint()
 
         if sim:
             g_dev['foc'].guarded_move((focus_start)*g_dev['foc'].micron_to_steps)

@@ -223,9 +223,6 @@ class Focuser:
         return quick
 
     def get_average_status(self, pre, post):
-        print ("report to focuser average status")
-        print (str(pre))
-        print (str(post))
         average = []
         average.append(round((pre[0] + post[0]) / 2, 3))
         average.append(round((pre[1] + post[1]) / 2, 3))
@@ -308,11 +305,11 @@ class Focuser:
     def get_position(self, counts=False):
         if not counts:
             if not self.theskyx:
-                self.current_focus_position=self.focuser.Position * self.steps_to_micron
+                self.current_focus_position=self.focuser.Position# * self.steps_to_micron
 
                 return int(self.current_focus_position)
             else:
-                self.current_focus_position=self.focuser.focPosition() * self.steps_to_micron
+                self.current_focus_position=self.focuser.focPosition() #* self.steps_to_micron
 
                 return int(self.current_focus_position)
 
@@ -397,13 +394,13 @@ class Focuser:
             else:
                 self.focuser.focMoveIn(absdifference_in_position)
             print (self.focuser.focPosition())
-            self.current_focus_position=self.focuser.focPosition()# * self.micron_to_steps
+            self.current_focus_position=self.focuser.focPosition() * self.micron_to_steps
 
         else:
             self.focuser.Move(int(float(self.reference) * self.micron_to_steps))
             #self.current_focus_position=self.focuser.Position * self.micron_to_steps
             self.current_focus_position=self.focuser.Position
-            #breakpoint()
+            breakpoint()
 
     def adjust_focus(self):
         """Adjusts the focus relative to the last formal focus procedure.
