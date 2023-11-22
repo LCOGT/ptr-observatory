@@ -139,7 +139,7 @@ class Focuser:
                 try:
                         status = {
                         "focus_position": round(
-                            self.get_position(), 1
+                            self.current_focus_position, 1
                         ),
                         "focus_temperature": self.current_focus_temperature,
                         "comp": reported_focus_temp_slope,
@@ -173,7 +173,7 @@ class Focuser:
             elif g_dev['fil'].null_filterwheel == False:
                 status = {
                     "focus_position": round(
-                        self.get_position(), 1
+                        self.current_focus_position, 1
                     ),
                     "focus_temperature": self.current_focus_temperature,
                     #"focus_moving": self.focuser.IsMoving,
@@ -183,7 +183,7 @@ class Focuser:
             else:
                 status = {
                     "focus_position": round(
-                        self.get_position(), 1
+                        self.current_focus_position, 1
                     ),
                     "focus_temperature": self.current_focus_temperature,
                     #"focus_moving": self.focuser.IsMoving,
@@ -203,7 +203,7 @@ class Focuser:
         #if self.theskyx:
         quick.append(time.time())
         #self.current_focus_position=self.focuser.focPosition() * self.steps_to_micron
-        quick.append(self.current_focus_position)        
+        quick.append(self.current_focus_position)
         try:
             quick.append(self.last_temperature)
         except:

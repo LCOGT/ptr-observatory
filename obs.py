@@ -555,7 +555,7 @@ class Observatory:
         #MTF -TEMP
         g_dev['obs'].enc_status = g_dev['obs'].get_enclosure_status_from_aws()
 
-
+        #breakpoint()
         # Initialisation complete!
 
 

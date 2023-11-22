@@ -351,8 +351,8 @@ site_config = {
             'desc':  'Optec Gemini',
             'driver': 'ASCOM.OptecGemini.Focuser',
 		    'com_port': 'COM13',    #AP 'COM5'  No Temp Probe on SRO AO Honders
-            'start_at_config_reference': True,
-            'correct_focus_for_temperature' : False,
+            'start_at_config_reference': False,
+            'correct_focus_for_temperature' : True,
             'maximum_good_focus_in_arcsecond': 2.5, # highest value to consider as being in "good focus". Used to select last good focus value
 
             # # F4.9 setup
@@ -538,7 +538,7 @@ site_config = {
                 'direct_qhy_offset' : 60,
                 #'direct_qhy_usb_speed' : 50,
                 'direct_qhy_usb_traffic' : 50,
-                
+
                 'set_qhy_usb_speed': False,
                 'direct_qhy_usb_speed' : 0,
 
