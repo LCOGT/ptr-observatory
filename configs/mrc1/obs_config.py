@@ -607,7 +607,7 @@ site_config = {
                 'direct_qhy_offset': 60,
                 
                 'direct_qhy_usb_traffic' : 60,
-                'direct_qhy_usb_speed' : 4,
+                'direct_qhy_usb_speed' : 2,
 
                 
 
