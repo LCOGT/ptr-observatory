@@ -537,7 +537,8 @@ site_config = {
                 'direct_qhy_gain' : 26,
                 'direct_qhy_offset' : 60,
                 #'direct_qhy_usb_speed' : 50,
-                'direct_qhy_usb_traffic' : 60,
+                'direct_qhy_usb_traffic' : 50,
+                
                 'set_qhy_usb_speed': False,
                 'direct_qhy_usb_speed' : 0,
 
