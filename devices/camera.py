@@ -1501,7 +1501,7 @@ class Camera:
             self.retry_camera = 1
             self.retry_camera_start_time = time.time()
 
-            
+
 
             #Repeat camera acquisition loop to collect all smartstacks necessary
             #The variable Nsmartstacks defaults to 1 - e.g. normal functioning
@@ -1585,9 +1585,9 @@ class Camera:
                     # If not, stop running block
                     if not calendar_event_id == None:
                         #print ("ccccccc")
-                        
+
                         foundcalendar=False
-                        
+
                         for tempblock in g_dev['seq'].blocks:
                             try:
                                 if tempblock['event_id'] == calendar_event_id :
@@ -1748,8 +1748,8 @@ class Camera:
                             # sec_z = 1/math.cos(math.radians(new_z))
                             # airmass = abs(round(sec_z - 0.0018167*(sec_z - 1) - 0.002875*((sec_z - 1)**2) - 0.0008083*((sec_z - 1)**3),3))
                             # if airmass > 10: airmass = 10
-                            
-                           
+
+
                             airmass = round(g_dev['mnt'].airmass, 4)
 
                             airmass_of_observation = airmass
@@ -1832,7 +1832,7 @@ class Camera:
                         continue
         #  This is the loop point for the seq count loop
         self.exposure_busy = False
-        self.currently_in_smartstack_loop=False        
+        self.currently_in_smartstack_loop=False
         return expresult
 
     def stop_command(self, required_params, optional_params):
@@ -1976,19 +1976,19 @@ class Camera:
         # self.post_rot = []
         # self.post_foc = []
         # self.post_ocn = []
-        
+
         # This command takes 0.1s to do, so happens just during the start of exposures
-        g_dev['cam'].tempccdtemp, g_dev['cam'].ccd_humidity, g_dev['cam'].ccd_pressure = (g_dev['cam']._temperature())                            
-        
+        g_dev['cam'].tempccdtemp, g_dev['cam'].ccd_humidity, g_dev['cam'].ccd_pressure = (g_dev['cam']._temperature())
+
         while True:
-            
+
 
 
             if (
                 time.time() < self.completion_time or self.async_exposure_lock==True
             ):
 
-                if exposure_time < 4.1:                    
+                if exposure_time < 4.1:
                     g_dev['obs'].scan_requests()
                     g_dev['seq'].update_calendar_blocks()
 
@@ -2086,7 +2086,7 @@ class Camera:
                         wait_for_slew()
                         g_dev['mnt'].slew_async_directly(ra=initial_smartstack_ra + ra_random_dither, dec=initial_smartstack_dec + dec_random_dither)
                         # no wait for slew here as we start downloading the image. the wait_for_slew is after that
-                        
+
                     except Exception as e:
                         plog (traceback.format_exc())
                         if 'Object reference not set' in str(e) and g_dev['mnt'].theskyx:
@@ -2102,7 +2102,7 @@ class Camera:
                         wait_for_slew()
                         g_dev['mnt'].slew_async_directly(ra=initial_smartstack_ra, dec=initial_smartstack_dec)
                         # no wait for slew here as we start downloading the image. the wait_for_slew is after that
-                        
+
                     except Exception as e:
                         plog (traceback.format_exc())
                         if 'Object reference not set' in str(e) and g_dev['mnt'].theskyx:
@@ -2112,7 +2112,7 @@ class Camera:
                             plog("Killing then waiting 60 seconds then reconnecting")
                             g_dev['seq'].kill_and_reboot_theskyx(g_dev['mnt'].current_icrs_ra,g_dev['mnt'].current_icrs_dec)
 
-                    
+
 
                 #incoming_image_list = []
 
@@ -2157,7 +2157,7 @@ class Camera:
                             plog("Still waiting for file to arrive: ", e)
                         time.sleep(3)
                         retrycounter = retrycounter + 1
-                        
+
                 # Here is where we wait for any slew left over while async'ing and grabbing image
                 if Nsmartstack > 1:
                     wait_for_slew()
@@ -2214,7 +2214,7 @@ class Camera:
                 except:
                     avg_rot = None
 
-                
+
 
                 object_name='Unknown'
                 object_specf='no'
@@ -2341,7 +2341,7 @@ class Camera:
                         + "00.fits"
                     )
                     cal_path = im_path_r + g_dev["day"] + "/calib/"
-                    
+
                     if not os.path.exists(im_path_r):
                         os.makedirs(im_path_r)
                     if not os.path.exists(im_path_r+ g_dev["day"]):
@@ -2353,6 +2353,8 @@ class Camera:
 
                     hdu = fits.PrimaryHDU()
                     hdu.header['PIXSCALE']=self.pixscale
+
+                    hdu.header['OBSTYPE']='pointing'
                     hdusmallheader=copy.deepcopy(hdu.header)
                     del hdu
 
@@ -2398,7 +2400,7 @@ class Camera:
                         + "00.fits"
                     )
                     cal_path = im_path_r + g_dev["day"] + "/calib/"
-                    
+
                     if not os.path.exists(im_path_r):
                         os.makedirs(im_path_r)
                     if not os.path.exists(im_path_r+ g_dev["day"]):
@@ -2413,6 +2415,8 @@ class Camera:
                     hdu = fits.PrimaryHDU()
                     hdu.header['PIXSCALE']=self.pixscale
                     hdu.header['EXPTIME']=exposure_time
+
+                    hdu.header['OBSTYPE']='focus'
                     hdusmallheader=copy.deepcopy(hdu.header)
                     del hdu
 
