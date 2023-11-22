@@ -139,7 +139,7 @@ class Focuser:
                 try:
                         status = {
                         "focus_position": round(
-                            self.current_focus_position, 1
+                            self.get_position(), 1
                         ),
                         "focus_temperature": self.current_focus_temperature,
                         "comp": reported_focus_temp_slope,
@@ -173,7 +173,7 @@ class Focuser:
             elif g_dev['fil'].null_filterwheel == False:
                 status = {
                     "focus_position": round(
-                        self.current_focus_position, 1
+                        self.get_position(), 1
                     ),
                     "focus_temperature": self.current_focus_temperature,
                     #"focus_moving": self.focuser.IsMoving,
@@ -183,7 +183,7 @@ class Focuser:
             else:
                 status = {
                     "focus_position": round(
-                        self.current_focus_position, 1
+                        self.get_position(), 1
                     ),
                     "focus_temperature": self.current_focus_temperature,
                     #"focus_moving": self.focuser.IsMoving,
@@ -203,7 +203,7 @@ class Focuser:
         #if self.theskyx:
         quick.append(time.time())
         #self.current_focus_position=self.focuser.focPosition() * self.steps_to_micron
-        quick.append(self.current_focus_position)
+        quick.append(self.current_focus_position)        
         try:
             quick.append(self.last_temperature)
         except:
@@ -223,9 +223,9 @@ class Focuser:
         return quick
 
     def get_average_status(self, pre, post):
-        #print ("report to focuser average status")
-        #print (str(pre))
-        #print (str(post))
+        print ("MTF tempcheck - report to focuser average status")
+        print (str(pre))
+        print (str(post))
         average = []
         average.append(round((pre[0] + post[0]) / 2, 3))
         average.append(round((pre[1] + post[1]) / 2, 3))
@@ -397,12 +397,12 @@ class Focuser:
             else:
                 self.focuser.focMoveIn(absdifference_in_position)
             print (self.focuser.focPosition())
-            self.current_focus_position=self.focuser.focPosition()# * self.micron_to_steps
+            self.current_focus_position=self.get_position()#self.focuser.focPosition()# * self.micron_to_steps
 
         else:
             self.focuser.Move(int(float(self.reference) * self.micron_to_steps))
             #self.current_focus_position=self.focuser.Position * self.micron_to_steps
-            self.current_focus_position=self.focuser.Position
+            self.current_focus_position=self.get_position()
             #breakpoint()
 
     def adjust_focus(self):
@@ -437,10 +437,10 @@ class Focuser:
 
 
             if self.theskyx:
-                self.current_focus_position=self.focuser.focPosition() * self.micron_to_steps
+                self.current_focus_position=self.get_position()
 
             else:
-                self.current_focus_position=self.focuser.Position * self.micron_to_steps
+                self.current_focus_position=self.get_position()
 
 
             if abs((self.last_known_focus + adjust) - self.current_focus_position) > 10:
@@ -478,7 +478,7 @@ class Focuser:
                 else:
                     self.focuser.focMoveIn(absdifference_in_position)
                 print (self.focuser.focPosition())
-                self.current_focus_position=self.focuser.focPosition()  * self.micron_to_steps
+                self.current_focus_position=self.get_position()
 
              else:
 
@@ -491,7 +491,7 @@ class Focuser:
                         plog("Focuser is moving.....")
                         movement_report=1
                     time.sleep(0.3)
-                self.current_focus_position=self.focuser.Position  * self.micron_to_steps
+                self.current_focus_position=self.get_position()
 
 
                     #plog(">f")
@@ -528,7 +528,7 @@ class Focuser:
             else:
                 self.focuser.focMoveIn(absdifference_in_position)
             print (self.focuser.focPosition())
-            self.current_focus_position=self.focuser.focPosition()  * self.micron_to_steps
+            self.current_focus_position=self.get_position()
 
         else:
 
@@ -555,7 +555,7 @@ class Focuser:
                     time.sleep(0.2)
             else:
                 plog("Supplied relative move is lacking a sign; ignoring.")
-            self.current_focus_position=self.focuser.Position  * self.micron_to_steps
+            self.current_focus_position=self.get_position()
 
 
     def move_absolute_command(self, req: dict, opt: dict):
@@ -583,14 +583,14 @@ class Focuser:
             else:
                 self.focuser.focMoveIn(absdifference_in_position)
             print (self.focuser.focPosition())
-            self.current_focus_position=self.focuser.focPosition()  * self.micron_to_steps
+            self.current_focus_position=self.get_position()
 
         else:
             self.focuser.Move(int(position * self.micron_to_steps))
             time.sleep(0.3)
             while self.focuser.IsMoving:
                 time.sleep(0.3)
-            self.current_focus_position=self.focuser.Position  * self.micron_to_steps
+            self.current_focus_position=self.get_position()
 
 
 
