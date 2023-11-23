@@ -223,9 +223,9 @@ class Focuser:
         return quick
 
     def get_average_status(self, pre, post):
-        print ("MTF tempcheck - report to focuser average status")
-        print (str(pre))
-        print (str(post))
+        #print ("MTF tempcheck - report to focuser average status")
+        #print (str(pre))
+        #print (str(post))
         average = []
         average.append(round((pre[0] + post[0]) / 2, 3))
         average.append(round((pre[1] + post[1]) / 2, 3))
