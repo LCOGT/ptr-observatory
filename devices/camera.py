@@ -1069,6 +1069,34 @@ class Camera:
         #return np.asarray(image)
         #return image
 
+    def wait_for_slew(self):
+        """
+        A function called when the code needs to wait for the telescope to stop slewing before undertaking a task.
+        """
+        try:
+            if not g_dev['mnt'].rapid_park_indicator:
+                movement_reporting_timer=time.time()
+                while g_dev['mnt'].return_slewing(): #or g_dev['enc'].status['dome_slewing']:   #Filter is moving??
+                #while g_dev['mnt'].mount.Slewing():
+                    if time.time() - movement_reporting_timer > 2.0:
+                        plog( 'm>')
+                        movement_reporting_timer=time.time()
+                    if not g_dev['obs'].currently_updating_status and g_dev['obs'].update_status_queue.empty():
+                        g_dev['mnt'].get_mount_coordinates()
+                        #g_dev['obs'].request_update_status(mount_only=True, dont_wait=True)
+                        g_dev['obs'].update_status(mount_only=True, dont_wait=True)
+
+        except Exception as e:
+            plog("Motion check faulted.")
+            plog(traceback.format_exc())
+            if 'pywintypes.com_error' in str(e):
+                plog ("Mount disconnected. Recovering.....")
+                time.sleep(5)
+                g_dev['mnt'].reboot_mount()
+            else:
+                pass
+        return
+
 
     def create_simple_autosave(
         self,
@@ -1727,7 +1755,7 @@ class Camera:
                             start_time_of_observation=time.time()
                             self.start_time_of_observation=time.time()
                             plog ("Time between end of last exposure and start of next minus exposure time: " + str(time.time() -  self.end_of_last_exposure_time - exposure_time))
-                            wait_for_slew()
+                            self.wait_for_slew()
                             self._expose(exposure_time, bias_dark_or_light_type_frame)
                             self.end_of_last_exposure_time=time.time()
 
@@ -2086,7 +2114,7 @@ class Camera:
                     ra_random_dither=(((random.randint(0,50)-25) * self.pixscale / 3600 ) / 15)
                     dec_random_dither=((random.randint(0,50)-25) * self.pixscale /3600 )
                     try:
-                        wait_for_slew()
+                        self.wait_for_slew()
                         g_dev['mnt'].slew_async_directly(ra=initial_smartstack_ra + ra_random_dither, dec=initial_smartstack_dec + dec_random_dither)
                         # no wait for slew here as we start downloading the image. the wait_for_slew is after that
 
@@ -2102,7 +2130,7 @@ class Camera:
                 # Otherwise immediately nudge scope back to initial pointing in smartstack
                 elif Nsmartstack > 1 and (Nsmartstack == sskcounter+1):
                     try:
-                        wait_for_slew()
+                        self.wait_for_slew()
                         g_dev['mnt'].slew_async_directly(ra=initial_smartstack_ra, dec=initial_smartstack_dec)
                         # no wait for slew here as we start downloading the image. the wait_for_slew is after that
 
@@ -2163,7 +2191,7 @@ class Camera:
 
                 # Here is where we wait for any slew left over while async'ing and grabbing image
                 if Nsmartstack > 1:
-                    wait_for_slew()
+                    self.wait_for_slew()
                     g_dev['obs'].check_platesolve_and_nudge()
 
                 if (frame_type in ["bias", "dark"] or frame_type[-4:] == ['flat']) and not manually_requested_calibration:
@@ -2362,7 +2390,7 @@ class Camera:
                     del hdu
 
 
-                    wait_for_slew()
+                    #self.wait_for_slew()
                     g_dev['obs'].platesolve_is_processing =True
                     g_dev['obs'].to_platesolve((outputimg, hdusmallheader, cal_path, cal_name, frame_type, time.time(), self.pixscale, ra_at_time_of_exposure,dec_at_time_of_exposure))
                     # If it is the last of a set of smartstacks, we actually want to
@@ -3822,7 +3850,7 @@ def post_exposure_process(payload):
                     if solve_it == True or (not image_during_smartstack and not g_dev['seq'].currently_mosaicing and not g_dev['obs'].pointing_correction_requested_by_platesolve_thread and g_dev['obs'].platesolve_queue.empty() and not g_dev['obs'].platesolve_is_processing):
 
                         # Make sure any dither or return nudge has finished before platesolution
-                        wait_for_slew()
+                        #wait_for_slew()
                         g_dev['obs'].to_platesolve((hdusmalldata, hdusmallheader, cal_path, cal_name, frame_type, time.time(), pixscale, ra_at_time_of_exposure,dec_at_time_of_exposure))
                         # If it is the last of a set of smartstacks, we actually want to
                         # wait for the platesolve and nudge before starting the next smartstack.
@@ -3891,31 +3919,6 @@ def post_exposure_process(payload):
         breakpoint()
 
 
-def wait_for_slew():
-    """
-    A function called when the code needs to wait for the telescope to stop slewing before undertaking a task.
-    """
-    try:
-        if not g_dev['mnt'].rapid_park_indicator:
-            movement_reporting_timer=time.time()
-            while g_dev['mnt'].return_slewing(): #or g_dev['enc'].status['dome_slewing']:   #Filter is moving??
-                if time.time() - movement_reporting_timer > 2.0:
-                    plog( 'm>')
-                    movement_reporting_timer=time.time()
-                if not g_dev['obs'].currently_updating_status and g_dev['obs'].update_status_queue.empty():
-                    g_dev['mnt'].get_mount_coordinates()
-                    #g_dev['obs'].request_update_status(mount_only=True, dont_wait=True)
-                    g_dev['obs'].update_status(mount_only=True, dont_wait=True)
 
-    except Exception as e:
-        plog("Motion check faulted.")
-        plog(traceback.format_exc())
-        if 'pywintypes.com_error' in str(e):
-            plog ("Mount disconnected. Recovering.....")
-            time.sleep(5)
-            g_dev['mnt'].reboot_mount()
-        else:
-            pass
-    return
 
 

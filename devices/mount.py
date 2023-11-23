@@ -261,9 +261,9 @@ class Mount:
         self.theskyx_tracking_rescues = 0
 
 
-        
 
-        
+
+
 
         # NEED to initialise these variables here in case the mount isn't slewed
         # before exposures after bootup
@@ -273,7 +273,7 @@ class Mount:
         self.last_tracking_rate_ra = 0
         self.last_tracking_rate_dec = 0
         self.last_seek_time = time.time() - 5000
-
+        self.last_slew_was_pointing_slew = False
         #self.check_connect()
 
 
@@ -317,20 +317,20 @@ class Mount:
         self.current_tracking_state=copy.deepcopy(self.mount.Tracking)
 
         self.CanFindHome = self.mount.CanFindHome
-        
-        # This is a latch to prevent multiple commands being sent to latch at the same time. 
+
+        # This is a latch to prevent multiple commands being sent to latch at the same time.
         self.mount_busy=False
-        
-        
+
+
         tempunparked=False
         # if mount is parked, temporarily unpark it quickly to test pierside functions.
         if self.mount.AtPark:
             self.mount.Unpark()
             tempunparked=True
             self.rapid_park_indicator=False
-            
-        
-        
+
+
+
         # Here we figure out if it can report pierside. If it cannot, we need
         # not keep calling the mount to ask for it, which is slow and prone
         # to an ascom crash.
@@ -363,17 +363,17 @@ class Mount:
             self.pier_side_str ="Looking West"
         else:
             self.pier_side_str = "Looking East"
-        
+
         if tempunparked:
             self.mount.Park()
             self.rapid_park_indicator=True
-        
+
         self.get_status()
         # # mount command #
         # while self.mount_busy:
         #     time.sleep(0.05)
         # self.mount_busy=True
-        
+
         # self.mount_busy=False
 
     def wait_for_slew(self):
@@ -397,7 +397,7 @@ class Mount:
             if 'pywintypes.com_error' in str(e):
                 plog ("Mount disconnected. Recovering.....")
                 time.sleep(30)
-                
+
                 g_dev['mnt'].mount.Connected = True
                 #g_dev['mnt'].home_command()
             else:
@@ -430,15 +430,15 @@ class Mount:
         self.mount_busy=False
         # end mount command #
         return tempvalue
-        
+
 
     def return_right_ascension(self):
 
         return self.right_ascension_directly_from_mount
-    
+
 
     def return_declination(self):
-        
+
         return self.declination_directly_from_mount
 
     def return_slewing(self):
@@ -461,7 +461,7 @@ class Mount:
         # end mount command #
         return tempvalue
 
-    def set_tracking_on(self):        
+    def set_tracking_on(self):
         if self.return_slewing() == False:
             if self.can_set_tracking:
                 # mount command #
@@ -1074,7 +1074,7 @@ class Mount:
 
         if flatspot_alt < 90 and sun_alt < -15:
             flatspot_az = sun_az
-        
+
         self.flatspot_alt=flatspot_alt
         self.flatspot_az=flatspot_az
 
@@ -1413,7 +1413,7 @@ class Mount:
         if not self.current_tracking_state:
             try:
                 self.wait_for_slew()
-                self.set_tracking_on()                
+                self.set_tracking_on()
             except Exception:
                 # Yes, this is an awfully non-elegant way to force a mount to start
                 # Tracking when it isn't implemented in the ASCOM driver. But if anyone has any better ideas, I am all ears - MF
@@ -1565,7 +1565,7 @@ class Mount:
         if not self.current_tracking_state:
             try:
                 self.wait_for_slew()
-                self.set_tracking_on()  
+                self.set_tracking_on()
             except Exception as e:
                 # Yes, this is an awfully non-elegant way to force a mount to start
                 # Tracking when it isn't implemented in the ASCOM driver. But if anyone has any better ideas, I am all ears - MF
@@ -1695,7 +1695,7 @@ class Mount:
             self.mount.RightAscensionRate = 0.0 # self.prior_roll_rate  #Neg number makes RA decrease
             self.mount_busy=False
             # end mount command #
-            
+
         else:
             self.prior_roll_rate = 0.0
         if self.CanSetDeclinationRate:
@@ -1761,7 +1761,7 @@ class Mount:
             mount_at_home = self.mount.AtHome
             self.mount_busy=False
             # end mount command #
-            
+
             if mount_at_home:
                 plog("Mount is at home.")
             elif not mount_at_home:
@@ -1770,7 +1770,7 @@ class Mount:
                 self.unpark_command()
                 self.wait_for_slew()
 
-                self.move_time = time.time()                
+                self.move_time = time.time()
                 # mount command #
                 while self.mount_busy:
                     time.sleep(0.05)
@@ -1811,7 +1811,7 @@ class Mount:
             tempatpark=self.mount.AtPark
             self.mount_busy=False
             # end mount command #
-            
+
             if not tempatpark:
                 plog("mount cmd: parking mount")
                 if g_dev['obs'] is not None:  #THis gets called before obs is created
