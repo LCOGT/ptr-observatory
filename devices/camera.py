@@ -1712,7 +1712,9 @@ class Camera:
 
 
                             self.current_exposure_time=exposure_time
-
+                            
+                            
+                            
                             # Always check rotator just before exposure  The Rot jitters wehn parked so
                             # this give rot moving report during bia darks
                             rot_report=0
@@ -1755,8 +1757,7 @@ class Camera:
                             self.wait_for_slew()
                             start_time_of_observation=time.time()
                             self.start_time_of_observation=time.time()
-                            plog ("Time between end of last exposure and start of next minus exposure time: " + str(time.time() -  self.end_of_last_exposure_time - exposure_time))
-                            
+                            plog ("Time between end of last exposure and start of next minus exposure time: " + str(time.time() -  self.end_of_last_exposure_time - exposure_time))                           
                             self._expose(exposure_time, bias_dark_or_light_type_frame)
                             self.end_of_last_exposure_time=time.time()
 
