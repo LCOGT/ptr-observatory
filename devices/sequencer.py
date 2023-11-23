@@ -400,15 +400,13 @@ class Sequencer:
                 self.reset_completes()
 
                 if (g_dev['events']['Observing Begins'] < ephem_now < g_dev['events']['Observing Ends']):
-                    # Move to reasonable spot
-                    g_dev['mnt'].set_tracking_on()
-
-
+                    # Move to reasonable spot    
                     g_dev['mnt'].go_command(alt=70,az= 70)
                     g_dev['foc'].time_of_last_focus = datetime.datetime.utcnow() - datetime.timedelta(
                         days=1
                     )  # Initialise last focus as yesterday
                     g_dev['foc'].set_initial_best_guess_for_focus()
+                    g_dev['mnt'].set_tracking_on()
                     # Autofocus
                     req2 = {'target': 'near_tycho_star'}
                     opt = {}
@@ -468,10 +466,10 @@ class Sequencer:
 
                 g_dev['obs'].send_to_user("Beginning start of night Focus and Pointing Run", p_level='INFO')
 
-                g_dev['mnt'].set_tracking_on()
 
                 g_dev['mnt'].go_command(alt=70,az= 70)
-
+                g_dev['mnt'].set_tracking_on()
+                
                 # Super-duper double check that darkslide is open
                 if g_dev['cam'].darkslide:
                     g_dev['cam'].darkslide_instance.openDarkslide()
@@ -837,9 +835,9 @@ class Sequencer:
         # NB we assume the dome is open and already slaving.
         block = copy.deepcopy(block_specification)
 
-        g_dev['mnt'].unpark_command({}, {})
-        g_dev['mnt'].set_tracking_on()
-
+        g_dev['mnt'].unpark_command({}, {})   
+        plog("unparked")
+        
 
         # this variable is what we check to see if the calendar
         # event still exists on AWS. If not, we assume it has been
@@ -869,12 +867,14 @@ class Sequencer:
                 self.blockend = None
                 continue
 
-            try:
-                g_dev['mnt'].get_mount_coordinates()
-            except:
-                pass
+            #try:
+            #    g_dev['mnt'].get_mount_coordinates()
+            #except:
+            #    pass
 
             g_dev['mnt'].go_command(ra=dest_ra, dec=dest_dec)
+            g_dev['mnt'].set_tracking_on()
+            plog("tracking on")
 
             # Check it hasn't actually been homed this evening from the rotatorhome shelf
             homerotator_time_shelf = shelve.open(g_dev['obs'].obsid_path + 'ptr_night_shelf/' + 'homerotatortime' + g_dev['cam'].name + str(g_dev['obs'].name))
