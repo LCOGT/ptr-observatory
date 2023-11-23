@@ -155,6 +155,7 @@ class Mount:
         try:
             self.mount.Connected = True
         except Exception as e:
+            self.mount_busy=False
             print (e)
             if 'PWI4_ASCOM' in str(e):
                 os.system('"C:\Program Files (x86)\PlaneWave Instruments\PlaneWave Interface 4\PWI4.exe"')
@@ -180,11 +181,11 @@ class Mount:
         self.has_paddle = config['mount']['mount1']['has_paddle']
 
         self.object = "Unspecified"
-        try:
-            self.current_sidereal = float((Time(datetime.datetime.utcnow(), scale='utc', location=g_dev['mnt'].site_coordinates).sidereal_time('apparent')*u.deg) / u.deg / u.hourangle)
+        #try:
+        self.current_sidereal = float((Time(datetime.datetime.utcnow(), scale='utc', location=g_dev['mnt'].site_coordinates).sidereal_time('apparent')*u.deg) / u.deg / u.hourangle)
 
-        except:
-            plog ("Failed to get the current sidereal time from the mount.")
+        # except:
+        #     plog ("Failed to get the current sidereal time from the mount.")
         self.current_icrs_ra = self.mount.RightAscension
         self.current_icrs_dec = self.mount.Declination
         try:
@@ -392,6 +393,7 @@ class Mount:
                         g_dev['obs'].update_status(mount_only=True, dont_wait=True)
 
         except Exception as e:
+            self.mount_busy=False
             plog("Motion check faulted.")
             plog(traceback.format_exc())
             if 'pywintypes.com_error' in str(e):
@@ -413,6 +415,7 @@ class Mount:
 
                         break
                     except:
+                        self.mount_busy=False
                         plog("recovery didn't work")
                         plog(traceback.format_exc())
                         if q > 15:
@@ -747,10 +750,10 @@ class Mount:
             self.az = az
             self.zen = zen
 
-            try:
-                self.current_sidereal = float((Time(datetime.datetime.utcnow(), scale='utc', location=g_dev['mnt'].site_coordinates).sidereal_time('apparent')*u.deg) / u.deg / u.hourangle)
-            except:
-                plog ("Mount didn't accept request for sidereal time. Need to make a calculation for this.")
+            #try:
+            self.current_sidereal = float((Time(datetime.datetime.utcnow(), scale='utc', location=g_dev['mnt'].site_coordinates).sidereal_time('apparent')*u.deg) / u.deg / u.hourangle)
+            #except:
+            #    plog ("Mount didn't accept request for sidereal time. Need to make a calculation for this.")
 
             if self.prior_roll_rate == 0:
                 pass
@@ -1035,6 +1038,7 @@ class Mount:
                 #self.go_command(ra=gora, dec=godec)#, offset=True, calibrate=False)
             except:
                 plog (traceback.format_exc())
+                self.mount_busy=False
                 plog ("seems the image header hasn't arrived at the UI yet, wait a moment")
 
         elif action == 'sky_flat_position':
@@ -1268,9 +1272,10 @@ class Mount:
 
             except:
                 try:
-                    # mount command #
-                    while self.mount_busy:
-                        time.sleep(0.05)
+                    # self.mount_busy=False
+                    # # mount command #
+                    # while self.mount_busy:
+                    #     time.sleep(0.05)
                     self.mount_busy=True
                     new_pierside =  self.mount.DestinationSideOfPier(ra, dec) #  A tuple gets returned: (pierside, Ra.h and dec.d)
                     self.mount_busy=False
@@ -1282,6 +1287,7 @@ class Mount:
                         delta_ra, delta_dec = self.get_flip_reference()
 
                 except:
+                    self.mount_busy=False
                     delta_ra, delta_dec = self.get_mount_reference()
 
 
@@ -1329,6 +1335,7 @@ class Mount:
                 self.wait_for_slew()
                 self.get_mount_coordinates()
             except Exception:
+                self.mount_busy=False
                 # This catches an occasional ASCOM/TheSkyX glitch and gets it out of being stuck
                 # And back on tracking.
                 try:
@@ -1363,9 +1370,11 @@ class Mount:
                                 plog (traceback.format_exc())
                                 ######breakpoint()
                         except:
+                            self.mount_busy=False
                             time.sleep(120)
                             retry=retry+1
                 except:
+                    self.mount_busy=False
                     plog (traceback.format_exc())
                     #######breakpoint()
 
@@ -1418,7 +1427,7 @@ class Mount:
                 # Yes, this is an awfully non-elegant way to force a mount to start
                 # Tracking when it isn't implemented in the ASCOM driver. But if anyone has any better ideas, I am all ears - MF
                 # It also doesn't want to get into an endless loop of parking and unparking and homing, hence the rescue counter
-
+                self.mount_busy=False
                 if "Property write Tracking is not implemented in this driver" in str(traceback.format_exc()):
                     pass
                 elif g_dev['mnt'].theskyx:
@@ -1509,8 +1518,8 @@ class Mount:
             except:
                 try:
                     # mount command #
-                    while self.mount_busy:
-                        time.sleep(0.05)
+                    # while self.mount_busy:
+                    #     time.sleep(0.05)
                     self.mount_busy=True
                     new_pierside =  self.mount.DestinationSideOfPier(ra, dec) #  A tuple gets returned: (pierside, Ra.h and dec.d)
                     self.mount_busy=False
@@ -1522,9 +1531,11 @@ class Mount:
                         delta_ra, delta_dec = self.get_flip_reference()
                         pier_east = 0
                 except:
+                    self.mount_busy=False
                     delta_ra, delta_dec = self.get_mount_reference()
                     pier_east = 1
         except Exception as e:
+            self.mount_busy=False
             print ("mount really doesn't like pierside calls ", e)
             pier_east = 1
          #Update incoming ra and dec with mounting offsets.
@@ -1567,6 +1578,7 @@ class Mount:
                 self.wait_for_slew()
                 self.set_tracking_on()
             except Exception as e:
+                self.mount_busy=False
                 # Yes, this is an awfully non-elegant way to force a mount to start
                 # Tracking when it isn't implemented in the ASCOM driver. But if anyone has any better ideas, I am all ears - MF
                 # It also doesn't want to get into an endless loop of parking and unparking and homing, hence the rescue counter
@@ -1613,6 +1625,7 @@ class Mount:
             self.wait_for_slew()
             self.get_mount_coordinates()
         except Exception as e:
+            self.mount_busy=False
             # This catches an occasional ASCOM/TheSkyX glitch and gets it out of being stuck
             # And back on tracking.
             if ('Object reference not set to an instance of an object.' in str(e)):
@@ -1636,6 +1649,7 @@ class Mount:
                 self.wait_for_slew()
                 self.set_tracking_on()
             except Exception as e:
+                self.mount_busy=False
                 # Yes, this is an awfully non-elegant way to force a mount to start
                 # Tracking when it isn't implemented in the ASCOM driver. But if anyone has any better ideas, I am all ears - MF
                 # It also doesn't want to get into an endless loop of parking and unparking and homing, hence the rescue counter
@@ -1866,6 +1880,7 @@ class Mount:
                     self.rapid_park_indicator=False
                     self.wait_for_slew()
                 except:
+                    self.mount_busy=False
                     if g_dev['mnt'].theskyx:
                         g_dev['seq'].kill_and_reboot_theskyx(-1,-1)
                         self.wait_for_slew()
@@ -1909,8 +1924,8 @@ class Mount:
                                 plog("Killing then waiting 60 seconds then reconnecting")
                                 g_dev['seq'].kill_and_reboot_theskyx(-1,-1)
                                 # mount command #
-                                while self.mount_busy:
-                                    time.sleep(0.05)
+                                # while self.mount_busy:
+                                #     time.sleep(0.05)
                                 self.mount_busy=True
                                 self.mount.Unpark()
                                 self.mount_busy=False
