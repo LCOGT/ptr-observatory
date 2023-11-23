@@ -1917,6 +1917,10 @@ class Camera:
             "Exposure Started:  " + str(exposure_time) + "s ",
             frame_type
         )
+        try:
+            plog(opt["object_name"])
+        except:
+            opt["object_name"] = 'Unknown'
 
         try:
             filter_ui_info=opt['filter']
@@ -2351,6 +2355,7 @@ class Camera:
 
                 if frame_type=='pointing':
 
+                    g_dev['obs'].platesolve_is_processing = True
                     #cal_name = (
                     #    cal_name[:-9] + "F012" + cal_name[-7:]
                     #)
@@ -2390,7 +2395,7 @@ class Camera:
                     del hdu
 
 
-                    #self.wait_for_slew()
+                    #wait_for_slew()
                     g_dev['obs'].platesolve_is_processing =True
                     g_dev['obs'].to_platesolve((outputimg, hdusmallheader, cal_path, cal_name, frame_type, time.time(), self.pixscale, ra_at_time_of_exposure,dec_at_time_of_exposure))
                     # If it is the last of a set of smartstacks, we actually want to
@@ -3918,7 +3923,33 @@ def post_exposure_process(payload):
         plog(traceback.format_exc())
         breakpoint()
 
+def wait_for_slew():
+    """
+    A function called when the code needs to wait for the telescope to stop slewing before undertaking a task.
+    """
+    try:
+        if not g_dev['mnt'].rapid_park_indicator:
+            movement_reporting_timer=time.time()
+            while g_dev['mnt'].return_slewing(): #or g_dev['enc'].status['dome_slewing']:   #Filter is moving??
+            #while g_dev['mnt'].mount.Slewing():
+                if time.time() - movement_reporting_timer > 2.0:
+                    plog( 'm>')
+                    movement_reporting_timer=time.time()
+                if not g_dev['obs'].currently_updating_status and g_dev['obs'].update_status_queue.empty():
+                    g_dev['mnt'].get_mount_coordinates()
+                    #g_dev['obs'].request_update_status(mount_only=True, dont_wait=True)
+                    g_dev['obs'].update_status(mount_only=True, dont_wait=True)
 
+    except Exception as e:
+        plog("Motion check faulted.")
+        plog(traceback.format_exc())
+        if 'pywintypes.com_error' in str(e):
+            plog ("Mount disconnected. Recovering.....")
+            time.sleep(5)
+            g_dev['mnt'].reboot_mount()
+        else:
+            pass
+    return
 
 
 

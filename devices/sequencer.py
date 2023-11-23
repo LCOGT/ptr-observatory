@@ -4179,8 +4179,14 @@ class Sequencer:
             self.wait_for_slew()
 
 
-            g_dev["obs"].request_update_status()
-            req = { 'time': self.config['pointing_exposure_time'],  'alias':  str(self.config['camera']['camera_1_1']['name']), 'image_type': 'light'}
+            #g_dev["obs"].request_update_status()
+            g_dev["obs"].update_status()
+
+
+            g_dev["mnt"].last_ra_requested=grid_star[0] / 15
+            g_dev["mnt"].last_dec_requested=grid_star[1]
+
+            req = { 'time': self.config['pointing_exposure_time'], 'smartstack': False, 'alias':  str(self.config['camera']['camera_1_1']['name']), 'image_type': 'light'}
             opt = { 'count': 1,  'filter': 'pointing'}
             result = g_dev['cam'].expose_command(req, opt)
 
@@ -4188,8 +4194,9 @@ class Sequencer:
             # Wait for platesolve
             reported=0
             temptimer=time.time()
+            g_dev['obs'].platesolve_is_processing = True
             while True:
-                if g_dev['obs'].platesolve_is_processing ==False and g_dev['obs'].platesolve_queue.empty():
+                if g_dev['obs'].platesolve_is_processing ==False: #and g_dev['obs'].platesolve_queue.empty():
                     break
                 else:
                     if reported ==0:
@@ -4209,6 +4216,8 @@ class Sequencer:
                         g_dev['obs'].stop_processing_command_requests = False
                         return
                     pass
+
+
 
             g_dev["obs"].send_to_user("Finished platesolving")
             plog ("Finished platesolving")
