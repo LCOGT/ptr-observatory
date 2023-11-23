@@ -2017,17 +2017,21 @@ class Camera:
         # This command takes 0.1s to do, so happens just during the start of exposures
         g_dev['cam'].tempccdtemp, g_dev['cam'].ccd_humidity, g_dev['cam'].ccd_pressure = (g_dev['cam']._temperature())
 
+        block_and_focus_check_done=False
+
+        if exposure_time < 5.0:
+            g_dev['obs'].scan_requests()
+            g_dev['seq'].update_calendar_blocks()
+            focus_position=g_dev['foc'].current_focus_position
+            block_and_focus_check_done=True
+
         while True:
-
-
 
             if (
                 time.time() < self.completion_time or self.async_exposure_lock==True
             ):
 
-                if exposure_time < 4.1:
-                    g_dev['obs'].scan_requests()
-                    g_dev['seq'].update_calendar_blocks()
+                
 
                 # Scan requests every 4 seconds... primarily hunting for a "Cancel/Stop"
                 if time.time() - exposure_scan_request_timer > 4 and (time.time() - self.completion_time) > 4:
@@ -2106,8 +2110,10 @@ class Camera:
                             + " sec.",
                             p_level="INFO",
                         )
-                        if remaining > 5:
+                        if remaining > 5 and not block_and_focus_check_done:
                             g_dev['seq'].update_calendar_blocks()
+                            focus_position=g_dev['foc'].current_focus_position
+                            block_and_focus_check_done=True
 
 
                 continue
@@ -2158,7 +2164,7 @@ class Camera:
                 # becomes a large fraction of the actual exposure time,
                 # sometimes more. So if it is a short exposure, assume nothing changed
                 # much since the beginning.
-                if exposure_time > 5:
+                if exposure_time >= 5:
                     try:
                         g_dev["rot"].get_quick_status(self.post_rot)
                     except:
@@ -2277,7 +2283,7 @@ class Camera:
                     object_name = RAstring + "ra" + DECstring + "dec"
                     object_specf = "no"
 
-                focus_position=g_dev['foc'].current_focus_position
+                
 
                 # # If the file isn't a calibration frame, then undertake a flash reduction quickly
                 # # To make a palatable jpg AS SOON AS POSSIBLE to send to AWS
