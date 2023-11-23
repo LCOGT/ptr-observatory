@@ -2318,6 +2318,9 @@ class Camera:
                 #post_exposure_process(payload=payload)
 
                 #deep_copy_timer=time.time()
+
+
+
                 if not frame_type[-4:] == "flat" and not focus_image == True and not frame_type=='pointing':
                     self.post_processing_queue.put(copy.deepcopy((outputimg, g_dev["mnt"].pier_side, self.config["camera"][self.name]["settings"]['is_osc'], frame_type, self.config['camera']['camera_1_1']['settings']['reject_new_flat_by_known_gain'], avg_mnt, avg_foc, avg_rot, self.setpoint, self.tempccdtemp, self.ccd_humidity, self.ccd_pressure, self.darkslide_state, exposure_time, this_exposure_filter, exposure_filter_offset, self.pane,opt , observer_user_name, self.hint, azimuth_of_observation, altitude_of_observation, airmass_of_observation, self.pixscale, smartstackid,sskcounter,Nsmartstack, longstackid, ra_at_time_of_exposure, dec_at_time_of_exposure, manually_requested_calibration, object_name, object_specf, g_dev["mnt"].ha_corr, g_dev["mnt"].dec_corr, focus_position, self.config, self.name, self.camera_known_gain, self.camera_known_readnoise, start_time_of_observation, observer_user_id, self.camera_path,  solve_it)), block=False)
                 #print ("Deep copy timer: " +str(time.time()-deep_copy_timer))
@@ -2355,7 +2358,7 @@ class Camera:
 
                 if frame_type=='pointing':
 
-                    g_dev['obs'].platesolve_is_processing = True
+
                     #cal_name = (
                     #    cal_name[:-9] + "F012" + cal_name[-7:]
                     #)

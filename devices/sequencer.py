@@ -4186,7 +4186,7 @@ class Sequencer:
             g_dev["mnt"].last_ra_requested=grid_star[0] / 15
             g_dev["mnt"].last_dec_requested=grid_star[1]
 
-            req = { 'time': self.config['pointing_exposure_time'], 'smartstack': False, 'alias':  str(self.config['camera']['camera_1_1']['name']), 'image_type': 'light'}
+            req = { 'time': self.config['pointing_exposure_time'], 'smartstack': False, 'alias':  str(self.config['camera']['camera_1_1']['name']), 'image_type': 'pointing'}
             opt = { 'count': 1,  'filter': 'pointing'}
             result = g_dev['cam'].expose_command(req, opt)
 
@@ -4194,9 +4194,9 @@ class Sequencer:
             # Wait for platesolve
             reported=0
             temptimer=time.time()
-            g_dev['obs'].platesolve_is_processing = True
+            #g_dev['obs'].platesolve_is_processing = True
             while True:
-                if g_dev['obs'].platesolve_is_processing ==False: #and g_dev['obs'].platesolve_queue.empty():
+                if g_dev['obs'].platesolve_is_processing ==False and g_dev['obs'].platesolve_queue.empty():
                     break
                 else:
                     if reported ==0:
