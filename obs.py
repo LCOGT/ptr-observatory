@@ -1634,6 +1634,7 @@ class Observatory:
         self.full_update_lock=False
         self.currently_updating_FULL=False
         self.last_update_complete=time.time()
+        #time.sleep(0.5)
         # END of safety checks.
 
     def run(self):
@@ -1645,6 +1646,7 @@ class Observatory:
                         self.update()
                         #self.request_full_update()
                         self.last_update_complete=time.time()
+                        time.sleep(0.5)
                 else:
                     time.sleep(0.05)
                 # `Ctrl-C` will exit the program.
