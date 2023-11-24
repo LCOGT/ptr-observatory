@@ -1056,6 +1056,9 @@ class Observatory:
 
         if self.currently_updating_FULL:
             return
+        
+        if (time.time() - self.last_update_complete) < 1.0:
+            return
 
         self.currently_updating_FULL=True
 
@@ -1630,6 +1633,7 @@ class Observatory:
 
         self.full_update_lock=False
         self.currently_updating_FULL=False
+        self.last_update_complete=time.time()
         # END of safety checks.
 
     def run(self):
