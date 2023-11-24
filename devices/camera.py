@@ -1379,6 +1379,8 @@ class Camera:
                 lamps = None
 
         self.smartstack = required_params.get('smartstack', True)
+        if imtype.lower() in ["pointing", "focus"]:
+            self.smartstack=False
         self.longstack = required_params.get('longstackswitch', False)
 
 

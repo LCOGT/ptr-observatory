@@ -471,7 +471,8 @@ class Mount:
                 while self.mount_busy:
                     time.sleep(0.05)
                 self.mount_busy=True
-                self.mount.Tracking = True
+                if not self.mount.Tracking:
+                    self.mount.Tracking = True
                 self.mount_busy=False
                 # end mount command #
                 self.current_tracking_state=True
@@ -487,7 +488,8 @@ class Mount:
                 while self.mount_busy:
                     time.sleep(0.05)
                 self.mount_busy=True
-                self.mount.Tracking = False
+                if self.mount.Tracking:
+                    self.mount.Tracking = False
                 self.mount_busy=False
                 # end mount command #
                 self.current_tracking_state=False
