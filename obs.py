@@ -1661,8 +1661,8 @@ class Observatory:
             while True:
                 if self.currently_updating_FULL==False:
                     if (time.time() - self.last_update_complete) > 1.0:
-                        self.update()
-                        #self.request_full_update()
+                        #self.update()
+                        self.request_full_update()
                         self.last_update_complete=time.time()
                         time.sleep(0.5)
                 else:
