@@ -1088,7 +1088,7 @@ class Observatory:
         if time.time() - self.get_new_job_timer > 3:
             self.get_new_job_timer = time.time()
             try:
-                self.scan_requests("mount1")
+                self.request_scan_requests("mount1")
             except:
                 pass
 
