@@ -753,7 +753,7 @@ site_config = {
                 'saturate':   65535,
                 'max_linearity':  60000,   # Guess
                 # How long does it take to readout an image after exposure
-                'cycle_time':            0.5,
+                'cycle_time':            0.0,
                 # What is the base smartstack exposure time?
                 # It will vary from scope to scope and computer to computer.
                 # 30s is a good default.
