@@ -1486,7 +1486,8 @@ class Camera:
         num_retries = 0
         incoming_exposure_time=exposure_time
         g_dev['obs'].scan_requests()
-        g_dev['seq'].update_calendar_blocks()
+        if g_dev['seq'].blockend != None:
+            g_dev['seq'].update_calendar_blocks()
         for seq in range(count):
 
             #pre_exposure_overhead_timer=time.time()
@@ -2026,7 +2027,8 @@ class Camera:
 
         if exposure_time <= 5.0:
             g_dev['obs'].scan_requests()
-            g_dev['seq'].update_calendar_blocks()
+            if g_dev['seq'].blockend != None:
+                g_dev['seq'].update_calendar_blocks()
             focus_position=g_dev['foc'].current_focus_position
             block_and_focus_check_done=True
 
@@ -2116,7 +2118,8 @@ class Camera:
                             p_level="INFO",
                         )
                         if remaining > 5 and not block_and_focus_check_done:
-                            g_dev['seq'].update_calendar_blocks()
+                            if g_dev['seq'].blockend != None:
+                                g_dev['seq'].update_calendar_blocks()
                             focus_position=g_dev['foc'].current_focus_position
                             block_and_focus_check_done=True
 
