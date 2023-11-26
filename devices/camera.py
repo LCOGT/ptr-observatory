@@ -2026,7 +2026,7 @@ class Camera:
         #focus_position=g_dev['foc'].current_focus_position
 
         if exposure_time <= 5.0:
-            g_dev['obs'].request.request_scan_requests()
+            g_dev['obs'].request_scan_requests()
             if g_dev['seq'].blockend != None:
                 g_dev['seq'].request_update_calendar_blocks()
             focus_position=g_dev['foc'].current_focus_position
