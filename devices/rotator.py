@@ -46,39 +46,43 @@ class Rotator:
             breakpoint()
             
         
+        self.TargetPosition=self.rotator.TargetPosition
+        self.Position=self.rotator.Position
+        self.IsMoving=self.rortator.IsMoving
+        
         self.rotator_meant_to_be_rotating = True
-        self.check_rotator_is_rotating()       
+        #self.check_rotator_is_rotating()       
         
-    def check_rotator_is_rotating(self):
+    # def check_rotator_is_rotating(self):
         
-        # Test that the rotator is ACTUALLY connected
-        # Not pretending
-        pos1=g_dev['rot'].rotator.Position
-        time.sleep(0.05)
-        pos2=g_dev['rot'].rotator.Position
-        time.sleep(0.05)
-        pos3=g_dev['rot'].rotator.Position
-        time.sleep(0.05)
+    #     # Test that the rotator is ACTUALLY connected
+    #     # Not pretending
+    #     pos1=g_dev['rot'].rotator.Position
+    #     time.sleep(0.05)
+    #     pos2=g_dev['rot'].rotator.Position
+    #     time.sleep(0.05)
+    #     pos3=g_dev['rot'].rotator.Position
+    #     time.sleep(0.05)
         
-        #plog("Rotator positions (Temporary reporting - MTF)")
-        if pos1 < 180:
-            pos1=pos1+360
-        if pos2 < 180:
-            pos2=pos2+360
-        if pos3 < 180:
-            pos3=pos3+360
+    #     #plog("Rotator positions (Temporary reporting - MTF)")
+    #     if pos1 < 180:
+    #         pos1=pos1+360
+    #     if pos2 < 180:
+    #         pos2=pos2+360
+    #     if pos3 < 180:
+    #         pos3=pos3+360
             
         
-        avgpos=((pos1)+(pos2)+(pos3))/3
+    #     avgpos=((pos1)+(pos2)+(pos3))/3
         
 
-        if 359 < avgpos < 361 :
-            print ("The Rotator is indicating telescope is parked")
-            #breakpoint()
-        elif not self.rotator_meant_to_be_rotating:
-            print ("The Rotator is not moving, but it isn't meant to be.")
-        else:
-            print ("THE ROTATOR HAS PERHAPS CRASHED.")
+    #     if 359 < avgpos < 361 :
+    #         print ("The Rotator is indicating telescope is parked")
+    #         #breakpoint()
+    #     elif not self.rotator_meant_to_be_rotating:
+    #         print ("The Rotator is not moving, but it isn't meant to be.")
+    #     else:
+    #         print ("THE ROTATOR HAS PERHAPS CRASHED.")
             
     def get_status(self):
         """
@@ -91,17 +95,22 @@ class Rotator:
         mechanical rotator position angle and the true Equatorial Position
         Angle of the imager, and compensate for any difference.
         """
+        
+        self.TargetPosition=self.rotator.TargetPosition
+        self.Position=self.rotator.Position
+        self.IsMoving=self.rotator.IsMoving
         # NB we had an exception here with Target position.  mORE THAN ONE OF THESE! 220210709
         try:
+            
             status = {
-                "position_angle": round(self.rotator.TargetPosition, 4),
-                "rotator_moving": self.rotator.IsMoving,
+                "position_angle": round(self.TargetPosition, 4),
+                "rotator_moving": self.IsMoving,
             }
         except:
             try:
                 status = {
-                    "position_angle": round(self.rotator.TargetPosition, 4),
-                    "rotator_moving": self.rotator.IsMoving,
+                    "position_angle": round(self.TargetPosition, 4),
+                    "rotator_moving": self.IsMoving,
                 }
             except:
                 status = {
@@ -114,8 +123,8 @@ class Rotator:
     def get_quick_status(self, quick):
         quick.append(time.time())
         try:
-            quick.append(self.rotator.Position)
-            quick.append(self.rotator.IsMoving)
+            quick.append(self.Position)
+            quick.append(self.IsMoving)
         except:
             quick.append(0.0)
             quick.append(False)
