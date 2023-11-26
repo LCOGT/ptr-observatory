@@ -404,8 +404,7 @@ class Observatory:
         # Rotator vs mount vs camera sync stuff
         self.rotator_has_been_checked_since_last_slew = False
         
-        g_dev['obs'].rotator_has_been_checked_since_last_slew
-        
+
         g_dev["obs"] = self
         obsid_str = ptr_config["obs_id"]
         g_dev["obsid"]: obsid_str
