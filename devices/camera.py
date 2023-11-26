@@ -1485,9 +1485,9 @@ class Camera:
         #expresult = {}  #  This is a default return just in case
         num_retries = 0
         incoming_exposure_time=exposure_time
-        g_dev['obs'].scan_requests()
+        g_dev['obs'].request_scan_requests()
         if g_dev['seq'].blockend != None:
-            g_dev['seq'].update_calendar_blocks()
+            g_dev['seq'].request_update_calendar_blocks()
         for seq in range(count):
 
             #pre_exposure_overhead_timer=time.time()
@@ -2026,9 +2026,9 @@ class Camera:
         #focus_position=g_dev['foc'].current_focus_position
 
         if exposure_time <= 5.0:
-            g_dev['obs'].scan_requests()
+            g_dev['obs'].request.request_scan_requests()
             if g_dev['seq'].blockend != None:
-                g_dev['seq'].update_calendar_blocks()
+                g_dev['seq'].request_update_calendar_blocks()
             focus_position=g_dev['foc'].current_focus_position
             block_and_focus_check_done=True
 
@@ -2044,7 +2044,7 @@ class Camera:
                 if time.time() - exposure_scan_request_timer > 4 and (time.time() - self.completion_time) > 4:
                     exposure_scan_request_timer=time.time()
 
-                    g_dev['obs'].scan_requests()
+                    g_dev['obs'].request_scan_requests()
 
                     if g_dev["obs"].exposure_halted_indicator:
                         expresult["error"] = True
@@ -2119,7 +2119,7 @@ class Camera:
                         )
                         if remaining > 5 and not block_and_focus_check_done:
                             if g_dev['seq'].blockend != None:
-                                g_dev['seq'].update_calendar_blocks()
+                                g_dev['seq'].request_update_calendar_blocks()
                             focus_position=g_dev['foc'].current_focus_position
                             block_and_focus_check_done=True
 

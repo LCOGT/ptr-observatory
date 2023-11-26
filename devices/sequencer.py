@@ -546,7 +546,7 @@ class Sequencer:
 
                     self.project_call_timer = time.time()
 
-                    self.update_calendar_blocks()
+                    g_dev['obs'].request_update_calendar_blocks()
 
                     # only need to bother with the rest if there is more than 0 blocks.
                     self.block_guard=False
@@ -752,7 +752,7 @@ class Sequencer:
             # While in this part of the sequencer, we need to have manual UI commands turned back on
             # So that we can process any new manual commands that come in.
             g_dev['obs'].stop_processing_command_requests = False
-            g_dev['obs'].scan_requests()
+            g_dev['obs'].request_scan_requests()
             ###########################################################################
 
 
@@ -993,9 +993,9 @@ class Sequencer:
 
                     # Check whether calendar entry is still existant.
                     # If not, stop running block
-                    g_dev['obs'].scan_requests()
+                    g_dev['obs'].request_scan_requests()
                     foundcalendar=False
-                    self.update_calendar_blocks()
+                    g_dev['obs'].request_update_calendar_blocks()
                     for tempblock in self.blocks:
                         if tempblock['event_id'] == calendar_event_id :
                             foundcalendar=True
@@ -1433,7 +1433,7 @@ class Sequencer:
 
 
             while b_d_to_do > 0:
-                g_dev['obs'].scan_requests()
+                g_dev['obs'].request_scan_requests()
                 min_to_do = min(b_d_to_do, stride)
                 plog("Expose " + str(stride) +" 1x1 bias frames.")
                 req = {'time': 0.0,  'script': 'True', 'image_type': 'bias'}
@@ -1460,7 +1460,7 @@ class Sequencer:
                     self.bias_dark_latch = False
                     break
 
-                g_dev['obs'].scan_requests()
+                g_dev['obs'].request_scan_requests()
 
                 if not single_dark:
 
@@ -1496,7 +1496,7 @@ class Sequencer:
                         self.bias_dark_latch = False
                         break
 
-                g_dev['obs'].scan_requests()
+                g_dev['obs'].request_scan_requests()
                 g_dev["obs"].request_full_update()
                 if ephem.now() + 30/86400 >= ending:
                     self.bias_dark_latch = False
@@ -2412,7 +2412,7 @@ class Sequencer:
 
                     time.sleep(30)
 
-                    g_dev['obs'].scan_requests()
+                    g_dev['obs'].request_scan_requests()
                     g_dev["obs"].request_full_update()
 
                     if g_dev['obs'].open_and_enabled_to_observe == False:
@@ -2602,7 +2602,7 @@ class Sequencer:
                     self.check_zenith_and_move_to_flat_spot(ending=ending)
                     self.time_of_next_slew = time.time() + 45
 
-                #g_dev['obs'].scan_requests()
+                #g_dev['obs'].request_scan_requests()
                 g_dev["obs"].request_full_update()
 
                 if g_dev["fil"].null_filterwheel == False:
@@ -2648,7 +2648,7 @@ class Sequencer:
                 slow_report_timer=time.time()-180
 
                 while (acquired_count < flat_count):
-                    #g_dev['obs'].scan_requests()
+                    #g_dev['obs'].request_scan_requests()
                     g_dev["obs"].request_full_update()
 
                     if g_dev['obs'].open_and_enabled_to_observe == False:
@@ -2855,7 +2855,7 @@ class Sequencer:
                                 g_dev["obs"].request_full_update()
                                 continue
 
-                            #g_dev['obs'].scan_requests()
+                            #g_dev['obs'].request_scan_requests()
                             g_dev["obs"].request_full_update()
 
                             try:
@@ -3001,12 +3001,12 @@ class Sequencer:
         g_dev['mnt'].park_command({}, {})
         #  NB:  g_dev['enc'].close
         g_dev["obs"].request_full_update()
-        g_dev['obs'].scan_requests()
+        g_dev['obs'].request_scan_requests()
         g_dev['scr'].set_screen_bright(0)
         g_dev['scr'].screen_dark()
         time.sleep(5)
         g_dev["obs"].request_full_update()
-        g_dev['obs'].scan_requests()
+        g_dev['obs'].request_scan_requests()
         #Here we need to switch off any IR or dome lighting.
         #Take a 10 s dark screen air flat to record ambient
         # Park Telescope
@@ -3022,7 +3022,7 @@ class Sequencer:
 
         for filt in g_dev['fil'].filter_screen_sort:
             #enter with screen dark
-            g_dev['obs'].scan_requests()
+            g_dev['obs'].request_scan_requests()
             filter_number = int(filt)
             plog(filter_number, g_dev['fil'].filter_data[filter_number][0])
             screen_setting = g_dev['fil'].filter_data[filter_number][4][1]
@@ -3030,7 +3030,7 @@ class Sequencer:
             g_dev['scr'].screen_dark()
             time.sleep(5)
             exp_time  = g_dev['fil'].filter_data[filter_number][4][0]
-            g_dev['obs'].scan_requests()
+            g_dev['obs'].request_scan_requests()
             g_dev["obs"].request_full_update()
             plog('Dark Screen; filter, bright:  ', filter_number, 0)
             req = {'time': float(exp_time),  'alias': camera_name, 'image_type': 'screen flat'}
@@ -3049,7 +3049,7 @@ class Sequencer:
             # time.sleep(10)
             # g_dev["obs"].request_full_update()
             # time.sleep(10)
-            g_dev['obs'].scan_requests()
+            g_dev['obs'].request_scan_requests()
             g_dev["obs"].request_full_update()
             req = {'time': float(exp_time),  'alias': camera_name, 'image_type': 'screen flat'}
             opt = {'count': flat_count, 'filter': g_dev['fil'].filter_data[filter_number][0], 'hint': 'screen filter light'}
@@ -3059,12 +3059,12 @@ class Sequencer:
                 return
             # if no exposure, wait 10 sec
             plog("Lighted Screen flat:  ", result['patch'], g_dev['fil'].filter_data[filter_number][0], '\n\n')
-            g_dev['obs'].scan_requests()
+            g_dev['obs'].request_scan_requests()
             g_dev["obs"].request_full_update()
             g_dev['scr'].set_screen_bright(0)
             g_dev['scr'].screen_dark()
             time.sleep(5)
-            g_dev['obs'].scan_requests()
+            g_dev['obs'].request_scan_requests()
             g_dev["obs"].request_full_update()
             plog('Dark Screen; filter, bright:  ', filter_number, 0)
             req = {'time': float(exp_time),  'alias': camera_name, 'image_type': 'screen flat'}
@@ -3192,7 +3192,7 @@ class Sequencer:
         focus_patch_dec=above_altitude_patches[idx,1]
         focus_patch_n=above_altitude_patches[idx,2]
 
-        g_dev['obs'].scan_requests()
+        g_dev['obs'].request_scan_requests()
         g_dev['obs'].send_to_user("Slewing to a focus field", p_level='INFO')
         try:
             plog("\nGoing to near focus patch of " + str(int(focus_patch_n)) + " 9th to 12th mag stars " + str(d2d.deg[0]) + "  degrees away.\n")
@@ -3273,7 +3273,7 @@ class Sequencer:
             time.sleep(0.2)
 
 
-        g_dev['obs'].scan_requests()
+        g_dev['obs'].request_scan_requests()
         g_dev["obs"].request_full_update()
 
         plog('Autofocus Starting at:  ', foc_pos0, '\n\n')
@@ -3284,7 +3284,7 @@ class Sequencer:
         retry = 0
         while retry < 3:
             if not sim:
-                g_dev['obs'].scan_requests()
+                g_dev['obs'].request_scan_requests()
                 result = g_dev['cam'].expose_command(req, opt, user_id='Tobor', user_name='Tobor', user_roles='system', no_AWS=True, solve_it=False) ## , script = 'auto_focus_script_0')  #  This is where we start.
                 if self.stop_script_called:
                     g_dev["obs"].send_to_user("Cancelling out of autofocus script as stop script has been called.")
@@ -3325,7 +3325,7 @@ class Sequencer:
         g_dev['foc'].guarded_move((foc_pos0 - 1*throw)*g_dev['foc'].micron_to_steps)
 
         if not sim:
-            g_dev['obs'].scan_requests()
+            g_dev['obs'].request_scan_requests()
             result = g_dev['cam'].expose_command(req, opt, user_id='Tobor', user_name='Tobor', user_roles='system', no_AWS=True, solve_it=False) ## , script = 'auto_focus_script_1')  #  This is moving in one throw.
             if self.stop_script_called:
                 g_dev["obs"].send_to_user("Cancelling out of autofocus script as stop script has been called.")
@@ -3355,7 +3355,7 @@ class Sequencer:
         g_dev['foc'].guarded_move((foc_pos0 + throw)*g_dev['foc'].micron_to_steps)  #NB NB NB THIS IS WRONG!
 
         if not sim:
-            g_dev['obs'].scan_requests()
+            g_dev['obs'].request_scan_requests()
             result = g_dev['cam'].expose_command(req, opt, user_id='Tobor', user_name='Tobor', user_roles='system', no_AWS=True, solve_it=False) ## , script = 'auto_focus_script_2')  #  This is moving out one throw.
             if self.stop_script_called:
                 g_dev["obs"].send_to_user("Cancelling out of autofocus script as stop script has been called.")
@@ -3433,7 +3433,7 @@ class Sequencer:
                 g_dev['foc'].last_source = "auto_focus_script"
 
                 if not sim:
-                    g_dev['obs'].scan_requests()
+                    g_dev['obs'].request_scan_requests()
                     result = g_dev['cam'].expose_command(req, opt, user_id='Tobor', user_name='Tobor', user_roles='system', no_AWS=True, solve_it=False)  #   script = 'auto_focus_script_3')  #  This is verifying the new focus.
                     if self.stop_script_called:
                         g_dev["obs"].send_to_user("Cancelling out of autofocus script as stop script has been called.")
@@ -3479,7 +3479,7 @@ class Sequencer:
             plog('Autofocus Moving In 2nd time.\n\n')
             g_dev['foc'].guarded_move((foc_pos0 - 2.5*throw)*g_dev['foc'].micron_to_steps)
             if not sim:
-                g_dev['obs'].scan_requests()
+                g_dev['obs'].request_scan_requests()
                 result = g_dev['cam'].expose_command(req, opt, user_id='Tobor', user_name='Tobor', user_roles='system', no_AWS=True, solve_it=False) ## , script = 'auto_focus_script_1')  #  This is moving in one throw.
                 if self.stop_script_called:
                     g_dev["obs"].send_to_user("Cancelling out of autofocus script as stop script has been called.")
@@ -3557,7 +3557,7 @@ class Sequencer:
                 g_dev['foc'].last_source = "auto_focus_script"
 
                 if not sim:
-                    g_dev['obs'].scan_requests()
+                    g_dev['obs'].request_scan_requests()
                     result = g_dev['cam'].expose_command(req, opt, user_id='Tobor', user_name='Tobor', user_roles='system', no_AWS=True, solve_it=False)  #   script = 'auto_focus_script_3')  #  This is verifying the new focus.
                     if self.stop_script_called:
                         g_dev["obs"].send_to_user("Cancelling out of autofocus script as stop script has been called.")
@@ -3599,7 +3599,7 @@ class Sequencer:
 
             g_dev['foc'].guarded_move((foc_pos0 + 2.5*throw)*g_dev['foc'].micron_to_steps)  #NB NB NB THIS IS WRONG!
             if not sim:
-                g_dev['obs'].scan_requests()
+                g_dev['obs'].request_scan_requests()
                 result = g_dev['cam'].expose_command(req, opt, user_id='Tobor', user_name='Tobor', user_roles='system', no_AWS=True, solve_it=False) ## , script = 'auto_focus_script_2')  #  This is moving out one throw.
                 if self.stop_script_called:
                     g_dev["obs"].send_to_user("Cancelling out of autofocus script as stop script has been called.")
@@ -3671,7 +3671,7 @@ class Sequencer:
                 g_dev['foc'].last_source = "auto_focus_script"
 
                 if not sim:
-                    g_dev['obs'].scan_requests()
+                    g_dev['obs'].request_scan_requests()
                     result = g_dev['cam'].expose_command(req, opt, user_id='Tobor', user_name='Tobor', user_roles='system', no_AWS=True, solve_it=False)  #   script = 'auto_focus_script_3')  #  This is verifying the new focus.
                     if self.stop_script_called:
                         g_dev["obs"].send_to_user("Cancelling out of autofocus script as stop script has been called.")
@@ -3920,7 +3920,7 @@ class Sequencer:
             g_dev['foc'].guarded_move((foc_pos0 - (ctr+0)*throw)*g_dev['foc'].micron_to_steps)
 
             if not sim:
-                g_dev['obs'].scan_requests()
+                g_dev['obs'].request_scan_requests()
                 req = {'time': self.config['focus_exposure_time'],  'alias':  str(self.config['camera']['camera_1_1']['name']), 'image_type': 'focus'}   #  NB Should pick up filter and constats from config
                 opt = {'count': 1, 'filter': 'focus'}
                 result = g_dev['cam'].expose_command(req, opt, user_id='Tobor', user_name='Tobor', user_roles='system', no_AWS=True, solve_it=False)
@@ -3964,7 +3964,7 @@ class Sequencer:
         for ctr in range(3):
             g_dev['foc'].guarded_move((foc_pos0 + (ctr+1)*throw)*g_dev['foc'].micron_to_steps)
             if not sim:
-                g_dev['obs'].scan_requests()
+                g_dev['obs'].request_scan_requests()
                 req = {'time': self.config['focus_exposure_time'],  'alias':  str(self.config['camera']['camera_1_1']['name']), 'image_type': 'focus'}   #  NB Should pick up filter and constats from config
                 opt = { 'count': 1, 'filter': 'focus'}
                 result = g_dev['cam'].expose_command(req, opt, user_id='Tobor', user_name='Tobor', user_roles='system', no_AWS=True, solve_it=False)

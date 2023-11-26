@@ -325,6 +325,20 @@ class Observatory:
         # self.FULL_update_thread_queue = queue.Queue(maxsize=0)
         # self.FULL_update_thread=threading.Thread(target=self.full_update_thread)
         # self.FULL_update_thread.start()
+        
+        # ANd one for scan requests
+        self.currently_scan_requesting = False
+        self.scan_request_queue = queue.Queue(maxsize=0)
+        self.scan_request_thread=threading.Thread(target=self.scan_request_thread)
+        self.scan_request_thread.start()
+
+        # And one for updating calendar blocks 
+        self.currently_updating_calendar_blocks = False
+        self.calendar_block_queue = queue.Queue(maxsize=0)
+        self.calendar_block_thread=threading.Thread(target=self.calendar_block_thread)
+        self.calendar_block_thread.start()
+        
+        
 
         self.too_hot_temperature=self.config['temperature_at_which_obs_too_hot_for_camera_cooling']
         self.warm_report_timer = time.time()-600
@@ -1975,6 +1989,58 @@ class Observatory:
                 time.sleep(0.2)
 
 
+        
+        
+
+    # Note this is a thread!
+    def scan_request_thread(self):
+
+
+        one_at_a_time = 0
+
+        # This stopping mechanism allows for threads to close cleanly.
+        while True:
+
+            if not self.full_update_lock and (not self.scan_request_queue.empty()) and one_at_a_time == 0:
+
+                one_at_a_time = 1
+                request = self.scan_request_queue.get(block=False)
+                self.currently_scan_requesting = True
+                self.scan_requests()
+                self.currently_scan_requesting = False
+                self.scan_request_queue.task_done()
+                one_at_a_time = 0
+
+
+            else:
+                time.sleep(0.05)
+
+
+    # Note this is a thread!
+    def calendar_block_thread(self):
+
+
+        one_at_a_time = 0
+
+        # This stopping mechanism allows for threads to close cleanly.
+        while True:
+
+            if not self.full_update_lock and (not self.calendar_block_queue.empty()) and one_at_a_time == 0:
+
+                one_at_a_time = 1
+                request = self.calendar_block_queue.get(block=False)
+                
+                #self.scan_requests()
+                self.currently_updating_calendar_blocks = True
+                g_dev['seq'].update_calendar_blocks()
+                self.currently_updating_calendar_blocks = False
+                
+                self.calendar_block_queue.task_done()
+                one_at_a_time = 0
+
+
+            else:
+                time.sleep(0.05)
 
 
     # Note this is a thread!
@@ -1987,7 +2053,6 @@ class Observatory:
         while True:
 
             if not self.full_update_lock and (not self.update_status_queue.empty()) and one_at_a_time == 0:
-
 
                 one_at_a_time = 1
                 request = self.update_status_queue.get(block=False)
@@ -3692,6 +3757,15 @@ class Observatory:
             self.update_status_queue.put( 'normal', block=False)
         elif not self.currently_updating_status and mount_only:
             self.update_status_queue.put( 'mountonly', block=False)
+
+    def request_scan_requests(self, mount_only=False):
+        if not self.currently_scan_requesting:
+            self.scan_request_queue.put( 'normal', block=False)
+            
+    def request_update_calendar_blocks(self, mount_only=False):
+        if not self.currently_updating_calendar_blocks:
+            self.calendar_block_queue.put( 'normal', block=False)
+       
 
     def request_full_update(self):
         if not g_dev["obs"].currently_updating_FULL:
