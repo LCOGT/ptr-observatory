@@ -322,9 +322,9 @@ class Observatory:
         # Also this is true for the FULL update.
         self.currently_updating_FULL=False
 
-        # self.FULL_update_thread_queue = queue.Queue(maxsize=0)
-        # self.FULL_update_thread=threading.Thread(target=self.full_update_thread)
-        # self.FULL_update_thread.start()
+        self.FULL_update_thread_queue = queue.Queue(maxsize=0)
+        self.FULL_update_thread=threading.Thread(target=self.full_update_thread)
+        self.FULL_update_thread.start()
         
         # ANd one for scan requests
         self.currently_scan_requesting = False
@@ -3769,8 +3769,8 @@ class Observatory:
 
     def request_full_update(self):
         if not g_dev["obs"].currently_updating_FULL:
-            #self.FULL_update_thread_queue.put( 'dummy', block=False)
-            self.update()
+            self.FULL_update_thread_queue.put( 'dummy', block=False)
+            #self.update()
 
 def wait_for_slew():
 

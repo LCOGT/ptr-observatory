@@ -2120,7 +2120,6 @@ class Camera:
                         if remaining > 5 and not block_and_focus_check_done:
                             if g_dev['seq'].blockend != None:
                                 g_dev['seq'].request_update_calendar_blocks()
-                            focus_position=g_dev['foc'].current_focus_position
                             block_and_focus_check_done=True
 
 
