@@ -66,7 +66,9 @@ site_config = {
     # LINKS TO PIPE FOLDER
     'save_raws_to_pipe_folder_for_nightly_processing': False,
     'pipe_archive_folder_path': 'X:/localptrarchive/',  #WER changed Z to X 20231113 @1:16 UTC
-    'temporary_local_pipe_archive_to_hold_files_while_copying' : 'F:/tempfolderforpipeline',
+    'temporary_local_pipe_archive_to_hold_files_while_copying' : 'D:/tempfolderforpipeline',
+    'temporary_local_alt_archive_to_hold_files_while_copying' : 'D:/tempfolderforaltpath',
+
     # Setup of folders on local and network drives.
     'client_hostname':  'mrc-0m35',  # This is also the long-name  Client is confusing!    
     'archive_path':  'D:/ptr/',  # Generic place for client host to stash misc stuff
@@ -606,7 +608,7 @@ site_config = {
                 'direct_qhy_gain': 26,
                 'direct_qhy_offset': 60,
                 
-                'direct_qhy_usb_traffic' : 50,
+                'direct_qhy_usb_traffic' : 60,
                 
                 'set_qhy_usb_speed': False,
                 'direct_qhy_usb_speed' : 0,

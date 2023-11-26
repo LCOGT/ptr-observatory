@@ -114,6 +114,8 @@ site_config = {
     'save_raws_to_pipe_folder_for_nightly_processing': False,
     'pipe_archive_folder_path': 'X:/localptrarchive/',  #WER changed Z to X 20231113 @1:16 UTC
     'temporary_local_pipe_archive_to_hold_files_while_copying' : 'F:/tempfolderforpipeline',
+    'temporary_local_alt_archive_to_hold_files_while_copying' : 'F:/tempfolderforaltpath',
+
     # Setup of folders on local and network drives.
     'client_hostname':  'mr2-0m60',
     'archive_path':  'C:/ptr/',  # Generic place for client host to stash misc stuff

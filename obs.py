@@ -2748,10 +2748,10 @@ class Observatory:
                             )
                             os.makedirs(
                                 self.alt_path + g_dev["day"] + "/calib/", exist_ok=True)
-
-                    altfolder = self.config['temporary_local_alt_archive_to_hold_files_while_copying']
-                    if not os.path.exists(self.config['temporary_local_alt_archive_to_hold_files_while_copying']):
-                        os.makedirs(self.config['temporary_local_alt_archive_to_hold_files_while_copying'] )
+                    
+                        altfolder = self.config['temporary_local_alt_archive_to_hold_files_while_copying']
+                        if not os.path.exists(self.config['temporary_local_alt_archive_to_hold_files_while_copying']):
+                            os.makedirs(self.config['temporary_local_alt_archive_to_hold_files_while_copying'] )
 
 
                     saver = 0

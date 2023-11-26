@@ -2020,8 +2020,9 @@ class Camera:
         g_dev['cam'].tempccdtemp, g_dev['cam'].ccd_humidity, g_dev['cam'].ccd_pressure = (g_dev['cam']._temperature())
 
         block_and_focus_check_done=False
+        #focus_position=g_dev['foc'].current_focus_position
 
-        if exposure_time < 5.0:
+        if exposure_time <= 5.0:
             g_dev['obs'].scan_requests()
             g_dev['seq'].update_calendar_blocks()
             focus_position=g_dev['foc'].current_focus_position
