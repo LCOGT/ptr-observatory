@@ -3758,11 +3758,11 @@ class Observatory:
         elif not self.currently_updating_status and mount_only:
             self.update_status_queue.put( 'mountonly', block=False)
 
-    def request_scan_requests(self, mount_only=False):
+    def request_scan_requests(self): 
         if not self.currently_scan_requesting:
             self.scan_request_queue.put( 'normal', block=False)
             
-    def request_update_calendar_blocks(self, mount_only=False):
+    def request_update_calendar_blocks(self):
         if not self.currently_updating_calendar_blocks:
             self.calendar_block_queue.put( 'normal', block=False)
        
