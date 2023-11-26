@@ -48,7 +48,7 @@ class Rotator:
         
         self.TargetPosition=self.rotator.TargetPosition
         self.Position=self.rotator.Position
-        self.IsMoving=self.rortator.IsMoving
+        self.IsMoving=self.rotator.IsMoving
         
         self.rotator_meant_to_be_rotating = True
         #self.check_rotator_is_rotating()       
