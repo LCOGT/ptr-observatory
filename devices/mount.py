@@ -580,6 +580,8 @@ class Mount:
             time.sleep(0.05)
         self.mount_busy=True
         self.mount.SlewToCoordinatesAsync(ra, dec)
+        g_dev['obs'].rotator_has_been_checked_since_last_slew=False
+        
         self.mount_busy=False
         # end mount command #
         self.wait_for_slew()
@@ -1031,6 +1033,7 @@ class Mount:
                     time.sleep(0.05)
                 self.mount_busy=True
                 self.mount.SlewToCoordinatesAsync(gora, godec)
+                g_dev['obs'].rotator_has_been_checked_since_last_slew=False
                 self.mount_busy=False
                 # end mount command #
                 self.wait_for_slew()
@@ -1333,6 +1336,7 @@ class Mount:
                 self.mount_busy=True
                 self.mount.SlewToCoordinatesAsync(ra, dec)  #Is this needed?
                 self.mount_busy=False
+                g_dev['obs'].rotator_has_been_checked_since_last_slew=False
                 # end mount command #
                 self.wait_for_slew()
                 self.get_mount_coordinates()
@@ -1363,6 +1367,7 @@ class Mount:
                                 self.mount_busy=True
                                 self.mount.SlewToCoordinatesAsync(ra, dec)
                                 self.mount_busy=False
+                                g_dev['obs'].rotator_has_been_checked_since_last_slew=False
                                 # end mount command #
                                 self.wait_for_slew()
                                 self.get_mount_coordinates()
@@ -1415,6 +1420,7 @@ class Mount:
                 self.mount_busy=True
                 self.mount.SlewToCoordinatesAsync(ra, dec)
                 self.mount_busy=False
+                g_dev['obs'].rotator_has_been_checked_since_last_slew=False
                 # end mount command #
                 self.wait_for_slew()
                 self.get_mount_coordinates()
@@ -1450,6 +1456,7 @@ class Mount:
                     self.mount_busy=True
                     self.mount.SlewToCoordinatesAsync(ra, dec)  #Is this needed?
                     self.mount_busy=False
+                    g_dev['obs'].rotator_has_been_checked_since_last_slew=False
                     # end mount command #
                     self.wait_for_slew()
                     self.get_mount_coordinates()
@@ -1597,6 +1604,7 @@ class Mount:
                     self.mount_busy=True
                     self.mount.SlewToCoordinatesAsync(self.ra_mech*RTOH, self.dec_mech*RTOD)  #Is this needed?
                     self.mount_busy=False
+                    g_dev['obs'].rotator_has_been_checked_since_last_slew=False
                     # end mount command #
                     self.wait_for_slew()
                     self.get_mount_coordinates()
@@ -1623,6 +1631,7 @@ class Mount:
             self.mount_busy=True
             self.mount.SlewToCoordinatesAsync(self.ra_mech*RTOH, self.dec_mech*RTOD)  #Is this needed?
             self.mount_busy=False
+            g_dev['obs'].rotator_has_been_checked_since_last_slew=False
             # end mount command #
             self.wait_for_slew()
             self.get_mount_coordinates()
@@ -1642,6 +1651,7 @@ class Mount:
                 self.mount_busy=True
                 self.mount.SlewToCoordinatesAsync(self.ra_mech*RTOH, self.dec_mech*RTOD)  #Is this needed?
                 self.mount_busy=False
+                g_dev['obs'].rotator_has_been_checked_since_last_slew=False
                 # end mount command #
                 self.wait_for_slew()
                 self.get_mount_coordinates()
@@ -1667,6 +1677,7 @@ class Mount:
                     self.mount_busy=True
                     self.mount.SlewToCoordinatesAsync(self.ra_mech*RTOH, self.dec_mech*RTOD)  #Is this needed?
                     self.mount_busy=False
+                    g_dev['obs'].rotator_has_been_checked_since_last_slew=False
                     # end mount command #
                     self.wait_for_slew()
                     self.get_mount_coordinates()
@@ -1793,6 +1804,7 @@ class Mount:
                 self.mount_busy=True
                 self.mount.FindHome()
                 self.mount_busy=False
+                g_dev['obs'].rotator_has_been_checked_since_last_slew=False
                 # end mount command #
                 self.wait_for_slew()
                 self.get_mount_coordinates()
@@ -1840,6 +1852,7 @@ class Mount:
                 self.mount_busy=True
                 self.mount.Park()
                 self.mount_busy=False
+                g_dev['obs'].rotator_has_been_checked_since_last_slew=False
                 # end mount command #
                 self.rapid_park_indicator=True
 
@@ -1878,6 +1891,7 @@ class Mount:
                     self.mount_busy=True
                     self.mount.Unpark()
                     self.mount_busy=False
+                    g_dev['obs'].rotator_has_been_checked_since_last_slew=False
                     # end mount command #
                     self.rapid_park_indicator=False
                     self.wait_for_slew()
@@ -1892,6 +1906,7 @@ class Mount:
                         self.mount_busy=True
                         self.mount.Unpark()
                         self.mount_busy=False
+                        g_dev['obs'].rotator_has_been_checked_since_last_slew=False
                         # end mount command #
                         self.rapid_park_indicator=False
                         self.wait_for_slew()
@@ -1909,6 +1924,7 @@ class Mount:
                         self.mount_busy=True
                         self.mount.FindHome()
                         self.mount_busy=False
+                        g_dev['obs'].rotator_has_been_checked_since_last_slew=False
                         # end mount command #
                         self.wait_for_slew()
                     except:
@@ -1931,6 +1947,7 @@ class Mount:
                                 self.mount_busy=True
                                 self.mount.Unpark()
                                 self.mount_busy=False
+                                g_dev['obs'].rotator_has_been_checked_since_last_slew=False
                                 # end mount command #
                                 self.rapid_park_indicator=False
                                 self.wait_for_slew()

@@ -1468,7 +1468,8 @@ class Camera:
          # this give rot moving report during bia darks
         rot_report=0
         if g_dev['rot']!=None:
-            if not g_dev['mnt'].rapid_park_indicator:
+            if not g_dev['mnt'].rapid_park_indicatorand and not g_dev['obs'].rotator_has_been_checked_since_last_slew:
+                g_dev['obs'].rotator_has_been_checked_since_last_slew = True
                 while g_dev['rot'].rotator.IsMoving:
                         if rot_report == 0 and imtype not in ['bias', 'dark']:
                             plog("Waiting for camera rotator to catch up. ")
@@ -1721,7 +1722,8 @@ class Camera:
                             # this give rot moving report during bia darks
                             rot_report=0
                             if g_dev['rot']!=None:
-                                if not g_dev['mnt'].rapid_park_indicator:
+                                if not g_dev['mnt'].rapid_park_indicator and not g_dev['obs'].rotator_has_been_checked_since_last_slew:
+                                    g_dev['obs'].rotator_has_been_checked_since_last_slew = True
                                     while g_dev['rot'].rotator.IsMoving:    #This signal fibrulates!
                                         #if g_dev['rot'].rotator.IsMoving:
                                          if rot_report == 0 :

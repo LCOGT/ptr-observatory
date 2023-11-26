@@ -509,6 +509,8 @@ class Sequencer:
                             plog("home rotator wait")
                             time.sleep(1)
                         self.rotator_has_been_homed_this_evening=True
+                        g_dev['obs'].rotator_has_been_checked_since_last_slew = True
+                            
                     except:
                         #plog ("no rotator to home or wait for.")
                         pass
@@ -906,6 +908,8 @@ class Sequencer:
                         plog("home rotator wait")
                         time.sleep(1)
                     self.rotator_has_been_homed_this_evening=True
+                    g_dev['obs'].rotator_has_been_checked_since_last_slew = True
+                        
                 except:
                     #plog ("no rotator to home or wait for.")
                     pass
@@ -2400,6 +2404,8 @@ class Sequencer:
                                 plog("home rotator wait")
                                 time.sleep(1)
                             self.rotator_has_been_homed_this_evening=True
+                            g_dev['obs'].rotator_has_been_checked_since_last_slew = True
+                                
                         except:
                             #plog ("no rotator to home or wait for.")
                             pass
@@ -2571,6 +2577,8 @@ class Sequencer:
                     plog("home rotator wait")
                     time.sleep(1)
                 self.rotator_has_been_homed_this_evening=True
+                g_dev['obs'].rotator_has_been_checked_since_last_slew = True
+                    
             except:
                 #plog ("no rotator to home or wait for.")
                 g_dev['mnt']
