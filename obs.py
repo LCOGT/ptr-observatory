@@ -2075,8 +2075,7 @@ class Observatory:
         # This stopping mechanism allows for threads to close cleanly.
         while True:            
             if (not self.FULL_update_thread_queue.empty()) and one_at_a_time == 0:
-                print ('M')
-
+               
                 one_at_a_time = 1
                 self.FULL_update_thread_queue.get(block=False)
                 self.update()
