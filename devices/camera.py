@@ -2478,6 +2478,11 @@ class Camera:
                     #g_dev['obs'].to_sep((outputimg, self.pixscale, self.camera_known_readnoise, avg_foc[1], focus_image, im_path, text_name, hdusmallheader, cal_path, cal_name, frame_type, focus_position, self.native_bin))
                     g_dev['obs'].to_sep((outputimg, self.pixscale, self.camera_known_readnoise, avg_foc[1], focus_image, im_path, text_name, hdusmallheader, cal_path, cal_name, frame_type, focus_position, 1.0))
 
+                    # while sepping, write out the image
+
+
+
+
                     reported=0
                     temptimer=time.time()
                     plog ("Exposure Complete")
