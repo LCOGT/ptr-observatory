@@ -653,7 +653,12 @@ class Observatory:
         xl = win32com.client.Dispatch(
             win32com.client.pythoncom.CoGetInterfaceAndReleaseStream(g_dev['mnt'].mount_id, win32com.client.pythoncom.IID_IDispatch)
     )
-
+        
+    #     # Hooking up obs connection to win32 com focuser
+    #     win32com.client.pythoncom.CoInitialize()
+    #     fl = win32com.client.Dispatch(
+    #         win32com.client.pythoncom.CoGetInterfaceAndReleaseStream(g_dev['foc'].focuser_id, win32com.client.pythoncom.IID_IDispatch)
+    # )
 
         plog("Finished creating devices.")
 
@@ -998,6 +1003,10 @@ class Observatory:
 
         self.currently_updating_status=True
 
+        #print ('l')
+        g_dev['foc'].update_focuser_temperature()
+        #print ('m')
+
         # Wait a bit between status updates otherwise
         # status updates bank up in the queue
         if dont_wait == True:
@@ -1078,7 +1087,7 @@ class Observatory:
 
 
         self.currently_updating_FULL=True
-
+        
         #print ("full update")
 
         if not self.currently_updating_status:
@@ -1100,6 +1109,7 @@ class Observatory:
         if self.status_count > 1:  # Give time for status to form
             g_dev["seq"].manager()  # Go see if there is something new to do.
 
+        #breakpoint()
 
         #g_dev["mnt"].get_mount_coordinates()
         # try:
@@ -1656,11 +1666,15 @@ class Observatory:
     def run(self):
         try:
             # Keep the main thread alive, otherwise signals are ignored
-            while True:
-                if self.currently_updating_FULL==False:
+            while True:                
+                if self.currently_updating_FULL==False:                    
                     if (time.time() - self.last_update_complete) > 3.0:
-                        #self.update()
-                        self.request_full_update()                        
+                        
+                        
+                        if self.config['run_main_update_in_a_thread']:
+                            self.request_full_update()                        
+                        else:
+                            self.update()
                         self.last_update_complete=time.time()
                         time.sleep(0.5)
                 else:
@@ -2071,6 +2085,8 @@ class Observatory:
 
 
         one_at_a_time = 0
+        
+        
 
         # This stopping mechanism allows for threads to close cleanly.
         while True:            
@@ -3749,10 +3765,20 @@ class Observatory:
         self.mainjpeg_queue.put( to_sep, block=False)
 
     def request_update_status(self, mount_only=False):
-        if not self.currently_updating_status and not mount_only:
-            self.update_status_queue.put( 'normal', block=False)
-        elif not self.currently_updating_status and mount_only:
-            self.update_status_queue.put( 'mountonly', block=False)
+        
+        
+        if self.config['run_status_update_in_a_thread']:       
+            if not self.currently_updating_status and not mount_only:
+                self.update_status_queue.put( 'normal', block=False)
+            elif not self.currently_updating_status and mount_only:
+                self.update_status_queue.put( 'mountonly', block=False)
+        else:
+            if mount_only:
+                #print ("mount only")
+                self.update_status(mount_only=True, dont_wait=True)
+            else:
+                self.update_status()
+                
 
     def request_scan_requests(self): 
         if not self.currently_scan_requesting:
@@ -3763,9 +3789,13 @@ class Observatory:
             self.calendar_block_queue.put( 'normal', block=False)
        
 
-    def request_full_update(self):        
-        if not g_dev["obs"].currently_updating_FULL:
-            self.FULL_update_thread_queue.put( 'dummy', block=False)
+    def request_full_update(self):  
+        if self.config['run_main_update_in_a_thread']:
+            if not g_dev["obs"].currently_updating_FULL:
+                self.FULL_update_thread_queue.put( 'dummy', block=False)
+        else:
+            if (time.time() - self.last_update_complete) > 3.0:
+                self.update()
             #self.update()
 
 def wait_for_slew():
@@ -3778,13 +3808,15 @@ def wait_for_slew():
         if not g_dev['mnt'].rapid_park_indicator:
             movement_reporting_timer = time.time()
             while g_dev['mnt'].return_slewing():
+                g_dev['mnt'].currently_slewing= True
                 if time.time() - movement_reporting_timer > 2.0:
                     plog('m>')
                     movement_reporting_timer = time.time()
                 if not g_dev['obs'].currently_updating_status and g_dev['obs'].update_status_queue.empty():
                     g_dev['mnt'].get_mount_coordinates()
-                    #g_dev['obs'].request_update_status(mount_only=True, dont_wait=True)
-                    g_dev['obs'].update_status(mount_only=True, dont_wait=True)
+                    g_dev['obs'].request_update_status(mount_only=True, dont_wait=True)
+                    #g_dev['obs'].update_status(mount_only=True, dont_wait=True)
+            g_dev['mnt'].currently_slewing= False
 
     except Exception as e:
         plog("Motion check faulted.")

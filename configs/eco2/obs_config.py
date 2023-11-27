@@ -100,9 +100,10 @@ site_config = {
     'number_of_simultaneous_altarchive_streams' : 4,
     
     
-    
-   
-    
+    # Bisque mounts can't run updates in a thread ... yet... until I figure it out,
+    # So this is False for Bisques and true for everyone else.
+    'run_main_update_in_a_thread': False,
+    'run_status_update_in_a_thread' : False,
     
     # Minimum realistic seeing at the site.
     # This allows culling of unphysical results in photometry and other things

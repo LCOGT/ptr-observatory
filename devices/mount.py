@@ -369,6 +369,8 @@ class Mount:
             self.mount.Park()
             self.rapid_park_indicator=True
 
+        self.currently_slewing= False
+
         self.get_status()
         # # mount command #
         # while self.mount_busy:
@@ -383,6 +385,7 @@ class Mount:
             if not g_dev['mnt'].rapid_park_indicator:
                 movement_reporting_timer=time.time()
                 while self.return_slewing():
+                    self.currently_slewing=True
                     if time.time() - movement_reporting_timer > 2.0:
                         plog( 'm>')
                         movement_reporting_timer=time.time()
@@ -391,6 +394,8 @@ class Mount:
                         g_dev['mnt'].get_mount_coordinates()
                         #g_dev['obs'].request_update_status(mount_only=True, dont_wait=True)
                         g_dev['obs'].update_status(mount_only=True, dont_wait=True)
+                        
+                self.currently_slewing=False
 
         except Exception as e:
             self.mount_busy=False
@@ -580,6 +585,7 @@ class Mount:
             time.sleep(0.05)
         self.mount_busy=True
         self.mount.SlewToCoordinatesAsync(ra, dec)
+        
         g_dev['obs'].rotator_has_been_checked_since_last_slew=False
         
         self.mount_busy=False

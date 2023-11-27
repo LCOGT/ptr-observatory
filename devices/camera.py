@@ -3950,6 +3950,7 @@ def wait_for_slew():
             movement_reporting_timer=time.time()
             while g_dev['mnt'].return_slewing(): #or g_dev['enc'].status['dome_slewing']:   #Filter is moving??
             #while g_dev['mnt'].mount.Slewing():
+                g_dev['mnt'].currently_slewing= True
                 if time.time() - movement_reporting_timer > 2.0:
                     plog( 'm>')
                     movement_reporting_timer=time.time()
@@ -3957,6 +3958,7 @@ def wait_for_slew():
                     g_dev['mnt'].get_mount_coordinates()
                     #g_dev['obs'].request_update_status(mount_only=True, dont_wait=True)
                     g_dev['obs'].update_status(mount_only=True, dont_wait=True)
+            g_dev['mnt'].currently_slewing= False
 
     except Exception as e:
         plog("Motion check faulted.")

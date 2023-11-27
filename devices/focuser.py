@@ -37,6 +37,7 @@ class Focuser:
         win32com.client.pythoncom.CoInitialize()
 
         self.focuser = win32com.client.Dispatch(driver)
+        #self.focuser_id = win32com.client.pythoncom.CoMarshalInterThreadInterfaceInStream(win32com.client.pythoncom.IID_IDispatch, self.focuser)
 
         if driver == "CCDSoft2XAdaptor.ccdsoft5Camera":
             self.theskyx=True
