@@ -325,20 +325,20 @@ class Observatory:
         self.FULL_update_thread_queue = queue.Queue(maxsize=0)
         self.FULL_update_thread=threading.Thread(target=self.full_update_thread)
         self.FULL_update_thread.start()
-        
+
         # ANd one for scan requests
         self.currently_scan_requesting = False
         self.scan_request_queue = queue.Queue(maxsize=0)
         self.scan_request_thread=threading.Thread(target=self.scan_request_thread)
         self.scan_request_thread.start()
 
-        # And one for updating calendar blocks 
+        # And one for updating calendar blocks
         self.currently_updating_calendar_blocks = False
         self.calendar_block_queue = queue.Queue(maxsize=0)
         self.calendar_block_thread=threading.Thread(target=self.calendar_block_thread)
         self.calendar_block_thread.start()
-        
-        
+
+
 
         self.too_hot_temperature=self.config['temperature_at_which_obs_too_hot_for_camera_cooling']
         self.warm_report_timer = time.time()-600
@@ -417,7 +417,7 @@ class Observatory:
 
         # Rotator vs mount vs camera sync stuff
         self.rotator_has_been_checked_since_last_slew = False
-        
+
 
         g_dev["obs"] = self
         obsid_str = ptr_config["obs_id"]
@@ -653,7 +653,7 @@ class Observatory:
         xl = win32com.client.Dispatch(
             win32com.client.pythoncom.CoGetInterfaceAndReleaseStream(g_dev['mnt'].mount_id, win32com.client.pythoncom.IID_IDispatch)
     )
-        
+
     #     # Hooking up obs connection to win32 com focuser
     #     win32com.client.pythoncom.CoInitialize()
     #     fl = win32com.client.Dispatch(
@@ -1081,13 +1081,13 @@ class Observatory:
         a variety of safety checks as well.
         """
 
-        
+
         if self.currently_updating_FULL:
             return
 
 
         self.currently_updating_FULL=True
-        
+
         #print ("full update")
 
         if not self.currently_updating_status:
@@ -1129,6 +1129,7 @@ class Observatory:
         #breakpoint()
 
         g_dev['foc'].update_focuser_temperature()
+
 
         # If the roof is open, then it is open and enabled to observe
         if not g_dev['obs'].enc_status == None:
@@ -1660,19 +1661,19 @@ class Observatory:
 
         self.full_update_lock=False
         self.currently_updating_FULL=False
-        self.last_update_complete=time.time()       
+        self.last_update_complete=time.time()
         # END of safety checks.
 
     def run(self):
         try:
             # Keep the main thread alive, otherwise signals are ignored
-            while True:                
-                if self.currently_updating_FULL==False:                    
+            while True:
+                if self.currently_updating_FULL==False:
                     if (time.time() - self.last_update_complete) > 3.0:
-                        
-                        
+
+
                         if self.config['run_main_update_in_a_thread']:
-                            self.request_full_update()                        
+                            self.request_full_update()
                         else:
                             self.update()
                         self.last_update_complete=time.time()
@@ -2001,8 +2002,8 @@ class Observatory:
                 time.sleep(0.2)
 
 
-        
-        
+
+
 
     # Note this is a thread!
     def scan_request_thread(self):
@@ -2041,12 +2042,12 @@ class Observatory:
 
                 one_at_a_time = 1
                 request = self.calendar_block_queue.get(block=False)
-                
+
                 #self.scan_requests()
                 self.currently_updating_calendar_blocks = True
                 g_dev['seq'].update_calendar_blocks()
                 self.currently_updating_calendar_blocks = False
-                
+
                 self.calendar_block_queue.task_done()
                 one_at_a_time = 0
 
@@ -2085,13 +2086,13 @@ class Observatory:
 
 
         one_at_a_time = 0
-        
-        
+
+
 
         # This stopping mechanism allows for threads to close cleanly.
-        while True:            
+        while True:
             if (not self.FULL_update_thread_queue.empty()) and one_at_a_time == 0:
-               
+
                 one_at_a_time = 1
                 self.FULL_update_thread_queue.get(block=False)
                 self.update()
@@ -2829,7 +2830,7 @@ class Observatory:
                             )
                             os.makedirs(
                                 self.alt_path + g_dev["day"] + "/calib/", exist_ok=True)
-                    
+
                         altfolder = self.config['temporary_local_alt_archive_to_hold_files_while_copying']
                         if not os.path.exists(self.config['temporary_local_alt_archive_to_hold_files_while_copying']):
                             os.makedirs(self.config['temporary_local_alt_archive_to_hold_files_while_copying'] )
@@ -3765,9 +3766,9 @@ class Observatory:
         self.mainjpeg_queue.put( to_sep, block=False)
 
     def request_update_status(self, mount_only=False):
-        
-        
-        if self.config['run_status_update_in_a_thread']:       
+
+
+        if self.config['run_status_update_in_a_thread']:
             if not self.currently_updating_status and not mount_only:
                 self.update_status_queue.put( 'normal', block=False)
             elif not self.currently_updating_status and mount_only:
@@ -3778,18 +3779,18 @@ class Observatory:
                 self.update_status(mount_only=True, dont_wait=True)
             else:
                 self.update_status()
-                
 
-    def request_scan_requests(self): 
+
+    def request_scan_requests(self):
         if not self.currently_scan_requesting:
             self.scan_request_queue.put( 'normal', block=False)
-            
+
     def request_update_calendar_blocks(self):
         if not self.currently_updating_calendar_blocks:
             self.calendar_block_queue.put( 'normal', block=False)
-       
 
-    def request_full_update(self):  
+
+    def request_full_update(self):
         if self.config['run_main_update_in_a_thread']:
             if not g_dev["obs"].currently_updating_FULL:
                 self.FULL_update_thread_queue.put( 'dummy', block=False)
