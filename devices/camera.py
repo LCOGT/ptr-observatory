@@ -1759,7 +1759,7 @@ class Camera:
 
 
                             #plog ("pre-exposure overhead: " + str(time.time() -pre_exposure_overhead_timer) +"s.")
-                            self.wait_for_slew()
+                            #self.wait_for_slew()
                             start_time_of_observation=time.time()
                             self.start_time_of_observation=time.time()
                             plog ("Time between end of last exposure and start of next minus exposure time: " + str(time.time() -  self.end_of_last_exposure_time - exposure_time))                           
@@ -4068,7 +4068,7 @@ def wait_for_slew():
             movement_reporting_timer=time.time()
             while g_dev['mnt'].return_slewing(): #or g_dev['enc'].status['dome_slewing']:   #Filter is moving??
             #while g_dev['mnt'].mount.Slewing():
-                g_dev['mnt'].currently_slewing= True
+                #g_dev['mnt'].currently_slewing= True
                 if time.time() - movement_reporting_timer > 2.0:
                     plog( 'm>')
                     movement_reporting_timer=time.time()
@@ -4076,7 +4076,7 @@ def wait_for_slew():
                     g_dev['mnt'].get_mount_coordinates()
                     #g_dev['obs'].request_update_status(mount_only=True, dont_wait=True)
                     g_dev['obs'].update_status(mount_only=True, dont_wait=True)
-            g_dev['mnt'].currently_slewing= False
+            #g_dev['mnt'].currently_slewing= False
 
     except Exception as e:
         plog("Motion check faulted.")

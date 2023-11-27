@@ -1004,7 +1004,7 @@ class Observatory:
         self.currently_updating_status=True
 
         #print ('l')
-        g_dev['foc'].update_focuser_temperature()
+        #g_dev['foc'].update_focuser_temperature()
         #print ('m')
 
         # Wait a bit between status updates otherwise
@@ -1128,7 +1128,7 @@ class Observatory:
         #         plog ("astrophysics doesn't report side of pier at park? MTF hunting this bug.")
         #breakpoint()
 
-        g_dev['foc'].update_focuser_temperature()
+        #g_dev['foc'].update_focuser_temperature()
 
 
         # If the roof is open, then it is open and enabled to observe
@@ -3809,7 +3809,7 @@ def wait_for_slew():
         if not g_dev['mnt'].rapid_park_indicator:
             movement_reporting_timer = time.time()
             while g_dev['mnt'].return_slewing():
-                g_dev['mnt'].currently_slewing= True
+                #g_dev['mnt'].currently_slewing= True
                 if time.time() - movement_reporting_timer > 2.0:
                     plog('m>')
                     movement_reporting_timer = time.time()
@@ -3817,7 +3817,7 @@ def wait_for_slew():
                     g_dev['mnt'].get_mount_coordinates()
                     g_dev['obs'].request_update_status(mount_only=True, dont_wait=True)
                     #g_dev['obs'].update_status(mount_only=True, dont_wait=True)
-            g_dev['mnt'].currently_slewing= False
+            #g_dev['mnt'].currently_slewing= False
 
     except Exception as e:
         plog("Motion check faulted.")

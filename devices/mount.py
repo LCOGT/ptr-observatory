@@ -44,6 +44,8 @@ import traceback
 import os
 import copy
 import shelve
+import threading
+import queue
 from math import cos, radians    #"What plan do we have for making some imports be done this way, elg, import numpy as np...?"
 from global_yard import g_dev    #"Ditto guestion we are importing a single object instance."
 
@@ -378,6 +380,64 @@ class Mount:
         # self.mount_busy=True
 
         # self.mount_busy=False
+        
+        
+        self.mount_update_period=0.2
+        self.mount_update_timer=time.time() - 2* self.mount_update_period
+        self.mount_updates=0
+        #self.focuser_update_thread_queue = queue.Queue(maxsize=0)
+        self.mount_update_thread=threading.Thread(target=self.mount_update_thread)
+        self.mount_update_thread.start()
+
+    # Note this is a thread!
+    def mount_update_thread(self):
+
+
+        #one_at_a_time = 0
+        
+        #Hooking up connection to win32 com focuser
+        #win32com.client.pythoncom.CoInitialize()
+    #     fl = win32com.client.Dispatch(
+    #         win32com.client.pythoncom.CoGetInterfaceAndReleaseStream(g_dev['foc'].focuser_id, win32com.client.pythoncom.IID_IDispatch)
+    # )
+        
+        win32com.client.pythoncom.CoInitialize()
+
+        self.mount_update_wincom = win32com.client.Dispatch(self.driver)
+    
+        self.mount_update_wincom.Connected = True
+        # try:
+        #     self.pier_side = g_dev[
+        #         "mnt"
+        #     ].mount.sideOfPier  # 0 == Tel Looking West, is flipped.
+        #     self.can_report_pierside = True
+        # except:
+        #     self.can_report_pierside = False
+    
+        # This stopping mechanism allows for threads to close cleanly.
+        while True:
+
+            # update every so often, but update rapidly if slewing. 
+            if (self.mount_update_timer < time.time() - self.mount_update_period) or (self.currently_slewing):
+                
+                # Some things we don't do while slewing
+                if not self.currently_slewing:
+                
+                    self.rapid_park_indicator=copy.deepcopy(self.mount_update_wincom.AtPark)
+                    #if self.can_report_pierside:
+                    self.rapid_pier_indicator=copy.deepcopy(self.mount_update_wincom.sideOfPier)
+                    self.current_tracking_state=self.mount_update_wincom.Tracking
+
+                self.right_ascension_directly_from_mount = copy.deepcopy(self.mount_update_wincom.RightAscension)
+                self.declination_directly_from_mount = copy.deepcopy(self.mount_update_wincom.Declination)
+                
+                self.currently_slewing= self.mount_update_wincom.Slewing
+                                
+                
+                self.mount_updates=self.mount_updates + 1
+                self.mount_update_timer=time.time()
+            else:
+                time.sleep(0.05)
 
     def wait_for_slew(self):
 
@@ -385,7 +445,7 @@ class Mount:
             if not g_dev['mnt'].rapid_park_indicator:
                 movement_reporting_timer=time.time()
                 while self.return_slewing():
-                    self.currently_slewing=True
+                    #self.currently_slewing=True
                     if time.time() - movement_reporting_timer > 2.0:
                         plog( 'm>')
                         movement_reporting_timer=time.time()
@@ -395,50 +455,50 @@ class Mount:
                         #g_dev['obs'].request_update_status(mount_only=True, dont_wait=True)
                         g_dev['obs'].update_status(mount_only=True, dont_wait=True)
                         
-                self.currently_slewing=False
+                #self.currently_slewing=False
 
         except Exception as e:
             self.mount_busy=False
             plog("Motion check faulted.")
             plog(traceback.format_exc())
-            if 'pywintypes.com_error' in str(e):
-                plog ("Mount disconnected. Recovering.....")
-                time.sleep(30)
+            # if 'pywintypes.com_error' in str(e):
+            #     plog ("Mount disconnected. Recovering.....")
+            #     time.sleep(30)
 
-                g_dev['mnt'].mount.Connected = True
-                #g_dev['mnt'].home_command()
-            else:
-                print ("trying recovery routine")
-                q=0
-                while True:
-                    time.sleep(10)
-                    plog ("recovery attempt " + str(q+1))
-                    q=q+1
-                    g_dev['obs'].request_update_status(mount_only=True)
-                    try:
-                        g_dev['mnt'].mount.Connected = True
+            #     g_dev['mnt'].mount.Connected = True
+            #     #g_dev['mnt'].home_command()
+            # else:
+            #     print ("trying recovery routine")
+            #     q=0
+            #     while True:
+            #         time.sleep(10)
+            #         plog ("recovery attempt " + str(q+1))
+            #         q=q+1
+            #         g_dev['obs'].request_update_status(mount_only=True)
+            #         try:
+            #             g_dev['mnt'].mount.Connected = True
 
-                        break
-                    except:
-                        self.mount_busy=False
-                        plog("recovery didn't work")
-                        plog(traceback.format_exc())
-                        if q > 15:
-                            pass
-                            ######breakpoint()
+            #             break
+            #         except:
+            #             self.mount_busy=False
+            #             plog("recovery didn't work")
+            #             plog(traceback.format_exc())
+            #             if q > 15:
+            #                 pass
+            #                 ######breakpoint()
 
         return
 
     def return_side_of_pier(self):
-        # mount command #
-        while self.mount_busy:
-            time.sleep(0.05)
-        self.mount_busy=True
-        tempvalue = copy.deepcopy(self.mount.sideOfPier)
-        self.mount_busy=False
-        # end mount command #
-        return tempvalue
-
+        # # mount command #
+        # while self.mount_busy:
+        #     time.sleep(0.05)
+        # self.mount_busy=True
+        # tempvalue = copy.deepcopy(self.mount.sideOfPier)
+        # self.mount_busy=False
+        # # end mount command #
+        # return tempvalue
+        return self.rapid_pier_indicator
 
     def return_right_ascension(self):
 
@@ -450,24 +510,34 @@ class Mount:
         return self.declination_directly_from_mount
 
     def return_slewing(self):
-        # mount command #
-        while self.mount_busy:
-            time.sleep(0.05)
-        self.mount_busy=True
-        tempvalue = copy.deepcopy(self.mount.Slewing)
-        self.mount_busy=False
-        # end mount command #
-        return tempvalue
+        # # mount command #
+        # while self.mount_busy:
+        #     time.sleep(0.05)
+        # self.mount_busy=True
+        # tempvalue = copy.deepcopy(self.mount.Slewing)
+        # self.mount_busy=False
+        # # end mount command #
+        # return tempvalue
+        
+        sleep_period= self.mount_update_period / 4
+        current_updates=copy.deepcopy(self.mount_updates)
+        while current_updates==self.mount_updates:
+            #print ('ping')
+            time.sleep(sleep_period)
+        #print ("splat")
+        return self.currently_slewing
 
     def return_tracking(self):
-        # mount command #
-        while self.mount_busy:
-            time.sleep(0.05)
-        self.mount_busy=True
-        tempvalue = copy.deepcopy(self.mount.Tracking)
-        self.mount_busy=False
-        # end mount command #
-        return tempvalue
+        # # mount command #
+        # while self.mount_busy:
+        #     time.sleep(0.05)
+        # self.mount_busy=True
+        # tempvalue = copy.deepcopy(self.mount.Tracking)
+        # self.mount_busy=False
+        # # end mount command #
+        # return tempvalue
+        
+        return self.current_tracking_state
 
     def set_tracking_on(self):
         if self.return_slewing() == False:
@@ -476,7 +546,7 @@ class Mount:
                 while self.mount_busy:
                     time.sleep(0.05)
                 self.mount_busy=True
-                if not self.mount.Tracking:
+                if not self.current_tracking_state:
                     self.mount.Tracking = True
                 self.mount_busy=False
                 # end mount command #
@@ -493,7 +563,7 @@ class Mount:
                 while self.mount_busy:
                     time.sleep(0.05)
                 self.mount_busy=True
-                if self.mount.Tracking:
+                if self.current_tracking_state:
                     self.mount.Tracking = False
                 self.mount_busy=False
                 # end mount command #
@@ -568,8 +638,8 @@ class Mount:
         while self.mount_busy:
             time.sleep(0.05)
         self.mount_busy=True
-        self.right_ascension_directly_from_mount = copy.deepcopy(self.mount.RightAscension)
-        self.declination_directly_from_mount = copy.deepcopy(self.mount.Declination)
+        # self.right_ascension_directly_from_mount = copy.deepcopy(self.mount.RightAscension)
+        # self.declination_directly_from_mount = copy.deepcopy(self.mount.Declination)
         self.mount_busy=False
         # end mount command #
         self.current_icrs_ra = self.right_ascension_directly_from_mount    #May not be applied in positioning
@@ -1258,11 +1328,13 @@ class Mount:
         #flip offset.  So a GEM could track into positive HA territory without a problem but the next reseek should
         #result in a flip.  So first figure out if there will be a flip:
         # mount command #
-        while self.mount_busy:
-            time.sleep(0.05)
-        self.mount_busy=True
-        self.previous_pier_side=self.mount.sideOfPier
-        self.mount_busy=False
+        # while self.mount_busy:
+        #     time.sleep(0.05)
+        # self.mount_busy=True
+        #self.previous_pier_side=self.mount.sideOfPier
+        
+        self.previous_pier_side=self.rapid_pier_indicator
+        #self.mount_busy=False
         # end mount command #
 
         if self.can_report_destination_pierside == True:
@@ -1355,7 +1427,8 @@ class Mount:
                     while retry <3:
                         try:
                             if g_dev['mnt'].theskyx:
-
+                                plog (traceback.format_exc())
+                                breakpoint()
                                 plog("The SkyX had an error.")
                                 plog("Usually this is because of a broken connection.")
                                 plog("Killing then waiting 60 seconds then reconnecting")
@@ -1393,12 +1466,13 @@ class Mount:
 
             # Make sure the current pier_side variable is set
             # mount command #
-            while self.mount_busy:
-                time.sleep(0.05)
-            self.mount_busy=True
-            g_dev["mnt"].pier_side=self.mount.sideOfPier
-            self.mount_busy=False
-            # end mount command #
+            # while self.mount_busy:
+            #     time.sleep(0.05)
+            # self.mount_busy=True
+            #g_dev["mnt"].pier_side=self.mount.sideOfPier
+            g_dev["mnt"].pier_side=self.rapid_pier_indicator
+            # self.mount_busy=False
+            # # end mount command #
             if self.previous_pier_side == g_dev["mnt"].pier_side or self.can_report_destination_pierside:
                 successful_move=1
             else:
@@ -1485,11 +1559,11 @@ class Mount:
 
         # Continue to keep track of pierside
         # mount command #
-        while self.mount_busy:
-            time.sleep(0.05)
-        self.mount_busy=True
-        self.previous_pier_side=self.mount.sideOfPier
-        self.mount_busy=False
+        # while self.mount_busy:
+        #     time.sleep(0.05)
+        # self.mount_busy=True
+        self.previous_pier_side=self.rapid_pier_indicator
+        # self.mount_busy=False
         # end mount command #
 
     def go_w_model_and_velocity(self, ra, dec, tracking_rate_ra=0, tracking_rate_dec=0, reset_solve=True):  #Note these rates need a system specification
