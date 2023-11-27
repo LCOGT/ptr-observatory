@@ -2480,7 +2480,26 @@ class Camera:
 
                     # while sepping, write out the image
 
+                    # raw_path = im_path_r + g_dev["day"] + "/raw/"
+                    
+                    # # Similarly to the above. This saves the RAW file to disk
+                    # # it works 99.9999% of the time.
+                    # if self.config['save_raw_to_disk']:
+                    #    g_dev['obs'].to_slow_process(1000,('raw', raw_path + raw_name00, hdu.data, hdu.header, frame_type, g_dev["mnt"].current_icrs_ra, g_dev["mnt"].current_icrs_dec))
 
+
+                    # # For sites that have "save_to_alt_path" enabled, this routine
+                    # # Saves the raw and reduced fits files out to the provided directories
+                    # if selfconfig["save_to_alt_path"] == "yes":
+                    #     selfalt_path = selfconfig[
+                    #         "alt_path"
+                    #     ]  +'/' + selfconfig['obs_id']+ '/' # NB NB this should come from config file, it is site dependent.
+
+                    #     g_dev['obs'].to_slow_process(1000,('raw_alt_path', selfalt_path + g_dev["day"] + "/raw/" + raw_name00, hdu.data, hdu.header, \
+                    #                                    frame_type, g_dev["mnt"].current_icrs_ra, g_dev["mnt"].current_icrs_dec))
+                    #     if "hdusmalldata" in locals():
+                    #         g_dev['obs'].to_slow_process(1000,('reduced_alt_path', selfalt_path + g_dev["day"] + "/reduced/" + red_name01, hdusmalldata, hdusmallheader, \
+                    #                                            frame_type, g_dev["mnt"].current_icrs_ra, g_dev["mnt"].current_icrs_dec))
 
 
                     reported=0
@@ -2704,6 +2723,100 @@ class Camera:
                         plog("Exposure Complete")
                         g_dev["obs"].send_to_user("Exposure Complete")
                         #breakpoint()
+                        
+                        
+                        
+                        
+                        # Save good flat
+                        raw_path = im_path_r + g_dev["day"] + "/raw/"
+                        raw_name00 = (
+                            self.config["obs_id"]
+                            + "-"
+                            + g_dev['cam'].alias + '_' + str(frame_type) + '_' + str(this_exposure_filter)
+                            + "-"
+                            + g_dev["day"]
+                            + "-"
+                            + next_seq
+                            + "-"
+                            + im_type
+                            + "00.fits"
+                        )
+                        # if self.config['save_reduced_file_numberid_first']:
+                        #     red_name01 = (next_seq + "-" +self.config["obs_id"] + "-" + str(hdu.header['OBJECT']).replace(':','d').replace('@','at').replace('.','d').replace(' ','').replace('-','') +'-'+str(hdu.header['FILTER']) + "-" +  str(exposure_time).replace('.','d') + "-"+ im_type+ "01.fits")
+                        # else:
+                        #     red_name01 = (self.config["obs_id"] + "-" + str(hdu.header['OBJECT']).replace(':','d').replace('@','at').replace('.','d').replace(' ','').replace('-','') +'-'+str(hdu.header['FILTER']) + "-" + next_seq+ "-" + str(exposure_time).replace('.','d') + "-"+ im_type+ "01.fits")
+
+                        
+                        hdu = fits.PrimaryHDU()
+                       
+                        
+                        
+                        # Flip flat fits around to correct orientation
+                        if self.config["camera"][self.name]["settings"]["transpose_fits"]:
+                            hdu = fits.PrimaryHDU(
+                                outputimg.transpose().astype('float32'))
+                        elif self.config["camera"][self.name]["settings"]["flipx_fits"]:
+                            hdu = fits.PrimaryHDU(
+                                np.fliplr(outputimg.astype('float32'))
+                            )
+                        elif self.config["camera"][self.name]["settings"]["flipy_fits"]:
+                            hdu = fits.PrimaryHDU(
+                                np.flipud(outputimg.astype('float32'))
+                            )
+                        elif self.config["camera"][self.name]["settings"]["rotate90_fits"]:
+                            hdu = fits.PrimaryHDU(
+                                np.rot90(outputimg.astype('float32'))
+                            )
+                        elif self.config["camera"][self.name]["settings"]["rotate180_fits"]:
+                            hdu = fits.PrimaryHDU(
+                                np.rot90(outputimg.astype('float32'),2)
+                            )
+                        elif self.config["camera"][self.name]["settings"]["rotate270_fits"]:
+                            hdu = fits.PrimaryHDU(
+                                np.rot90(outputimg.astype('float32'),3)
+                            )
+                        else:
+                            hdu = fits.PrimaryHDU(
+                                outputimg.astype('float32')
+                            )
+                        del outputimg
+                        
+                        
+                        hdu.header['PIXSCALE']=self.pixscale
+                        hdu.header['EXPTIME']=exposure_time
+
+                        hdu.header['OBSTYPE']='flat'
+                        hdu.header['FILTER']=self.current_filter
+                        
+                        
+                        
+                        
+                        
+                        # If the files are local calibrations, save them out to the local calibration directory
+                        if not manually_requested_calibration:
+                            g_dev['obs'].to_slow_process(200000000, ('localcalibration', raw_name00, hdu.data, hdu.header, frame_type, g_dev["mnt"].current_icrs_ra, g_dev["mnt"].current_icrs_dec))
+
+
+                        # Similarly to the above. This saves the RAW file to disk                        
+                        if self.config['save_raw_to_disk']:
+                           g_dev['obs'].to_slow_process(1000,('raw', raw_path + raw_name00, hdu.data, hdu.header, frame_type, g_dev["mnt"].current_icrs_ra, g_dev["mnt"].current_icrs_dec))
+
+
+                        # For sites that have "save_to_alt_path" enabled, this routine
+                        # Saves the raw and reduced fits files out to the provided directories
+                        if self.config["save_to_alt_path"] == "yes":
+                            self.alt_path = self.config[
+                                "alt_path"
+                            ]  +'/' + self.config['obs_id']+ '/' # NB NB this should come from config file, it is site dependent.
+
+                            g_dev['obs'].to_slow_process(1000,('raw_alt_path', self.alt_path + g_dev["day"] + "/raw/" + raw_name00, hdu.data, hdu.header, \
+                                                           frame_type, g_dev["mnt"].current_icrs_ra, g_dev["mnt"].current_icrs_dec))
+                            # if "hdusmalldata" in locals():
+                            #     g_dev['obs'].to_slow_process(1000,('reduced_alt_path', selfalt_path + g_dev["day"] + "/reduced/" + red_name01, hdusmalldata, hdusmallheader, \
+                            #                                        frame_type, g_dev["mnt"].current_icrs_ra, g_dev["mnt"].current_icrs_dec))
+
+                        del hdu
+                        
                         return copy.deepcopy(expresult)
 
 
@@ -3822,39 +3935,39 @@ def post_exposure_process(payload):
 
             # Send data off to process jpeg
             # This is for a non-focus jpeg
-            if focus_image == False:
-                g_dev['obs'].to_mainjpeg((hdusmalldata, smartstackid, paths, pier_side))
+            #if focus_image == False:
+            g_dev['obs'].to_mainjpeg((hdusmalldata, smartstackid, paths, pier_side))
 
-            # If this is a focus image, we need to wait until the SEP queue is finished and empty to pick up the latest
-            # FWHM.
-            if focus_image == True:
-                reported=0
-                temptimer=time.time()
-                plog ("Exposure Complete")
-                g_dev["obs"].send_to_user("Exposure Complete")
-                while True:
-                    if g_dev['obs'].sep_processing==False and g_dev['obs'].sep_queue.empty():
-                        break
-                    else:
-                        if reported ==0:
-                            plog ("FOCUS: Waiting for SEP processing to complete and queue to clear")
-                            reported=1
-                        pass
+            # # If this is a focus image, we need to wait until the SEP queue is finished and empty to pick up the latest
+            # # FWHM.
+            # if focus_image == True:
+            #     reported=0
+            #     temptimer=time.time()
+            #     plog ("Exposure Complete")
+            #     g_dev["obs"].send_to_user("Exposure Complete")
+            #     while True:
+            #         if g_dev['obs'].sep_processing==False and g_dev['obs'].sep_queue.empty():
+            #             break
+            #         else:
+            #             if reported ==0:
+            #                 plog ("FOCUS: Waiting for SEP processing to complete and queue to clear")
+            #                 reported=1
+            #             pass
 
-                        if g_dev['obs'].open_and_enabled_to_observe==False:
-                            plog ("No longer open and enabled to observe, cancelling out of waiting for SEP.")
-                            break
-                    if (time.time() - temptimer) > 20:
-                        # During a pre-exposure, we don't want the update to be
-                        # syncronous!
-                        g_dev["obs"].request_full_update()
-                        #g_dev['obs'].update()
-                        temptimer=time.time()
+            #             if g_dev['obs'].open_and_enabled_to_observe==False:
+            #                 plog ("No longer open and enabled to observe, cancelling out of waiting for SEP.")
+            #                 break
+            #         if (time.time() - temptimer) > 20:
+            #             # During a pre-exposure, we don't want the update to be
+            #             # syncronous!
+            #             g_dev["obs"].request_full_update()
+            #             #g_dev['obs'].update()
+            #             temptimer=time.time()
 
-                    time.sleep(0.2)
-                focus_image = False
+            #         time.sleep(0.2)
+            #     focus_image = False
 
-                return expresult
+            #     return expresult
 
 
 
