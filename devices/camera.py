@@ -585,7 +585,10 @@ class Camera:
             "cooler_on"
         ]:  # NB NB why this logic, do we mean if not cooler found on, then turn it on and take the delay?
             self._set_cooler_on()
-        temp, humid, pressure =self._temperature()
+        if self.theskyx:
+            temp, humid, pressure =self.camera.Temperature, 999.9, 999.9
+        else:
+            temp, humid, pressure =self._temperature()
         plog("Cooling beginning @:  ", temp)
         plog("Humidity and pressure:  ", humid, pressure)
 
@@ -732,6 +735,126 @@ class Camera:
         self.post_processing_queue = queue.Queue(maxsize=0)
         self.post_processing_queue_thread = threading.Thread(target=self.post_processing_process, args=())
         self.post_processing_queue_thread.start()
+        
+        
+        if self.theskyx:
+            
+            
+            self.theskyx_set_cooler_on=True
+            self.theskyx_cooleron=True
+            self.theskyx_set_setpoint=True
+            self.theskyx_set_setpoint_value= self.setpoint
+            self.theskyx_temperature=self.camera.Temperature, 999.9, 999.9
+            self.camera_update_period=5
+            self.camera_update_timer=time.time() - 2* self.camera_update_period
+            self.camera_updates=0
+            #self.focuser_update_thread_queue = queue.Queue(maxsize=0)
+            self.camera_update_thread=threading.Thread(target=self.camera_update_thread)
+            self.camera_update_thread.start()
+
+    # Note this is a thread!
+    def camera_update_thread(self):
+
+
+        #one_at_a_time = 0
+        
+        #Hooking up connection to win32 com focuser
+        #win32com.client.pythoncom.CoInitialize()
+    #     fl = win32com.client.Dispatch(
+    #         win32com.client.pythoncom.CoGetInterfaceAndReleaseStream(g_dev['foc'].focuser_id, win32com.client.pythoncom.IID_IDispatch)
+    # )
+        
+        win32com.client.pythoncom.CoInitialize()
+
+        self.camera_update_wincom = win32com.client.Dispatch(self.driver)
+    
+        self.camera_update_wincom.Connect()
+        #breakpoint()
+    
+        #self.camera_update_wincom.LinkEnabled = True
+        #self.camera_update_wincom.Connected = True
+        # try:
+        #     self.pier_side = g_dev[
+        #         "mnt"
+        #     ].mount.sideOfPier  # 0 == Tel Looking West, is flipped.
+        #     self.can_report_pierside = True
+        # except:
+        #     self.can_report_pierside = False
+    
+        # This stopping mechanism allows for threads to close cleanly.
+        while True:
+
+            # update every so often, but update rapidly if slewing. 
+            if (self.camera_update_timer < time.time() - self.camera_update_period) :
+                
+                
+                
+                self.theskyx_temperature= self.camera_update_wincom.Temperature, 999.9, 999.9
+
+                self.theskyx_cooleron= self.camera_update_wincom.RegulateTemperature
+
+                if self.theskyx_set_cooler_on==True:
+                    
+                    self.camera_update_wincom.RegulateTemperature = True
+                    self.theskyx_set_cooler_on=False
+                    # return (
+                    #     self.camera_update_wincom.RegulateTemperature
+                    # )
+                
+                if self.theskyx_set_setpoint==True:
+                    self.camera_update_wincom.TemperatureSetpoint = float(self.theskyx_set_setpoint_value)
+                    self.current_setpoint = self.theskyx_set_setpoint_value
+                    self.theskyx_set_setpoint=False
+                    
+                # def _theskyx_set_setpoint(self, p_temp):
+                #     self.camera_update_wincom.TemperatureSetpoint = float(p_temp)
+                #     self.current_setpoint = p_temp
+                #     return self.camera.TemperatureSetpoint
+
+                #def _theskyx_setpoint(self):
+                #    return self.camera_update_timer.TemperatureSetpoint
+
+                # def _theskyx_cooler_power(self):
+                #     return self.camera.CoolerPower
+
+                # def _theskyx_heatsink_temp(self):
+                #     return self.camera.HeatSinkTemperature
+
+                
+
+                # def _theskyx_set_cooler_on(self):
+                #     self.camera.RegulateTemperature = True
+                #     return (
+                #         self.camera.RegulateTemperature
+                #     )
+
+                # def _theskyx_set_setpoint(self, p_temp):
+                #     self.camera.TemperatureSetpoint = float(p_temp)
+                #     self.current_setpoint = p_temp
+                #     return self.camera.TemperatureSetpoint
+
+                # def _theskyx_setpoint(self):
+                #     return self.camera.TemperatureSetpoint
+                # # Some things we don't do while slewing
+                # if not self.currently_slewing:
+                
+                #     self.rapid_park_indicator=copy.deepcopy(self.mount_update_wincom.AtPark)
+                #     #if self.can_report_pierside:
+                #     self.rapid_pier_indicator=copy.deepcopy(self.mount_update_wincom.sideOfPier)
+                #     self.current_tracking_state=self.mount_update_wincom.Tracking
+
+                # self.right_ascension_directly_from_mount = copy.deepcopy(self.mount_update_wincom.RightAscension)
+                # self.declination_directly_from_mount = copy.deepcopy(self.mount_update_wincom.Declination)
+                
+                # self.currently_slewing= self.mount_update_wincom.Slewing
+                                
+                
+                # self.mount_updates=self.mount_updates + 1
+                # self.mount_update_timer=time.time()
+            else:
+                time.sleep(0.05)
+        
+        
 
     def post_processing_process(self):
         """
@@ -778,7 +901,8 @@ class Camera:
         return self.camera.LinkEnabled
 
     def _theskyx_temperature(self):
-        return self.camera.Temperature, 999.9, 999.9
+        #return self.camera.Temperature, 999.9, 999.9
+        return self.theskyx_temperature
 
     def _theskyx_cooler_power(self):
         return self.camera.CoolerPower
@@ -787,26 +911,44 @@ class Camera:
         return self.camera.HeatSinkTemperature
 
     def _theskyx_cooler_on(self):
-        return self.camera.RegulateTemperature
+        #return self.camera.RegulateTemperature
+        return self.theskyx_cooleron
 
     def _theskyx_set_cooler_on(self):
-        self.camera.RegulateTemperature = True
-        return (
-            self.camera.RegulateTemperature
-        )
+        self.theskyx_set_cooler_on=True
+        return True
+        # self.camera.RegulateTemperature = True
+        # return (
+        #     self.camera.RegulateTemperature
+        # )
 
     def _theskyx_set_setpoint(self, p_temp):
-        self.camera.TemperatureSetpoint = float(p_temp)
-        self.current_setpoint = p_temp
-        return self.camera.TemperatureSetpoint
+        
+        self.theskyx_set_setpoint=True
+        self.theskyx_set_setpoint_value= float(p_temp)
+        return float(p_temp)
+        #self.camera.TemperatureSetpoint = float(p_temp)
+        #self.current_setpoint = p_temp
+        #return self.camera.TemperatureSetpoint
 
     def _theskyx_setpoint(self):
-        return self.camera.TemperatureSetpoint
+        #return self.camera.TemperatureSetpoint
+        return self.theskyx_set_setpoint_value
 
     def theskyx_async_expose(self):
         self.async_exposure_lock=True
         tempcamera = win32com.client.Dispatch(self.driver)
         tempcamera.Connect()
+        
+        tempcamera.ExposureTime = self.theskyxExposureTime
+        #if bias_dark_or_light_type_frame == 'dark':
+        tempcamera.Frame = self.theskyxFrame
+        #elif bias_dark_or_light_type_frame == 'bias':
+        #    self.camera.Frame = 2
+        #else:
+        #    self.camera.Frame = 1
+        
+        
         try:
             tempcamera.TakeImage()
         except:
@@ -821,17 +963,25 @@ class Camera:
                 plog(traceback.format_exc())
                 plog("MTF hunting this error")
                 # breakpoint()
+        while not tempcamera.IsExposureComplete:
+            self.theskyxIsExposureComplete=False
+            #time.sleep(0.01)
+        self.theskyxIsExposureComplete=True
+        self.theskyxLastImageFileName=tempcamera.LastImageFileName
+        
         tempcamera.ShutDownTemperatureRegulationOnDisconnect = False
+        
         self.async_exposure_lock=False
 
     def _theskyx_expose(self, exposure_time, bias_dark_or_light_type_frame):
-        self.camera.ExposureTime = exposure_time
+        self.theskyxExposureTime = exposure_time
         if bias_dark_or_light_type_frame == 'dark':
-            self.camera.Frame = 3
+            self.theskyxFrame = 3
         elif bias_dark_or_light_type_frame == 'bias':
-            self.camera.Frame = 2
+            self.theskyxFrame = 2
         else:
-            self.camera.Frame = 1
+            self.theskyxFrame = 1
+        self.theskyxIsExposureComplete=False
         thread=threading.Thread(target=self.theskyx_async_expose)
         thread.start()
 
@@ -847,7 +997,8 @@ class Camera:
     def _theskyx_imageavailable(self):
         #plog(self.camera.IsExposureComplete)
         try:
-            return self.camera.IsExposureComplete
+            #return self.camera.IsExposureComplete
+            return self.theskyxIsExposureComplete
         except:
             if 'Process aborted.' in str(traceback.format_exc()):
                 plog ("Image isn't available because the command was aborted.")
@@ -855,9 +1006,9 @@ class Camera:
                 plog(traceback.format_exc())
 
     def _theskyx_getImageArray(self):
-        imageTempOpen=fits.open(self.camera.LastImageFileName, uint=False)[0].data.astype("float32")
+        imageTempOpen=fits.open(self.theskyxLastImageFileName, uint=False)[0].data.astype("float32")
         try:
-            os.remove(self.camera.LastImageFileName)
+            os.remove(self.theskyxLastImageFileName)
         except Exception as e:
             plog ("Could not remove theskyx image file: ",e)
         return imageTempOpen

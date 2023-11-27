@@ -138,6 +138,22 @@ class Focuser:
 
         self.focuser_update_wincom = win32com.client.Dispatch(self.driver)
     
+        try:
+            self.focuser_update_wincom.Connected = True
+        except:
+            try:
+                self.focuser_update_wincom.focConnect()
+            except:
+                if self.focuser_update_wincom.Link == True:
+                    plog ("focuser doesn't have ASCOM Connected keyword, but reports a positive link")
+                else:
+                    try:
+                        self.focuser_update_wincom.Link = True
+                        plog ("focuser doesn't have ASCOM Connected keyword, attempted to send a positive Link")
+                    except:
+                        plog ("focuser doesn't have ASCOM Connected keyword, also crashed on focuser.Link")
+
+    
         # This stopping mechanism allows for threads to close cleanly.
         while True:
 
