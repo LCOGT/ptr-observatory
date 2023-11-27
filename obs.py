@@ -1072,11 +1072,10 @@ class Observatory:
         a variety of safety checks as well.
         """
 
+        
         if self.currently_updating_FULL:
             return
-        
-        if (time.time() - self.last_update_complete) < 1.0:
-            return
+
 
         self.currently_updating_FULL=True
 
@@ -1651,8 +1650,7 @@ class Observatory:
 
         self.full_update_lock=False
         self.currently_updating_FULL=False
-        self.last_update_complete=time.time()
-        #time.sleep(0.5)
+        self.last_update_complete=time.time()       
         # END of safety checks.
 
     def run(self):
@@ -1660,9 +1658,9 @@ class Observatory:
             # Keep the main thread alive, otherwise signals are ignored
             while True:
                 if self.currently_updating_FULL==False:
-                    if (time.time() - self.last_update_complete) > 1.0:
+                    if (time.time() - self.last_update_complete) > 3.0:
                         #self.update()
-                        self.request_full_update()
+                        self.request_full_update()                        
                         self.last_update_complete=time.time()
                         time.sleep(0.5)
                 else:
@@ -2075,10 +2073,9 @@ class Observatory:
         one_at_a_time = 0
 
         # This stopping mechanism allows for threads to close cleanly.
-        while True:
-
+        while True:            
             if (not self.FULL_update_thread_queue.empty()) and one_at_a_time == 0:
-
+                print ('M')
 
                 one_at_a_time = 1
                 self.FULL_update_thread_queue.get(block=False)
@@ -3767,7 +3764,7 @@ class Observatory:
             self.calendar_block_queue.put( 'normal', block=False)
        
 
-    def request_full_update(self):
+    def request_full_update(self):        
         if not g_dev["obs"].currently_updating_FULL:
             self.FULL_update_thread_queue.put( 'dummy', block=False)
             #self.update()
