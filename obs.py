@@ -1004,7 +1004,7 @@ class Observatory:
         self.currently_updating_status=True
 
         #print ('l')
-        g_dev['foc'].update_focuser_temperature()
+        #g_dev['foc'].update_focuser_temperature()
         #print ('m')
 
         # Wait a bit between status updates otherwise
@@ -1128,7 +1128,7 @@ class Observatory:
         #         plog ("astrophysics doesn't report side of pier at park? MTF hunting this bug.")
         #breakpoint()
 
-        g_dev['foc'].update_focuser_temperature()
+        #g_dev['foc'].update_focuser_temperature()
 
 
         # If the roof is open, then it is open and enabled to observe
@@ -2583,7 +2583,7 @@ class Observatory:
                         solved_ra = solve["ra_j2000_hours"]
                         solved_dec = solve["dec_j2000_degrees"]
                         solved_arcsecperpixel = solve["arcsec_per_pixel"]
-                        plog("1x1 pixelscale solved: " + str(float(solved_arcsecperpixel / platesolve_bin_factor / g_dev['cam'].native_bin)))
+                        plog("1x1 pixelscale solved: " + str(float(solved_arcsecperpixel / platesolve_bin_factor)))# / g_dev['cam'].native_bin)))
 
                         self.pixelscale_shelf = shelve.open(g_dev['obs'].obsid_path + 'ptr_night_shelf/' + 'pixelscale' + g_dev['cam'].name + str(g_dev['obs'].name))
                         try:
@@ -2591,7 +2591,7 @@ class Observatory:
                         except:
                             pixelscale_list=[]
 
-                        pixelscale_list.append(float(solved_arcsecperpixel / platesolve_bin_factor / g_dev['cam'].native_bin))
+                        pixelscale_list.append(float(solved_arcsecperpixel / platesolve_bin_factor))# / g_dev['cam'].native_bin))
 
                         too_long=True
                         while too_long:
@@ -3811,7 +3811,7 @@ def wait_for_slew():
         if not g_dev['mnt'].rapid_park_indicator:
             movement_reporting_timer = time.time()
             while g_dev['mnt'].return_slewing():
-                g_dev['mnt'].currently_slewing= True
+                #g_dev['mnt'].currently_slewing= True
                 if time.time() - movement_reporting_timer > 2.0:
                     plog('m>')
                     movement_reporting_timer = time.time()
@@ -3819,7 +3819,7 @@ def wait_for_slew():
                     g_dev['mnt'].get_mount_coordinates()
                     g_dev['obs'].request_update_status(mount_only=True, dont_wait=True)
                     #g_dev['obs'].update_status(mount_only=True, dont_wait=True)
-            g_dev['mnt'].currently_slewing= False
+            #g_dev['mnt'].currently_slewing= False
 
     except Exception as e:
         plog("Motion check faulted.")

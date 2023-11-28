@@ -835,12 +835,12 @@ class Sequencer:
 
         calendar_event_id=block_specification['event_id']
 
-
+        #breakpoint()
         # NB we assume the dome is open and already slaving.
         block = copy.deepcopy(block_specification)
 
-        g_dev['mnt'].unpark_command({}, {})
-        plog("unparked")
+        #g_dev['mnt'].unpark_command({}, {})
+        #plog("unparked")
 
 
         # this variable is what we check to see if the calendar
@@ -3165,7 +3165,10 @@ class Sequencer:
         sim = False
         start_ra = g_dev['mnt'].return_right_ascension()   #Read these to go back.  NB NB Need to cleanly pass these on so we can return to proper target.
         start_dec = g_dev['mnt'].return_declination()
-        focus_start = g_dev['foc'].get_position()
+        #focus_start = g_dev['foc'].current_focus_position
+        focus_start=g_dev['foc'].current_focus_position
+
+
         #breakpoint()
         #
 # =============================================================================
@@ -3267,12 +3270,12 @@ class Sequencer:
 
 
 
-        rot_report=0
-        while g_dev['foc'].is_moving():
-            if rot_report == 0:
-                plog('Waiting for Focuser to shift.\n')
-                rot_report =1
-            time.sleep(0.2)
+        # rot_report=0
+        # while g_dev['foc'].is_moving():
+        #     if rot_report == 0:
+        #         plog('Waiting for Focuser to shift.\n')
+        #         rot_report =1
+        #     time.sleep(0.2)
 
 
         g_dev['obs'].request_scan_requests()
@@ -3300,12 +3303,12 @@ class Sequencer:
             else:
 
                 g_dev['obs'].fwhmresult['FWHM'] = 3
-                g_dev['obs'].fwhmresult['mean_focus'] = g_dev['foc'].get_position()
+                g_dev['obs'].fwhmresult['mean_focus'] = g_dev['foc'].current_focus_position
 
             try:
                 spot1 = g_dev['obs'].fwhmresult['FWHM']
                 #foc_pos1 = g_dev['obs'].fwhmresult['mean_focus']
-                foc_pos1=g_dev['foc'].get_position()
+                foc_pos1=g_dev['foc'].current_focus_position
             except:
                 spot1 = False
                 foc_pos1 = False
@@ -3339,10 +3342,10 @@ class Sequencer:
                 return
         else:
             g_dev['obs'].fwhmresult['FWHM'] = 4
-            g_dev['obs'].fwhmresult['mean_focus'] = g_dev['foc'].get_position()
+            g_dev['obs'].fwhmresult['mean_focus'] = g_dev['foc'].current_focus_position
         try:
             spot2 = g_dev['obs'].fwhmresult['FWHM']
-            foc_pos2 = g_dev['foc'].get_position()
+            foc_pos2 = g_dev['foc'].current_focus_position
         except:
             spot2 = False
             foc_pos2 = False
@@ -3369,10 +3372,10 @@ class Sequencer:
                 return
         else:
             g_dev['obs'].fwhmresult['FWHM'] = 4.5
-            g_dev['obs'].fwhmresult['mean_focus'] = g_dev['foc'].get_position()
+            g_dev['obs'].fwhmresult['mean_focus'] = g_dev['foc'].current_focus_position
         try:
             spot3 = g_dev['obs'].fwhmresult['FWHM']
-            foc_pos3 = g_dev['foc'].get_position()
+            foc_pos3 = g_dev['foc'].current_focus_position
         except:
             spot3 = False
             foc_pos3 = False
@@ -3447,10 +3450,10 @@ class Sequencer:
                         return
                 else:
                     g_dev['obs'].fwhmresult['FWHM'] = new_spot
-                    g_dev['obs'].fwhmresult['mean_focus'] = g_dev['foc'].get_position()
+                    g_dev['obs'].fwhmresult['mean_focus'] = g_dev['foc'].current_focus_position
                 try:
                     spot4 = g_dev['obs'].fwhmresult['FWHM']
-                    foc_pos4 = g_dev['foc'].get_position()
+                    foc_pos4 = g_dev['foc'].current_focus_position
                 except:
                     spot4 = False
                     foc_pos4 = False
@@ -3493,10 +3496,10 @@ class Sequencer:
                     return
             else:
                 g_dev['obs'].fwhmresult['FWHM'] = 6
-                g_dev['obs'].fwhmresult['mean_focus'] = g_dev['foc'].get_position()
+                g_dev['obs'].fwhmresult['mean_focus'] = g_dev['foc'].current_focus_position
             try:
                 spot4 = g_dev['obs'].fwhmresult['FWHM']
-                foc_pos4 = g_dev['foc'].get_position()
+                foc_pos4 = g_dev['foc'].current_focus_position
             except:
                 spot4 = False
                 foc_pos4 = False
@@ -3571,10 +3574,10 @@ class Sequencer:
                         return
                 else:
                     g_dev['obs'].fwhmresult['FWHM'] = new_spot
-                    g_dev['obs'].fwhmresult['mean_focus'] = g_dev['foc'].get_position()
+                    g_dev['obs'].fwhmresult['mean_focus'] = g_dev['foc'].current_focus_position
                 try:
                     spot4 = g_dev['obs'].fwhmresult['FWHM']
-                    foc_pos4 = g_dev['foc'].get_position()
+                    foc_pos4 = g_dev['foc'].current_focus_position
                 except:
                     spot4 = False
                     foc_pos4 = False
@@ -3613,10 +3616,10 @@ class Sequencer:
                     return
             else:
                 g_dev['obs'].fwhmresult['FWHM'] = 5.5
-                g_dev['obs'].fwhmresult['mean_focus'] = g_dev['foc'].get_position()
+                g_dev['obs'].fwhmresult['mean_focus'] = g_dev['foc'].current_focus_position
             try:
                 spot4 = g_dev['obs'].fwhmresult['FWHM']
-                foc_pos4 = g_dev['foc'].get_position()
+                foc_pos4 = g_dev['foc'].current_focus_position
             except:
                 spot4 = False
                 foc_pos4 = False
@@ -3685,10 +3688,10 @@ class Sequencer:
                         return
                 else:
                     g_dev['obs'].fwhmresult['FWHM'] = new_spot
-                    g_dev['obs'].fwhmresult['mean_focus'] = g_dev['foc'].get_position()
+                    g_dev['obs'].fwhmresult['mean_focus'] = g_dev['foc'].current_focus_position
                 try:
                     spot4 = g_dev['obs'].fwhmresult['FWHM']
-                    foc_pos4 = g_dev['foc'].get_position()
+                    foc_pos4 = g_dev['foc'].current_focus_position
                 except:
                     spot4 = False
                     foc_pos4 = False
@@ -3821,7 +3824,7 @@ class Sequencer:
         sim = False
         # Reset focus tracker
         if begin_at is None:
-            foc_start = g_dev['foc'].get_position()
+            foc_start = g_dev['foc'].current_focus_position
         else:
             foc_start = begin_at  #In this case we start at a place close to a 3 point minimum.
             g_dev['foc'].guarded_move((foc_start)*g_dev['foc'].micron_to_steps)
@@ -3937,7 +3940,7 @@ class Sequencer:
             else:
                 try:
                     g_dev['obs'].fwhmresult['FWHM'] = 4
-                    g_dev['obs'].fwhmresult['mean_focus'] = g_dev['foc'].get_position()
+                    g_dev['obs'].fwhmresult['mean_focus'] = g_dev['foc'].current_focus_position
                 except:
                     plog(traceback.format_exc())
                     #
@@ -3980,7 +3983,7 @@ class Sequencer:
                     return
             else:
                 g_dev['obs'].fwhmresult['FWHM'] = 4
-                g_dev['obs'].fwhmresult['mean_focus'] = g_dev['foc'].get_position()
+                g_dev['obs'].fwhmresult['mean_focus'] = g_dev['foc'].current_focus_position
             try:
                 spot = g_dev['obs'].fwhmresult['FWHM']
                 lsources = g_dev['obs'].fwhmresult['No_of_sources']

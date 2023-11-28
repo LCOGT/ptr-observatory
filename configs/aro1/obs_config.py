@@ -116,8 +116,8 @@ site_config = {
 
     # Bisque mounts can't run updates in a thread ... yet... until I figure it out,
     # So this is False for Bisques and true for everyone else.
-    'run_main_update_in_a_thread': False,
-    'run_status_update_in_a_thread' : False,
+    'run_main_update_in_a_thread': True,
+    'run_status_update_in_a_thread' : True,
 
     # Minimum realistic seeing at the site.
     # This allows culling of unphysical results in photometry and other things
@@ -642,6 +642,7 @@ site_config = {
                 # These are the physical values for the camera
                 # related to pixelscale. Binning only applies to single
                 # images. Stacks will always be drizzled to to drizzle value from 1x1.
+                #'onebyone_pix_scale': 0.528,    #  This is the 1x1 binning pixelscale
                 'onebyone_pix_scale': 0.528,    #  This is the 1x1 binning pixelscale
                 'native_bin': 2, # Needs to be simple, it will recalculate things on the 1x1 binning pixscale above.
                 'x_pixel':  3.76, # pixel size in microns
