@@ -782,7 +782,7 @@ class Focuser:
 
             f_temp = None
 
-        if not f_temp == None and (-10 < f_temp < 40):
+        if not f_temp == None and (-30 < f_temp < 40):
             if "af_log" in cam_shelf:
                 cam_shelf["af_log"].append(
                     (f_temp, ref, round(fwhm, 2), round(solved, 2), datetime.datetime.utcnow().isoformat())
@@ -792,6 +792,8 @@ class Focuser:
         else:
             f_temp=15.0
             plog ("getting f_temp failed, using 15 degrees C")
+            plog (traceback.format_exc())
+
         cam_shelf.close()
         return
 
