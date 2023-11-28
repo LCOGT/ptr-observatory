@@ -359,8 +359,8 @@ else:
             rfp = round(np.median(fwhmcalc), 3)
 #            rfr = round(np.median(fwhmcalc) * pixscale * nativebin, 3)
 #            rfs = round(np.std(fwhmcalc) * pixscale * nativebin, 3)
-            rfr = round(np.median(fwhmcalc) * pixscale , 3)
-            rfs = round(np.std(fwhmcalc) * pixscale, 3)
+            rfr = round(np.median(fwhmcalc) * pixscale * binfocus * nativebin, 3)
+            rfs = round(np.std(fwhmcalc) * pixscale * binfocus * nativebin, 3)
 
 
 
