@@ -2583,7 +2583,7 @@ class Observatory:
                         solved_ra = solve["ra_j2000_hours"]
                         solved_dec = solve["dec_j2000_degrees"]
                         solved_arcsecperpixel = solve["arcsec_per_pixel"]
-                        plog("1x1 pixelscale solved: " + str(float(solved_arcsecperpixel / platesolve_bin_factor / g_dev['cam'].native_bin)))
+                        plog("1x1 pixelscale solved: " + str(float(solved_arcsecperpixel / platesolve_bin_factor)))# / g_dev['cam'].native_bin)))
 
                         self.pixelscale_shelf = shelve.open(g_dev['obs'].obsid_path + 'ptr_night_shelf/' + 'pixelscale' + g_dev['cam'].name + str(g_dev['obs'].name))
                         try:
@@ -2591,7 +2591,7 @@ class Observatory:
                         except:
                             pixelscale_list=[]
 
-                        pixelscale_list.append(float(solved_arcsecperpixel / platesolve_bin_factor / g_dev['cam'].native_bin))
+                        pixelscale_list.append(float(solved_arcsecperpixel / platesolve_bin_factor))# / g_dev['cam'].native_bin))
 
                         too_long=True
                         while too_long:

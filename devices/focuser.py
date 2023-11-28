@@ -10,7 +10,7 @@ import win32com.client
 import traceback
 import threading
 import queue
-
+import copy
 from global_yard import g_dev
 from ptr_utility import plog
 from dateutil import parser
@@ -111,33 +111,36 @@ class Focuser:
         except:
             plog ('setting last filter offset to 0')
             self.last_filter_offset= 0
-        
-        
-        
-        
-        self.focuser_update_period=30
+
+
+        self.guarded_move_requested=False
+        self.guarded_move_to_focus=20000
+
+
+        self.focuser_updates=0
+        self.focuser_update_period=3
         self.focuser_update_timer=time.time() - 2* self.focuser_update_period
         #self.focuser_update_thread_queue = queue.Queue(maxsize=0)
         self.focuser_update_thread=threading.Thread(target=self.focuser_update_thread)
         self.focuser_update_thread.start()
-        
+
 
     # Note this is a thread!
     def focuser_update_thread(self):
 
 
         #one_at_a_time = 0
-        
+
         #Hooking up connection to win32 com focuser
         #win32com.client.pythoncom.CoInitialize()
     #     fl = win32com.client.Dispatch(
     #         win32com.client.pythoncom.CoGetInterfaceAndReleaseStream(g_dev['foc'].focuser_id, win32com.client.pythoncom.IID_IDispatch)
     # )
-        
+
         win32com.client.pythoncom.CoInitialize()
 
         self.focuser_update_wincom = win32com.client.Dispatch(self.driver)
-    
+
         try:
             self.focuser_update_wincom.Connected = True
         except:
@@ -153,29 +156,74 @@ class Focuser:
                     except:
                         plog ("focuser doesn't have ASCOM Connected keyword, also crashed on focuser.Link")
 
-    
+
         # This stopping mechanism allows for threads to close cleanly.
         while True:
 
-            if self.focuser_update_timer < time.time() - self.focuser_update_period:
-                
+            if self.guarded_move_requested:
+
+
+                try:
+                     if self.theskyx:
+                        requestedPosition=int(self.guarded_move_to_focus * self.micron_to_steps)
+                        difference_in_position=self.focuser_update_wincom.focPosition() - requestedPosition
+                        absdifference_in_position=abs(self.focuser_update_wincom.focPosition() - requestedPosition)
+                        print (difference_in_position)
+                        print (absdifference_in_position)
+                        if difference_in_position < 0 :
+                            self.focuser_update_wincom.focMoveOut(absdifference_in_position)
+                        else:
+                            self.focuser_update_wincom.focMoveIn(absdifference_in_position)
+                        print (self.focuser_update_wincom.focPosition())
+                        self.current_focus_position=self.get_position()
+
+                     else:
+
+                        self.focuser_update_wincom.Move(int(self.guarded_move_to_focus))
+                        time.sleep(0.1)
+                        movement_report=0
+
+                        while self.focuser_update_wincom.IsMoving:
+                            if movement_report==0:
+                                plog("Focuser is moving.....")
+                                movement_report=1
+                            time.sleep(0.3)
+                        self.current_focus_position=self.get_position()
+
+
+                            #plog(">f")
+                except:
+                    plog("AF Guarded move failed.")
+                    plog (traceback.format_exc())
+
+                self.guarded_move_requested=False
+
+
+            elif self.focuser_update_timer < time.time() - self.focuser_update_period:
+
                 if self.theskyx:
                     self.current_focus_temperature=self.focuser_update_wincom.focTemperature
                 else:
                     self.current_focus_temperature=self.focuser_update_wincom.Temperature
-            
+
                 if not self.theskyx:
                     self.current_focus_position=int(self.focuser_update_wincom.Position * self.steps_to_micron)
 
-                    
+
                 else:
                     self.current_focus_position=int(self.focuser_update_wincom.focPosition() * self.steps_to_micron)
 
                 self.focuser_update_timer = time.time()
 
 
+
             else:
-                time.sleep(3)
+                time.sleep(1)
+
+
+
+            self.focuser_updates=self.focuser_updates+1
+
 
     def calculate_compensation(self, temp_primary):
 
@@ -538,47 +586,60 @@ class Focuser:
             plog("Focus-adjust: no changes made.")
 
 
+    def wait_for_focuser_update(self):
+        sleep_period= self.focuser_update_period / 4
+        current_updates=copy.deepcopy(self.focuser_updates)
+        while current_updates==self.focuser_updates:
+            #print ('ping')
+            time.sleep(sleep_period)
+
     def guarded_move(self, to_focus):
-        try:
-             if self.theskyx:
-                requestedPosition=int(to_focus * self.micron_to_steps)
-                difference_in_position=self.focuser.focPosition() - requestedPosition
-                absdifference_in_position=abs(self.focuser.focPosition() - requestedPosition)
-                print (difference_in_position)
-                print (absdifference_in_position)
-                if difference_in_position < 0 :
-                    self.focuser.focMoveOut(absdifference_in_position)
-                else:
-                    self.focuser.focMoveIn(absdifference_in_position)
-                print (self.focuser.focPosition())
-                self.current_focus_position=self.get_position()
 
-             else:
-
-                self.focuser.Move(int(to_focus))
-                time.sleep(0.1)
-                movement_report=0
-
-                while self.focuser.IsMoving:
-                    if movement_report==0:
-                        plog("Focuser is moving.....")
-                        movement_report=1
-                    time.sleep(0.3)
-                self.current_focus_position=self.get_position()
+        self.guarded_move_requested=True
+        self.guarded_move_to_focus=to_focus
+        self.wait_for_focuser_update()
 
 
-                    #plog(">f")
-        except:
-            plog("AF Guarded move failed.")
-            plog (traceback.format_exc())
+        # try:
+        #      if self.theskyx:
+        #         requestedPosition=int(to_focus * self.micron_to_steps)
+        #         difference_in_position=self.focuser.focPosition() - requestedPosition
+        #         absdifference_in_position=abs(self.focuser.focPosition() - requestedPosition)
+        #         print (difference_in_position)
+        #         print (absdifference_in_position)
+        #         if difference_in_position < 0 :
+        #             self.focuser.focMoveOut(absdifference_in_position)
+        #         else:
+        #             self.focuser.focMoveIn(absdifference_in_position)
+        #         print (self.focuser.focPosition())
+        #         self.current_focus_position=self.get_position()
+
+        #      else:
+
+        #         self.focuser.Move(int(to_focus))
+        #         time.sleep(0.1)
+        #         movement_report=0
+
+        #         while self.focuser.IsMoving:
+        #             if movement_report==0:
+        #                 plog("Focuser is moving.....")
+        #                 movement_report=1
+        #             time.sleep(0.3)
+        #         self.current_focus_position=self.get_position()
+
+
+        #             #plog(">f")
+        # except:
+        #     plog("AF Guarded move failed.")
+        #     plog (traceback.format_exc())
 
 
 
-    def is_moving(self):
-        if self.theskyx:
-            return False
-        else:
-            return self.focuser.IsMoving
+    # def is_moving(self):
+    #     if self.theskyx:
+    #         return False
+    #     else:
+    #         return self.focuser.IsMoving
 
 
     def move_relative_command(self, req: dict, opt: dict):
@@ -710,12 +771,13 @@ class Focuser:
             self.obsid_path + "ptr_night_shelf/" + self.camera_name + str(g_dev['obs'].name), writeback=True
         )
         try:
-            if self.theskyx:
-                f_temp= self.focuser.focTemperature
-            else:
-                f_temp = (
-                    self.focuser.Temperature
-                )  # NB refering a quantity possibly from WEMA if no focus temp available.
+            f_temp=self.current_focus_temperature
+            # if self.theskyx:
+            #     f_temp= self.focuser.focTemperature
+            # else:
+            #     f_temp = (
+            #         self.focuser.Temperature
+            #     )  # NB refering a quantity possibly from WEMA if no focus temp available.
         except:
 
             f_temp = None
