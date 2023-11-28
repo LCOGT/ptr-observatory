@@ -735,11 +735,11 @@ class Camera:
         self.post_processing_queue = queue.Queue(maxsize=0)
         self.post_processing_queue_thread = threading.Thread(target=self.post_processing_process, args=())
         self.post_processing_queue_thread.start()
-        
-        
+
+
         if self.theskyx:
-            
-            
+
+
             self.theskyx_set_cooler_on=True
             self.theskyx_cooleron=True
             self.theskyx_set_setpoint=True
@@ -757,20 +757,20 @@ class Camera:
 
 
         #one_at_a_time = 0
-        
+
         #Hooking up connection to win32 com focuser
         #win32com.client.pythoncom.CoInitialize()
     #     fl = win32com.client.Dispatch(
     #         win32com.client.pythoncom.CoGetInterfaceAndReleaseStream(g_dev['foc'].focuser_id, win32com.client.pythoncom.IID_IDispatch)
     # )
-        
+
         win32com.client.pythoncom.CoInitialize()
 
         self.camera_update_wincom = win32com.client.Dispatch(self.driver)
-    
+
         self.camera_update_wincom.Connect()
         #breakpoint()
-    
+
         #self.camera_update_wincom.LinkEnabled = True
         #self.camera_update_wincom.Connected = True
         # try:
@@ -780,32 +780,32 @@ class Camera:
         #     self.can_report_pierside = True
         # except:
         #     self.can_report_pierside = False
-    
+
         # This stopping mechanism allows for threads to close cleanly.
         while True:
 
-            # update every so often, but update rapidly if slewing. 
+            # update every so often, but update rapidly if slewing.
             if (self.camera_update_timer < time.time() - self.camera_update_period) :
-                
-                
-                
+
+
+
                 self.theskyx_temperature= self.camera_update_wincom.Temperature, 999.9, 999.9
 
                 self.theskyx_cooleron= self.camera_update_wincom.RegulateTemperature
 
                 if self.theskyx_set_cooler_on==True:
-                    
+
                     self.camera_update_wincom.RegulateTemperature = True
                     self.theskyx_set_cooler_on=False
                     # return (
                     #     self.camera_update_wincom.RegulateTemperature
                     # )
-                
+
                 if self.theskyx_set_setpoint==True:
                     self.camera_update_wincom.TemperatureSetpoint = float(self.theskyx_set_setpoint_value)
                     self.current_setpoint = self.theskyx_set_setpoint_value
                     self.theskyx_set_setpoint=False
-                    
+
                 # def _theskyx_set_setpoint(self, p_temp):
                 #     self.camera_update_wincom.TemperatureSetpoint = float(p_temp)
                 #     self.current_setpoint = p_temp
@@ -820,7 +820,7 @@ class Camera:
                 # def _theskyx_heatsink_temp(self):
                 #     return self.camera.HeatSinkTemperature
 
-                
+
 
                 # def _theskyx_set_cooler_on(self):
                 #     self.camera.RegulateTemperature = True
@@ -837,7 +837,7 @@ class Camera:
                 #     return self.camera.TemperatureSetpoint
                 # # Some things we don't do while slewing
                 # if not self.currently_slewing:
-                
+
                 #     self.rapid_park_indicator=copy.deepcopy(self.mount_update_wincom.AtPark)
                 #     #if self.can_report_pierside:
                 #     self.rapid_pier_indicator=copy.deepcopy(self.mount_update_wincom.sideOfPier)
@@ -845,16 +845,16 @@ class Camera:
 
                 # self.right_ascension_directly_from_mount = copy.deepcopy(self.mount_update_wincom.RightAscension)
                 # self.declination_directly_from_mount = copy.deepcopy(self.mount_update_wincom.Declination)
-                
+
                 # self.currently_slewing= self.mount_update_wincom.Slewing
-                                
-                
+
+
                 # self.mount_updates=self.mount_updates + 1
                 # self.mount_update_timer=time.time()
             else:
                 time.sleep(0.05)
-        
-        
+
+
 
     def post_processing_process(self):
         """
@@ -923,7 +923,7 @@ class Camera:
         # )
 
     def _theskyx_set_setpoint(self, p_temp):
-        
+
         self.theskyx_set_setpoint=True
         self.theskyx_set_setpoint_value= float(p_temp)
         return float(p_temp)
@@ -939,7 +939,7 @@ class Camera:
         self.async_exposure_lock=True
         tempcamera = win32com.client.Dispatch(self.driver)
         tempcamera.Connect()
-        
+
         tempcamera.ExposureTime = self.theskyxExposureTime
         #if bias_dark_or_light_type_frame == 'dark':
         tempcamera.Frame = self.theskyxFrame
@@ -947,8 +947,8 @@ class Camera:
         #    self.camera.Frame = 2
         #else:
         #    self.camera.Frame = 1
-        
-        
+
+
         try:
             tempcamera.TakeImage()
         except:
@@ -968,9 +968,9 @@ class Camera:
             #time.sleep(0.01)
         self.theskyxIsExposureComplete=True
         self.theskyxLastImageFileName=tempcamera.LastImageFileName
-        
+
         tempcamera.ShutDownTemperatureRegulationOnDisconnect = False
-        
+
         self.async_exposure_lock=False
 
     def _theskyx_expose(self, exposure_time, bias_dark_or_light_type_frame):
@@ -2880,6 +2880,7 @@ class Camera:
 
 
                         # Save good flat
+                        im_path_r = self.camera_path
                         raw_path = im_path_r + g_dev["day"] + "/raw/"
                         raw_name00 = (
                             self.config["obs_id"]
