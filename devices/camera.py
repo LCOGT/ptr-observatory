@@ -1638,7 +1638,7 @@ class Camera:
         incoming_exposure_time=exposure_time
         g_dev['obs'].request_scan_requests()
         if g_dev['seq'].blockend != None:
-            g_dev['seq'].request_update_calendar_blocks()
+            g_dev['obs'].request_update_calendar_blocks()
         for seq in range(count):
 
             #pre_exposure_overhead_timer=time.time()
@@ -1867,9 +1867,9 @@ class Camera:
 
 
                             self.current_exposure_time=exposure_time
-                            
-                            
-                            
+
+
+
                             # Always check rotator just before exposure  The Rot jitters wehn parked so
                             # this give rot moving report during bia darks
                             rot_report=0
@@ -1913,7 +1913,7 @@ class Camera:
                             #self.wait_for_slew()
                             start_time_of_observation=time.time()
                             self.start_time_of_observation=time.time()
-                            plog ("Time between end of last exposure and start of next minus exposure time: " + str(time.time() -  self.end_of_last_exposure_time - exposure_time))                           
+                            plog ("Time between end of last exposure and start of next minus exposure time: " + str(time.time() -  self.end_of_last_exposure_time - exposure_time))
                             self._expose(exposure_time, bias_dark_or_light_type_frame)
                             self.end_of_last_exposure_time=time.time()
 
@@ -2179,7 +2179,7 @@ class Camera:
         if exposure_time <= 5.0:
             g_dev['obs'].request_scan_requests()
             if g_dev['seq'].blockend != None:
-                g_dev['seq'].request_update_calendar_blocks()
+                g_dev['obs'].request_update_calendar_blocks()
             focus_position=g_dev['foc'].current_focus_position
             block_and_focus_check_done=True
 
@@ -2189,7 +2189,7 @@ class Camera:
                 time.time() < self.completion_time or self.async_exposure_lock==True
             ):
 
-                
+
 
                 # Scan requests every 4 seconds... primarily hunting for a "Cancel/Stop"
                 if time.time() - exposure_scan_request_timer > 4 and (time.time() - self.completion_time) > 4:
@@ -2270,7 +2270,7 @@ class Camera:
                         )
                         if remaining > 5 and not block_and_focus_check_done:
                             if g_dev['seq'].blockend != None:
-                                g_dev['seq'].request_update_calendar_blocks()
+                                g_dev['obs'].request_update_calendar_blocks()
                             block_and_focus_check_done=True
 
 
@@ -2441,7 +2441,7 @@ class Camera:
                     object_name = RAstring + "ra" + DECstring + "dec"
                     object_specf = "no"
 
-                
+
 
                 # # If the file isn't a calibration frame, then undertake a flash reduction quickly
                 # # To make a palatable jpg AS SOON AS POSSIBLE to send to AWS
@@ -2488,6 +2488,7 @@ class Camera:
 
 
                 if not frame_type[-4:] == "flat" and not focus_image == True and not frame_type=='pointing':
+                    focus_position=g_dev['foc'].current_focus_position
                     self.post_processing_queue.put(copy.deepcopy((outputimg, g_dev["mnt"].pier_side, self.config["camera"][self.name]["settings"]['is_osc'], frame_type, self.config['camera']['camera_1_1']['settings']['reject_new_flat_by_known_gain'], avg_mnt, avg_foc, avg_rot, self.setpoint, self.tempccdtemp, self.ccd_humidity, self.ccd_pressure, self.darkslide_state, exposure_time, this_exposure_filter, exposure_filter_offset, self.pane,opt , observer_user_name, self.hint, azimuth_of_observation, altitude_of_observation, airmass_of_observation, self.pixscale, smartstackid,sskcounter,Nsmartstack, longstackid, ra_at_time_of_exposure, dec_at_time_of_exposure, manually_requested_calibration, object_name, object_specf, g_dev["mnt"].ha_corr, g_dev["mnt"].dec_corr, focus_position, self.config, self.name, self.camera_known_gain, self.camera_known_readnoise, start_time_of_observation, observer_user_id, self.camera_path,  solve_it)), block=False)
                 #print ("Deep copy timer: " +str(time.time()-deep_copy_timer))
 
@@ -2624,7 +2625,7 @@ class Camera:
                     hdu.header['OBSTYPE']='focus'
                     hdusmallheader=copy.deepcopy(hdu.header)
                     del hdu
-
+                    focus_position=g_dev['foc'].current_focus_position
                     g_dev['obs'].sep_processing=True
                     #g_dev['obs'].to_sep((outputimg, self.pixscale, self.camera_known_readnoise, avg_foc[1], focus_image, im_path, text_name, hdusmallheader, cal_path, cal_name, frame_type, focus_position, self.native_bin))
                     g_dev['obs'].to_sep((outputimg, self.pixscale, self.camera_known_readnoise, avg_foc[1], focus_image, im_path, text_name, hdusmallheader, cal_path, cal_name, frame_type, focus_position, 1.0))
@@ -2632,7 +2633,7 @@ class Camera:
                     # while sepping, write out the image
 
                     # raw_path = im_path_r + g_dev["day"] + "/raw/"
-                    
+
                     # # Similarly to the above. This saves the RAW file to disk
                     # # it works 99.9999% of the time.
                     # if self.config['save_raw_to_disk']:
@@ -2874,10 +2875,10 @@ class Camera:
                         plog("Exposure Complete")
                         g_dev["obs"].send_to_user("Exposure Complete")
                         #breakpoint()
-                        
-                        
-                        
-                        
+
+
+
+
                         # Save good flat
                         raw_path = im_path_r + g_dev["day"] + "/raw/"
                         raw_name00 = (
@@ -2897,11 +2898,11 @@ class Camera:
                         # else:
                         #     red_name01 = (self.config["obs_id"] + "-" + str(hdu.header['OBJECT']).replace(':','d').replace('@','at').replace('.','d').replace(' ','').replace('-','') +'-'+str(hdu.header['FILTER']) + "-" + next_seq+ "-" + str(exposure_time).replace('.','d') + "-"+ im_type+ "01.fits")
 
-                        
+
                         hdu = fits.PrimaryHDU()
-                       
-                        
-                        
+
+
+
                         # Flip flat fits around to correct orientation
                         if self.config["camera"][self.name]["settings"]["transpose_fits"]:
                             hdu = fits.PrimaryHDU(
@@ -2931,24 +2932,24 @@ class Camera:
                                 outputimg.astype('float32')
                             )
                         del outputimg
-                        
-                        
+
+
                         hdu.header['PIXSCALE']=self.pixscale
                         hdu.header['EXPTIME']=exposure_time
 
                         hdu.header['OBSTYPE']='flat'
                         hdu.header['FILTER']=self.current_filter
-                        
-                        
-                        
-                        
-                        
+
+
+
+
+
                         # If the files are local calibrations, save them out to the local calibration directory
                         if not manually_requested_calibration:
                             g_dev['obs'].to_slow_process(200000000, ('localcalibration', raw_name00, hdu.data, hdu.header, frame_type, g_dev["mnt"].current_icrs_ra, g_dev["mnt"].current_icrs_dec))
 
 
-                        # Similarly to the above. This saves the RAW file to disk                        
+                        # Similarly to the above. This saves the RAW file to disk
                         if self.config['save_raw_to_disk']:
                            g_dev['obs'].to_slow_process(1000,('raw', raw_path + raw_name00, hdu.data, hdu.header, frame_type, g_dev["mnt"].current_icrs_ra, g_dev["mnt"].current_icrs_dec))
 
@@ -2967,7 +2968,7 @@ class Camera:
                             #                                        frame_type, g_dev["mnt"].current_icrs_ra, g_dev["mnt"].current_icrs_dec))
 
                         del hdu
-                        
+
                         return copy.deepcopy(expresult)
 
 

@@ -213,6 +213,8 @@ class Sequencer:
         self.project_call_timer = time.time() - 120
 
         self.rotator_has_been_homed_this_evening=False
+        g_dev['obs'].request_update_calendar_blocks()
+        #self.blocks=
 
     def wait_for_slew(self):
         """
@@ -400,7 +402,7 @@ class Sequencer:
                 self.reset_completes()
 
                 if (g_dev['events']['Observing Begins'] < ephem_now < g_dev['events']['Observing Ends']):
-                    # Move to reasonable spot    
+                    # Move to reasonable spot
                     g_dev['mnt'].go_command(alt=70,az= 70)
                     g_dev['foc'].time_of_last_focus = datetime.datetime.utcnow() - datetime.timedelta(
                         days=1
@@ -469,7 +471,7 @@ class Sequencer:
 
                 g_dev['mnt'].go_command(alt=70,az= 70)
                 g_dev['mnt'].set_tracking_on()
-                
+
                 # Super-duper double check that darkslide is open
                 if g_dev['cam'].darkslide:
                     g_dev['cam'].darkslide_instance.openDarkslide()
@@ -510,7 +512,7 @@ class Sequencer:
                             time.sleep(1)
                         self.rotator_has_been_homed_this_evening=True
                         g_dev['obs'].rotator_has_been_checked_since_last_slew = True
-                            
+
                     except:
                         #plog ("no rotator to home or wait for.")
                         pass
@@ -837,9 +839,9 @@ class Sequencer:
         # NB we assume the dome is open and already slaving.
         block = copy.deepcopy(block_specification)
 
-        g_dev['mnt'].unpark_command({}, {})   
+        g_dev['mnt'].unpark_command({}, {})
         plog("unparked")
-        
+
 
         # this variable is what we check to see if the calendar
         # event still exists on AWS. If not, we assume it has been
@@ -909,7 +911,7 @@ class Sequencer:
                         time.sleep(1)
                     self.rotator_has_been_homed_this_evening=True
                     g_dev['obs'].rotator_has_been_checked_since_last_slew = True
-                        
+
                 except:
                     #plog ("no rotator to home or wait for.")
                     pass
@@ -2405,7 +2407,7 @@ class Sequencer:
                                 time.sleep(1)
                             self.rotator_has_been_homed_this_evening=True
                             g_dev['obs'].rotator_has_been_checked_since_last_slew = True
-                                
+
                         except:
                             #plog ("no rotator to home or wait for.")
                             pass
@@ -2578,7 +2580,7 @@ class Sequencer:
                     time.sleep(1)
                 self.rotator_has_been_homed_this_evening=True
                 g_dev['obs'].rotator_has_been_checked_since_last_slew = True
-                    
+
             except:
                 #plog ("no rotator to home or wait for.")
                 g_dev['mnt']

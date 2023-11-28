@@ -310,6 +310,9 @@ else:
         sources['peak'] = (sources['peak']) / pow(binfocus, 2)
         sources['cpeak'] = (sources['cpeak']) / pow(binfocus, 2)
 
+
+
+
         # Need to reject any stars that have FWHM that are less than a extremely
         # perfect night as artifacts
         if frame_type == 'focus':
@@ -354,8 +357,11 @@ else:
 
             fwhmcalc = fwhmcalc[fwhmcalc > np.median(fwhmcalc) - 3 * np.std(fwhmcalc)]
             rfp = round(np.median(fwhmcalc), 3)
-            rfr = round(np.median(fwhmcalc) * pixscale * nativebin, 3)
-            rfs = round(np.std(fwhmcalc) * pixscale * nativebin, 3)
+#            rfr = round(np.median(fwhmcalc) * pixscale * nativebin, 3)
+#            rfs = round(np.std(fwhmcalc) * pixscale * nativebin, 3)
+            rfr = round(np.median(fwhmcalc) * pixscale * binfocus * nativebin, 3)
+            rfs = round(np.std(fwhmcalc) * pixscale * binfocus * nativebin, 3)
+
 
 
 
