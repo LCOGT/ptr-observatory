@@ -1,4 +1,4 @@
-
+ll
 """
 20200310 WER
 General comments.  Note use of double quotes.  Maybe this is our convention for polemics and trading opinions then we strip
@@ -394,7 +394,7 @@ class Mount:
                         g_dev['mnt'].get_mount_coordinates()
                         #g_dev['obs'].request_update_status(mount_only=True, dont_wait=True)
                         g_dev['obs'].update_status(mount_only=True, dont_wait=True)
-                        
+
                 self.currently_slewing=False
 
         except Exception as e:
@@ -585,9 +585,9 @@ class Mount:
             time.sleep(0.05)
         self.mount_busy=True
         self.mount.SlewToCoordinatesAsync(ra, dec)
-        
+
         g_dev['obs'].rotator_has_been_checked_since_last_slew=False
-        
+
         self.mount_busy=False
         # end mount command #
         self.wait_for_slew()
@@ -1237,7 +1237,7 @@ class Mount:
 
         #
         #breakpoint()
-        icrs_ra, icrs_dec = self.get_mount_coordinates()   #Does not appear to be used
+        icrs_ra, icrs_dec = self.get_mount_coordinates()   #Does not appear to be used  20231128 wer
         #breakpoint()
         if self.object == "":
             if not silent:
@@ -1340,7 +1340,7 @@ class Mount:
                 while self.mount_busy:
                     time.sleep(0.05)
                 self.mount_busy=True
-                self.mount.SlewToCoordinatesAsync(ra, dec)  #Is this needed?
+                self.mount.SlewToCoordinatesAsync(ra, dec)  #Is this needed?,
                 self.mount_busy=False
                 g_dev['obs'].rotator_has_been_checked_since_last_slew=False
                 # end mount command #
