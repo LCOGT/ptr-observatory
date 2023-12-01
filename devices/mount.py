@@ -429,16 +429,19 @@ class Mount:
                 if (self.mount_update_timer < time.time() - self.mount_update_period) or (self.currently_slewing):
     
                     if self.unpark_requested:
-                        self.mount_update_wincom.Unpark()
                         self.unpark_requested=False
+                        self.mount_update_wincom.Unpark()
+                        
     
                     if self.park_requested:
-                        self.mount_update_wincom.Park()
                         self.park_requested=False
+                        self.mount_update_wincom.Park()
+                        
     
                     if self.slewtoAsyncRequested:
-                        self.mount_update_wincom.SlewToCoordinatesAsync(self.slewtoRA , self.slewtoDEC)
                         self.slewtoAsyncRequested=False
+                        self.mount_update_wincom.SlewToCoordinatesAsync(self.slewtoRA , self.slewtoDEC)
+                        
     
     
     
