@@ -424,43 +424,46 @@ class Mount:
 
         # This stopping mechanism allows for threads to close cleanly.
         while True:
-
-            # update every so often, but update rapidly if slewing.
-            if (self.mount_update_timer < time.time() - self.mount_update_period) or (self.currently_slewing):
-
-                if self.unpark_requested:
-                    self.mount_update_wincom.Unpark()
-                    self.unpark_requested=False
-
-                if self.park_requested:
-                    self.mount_update_wincom.Park()
-                    self.park_requested=False
-
-                if self.slewtoAsyncRequested:
-                    self.mount_update_wincom.SlewToCoordinatesAsync(self.slewtoRA , self.slewtoDEC)
-                    self.slewtoAsyncRequested=False
-
-
-
-
-                # Some things we don't do while slewing
-                if not self.currently_slewing:
-
-                    self.rapid_park_indicator=copy.deepcopy(self.mount_update_wincom.AtPark)
-                    #if self.can_report_pierside:
-                    self.rapid_pier_indicator=copy.deepcopy(self.mount_update_wincom.sideOfPier)
-                    self.current_tracking_state=self.mount_update_wincom.Tracking
-
-                self.right_ascension_directly_from_mount = copy.deepcopy(self.mount_update_wincom.RightAscension)
-                self.declination_directly_from_mount = copy.deepcopy(self.mount_update_wincom.Declination)
-
-                self.currently_slewing= self.mount_update_wincom.Slewing
-
-
-                self.mount_updates=self.mount_updates + 1
-                self.mount_update_timer=time.time()
-            else:
-                time.sleep(0.05)
+            try:
+                # update every so often, but update rapidly if slewing.
+                if (self.mount_update_timer < time.time() - self.mount_update_period) or (self.currently_slewing):
+    
+                    if self.unpark_requested:
+                        self.mount_update_wincom.Unpark()
+                        self.unpark_requested=False
+    
+                    if self.park_requested:
+                        self.mount_update_wincom.Park()
+                        self.park_requested=False
+    
+                    if self.slewtoAsyncRequested:
+                        self.mount_update_wincom.SlewToCoordinatesAsync(self.slewtoRA , self.slewtoDEC)
+                        self.slewtoAsyncRequested=False
+    
+    
+    
+    
+                    # Some things we don't do while slewing
+                    if not self.currently_slewing:
+    
+                        self.rapid_park_indicator=copy.deepcopy(self.mount_update_wincom.AtPark)
+                        #if self.can_report_pierside:
+                        self.rapid_pier_indicator=copy.deepcopy(self.mount_update_wincom.sideOfPier)
+                        self.current_tracking_state=self.mount_update_wincom.Tracking
+    
+                    self.right_ascension_directly_from_mount = copy.deepcopy(self.mount_update_wincom.RightAscension)
+                    self.declination_directly_from_mount = copy.deepcopy(self.mount_update_wincom.Declination)
+    
+                    self.currently_slewing= self.mount_update_wincom.Slewing
+    
+    
+                    self.mount_updates=self.mount_updates + 1
+                    self.mount_update_timer=time.time()
+                else:
+                    time.sleep(0.05)
+            except Exception as e:
+                plog ("some type of glitch in the mount thread: " + str(e))
+                plog(traceback.format_exc())
 
     def wait_for_slew(self):
 
