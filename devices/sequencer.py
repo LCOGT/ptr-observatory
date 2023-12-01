@@ -1665,13 +1665,13 @@ class Sequencer:
         if response:
             plog("Config uploaded successfully.")
 
-        # If you are using TheSkyX, then update the autosave path
-        if self.config['camera']['camera_1_1']['driver'] == "CCDSoft2XAdaptor.ccdsoft5Camera":
-            g_dev['cam'].camera.AutoSavePath = g_dev['obs'].obsid_path +'archive/' + datetime.datetime.strftime(datetime.datetime.now(), '%Y%m%d')
-            try:
-                os.mkdir(g_dev['obs'].obsid_path +'archive/' + datetime.datetime.strftime(datetime.datetime.now(), '%Y%m%d'))
-            except:
-                plog ("Couldn't make autosave directory")
+        # # If you are using TheSkyX, then update the autosave path
+        # if self.config['camera']['camera_1_1']['driver'] == "CCDSoft2XAdaptor.ccdsoft5Camera":
+        #     g_dev['cam'].camera.AutoSavePath = g_dev['obs'].obsid_path +'archive/' + datetime.datetime.strftime(datetime.datetime.now(), '%Y%m%d')
+        #     try:
+        #         os.mkdir(g_dev['obs'].obsid_path +'archive/' + datetime.datetime.strftime(datetime.datetime.now(), '%Y%m%d'))
+        #     except:
+        #         plog ("Couldn't make autosave directory")
 
         # Resetting complete projects
         plog ("Nightly reset of complete projects")
