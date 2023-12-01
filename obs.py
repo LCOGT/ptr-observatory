@@ -1019,9 +1019,10 @@ class Observatory:
         # Send main batch of devices status
         obsy = self.name
         if mount_only == True:
-            device_list = ['mount','telescope']
+            #device_list = ['mount','telescope']
+            device_list = ['mount']
         else:
-            self.device_types.append('telescope')
+            #self.device_types.append('telescope')
             device_list = self.device_types
         status={}
         for dev_type in device_list:
@@ -1036,9 +1037,9 @@ class Observatory:
                 # Get the actual device object...
                 device = devices_of_type[device_name]
                 # Currently the telescope and mount devices are the same... this will change.
-                if 'telescope' in device_name:
-                    status['telescope'] = copy.deepcopy(status['mount'])
-                else:
+                # if 'telescope' in device_name:
+                #     status['telescope'] = copy.deepcopy(status['mount'])
+                # else:
                     #breakpoint()
                     # if 'mount' in device_name and self.mount_reboot_on_first_status:
                     #     plog ("rebooting mount on first status update. Need to chase why, it is a collision I can't see yet - MTF")
@@ -1046,7 +1047,7 @@ class Observatory:
                     #     self.mount_reboot_on_first_status = False
 
                     #if not 'mount' in device_name:
-                    result = device.get_status()
+                result = device.get_status()
                     #else:
                     #    result = None
 
@@ -1057,6 +1058,15 @@ class Observatory:
                     status[dev_type][device_name] = result
         status["timestamp"] = round((time.time()) / 2.0, 3)
         status["send_heartbeat"] = False
+
+        #breakpoint()
+
+        #status['telescope']={}
+        
+        #status['telescope']['telescope1']=status['mount']['mount1']
+
+        #print (status['telescope'])
+        #print (status['mount'])
 
         if status is not None:
             lane = "device"
