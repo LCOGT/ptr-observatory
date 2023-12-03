@@ -2480,7 +2480,7 @@ def writeTpointModel():
     modelf.write("     AN       " + str(round(float(model["AN"]), 2)) + "     3.0  \n")
     modelf.write("     AW       " + str(round(float(model["AW"]), 2)) + "     3.0  \n")
     modelf.write("     CA       " + str(round(float(model["CA"]), 2)) + "     3.0  \n")
-    modelf.write(g
+    modelf.write(
         "     NPAE     " + str(round(float(model["NPAE"]), 2)) + "     3.0  \n"
     )
     modelf.write(
@@ -2601,4 +2601,3 @@ def test_icrs_mount_icrs():
                     print(pRa, pDec, lst, ra_err, dec_err)
 
 
-l
