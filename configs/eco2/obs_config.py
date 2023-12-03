@@ -51,6 +51,9 @@ site_config = {
     'minimum_distance_from_the_moon_when_taking_flats': 45,
     'lowest_requestable_altitude': -10,  # Degrees. For normal pointing requests don't allow requests to go this low.
     'degrees_to_avoid_zenith_area_for_calibrations': 0, 
+    'degrees_to_avoid_zenith_area_in_general' : 0,
+    'maximum_hour_angle_requestable' : 12,
+    
     'temperature_at_which_obs_too_hot_for_camera_cooling' : 23, 
     
     # These are the default values that will be set for the obs
@@ -64,7 +67,12 @@ site_config = {
     'daytime_exposure_time_safety_on': True,
     
     
-    
+    # Setup of folders on local and network drives.
+    'ingest_raws_directly_to_archive': True,
+    # LINKS TO PIPE FOLDER
+    'save_raws_to_pipe_folder_for_nightly_processing': False,
+    'pipe_archive_folder_path': 'X:/localptrarchive/',  #WER changed Z to X 20231113 @1:16 UTC
+    'temporary_local_pipe_archive_to_hold_files_while_copying' : 'F:/tempfolderforpipeline',
     # Setup of folders on local and network drives.
     'client_hostname':  'ECO-0m28-OSC',
     'archive_path':  'C:/ptr/',  
@@ -84,13 +92,18 @@ site_config = {
     'keep_focus_images_on_disk': False,  # To save space, the focus file can not be saved.   
     # A certain type of naming that sorts filenames by numberid first
     'save_reduced_file_numberid_first' : False,
-    # Number of files to send up to the archive simultaneously.
-    'number_of_simultaneous_archive_streams' : 8,
+    # Number of files to send up to the ptrarchive simultaneously.
+    'number_of_simultaneous_ptrarchive_streams' : 4,
+    # Number of files to send over to the pipearchive simultaneously.
+    'number_of_simultaneous_pipearchive_streams' : 4,
+    # Number of files to send over to the altarchive simultaneously.
+    'number_of_simultaneous_altarchive_streams' : 4,
     
     
-    
-   
-    
+    # Bisque mounts can't run updates in a thread ... yet... until I figure it out,
+    # So this is False for Bisques and true for everyone else.
+    'run_main_update_in_a_thread': True,
+    'run_status_update_in_a_thread' : True,
     
     # Minimum realistic seeing at the site.
     # This allows culling of unphysical results in photometry and other things
@@ -100,10 +113,16 @@ site_config = {
     
     # TIMING FOR CALENDAR EVENTS
     # How many minutes with respect to eve sunset start flats
+    
+    'bias_dark interval':  105.,   #minutes
     'eve_sky_flat_sunset_offset': +5,  # 40 before Minutes  neg means before, + after.
     # How many minutes after civilDusk to do....
     'end_eve_sky_flats_offset': 5 , 
     'clock_and_auto_focus_offset': 8,
+    'astro_dark_buffer': 30,   #Min before and after AD to extend observing window
+    'morn_flat_start_offset': -10,       #min from Sunrise
+    'morn_flat_end_offset':  +45,        #min from Sunrise
+    'end_night_processing_time':  90,   #  A guess
     'observing_begins_offset': 18,    
     # How many minutes before civilDawn to do ....
     'observing_ends_offset': 18,   
@@ -111,7 +130,7 @@ site_config = {
     
     # Exposure times for standard system exposures
     'focus_exposure_time': 15,  # Exposure time in seconds for exposure image
-    'pointing_exposure_time': 20,  # Exposure time in seconds for exposure image
+    'pointing_exposure_time': 10,  # Exposure time in seconds for exposure image
 
     # How often to do various checks and such
     'observing_check_period': 1,    # How many minutes between weather checks
@@ -120,6 +139,8 @@ site_config = {
     # Turn on and off various automated calibrations at different times.
     'auto_eve_bias_dark': False,
     'auto_eve_sky_flat': True,
+    
+     'time_to_wait_after_roof_opens_to_take_flats': 120,   #Just imposing a minimum in case of a restart.
     'auto_midnight_moonless_bias_dark': False,
     'auto_morn_sky_flat': True,
     'auto_morn_bias_dark': False,
@@ -139,7 +160,7 @@ site_config = {
     'defaults': {
         'screen': 'screen1',
         'mount': 'mount1',
-        'telescope': 'telescope1',     #How do we handle selector here, if at all?
+        #'telescope': 'telescope1',     #How do we handle selector here, if at all?
         'focuser': 'focuser1',
         'rotator': 'rotator1',
         'selector': None,
@@ -149,7 +170,7 @@ site_config = {
         },
     'device_types': [
             'mount',
-            'telescope',
+            #'telescope',
             #'screen',
             #'rotator',
             'focuser',
@@ -161,7 +182,7 @@ site_config = {
     
     'short_status_devices': [
             'mount',
-            'telescope',
+            #'telescope',
             'screen',
             'rotator',
             'focuser',
@@ -439,7 +460,11 @@ site_config = {
                 'direct_qhy_readout_mode' : 3,        
                 'direct_qhy_gain' : 26,
                 'direct_qhy_offset' : 60,  
-                'direct_qhy_usb_speed' : 60,
+                
+                'direct_qhy_usb_traffic' : 50,
+                
+                'set_qhy_usb_speed': False,
+                'direct_qhy_usb_speed' : 0,
                 
                 
                 
@@ -531,7 +556,7 @@ site_config = {
                 'x_pixel':  3.76, # microns
                 'y_pixel':  3.76, # microns
                 
-                '1x1_pix_scale': 1.25,    #  This is the 1x1 binning pixelscale
+                'onebyone_pix_scale': 1.25,    #  This is the 1x1 binning pixelscale
                 'native_bin': 1, # Needs to be simple, it will recalculate things on the 1x1 binning pixscale above.
                 
                 
@@ -542,7 +567,7 @@ site_config = {
                 # If you have a higher resolution pixelscale it will use that instead.
                 # Generally leave this at 0.5 - the optimal value for ground based
                 # observatories.... unless you have a large field of view.                
-                'drizzle_value_for_later_stacking': 0.5,
+                'drizzle_value_for_later_stacking': 1.25,
                 
                 'north_offset': 0.0,    #  These three are normally 0.0 for the primary telescope
                 'east_offset': 0.0,
@@ -597,7 +622,7 @@ site_config = {
                 'readout_mode': 'Normal',
                 'readout_speed':  0.4,
                 'readout_seconds': 2.4,
-                'smart_stack_exposure_time': 20,
+                'smart_stack_exposure_time': 15,
                 'square_detector': False,
                 'square_pixels': True,
                 'areas_implemented': ['Full', 'SQR', '0.5*0.5°',  '0.7x0.7°', '1x1°', '1.4x1.4°', '2x2°', '2.8x2.8°', '4x4sq°', '5.6x5.6°'],

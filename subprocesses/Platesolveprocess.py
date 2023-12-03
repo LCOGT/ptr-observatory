@@ -7,7 +7,7 @@ It is also not necessary - the platesolve we do is FAST (for windows)
 but only spits out RA, Dec, Pixelscale and rotation. Which is actually all
 we need to monitor pointing and keep scopes dead on target.
 
-There is a windswept and interesting way that platesolve frames lead to 
+There is a windswept and interesting way that platesolve frames lead to
 slight nudges during observing, but they are all triggered from values
 from this subprocess... which actually sub-sub-processes the platesolve3 platesolver from planewave.
 
@@ -36,6 +36,7 @@ import time
 from astropy.utils.exceptions import AstropyUserWarning
 import warnings
 warnings.simplefilter('ignore', category=AstropyUserWarning)
+warnings.simplefilter("ignore", category=RuntimeWarning)
 
 def parse_platesolve_output(output_file):
     f = open(output_file)
@@ -114,7 +115,7 @@ if crop_width > 0 or crop_height > 0:
 binfocus = 1
 if bin_for_platesolve:
     hdufocusdata=block_reduce(hdufocusdata,platesolve_bin_factor)
-    binfocus=platesolve_bin_factor                    
+    binfocus=platesolve_bin_factor
 
 focusimg = np.array(
     hdufocusdata, order="C"
@@ -176,7 +177,7 @@ flux, fluxerr, flag = sep.sum_ellipse(focusimg, sources['x'], sources['y'],
                                   sources['a'], sources['b'],
                                   np.pi / 2.0, 2.5 * kronrad,
                                   subpix=1, err=uncertainty)
-    
+
 sources['flux'] = flux
 sources['fluxerr'] = fluxerr
 sources['flag'] |= flag
@@ -190,7 +191,7 @@ for col in sources.colnames:
 sources = sources[~nan_in_row]
 
 sources = sources[sources['FWHM'] != 0]
-sources = sources[sources['FWHM'] > 0.5] 
+sources = sources[sources['FWHM'] > 0.5]
 sources = sources[sources['FWHM'] < (np.nanmedian(sources['FWHM']) + (3 * np.nanstd(sources['FWHM'])))]
 
 sources = sources[sources['flux'] > 0]
@@ -198,30 +199,30 @@ sources = sources[sources['flux'] < 1000000]
 
 
 if len(sources) >= 15:
-    
-    
+
+
     # Get size of original image
     xpixelsize = hdufocusdata.shape[0]
     ypixelsize = hdufocusdata.shape[1]
     shape = (xpixelsize, ypixelsize)
-    
+
     # Make blank synthetic image with a sky background
     synthetic_image = np.zeros([xpixelsize, ypixelsize])
     synthetic_image = synthetic_image + 200
 
-    #Bullseye Star Shape    
+    #Bullseye Star Shape
     modelstar = [
                 [ .01 , .05 , 0.1 , 0.2,  0.1, .05, .01],
-                [ .05 , 0.1 , 0.2 , 0.4,  0.2, 0.1, .05], 
+                [ .05 , 0.1 , 0.2 , 0.4,  0.2, 0.1, .05],
                 [ 0.1 , 0.2 , 0.4 , 0.8,  0.4, 0.2, 0.1],
                 [ 0.2 , 0.4 , 0.8 , 1.2,  0.8, 0.4, 0.2],
                 [ 0.1 , 0.2 , 0.4 , 0.8,  0.4, 0.2, 0.1],
                 [ .05 , 0.1 , 0.2 , 0.4,  0.2, 0.1, .05],
                 [ .01 , .05 , 0.1 , 0.2,  0.1, .05, .01]
-                
+
                 ]
-    
-    
+
+
     modelstar=np.array(modelstar)
 
     # Add bullseye stars to blank image
@@ -234,12 +235,12 @@ if len(sources) >= 15:
             synthetic_image[y-3:y+4,x-3:x+4] += peak*modelstar
         except Exception as e:
             print (e)
-            breakpoint()
-    
-    
-    
+            # breakpoint()
+
+
+
     # Make an int16 image for planewave solver
-    hdufocusdata = np.array(synthetic_image, dtype=np.int32)    
+    hdufocusdata = np.array(synthetic_image, dtype=np.int32)
     hdufocusdata[hdufocusdata < 0] = 200
     hdufocus = fits.PrimaryHDU()
     hdufocus.data = hdufocusdata
@@ -247,8 +248,8 @@ if len(sources) >= 15:
     hdufocus.header["NAXIS1"] = hdufocusdata.shape[0]
     hdufocus.header["NAXIS2"] = hdufocusdata.shape[1]
     hdufocus.writeto(cal_path + 'platesolvetemp.fits', overwrite=True, output_verify='silentfix')
-    pixscale = (hdufocus.header['PIXSCALE']) 
-    
+    pixscale = (hdufocus.header['PIXSCALE'])
+
     try:
         hdufocus.close()
     except:
@@ -256,7 +257,7 @@ if len(sources) >= 15:
     del hdufocusdata
     del hdufocus
 
-            
+
     try:
         args = [
             PS3CLI_EXE,
@@ -265,7 +266,7 @@ if len(sources) >= 15:
             output_file_path,
             catalog_path
         ]
-        
+
         process = Popen(
                 args,
                 stdout=None,
@@ -276,17 +277,17 @@ if len(sources) >= 15:
         failed = False
         time.sleep(1)
         process.kill()
-        
+
         solve = parse_platesolve_output(output_file_path)
-        
+
     except:
         failed = True
         process.kill()
-        
+
     if failed:
         try:
-            # Try again with a lower pixelscale... yes it makes no sense 
-            # But I didn't write PS3.exe ..... but it works (MTF)        
+            # Try again with a lower pixelscale... yes it makes no sense
+            # But I didn't write PS3.exe ..... but it works (MTF)
             args = [
                 PS3CLI_EXE,
                 cal_path + 'platesolvetemp.fits',
@@ -294,7 +295,7 @@ if len(sources) >= 15:
                 output_file_path,
                 catalog_path
             ]
-            
+
             process = Popen(
                     args,
                     stdout=None,
@@ -304,14 +305,14 @@ if len(sources) >= 15:
             exit_code = process.wait() # Wait for process to complete and obtain the exit code
             time.sleep(1)
             process.kill()
-            
+
             solve = parse_platesolve_output(output_file_path)
-            
+
         except:
             process.kill()
             solve = 'error'
     pickle.dump(solve, open(cal_path + 'platesolve.pickle', 'wb'))
-    
+
     try:
         os.remove(cal_path + 'platesolvetemp.fits')
     except:

@@ -92,6 +92,8 @@ site_config = {
     'minimum_distance_from_the_moon_when_taking_flats': 10,
     'lowest_requestable_altitude': 15,  # Degrees. For normal pointing requests don't allow requests to go this low.
     'degrees_to_avoid_zenith_area_for_calibrations': 5, 
+    'degrees_to_avoid_zenith_area_in_general' : 0,
+    'maximum_hour_angle_requestable' : 12,
     'temperature_at_which_obs_too_hot_for_camera_cooling' : 28,   #10C higher than chiller water
 
     # These are the default values that will be set for the obs
@@ -106,14 +108,21 @@ site_config = {
     
     
     
-    
+    # Setup of folders on local and network drives.
+    'ingest_raws_directly_to_archive': True,
+    # LINKS TO PIPE FOLDER
+    'save_raws_to_pipe_folder_for_nightly_processing': False,
+    'pipe_archive_folder_path': 'X:/localptrarchive/',  #WER changed Z to X 20231113 @1:16 UTC
+    'temporary_local_pipe_archive_to_hold_files_while_copying' : 'F:/tempfolderforpipeline',
+    'temporary_local_alt_archive_to_hold_files_while_copying' : 'F:/tempfolderforaltpath',
+
     # Setup of folders on local and network drives.
     'client_hostname':  'mr2-0m60',
     'archive_path':  'C:/ptr/',  # Generic place for client host to stash misc stuff
     'alt_path':  'Q:/ptr/',  # Generic place for this host to stash misc stuff
     'save_to_alt_path':  'yes',
     'local_calibration_path': 'C:/ptr/', # THIS FOLDER HAS TO BE ON A LOCAL DRIVE, not a network drive due to the necessity of huge memmap files
-    'archive_age' : -3, # Number of days to keep files in the local archive before deletion. Negative means never delete
+    'archive_age' : 7, # Number of days to keep files in the local archive before deletion. Negative means never delete
     'send_files_at_end_of_night' : 'no', # For low bandwidth sites, do not send up large files until the end of the night. set to 'no' to disable
     
     # For low bandwidth sites, do not send up large files until the end of the night. set to 'no' to disable
@@ -125,8 +134,18 @@ site_config = {
     'keep_focus_images_on_disk': True,  # To save space, the focus file can not be saved.   
     # A certain type of naming that sorts filenames by numberid first
     'save_reduced_file_numberid_first' : False,   
-    # Number of files to send up to the archive simultaneously.
-    'number_of_simultaneous_archive_streams' : 4,
+   # Number of files to send up to the ptrarchive simultaneously.
+   'number_of_simultaneous_ptrarchive_streams' : 4,
+   # Number of files to send over to the pipearchive simultaneously.
+   'number_of_simultaneous_pipearchive_streams' : 4,
+   # Number of files to send over to the altarchive simultaneously.
+   'number_of_simultaneous_altarchive_streams' : 4,
+   
+   
+   # Bisque mounts can't run updates in a thread ... yet... until I figure it out,
+   # So this is False for Bisques and true for everyone else.
+   'run_main_update_in_a_thread': True,
+   'run_status_update_in_a_thread' : True,
 
     # Minimum realistic seeing at the site.
     # This allows culling of unphysical results in photometry and other things
@@ -136,11 +155,19 @@ site_config = {
 
     
     # TIMING FOR CALENDAR EVENTS
+    
     # How many minutes with respect to eve sunset start flats
+    
+    'bias_dark interval':  105.,   #minutes
     'eve_sky_flat_sunset_offset': -45.,  # 40 before Minutes  neg means before, + after.
     # How many minutes after civilDusk to do....
     'end_eve_sky_flats_offset': 5 , 
     'clock_and_auto_focus_offset': 8,
+    
+    'astro_dark_buffer': 30,   #Min before and after AD to extend observing window
+    'morn_flat_start_offset': -10,       #min from Sunrise
+    'morn_flat_end_offset':  +45,        #min from Sunrise
+    'end_night_processing_time':  90,   #  A guess
     'observing_begins_offset': 18,    
     # How many minutes before civilDawn to do ....
     'observing_ends_offset': 18,   
@@ -157,6 +184,8 @@ site_config = {
     # Turn on and off various automated calibrations at different times.
     'auto_eve_bias_dark': True,
     'auto_eve_sky_flat': True,
+    
+     'time_to_wait_after_roof_opens_to_take_flats': 120,   #Just imposing a minimum in case of a restart.
     'auto_midnight_moonless_bias_dark': True,
     'auto_morn_sky_flat': True,
     'auto_morn_bias_dark': True,
@@ -174,7 +203,7 @@ site_config = {
 
     'defaults': {
         'mount': 'mount1',
-        'telescope': 'telescope1',
+        #'telescope': 'telescope1',
         'focuser': 'focuser1',
         'rotator': 'rotator1',
         'selector':  'selector1',
@@ -185,7 +214,7 @@ site_config = {
         },
     'device_types': [
         'mount',
-        'telescope',
+        #'telescope',
         #'screen',
         'rotator',
         'focuser',
@@ -196,7 +225,7 @@ site_config = {
         ],
      'short_status_devices':  [
         'mount',
-        'telescope',
+        #'telescope',
         # 'screen',
         'rotator',
         'focuser',
@@ -620,7 +649,11 @@ site_config = {
                 'direct_qhy_readout_mode' : 3,        
                 'direct_qhy_gain' : 26,
                 'direct_qhy_offset' : 60,
-                'direct_qhy_usb_speed' : 60,
+                
+                'direct_qhy_usb_traffic' : 60,
+                
+                'set_qhy_usb_speed': False,
+                'direct_qhy_usb_speed' : 0,
                 
                 
                 # These options set whether an OSC gets binned or interpolated for different functions
@@ -721,7 +754,7 @@ site_config = {
                 # These are the physical values for the camera
                 # related to pixelscale. Binning only applies to single
                 # images. Stacks will always be drizzled to to drizzle value from 1x1.
-                '1x1_pix_scale': 0.198,    #  This is the 1x1 binning pixelscale
+                'onebyone_pix_scale': 0.198,    #  This is the 1x1 binning pixelscale
                 'native_bin': 2, # Needs to be simple, it will recalculate things on the 1x1 binning pixscale above.
                 'x_pixel':  3.76, # pixel size in microns
                 'y_pixel':  3.76, # pixel size in microns

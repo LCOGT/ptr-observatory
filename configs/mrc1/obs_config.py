@@ -47,6 +47,8 @@ site_config = {
     'minimum_distance_from_the_moon_when_taking_flats': 45,
     'lowest_requestable_altitude': -5,  # Degrees. For normal pointing requests don't allow requests to go this low.
     'degrees_to_avoid_zenith_area_for_calibrations': 5, 
+    'degrees_to_avoid_zenith_area_in_general' : 0,
+    'maximum_hour_angle_requestable' : 12,
     'temperature_at_which_obs_too_hot_for_camera_cooling' : 23,  
     
     # These are the default values that will be set for the obs
@@ -59,7 +61,14 @@ site_config = {
     'altitude_checks_on': True,    
     'daytime_exposure_time_safety_on': True,
         
-    
+    # Setup of folders on local and network drives.
+    'ingest_raws_directly_to_archive': True,
+    # LINKS TO PIPE FOLDER
+    'save_raws_to_pipe_folder_for_nightly_processing': False,
+    'pipe_archive_folder_path': 'X:/localptrarchive/',  #WER changed Z to X 20231113 @1:16 UTC
+    'temporary_local_pipe_archive_to_hold_files_while_copying' : 'D:/tempfolderforpipeline',
+    'temporary_local_alt_archive_to_hold_files_while_copying' : 'D:/tempfolderforaltpath',
+
     # Setup of folders on local and network drives.
     'client_hostname':  'mrc-0m35',  # This is also the long-name  Client is confusing!    
     'archive_path':  'D:/ptr/',  # Generic place for client host to stash misc stuff
@@ -67,7 +76,7 @@ site_config = {
     'alt_path':  'Q:/ptr/',  # Generic place for this host to stash misc stuff
     'plog_path':  'Q:/ptr/mrc1/',  # place where night logs can be found.
     'save_to_alt_path': 'yes',    
-    'archive_age': -3,  # Number of days to keep files in the local archive before deletion. Negative means never delete
+    'archive_age': 7,  # Number of days to keep files in the local archive before deletion. Negative means never delete
     
     # For low bandwidth sites, do not send up large files until the end of the night. set to 'no' to disable
     'send_files_at_end_of_night': 'no',
@@ -78,8 +87,18 @@ site_config = {
     'keep_focus_images_on_disk': True,  # To save space, the focus file can not be saved.   
     # A certain type of naming that sorts filenames by numberid first
     'save_reduced_file_numberid_first' : False,   
-    # Number of files to send up to the archive simultaneously.
-    'number_of_simultaneous_archive_streams' : 4,
+    # Number of files to send up to the ptrarchive simultaneously.
+    'number_of_simultaneous_ptrarchive_streams' : 4,
+    # Number of files to send over to the pipearchive simultaneously.
+    'number_of_simultaneous_pipearchive_streams' : 4,
+    # Number of files to send over to the altarchive simultaneously.
+    'number_of_simultaneous_altarchive_streams' : 4,
+    
+    
+    # Bisque mounts can't run updates in a thread ... yet... until I figure it out,
+    # So this is False for Bisques and true for everyone else.
+    'run_main_update_in_a_thread': True,
+    'run_status_update_in_a_thread' : True,
 
     # Minimum realistic seeing at the site.
     # This allows culling of unphysical results in photometry and other things
@@ -88,10 +107,17 @@ site_config = {
 
     # TIMING FOR CALENDAR EVENTS
     # How many minutes with respect to eve sunset start flats
+    
+    'bias_dark interval':  105.,   #minutes
     'eve_sky_flat_sunset_offset': -45.,  # 40 before Minutes  neg means before, + after.
     # How many minutes after civilDusk to do....
     'end_eve_sky_flats_offset': 5 , 
     'clock_and_auto_focus_offset': 8,
+    
+    'astro_dark_buffer': 30,   #Min before and after AD to extend observing window
+    'morn_flat_start_offset': -10,       #min from Sunrise
+    'morn_flat_end_offset':  +45,        #min from Sunrise
+    'end_night_processing_time':  90,   #  A guess
     'observing_begins_offset': 18,    
     # How many minutes before civilDawn to do ....
     'observing_ends_offset': 18,   
@@ -109,6 +135,8 @@ site_config = {
     # Turn on and off various automated calibrations at different times.
     'auto_eve_bias_dark': True,
     'auto_eve_sky_flat': True,
+    
+     'time_to_wait_after_roof_opens_to_take_flats': 120,   #Just imposing a minimum in case of a restart.
     'auto_midnight_moonless_bias_dark': True,
     'auto_morn_sky_flat': True,
     'auto_morn_bias_dark': True,
@@ -125,7 +153,7 @@ site_config = {
 
     'defaults': {       
         'mount': 'mount1',
-        'telescope': 'telescope1',
+        #'telescope': 'telescope1',
         'focuser': 'focuser1',
         'rotator': 'rotator1',
         'selector':  None,
@@ -136,7 +164,7 @@ site_config = {
     },
     'device_types': [
         'mount',
-        'telescope',
+        #'telescope',
         'screen',    #  We do have one!  >>>>
         'rotator',
         'focuser',
@@ -473,14 +501,14 @@ site_config = {
                                 ['rp',      [0, 7],     0,  180.853,  [2, 17], 'rp'],  # 6
                                 ['PG',      [0, 2],     0,  120.048, [2, 17], 'PG'],  # 7
                                 ['PR',      [0, 3],     0,  70.336,  [2, 17], 'PR'],  # 8
-                                ['ip',      [0, 8],     0,  80.741,  [2, 17], 'ip'],  # 9
-                                ['z',       [5, 0],     0,  10,  [2, 17], 'z'],  # 10
-                                ['O3',      [7, 0],     0,  5,  [2, 17], '03'],  # 11
-                                ['up',      [0, 5],     0,  7,  [1, 17], 'up'],  # 12
-                                ['N2',      [3, 0],     0,  3,  [2, 17], 'N2'],  # 13
-                                ['CR',      [1, 0],     0,  5,    [2, 17], 'CR'],  # 14
-                                ['S2',      [8, 0],     0,  3,  [2, 17], 'S2'],  # 15
-                                ['HA',      [6, 0],     0,  3,  [2, 17], 'HA'],  # 16
+                                ['ip',      [0, 8],     0,  100.741,  [2, 17], 'ip'],  # 9
+                                ['z',       [5, 0],     0,  31,  [2, 17], 'z'],  # 10
+                                ['O3',      [7, 0],     0,  20,  [2, 17], '03'],  # 11
+                                ['up',      [0, 5],     0,  31,  [1, 17], 'up'],  # 12
+                                ['N2',      [3, 0],     0,  9,  [2, 17], 'N2'],  # 13
+                                ['CR',      [1, 0],     0,  15,    [2, 17], 'CR'],  # 14
+                                ['S2',      [8, 0],     0,  8,  [2, 17], 'S2'],  # 15
+                                ['HA',      [6, 0],     0,  8,  [2, 17], 'HA'],  # 16
                                 ['dark',    [8, 5],     0,   0.0,   [2, 17], 'dk']],  # 18
                 
                 'focus_filter' : 'w',
@@ -489,7 +517,7 @@ site_config = {
                 'filter_screen_sort':  ['air', 'w', 'PL', 'gp', 'PB', 'rp', 'PG', 'PR', 'ip', 'O3', 'N2', 'CR', 'S2', 'HA'],  # 9, 21],  # 5, 17], #Most to least throughput, \
                 # so screen brightens, skipping u and zs which really need sky.
 
-                'filter_sky_sort':     ['S2', 'N2', 'CR', 'O3', 'HA', 'z', 'PR', 'PG', 'PB', 'gp', 'rp', 'ip', 'w', 'PL', 'air'],
+                'filter_sky_sort':     ['S2', 'N2', 'CR', 'O3', 'HA', 'z', 'up', 'ip', 'PR', 'PG', 'PB', 'gp', 'rp', 'w', 'PL', 'air'],
                  
             },
         },
@@ -526,8 +554,8 @@ site_config = {
     'camera': {
         'camera_1_1': {
             'parent': 'telescope1',
-            'name': 'sq002cs',  # Important because this points to a server file structure by that name.
-            'desc':  'QHY 410C',
+            'name': 'sq005mm',  # Important because this points to a server file structure by that name.
+            'desc':  'QHY 600Pro Mono',
             #'driver':  "ASCOM.QHYCCD_CAM2.Camera", # NB Be careful this is not QHY Camera2 or Guider  "Maxim.CCDCamera",   #'ASCOM.FLI.Kepler.Camera', "ASCOM.QHYCCD.Camera",   #
             # NB Be careful this is not QHY Camera2 or Guider  "Maxim.CCDCamera",   #'ASCOM.FLI.Kepler.Camera', "ASCOM.QHYCCD.Camera",   #
             'driver':  "QHYCCD_Direct_Control",
@@ -535,7 +563,7 @@ site_config = {
 
 
 
-            'detector':  'Sony IMX441 Color',  # It would be good to build out a table of chip characteristics
+            'detector':  'Sony IMX455 BI Mono',  # It would be good to build out a table of chip characteristics
             'use_file_mode':  False,   # NB we should clean out all file mode stuff.
             'file_mode_path':  'Q:/archive/sq01/maxim/',  # NB NB all file_mode Maxim stuff should go!
             'manufacturer':  "QHY",
@@ -551,8 +579,8 @@ site_config = {
 
                 # Simple Camera Properties
                 'is_cmos':  True,
-                'is_osc': True,
-                'is_color': True,  # NB we also have a is_osc key.
+                'is_osc': False,
+                'is_color': False,  # NB we also have a is_osc key.
                 'osc_bayer': 'RGGB',
 
                 # For direct QHY usage we need to set the appropriate gain.
@@ -580,12 +608,16 @@ site_config = {
                 # USB Speed is a tradeoff between speed and banding, min 0, max 60. 60 is least banding. Most of the
                 # readout seems to be dominated by the slow driver (difference is a small fraction of a second), so I've left it at 60 - least banding.
                 #
-                # QHY410C is gain 0, offset 9                
-                'direct_qhy_readout_mode': 1,  #These settings may be wrong. WER 20230712
+                # QHY410C is gain 0, offset 9, mode 1              
+                'direct_qhy_readout_mode': 3,  #These settings may be wrong. WER 20230712
                                
-                'direct_qhy_gain': 0,
-                'direct_qhy_offset': 9,
-                'direct_qhy_usb_speed': 60,
+                'direct_qhy_gain': 26,
+                'direct_qhy_offset': 60,
+                
+                'direct_qhy_usb_traffic' : 60,
+                
+                'set_qhy_usb_speed': False,
+                'direct_qhy_usb_speed' : 0,
 
                 
 
@@ -624,7 +656,7 @@ site_config = {
                 'rotate180_fits': False,  # This also should be flipxy!
                 'rotate90_fits': False,
                 'rotate270_fits': False,
-                'squash_on_x_axis': True,
+                'squash_on_x_axis': False,
                 
                 # What number of pixels to crop around the edges of a REDUCED image
                 # This is primarily to get rid of overscan areas and also all images
@@ -677,10 +709,10 @@ site_config = {
                 # This is the area for cooling related settings
                 'cooler_on': True,
                 'temp_setpoint': -5,  # Verify we can go colder
-                'has_chiller': False,
+                'has_chiller': True,
                 'chiller_com_port': 'COM1',
                 'chiller_ref_temp':  15.0,  # C
-                'day_warm': True,
+                'day_warm': False,
                 'day_warm_degrees': 8,  # Number of degrees to warm during the daytime.
                 'protect_camera_from_overheating' : False,
                                 
@@ -688,10 +720,10 @@ site_config = {
                 # These are the physical values for the camera
                 # related to pixelscale. Binning only applies to single
                 # images. Stacks will always be drizzled to to drizzle value from 1x1.
-                '1x1_pix_scale': 0.4777272,    #  This is the 1x1 binning pixelscale
-                'native_bin': 1, # Needs to be simple, it will recalculate things on the 1x1 binning pixscale above.
-                'x_pixel':  5.94, # pixel size in microns
-                'y_pixel':  5.94, # pixel size in microns
+                'onebyone_pix_scale': 0.30258,    #  This is the 1x1 binning pixelscale
+                'native_bin': 2, # Needs to be simple, it will recalculate things on the 1x1 binning pixscale above.
+                'x_pixel':  3.76, # pixel size in microns
+                'y_pixel':  3.76, # pixel size in microns
                 # The drizzle_value is by the new pixelscale
                 # for the new resolution when stacking in the EVA pipeline
                 # Realistically you want a resolution of about 0.5 arcseconds per pixel
@@ -710,12 +742,12 @@ site_config = {
                 # Realistically there is maximum flat_exposure that makes sure flats are efficient and aren't collecting actual stars.
                 'max_flat_exposure': 20.0,
                 # During the daytime with the daytime safety mode on, exposures will be limited to this maximum exposure
-                'max_daytime_exposure': 0.0001,
+                'max_daytime_exposure': 0.001,
                 
                 # One of the best cloud detections is to estimate the gain of the camera from the image
                 # If the variation, and hence gain, is too high according to gain + stdev, the flat can be easily rejected.
                 # Should be off for new observatories coming online until a real gain is known.
-                'reject_new_flat_by_known_gain' : True,
+                'reject_new_flat_by_known_gain' : False,
                 # These values are just the STARTING values. Once the software has been
                 # through a few nights of calibration images, it should automatically calculate these gains.
                 'camera_gain':   8.634, #[10., 10., 10., 10.],     #  One val for each binning.
@@ -727,7 +759,7 @@ site_config = {
                 'saturate':   65535,
                 'max_linearity':  60000,   # Guess
                 # How long does it take to readout an image after exposure
-                'cycle_time':            0.5,
+                'cycle_time':            0.0,
                 # What is the base smartstack exposure time?
                 # It will vary from scope to scope and computer to computer.
                 # 30s is a good default.
@@ -737,10 +769,10 @@ site_config = {
                 # As simple as it states, how many calibration frames to collect and how many to store.                
                 'number_of_bias_to_collect': 33,
                 'number_of_dark_to_collect': 17,
-                'number_of_flat_to_collect': 10,
+                'number_of_flat_to_collect': 7,
                 'number_of_bias_to_store': 63,
                 'number_of_dark_to_store': 31,
-                'number_of_flat_to_store': 31,
+                'number_of_flat_to_store': 15,
                 # Default dark exposure time.
                 'dark_exposure': 180,
                
