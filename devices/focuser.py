@@ -63,6 +63,17 @@ class Focuser:
                     except:
                         plog ("focuser doesn't have ASCOM Connected keyword, also crashed on focuser.Link")
 
+        self.micron_to_steps = float(
+            config["focuser"]["focuser1"]["unit_conversion"]
+        )  #  Note this can be a bogus value
+        self.steps_to_micron = 1 / self.micron_to_steps
+
+        if not self.theskyx:
+            self.current_focus_position=self.focuser.Position * self.steps_to_micron            
+        else:
+            self.current_focus_position=self.focuser.focPosition() * self.steps_to_micron
+
+
 
         self.focuser_update_period=3
         self.focuser_updates=0
@@ -75,10 +86,7 @@ class Focuser:
         self.focuser_update_thread.start()
         
         
-        self.micron_to_steps = float(
-            config["focuser"]["focuser1"]["unit_conversion"]
-        )  #  Note this can be a bogus value
-        self.steps_to_micron = 1 / self.micron_to_steps
+        
         self.focuser_message = "-"
 
         if self.theskyx:
