@@ -1754,14 +1754,15 @@ class Sequencer:
         self.regenerate_local_masters()
 
         # Daily reboot of necessary windows 32 programs *Cough* Theskyx *Cough*
-        if g_dev['mnt'].theskyx: # It is only the mount that is the reason theskyx needs to reset
-            g_dev['mnt'].mount_update_paused=True
+        if g_dev['mnt'].theskyx: # It is only the mount that is the reason theskyx needs to reset            
             self.kill_and_reboot_theskyx(-1,-1)
-            g_dev['mnt'].mount_update_reboot=True
 
         return
 
     def kill_and_reboot_theskyx(self, returnra, returndec): # Return to a given ra and dec or send -1,-1 to remain at park
+        g_dev['mnt'].mount_update_paused=True
+        g_dev['mnt'].wait_for_mount_update()
+        
         os.system("taskkill /IM TheSkyX.exe /F")
         os.system("taskkill /IM TheSky64.exe /F")
         time.sleep(16)
@@ -1812,7 +1813,7 @@ class Sequencer:
                 if retries ==4:
                     plog(traceback.format_exc())
                     #
-
+        g_dev['mnt'].mount_update_reboot=True
         return
 
     def regenerate_local_masters(self):

@@ -391,6 +391,7 @@ class Mount:
         self.mount_update_timer=time.time() - 2* self.mount_update_period
         self.mount_updates=0
         self.mount_update_paused=False
+        self.mount_update_reboot=False
         #self.focuser_update_thread_queue = queue.Queue(maxsize=0)
         self.mount_update_thread=threading.Thread(target=self.mount_update_thread)
         self.mount_update_thread.start()
