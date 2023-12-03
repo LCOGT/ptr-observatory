@@ -256,9 +256,20 @@ class FilterWheel:
             # perhaps the AP mount doesn't like this.
             pass
         
-        
-        if self.theskyx:
+        # If theskyx, then it needs a different connect command
+        if self.driver== "CCDSoft2XAdaptor.ccdsoft5Camera":
             self.filterwheel_update_wincom.Connect()
+        
+        if self.driver.lower() in ["maxim.ccdcamera", "maxim", "maximdl", "maximdlpro"]:
+            #breakpoint()
+            time.sleep(1)
+            try:
+                self.filterwheel_update_wincom.LinkEnabled = True
+            except:
+                plog(traceback.format_exc())
+                breakpoint()
+            
+        
         # try:
         #     self.pier_side = g_dev[
         #         "mnt"
@@ -324,7 +335,9 @@ class FilterWheel:
                                     self.filterwheel_update_wincom.GuiderFilter = self.filter_selections[1]
 
                             except:
-                                plog("Filter RPC error, Maxim not responding. Reset Maxim needed.")
+                                #plog("Filter RPC error, Maxim not responding. Reset Maxim needed.")
+                                plog(traceback.format_exc())
+                                breakpoint()
                         elif self.theskyx:
                             
                             self.filterwheel_update_wincom.FilterIndexZeroBased = self.filter_data[self.filt_pointer][1][0]
