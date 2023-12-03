@@ -15,7 +15,9 @@ import requests
 import serial
 import win32com.client
 import numpy as np
-
+import threading
+import copy
+import traceback
 import ptr_config
 from global_yard import g_dev
 from ptr_utility import plog
@@ -28,6 +30,7 @@ class FilterWheel:
         g_dev["fil"] = self
         self.config = config["filter_wheel"]
         self.previous_filter_name='none'
+        self.driver = driver
         if driver is not None:
             self.null_filterwheel = False
             self.dual_filter = self.config["filter_wheel1"]["dual_wheel"]
@@ -41,6 +44,15 @@ class FilterWheel:
             self.filter_message = "-"
             plog("Please NOTE: Filter wheel may block for many seconds while first connecting \
                  & homing.")
+                 
+            self.filter_change_requested=False
+            self.filterwheel_update_period=0.2
+            self.filterwheel_update_timer=time.time() - 2* self.filterwheel_update_period
+            self.filterwheel_updates=0
+            #self.focuser_update_thread_queue = queue.Queue(maxsize=0)
+            self.filterwheel_update_thread=threading.Thread(target=self.filterwheel_update_thread)
+            self.filterwheel_update_thread.start()
+                 
             if driver == "LCO.dual":
                 # home the wheel and get responses, which indicates it is connected.
                 # set current_0 and _1 to [0, 0] position to default of w/L filter.    
@@ -214,6 +226,128 @@ class FilterWheel:
             self.home_command(None)       
         
         
+        
+    
+    def wait_for_filterwheel_update(self):
+        sleep_period= self.filterwheel_update_period / 4
+        current_updates=copy.deepcopy(self.filterwheel_updates)
+        while current_updates==self.filterwheel_updates:
+            #print ('ping')
+            time.sleep(sleep_period)
+    
+    # Note this is a thread!
+    def filterwheel_update_thread(self):
+
+
+        #one_at_a_time = 0
+
+        #Hooking up connection to win32 com focuser
+        #win32com.client.pythoncom.CoInitialize()
+    #     fl = win32com.client.Dispatch(
+    #         win32com.client.pythoncom.CoGetInterfaceAndReleaseStream(g_dev['foc'].focuser_id, win32com.client.pythoncom.IID_IDispatch)
+    # )
+        #breakpoint()
+        win32com.client.pythoncom.CoInitialize()
+
+        self.filterwheel_update_wincom = win32com.client.Dispatch(self.driver)
+        try:
+            self.filterwheel_update_wincom.Connected = True
+        except:
+            # perhaps the AP mount doesn't like this.
+            pass
+        
+        
+        if self.theskyx:
+            self.filterwheel_update_wincom.Connect()
+        # try:
+        #     self.pier_side = g_dev[
+        #         "mnt"
+        #     ].mount.sideOfPier  # 0 == Tel Looking West, is flipped.
+        #     self.can_report_pierside = True
+        # except:
+        #     self.can_report_pierside = False
+
+        # This stopping mechanism allows for threads to close cleanly.
+        while True:
+            try:
+                # update every so often, but update rapidly if slewing.
+                if (self.filterwheel_update_timer < time.time() - self.filterwheel_update_period) or (self.currently_slewing):
+    
+                    if self.filter_change_requested:
+                        self.filter_change_requested=False
+                        if self.dual and self.custom:
+                            r0 = self.r0
+                            r1 = self.r1
+                            r0["filterwheel"]["position"] = self.filter_selections[0]
+                            r1["filterwheel"]["position"] = self.filter_selections[1]
+                            r0_pr = requests.put(self.ip + "/filterwheel/0/position", json=r0, timeout=5)
+                            r1_pr = requests.put(self.ip + "/filterwheel/1/position", json=r1, timeout=5)
+                            if str(r0_pr) == str(r1_pr) == "<Response [200]>":                
+                                pass
+                            while True:
+                                r0_t = int(
+                                    requests.get(self.ip + "/filterwheel/0/position", timeout=5)
+                                    .text.split('"position":')[1]
+                                    .split("}")[0]
+                                )
+                                r1_t = int(
+                                    requests.get(self.ip + "/filterwheel/1/position", timeout=5)
+                                    .text.split('"position":')[1]
+                                    .split("}")[0]
+                                )                
+                                if r0_t == 808 or r1_t == 808:                    
+                                    continue
+                                else:
+                                    pass                    
+                                    break
+
+                        elif self.dual and not self.maxim:
+                            try:
+                                while self.filter_front.Position == -1:
+                                    time.sleep(0.1)
+                                self.filter_front.Position = self.filter_selections[1]
+                                
+                            except:
+                                pass
+                            try:
+                                while self.filter_back.Position == -1:
+                                    time.sleep(0.1)
+                                self.filter_back.Position = self.filter_selections[0]
+
+                            except:
+                                pass
+                            self.filter_offset = float(self.filter_data[self.filt_pointer][2])
+                        elif self.maxim and self.dual:
+                            try:
+                                self.filterwheel_update_wincom.Filter = self.filter_selections[0]
+                                if self.dual_filter:
+                                    self.filterwheel_update_wincom.GuiderFilter = self.filter_selections[1]
+
+                            except:
+                                plog("Filter RPC error, Maxim not responding. Reset Maxim needed.")
+                        elif self.theskyx:
+                            
+                            self.filterwheel_update_wincom.FilterIndexZeroBased = self.filter_data[self.filt_pointer][1][0]
+                            
+                        else:
+                            try:
+                                while self.filter_front.Position == -1:
+                                    time.sleep(0.1)
+                                self.filter_front.Position = self.filter_selections[0]
+                            except:
+                                plog ("Failed to change filter")
+                                pass
+
+                            self.filter_offset = float(self.filter_data[self.filt_pointer][2])
+
+                    self.filterwheel_updates=self.filterwheel_updates+1
+
+                else:
+                    time.sleep(0.05)
+            except Exception as e:
+                plog ("some type of glitch in the mount thread: " + str(e))
+                plog(traceback.format_exc())
+        
 
     # The patches. Note these are essentially a getter-setter/property constructs.
     # NB we are here talking to Maxim acting only as a filter controller.
@@ -289,12 +423,12 @@ class FilterWheel:
         ):  
 
             if filter_name in str(self.filter_data[match][0]).lower():
-                filt_pointer = match                
+                self.filt_pointer = match                
                 filter_identified = 1
                 break
             
         try:
-            filter_throughput = float(self.filter_data[filt_pointer][3])
+            filter_throughput = float(self.filter_data[self.filt_pointer][3])
         except:
             plog("Could not find an appropriate throughput for " +str(filter_name))
             filter_throughput = np.nan
@@ -317,7 +451,7 @@ class FilterWheel:
         ):  
 
             if filter_name in str(self.filter_data[match][0]).lower():
-                filt_pointer = match                
+                self.filt_pointer = match                
                 filter_identified = 1
                 break
 
@@ -330,7 +464,7 @@ class FilterWheel:
                 len(self.filter_data)
             ):  
                 if filter_name in str(self.filter_data[match][0]).lower():
-                    filt_pointer = match
+                    self.filt_pointer = match
                     filter_identified = 1
                     break
         
@@ -345,78 +479,18 @@ class FilterWheel:
         except:
             pass  # This is usually when it is just booting up and obs doesn't exist yet
         try:
-            self.filter_number = filt_pointer
+            self.filter_number = self.filt_pointer
             self.filter_selected = str(filter_name).lower()
-            filter_selections = self.filter_data[filt_pointer][1]
-            self.filter_offset = float(self.filter_data[filt_pointer][2])
+            self.filter_selections = self.filter_data[self.filt_pointer][1]
+            self.filter_offset = float(self.filter_data[self.filt_pointer][2])
         except:
             plog("Failed to change filter. Returning.")
             return None, None, None
+        
+        
+        self.filter_change_requested=True
+        self.wait_for_filterwheel_update()
 
-        if self.dual and self.custom:
-            r0 = self.r0
-            r1 = self.r1
-            r0["filterwheel"]["position"] = filter_selections[0]
-            r1["filterwheel"]["position"] = filter_selections[1]
-            r0_pr = requests.put(self.ip + "/filterwheel/0/position", json=r0, timeout=5)
-            r1_pr = requests.put(self.ip + "/filterwheel/1/position", json=r1, timeout=5)
-            if str(r0_pr) == str(r1_pr) == "<Response [200]>":                
-                pass
-            while True:
-                r0_t = int(
-                    requests.get(self.ip + "/filterwheel/0/position", timeout=5)
-                    .text.split('"position":')[1]
-                    .split("}")[0]
-                )
-                r1_t = int(
-                    requests.get(self.ip + "/filterwheel/1/position", timeout=5)
-                    .text.split('"position":')[1]
-                    .split("}")[0]
-                )                
-                if r0_t == 808 or r1_t == 808:                    
-                    continue
-                else:
-                    pass                    
-                    break
-
-        elif self.dual and not self.maxim:
-            try:
-                while self.filter_front.Position == -1:
-                    time.sleep(0.1)
-                self.filter_front.Position = filter_selections[1]
-                
-            except:
-                pass
-            try:
-                while self.filter_back.Position == -1:
-                    time.sleep(0.1)
-                self.filter_back.Position = filter_selections[0]
-
-            except:
-                pass
-            self.filter_offset = float(self.filter_data[filt_pointer][2])
-        elif self.maxim and self.dual:
-            try:
-                self.filter.Filter = filter_selections[0]
-                if self.dual_filter:
-                    self.filter.GuiderFilter = filter_selections[1]
-
-            except:
-                plog("Filter RPC error, Maxim not responding. Reset Maxim needed.")
-        elif self.theskyx:
-            
-            self.filter.FilterIndexZeroBased = self.filter_data[match][1][0]
-            
-        else:
-            try:
-                while self.filter_front.Position == -1:
-                    time.sleep(0.1)
-                self.filter_front.Position = filter_selections[0]
-            except:
-                plog ("Failed to change filter")
-                pass
-
-            self.filter_offset = float(self.filter_data[filt_pointer][2])
 
         
         if self.wait_time_after_filter_change != 0:
