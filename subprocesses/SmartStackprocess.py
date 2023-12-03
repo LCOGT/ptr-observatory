@@ -16,7 +16,7 @@ import astroalign as aa
 from auto_stretch.stretch import Stretch
 from PIL import Image, ImageEnhance
 import subprocess
-#from ptr_utility import plog
+
 input_sstk_info=pickle.load(sys.stdin.buffer)
 #input_sstk_info=pickle.load(open('testsmartstackpickle','rb'))
 
