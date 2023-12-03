@@ -434,11 +434,11 @@ class Focuser:
     def get_position(self, counts=False):
         if not counts:
             if not self.theskyx:
-                self.current_focus_position=self.focuser.Position * self.steps_to_micron
+                #self.current_focus_position=self.focuser.Position * self.steps_to_micron
 
                 return int(self.current_focus_position)
             else:
-                self.current_focus_position=self.focuser.focPosition() * self.steps_to_micron
+                #self.current_focus_position=self.focuser.focPosition() * self.steps_to_micron
 
                 return int(self.current_focus_position)
 

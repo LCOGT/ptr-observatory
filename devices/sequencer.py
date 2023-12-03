@@ -1755,7 +1755,9 @@ class Sequencer:
 
         # Daily reboot of necessary windows 32 programs *Cough* Theskyx *Cough*
         if g_dev['mnt'].theskyx: # It is only the mount that is the reason theskyx needs to reset
+            g_dev['mnt'].mount_update_paused=True
             self.kill_and_reboot_theskyx(-1,-1)
+            g_dev['mnt'].mount_update_reboot=True
 
         return
 

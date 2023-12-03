@@ -390,6 +390,7 @@ class Mount:
         self.mount_update_period=0.2
         self.mount_update_timer=time.time() - 2* self.mount_update_period
         self.mount_updates=0
+        self.mount_update_paused=False
         #self.focuser_update_thread_queue = queue.Queue(maxsize=0)
         self.mount_update_thread=threading.Thread(target=self.mount_update_thread)
         self.mount_update_thread.start()
@@ -426,7 +427,18 @@ class Mount:
         while True:
             try:
                 # update every so often, but update rapidly if slewing.
-                if (self.mount_update_timer < time.time() - self.mount_update_period) or (self.currently_slewing):
+                if self.mount_update_reboot:
+                    win32com.client.pythoncom.CoInitialize()
+                    self.mount_update_wincom = win32com.client.Dispatch(self.driver)
+                    try:
+                        self.mount_update_wincom.Connected = True
+                    except:
+                        # perhaps the AP mount doesn't like this.
+                        pass
+                    self.mount_update_paused=False
+                    self.mount_update_reboot=False
+                    
+                if (self.mount_update_timer < time.time() - self.mount_update_period) or (self.currently_slewing) and not self.mount_update_paused:
     
                     if self.unpark_requested:
                         self.unpark_requested=False
