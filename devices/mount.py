@@ -299,6 +299,11 @@ class Mount:
 
         self.previous_pier_side=self.mount.sideOfPier
 
+        self.request_new_pierside=False
+        self.request_new_pierside_ra=1.0
+        self.request_new_pierside_dec=1.0
+
+
         self.can_park = self.mount.CanPark
         self.can_set_tracking = self.mount.CanSetTracking
         # The update_status routine collects the current atpark status and pier status.
@@ -366,6 +371,8 @@ class Mount:
 
             pass
 
+        self.new_pierside =0
+
         if self.pier_side == 0:
             self.pier_side_str ="Looking West"
         else:
@@ -376,6 +383,8 @@ class Mount:
             self.rapid_park_indicator=True
 
         self.currently_slewing= False
+
+
 
         self.get_status()
         # # mount command #
@@ -468,6 +477,13 @@ class Mount:
                     if self.request_tracking_off:
                         self.request_tracking_off = False
                         self.mount_update_wincom.Tracking = False
+
+                    if self.request_new_pierside:
+                        self.request_new_pierside=False
+                        self.new_pierside=self.mount_update_wincom.DestinationSideOfPier(self.request_new_pierside_ra, self.request_new_pierside_dec)
+
+
+
 
 
 
@@ -1267,7 +1283,7 @@ class Mount:
 
         ''' Slew to the given ra/dec, alt/az or ha/dec or skyflatspot coordinates. '''
 
-
+        breakpoint()
 
         # First thing to do is check the position of the sun and
         # Whether this violates the pointing principle.
@@ -1430,14 +1446,23 @@ class Mount:
         if self.can_report_destination_pierside == True:
             try:                          #  NB NB Might be good to log is flipping on a re-seek.
                 # mount command #
-                while self.mount_busy:
-                    time.sleep(0.05)
-                self.mount_busy=True
-                new_pierside =  self.mount.DestinationSideOfPier(ra, dec) #  A tuple gets returned: (pierside, Ra.h and dec.d)
-                self.mount_busy=False
+                # while self.mount_busy:
+                #     time.sleep(0.05)
+                # self.mount_busy=True
+
+                #new_pierside =  self.mount.DestinationSideOfPier(ra, dec) #  A tuple gets returned: (pierside, Ra.h and dec.d)
+
+                self.request_new_pierside=True
+                self.request_new_pierside_ra=ra
+                self.request_new_pierside_dec=dec
+
+                self.wait_for_mount_update()
+
+
+                # self.mount_busy=False
                 # end mount command #
-                if len(new_pierside) > 1:
-                    if new_pierside[0] == 0:
+                if len(self.new_pierside) > 1:
+                    if self.new_pierside[0] == 0:
                         delta_ra, delta_dec = self.get_mount_reference()
 
                     else:
@@ -1449,11 +1474,16 @@ class Mount:
                     # # mount command #
                     # while self.mount_busy:
                     #     time.sleep(0.05)
-                    self.mount_busy=True
-                    new_pierside =  self.mount.DestinationSideOfPier(ra, dec) #  A tuple gets returned: (pierside, Ra.h and dec.d)
-                    self.mount_busy=False
+                    # self.mount_busy=True
+                    # new_pierside =  self.mount.DestinationSideOfPier(ra, dec) #  A tuple gets returned: (pierside, Ra.h and dec.d)
+                    # self.mount_busy=False
                     # end mount command #
-                    if new_pierside == 0:
+                    self.request_new_pierside=True
+                    self.request_new_pierside_ra=ra
+                    self.request_new_pierside_dec=dec
+
+                    self.wait_for_mount_update()
+                    if self.new_pierside == 0:
                         delta_ra, delta_dec = self.get_mount_reference()
 
                     else:
@@ -2132,7 +2162,7 @@ class Mount:
                 g_dev['obs'].time_of_last_slew=time.time()
                 #breakpoint()
                 #try:
-                self.wait_for_slew()
+                #self.wait_for_slew()
                 # mount command #
                 # while self.mount_busy:
                 #     time.sleep(0.05)
