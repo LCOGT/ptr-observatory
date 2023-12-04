@@ -473,10 +473,13 @@ class Mount:
                     self.currently_slewing= self.mount_update_wincom.Slewing
     
     
-                    self.mount_updates=self.mount_updates + 1
-                    self.mount_update_timer=time.time()
+                    
                 else:
                     time.sleep(0.05)
+                    
+                self.mount_updates=self.mount_updates + 1
+                self.mount_update_timer=time.time()
+                
             except Exception as e:
                 plog ("some type of glitch in the mount thread: " + str(e))
                 plog(traceback.format_exc())
