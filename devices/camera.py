@@ -2623,6 +2623,56 @@ class Camera:
                     hdu.header['EXPTIME']=exposure_time
 
                     hdu.header['OBSTYPE']='focus'
+                    hdu.header["SITEID"] = (self.config["wema_name"].replace("-", "").replace("_", ""))
+                    hdu.header["INSTRUME"] = (self.config["camera"][self.name]["name"], "Name of camera")
+                    hdu.header["DAY-OBS"] = (
+                        g_dev["day"],
+                        "Date at start of observing night"
+                    )
+                    raw_name00 = (
+                        self.config["obs_id"]
+                        + "-"
+                        + self.config["camera"][self.name]["name"] + '_' + str(frame_type) + '_' + str(this_exposure_filter)
+                        + "-"
+                        + g_dev["day"]
+                        + "-"
+                        + next_seq
+                        + "-"
+                        + im_type
+                        + "00.fits"
+                    )
+                    hdu.header["ORIGNAME"] = str(raw_name00 + ".fz")
+                    hdu.header["FILTER"] =g_dev['cam'].current_filter 
+                    hdu.header["SMARTSTK"] = 'no'
+                    hdu.header["SSTKNUM"] = 1
+                    
+                    tempRAdeg = ra_at_time_of_exposure * 15
+                    tempDECdeg = dec_at_time_of_exposure
+                    tempointing = SkyCoord(tempRAdeg, tempDECdeg, unit='deg')
+                    tempointing=tempointing.to_string("hmsdms").split(' ')
+
+                    hdu.header["RA"] = (
+                        tempointing[0],
+                        "[hms] Telescope right ascension",
+                    )
+                    hdu.header["DEC"] = (
+                        tempointing[1],
+                        "[dms] Telescope declination",
+                    )
+                    hdu.header["AZIMUTH "] = (
+                        azimuth_of_observation,
+                        "[deg] Azimuth axis positions",
+                    )
+                    hdu.header["ALTITUDE"] = (
+                        altitude_of_observation,
+                        "[deg] Altitude axis position",
+                    )
+                    hdu.header["ZENITH"] = (90 - altitude_of_observation, "[deg] Zenith")
+                    hdu.header["AIRMASS"] = (
+                        airmass_of_observation,
+                        "Effective mean airmass",
+                    )
+                    
                     hdusmallheader=copy.deepcopy(hdu.header)
                     del hdu
                     focus_position=g_dev['foc'].current_focus_position
