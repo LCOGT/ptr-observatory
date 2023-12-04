@@ -724,6 +724,15 @@ site_config = {
                 'native_bin': 2, # Needs to be simple, it will recalculate things on the 1x1 binning pixscale above.
                 'x_pixel':  3.76, # pixel size in microns
                 'y_pixel':  3.76, # pixel size in microns
+                
+                #Please do not remove the following:  9576*6388
+                # WAYNE - x field and y field are already calculated within camera.py on bootup and send up in the config
+                # we don't neeed these values. Carolina is also calculating it already at the UI.              
+                # I made it calculate it directly PRECISELY because of incorrect values in the config file.
+                #'x_field':  46.8, # amin  0.30259*9276/60   NB subtractedd 100 pix for trim
+                #'y_field':  31.7, # amin  0k.30259*6288/60   NB subtractedd 100 pix for trim
+                
+                
                 # The drizzle_value is by the new pixelscale
                 # for the new resolution when stacking in the EVA pipeline
                 # Realistically you want a resolution of about 0.5 arcseconds per pixel

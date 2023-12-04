@@ -63,11 +63,30 @@ class Focuser:
                     except:
                         plog ("focuser doesn't have ASCOM Connected keyword, also crashed on focuser.Link")
 
-
         self.micron_to_steps = float(
             config["focuser"]["focuser1"]["unit_conversion"]
         )  #  Note this can be a bogus value
         self.steps_to_micron = 1 / self.micron_to_steps
+
+        if not self.theskyx:
+            self.current_focus_position=self.focuser.Position * self.steps_to_micron            
+        else:
+            self.current_focus_position=self.focuser.focPosition() * self.steps_to_micron
+
+
+
+        self.focuser_update_period=3
+        self.focuser_updates=0
+        self.guarded_move_requested=False
+        self.guarded_move_to_focus=20000
+        
+        self.focuser_update_timer=time.time() - 2* self.focuser_update_period
+        #self.focuser_update_thread_queue = queue.Queue(maxsize=0)
+        self.focuser_update_thread=threading.Thread(target=self.focuser_update_thread)
+        self.focuser_update_thread.start()
+        
+        
+        
         self.focuser_message = "-"
 
         if self.theskyx:
@@ -113,16 +132,10 @@ class Focuser:
             self.last_filter_offset= 0
 
 
-        self.guarded_move_requested=False
-        self.guarded_move_to_focus=20000
+        
 
 
-        self.focuser_updates=0
-        self.focuser_update_period=3
-        self.focuser_update_timer=time.time() - 2* self.focuser_update_period
-        #self.focuser_update_thread_queue = queue.Queue(maxsize=0)
-        self.focuser_update_thread=threading.Thread(target=self.focuser_update_thread)
-        self.focuser_update_thread.start()
+        
 
 
     # Note this is a thread!
@@ -429,11 +442,11 @@ class Focuser:
     def get_position(self, counts=False):
         if not counts:
             if not self.theskyx:
-                self.current_focus_position=self.focuser.Position * self.steps_to_micron
+                #self.current_focus_position=self.focuser.Position * self.steps_to_micron
 
                 return int(self.current_focus_position)
             else:
-                self.current_focus_position=self.focuser.focPosition() * self.steps_to_micron
+                #self.current_focus_position=self.focuser.focPosition() * self.steps_to_micron
 
                 return int(self.current_focus_position)
 
@@ -521,7 +534,8 @@ class Focuser:
             self.current_focus_position=self.get_position()#self.focuser.focPosition()# * self.micron_to_steps
 
         else:
-            self.focuser.Move(int(float(self.reference) * self.micron_to_steps))
+            self.guarded_move(int(float(self.reference) * self.micron_to_steps))
+            #self.focuser.Move(int(float(self.reference) * self.micron_to_steps))
             #self.current_focus_position=self.focuser.Position * self.micron_to_steps
             self.current_focus_position=self.get_position()
             #breakpoint()
