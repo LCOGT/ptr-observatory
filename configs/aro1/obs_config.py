@@ -82,7 +82,7 @@ site_config = {
     'ingest_raws_directly_to_archive': True,
     # LINKS TO PIPE FOLDER
     'save_raws_to_pipe_folder_for_nightly_processing': True,
-    'pipe_archive_folder_path': 'X:/localptrarchive/',  #WER changed Z to X 20231113 @1:16 UTC
+    'pipe_archive_folder_path': 'Y:/localptrarchive/',  #WER changed Z to X 20231113 @1:16 UTC
     'temporary_local_pipe_archive_to_hold_files_while_copying' : 'F:/tempfolderforpipeline',
     # LINKS FOR OBS FOLDERS
     'client_hostname':"ARO-0m30",     # Generic place for this host to stash.
