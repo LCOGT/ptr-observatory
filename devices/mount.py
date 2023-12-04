@@ -466,9 +466,9 @@ class Mount:
 
                     if self.slewtoAsyncRequested:
                         self.slewtoAsyncRequested=False
-                        print ("attempting to slew")
+                        #print ("attempting to slew")
                         self.mount_update_wincom.SlewToCoordinatesAsync(self.slewtoRA , self.slewtoDEC)
-                        print ("successful slew")
+                        #print ("successful slew")
 
                     if self.request_tracking_on:
 
