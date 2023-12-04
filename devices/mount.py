@@ -319,6 +319,10 @@ class Mount:
 
         self.current_tracking_state=copy.deepcopy(self.mount.Tracking)
 
+        self.request_tracking_on = False
+        self.request_tracking_off = False
+
+
         self.CanFindHome = self.mount.CanFindHome
 
         # This is a latch to prevent multiple commands being sent to latch at the same time.
@@ -438,48 +442,56 @@ class Mount:
                         pass
                     self.mount_update_paused=False
                     self.mount_update_reboot=False
-                    
+
                 if (self.mount_update_timer < time.time() - self.mount_update_period) or (self.currently_slewing) and not self.mount_update_paused:
-    
+
                     if self.unpark_requested:
                         self.unpark_requested=False
                         self.mount_update_wincom.Unpark()
-                        
-    
+
+
                     if self.park_requested:
                         self.park_requested=False
                         self.mount_update_wincom.Park()
-                        
-    
+
+
                     if self.slewtoAsyncRequested:
                         self.slewtoAsyncRequested=False
                         self.mount_update_wincom.SlewToCoordinatesAsync(self.slewtoRA , self.slewtoDEC)
-                        
-    
-    
-    
-    
+
+
+                    if self.request_tracking_on:
+
+                        self.request_tracking_on = False
+                        self.mount_update_wincom.Tracking = True
+
+                    if self.request_tracking_off:
+                        self.request_tracking_off = False
+                        self.mount_update_wincom.Tracking = False
+
+
+
                     # Some things we don't do while slewing
                     if not self.currently_slewing:
-    
+
                         self.rapid_park_indicator=copy.deepcopy(self.mount_update_wincom.AtPark)
                         #if self.can_report_pierside:
                         self.rapid_pier_indicator=copy.deepcopy(self.mount_update_wincom.sideOfPier)
                         self.current_tracking_state=self.mount_update_wincom.Tracking
-    
+
                     self.right_ascension_directly_from_mount = copy.deepcopy(self.mount_update_wincom.RightAscension)
                     self.declination_directly_from_mount = copy.deepcopy(self.mount_update_wincom.Declination)
-    
+
                     self.currently_slewing= self.mount_update_wincom.Slewing
-    
-    
-                    
+
+
+
                 else:
                     time.sleep(0.05)
-                    
+
                 self.mount_updates=self.mount_updates + 1
                 self.mount_update_timer=time.time()
-                
+
             except Exception as e:
                 plog ("some type of glitch in the mount thread: " + str(e))
                 plog(traceback.format_exc())
@@ -597,12 +609,14 @@ class Mount:
         if self.return_slewing() == False:
             if self.can_set_tracking:
                 # mount command #
-                while self.mount_busy:
-                    time.sleep(0.05)
-                self.mount_busy=True
+                # while self.mount_busy:
+                #     time.sleep(0.05)
+                # self.mount_busy=True
                 if not self.current_tracking_state:
-                    self.mount.Tracking = True
-                self.mount_busy=False
+                    #self.mount.Tracking = True
+                    self.request_tracking_on = True
+                    self.wait_for_mount_update()
+                # self.mount_busy=False
                 # end mount command #
                 self.current_tracking_state=True
             else:
@@ -614,12 +628,14 @@ class Mount:
         if self.return_slewing() == False:
             if self.can_set_tracking:
                 # mount command #
-                while self.mount_busy:
-                    time.sleep(0.05)
-                self.mount_busy=True
+                # while self.mount_busy:
+                #     time.sleep(0.05)
+                # self.mount_busy=True
                 if self.current_tracking_state:
-                    self.mount.Tracking = False
-                self.mount_busy=False
+                    #self.mount.Tracking = False
+                    self.request_tracking_off = True
+                    self.wait_for_mount_update()
+                # self.mount_busy=False
                 # end mount command #
                 self.current_tracking_state=False
             else:
