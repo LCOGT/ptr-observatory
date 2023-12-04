@@ -2882,6 +2882,7 @@ class Camera:
                         # Save good flat
                         im_path_r = self.camera_path
                         raw_path = im_path_r + g_dev["day"] + "/raw/"
+                        next_seq = next_sequence(self.config["camera"][self.name]["name"])
                         raw_name00 = (
                             self.config["obs_id"]
                             + "-"
