@@ -2367,7 +2367,7 @@ class Sequencer:
     def check_zenith_and_move_to_flat_spot(self, ending=None):
         too_close_to_zenith=True
         while too_close_to_zenith:
-            #alt, az = g_dev['mnt'].flat_spot_now()
+            alt, az = g_dev['mnt'].flat_spot_now()
             alt=g_dev['mnt'].flatspot_alt
             #az=g_dev['mnt'].flatspot_az
             if self.config['degrees_to_avoid_zenith_area_for_calibrations'] > 0:
@@ -2377,7 +2377,7 @@ class Sequencer:
                     plog ("waiting for the flat spot to move through the zenith")
 
                     plog ("Moving the scope ahead of the zenith spot and keeping it there and waiting for the sun to set a little more.")
-                    g_dev['mnt'].go_command(alt=parkalt, az=270)
+                    g_dev['mnt'].go_command(alt=parkalt, az=270, skyflatspot=True)
 
                     # Check it hasn't actually been homed this evening from the rotatorhome shelf
                     homerotator_time_shelf = shelve.open(g_dev['obs'].obsid_path + 'ptr_night_shelf/' + 'homerotatortime' + g_dev['cam'].name + str(g_dev['obs'].name))
@@ -2590,7 +2590,8 @@ class Sequencer:
 
             except:
                 #plog ("no rotator to home or wait for.")
-                g_dev['mnt']
+                #g_dev['mnt']
+                pass
 
         camera_gain_collector=[]
 
