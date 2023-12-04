@@ -466,8 +466,9 @@ class Mount:
 
                     if self.slewtoAsyncRequested:
                         self.slewtoAsyncRequested=False
+                        print ("attempting to slew")
                         self.mount_update_wincom.SlewToCoordinatesAsync(self.slewtoRA , self.slewtoDEC)
-
+                        print ("successful slew")
 
                     if self.request_tracking_on:
 
@@ -500,13 +501,13 @@ class Mount:
 
                     self.currently_slewing= self.mount_update_wincom.Slewing
 
-
+                    self.mount_updates=self.mount_updates + 1
+                    self.mount_update_timer=time.time()
 
                 else:
                     time.sleep(0.05)
 
-                self.mount_updates=self.mount_updates + 1
-                self.mount_update_timer=time.time()
+
 
             except Exception as e:
                 plog ("some type of glitch in the mount thread: " + str(e))
@@ -1283,7 +1284,7 @@ class Mount:
 
         ''' Slew to the given ra/dec, alt/az or ha/dec or skyflatspot coordinates. '''
 
-        breakpoint()
+        #breakpoint()
 
         # First thing to do is check the position of the sun and
         # Whether this violates the pointing principle.
@@ -1516,6 +1517,9 @@ class Mount:
 
 
         self.current_sidereal = float((Time(datetime.datetime.utcnow(), scale='utc', location=g_dev['mnt'].site_coordinates).sidereal_time('apparent')*u.deg) / u.deg / u.hourangle)
+
+
+        #breakpoint()
 
         # First move, then check the pier side
         successful_move=0
