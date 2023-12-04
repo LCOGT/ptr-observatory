@@ -1754,7 +1754,7 @@ class Sequencer:
         self.regenerate_local_masters()
 
         # Daily reboot of necessary windows 32 programs *Cough* Theskyx *Cough*
-        if g_dev['mnt'].theskyx: # It is only the mount that is the reason theskyx needs to reset            
+        if g_dev['mnt'].theskyx: # It is only the mount that is the reason theskyx needs to reset
             self.kill_and_reboot_theskyx(-1,-1)
 
         return
@@ -1762,11 +1762,11 @@ class Sequencer:
     def kill_and_reboot_theskyx(self, returnra, returndec): # Return to a given ra and dec or send -1,-1 to remain at park
         g_dev['mnt'].mount_update_paused=True
         g_dev['mnt'].wait_for_mount_update()
-        
+
         time.sleep(10)
         print ("Paused at kill theskyx for bugtesting")
         breakpoint()
-        
+
         os.system("taskkill /IM TheSkyX.exe /F")
         os.system("taskkill /IM TheSky64.exe /F")
         time.sleep(16)
@@ -2464,6 +2464,12 @@ class Sequencer:
             g_dev["obs"].send_to_user("A sky flat script request was rejected as it too dark.")
             return
 
+        self.eve_sky_flat_latch = True
+        self.morn_sky_flat_latch = True
+        self.flats_being_collected = True
+
+
+
         g_dev['seq'].blockend= None
 
         # Moon check.
@@ -2666,6 +2672,8 @@ class Sequencer:
                         self.filter_throughput_shelf.close()
                         g_dev['mnt'].park_command({}, {}) # You actually always want it to park, TheSkyX can't stop the telescope tracking, so park is safer... it is before focus anyway.
                         self.flats_being_collected = False
+                        self.eve_sky_flat_latch = False
+                        self.morn_sky_flat_latch = False
                         return
 
                     # Check that Flat time hasn't ended
@@ -2674,6 +2682,8 @@ class Sequencer:
                         self.filter_throughput_shelf.close()
                         g_dev['mnt'].park_command({}, {}) # You actually always want it to park, TheSkyX can't stop the telescope tracking, so park is safer... it is before focus anyway.
                         self.flats_being_collected = False
+                        self.eve_sky_flat_latch = False
+                        self.morn_sky_flat_latch = False
                         return
 
 
@@ -2707,6 +2717,8 @@ class Sequencer:
                             self.filter_throughput_shelf.close()
                             g_dev['mnt'].park_command({}, {}) # You actually always want it to park, TheSkyX can't stop the telescope tracking, so park is safer... it is before focus anyway.
                             self.flats_being_collected = False
+                            self.eve_sky_flat_latch = False
+                            self.morn_sky_flat_latch = False
                             return
 
                         if not g_dev['obs'].open_and_enabled_to_observe:
@@ -2714,6 +2726,8 @@ class Sequencer:
                             self.filter_throughput_shelf.close()
                             g_dev['mnt'].park_command({}, {}) # You actually always want it to park, TheSkyX can't stop the telescope tracking, so park is safer... it is before focus anyway.
                             self.flats_being_collected = False
+                            self.eve_sky_flat_latch = False
+                            self.morn_sky_flat_latch = False
                             return
 
 
@@ -2766,12 +2780,16 @@ class Sequencer:
                                 self.filter_throughput_shelf.close()
                                 g_dev['mnt'].park_command({}, {}) # You actually always want it to park, TheSkyX can't stop the telescope tracking, so park is safer... it is before focus anyway.
                                 self.flats_being_collected = False
+                                self.eve_sky_flat_latch = False
+                                self.morn_sky_flat_latch = False
                                 return
                             if not g_dev['obs'].open_and_enabled_to_observe:
                                 g_dev["obs"].send_to_user("Cancelling out of activity as no longer open and enabled to observe.")
                                 self.filter_throughput_shelf.close()
                                 g_dev['mnt'].park_command({}, {}) # You actually always want it to park, TheSkyX can't stop the telescope tracking, so park is safer... it is before focus anyway.
                                 self.flats_being_collected = False
+                                self.eve_sky_flat_latch = False
+                                self.morn_sky_flat_latch = False
                                 return
 
                             req = {'time': float(exp_time),  'alias': camera_name, 'image_type': 'sky flat', 'script': 'On'}
@@ -2789,6 +2807,8 @@ class Sequencer:
                                         plog("Mount did not park at end of morning skyflats.")
                                 self.filter_throughput_shelf.close()
                                 self.flats_being_collected = False
+                                self.eve_sky_flat_latch = False
+                                self.morn_sky_flat_latch = False
                                 return
                             try:
                                 # Particularly for AltAz, the slew and rotator rotation must have ended before exposing.
@@ -2813,6 +2833,8 @@ class Sequencer:
                                         self.filter_throughput_shelf.close()
                                         g_dev['mnt'].park_command({}, {}) # You actually always want it to park, TheSkyX can't stop the telescope tracking, so park is safer... it is before focus anyway.
                                         self.flats_being_collected = False
+                                        self.eve_sky_flat_latch = False
+                                        self.morn_sky_flat_latch = False
                                         return
 
                                     if not g_dev['obs'].open_and_enabled_to_observe:
@@ -2820,6 +2842,8 @@ class Sequencer:
                                         self.filter_throughput_shelf.close()
                                         g_dev['mnt'].park_command({}, {}) # You actually always want it to park, TheSkyX can't stop the telescope tracking, so park is safer... it is before focus anyway.
                                         self.flats_being_collected = False
+                                        self.eve_sky_flat_latch = False
+                                        self.morn_sky_flat_latch = False
                                         return
 
                                 except Exception as e:
@@ -2833,6 +2857,8 @@ class Sequencer:
                                     self.filter_throughput_shelf.close()
                                     g_dev['mnt'].park_command({}, {}) # You actually always want it to park, TheSkyX can't stop the telescope tracking, so park is safer... it is before focus anyway.
                                     self.flats_being_collected = False
+                                    self.eve_sky_flat_latch = False
+                                    self.morn_sky_flat_latch = False
                                     return
 
                                 if fred == 'blockend':
@@ -2841,6 +2867,8 @@ class Sequencer:
                                     self.filter_throughput_shelf.close()
                                     g_dev['mnt'].park_command({}, {}) # You actually always want it to park, TheSkyX can't stop the telescope tracking, so park is safer... it is before focus anyway.
                                     self.flats_being_collected = False
+                                    self.eve_sky_flat_latch = False
+                                    self.morn_sky_flat_latch = False
                                     return
 
                                 if g_dev["obs"].stop_all_activity:
@@ -2848,6 +2876,8 @@ class Sequencer:
                                     self.filter_throughput_shelf.close()
                                     g_dev['mnt'].park_command({}, {}) # You actually always want it to park, TheSkyX can't stop the telescope tracking, so park is safer... it is before focus anyway.
                                     self.flats_being_collected = False
+                                    self.eve_sky_flat_latch = False
+                                    self.morn_sky_flat_latch = False
                                     return
 
                                 try:
@@ -2880,6 +2910,8 @@ class Sequencer:
                                 self.filter_throughput_shelf.close()
                                 g_dev['mnt'].park_command({}, {}) # You actually always want it to park, TheSkyX can't stop the telescope tracking, so park is safer... it is before focus anyway.
                                 self.flats_being_collected = False
+                                self.eve_sky_flat_latch = False
+                                self.morn_sky_flat_latch = False
                                 return
 
                             if not g_dev['obs'].open_and_enabled_to_observe:
@@ -2887,6 +2919,8 @@ class Sequencer:
                                 self.filter_throughput_shelf.close()
                                 g_dev['mnt'].park_command({}, {}) # You actually always want it to park, TheSkyX can't stop the telescope tracking, so park is safer... it is before focus anyway.
                                 self.flats_being_collected = False
+                                self.eve_sky_flat_latch = False
+                                self.morn_sky_flat_latch = False
                                 return
 
                             if g_dev["fil"].null_filterwheel == False:

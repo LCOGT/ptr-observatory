@@ -2642,10 +2642,10 @@ class Camera:
                         + "00.fits"
                     )
                     hdu.header["ORIGNAME"] = str(raw_name00 + ".fz")
-                    hdu.header["FILTER"] =g_dev['cam'].current_filter 
+                    hdu.header["FILTER"] =g_dev['cam'].current_filter
                     hdu.header["SMARTSTK"] = 'no'
                     hdu.header["SSTKNUM"] = 1
-                    
+
                     tempRAdeg = ra_at_time_of_exposure * 15
                     tempDECdeg = dec_at_time_of_exposure
                     tempointing = SkyCoord(tempRAdeg, tempDECdeg, unit='deg')
@@ -2672,7 +2672,7 @@ class Camera:
                         airmass_of_observation,
                         "Effective mean airmass",
                     )
-                    
+
                     hdusmallheader=copy.deepcopy(hdu.header)
                     del hdu
                     focus_position=g_dev['foc'].current_focus_position
@@ -2932,6 +2932,7 @@ class Camera:
                         # Save good flat
                         im_path_r = self.camera_path
                         raw_path = im_path_r + g_dev["day"] + "/raw/"
+                        next_seq = next_sequence(self.config["camera"][self.name]["name"])
                         raw_name00 = (
                             self.config["obs_id"]
                             + "-"
@@ -2941,7 +2942,7 @@ class Camera:
                             + "-"
                             + next_seq
                             + "-"
-                            + im_type
+                            + "skyflat"
                             + "00.fits"
                         )
                         # if self.config['save_reduced_file_numberid_first']:
