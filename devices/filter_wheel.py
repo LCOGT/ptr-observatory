@@ -40,11 +40,11 @@ class FilterWheel:
                 "filter_screen_sort"
             ]
             self.wait_time_after_filter_change=self.config["filter_wheel1"]["filter_settle_time"]
-            
+
             self.filter_message = "-"
             plog("Please NOTE: Filter wheel may block for many seconds while first connecting \
                  & homing.")
-                 
+
             self.filter_change_requested=False
             self.filterwheel_update_period=0.2
             self.filterwheel_update_timer=time.time() - 2* self.filterwheel_update_period
@@ -52,15 +52,15 @@ class FilterWheel:
             #self.focuser_update_thread_queue = queue.Queue(maxsize=0)
             self.filterwheel_update_thread=threading.Thread(target=self.filterwheel_update_thread)
             self.filterwheel_update_thread.start()
-                 
+
             if driver == "LCO.dual":
                 # home the wheel and get responses, which indicates it is connected.
-                # set current_0 and _1 to [0, 0] position to default of w/L filter.    
+                # set current_0 and _1 to [0, 0] position to default of w/L filter.
                 r0 = requests.get(self.ip + "/filterwheel/0/position", timeout=5)
                 r1 = requests.get(self.ip + "/filterwheel/1/position", timeout=5)
                 if str(r0) == str(r1) == "<Response [200]>":
                     plog("LCO Wheel present and connected.")
-    
+
                 r0 = json.loads(r0.text)
                 r1 = json.loads(r1.text)
                 self.r0 = r0
@@ -76,32 +76,32 @@ class FilterWheel:
                 self.ascom = False
                 self.dual = True
                 self.custom = True
-                
+
             elif isinstance(driver, list) and self.dual_filter:
                 # TODO: Fix this, THIS IS A FAST KLUDGE TO GET MRC WORKING, NEED TO VERIFY THE FILTER ORDERING
                 self.filter_back = win32com.client.Dispatch(driver[0])  # Closest to Camera
                 self.filter_front = win32com.client.Dispatch(driver[1])  # Closest to Tel
                 self.filter_back.Connected = True
                 self.filter_front.Connected = True
-    
+
                 self.filter_front.Position = 0
                 self.filter_back.Position = 0
                 self.dual = True
                 self.custom = False
-               
+
                 while self.filter_front.Position == -1:
                     time.sleep(0.1)
                 self.filter_front.Position = self.filter_data[self.filter_reference][1][1]
-                
+
                 while self.filter_back.Position == -1:
                     time.sleep(0.1)
                 self.filter_back.Position = self.filter_data[self.filter_reference][1][0]
-                
+
                 plog(self.filter_selected, self.filter_offset)
             elif driver == "ASCOM.FLI.FilterWheel" and self.dual_filter:
                 self.maxim = False
                 self.dual = True
-               
+
                 fw0 = win32com.client.Dispatch(driver)  # Closest to Camera
                 fw1 = win32com.client.Dispatch(driver)  # Closest to Telescope
                 plog(fw0, fw1)
@@ -124,7 +124,7 @@ class FilterWheel:
                 fw1.Connected = True
                 plog("Conn 1,2:  ", fw0.Connected, fw1.Connected)
                 plog("Pos  1,2:  ", fw0.Position, fw1.Position)
-    
+
                 self.filter_back = fw1  # Closest to Camera
                 self.filter_front = fw0  # Closest to Telescope
                 self.filter_back.Connected = True
@@ -139,31 +139,31 @@ class FilterWheel:
                     self.filter_front.Position,
                     self.filter_back.Position,
                 )
-    
+
                 self.dual = True
                 self.custom = False
                 self.filter_selected = self.filter_data[self.filter_reference][0]
                 self.filter_number = self.filter_reference
                 self.filter_offset = self.filter_data[self.filter_reference][2]
-    
-                
+
+
                 while self.filter_front.Position == -1:
                     time.sleep(0.1)
                 self.filter_front.Position = self.filter_data[self.filter_reference][1][1]
-                
+
                 while self.filter_back.Position == -1:
                     time.sleep(0.1)
                 self.filter_back.Position = self.filter_data[self.filter_reference][1][0]
-                
+
                 plog(self.filter_selected, self.filter_offset)
-    
+
             elif driver.lower() in ["maxim.ccdcamera", "maxim", "maximdl", "maximdlpro"]:
                 # NOTE: Changed since FLI Dual code is failing.
                 # This presumes Maxim is filter wheel controller and
                 # it may be the Aux-camera controller as well.
                 win32com.client.pythoncom.CoInitialize()
                 self.filter = win32com.client.Dispatch(driver)
-    
+
                 # Monkey patch in Maxim specific methods.
                 self._connected = self._maxim_connected
                 self._connect = self._maxim_connect
@@ -179,7 +179,7 @@ class FilterWheel:
                 self.ascom = False
                 self.dual = True
                 self.custom = False
-                
+
             elif "com" in driver.lower():
                 self.custom = True
                 try:
@@ -190,7 +190,7 @@ class FilterWheel:
                     self.filter_name = "lpr"
                 except:
                     plog("QHY Filter not connected.")
-    
+
             # This controls the filter wheel through TheSkyX
             elif driver == "CCDSoft2XAdaptor.ccdsoft5Camera":
                 self.maxim = False
@@ -201,7 +201,7 @@ class FilterWheel:
                 self.filter = win32com.client.Dispatch(driver)
                 self.filter.Connect()
                 #com_object = win32com.client.Dispatch(driver)
-    
+
             else:
                 # We default here to setting up a single wheel ASCOM driver.
                 # We need to distinguish here between an independent ASCOM filter wheel
@@ -211,7 +211,7 @@ class FilterWheel:
                 # fake having an independnet filter wheel. IF the filter supplied is
                 # an ASCOM.filter then we set this device up normally. Eg., SAF is an
                 # example of this version of the setup.
-    
+
                 self.maxim = False
                 self.dual = False
                 self.custom = False
@@ -221,20 +221,20 @@ class FilterWheel:
                 plog("Currently QHY RS232 FW")
         else:
             self.null_filterwheel = True
-        
+
         if self.null_filterwheel == False:
-            self.home_command(None)       
-        
-        
-        
-    
+            self.home_command(None)
+
+
+
+
     def wait_for_filterwheel_update(self):
         sleep_period= self.filterwheel_update_period / 4
         current_updates=copy.deepcopy(self.filterwheel_updates)
         while current_updates==self.filterwheel_updates:
             #print ('ping')
             time.sleep(sleep_period)
-    
+
     # Note this is a thread!
     def filterwheel_update_thread(self):
 
@@ -247,29 +247,31 @@ class FilterWheel:
     #         win32com.client.pythoncom.CoGetInterfaceAndReleaseStream(g_dev['foc'].focuser_id, win32com.client.pythoncom.IID_IDispatch)
     # )
         #breakpoint()
-        win32com.client.pythoncom.CoInitialize()
+        #breakpoint()
+        if not self.driver == "LCO.dual":
+            win32com.client.pythoncom.CoInitialize()
 
-        self.filterwheel_update_wincom = win32com.client.Dispatch(self.driver)
-        try:
-            self.filterwheel_update_wincom.Connected = True
-        except:
-            # perhaps the AP mount doesn't like this.
-            pass
-        
-        # If theskyx, then it needs a different connect command
-        if self.driver== "CCDSoft2XAdaptor.ccdsoft5Camera":
-            self.filterwheel_update_wincom.Connect()
-        
-        if self.driver.lower() in ["maxim.ccdcamera", "maxim", "maximdl", "maximdlpro"]:
-            #breakpoint()
-            time.sleep(1)
+            self.filterwheel_update_wincom = win32com.client.Dispatch(self.driver)
             try:
-                self.filterwheel_update_wincom.LinkEnabled = True
+                self.filterwheel_update_wincom.Connected = True
             except:
-                plog(traceback.format_exc())
-                breakpoint()
-            
-        
+                # perhaps the AP mount doesn't like this.
+                pass
+
+            # If theskyx, then it needs a different connect command
+            if self.driver== "CCDSoft2XAdaptor.ccdsoft5Camera":
+                self.filterwheel_update_wincom.Connect()
+
+            if self.driver.lower() in ["maxim.ccdcamera", "maxim", "maximdl", "maximdlpro"]:
+                #breakpoint()
+                time.sleep(1)
+                try:
+                    self.filterwheel_update_wincom.LinkEnabled = True
+                except:
+                    plog(traceback.format_exc())
+                    breakpoint()
+
+
         # try:
         #     self.pier_side = g_dev[
         #         "mnt"
@@ -283,7 +285,7 @@ class FilterWheel:
             try:
                 # update every so often, but update rapidly if slewing.
                 if (self.filterwheel_update_timer < time.time() - self.filterwheel_update_period) or (self.currently_slewing):
-    
+
                     if self.filter_change_requested:
                         self.filter_change_requested=False
                         if self.dual and self.custom:
@@ -293,7 +295,7 @@ class FilterWheel:
                             r1["filterwheel"]["position"] = self.filter_selections[1]
                             r0_pr = requests.put(self.ip + "/filterwheel/0/position", json=r0, timeout=5)
                             r1_pr = requests.put(self.ip + "/filterwheel/1/position", json=r1, timeout=5)
-                            if str(r0_pr) == str(r1_pr) == "<Response [200]>":                
+                            if str(r0_pr) == str(r1_pr) == "<Response [200]>":
                                 pass
                             while True:
                                 r0_t = int(
@@ -305,11 +307,11 @@ class FilterWheel:
                                     requests.get(self.ip + "/filterwheel/1/position", timeout=5)
                                     .text.split('"position":')[1]
                                     .split("}")[0]
-                                )                
-                                if r0_t == 808 or r1_t == 808:                    
+                                )
+                                if r0_t == 808 or r1_t == 808:
                                     continue
                                 else:
-                                    pass                    
+                                    pass
                                     break
 
                         elif self.dual and not self.maxim:
@@ -317,7 +319,7 @@ class FilterWheel:
                                 while self.filter_front.Position == -1:
                                     time.sleep(0.1)
                                 self.filter_front.Position = self.filter_selections[1]
-                                
+
                             except:
                                 pass
                             try:
@@ -339,9 +341,9 @@ class FilterWheel:
                                 plog(traceback.format_exc())
                                 breakpoint()
                         elif self.theskyx:
-                            
+
                             self.filterwheel_update_wincom.FilterIndexZeroBased = self.filter_data[self.filt_pointer][1][0]
-                            
+
                         else:
                             try:
                                 while self.filter_front.Position == -1:
@@ -360,14 +362,14 @@ class FilterWheel:
             except Exception as e:
                 plog ("some type of glitch in the mount thread: " + str(e))
                 plog(traceback.format_exc())
-        
+
 
     # The patches. Note these are essentially a getter-setter/property constructs.
     # NB we are here talking to Maxim acting only as a filter controller.
     def _maxim_connected(self):
         return self.filter.LinkEnabled
 
-    def _maxim_connect(self, p_connect):        
+    def _maxim_connect(self, p_connect):
         self.filter.LinkEnabled = p_connect
         return self.filter.LinkEnabled
 
@@ -422,7 +424,7 @@ class FilterWheel:
 
 
     def return_filter_throughput(self, req: dict, opt: dict):
-        """Returns the filter throughput given a filter name."""      
+        """Returns the filter throughput given a filter name."""
 
         try:
             filter_name = str(req["filter"]).lower()
@@ -431,15 +433,15 @@ class FilterWheel:
 
         filter_identified = 0
 
-        for match in range(           
+        for match in range(
             len(self.filter_data)
-        ):  
+        ):
 
             if filter_name in str(self.filter_data[match][0]).lower():
-                self.filt_pointer = match                
+                self.filt_pointer = match
                 filter_identified = 1
                 break
-            
+
         try:
             filter_throughput = float(self.filter_data[self.filt_pointer][3])
         except:
@@ -451,39 +453,39 @@ class FilterWheel:
 
 
     def set_name_command(self, req: dict, opt: dict):
-        """Sets the filter position by filter name."""      
-        
+        """Sets the filter position by filter name."""
+
         try:
             filter_name = str(req["filter"]).lower()
         except:
             filter_name = str(req["filter_name"]).lower()
         filter_identified = 0
 
-        for match in range(           
+        for match in range(
             len(self.filter_data)
-        ):  
+        ):
 
             if filter_name in str(self.filter_data[match][0]).lower():
-                self.filt_pointer = match                
+                self.filt_pointer = match
                 filter_identified = 1
                 break
 
         # If filter was not identified, find a substitute filter
-        if filter_identified == 0:           
+        if filter_identified == 0:
             filter_name = str(self.substitute_filter(filter_name)).lower()
             if filter_name == "none":
                 return "none"
             for match in range(
                 len(self.filter_data)
-            ):  
+            ):
                 if filter_name in str(self.filter_data[match][0]).lower():
                     self.filt_pointer = match
                     filter_identified = 1
                     break
-        
+
 
         if self.previous_filter_name==filter_name:
-            
+
             return self.previous_filter_name, self.previous_filter_match, self.filter_offset
 
         try:
@@ -499,13 +501,13 @@ class FilterWheel:
         except:
             plog("Failed to change filter. Returning.")
             return None, None, None
-        
-        
+
+
         self.filter_change_requested=True
         self.wait_for_filterwheel_update()
 
 
-        
+
         if self.wait_time_after_filter_change != 0:
             plog ("Waiting " + str(self.wait_time_after_filter_change) + " seconds for filter wheel.")
             time.sleep(self.wait_time_after_filter_change)
@@ -514,13 +516,13 @@ class FilterWheel:
         g_dev['foc'].adjust_focus()
         self.previous_filter_name=filter_name
         self.previous_filter_match=match
-        
+
         return filter_name, match, self.filter_offset
 
     def home_command(self, opt: dict):
         """Sets the filter to the home position."""
 
-           
+
         self.set_name_command({"filter": self.config["filter_wheel1"]["settings"]['default_filter']}, {})
 
 
@@ -532,20 +534,20 @@ class FilterWheel:
         Skips the requested exposure if no substitute filter can be found.
         """
 
-        
+
         # Seriously dumb way to do this..... but quick!
         # Construct available filter list
         filter_names=[]
         for ctr in range(len(self.config["filter_wheel1"]["settings"]['filter_data'])):
             filter_names.append(self.config["filter_wheel1"]["settings"]['filter_data'][ctr][0])
-        
+
         available_filters = list(map(lambda x: x.lower(), filter_names))
 
 
         #  NB NB NB note any filter string when lower cased needs to be unique. j - Johnson,
         #  c = Cousins, p or ' implies Sloane, S is for stromgren.  Some of the mappings
         #  below may not be optimal. WER
-        
+
         # List of tuples containing ([requested filter groups], [priority order]).
         # If this list continues to grow, consider putting it in a separate file.
         # This is going to get messy when we add Stromgrens, so I suggest
@@ -596,7 +598,7 @@ class FilterWheel:
                 )
                 return str(sub).lower()
         # NB I suggest we pick the default (w) filter instead of skipping. WER
-        
+
         plog("No substitute filter found, skipping exposure.")
         return "none", None, None
 
