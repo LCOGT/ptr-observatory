@@ -1763,6 +1763,10 @@ class Sequencer:
         g_dev['mnt'].mount_update_paused=True
         g_dev['mnt'].wait_for_mount_update()
         
+        time.sleep(10)
+        print ("Paused at kill theskyx for bugtesting")
+        breakpoint()
+        
         os.system("taskkill /IM TheSkyX.exe /F")
         os.system("taskkill /IM TheSky64.exe /F")
         time.sleep(16)
