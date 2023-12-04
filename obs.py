@@ -1062,7 +1062,7 @@ class Observatory:
         #breakpoint()
 
         #status['telescope']={}
-        
+
         #status['telescope']['telescope1']=status['mount']['mount1']
 
         #print (status['telescope'])
@@ -2545,173 +2545,175 @@ class Observatory:
                 if not (g_dev['events']['Civil Dusk'] < ephem.now() < g_dev['events']['Civil Dawn']):
                     plog("Too bright to consider platesolving!")
                 else:
-
-                    platesolve_subprocess=subprocess.Popen(['python','subprocesses/Platesolveprocess.py'],stdin=subprocess.PIPE,stdout=subprocess.PIPE,bufsize=0)
-
-                    platesolve_crop = self.config["camera"][g_dev['cam'].name]["settings"]['platesolve_image_crop']
-                    bin_for_platesolve= self.config["camera"][g_dev['cam'].name]["settings"]['bin_for_platesolve']
-                    platesolve_bin_factor=self.config["camera"][g_dev['cam'].name]["settings"]['platesolve_bin_value']
-
-                    pickle.dump([hdufocusdata, hduheader, self.local_calibration_path, cal_name, frame_type, time_platesolve_requested,
-                     pixscale, pointing_ra, pointing_dec, platesolve_crop, bin_for_platesolve, platesolve_bin_factor, g_dev['cam'].config["camera"][g_dev['cam'].name]["settings"]["saturate"], g_dev['cam'].camera_known_readnoise, self.config['minimum_realistic_seeing']], platesolve_subprocess.stdin)
-
-                    # yet another pickle debugger.
-                    if False:
-                        pickle.dump([hdufocusdata, hduheader, self.local_calibration_path, cal_name, frame_type, time_platesolve_requested,
-                         pixscale, pointing_ra, pointing_dec, platesolve_crop, bin_for_platesolve, platesolve_bin_factor, g_dev['cam'].config["camera"][g_dev['cam'].name]["settings"]["saturate"], g_dev['cam'].camera_known_readnoise, self.config['minimum_realistic_seeing']], open('subprocesses/testplatesolvepickle','wb'))
-
-                    del hdufocusdata
-
-                    # Essentially wait until the subprocess is complete
-                    platesolve_subprocess.communicate()
-
-                    if os.path.exists(self.local_calibration_path + 'platesolve.pickle'):
-                        solve= pickle.load(open(self.local_calibration_path + 'platesolve.pickle', 'rb'))
-                    else:
-                        solve= 'error'
                     try:
-                        os.remove(self.local_calibration_path + 'platesolve.pickle')
-                    except:
-                        plog ("Could not remove platesolve pickle. ")
+                        platesolve_subprocess=subprocess.Popen(['python','subprocesses/Platesolveprocess.py'],stdin=subprocess.PIPE,stdout=subprocess.PIPE,bufsize=0)
 
-                    if solve == 'error':
-                        plog ("Planewave solve came back as error")
-                        self.last_platesolved_ra = np.nan
-                        self.last_platesolved_dec = np.nan
-                        self.last_platesolved_ra_err = np.nan
-                        self.last_platesolved_dec_err = np.nan
-                        self.platesolve_errors_in_a_row=self.platesolve_errors_in_a_row+1
-                    else:
-                        plog(
-                            "PW Solves: ",
-                            solve["ra_j2000_hours"],
-                            solve["dec_j2000_degrees"],
-                        )
+                        platesolve_crop = self.config["camera"][g_dev['cam'].name]["settings"]['platesolve_image_crop']
+                        bin_for_platesolve= self.config["camera"][g_dev['cam'].name]["settings"]['bin_for_platesolve']
+                        platesolve_bin_factor=self.config["camera"][g_dev['cam'].name]["settings"]['platesolve_bin_value']
 
-                        target_ra = g_dev["mnt"].last_ra_requested
-                        target_dec = g_dev["mnt"].last_dec_requested
-                        solved_ra = solve["ra_j2000_hours"]
-                        solved_dec = solve["dec_j2000_degrees"]
-                        solved_arcsecperpixel = solve["arcsec_per_pixel"]
-                        plog("1x1 pixelscale solved: " + str(float(solved_arcsecperpixel / platesolve_bin_factor)))# / g_dev['cam'].native_bin)))
+                        pickle.dump([hdufocusdata, hduheader, self.local_calibration_path, cal_name, frame_type, time_platesolve_requested,
+                         pixscale, pointing_ra, pointing_dec, platesolve_crop, bin_for_platesolve, platesolve_bin_factor, g_dev['cam'].config["camera"][g_dev['cam'].name]["settings"]["saturate"], g_dev['cam'].camera_known_readnoise, self.config['minimum_realistic_seeing']], platesolve_subprocess.stdin)
 
-                        self.pixelscale_shelf = shelve.open(g_dev['obs'].obsid_path + 'ptr_night_shelf/' + 'pixelscale' + g_dev['cam'].name + str(g_dev['obs'].name))
+                        # yet another pickle debugger.
+                        if False:
+                            pickle.dump([hdufocusdata, hduheader, self.local_calibration_path, cal_name, frame_type, time_platesolve_requested,
+                             pixscale, pointing_ra, pointing_dec, platesolve_crop, bin_for_platesolve, platesolve_bin_factor, g_dev['cam'].config["camera"][g_dev['cam'].name]["settings"]["saturate"], g_dev['cam'].camera_known_readnoise, self.config['minimum_realistic_seeing']], open('subprocesses/testplatesolvepickle','wb'))
+
+                        del hdufocusdata
+
+                        # Essentially wait until the subprocess is complete
+                        platesolve_subprocess.communicate()
+
+                        if os.path.exists(self.local_calibration_path + 'platesolve.pickle'):
+                            solve= pickle.load(open(self.local_calibration_path + 'platesolve.pickle', 'rb'))
+                        else:
+                            solve= 'error'
                         try:
-                            pixelscale_list=self.pixelscale_shelf['pixelscale_list']
+                            os.remove(self.local_calibration_path + 'platesolve.pickle')
                         except:
-                            pixelscale_list=[]
+                            plog ("Could not remove platesolve pickle. ")
 
-                        pixelscale_list.append(float(solved_arcsecperpixel / platesolve_bin_factor))# / g_dev['cam'].native_bin))
+                        if solve == 'error':
+                            plog ("Planewave solve came back as error")
+                            self.last_platesolved_ra = np.nan
+                            self.last_platesolved_dec = np.nan
+                            self.last_platesolved_ra_err = np.nan
+                            self.last_platesolved_dec_err = np.nan
+                            self.platesolve_errors_in_a_row=self.platesolve_errors_in_a_row+1
+                        else:
+                            plog(
+                                "PW Solves: ",
+                                solve["ra_j2000_hours"],
+                                solve["dec_j2000_degrees"],
+                            )
 
-                        too_long=True
-                        while too_long:
-                            if len(pixelscale_list) > 100:
-                                pixelscale_list.pop(0)
-                            else:
-                                too_long = False
+                            target_ra = g_dev["mnt"].last_ra_requested
+                            target_dec = g_dev["mnt"].last_dec_requested
+                            solved_ra = solve["ra_j2000_hours"]
+                            solved_dec = solve["dec_j2000_degrees"]
+                            solved_arcsecperpixel = solve["arcsec_per_pixel"]
+                            plog("1x1 pixelscale solved: " + str(float(solved_arcsecperpixel / platesolve_bin_factor)))# / g_dev['cam'].native_bin)))
 
-                        self.pixelscale_shelf['pixelscale_list'] = pixelscale_list
-                        self.pixelscale_shelf.close()
+                            self.pixelscale_shelf = shelve.open(g_dev['obs'].obsid_path + 'ptr_night_shelf/' + 'pixelscale' + g_dev['cam'].name + str(g_dev['obs'].name))
+                            try:
+                                pixelscale_list=self.pixelscale_shelf['pixelscale_list']
+                            except:
+                                pixelscale_list=[]
 
+                            pixelscale_list.append(float(solved_arcsecperpixel / platesolve_bin_factor))# / g_dev['cam'].native_bin))
 
+                            too_long=True
+                            while too_long:
+                                if len(pixelscale_list) > 100:
+                                    pixelscale_list.pop(0)
+                                else:
+                                    too_long = False
 
-                        err_ha = target_ra - solved_ra
-                        err_dec = target_dec - solved_dec
-
-                        # Check that the RA doesn't cross over zero, if so, bring it back around
-                        if err_ha > 12:
-                            plog ("BIG CHANGE ERR_HA")
-                            plog(err_ha)
-                            err_ha = err_ha - 24
-                            plog(err_ha)
-                        elif err_ha < -12:
-                            plog ("BIG CHANGE ERR_HA")
-                            plog(err_ha)
-                            err_ha = err_ha + 24
-                            plog(err_ha)
-
-                        plog("Deviation from plate solution in ra: " + str(round(err_ha * 15 * 3600, 2)) + " & dec: " + str (round(err_dec * 3600, 2)) + " asec")
-
-                        self.last_platesolved_ra = solve["ra_j2000_hours"]
-                        self.last_platesolved_dec = solve["dec_j2000_degrees"]
-                        self.last_platesolved_ra_err = target_ra - solved_ra
-                        self.last_platesolved_dec_err = target_dec - solved_dec
-                        self.platesolve_errors_in_a_row=0
-
-                        # Reset Solve timers
-                        g_dev['obs'].last_solve_time = datetime.datetime.now()
-                        g_dev['obs'].images_since_last_solve = 0
+                            self.pixelscale_shelf['pixelscale_list'] = pixelscale_list
+                            self.pixelscale_shelf.close()
 
 
 
+                            err_ha = target_ra - solved_ra
+                            err_dec = target_dec - solved_dec
 
-                        # Test here that there has not been a slew, if there has been a slew, cancel out!
+                            # Check that the RA doesn't cross over zero, if so, bring it back around
+                            if err_ha > 12:
+                                plog ("BIG CHANGE ERR_HA")
+                                plog(err_ha)
+                                err_ha = err_ha - 24
+                                plog(err_ha)
+                            elif err_ha < -12:
+                                plog ("BIG CHANGE ERR_HA")
+                                plog(err_ha)
+                                err_ha = err_ha + 24
+                                plog(err_ha)
 
+                            plog("Deviation from plate solution in ra: " + str(round(err_ha * 15 * 3600, 2)) + " & dec: " + str (round(err_dec * 3600, 2)) + " asec")
 
-                        # If we are WAY out of range, then reset the mount reference and attempt moving back there.
-                        if not self.auto_centering_off:
-                            if (abs(err_ha * 15 * 3600) > 5400) or (abs(err_dec * 3600) > 5400):
-                                err_ha = 0
-                                err_dec = 0
-                                plog("Platesolve has found that the current suggested pointing is way off!")
-                                plog("This may be a poor pointing estimate.")
-                                plog("This is more than a simple nudge, so not nudging the scope.")
-                                g_dev["mnt"].reset_mount_reference()
-                                plog("I've  reset the mount_reference.")
+                            self.last_platesolved_ra = solve["ra_j2000_hours"]
+                            self.last_platesolved_dec = solve["dec_j2000_degrees"]
+                            self.last_platesolved_ra_err = target_ra - solved_ra
+                            self.last_platesolved_dec_err = target_dec - solved_dec
+                            self.platesolve_errors_in_a_row=0
 
-                                plog ("reattempting to get back on target on next attempt")
-                                #self.pointing_correction_requested_by_platesolve_thread = True
-                                self.pointing_recentering_requested_by_platesolve_thread = True
-                                self.pointing_correction_request_time = time.time()
-                                self.pointing_correction_request_ra = target_ra
-                                self.pointing_correction_request_dec = target_dec
-                                self.pointing_correction_request_ra_err = err_ha
-                                self.pointing_correction_request_dec_err = err_dec
-
-                            elif self.time_of_last_slew > time_platesolve_requested:
-                                plog("detected a slew since beginning platesolve... bailing out of platesolve.")
-
-                            else:
-
-                                 self.pointing_correction_requested_by_platesolve_thread = True
-                                 self.pointing_correction_request_time = time.time()
-                                 self.pointing_correction_request_ra = pointing_ra + err_ha
-                                 self.pointing_correction_request_dec = pointing_dec + err_dec
-                                 self.pointing_correction_request_ra_err = err_ha
-                                 self.pointing_correction_request_dec_err = err_dec
-
-                                 if not g_dev['obs'].mount_reference_model_off:
-                                     if target_dec > -85 and target_dec < 85 and g_dev['mnt'].last_slew_was_pointing_slew:
-                                         try:
-                                             plog ("updating mount reference")
-                                             g_dev['mnt'].last_slew_was_pointing_slew = False
-
-                                             plog ("adjustment: " + str(err_ha) +' ' +str(err_dec))
-                                             if g_dev["mnt"].pier_side == 0:
-                                                 try:
-                                                     plog ("current references: " + str ( g_dev['mnt'].get_mount_reference()))
-                                                     g_dev["mnt"].adjust_mount_reference(
-                                                         err_ha, err_dec
-                                                     )
-                                                 except Exception as e:
-                                                     plog("Something is up in the mount reference adjustment code ", e)
-                                             else:
-                                                 try:
-                                                     plog ("current references: " + str ( g_dev['mnt'].get_flip_reference()))
-                                                     g_dev["mnt"].adjust_flip_reference(
-                                                         err_ha, err_dec
-                                                     )
-                                                 except Exception as e:
-                                                     plog("Something is up in the mount reference adjustment code ", e)
-                                             plog ("final references: " + str ( g_dev['mnt'].get_mount_reference()))
-
-                                         except:
-                                             plog("This mount doesn't report pierside")
-                                             plog(traceback.format_exc())
+                            # Reset Solve timers
+                            g_dev['obs'].last_solve_time = datetime.datetime.now()
+                            g_dev['obs'].images_since_last_solve = 0
 
 
-                        self.platesolve_is_processing = False
 
+
+                            # Test here that there has not been a slew, if there has been a slew, cancel out!
+
+
+                            # If we are WAY out of range, then reset the mount reference and attempt moving back there.
+                            if not self.auto_centering_off:
+                                if (abs(err_ha * 15 * 3600) > 5400) or (abs(err_dec * 3600) > 5400):
+                                    err_ha = 0
+                                    err_dec = 0
+                                    plog("Platesolve has found that the current suggested pointing is way off!")
+                                    plog("This may be a poor pointing estimate.")
+                                    plog("This is more than a simple nudge, so not nudging the scope.")
+                                    g_dev["mnt"].reset_mount_reference()
+                                    plog("I've  reset the mount_reference.")
+
+                                    plog ("reattempting to get back on target on next attempt")
+                                    #self.pointing_correction_requested_by_platesolve_thread = True
+                                    self.pointing_recentering_requested_by_platesolve_thread = True
+                                    self.pointing_correction_request_time = time.time()
+                                    self.pointing_correction_request_ra = target_ra
+                                    self.pointing_correction_request_dec = target_dec
+                                    self.pointing_correction_request_ra_err = err_ha
+                                    self.pointing_correction_request_dec_err = err_dec
+
+                                elif self.time_of_last_slew > time_platesolve_requested:
+                                    plog("detected a slew since beginning platesolve... bailing out of platesolve.")
+
+                                else:
+
+                                     self.pointing_correction_requested_by_platesolve_thread = True
+                                     self.pointing_correction_request_time = time.time()
+                                     self.pointing_correction_request_ra = pointing_ra + err_ha
+                                     self.pointing_correction_request_dec = pointing_dec + err_dec
+                                     self.pointing_correction_request_ra_err = err_ha
+                                     self.pointing_correction_request_dec_err = err_dec
+
+                                     if not g_dev['obs'].mount_reference_model_off:
+                                         if target_dec > -85 and target_dec < 85 and g_dev['mnt'].last_slew_was_pointing_slew:
+                                             try:
+                                                 plog ("updating mount reference")
+                                                 g_dev['mnt'].last_slew_was_pointing_slew = False
+
+                                                 plog ("adjustment: " + str(err_ha) +' ' +str(err_dec))
+                                                 if g_dev["mnt"].pier_side == 0:
+                                                     try:
+                                                         plog ("current references: " + str ( g_dev['mnt'].get_mount_reference()))
+                                                         g_dev["mnt"].adjust_mount_reference(
+                                                             err_ha, err_dec
+                                                         )
+                                                     except Exception as e:
+                                                         plog("Something is up in the mount reference adjustment code ", e)
+                                                 else:
+                                                     try:
+                                                         plog ("current references: " + str ( g_dev['mnt'].get_flip_reference()))
+                                                         g_dev["mnt"].adjust_flip_reference(
+                                                             err_ha, err_dec
+                                                         )
+                                                     except Exception as e:
+                                                         plog("Something is up in the mount reference adjustment code ", e)
+                                                 plog ("final references: " + str ( g_dev['mnt'].get_mount_reference()))
+
+                                             except:
+                                                 plog("This mount doesn't report pierside")
+                                                 plog(traceback.format_exc())
+
+
+                            self.platesolve_is_processing = False
+                    except:
+                        plog ("glitch in the platesolving dimension")
+                        plog(traceback.format_exc())
 
                 self.platesolve_is_processing = False
                 self.platesolve_queue.task_done()
