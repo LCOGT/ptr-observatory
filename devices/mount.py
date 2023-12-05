@@ -327,6 +327,8 @@ class Mount:
         self.request_tracking_on = False
         self.request_tracking_off = False
 
+        self.request_set_RightAscensionRate=False
+        self.request_set_DeclinationRate=False  
 
         self.CanFindHome = self.mount.CanFindHome
 
@@ -383,8 +385,8 @@ class Mount:
             self.rapid_park_indicator=True
 
         self.currently_slewing= False
-
-
+        self.abort_slew_requested=False
+        self.find_home_requested=False
 
         self.get_status()
         # # mount command #
@@ -454,6 +456,9 @@ class Mount:
 
                 if (self.mount_update_timer < time.time() - self.mount_update_period) or (self.currently_slewing) and not self.mount_update_paused:
 
+                    self.currently_slewing= self.mount_update_wincom.Slewing
+                    
+
                     if self.unpark_requested:
                         self.unpark_requested=False
                         self.mount_update_wincom.Unpark()
@@ -462,6 +467,46 @@ class Mount:
                     if self.park_requested:
                         self.park_requested=False
                         self.mount_update_wincom.Park()
+
+
+                    if self.find_home_requested:
+                        self.find_home_requested=False
+                     
+                         
+                        #mount_at_home = self.mount_update_wincom.AtHome                         
+   
+                        if self.mount_update_wincom.AtHome:
+                            plog("Mount is at home.")
+                        else:
+                            g_dev['obs'].time_of_last_slew=time.time()
+                            if self.mount_update_wincom.AtPark:
+                                self.mount_update_wincom.Unpark()
+                                
+                            while self.mount_update_wincom.Slewing:
+                                plog("waiting for slew before homing")
+                                time.sleep(0.2)
+                            
+                            self.mount_update_wincom.FindHome()
+                            
+                            
+                            
+                            #self.unpark_command()
+                            #self.wait_for_slew()
+   
+                            # self.move_time = time.time()
+                            # # mount command #
+                            # while self.mount_busy:
+                            #     time.sleep(0.05)
+                            # self.mount_busy=True
+                            #self.mount.FindHome()
+                            # self.mount_busy=False
+                            
+
+                    
+                    if self.abort_slew_requested:
+                        self.abort_slew_requested=False
+                        self.mount_update_wincom.AbortSlew()
+
 
 
                     if self.slewtoAsyncRequested:
@@ -484,9 +529,20 @@ class Mount:
                         self.new_pierside=self.mount_update_wincom.DestinationSideOfPier(self.request_new_pierside_ra, self.request_new_pierside_dec)
 
 
-
+                    if self.request_set_RightAscensionRate:
+                        self.request_set_RightAscensionRate=False
+                        self.mount_update_wincom.RightAscensionRate=self.request_new_RightAscensionRate
+                        self.RightAscensionRate=self.request_new_RightAscensionRate
+                        
+                    if self.request_set_DeclinationRate:
+                        self.request_set_DeclinationRate=False
+                        self.mount_update_wincom.DeclinationRate=self.request_new_DeclinationRate
+                        self.DeclinationRate=self.request_new_DeclinationRate
+                        
                     
 
+
+                    
                     if self.request_find_home:
                         self.request_find_home=False
                         self.mount_update_wincom.FindHome()
@@ -503,7 +559,7 @@ class Mount:
                     self.right_ascension_directly_from_mount = copy.deepcopy(self.mount_update_wincom.RightAscension)
                     self.declination_directly_from_mount = copy.deepcopy(self.mount_update_wincom.Declination)
 
-                    self.currently_slewing= self.mount_update_wincom.Slewing
+                    
 
                     self.mount_updates=self.mount_updates + 1
                     self.mount_update_timer=time.time()
@@ -1752,14 +1808,22 @@ class Mount:
 
             try:                          #  NB NB Might be good to log is flipping on a re-seek.
                 # mount command #
-                while self.mount_busy:
-                    time.sleep(0.05)
-                self.mount_busy=True
-                new_pierside =  self.mount.DestinationSideOfPier(ra, dec) #  A tuple gets returned: (pierside, Ra.h and dec.d)
-                self.mount_busy=False
+                # while self.mount_busy:
+                #     time.sleep(0.05)
+                # self.mount_busy=True
+                # new_pierside =  self.mount.DestinationSideOfPier(ra, dec) #  A tuple gets returned: (pierside, Ra.h and dec.d)
+                # self.mount_busy=False
+                
+                
+                self.request_new_pierside=True
+                self.request_new_pierside_ra=ra
+                self.request_new_pierside_dec=dec
+
+                self.wait_for_mount_update()
+                
                 # end mount command #
-                if len(new_pierside) > 1:
-                    if new_pierside[0] == 0:
+                if len(self.new_pierside) > 1:
+                    if self.new_pierside[0] == 0:
                         delta_ra, delta_dec = self.get_mount_reference()
                         pier_east = 1
                     else:
@@ -1770,11 +1834,18 @@ class Mount:
                     # mount command #
                     # while self.mount_busy:
                     #     time.sleep(0.05)
-                    self.mount_busy=True
-                    new_pierside =  self.mount.DestinationSideOfPier(ra, dec) #  A tuple gets returned: (pierside, Ra.h and dec.d)
-                    self.mount_busy=False
+                    # self.mount_busy=True
+                    # new_pierside =  self.mount.DestinationSideOfPier(ra, dec) #  A tuple gets returned: (pierside, Ra.h and dec.d)
+                    # self.mount_busy=False
+                    
+                    self.request_new_pierside=True
+                    self.request_new_pierside_ra=ra
+                    self.request_new_pierside_dec=dec
+
+                    self.wait_for_mount_update()
+                    
                     # end mount command #
-                    if new_pierside == 0:
+                    if self.new_pierside == 0:
                         delta_ra, delta_dec = self.get_mount_reference()
                         pier_east = 1
                     else:
@@ -1985,23 +2056,40 @@ class Mount:
         if self.CanSetRightAscensionRate:
             self.prior_roll_rate = -((self.ha_mech_adv - self. ha_mech)*RTOS*MOUNTRATE/self.delta_t_s - MOUNTRATE)/(APPTOSID*15)    #Conversion right 20219329
             # mount command #
-            while self.mount_busy:
-                time.sleep(0.05)
-            self.mount_busy=True
-            self.mount.RightAscensionRate = 0.0 # self.prior_roll_rate  #Neg number makes RA decrease
-            self.mount_busy=False
+            # while self.mount_busy:
+            #     time.sleep(0.05)
+            # self.mount_busy=True
+            
+            
+            
+            
+            #self.mount.RightAscensionRate = 0.0 # self.prior_roll_rate  #Neg number makes RA decrease
+            
+            self.request_set_RightAscensionRate=True
+            self.request_new_RightAscensionRate=0.0
+            self.wait_for_mount_update()
+            
+            
+            #self.mount_busy=False
             # end mount command #
 
         else:
             self.prior_roll_rate = 0.0
+            
         if self.CanSetDeclinationRate:
            self.prior_pitch_rate = -(self.dec_mech_adv - self.dec_mech)*RTOS/self.delta_t_s    #20210329 OK 1 hour from zenith.  No Appsid correction per ASCOM spec.
            # mount command #
-           while self.mount_busy:
-               time.sleep(0.05)
-           self.mount_busy=True
-           self.mount.DeclinationRate = self.prior_pitch_rate  #Neg sign makes Dec decrease
-           self.mount_busy=False
+           # while self.mount_busy:
+           #     time.sleep(0.05)
+           # self.mount_busy=True
+           #self.mount.DeclinationRate = self.prior_pitch_rate  #Neg sign makes Dec decrease
+           
+           self.request_set_DeclinationRate=True
+           self.request_new_DeclinationRate=self.prior_pitch_rate
+           self.wait_for_mount_update()
+           
+           
+           # self.mount_busy=False
            # end mount command #
            #plog("Rates, refr are:  ", self.prior_roll_rate, self.prior_pitch_rate, self.refr_asec)
         else:
@@ -2011,25 +2099,32 @@ class Mount:
         # self.mount.SlewToCoordinatesAsync(ra_mech*RTOH, dec_mech*RTOD)
         #time.sleep(1)   #fOR SOME REASON REPEATING THIS HELPS!
         if self.CanSetRightAscensionRate:
-            # mount command #
-            while self.mount_busy:
-                time.sleep(0.05)
-            self.mount_busy=True
-            self.mount.RightAscensionRate = 0.0 #self.prior_roll_rate
-            self.mount_busy=False
+            # # mount command #
+            # while self.mount_busy:
+            #     time.sleep(0.05)
+            # self.mount_busy=True
+            #self.mount.RightAscensionRate = 0.0 #self.prior_roll_rate
+            self.request_set_RightAscensionRate=True
+            self.request_new_RightAscensionRate=0.0
+            self.wait_for_mount_update()
+            
+            #self.mount_busy=False
             # end mount command #
 
         if self.CanSetDeclinationRate:
             # mount command #
-            while self.mount_busy:
-                time.sleep(0.05)
-            self.mount_busy=True
-            self.mount.DeclinationRate = self.prior_pitch_rate
-            self.mount_busy=False
+            # while self.mount_busy:
+            #     time.sleep(0.05)
+            # self.mount_busy=True
+            self.request_set_DeclinationRate=True
+            self.request_new_DeclinationRate=self.prior_pitch_rate
+            self.wait_for_mount_update()
+            #self.mount.DeclinationRate = self.prior_pitch_rate
+            # self.mount_busy=False
             # end mount command #
 
         plog("Rates set:  ", self.prior_roll_rate, self.prior_pitch_rate, self.refr_adv)
-        self.seek_commanded = True
+        #self.seek_commanded = True
         #I think to reliable establish rates, set them before the slew.
         #self.mount.Tracking = True
         #self.mount.SlewToCoordinatesAsync(ra_mech*RTOH, dec_mech*RTOD)
@@ -2044,39 +2139,24 @@ class Mount:
 
     def stop_command(self, req, opt):
         plog("mount cmd: stopping mount")
-        self.mount.AbortSlew()
+        
+        self.abort_slew_requested=True
+        self.wait_for_mount_update()
+        #self.mount.AbortSlew()
 
     def home_command(self, req=None, opt=None):
         ''' slew to the home position '''
         plog("mount cmd: homing mount")
         if self.CanFindHome:
-            # mount command #
-            while self.mount_busy:
-                time.sleep(0.05)
-            self.mount_busy=True
-            mount_at_home = self.mount.AtHome
-            self.mount_busy=False
+            self.find_home_requested=True
+            self.wait_for_mount_update()
+            
+            g_dev['obs'].rotator_has_been_checked_since_last_slew=False
             # end mount command #
+            self.wait_for_slew()
+            self.get_mount_coordinates()
+            
 
-            if mount_at_home:
-                plog("Mount is at home.")
-            elif not mount_at_home:
-                g_dev['obs'].time_of_last_slew=time.time()
-                plog(f"can find home: {self.mount.CanFindHome}")
-                self.unpark_command()
-                self.wait_for_slew()
-
-                self.move_time = time.time()
-                # mount command #
-                while self.mount_busy:
-                    time.sleep(0.05)
-                self.mount_busy=True
-                self.mount.FindHome()
-                self.mount_busy=False
-                g_dev['obs'].rotator_has_been_checked_since_last_slew=False
-                # end mount command #
-                self.wait_for_slew()
-                self.get_mount_coordinates()
         else:
             plog("Mount is not capable of finding home. Slewing to home_alt and home_az")
             self.move_time = time.time()
@@ -2245,9 +2325,9 @@ class Mount:
                                 # mount command #
                                 # while self.mount_busy:
                                 #     time.sleep(0.05)
-                                self.mount_busy=True
-                                self.mount.Unpark()
-                                self.mount_busy=False
+                                # self.mount_busy=True
+                                self.unpark_command()
+                                # self.mount_busy=False
                                 g_dev['obs'].rotator_has_been_checked_since_last_slew=False
                                 # end mount command #
                                 self.rapid_park_indicator=False
