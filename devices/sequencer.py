@@ -2554,9 +2554,9 @@ class Sequencer:
 
 
 
-        # First pointing towards flatspot
-        if g_dev['mnt'].rapid_park_indicator:
-            g_dev['mnt'].unpark_command({}, {})
+        # # First pointing towards flatspot
+        # if g_dev['mnt'].rapid_park_indicator:
+        #     g_dev['mnt'].unpark_command({}, {})
 
         self.check_zenith_and_move_to_flat_spot(ending=ending)
 
