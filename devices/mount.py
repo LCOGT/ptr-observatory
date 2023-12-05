@@ -398,7 +398,7 @@ class Mount:
         self.slewtoRA = 1.0
         self.slewtoDEC = 34.0
         self.slewtoAsyncRequested=False
-
+        self.request_find_home=False
 
         self.mount_update_period=0.2
         self.mount_update_timer=time.time() - 2* self.mount_update_period
@@ -485,7 +485,11 @@ class Mount:
 
 
 
+                    
 
+                    if self.request_find_home:
+                        self.request_find_home=False
+                        self.mount_update_wincom.FindHome()
 
 
                     # Some things we don't do while slewing
@@ -2214,11 +2218,13 @@ class Mount:
                     try:
                         self.wait_for_slew()
                         # mount command #
-                        while self.mount_busy:
-                            time.sleep(0.05)
-                        self.mount_busy=True
-                        self.mount.FindHome()
-                        self.mount_busy=False
+                        # while self.mount_busy:
+                        #     time.sleep(0.05)
+                        # self.mount_busy=
+                        self.request_find_home=True
+                        self.wait_for_mount_update()
+                        #self.mount.FindHome()
+                        # self.mount_busy=False
                         g_dev['obs'].rotator_has_been_checked_since_last_slew=False
                         # end mount command #
                         self.wait_for_slew()
