@@ -435,6 +435,8 @@ class Observatory:
 
         # Boot up the various queues to process
 
+        #self.send_status_queue.qsize()
+
         if self.config['ingest_raws_directly_to_archive']:
             self.ptrarchive_queue = queue.PriorityQueue(maxsize=0)
             self.ptrarchive_queue_thread = threading.Thread(target=self.send_to_ptrarchive, args=())
@@ -1920,8 +1922,8 @@ class Observatory:
                 return str(fromfile) + " broken."
         except Exception as e:
             plog(traceback.format_exc())
-            plog ("something strange in the pipearchive copier", e)
-            return 'something strange in the pipearchive copier'
+            plog ("something strange in the altarchive copier", e)
+            return 'something strange in the altarchive copier'
 
 
         upload_timer=time.time() - upload_timer
@@ -2850,42 +2852,43 @@ class Observatory:
                             os.makedirs(self.config['temporary_local_alt_archive_to_hold_files_while_copying'] )
 
 
-                    saver = 0
-                    saverretries = 0
-                    while saver == 0 and saverretries < 10:
+                    # saver = 0
+                    # saverretries = 0
+                    # while saver == 0 and saverretries < 10:
+                    try:
+                        hdu = fits.PrimaryHDU()
+                        hdu.data = slow_process[2]
+                        hdu.header = temphduheader
+                        hdu.header["DATE"] = (
+                            datetime.date.strftime(
+                                datetime.datetime.utcfromtimestamp(time.time()), "%Y-%m-%d"
+                            ),
+                            "Date FITS file was written",
+                        )
+                        if slow_process[0] == 'raw_alt_path' or slow_process[0] == 'reduced_alt_path':
+                            #breakpoint()
+                            hdu.writeto( altfolder +'/' + slow_process[1].split('/')[-1].replace('EX00','EX00-'+temphduheader['OBSTYPE']), overwrite=True, output_verify='silentfix'
+                            )  # Save full raw file locally
+                            self.altarchive_queue.put((copy.deepcopy(altfolder +'/' + slow_process[1].split('/')[-1].replace('EX00','EX00-'+temphduheader['OBSTYPE'])),copy.deepcopy(slow_process[1])), block=False)
+                        else:
+                            hdu.writeto(
+                                slow_process[1].replace('EX00','EX00-'+temphduheader['OBSTYPE']), overwrite=True, output_verify='silentfix'
+                            )  # Save full raw file locally
                         try:
-                            hdu = fits.PrimaryHDU()
-                            hdu.data = slow_process[2]
-                            hdu.header = temphduheader
-                            hdu.header["DATE"] = (
-                                datetime.date.strftime(
-                                    datetime.datetime.utcfromtimestamp(time.time()), "%Y-%m-%d"
-                                ),
-                                "Date FITS file was written",
-                            )
-                            if 'alt_path' in slow_process[0]:
-                                #breakpoint()
-                                hdu.writeto( altfolder +'/' + slow_process[1].split('/')[-1].replace('EX00','EX00-'+temphduheader['OBSTYPE']), overwrite=True, output_verify='silentfix'
-                                )  # Save full raw file locally
-                                self.altarchive_queue.put((copy.deepcopy(altfolder +'/' + slow_process[1].split('/')[-1].replace('EX00','EX00-'+temphduheader['OBSTYPE'])),copy.deepcopy(slow_process[1])), block=False)
-                            else:
-                                hdu.writeto(
-                                    slow_process[1].replace('EX00','EX00-'+temphduheader['OBSTYPE']), overwrite=True, output_verify='silentfix'
-                                )  # Save full raw file locally
-                            try:
-                                hdu.close()
-                            except:
-                                pass
-                            del hdu
-                            saver = 1
+                            hdu.close()
+                        except:
+                            pass
+                        del hdu
+                        saver = 1
 
-                        except Exception as e:
-                            plog("Failed to write raw file: ", e)
-                            if "requested" in e and "written" in e:
-                                plog(check_download_cache())
-                            plog(traceback.format_exc())
-                            time.sleep(10)
-                            saverretries = saverretries + 1
+                    except Exception as e:
+                        plog("Failed to write raw file: ", e)
+                        plog(traceback.format_exc())
+                            # if "requested" in e and "written" in e:
+                            #     plog(check_download_cache())
+                            # plog(traceback.format_exc())
+                            # time.sleep(10)
+                            # saverretries = saverretries + 1
 
                 if slow_process[0] == 'fz_and_send':
 

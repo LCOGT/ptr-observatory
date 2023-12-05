@@ -3010,9 +3010,12 @@ class Sequencer:
         plog('\nSky flat sequence complete.\n')
         g_dev["obs"].send_to_user("Sky flat collection complete.")
 
-        g_dev['mnt'].park_command({}, {}) # You actually always want it to park, TheSkyX can't stop the telescope tracking, so park is safer... it is before focus anyway.
         self.flats_being_collected = False
+        self.eve_sky_flat_latch = False
+        self.morn_sky_flat_latch = False
 
+        g_dev['mnt'].park_command({}, {}) # You actually always want it to park, TheSkyX can't stop the telescope tracking, so park is safer... it is before focus anyway.
+        plog ("Scope parked at the end of flats.")
 
     def screen_flat_script(self, req, opt):
 
