@@ -12,6 +12,7 @@ import sys
 import pickle
 import time
 import sep
+import traceback
 import math
 from auto_stretch.stretch import Stretch
 from astropy.nddata import block_reduce
@@ -86,7 +87,9 @@ hduheader["IMGMED"] = ( np.nanmedian(hdufocusdata), "Median Value of Image Array
 hduheader["IMGSTDEV"] = ( np.nanstd(hdufocusdata), "Median Value of Image Array" )
 hduheader["IMGMAD"] = ( median_absolute_deviation(hdufocusdata, ignore_nan=True), "Median Absolute Deviation of Image Array" )
 
-
+# no zero values in readnoise.
+if float(readnoise) < 0.1:
+    readnoise = 0.1
 
 # Get out raw histogram construction data
 # Get a flattened array with all nans removed
@@ -242,30 +245,33 @@ else:
             focusimg, 3.0, err=bkg.globalrms, minarea=minarea
         )
         sources = Table(sources)
+        
         sources = sources[sources['flag'] < 8]
         image_saturation_level = saturate
         sources = sources[sources["peak"] < 0.8 * image_saturation_level * pow(binfocus, 2)]
         sources = sources[sources["cpeak"] < 0.8 * image_saturation_level * pow(binfocus, 2)]
-        sources = sources[sources["flux"] > 2000]
-        sources = sources[sources["x"] < iy - border_y]
-        sources = sources[sources["x"] > border_y]
-        sources = sources[sources["y"] < ix - border_x]
-        sources = sources[sources["y"] > border_x]
-
+        sources = sources[sources["flux"] > 1000]
+        #sources = sources[sources["x"] < iy - border_y]
+        #sources = sources[sources["x"] > border_y]
+        #sources = sources[sources["y"] < ix - border_x]
+        #sources = sources[sources["y"] > border_x]
+        #breakpoint()
         # BANZAI prune nans from table
+        
         nan_in_row = np.zeros(len(sources), dtype=bool)
         for col in sources.colnames:
             nan_in_row |= np.isnan(sources[col])
         sources = sources[~nan_in_row]
 
         # Calculate the ellipticity (Thanks BANZAI)
-
+        
         sources['ellipticity'] = 1.0 - (sources['b'] / sources['a'])
-
-        if frame_type == 'focus':
-            sources = sources[sources['ellipticity'] < 0.4]  # Remove things that are not circular stars
-        else:
-            sources = sources[sources['ellipticity'] < 0.6]  # Remove things that are not circular stars
+        
+        # if frame_type == 'focus':
+        #     sources = sources[sources['ellipticity'] < 0.4]  # Remove things that are not circular stars
+        # else:
+        #breakpoint()
+        sources = sources[sources['ellipticity'] < 0.6]  # Remove things that are not circular stars
 
         # Calculate the kron radius (Thanks BANZAI)
         kronrad, krflag = sep.kron_radius(focusimg, sources['x'], sources['y'],
@@ -320,16 +326,21 @@ else:
             sources = sources[sources['FWHM'] > (minimum_realistic_seeing / pixscale)]
             sources = sources[sources['FWHM'] != 0]
 
+        source_delete = ['thresh', 'npix', 'tnpix', 'xmin', 'xmax', 'ymin', 'ymax', 'x2', 'y2', 'xy', 'errx2',
+                         'erry2', 'errxy', 'a', 'b', 'theta', 'cxx', 'cyy', 'cxy', 'cflux', 'cpeak', 'xcpeak', 'ycpeak']
+
+        sources.remove_columns(source_delete)
+
+         
+
         # BANZAI prune nans from table
         nan_in_row = np.zeros(len(sources), dtype=bool)
         for col in sources.colnames:
             nan_in_row |= np.isnan(sources[col])
         sources = sources[~nan_in_row]
-
-        source_delete = ['thresh', 'npix', 'tnpix', 'xmin', 'xmax', 'ymin', 'ymax', 'x2', 'y2', 'xy', 'errx2',
-                         'erry2', 'errxy', 'a', 'b', 'theta', 'cxx', 'cyy', 'cxy', 'cflux', 'cpeak', 'xcpeak', 'ycpeak']
-
-        sources.remove_columns(source_delete)
+        
+        #breakpoint()
+               
 
         sources.write(im_path + text_name.replace('.txt', '.sep'), format='csv', overwrite=True)
 
@@ -368,13 +379,12 @@ else:
 
 
     except:
+        traceback.format_exc()
         sources = [0]
         rfp = np.nan
         rfr = np.nan
         rfs = np.nan
         sepsky = np.nan
-
-#breakpoint()
 
 
 # Value-added header items for the UI

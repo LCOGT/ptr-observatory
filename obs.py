@@ -2373,8 +2373,8 @@ class Observatory:
                                                                                                         .name]["settings"]['focus_image_crop_height'], is_osc,interpolate_for_focus,bin_for_focus,focus_bin_value,interpolate_for_sep,bin_for_sep,sep_bin_value,focus_jpeg_size,saturate,minimum_realistic_seeing,nativebin,do_sep
                                                                                                                                                                                ], open('subprocesses/testSEPpickle','wb'))
 
-
-
+                                                                                                                                 
+                                                                                                                                      
                 # Essentially wait until the subprocess is complete
                 sep_subprocess.communicate()
 

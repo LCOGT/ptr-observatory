@@ -185,10 +185,10 @@ sources['FWHM'], _ = sep.flux_radius(focusimg, sources['x'], sources['y'], sourc
                                      subpix=5)
 
 # BANZAI prune nans from table
-nan_in_row = np.zeros(len(sources), dtype=bool)
-for col in sources.colnames:
-    nan_in_row |= np.isnan(sources[col])
-sources = sources[~nan_in_row]
+# nan_in_row = np.zeros(len(sources), dtype=bool)
+# for col in sources.colnames:
+#     nan_in_row |= np.isnan(sources[col])
+# sources = sources[~nan_in_row]
 
 sources = sources[sources['FWHM'] != 0]
 sources = sources[sources['FWHM'] > 0.5]
