@@ -507,6 +507,10 @@ class Observatory:
 
 
 
+        self.queue_reporting_period = 180
+        self.queue_reporting_timer = time.time() - (2* self.queue_reporting_period)
+
+
         # send up obs status immediately
         self.obs_settings_upload_timer = time.time() - 2*self.obs_settings_upload_period
         #self.update_status(dont_wait=True)
@@ -1141,6 +1145,22 @@ class Observatory:
         #breakpoint()
 
         #g_dev['foc'].update_focuser_temperature()
+
+        if (time.time() - self.queue_reporting_timer) > self.queue_reporting_period:
+            self.queue_reporting_timer=time.time()
+            plog ("Queue Reports - hunting for ram leak")
+                      
+            plog ("PTR Archive Queue: " +str(self.ptrarchive_queue.qsize()))
+            plog ("PTR Archive Queue: " +str(self.pipearchive_queue.qsize()))
+            plog ("PTR Archive Queue: " +str(self.altarchive_queue.qsize()))
+            plog ("PTR Archive Queue: " +str(self.fast_queue.qsize()))
+            plog ("PTR Archive Queue: " +str(self.mediumui_queue.qsize()))
+            plog ("PTR Archive Queue: " +str(self.calibrationui_queue.qsize()))
+            plog ("PTR Archive Queue: " +str(self.slow_camera_queue.qsize()))
+            plog ("PTR Archive Queue: " +str(self.platesolve_queue.qsize()))
+            plog ("PTR Archive Queue: " +str(self.sep_queue.qsize()))
+            plog ("PTR Archive Queue: " +str(self.mainjpeg_queue.qsize()))
+            plog ("PTR Archive Queue: " +str(self.smartstack_queue.qsize()))
 
 
         # If the roof is open, then it is open and enabled to observe
