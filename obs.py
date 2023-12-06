@@ -1151,16 +1151,16 @@ class Observatory:
             plog ("Queue Reports - hunting for ram leak")
                       
             plog ("PTR Archive Queue: " +str(self.ptrarchive_queue.qsize()))
-            plog ("PTR Archive Queue: " +str(self.pipearchive_queue.qsize()))
-            plog ("PTR Archive Queue: " +str(self.altarchive_queue.qsize()))
-            plog ("PTR Archive Queue: " +str(self.fast_queue.qsize()))
-            plog ("PTR Archive Queue: " +str(self.mediumui_queue.qsize()))
-            plog ("PTR Archive Queue: " +str(self.calibrationui_queue.qsize()))
-            plog ("PTR Archive Queue: " +str(self.slow_camera_queue.qsize()))
-            plog ("PTR Archive Queue: " +str(self.platesolve_queue.qsize()))
-            plog ("PTR Archive Queue: " +str(self.sep_queue.qsize()))
-            plog ("PTR Archive Queue: " +str(self.mainjpeg_queue.qsize()))
-            plog ("PTR Archive Queue: " +str(self.smartstack_queue.qsize()))
+            plog ("Pipe Archive Queue: " +str(self.pipearchive_queue.qsize()))
+            plog ("Alt Archive Queue: " +str(self.altarchive_queue.qsize()))
+            plog ("Fast UI Queue: " +str(self.fast_queue.qsize()))
+            plog ("Medium UI Queue: " +str(self.mediumui_queue.qsize()))
+            plog ("Calibration UI Queue: " +str(self.calibrationui_queue.qsize()))
+            plog ("Slow Camera Queue: " +str(self.slow_camera_queue.qsize()))
+            plog ("Platesolve Queue: " +str(self.platesolve_queue.qsize()))
+            plog ("SEP Queue: " +str(self.sep_queue.qsize()))
+            plog ("JPEG Queue: " +str(self.mainjpeg_queue.qsize()))
+            plog ("Smartstack Queue: " +str(self.smartstack_queue.qsize()))
 
 
         # If the roof is open, then it is open and enabled to observe
