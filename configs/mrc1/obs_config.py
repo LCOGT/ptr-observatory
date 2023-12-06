@@ -554,12 +554,12 @@ site_config = {
     'camera': {
         'camera_1_1': {
             'parent': 'telescope1',
-            'name': 'sq005mm',  # Important because this points to a server file structure by that name.
-            'desc':  'QHY 600Pro Mono',
+            'name': 'sq003cm',  # Important because this points to a server file structure by that name.
+            'desc':  'QHY 410 Color',
             #'driver':  "ASCOM.QHYCCD_CAM2.Camera", # NB Be careful this is not QHY Camera2 or Guider  "Maxim.CCDCamera",   #'ASCOM.FLI.Kepler.Camera', "ASCOM.QHYCCD.Camera",   #
             # NB Be careful this is not QHY Camera2 or Guider  "Maxim.CCDCamera",   #'ASCOM.FLI.Kepler.Camera', "ASCOM.QHYCCD.Camera",   #
             'driver':  "QHYCCD_Direct_Control",
-            'service_date': '20230712',  #Replaced sq001cs which appears to have a TEC failure
+            'service_date': '20231205',  #Replaced sq005mm which appears to have a circuit failure with prior QHY6oo. Left name unchanged.
 
 
 
@@ -579,8 +579,8 @@ site_config = {
 
                 # Simple Camera Properties
                 'is_cmos':  True,
-                'is_osc': False,
-                'is_color': False,  # NB we also have a is_osc key.
+                'is_osc': True,
+                'is_color': True,  # NB we also have a is_osc key.
                 'osc_bayer': 'RGGB',
 
                 # For direct QHY usage we need to set the appropriate gain.
@@ -609,10 +609,10 @@ site_config = {
                 # readout seems to be dominated by the slow driver (difference is a small fraction of a second), so I've left it at 60 - least banding.
                 #
                 # QHY410C is gain 0, offset 9, mode 1              
-                'direct_qhy_readout_mode': 3,  #These settings may be wrong. WER 20230712
+                'direct_qhy_readout_mode': 1,  #These settings may be wrong. WER 20230712
                                
-                'direct_qhy_gain': 26,
-                'direct_qhy_offset': 60,
+                'direct_qhy_gain': 0,
+                'direct_qhy_offset': 9,
                 
                 'direct_qhy_usb_traffic' : 60,
                 
@@ -656,7 +656,7 @@ site_config = {
                 'rotate180_fits': False,  # This also should be flipxy!
                 'rotate90_fits': False,
                 'rotate270_fits': False,
-                'squash_on_x_axis': False,
+                'squash_on_x_axis': True,
                 
                 # What number of pixels to crop around the edges of a REDUCED image
                 # This is primarily to get rid of overscan areas and also all images
@@ -708,7 +708,7 @@ site_config = {
                 
                 # This is the area for cooling related settings
                 'cooler_on': True,
-                'temp_setpoint': -5,  # Verify we can go colder
+                'temp_setpoint': -2,  # Verify we can go colder
                 'has_chiller': True,
                 'chiller_com_port': 'COM1',
                 'chiller_ref_temp':  15.0,  # C
@@ -720,15 +720,17 @@ site_config = {
                 # These are the physical values for the camera
                 # related to pixelscale. Binning only applies to single
                 # images. Stacks will always be drizzled to to drizzle value from 1x1.
-                'onebyone_pix_scale': 0.30258,    #  This is the 1x1 binning pixelscale
+                'onebyone_pix_scale': 0.478,    #  This is the 1x1 binning pixelscale
                 'native_bin': 2, # Needs to be simple, it will recalculate things on the 1x1 binning pixscale above.
-                'x_pixel':  3.76, # pixel size in microns
-                'y_pixel':  3.76, # pixel size in microns
+                'x_pixel':  5.94, # pixel size in microns
+                'y_pixel':  5.94, # pixel size in microns
                 
                 #Please do not remove the following:  9576*6388
                 # WAYNE - x field and y field are already calculated within camera.py on bootup and send up in the config
                 # we don't neeed these values. Carolina is also calculating it already at the UI.              
                 # I made it calculate it directly PRECISELY because of incorrect values in the config file.
+                
+                #As long as the numbers below are here, even commented out, that if fine.
                 #'x_field':  46.8, # amin  0.30259*9276/60   NB subtractedd 100 pix for trim
                 #'y_field':  31.7, # amin  0k.30259*6288/60   NB subtractedd 100 pix for trim
                 

@@ -2364,6 +2364,8 @@ class Camera:
                     self.wait_for_slew()
                     g_dev['obs'].check_platesolve_and_nudge()
 
+
+                #breakpoint()
                 if (frame_type in ["bias", "dark"] or frame_type[-4:] == ['flat']) and not manually_requested_calibration:
                     plog("Median of full-image area bias, dark or flat:  ", np.median(outputimg))
 
@@ -2386,16 +2388,24 @@ class Camera:
                     # If there is no master bias, it will just skip this check
                     if frame_type in ["dark"]:
                         #try:
-                        debiaseddarkmedian= np.nanmedian(outputimg - self.biasFiles[str(1)]) / exposure_time
-                        plog ("Debiased 1s Dark Median is " + str(debiaseddarkmedian))
-                        if debiaseddarkmedian > 0.5:
-                            plog ("Reject! This Dark seems to be light affected. ")
-                            expresult = {}
-                            expresult["error"] = True
-                            self.exposure_busy = False
-                            return expresult
+                        if len(self.biasFiles) > 0:
+                            debiaseddarkmedian= np.nanmedian(outputimg - self.biasFiles[str(1)]) / exposure_time
+                            plog ("Debiased 1s Dark Median is " + str(debiaseddarkmedian))
+                            if debiaseddarkmedian > 0.5:
+                                plog ("Reject! This Dark seems to be light affected. ")
+                                expresult = {}
+                                expresult["error"] = True
+                                self.exposure_busy = False
+                                return expresult
                         #except:
                         #    pass
+
+
+
+
+
+
+
 
 
                 if frame_type[-5:] in ["focus", "probe", "ental"]:
@@ -2443,6 +2453,105 @@ class Camera:
 
 
 
+
+                # Specific dark and bias save area
+                if frame_type in ["bias", "dark"]:
+                    # Save good flat
+                    im_path_r = self.camera_path
+                    raw_path = im_path_r + g_dev["day"] + "/raw/"
+                    next_seq = next_sequence(self.config["camera"][self.name]["name"])
+                    raw_name00 = (
+                        self.config["obs_id"]
+                        + "-"
+                        + g_dev['cam'].alias + '_' + str(frame_type) + '_' + str(this_exposure_filter)
+                        + "-"
+                        + g_dev["day"]
+                        + "-"
+                        + next_seq
+                        + "-"
+                        + "skyflat"
+                        + "00.fits"
+                    )
+                    # if self.config['save_reduced_file_numberid_first']:
+                    #     red_name01 = (next_seq + "-" +self.config["obs_id"] + "-" + str(hdu.header['OBJECT']).replace(':','d').replace('@','at').replace('.','d').replace(' ','').replace('-','') +'-'+str(hdu.header['FILTER']) + "-" +  str(exposure_time).replace('.','d') + "-"+ im_type+ "01.fits")
+                    # else:
+                    #     red_name01 = (self.config["obs_id"] + "-" + str(hdu.header['OBJECT']).replace(':','d').replace('@','at').replace('.','d').replace(' ','').replace('-','') +'-'+str(hdu.header['FILTER']) + "-" + next_seq+ "-" + str(exposure_time).replace('.','d') + "-"+ im_type+ "01.fits")
+
+
+                    hdu = fits.PrimaryHDU()
+
+
+
+                    # Flip flat fits around to correct orientation
+                    if self.config["camera"][self.name]["settings"]["transpose_fits"]:
+                        hdu = fits.PrimaryHDU(
+                            outputimg.transpose().astype('float32'))
+                    elif self.config["camera"][self.name]["settings"]["flipx_fits"]:
+                        hdu = fits.PrimaryHDU(
+                            np.fliplr(outputimg.astype('float32'))
+                        )
+                    elif self.config["camera"][self.name]["settings"]["flipy_fits"]:
+                        hdu = fits.PrimaryHDU(
+                            np.flipud(outputimg.astype('float32'))
+                        )
+                    elif self.config["camera"][self.name]["settings"]["rotate90_fits"]:
+                        hdu = fits.PrimaryHDU(
+                            np.rot90(outputimg.astype('float32'))
+                        )
+                    elif self.config["camera"][self.name]["settings"]["rotate180_fits"]:
+                        hdu = fits.PrimaryHDU(
+                            np.rot90(outputimg.astype('float32'),2)
+                        )
+                    elif self.config["camera"][self.name]["settings"]["rotate270_fits"]:
+                        hdu = fits.PrimaryHDU(
+                            np.rot90(outputimg.astype('float32'),3)
+                        )
+                    else:
+                        hdu = fits.PrimaryHDU(
+                            outputimg.astype('float32')
+                        )
+                    del outputimg
+
+
+                    hdu.header['PIXSCALE']=self.pixscale
+                    hdu.header['EXPTIME']=exposure_time
+
+                    hdu.header['OBSTYPE']='flat'
+                    hdu.header['FILTER']=self.current_filter
+
+
+
+
+
+                    # If the files are local calibrations, save them out to the local calibration directory
+                    if not manually_requested_calibration:
+                        g_dev['obs'].to_slow_process(200000000, ('localcalibration', raw_name00, hdu.data, hdu.header, frame_type, g_dev["mnt"].current_icrs_ra, g_dev["mnt"].current_icrs_dec))
+
+
+                    # Similarly to the above. This saves the RAW file to disk
+                    if self.config['save_raw_to_disk']:
+                       g_dev['obs'].to_slow_process(1000,('raw', raw_path + raw_name00, hdu.data, hdu.header, frame_type, g_dev["mnt"].current_icrs_ra, g_dev["mnt"].current_icrs_dec))
+
+
+                    # For sites that have "save_to_alt_path" enabled, this routine
+                    # Saves the raw and reduced fits files out to the provided directories
+                    if self.config["save_to_alt_path"] == "yes":
+                        self.alt_path = self.config[
+                            "alt_path"
+                        ]  +'/' + self.config['obs_id']+ '/' # NB NB this should come from config file, it is site dependent.
+
+                        g_dev['obs'].to_slow_process(1000,('raw_alt_path', self.alt_path + g_dev["day"] + "/raw/" + raw_name00, hdu.data, hdu.header, \
+                                                       frame_type, g_dev["mnt"].current_icrs_ra, g_dev["mnt"].current_icrs_dec))
+                        # if "hdusmalldata" in locals():
+                        #     g_dev['obs'].to_slow_process(1000,('reduced_alt_path', selfalt_path + g_dev["day"] + "/reduced/" + red_name01, hdusmalldata, hdusmallheader, \
+                        #                                        frame_type, g_dev["mnt"].current_icrs_ra, g_dev["mnt"].current_icrs_dec))
+
+                    del hdu
+
+                    return copy.deepcopy(expresult)
+
+
+
                 # # If the file isn't a calibration frame, then undertake a flash reduction quickly
                 # # To make a palatable jpg AS SOON AS POSSIBLE to send to AWS
                 # if (not frame_type.lower() in (
@@ -2487,7 +2596,7 @@ class Camera:
 
 
 
-                if not frame_type[-4:] == "flat" and not focus_image == True and not frame_type=='pointing':
+                if not frame_type[-4:] == "flat" or not frame_type in ["bias", "dark"] and not focus_image == True and not frame_type=='pointing':
                     focus_position=g_dev['foc'].current_focus_position
                     self.post_processing_queue.put(copy.deepcopy((outputimg, g_dev["mnt"].pier_side, self.config["camera"][self.name]["settings"]['is_osc'], frame_type, self.config['camera']['camera_1_1']['settings']['reject_new_flat_by_known_gain'], avg_mnt, avg_foc, avg_rot, self.setpoint, self.tempccdtemp, self.ccd_humidity, self.ccd_pressure, self.darkslide_state, exposure_time, this_exposure_filter, exposure_filter_offset, self.pane,opt , observer_user_name, self.hint, azimuth_of_observation, altitude_of_observation, airmass_of_observation, self.pixscale, smartstackid,sskcounter,Nsmartstack, longstackid, ra_at_time_of_exposure, dec_at_time_of_exposure, manually_requested_calibration, object_name, object_specf, g_dev["mnt"].ha_corr, g_dev["mnt"].dec_corr, focus_position, self.config, self.name, self.camera_known_gain, self.camera_known_readnoise, start_time_of_observation, observer_user_id, self.camera_path,  solve_it)), block=False)
                 #print ("Deep copy timer: " +str(time.time()-deep_copy_timer))
