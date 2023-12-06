@@ -213,12 +213,15 @@ class Focuser:
 
 
             elif self.focuser_update_timer < time.time() - self.focuser_update_period:
-
-                if self.theskyx:
-                    self.current_focus_temperature=self.focuser_update_wincom.focTemperature
-                else:
-                    self.current_focus_temperature=self.focuser_update_wincom.Temperature
-
+                try:
+                    if self.theskyx:
+                        self.current_focus_temperature=self.focuser_update_wincom.focTemperature
+                    else:
+                        self.current_focus_temperature=self.focuser_update_wincom.Temperature
+                except:
+                    plog ("glitch in getting focus temperature")
+                    plog (traceback.format_exc())
+                    
                 if not self.theskyx:
                     self.current_focus_position=int(self.focuser_update_wincom.Position * self.steps_to_micron)
 
