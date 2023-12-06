@@ -14,7 +14,7 @@ kernel = Gaussian2DKernel(x_stddev=2,y_stddev=2)
 from astropy.stats import sigma_clip
 import ephem
 import shelve
-
+from multiprocessing.pool import Pool
 import math
 import shutil
 import numpy as np
@@ -23,6 +23,7 @@ import os
 import gc
 from pyowm import OWM
 from pyowm.utils import config
+import warnings
 
 from devices.camera import Camera
 from devices.filter_wheel import FilterWheel
@@ -1922,11 +1923,39 @@ class Sequencer:
             plog (datetime.datetime.now().strftime("%H:%M:%S"))
             # Go through each pixel and calculate nanmedian. Can't do all arrays at once as it is hugely memory intensive
             finalImage=np.zeros(shapeImage,dtype=float)
-            for xi in range(shapeImage[0]):
-                if xi % 500 == 0:
-                    print ("Up to Row" + str(xi))
-                    print (datetime.datetime.now().strftime("%H:%M:%S"))
-                finalImage[xi,:]=np.nanmedian(PLDrive[xi,:,:], axis=1)
+            totaltimer=time.time()
+            mptask=[]
+            counter=0
+            for goog in range(shapeImage[0]):
+                mptask.append((g_dev['obs'].local_bias_folder + 'tempfile',counter, (shapeImage[0],shapeImage[1],len(inputList))))
+                counter=counter+1
+            
+            #print (mptask)
+            
+            counter=0
+            with Pool(math.floor(os.cpu_count()*0.85)) as pool:
+                for result in pool.map(stack_nanmedian_row, mptask):
+                    #breakpoint()
+                    #return_rows.append(result)
+                    #finalImage[counter+x,:]=result
+                    #counter=counter+1
+                    #print (result)
+                    finalImage[counter,:]=result
+                    counter=counter+1
+            
+            
+            
+            # for xi in range(shapeImage[0]):
+            #     if xi % 500 == 0:
+            #         print ("Up to Row" + str(xi))
+            #         print (datetime.datetime.now().strftime("%H:%M:%S"))
+            #     finalImage[xi,:]=np.nanmedian(PLDrive[xi,:,:], axis=1)
+                
+                
+                
+                
+                
+                
             plog(datetime.datetime.now().strftime("%H:%M:%S"))
             plog ("**********************************")
 
@@ -4813,6 +4842,11 @@ class Sequencer:
             plog ("A glitch found in the blocks reqs post, probably date format")
 
 
-
+def stack_nanmedian_row(inputinfo):
+    (pldrivetempfiletemp,counter,shape) = inputinfo
+    tempPLDrive = np.memmap(pldrivetempfiletemp, dtype='float32', mode= 'r', shape = shape )
+    with warnings.catch_warnings():
+        warnings.simplefilter("ignore", category=RuntimeWarning)
+        return np.nanmedian(tempPLDrive[counter,:,:], axis=1)
 
 
