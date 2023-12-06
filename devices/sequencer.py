@@ -1923,14 +1923,12 @@ class Sequencer:
             plog (datetime.datetime.now().strftime("%H:%M:%S"))
             # Go through each pixel and calculate nanmedian. Can't do all arrays at once as it is hugely memory intensive
             finalImage=np.zeros(shapeImage,dtype=float)
-            totaltimer=time.time()
+                        
             mptask=[]
             counter=0
             for goog in range(shapeImage[0]):
                 mptask.append((g_dev['obs'].local_bias_folder + 'tempfile',counter, (shapeImage[0],shapeImage[1],len(inputList))))
-                counter=counter+1
-            
-            #print (mptask)
+                counter=counter+1           
             
             counter=0
             with Pool(math.floor(os.cpu_count()*0.85)) as pool:
@@ -1943,18 +1941,11 @@ class Sequencer:
                     finalImage[counter,:]=result
                     counter=counter+1
             
-            
-            
             # for xi in range(shapeImage[0]):
             #     if xi % 500 == 0:
             #         print ("Up to Row" + str(xi))
             #         print (datetime.datetime.now().strftime("%H:%M:%S"))
             #     finalImage[xi,:]=np.nanmedian(PLDrive[xi,:,:], axis=1)
-                
-                
-                
-                
-                
                 
             plog(datetime.datetime.now().strftime("%H:%M:%S"))
             plog ("**********************************")
@@ -2045,11 +2036,32 @@ class Sequencer:
             plog (datetime.datetime.now().strftime("%H:%M:%S"))
             # Go through each pixel and calculate nanmedian. Can't do all arrays at once as it is hugely memory intensive
             finalImage=np.zeros(shapeImage,dtype=float)
-            for xi in range(shapeImage[0]):
-                if xi % 500 == 0:
-                    print ("Up to Row" + str(xi))
-                    print (datetime.datetime.now().strftime("%H:%M:%S"))
-                finalImage[xi,:]=np.nanmedian(PLDrive[xi,:,:], axis=1)
+            
+            
+            mptask=[]
+            counter=0
+            for goog in range(shapeImage[0]):
+                mptask.append((g_dev['obs'].local_dark_folder + 'tempfile',counter, (shapeImage[0],shapeImage[1],len(inputList))))
+                counter=counter+1           
+            
+            counter=0
+            with Pool(math.floor(os.cpu_count()*0.85)) as pool:
+                for result in pool.map(stack_nanmedian_row, mptask):
+                    #breakpoint()
+                    #return_rows.append(result)
+                    #finalImage[counter+x,:]=result
+                    #counter=counter+1
+                    #print (result)
+                    finalImage[counter,:]=result
+                    counter=counter+1
+            
+            
+            # for xi in range(shapeImage[0]):
+            #     if xi % 500 == 0:
+            #         print ("Up to Row" + str(xi))
+            #         print (datetime.datetime.now().strftime("%H:%M:%S"))
+            #     finalImage[xi,:]=np.nanmedian(PLDrive[xi,:,:], axis=1)
+                
             plog (datetime.datetime.now().strftime("%H:%M:%S"))
             plog ("**********************************")
 
@@ -2173,12 +2185,32 @@ class Sequencer:
                         plog (datetime.datetime.now().strftime("%H:%M:%S"))
                         # Go through each pixel and calculate nanmedian. Can't do all arrays at once as it is hugely memory intensive
                         finalImage=np.zeros(shapeImage,dtype=float)
-                        for xi in range(shapeImage[0]):
-                            if xi % 500 == 0:
-                                print ("Up to Row" + str(xi))
-                                print (datetime.datetime.now().strftime("%H:%M:%S"))
+                        
+                        mptask=[]
+                        counter=0
+                        for goog in range(shapeImage[0]):
+                            mptask.append((g_dev['obs'].local_flat_folder + 'tempfile',counter, (shapeImage[0],shapeImage[1],len(inputList))))
+                            counter=counter+1           
+                        
+                        counter=0
+                        with Pool(math.floor(os.cpu_count()*0.85)) as pool:
+                            for result in pool.map(stack_nanmedian_row, mptask):
+                                #breakpoint()
+                                #return_rows.append(result)
+                                #finalImage[counter+x,:]=result
+                                #counter=counter+1
+                                #print (result)
+                                finalImage[counter,:]=result
+                                counter=counter+1
+                        
+                        
+                        
+                        # for xi in range(shapeImage[0]):
+                        #     if xi % 500 == 0:
+                        #         print ("Up to Row" + str(xi))
+                        #         print (datetime.datetime.now().strftime("%H:%M:%S"))
 
-                            finalImage[xi,:]=np.nanmedian(PLDrive[xi,:,:], axis=1)
+                        #     finalImage[xi,:]=np.nanmedian(PLDrive[xi,:,:], axis=1)
                         plog (datetime.datetime.now().strftime("%H:%M:%S"))
                         plog ("**********************************")
 
