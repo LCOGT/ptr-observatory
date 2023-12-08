@@ -436,8 +436,8 @@ class Observatory:
         # Boot up the various queues to process
 
         #self.send_status_queue.qsize()
-        
-        
+
+
         if self.config['ingest_raws_directly_to_archive']:
             self.ptrarchive_queue = queue.PriorityQueue(maxsize=0)
             self.ptrarchive_queue_thread = threading.Thread(target=self.send_to_ptrarchive, args=())
@@ -508,7 +508,7 @@ class Observatory:
 
 
 
-        self.queue_reporting_period = 180
+        self.queue_reporting_period = 600
         self.queue_reporting_timer = time.time() - (2* self.queue_reporting_period)
 
 
@@ -1147,20 +1147,20 @@ class Observatory:
 
         #g_dev['foc'].update_focuser_temperature()
 
-        if (time.time() - self.queue_reporting_timer) > self.queue_reporting_period:
+        if True and ((time.time() - self.queue_reporting_timer) > self.queue_reporting_period):
             self.queue_reporting_timer=time.time()
             plog ("Queue Reports - hunting for ram leak")
-            
+
             if self.config['ingest_raws_directly_to_archive']:
                 plog ("PTR Archive Queue: " +str(self.ptrarchive_queue.qsize()))
-                
-            
+
+
             if self.config['save_raws_to_pipe_folder_for_nightly_processing']:
                 plog ("Pipe Archive Queue: " +str(self.pipearchive_queue.qsize()))
-                
+
             if self.config['save_to_alt_path'] == 'yes':
                 plog ("Alt Archive Queue: " +str(self.altarchive_queue.qsize()))
-                
+
             plog ("Fast UI Queue: " +str(self.fast_queue.qsize()))
             plog ("Medium UI Queue: " +str(self.mediumui_queue.qsize()))
             plog ("Calibration UI Queue: " +str(self.calibrationui_queue.qsize()))
@@ -2401,8 +2401,8 @@ class Observatory:
                                                                                                         .name]["settings"]['focus_image_crop_height'], is_osc,interpolate_for_focus,bin_for_focus,focus_bin_value,interpolate_for_sep,bin_for_sep,sep_bin_value,focus_jpeg_size,saturate,minimum_realistic_seeing,nativebin,do_sep
                                                                                                                                                                                ], open('subprocesses/testSEPpickle','wb'))
 
-                                                                                                                                 
-                                                                                                                                      
+
+
                 # Essentially wait until the subprocess is complete
                 sep_subprocess.communicate()
 
