@@ -2405,7 +2405,7 @@ class Camera:
 
 
 
-
+                next_seq = next_sequence(self.config["camera"][self.name]["name"])
 
 
 
@@ -2461,7 +2461,7 @@ class Camera:
                     # Save good flat
                     im_path_r = self.camera_path
                     raw_path = im_path_r + g_dev["day"] + "/raw/"
-                    next_seq = next_sequence(self.config["camera"][self.name]["name"])
+                    
                     raw_name00 = (
                         self.config["obs_id"]
                         + "-"
@@ -2600,7 +2600,7 @@ class Camera:
 
                 if not frame_type[-4:] == "flat" or not frame_type in ["bias", "dark"] and not focus_image == True and not frame_type=='pointing':
                     focus_position=g_dev['foc'].current_focus_position
-                    self.post_processing_queue.put(copy.deepcopy((outputimg, g_dev["mnt"].pier_side, self.config["camera"][self.name]["settings"]['is_osc'], frame_type, self.config['camera']['camera_1_1']['settings']['reject_new_flat_by_known_gain'], avg_mnt, avg_foc, avg_rot, self.setpoint, self.tempccdtemp, self.ccd_humidity, self.ccd_pressure, self.darkslide_state, exposure_time, this_exposure_filter, exposure_filter_offset, self.pane,opt , observer_user_name, self.hint, azimuth_of_observation, altitude_of_observation, airmass_of_observation, self.pixscale, smartstackid,sskcounter,Nsmartstack, longstackid, ra_at_time_of_exposure, dec_at_time_of_exposure, manually_requested_calibration, object_name, object_specf, g_dev["mnt"].ha_corr, g_dev["mnt"].dec_corr, focus_position, self.config, self.name, self.camera_known_gain, self.camera_known_readnoise, start_time_of_observation, observer_user_id, self.camera_path,  solve_it)), block=False)
+                    self.post_processing_queue.put(copy.deepcopy((outputimg, g_dev["mnt"].pier_side, self.config["camera"][self.name]["settings"]['is_osc'], frame_type, self.config['camera']['camera_1_1']['settings']['reject_new_flat_by_known_gain'], avg_mnt, avg_foc, avg_rot, self.setpoint, self.tempccdtemp, self.ccd_humidity, self.ccd_pressure, self.darkslide_state, exposure_time, this_exposure_filter, exposure_filter_offset, self.pane,opt , observer_user_name, self.hint, azimuth_of_observation, altitude_of_observation, airmass_of_observation, self.pixscale, smartstackid,sskcounter,Nsmartstack, longstackid, ra_at_time_of_exposure, dec_at_time_of_exposure, manually_requested_calibration, object_name, object_specf, g_dev["mnt"].ha_corr, g_dev["mnt"].dec_corr, focus_position, self.config, self.name, self.camera_known_gain, self.camera_known_readnoise, start_time_of_observation, observer_user_id, self.camera_path,  solve_it, next_seq)), block=False)
                 #print ("Deep copy timer: " +str(time.time()-deep_copy_timer))
 
 
@@ -2642,7 +2642,7 @@ class Camera:
                     #)
                     im_path_r = self.camera_path
                     im_type = "EX"
-                    next_seq = next_sequence(self.config["camera"][self.name]["name"])
+                    #next_seq = next_sequence(self.config["camera"][self.name]["name"])
                     f_ext = "-"
                     cal_name = (
                         self.config["obs_id"]
@@ -2689,7 +2689,7 @@ class Camera:
                     im_path_r = self.camera_path
                     im_type = "EX"
                     f_ext = "-"
-                    next_seq = next_sequence(self.config["camera"][self.name]["name"])
+                    #next_seq = next_sequence(self.config["camera"][self.name]["name"])
                     text_name = (
                         self.config["obs_id"]
                         + "-"
@@ -3043,7 +3043,7 @@ class Camera:
                         # Save good flat
                         im_path_r = self.camera_path
                         raw_path = im_path_r + g_dev["day"] + "/raw/"
-                        next_seq = next_sequence(self.config["camera"][self.name]["name"])
+                        #next_seq = next_sequence(self.config["camera"][self.name]["name"])
                         raw_name00 = (
                             self.config["obs_id"]
                             + "-"
@@ -3182,7 +3182,7 @@ def post_exposure_process(payload):
 
     expresult={}
 
-    (img, pier_side, is_osc, frame_type, reject_flat_by_known_gain, avg_mnt, avg_foc, avg_rot, setpoint, tempccdtemp, ccd_humidity, ccd_pressure, darkslide_state, exposure_time, this_exposure_filter, exposure_filter_offset, pane,opt, observer_user_name, hint, azimuth_of_observation, altitude_of_observation, airmass_of_observation, pixscale, smartstackid,sskcounter,Nsmartstack, longstackid, ra_at_time_of_exposure, dec_at_time_of_exposure, manually_requested_calibration, object_name, object_specf, ha_corr, dec_corr, focus_position, selfconfig, selfname, camera_known_gain, camera_known_readnoise, start_time_of_observation, observer_user_id, selfcamera_path,  solve_it ) = payload
+    (img, pier_side, is_osc, frame_type, reject_flat_by_known_gain, avg_mnt, avg_foc, avg_rot, setpoint, tempccdtemp, ccd_humidity, ccd_pressure, darkslide_state, exposure_time, this_exposure_filter, exposure_filter_offset, pane,opt, observer_user_name, hint, azimuth_of_observation, altitude_of_observation, airmass_of_observation, pixscale, smartstackid,sskcounter,Nsmartstack, longstackid, ra_at_time_of_exposure, dec_at_time_of_exposure, manually_requested_calibration, object_name, object_specf, ha_corr, dec_corr, focus_position, selfconfig, selfname, camera_known_gain, camera_known_readnoise, start_time_of_observation, observer_user_id, selfcamera_path,  solve_it, next_seq ) = payload
 
     post_exposure_process_timer=time.time()
 
@@ -3858,7 +3858,7 @@ def post_exposure_process(payload):
         hdu.header["ISMASTER"] = (False, "Is master image")
         current_camera_name = selfconfig["camera"][selfname]["name"]
 
-        next_seq = next_sequence(current_camera_name)
+        #next_seq = next_sequence(current_camera_name)
         hdu.header["FRAMENUM"] = (int(next_seq), "Running frame number")
         hdu.header["SMARTSTK"] = smartstackid # ID code for an individual smart stack group
         hdu.header["SSTKNUM"] = sskcounter
