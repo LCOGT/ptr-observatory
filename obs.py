@@ -2686,17 +2686,18 @@ class Observatory:
                                     plog("Platesolve has found that the current suggested pointing is way off!")
                                     plog("This may be a poor pointing estimate.")
                                     plog("This is more than a simple nudge, so not nudging the scope.")
-                                    g_dev["mnt"].reset_mount_reference()
-                                    plog("I've  reset the mount_reference.")
+                                    g_dev["obs"].send_to_user("Platesolve detects pointing far out, RA: " + str(err_ha * 15 * 3600) + " DEC: " +str(err_dec * 3600))
+                                    # g_dev["mnt"].reset_mount_reference()
+                                    # plog("I've  reset the mount_reference.")
 
-                                    plog ("reattempting to get back on target on next attempt")
-                                    #self.pointing_correction_requested_by_platesolve_thread = True
-                                    self.pointing_recentering_requested_by_platesolve_thread = True
-                                    self.pointing_correction_request_time = time.time()
-                                    self.pointing_correction_request_ra = target_ra
-                                    self.pointing_correction_request_dec = target_dec
-                                    self.pointing_correction_request_ra_err = err_ha
-                                    self.pointing_correction_request_dec_err = err_dec
+                                    # plog ("reattempting to get back on target on next attempt")
+                                    # #self.pointing_correction_requested_by_platesolve_thread = True
+                                    # self.pointing_recentering_requested_by_platesolve_thread = True
+                                    # self.pointing_correction_request_time = time.time()
+                                    # self.pointing_correction_request_ra = target_ra
+                                    # self.pointing_correction_request_dec = target_dec
+                                    # self.pointing_correction_request_ra_err = err_ha
+                                    # self.pointing_correction_request_dec_err = err_dec
 
                                 elif self.time_of_last_slew > time_platesolve_requested:
                                     plog("detected a slew since beginning platesolve... bailing out of platesolve.")
