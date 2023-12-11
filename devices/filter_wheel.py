@@ -30,7 +30,9 @@ class FilterWheel:
         g_dev["fil"] = self
         self.config = config["filter_wheel"]
         self.previous_filter_name='none'
+
         self.driver = driver
+
         if driver is not None:
             self.null_filterwheel = False
             self.dual_filter = self.config["filter_wheel1"]["dual_wheel"]
@@ -506,6 +508,18 @@ class FilterWheel:
         self.filter_change_requested=True
         self.wait_for_filterwheel_update()
 
+# <<<<<<< Updated upstream
+# =======
+#             except:
+#                 pass
+#             self.filter_offset = float(self.filter_data[filt_pointer][2])
+#         elif self.maxim and self.dual:
+#             try:
+#                 breakpoint()
+#                 self.filter.Filter = filter_selections[0]
+#                 if self.dual_filter:
+#                     self.filter.GuiderFilter = filter_selections[1]
+# >>>>>>> Stashed changes
 
 
         if self.wait_time_after_filter_change != 0:

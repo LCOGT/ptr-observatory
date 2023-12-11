@@ -101,10 +101,10 @@ site_config = {
     # can be toggled by an admin in the Observe tab.
     'scope_in_manual_mode': False,
     'mount_reference_model_off': True,
-    'sun_checks_on': True,
+    'sun_checks_on': False,
     'moon_checks_on': True,
     'altitude_checks_on': True,    
-    'daytime_exposure_time_safety_on': True,
+    'daytime_exposure_time_safety_on': False,
     
     
     
