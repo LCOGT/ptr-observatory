@@ -1147,7 +1147,7 @@ class Observatory:
 
         #g_dev['foc'].update_focuser_temperature()
 
-        if True and ((time.time() - self.queue_reporting_timer) > self.queue_reporting_period):
+        if False and ((time.time() - self.queue_reporting_timer) > self.queue_reporting_period):
             self.queue_reporting_timer=time.time()
             plog ("Queue Reports - hunting for ram leak")
 
@@ -2625,7 +2625,7 @@ class Observatory:
                             solved_arcsecperpixel = solve["arcsec_per_pixel"]
                             plog("1x1 pixelscale solved: " + str(float(solved_arcsecperpixel / platesolve_bin_factor)))# / g_dev['cam'].native_bin)))
 
-                            self.pixelscale_shelf = shelve.open(g_dev['obs'].obsid_path + 'ptr_night_shelf/' + 'pixelscale' + g_dev['cam'].name + str(g_dev['obs'].name))
+                            self.pixelscale_shelf = shelve.open(g_dev['obs'].obsid_path + 'ptr_night_shelf/' + 'pixelscale' + g_dev['cam'].alias + str(g_dev['obs'].name))
                             try:
                                 pixelscale_list=self.pixelscale_shelf['pixelscale_list']
                             except:

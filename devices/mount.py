@@ -328,7 +328,7 @@ class Mount:
         self.request_tracking_off = False
 
         self.request_set_RightAscensionRate=False
-        self.request_set_DeclinationRate=False  
+        self.request_set_DeclinationRate=False
 
         self.CanFindHome = self.mount.CanFindHome
 
@@ -457,7 +457,7 @@ class Mount:
                 if (self.mount_update_timer < time.time() - self.mount_update_period) or (self.currently_slewing) and not self.mount_update_paused:
 
                     self.currently_slewing= self.mount_update_wincom.Slewing
-                    
+
 
                     if self.unpark_requested:
                         self.unpark_requested=False
@@ -471,28 +471,28 @@ class Mount:
 
                     if self.find_home_requested:
                         self.find_home_requested=False
-                     
-                         
-                        #mount_at_home = self.mount_update_wincom.AtHome                         
-   
+
+
+                        #mount_at_home = self.mount_update_wincom.AtHome
+
                         if self.mount_update_wincom.AtHome:
                             plog("Mount is at home.")
                         else:
                             g_dev['obs'].time_of_last_slew=time.time()
                             if self.mount_update_wincom.AtPark:
                                 self.mount_update_wincom.Unpark()
-                                
+
                             while self.mount_update_wincom.Slewing:
                                 plog("waiting for slew before homing")
                                 time.sleep(0.2)
-                            
+
                             self.mount_update_wincom.FindHome()
-                            
-                            
-                            
+
+
+
                             #self.unpark_command()
                             #self.wait_for_slew()
-   
+
                             # self.move_time = time.time()
                             # # mount command #
                             # while self.mount_busy:
@@ -500,9 +500,9 @@ class Mount:
                             # self.mount_busy=True
                             #self.mount.FindHome()
                             # self.mount_busy=False
-                            
 
-                    
+
+
                     if self.abort_slew_requested:
                         self.abort_slew_requested=False
                         self.mount_update_wincom.AbortSlew()
@@ -533,16 +533,16 @@ class Mount:
                         self.request_set_RightAscensionRate=False
                         self.mount_update_wincom.RightAscensionRate=self.request_new_RightAscensionRate
                         self.RightAscensionRate=self.request_new_RightAscensionRate
-                        
+
                     if self.request_set_DeclinationRate:
                         self.request_set_DeclinationRate=False
                         self.mount_update_wincom.DeclinationRate=self.request_new_DeclinationRate
                         self.DeclinationRate=self.request_new_DeclinationRate
-                        
-                    
 
 
-                    
+
+
+
                     if self.request_find_home:
                         self.request_find_home=False
                         self.mount_update_wincom.FindHome()
@@ -559,7 +559,7 @@ class Mount:
                     self.right_ascension_directly_from_mount = copy.deepcopy(self.mount_update_wincom.RightAscension)
                     self.declination_directly_from_mount = copy.deepcopy(self.mount_update_wincom.Declination)
 
-                    
+
 
                     self.mount_updates=self.mount_updates + 1
                     self.mount_update_timer=time.time()
@@ -1440,9 +1440,9 @@ class Mount:
 
         # Fifth thing, check that the sky flat latch isn't on
         # (I moved the scope during flats once, it wasn't optimal)
-        plog ("MTF TEMP REPORTING FOR SKYFLAT")
-        plog (str(skyflatspot))
-        plog (str(g_dev['seq'].morn_sky_flat_latch  or g_dev['seq'].eve_sky_flat_latch or g_dev['seq'].sky_flat_latch or g_dev['seq'].bias_dark_latch))
+        #plog ("MTF TEMP REPORTING FOR SKYFLAT")
+        #plog (str(skyflatspot))
+        #plog (str(g_dev['seq'].morn_sky_flat_latch  or g_dev['seq'].eve_sky_flat_latch or g_dev['seq'].sky_flat_latch or g_dev['seq'].bias_dark_latch))
         # if not skyflatspot:
         #     if g_dev['seq'].morn_sky_flat_latch  or g_dev['seq'].eve_sky_flat_latch or g_dev['seq'].sky_flat_latch or g_dev['seq'].bias_dark_latch:
         #         g_dev['obs'].send_to_user("Refusing pointing request as the observatory is currently undertaking flats or calibration frames.")
@@ -1813,14 +1813,14 @@ class Mount:
                 # self.mount_busy=True
                 # new_pierside =  self.mount.DestinationSideOfPier(ra, dec) #  A tuple gets returned: (pierside, Ra.h and dec.d)
                 # self.mount_busy=False
-                
-                
+
+
                 self.request_new_pierside=True
                 self.request_new_pierside_ra=ra
                 self.request_new_pierside_dec=dec
 
                 self.wait_for_mount_update()
-                
+
                 # end mount command #
                 if len(self.new_pierside) > 1:
                     if self.new_pierside[0] == 0:
@@ -1837,13 +1837,13 @@ class Mount:
                     # self.mount_busy=True
                     # new_pierside =  self.mount.DestinationSideOfPier(ra, dec) #  A tuple gets returned: (pierside, Ra.h and dec.d)
                     # self.mount_busy=False
-                    
+
                     self.request_new_pierside=True
                     self.request_new_pierside_ra=ra
                     self.request_new_pierside_dec=dec
 
                     self.wait_for_mount_update()
-                    
+
                     # end mount command #
                     if self.new_pierside == 0:
                         delta_ra, delta_dec = self.get_mount_reference()
@@ -2059,23 +2059,23 @@ class Mount:
             # while self.mount_busy:
             #     time.sleep(0.05)
             # self.mount_busy=True
-            
-            
-            
-            
+
+
+
+
             #self.mount.RightAscensionRate = 0.0 # self.prior_roll_rate  #Neg number makes RA decrease
-            
+
             self.request_set_RightAscensionRate=True
             self.request_new_RightAscensionRate=0.0
             self.wait_for_mount_update()
-            
-            
+
+
             #self.mount_busy=False
             # end mount command #
 
         else:
             self.prior_roll_rate = 0.0
-            
+
         if self.CanSetDeclinationRate:
            self.prior_pitch_rate = -(self.dec_mech_adv - self.dec_mech)*RTOS/self.delta_t_s    #20210329 OK 1 hour from zenith.  No Appsid correction per ASCOM spec.
            # mount command #
@@ -2083,12 +2083,12 @@ class Mount:
            #     time.sleep(0.05)
            # self.mount_busy=True
            #self.mount.DeclinationRate = self.prior_pitch_rate  #Neg sign makes Dec decrease
-           
+
            self.request_set_DeclinationRate=True
            self.request_new_DeclinationRate=self.prior_pitch_rate
            self.wait_for_mount_update()
-           
-           
+
+
            # self.mount_busy=False
            # end mount command #
            #plog("Rates, refr are:  ", self.prior_roll_rate, self.prior_pitch_rate, self.refr_asec)
@@ -2107,7 +2107,7 @@ class Mount:
             self.request_set_RightAscensionRate=True
             self.request_new_RightAscensionRate=0.0
             self.wait_for_mount_update()
-            
+
             #self.mount_busy=False
             # end mount command #
 
@@ -2139,7 +2139,7 @@ class Mount:
 
     def stop_command(self, req, opt):
         plog("mount cmd: stopping mount")
-        
+
         self.abort_slew_requested=True
         self.wait_for_mount_update()
         #self.mount.AbortSlew()
@@ -2150,12 +2150,12 @@ class Mount:
         if self.CanFindHome:
             self.find_home_requested=True
             self.wait_for_mount_update()
-            
+
             g_dev['obs'].rotator_has_been_checked_since_last_slew=False
             # end mount command #
             self.wait_for_slew()
             self.get_mount_coordinates()
-            
+
 
         else:
             plog("Mount is not capable of finding home. Slewing to home_alt and home_az")

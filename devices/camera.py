@@ -319,7 +319,7 @@ class Camera:
         """
         This section loads in the calibration files for flash calibrations
         """
-        plog("loading flash dark, bias and flat masters frames if available")
+        plog("loading flash dark, bias and flat master frames if available")
         self.biasFiles = {}
         self.darkFiles = {}
         self.flatFiles = {}
@@ -609,7 +609,7 @@ class Camera:
         # Figure out pixelscale from own observations
         # Or use the config value if there hasn't been enough
         # observations yet.
-        self.pixelscale_shelf = shelve.open(g_dev['obs'].obsid_path + 'ptr_night_shelf/' + 'pixelscale' + g_dev['cam'].name + str(g_dev['obs'].name))
+        self.pixelscale_shelf = shelve.open(g_dev['obs'].obsid_path + 'ptr_night_shelf/' + 'pixelscale' + g_dev['cam'].alias + str(g_dev['obs'].name))
         try:
             pixelscale_list=self.pixelscale_shelf['pixelscale_list']
         except:
@@ -725,6 +725,8 @@ class Camera:
         try:
             seq = test_sequence(self.alias)
         except:
+            plog ("Sequence number failed to load. Starting from zero.")
+            plog(traceback.format_exc())
             reset_sequence(self.alias)
         try:
             self._stop_expose()

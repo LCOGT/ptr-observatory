@@ -59,7 +59,7 @@ class FilterWheel:
                 r0 = requests.get(self.ip + "/filterwheel/0/position", timeout=5)
                 r1 = requests.get(self.ip + "/filterwheel/1/position", timeout=5)
                 if str(r0) == str(r1) == "<Response [200]>":
-                    plog("LCO Wheel present and connected.")
+                    plog("LCO Dual Layer Filter Wheel connected.")
 
                 r0 = json.loads(r0.text)
                 r1 = json.loads(r1.text)
