@@ -2686,7 +2686,7 @@ class Observatory:
                                     plog("Platesolve has found that the current suggested pointing is way off!")
                                     plog("This may be a poor pointing estimate.")
                                     plog("This is more than a simple nudge, so not nudging the scope.")
-                                    g_dev["obs"].send_to_user("Platesolve detects pointing far out, RA: " + str(err_ha * 15 * 3600) + " DEC: " +str(err_dec * 3600))
+                                    g_dev["obs"].send_to_user("Platesolve detects pointing far out, RA: " + str(round(err_ha * 15 * 3600, 2)) + " DEC: " +str (round(err_dec * 3600, 2)))
                                     # g_dev["mnt"].reset_mount_reference()
                                     # plog("I've  reset the mount_reference.")
 
