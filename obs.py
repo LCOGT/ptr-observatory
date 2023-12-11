@@ -2861,6 +2861,20 @@ class Observatory:
 
                 if slow_process[0] == 'raw' or slow_process[0] == 'raw_alt_path' or slow_process[0] == 'reduced_alt_path':
 
+                    # Make sure normal paths exist
+                    os.makedirs(
+                        self.camera_path + g_dev["day"], exist_ok=True
+                    )
+                    os.makedirs(
+                        self.camera_path + g_dev["day"] + "/raw/", exist_ok=True
+                    )
+                    os.makedirs(
+                        self.camera_path + g_dev["day"] + "/reduced/", exist_ok=True
+                    )
+                    os.makedirs(
+                        self.camera_path + g_dev["day"] + "/calib/", exist_ok=True)
+
+
                     # Make  sure the alt paths exist
                     if self.config["save_to_alt_path"] == "yes":
                         if slow_process[0] == 'raw_alt_path' or slow_process[0] == 'reduced_alt_path':
