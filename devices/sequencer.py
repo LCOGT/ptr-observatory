@@ -1588,22 +1588,21 @@ class Sequencer:
 
             self.collect_and_queue_neglected_fits()
 
-        # At this stage, we want to empty the AWS Queue!
-        # We are about to pull all the fits.fz out from their folders
-        # And dump them in the orphans folder so we want the queue
-        # cleared to reconstitute it.
-        plog ("Emptying AWS Queue To Reconstitute it from the Orphan Directory")
-        with g_dev['obs'].ptrarchive_queue.mutex:
-            g_dev['obs'].ptrarchive_queue.queue.clear()
+            # At this stage, we want to empty the AWS Queue!
+            # We are about to pull all the fits.fz out from their folders
+            # And dump them in the orphans folder so we want the queue
+            # cleared to reconstitute it.
+            plog ("Emptying AWS Queue To Reconstitute it from the Orphan Directory")
+            with g_dev['obs'].ptrarchive_queue.mutex:
+                g_dev['obs'].ptrarchive_queue.queue.clear()
 
-        while (not g_dev['obs'].ptrarchive_queue.empty()):
-            plog ("Waiting for the AWS queue to complete it's last job")
-            time.sleep(1)
+            while (not g_dev['obs'].ptrarchive_queue.empty()):
+                plog ("Waiting for the AWS queue to complete it's last job")
+                time.sleep(1)
 
-        # Before Culling, making sure we go through and harvest
-        # all the orphaned and neglected files that actually
-        # do need to get to the PTRarchive
-        if g_dev['obs'].config['ingest_raws_directly_to_archive']:
+            # Before Culling, making sure we go through and harvest
+            # all the orphaned and neglected files that actually
+            # do need to get to the PTRarchive
 
             self.collect_and_queue_neglected_fits()
 
@@ -1923,13 +1922,13 @@ class Sequencer:
             plog (datetime.datetime.now().strftime("%H:%M:%S"))
             # Go through each pixel and calculate nanmedian. Can't do all arrays at once as it is hugely memory intensive
             finalImage=np.zeros(shapeImage,dtype=float)
-                        
+
             mptask=[]
             counter=0
             for goog in range(shapeImage[0]):
                 mptask.append((g_dev['obs'].local_bias_folder + 'tempfile',counter, (shapeImage[0],shapeImage[1],len(inputList))))
-                counter=counter+1           
-            
+                counter=counter+1
+
             counter=0
             with Pool(math.floor(os.cpu_count()*0.85)) as pool:
                 for result in pool.map(stack_nanmedian_row, mptask):
@@ -1940,13 +1939,13 @@ class Sequencer:
                     #print (result)
                     finalImage[counter,:]=result
                     counter=counter+1
-            
+
             # for xi in range(shapeImage[0]):
             #     if xi % 500 == 0:
             #         print ("Up to Row" + str(xi))
             #         print (datetime.datetime.now().strftime("%H:%M:%S"))
             #     finalImage[xi,:]=np.nanmedian(PLDrive[xi,:,:], axis=1)
-                
+
             plog(datetime.datetime.now().strftime("%H:%M:%S"))
             plog ("**********************************")
 
@@ -2036,14 +2035,14 @@ class Sequencer:
             plog (datetime.datetime.now().strftime("%H:%M:%S"))
             # Go through each pixel and calculate nanmedian. Can't do all arrays at once as it is hugely memory intensive
             finalImage=np.zeros(shapeImage,dtype=float)
-            
-            
+
+
             mptask=[]
             counter=0
             for goog in range(shapeImage[0]):
                 mptask.append((g_dev['obs'].local_dark_folder + 'tempfile',counter, (shapeImage[0],shapeImage[1],len(inputList))))
-                counter=counter+1           
-            
+                counter=counter+1
+
             counter=0
             with Pool(math.floor(os.cpu_count()*0.85)) as pool:
                 for result in pool.map(stack_nanmedian_row, mptask):
@@ -2054,14 +2053,14 @@ class Sequencer:
                     #print (result)
                     finalImage[counter,:]=result
                     counter=counter+1
-            
-            
+
+
             # for xi in range(shapeImage[0]):
             #     if xi % 500 == 0:
             #         print ("Up to Row" + str(xi))
             #         print (datetime.datetime.now().strftime("%H:%M:%S"))
             #     finalImage[xi,:]=np.nanmedian(PLDrive[xi,:,:], axis=1)
-                
+
             plog (datetime.datetime.now().strftime("%H:%M:%S"))
             plog ("**********************************")
 
@@ -2185,13 +2184,13 @@ class Sequencer:
                         plog (datetime.datetime.now().strftime("%H:%M:%S"))
                         # Go through each pixel and calculate nanmedian. Can't do all arrays at once as it is hugely memory intensive
                         finalImage=np.zeros(shapeImage,dtype=float)
-                        
+
                         mptask=[]
                         counter=0
                         for goog in range(shapeImage[0]):
                             mptask.append((g_dev['obs'].local_flat_folder + 'tempfile',counter, (shapeImage[0],shapeImage[1],len(inputList))))
-                            counter=counter+1           
-                        
+                            counter=counter+1
+
                         counter=0
                         with Pool(math.floor(os.cpu_count()*0.85)) as pool:
                             for result in pool.map(stack_nanmedian_row, mptask):
@@ -2202,9 +2201,9 @@ class Sequencer:
                                 #print (result)
                                 finalImage[counter,:]=result
                                 counter=counter+1
-                        
-                        
-                        
+
+
+
                         # for xi in range(shapeImage[0]):
                         #     if xi % 500 == 0:
                         #         print ("Up to Row" + str(xi))

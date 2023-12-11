@@ -22,13 +22,13 @@ spokes_per_turn = 4
 az_asec_per_small_grad = 0.74*60
 az_asec_per_major_grad = 3.7*60
 
-IH = -563.12
+IH = 512
 
-ID = +549.54
+ID =413
 
-MA = 188.43
+MA = 512
 
-ME = -860.84
+ME = -165
 
 #aro_lift = ME + adjust
 #aro_lift - ME = adjust
@@ -40,7 +40,7 @@ small_az = round(az/az_asec_per_small_grad, 1)
 major_az = round(az/az_asec_per_major_grad, 1)
 #print('-- positive means Lower - ClockWise, negative means Raise - counterCW.')
 print('\n\n')
-print("Polar Axis alignment derived from Tpoint run 20231210.DAT.")
+print("Polar Axis alignment derived from Tpoint run 20231211.DAT.")
 print('\n\n')
 if adjust > 0:
     print("Elevation Adjustment:  ", adjust, 'asec Clockwise, as seen from above. Lower Tel, raise tail.')
@@ -64,3 +64,6 @@ else:
     print("AAzimuth Adjustment:  ", major_az, 'major graduations COUNTER-Clockwise, as seen from above.' )
     print('\n')
     print('1: Check right az knob is snug, 2) back off left az knob, then turn right az knob the suggested amount. then snug other side.')
+print('\n\n')
+print("Last, double check the mount is level and the black tapes line up.")
+print('Clear Skies!')
