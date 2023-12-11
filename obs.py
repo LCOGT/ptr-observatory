@@ -2863,16 +2863,16 @@ class Observatory:
 
                     # Make sure normal paths exist
                     os.makedirs(
-                        self.camera_path + g_dev["day"], exist_ok=True
+                        g_dev['cam'].camera_path + g_dev["day"], exist_ok=True
                     )
                     os.makedirs(
-                        self.camera_path + g_dev["day"] + "/raw/", exist_ok=True
+                        g_dev['cam'].camera_path + g_dev["day"] + "/raw/", exist_ok=True
                     )
                     os.makedirs(
-                        self.camera_path + g_dev["day"] + "/reduced/", exist_ok=True
+                        g_dev['cam'].camera_path + g_dev["day"] + "/reduced/", exist_ok=True
                     )
                     os.makedirs(
-                        self.camera_path + g_dev["day"] + "/calib/", exist_ok=True)
+                        g_dev['cam'].camera_path + g_dev["day"] + "/calib/", exist_ok=True)
 
 
                     # Make  sure the alt paths exist
