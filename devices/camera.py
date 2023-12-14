@@ -265,6 +265,7 @@ class Camera:
             g_dev["cam"] = self
         self.config = config
         self.alias = config["camera"][self.name]["name"]
+        #breakpoint()
         win32com.client.pythoncom.CoInitialize()
         plog(driver, name)
         if not driver == "QHYCCD_Direct_Control":
@@ -389,8 +390,11 @@ class Camera:
             self.ascom = True
             self.theskyx = False
             self.qhydirect = False
+            
+            self.camera.Connected = True
             plog("ASCOM is connected:  ", self._connect(True))
             plog("Control is ASCOM camera driver.")
+            #breakpoint()
 
             self.imagesize_x = self.camera.CameraXSize
             self.imagesize_y = self.camera.CameraYSize
@@ -2341,7 +2345,7 @@ class Camera:
                     self.post_foc = self.pre_foc
                     self.post_mnt = self.pre_mnt
 
-
+                #breakpoint()
 
                 imageCollected = 0
                 retrycounter = 0
@@ -2351,8 +2355,9 @@ class Camera:
                         plog("Retried 8 times and didn't get an image, giving up.")
                         return expresult
                     try:
-                        outputimg = self._getImageArray()
+                        outputimg = self._getImageArray().astype(np.float32)
                         imageCollected = 1
+                        #breakpoint()
                     except Exception as e:
                         plog(e)
                         plog (traceback.format_exc())
@@ -2366,8 +2371,7 @@ class Camera:
                     self.wait_for_slew()
                     g_dev['obs'].check_platesolve_and_nudge()
 
-
-                #breakpoint()
+                 
                 if (frame_type in ["bias", "dark"] or frame_type[-4:] == ['flat']) and not manually_requested_calibration:
                     plog("Median of full-image area bias, dark or flat:  ", np.median(outputimg))
 
@@ -2595,7 +2599,6 @@ class Camera:
                 #post_exposure_process(payload=payload)
 
                 #deep_copy_timer=time.time()
-
 
 
                 if not frame_type[-4:] == "flat" or not frame_type in ["bias", "dark"] and not focus_image == True and not frame_type=='pointing':
@@ -3187,6 +3190,8 @@ def post_exposure_process(payload):
     post_exposure_process_timer=time.time()
 
     ix, iy = img.shape
+
+
 
     image_saturation_level = g_dev['cam'].config["camera"][g_dev['cam'].name]["settings"]["saturate"]
 
@@ -4107,7 +4112,7 @@ def post_exposure_process(payload):
             focus_image = True
         else:
             focus_image = False
-
+        #breakpoint()
         # If the file isn't a calibration frame, then undertake a flash reduction quickly
         # To make a palatable jpg AS SOON AS POSSIBLE to send to AWS
         if (not frame_type.lower() in (
@@ -4154,12 +4159,14 @@ def post_exposure_process(payload):
                     #From the reduced data, crop around the edges of the
                     #raw 1x1 image to get rid of overscan and crusty edge bits
                     edge_crop=selfconfig["camera"][selfname]["settings"]['reduced_image_edge_crop']
-                    hdusmalldata=hdusmalldata[edge_crop:-edge_crop,edge_crop:-edge_crop]
-
-                    hdusmallheader['NAXIS1']=float(hdu.header['NAXIS1']) - (edge_crop * 2)
-                    hdusmallheader['NAXIS2']=float(hdu.header['NAXIS2']) - (edge_crop * 2)
-                    hdusmallheader['CRPIX1']=float(hdu.header['CRPIX1']) - (edge_crop * 2)
-                    hdusmallheader['CRPIX2']=float(hdu.header['CRPIX2']) - (edge_crop * 2)
+                    #breakpoint()
+                    if edge_crop > 0:
+                        hdusmalldata=hdusmalldata[edge_crop:-edge_crop,edge_crop:-edge_crop]
+    
+                        hdusmallheader['NAXIS1']=float(hdu.header['NAXIS1']) - (edge_crop * 2)
+                        hdusmallheader['NAXIS2']=float(hdu.header['NAXIS2']) - (edge_crop * 2)
+                        hdusmallheader['CRPIX1']=float(hdu.header['CRPIX1']) - (edge_crop * 2)
+                        hdusmallheader['CRPIX2']=float(hdu.header['CRPIX2']) - (edge_crop * 2)
 
                     selfnative_bin = selfconfig["camera"][selfname]["settings"]["native_bin"]
 

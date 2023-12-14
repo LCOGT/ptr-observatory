@@ -75,7 +75,7 @@ class Focuser:
 
 
 
-        self.focuser_update_period=3
+        self.focuser_update_period=15   #WER changed from 3 20231214
         self.focuser_updates=0
         self.guarded_move_requested=False
         self.guarded_move_to_focus=20000
@@ -213,12 +213,18 @@ class Focuser:
 
 
             elif self.focuser_update_timer < time.time() - self.focuser_update_period:
+                
                 try:
                     if self.theskyx:
                         self.current_focus_temperature=self.focuser_update_wincom.focTemperature
                     else:
-                        self.current_focus_temperature=self.focuser_update_wincom.Temperature
+                        #MRC2temp probe has failed. Will sort tomorrow WER 20231213 Early Eve
+                        #self.current_focus_temperature= 16 
+                        self.focuser_update_wincom.Temperature
+                        #plog("Focus temp set to 16C, temporary Focus.py  line 222")
                 except:
+                    plog ("glitch in getting focus temperature")
+                    plog (traceback.format_exc())
                     plog ("glitch in getting focus temperature")
                     plog (traceback.format_exc())
                     

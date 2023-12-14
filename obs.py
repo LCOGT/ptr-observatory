@@ -2308,9 +2308,7 @@ class Observatory:
                 ##  Here WER adds Zoom prototype code:
                 zoom_factor = 'full'   #This still needs to be passed in as a parameter.
 
-
                 jpeg_subprocess=subprocess.Popen(['python','subprocesses/mainjpeg.py'],stdin=subprocess.PIPE,stdout=subprocess.PIPE,bufsize=0)
-
 
 
                 if True:
