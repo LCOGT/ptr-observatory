@@ -185,8 +185,8 @@ site_config = {
     'auto_eve_bias_dark': True,
     'auto_eve_sky_flat': True,
     
-     'time_to_wait_after_roof_opens_to_take_flats': 120,   #Just imposing a minimum in case of a restart.
-    'auto_midnight_moonless_bias_dark': True,
+    'time_to_wait_after_roof_opens_to_take_flats': 120,   #sec Just imposing a minimum in case of a restart.
+    'auto_midnight_moonless_bias_dark': False,
     'auto_morn_sky_flat': True,
     'auto_morn_bias_dark': True,
     
@@ -448,7 +448,7 @@ site_config = {
             'correct_focus_for_temperature' : True,
             'maximum_good_focus_in_arcsecond': 2.5, # highest value to consider as being in "good focus". Used to select last good focus value
 
-            'reference':  5870,    #Nominal at 20C Primary temperature, in microns not steps.            
+            'reference':  10500,    #Nominal at 20C Primary temperature, in microns not steps.            
             'z_compression': 0.0, #  microns per degree of zenith distance
             'z_coef_date':  '20221002',   # 'reference': 4375,    #   Guess 20210904  Nominal at 10C Primary temperature
             'use_local_temp':  False,
@@ -743,10 +743,10 @@ site_config = {
 
                 # This is the area for cooling related settings
                 'cooler_on': True,
-                'temp_setpoint': -25,  # Verify we can go colder
+                'temp_setpoint': -20.,  # Verify we can go colder
                 'has_chiller': True,                
                 'chiller_com_port': 'COM1',
-                'chiller_ref_temp':  15.0,  # C
+                'chiller_ref_temp':  12.0,  # C
                 'day_warm': False,
                 'day_warm_degrees': 0,  # Number of degrees to warm during the daytime.
                 'protect_camera_from_overheating' : False,
@@ -773,7 +773,7 @@ site_config = {
                 'min_exposure': 0.0001,
                 'max_exposure': 600.,
                 # For certain shutters, short exposures aren't good for flats. Some CMOS have banding in too short an exposure. Largely applies to ccds though.
-                'min_flat_exposure': 0.0001,                
+                'min_flat_exposure': 0.00005,                
                 # Realistically there is maximum flat_exposure that makes sure flats are efficient and aren't collecting actual stars.
                 'max_flat_exposure': 20.0,
                 # During the daytime with the daytime safety mode on, exposures will be limited to this maximum exposure

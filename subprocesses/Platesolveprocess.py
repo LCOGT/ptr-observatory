@@ -181,7 +181,8 @@ flux, fluxerr, flag = sep.sum_ellipse(focusimg, sources['x'], sources['y'],
 sources['flux'] = flux
 sources['fluxerr'] = fluxerr
 sources['flag'] |= flag
-sources['FWHM'], _ = sep.flux_radius(focusimg, sources['x'], sources['y'], sources['a'], 0.5,
+
+sources['FWHM'], _ = 2* sep.flux_radius(focusimg, sources['x'], sources['y'], sources['a'], 0.5,
                                      subpix=5)
 
 # BANZAI prune nans from table
