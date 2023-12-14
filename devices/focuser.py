@@ -220,7 +220,7 @@ class Focuser:
                     else:
                         #MRC2temp probe has failed. Will sort tomorrow WER 20231213 Early Eve
                         #self.current_focus_temperature= 16 
-                        self.focuser_update_wincom.Temperature
+                        self.current_focus_temperature=self.focuser_update_wincom.Temperature
                         #plog("Focus temp set to 16C, temporary Focus.py  line 222")
                 except:
                     plog ("glitch in getting focus temperature")
