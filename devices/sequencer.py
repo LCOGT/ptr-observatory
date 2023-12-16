@@ -216,6 +216,8 @@ class Sequencer:
         self.rotator_has_been_homed_this_evening=False
         g_dev['obs'].request_update_calendar_blocks()
         #self.blocks=
+        
+        
 
     def wait_for_slew(self):
         """
@@ -2662,7 +2664,8 @@ class Sequencer:
         camera_gain_collector=[]
 
         # Super-duper double check that darkslide is open
-        if g_dev['cam'].darkslide:
+        #NB this is the only reference to darkslide outside of the Camera and obs_config modules.
+        if g_dev['cam'].has_darkslide:   #NB we should rename to 'has_darkslide' WER
             g_dev['cam'].darkslide_instance.openDarkslide()
             g_dev['cam'].darkslide_open = True
             g_dev['cam'].darkslide_state = 'Open'

@@ -674,21 +674,35 @@ class Camera:
             except:
                 plog("Problem setting up 1x1 binning at startup.")
 
-        self.darkslide = False
+        self.has_darkslide = False
         self.darkslide_state = "N.A."   #Not Available.
         if self.config["camera"][self.name]["settings"]["has_darkslide"]:
-            self.darkslide = True
+            self.has_darkslide = True
             self.darkslide_state = 'Unknown'
+            self.darkslide_type=self.config["camera"][self.name]["settings"]['darkslide_type']
+
             com_port = self.config["camera"][self.name]["settings"]["darkslide_com"]
-            self.darkslide_instance = Darkslide(
-                com_port
-            )
+            if self.darkslide_type=='COM':
+                self.darkslide_instance = Darkslide(com_port)
+            #elif self.darkslide_type='ASCOM_FLI_SHUTTER':  #this must be the Fli.ASCOM version
+                #self.darkslide_instance = self.camera
+                #breakpoint()
+                #Michael I stop here. There is one reference to darkslide in Sequencer line 2668
             # As it takes 12seconds to open, make sure it is either Open or Shut at startup
             if self.darkslide_state != 'Open':
-                self.darkslide_instance.openDarkslide()
-                self.darkslide_open = True
-                self.darkslide_state = 'Open'
-
+                if self.darkslide_type=='COM':
+                    self.darkslide_instance.openDarkslide()
+                    ####I think we just need to add open and closeDarkslide methods to the camera class and
+                    ####make the calls outlined in the PDF  note lower case open and close strings to the ASCOM driver
+                    self.darkslide_open = True
+                    self.darkslide_state = 'Open'
+                elif self.darkslide_type=='ASCOM_FLI_SHUTTER':
+                    self.camera.Action('SetShutter', 'open')
+                    self.darkslide_open = True
+                    self.darkslide_state = 'Open'
+                    
+                
+            ###See lines around 766 for local methods
 
 
         if True:
@@ -757,6 +771,20 @@ class Camera:
             #self.focuser_update_thread_queue = queue.Queue(maxsize=0)
             self.camera_update_thread=threading.Thread(target=self.camera_update_thread)
             self.camera_update_thread.start()
+
+    # def openDarkslide(self):
+    #     breakpoint()   #Fill in here from the PDF shutter instructions.
+    #     pass
+    
+    # def closeDarkslide(self):
+    #     breakpoint()
+    #     pass
+    
+    # #I assume we might be able to read the shutter state...
+    
+    # def query_Darkslide(self):
+    #     breakpoint()
+    #     pass
 
     # Note this is a thread!
     def camera_update_thread(self):
@@ -1300,7 +1328,7 @@ class Camera:
         status = {}
         status["active_camera"] = self.name
         if self.config["camera"][self.name]["settings"]["has_darkslide"]:
-            status["darkslide"] = g_dev["drk"].slideStatus
+            status["darkslide"] = self.darkslide_state
         else:
             status["darkslide"] = "unknown"
 
@@ -1364,13 +1392,22 @@ class Camera:
             self.active_script = None
 
         elif action == "darkslide_close":
-
-            g_dev["drk"].closeDarkslide()
+            if self.darkslide_type=='COM':
+                g_dev["drk"].closeDarkslide()
+            elif self.darkslide_type=='ASCOM_FLI_SHUTTER':
+                self.camera.Action('SetShutter', 'close')
+            
+            
             plog("Closing the darkslide.")
             self.darkslide_state = 'Closed'
         elif action == "darkslide_open":
+            if self.darkslide_type=='COM':
+                g_dev["drk"].openDarkslide()
+            elif self.darkslide_type=='ASCOM_FLI_SHUTTER':
+                self.camera.Action('SetShutter', 'open')
+                        
 
-            g_dev["drk"].openDarkslide()
+            
             plog("Opening the darkslide.")
             self.darkslide_state = 'Open'
         elif action == "stop":
@@ -1830,14 +1867,21 @@ class Camera:
                             ldr_handle_time = None
                             ldr_handle_high_time = None  #  This is not maxim-specific
 
-                            if self.darkslide and bias_dark_or_light_type_frame == 'light':
+                            if self.has_darkslide and bias_dark_or_light_type_frame == 'light':
                                 if self.darkslide_state != 'Open':
-                                    self.darkslide_instance.openDarkslide()
+                                    if self.darkslide_type=='COM':
+                                        self.darkslide_instance.openDarkslide()
+                                    elif self.darkslide_type=='ASCOM_FLI_SHUTTER':
+                                        self.camera.Action('SetShutter', 'open')
                                     self.darkslide_open = True
                                     self.darkslide_state = 'Open'
-                            elif self.darkslide and (bias_dark_or_light_type_frame == 'bias' or bias_dark_or_light_type_frame == 'dark'):
+                            elif self.has_darkslide and (bias_dark_or_light_type_frame == 'bias' or bias_dark_or_light_type_frame == 'dark'):
                                 if self.darkslide_state != 'Closed':
-                                    self.darkslide_instance.closeDarkslide()
+                                    if self.darkslide_type=='COM':
+                                        self.darkslide_instance.closeDarkslide()
+                                    elif self.darkslide_type=='ASCOM_FLI_SHUTTER':
+                                        self.camera.Action('SetShutter', 'close')
+                                    
                                     self.darkslide_open = False
                                     self.darkslide_state = 'Closed'
 
@@ -2601,7 +2645,7 @@ class Camera:
                 #deep_copy_timer=time.time()
 
 
-                if not frame_type[-4:] == "flat" or not frame_type in ["bias", "dark"] and not focus_image == True and not frame_type=='pointing':
+                if not frame_type[-4:] == "flat" or (not frame_type in ["bias", "dark"] or (frame_type in ["bias", "dark"] and manually_requested_calibration)) and not focus_image == True and not frame_type=='pointing':
                     focus_position=g_dev['foc'].current_focus_position
                     self.post_processing_queue.put(copy.deepcopy((outputimg, g_dev["mnt"].pier_side, self.config["camera"][self.name]["settings"]['is_osc'], frame_type, self.config['camera']['camera_1_1']['settings']['reject_new_flat_by_known_gain'], avg_mnt, avg_foc, avg_rot, self.setpoint, self.tempccdtemp, self.ccd_humidity, self.ccd_pressure, self.darkslide_state, exposure_time, this_exposure_filter, exposure_filter_offset, self.pane,opt , observer_user_name, self.hint, azimuth_of_observation, altitude_of_observation, airmass_of_observation, self.pixscale, smartstackid,sskcounter,Nsmartstack, longstackid, ra_at_time_of_exposure, dec_at_time_of_exposure, manually_requested_calibration, object_name, object_specf, g_dev["mnt"].ha_corr, g_dev["mnt"].dec_corr, focus_position, self.config, self.name, self.camera_known_gain, self.camera_known_readnoise, start_time_of_observation, observer_user_id, self.camera_path,  solve_it, next_seq)), block=False)
                 #print ("Deep copy timer: " +str(time.time()-deep_copy_timer))
@@ -4379,7 +4423,7 @@ def post_exposure_process(payload):
 
     except:
         plog(traceback.format_exc())
-        breakpoint()
+ 
 
 def wait_for_slew():
     """

@@ -182,9 +182,9 @@ sources['flux'] = flux
 sources['fluxerr'] = fluxerr
 sources['flag'] |= flag
 
-sources['FWHM'], _ = 2* sep.flux_radius(focusimg, sources['x'], sources['y'], sources['a'], 0.5,
+sources['FWHM'], _ = sep.flux_radius(focusimg, sources['x'], sources['y'], sources['a'], 0.5,
                                      subpix=5)
-
+sources['FWHM'] = 2 * sources['FWHM']
 # BANZAI prune nans from table
 # nan_in_row = np.zeros(len(sources), dtype=bool)
 # for col in sources.colnames:

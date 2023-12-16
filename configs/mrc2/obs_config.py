@@ -816,8 +816,9 @@ site_config = {
                 'do_cosmics': False,
 
                 # Does this camera have a darkslide, if so, what are the settings?
-                'has_darkslide':  False,
-                'darkslide_com':  'COM15',
+                'has_darkslide':  True,           #was False until WER put in FLI ascom shutter mod
+                'darkslide_type' : 'ASCOM_FLI_SHUTTER', # dunno what the other one is yet.
+                'darkslide_com':  'ASCOM.FLI',    # Was "COM15" before changing to FLI.ASCOM
                 'shutter_type': "Electronic",
                
                 # 'has_screen': True,
