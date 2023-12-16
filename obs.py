@@ -2678,6 +2678,10 @@ class Observatory:
 
                             # If we are WAY out of range, then reset the mount reference and attempt moving back there.
                             if not self.auto_centering_off:
+                                
+                                dec_field_asec = (g_dev['cam'].pixscale * g_dev['cam'].imagesize_x) 
+                                ra_field_asec = (g_dev['cam'].pixscale * g_dev['cam'].imagesize_y) 
+                                
                                 if (abs(err_ha * 15 * 3600) > 5400) or (abs(err_dec * 3600) > 5400):
                                     err_ha = 0
                                     err_dec = 0
@@ -2700,7 +2704,8 @@ class Observatory:
                                 elif self.time_of_last_slew > time_platesolve_requested:
                                     plog("detected a slew since beginning platesolve... bailing out of platesolve.")
 
-                                else:
+                                # Only recenter if out by more than 1%
+                                elif (abs(err_ha * 15 * 3600) > 0.01 * ra_field_asec) or (abs(err_dec * 3600) > 0.01 * dec_field_asec):
 
                                      self.pointing_correction_requested_by_platesolve_thread = True
                                      self.pointing_correction_request_time = time.time()
