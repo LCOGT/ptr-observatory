@@ -2601,8 +2601,9 @@ class Camera:
                 #deep_copy_timer=time.time()
 
 
-                if not frame_type[-4:] == "flat" or not frame_type in ["bias", "dark"] and not focus_image == True and not frame_type=='pointing':
+                if not frame_type[-4:] == "flat" or not frame_type in ["bias", "dark"] and not focus_image and not frame_type=='pointing':
                     focus_position=g_dev['foc'].current_focus_position
+                    print ("going into the post exposure thread")
                     self.post_processing_queue.put(copy.deepcopy((outputimg, g_dev["mnt"].pier_side, self.config["camera"][self.name]["settings"]['is_osc'], frame_type, self.config['camera']['camera_1_1']['settings']['reject_new_flat_by_known_gain'], avg_mnt, avg_foc, avg_rot, self.setpoint, self.tempccdtemp, self.ccd_humidity, self.ccd_pressure, self.darkslide_state, exposure_time, this_exposure_filter, exposure_filter_offset, self.pane,opt , observer_user_name, self.hint, azimuth_of_observation, altitude_of_observation, airmass_of_observation, self.pixscale, smartstackid,sskcounter,Nsmartstack, longstackid, ra_at_time_of_exposure, dec_at_time_of_exposure, manually_requested_calibration, object_name, object_specf, g_dev["mnt"].ha_corr, g_dev["mnt"].dec_corr, focus_position, self.config, self.name, self.camera_known_gain, self.camera_known_readnoise, start_time_of_observation, observer_user_id, self.camera_path,  solve_it, next_seq)), block=False)
                 #print ("Deep copy timer: " +str(time.time()-deep_copy_timer))
 
@@ -2637,7 +2638,7 @@ class Camera:
                         plog("flatting light frame failed", e)
                         #plog(traceback.format_exc())
 
-                if frame_type=='pointing':
+                if frame_type=='pointing' and focus_image == False:
 
 
                     #cal_name = (
