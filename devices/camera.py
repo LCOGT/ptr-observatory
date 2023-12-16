@@ -390,10 +390,13 @@ class Camera:
             self.ascom = True
             self.theskyx = False
             self.qhydirect = False
-            
-            self.camera.Connected = True
-            plog("ASCOM is connected:  ", self._connect(True))
             plog("Control is ASCOM camera driver.")
+            self.camera.Connected = True
+            time.sleep(0.2)
+            if self.camera.Connected:
+                plog("ASCOM camera is connected:  ", self._connect(True))
+            else:
+                plog("ERROR:  ASCOM camera is not connected:  ", self._connect(True))
             #breakpoint()
 
             self.imagesize_x = self.camera.CameraXSize
@@ -594,7 +597,8 @@ class Camera:
         else:
             temp, humid, pressure =self._temperature()
         plog("Cooling beginning @:  ", temp)
-        plog("Humidity and pressure:  ", humid, pressure)
+        if not humid > 100.:
+            plog("Humidity and pressure:  ", humid, pressure)
 
         if self.maxim == True:
             plog("TEC  % load:  ", self._maxim_cooler_power())
@@ -1127,6 +1131,7 @@ class Camera:
         return self.camera.Connected
 
     def _ascom_temperature(self):
+
         try:
             temptemp=self.camera.CCDTemperature
         except:
@@ -2434,7 +2439,7 @@ class Camera:
                  
                 if (frame_type in ["bias", "dark"] or frame_type[-4:] == ['flat']) and not manually_requested_calibration:
                     plog("Median of full-image area bias, dark or flat:  ", np.median(outputimg))
-
+                    
                     # Check that the temperature is ok before accepting
                     current_camera_temperature, cur_humidity, cur_pressure = (g_dev['cam']._temperature())
                     current_camera_temperature = float(current_camera_temperature)
@@ -2662,7 +2667,7 @@ class Camera:
 
                 #print ((frame_type in ["bias", "dark"] and manually_requested_calibration))
                 #print (manually_requested_calibration)
-                if not frame_type[-4:] == "flat" or (not frame_type in ["bias", "dark"] or (frame_type in ["bias", "dark"] and manually_requested_calibration)) and not focus_image == True and not frame_type=='pointing':
+                if not frame_type[-4:] == "flat" and (not frame_type in ["bias", "dark"] or (frame_type in ["bias", "dark"] and manually_requested_calibration)) and not focus_image == True and not frame_type=='pointing':
                     focus_position=g_dev['foc'].current_focus_position
                     self.post_processing_queue.put(copy.deepcopy((outputimg, g_dev["mnt"].pier_side, self.config["camera"][self.name]["settings"]['is_osc'], frame_type, self.config['camera']['camera_1_1']['settings']['reject_new_flat_by_known_gain'], avg_mnt, avg_foc, avg_rot, self.setpoint, self.tempccdtemp, self.ccd_humidity, self.ccd_pressure, self.darkslide_state, exposure_time, this_exposure_filter, exposure_filter_offset, self.pane,opt , observer_user_name, self.hint, azimuth_of_observation, altitude_of_observation, airmass_of_observation, self.pixscale, smartstackid,sskcounter,Nsmartstack, longstackid, ra_at_time_of_exposure, dec_at_time_of_exposure, manually_requested_calibration, object_name, object_specf, g_dev["mnt"].ha_corr, g_dev["mnt"].dec_corr, focus_position, self.config, self.name, self.camera_known_gain, self.camera_known_readnoise, start_time_of_observation, observer_user_id, self.camera_path,  solve_it, next_seq)), block=False)
                 #print ("Deep copy timer: " +str(time.time()-deep_copy_timer))

@@ -476,7 +476,7 @@ class Sequencer:
                 g_dev['mnt'].set_tracking_on()
 
                 # Super-duper double check that darkslide is open
-                if g_dev['cam'].darkslide:
+                if g_dev['cam'].has_darkslide:
                     g_dev['cam'].openDarkslide()
                     # g_dev['cam'].darkslide_open = True
                     # g_dev['cam'].darkslide_state = 'Open'
@@ -1409,7 +1409,7 @@ class Sequencer:
         else:
             ending = g_dev['events']['End Eve Bias Dark']
 
-        if g_dev['cam'].darkslide and ephem.now() < ending:
+        if g_dev['cam'].has_darkslide and ephem.now() < ending:
             g_dev['cam'].closeDarkslide()
             # g_dev['cam'].darkslide_open = False
             # g_dev['cam'].darkslide_state = 'Closed'
@@ -1556,7 +1556,7 @@ class Sequencer:
         # Never hurts to make sure the telescope is parked for the night
         self.park_and_close()
 
-        if g_dev['cam'].darkslide:
+        if g_dev['cam'].has_darkslide:
             g_dev['cam'].closeDarkslide()
             # g_dev['cam'].darkslide_open = False
             # g_dev['cam'].darkslide_state = 'Closed'

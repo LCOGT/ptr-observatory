@@ -1491,7 +1491,7 @@ class Observatory:
             if g_dev['cam']._cooler_on():
                 current_camera_temperature, cur_humidity, cur_pressure = (g_dev['cam']._temperature())
                 current_camera_temperature = float(current_camera_temperature)
-
+                #plog("WER Buggered obs.py lines 1496, 1499")
                 if abs(float(current_camera_temperature) - float(g_dev['cam'].setpoint)) > 1.5:
                     self.camera_sufficiently_cooled_for_calibrations = False
                     self.last_time_camera_was_warm=time.time()
