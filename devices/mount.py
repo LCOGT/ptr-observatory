@@ -513,6 +513,7 @@ class Mount:
                         self.slewtoAsyncRequested=False
                         #print ("attempting to slew")
                         self.mount_update_wincom.SlewToCoordinatesAsync(self.slewtoRA , self.slewtoDEC)
+                        
                         #print ("successful slew")
 
                     if self.request_tracking_on:
@@ -1493,7 +1494,8 @@ class Mount:
         self.last_tracking_rate_dec = tracking_rate_dec
         self.last_seek_time = time.time() - 5000
 
-
+        g_dev['obs'].drift_tracker_ra=0
+        g_dev['obs'].drift_tracker_dec=0
 
         #Note this initiates a mount move.  WE should Evaluate if the destination is on the flip side and pick up the
         #flip offset.  So a GEM could track into positive HA territory without a problem but the next reseek should

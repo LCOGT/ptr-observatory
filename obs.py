@@ -580,6 +580,9 @@ class Observatory:
         #MTF -TEMP
         g_dev['obs'].enc_status = g_dev['obs'].get_enclosure_status_from_aws()
 
+        self.drift_tracker_ra=0
+        self.drift_tracker_dec=0
+
         #breakpoint()
         # Initialisation complete!
 
@@ -2672,7 +2675,10 @@ class Observatory:
                             g_dev['obs'].images_since_last_solve = 0
 
 
+                            self.drift_tracker_ra=self.drift_tracker_ra+ err_ha
+                            self.drift_tracker_dec=self.drift_tracker_dec + err_dec
 
+                            plog ("Current drift in ra: " + str(self.drift_tracker_ra) + " Current drift in dec: " + str(self.drift_tracker_dec))
 
                             # Test here that there has not been a slew, if there has been a slew, cancel out!
 
@@ -2683,13 +2689,16 @@ class Observatory:
                                 dec_field_asec = (g_dev['cam'].pixscale * g_dev['cam'].imagesize_x)
                                 ra_field_asec = (g_dev['cam'].pixscale * g_dev['cam'].imagesize_y)
 
-                                if (abs(err_ha * 15 * 3600) > 5400) or (abs(err_dec * 3600) > 5400):
+                                if (abs(self.drift_tracker_ra * 15 * 3600) > 5400) or (abs(self.drift_tracker_dec * 3600) > 5400):
                                     err_ha = 0
                                     err_dec = 0
                                     plog("Platesolve has found that the current suggested pointing is way off!")
                                     plog("This may be a poor pointing estimate.")
                                     plog("This is more than a simple nudge, so not nudging the scope.")
                                     g_dev["obs"].send_to_user("Platesolve detects pointing far out, RA: " + str(round(err_ha * 15 * 3600, 2)) + " DEC: " +str (round(err_dec * 3600, 2)))
+                                    
+                                    self.drift_tracker_ra=0
+                                    self.drift_tracker_dec=0
                                     # g_dev["mnt"].reset_mount_reference()
                                     # plog("I've  reset the mount_reference.")
 
@@ -2704,16 +2713,18 @@ class Observatory:
 
                                 elif self.time_of_last_slew > time_platesolve_requested:
                                     plog("detected a slew since beginning platesolve... bailing out of platesolve.")
+                                    self.drift_tracker_ra=0
+                                    self.drift_tracker_dec=0
 
                                 # Only recenter if out by more than 1%
-                                elif (abs(err_ha * 15 * 3600) > 0.01 * ra_field_asec) or (abs(err_dec * 3600) > 0.01 * dec_field_asec):
+                                elif (abs(self.drift_tracker_ra * 15 * 3600) > 0.01 * ra_field_asec) or (abs(self.drift_tracker_dec * 3600) > 0.01 * dec_field_asec):
 
                                      self.pointing_correction_requested_by_platesolve_thread = True
                                      self.pointing_correction_request_time = time.time()
-                                     self.pointing_correction_request_ra = pointing_ra + err_ha
-                                     self.pointing_correction_request_dec = pointing_dec + err_dec
-                                     self.pointing_correction_request_ra_err = err_ha
-                                     self.pointing_correction_request_dec_err = err_dec
+                                     self.pointing_correction_request_ra = pointing_ra + self.drift_tracker_ra
+                                     self.pointing_correction_request_dec = pointing_dec + self.drift_tracker_dec
+                                     self.pointing_correction_request_ra_err = self.drift_tracker_ra
+                                     self.pointing_correction_request_dec_err = self.drift_tracker_dec
 
                                      if not g_dev['obs'].mount_reference_model_off:
                                          if target_dec > -85 and target_dec < 85 and g_dev['mnt'].last_slew_was_pointing_slew:
