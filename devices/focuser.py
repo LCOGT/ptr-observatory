@@ -222,11 +222,13 @@ class Focuser:
                         #self.current_focus_temperature= 16 
                         self.current_focus_temperature=self.focuser_update_wincom.Temperature
                         #plog("Focus temp set to 16C, temporary Focus.py  line 222")
+                            self.current_focus_temperature = 10.0  # NB 20231216 WER Temporary patch for MRC2
+                            plog("Focus temp set to 10C, temporary Focus.py  line 226")
                 except:
                     plog ("glitch in getting focus temperature")
                     plog (traceback.format_exc())
-                    plog ("glitch in getting focus temperature")
-                    plog (traceback.format_exc())
+                    # plog ("glitch in getting focus temperature")
+                    # plog (traceback.format_exc())
                     
                 if not self.theskyx:
                     self.current_focus_position=int(self.focuser_update_wincom.Position * self.steps_to_micron)
