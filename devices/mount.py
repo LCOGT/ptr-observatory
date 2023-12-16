@@ -1494,8 +1494,7 @@ class Mount:
         self.last_tracking_rate_dec = tracking_rate_dec
         self.last_seek_time = time.time() - 5000
 
-        g_dev['obs'].drift_tracker_ra=0
-        g_dev['obs'].drift_tracker_dec=0
+        
 
         #Note this initiates a mount move.  WE should Evaluate if the destination is on the flip side and pick up the
         #flip offset.  So a GEM could track into positive HA territory without a problem but the next reseek should
@@ -1770,6 +1769,12 @@ class Mount:
         g_dev['obs'].last_solve_time = datetime.datetime.now() - datetime.timedelta(days=1)
         g_dev['obs'].images_since_last_solve = 10000
         self.wait_for_slew()
+        
+        
+        g_dev['obs'].drift_tracker_ra=0
+        g_dev['obs'].drift_tracker_dec=0
+        g_dev['obs'].drift_tracker_timer=time.time()
+        
         if not silent:
             g_dev['obs'].send_to_user("Slew Complete.")
 

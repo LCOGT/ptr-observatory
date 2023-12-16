@@ -582,6 +582,7 @@ class Observatory:
 
         self.drift_tracker_ra=0
         self.drift_tracker_dec=0
+        g_dev['obs'].drift_tracker_timer=0
 
         #breakpoint()
         # Initialisation complete!
@@ -2699,6 +2700,7 @@ class Observatory:
                                     
                                     self.drift_tracker_ra=0
                                     self.drift_tracker_dec=0
+                                    g_dev['obs'].drift_tracker_timer=0
                                     # g_dev["mnt"].reset_mount_reference()
                                     # plog("I've  reset the mount_reference.")
 
@@ -2715,6 +2717,7 @@ class Observatory:
                                     plog("detected a slew since beginning platesolve... bailing out of platesolve.")
                                     self.drift_tracker_ra=0
                                     self.drift_tracker_dec=0
+                                    g_dev['obs'].drift_tracker_timer=0
 
                                 # Only recenter if out by more than 1%
                                 elif (abs(self.drift_tracker_ra * 15 * 3600) > 0.01 * ra_field_asec) or (abs(self.drift_tracker_dec * 3600) > 0.01 * dec_field_asec):
@@ -2725,6 +2728,12 @@ class Observatory:
                                      self.pointing_correction_request_dec = pointing_dec + self.drift_tracker_dec
                                      self.pointing_correction_request_ra_err = self.drift_tracker_ra
                                      self.pointing_correction_request_dec_err = self.drift_tracker_dec
+                                     
+                                     
+                                     drift_timespan= time.time() - self.drift_tracker_timer
+                                     drift_milliarcsec_ra= (self.drift_tracker_ra * 1000) / drift_timespan
+                                     drift_milliarcsec_dec=  (self.drift_tracker_dec * 1000) / drift_timespan
+                                     plog ("Drift calculations in milliarcsecs, RA: " + str(drift_milliarcsec_ra) + " DEC: " + str(drift_milliarcsec_dec) )
 
                                      if not g_dev['obs'].mount_reference_model_off:
                                          if target_dec > -85 and target_dec < 85 and g_dev['mnt'].last_slew_was_pointing_slew:
