@@ -1853,6 +1853,24 @@ class Camera:
                             g_dev["obs"].request_full_update()
                             #g_dev['obs'].update()
 
+                            # Nudge to a different part of the dither pattern on the first frame
+                            if Nsmartstack > 1 and sskcounter == 0:
+                                ra_random_dither=(((random.randint(0,50)-25) * self.pixscale / 3600 ) / 15)
+                                dec_random_dither=((random.randint(0,50)-25) * self.pixscale /3600 )
+                                try:
+                                    self.wait_for_slew()
+                                    g_dev['mnt'].slew_async_directly(ra=initial_smartstack_ra + ra_random_dither, dec=initial_smartstack_dec + dec_random_dither)
+                                    #self.wait_for_slew()
+                                    
+                                except Exception as e:
+                                    plog (traceback.format_exc())
+                                    if 'Object reference not set' in str(e) and g_dev['mnt'].theskyx:
+
+                                        plog("The SkyX had an error.")
+                                        plog("Usually this is because of a broken connection.")
+                                        plog("Killing then waiting 60 seconds then reconnecting")
+                                        g_dev['seq'].kill_and_reboot_theskyx(g_dev['mnt'].current_icrs_ra,g_dev['mnt'].current_icrs_dec)
+
 
                             # Make sure the latest mount_coordinates are updated. HYPER-IMPORTANT!
                             # This is now done in async update_status thread
@@ -1916,7 +1934,7 @@ class Camera:
 
 
                             #plog ("pre-exposure overhead: " + str(time.time() -pre_exposure_overhead_timer) +"s.")
-                            #self.wait_for_slew()
+                            self.wait_for_slew()
                             start_time_of_observation=time.time()
                             self.start_time_of_observation=time.time()
                             #plog ("Time between end of last exposure and start of next minus exposure time: " + str(time.time() -  self.end_of_last_exposure_time - exposure_time))
@@ -2285,8 +2303,8 @@ class Camera:
             elif self.async_exposure_lock == False and self._imageavailable():   #NB no more file-mode
 
 
-                # Immediately nudge scope to a different point in the smartstack dither
-                if Nsmartstack > 1 and not (Nsmartstack == sskcounter+1):
+                # Immediately nudge scope to a different point in the smartstack dither except for the last frame and after the last frame.
+                if Nsmartstack > 1 and not ((Nsmartstack == sskcounter+1) or (Nsmartstack == sskcounter+2)):
                     ra_random_dither=(((random.randint(0,50)-25) * self.pixscale / 3600 ) / 15)
                     dec_random_dither=((random.randint(0,50)-25) * self.pixscale /3600 )
                     try:
@@ -2303,8 +2321,9 @@ class Camera:
                             plog("Killing then waiting 60 seconds then reconnecting")
                             g_dev['seq'].kill_and_reboot_theskyx(g_dev['mnt'].current_icrs_ra,g_dev['mnt'].current_icrs_dec)
 
-                # Otherwise immediately nudge scope back to initial pointing in smartstack
-                elif Nsmartstack > 1 and (Nsmartstack == sskcounter+1):
+                # Otherwise immediately nudge scope back to initial pointing in smartstack after the last frame of the smartstack
+                # Last frame of the smartstack must also be at the normal pointing for platesolving purposes
+                elif Nsmartstack > 1 and ((Nsmartstack == sskcounter+1) or (Nsmartstack == sskcounter+2)):
                     try:
                         self.wait_for_slew()
                         g_dev['mnt'].slew_async_directly(ra=initial_smartstack_ra, dec=initial_smartstack_dec)
