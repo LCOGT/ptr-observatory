@@ -772,13 +772,29 @@ class Camera:
             self.camera_update_thread=threading.Thread(target=self.camera_update_thread)
             self.camera_update_thread.start()
 
-    # def openDarkslide(self):
-    #     breakpoint()   #Fill in here from the PDF shutter instructions.
-    #     pass
+    def openDarkslide(self):
+        if self.darkslide_state != 'Open':
+            if self.darkslide_type=='COM':
+                self.darkslide_instance.openDarkslide()
+            elif self.darkslide_type=='ASCOM_FLI_SHUTTER':
+                self.camera.Action('SetShutter', 'open')
+            self.darkslide_open = True
+            self.darkslide_state = 'Open'
+            
+        
+        
+        
     
-    # def closeDarkslide(self):
-    #     breakpoint()
-    #     pass
+    
+    def closeDarkslide(self):
+        if self.darkslide_state != 'Closed':
+            if self.darkslide_type=='COM':
+                self.darkslide_instance.closeDarkslide()
+            elif self.darkslide_type=='ASCOM_FLI_SHUTTER':
+                self.camera.Action('SetShutter', 'close')
+            
+            self.darkslide_open = False
+            self.darkslide_state = 'Closed'
     
     # #I assume we might be able to read the shutter state...
     
@@ -2505,7 +2521,7 @@ class Camera:
 
 
                 # Specific dark and bias save area
-                if frame_type in ["bias", "dark"]:
+                if frame_type in ["bias", "dark"] and not manually_requested_calibration:
                     # Save good flat
                     im_path_r = self.camera_path
                     raw_path = im_path_r + g_dev["day"] + "/raw/"
@@ -2644,7 +2660,8 @@ class Camera:
 
                 #deep_copy_timer=time.time()
 
-
+                #print ((frame_type in ["bias", "dark"] and manually_requested_calibration))
+                #print (manually_requested_calibration)
                 if not frame_type[-4:] == "flat" or (not frame_type in ["bias", "dark"] or (frame_type in ["bias", "dark"] and manually_requested_calibration)) and not focus_image == True and not frame_type=='pointing':
                     focus_position=g_dev['foc'].current_focus_position
                     self.post_processing_queue.put(copy.deepcopy((outputimg, g_dev["mnt"].pier_side, self.config["camera"][self.name]["settings"]['is_osc'], frame_type, self.config['camera']['camera_1_1']['settings']['reject_new_flat_by_known_gain'], avg_mnt, avg_foc, avg_rot, self.setpoint, self.tempccdtemp, self.ccd_humidity, self.ccd_pressure, self.darkslide_state, exposure_time, this_exposure_filter, exposure_filter_offset, self.pane,opt , observer_user_name, self.hint, azimuth_of_observation, altitude_of_observation, airmass_of_observation, self.pixscale, smartstackid,sskcounter,Nsmartstack, longstackid, ra_at_time_of_exposure, dec_at_time_of_exposure, manually_requested_calibration, object_name, object_specf, g_dev["mnt"].ha_corr, g_dev["mnt"].dec_corr, focus_position, self.config, self.name, self.camera_known_gain, self.camera_known_readnoise, start_time_of_observation, observer_user_id, self.camera_path,  solve_it, next_seq)), block=False)
@@ -4169,6 +4186,8 @@ def post_exposure_process(payload):
 
             hdusmalldata=copy.deepcopy(hdu.data)
             # Quick flash bias and dark frame
+            selfnative_bin = selfconfig["camera"][selfname]["settings"]["native_bin"]
+
 
             if not manually_requested_calibration:
                 try:
@@ -4212,8 +4231,7 @@ def post_exposure_process(payload):
                         hdusmallheader['CRPIX1']=float(hdu.header['CRPIX1']) - (edge_crop * 2)
                         hdusmallheader['CRPIX2']=float(hdu.header['CRPIX2']) - (edge_crop * 2)
 
-                    selfnative_bin = selfconfig["camera"][selfname]["settings"]["native_bin"]
-
+                    
 
                     # bin to native binning
                     if selfnative_bin != 1:

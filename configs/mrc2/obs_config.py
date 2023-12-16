@@ -791,8 +791,8 @@ site_config = {
                 'read_noise_stdev':   0.012, #[10., 10., 10., 10.],     #  One val for each binning.              
                 # Saturate is the important one. Others are informational only.
                 'fullwell_capacity': 80000,  # NB Guess
-                'saturate':   65535,
-                'max_linearity':  60000,   # Guess
+                'saturate':   4000,
+                'max_linearity':  4000,   # Guess
                 # How long does it take to readout an image after exposure
                 'cycle_time':            0.5,
                 # What is the base smartstack exposure time?
