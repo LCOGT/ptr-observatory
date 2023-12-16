@@ -245,7 +245,7 @@ else:
             focusimg, 3.0, err=bkg.globalrms, minarea=minarea
         )
         sources = Table(sources)
-        
+
         sources = sources[sources['flag'] < 8]
         image_saturation_level = saturate
         sources = sources[sources["peak"] < 0.8 * image_saturation_level * pow(binfocus, 2)]
@@ -257,16 +257,16 @@ else:
         #sources = sources[sources["y"] > border_x]
         #breakpoint()
         # BANZAI prune nans from table
-        
+
         nan_in_row = np.zeros(len(sources), dtype=bool)
         for col in sources.colnames:
             nan_in_row |= np.isnan(sources[col])
         sources = sources[~nan_in_row]
 
         # Calculate the ellipticity (Thanks BANZAI)
-        
+
         sources['ellipticity'] = 1.0 - (sources['b'] / sources['a'])
-        
+
         # if frame_type == 'focus':
         #     sources = sources[sources['ellipticity'] < 0.4]  # Remove things that are not circular stars
         # else:
@@ -331,16 +331,16 @@ else:
 
         sources.remove_columns(source_delete)
 
-         
+
 
         # BANZAI prune nans from table
         nan_in_row = np.zeros(len(sources), dtype=bool)
         for col in sources.colnames:
             nan_in_row |= np.isnan(sources[col])
         sources = sources[~nan_in_row]
-        
+
         #breakpoint()
-               
+
 
         sources.write(im_path + text_name.replace('.txt', '.sep'), format='csv', overwrite=True)
 
