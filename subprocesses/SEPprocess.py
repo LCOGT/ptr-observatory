@@ -246,6 +246,7 @@ else:
         )
         sources = Table(sources)
 
+
         sources = sources[sources['flag'] < 8]
         image_saturation_level = saturate
         sources = sources[sources["peak"] < 0.8 * image_saturation_level * pow(binfocus, 2)]
@@ -262,6 +263,8 @@ else:
         for col in sources.colnames:
             nan_in_row |= np.isnan(sources[col])
         sources = sources[~nan_in_row]
+
+
 
         # Calculate the ellipticity (Thanks BANZAI)
 
@@ -292,15 +295,20 @@ else:
 
         # Calcuate the equivilent of flux_auto (Thanks BANZAI)
         # This is the preferred best photometry SEP can do.
-        flux, fluxerr, flag = sep.sum_ellipse(focusimg, sources['x'], sources['y'],
-                                          sources['a'], sources['b'],
-                                          np.pi / 2.0, 2.5 * kronrad,
-                                          subpix=1, err=uncertainty)
+        # But sometimes it fails, so we try and except
+        try:
+            flux, fluxerr, flag = sep.sum_ellipse(focusimg, sources['x'], sources['y'],
+                                              sources['a'], sources['b'],
+                                              np.pi / 2.0, 2.5 * kronrad,
+                                              subpix=1, err=uncertainty)
+            sources['flux'] = flux
+            sources['fluxerr'] = fluxerr
+            sources['flag'] |= flag
+        except:
+            pass
 
 
-        sources['flux'] = flux
-        sources['fluxerr'] = fluxerr
-        sources['flag'] |= flag
+
         sources['FWHM'], _ = sep.flux_radius(focusimg, sources['x'], sources['y'], sources['a'], 0.5,
                                              subpix=5)
         # If image has been binned for focus we need to multiply some of these things by the binning
@@ -317,7 +325,7 @@ else:
         sources['cpeak'] = (sources['cpeak']) / pow(binfocus, 2)
 
 
-
+        #print (sources)
 
         # Need to reject any stars that have FWHM that are less than a extremely
         # perfect night as artifacts
@@ -331,7 +339,7 @@ else:
 
         sources.remove_columns(source_delete)
 
-
+        #print (sources)
 
         # BANZAI prune nans from table
         nan_in_row = np.zeros(len(sources), dtype=bool)
@@ -340,7 +348,8 @@ else:
         sources = sources[~nan_in_row]
 
         #breakpoint()
-
+        #print (sources)
+        #breakpoint()
 
         sources.write(im_path + text_name.replace('.txt', '.sep'), format='csv', overwrite=True)
 

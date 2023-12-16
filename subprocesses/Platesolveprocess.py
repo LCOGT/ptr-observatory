@@ -172,11 +172,13 @@ sources['kronrad'] = kronrad
 uncertainty = float(readnoise) * np.ones(focusimg.shape,
                                          dtype=focusimg.dtype) / float(readnoise)
 
-
-flux, fluxerr, flag = sep.sum_ellipse(focusimg, sources['x'], sources['y'],
-                                  sources['a'], sources['b'],
-                                  np.pi / 2.0, 2.5 * kronrad,
-                                  subpix=1, err=uncertainty)
+try:
+    flux, fluxerr, flag = sep.sum_ellipse(focusimg, sources['x'], sources['y'],
+                                      sources['a'], sources['b'],
+                                      np.pi / 2.0, 2.5 * kronrad,
+                                      subpix=1, err=uncertainty)
+except:
+    pass
 
 sources['flux'] = flux
 sources['fluxerr'] = fluxerr
@@ -284,33 +286,33 @@ if len(sources) >= 15:
         failed = True
         process.kill()
 
-    # if failed:
-    #     try:
-    #         # Try again with a lower pixelscale... yes it makes no sense
-    #         # But I didn't write PS3.exe ..... but it works (MTF)
-    #         args = [
-    #             PS3CLI_EXE,
-    #             cal_path + 'platesolvetemp.fits',
-    #             str(float(pixscale)/2.0),
-    #             output_file_path,
-    #             catalog_path
-    #         ]
+    if failed:
+        try:
+            # Try again with a lower pixelscale... yes it makes no sense
+            # But I didn't write PS3.exe ..... but it works (MTF)
+            args = [
+                PS3CLI_EXE,
+                cal_path + 'platesolvetemp.fits',
+                str(float(pixscale)/2.0),
+                output_file_path,
+                catalog_path
+            ]
 
-    #         process = Popen(
-    #                 args,
-    #                 stdout=None,
-    #                 stderr=PIPE
-    #                 )
-    #         (stdout, stderr) = process.communicate()  # Obtain stdout and stderr output from the wcs tool
-    #         exit_code = process.wait() # Wait for process to complete and obtain the exit code
-    #         time.sleep(1)
-    #         process.kill()
+            process = Popen(
+                    args,
+                    stdout=None,
+                    stderr=PIPE
+                    )
+            (stdout, stderr) = process.communicate()  # Obtain stdout and stderr output from the wcs tool
+            exit_code = process.wait() # Wait for process to complete and obtain the exit code
+            time.sleep(1)
+            process.kill()
 
-    #         solve = parse_platesolve_output(output_file_path)
+            solve = parse_platesolve_output(output_file_path)
 
-    #     except:
-    #         process.kill()
-    #         solve = 'error'
+        except:
+            process.kill()
+            solve = 'error'
     pickle.dump(solve, open(cal_path + 'platesolve.pickle', 'wb'))
 
     try:

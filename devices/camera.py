@@ -2637,6 +2637,32 @@ class Camera:
                         plog("flatting light frame failed", e)
                         #plog(traceback.format_exc())
 
+                    # hdu = fits.PrimaryHDU()
+
+                    if self.native_bin != 1:
+                        outputimg=(block_reduce(outputimg,self.native_bin))
+                        # hdu.header['XBINING']=selfnative_bin
+                        # hdu.header['YBINING']=selfnative_bin
+                        # hdu.header['PIXSCALE']=float(hdu.header['PIXSCALE']) * selfnative_bin
+                        # pixscale=float(hdu.header['PIXSCALE'])
+                        # hdu.header['NAXIS1']=float(hdu.header['NAXIS1']) / selfnative_bin
+                        # hdu.header['NAXIS2']=float(hdu.header['NAXIS2']) / selfnative_bin
+                        # hdu.header['CRPIX1']=float(hdu.header['CRPIX1']) / selfnative_bin
+                        # hdu.header['CRPIX2']=float(hdu.header['CRPIX2']) / selfnative_bin
+                        # hdu.header['CDELT1']=float(hdu.header['CDELT1']) * selfnative_bin
+                        # hdu.header['CDELT2']=float(hdu.header['CDELT2']) * selfnative_bin
+                        # hdu.header['CCDXPIXE']=float(hdu.header['CCDXPIXE']) * selfnative_bin
+                        # hdu.header['CCDYPIXE']=float(hdu.header['CCDYPIXE']) * selfnative_bin
+                        # hdu.header['XPIXSZ']=float(hdu.header['XPIXSZ']) * selfnative_bin
+                        # hdu.header['YPIXSZ']=float(hdu.header['YPIXSZ']) * selfnative_bin
+
+                        # hdu.header['SATURATE']=float(hdu.header['SATURATE']) * pow( selfnative_bin,2)
+                        # hdu.header['FULLWELL']=float(hdu.header['FULLWELL']) * pow( selfnative_bin,2)
+                        # hdu.header['MAXLIN']=float(hdu.header['MAXLIN']) * pow( selfnative_bin,2)
+
+
+
+
                 if frame_type=='pointing' and focus_image == False:
 
 
@@ -2792,7 +2818,7 @@ class Camera:
                     focus_position=g_dev['foc'].current_focus_position
                     g_dev['obs'].sep_processing=True
                     #g_dev['obs'].to_sep((outputimg, self.pixscale, self.camera_known_readnoise, avg_foc[1], focus_image, im_path, text_name, hdusmallheader, cal_path, cal_name, frame_type, focus_position, self.native_bin))
-                    g_dev['obs'].to_sep((outputimg, self.pixscale, self.camera_known_readnoise, avg_foc[1], focus_image, im_path, text_name, hdusmallheader, cal_path, cal_name, frame_type, focus_position, 1.0))
+                    g_dev['obs'].to_sep((outputimg, self.pixscale, self.camera_known_readnoise, avg_foc[1], focus_image, im_path, text_name, hdusmallheader, cal_path, cal_name, frame_type, focus_position, self.native_bin))
 
                     # while sepping, write out the image
 
