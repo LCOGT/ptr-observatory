@@ -112,10 +112,10 @@ crop_height = int(crop_height)
 if crop_width > 0 or crop_height > 0:
     hdufocusdata = hdufocusdata[crop_width:-crop_width, crop_height:-crop_height]
 
-binfocus = 1
-if bin_for_platesolve:
-    hdufocusdata=block_reduce(hdufocusdata,platesolve_bin_factor)
-    binfocus=platesolve_bin_factor
+# binfocus = 1
+# if bin_for_platesolve:
+#     hdufocusdata=block_reduce(hdufocusdata,platesolve_bin_factor)
+#     binfocus=platesolve_bin_factor
 
 focusimg = np.array(
     hdufocusdata, order="C"
@@ -142,8 +142,8 @@ sources = sep.extract(
 
 sources = Table(sources)
 sources = sources[sources['flag'] < 8]
-sources = sources[sources["peak"] < 0.8 * image_saturation_level * pow(binfocus, 2)]
-sources = sources[sources["cpeak"] < 0.8 * image_saturation_level * pow(binfocus, 2)]
+sources = sources[sources["peak"] < 0.8 * image_saturation_level]
+sources = sources[sources["cpeak"] < 0.8 * image_saturation_level]
 sources = sources[sources["flux"] > 2000]
 sources = sources[sources["x"] < iy -50]
 sources = sources[sources["x"] > 50]
@@ -284,33 +284,33 @@ if len(sources) >= 15:
         failed = True
         process.kill()
 
-    if failed:
-        try:
-            # Try again with a lower pixelscale... yes it makes no sense
-            # But I didn't write PS3.exe ..... but it works (MTF)
-            args = [
-                PS3CLI_EXE,
-                cal_path + 'platesolvetemp.fits',
-                str(float(pixscale)/2.0),
-                output_file_path,
-                catalog_path
-            ]
+    # if failed:
+    #     try:
+    #         # Try again with a lower pixelscale... yes it makes no sense
+    #         # But I didn't write PS3.exe ..... but it works (MTF)
+    #         args = [
+    #             PS3CLI_EXE,
+    #             cal_path + 'platesolvetemp.fits',
+    #             str(float(pixscale)/2.0),
+    #             output_file_path,
+    #             catalog_path
+    #         ]
 
-            process = Popen(
-                    args,
-                    stdout=None,
-                    stderr=PIPE
-                    )
-            (stdout, stderr) = process.communicate()  # Obtain stdout and stderr output from the wcs tool
-            exit_code = process.wait() # Wait for process to complete and obtain the exit code
-            time.sleep(1)
-            process.kill()
+    #         process = Popen(
+    #                 args,
+    #                 stdout=None,
+    #                 stderr=PIPE
+    #                 )
+    #         (stdout, stderr) = process.communicate()  # Obtain stdout and stderr output from the wcs tool
+    #         exit_code = process.wait() # Wait for process to complete and obtain the exit code
+    #         time.sleep(1)
+    #         process.kill()
 
-            solve = parse_platesolve_output(output_file_path)
+    #         solve = parse_platesolve_output(output_file_path)
 
-        except:
-            process.kill()
-            solve = 'error'
+    #     except:
+    #         process.kill()
+    #         solve = 'error'
     pickle.dump(solve, open(cal_path + 'platesolve.pickle', 'wb'))
 
     try:

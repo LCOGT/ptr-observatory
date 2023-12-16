@@ -2507,6 +2507,7 @@ class Observatory:
                     #plog ("Did not find a source list from SEP for this image.")
                     self.fwhmresult={}
                     self.fwhmresult['FWHM'] = np.nan
+                    self.fwhmresult["mean_focus"] = np.nan
                     self.fwhmresult['No_of_sources'] = np.nan
 
 
@@ -2577,16 +2578,16 @@ class Observatory:
                         platesolve_subprocess=subprocess.Popen(['python','subprocesses/Platesolveprocess.py'],stdin=subprocess.PIPE,stdout=subprocess.PIPE,bufsize=0)
 
                         platesolve_crop = self.config["camera"][g_dev['cam'].name]["settings"]['platesolve_image_crop']
-                        bin_for_platesolve= self.config["camera"][g_dev['cam'].name]["settings"]['bin_for_platesolve']
-                        platesolve_bin_factor=self.config["camera"][g_dev['cam'].name]["settings"]['platesolve_bin_value']
+                        #bin_for_platesolve= self.config["camera"][g_dev['cam'].name]["settings"]['bin_for_platesolve']
+                        #platesolve_bin_factor=self.config["camera"][g_dev['cam'].name]["settings"]['platesolve_bin_value']
 
                         pickle.dump([hdufocusdata, hduheader, self.local_calibration_path, cal_name, frame_type, time_platesolve_requested,
-                         pixscale, pointing_ra, pointing_dec, platesolve_crop, bin_for_platesolve, platesolve_bin_factor, g_dev['cam'].config["camera"][g_dev['cam'].name]["settings"]["saturate"], g_dev['cam'].camera_known_readnoise, self.config['minimum_realistic_seeing']], platesolve_subprocess.stdin)
+                         pixscale, pointing_ra, pointing_dec, platesolve_crop, False, 1, g_dev['cam'].config["camera"][g_dev['cam'].name]["settings"]["saturate"], g_dev['cam'].camera_known_readnoise, self.config['minimum_realistic_seeing']], platesolve_subprocess.stdin)
 
                         # yet another pickle debugger.
                         if False:
                             pickle.dump([hdufocusdata, hduheader, self.local_calibration_path, cal_name, frame_type, time_platesolve_requested,
-                             pixscale, pointing_ra, pointing_dec, platesolve_crop, bin_for_platesolve, platesolve_bin_factor, g_dev['cam'].config["camera"][g_dev['cam'].name]["settings"]["saturate"], g_dev['cam'].camera_known_readnoise, self.config['minimum_realistic_seeing']], open('subprocesses/testplatesolvepickle','wb'))
+                             pixscale, pointing_ra, pointing_dec, platesolve_crop, False, 1, g_dev['cam'].config["camera"][g_dev['cam'].name]["settings"]["saturate"], g_dev['cam'].camera_known_readnoise, self.config['minimum_realistic_seeing']], open('subprocesses/testplatesolvepickle','wb'))
 
                         del hdufocusdata
 
@@ -2621,25 +2622,25 @@ class Observatory:
                             solved_ra = solve["ra_j2000_hours"]
                             solved_dec = solve["dec_j2000_degrees"]
                             solved_arcsecperpixel = solve["arcsec_per_pixel"]
-                            plog("1x1 pixelscale solved: " + str(float(solved_arcsecperpixel / platesolve_bin_factor)))# / g_dev['cam'].native_bin)))
+                            plog("1x1 pixelscale solved: " + str(float(solved_arcsecperpixel )))# / g_dev['cam'].native_bin)))
+                            if (g_dev['cam'].pixscale * 0.9) < float(solved_arcsecperpixel) < (g_dev['cam'].pixscale * 1.1):
+                                self.pixelscale_shelf = shelve.open(g_dev['obs'].obsid_path + 'ptr_night_shelf/' + 'pixelscale' + g_dev['cam'].alias + str(g_dev['obs'].name))
+                                try:
+                                    pixelscale_list=self.pixelscale_shelf['pixelscale_list']
+                                except:
+                                    pixelscale_list=[]
 
-                            self.pixelscale_shelf = shelve.open(g_dev['obs'].obsid_path + 'ptr_night_shelf/' + 'pixelscale' + g_dev['cam'].alias + str(g_dev['obs'].name))
-                            try:
-                                pixelscale_list=self.pixelscale_shelf['pixelscale_list']
-                            except:
-                                pixelscale_list=[]
+                                pixelscale_list.append(float(solved_arcsecperpixel ))# / g_dev['cam'].native_bin))
 
-                            pixelscale_list.append(float(solved_arcsecperpixel / platesolve_bin_factor))# / g_dev['cam'].native_bin))
+                                too_long=True
+                                while too_long:
+                                    if len(pixelscale_list) > 100:
+                                        pixelscale_list.pop(0)
+                                    else:
+                                        too_long = False
 
-                            too_long=True
-                            while too_long:
-                                if len(pixelscale_list) > 100:
-                                    pixelscale_list.pop(0)
-                                else:
-                                    too_long = False
-
-                            self.pixelscale_shelf['pixelscale_list'] = pixelscale_list
-                            self.pixelscale_shelf.close()
+                                self.pixelscale_shelf['pixelscale_list'] = pixelscale_list
+                                self.pixelscale_shelf.close()
 
 
 
@@ -2678,10 +2679,10 @@ class Observatory:
 
                             # If we are WAY out of range, then reset the mount reference and attempt moving back there.
                             if not self.auto_centering_off:
-                                
-                                dec_field_asec = (g_dev['cam'].pixscale * g_dev['cam'].imagesize_x) 
-                                ra_field_asec = (g_dev['cam'].pixscale * g_dev['cam'].imagesize_y) 
-                                
+
+                                dec_field_asec = (g_dev['cam'].pixscale * g_dev['cam'].imagesize_x)
+                                ra_field_asec = (g_dev['cam'].pixscale * g_dev['cam'].imagesize_y)
+
                                 if (abs(err_ha * 15 * 3600) > 5400) or (abs(err_dec * 3600) > 5400):
                                     err_ha = 0
                                     err_dec = 0
@@ -2742,7 +2743,9 @@ class Observatory:
                                              except:
                                                  plog("This mount doesn't report pierside")
                                                  plog(traceback.format_exc())
-
+                                else:
+                                    self.pointing_correction_requested_by_platesolve_thread = False
+                                    plog ("pointing too good to recenter")
 
                             self.platesolve_is_processing = False
                     except:

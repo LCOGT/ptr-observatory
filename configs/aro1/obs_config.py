@@ -560,8 +560,8 @@ site_config = {
                 'bin_for_sep': True,  # This setting will bin the image for SEP photometry rather than interpolating.
                 'sep_bin_value' : 2,
                 # This setting will bin the image for platesolving rather than interpolating.
-                'bin_for_platesolve': False,
-                'platesolve_bin_value' : 1,
+                #'bin_for_platesolve': False,
+                #'platesolve_bin_value' : 1,
 
                 # Colour image tweaks.
                 'osc_brightness_enhance': 1.0,

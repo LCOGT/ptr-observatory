@@ -390,7 +390,7 @@ class Camera:
             self.ascom = True
             self.theskyx = False
             self.qhydirect = False
-            
+
             self.camera.Connected = True
             plog("ASCOM is connected:  ", self._connect(True))
             plog("Control is ASCOM camera driver.")
@@ -2371,7 +2371,7 @@ class Camera:
                     self.wait_for_slew()
                     g_dev['obs'].check_platesolve_and_nudge()
 
-                 
+
                 if (frame_type in ["bias", "dark"] or frame_type[-4:] == ['flat']) and not manually_requested_calibration:
                     plog("Median of full-image area bias, dark or flat:  ", np.median(outputimg))
 
@@ -2843,6 +2843,11 @@ class Camera:
 
                         time.sleep(0.2)
                     focus_image = False
+
+                    expresult['FWHM']=g_dev['obs'].fwhmresult['FWHM']
+
+                    expresult["mean_focus"]=g_dev['obs'].fwhmresult["mean_focus"]
+                    expresult['No_of_sources']=g_dev['obs'].fwhmresult['No_of_sources']
 
                     return expresult
 
@@ -4162,7 +4167,7 @@ def post_exposure_process(payload):
                     #breakpoint()
                     if edge_crop > 0:
                         hdusmalldata=hdusmalldata[edge_crop:-edge_crop,edge_crop:-edge_crop]
-    
+
                         hdusmallheader['NAXIS1']=float(hdu.header['NAXIS1']) - (edge_crop * 2)
                         hdusmallheader['NAXIS2']=float(hdu.header['NAXIS2']) - (edge_crop * 2)
                         hdusmallheader['CRPIX1']=float(hdu.header['CRPIX1']) - (edge_crop * 2)

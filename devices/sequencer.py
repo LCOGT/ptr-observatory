@@ -3425,6 +3425,7 @@ class Sequencer:
             g_dev['obs'].send_to_user("Central focus FWHM: " + str(spot1), p_level='INFO')
 
             if math.isnan(spot1) or spot1 ==False:
+                breakpoint()
                 retry += 1
                 plog("Retry of central focus star)")
                 continue
