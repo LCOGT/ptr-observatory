@@ -4132,12 +4132,14 @@ class Sequencer:
                     solved_pos = focentry[0]
                     minimumFWHM = focentry[1]
         try:
-            plog (extensive_focus)
-            plog (solved_pos)
-            plog (minimumFWHM)
-            g_dev['foc'].guarded_move((solved_pos)*g_dev['foc'].micron_to_steps)
-            g_dev['foc'].last_known_focus=(solved_pos)
-
+            try:
+                plog (extensive_focus)
+                plog (solved_pos)
+                plog (minimumFWHM)
+                g_dev['foc'].guarded_move((solved_pos)*g_dev['foc'].micron_to_steps)
+                g_dev['foc'].last_known_focus=(solved_pos)
+            except:
+                plog ("extensive focus failed :(")
             if not no_auto_after_solve:
                 self.auto_focus_script(None,None, skip_timer_check=True, extensive_focus=solved_pos)
         except:
