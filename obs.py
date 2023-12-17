@@ -2679,7 +2679,7 @@ class Observatory:
                             self.drift_tracker_ra=self.drift_tracker_ra+ err_ha
                             self.drift_tracker_dec=self.drift_tracker_dec + err_dec
 
-                            plog ("Current drift in ra: " + str(self.drift_tracker_ra) + " Current drift in dec: " + str(self.drift_tracker_dec))
+                            plog ("Current drift in ra: " + str(self.drift_tracker_ra * 15 * 3600) + " Current drift in dec: " + str(self.drift_tracker_dec * 3600))
 
                             # Test here that there has not been a slew, if there has been a slew, cancel out!
 
@@ -2697,7 +2697,7 @@ class Observatory:
                                     plog("This may be a poor pointing estimate.")
                                     plog("This is more than a simple nudge, so not nudging the scope.")
                                     g_dev["obs"].send_to_user("Platesolve detects pointing far out, RA: " + str(round(err_ha * 15 * 3600, 2)) + " DEC: " +str (round(err_dec * 3600, 2)))
-                                    
+
                                     self.drift_tracker_ra=0
                                     self.drift_tracker_dec=0
                                     g_dev['obs'].drift_tracker_timer=0
@@ -2728,12 +2728,12 @@ class Observatory:
                                      self.pointing_correction_request_dec = pointing_dec + self.drift_tracker_dec
                                      self.pointing_correction_request_ra_err = self.drift_tracker_ra
                                      self.pointing_correction_request_dec_err = self.drift_tracker_dec
-                                     
-                                     
+
+
                                      drift_timespan= time.time() - self.drift_tracker_timer
-                                     drift_milliarcsec_ra= (self.drift_tracker_ra * 1000) / drift_timespan
-                                     drift_milliarcsec_dec=  (self.drift_tracker_dec * 1000) / drift_timespan
-                                     plog ("Drift calculations in milliarcsecs, RA: " + str(drift_milliarcsec_ra) + " DEC: " + str(drift_milliarcsec_dec) )
+                                     drift_arcsec_ra= (self.drift_tracker_ra * 15 * 3600 ) / drift_timespan
+                                     drift_arcsec_dec=  (self.drift_tracker_dec *3600) / drift_timespan
+                                     plog ("Drift calculations in arcsecs per second, RA: " + str(drift_arcsec_ra) + " DEC: " + str(drift_arcsec_dec) )
 
                                      if not g_dev['obs'].mount_reference_model_off:
                                          if target_dec > -85 and target_dec < 85 and g_dev['mnt'].last_slew_was_pointing_slew:
