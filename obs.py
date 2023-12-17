@@ -2731,7 +2731,7 @@ class Observatory:
 
 
                                      drift_timespan= time.time() - self.drift_tracker_timer
-                                     drift_arcsec_ra= (self.drift_tracker_ra * 15 * 3600 ) / drift_timespan
+                                     drift_arcsec_ra= (self.drift_tracker_ra * 15 * 3600 ) / drift_timespan   #NB NB  RA needs a cos(dec) scaling.
                                      drift_arcsec_dec=  (self.drift_tracker_dec *3600) / drift_timespan
                                      plog ("Drift calculations in arcsecs per second, RA: " + str(drift_arcsec_ra) + " DEC: " + str(drift_arcsec_dec) )
 

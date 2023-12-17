@@ -663,6 +663,10 @@ class Camera:
         else:
             self.is_cmos = False
 
+        if self.config["camera"][self.name]["settings"]["dither_enabled"] == True:
+            self.dither_enabled = True
+        else:
+            self.dither_enabled = False
 
         self.camera_model = self.config["camera"][self.name]["desc"]
         # NB We are reading from the actual camera or setting as the case may be. For initial setup,
@@ -1854,14 +1858,14 @@ class Camera:
                             #g_dev['obs'].update()
 
                             # Nudge to a different part of the dither pattern on the first frame
-                            if Nsmartstack > 1 and sskcounter == 0:
+                            if Nsmartstack > 1 and self.dither_enabled and sskcounter == 0:
                                 ra_random_dither=(((random.randint(0,50)-25) * self.pixscale / 3600 ) / 15)
                                 dec_random_dither=((random.randint(0,50)-25) * self.pixscale /3600 )
                                 try:
                                     self.wait_for_slew()
                                     g_dev['mnt'].slew_async_directly(ra=initial_smartstack_ra + ra_random_dither, dec=initial_smartstack_dec + dec_random_dither)
                                     #self.wait_for_slew()
-                                    
+
                                 except Exception as e:
                                     plog (traceback.format_exc())
                                     if 'Object reference not set' in str(e) and g_dev['mnt'].theskyx:
@@ -2304,7 +2308,7 @@ class Camera:
 
 
                 # Immediately nudge scope to a different point in the smartstack dither except for the last frame and after the last frame.
-                if Nsmartstack > 1 and not ((Nsmartstack == sskcounter+1) or (Nsmartstack == sskcounter+2)):
+                if Nsmartstack > 1 and self.dither_enabled and not ((Nsmartstack == sskcounter+1) or (Nsmartstack == sskcounter+2)):
                     ra_random_dither=(((random.randint(0,50)-25) * self.pixscale / 3600 ) / 15)
                     dec_random_dither=((random.randint(0,50)-25) * self.pixscale /3600 )
                     try:
@@ -3758,7 +3762,7 @@ def post_exposure_process(payload):
         #     hdu.header[
         #         "FLIPSTAT"
         #     ] = "None"  # This is a maxim camera setup, not a flip status
-        hdu.header["DITHER"] = (0, "[] Dither")
+        hdu.header["DITHER"] = (0, "[] Dither")  #This was intended to inform of a 5x5 pattern number
         hdu.header["OPERATOR"] = ("WER", "Site operator")
 
         hdu.header["ENCLIGHT"] = ("Off/White/Red/NIR", "Enclosure lights")

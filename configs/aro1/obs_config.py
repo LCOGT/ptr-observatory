@@ -658,6 +658,7 @@ site_config = {
                 # Generally leave this at 0.5 - the optimal value for ground based
                 # observatories.... unless you have a large field of view.
                 'drizzle_value_for_later_stacking': 0.5,
+                'dither_enabled':  False,      #Set this way for tracking testing
 
 
                 # This is the absolute minimum and maximum exposure for the camera
