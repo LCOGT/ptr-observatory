@@ -558,7 +558,7 @@ class Observatory:
                          plog (line.replace('\n',''))
             except:
                 plog ("something wrong with opening camera gain text file")
-                # breakpoint()
+                #breakpoint()
                 pass
 
         # Report filter throughputs as part of bootup
@@ -1210,7 +1210,7 @@ class Observatory:
                         return
             except Exception as e:
                 plog(traceback.format_exc())
-                breakpoint()
+                #breakpoint()
                 plog ("Sun check didn't work for some reason")
                 if 'Object reference not set' in str(e) and g_dev['mnt'].theskyx:
 
@@ -1477,7 +1477,7 @@ class Observatory:
                         plog("Killing then waiting 60 seconds then reconnecting")
                         g_dev['seq'].kill_and_reboot_theskyx(-1,-1)
                     else:
-                       # breakpoint()
+                       #breakpoint()
                        pass
 
             # If no activity for an hour, park the scope
@@ -2310,19 +2310,20 @@ class Observatory:
                 squash_on_x_axis=self.config["camera"][g_dev['cam'].name]["settings"]["squash_on_x_axis"]
 
                 ##  Here WER adds Zoom prototype code:
-                zoom_factor = 'full'   #This still needs to be passed in as a parameter.
+                zoom_factor = 'Small Sq.'   #This still needs to be passed in as a parameter.
 
                 jpeg_subprocess=subprocess.Popen(['python','subprocesses/mainjpeg.py'],stdin=subprocess.PIPE,stdout=subprocess.PIPE,bufsize=0)
 
 
-                if True:
+                if False:
+                    #
                     pickle.dump([hdusmalldata, smartstackid, paths, pier_side, is_osc, osc_bayer, osc_background_cut,osc_brightness_enhance, osc_contrast_enhance,\
                           osc_colour_enhance, osc_saturation_enhance, osc_sharpness_enhance, transpose_jpeg, flipx_jpeg, flipy_jpeg, rotate180_jpeg,rotate90_jpeg, \
                               rotate270_jpeg, crop_preview, yb, yt, xl, xr, squash_on_x_axis, zoom_factor], jpeg_subprocess.stdin)
 
                 # Here is a manual debug area which makes a pickle for debug purposes. Default is False, but can be manually set to True for code debugging
                 else:
-                    # breakpoint()
+                    #NB set this path to create test pickle for makejpeg routine.
                     pickle.dump([hdusmalldata, smartstackid, paths, pier_side, is_osc, osc_bayer, osc_background_cut,osc_brightness_enhance, osc_contrast_enhance,\
                         osc_colour_enhance, osc_saturation_enhance, osc_sharpness_enhance, transpose_jpeg, flipx_jpeg, flipy_jpeg, rotate180_jpeg,rotate90_jpeg, \
                             rotate270_jpeg, crop_preview, yb, yt, xl, xr, squash_on_x_axis, zoom_factor], open('testjpegpickle','wb'))
@@ -2334,6 +2335,7 @@ class Observatory:
 
                 # Essentially wait until the subprocess is complete
                 jpeg_subprocess.communicate()
+
 
                 # Try saving the jpeg to disk and quickly send up to AWS to present for the user
                 if smartstackid == 'no':
@@ -3913,7 +3915,7 @@ def wait_for_slew():
             time.sleep(5)
             g_dev['mnt'].mount_reboot()
         else:
-            # breakpoint()
+            ##breakpoint()
             pass
     return
 

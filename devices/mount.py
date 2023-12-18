@@ -513,7 +513,7 @@ class Mount:
                         self.slewtoAsyncRequested=False
                         #print ("attempting to slew")
                         self.mount_update_wincom.SlewToCoordinatesAsync(self.slewtoRA , self.slewtoDEC)
-                        
+
                         #print ("successful slew")
 
                     if self.request_tracking_on:
@@ -1494,7 +1494,7 @@ class Mount:
         self.last_tracking_rate_dec = tracking_rate_dec
         self.last_seek_time = time.time() - 5000
 
-        
+
 
         #Note this initiates a mount move.  WE should Evaluate if the destination is on the flip side and pick up the
         #flip offset.  So a GEM could track into positive HA territory without a problem but the next reseek should
@@ -1625,7 +1625,7 @@ class Mount:
                         try:
                             if g_dev['mnt'].theskyx:
                                 plog (traceback.format_exc())
-                                breakpoint()
+                                #breakpoint()
                                 plog("The SkyX had an error.")
                                 plog("Usually this is because of a broken connection.")
                                 plog("Killing then waiting 60 seconds then reconnecting")
@@ -1769,12 +1769,12 @@ class Mount:
         g_dev['obs'].last_solve_time = datetime.datetime.now() - datetime.timedelta(days=1)
         g_dev['obs'].images_since_last_solve = 10000
         self.wait_for_slew()
-        
-        
+
+
         g_dev['obs'].drift_tracker_ra=0
         g_dev['obs'].drift_tracker_dec=0
         g_dev['obs'].drift_tracker_timer=time.time()
-        
+
         if not silent:
             g_dev['obs'].send_to_user("Slew Complete.")
 

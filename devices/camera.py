@@ -972,7 +972,7 @@ class Camera:
             else:
                 plog(traceback.format_exc())
                 plog("MTF hunting this error")
-                # breakpoint()
+                #breakpoint()
         while not tempcamera.IsExposureComplete:
             self.theskyxIsExposureComplete=False
             #time.sleep(0.01)
@@ -4365,6 +4365,7 @@ def post_exposure_process(payload):
                     image_during_smartstack=True
                 if exposure_time < 1.0:
                     plog ("Not doing Platesolve for sub-second exposures.")
+                   #breakpoint()
                 else:
                     if solve_it == True or (not image_during_smartstack and not g_dev['seq'].currently_mosaicing and not g_dev['obs'].pointing_correction_requested_by_platesolve_thread and g_dev['obs'].platesolve_queue.empty() and not g_dev['obs'].platesolve_is_processing):
 

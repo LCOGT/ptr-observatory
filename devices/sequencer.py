@@ -1765,7 +1765,7 @@ class Sequencer:
 
         time.sleep(10)
         print ("Paused at kill theskyx for bugtesting")
-        breakpoint()
+       #breakpoint()
 
         os.system("taskkill /IM TheSkyX.exe /F")
         os.system("taskkill /IM TheSky64.exe /F")
@@ -2946,7 +2946,7 @@ class Sequencer:
                                     plog ("patch broken?")
                                     plog(traceback.format_exc())
                                     plog (fred)
-                                    breakpoint()
+                                   #breakpoint()
 
 
                             except Exception as e:
@@ -3427,7 +3427,7 @@ class Sequencer:
             g_dev['obs'].send_to_user("Central focus FWHM: " + str(spot1), p_level='INFO')
 
             if math.isnan(spot1) or spot1 ==False:
-                breakpoint()
+
                 retry += 1
                 plog("Retry of central focus star)")
                 continue
@@ -3882,14 +3882,14 @@ class Sequencer:
                 self.focussing=False
                 return
 
-        breakpoint()
+       #breakpoint()
 
         plog("Returning to RA:  " +str(start_ra) + " Dec: " + str(start_dec))
         g_dev["obs"].send_to_user("Returning to RA:  " +str(start_ra) + " Dec: " + str(start_dec))
         g_dev['mnt'].go_command(ra=start_ra, dec=start_dec)
         self.wait_for_slew()
 
-        breakpoint()
+       #breakpoint()
 
         if sim:
             g_dev['foc'].guarded_move((focus_start)*g_dev['foc'].micron_to_steps)
