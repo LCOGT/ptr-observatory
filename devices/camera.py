@@ -1425,7 +1425,8 @@ class Camera:
         calendar_event_id=None,
         skip_open_check=False,
         skip_daytime_check=False,
-        manually_requested_calibration=False
+        manually_requested_calibration=False,
+        zoom_factor='False'
     ):
         """
         This is Phase 1:  Setup the camera.
@@ -1497,6 +1498,11 @@ class Camera:
         opt = optional_params
         self.hint = optional_params.get("hint", "")
         self.script = required_params.get("script", "None")
+        if zoom_factor is not None:
+            self.zoom_factor = zoom_factor
+        else:
+            self.zoom_factor = optional_params.get('zoom_factor', False)
+
 
         if imtype.lower() in ("bias"):
             exposure_time = 0.0
@@ -2033,7 +2039,8 @@ class Camera:
                             altitude_of_observation = altitude_of_observation,
                             manually_requested_calibration=manually_requested_calibration,
                             initial_smartstack_ra=initial_smartstack_ra,
-                            initial_smartstack_dec= initial_smartstack_dec
+                            initial_smartstack_dec= initial_smartstack_dec,
+                            zoom_factor=self.zoom_factor
                         )  # NB all these parameters are crazy!
                         self.exposure_busy = False
                         self.retry_camera = 0
@@ -2093,7 +2100,8 @@ class Camera:
         altitude_of_observation=None,
         manually_requested_calibration=False,
         initial_smartstack_ra=None,
-        initial_smartstack_dec=None
+        initial_smartstack_dec=None,
+        zoom_factor=False
 
     ):
 
@@ -2626,7 +2634,7 @@ class Camera:
                 #breakpoint()
                 if not frame_type[-4:] == "flat" and not frame_type in ["bias", "dark"] and not focus_image and not frame_type=='pointing':
                     focus_position=g_dev['foc'].current_focus_position
-                    self.post_processing_queue.put(copy.deepcopy((outputimg, g_dev["mnt"].pier_side, self.config["camera"][self.name]["settings"]['is_osc'], frame_type, self.config['camera']['camera_1_1']['settings']['reject_new_flat_by_known_gain'], avg_mnt, avg_foc, avg_rot, self.setpoint, self.tempccdtemp, self.ccd_humidity, self.ccd_pressure, self.darkslide_state, exposure_time, this_exposure_filter, exposure_filter_offset, self.pane,opt , observer_user_name, self.hint, azimuth_of_observation, altitude_of_observation, airmass_of_observation, self.pixscale, smartstackid,sskcounter,Nsmartstack, longstackid, ra_at_time_of_exposure, dec_at_time_of_exposure, manually_requested_calibration, object_name, object_specf, g_dev["mnt"].ha_corr, g_dev["mnt"].dec_corr, focus_position, self.config, self.name, self.camera_known_gain, self.camera_known_readnoise, start_time_of_observation, observer_user_id, self.camera_path,  solve_it, next_seq)), block=False)
+                    self.post_processing_queue.put(copy.deepcopy((outputimg, g_dev["mnt"].pier_side, self.config["camera"][self.name]["settings"]['is_osc'], frame_type, self.config['camera']['camera_1_1']['settings']['reject_new_flat_by_known_gain'], avg_mnt, avg_foc, avg_rot, self.setpoint, self.tempccdtemp, self.ccd_humidity, self.ccd_pressure, self.darkslide_state, exposure_time, this_exposure_filter, exposure_filter_offset, self.pane,opt , observer_user_name, self.hint, azimuth_of_observation, altitude_of_observation, airmass_of_observation, self.pixscale, smartstackid,sskcounter,Nsmartstack, longstackid, ra_at_time_of_exposure, dec_at_time_of_exposure, manually_requested_calibration, object_name, object_specf, g_dev["mnt"].ha_corr, g_dev["mnt"].dec_corr, focus_position, self.config, self.name, self.camera_known_gain, self.camera_known_readnoise, start_time_of_observation, observer_user_id, self.camera_path,  solve_it, next_seq, zoom_factor)), block=False)
                 #print ("Deep copy timer: " +str(time.time()-deep_copy_timer))
 
 
@@ -3236,15 +3244,19 @@ class Camera:
 
 
 def post_exposure_process(payload):
-
     #time.sleep(1)
-
     expresult={}
-
-    (img, pier_side, is_osc, frame_type, reject_flat_by_known_gain, avg_mnt, avg_foc, avg_rot, setpoint, tempccdtemp, ccd_humidity, ccd_pressure, darkslide_state, exposure_time, this_exposure_filter, exposure_filter_offset, pane,opt, observer_user_name, hint, azimuth_of_observation, altitude_of_observation, airmass_of_observation, pixscale, smartstackid,sskcounter,Nsmartstack, longstackid, ra_at_time_of_exposure, dec_at_time_of_exposure, manually_requested_calibration, object_name, object_specf, ha_corr, dec_corr, focus_position, selfconfig, selfname, camera_known_gain, camera_known_readnoise, start_time_of_observation, observer_user_id, selfcamera_path,  solve_it, next_seq ) = payload
-
+    #A long tuple unpack of the payload
+    (img, pier_side, is_osc, frame_type, reject_flat_by_known_gain, avg_mnt, avg_foc, avg_rot, \
+     setpoint, tempccdtemp, ccd_humidity, ccd_pressure, darkslide_state, exposure_time, \
+     this_exposure_filter, exposure_filter_offset, pane,opt, observer_user_name, hint, \
+     azimuth_of_observation, altitude_of_observation, airmass_of_observation, pixscale, \
+     smartstackid,sskcounter,Nsmartstack, longstackid, ra_at_time_of_exposure, \
+     dec_at_time_of_exposure, manually_requested_calibration, object_name, object_specf, \
+     ha_corr, dec_corr, focus_position, selfconfig, selfname, camera_known_gain, \
+     camera_known_readnoise, start_time_of_observation, observer_user_id, selfcamera_path, \
+     solve_it, next_seq, zoom_factor) = payload
     post_exposure_process_timer=time.time()
-
     ix, iy = img.shape
 
 
@@ -4314,7 +4326,8 @@ def post_exposure_process(payload):
             # Send data off to process jpeg
             # This is for a non-focus jpeg
             #if focus_image == False:
-            g_dev['obs'].to_mainjpeg((hdusmalldata, smartstackid, paths, pier_side))
+
+            g_dev['obs'].to_mainjpeg((hdusmalldata, smartstackid, paths, pier_side, zoom_factor))
 
             # # If this is a focus image, we need to wait until the SEP queue is finished and empty to pick up the latest
             # # FWHM.
@@ -4436,8 +4449,7 @@ def post_exposure_process(payload):
 
     except:
         plog(traceback.format_exc())
-        breakpoint()
-
+        #breakpoint()
 def wait_for_slew():
     """
     A function called when the code needs to wait for the telescope to stop slewing before undertaking a task.

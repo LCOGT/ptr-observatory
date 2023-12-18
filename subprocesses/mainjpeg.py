@@ -196,7 +196,7 @@ if smartstackid == 'no':
             if zoom_factor is not False:
                 if zoom_factor in ['full', 'Full', '100%']:
                     zoom = (0.0, 0.0, 0.0, 0.0)   #  Trim nothing
-                elif zoom_factor in ['square', 'Sqr.']:
+                elif zoom_factor in ['square', 'Sqr.', 'small sq.']:
                     zoom = ((ix/iy -1)/2, 0.0, (ix/iy -1)/2, 0.00,)    #  3:2 ->> 2:2, QHY600 sides trim.
                 elif zoom_factor in ['71%', '70.7%']:
                     r_sq2 = (1 - 1/sqrt(2))/2
@@ -235,7 +235,7 @@ if smartstackid == 'no':
                 final_image = trial_image
 
 
-        if iy == ix:
+        if ix == iy:
             final_image = final_image.resize((900, 900))
         else:
             if squash_on_x_axis:
@@ -300,7 +300,7 @@ if smartstackid == 'no':
            #breakpoint()
             if zoom_factor in ['full', 'Full', '100%']:
                 zoom = (0.0, 0.0, 0.0, 0.0)   #  Trim nothing
-            elif zoom_factor in ['square', 'Sqr.', 'Small Sq.']:
+            elif zoom_factor in ['square', 'Sqr.', 'small sq.', 'Small sq.']:
                 zoom = (((ix - iy)/2/ix ), 0.0, ((ix - iy)/2/ix ), 0.00,)    #  3:2 ->> 2:2, QHY600 sides trim.
             elif zoom_factor in ['71%', '70.7%']:
                 r_sq2 = (1 - 1/sqrt(2))/2

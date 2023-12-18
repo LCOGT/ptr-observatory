@@ -1059,12 +1059,13 @@ class Sequencer:
                     except:
                         pass
 
+                    zoom_factor = exposure['zoom'].lower()
+                    if exposure['zoom'].lower() in ["full", 'Full'] or '%' in exposure['zoom'] or ( exposure['zoom'].lower() == 'small sq.' ):    # and dec_field_deg == ra_field_deg):
 
-                    if exposure['zoom'].lower() in ["full", 'Full'] or '%' in exposure['zoom'] or ( exposure['zoom'].lower() == 'big sq.' and dec_field_deg == ra_field_deg):
-
-                        # These are waiting for a mosaic approach
+                        # These are not mosaic exposures
                         offset = [(0., 0.)] #Zero(no) mosaic offset
                         pane = 0
+                        self.currently_mosaicing = False
                     else:
                         self.currently_mosaicing = True
 
@@ -1274,7 +1275,7 @@ class Sequencer:
                             # Set up options for exposure and take exposure.
                             req = {'time': exp_time,  'alias':  str(self.config['camera']['camera_1_1']['name']), 'image_type': imtype, 'smartstack' : smartstackswitch, 'longstackswitch' : longstackswitch, 'longstackname' : longstackname, 'block_end' : g_dev['seq'].blockend}   #  NB Should pick up filter and constants from config
                             opt = {'count': 1, 'filter': filter_requested, \
-                                   'hint': block['project_id'] + "##" + dest_name, 'object_name': block['project']['project_targets'][0]['name'], 'pane': pane}
+                                   'hint': block['project_id'] + "##" + dest_name, 'object_name': block['project']['project_targets'][0]['name'], 'pane': pane, 'zoom_factor': zoom_factor}
                             plog('Seq Blk sent to camera:  ', req, opt)
 
                             now_date_timeZ = datetime.datetime.utcnow().isoformat().split('.')[0] +'Z'
@@ -1285,7 +1286,7 @@ class Sequencer:
                                     self.currently_mosaicing = False
                                     return
                             g_dev["obs"].request_full_update()
-                            result = g_dev['cam'].expose_command(req, opt, user_name=user_name, user_id=user_id, user_roles=user_roles, no_AWS=False, solve_it=False, calendar_event_id=calendar_event_id)
+                            result = g_dev['cam'].expose_command(req, opt, user_name=user_name, user_id=user_id, user_roles=user_roles, no_AWS=False, solve_it=False, calendar_event_id=calendar_event_id, zoom_factor=zoom_factor)
                             g_dev["obs"].request_full_update()
                             try:
                                 if result == 'blockend':

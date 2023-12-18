@@ -2262,7 +2262,7 @@ class Observatory:
             else:
                 time.sleep(0.1)
 
-    def mainjpeg_process(self):
+    def mainjpeg_process(self, zoom_factor=False):
         """
         This is the main subprocess where jpegs are created for the UI.
         """
@@ -2270,7 +2270,7 @@ class Observatory:
         while True:
             if (not self.mainjpeg_queue.empty()):
                 osc_jpeg_timer_start = time.time()
-                (hdusmalldata, smartstackid, paths, pier_side) = self.mainjpeg_queue.get(block=False)
+                (hdusmalldata, smartstackid, paths, pier_side, zoom_factor) = self.mainjpeg_queue.get(block=False)
                 is_osc = g_dev['cam'].config["camera"][g_dev['cam'].name]["settings"]["is_osc"]
                 osc_bayer= g_dev['cam'].config["camera"][g_dev['cam'].name]["settings"]["osc_bayer"]
                 if is_osc:
@@ -2310,12 +2310,12 @@ class Observatory:
                 squash_on_x_axis=self.config["camera"][g_dev['cam'].name]["settings"]["squash_on_x_axis"]
 
                 ##  Here WER adds Zoom prototype code:
-                zoom_factor = 'Small Sq.'   #This still needs to be passed in as a parameter.
+                #zoom_factor = 'Small Sq.'   #This still needs to be passed in as a parameter.
 
                 jpeg_subprocess=subprocess.Popen(['python','subprocesses/mainjpeg.py'],stdin=subprocess.PIPE,stdout=subprocess.PIPE,bufsize=0)
 
 
-                if False:
+                if True:
                     #
                     pickle.dump([hdusmalldata, smartstackid, paths, pier_side, is_osc, osc_bayer, osc_background_cut,osc_brightness_enhance, osc_contrast_enhance,\
                           osc_colour_enhance, osc_saturation_enhance, osc_sharpness_enhance, transpose_jpeg, flipx_jpeg, flipy_jpeg, rotate180_jpeg,rotate90_jpeg, \
