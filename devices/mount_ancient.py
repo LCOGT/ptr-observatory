@@ -350,7 +350,7 @@ class Mount:
         if self. mount.EquatorialSystem == 1:
             loop_count += 1
             if loop_count == 5:
-               # breakpoint()
+               #breakpoint()
                 pass
             self.get_current_times()
             if self.mount.sideOfPier == 1:
@@ -822,7 +822,7 @@ class Mount:
                 else:
                     print("No outstanding offset available for calibration, reset existing calibration.")
                     # NB We currently use this path to clear a calibration.  But should be ad explicit Command instead. 20201230
-                    # breakpoint()
+                    #breakpoint()
                     self.reset_mount_reference()
                     self.ra_offset = 0
                     self.dec_offset = 0
@@ -854,7 +854,7 @@ class Mount:
                 else:
                     print("No outstanding offset available for calibration, reset existing calibration.")
                     # NB We currently use this path to clear a calibration.  But should be ad explicit Command instead. 20201230
-                    # breakpoint()
+                    #breakpoint()
                     self.reset_mount_reference()
                     self.ra_offset = 0
                     self.dec_offset = 0

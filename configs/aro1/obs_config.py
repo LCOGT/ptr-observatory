@@ -157,7 +157,7 @@ site_config = {
      'auto_morn_bias_dark': True,
 
      # FOCUS OPTIONS
-     'periodic_focus_time': 12.0, # This is a time, in hours, over which to bypass automated focussing (e.g. at the start of a project it will not refocus if a new project starts X hours after the last focus)
+     'periodic_focus_time': 4.0, # This is a time, in hours, over which to bypass automated focussing (e.g. at the start of a project it will not refocus if a new project starts X hours after the last focus)
      'stdev_fwhm': 0.5,  # This is the expected variation in FWHM at a given telescope/camera/site combination. This is used to check if a fwhm is within normal range or the focus has shifted
      'focus_trigger': 0.6,  # What FWHM increase is needed to trigger an autofocus
 
@@ -695,12 +695,12 @@ site_config = {
 
 
                 # As simple as it states, how many calibration frames to collect and how many to store.
-                'number_of_bias_to_collect': 33,
-                'number_of_dark_to_collect': 15,
-                'number_of_flat_to_collect': 9,
+                'number_of_bias_to_collect': 31,
+                'number_of_dark_to_collect': 13,
+                'number_of_flat_to_collect': 5,
                 'number_of_bias_to_store': 63,
-                'number_of_dark_to_store': 31,
-                'number_of_flat_to_store': 17,
+                'number_of_dark_to_store': 27,
+                'number_of_flat_to_store': 11,
                 # Default dark exposure time.
                 'dark_exposure': 360,
 

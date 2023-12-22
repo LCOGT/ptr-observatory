@@ -3033,6 +3033,7 @@ class Sequencer:
                                 pop_list.pop(0)
                                 scale = 1
 
+
                             continue
                     else:
                         time.sleep(10)

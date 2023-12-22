@@ -315,6 +315,9 @@ class Mount:
 
         self.right_ascension_directly_from_mount = copy.deepcopy(self.mount.RightAscension)
         self.declination_directly_from_mount = copy.deepcopy(self.mount.Declination)
+        #Verified these set the rates additively to mount supplied refraction rate.20231221 WER
+        self.right_ascension_rate_directly_from_mount = copy.deepcopy(self.mount.RightAscensionRate)
+        self.declination_rate_directly_from_mount = copy.deepcopy(self.mount.DeclinationRate)
 
         # initialisation values
         self.alt= 45
@@ -412,7 +415,7 @@ class Mount:
         self.mount_update_thread.start()
 
     # Note this is a thread!
-    def mount_update_thread(self):
+    def mount_update_thread(self):   # NB is this the best name for this? Update vs Command
 
 
         #one_at_a_time = 0
@@ -559,7 +562,8 @@ class Mount:
 
                     self.right_ascension_directly_from_mount = copy.deepcopy(self.mount_update_wincom.RightAscension)
                     self.declination_directly_from_mount = copy.deepcopy(self.mount_update_wincom.Declination)
-
+                    self.right_ascension_rate_directly_from_mount = copy.deepcopy(self.mount_update_wincom.RightAscensionRate)
+                    self.declination_rate_directly_from_mount = copy.deepcopy(self.mount_update_wincom.DeclinationRate)
 
 
                     self.mount_updates=self.mount_updates + 1
@@ -796,6 +800,22 @@ class Mount:
         #return copy.deepcopy(self.current_icrs_ra, self.current_icrs_dec)
         return self.current_icrs_ra, self.current_icrs_dec
 
+    def get_mount_rates(self):
+        '''
+        Build up an ICRS coordinate from mount reported coordinates,
+        removing offset and pierside calibrations.  From either flip
+        the ICRS coordiate returned should be that of the object
+        commanded, hence removing the offsets that are needed to
+        position the mount on the axis.
+        '''
+        while self.mount_busy:
+            time.sleep(0.05)
+        self.mount_busy=True
+        self.mount_busy=False
+        self.current_rate_ra = self.right_ascension_rate_directly_from_mount
+        self.current_rate_dec = self.declination_rate_directly_from_mount
+        return self.current_rate_ra, self.current_rate_dec
+
     def slew_async_directly(self, ra, dec):
         self.wait_for_slew()
         # mount command #
@@ -960,6 +980,7 @@ class Mount:
             }
         elif self.tel == True:
             #try:
+
             #icrs_ra, icrs_dec = self.get_mount_coordinates()
             rd = SkyCoord(ra=self.right_ascension_directly_from_mount*u.hour, dec=self.declination_directly_from_mount*u.deg)
             # except:
@@ -1012,9 +1033,9 @@ class Mount:
                 'correction_dec': round(self.dec_corr, 4),
                 'hour_angle': round(ha, 3),
                 'demand_right_ascension_rate': round(self.prior_roll_rate, 9),   #NB as on 20231113 these rates are basically fixed and static. WER
-                'mount_right_ascension_rate': round(self.RightAscensionRate, 9),   #Will use sec-RA/sid-sec
+                'mount_right_ascension_rate': round(self.right_ascension_rate_directly_from_mount, 9),   #Will use sec-RA/sid-sec
                 'demand_declination_rate': round(self.prior_pitch_rate, 8),
-                'mount_declination_rate': round(self.DeclinationRate, 8),
+                'mount_declination_rate': round(self.declination_rate_directly_from_mount, 8),
                 'pier_side':self.pier_side,
                 'pier_side_str': self.pier_side_str,
                 'azimuth': round(az, 3),
@@ -1027,7 +1048,6 @@ class Mount:
                 'message': str(self.mount_message[:54]),
                 'move_time': self.move_time
             }
-
         else:
             plog('Proper device_name is missing, or tel == None')
             status = {'defective':  'status'}
@@ -1341,7 +1361,10 @@ class Mount:
 
     '''
 
-    def go_command(self, skyflatspot=None, ra=None, dec=None, az=None, alt=None, ha=None, objectname=None, offset=False, calibrate=False, auto_center=False, silent=False, skip_open_test=False,tracking_rate_ra = 0, tracking_rate_dec =  0, do_centering_routine=False):
+    def go_command(self, skyflatspot=None, ra=None, dec=None, az=None, alt=None, ha=None, \
+                   objectname=None, offset=False, calibrate=False, auto_center=False, \
+                   silent=False, skip_open_test=False,tracking_rate_ra = 0, \
+                   tracking_rate_dec =  0, do_centering_routine=False):
 
         ''' Slew to the given ra/dec, alt/az or ha/dec or skyflatspot coordinates. '''
 
@@ -1439,21 +1462,6 @@ class Mount:
             plog("Refusing pointing request as the observatory is not enabled to observe.")
             return 'refused'
 
-        # Fifth thing, check that the sky flat latch isn't on
-        # (I moved the scope during flats once, it wasn't optimal)
-        #plog ("MTF TEMP REPORTING FOR SKYFLAT")
-        #plog (str(skyflatspot))
-        #plog (str(g_dev['seq'].morn_sky_flat_latch  or g_dev['seq'].eve_sky_flat_latch or g_dev['seq'].sky_flat_latch or g_dev['seq'].bias_dark_latch))
-        # if not skyflatspot:
-        #     if g_dev['seq'].morn_sky_flat_latch  or g_dev['seq'].eve_sky_flat_latch or g_dev['seq'].sky_flat_latch or g_dev['seq'].bias_dark_latch:
-        #         g_dev['obs'].send_to_user("Refusing pointing request as the observatory is currently undertaking flats or calibration frames.")
-        #         plog("Refusing pointing request as the observatory is currently taking flats or calibration frmaes.")
-        #         return 'refused'
-
-
-        #breakpoint()
-
-
         if objectname != None:
             self.object = objectname
         else:
@@ -1479,7 +1487,8 @@ class Mount:
 
         #
         #breakpoint()
-        icrs_ra, icrs_dec = self.get_mount_coordinates()   #Does not appear to be used  20231128 wer
+        icrs_ra, icrs_dec = self.get_mount_coordinates()    #These are for debugging.
+        check_ra_rate, check_dec_rate = self.get_mount_rates()  #These do not appear to be used  20231128 wer
         #breakpoint()
         if self.object == "":
             if not silent:
