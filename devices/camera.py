@@ -878,7 +878,7 @@ class Camera:
             if (not self.post_processing_queue.empty()) and one_at_a_time == 0:
                 one_at_a_time = 1
                 #pre_upload = time.time()
-                breakpoint()
+                #breakpoint()
                 payload = self.post_processing_queue.get(block=False)
                 post_exposure_process(payload)
                 self.post_processing_queue.task_done()
@@ -1312,7 +1312,7 @@ class Camera:
         cam_stat = self.config['camera'][self.name]['name'] + " connected." # self.camera.CameraState
         status[
             "status"
-        ] = cam_stat  # The state could be expanded to be more meaningful. for instance repport TEC % TEmp, temp setpoint...
+        ] = cam_stat  # The state could be expanded to be more meaningful. for instance report TEC % TEmp, temp setpoint...
         return status
 
     def parse_command(self, command):
@@ -1320,12 +1320,23 @@ class Camera:
         req = command["required_params"]
         opt = command["optional_params"]
         action = command["action"]
-        breakpoint()
+        #breakpoint()
         self.user_id = command["user_id"]
         if self.user_id != self.last_user_id:
             self.last_user_id = self.user_id
         self.user_name = command["user_name"]
-
+# =============================================================================
+#         #Todo  NB NB NB Temp injection of a  Zoom value 20231222 WER
+# =============================================================================
+        try:
+            test = opt['zoom']
+            print("Zoom value is:  ", test)
+        except:
+            opt['zoom'] = 'Full'
+            print('Camera, line 1334 temporary code, injection.  req, opt:  ', req, opt)
+# =============================================================================
+#         #Todo  NB NB NB Temp injection of a  Zoom value 20231222 WER
+# =============================================================================
         if (
             "object_name" in opt
         ):
@@ -1427,8 +1438,7 @@ class Camera:
         calendar_event_id=None,
         skip_open_check=False,
         skip_daytime_check=False,
-        manually_requested_calibration=False,
-        zoom_factor='False'
+        manually_requested_calibration=False
     ):
         """
         This is Phase 1:  Setup the camera.
@@ -1500,10 +1510,14 @@ class Camera:
         opt = optional_params
         self.hint = optional_params.get("hint", "")
         self.script = required_params.get("script", "None")
-        if zoom_factor is not None:
-            self.zoom_factor = zoom_factor
-        else:
-            self.zoom_factor = optional_params.get('zoom_factor', False)
+
+        try:
+            self.zoom_factor = optional_params.get('zoom_factor', 'Full')
+        except:
+            plog("Problem with supplied Zoom factor, Camera line 1510")
+            self.zoom_factor = "Full"
+
+
 
 
         if imtype.lower() in ("bias"):
@@ -2010,7 +2024,7 @@ class Camera:
 
 
                         # We call below to keep this subroutine a reasonable length, Basically still in Phase 2
-                        breakpoint()
+                        #breakpoint()
                         expresult = self.finish_exposure(
                             exposure_time,
                             frame_type,
@@ -2108,7 +2122,7 @@ class Camera:
 
     ):
 
-        breakpoint()
+        #breakpoint()
         #self.expresult={}
         plog(
             "Exposure Started:  " + str(exposure_time) + "s ",
@@ -2634,10 +2648,10 @@ class Camera:
 
                 #deep_copy_timer=time.time()
 
-                breakpoint()
+                #breakpoint()
                 if not frame_type[-4:] == "flat" and not frame_type in ["bias", "dark"] and not focus_image and not frame_type=='pointing':
                     focus_position=g_dev['foc'].current_focus_position
-                    breakpoint()
+                    #breakpoint()
                     self.post_processing_queue.put(copy.deepcopy((outputimg, g_dev["mnt"].pier_side, self.config["camera"][self.name]["settings"]['is_osc'], frame_type, self.config['camera']['camera_1_1']['settings']['reject_new_flat_by_known_gain'], avg_mnt, avg_foc, avg_rot, self.setpoint, self.tempccdtemp, self.ccd_humidity, self.ccd_pressure, self.darkslide_state, exposure_time, this_exposure_filter, exposure_filter_offset, self.pane,opt , observer_user_name, self.hint, azimuth_of_observation, altitude_of_observation, airmass_of_observation, self.pixscale, smartstackid,sskcounter,Nsmartstack, longstackid, ra_at_time_of_exposure, dec_at_time_of_exposure, manually_requested_calibration, object_name, object_specf, g_dev["mnt"].ha_corr, g_dev["mnt"].dec_corr, focus_position, self.config, self.name, self.camera_known_gain, self.camera_known_readnoise, start_time_of_observation, observer_user_id, self.camera_path,  solve_it, next_seq, zoom_factor)), block=False)
                 #print ("Deep copy timer: " +str(time.time()-deep_copy_timer))
 

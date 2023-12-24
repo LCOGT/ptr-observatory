@@ -1060,8 +1060,10 @@ class Sequencer:
                         pass
 
                     zoom_factor = exposure['zoom'].lower()
-                    breakpoint()
-                    if exposure['zoom'].lower() in ["full", 'Full'] or '%' in exposure['zoom'] or ( exposure['zoom'].lower() == 'small sq.' ):    # and dec_field_deg == ra_field_deg):
+                    #breakpoint()
+                    if exposure['zoom'].lower() in ["full", 'Full'] or 'X' in exposure['zoom'] \
+                        or  '%' in exposure['zoom'] or ( exposure['zoom'].lower() == 'small sq.' ) \
+                        or (exposure['zoom'].lower() == 'small sq' ):    # and dec_field_deg == ra_field_deg):
 
                         # These are not mosaic exposures
                         offset = [(0., 0.)] #Zero(no) mosaic offset

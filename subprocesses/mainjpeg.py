@@ -191,38 +191,39 @@ if smartstackid == 'no':
         if (crop_preview == True):
             final_image=final_image.crop((xl,yt,xr,yb))
             iy, ix = final_image.size
-            #insert Debify routine here.
+            #insert Debify routine here.  NB NB Note LCO '30-amin Sq field not implemented.'
             print('Zoom factor is:  ', zoom_factor)
             if zoom_factor is not False:
                 if zoom_factor in ['full', 'Full', '100%']:
                     zoom = (0.0, 0.0, 0.0, 0.0)   #  Trim nothing
                 elif zoom_factor in ['square', 'Sqr.', 'small sq.']:
                     zoom = ((ix/iy -1)/2, 0.0, (ix/iy -1)/2, 0.00,)    #  3:2 ->> 2:2, QHY600 sides trim.
-                elif zoom_factor in ['71%', '70.7%']:
+                elif zoom_factor in ['71%', '70.7%', '1.4X', '1.5X']:
                     r_sq2 = (1 - 1/sqrt(2))/2
                     zoom = (r_sq2, r_sq2, r_sq2, r_sq2,)    #  0.14644, sides trim.
-                elif zoom_factor in ['50%']:
+                elif zoom_factor in ['50%', '2X']:
                     r_sq2 = (1 - 0.5)/2
                     zoom = (r_sq2, r_sq2, r_sq2, r_sq2,)    #  0.14644, sides trim.
-                elif zoom_factor in ['35%']:
+                elif zoom_factor in ['35%', '2.8X', '3X']:
                     r_sq2 = (1 - 0.5/sqrt(2))/2
                     zoom = (r_sq2, r_sq2, r_sq2, r_sq2,)    #  0.14644, sides trim.
-                elif zoom_factor in ['25%']:
+                elif zoom_factor in ['25%', '4X']:
                     r_sq2 = (1 - 0.25)/2
                     zoom = (r_sq2, r_sq2, r_sq2, r_sq2,)    #  0.14644, sides trim.
-                elif zoom_factor in ['18%']:
+                elif zoom_factor in ['18%', '5.7X', '6X']:
                     r_sq2 = (1 - 0.25/sqrt(2))/2
                     zoom = (r_sq2, r_sq2, r_sq2, r_sq2,)    #  0.14644, sides trim.
-                elif zoom_factor in ['12.5%', '13%', '12%']:
+                elif zoom_factor in ['12.5%', '13%', '12%', '8X']:
                     r_sq2 = (1 - 0.125)/2
                     zoom = (r_sq2, r_sq2, r_sq2, r_sq2,)    #  0.14644, sides trim.
-                elif zoom_factor in ['9%']:
+                elif zoom_factor in ['9%', '11.3X', '11X', '12X']:
                     r_sq2 = (1 - 0.125/sqrt(2))/2
                     zoom = (r_sq2, r_sq2, r_sq2, r_sq2,)    #  0.14644, sides trim.
-                elif zoom_factor in ['600%', "Sel.", "Sub Frame"]:
-                    zoom = (.2, .2725, .2, .2725)
+                elif zoom_factor in ['6%', '6.3%', '16X']:
+                    r_sq2 = (1 - 0.0625)/2
+                    zoom = (r_sq2, r_sq2, r_sq2, r_sq2,)
                 else:
-                    zoom = (0.0, 0.0, 0.0, 0.0)
+                    zoom = (1.0, 1.0, 1.0, 1.0)
                 #breakpoint()
                 xl, yt, xr, yb = zoom
                 xl *= ix
@@ -297,36 +298,36 @@ if smartstackid == 'no':
         ix, iy = final_image.size
         print('Zoom factor is:  ', zoom_factor)
         if zoom_factor is not False:
-           #breakpoint()
             if zoom_factor in ['full', 'Full', '100%']:
                 zoom = (0.0, 0.0, 0.0, 0.0)   #  Trim nothing
-            elif zoom_factor in ['square', 'Sqr.', 'small sq.', 'Small sq.']:
-                zoom = (((ix - iy)/2/ix ), 0.0, ((ix - iy)/2/ix ), 0.00,)    #  3:2 ->> 2:2, QHY600 sides trim.
-            elif zoom_factor in ['71%', '70.7%']:
+            elif zoom_factor in ['square', 'Sqr.', 'small sq.']:
+                zoom = ((ix/iy -1)/2, 0.0, (ix/iy -1)/2, 0.00,)    #  3:2 ->> 2:2, QHY600 sides trim.
+            elif zoom_factor in ['71%', '70.7%', '1.4X', '1.5X']:
                 r_sq2 = (1 - 1/sqrt(2))/2
                 zoom = (r_sq2, r_sq2, r_sq2, r_sq2,)    #  0.14644, sides trim.
-            elif zoom_factor in ['50%']:
+            elif zoom_factor in ['50%', '2X']:
                 r_sq2 = (1 - 0.5)/2
                 zoom = (r_sq2, r_sq2, r_sq2, r_sq2,)    #  0.14644, sides trim.
-            elif zoom_factor in ['35%']:
+            elif zoom_factor in ['35%', '2.8X', '3X']:
                 r_sq2 = (1 - 0.5/sqrt(2))/2
                 zoom = (r_sq2, r_sq2, r_sq2, r_sq2,)    #  0.14644, sides trim.
-            elif zoom_factor in ['25%']:
+            elif zoom_factor in ['25%', '4X']:
                 r_sq2 = (1 - 0.25)/2
                 zoom = (r_sq2, r_sq2, r_sq2, r_sq2,)    #  0.14644, sides trim.
-            elif zoom_factor in ['18%']:
+            elif zoom_factor in ['18%', '5.7X', '6X']:
                 r_sq2 = (1 - 0.25/sqrt(2))/2
                 zoom = (r_sq2, r_sq2, r_sq2, r_sq2,)    #  0.14644, sides trim.
-            elif zoom_factor in ['12.5%', '13%', '12%']:
+            elif zoom_factor in ['12.5%', '13%', '12%', '8X']:
                 r_sq2 = (1 - 0.125)/2
                 zoom = (r_sq2, r_sq2, r_sq2, r_sq2,)    #  0.14644, sides trim.
-            elif zoom_factor in ['9%']:
+            elif zoom_factor in ['9%', '11.3X', '11X', '12X']:
                 r_sq2 = (1 - 0.125/sqrt(2))/2
                 zoom = (r_sq2, r_sq2, r_sq2, r_sq2,)    #  0.14644, sides trim.
-            elif zoom_factor in ['600%', "Sel.", "Sub Frame"]:
-                zoom = (.2, .2725, .2, .2725)
+            elif zoom_factor in ['6%', '6.3%', '16X']:
+                r_sq2 = (1 - 0.0625)/2
+                zoom = (r_sq2, r_sq2, r_sq2, r_sq2,)
             else:
-                zoom = (0.0, 0.0, 0.0, 0.0)
+                zoom = (1.0, 1.0, 1.0, 1.0)
 
 
 
