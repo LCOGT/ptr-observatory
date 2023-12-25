@@ -13,8 +13,10 @@ aro-0m30      10.0.0.73
 aro-wema      10.0.0.50
 Power Control 10.0.0.100   admin arot******
 Roof Control  10.0.0.200   admin arot******
-Redis         10.0.0.73:6379
+Redis         10.0.0.174:6379  ; rds = redis.Redis(host='10.0.0.174', port=6379); rds.set('wx', 'bogus'); rds.get('wx').decode()
 Dragonfly     Obsolete.
+
+Hubble V1  00:41:27.30 +41:10:10.4
 '''
 
 #                                                                                                  1         1         1
@@ -94,7 +96,8 @@ site_config = {
     'local_calibration_path': 'F:/ptr/', # THIS FOLDER HAS TO BE ON A LOCAL DRIVE, not a network drive due to the necessity of huge memmap files
     'archive_age' : 10.0, # Number of days to keep files in the local archive before deletion. Negative means never delete
 
-
+    'redis_available':  True,
+    'redis_ip': "10.0.0.174:6379",
 
 
     # For low bandwidth sites, do not send up large files until the end of the night. set to 'no' to disable
@@ -691,7 +694,8 @@ site_config = {
                 # What is the base smartstack exposure time?
                 # It will vary from scope to scope and computer to computer.
                 # 30s is a good default.
-                'smart_stack_exposure_time': 25,
+                'smart_stack_exposure_time': 30,
+                'smart_stack_exposure_NB_multiplier':  3,   #Michael's setting
 
 
                 # As simple as it states, how many calibration frames to collect and how many to store.

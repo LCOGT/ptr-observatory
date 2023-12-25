@@ -1289,7 +1289,7 @@ class Sequencer:
                                     self.currently_mosaicing = False
                                     return
                             g_dev["obs"].request_full_update()
-                            result = g_dev['cam'].expose_command(req, opt, user_name=user_name, user_id=user_id, user_roles=user_roles, no_AWS=False, solve_it=False, calendar_event_id=calendar_event_id, zoom_factor=zoom_factor)
+                            result = g_dev['cam'].expose_command(req, opt, user_name=user_name, user_id=user_id, user_roles=user_roles, no_AWS=False, solve_it=False, calendar_event_id=calendar_event_id) #, zoom_factor=zoom_factor)
                             g_dev["obs"].request_full_update()
                             try:
                                 if result == 'blockend':
@@ -2730,6 +2730,7 @@ class Sequencer:
                 while (acquired_count < flat_count):
                     #g_dev['obs'].request_scan_requests()
                     g_dev["obs"].request_full_update()
+                    g_dev["obs"].request_update_status()
 
                     if g_dev['obs'].open_and_enabled_to_observe == False:
                         plog ("Observatory closed or disabled during flat script. Cancelling out of flat acquisition loop.")

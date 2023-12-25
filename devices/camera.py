@@ -1699,9 +1699,11 @@ class Camera:
             # Within each count - which is a single requested exposure, IF it is a smartstack
             # Then we divide each count up into individual smartstack exposures.
             ssExp=self.config["camera"][self.name]["settings"]['smart_stack_exposure_time']
+            ssNBmult=self.config["camera"][self.name]["settings"]['smart_stack_exposure_NB_multiplier']
             if g_dev["fil"].null_filterwheel == False:
                 if self.current_filter.lower() in ['ha', 'o3', 's2', 'n2', 'y', 'up', 'u']:
-                    ssExp = ssExp * 3.0 # For narrowband and low throughput filters, increase base exposure time.
+                    ssExp = ssExp * ssNBmult # For narrowband and low throughput filters, increase base exposure time.
+                plog("WER Hack at Camera line 1704 -- 60 sec NB shortstacks")
             if not imtype.lower() in ["light", "expose"]:
                 Nsmartstack=1
                 SmartStackID='no'
