@@ -376,7 +376,7 @@ class Observatory:
         self.mount_reference_model_off = self.config['mount_reference_model_off']
         self.admin_owner_commands_only = False
         self.assume_roof_open = False
-        self.auto_centering_off = False
+        self.auto_centering_off = False  #WER 20231239 Toggled to True
 
         # Instantiate the helper class for astronomical events
         # Soon the primary event / time values can come from AWS.  NB NB   I send them there! Why do we want to put that code in AWS???
@@ -1070,7 +1070,7 @@ class Observatory:
         status["timestamp"] = round((time.time()) / 2.0, 3)
         status["send_heartbeat"] = False
 
-        #breakpoint()
+
 
         #status['telescope']={}
 
@@ -1124,7 +1124,7 @@ class Observatory:
 
         self.full_update_lock=True
         while self.currently_updating_status:
-            print ('w')
+            print ('updating status')
             time.sleep(0.5)
 
         if self.status_count > 1:  # Give time for status to form
@@ -2314,7 +2314,7 @@ class Observatory:
 
                 jpeg_subprocess=subprocess.Popen(['python','subprocesses/mainjpeg.py'],stdin=subprocess.PIPE,stdout=subprocess.PIPE,bufsize=0)
 
-                #breakpoint()
+                plog("@ Pickle point:  ", zoom_factor)
                 if True:
                     #
                     pickle.dump([hdusmalldata, smartstackid, paths, pier_side, is_osc, osc_bayer, osc_background_cut,osc_brightness_enhance, osc_contrast_enhance,\
@@ -3490,7 +3490,7 @@ class Observatory:
                     pixscale,
                     smartstackid,
                     sskcounter,
-                    Nsmartstack, pier_side
+                    Nsmartstack, pier_side, zoom_factor
                 ) = self.smartstack_queue.get(block=False)
 
                 if paths is None:
@@ -3547,7 +3547,8 @@ class Observatory:
                             ],
                             self.config["camera"][g_dev['cam'].name]["settings"][
                                 "crop_preview_xright"
-                            ]
+                            ],
+                            zoom_factor,
                             ]
                     else:
                         picklepayload=[
@@ -3582,7 +3583,8 @@ class Observatory:
                             ],
                             self.config["camera"][g_dev['cam'].name]["settings"][
                                 "crop_preview_xright"
-                            ]
+                            ],
+                            zoom_factor,
                             ]
 
 

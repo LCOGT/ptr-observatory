@@ -62,7 +62,7 @@ site_config = {
     'closest_distance_to_the_sun': 30,  # Degrees. For normal pointing requests don't go this close to the sun.
     'closest_distance_to_the_moon': 5,  # Degrees. For normal pointing requests don't go this close to the moon.
     'minimum_distance_from_the_moon_when_taking_flats': 30,
-    'lowest_requestable_altitude': -1,  # Degrees. For normal pointing requests don't allow requests to go this low.
+    'lowest_requestable_altitude': -2,  # Degrees. For normal pointing requests don't allow requests to go this low.
     'degrees_to_avoid_zenith_area_for_calibrations': 0,
     'degrees_to_avoid_zenith_area_in_general' : 0,
     'maximum_hour_angle_requestable' : 12,
@@ -134,7 +134,7 @@ site_config = {
     'eve_sky_flat_sunset_offset': -45.,  # Before Sunset Minutes  neg means before, + after.
     'end_eve_sky_flats_offset': -1 ,      # How many minutes after civilDusk to do....
     'clock_and_auto_focus_offset':-10,   #min before start of observing
-    'astro_dark_buffer': 30,   #Min before and after AD to extend observing window
+    'astro_dark_buffer': 15,   #Min before and after AD to extend observing window
     'morn_flat_start_offset': -10,       #min from Sunrise
     'morn_flat_end_offset':  +45,        #min from Sunrise
     'end_night_processing_time':  90,   #  A guess
@@ -154,7 +154,7 @@ site_config = {
      # Turn on and off various automated calibrations at different times.
      'auto_eve_bias_dark': True,
      'auto_eve_sky_flat': True,
-     'time_to_wait_after_roof_opens_to_take_flats': 120,   #Just imposing a minimum in case of a restart.
+     'time_to_wait_after_roof_opens_to_take_flats': 10,   #Just imposing a minimum in case of a restart.
      'auto_midnight_moonless_bias_dark': False,
      'auto_morn_sky_flat': True,
      'auto_morn_bias_dark': True,
@@ -429,10 +429,10 @@ site_config = {
                 # Columns for filter data are : ['filter', 'filter_index', 'filter_offset', 'sky_gain', 'screen_gain', 'alias']
                 #NB NB Note to WER please add cwl, bw and 'shape'
                 'filter_data': [
-                        ['Air',  [0,  0], -800, 1850., [2   ,  20], 'AIR'],    #0  Gains 20230703
+                        ['Air',  [0,  0], -800, 1100., [2   ,  20], 'AIR'],    #0  Gains 20230703
                         ['Exo',  [8,  0],    0,  945., [360 , 170], 'Exoplanet - yellow, no UV or NIR'],     #1
 
-                        ['PL',   [7,  0],    0, 1330., [360 , 170], 'Photo Luminance - does not pass NIR'],     #2
+                        ['PL',   [7,  0],    0, 1110., [360 , 170], 'Photo Luminance - does not pass NIR'],     #2
                         ['PR',   [0,  8],    0, 437.,  [.32 ,  20], 'Photo Blue'],     #3
                         ['PG',   [0,  7],    0, 495.,  [30  , 170], 'Photo Green'],     #4
                         ['PB',   [0,  6],    0, 545,   [360 , 170], 'Photo Blue'],     #5
@@ -446,7 +446,7 @@ site_config = {
 
                         ['up',   [1,  0],    0, 32.5,  [2   ,  20], "Sloan u'"],     #12
                         ['BB',   [9,  0],    0, 506.,  [0.65,  20], 'Bessell B'],     #13
-                        ['gp',   [2,  0],    0, 822.,  [.77 ,  20], "Sloan g'"],     #14
+                        ['gp',   [2,  0],    0, 625.,  [.77 ,  20], "Sloan g'"],     #14
                         ['BV',   [10, 0],    0, 609.,  [.32 ,  20], 'Bessell V'],     #15
                         ['BR',   [11, 0],    0, 527.,  [10  , 170], 'Bessell R'],     #16
                         ['rp',   [3,  0],    0, 464.,  [1.2 ,  20], "Sloan r'"],     #17
@@ -685,6 +685,8 @@ site_config = {
                 'camera_gain_stdev':   0.16, #[10., 10., 10., 10.],     #  One val for each binning.
                 'read_noise':  9.55, #[9, 9, 9, 9],    #  All SWAGs right now
                 'read_noise_stdev':   0.004, #[10., 10., 10., 10.],     #  One val for each binning.
+                'dark_lim_adu': 0.15,   #adu/s of dark 20231229 moved down from 0.5
+                'dark_lim_std': 15,  #first guess. See above.
                 # Saturate is the important one. Others are informational only.
                 'fullwell_capacity': 80000,  # NB Guess
                 'saturate':   65535,
@@ -701,10 +703,10 @@ site_config = {
                 # As simple as it states, how many calibration frames to collect and how many to store.
                 'number_of_bias_to_collect': 31,
                 'number_of_dark_to_collect': 13,
-                'number_of_flat_to_collect': 5,
+                'number_of_flat_to_collect': 7,   #increased from 5  20231226 WER
                 'number_of_bias_to_store': 63,
                 'number_of_dark_to_store': 27,
-                'number_of_flat_to_store': 11,
+                'number_of_flat_to_store': 13,
                 # Default dark exposure time.
                 'dark_exposure': 360,
 

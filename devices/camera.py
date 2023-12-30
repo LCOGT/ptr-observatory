@@ -1325,18 +1325,7 @@ class Camera:
         if self.user_id != self.last_user_id:
             self.last_user_id = self.user_id
         self.user_name = command["user_name"]
-# =============================================================================
-#         #Todo  NB NB NB Temp injection of a  Zoom value 20231222 WER
-# =============================================================================
-        try:
-            test = opt['zoom']
-            print("Zoom value is:  ", test)
-        except:
-            opt['zoom'] = 'Full'
-            print('Camera, line 1334 temporary code, injection.  req, opt:  ', req, opt)
-# =============================================================================
-#         #Todo  NB NB NB Temp injection of a  Zoom value 20231222 WER
-# =============================================================================
+
         if (
             "object_name" in opt
         ):
@@ -1510,9 +1499,23 @@ class Camera:
         opt = optional_params
         self.hint = optional_params.get("hint", "")
         self.script = required_params.get("script", "None")
-
+# =============================================================================
+#         #Todo  NB NB NB Temp injection of a  Zoom value 20231222 WER
+# =============================================================================
         try:
-            self.zoom_factor = optional_params.get('zoom_factor', 'Full')
+            test = opt['zoom']
+            #test2 = opt['area']
+            print("Cam line 1508.  Zoom and Area value is:  ", test, " --  end of tests.")
+        except:
+            #opt['zoom'] = 'Full'
+            #print('Camera, line 1337 temporary code, injection.  req, opt:  ', req, opt)
+            pass
+# =============================================================================
+#         #Todo  NB NB NB Temp injection of a  Zoom value 20231222 WER
+# =============================================================================
+        try:
+
+            self.zoom_factor = optional_params.get('zoom', False)
         except:
             plog("Problem with supplied Zoom factor, Camera line 1510")
             self.zoom_factor = "Full"
@@ -1703,7 +1706,7 @@ class Camera:
             if g_dev["fil"].null_filterwheel == False:
                 if self.current_filter.lower() in ['ha', 'o3', 's2', 'n2', 'y', 'up', 'u']:
                     ssExp = ssExp * ssNBmult # For narrowband and low throughput filters, increase base exposure time.
-                plog("WER Hack at Camera line 1704 -- 60 sec NB shortstacks")
+                #
             if not imtype.lower() in ["light", "expose"]:
                 Nsmartstack=1
                 SmartStackID='no'
@@ -2130,6 +2133,7 @@ class Camera:
             "Exposure Started:  " + str(exposure_time) + "s ",
             frame_type
         )
+        plog("Finish Exposure, zoom:  ", zoom_factor)
         try:
             plog(opt["object_name"])
         except:
@@ -2444,10 +2448,11 @@ class Camera:
                     # If there is no master bias, it will just skip this check
                     if frame_type in ["dark"]:
                         #try:
+                        dark_limit_adu =   self.config["camera"][self.name]["settings"]['dark_lim_adu']
                         if len(self.biasFiles) > 0:
                             debiaseddarkmedian= np.nanmedian(outputimg - self.biasFiles[str(1)]) / exposure_time
                             plog ("Debiased 1s Dark Median is " + str(debiaseddarkmedian))
-                            if debiaseddarkmedian > 0.5:
+                            if debiaseddarkmedian > dark_limit_adu:   # was 0.5, NB later add in an std based second rejection criterion
                                 plog ("Reject! This Dark seems to be light affected. ")
                                 expresult = {}
                                 expresult["error"] = True
@@ -4335,7 +4340,7 @@ def post_exposure_process(payload):
                     "focus",
                     "pointing"
                 ]) and smartstackid != 'no' :
-                    g_dev['obs'].to_smartstack((paths, pixscale, smartstackid, sskcounter, Nsmartstack, pier_side))
+                    g_dev['obs'].to_smartstack((paths, pixscale, smartstackid, sskcounter, Nsmartstack, pier_side, zoom_factor))
                 else:
                     if not selfconfig['keep_reduced_on_disk']:
                         try:

@@ -2,7 +2,7 @@
 """
 This is the main platesolve sub-process for solving frames.
 
-Platsolving is relatively costly in time, so we don't solve each frame.
+Platesolving is relatively costly in time, so we don't solve each frame.
 It is also not necessary - the platesolve we do is FAST (for windows)
 but only spits out RA, Dec, Pixelscale and rotation. Which is actually all
 we need to monitor pointing and keep scopes dead on target.
