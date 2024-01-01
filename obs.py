@@ -2603,7 +2603,7 @@ class Observatory:
                         if os.path.exists(self.local_calibration_path + 'platesolve.pickle'):
                             solve= pickle.load(open(self.local_calibration_path + 'platesolve.pickle', 'rb'))
                         else:
-                            solve= 'error'
+                            solve= 'Platesove error, Pickle file not available'
                         try:
                             os.remove(self.local_calibration_path + 'platesolve.pickle')
                         except:

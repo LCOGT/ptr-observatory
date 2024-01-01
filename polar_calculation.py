@@ -22,13 +22,13 @@ spokes_per_turn = 4
 az_asec_per_small_grad = 0.74*60
 az_asec_per_major_grad = 3.7*60
 
-IH = 512
+IH = 188
 
-ID =413
+ID =405
 
-MA = 512
+MA = 950
 
-ME = -165
+ME = -240
 
 #aro_lift = ME + adjust
 #aro_lift - ME = adjust

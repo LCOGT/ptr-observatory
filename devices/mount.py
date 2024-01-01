@@ -295,9 +295,9 @@ class Mount:
             self.CanSetDeclinationRate = False
         self.DeclinationRate = self.mount.DeclinationRate
 
-        self.EquatorialSystem=self.mount.EquatorialSystem
+        self.EquatorialSystem = self.mount.EquatorialSystem
 
-        self.previous_pier_side=self.mount.sideOfPier
+        self.previous_pier_side = self.mount.sideOfPier
 
         self.request_new_pierside=False
         self.request_new_pierside_ra=1.0
@@ -515,8 +515,11 @@ class Mount:
                     if self.slewtoAsyncRequested:
                         self.slewtoAsyncRequested=False
                         #print ("attempting to slew")
+                        #breakpoint()
+                        #self.mount_update_wincom.DeclinationRate = 5 #gets reset on the slew
                         self.mount_update_wincom.SlewToCoordinatesAsync(self.slewtoRA , self.slewtoDEC)
-
+                        self.mount_update_wincom.DeclinationRate = 0
+                        plog("dec rate set to: ", self.mount_update_wincom.DeclinationRate)
                         #print ("successful slew")
 
                     if self.request_tracking_on:
@@ -1206,6 +1209,7 @@ class Mount:
         opt = command['optional_params']
         action = command['action']
         #self.check_connect()
+
         if action == "go":
             if 'ra' in req:
                 result = self.go_command(ra=req['ra'], dec=req['dec'])   #  Entered from Target Explorer or Telescope tabs.
@@ -1368,7 +1372,9 @@ class Mount:
 
         ''' Slew to the given ra/dec, alt/az or ha/dec or skyflatspot coordinates. '''
 
-        #breakpoint()
+        if self.model_on:
+            #breakpoint()
+            pass
 
         # First thing to do is check the position of the sun and
         # Whether this violates the pointing principle.
@@ -1402,7 +1408,7 @@ class Mount:
                     plog("Refusing skyflat pointing request as it is too close to the zenith for this scope.")
                     return 'refused'
 
-        elif ra != None:
+        elif ra != None:   #implying RA and Dec are supplied. Compute resulting altitude
             ra = float(ra)
             dec = float(dec)
             temppointing=SkyCoord(ra*u.hour, dec*u.degree, frame='icrs')
@@ -1467,7 +1473,7 @@ class Mount:
         else:
             self.object = 'unspecified'    #NB could possibly augment with "Near --blah--"
 
-        self.unpark_command()
+        self.unpark_command()   #can we qualify this?
 
 
         if self.object in ['Moon', 'moon', 'Lune', 'lune', 'Luna', 'luna',]:
@@ -1486,7 +1492,7 @@ class Mount:
             tracking_rate_dec = ddec_moon
 
         #
-        #breakpoint()
+
         icrs_ra, icrs_dec = self.get_mount_coordinates()    #These are for debugging.
         check_ra_rate, check_dec_rate = self.get_mount_rates()  #These do not appear to be used  20231128 wer
         #breakpoint()

@@ -2727,8 +2727,8 @@ class Sequencer:
                     self.current_filter_last_camera_gain=200
                     self.current_filter_last_camera_gain_stdev=200
                 self.filter_camera_gain_shelf.close()
-                if current_filter in ['gp', 'rp']:
-                    flat_count *= 2
+                # if current_filter in ['gp', 'rp']:
+                #     flat_count *= 2
 
                 acquired_count = 0
                 flat_saturation_level = g_dev['cam'].config["camera"][g_dev['cam'].name]["settings"]["saturate"]
@@ -3055,7 +3055,7 @@ class Sequencer:
 
                             continue
                     else:
-                        time.sleep(10)
+                        time.sleep(5)
 
         if morn:
             self.morn_sky_flat_latch = False
