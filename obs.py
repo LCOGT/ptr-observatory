@@ -2694,10 +2694,13 @@ class Observatory:
                             g_dev['obs'].images_since_last_solve = 0
 
 
-                            self.drift_tracker_ra=self.drift_tracker_ra+ err_ha
-                            self.drift_tracker_dec=self.drift_tracker_dec + err_dec
+                            # self.drift_tracker_ra=self.drift_tracker_ra+ err_ha
+                            # self.drift_tracker_dec=self.drift_tracker_dec + err_dec
+                            
+                            self.drift_tracker_ra= err_ha / (time.time() - g_dev['obs'].drift_tracker_timer)
+                            self.drift_tracker_dec= err_dec / (time.time() - g_dev['obs'].drift_tracker_timer)
 
-                            plog ("Current drift in ra: " + str(self.drift_tracker_ra * 15 * 3600) + " Current drift in dec: " + str(self.drift_tracker_dec * 3600))
+                            plog ("Current drift in ra (arcsec/sec): " + str(self.drift_tracker_ra * 15 * 3600) + " Current drift in dec (arcsec/sec): " + str(self.drift_tracker_dec * 3600))
 
                             # Test here that there has not been a slew, if there has been a slew, cancel out!
 
@@ -2708,7 +2711,7 @@ class Observatory:
                                 dec_field_asec = (g_dev['cam'].pixscale * g_dev['cam'].imagesize_x)
                                 ra_field_asec = (g_dev['cam'].pixscale * g_dev['cam'].imagesize_y)
 
-                                if (abs(self.drift_tracker_ra * 15 * 3600) > 5400) or (abs(self.drift_tracker_dec * 3600) > 5400):
+                                if (abs(err_ha * 15 * 3600) > 5400) or (abs(err_dec * 3600) > 5400):
                                     err_ha = 0
                                     err_dec = 0
                                     plog("Platesolve has found that the current suggested pointing is way off!")
@@ -2738,20 +2741,24 @@ class Observatory:
                                     g_dev['obs'].drift_tracker_timer=0
 
                                 # Only recenter if out by more than 1%
-                                elif (abs(self.drift_tracker_ra * 15 * 3600) > 0.01 * ra_field_asec) or (abs(self.drift_tracker_dec * 3600) > 0.01 * dec_field_asec):
+                                elif (abs(err_ha * 15 * 3600) > 0.01 * ra_field_asec) or (abs(err_dec * 3600) > 0.01 * dec_field_asec):
 
                                      self.pointing_correction_requested_by_platesolve_thread = True
                                      self.pointing_correction_request_time = time.time()
-                                     self.pointing_correction_request_ra = pointing_ra + self.drift_tracker_ra
-                                     self.pointing_correction_request_dec = pointing_dec + self.drift_tracker_dec
-                                     self.pointing_correction_request_ra_err = self.drift_tracker_ra
-                                     self.pointing_correction_request_dec_err = self.drift_tracker_dec
+                                     # self.pointing_correction_request_ra = pointing_ra + self.drift_tracker_ra
+                                     # self.pointing_correction_request_dec = pointing_dec + self.drift_tracker_dec
+                                     # self.pointing_correction_request_ra_err = self.drift_tracker_ra
+                                     # self.pointing_correction_request_dec_err = self.drift_tracker_dec
+                                     self.pointing_correction_request_ra = pointing_ra + err_ha
+                                     self.pointing_correction_request_dec = pointing_dec + err_dec
+                                     self.pointing_correction_request_ra_err = err_ha
+                                     self.pointing_correction_request_dec_err = err_dec
 
 
                                      drift_timespan= time.time() - self.drift_tracker_timer
-                                     drift_arcsec_ra= (self.drift_tracker_ra * 15 * 3600 ) / drift_timespan
-                                     drift_arcsec_dec=  (self.drift_tracker_dec *3600) / drift_timespan
-                                     plog ("Drift calculations in arcsecs per second, RA: " + str(drift_arcsec_ra) + " DEC: " + str(drift_arcsec_dec) )
+                                     drift_arcsec_ra= (err_ha * 15 * 3600 ) / (drift_timespan * 3600)
+                                     drift_arcsec_dec=  (err_dec *3600) / (drift_timespan * 3600)
+                                     plog ("Drift calculations in arcsecs per hour, RA: " + str(drift_arcsec_ra) + " DEC: " + str(drift_arcsec_dec) )
 
                                      if not g_dev['obs'].mount_reference_model_off:
                                          if target_dec > -85 and target_dec < 85 and g_dev['mnt'].last_slew_was_pointing_slew:
@@ -3659,6 +3666,11 @@ class Observatory:
                 self.pointing_correction_requested_by_platesolve_thread = False
                 g_dev['mnt'].go_command(ra=self.pointing_correction_request_ra, dec=self.pointing_correction_request_dec)
                 g_dev['seq'].centering_exposure(no_confirmation=True, try_hard=True, try_forever=True)
+                #self.drift_tracker_ra=g_dev['mnt'].return_right_ascension()
+                #self.drift_tracker_dec=g_dev['mnt'].return_declination()
+                self.drift_tracker_ra=0
+                self.drift_tracker_dec=0
+                g_dev['obs'].drift_tracker_timer=0
                 if g_dev['seq'].currently_mosaicing:
                     # Slew to new mosaic pane location.
                     new_ra = g_dev['seq'].mosaic_center_ra + g_dev['seq'].current_mosaic_displacement_ra
@@ -3668,6 +3680,7 @@ class Observatory:
                     #g_dev['mnt'].mount.SlewToCoordinatesAsync(new_ra, new_dec)
                     g_dev['mnt'].slew_async_directly(ra=new_ra, dec=new_dec)
                     wait_for_slew()
+                    
 
                     self.time_of_last_slew=time.time()
 
@@ -3708,6 +3721,10 @@ class Observatory:
                         g_dev['seq'].centering_exposure(no_confirmation=True, try_hard=True, try_forever=True)
                     g_dev['obs'].time_of_last_slew = time.time()
                     wait_for_slew()
+                    
+                    self.drift_tracker_ra=0
+                    self.drift_tracker_dec=0
+                    g_dev['obs'].drift_tracker_timer=0
 
                 self.pointing_correction_requested_by_platesolve_thread = False
 
