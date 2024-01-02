@@ -381,7 +381,8 @@ class Sequencer:
 
             self.nightly_reset_complete = False
 
-        if not self.total_sequencer_control:
+        # Don't attempt to start a sequence during an exposure OR when a function (usually TPOINT) has taken total control.
+        if not self.total_sequencer_control and not g_dev['cam'].exposure_busy:
             ###########################################################################
             # While in this part of the sequencer, we need to have manual UI commands
             # turned off.  So that if a sequencer script starts running, we don't get
@@ -665,8 +666,11 @@ class Sequencer:
                     self.blockend = None
                     self.block_guard=False
 
+
+            
+
             if (time.time() - g_dev['seq'].time_roof_last_opened > 1200 ) and not self.morn_sky_flat_latch and ((events['Morn Sky Flats'] <= ephem_now < events['End Morn Sky Flats']) and \
-                   self.config['auto_morn_sky_flat']) and not g_dev['obs'].scope_in_manual_mode and not self.morn_flats_done and g_dev['obs'].camera_sufficiently_cooled_for_calibrations and g_dev['obs'].open_and_enabled_to_observe:
+                   self.config['auto_morn_sky_flat'])  and not g_dev['obs'].scope_in_manual_mode and not self.morn_flats_done and g_dev['obs'].camera_sufficiently_cooled_for_calibrations and g_dev['obs'].open_and_enabled_to_observe:
 
                 self.morn_sky_flat_latch = True
 
@@ -676,7 +680,6 @@ class Sequencer:
 
                 self.morn_sky_flat_latch = False
                 self.morn_flats_done = True
-
 
             if not self.morn_bias_dark_latch and (events['Morn Bias Dark'] <= ephem_now < events['End Morn Bias Dark']) and \
                       self.config['auto_morn_bias_dark'] and not g_dev['obs'].scope_in_manual_mode and not  self.morn_bias_done and g_dev['obs'].camera_sufficiently_cooled_for_calibrations: # and g_dev['enc'].mode == 'Automatic' ):
@@ -3099,6 +3102,11 @@ class Sequencer:
 
         plog('\nSky flat sequence complete.\n')
         g_dev["obs"].send_to_user("Sky flat collection complete.")
+
+        if morn:
+            self.morn_flats_done = True
+        else:
+            self.eve_flats_done = True
 
         self.flats_being_collected = False
         self.eve_sky_flat_latch = False
