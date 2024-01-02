@@ -762,6 +762,7 @@ class Observatory:
         have parallel mountings or independently controlled cameras.
         """
 
+
         # To stop the scan requests getting hammered unnecessarily.
         # Which is has sometimes on net disconnections.
         if (time.time() - self.scan_request_timer) > 1.0:
@@ -780,6 +781,8 @@ class Observatory:
                 unread_commands=[]
         else:
             unread_commands=[]
+        
+        #print (unread_commands)
 
         # Make sure the list is sorted in the order the jobs were issued
         # Note: the ulid for a job is a unique lexicographically-sortable id.
@@ -2054,18 +2057,31 @@ class Observatory:
 
 
         one_at_a_time = 0
+        
+        temptimer=time.time()
 
         # This stopping mechanism allows for threads to close cleanly.
         while True:
+            
+            # if time.time()-temptimer > 4:
+            #     temptimer=time.time()
+            #     print (not self.scan_request_queue.empty())
+            #     print (one_at_a_time)
+            #     print (self.full_update_lock)
 
-            if not self.full_update_lock and (not self.scan_request_queue.empty()) and one_at_a_time == 0:
-
+            #if not self.full_update_lock and (not self.scan_request_queue.empty()) and one_at_a_time == 0:
+            if (not self.scan_request_queue.empty()) and one_at_a_time == 0:
                 one_at_a_time = 1
                 request = self.scan_request_queue.get(block=False)
                 self.currently_scan_requesting = True
+                
                 self.scan_requests()
+                # print ("scanned")
                 self.currently_scan_requesting = False
                 self.scan_request_queue.task_done()
+                # We don't want multiple requests straight after one another, so clear the queue.
+                with self.scan_request_queue.mutex:
+                    self.scan_request_queue.queue.clear()
                 one_at_a_time = 0
 
 
@@ -2082,10 +2098,11 @@ class Observatory:
         # This stopping mechanism allows for threads to close cleanly.
         while True:
 
-            if not self.full_update_lock and (not self.calendar_block_queue.empty()) and one_at_a_time == 0:
-
+            #if not self.full_update_lock and (not self.calendar_block_queue.empty()) and one_at_a_time == 0:
+            if (not self.calendar_block_queue.empty()) and one_at_a_time == 0:
                 one_at_a_time = 1
                 request = self.calendar_block_queue.get(block=False)
+                #print ("Calendar checked")
 
                 #self.scan_requests()
                 self.currently_updating_calendar_blocks = True
@@ -2113,6 +2130,7 @@ class Observatory:
 
                 one_at_a_time = 1
                 request = self.update_status_queue.get(block=False)
+                #print ("status updated")
                 if request == 'mountonly':
                     #print ("mount only")
                     self.update_status(mount_only=True, dont_wait=True)
@@ -3868,8 +3886,8 @@ class Observatory:
 
 
     def request_scan_requests(self):
-        if not self.currently_scan_requesting:
-            self.scan_request_queue.put( 'normal', block=False)
+        #if not self.currently_scan_requesting:
+        self.scan_request_queue.put( 'normal', block=False)
 
     def request_update_calendar_blocks(self):
         if not self.currently_updating_calendar_blocks:

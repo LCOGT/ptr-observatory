@@ -2214,7 +2214,8 @@ class Camera:
         #focus_position=g_dev['foc'].current_focus_position
 
         if exposure_time <= 5.0:
-            g_dev['obs'].request_scan_requests()
+            #g_dev['obs'].request_scan_requests()
+            g_dev['obs'].scan_requests()
             if g_dev['seq'].blockend != None:
                 g_dev['obs'].request_update_calendar_blocks()
             focus_position=g_dev['foc'].current_focus_position
@@ -2226,13 +2227,17 @@ class Camera:
                 time.time() < self.completion_time or self.async_exposure_lock==True
             ):
 
-
-
+                # Need to have a time sleep to release the GIL to run the other threads
+                #print ("sleeping")
+                time.sleep(min(0.5, max(self.completion_time - time.time() - 0.05,0.01) ))
+        
                 # Scan requests every 4 seconds... primarily hunting for a "Cancel/Stop"
-                if time.time() - exposure_scan_request_timer > 4 and (time.time() - self.completion_time) > 4:
+                if time.time() - exposure_scan_request_timer > 4:# and (time.time() - self.completion_time) > 4:
                     exposure_scan_request_timer=time.time()
 
-                    g_dev['obs'].request_scan_requests()
+                    #g_dev['obs'].request_scan_requests()
+                    g_dev['obs'].scan_requests()
+                    
                     
                     # Check there hasn't been a cancel sent through
                     if g_dev["obs"].stop_all_activity:
@@ -3187,6 +3192,10 @@ class Camera:
                 # return expresult
             else:
                 remaining = round(self.completion_time - time.time(), 1)
+                
+                # Need to have a time sleep to release the GIL to run the other threads
+                print ("sleeping")
+                time.sleep(min(0.5, max(self.completion_time - time.time() - 0.05,0.01) ))
 
                 if remaining < -30:
                     plog(
