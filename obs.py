@@ -2702,7 +2702,10 @@ class Observatory:
                             # self.drift_tracker_ra=self.drift_tracker_ra+ err_ha
                             # self.drift_tracker_dec=self.drift_tracker_dec + err_dec
                             #self.drift_tracker_counter=self.drift_tracker_counter+1
+                            
                             drift_timespan= time.time() - self.drift_tracker_timer
+                            if drift_timespan < 300:
+                                plog ("Drift calculations unreliable as yet because drift timescale < 300s.")
                             self.drift_tracker_ra_arcsecperhour=  (err_ha * 15 * 3600 ) / (drift_timespan / 3600)
                             self.drift_tracker_dec_arcsecperhour= (err_dec *3600) / (drift_timespan / 3600)
 
