@@ -813,10 +813,10 @@ class Mount:
         commanded, hence removing the offsets that are needed to
         position the mount on the axis.
         '''
-        while self.mount_busy:
-            time.sleep(0.05)
-        self.mount_busy=True
-        self.mount_busy=False
+        # while self.mount_busy:
+        #     time.sleep(0.05)
+        # self.mount_busy=True
+        # self.mount_busy=False
         self.current_rate_ra = self.right_ascension_rate_directly_from_mount
         self.current_rate_dec = self.declination_rate_directly_from_mount
         return self.current_rate_ra, self.current_rate_dec

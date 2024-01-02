@@ -2701,14 +2701,18 @@ class Observatory:
 
                             # self.drift_tracker_ra=self.drift_tracker_ra+ err_ha
                             # self.drift_tracker_dec=self.drift_tracker_dec + err_dec
+                            #self.drift_tracker_counter=self.drift_tracker_counter+1
                             drift_timespan= time.time() - self.drift_tracker_timer
-                            self.drift_tracker_ra_arcsecperhour=  (err_ha * 15 * 3600 ) / (drift_timespan * 3600)
-                            self.drift_tracker_dec_arcsecperhour= (err_dec *3600) / (drift_timespan * 3600)
+                            self.drift_tracker_ra_arcsecperhour=  (err_ha * 15 * 3600 ) / (drift_timespan / 3600)
+                            self.drift_tracker_dec_arcsecperhour= (err_dec *3600) / (drift_timespan / 3600)
 
                             # drift_arcsec_ra= (err_ha * 15 * 3600 ) / (drift_timespan * 3600)
                             # drift_arcsec_dec=  (err_dec *3600) / (drift_timespan * 3600)
-
-                            plog ("Current drift in ra (arcsec/hour): " + str(round(self.drift_tracker_ra_arcsecperhour,6)) + " Current drift in dec (arcsec/hour): " + str(round(self.drift_tracker_dec_arcsecperhour,6)))
+                            
+                            if drift_timespan < 300:
+                                plog ("Not calculating drift on a timescale under 5 minutes.")
+                            else:
+                                plog ("Current drift in ra (arcsec/hour): " + str(round(self.drift_tracker_ra_arcsecperhour,6)) + " Current drift in dec (arcsec/hour): " + str(round(self.drift_tracker_dec_arcsecperhour,6)))
 
                             # Test here that there has not been a slew, if there has been a slew, cancel out!
 
@@ -2764,13 +2768,15 @@ class Observatory:
                                      self.pointing_correction_request_dec = pointing_dec + err_dec
                                      self.pointing_correction_request_ra_err = err_ha
                                      self.pointing_correction_request_dec_err = err_dec
-
-
+                                     
                                      drift_timespan= time.time() - self.drift_tracker_timer
-
-                                     self.drift_arcsec_ra_arcsecperhour= (err_ha * 15 * 3600 ) / (drift_timespan * 3600)
-                                     self.drift_arcsec_dec_arcsecperhour=  (err_dec *3600) / (drift_timespan * 3600)
-                                     plog ("Drift calculations in arcsecs per hour, RA: " + str(round(self.drift_arcsec_ra_arcsecperhour,6)) + " DEC: " + str(round(self.drift_arcsec_dec_arcsecperhour,6)) )
+                                     
+                                     if drift_timespan < 300:
+                                         plog ("Not calculating drift on a timescale under 5 minutes.")
+                                     else:
+                                         self.drift_arcsec_ra_arcsecperhour= (err_ha * 15 * 3600 ) / (drift_timespan / 3600)
+                                         self.drift_arcsec_dec_arcsecperhour=  (err_dec *3600) / (drift_timespan / 3600)
+                                         plog ("Drift calculations in arcsecs per hour, RA: " + str(round(self.drift_arcsec_ra_arcsecperhour,6)) + " DEC: " + str(round(self.drift_arcsec_dec_arcsecperhour,6)) )
 
 
                                      if not g_dev['obs'].mount_reference_model_off:
