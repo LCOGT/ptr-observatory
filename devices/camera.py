@@ -1635,6 +1635,8 @@ class Camera:
                             rot_report=1
                         time.sleep(0.2)
                         if g_dev["obs"].stop_all_activity:
+                            Nsmartstack=1
+                            sskcounter=2
                             plog('stop_all_activity cancelling camera exposure')
                             return
 
@@ -1735,12 +1737,12 @@ class Camera:
                 self.retry_camera_start_time = time.time()
                 while self.retry_camera > 0:
                     if g_dev["obs"].stop_all_activity:
-
+                        Nsmartstack=1
+                        sskcounter=2
                         # if expresult != None and expresult != {}:
                         #     if expresult["stopped"] is True:
                         g_dev["obs"].stop_all_activity = False
                         plog("Camera retry loop stopped by Cancel Exposure")
-                        self.exposure_busy = False
                         self.exposure_busy = False
                         #plog ("stop_all_activity cancelling out of camera exposure")
                         self.currently_in_smartstack_loop=False
@@ -1909,6 +1911,8 @@ class Camera:
                                              rot_report=1
                                          time.sleep(0.2)
                                          if g_dev["obs"].stop_all_activity:
+                                             Nsmartstack=1
+                                             sskcounter=2
                                              plog ("stop_all_activity cancelling out of camera exposure")
                                              self.currently_in_smartstack_loop=False
                                              return
@@ -1937,6 +1941,15 @@ class Camera:
                             self.wait_for_slew()
                             start_time_of_observation=time.time()
                             self.start_time_of_observation=time.time()
+                            
+                            # Check there hasn't been a cancel sent through
+                            if g_dev["obs"].stop_all_activity:
+                                plog ("stop_all_activity cancelling out of camera exposure")
+                                Nsmartstack=1
+                                sskcounter=2
+                                self.currently_in_smartstack_loop=False
+                                return 'cancelled'
+                                                        
                             #plog ("Time between end of last exposure and start of next minus exposure time: " + str(time.time() -  self.end_of_last_exposure_time - exposure_time))
                             self._expose(exposure_time, bias_dark_or_light_type_frame)
                             self.end_of_last_exposure_time=time.time()
@@ -2220,6 +2233,17 @@ class Camera:
                     exposure_scan_request_timer=time.time()
 
                     g_dev['obs'].request_scan_requests()
+                    
+                    # Check there hasn't been a cancel sent through
+                    if g_dev["obs"].stop_all_activity:
+                        plog ("stop_all_activity cancelling out of camera exposure")
+                        Nsmartstack=1
+                        sskcounter=2
+                        expresult["error"] = True
+                        expresult["stopped"] = True
+                        g_dev["obs"].exposure_halted_indicator =False
+                        self.currently_in_smartstack_loop=False
+                        return expresult
 
                     if g_dev["obs"].exposure_halted_indicator:
                         expresult["error"] = True
@@ -2576,60 +2600,10 @@ class Camera:
                     return copy.deepcopy(expresult)
 
 
-
-                # # If the file isn't a calibration frame, then undertake a flash reduction quickly
-                # # To make a palatable jpg AS SOON AS POSSIBLE to send to AWS
-                # if (not frame_type.lower() in (
-                #     "bias",
-                #     "dark",
-                #     "flat",
-                #     "screenflat",
-                #     "skyflat",
-                # )) or (manually_requested_calibration):  # Don't process jpgs or small fits for biases and darks
-
-                #     # Make a copy of hdu to use as jpg and small fits as well as a local raw used file for
-                #     # planewave solves
-                #    # hdusmalldata = copy.deepcopy(hdu.data.astype("float32"))
-                #     hdusmalldata=copy.deepcopy(outputimg)
-                #     # Quick flash bias and dark frame
-
-                #     if not manually_requested_calibration:
-                #         try:
-                #             hdusmalldata = hdusmalldata - self.biasFiles[str(1)]
-                #             hdusmalldata = hdusmalldata - (self.darkFiles[str(1)] * exposure_time)
-
-                #         except Exception as e:
-                #             plog("debias/darking light frame failed: ", e)
-
-                #         # Quick flat flat frame
-                #         try:
-                #             if self.config['camera'][self.name]['settings']['hold_flats_in_memory']:
-                #                 hdusmalldata = np.divide(hdusmalldata, self.flatFiles[self.current_filter])
-                #             else:
-                #                 hdusmalldata = np.divide(hdusmalldata, np.load(self.flatFiles[str(self.current_filter + "_bin" + str(1))]))
-
-                #         except Exception as e:
-                #             plog("flatting light frame failed", e)
-                #             #plog(traceback.format_exc())
-
-
-                #payload=copy.deepcopy((outputimg, g_dev["mnt"].pier_side, self.config["camera"][self.name]["settings"]['is_osc'], frame_type, self.config['camera']['camera_1_1']['settings']['reject_new_flat_by_known_gain'], avg_mnt, avg_foc, avg_rot, self.setpoint, tempccdtemp, ccd_humidity, ccd_pressure, self.darkslide_state, exposure_time, this_exposure_filter, exposure_filter_offset, self.pane,opt , observer_user_name, self.hint, azimuth_of_observation, altitude_of_observation, airmass_of_observation, self.pixscale, smartstackid,sskcounter,Nsmartstack, longstackid, ra_at_time_of_exposure, dec_at_time_of_exposure, manually_requested_calibration, object_name, object_specf, g_dev["mnt"].ha_corr, g_dev["mnt"].dec_corr, focus_position, self.config, self.name, self.camera_known_gain, self.camera_known_readnoise, start_time_of_observation, observer_user_id, self.camera_path,  solve_it))
-                #print ("mini_inline_process_timer: " +str(time.time() -mini_inline_process_timer))
-                #post_exposure_process(payload=payload)
-
-                #deep_copy_timer=time.time()
-
-                #breakpoint()
                 if not frame_type[-4:] == "flat" and not frame_type in ["bias", "dark"] and not focus_image and not frame_type=='pointing':
                     focus_position=g_dev['foc'].current_focus_position
                     self.post_processing_queue.put(copy.deepcopy((outputimg, g_dev["mnt"].pier_side, self.config["camera"][self.name]["settings"]['is_osc'], frame_type, self.config['camera']['camera_1_1']['settings']['reject_new_flat_by_known_gain'], avg_mnt, avg_foc, avg_rot, self.setpoint, self.tempccdtemp, self.ccd_humidity, self.ccd_pressure, self.darkslide_state, exposure_time, this_exposure_filter, exposure_filter_offset, self.pane,opt , observer_user_name, self.hint, azimuth_of_observation, altitude_of_observation, airmass_of_observation, self.pixscale, smartstackid,sskcounter,Nsmartstack, longstackid, ra_at_time_of_exposure, dec_at_time_of_exposure, manually_requested_calibration, object_name, object_specf, g_dev["mnt"].ha_corr, g_dev["mnt"].dec_corr, focus_position, self.config, self.name, self.camera_known_gain, self.camera_known_readnoise, start_time_of_observation, observer_user_id, self.camera_path,  solve_it, next_seq)), block=False)
-                #print ("Deep copy timer: " +str(time.time()-deep_copy_timer))
-
-
-                #self.post_deepcopy_overhead_timer=time.time()
-                #post_exposure_thread=threading.Thread(target=post_exposure_process,args=(payload,))
-                #post_exposure_thread.start()
-                #breakpoint()
+   
 
 
 

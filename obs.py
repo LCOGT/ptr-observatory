@@ -736,8 +736,8 @@ class Observatory:
         try:
             g_dev["cam"]._stop_expose()
             g_dev["cam"].exposure_busy = False
-            expresult = {}
-            expresult["stopped"] = True
+            #expresult = {}
+            #expresult["stopped"] = True
 
         except Exception as e:
             plog("Camera is not busy.", e)
