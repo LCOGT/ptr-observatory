@@ -667,7 +667,7 @@ class Camera:
         if self.config["camera"][self.name]["settings"]["dither_enabled"] == True:
             self.dither_enabled = True
         else:
-            self.dither_enabled = False
+            self.dither_enabled = False            
 
         self.camera_model = self.config["camera"][self.name]["desc"]
         # NB We are reading from the actual camera or setting as the case may be. For initial setup,
@@ -1726,12 +1726,20 @@ class Camera:
             self.retry_camera = 1
             self.retry_camera_start_time = time.time()
 
-
+            if Nsmartstack > 1 :
+                self.currently_in_smartstack_loop=True                
+                initial_smartstack_ra= g_dev['mnt'].return_right_ascension()
+                initial_smartstack_dec= g_dev['mnt'].return_declination()
+            else:
+                initial_smartstack_ra= None
+                initial_smartstack_dec= None
+                self.currently_in_smartstack_loop=False
 
             #Repeat camera acquisition loop to collect all smartstacks necessary
             #The variable Nsmartstacks defaults to 1 - e.g. normal functioning
             #When a smartstack is not requested.
             for sskcounter in range(int(Nsmartstack)):
+
 
                 # If the pier just flipped, trigger a recentering exposure.
                 if not g_dev['mnt'].rapid_park_indicator and not (g_dev['events']['Civil Dusk'] < ephem.now() < g_dev['events']['Civil Dawn']):
@@ -1755,16 +1763,13 @@ class Camera:
                     g_dev['obs'].check_platesolve_and_nudge()
 
                 self.tempStartupExposureTime=time.time()
-                if Nsmartstack > 1 :
-                    self.currently_in_smartstack_loop=True
+                
+                if Nsmartstack > 1 :                
                     plog ("Smartstack " + str(sskcounter+1) + " out of " + str(Nsmartstack))
                     g_dev["obs"].request_update_status()
-                    initial_smartstack_ra= g_dev['mnt'].return_right_ascension()
-                    initial_smartstack_dec= g_dev['mnt'].return_declination()
-                else:
-                    initial_smartstack_ra= None
-                    initial_smartstack_dec= None
-                    self.currently_in_smartstack_loop=False
+                
+                
+                
                 self.retry_camera = 1
                 self.retry_camera_start_time = time.time()
                 while self.retry_camera > 0:
@@ -2744,7 +2749,7 @@ class Camera:
 
                     #wait_for_slew()
                     g_dev['obs'].platesolve_is_processing =True
-                    g_dev['obs'].to_platesolve((outputimg, hdusmallheader, cal_path, cal_name, frame_type, time.time(), self.pixscale, ra_at_time_of_exposure,dec_at_time_of_exposure))
+                    g_dev['obs'].to_platesolve((outputimg, hdusmallheader, cal_path, cal_name, frame_type, time.time(), self.pixscale, ra_at_time_of_exposure,dec_at_time_of_exposure, False))
                     # If it is the last of a set of smartstacks, we actually want to
                     # wait for the platesolve and nudge before starting the next smartstack.
 
@@ -4384,7 +4389,7 @@ def post_exposure_process(payload):
                 # Check this is not an image in a smartstack set.
                 # No shifts in pointing are wanted in a smartstack set!
                 image_during_smartstack=False
-                if Nsmartstack > 1 and not (Nsmartstack == sskcounter+1):
+                if Nsmartstack > 1 and not ((Nsmartstack == sskcounter+1) or sskcounter ==0):
                     image_during_smartstack=True
                 if exposure_time < 1.0:
                     plog ("Not doing Platesolve for sub-second exposures.")
@@ -4394,7 +4399,13 @@ def post_exposure_process(payload):
 
                         # Make sure any dither or return nudge has finished before platesolution
                         #wait_for_slew()
-                        g_dev['obs'].to_platesolve((hdusmalldata, hdusmallheader, cal_path, cal_name, frame_type, time.time(), pixscale, ra_at_time_of_exposure,dec_at_time_of_exposure))
+                        if sskcounter == 0 and Nsmartstack > 1:
+                            firstframesmartstack = True
+                        else:
+                            firstframesmartstack = False
+                        
+                        
+                        g_dev['obs'].to_platesolve((hdusmalldata, hdusmallheader, cal_path, cal_name, frame_type, time.time(), pixscale, ra_at_time_of_exposure,dec_at_time_of_exposure, firstframesmartstack))
                         # If it is the last of a set of smartstacks, we actually want to
                         # wait for the platesolve and nudge before starting the next smartstack.
 

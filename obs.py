@@ -581,9 +581,10 @@ class Observatory:
         #MTF -TEMP
         g_dev['obs'].enc_status = g_dev['obs'].get_enclosure_status_from_aws()
 
-        self.drift_tracker_ra=0
-        self.drift_tracker_dec=0
-        g_dev['obs'].drift_tracker_timer=0
+        # self.drift_tracker_ra=0
+        # self.drift_tracker_dec=0
+        g_dev['obs'].drift_tracker_timer=time.time()
+        self.drift_tracker_counter = 0
 
         #breakpoint()
         # Initialisation complete!
@@ -2594,7 +2595,7 @@ class Observatory:
                 self.platesolve_is_processing = True
 
                 (hdufocusdata, hduheader, cal_path, cal_name, frame_type, time_platesolve_requested,
-                 pixscale, pointing_ra, pointing_dec) = self.platesolve_queue.get(block=False)
+                 pixscale, pointing_ra, pointing_dec, firstframesmartstack) = self.platesolve_queue.get(block=False)
 
                 # Do not bother platesolving unless it is dark enough!!
                 if not (g_dev['events']['Civil Dusk'] < ephem.now() < g_dev['events']['Civil Dawn']):
@@ -2701,22 +2702,36 @@ class Observatory:
 
                             # self.drift_tracker_ra=self.drift_tracker_ra+ err_ha
                             # self.drift_tracker_dec=self.drift_tracker_dec + err_dec
-                            #self.drift_tracker_counter=self.drift_tracker_counter+1
                             
-                            drift_timespan= time.time() - self.drift_tracker_timer
-                            if drift_timespan < 300:
-                                plog ("Drift calculations unreliable as yet because drift timescale < 300s.")
-                            self.drift_tracker_ra_arcsecperhour=  (err_ha * 15 * 3600 ) / (drift_timespan / 3600)
-                            self.drift_tracker_dec_arcsecperhour= (err_dec *3600) / (drift_timespan / 3600)
+                            if self.drift_tracker_counter == 0:
+                                plog ("not calculating drift on first platesolve of drift set. Using deviation as the zeropoint in time and space.")    
+                                self.drift_tracker_first_offset_ra = err_ha  * 15 * 3600
+                                self.drift_tracker_first_offset_dec = err_dec   * 3600
+                                self.drift_tracker_timer=time.time()
+                            
+                            else:
+                            
+                                drift_timespan= time.time() - self.drift_tracker_timer
+                                if drift_timespan < 300:
+                                    plog ("Drift calculations unreliable as yet because drift timescale < 300s.")
+                                plog ("Solve in drift set: " +str(self.drift_tracker_counter))
+                                print ("Drift Timespan " + str(drift_timespan))
+                                self.drift_tracker_ra_arcsecperhour=  ((err_ha * 15 * 3600 ) - self.drift_tracker_first_offset_ra) / (drift_timespan / 3600)
+                                self.drift_tracker_dec_arcsecperhour= ((err_dec *3600) - self.drift_tracker_first_offset_dec) / (drift_timespan / 3600)
+                                if drift_timespan < 300:
+                                    plog ("Not calculating drift on a timescale under 5 minutes.")
+                                else:
+                                    plog ("Current drift in ra (arcsec/hour): " + str(round(self.drift_tracker_ra_arcsecperhour,6)) + " Current drift in dec (arcsec/hour): " + str(round(self.drift_tracker_dec_arcsecperhour,6)))
+
+                                
+                            self.drift_tracker_counter=self.drift_tracker_counter+1
+                            
 
                             # drift_arcsec_ra= (err_ha * 15 * 3600 ) / (drift_timespan * 3600)
                             # drift_arcsec_dec=  (err_dec *3600) / (drift_timespan * 3600)
                             
-                            if drift_timespan < 300:
-                                plog ("Not calculating drift on a timescale under 5 minutes.")
-                            else:
-                                plog ("Current drift in ra (arcsec/hour): " + str(round(self.drift_tracker_ra_arcsecperhour,6)) + " Current drift in dec (arcsec/hour): " + str(round(self.drift_tracker_dec_arcsecperhour,6)))
-
+                            
+                           
                             # Test here that there has not been a slew, if there has been a slew, cancel out!
 
 
@@ -2725,8 +2740,12 @@ class Observatory:
 
                                 dec_field_asec = (g_dev['cam'].pixscale * g_dev['cam'].imagesize_x)
                                 ra_field_asec = (g_dev['cam'].pixscale * g_dev['cam'].imagesize_y)
+                                
+                                if firstframesmartstack:
+                                    plog ("Not recentering as this is the first frame of a smartstack.")
+                                    self.pointing_correction_requested_by_platesolve_thread = False
 
-                                if (abs(err_ha * 15 * 3600) > 5400) or (abs(err_dec * 3600) > 5400):
+                                elif (abs(err_ha * 15 * 3600) > 5400) or (abs(err_dec * 3600) > 5400):
                                     err_ha = 0
                                     err_dec = 0
                                     plog("Platesolve has found that the current suggested pointing is way off!")
@@ -2773,6 +2792,8 @@ class Observatory:
                                      self.pointing_correction_request_dec_err = err_dec
                                      
                                      drift_timespan= time.time() - self.drift_tracker_timer
+                                     
+                                     print ("Drift Timespan " + str(drift_timespan))
                                      
                                      if drift_timespan < 300:
                                          plog ("Not calculating drift on a timescale under 5 minutes.")
@@ -3694,7 +3715,8 @@ class Observatory:
                 #self.drift_tracker_dec=g_dev['mnt'].return_declination()
                 #self.drift_tracker_ra=0
                 #self.drift_tracker_dec=0
-                g_dev['obs'].drift_tracker_timer=0
+                g_dev['obs'].drift_tracker_timer=time.time()
+                self.drift_tracker_counter = 0
                 if g_dev['seq'].currently_mosaicing:
                     # Slew to new mosaic pane location.
                     new_ra = g_dev['seq'].mosaic_center_ra + g_dev['seq'].current_mosaic_displacement_ra
@@ -3748,7 +3770,8 @@ class Observatory:
                     
                     #self.drift_tracker_ra=0
                     #self.drift_tracker_dec=0
-                    g_dev['obs'].drift_tracker_timer=0
+                    g_dev['obs'].drift_tracker_timer=time.time()
+                    self.drift_tracker_counter = 0
 
                 self.pointing_correction_requested_by_platesolve_thread = False
 
