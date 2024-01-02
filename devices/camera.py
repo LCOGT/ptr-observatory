@@ -1892,24 +1892,6 @@ class Camera:
                             g_dev["obs"].request_full_update()
                             #g_dev['obs'].update()
 
-                            # Nudge to a different part of the dither pattern on the first frame
-                            if Nsmartstack > 1 and self.dither_enabled and sskcounter == 0:
-                                ra_random_dither=(((random.randint(0,50)-25) * self.pixscale / 3600 ) / 15)
-                                dec_random_dither=((random.randint(0,50)-25) * self.pixscale /3600 )
-                                try:
-                                    self.wait_for_slew()
-                                    g_dev['mnt'].slew_async_directly(ra=initial_smartstack_ra + ra_random_dither, dec=initial_smartstack_dec + dec_random_dither)
-                                    #self.wait_for_slew()
-
-                                except Exception as e:
-                                    plog (traceback.format_exc())
-                                    if 'Object reference not set' in str(e) and g_dev['mnt'].theskyx:
-
-                                        plog("The SkyX had an error.")
-                                        plog("Usually this is because of a broken connection.")
-                                        plog("Killing then waiting 60 seconds then reconnecting")
-                                        g_dev['seq'].kill_and_reboot_theskyx(g_dev['mnt'].current_icrs_ra,g_dev['mnt'].current_icrs_dec)
-
 
                             # Make sure the latest mount_coordinates are updated. HYPER-IMPORTANT!
                             # This is now done in async update_status thread

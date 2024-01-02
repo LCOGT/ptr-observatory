@@ -1989,7 +1989,6 @@ class Observatory:
 
         number_of_simultaneous_uploads= self.config['number_of_simultaneous_altarchive_streams']
 
-        # This stopping mechanism allows for threads to close cleanly.
         while True:
 
             if (not self.altarchive_queue.empty()) and one_at_a_time == 0:
@@ -2030,7 +2029,6 @@ class Observatory:
 
         number_of_simultaneous_uploads= self.config['number_of_simultaneous_pipearchive_streams']
 
-        # This stopping mechanism allows for threads to close cleanly.
         while True:
 
             if (not self.pipearchive_queue.empty()) and one_at_a_time == 0:
@@ -2065,7 +2063,6 @@ class Observatory:
         
         temptimer=time.time()
 
-        # This stopping mechanism allows for threads to close cleanly.
         while True:
             
             # if time.time()-temptimer > 4:
@@ -2100,7 +2097,6 @@ class Observatory:
 
         one_at_a_time = 0
 
-        # This stopping mechanism allows for threads to close cleanly.
         while True:
 
             #if not self.full_update_lock and (not self.calendar_block_queue.empty()) and one_at_a_time == 0:
@@ -2128,7 +2124,6 @@ class Observatory:
 
         one_at_a_time = 0
 
-        # This stopping mechanism allows for threads to close cleanly.
         while True:
 
             if not self.full_update_lock and (not self.update_status_queue.empty()) and one_at_a_time == 0:
@@ -2155,8 +2150,6 @@ class Observatory:
         one_at_a_time = 0
 
 
-
-        # This stopping mechanism allows for threads to close cleanly.
         while True:
             if (not self.FULL_update_thread_queue.empty()) and one_at_a_time == 0:
 
@@ -2188,7 +2181,6 @@ class Observatory:
 
         number_of_simultaneous_uploads= self.config['number_of_simultaneous_ptrarchive_streams']
 
-        # This stopping mechanism allows for threads to close cleanly.
         while True:
 
             if (not self.ptrarchive_queue.empty()) and one_at_a_time == 0:
@@ -2589,7 +2581,6 @@ class Observatory:
         """
 
         one_at_a_time = 0
-        # This stopping mechanism allows for threads to close cleanly.
         while True:
             if (not self.platesolve_queue.empty()) and one_at_a_time == 0:
 
@@ -2859,7 +2850,6 @@ class Observatory:
         """
 
         one_at_a_time = 0
-        # This stopping mechanism allows for threads to close cleanly.
         while True:
             if (not self.slow_camera_queue.empty()) and one_at_a_time == 0:
                 one_at_a_time = 1
