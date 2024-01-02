@@ -2744,7 +2744,6 @@ class Camera:
 
                     #wait_for_slew()
                     g_dev['obs'].platesolve_is_processing =True
-                    print (outputimg)
                     g_dev['obs'].to_platesolve((outputimg, hdusmallheader, cal_path, cal_name, frame_type, time.time(), self.pixscale, ra_at_time_of_exposure,dec_at_time_of_exposure))
                     # If it is the last of a set of smartstacks, we actually want to
                     # wait for the platesolve and nudge before starting the next smartstack.
@@ -3234,7 +3233,7 @@ class Camera:
                 remaining = round(self.completion_time - time.time(), 1)
                 
                 # Need to have a time sleep to release the GIL to run the other threads
-                print ("sleeping")
+                #print ("sleeping")
                 time.sleep(min(0.5, max(self.completion_time - time.time() - 0.05,0.01) ))
 
                 if remaining < -30:

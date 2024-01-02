@@ -1900,7 +1900,7 @@ class Sequencer:
                 plog ("Could not remove " + str(item))
         
         tempfrontcalib=g_dev['obs'].calib_masters_folder +'masterFlat*'
-        tempfrontcalib=g_dev['obs'].calib_masters_folder + g_dev['obs'].obs_id + '_' + g_dev['cam'].alias +'_masterFlat*'
+        
         deletelist=glob(tempfrontcalib)
         for item in deletelist:
             try:
@@ -2033,22 +2033,27 @@ class Sequencer:
 
             # Now that we have the master bias, we can estimate the readnoise actually
             # by comparing the standard deviations between the bias and the masterbias
-            readnoise_array=[]
-            post_readnoise_array=[]
-            plog ("Calculating Readnoise. Please Wait.")
-            for file in inputList:
-                hdu1data = np.load(file, mmap_mode='r')
-                hdu1data=hdu1data-masterBias
-                hdu1data = hdu1data[500:-500,500:-500]
-                stddiffimage=np.nanstd(pow(pow(hdu1data,2),0.5))
-                est_read_noise= (stddiffimage * g_dev['cam'].config["camera"][g_dev['cam'].name]["settings"]["camera_gain"]) / 1.414
-                readnoise_array.append(est_read_noise)
-                post_readnoise_array.append(stddiffimage)
-
-            readnoise_array=np.array(readnoise_array)
-            plog ("Raw Readnoise outputs: " +str(readnoise_array))
-            plog ("WARNING, THIS VALUE IS ONLY TRUE IF YOU HAVE THE CORRECT GAIN IN reference_gain")
-            plog ("Final Readnoise: " + str(np.nanmedian(readnoise_array)) + " std: " + str(np.nanstd(readnoise_array)))
+            if g_dev['cam'].camera_known_gain <1000:
+                readnoise_array=[]
+                post_readnoise_array=[]
+                plog ("Calculating Readnoise. Please Wait.")
+                for file in inputList:
+                    hdu1data = np.load(file, mmap_mode='r')
+                    hdu1data=hdu1data-masterBias
+                    hdu1data = hdu1data[500:-500,500:-500]
+                    stddiffimage=np.nanstd(pow(pow(hdu1data,2),0.5))
+                    #est_read_noise= (stddiffimage * g_dev['cam'].config["camera"][g_dev['cam'].name]["settings"]["camera_gain"]) / 1.414
+                    
+                    est_read_noise= (stddiffimage * g_dev['cam'].camera_known_gain) / 1.414
+                    readnoise_array.append(est_read_noise)
+                    post_readnoise_array.append(stddiffimage)
+    
+                readnoise_array=np.array(readnoise_array)
+                plog ("Raw Readnoise outputs: " +str(readnoise_array))
+            
+                plog ("Final Readnoise: " + str(np.nanmedian(readnoise_array)) + " std: " + str(np.nanstd(readnoise_array)))
+            else:
+                plog ("Skipping readnoise estimation as we don't currently have a reliable camera gain estimate.")
 
 
             g_dev["obs"].send_to_user("Bias calibration frame created.")
@@ -3345,7 +3350,10 @@ class Sequencer:
         start_ra = g_dev['mnt'].return_right_ascension()   #Read these to go back.  NB NB Need to cleanly pass these on so we can return to proper target.
         start_dec = g_dev['mnt'].return_declination()
         #focus_start = g_dev['foc'].current_focus_position
-        focus_start=g_dev['foc'].current_focus_position
+        if not extensive_focus == None:
+            focus_start=extensive_focus
+        else:
+            focus_start=g_dev['foc'].current_focus_position
 
 
         #breakpoint()
@@ -4218,11 +4226,13 @@ class Sequencer:
                 plog (solved_pos)
                 plog (minimumFWHM)
                 g_dev['foc'].guarded_move((solved_pos)*g_dev['foc'].micron_to_steps)
-                g_dev['foc'].last_known_focus=(solved_pos)
+                g_dev['foc'].last_known_focus=(solved_pos)                
             except:
                 plog ("extensive focus failed :(")
             if not no_auto_after_solve:
                 self.auto_focus_script(None,None, skip_timer_check=True, extensive_focus=solved_pos)
+            else:
+                g_dev['foc'].af_log(solved_pos,minimumFWHM, minimumFWHM)
         except:
             plog ("Something went wrong in the extensive focus routine")
             plog(traceback.format_exc())
