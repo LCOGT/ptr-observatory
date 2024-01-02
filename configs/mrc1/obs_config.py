@@ -491,25 +491,26 @@ site_config = {
                 'mono_Narrowband_colour_filters': ['ha', 'o3', 's2'],
                 'mono_Narrowband_relative_weights': [1.0, 2, 2.5],
                
-                'filter_data': [['air',     [0, 0], -1000,  560.00, [2, 17], 'ai'],  # 0 357
+
+                'filter_data': [['air',     [0, 0], -1000,  3006.00, [2, 17], 'ai'],  # 0 357
                                 # 1  330NB NB NB If this in series should change focus about 1mm more.
-                                ['dif',     [4, 0],     0,  16.00,  [2, 17], 'df'],
-                                ['w',       [2, 0],     0,  500.468, [2, 17], 'w '],  # 2 346
-                                ['PL',      [0, 4],     0,  250.00,  [2, 17], "PL"],  # 3 317
-                                ['gp',      [0, 6],     0,  250.87,  [2, 17], 'gp'],  # 4
-                                ['PB',      [0, 1],     0,  250.25,  [2, 17], 'PB'],  # 5
-                                ['rp',      [0, 7],     0,  180.853,  [2, 17], 'rp'],  # 6
-                                ['PG',      [0, 2],     0,  120.048, [2, 17], 'PG'],  # 7
-                                ['PR',      [0, 3],     0,  70.336,  [2, 17], 'PR'],  # 8
-                                ['ip',      [0, 8],     0,  100.741,  [2, 17], 'ip'],  # 9
-                                ['z',       [5, 0],     0,  31,  [2, 17], 'z'],  # 10
-                                ['O3',      [7, 0],     0,  20,  [2, 17], '03'],  # 11
-                                ['up',      [0, 5],     0,  31,  [1, 17], 'up'],  # 12
-                                ['N2',      [3, 0],     0,  9,  [2, 17], 'N2'],  # 13
-                                ['CR',      [1, 0],     0,  15,    [2, 17], 'CR'],  # 14
-                                ['S2',      [8, 0],     0,  8,  [2, 17], 'S2'],  # 15
-                                ['HA',      [6, 0],     0,  8,  [2, 17], 'HA'],  # 16
-                                ['dark',    [8, 5],     0,   0.0,   [2, 17], 'dk']],  # 18
+                                ['dif',     [4, 0],     0,  16.00,   [2, 17], 'df'],
+                                ['w',       [2, 0],     0,  3036.0,  [2, 17], 'w '],  # 2 346
+                                ['PL',      [0, 4],     0,  2504.0,  [2, 17], "PL"],  # 3 317
+                                ['gp',      [0, 6],     0,  2319.0,  [2, 17], 'gp'],  # 4
+                                ['PB',      [0, 1],     0,  2191.0,  [2, 17], 'PB'],  # 5
+                                ['rp',      [0, 7],     0,  1420.0,  [2, 17], 'rp'],  # 6
+                                ['PG',      [0, 2],     0,  1423.0,  [2, 17], 'PG'],  # 7
+                                ['PR',      [0, 3],     0,  699.0,   [2, 17], 'PR'],  # 8
+                                ['ip',      [0, 8],     0,  1529.0,  [2, 17], 'ip'],  # 9
+                                ['z',       [5, 0],     0,  310,     [2, 17], 'z'],  # 10
+                                ['O3',      [7, 0],     0,  75,      [2, 17], '03'],  # 11
+                                ['up',      [0, 5],     0,  33,      [1, 17], 'up'],  # 12
+                                ['N2',      [3, 0],     0,  34,      [2, 17], 'N2'],  # 13
+                                ['CR',      [1, 0],     0,  56,      [2, 17], 'CR'],  # 14
+                                ['S2',      [8, 0],     0,  31,      [2, 17], 'S2'],  # 15
+                                ['HA',      [6, 0],     0,  42,      [2, 17], 'HA'],  # 16
+                                ['dark',    [8, 5],     0,  0.0,   [2, 17], 'dk']],  # 18
                 
                 'focus_filter' : 'w',
 
@@ -517,7 +518,7 @@ site_config = {
                 'filter_screen_sort':  ['air', 'w', 'PL', 'gp', 'PB', 'rp', 'PG', 'PR', 'ip', 'O3', 'N2', 'CR', 'S2', 'HA'],  # 9, 21],  # 5, 17], #Most to least throughput, \
                 # so screen brightens, skipping u and zs which really need sky.
 
-                'filter_sky_sort':     ['S2', 'N2', 'CR', 'O3', 'HA', 'z', 'up', 'ip', 'PR', 'PG', 'PB', 'gp', 'rp', 'w', 'PL', 'air'],
+                'filter_sky_sort':     ['S2', 'N2', 'up', 'HA', 'CR', 'O3', 'z', 'PR', 'rp', 'PG', 'ip', 'PB', 'gp', 'PL', 'w', 'air'],
                  
             },
         },
@@ -762,10 +763,10 @@ site_config = {
                 'reject_new_flat_by_known_gain' : True,
                 # These values are just the STARTING values. Once the software has been
                 # through a few nights of calibration images, it should automatically calculate these gains.
-                # 'camera_gain':   8.634, #[10., 10., 10., 10.],     #  One val for each binning.
-                # 'camera_gain_stdev':   0.4, #[10., 10., 10., 10.],     #  One val for each binning.
-                # 'read_noise':  47.74, #[9, 9, 9, 9],    #  All SWAGs right now
-                # 'read_noise_stdev':   0.03, #[10., 10., 10., 10.],     #  One val for each binning. 
+                'camera_gain':   8.634, #[10., 10., 10., 10.],     #  One val for each binning.
+                'camera_gain_stdev':   0.4, #[10., 10., 10., 10.],     #  One val for each binning.
+                'read_noise':  47.74, #[9, 9, 9, 9],    #  All SWAGs right now
+                'read_noise_stdev':   0.03, #[10., 10., 10., 10.],     #  One val for each binning. 
                 'dark_lim_adu': 0.15,   #adu/s of dark 20231229 moved down from 0.5
                 'dark_lim_std': 15,  #first guess. See above.
                 # Saturate is the important one. Others are informational only.

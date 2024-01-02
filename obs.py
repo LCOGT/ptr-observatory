@@ -1846,6 +1846,7 @@ class Observatory:
 
             upload_timer=time.time() - upload_timer
             hours_to_go = (self.ptrarchive_queue.qsize() * upload_timer/60/60) / int(self.config['number_of_simultaneous_ptrarchive_streams'])
+            
             return ( str(filepath.split('/')[-1]) + " sent to archive. Queue Size: " + str(self.ptrarchive_queue.qsize())+ ". " + str(round(hours_to_go,1)) +" hours to go.")
 
     def pipearchive_copier(self, fileinfo):
@@ -1906,6 +1907,7 @@ class Observatory:
 
             upload_timer=time.time() - upload_timer
             hours_to_go = (self.pipearchive_queue.qsize() * upload_timer/60/60) / int(self.config['number_of_simultaneous_pipearchive_streams'])
+
             return ( str(filename.split('/')[-1]) + " sent to local pipe archive. Queue Size: " + str(self.pipearchive_queue.qsize())+ ". " + str(round(hours_to_go,1)) +" hours to go.")
 
     def altarchive_copier(self, fileinfo):
@@ -2201,7 +2203,7 @@ class Observatory:
                 with ThreadPool(processes=number_of_simultaneous_uploads) as pool:
                     for result in pool.map(self.ptrarchive_uploader, items):
                         self.ptrarchive_queue.task_done()
-                        plog (result)
+                        #plog (result)
 
                 one_at_a_time = 0
 
