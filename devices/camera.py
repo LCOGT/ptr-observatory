@@ -2374,39 +2374,41 @@ class Camera:
 
 
                 # Immediately nudge scope to a different point in the smartstack dither except for the last frame and after the last frame.
-                if Nsmartstack > 1 and self.dither_enabled and not ((Nsmartstack == sskcounter+1) or (Nsmartstack == sskcounter+2)):
-                    ra_random_dither=(((random.randint(0,50)-25) * self.pixscale / 3600 ) / 15)
-                    dec_random_dither=((random.randint(0,50)-25) * self.pixscale /3600 )
-                    try:
-                        self.wait_for_slew()
-                        g_dev['mnt'].slew_async_directly(ra=initial_smartstack_ra + ra_random_dither, dec=initial_smartstack_dec + dec_random_dither)
-                        # no wait for slew here as we start downloading the image. the wait_for_slew is after that
-
-                    except Exception as e:
-                        plog (traceback.format_exc())
-                        if 'Object reference not set' in str(e) and g_dev['mnt'].theskyx:
-
-                            plog("The SkyX had an error.")
-                            plog("Usually this is because of a broken connection.")
-                            plog("Killing then waiting 60 seconds then reconnecting")
-                            g_dev['seq'].kill_and_reboot_theskyx(g_dev['mnt'].current_icrs_ra,g_dev['mnt'].current_icrs_dec)
-
-                # Otherwise immediately nudge scope back to initial pointing in smartstack after the last frame of the smartstack
-                # Last frame of the smartstack must also be at the normal pointing for platesolving purposes
-                elif Nsmartstack > 1 and ((Nsmartstack == sskcounter+1) or (Nsmartstack == sskcounter+2)):
-                    try:
-                        self.wait_for_slew()
-                        g_dev['mnt'].slew_async_directly(ra=initial_smartstack_ra, dec=initial_smartstack_dec)
-                        # no wait for slew here as we start downloading the image. the wait_for_slew is after that
-
-                    except Exception as e:
-                        plog (traceback.format_exc())
-                        if 'Object reference not set' in str(e) and g_dev['mnt'].theskyx:
-
-                            plog("The SkyX had an error.")
-                            plog("Usually this is because of a broken connection.")
-                            plog("Killing then waiting 60 seconds then reconnecting")
-                            g_dev['seq'].kill_and_reboot_theskyx(g_dev['mnt'].current_icrs_ra,g_dev['mnt'].current_icrs_dec)
+                
+                if self.dither_enabled:
+                    if Nsmartstack > 1 and not ((Nsmartstack == sskcounter+1) or (Nsmartstack == sskcounter+2)):
+                        ra_random_dither=(((random.randint(0,50)-25) * self.pixscale / 3600 ) / 15)
+                        dec_random_dither=((random.randint(0,50)-25) * self.pixscale /3600 )
+                        try:
+                            self.wait_for_slew()
+                            g_dev['mnt'].slew_async_directly(ra=initial_smartstack_ra + ra_random_dither, dec=initial_smartstack_dec + dec_random_dither)
+                            # no wait for slew here as we start downloading the image. the wait_for_slew is after that
+    
+                        except Exception as e:
+                            plog (traceback.format_exc())
+                            if 'Object reference not set' in str(e) and g_dev['mnt'].theskyx:
+    
+                                plog("The SkyX had an error.")
+                                plog("Usually this is because of a broken connection.")
+                                plog("Killing then waiting 60 seconds then reconnecting")
+                                g_dev['seq'].kill_and_reboot_theskyx(g_dev['mnt'].current_icrs_ra,g_dev['mnt'].current_icrs_dec)
+    
+                    # Otherwise immediately nudge scope back to initial pointing in smartstack after the last frame of the smartstack
+                    # Last frame of the smartstack must also be at the normal pointing for platesolving purposes
+                    elif Nsmartstack > 1 and ((Nsmartstack == sskcounter+1) or (Nsmartstack == sskcounter+2)):
+                        try:
+                            self.wait_for_slew()
+                            g_dev['mnt'].slew_async_directly(ra=initial_smartstack_ra, dec=initial_smartstack_dec)
+                            # no wait for slew here as we start downloading the image. the wait_for_slew is after that
+    
+                        except Exception as e:
+                            plog (traceback.format_exc())
+                            if 'Object reference not set' in str(e) and g_dev['mnt'].theskyx:
+    
+                                plog("The SkyX had an error.")
+                                plog("Usually this is because of a broken connection.")
+                                plog("Killing then waiting 60 seconds then reconnecting")
+                                g_dev['seq'].kill_and_reboot_theskyx(g_dev['mnt'].current_icrs_ra,g_dev['mnt'].current_icrs_dec)
 
 
 
