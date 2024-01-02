@@ -13,8 +13,10 @@ aro-0m30      10.0.0.73
 aro-wema      10.0.0.50
 Power Control 10.0.0.100   admin arot******
 Roof Control  10.0.0.200   admin arot******
-Redis         10.0.0.73:6379
+Redis         10.0.0.174:6379  ; rds = redis.Redis(host='10.0.0.174', port=6379); rds.set('wx', 'bogus'); rds.get('wx').decode()
 Dragonfly     Obsolete.
+
+Hubble V1  00:41:27.30 +41:10:10.4
 '''
 
 #                                                                                                  1         1         1
@@ -60,7 +62,7 @@ site_config = {
     'closest_distance_to_the_sun': 30,  # Degrees. For normal pointing requests don't go this close to the sun.
     'closest_distance_to_the_moon': 5,  # Degrees. For normal pointing requests don't go this close to the moon.
     'minimum_distance_from_the_moon_when_taking_flats': 30,
-    'lowest_requestable_altitude': -1,  # Degrees. For normal pointing requests don't allow requests to go this low.
+    'lowest_requestable_altitude': -2,  # Degrees. For normal pointing requests don't allow requests to go this low.
     'degrees_to_avoid_zenith_area_for_calibrations': 0,
     'degrees_to_avoid_zenith_area_in_general' : 0,
     'maximum_hour_angle_requestable' : 12,
@@ -94,7 +96,8 @@ site_config = {
     'local_calibration_path': 'F:/ptr/', # THIS FOLDER HAS TO BE ON A LOCAL DRIVE, not a network drive due to the necessity of huge memmap files
     'archive_age' : 10.0, # Number of days to keep files in the local archive before deletion. Negative means never delete
 
-
+    'redis_available':  True,
+    'redis_ip': "10.0.0.174:6379",
 
 
     # For low bandwidth sites, do not send up large files until the end of the night. set to 'no' to disable
@@ -131,7 +134,7 @@ site_config = {
     'eve_sky_flat_sunset_offset': -45.,  # Before Sunset Minutes  neg means before, + after.
     'end_eve_sky_flats_offset': -1 ,      # How many minutes after civilDusk to do....
     'clock_and_auto_focus_offset':-10,   #min before start of observing
-    'astro_dark_buffer': 30,   #Min before and after AD to extend observing window
+    'astro_dark_buffer': 15,   #Min before and after AD to extend observing window
     'morn_flat_start_offset': -10,       #min from Sunrise
     'morn_flat_end_offset':  +45,        #min from Sunrise
     'end_night_processing_time':  90,   #  A guess
@@ -151,21 +154,21 @@ site_config = {
      # Turn on and off various automated calibrations at different times.
      'auto_eve_bias_dark': True,
      'auto_eve_sky_flat': True,
-     'time_to_wait_after_roof_opens_to_take_flats': 120,   #Just imposing a minimum in case of a restart.
+     'time_to_wait_after_roof_opens_to_take_flats': 10,   #Just imposing a minimum in case of a restart.
      'auto_midnight_moonless_bias_dark': False,
      'auto_morn_sky_flat': True,
      'auto_morn_bias_dark': True,
 
      # FOCUS OPTIONS
-     'periodic_focus_time': 12.0, # This is a time, in hours, over which to bypass automated focussing (e.g. at the start of a project it will not refocus if a new project starts X hours after the last focus)
-     'stdev_fwhm': 0.5,  # This is the expected variation in FWHM at a given telescope/camera/site combination. This is used to check if a fwhm is within normal range or the focus has shifted
+     'periodic_focus_time': 1.5, # This is a time, in hours, over which to bypass automated focussing (e.g. at the start of a project it will not refocus if a new project starts X hours after the last focus)
+     'stdev_fwhm': 0.4,  # This is the expected variation in FWHM at a given telescope/camera/site combination. This is used to check if a fwhm is within normal range or the focus has shifted
      'focus_trigger': 0.6,  # What FWHM increase is needed to trigger an autofocus
 
      # PLATESOLVE options
      'solve_nth_image': 1,  # Only solve every nth image
      'solve_timer': 0.05,  # Only solve every X minutes    NB WER  3 seconds????
-     'threshold_mount_update': 45,  # only update mount when X arcseconds away
-
+     'threshold_mount_update': 45,  # only update mount zero point when X arcseconds away
+     'limit_mount_tweak': 15,   #maximum radial drift allowed for a correction when running a block
 
 
     'defaults': {
@@ -280,7 +283,7 @@ site_config = {
             'collecting_area': 31808,   #This is correct as of 20230420 WER
             'obscuration':  0.55,  # Informatinal, already included in collecting_area.
             'aperture': 30,
-            'focal_length': 1470,  # 1470,   #2697,   # Converted to F9, measured 20200905  11.1C
+            'focal_length': 1470,  # 1470,   #2697,   # Converted to F9, measured 20200905  11.1C  1468.4 @ F4.9?
             'has_dew_heater':  False,
             'screen_name': 'screen1',
             'focuser_name':  'focuser1',
@@ -408,7 +411,7 @@ site_config = {
             'service_date': '20210716',
 
 
-            "filter_settle_time": 0, #how long to wait for the filter to settle after a filter change(seconds)
+            "filter_settle_time": 5, # WER 20231231 test.  how long to wait for the filter to settle after a filter change(seconds)
             'override_automatic_filter_throughputs': False, # This ignores the automatically estimated filter gains and starts with the values from the config file
 
             "driver": "LCO.dual",  # 'ASCOM.FLI.FilterWheel',   #'MAXIM',
@@ -426,31 +429,31 @@ site_config = {
                 # Columns for filter data are : ['filter', 'filter_index', 'filter_offset', 'sky_gain', 'screen_gain', 'alias']
                 #NB NB Note to WER please add cwl, bw and 'shape'
                 'filter_data': [
-                        ['Air',  [0,  0], -800, 1850., [2   ,  20], 'AIR'],    #0  Gains 20230703
-                        ['Exo',  [8,  0],    0,  945., [360 , 170], 'Exoplanet - yellow, no UV or NIR'],     #1
+                        ['Air',  [0,  0], -800, 1100., [2   ,  20], 'AIR'],    #0  Gains 20230703
+                        ['Exo',  [8,  0],    0,  945., [360 , 170], 'Exoplanet - yellow, no UV or far NIR'],     #1
 
-                        ['PL',   [7,  0],    0, 1330., [360 , 170], 'Photo Luminance - does not pass NIR'],     #2
-                        ['PR',   [0,  8],    0, 437.,  [.32 ,  20], 'Photo Blue'],     #3
-                        ['PG',   [0,  7],    0, 495.,  [30  , 170], 'Photo Green'],     #4
-                        ['PB',   [0,  6],    0, 545,   [360 , 170], 'Photo Blue'],     #5
-                        ['NIR',  [0, 10],    0, 168.,  [0.65,  20], 'Near IR - redward of PR'],     #6  Value suspect 2023/10/23 WER
+                        ['PL',   [7,  0],    0, 1110., [360 , 170], 'Photo Luminance - does not pass NIR'],     #2
+                        ['PR',   [0,  8],    0, 305.,  [.32 ,  20], 'Photo Blue'],     #3
+                        ['PG',   [0,  7],    0, 430.,  [30  , 170], 'Photo Green'],     #4
+                        ['PB',   [0,  6],    0, 625,   [360 , 170], 'Photo Blue'],     #5
+                        ['NIR',  [0, 10],    0, 100.,  [0.65,  20], 'Near IR - redward of PL'],     #6  Value suspect 2023/10/23 WER
 
-                        ['O3',   [0,  2],    0, 45.0,  [360 , 170], 'Oxygen III'],     #7    #guess
-                        ['HA',   [0,  3],    0, 12.8,  [360 , 170], 'Hydrogen Alpha - aka II'],     #8
-                        ['N2',   [13, 0],    0, 5.97,  [360 , 170], 'Nitrogen II'],     #9
-                        ['S2',   [0,  4],    0, 6.09,  [0.65,  20], 'Sulphur II'],     #10
-                        ['CR',   [0,  5],    0, 12.0,  [360 , 170], 'Continuum Red - for Star subtraction'],     #11
+                        ['O3',   [0,  2],    0, 35.0,  [360 , 170], 'Oxygen III'],     #7    #guess
+                        ['HA',   [0,  3],    0, 7.,  [360 , 170], 'Hydrogen Alpha - aka II'],     #8
+                        ['N2',   [13, 0],    0, 4.,  [360 , 170], 'Nitrogen II'],     #9
+                        ['S2',   [0,  4],    0, 4.,  [0.65,  20], 'Sulphur II'],     #10
+                        ['CR',   [0,  5],    0, 7.6,  [360 , 170], 'Continuum Red - for Star subtraction'],     #11
 
                         ['up',   [1,  0],    0, 32.5,  [2   ,  20], "Sloan u'"],     #12
-                        ['BB',   [9,  0],    0, 506.,  [0.65,  20], 'Bessell B'],     #13
-                        ['gp',   [2,  0],    0, 822.,  [.77 ,  20], "Sloan g'"],     #14
-                        ['BV',   [10, 0],    0, 609.,  [.32 ,  20], 'Bessell V'],     #15
-                        ['BR',   [11, 0],    0, 527.,  [10  , 170], 'Bessell R'],     #16
+                        ['BB',   [9,  0],    0, 550.,  [0.65,  20], 'Bessell B'],     #13
+                        ['gp',   [2,  0],    0, 705.,  [.77 ,  20], "Sloan g'"],     #14
+                        ['BV',   [10, 0],    0, 450.,  [.32 ,  20], 'Bessell V'],     #15
+                        ['BR',   [11, 0],    0, 350.,  [10  , 170], 'Bessell R'],     #16
                         ['rp',   [3,  0],    0, 464.,  [1.2 ,  20], "Sloan r'"],     #17
-                        ['ip',   [4,  0],    0, 193.,  [.65 ,  20], "Sloan i'"],     #18
-                        ['BI',   [12, 0],    0, 114.,  [360 , 170], 'Bessell I'],     #19
-                        ['zp',   [0,  9],    0,  23.,  [360 , 170], "Sloan z'"],     #20    # NB I think these may be backward labeled,
-                        ['zs',   [5,  0],    0, 16.88, [1.0 ,  20], "Sloan z-short"],     #21    # NB ZP is a broader filter than zs.
+                        ['ip',   [4,  0],    0, 110.,  [.65 ,  20], "Sloan i'"],     #18
+                        ['BI',   [12, 0],    0, 62.,  [360 , 170], 'Bessell I'],     #19
+                        ['zp',   [0,  9],    0, 11.,  [360 , 170], "Sloan z'"],     #20    # NB I think these may be backward labeled,
+                        ['zs',   [5,  0],    0, 8.5, [1.0 ,  20], "Sloan z-short"],     #21    # NB ZP is a broader filter than zs.
                         ['Y',    [6,  0],    0, 7.3,   [360 , 170], "Rubin Y - low throughput, defective filter in top area "],     #22
 
 
@@ -459,8 +462,8 @@ site_config = {
 
 
                 'filter_screen_sort':  ['ip'],   # don't use narrow yet,  8, 10, 9], useless to try.
-                'filter_sky_sort': ['N2','S2','HA','CR','zs','zp','up','O3','BI','NIR','ip','PR','rp',\
-                                    'PG','BB','BR','BV','PB','gp','EXO','PL','air'],
+                'filter_sky_sort': ['N2','S2','HA','CR','zs','zp','up','O3','BI','NIR','ip','PR','BR',\
+                                    'rp','PG','BV','PB','BB','gp','EXO','PL','air'],
 
 
 
@@ -545,8 +548,8 @@ site_config = {
                 #'direct_qhy_usb_speed' : 50,
                 'direct_qhy_usb_traffic' : 50,
 
-                'set_qhy_usb_speed': False,
-                'direct_qhy_usb_speed' : 0,
+                'set_qhy_usb_speed': True,
+                'direct_qhy_usb_speed' : 60,
 
                 # These options set whether an OSC gets binned or interpolated for different functions
                 # If the pixel scale is well-sampled (e.g. 0.6 arcsec per RGGB pixel or 0.3 arcsec per individual debayer pixel)
@@ -658,6 +661,7 @@ site_config = {
                 # Generally leave this at 0.5 - the optimal value for ground based
                 # observatories.... unless you have a large field of view.
                 'drizzle_value_for_later_stacking': 0.5,
+                'dither_enabled':  False,      #Set this way for tracking testing
 
 
                 # This is the absolute minimum and maximum exposure for the camera
@@ -681,6 +685,8 @@ site_config = {
                 'camera_gain_stdev':   0.16, #[10., 10., 10., 10.],     #  One val for each binning.
                 'read_noise':  9.55, #[9, 9, 9, 9],    #  All SWAGs right now
                 'read_noise_stdev':   0.004, #[10., 10., 10., 10.],     #  One val for each binning.
+                'dark_lim_adu': 0.15,   #adu/s of dark 20231229 moved down from 0.5
+                'dark_lim_std': 15,  #first guess. See above.
                 # Saturate is the important one. Others are informational only.
                 'fullwell_capacity': 80000,  # NB Guess
                 'saturate':   65535,
@@ -690,16 +696,17 @@ site_config = {
                 # What is the base smartstack exposure time?
                 # It will vary from scope to scope and computer to computer.
                 # 30s is a good default.
-                'smart_stack_exposure_time': 25,
+                'smart_stack_exposure_time': 30,
+                'smart_stack_exposure_NB_multiplier':  3,   #Michael's setting
 
 
                 # As simple as it states, how many calibration frames to collect and how many to store.
-                'number_of_bias_to_collect': 33,
-                'number_of_dark_to_collect': 15,
-                'number_of_flat_to_collect': 9,
+                'number_of_bias_to_collect': 31,
+                'number_of_dark_to_collect': 13,
+                'number_of_flat_to_collect': 5,   #increased from 5  20231226 WER
                 'number_of_bias_to_store': 63,
-                'number_of_dark_to_store': 31,
-                'number_of_flat_to_store': 17,
+                'number_of_dark_to_store': 27,
+                'number_of_flat_to_store': 9,
                 # Default dark exposure time.
                 'dark_exposure': 360,
 

@@ -376,7 +376,7 @@ class Observatory:
         self.mount_reference_model_off = self.config['mount_reference_model_off']
         self.admin_owner_commands_only = False
         self.assume_roof_open = False
-        self.auto_centering_off = False
+        self.auto_centering_off = False  #WER 20231239 Toggled to True
 
         # Instantiate the helper class for astronomical events
         # Soon the primary event / time values can come from AWS.  NB NB   I send them there! Why do we want to put that code in AWS???
@@ -558,7 +558,7 @@ class Observatory:
                          plog (line.replace('\n',''))
             except:
                 plog ("something wrong with opening camera gain text file")
-                # breakpoint()
+                #breakpoint()
                 pass
 
         # Report filter throughputs as part of bootup
@@ -1073,7 +1073,7 @@ class Observatory:
         status["timestamp"] = round((time.time()) / 2.0, 3)
         status["send_heartbeat"] = False
 
-        #breakpoint()
+
 
         #status['telescope']={}
 
@@ -1127,7 +1127,7 @@ class Observatory:
 
         self.full_update_lock=True
         while self.currently_updating_status:
-            print ('w')
+            print ('updating status')
             time.sleep(0.5)
 
         if self.status_count > 1:  # Give time for status to form
@@ -1154,7 +1154,7 @@ class Observatory:
 
         #g_dev['foc'].update_focuser_temperature()
 
-        if True and ((time.time() - self.queue_reporting_timer) > self.queue_reporting_period):
+        if False and ((time.time() - self.queue_reporting_timer) > self.queue_reporting_period):
             self.queue_reporting_timer=time.time()
             plog ("Queue Reports - hunting for ram leak")
 
@@ -1213,7 +1213,7 @@ class Observatory:
                         return
             except Exception as e:
                 plog(traceback.format_exc())
-                breakpoint()
+                #breakpoint()
                 plog ("Sun check didn't work for some reason")
                 if 'Object reference not set' in str(e) and g_dev['mnt'].theskyx:
 
@@ -1480,7 +1480,7 @@ class Observatory:
                         plog("Killing then waiting 60 seconds then reconnecting")
                         g_dev['seq'].kill_and_reboot_theskyx(-1,-1)
                     else:
-                       # breakpoint()
+                       #breakpoint()
                        pass
 
             # If no activity for an hour, park the scope
@@ -2280,7 +2280,7 @@ class Observatory:
             else:
                 time.sleep(0.1)
 
-    def mainjpeg_process(self):
+    def mainjpeg_process(self, zoom_factor=False):
         """
         This is the main subprocess where jpegs are created for the UI.
         """
@@ -2288,7 +2288,7 @@ class Observatory:
         while True:
             if (not self.mainjpeg_queue.empty()):
                 osc_jpeg_timer_start = time.time()
-                (hdusmalldata, smartstackid, paths, pier_side) = self.mainjpeg_queue.get(block=False)
+                (hdusmalldata, smartstackid, paths, pier_side, zoom_factor) = self.mainjpeg_queue.get(block=False)
                 is_osc = g_dev['cam'].config["camera"][g_dev['cam'].name]["settings"]["is_osc"]
                 osc_bayer= g_dev['cam'].config["camera"][g_dev['cam'].name]["settings"]["osc_bayer"]
                 if is_osc:
@@ -2328,19 +2328,20 @@ class Observatory:
                 squash_on_x_axis=self.config["camera"][g_dev['cam'].name]["settings"]["squash_on_x_axis"]
 
                 ##  Here WER adds Zoom prototype code:
-                zoom_factor = 'full'   #This still needs to be passed in as a parameter.
+                #zoom_factor = 'Small Sq.'   #This still needs to be passed in as a parameter.
 
                 jpeg_subprocess=subprocess.Popen(['python','subprocesses/mainjpeg.py'],stdin=subprocess.PIPE,stdout=subprocess.PIPE,bufsize=0)
 
-
+                plog("@ Pickle point:  ", zoom_factor)
                 if True:
+                    #
                     pickle.dump([hdusmalldata, smartstackid, paths, pier_side, is_osc, osc_bayer, osc_background_cut,osc_brightness_enhance, osc_contrast_enhance,\
                           osc_colour_enhance, osc_saturation_enhance, osc_sharpness_enhance, transpose_jpeg, flipx_jpeg, flipy_jpeg, rotate180_jpeg,rotate90_jpeg, \
                               rotate270_jpeg, crop_preview, yb, yt, xl, xr, squash_on_x_axis, zoom_factor], jpeg_subprocess.stdin)
 
                 # Here is a manual debug area which makes a pickle for debug purposes. Default is False, but can be manually set to True for code debugging
                 else:
-                    # breakpoint()
+                    #NB set this path to create test pickle for makejpeg routine.
                     pickle.dump([hdusmalldata, smartstackid, paths, pier_side, is_osc, osc_bayer, osc_background_cut,osc_brightness_enhance, osc_contrast_enhance,\
                         osc_colour_enhance, osc_saturation_enhance, osc_sharpness_enhance, transpose_jpeg, flipx_jpeg, flipy_jpeg, rotate180_jpeg,rotate90_jpeg, \
                             rotate270_jpeg, crop_preview, yb, yt, xl, xr, squash_on_x_axis, zoom_factor], open('testjpegpickle','wb'))
@@ -2352,6 +2353,7 @@ class Observatory:
 
                 # Essentially wait until the subprocess is complete
                 jpeg_subprocess.communicate()
+
 
                 # Try saving the jpeg to disk and quickly send up to AWS to present for the user
                 if smartstackid == 'no':
@@ -2499,7 +2501,7 @@ class Observatory:
                             # Then it triggers an autofocus.
                             g_dev["foc"].focus_tracker.pop(0)
                             g_dev["foc"].focus_tracker.append(round(rfr, 3))
-                            plog("Last ten FWHM: " + str(g_dev["foc"].focus_tracker) + " Median: " + str(np.nanmedian(g_dev["foc"].focus_tracker)) + " Last Solved: " + str(g_dev["foc"].last_focus_fwhm))
+                            plog("Last ten FWHM (pixels): " + str(g_dev["foc"].focus_tracker) + " Median: " + str(np.nanmedian(g_dev["foc"].focus_tracker)) + " Last Solved: " + str(g_dev["foc"].last_focus_fwhm))
 
                             # If there hasn't been a focus yet, then it can't check it,
                             # so make this image the last solved focus.
@@ -2619,7 +2621,7 @@ class Observatory:
                         if os.path.exists(self.local_calibration_path + 'platesolve.pickle'):
                             solve= pickle.load(open(self.local_calibration_path + 'platesolve.pickle', 'rb'))
                         else:
-                            solve= 'error'
+                            solve= 'Platesove error, Pickle file not available'
                         try:
                             os.remove(self.local_calibration_path + 'platesolve.pickle')
                         except:
@@ -2756,9 +2758,11 @@ class Observatory:
 
 
                                      drift_timespan= time.time() - self.drift_tracker_timer
+
                                      drift_arcsec_ra= (err_ha * 15 * 3600 ) / (drift_timespan * 3600)
                                      drift_arcsec_dec=  (err_dec *3600) / (drift_timespan * 3600)
                                      plog ("Drift calculations in arcsecs per hour, RA: " + str(drift_arcsec_ra) + " DEC: " + str(drift_arcsec_dec) )
+
 
                                      if not g_dev['obs'].mount_reference_model_off:
                                          if target_dec > -85 and target_dec < 85 and g_dev['mnt'].last_slew_was_pointing_slew:
@@ -3513,7 +3517,7 @@ class Observatory:
                     pixscale,
                     smartstackid,
                     sskcounter,
-                    Nsmartstack, pier_side
+                    Nsmartstack, pier_side, zoom_factor
                 ) = self.smartstack_queue.get(block=False)
 
                 if paths is None:
@@ -3570,7 +3574,8 @@ class Observatory:
                             ],
                             self.config["camera"][g_dev['cam'].name]["settings"][
                                 "crop_preview_xright"
-                            ]
+                            ],
+                            zoom_factor,
                             ]
                     else:
                         picklepayload=[
@@ -3605,7 +3610,8 @@ class Observatory:
                             ],
                             self.config["camera"][g_dev['cam'].name]["settings"][
                                 "crop_preview_xright"
-                            ]
+                            ],
+                            zoom_factor,
                             ]
 
 
@@ -3948,7 +3954,7 @@ def wait_for_slew():
             time.sleep(5)
             g_dev['mnt'].mount_reboot()
         else:
-            # breakpoint()
+            ##breakpoint()
             pass
     return
 

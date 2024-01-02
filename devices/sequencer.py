@@ -375,6 +375,7 @@ class Sequencer:
              if self.nightly_reset_complete == False:
                  self.nightly_reset_complete = True
                  self.nightly_reset_script()
+                 self.nightly_reset_complete = True
 
         if ((g_dev['events']['Cool Down, Open'] <= ephem_now < g_dev['events']['Observing Ends'])):
 
@@ -390,7 +391,7 @@ class Sequencer:
             ###########################################################################
 
             # A little switch flip to make sure focus goes off when roof is simulated
-            if  ephem_now <g_dev['events']['Clock & Auto Focus'] :
+            if  ephem_now < g_dev['events']['Clock & Auto Focus'] :
                 self.night_focus_ready=True
 
             # This bit is really to get the scope up and running if the roof opens
@@ -446,13 +447,20 @@ class Sequencer:
                 self.eve_bias_done = True
                 self.bias_dark_latch = False
 
-            if (time.time() - g_dev['seq'].time_roof_last_opened > self.config['time_to_wait_after_roof_opens_to_take_flats'] ) and not self.eve_sky_flat_latch and not g_dev['obs'].scope_in_manual_mode and ((events['Eve Sky Flats'] <= ephem_now < events['End Eve Sky Flats'])  \
-                   and self.config['auto_eve_sky_flat'] and g_dev['obs'].open_and_enabled_to_observe and not self.eve_flats_done and g_dev['obs'].camera_sufficiently_cooled_for_calibrations):
+            if (time.time() - g_dev['seq'].time_roof_last_opened > \
+                   self.config['time_to_wait_after_roof_opens_to_take_flats'] ) and \
+                   not self.eve_sky_flat_latch and not g_dev['obs'].scope_in_manual_mode and \
+                   ((events['Eve Sky Flats'] <= ephem_now < events['End Eve Sky Flats'])  \
+                   and self.config['auto_eve_sky_flat'] and g_dev['obs'].open_and_enabled_to_observe and\
+                   not self.eve_flats_done \
+                   and g_dev['obs'].camera_sufficiently_cooled_for_calibrations):
 
                 self.eve_sky_flat_latch = True
                 self.current_script = "Eve Sky Flat script starting"
+                g_dev['obs'].send_to_user("Eve Sky Flat script starting")
 
                 g_dev['foc'].set_initial_best_guess_for_focus()
+                g_dev['mnt'].set_tracking_on()
 
                 self.sky_flat_script({}, {}, morn=False)   #Null command dictionaries
 
@@ -460,6 +468,7 @@ class Sequencer:
 
                 self.eve_sky_flat_latch = False
                 self.eve_flats_done = True
+                g_dev['obs'].send_to_user("Eve Sky Flats gathered.")
 
 
             if ((g_dev['events']['Clock & Auto Focus']  <= ephem_now < g_dev['events']['Observing Begins'])) \
@@ -1058,16 +1067,24 @@ class Sequencer:
 
                     # A hack to get older projects working. should be deleted at some point.
                     try:
-                        exposure['zoom']=exposure['area']
+                        if exposure['area'] is not None:
+                            exposure['zoom']=exposure['area']
+                            plog("*****Line 1067 in Seq says key 'area' supplied:  ",exposure['area'] )
+                            exposure.pop('area')
                     except:
                         pass
 
+                    zoom_factor = exposure['zoom'].lower()
+                    plog("*****Zoom supplied line 1074 seq is:  ", zoom_factor)
+                    #breakpoint()
+                    if exposure['zoom'].lower() in ["full", 'Full'] or 'X' in exposure['zoom'] \
+                        or  '%' in exposure['zoom'] or ( exposure['zoom'].lower() == 'small sq.') \
+                        or (exposure['zoom'].lower() == 'small sq'):    # and dec_field_deg == ra_field_deg):
 
-                    if exposure['zoom'].lower() in ["full", 'Full'] or '%' in exposure['zoom'] or ( exposure['zoom'].lower() == 'big sq.' and dec_field_deg == ra_field_deg):
-
-                        # These are waiting for a mosaic approach
+                        # These are not mosaic exposures
                         offset = [(0., 0.)] #Zero(no) mosaic offset
                         pane = 0
+                        self.currently_mosaicing = False
                     else:
                         self.currently_mosaicing = True
 
@@ -1277,7 +1294,7 @@ class Sequencer:
                             # Set up options for exposure and take exposure.
                             req = {'time': exp_time,  'alias':  str(self.config['camera']['camera_1_1']['name']), 'image_type': imtype, 'smartstack' : smartstackswitch, 'longstackswitch' : longstackswitch, 'longstackname' : longstackname, 'block_end' : g_dev['seq'].blockend}   #  NB Should pick up filter and constants from config
                             opt = {'count': 1, 'filter': filter_requested, \
-                                   'hint': block['project_id'] + "##" + dest_name, 'object_name': block['project']['project_targets'][0]['name'], 'pane': pane}
+                                   'hint': block['project_id'] + "##" + dest_name, 'object_name': block['project']['project_targets'][0]['name'], 'pane': pane, 'zoom': zoom_factor}
                             plog('Seq Blk sent to camera:  ', req, opt)
 
                             now_date_timeZ = datetime.datetime.utcnow().isoformat().split('.')[0] +'Z'
@@ -1288,7 +1305,8 @@ class Sequencer:
                                     self.currently_mosaicing = False
                                     return
                             g_dev["obs"].request_full_update()
-                            result = g_dev['cam'].expose_command(req, opt, user_name=user_name, user_id=user_id, user_roles=user_roles, no_AWS=False, solve_it=False, calendar_event_id=calendar_event_id)
+                            plog("*****Line 1304 Seg. Right before call expose:  req, opt:  ", req, opt)
+                            result = g_dev['cam'].expose_command(req, opt, user_name=user_name, user_id=user_id, user_roles=user_roles, no_AWS=False, solve_it=False, calendar_event_id=calendar_event_id) #, zoom_factor=zoom_factor)
                             g_dev["obs"].request_full_update()
                             try:
                                 if result == 'blockend':
@@ -1768,7 +1786,7 @@ class Sequencer:
 
         time.sleep(10)
         print ("Paused at kill theskyx for bugtesting")
-        breakpoint()
+       #breakpoint()
 
         os.system("taskkill /IM TheSkyX.exe /F")
         os.system("taskkill /IM TheSky64.exe /F")
@@ -2577,8 +2595,17 @@ class Sequencer:
             for filtertempgain in list(self.filter_throughput_shelf.keys()):
                 plog (str(filtertempgain) + " " + str(self.filter_throughput_shelf[filtertempgain]))
 
+        #240101 WER Sometimes the throughuts can get spoiled by starting late, restarts, and the like.
+        #when this happens, the throuputs get corrupt -- generally are lower. So one thing to do
+        # is clamp the automatic values to say 80% to 120% of the config file values.  That will keep
+        #things stable.  Second point is to make sure the input list is ordered from lowest to highest
+        #throughput for evening operation.  If the flat acquisiton works the resulting gain list is
+        #correct for the next run, with an exception. The throughput is a function of how bright the
+        #sky is:  so something is not qite right about the scaling of the throughput.  So starting late
+        #causes the automatic throughuts to be smaller than otherwise.
 
-        #  Pick up list of filters is sky flat order of lowest to highest transparency.
+
+        #  Pick up list of filters in sky flat order of lowest to highest transparency.
         if g_dev["fil"].null_filterwheel == True:
             plog ("No Filter Wheel, just getting non-filtered flats")
             pop_list = [0]
@@ -2613,7 +2640,7 @@ class Sequencer:
         #obs_win_begin, sunset, sunrise, ephem_now = self.astro_events.getSunEvents()
         exp_time = 0
         scale = 1.0
-        collecting_area = self.config['telescope']['telescope1']['collecting_area']/31808.
+        collecting_area = self.config['telescope']['telescope1']['collecting_area']/31808.  #Ratio to ARO Ceravolo 300mm
 
 
 
@@ -2713,6 +2740,7 @@ class Sequencer:
                     self.current_filter_last_camera_gain_stdev=200
                 self.filter_camera_gain_shelf.close()
 
+
                 acquired_count = 0
                 flat_saturation_level = g_dev['cam'].config["camera"][g_dev['cam'].name]["settings"]["saturate"]
 
@@ -2729,6 +2757,7 @@ class Sequencer:
                 while (acquired_count < flat_count):
                     #g_dev['obs'].request_scan_requests()
                     g_dev["obs"].request_full_update()
+                    g_dev["obs"].request_update_status()
 
                     if g_dev['obs'].open_and_enabled_to_observe == False:
                         plog ("Observatory closed or disabled during flat script. Cancelling out of flat acquisition loop.")
@@ -2752,7 +2781,7 @@ class Sequencer:
 
                     if self.next_flat_observe < time.time():
                         try:
-                            sky_lux, _ = g_dev['evnt'].illuminationNow()
+                            sky_lux, _ = g_dev['evnt'].illuminationNow()    # NB NB Eventually we should MEASURE this.
                         except:
                             sky_lux = None
 
@@ -2949,7 +2978,7 @@ class Sequencer:
                                     plog ("patch broken?")
                                     plog(traceback.format_exc())
                                     plog (fred)
-                                    breakpoint()
+                                   #breakpoint()
 
 
                             except Exception as e:
@@ -3034,9 +3063,10 @@ class Sequencer:
                                 pop_list.pop(0)
                                 scale = 1
 
+
                             continue
                     else:
-                        time.sleep(10)
+                        time.sleep(5)
 
         if morn:
             self.morn_sky_flat_latch = False
@@ -3318,7 +3348,7 @@ class Sequencer:
         except Exception as e:
             plog ("Issues pointing to a focus patch. Focussing at the current pointing." , e)
             plog(traceback.format_exc())
-
+        g_dev["obs"].request_full_update()
         req = {'time': self.config['focus_exposure_time'],  'alias':  str(self.config['camera']['camera_1_1']['name']), 'image_type': 'focus'}   #  NB Should pick up filter and constats from config
 
         opt = { 'count': 1, 'filter': 'focus'}
@@ -3405,6 +3435,7 @@ class Sequencer:
         while retry < 3:
             if not sim:
                 g_dev['obs'].request_scan_requests()
+                g_dev["obs"].request_full_update()
                 result = g_dev['cam'].expose_command(req, opt, user_id='Tobor', user_name='Tobor', user_roles='system', no_AWS=True, solve_it=False) ## , script = 'auto_focus_script_0')  #  This is where we start.
                 if self.stop_script_called:
                     g_dev["obs"].send_to_user("Cancelling out of autofocus script as stop script has been called.")
@@ -3435,7 +3466,7 @@ class Sequencer:
             g_dev['obs'].send_to_user("Central focus FWHM: " + str(spot1), p_level='INFO')
 
             if math.isnan(spot1) or spot1 ==False:
-                #breakpoint()
+
                 retry += 1
                 plog("Retry of central focus star)")
                 continue
@@ -3512,6 +3543,7 @@ class Sequencer:
             g_dev['foc'].guarded_move((focus_start)*g_dev['foc'].micron_to_steps)  #NB NB 20221002 THis unit fix shoudl be in the routine. WER
 
             g_dev['mnt'].go_command(ra=start_ra, dec=start_dec)
+            g_dev["obs"].request_full_update()
             self.wait_for_slew()
 
             self.af_guard = False
@@ -3577,6 +3609,7 @@ class Sequencer:
                 plog('\nFound best focus at:  ', foc_pos4,' measured FWHM is:  ',  round(spot4, 2), '\n')
                 g_dev['obs'].send_to_user('Found best focus at:  ' +str(foc_pos4) +' measured FWHM is:  ' + str(round(spot4, 2)), p_level='INFO')
                 g_dev['foc'].af_log(foc_pos4, spot4, new_spot)
+                g_dev["obs"].request_full_update()
                 plog("Returning to RA:  " +str(start_ra) + " Dec: " + str(start_dec))
                 g_dev["obs"].send_to_user("Returning to RA:  " +str(start_ra) + " Dec: " + str(start_dec))
                 g_dev['mnt'].go_command(ra=start_ra, dec=start_dec)
@@ -3890,14 +3923,14 @@ class Sequencer:
                 self.focussing=False
                 return
 
-        breakpoint()
+       #breakpoint()
 
         plog("Returning to RA:  " +str(start_ra) + " Dec: " + str(start_dec))
         g_dev["obs"].send_to_user("Returning to RA:  " +str(start_ra) + " Dec: " + str(start_dec))
         g_dev['mnt'].go_command(ra=start_ra, dec=start_dec)
         self.wait_for_slew()
 
-        breakpoint()
+       #breakpoint()
 
         if sim:
             g_dev['foc'].guarded_move((focus_start)*g_dev['foc'].micron_to_steps)
@@ -4084,6 +4117,7 @@ class Sequencer:
 
         for ctr in range(3):
             g_dev['foc'].guarded_move((foc_pos0 + (ctr+1)*throw)*g_dev['foc'].micron_to_steps)
+            g_dev["obs"].request_full_update()
             if not sim:
                 g_dev['obs'].request_scan_requests()
                 req = {'time': self.config['focus_exposure_time'],  'alias':  str(self.config['camera']['camera_1_1']['name']), 'image_type': 'focus'}   #  NB Should pick up filter and constats from config

@@ -295,9 +295,9 @@ class Mount:
             self.CanSetDeclinationRate = False
         self.DeclinationRate = self.mount.DeclinationRate
 
-        self.EquatorialSystem=self.mount.EquatorialSystem
+        self.EquatorialSystem = self.mount.EquatorialSystem
 
-        self.previous_pier_side=self.mount.sideOfPier
+        self.previous_pier_side = self.mount.sideOfPier
 
         self.request_new_pierside=False
         self.request_new_pierside_ra=1.0
@@ -315,6 +315,9 @@ class Mount:
 
         self.right_ascension_directly_from_mount = copy.deepcopy(self.mount.RightAscension)
         self.declination_directly_from_mount = copy.deepcopy(self.mount.Declination)
+        #Verified these set the rates additively to mount supplied refraction rate.20231221 WER
+        self.right_ascension_rate_directly_from_mount = copy.deepcopy(self.mount.RightAscensionRate)
+        self.declination_rate_directly_from_mount = copy.deepcopy(self.mount.DeclinationRate)
 
         # initialisation values
         self.alt= 45
@@ -412,7 +415,7 @@ class Mount:
         self.mount_update_thread.start()
 
     # Note this is a thread!
-    def mount_update_thread(self):
+    def mount_update_thread(self):   # NB is this the best name for this? Update vs Command
 
 
         #one_at_a_time = 0
@@ -458,7 +461,7 @@ class Mount:
 
                     self.currently_slewing= self.mount_update_wincom.Slewing
 
-
+                    #  Starting here ae tha varius mount commands and reads...
                     if self.unpark_requested:
                         self.unpark_requested=False
                         self.mount_update_wincom.Unpark()
@@ -512,8 +515,11 @@ class Mount:
                     if self.slewtoAsyncRequested:
                         self.slewtoAsyncRequested=False
                         #print ("attempting to slew")
+                        #breakpoint()  #Here is a place close to the mount to deal with Model, etc
+                        #self.mount_update_wincom.DeclinationRate = 5 #gets reset on the slew
                         self.mount_update_wincom.SlewToCoordinatesAsync(self.slewtoRA , self.slewtoDEC)
-                        
+                        self.mount_update_wincom.DeclinationRate = 0
+                        plog("dec rate set to: ", self.mount_update_wincom.DeclinationRate)
                         #print ("successful slew")
 
                     if self.request_tracking_on:
@@ -559,7 +565,8 @@ class Mount:
 
                     self.right_ascension_directly_from_mount = copy.deepcopy(self.mount_update_wincom.RightAscension)
                     self.declination_directly_from_mount = copy.deepcopy(self.mount_update_wincom.Declination)
-
+                    self.right_ascension_rate_directly_from_mount = copy.deepcopy(self.mount_update_wincom.RightAscensionRate)
+                    self.declination_rate_directly_from_mount = copy.deepcopy(self.mount_update_wincom.DeclinationRate)
 
 
                     self.mount_updates=self.mount_updates + 1
@@ -573,6 +580,8 @@ class Mount:
             except Exception as e:
                 plog ("some type of glitch in the mount thread: " + str(e))
                 plog(traceback.format_exc())
+
+        #END of Mount Update Thread.  Note it spins on the while True. line 446
 
     def wait_for_slew(self):
 
@@ -796,6 +805,23 @@ class Mount:
         #return copy.deepcopy(self.current_icrs_ra, self.current_icrs_dec)
         return self.current_icrs_ra, self.current_icrs_dec
 
+    def get_mount_rates(self):
+        '''
+        Build up an ICRS coordinate from mount reported coordinates,
+        removing offset and pierside calibrations.  From either flip
+        the ICRS coordiate returned should be that of the object
+        commanded, hence removing the offsets that are needed to
+        position the mount on the axis.
+        '''
+        while self.mount_busy:
+            time.sleep(0.05)
+        self.mount_busy=True
+        self.mount_busy=False
+        self.current_rate_ra = self.right_ascension_rate_directly_from_mount
+        self.current_rate_dec = self.declination_rate_directly_from_mount
+        return self.current_rate_ra, self.current_rate_dec
+
+    #Never Called  20240101 WER
     def slew_async_directly(self, ra, dec):
         self.wait_for_slew()
         # mount command #
@@ -960,6 +986,7 @@ class Mount:
             }
         elif self.tel == True:
             #try:
+
             #icrs_ra, icrs_dec = self.get_mount_coordinates()
             rd = SkyCoord(ra=self.right_ascension_directly_from_mount*u.hour, dec=self.declination_directly_from_mount*u.deg)
             # except:
@@ -1012,9 +1039,9 @@ class Mount:
                 'correction_dec': round(self.dec_corr, 4),
                 'hour_angle': round(ha, 3),
                 'demand_right_ascension_rate': round(self.prior_roll_rate, 9),   #NB as on 20231113 these rates are basically fixed and static. WER
-                'mount_right_ascension_rate': round(self.RightAscensionRate, 9),   #Will use sec-RA/sid-sec
+                'mount_right_ascension_rate': round(self.right_ascension_rate_directly_from_mount, 9),   #Will use sec-RA/sid-sec
                 'demand_declination_rate': round(self.prior_pitch_rate, 8),
-                'mount_declination_rate': round(self.DeclinationRate, 8),
+                'mount_declination_rate': round(self.declination_rate_directly_from_mount, 8),
                 'pier_side':self.pier_side,
                 'pier_side_str': self.pier_side_str,
                 'azimuth': round(az, 3),
@@ -1027,7 +1054,6 @@ class Mount:
                 'message': str(self.mount_message[:54]),
                 'move_time': self.move_time
             }
-
         else:
             plog('Proper device_name is missing, or tel == None')
             status = {'defective':  'status'}
@@ -1186,6 +1212,7 @@ class Mount:
         opt = command['optional_params']
         action = command['action']
         #self.check_connect()
+
         if action == "go":
             if 'ra' in req:
                 result = self.go_command(ra=req['ra'], dec=req['dec'])   #  Entered from Target Explorer or Telescope tabs.
@@ -1341,11 +1368,16 @@ class Mount:
 
     '''
 
-    def go_command(self, skyflatspot=None, ra=None, dec=None, az=None, alt=None, ha=None, objectname=None, offset=False, calibrate=False, auto_center=False, silent=False, skip_open_test=False,tracking_rate_ra = 0, tracking_rate_dec =  0, do_centering_routine=False):
+    def go_command(self, skyflatspot=None, ra=None, dec=None, az=None, alt=None, ha=None, \
+                   objectname=None, offset=False, calibrate=False, auto_center=False, \
+                   silent=False, skip_open_test=False,tracking_rate_ra = 0, \
+                   tracking_rate_dec =  0, do_centering_routine=False):
 
         ''' Slew to the given ra/dec, alt/az or ha/dec or skyflatspot coordinates. '''
-
-        #breakpoint()
+        breakpoint()
+        if self.model_on:
+            #breakpoint()
+            pass
 
         # First thing to do is check the position of the sun and
         # Whether this violates the pointing principle.
@@ -1379,7 +1411,7 @@ class Mount:
                     plog("Refusing skyflat pointing request as it is too close to the zenith for this scope.")
                     return 'refused'
 
-        elif ra != None:
+        elif ra != None:   #implying RA and Dec are supplied. Compute resulting altitude
             ra = float(ra)
             dec = float(dec)
             temppointing=SkyCoord(ra*u.hour, dec*u.degree, frame='icrs')
@@ -1439,27 +1471,12 @@ class Mount:
             plog("Refusing pointing request as the observatory is not enabled to observe.")
             return 'refused'
 
-        # Fifth thing, check that the sky flat latch isn't on
-        # (I moved the scope during flats once, it wasn't optimal)
-        #plog ("MTF TEMP REPORTING FOR SKYFLAT")
-        #plog (str(skyflatspot))
-        #plog (str(g_dev['seq'].morn_sky_flat_latch  or g_dev['seq'].eve_sky_flat_latch or g_dev['seq'].sky_flat_latch or g_dev['seq'].bias_dark_latch))
-        # if not skyflatspot:
-        #     if g_dev['seq'].morn_sky_flat_latch  or g_dev['seq'].eve_sky_flat_latch or g_dev['seq'].sky_flat_latch or g_dev['seq'].bias_dark_latch:
-        #         g_dev['obs'].send_to_user("Refusing pointing request as the observatory is currently undertaking flats or calibration frames.")
-        #         plog("Refusing pointing request as the observatory is currently taking flats or calibration frmaes.")
-        #         return 'refused'
-
-
-        #breakpoint()
-
-
         if objectname != None:
             self.object = objectname
         else:
             self.object = 'unspecified'    #NB could possibly augment with "Near --blah--"
 
-        self.unpark_command()
+        self.unpark_command()   #can we qualify this?
 
 
         if self.object in ['Moon', 'moon', 'Lune', 'lune', 'Luna', 'luna',]:
@@ -1478,9 +1495,10 @@ class Mount:
             tracking_rate_dec = ddec_moon
 
         #
-        #breakpoint()
-        icrs_ra, icrs_dec = self.get_mount_coordinates()   #Does not appear to be used  20231128 wer
-        #breakpoint()
+
+        icrs_ra, icrs_dec = self.get_mount_coordinates()    #These are for debugging.
+        check_ra_rate, check_dec_rate = self.get_mount_rates()  #These do not appear to be used  20231128 wer
+        breakpoint()
         if self.object == "":
             if not silent:
                 g_dev['obs'].send_to_user("Slewing telescope to un-named target!  ",  p_level="INFO")
@@ -1494,7 +1512,7 @@ class Mount:
         self.last_tracking_rate_dec = tracking_rate_dec
         self.last_seek_time = time.time() - 5000
 
-        
+
 
         #Note this initiates a mount move.  WE should Evaluate if the destination is on the flip side and pick up the
         #flip offset.  So a GEM could track into positive HA territory without a problem but the next reseek should
@@ -1625,7 +1643,7 @@ class Mount:
                         try:
                             if g_dev['mnt'].theskyx:
                                 plog (traceback.format_exc())
-                                breakpoint()
+                                #breakpoint()
                                 plog("The SkyX had an error.")
                                 plog("Usually this is because of a broken connection.")
                                 plog("Killing then waiting 60 seconds then reconnecting")
@@ -1769,12 +1787,12 @@ class Mount:
         g_dev['obs'].last_solve_time = datetime.datetime.now() - datetime.timedelta(days=1)
         g_dev['obs'].images_since_last_solve = 10000
         self.wait_for_slew()
-        
-        
+
+
         g_dev['obs'].drift_tracker_ra=0
         g_dev['obs'].drift_tracker_dec=0
         g_dev['obs'].drift_tracker_timer=time.time()
-        
+
         if not silent:
             g_dev['obs'].send_to_user("Slew Complete.")
 
