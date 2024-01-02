@@ -63,7 +63,7 @@ else:
     print("Azimuth Adjustment:  ", small_az, 'small graduations COUNTER-Clockwise, as seen from above.' )
     print("AAzimuth Adjustment:  ", major_az, 'major graduations COUNTER-Clockwise, as seen from above.' )
     print('\n')
-    print('1: Check right az knob is snug, 2) back off left az knob, then turn right az knob the suggested amount. then snug other side.')
+    print('1: Check both az knobs are snug, 2) back off right az knob, then turn left az knob the suggested amount. then snug other side.')
 print('\n\n')
 print("Last, double check the mount is level and the black tapes line up.")
 print('Clear Skies!')

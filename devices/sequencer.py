@@ -2592,8 +2592,17 @@ class Sequencer:
             for filtertempgain in list(self.filter_throughput_shelf.keys()):
                 plog (str(filtertempgain) + " " + str(self.filter_throughput_shelf[filtertempgain]))
 
+        #240101 WER Sometimes the throughuts can get spoiled by starting late, restarts, and the like.
+        #when this happens, the throuputs get corrupt -- generally are lower. So one thing to do
+        # is clamp the automatic values to say 80% to 120% of the config file values.  That will keep
+        #things stable.  Second point is to make sure the input list is ordered from lowest to highest
+        #throughput for evening operation.  If the flat acquisiton works the resulting gain list is
+        #correct for the next run, with an exception. The throughput is a function of how bright the
+        #sky is:  so something is not qite right about the scaling of the throughput.  So starting late
+        #causes the automatic throughuts to be smaller than otherwise.
 
-        #  Pick up list of filters is sky flat order of lowest to highest transparency.
+
+        #  Pick up list of filters in sky flat order of lowest to highest transparency.
         if g_dev["fil"].null_filterwheel == True:
             plog ("No Filter Wheel, just getting non-filtered flats")
             pop_list = [0]
@@ -2628,7 +2637,7 @@ class Sequencer:
         #obs_win_begin, sunset, sunrise, ephem_now = self.astro_events.getSunEvents()
         exp_time = 0
         scale = 1.0
-        collecting_area = self.config['telescope']['telescope1']['collecting_area']/31808.
+        collecting_area = self.config['telescope']['telescope1']['collecting_area']/31808.  #Ratio to ARO Ceravolo 300mm
 
 
 
@@ -2727,8 +2736,7 @@ class Sequencer:
                     self.current_filter_last_camera_gain=200
                     self.current_filter_last_camera_gain_stdev=200
                 self.filter_camera_gain_shelf.close()
-                # if current_filter in ['gp', 'rp']:
-                #     flat_count *= 2
+
 
                 acquired_count = 0
                 flat_saturation_level = g_dev['cam'].config["camera"][g_dev['cam'].name]["settings"]["saturate"]
@@ -2770,7 +2778,7 @@ class Sequencer:
 
                     if self.next_flat_observe < time.time():
                         try:
-                            sky_lux, _ = g_dev['evnt'].illuminationNow()
+                            sky_lux, _ = g_dev['evnt'].illuminationNow()    # NB NB Eventually we should MEASURE this.
                         except:
                             sky_lux = None
 

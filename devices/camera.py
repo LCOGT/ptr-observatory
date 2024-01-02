@@ -506,6 +506,7 @@ class Camera:
 
             if self.config["camera"][self.name]["settings"]['set_qhy_usb_speed']:
                 success = qhycam.so.SetQHYCCDParam(qhycam.camera_params[qhycam_id]['handle'], qhycam.CONTROL_SPEED,c_double(float(self.config["camera"][self.name]["settings"]['direct_qhy_usb_speed'])))
+            plog('Set QHY USB speed to: ', success, self.config["camera"][self.name]["settings"]['direct_qhy_usb_speed'] )
 
             self._connected = self._qhyccd_connected
             self._connect = self._qhyccd_connect

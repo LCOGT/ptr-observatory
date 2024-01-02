@@ -283,7 +283,7 @@ site_config = {
             'collecting_area': 31808,   #This is correct as of 20230420 WER
             'obscuration':  0.55,  # Informatinal, already included in collecting_area.
             'aperture': 30,
-            'focal_length': 1470,  # 1470,   #2697,   # Converted to F9, measured 20200905  11.1C
+            'focal_length': 1470,  # 1470,   #2697,   # Converted to F9, measured 20200905  11.1C  1468.4 @ F4.9?
             'has_dew_heater':  False,
             'screen_name': 'screen1',
             'focuser_name':  'focuser1',
@@ -411,7 +411,7 @@ site_config = {
             'service_date': '20210716',
 
 
-            "filter_settle_time": 10, # WER 20231231 test.  how long to wait for the filter to settle after a filter change(seconds)
+            "filter_settle_time": 5, # WER 20231231 test.  how long to wait for the filter to settle after a filter change(seconds)
             'override_automatic_filter_throughputs': False, # This ignores the automatically estimated filter gains and starts with the values from the config file
 
             "driver": "LCO.dual",  # 'ASCOM.FLI.FilterWheel',   #'MAXIM',
@@ -548,8 +548,8 @@ site_config = {
                 #'direct_qhy_usb_speed' : 50,
                 'direct_qhy_usb_traffic' : 50,
 
-                'set_qhy_usb_speed': False,
-                'direct_qhy_usb_speed' : 0,
+                'set_qhy_usb_speed': True,
+                'direct_qhy_usb_speed' : 60,
 
                 # These options set whether an OSC gets binned or interpolated for different functions
                 # If the pixel scale is well-sampled (e.g. 0.6 arcsec per RGGB pixel or 0.3 arcsec per individual debayer pixel)

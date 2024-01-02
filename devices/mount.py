@@ -461,7 +461,7 @@ class Mount:
 
                     self.currently_slewing= self.mount_update_wincom.Slewing
 
-
+                    #  Starting here ae tha varius mount commands and reads...
                     if self.unpark_requested:
                         self.unpark_requested=False
                         self.mount_update_wincom.Unpark()
@@ -515,7 +515,7 @@ class Mount:
                     if self.slewtoAsyncRequested:
                         self.slewtoAsyncRequested=False
                         #print ("attempting to slew")
-                        #breakpoint()
+                        #breakpoint()  #Here is a place close to the mount to deal with Model, etc
                         #self.mount_update_wincom.DeclinationRate = 5 #gets reset on the slew
                         self.mount_update_wincom.SlewToCoordinatesAsync(self.slewtoRA , self.slewtoDEC)
                         self.mount_update_wincom.DeclinationRate = 0
@@ -580,6 +580,8 @@ class Mount:
             except Exception as e:
                 plog ("some type of glitch in the mount thread: " + str(e))
                 plog(traceback.format_exc())
+
+        #END of Mount Update Thread.  Note it spins on the while True. line 446
 
     def wait_for_slew(self):
 
@@ -819,6 +821,7 @@ class Mount:
         self.current_rate_dec = self.declination_rate_directly_from_mount
         return self.current_rate_ra, self.current_rate_dec
 
+    #Never Called  20240101 WER
     def slew_async_directly(self, ra, dec):
         self.wait_for_slew()
         # mount command #
@@ -1371,7 +1374,7 @@ class Mount:
                    tracking_rate_dec =  0, do_centering_routine=False):
 
         ''' Slew to the given ra/dec, alt/az or ha/dec or skyflatspot coordinates. '''
-
+        breakpoint()
         if self.model_on:
             #breakpoint()
             pass
@@ -1495,7 +1498,7 @@ class Mount:
 
         icrs_ra, icrs_dec = self.get_mount_coordinates()    #These are for debugging.
         check_ra_rate, check_dec_rate = self.get_mount_rates()  #These do not appear to be used  20231128 wer
-        #breakpoint()
+        breakpoint()
         if self.object == "":
             if not silent:
                 g_dev['obs'].send_to_user("Slewing telescope to un-named target!  ",  p_level="INFO")
