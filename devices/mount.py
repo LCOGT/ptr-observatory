@@ -821,7 +821,7 @@ class Mount:
         self.current_rate_dec = self.declination_rate_directly_from_mount
         return self.current_rate_ra, self.current_rate_dec
 
-    #Never Called  20240101 WER
+    #Never Called  20240101 WER - THAT ISN'T TRUE! It is called directly from the obs code etc. Hence "directly"
     def slew_async_directly(self, ra, dec):
         self.wait_for_slew()
         # mount command #
@@ -1374,7 +1374,7 @@ class Mount:
                    tracking_rate_dec =  0, do_centering_routine=False):
 
         ''' Slew to the given ra/dec, alt/az or ha/dec or skyflatspot coordinates. '''
-        breakpoint()
+        #breakpoint()
         if self.model_on:
             #breakpoint()
             pass
@@ -1498,7 +1498,7 @@ class Mount:
 
         icrs_ra, icrs_dec = self.get_mount_coordinates()    #These are for debugging.
         check_ra_rate, check_dec_rate = self.get_mount_rates()  #These do not appear to be used  20231128 wer
-        breakpoint()
+        #breakpoint()
         if self.object == "":
             if not silent:
                 g_dev['obs'].send_to_user("Slewing telescope to un-named target!  ",  p_level="INFO")
@@ -1789,8 +1789,8 @@ class Mount:
         self.wait_for_slew()
 
 
-        g_dev['obs'].drift_tracker_ra=0
-        g_dev['obs'].drift_tracker_dec=0
+        #g_dev['obs'].drift_tracker_ra=0
+        #g_dev['obs'].drift_tracker_dec=0
         g_dev['obs'].drift_tracker_timer=time.time()
 
         if not silent:

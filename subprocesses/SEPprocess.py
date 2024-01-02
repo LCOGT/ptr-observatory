@@ -87,6 +87,8 @@ hduheader["IMGMED"] = ( np.nanmedian(hdufocusdata), "Median Value of Image Array
 hduheader["IMGSTDEV"] = ( np.nanstd(hdufocusdata), "Median Value of Image Array" )
 hduheader["IMGMAD"] = ( median_absolute_deviation(hdufocusdata, ignore_nan=True), "Median Absolute Deviation of Image Array" )
 
+#breakpoint()
+
 # no zero values in readnoise.
 if float(readnoise) < 0.1:
     readnoise = 0.1
@@ -129,6 +131,8 @@ if not do_sep or (float(hduheader["EXPTIME"]) < 1.0):
     rfs = np.nan
     sepsky = np.nan
 else:
+    
+    
 
     if frame_type == 'focus':
 
@@ -170,6 +174,8 @@ else:
             hdufocusdata=block_reduce(hdufocusdata,sep_bin_factor)
             binfocus=sep_bin_factor
 
+    
+    
 
     # If it is a focus image then it will get sent in a different manner to the UI for a jpeg
     if frame_type == 'focus':
@@ -224,6 +230,8 @@ else:
     try:
         # Some of these are liberated from BANZAI
 
+        
+
         bkg = sep.Background(focusimg, bw=32, bh=32, fw=3, fh=3)
         bkg.subfrom(focusimg)
 
@@ -258,6 +266,10 @@ else:
         #sources = sources[sources["y"] > border_x]
         #breakpoint()
         # BANZAI prune nans from table
+        
+        
+
+        
 
         nan_in_row = np.zeros(len(sources), dtype=bool)
         for col in sources.colnames:

@@ -694,39 +694,39 @@ class Camera:
                 self.darkslide_open = True
                 self.darkslide_state = 'Open'
 
+        self.camera_known_gain=70000.0
+        self.camera_known_gain_stdev=70000.0
+        self.camera_known_readnoise=70000.0
+        self.camera_known_readnoise_stdev=70000.0
 
+        # if True:
+        try:
+            
+            self.filter_camera_gain_shelf = shelve.open(g_dev['obs'].obsid_path + 'ptr_night_shelf/' + 'filtercameragain' + g_dev['cam'].alias + str(g_dev['obs'].name))
 
-        if True:
-            try:
-                self.camera_known_gain=70000.0
-                self.camera_known_gain_stdev=70000.0
-                self.camera_known_readnoise=70000.0
-                self.camera_known_readnoise_stdev=70000.0
-                self.filter_camera_gain_shelf = shelve.open(g_dev['obs'].obsid_path + 'ptr_night_shelf/' + 'filtercameragain' + g_dev['cam'].name + str(g_dev['obs'].name))
+            for entry in self.filter_camera_gain_shelf:
+                if entry != 'readnoise':
+                    singlentry=self.filter_camera_gain_shelf[entry]
+                    if singlentry[2] > int(0.8 * self.config['camera'][self.name]['settings']['number_of_flat_to_store']):
+                        if singlentry[0] < self.camera_known_gain:
+                            self.camera_known_gain=singlentry[0]
+                            self.camera_known_gain_stdev=singlentry[1]
 
-                for entry in self.filter_camera_gain_shelf:
-                    if entry != 'readnoise':
-                        singlentry=self.filter_camera_gain_shelf[entry]
-                        if singlentry[2] > int(0.8 * self.config['camera'][self.name]['settings']['number_of_flat_to_store']):
-                            if singlentry[0] < self.camera_known_gain:
-                                self.camera_known_gain=singlentry[0]
-                                self.camera_known_gain_stdev=singlentry[1]
+            singlentry=self.filter_camera_gain_shelf['readnoise']
+            self.camera_known_readnoise= (singlentry[0] * self.camera_known_gain) / 1.414
+            self.camera_known_readnoise_stdev = (singlentry[1] * self.camera_known_gain) / 1.414
+        except:
+            plog('failed to estimate gain and readnoise from flats and such')
+        #         self.camera_known_gain=self.config["camera"][self.name]["settings"]["camera_gain"]
+        #         self.camera_known_gain_stdev=self.config["camera"][self.name]["settings"]['camera_gain_stdev']
+        #         self.camera_known_readnoise=self.config["camera"][self.name]["settings"]['read_noise']
+        #         self.camera_known_readnoise_stdev=self.config["camera"][self.name]["settings"]['read_noise_stdev']
 
-                singlentry=self.filter_camera_gain_shelf['readnoise']
-                self.camera_known_readnoise= (singlentry[0] * self.camera_known_gain) / 1.414
-                self.camera_known_readnoise_stdev = (singlentry[1] * self.camera_known_gain) / 1.414
-            except:
-                plog('failed to estimate gain and readnoise from flats and such')
-                self.camera_known_gain=self.config["camera"][self.name]["settings"]["camera_gain"]
-                self.camera_known_gain_stdev=self.config["camera"][self.name]["settings"]['camera_gain_stdev']
-                self.camera_known_readnoise=self.config["camera"][self.name]["settings"]['read_noise']
-                self.camera_known_readnoise_stdev=self.config["camera"][self.name]["settings"]['read_noise_stdev']
-
-        else:
-            self.camera_known_gain=self.config["camera"][self.name]["settings"]["camera_gain"]
-            self.camera_known_gain_stdev=self.config["camera"][self.name]["settings"]['camera_gain_stdev']
-            self.camera_known_readnoise=self.config["camera"][self.name]["settings"]['read_noise']
-            self.camera_known_readnoise_stdev=self.config["camera"][self.name]["settings"]['read_noise_stdev']
+        # else:
+        #     self.camera_known_gain=self.config["camera"][self.name]["settings"]["camera_gain"]
+        #     self.camera_known_gain_stdev=self.config["camera"][self.name]["settings"]['camera_gain_stdev']
+        #     self.camera_known_readnoise=self.config["camera"][self.name]["settings"]['read_noise']
+        #     self.camera_known_readnoise_stdev=self.config["camera"][self.name]["settings"]['read_noise_stdev']
 
         plog ("Used Camera Gain: " + str(self.camera_known_gain))
         plog ("Used Readnoise  : "+ str(self.camera_known_readnoise))
@@ -2648,7 +2648,8 @@ class Camera:
                     self.post_processing_queue.put(copy.deepcopy((outputimg, g_dev["mnt"].pier_side, self.config["camera"][self.name]["settings"]['is_osc'], frame_type, self.config['camera']['camera_1_1']['settings']['reject_new_flat_by_known_gain'], avg_mnt, avg_foc, avg_rot, self.setpoint, self.tempccdtemp, self.ccd_humidity, self.ccd_pressure, self.darkslide_state, exposure_time, this_exposure_filter, exposure_filter_offset, self.pane,opt , observer_user_name, self.hint, azimuth_of_observation, altitude_of_observation, airmass_of_observation, self.pixscale, smartstackid,sskcounter,Nsmartstack, longstackid, ra_at_time_of_exposure, dec_at_time_of_exposure, manually_requested_calibration, object_name, object_specf, g_dev["mnt"].ha_corr, g_dev["mnt"].dec_corr, focus_position, self.config, self.name, self.camera_known_gain, self.camera_known_readnoise, start_time_of_observation, observer_user_id, self.camera_path,  solve_it, next_seq, zoom_factor)), block=False)
 
 
-
+                # print (outputimg)
+                # breakpoint()
 
                 # If this is a pointing or a focus frame, we need to do an
                 # in-line flash reduction
@@ -2674,8 +2675,8 @@ class Camera:
 
                     # hdu = fits.PrimaryHDU()
 
-                    if self.native_bin != 1:
-                        outputimg=(block_reduce(outputimg,self.native_bin))
+                    #if self.native_bin != 1:
+                    #    outputimg=(block_reduce(outputimg,self.native_bin))
                         # hdu.header['XBINING']=selfnative_bin
                         # hdu.header['YBINING']=selfnative_bin
                         # hdu.header['PIXSCALE']=float(hdu.header['PIXSCALE']) * selfnative_bin
@@ -2696,7 +2697,8 @@ class Camera:
                         # hdu.header['MAXLIN']=float(hdu.header['MAXLIN']) * pow( selfnative_bin,2)
 
 
-
+                # print (outputimg)
+                # breakpoint()
 
                 if frame_type=='pointing' and focus_image == False:
 
@@ -2742,6 +2744,7 @@ class Camera:
 
                     #wait_for_slew()
                     g_dev['obs'].platesolve_is_processing =True
+                    print (outputimg)
                     g_dev['obs'].to_platesolve((outputimg, hdusmallheader, cal_path, cal_name, frame_type, time.time(), self.pixscale, ra_at_time_of_exposure,dec_at_time_of_exposure))
                     # If it is the last of a set of smartstacks, we actually want to
                     # wait for the platesolve and nudge before starting the next smartstack.

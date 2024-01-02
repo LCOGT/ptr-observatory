@@ -133,13 +133,13 @@ site_config = {
     'enclosure_check_period': 1,    # How many minutes between enclosure checks
 
     # Turn on and off various automated calibrations at different times.
-    'auto_eve_bias_dark': True,
+    'auto_eve_bias_dark': False,
     'auto_eve_sky_flat': True,
     
      'time_to_wait_after_roof_opens_to_take_flats': 120,   #Just imposing a minimum in case of a restart.
     'auto_midnight_moonless_bias_dark': True,
     'auto_morn_sky_flat': True,
-    'auto_morn_bias_dark': True,
+    'auto_morn_bias_dark': False,
     
     # FOCUS OPTIONS
     'periodic_focus_time': 12.0, # This is a time, in hours, over which to bypass automated focussing (e.g. at the start of a project it will not refocus if a new project starts X hours after the last focus)
@@ -743,6 +743,7 @@ site_config = {
                 # Generally leave this at 0.5 - the optimal value for ground based
                 # observatories.... unless you have a large field of view.                
                 'drizzle_value_for_later_stacking': 0.5,
+                'dither_enabled':  True,      #Set this way for tracking testing
 
                 
                 # This is the absolute minimum and maximum exposure for the camera
@@ -758,13 +759,15 @@ site_config = {
                 # One of the best cloud detections is to estimate the gain of the camera from the image
                 # If the variation, and hence gain, is too high according to gain + stdev, the flat can be easily rejected.
                 # Should be off for new observatories coming online until a real gain is known.
-                'reject_new_flat_by_known_gain' : False,
+                'reject_new_flat_by_known_gain' : True,
                 # These values are just the STARTING values. Once the software has been
                 # through a few nights of calibration images, it should automatically calculate these gains.
-                'camera_gain':   8.634, #[10., 10., 10., 10.],     #  One val for each binning.
-                'camera_gain_stdev':   0.4, #[10., 10., 10., 10.],     #  One val for each binning.
-                'read_noise':  47.74, #[9, 9, 9, 9],    #  All SWAGs right now
-                'read_noise_stdev':   0.03, #[10., 10., 10., 10.],     #  One val for each binning.              
+                # 'camera_gain':   8.634, #[10., 10., 10., 10.],     #  One val for each binning.
+                # 'camera_gain_stdev':   0.4, #[10., 10., 10., 10.],     #  One val for each binning.
+                # 'read_noise':  47.74, #[9, 9, 9, 9],    #  All SWAGs right now
+                # 'read_noise_stdev':   0.03, #[10., 10., 10., 10.],     #  One val for each binning. 
+                'dark_lim_adu': 0.15,   #adu/s of dark 20231229 moved down from 0.5
+                'dark_lim_std': 15,  #first guess. See above.
                 # Saturate is the important one. Others are informational only.
                 'fullwell_capacity': 80000,  # NB Guess
                 'saturate':   65535,
@@ -775,6 +778,8 @@ site_config = {
                 # It will vary from scope to scope and computer to computer.
                 # 30s is a good default.
                 'smart_stack_exposure_time': 30,
+                
+                'smart_stack_exposure_NB_multiplier':  3,   #Michael's setting
                 
                 
                 # As simple as it states, how many calibration frames to collect and how many to store.                

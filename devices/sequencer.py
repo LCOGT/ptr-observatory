@@ -494,7 +494,7 @@ class Sequencer:
                 self.wait_for_slew()
 
                 # Check it hasn't actually been homed this evening from the rotatorhome shelf
-                homerotator_time_shelf = shelve.open(g_dev['obs'].obsid_path + 'ptr_night_shelf/' + 'homerotatortime' + g_dev['cam'].name + str(g_dev['obs'].name))
+                homerotator_time_shelf = shelve.open(g_dev['obs'].obsid_path + 'ptr_night_shelf/' + 'homerotatortime' + g_dev['cam'].alias + str(g_dev['obs'].name))
                 if 'lasthome' in homerotator_time_shelf:
                     if time.time() - homerotator_time_shelf['lasthome'] <  43200: # A home in the last twelve hours
                         self.rotator_has_been_homed_this_evening=True
@@ -512,7 +512,7 @@ class Sequencer:
                             plog("home rotator wait")
                             time.sleep(1)
                         # Store last home time.
-                        homerotator_time_shelf = shelve.open(g_dev['obs'].obsid_path + 'ptr_night_shelf/' + 'homerotatortime' + g_dev['cam'].name + str(g_dev['obs'].name))
+                        homerotator_time_shelf = shelve.open(g_dev['obs'].obsid_path + 'ptr_night_shelf/' + 'homerotatortime' + g_dev['cam'].alias + str(g_dev['obs'].name))
                         homerotator_time_shelf['lasthome'] = time.time()
                         homerotator_time_shelf.close()
 
@@ -894,7 +894,7 @@ class Sequencer:
             plog("tracking on")
 
             # Check it hasn't actually been homed this evening from the rotatorhome shelf
-            homerotator_time_shelf = shelve.open(g_dev['obs'].obsid_path + 'ptr_night_shelf/' + 'homerotatortime' + g_dev['cam'].name + str(g_dev['obs'].name))
+            homerotator_time_shelf = shelve.open(g_dev['obs'].obsid_path + 'ptr_night_shelf/' + 'homerotatortime' + g_dev['cam'].alias + str(g_dev['obs'].name))
             if 'lasthome' in homerotator_time_shelf:
                 if time.time() - homerotator_time_shelf['lasthome'] <  43200: # A home in the last twelve hours
                     self.rotator_has_been_homed_this_evening=True
@@ -913,7 +913,7 @@ class Sequencer:
                         plog("home rotator wait")
                         time.sleep(1)
                     # Store last home time.
-                    homerotator_time_shelf = shelve.open(g_dev['obs'].obsid_path + 'ptr_night_shelf/' + 'homerotatortime' + g_dev['cam'].name + str(g_dev['obs'].name))
+                    homerotator_time_shelf = shelve.open(g_dev['obs'].obsid_path + 'ptr_night_shelf/' + 'homerotatortime' + g_dev['cam'].alias + str(g_dev['obs'].name))
                     homerotator_time_shelf['lasthome'] = time.time()
                     homerotator_time_shelf.close()
 
@@ -1872,8 +1872,44 @@ class Sequencer:
         # with which to calculate the gain. This is the shelf to hold this data.
         # There is no hope for individual owners with a multitude of telescopes to keep up with
         # this estimate, so we need to automate it with a first best guess given in the config.
-        self.filter_camera_gain_shelf = shelve.open(g_dev['obs'].obsid_path + 'ptr_night_shelf/' + 'filtercameragain' + g_dev['cam'].name + str(g_dev['obs'].name))
+        self.filter_camera_gain_shelf = shelve.open(g_dev['obs'].obsid_path + 'ptr_night_shelf/' + 'filtercameragain' + g_dev['cam'].alias + str(g_dev['obs'].name))
 
+
+
+        # Remove the current master calibrations
+        # Not doing this can leave old faulty calibrations 
+        # in the directory.
+        tempfrontcalib=g_dev['obs'].obs_id + '_' + g_dev['cam'].alias +'_'
+        try:
+            os.remove(g_dev['obs'].calib_masters_folder + tempfrontcalib + 'BIAS_master_bin1.fits')
+        except:
+            plog ("Could not remove " + str(g_dev['obs'].calib_masters_folder + tempfrontcalib + 'BIAS_master_bin1.fits'))
+            
+        try:            
+            os.remove(g_dev['obs'].calib_masters_folder + tempfrontcalib + 'DARK_master_bin1.fits')
+        except:
+            plog ("Could not remove " + str(g_dev['obs'].calib_masters_folder + tempfrontcalib + 'DARK_master_bin1.fits'))
+
+        
+        tempfrontcalib=g_dev['obs'].calib_masters_folder + g_dev['obs'].obs_id + '_' + g_dev['cam'].alias +'_masterFlat*'
+        deletelist=glob(tempfrontcalib)
+        for item in deletelist:
+            try:
+                os.remove(item)
+            except:
+                plog ("Could not remove " + str(item))
+        
+        tempfrontcalib=g_dev['obs'].calib_masters_folder +'masterFlat*'
+        tempfrontcalib=g_dev['obs'].calib_masters_folder + g_dev['obs'].obs_id + '_' + g_dev['cam'].alias +'_masterFlat*'
+        deletelist=glob(tempfrontcalib)
+        for item in deletelist:
+            try:
+                os.remove(item)
+            except:
+                plog ("Could not remove " + str(item))
+        
+        
+        # also masterflat*.npy
 
         # NOW to get to the business of constructing the local calibrations
         # Start with biases
@@ -1939,7 +1975,7 @@ class Sequencer:
                 i=i+1
 
             plog ("**********************************")
-            plog ("Median Stacking each bias row individually from the Reprojections")
+            plog ("Median Stacking each bias row individually")
             plog (datetime.datetime.now().strftime("%H:%M:%S"))
             # Go through each pixel and calculate nanmedian. Can't do all arrays at once as it is hugely memory intensive
             finalImage=np.zeros(shapeImage,dtype=float)
@@ -2052,7 +2088,7 @@ class Sequencer:
                 i=i+1
 
             plog ("**********************************")
-            plog ("Median Stacking each darkframe row individually from the Reprojections")
+            plog ("Median Stacking each darkframe row individually ")
             plog (datetime.datetime.now().strftime("%H:%M:%S"))
             # Go through each pixel and calculate nanmedian. Can't do all arrays at once as it is hugely memory intensive
             finalImage=np.zeros(shapeImage,dtype=float)
@@ -2201,7 +2237,7 @@ class Sequencer:
                             i=i+1
 
                         plog ("**********************************")
-                        plog ("Median Stacking each " + str (filtercode) + " flat frame row individually from the Reprojections")
+                        plog ("Median Stacking each " + str (filtercode) + " flat frame row individually")
                         plog (datetime.datetime.now().strftime("%H:%M:%S"))
                         # Go through each pixel and calculate nanmedian. Can't do all arrays at once as it is hugely memory intensive
                         finalImage=np.zeros(shapeImage,dtype=float)
@@ -2345,7 +2381,7 @@ class Sequencer:
                 self.filter_camera_gain_shelf['readnoise']=[np.nanmedian(post_readnoise_array) , np.nanstd(post_readnoise_array), len(post_readnoise_array)]
                 self.filter_camera_gain_shelf.close()
 
-                textfilename= g_dev['obs'].obsid_path + 'ptr_night_shelf/' + 'cameragain' + g_dev['cam'].name + str(g_dev['obs'].name) +'.txt'
+                textfilename= g_dev['obs'].obsid_path + 'ptr_night_shelf/' + 'cameragain' + g_dev['cam'].alias + str(g_dev['obs'].name) +'.txt'
                 try:
                     os.remove(textfilename)
                 except:
@@ -2461,7 +2497,7 @@ class Sequencer:
                     g_dev['mnt'].go_command(alt=parkalt, az=270, skyflatspot=True)
 
                     # Check it hasn't actually been homed this evening from the rotatorhome shelf
-                    homerotator_time_shelf = shelve.open(g_dev['obs'].obsid_path + 'ptr_night_shelf/' + 'homerotatortime' + g_dev['cam'].name + str(g_dev['obs'].name))
+                    homerotator_time_shelf = shelve.open(g_dev['obs'].obsid_path + 'ptr_night_shelf/' + 'homerotatortime' + g_dev['cam'].alias + str(g_dev['obs'].name))
                     if 'lasthome' in homerotator_time_shelf:
                         if time.time() - homerotator_time_shelf['lasthome'] <  43200: # A home in the last twelve hours
                             self.rotator_has_been_homed_this_evening=True
@@ -2484,7 +2520,7 @@ class Sequencer:
                                     g_dev["obs"].request_full_update()
                                     temptimer=time.time()
                             # Store last home time.
-                            homerotator_time_shelf = shelve.open(g_dev['obs'].obsid_path + 'ptr_night_shelf/' + 'homerotatortime' + g_dev['cam'].name + str(g_dev['obs'].name))
+                            homerotator_time_shelf = shelve.open(g_dev['obs'].obsid_path + 'ptr_night_shelf/' + 'homerotatortime' + g_dev['cam'].alias + str(g_dev['obs'].name))
                             homerotator_time_shelf['lasthome'] = time.time()
                             homerotator_time_shelf.close()
 
@@ -2583,7 +2619,7 @@ class Sequencer:
         exp_time = min_exposure
 
         # Load up the pickled list of gains or start a new one.
-        self.filter_throughput_shelf = shelve.open(g_dev['obs'].obsid_path + 'ptr_night_shelf/' + 'filterthroughput' + g_dev['cam'].name + str(g_dev['obs'].name))
+        self.filter_throughput_shelf = shelve.open(g_dev['obs'].obsid_path + 'ptr_night_shelf/' + 'filterthroughput' + g_dev['cam'].alias + str(g_dev['obs'].name))
 
         if self.config['filter_wheel']['filter_wheel1']['override_automatic_filter_throughputs']:
             plog ("Config is set to not use the automatically estimated")
@@ -2653,7 +2689,7 @@ class Sequencer:
 
 
         # Check it hasn't actually been homed this evening from the rotatorhome shelf
-        homerotator_time_shelf = shelve.open(g_dev['obs'].obsid_path + 'ptr_night_shelf/' + 'homerotatortime' + g_dev['cam'].name + str(g_dev['obs'].name))
+        homerotator_time_shelf = shelve.open(g_dev['obs'].obsid_path + 'ptr_night_shelf/' + 'homerotatortime' + g_dev['cam'].alias + str(g_dev['obs'].name))
         if 'lasthome' in homerotator_time_shelf:
             if time.time() - homerotator_time_shelf['lasthome'] <  43200: # A home in the last twelve hours
                 self.rotator_has_been_homed_this_evening=True
@@ -2672,7 +2708,7 @@ class Sequencer:
                     plog("home rotator wait")
                     time.sleep(1)
                 # Store last home time.
-                homerotator_time_shelf = shelve.open(g_dev['obs'].obsid_path + 'ptr_night_shelf/' + 'homerotatortime' + g_dev['cam'].name + str(g_dev['obs'].name))
+                homerotator_time_shelf = shelve.open(g_dev['obs'].obsid_path + 'ptr_night_shelf/' + 'homerotatortime' + g_dev['cam'].alias + str(g_dev['obs'].name))
                 homerotator_time_shelf['lasthome'] = time.time()
                 homerotator_time_shelf.close()
 
@@ -2731,7 +2767,7 @@ class Sequencer:
 
 
                 # Pick up previous camera_gain specific for this filter
-                self.filter_camera_gain_shelf = shelve.open(g_dev['obs'].obsid_path + 'ptr_night_shelf/' + 'filtercameragain' + g_dev['cam'].name + str(g_dev['obs'].name))
+                self.filter_camera_gain_shelf = shelve.open(g_dev['obs'].obsid_path + 'ptr_night_shelf/' + 'filtercameragain' + g_dev['cam'].alias + str(g_dev['obs'].name))
                 try:
                     self.current_filter_last_camera_gain=self.filter_camera_gain_shelf[current_filter.lower()][0]
                     self.current_filter_last_camera_gain_stdev=self.filter_camera_gain_shelf[current_filter.lower()][1]
@@ -3073,7 +3109,7 @@ class Sequencer:
         else:
             self.eve_sky_flat_latch = False
 
-        textfilename= g_dev['obs'].obsid_path + 'ptr_night_shelf/' + 'filterthroughput' + g_dev['cam'].name + str(g_dev['obs'].name) +'.txt'
+        textfilename= g_dev['obs'].obsid_path + 'ptr_night_shelf/' + 'filterthroughput' + g_dev['cam'].alias + str(g_dev['obs'].name) +'.txt'
         try:
             os.remove(textfilename)
         except:

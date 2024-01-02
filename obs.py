@@ -347,6 +347,7 @@ class Observatory:
         # This is useful for various functions... e.g. if telescope idle for an hour, park.
         self.time_of_last_exposure = time.time()
         self.time_of_last_slew = time.time()
+        self.time_of_last_pulse = time.time()
 
         # Only poll the broad safety checks (altitude and inactivity) every 5 minutes
         self.safety_check_period = self.config['safety_check_period']
@@ -548,7 +549,7 @@ class Observatory:
         self.update_config()
 
         # Report previously calculated Camera Gains as part of bootup
-        textfilename= g_dev['obs'].obsid_path + 'ptr_night_shelf/' + 'cameragain' + g_dev['cam'].name + str(g_dev['obs'].name) +'.txt'
+        textfilename= g_dev['obs'].obsid_path + 'ptr_night_shelf/' + 'cameragain' + g_dev['cam'].alias + str(g_dev['obs'].name) +'.txt'
         if os.path.exists(textfilename):
             try:
                  with open(textfilename, 'r') as f:
@@ -562,7 +563,7 @@ class Observatory:
                 pass
 
         # Report filter throughputs as part of bootup
-        filter_throughput_shelf = shelve.open(g_dev['obs'].obsid_path + 'ptr_night_shelf/' + 'filterthroughput' + g_dev['cam'].name + str(g_dev['obs'].name))
+        filter_throughput_shelf = shelve.open(g_dev['obs'].obsid_path + 'ptr_night_shelf/' + 'filterthroughput' + g_dev['cam'].alias + str(g_dev['obs'].name))
 
         if len(filter_throughput_shelf)==0:
             plog ("Looks like there is no filter throughput shelf.")
@@ -1246,7 +1247,8 @@ class Observatory:
         # specific slew command is sent. So this tracks how long it has been since
         # a slew and sends a slew command to the exact coordinates it is already pointing on
         # at least a 5 minute basis.
-        if (time.time() - g_dev['obs'].time_of_last_slew) > 300:
+        self.time_of_last_pulse = max(self.time_of_last_slew, self.time_of_last_pulse)
+        if (time.time() - self.time_of_last_pulse) > 300 :
             # Check no other commands or exposures are happening
             if g_dev['obs'].cmd_queue.empty() and not g_dev["cam"].exposure_busy and not g_dev['cam'].currently_in_smartstack_loop and not g_dev["seq"].focussing:
                 if not g_dev['mnt'].rapid_park_indicator and not g_dev['mnt'].return_slewing() and g_dev['mnt'].return_tracking() :
@@ -1261,11 +1263,11 @@ class Observatory:
                             wait_for_slew()
                             meridianra=g_dev['mnt'].return_right_ascension()
                             meridiandec=g_dev['mnt'].return_declination()
-                            g_dev['obs'].time_of_last_slew=time.time()
+                            #g_dev['obs'].time_of_last_slew=time.time()
                             #g_dev['mnt'].mount.SlewToCoordinatesAsync(meridianra, meridiandec)
                             g_dev['mnt'].slew_async_directly(ra=meridianra, dec=meridiandec)
                             wait_for_slew()
-                            self.time_of_last_slew=time.time()
+                            self.time_of_last_pulse=time.time()
 
         # Send up the obs settings status - basically the current safety settings
         if (
@@ -2417,7 +2419,7 @@ class Observatory:
                                                            ], sep_subprocess.stdin)
 
                 # Here is a manual debug area which makes a pickle for debug purposes. Default is False, but can be manually set to True for code debugging
-                if False:
+                if True:
                     pickle.dump([hdufocusdata, pixscale, readnoise, avg_foc, focus_image, im_path, text_name, hduheader, cal_path, cal_name, frame_type, focus_position, g_dev['events'],ephem.now(),self.config["camera"][g_dev['cam']
                                                               .name]["settings"]['focus_image_crop_width'], self.config["camera"][g_dev['cam']
                                                                                                         .name]["settings"]['focus_image_crop_height'], is_osc,interpolate_for_focus,bin_for_focus,focus_bin_value,interpolate_for_sep,bin_for_sep,sep_bin_value,focus_jpeg_size,saturate,minimum_realistic_seeing,nativebin,do_sep
@@ -2664,6 +2666,7 @@ class Observatory:
                                         too_long = False
 
                                 self.pixelscale_shelf['pixelscale_list'] = pixelscale_list
+                                #print (pixelscale_list)
                                 self.pixelscale_shelf.close()
 
 
@@ -2698,11 +2701,14 @@ class Observatory:
 
                             # self.drift_tracker_ra=self.drift_tracker_ra+ err_ha
                             # self.drift_tracker_dec=self.drift_tracker_dec + err_dec
-                            
-                            self.drift_tracker_ra= err_ha / (time.time() - g_dev['obs'].drift_tracker_timer)
-                            self.drift_tracker_dec= err_dec / (time.time() - g_dev['obs'].drift_tracker_timer)
+                            drift_timespan= time.time() - self.drift_tracker_timer
+                            self.drift_tracker_ra_arcsecperhour=  (err_ha * 15 * 3600 ) / (drift_timespan * 3600)
+                            self.drift_tracker_dec_arcsecperhour= (err_dec *3600) / (drift_timespan * 3600)
 
-                            plog ("Current drift in ra (arcsec/sec): " + str(self.drift_tracker_ra * 15 * 3600) + " Current drift in dec (arcsec/sec): " + str(self.drift_tracker_dec * 3600))
+                            # drift_arcsec_ra= (err_ha * 15 * 3600 ) / (drift_timespan * 3600)
+                            # drift_arcsec_dec=  (err_dec *3600) / (drift_timespan * 3600)
+
+                            plog ("Current drift in ra (arcsec/hour): " + str(round(self.drift_tracker_ra_arcsecperhour,6)) + " Current drift in dec (arcsec/hour): " + str(round(self.drift_tracker_dec_arcsecperhour,6)))
 
                             # Test here that there has not been a slew, if there has been a slew, cancel out!
 
@@ -2721,9 +2727,12 @@ class Observatory:
                                     plog("This is more than a simple nudge, so not nudging the scope.")
                                     g_dev["obs"].send_to_user("Platesolve detects pointing far out, RA: " + str(round(err_ha * 15 * 3600, 2)) + " DEC: " +str (round(err_dec * 3600, 2)))
 
-                                    self.drift_tracker_ra=0
-                                    self.drift_tracker_dec=0
-                                    g_dev['obs'].drift_tracker_timer=0
+                                    #self.drift_tracker_ra=0
+                                    #self.drift_tracker_dec=0
+                                    #g_dev['obs'].drift_tracker_timer=0
+                                    
+                                    
+                                    
                                     # g_dev["mnt"].reset_mount_reference()
                                     # plog("I've  reset the mount_reference.")
 
@@ -2738,9 +2747,9 @@ class Observatory:
 
                                 elif self.time_of_last_slew > time_platesolve_requested:
                                     plog("detected a slew since beginning platesolve... bailing out of platesolve.")
-                                    self.drift_tracker_ra=0
-                                    self.drift_tracker_dec=0
-                                    g_dev['obs'].drift_tracker_timer=0
+                                    #self.drift_tracker_ra=0
+                                    #self.drift_tracker_dec=0
+                                    #g_dev['obs'].drift_tracker_timer=0
 
                                 # Only recenter if out by more than 1%
                                 elif (abs(err_ha * 15 * 3600) > 0.01 * ra_field_asec) or (abs(err_dec * 3600) > 0.01 * dec_field_asec):
@@ -2759,9 +2768,9 @@ class Observatory:
 
                                      drift_timespan= time.time() - self.drift_tracker_timer
 
-                                     drift_arcsec_ra= (err_ha * 15 * 3600 ) / (drift_timespan * 3600)
-                                     drift_arcsec_dec=  (err_dec *3600) / (drift_timespan * 3600)
-                                     plog ("Drift calculations in arcsecs per hour, RA: " + str(drift_arcsec_ra) + " DEC: " + str(drift_arcsec_dec) )
+                                     self.drift_arcsec_ra_arcsecperhour= (err_ha * 15 * 3600 ) / (drift_timespan * 3600)
+                                     self.drift_arcsec_dec_arcsecperhour=  (err_dec *3600) / (drift_timespan * 3600)
+                                     plog ("Drift calculations in arcsecs per hour, RA: " + str(round(self.drift_arcsec_ra_arcsecperhour,6)) + " DEC: " + str(round(self.drift_arcsec_dec_arcsecperhour,6)) )
 
 
                                      if not g_dev['obs'].mount_reference_model_off:
@@ -3555,7 +3564,7 @@ class Observatory:
                             self.config["camera"][g_dev['cam'].name]["settings"]["osc_bayer"],
                             g_dev['cam'].config["camera"][g_dev['cam'].name]["settings"]["saturate"],
                             g_dev['cam'].native_bin,
-                            g_dev['cam'].config["camera"][g_dev['cam'].name]["settings"]["read_noise"],
+                            g_dev['cam'].camera_known_readnoise,
                             self.config['minimum_realistic_seeing'],
                             self.config["camera"][g_dev['cam'].name]["settings"]['osc_brightness_enhance'] ,
                             self.config["camera"][g_dev['cam'].name]["settings"]['osc_contrast_enhance'] ,
@@ -3595,7 +3604,7 @@ class Observatory:
                             None,
                             g_dev['cam'].config["camera"][g_dev['cam'].name]["settings"]["saturate"],
                             g_dev['cam'].native_bin,
-                            g_dev['cam'].config["camera"][g_dev['cam'].name]["settings"]["read_noise"],
+                            g_dev['cam'].camera_known_readnoise,
                             self.config['minimum_realistic_seeing'],
                             0,0,0,0,0,
                             self.config["camera"][g_dev['cam'].name]["settings"]["crop_preview"],
@@ -3674,8 +3683,8 @@ class Observatory:
                 g_dev['seq'].centering_exposure(no_confirmation=True, try_hard=True, try_forever=True)
                 #self.drift_tracker_ra=g_dev['mnt'].return_right_ascension()
                 #self.drift_tracker_dec=g_dev['mnt'].return_declination()
-                self.drift_tracker_ra=0
-                self.drift_tracker_dec=0
+                #self.drift_tracker_ra=0
+                #self.drift_tracker_dec=0
                 g_dev['obs'].drift_tracker_timer=0
                 if g_dev['seq'].currently_mosaicing:
                     # Slew to new mosaic pane location.
@@ -3728,8 +3737,8 @@ class Observatory:
                     g_dev['obs'].time_of_last_slew = time.time()
                     wait_for_slew()
                     
-                    self.drift_tracker_ra=0
-                    self.drift_tracker_dec=0
+                    #self.drift_tracker_ra=0
+                    #self.drift_tracker_dec=0
                     g_dev['obs'].drift_tracker_timer=0
 
                 self.pointing_correction_requested_by_platesolve_thread = False

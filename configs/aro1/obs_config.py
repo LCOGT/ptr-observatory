@@ -681,10 +681,10 @@ site_config = {
                 'reject_new_flat_by_known_gain' : True,
                 # These values are just the STARTING values. Once the software has been
                 # through a few nights of calibration images, it should automatically calculate these gains.
-                'camera_gain':   2.15, #[10., 10., 10., 10.],     #  One val for each binning.
-                'camera_gain_stdev':   0.16, #[10., 10., 10., 10.],     #  One val for each binning.
-                'read_noise':  9.55, #[9, 9, 9, 9],    #  All SWAGs right now
-                'read_noise_stdev':   0.004, #[10., 10., 10., 10.],     #  One val for each binning.
+                # 'camera_gain':   2.15, #[10., 10., 10., 10.],     #  One val for each binning.
+                # 'camera_gain_stdev':   0.16, #[10., 10., 10., 10.],     #  One val for each binning.
+                # 'read_noise':  9.55, #[9, 9, 9, 9],    #  All SWAGs right now
+                # 'read_noise_stdev':   0.004, #[10., 10., 10., 10.],     #  One val for each binning.
                 'dark_lim_adu': 0.15,   #adu/s of dark 20231229 moved down from 0.5
                 'dark_lim_std': 15,  #first guess. See above.
                 # Saturate is the important one. Others are informational only.

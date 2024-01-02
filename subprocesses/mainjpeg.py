@@ -18,7 +18,7 @@ warnings.simplefilter('ignore', category=AstropyUserWarning)
 warnings.simplefilter("ignore", category=RuntimeWarning)
 #from ptr_utility import plog
 # Pick up the pickled array
-debug = True
+debug = False
 if not debug:
     input_jpeg_info=pickle.load(sys.stdin.buffer)
 else:

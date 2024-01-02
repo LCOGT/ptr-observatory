@@ -576,16 +576,20 @@ site_config = {
                 'is_color':  False,
                 'bayer_pattern':  None,    #  'RGGB" is a valid string in camera is color.
                 'can_set_gain':  True,
-                'camera_gain':   1.6, #[10., 10., 10., 10.],     #  One val for each binning.
-                'camera_gain_stdev':   0.45, #[10., 10., 10., 10.],     #  One val for each binning.
-                'read_noise':  6.22, #[9, 9, 9, 9],    #  All SWAGs right now
-                'read_noise_stdev':   0.02, #[10., 10., 10., 10.],     #  One val for each binning.
+                # 'camera_gain':   1.6, #[10., 10., 10., 10.],     #  One val for each binning.
+                # 'camera_gain_stdev':   0.45, #[10., 10., 10., 10.],     #  One val for each binning.
+                # 'read_noise':  6.22, #[9, 9, 9, 9],    #  All SWAGs right now
+                # 'read_noise_stdev':   0.02, #[10., 10., 10., 10.],     #  One val for each binning.
+                'dark_lim_adu': 0.15,   #adu/s of dark 20231229 moved down from 0.5
+                'dark_lim_std': 15,  #first guess. See above.
                 
                 'read_mode':  'Normal',
                 'readout_mode':  'Normal',
                 'readout_speed': 0.08,
                 'readout_seconds': 12.5,
                 'smart_stack_exposure_time' : 45,
+                
+                'smart_stack_exposure_NB_multiplier':  3,   #Michael's setting
                 'saturate':   65000 ,   # e-.  This is a close guess, not measured, but taken from data sheet.
                 'max_linearity': 65000,
                 'fullwell_capacity': 65000,  #e-.   We need to sort out the units properly NB NB NB
@@ -604,6 +608,7 @@ site_config = {
                 # Generally leave this at 0.5 - the optimal value for ground based
                 # observatories.... unless you have a large field of view.                
                 'drizzle_value_for_later_stacking': 0.5,
+                'dither_enabled':  True,      #Set this way for tracking testing
                 
                 
                 'do_cosmics' : False,
