@@ -411,7 +411,7 @@ site_config = {
             'service_date': '20210716',
 
 
-            "filter_settle_time": 3, # WER 20240103 continuing test.  how long to wait for the filter to settle after a filter change(seconds)
+            "filter_settle_time": 5, # WER 20240103 continuing test.  how long to wait for the filter to settle after a filter change(seconds)
             'override_automatic_filter_throughputs': False, # This ignores the automatically estimated filter gains and starts with the values from the config file
 
             "driver": "LCO.dual",  # 'ASCOM.FLI.FilterWheel',   #'MAXIM',
@@ -546,7 +546,8 @@ site_config = {
                 'direct_qhy_gain' : 26,
                 'direct_qhy_offset' : 60,
                 #'direct_qhy_usb_speed' : 50,
-                'direct_qhy_usb_traffic' : 50,
+                'direct_qhy_usb_traffic' : 45,  #Early 20240103 = 50, not clear earlier but better than before.
+                #The pattern before came and went. Now consitent at 50.  Changing to 45.
 
                 'set_qhy_usb_speed': True,
                 'direct_qhy_usb_speed' : 60,

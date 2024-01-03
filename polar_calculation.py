@@ -26,9 +26,9 @@ IH = 188
 
 ID =405
 
-MA = 950
+MA = -250
 
-ME = -240
+ME = -342
 
 #aro_lift = ME + adjust
 #aro_lift - ME = adjust
@@ -59,7 +59,7 @@ if az > 0:
     print("First: Check both az knobs are snug. Second: back off left az knob the required amount,")
     print("then turn right az knob the suggested amount. Then snug other side.")
 else:
-    print("Azimuth Adjustment:  ", alt, 'asec CLOCKWISE, as seen from above.' )
+    print("Azimuth Adjustment:  ", az, 'asec CLOCKWISE, as seen from above.' )
     print("Azimuth Adjustment:  ", small_az, 'small graduations COUNTER-Clockwise, as seen from above.' )
     print("AAzimuth Adjustment:  ", major_az, 'major graduations COUNTER-Clockwise, as seen from above.' )
     print('\n')
