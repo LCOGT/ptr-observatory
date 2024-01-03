@@ -783,7 +783,7 @@ class Observatory:
                 unread_commands=[]
         else:
             unread_commands=[]
-        
+
         #print (unread_commands)
 
         # Make sure the list is sorted in the order the jobs were issued
@@ -1846,7 +1846,7 @@ class Observatory:
 
             upload_timer=time.time() - upload_timer
             hours_to_go = (self.ptrarchive_queue.qsize() * upload_timer/60/60) / int(self.config['number_of_simultaneous_ptrarchive_streams'])
-            
+
             return ( str(filepath.split('/')[-1]) + " sent to archive. Queue Size: " + str(self.ptrarchive_queue.qsize())+ ". " + str(round(hours_to_go,1)) +" hours to go.")
 
     def pipearchive_copier(self, fileinfo):
@@ -2060,11 +2060,11 @@ class Observatory:
 
 
         one_at_a_time = 0
-        
+
         temptimer=time.time()
 
         while True:
-            
+
             # if time.time()-temptimer > 4:
             #     temptimer=time.time()
             #     print (not self.scan_request_queue.empty())
@@ -2076,7 +2076,7 @@ class Observatory:
                 one_at_a_time = 1
                 request = self.scan_request_queue.get(block=False)
                 self.currently_scan_requesting = True
-                
+
                 self.scan_requests()
                 # print ("scanned")
                 self.currently_scan_requesting = False
@@ -2329,7 +2329,7 @@ class Observatory:
 
                 jpeg_subprocess=subprocess.Popen(['python','subprocesses/mainjpeg.py'],stdin=subprocess.PIPE,stdout=subprocess.PIPE,bufsize=0)
 
-                plog("@ Pickle point:  ", zoom_factor)
+                #plog("@ Pickle point:  ", zoom_factor)
                 if True:
                     #
                     pickle.dump([hdusmalldata, smartstackid, paths, pier_side, is_osc, osc_bayer, osc_background_cut,osc_brightness_enhance, osc_contrast_enhance,\
@@ -2695,15 +2695,15 @@ class Observatory:
 
                             # self.drift_tracker_ra=self.drift_tracker_ra+ err_ha
                             # self.drift_tracker_dec=self.drift_tracker_dec + err_dec
-                            
+
                             if self.drift_tracker_counter == 0:
-                                plog ("not calculating drift on first platesolve of drift set. Using deviation as the zeropoint in time and space.")    
+                                plog ("not calculating drift on first platesolve of drift set. Using deviation as the zeropoint in time and space.")
                                 self.drift_tracker_first_offset_ra = err_ha  * 15 * 3600
                                 self.drift_tracker_first_offset_dec = err_dec   * 3600
                                 self.drift_tracker_timer=time.time()
-                            
+
                             else:
-                            
+
                                 drift_timespan= time.time() - self.drift_tracker_timer
                                 if drift_timespan < 300:
                                     plog ("Drift calculations unreliable as yet because drift timescale < 300s.")
@@ -2716,15 +2716,15 @@ class Observatory:
                                 else:
                                     plog ("Current drift in ra (arcsec/hour): " + str(round(self.drift_tracker_ra_arcsecperhour,6)) + " Current drift in dec (arcsec/hour): " + str(round(self.drift_tracker_dec_arcsecperhour,6)))
 
-                                
+
                             self.drift_tracker_counter=self.drift_tracker_counter+1
-                            
+
 
                             # drift_arcsec_ra= (err_ha * 15 * 3600 ) / (drift_timespan * 3600)
                             # drift_arcsec_dec=  (err_dec *3600) / (drift_timespan * 3600)
-                            
-                            
-                           
+
+
+
                             # Test here that there has not been a slew, if there has been a slew, cancel out!
 
 
@@ -2733,7 +2733,7 @@ class Observatory:
 
                                 dec_field_asec = (g_dev['cam'].pixscale * g_dev['cam'].imagesize_x)
                                 ra_field_asec = (g_dev['cam'].pixscale * g_dev['cam'].imagesize_y)
-                                
+
                                 if firstframesmartstack:
                                     plog ("Not recentering as this is the first frame of a smartstack.")
                                     self.pointing_correction_requested_by_platesolve_thread = False
@@ -2749,9 +2749,9 @@ class Observatory:
                                     #self.drift_tracker_ra=0
                                     #self.drift_tracker_dec=0
                                     #g_dev['obs'].drift_tracker_timer=0
-                                    
-                                    
-                                    
+
+
+
                                     # g_dev["mnt"].reset_mount_reference()
                                     # plog("I've  reset the mount_reference.")
 
@@ -2783,11 +2783,11 @@ class Observatory:
                                      self.pointing_correction_request_dec = pointing_dec + err_dec
                                      self.pointing_correction_request_ra_err = err_ha
                                      self.pointing_correction_request_dec_err = err_dec
-                                     
+
                                      drift_timespan= time.time() - self.drift_tracker_timer
-                                     
+
                                      print ("Drift Timespan " + str(drift_timespan))
-                                     
+
                                      if drift_timespan < 300:
                                          plog ("Not calculating drift on a timescale under 5 minutes.")
                                      else:
@@ -3718,7 +3718,7 @@ class Observatory:
                     #g_dev['mnt'].mount.SlewToCoordinatesAsync(new_ra, new_dec)
                     g_dev['mnt'].slew_async_directly(ra=new_ra, dec=new_dec)
                     wait_for_slew()
-                    
+
 
                     self.time_of_last_slew=time.time()
 
@@ -3759,7 +3759,7 @@ class Observatory:
                         g_dev['seq'].centering_exposure(no_confirmation=True, try_hard=True, try_forever=True)
                     g_dev['obs'].time_of_last_slew = time.time()
                     wait_for_slew()
-                    
+
                     #self.drift_tracker_ra=0
                     #self.drift_tracker_dec=0
                     g_dev['obs'].drift_tracker_timer=time.time()

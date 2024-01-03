@@ -667,7 +667,7 @@ class Camera:
         if self.config["camera"][self.name]["settings"]["dither_enabled"] == True:
             self.dither_enabled = True
         else:
-            self.dither_enabled = False            
+            self.dither_enabled = False
 
         self.camera_model = self.config["camera"][self.name]["desc"]
         # NB We are reading from the actual camera or setting as the case may be. For initial setup,
@@ -701,7 +701,7 @@ class Camera:
 
         # if True:
         try:
-            
+
             self.filter_camera_gain_shelf = shelve.open(g_dev['obs'].obsid_path + 'ptr_night_shelf/' + 'filtercameragain' + g_dev['cam'].alias + str(g_dev['obs'].name))
 
             for entry in self.filter_camera_gain_shelf:
@@ -1503,14 +1503,14 @@ class Camera:
 # =============================================================================
 #         #Todo  NB NB NB Temp injection of a  Zoom value 20231222 WER
 # =============================================================================
-        try:
-            test = opt['zoom']
-            #test2 = opt['area']
-            print("Cam line 1508.  Zoom and Area value is:  ", test, " --  end of tests.")
-        except:
-            #opt['zoom'] = 'Full'
-            #print('Camera, line 1337 temporary code, injection.  req, opt:  ', req, opt)
-            pass
+        # try:
+        #     test = opt['zoom']
+        #     #test2 = opt['area']
+        #     print("Cam line 1508.  Zoom and Area value is:  ", test, " --  end of tests.")
+        # except:
+        #     #opt['zoom'] = 'Full'
+        #     #print('Camera, line 1337 temporary code, injection.  req, opt:  ', req, opt)
+        #     pass
 # =============================================================================
 #         #Todo  NB NB NB Temp injection of a  Zoom value 20231222 WER
 # =============================================================================
@@ -1727,7 +1727,7 @@ class Camera:
             self.retry_camera_start_time = time.time()
 
             if Nsmartstack > 1 :
-                self.currently_in_smartstack_loop=True                
+                self.currently_in_smartstack_loop=True
                 initial_smartstack_ra= g_dev['mnt'].return_right_ascension()
                 initial_smartstack_dec= g_dev['mnt'].return_declination()
             else:
@@ -1763,13 +1763,13 @@ class Camera:
                     g_dev['obs'].check_platesolve_and_nudge()
 
                 self.tempStartupExposureTime=time.time()
-                
-                if Nsmartstack > 1 :                
+
+                if Nsmartstack > 1 :
                     plog ("Smartstack " + str(sskcounter+1) + " out of " + str(Nsmartstack))
                     g_dev["obs"].request_update_status()
-                
-                
-                
+
+
+
                 self.retry_camera = 1
                 self.retry_camera_start_time = time.time()
                 while self.retry_camera > 0:
@@ -1960,7 +1960,7 @@ class Camera:
                             self.wait_for_slew()
                             start_time_of_observation=time.time()
                             self.start_time_of_observation=time.time()
-                            
+
                             # Check there hasn't been a cancel sent through
                             if g_dev["obs"].stop_all_activity:
                                 plog ("stop_all_activity cancelling out of camera exposure")
@@ -1968,7 +1968,7 @@ class Camera:
                                 sskcounter=2
                                 self.currently_in_smartstack_loop=False
                                 return 'cancelled'
-                                                        
+
                             #plog ("Time between end of last exposure and start of next minus exposure time: " + str(time.time() -  self.end_of_last_exposure_time - exposure_time))
                             self._expose(exposure_time, bias_dark_or_light_type_frame)
                             self.end_of_last_exposure_time=time.time()
@@ -2134,7 +2134,7 @@ class Camera:
             "Exposure Started:  " + str(exposure_time) + "s ",
             frame_type
         )
-        plog("Finish Exposure, zoom:  ", zoom_factor)
+        #plog("Finish Exposure, zoom:  ", zoom_factor)
         try:
             plog(opt["object_name"])
         except:
@@ -2253,15 +2253,15 @@ class Camera:
                 # Need to have a time sleep to release the GIL to run the other threads
                 #print ("sleeping")
                 time.sleep(min(0.5, max(self.completion_time - time.time() - 0.05,0.01) ))
-        
+
                 # Scan requests every 4 seconds... primarily hunting for a "Cancel/Stop"
                 if time.time() - exposure_scan_request_timer > 4:# and (time.time() - self.completion_time) > 4:
                     exposure_scan_request_timer=time.time()
 
                     #g_dev['obs'].request_scan_requests()
                     g_dev['obs'].scan_requests()
-                    
-                    
+
+
                     # Check there hasn't been a cancel sent through
                     if g_dev["obs"].stop_all_activity:
                         plog ("stop_all_activity cancelling out of camera exposure")
@@ -2356,7 +2356,7 @@ class Camera:
 
 
                 # Immediately nudge scope to a different point in the smartstack dither except for the last frame and after the last frame.
-                
+
                 if self.dither_enabled:
                     if Nsmartstack > 1 and not ((Nsmartstack == sskcounter+1) or (Nsmartstack == sskcounter+2)):
                         ra_random_dither=(((random.randint(0,50)-25) * self.pixscale / 3600 ) / 15)
@@ -2365,16 +2365,16 @@ class Camera:
                             self.wait_for_slew()
                             g_dev['mnt'].slew_async_directly(ra=initial_smartstack_ra + ra_random_dither, dec=initial_smartstack_dec + dec_random_dither)
                             # no wait for slew here as we start downloading the image. the wait_for_slew is after that
-    
+
                         except Exception as e:
                             plog (traceback.format_exc())
                             if 'Object reference not set' in str(e) and g_dev['mnt'].theskyx:
-    
+
                                 plog("The SkyX had an error.")
                                 plog("Usually this is because of a broken connection.")
                                 plog("Killing then waiting 60 seconds then reconnecting")
                                 g_dev['seq'].kill_and_reboot_theskyx(g_dev['mnt'].current_icrs_ra,g_dev['mnt'].current_icrs_dec)
-    
+
                     # Otherwise immediately nudge scope back to initial pointing in smartstack after the last frame of the smartstack
                     # Last frame of the smartstack must also be at the normal pointing for platesolving purposes
                     elif Nsmartstack > 1 and ((Nsmartstack == sskcounter+1) or (Nsmartstack == sskcounter+2)):
@@ -2382,11 +2382,11 @@ class Camera:
                             self.wait_for_slew()
                             g_dev['mnt'].slew_async_directly(ra=initial_smartstack_ra, dec=initial_smartstack_dec)
                             # no wait for slew here as we start downloading the image. the wait_for_slew is after that
-    
+
                         except Exception as e:
                             plog (traceback.format_exc())
                             if 'Object reference not set' in str(e) and g_dev['mnt'].theskyx:
-    
+
                                 plog("The SkyX had an error.")
                                 plog("Usually this is because of a broken connection.")
                                 plog("Killing then waiting 60 seconds then reconnecting")
@@ -3220,7 +3220,7 @@ class Camera:
                 # return expresult
             else:
                 remaining = round(self.completion_time - time.time(), 1)
-                
+
                 # Need to have a time sleep to release the GIL to run the other threads
                 #print ("sleeping")
                 time.sleep(min(0.5, max(self.completion_time - time.time() - 0.05,0.01) ))
@@ -4387,8 +4387,8 @@ def post_exposure_process(payload):
                             firstframesmartstack = True
                         else:
                             firstframesmartstack = False
-                        
-                        
+
+
                         g_dev['obs'].to_platesolve((hdusmalldata, hdusmallheader, cal_path, cal_name, frame_type, time.time(), pixscale, ra_at_time_of_exposure,dec_at_time_of_exposure, firstframesmartstack))
                         # If it is the last of a set of smartstacks, we actually want to
                         # wait for the platesolve and nudge before starting the next smartstack.

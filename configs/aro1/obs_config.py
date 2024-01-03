@@ -152,12 +152,12 @@ site_config = {
      'enclosure_check_period': 3,    # How many minutes between enclosure checks
 
      # Turn on and off various automated calibrations at different times.
-     'auto_eve_bias_dark': True,
+     'auto_eve_bias_dark': False,
      'auto_eve_sky_flat': True,
      'time_to_wait_after_roof_opens_to_take_flats': 10,   #Just imposing a minimum in case of a restart.
-     'auto_midnight_moonless_bias_dark': False,
+     'auto_midnight_moonless_bias_dark': True,
      'auto_morn_sky_flat': True,
-     'auto_morn_bias_dark': True,
+     'auto_morn_bias_dark': False,
 
      # FOCUS OPTIONS
      'periodic_focus_time': 1.5, # This is a time, in hours, over which to bypass automated focussing (e.g. at the start of a project it will not refocus if a new project starts X hours after the last focus)
@@ -411,7 +411,7 @@ site_config = {
             'service_date': '20210716',
 
 
-            "filter_settle_time": 5, # WER 20231231 test.  how long to wait for the filter to settle after a filter change(seconds)
+            "filter_settle_time": 3, # WER 20240103 continuing test.  how long to wait for the filter to settle after a filter change(seconds)
             'override_automatic_filter_throughputs': False, # This ignores the automatically estimated filter gains and starts with the values from the config file
 
             "driver": "LCO.dual",  # 'ASCOM.FLI.FilterWheel',   #'MAXIM',
@@ -427,33 +427,33 @@ site_config = {
                 'focus_filter' : 'PL',
                 'filter_reference': 1,   # We choose to use PL as the default filter.  Gains taken at F9, Ceravolo 300mm
                 # Columns for filter data are : ['filter', 'filter_index', 'filter_offset', 'sky_gain', 'screen_gain', 'alias']
-                #NB NB Note to WER please add cwl, bw and 'shape'
+                #NB NB Note to WER please add cwl, bw and 'shape'.  Throughputs ADJUSTED 20240103 Eve run
                 'filter_data': [
-                        ['Air',  [0,  0], -800, 1100., [2   ,  20], 'AIR'],    #0  Gains 20230703
-                        ['Exo',  [8,  0],    0,  945., [360 , 170], 'Exoplanet - yellow, no UV or far NIR'],     #1
+                        ['Air',  [0,  0], -800, 1200., [2   ,  20], 'AIR'],    #0  Gains 20230703
+                        ['Exo',  [8,  0],    0,  915., [360 , 170], 'Exoplanet - yellow, no UV or far NIR'],     #1
 
-                        ['PL',   [7,  0],    0, 1110., [360 , 170], 'Photo Luminance - does not pass NIR'],     #2
-                        ['PR',   [0,  8],    0, 305.,  [.32 ,  20], 'Photo Blue'],     #3
-                        ['PG',   [0,  7],    0, 430.,  [30  , 170], 'Photo Green'],     #4
-                        ['PB',   [0,  6],    0, 625,   [360 , 170], 'Photo Blue'],     #5
-                        ['NIR',  [0, 10],    0, 100.,  [0.65,  20], 'Near IR - redward of PL'],     #6  Value suspect 2023/10/23 WER
+                        ['PL',   [7,  0],    0, 1200., [360 , 170], 'Photo Luminance - does not pass NIR'],     #2
+                        ['PR',   [0,  8],    0, 520.,  [.32 ,  20], 'Photo Blue'],     #3
+                        ['PG',   [0,  7],    0, 470.,  [30  , 170], 'Photo Green'],     #4
+                        ['PB',   [0,  6],    0, 700,   [360 , 170], 'Photo Blue'],     #5
+                        ['NIR',  [0, 10],    0, 226.,  [0.65,  20], 'Near IR - redward of PL'],     #6  Value suspect 2023/10/23 WER
 
-                        ['O3',   [0,  2],    0, 35.0,  [360 , 170], 'Oxygen III'],     #7    #guess
-                        ['HA',   [0,  3],    0, 7.,  [360 , 170], 'Hydrogen Alpha - aka II'],     #8
-                        ['N2',   [13, 0],    0, 4.,  [360 , 170], 'Nitrogen II'],     #9
-                        ['S2',   [0,  4],    0, 4.,  [0.65,  20], 'Sulphur II'],     #10
-                        ['CR',   [0,  5],    0, 7.6,  [360 , 170], 'Continuum Red - for Star subtraction'],     #11
+                        ['O3',   [0,  2],    0, 50.0,  [360 , 170], 'Oxygen III'],     #7    #guess
+                        ['HA',   [0,  3],    0, 14.,    [360 , 170], 'Hydrogen Alpha - aka II'],     #8
+                        ['N2',   [13, 0],    0, 8.,    [360 , 170], 'Nitrogen II'],     #9
+                        ['S2',   [0,  4],    0, 8.,    [0.65,  20], 'Sulphur II'],     #10
+                        ['CR',   [0,  5],    0, 15.,   [360 , 170], 'Continuum Red - for Star subtraction'],     #11
 
-                        ['up',   [1,  0],    0, 32.5,  [2   ,  20], "Sloan u'"],     #12
-                        ['BB',   [9,  0],    0, 550.,  [0.65,  20], 'Bessell B'],     #13
-                        ['gp',   [2,  0],    0, 705.,  [.77 ,  20], "Sloan g'"],     #14
-                        ['BV',   [10, 0],    0, 450.,  [.32 ,  20], 'Bessell V'],     #15
-                        ['BR',   [11, 0],    0, 350.,  [10  , 170], 'Bessell R'],     #16
-                        ['rp',   [3,  0],    0, 464.,  [1.2 ,  20], "Sloan r'"],     #17
-                        ['ip',   [4,  0],    0, 110.,  [.65 ,  20], "Sloan i'"],     #18
-                        ['BI',   [12, 0],    0, 62.,  [360 , 170], 'Bessell I'],     #19
-                        ['zp',   [0,  9],    0, 11.,  [360 , 170], "Sloan z'"],     #20    # NB I think these may be backward labeled,
-                        ['zs',   [5,  0],    0, 8.5, [1.0 ,  20], "Sloan z-short"],     #21    # NB ZP is a broader filter than zs.
+                        ['up',   [1,  0],    0, 39.,  [2   ,  20], "Sloan u'"],     #12
+                        ['BB',   [9,  0],    0, 500.,  [0.65,  20], 'Bessell B'],     #13
+                        ['gp',   [2,  0],    0, 820.,  [.77 ,  20], "Sloan g'"],     #14
+                        ['BV',   [10, 0],    0, 540.,  [.32 ,  20], 'Bessell V'],     #15
+                        ['BR',   [11, 0],    0, 600.,  [10  , 170], 'Bessell R'],     #16
+                        ['rp',   [3,  0],    0, 560.,  [1.2 ,  20], "Sloan r'"],     #17
+                        ['ip',   [4,  0],    0, 250.,  [.65 ,  20], "Sloan i'"],     #18
+                        ['BI',   [12, 0],    0, 155.,   [360 , 170], 'Bessell I'],     #19
+                        ['zp',   [0,  9],    0, 30.,   [360 , 170], "Sloan z'"],     #20    # NB I think these may be backward labeled,
+                        ['zs',   [5,  0],    0, 22.,   [1.0 ,  20], "Sloan z-short"],     #21    # NB ZP is a broader filter than zs.
                         ['Y',    [6,  0],    0, 7.3,   [360 , 170], "Rubin Y - low throughput, defective filter in top area "],     #22
 
 
@@ -463,7 +463,7 @@ site_config = {
 
                 'filter_screen_sort':  ['ip'],   # don't use narrow yet,  8, 10, 9], useless to try.
                 'filter_sky_sort': ['N2','S2','HA','CR','zs','zp','up','O3','BI','NIR','ip','PR','BR',\
-                                    'rp','PG','BV','PB','BB','gp','EXO','PL','air'],
+                                    'rp','PG','BV','BB','PB','gp','EXO','PL','air'],
 
 
 
