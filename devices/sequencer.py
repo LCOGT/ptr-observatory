@@ -1846,6 +1846,8 @@ class Sequencer:
     def regenerate_local_masters(self):
 
 
+        self.total_sequencer_control = True
+
 
         plog ("killing local problem programs")
 
@@ -2385,7 +2387,10 @@ class Sequencer:
 
                 # Bung in the readnoise estimates and then
                 # Close up the filter camera gain shelf.
-                self.filter_camera_gain_shelf['readnoise']=[np.nanmedian(post_readnoise_array) , np.nanstd(post_readnoise_array), len(post_readnoise_array)]
+                try:
+                    self.filter_camera_gain_shelf['readnoise']=[np.nanmedian(post_readnoise_array) , np.nanstd(post_readnoise_array), len(post_readnoise_array)]
+                except:
+                    plog ("cannot write the readnoise array to the shelf. Probs because this is the first time estimating gains")
                 self.filter_camera_gain_shelf.close()
 
                 textfilename= g_dev['obs'].obsid_path + 'ptr_night_shelf/' + 'cameragain' + g_dev['cam'].alias + str(g_dev['obs'].name) +'.txt'
@@ -2484,6 +2489,8 @@ class Sequencer:
                 pass
 
         g_dev["obs"].send_to_user("All calibration frames completed.")
+
+        self.total_sequencer_control = False
 
         return
 
