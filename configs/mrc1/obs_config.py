@@ -471,7 +471,7 @@ site_config = {
             "dual_wheel": True,
             
             #how long to wait for the filter to settle after a filter change(seconds)
-            "filter_settle_time": 1, 
+            "filter_settle_time": 5, #20240104 Upped from 1 to 5 per MF recommandatin. WER
             
             # This ignores the automatically estimated filter gains and starts with the values from the config file             
             'override_automatic_filter_throughputs': False, 

@@ -216,8 +216,6 @@ class Sequencer:
         self.rotator_has_been_homed_this_evening=False
         g_dev['obs'].request_update_calendar_blocks()
         #self.blocks=
-        #sid = float((Time(datetime.datetime.utcnow(), scale='utc', location=g_dev['mnt'].site_coordinates).sidereal_time('apparent')*u.deg) / u.deg / u.hourangle)
-        #breakpoint()
 
     def wait_for_slew(self):
         """
@@ -669,7 +667,7 @@ class Sequencer:
                     self.block_guard=False
 
 
-
+            
 
             if (time.time() - g_dev['seq'].time_roof_last_opened > 1200 ) and not self.morn_sky_flat_latch and ((events['Morn Sky Flats'] <= ephem_now < events['End Morn Sky Flats']) and \
                    self.config['auto_morn_sky_flat'])  and not g_dev['obs'].scope_in_manual_mode and not self.morn_flats_done and g_dev['obs'].camera_sufficiently_cooled_for_calibrations and g_dev['obs'].open_and_enabled_to_observe:
@@ -1307,7 +1305,7 @@ class Sequencer:
                                     self.currently_mosaicing = False
                                     return
                             g_dev["obs"].request_full_update()
-                            #plog("*****Line 1304 Seg. Right before call expose:  req, opt:  ", req, opt)
+                            plog("*****Line 1304 Seg. Right before call expose:  req, opt:  ", req, opt)
                             result = g_dev['cam'].expose_command(req, opt, user_name=user_name, user_id=user_id, user_roles=user_roles, no_AWS=False, solve_it=False, calendar_event_id=calendar_event_id) #, zoom_factor=zoom_factor)
                             g_dev["obs"].request_full_update()
                             try:
@@ -1881,20 +1879,20 @@ class Sequencer:
 
 
         # Remove the current master calibrations
-        # Not doing this can leave old faulty calibrations
+        # Not doing this can leave old faulty calibrations 
         # in the directory.
         tempfrontcalib=g_dev['obs'].obs_id + '_' + g_dev['cam'].alias +'_'
         try:
             os.remove(g_dev['obs'].calib_masters_folder + tempfrontcalib + 'BIAS_master_bin1.fits')
         except:
             plog ("Could not remove " + str(g_dev['obs'].calib_masters_folder + tempfrontcalib + 'BIAS_master_bin1.fits'))
-
-        try:
+            
+        try:            
             os.remove(g_dev['obs'].calib_masters_folder + tempfrontcalib + 'DARK_master_bin1.fits')
         except:
             plog ("Could not remove " + str(g_dev['obs'].calib_masters_folder + tempfrontcalib + 'DARK_master_bin1.fits'))
 
-
+        
         tempfrontcalib=g_dev['obs'].calib_masters_folder + g_dev['obs'].obs_id + '_' + g_dev['cam'].alias +'_masterFlat*'
         deletelist=glob(tempfrontcalib)
         for item in deletelist:
@@ -1902,17 +1900,17 @@ class Sequencer:
                 os.remove(item)
             except:
                 plog ("Could not remove " + str(item))
-
+        
         tempfrontcalib=g_dev['obs'].calib_masters_folder +'masterFlat*'
-
+        
         deletelist=glob(tempfrontcalib)
         for item in deletelist:
             try:
                 os.remove(item)
             except:
                 plog ("Could not remove " + str(item))
-
-
+        
+        
         # also masterflat*.npy
 
         # NOW to get to the business of constructing the local calibrations
@@ -2047,14 +2045,14 @@ class Sequencer:
                     hdu1data = hdu1data[500:-500,500:-500]
                     stddiffimage=np.nanstd(pow(pow(hdu1data,2),0.5))
                     #est_read_noise= (stddiffimage * g_dev['cam'].config["camera"][g_dev['cam'].name]["settings"]["camera_gain"]) / 1.414
-
+                    
                     est_read_noise= (stddiffimage * g_dev['cam'].camera_known_gain) / 1.414
                     readnoise_array.append(est_read_noise)
                     post_readnoise_array.append(stddiffimage)
-
+    
                 readnoise_array=np.array(readnoise_array)
                 plog ("Raw Readnoise outputs: " +str(readnoise_array))
-
+            
                 plog ("Final Readnoise: " + str(np.nanmedian(readnoise_array)) + " std: " + str(np.nanstd(readnoise_array)))
             else:
                 plog ("Skipping readnoise estimation as we don't currently have a reliable camera gain estimate.")
@@ -2768,7 +2766,7 @@ class Sequencer:
                     current_filter='No Filter'
                     plog("Beginning flat run for filterless observation")
 
-                g_dev['obs'].send_to_user("Beginning flat run for filter: " + str(current_filter))
+                g_dev['obs'].send_to_user("\n\nBeginning flat run for filter: " + str(current_filter) )
                 if (current_filter in self.filter_throughput_shelf.keys()) and (not self.config['filter_wheel']['filter_wheel1']['override_automatic_filter_throughputs']):
                     filter_throughput=self.filter_throughput_shelf[current_filter]
                     plog ("Using stored throughput : " + str(filter_throughput))
@@ -4235,7 +4233,7 @@ class Sequencer:
                 plog (solved_pos)
                 plog (minimumFWHM)
                 g_dev['foc'].guarded_move((solved_pos)*g_dev['foc'].micron_to_steps)
-                g_dev['foc'].last_known_focus=(solved_pos)
+                g_dev['foc'].last_known_focus=(solved_pos)                
             except:
                 plog ("extensive focus failed :(")
             if not no_auto_after_solve:
@@ -4288,7 +4286,6 @@ class Sequencer:
 
         g_dev["obs"].send_to_user("Starting pointing run. Constructing altitude catalogue. This can take a while.")
         plog("Constructing sweep catalogue above altitude " + str(alt_minimum))
-
 
         sweep_catalogue=[]
         #First remove all entries below given altitude
@@ -4367,25 +4364,11 @@ class Sequencer:
         deviation_catalogue_for_tpoint=[]
 
         plog ("Note that mount references and auto-centering are automatically turned off for a tpoint run.")
-        ha_catalog = [[-4.5, 0],[-4.0, 0], [-3.5, 0], [-3.0, 0], [-2.5, 0], [-2.0, 0], [-1.5, 0], [-1.0, 0], [-0.5, 0], [0.0, 0], [0.5, 0], [1.0, 0], [1.5, 0], [2.0, 0], [2.5, 0], [3.0, 0], [3.5, 0], [4, 0],[4.5, 0]]
-        use_ha = False
-        finalCatalog = finalCatalogue
-        if max_pointings < 25:
-            use_ha = True
-            finalCatalog = ha_catalog
-            plog("Going to do a equatorial star run, 0.5h spacing, E to W.")
 
-        for grid_star in finalCatalog:
-            plog("Ha catalog:  ",  finalCatalog, grid_star[0], grid_star[1])
-            #breakpoint()
-            #Grid_star[0] need to be treated as degrees!  u.deg adds the unit byt does not mul by 15
-            if not use_ha:
-                teststar = SkyCoord(ra = grid_star[0]*u.deg, dec = grid_star[1]*u.deg)
-            else:
-                sid = float((Time(datetime.datetime.utcnow(), scale='utc', location=g_dev['mnt'].site_coordinates).sidereal_time('apparent')*u.deg) / u.deg / u.hourangle)
-                ra_h = ra_fix(sid - grid_star[0])
-                grid_star[0]=ra_h*15  #downstream we need RA in h, not HA.  See above.
-                teststar = SkyCoord(ra = grid_star[0]*u.deg, dec = grid_star[1]*u.deg)
+        for grid_star in finalCatalogue:
+
+
+            teststar = SkyCoord(ra = grid_star[0]*u.deg, dec = grid_star[1]*u.deg)
 
             temppointingaltaz=teststar.transform_to(AltAz(location=g_dev['mnt'].site_coordinates, obstime=Time.now()))
             alt = temppointingaltaz.alt.degree
