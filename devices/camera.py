@@ -862,8 +862,9 @@ class Camera:
 
                 # self.mount_updates=self.mount_updates + 1
                 # self.mount_update_timer=time.time()
+                time.sleep(max(1,self.camera_update_period))
             else:
-                time.sleep(0.05)
+                time.sleep(max(1,self.camera_update_period))
 
 
 
@@ -885,8 +886,9 @@ class Camera:
                 self.post_processing_queue.task_done()
 
                 one_at_a_time = 0
+                time.sleep(2)
             else:
-                time.sleep(0.1)
+                time.sleep(2)
 
 
 
@@ -977,7 +979,7 @@ class Camera:
                 #breakpoint()
         while not tempcamera.IsExposureComplete:
             self.theskyxIsExposureComplete=False
-            #time.sleep(0.01)
+            time.sleep(0.01)
         self.theskyxIsExposureComplete=True
         self.theskyxLastImageFileName=tempcamera.LastImageFileName
 
@@ -2250,9 +2252,7 @@ class Camera:
                 time.time() < self.completion_time or self.async_exposure_lock==True
             ):
 
-                # Need to have a time sleep to release the GIL to run the other threads
-                #print ("sleeping")
-                time.sleep(min(0.5, max(self.completion_time - time.time() - 0.05,0.01) ))
+                
 
                 # Scan requests every 4 seconds... primarily hunting for a "Cancel/Stop"
                 if time.time() - exposure_scan_request_timer > 4:# and (time.time() - self.completion_time) > 4:
@@ -2281,6 +2281,8 @@ class Camera:
                         return expresult
 
                 remaining = round(self.completion_time - time.time(), 1)
+
+                
 
                 if remaining > 0:
                     if time.time() - self.plog_exposure_time_counter_timer > 10.0:
@@ -2348,6 +2350,10 @@ class Camera:
                             if g_dev['seq'].blockend != None:
                                 g_dev['obs'].request_update_calendar_blocks()
                             block_and_focus_check_done=True
+                    
+                    # Need to have a time sleep to release the GIL to run the other threads
+                    #print ("sleeping")
+                    time.sleep(min(self.completion_time - time.time()+0.00001, initialRemaining * 0.125))
 
 
                 continue
