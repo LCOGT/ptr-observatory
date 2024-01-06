@@ -4239,7 +4239,14 @@ class Sequencer:
             if not no_auto_after_solve:
                 self.auto_focus_script(None,None, skip_timer_check=True, extensive_focus=solved_pos)
             else:
-                g_dev['foc'].af_log(solved_pos,minimumFWHM, minimumFWHM)
+                try:
+                    g_dev['foc'].af_log(solved_pos,minimumFWHM, minimumFWHM)
+                except:
+                    plog ("Likely no focus positions were found in the extensive focus routine. Investigate if this isn't true.")
+                    #plog(traceback.format_exc())
+                    plog ("Moving back to the starting focus")
+                    g_dev['obs'].send_to_user("Extensive focus attempt failed. Returning to initial focus.")
+                    g_dev['foc'].guarded_move((foc_start)*g_dev['foc'].micron_to_steps)
         except:
             plog ("Something went wrong in the extensive focus routine")
             plog(traceback.format_exc())

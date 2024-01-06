@@ -2631,12 +2631,15 @@ class Observatory:
                             self.last_platesolved_dec_err = np.nan
                             self.platesolve_errors_in_a_row=self.platesolve_errors_in_a_row+1
                         else:
-                            plog(
-                                "PW Solves: ",
-                                solve["ra_j2000_hours"],
-                                solve["dec_j2000_degrees"],
-                            )
-
+                            try:
+                                plog(
+                                    "PW Solves: ",
+                                    solve["ra_j2000_hours"],
+                                    solve["dec_j2000_degrees"],
+                                )
+                            except:
+                                plog ("couldn't print PW solves.... why?")
+                                plog (solve)
                             target_ra = g_dev["mnt"].last_ra_requested
                             target_dec = g_dev["mnt"].last_dec_requested
                             solved_ra = solve["ra_j2000_hours"]
