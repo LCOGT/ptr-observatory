@@ -2265,6 +2265,11 @@ class Camera:
                     #g_dev['obs'].scan_requests()
 
 
+                    # TOTAL ABSOLUTE HACK TO GET THINGS WORKING WHILE I DISCOVER THE THREAD PROBLEM ELSEWHERE - MTF
+                    g_dev['obs'].scan_requests()
+                    g_dev['obs'].update_status()
+
+
                     # Check there hasn't been a cancel sent through
                     if g_dev["obs"].stop_all_activity:
                         plog ("stop_all_activity cancelling out of camera exposure")
