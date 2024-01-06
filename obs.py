@@ -317,27 +317,30 @@ class Observatory:
 
         # Create this actual thread
         self.update_status_queue = queue.Queue(maxsize=0)
-        self.update_status_thread=threading.Thread(target=self.update_status_thread)
+        self.update_status_thread=threading.Thread(target=self.update_status_thread)        
+        self.update_status_thread.daemon = True
         self.update_status_thread.start()
         # Also this is true for the FULL update.
         self.currently_updating_FULL=False
 
         self.FULL_update_thread_queue = queue.Queue(maxsize=0)
         self.FULL_update_thread=threading.Thread(target=self.full_update_thread)
+        self.FULL_update_thread.daemon = True
         self.FULL_update_thread.start()
 
         # ANd one for scan requests
         self.currently_scan_requesting = False
         self.scan_request_queue = queue.Queue(maxsize=0)
         self.scan_request_thread=threading.Thread(target=self.scan_request_thread)
+        self.scan_request_thread.daemon = True
         self.scan_request_thread.start()
 
         # And one for updating calendar blocks
         self.currently_updating_calendar_blocks = False
         self.calendar_block_queue = queue.Queue(maxsize=0)
         self.calendar_block_thread=threading.Thread(target=self.calendar_block_thread)
+        self.calendar_block_thread.daemon = True
         self.calendar_block_thread.start()
-
 
 
         self.too_hot_temperature=self.config['temperature_at_which_obs_too_hot_for_camera_cooling']
@@ -442,59 +445,72 @@ class Observatory:
         if self.config['ingest_raws_directly_to_archive']:
             self.ptrarchive_queue = queue.PriorityQueue(maxsize=0)
             self.ptrarchive_queue_thread = threading.Thread(target=self.send_to_ptrarchive, args=())
+            self.ptrarchive_queue_thread.daemon = True
             self.ptrarchive_queue_thread.start()
 
 
         if self.config['save_raws_to_pipe_folder_for_nightly_processing']:
             self.pipearchive_queue = queue.Queue(maxsize=0)
             self.pipearchive_queue_thread = threading.Thread(target=self.copy_to_pipearchive, args=())
+            self.pipearchive_queue_thread.daemon = True
             self.pipearchive_queue_thread.start()
 
         if self.config['save_to_alt_path'] == 'yes':
 
             self.altarchive_queue = queue.Queue(maxsize=0)
             self.altarchive_queue_thread = threading.Thread(target=self.copy_to_altarchive, args=())
+            self.altarchive_queue_thread.daemon = True
             self.altarchive_queue_thread.start()
 
         self.fast_queue = queue.PriorityQueue(maxsize=0)
         self.fast_queue_thread = threading.Thread(target=self.fast_to_ui, args=())
+        self.fast_queue_thread.daemon = True
         self.fast_queue_thread.start()
 
         self.mediumui_queue = queue.PriorityQueue(maxsize=0)
         self.mediumui_thread = threading.Thread(target=self.medium_to_ui, args=())
+        self.mediumui_thread.daemon = True
         self.mediumui_thread.start()
 
         self.calibrationui_queue = queue.PriorityQueue(maxsize=0)
         self.calibrationui_thread = threading.Thread(target=self.calibration_to_ui, args=())
+        self.calibrationui_thread.daemon = True
         self.calibrationui_thread.start()
 
         self.slow_camera_queue = queue.PriorityQueue(maxsize=0)
         self.slow_camera_queue_thread = threading.Thread(target=self.slow_camera_process, args=())
+        self.slow_camera_queue_thread.daemon = True
         self.slow_camera_queue_thread.start()
 
         self.send_status_queue = queue.Queue(maxsize=0)
         self.send_status_queue_thread = threading.Thread(target=self.send_status_process, args=())
+        self.send_status_queue_thread.daemon = True
         self.send_status_queue_thread.start()
 
         self.platesolve_queue = queue.Queue(maxsize=0)
         self.platesolve_queue_thread = threading.Thread(target=self.platesolve_process, args=())
+        self.platesolve_queue_thread.daemon = True
         self.platesolve_queue_thread.start()
 
         self.sep_queue = queue.Queue(maxsize=0)
         self.sep_queue_thread = threading.Thread(target=self.sep_process, args=())
+        self.sep_queue_thread.daemon = True
         self.sep_queue_thread.start()
 
         self.mainjpeg_queue = queue.Queue(maxsize=0)
         self.mainjpeg_queue_thread = threading.Thread(target=self.mainjpeg_process, args=())
+        self.mainjpeg_queue_thread.daemon = True
         self.mainjpeg_queue_thread.start()
 
         self.laterdelete_queue = queue.Queue(maxsize=0)
         self.laterdelete_queue_thread = threading.Thread(target=self.laterdelete_process, args=())
+        self.laterdelete_queue_thread.daemon = True
         self.laterdelete_queue_thread.start()
 
 
         self.sendtouser_queue = queue.Queue(maxsize=0)
         self.sendtouser_queue_thread = threading.Thread(target=self.sendtouser_process, args=())
+        self.sendtouser_queue_thread.daemon = True
         self.sendtouser_queue_thread.start()
 
         self.cmd_queue = queue.Queue(
@@ -505,6 +521,7 @@ class Observatory:
             maxsize=0
         )
         self.smartstack_queue_thread = threading.Thread(target=self.smartstack_image, args=())
+        self.smartstack_queue_thread.daemon = True
         self.smartstack_queue_thread.start()
 
 
@@ -2006,10 +2023,12 @@ class Observatory:
                         #plog (result)
 
                 one_at_a_time = 0
+                time.sleep(5)
 
 
             else:
-                time.sleep(0.2)
+                # Need this to be as LONG as possible to allow large gaps in the GIL. Lower priority tasks should have longer sleeps.
+                time.sleep(2)
 
 
     # Note this is a thread!
@@ -2046,10 +2065,12 @@ class Observatory:
                         plog (result)
 
                 one_at_a_time = 0
+                time.sleep(2)
 
 
             else:
-                time.sleep(0.2)
+                # Need this to be as LONG as possible to allow large gaps in the GIL. Lower priority tasks should have longer sleeps.
+                time.sleep(2)
 
 
 
@@ -2085,10 +2106,12 @@ class Observatory:
                 with self.scan_request_queue.mutex:
                     self.scan_request_queue.queue.clear()
                 one_at_a_time = 0
+                time.sleep(3)
 
 
             else:
-                time.sleep(0.05)
+                # Need this to be as LONG as possible.  Essentially this sets the rate of checking scan requests.
+                time.sleep(3)
 
 
     # Note this is a thread!
@@ -2112,10 +2135,12 @@ class Observatory:
 
                 self.calendar_block_queue.task_done()
                 one_at_a_time = 0
+                time.sleep(3)
 
 
             else:
-                time.sleep(0.05)
+                # Need this to be as LONG as possible to allow large gaps in the GIL. Lower priority tasks should have longer sleeps.
+                time.sleep(5)
 
 
     # Note this is a thread!
@@ -2138,10 +2163,12 @@ class Observatory:
                     self.update_status()
                 self.update_status_queue.task_done()
                 one_at_a_time = 0
+                time.sleep(2)
 
 
             else:
-                time.sleep(0.05)
+                # Need this to be as LONG as possible to allow large gaps in the GIL. Lower priority tasks should have longer sleeps.
+                time.sleep(2)
 
     # Note this is a thread!
     def full_update_thread(self):
@@ -2158,11 +2185,12 @@ class Observatory:
                 self.update()
                 self.FULL_update_thread_queue.task_done()
                 one_at_a_time = 0
+                time.sleep(2)
 
 
             else:
-                time.sleep(0.05)
-
+                # Need this to be as LONG as possible to allow large gaps in the GIL. Lower priority tasks should have longer sleeps.
+                time.sleep(2)
 
     # Note this is a thread!
     def send_to_ptrarchive(self):
@@ -2198,10 +2226,12 @@ class Observatory:
                         #plog (result)
 
                 one_at_a_time = 0
+                time.sleep(2)
 
 
             else:
-                time.sleep(0.2)
+                # Need this to be as LONG as possible to allow large gaps in the GIL. Lower priority tasks should have longer sleeps.
+                time.sleep(2)
 
 
     def send_status_process(self):
@@ -2221,12 +2251,14 @@ class Observatory:
                 self.send_status_queue.task_done()
                 upload_time = time.time() - pre_upload
                 self.status_interval = 2 * upload_time
-                if self.status_interval < 10:
+                if self.status_interval > 10:
                     self.status_interval = 10
                 self.status_upload_time = upload_time
                 one_at_a_time = 0
+                time.sleep(max(2, self.status_interval))
             else:
-                time.sleep(0.1)
+                # Need this to be as LONG as possible to allow large gaps in the GIL. Lower priority tasks should have longer sleeps.
+                time.sleep(max(2, self.status_interval))
 
     def laterdelete_process(self):
         """This is a thread where things that fail to get
@@ -2242,9 +2274,11 @@ class Observatory:
                     os.remove(deletefilename)
                 except:
                     self.laterdelete_queue.put(deletefilename, block=False)
+                time.sleep(2)
 
             else:
-                time.sleep(0.1)
+                # Need this to be as LONG as possible to allow large gaps in the GIL. Lower priority tasks should have longer sleeps.
+                time.sleep(2)
 
     def sendtouser_process(self):
         """This is a thread where things that fail to get
@@ -2254,28 +2288,30 @@ class Observatory:
 
         while True:
             if (not self.sendtouser_queue.empty()):
+                
+                while not self.sendtouser_queue.empty():
 
-                (p_log, p_level) = self.sendtouser_queue.get(block=False)
-                url_log = "https://logs.photonranch.org/logs/newlog"
-                body = json.dumps(
-                    {
-                        "site": self.config["obs_id"],
-                        "log_message": str(p_log),
-                        "log_level": str(p_level),
-                        "timestamp": time.time(),
-                    }
-                )
-
-                try:
-                    reqs.post(url_log, body, timeout=5)
-                except:
-                    plog("Log did not send, usually not fatal.")
-
-                self.sendtouser_queue.task_done()
-                time.sleep(0.1)
+                    (p_log, p_level) = self.sendtouser_queue.get(block=False)
+                    url_log = "https://logs.photonranch.org/logs/newlog"
+                    body = json.dumps(
+                        {
+                            "site": self.config["obs_id"],
+                            "log_message": str(p_log),
+                            "log_level": str(p_level),
+                            "timestamp": time.time(),
+                        }
+                    )
+    
+                    try:
+                        reqs.post(url_log, body, timeout=5)
+                    except:
+                        plog("Log did not send, usually not fatal.")
+    
+                    self.sendtouser_queue.task_done()      
+                time.sleep(1)
 
             else:
-                time.sleep(0.1)
+                time.sleep(1)
 
     def mainjpeg_process(self, zoom_factor=False):
         """
@@ -2368,9 +2404,11 @@ class Observatory:
                         )
 
                 self.mainjpeg_queue.task_done()
+                time.sleep(1)
 
             else:
-                time.sleep(0.1)
+                # Need this to be as LONG as possible to allow large gaps in the GIL. Lower priority tasks should have longer sleeps.
+                time.sleep(1)
 
     def sep_process(self):
         """This is the sep queue that happens in a different process
@@ -2566,9 +2604,11 @@ class Observatory:
                 self.sep_processing = False
                 self.sep_queue.task_done()
                 one_at_a_time = 0
+                time.sleep(1)
 
             else:
-                time.sleep(0.1)
+                # Need this to be as LONG as possible to allow large gaps in the GIL. Lower priority tasks should have longer sleeps.
+                time.sleep(1)
 
     def platesolve_process(self):
         """This is the platesolve queue that happens in a different process
@@ -2842,9 +2882,11 @@ class Observatory:
                 g_dev['mnt'].last_slew_was_pointing_slew = False
 
                 one_at_a_time = 0
+                time.sleep(1)
 
             else:
-                time.sleep(0.1)
+                # Need this to be as LONG as possible to allow large gaps in the GIL. Lower priority tasks should have longer sleeps.
+                time.sleep(1)
 
     def slow_camera_process(self):
         """
@@ -3318,9 +3360,11 @@ class Observatory:
 
                 self.slow_camera_queue.task_done()
                 one_at_a_time = 0
+                time.sleep(1)
 
             else:
-                time.sleep(0.5)
+                # Need this to be as LONG as possible to allow large gaps in the GIL. Lower priority tasks should have longer sleeps.
+                time.sleep(1)
 
     # Note this is a thread!
     def fast_to_ui(self):
@@ -3370,9 +3414,11 @@ class Observatory:
                         #time.sleep(5)
                 self.fast_queue.task_done()
                 one_at_a_time = 0
+                time.sleep(0.1)
 
             else:
-                time.sleep(0.05)
+                # Need this to be as LONG as possible to allow large gaps in the GIL. Lower priority tasks should have longer sleeps.
+                time.sleep(1)
 
     # Note this is a thread!
     def calibration_to_ui(self):
@@ -3430,9 +3476,11 @@ class Observatory:
                         #time.sleep(5)
                 self.calibrationui_queue.task_done()
                 one_at_a_time = 0
+                time.sleep(10)
 
             else:
-                time.sleep(0.05)
+                # Need this to be as LONG as possible to allow large gaps in the GIL. Lower priority tasks should have longer sleeps.
+                time.sleep(10)
 
     # Note this is a thread!
     def medium_to_ui(self):
@@ -3484,9 +3532,11 @@ class Observatory:
                         #time.sleep(5)
                 self.mediumui_queue.task_done()
                 one_at_a_time = 0
+                time.sleep(0.5)
 
             else:
-                time.sleep(0.05)
+                # Need this to be as LONG as possible to allow large gaps in the GIL. Lower priority tasks should have longer sleeps.
+                time.sleep(3)
 
 
     def send_to_user(self, p_log, p_level="INFO"):
@@ -3691,8 +3741,9 @@ class Observatory:
                 plog("Smartstack round complete. Time taken: " + str(time.time() - sstack_timer))
 
                 self.smartstack_queue.task_done()
+                time.sleep(3)
             else:
-                time.sleep(0.1)
+                time.sleep(3)
 
     def check_platesolve_and_nudge(self):
 
