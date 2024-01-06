@@ -436,9 +436,9 @@ class Sequencer:
             if not self.bias_dark_latch and not g_dev['obs'].scope_in_manual_mode and ((events['Eve Bias Dark'] <= ephem_now < events['End Eve Bias Dark']) and \
                  self.config['auto_eve_bias_dark'] and not self.eve_bias_done and g_dev['obs'].camera_sufficiently_cooled_for_calibrations):   #events['End Eve Bias Dark']) and \
 
-                self.bias_dark_latch = True
-                req = {'numOfBias': 33, \
-                       'numOfDark': 11, 'darkTime': 180, 'numOfDark2': 0, 'dark2Time': 360, \
+                self.bias_dark_latch = True   #Maybe long dark is a dark light leak check?
+                req = {'numOfBias': 31, \
+                       'numOfDark': 7, 'darkTime': 180, 'numOfDark2': 3, 'dark2Time': 540, \
                        'hotMap': True, 'coldMap': True, 'script': 'genBiasDarkMaster', }  # NB NB All of the prior is obsolete
                 opt = {}
 
@@ -667,7 +667,7 @@ class Sequencer:
                     self.block_guard=False
 
 
-            
+
 
             if (time.time() - g_dev['seq'].time_roof_last_opened > 1200 ) and not self.morn_sky_flat_latch and ((events['Morn Sky Flats'] <= ephem_now < events['End Morn Sky Flats']) and \
                    self.config['auto_morn_sky_flat'])  and not g_dev['obs'].scope_in_manual_mode and not self.morn_flats_done and g_dev['obs'].camera_sufficiently_cooled_for_calibrations and g_dev['obs'].open_and_enabled_to_observe:
@@ -1879,20 +1879,20 @@ class Sequencer:
 
 
         # Remove the current master calibrations
-        # Not doing this can leave old faulty calibrations 
+        # Not doing this can leave old faulty calibrations
         # in the directory.
         tempfrontcalib=g_dev['obs'].obs_id + '_' + g_dev['cam'].alias +'_'
         try:
             os.remove(g_dev['obs'].calib_masters_folder + tempfrontcalib + 'BIAS_master_bin1.fits')
         except:
             plog ("Could not remove " + str(g_dev['obs'].calib_masters_folder + tempfrontcalib + 'BIAS_master_bin1.fits'))
-            
-        try:            
+
+        try:
             os.remove(g_dev['obs'].calib_masters_folder + tempfrontcalib + 'DARK_master_bin1.fits')
         except:
             plog ("Could not remove " + str(g_dev['obs'].calib_masters_folder + tempfrontcalib + 'DARK_master_bin1.fits'))
 
-        
+
         tempfrontcalib=g_dev['obs'].calib_masters_folder + g_dev['obs'].obs_id + '_' + g_dev['cam'].alias +'_masterFlat*'
         deletelist=glob(tempfrontcalib)
         for item in deletelist:
@@ -1900,17 +1900,17 @@ class Sequencer:
                 os.remove(item)
             except:
                 plog ("Could not remove " + str(item))
-        
+
         tempfrontcalib=g_dev['obs'].calib_masters_folder +'masterFlat*'
-        
+
         deletelist=glob(tempfrontcalib)
         for item in deletelist:
             try:
                 os.remove(item)
             except:
                 plog ("Could not remove " + str(item))
-        
-        
+
+
         # also masterflat*.npy
 
         # NOW to get to the business of constructing the local calibrations
@@ -2045,14 +2045,14 @@ class Sequencer:
                     hdu1data = hdu1data[500:-500,500:-500]
                     stddiffimage=np.nanstd(pow(pow(hdu1data,2),0.5))
                     #est_read_noise= (stddiffimage * g_dev['cam'].config["camera"][g_dev['cam'].name]["settings"]["camera_gain"]) / 1.414
-                    
+
                     est_read_noise= (stddiffimage * g_dev['cam'].camera_known_gain) / 1.414
                     readnoise_array.append(est_read_noise)
                     post_readnoise_array.append(stddiffimage)
-    
+
                 readnoise_array=np.array(readnoise_array)
                 plog ("Raw Readnoise outputs: " +str(readnoise_array))
-            
+
                 plog ("Final Readnoise: " + str(np.nanmedian(readnoise_array)) + " std: " + str(np.nanstd(readnoise_array)))
             else:
                 plog ("Skipping readnoise estimation as we don't currently have a reliable camera gain estimate.")
@@ -4233,7 +4233,7 @@ class Sequencer:
                 plog (solved_pos)
                 plog (minimumFWHM)
                 g_dev['foc'].guarded_move((solved_pos)*g_dev['foc'].micron_to_steps)
-                g_dev['foc'].last_known_focus=(solved_pos)                
+                g_dev['foc'].last_known_focus=(solved_pos)
             except:
                 plog ("extensive focus failed :(")
             if not no_auto_after_solve:

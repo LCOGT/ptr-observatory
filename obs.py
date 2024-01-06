@@ -2329,7 +2329,7 @@ class Observatory:
 
                 jpeg_subprocess=subprocess.Popen(['python','subprocesses/mainjpeg.py'],stdin=subprocess.PIPE,stdout=subprocess.PIPE,bufsize=0)
 
-                #plog("@ Pickle point:  ", zoom_factor)
+                plog("@ Pickle point:  ", zoom_factor)
                 if True:
                     #
                     pickle.dump([hdusmalldata, smartstackid, paths, pier_side, is_osc, osc_bayer, osc_background_cut,osc_brightness_enhance, osc_contrast_enhance,\
@@ -3814,7 +3814,7 @@ class Observatory:
         try:
             if g_dev['seq'].last_roof_status == 'Closed' and aws_enclosure_status["shutter_status"] in ['Open','open']:
                 g_dev['seq'].time_roof_last_opened=time.time()
-                # reset blocks so it can restart a caelndar event
+                # reset blocks so it can restart a calendar event
                 g_dev['seq'].reset_completes()
                 g_dev['seq'].last_roof_status = 'Open'
 

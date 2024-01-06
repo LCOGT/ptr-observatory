@@ -307,12 +307,12 @@ class Camera:
         self.autosave_path = self.camera_path + "autosave/"
         self.lng_path = self.camera_path + "lng/"
         self.seq_path = self.camera_path + "seq/"
-        if not os.path.exists(self.autosave_path):
-            os.makedirs(self.autosave_path)
-        if not os.path.exists(self.lng_path):
-            os.makedirs(self.lng_path)
-        if not os.path.exists(self.seq_path):
-            os.makedirs(self.seq_path)
+        # if not os.path.exists(self.autosave_path):  #obsolete WER 20240106
+        #     os.makedirs(self.autosave_path)
+        # if not os.path.exists(self.lng_path):
+        #     os.makedirs(self.lng_path)
+        # if not os.path.exists(self.seq_path):
+        #     os.makedirs(self.seq_path)
 
         # Just need to initialise this filter thing
         self.current_offset  = 0
@@ -506,7 +506,7 @@ class Camera:
 
             if self.config["camera"][self.name]["settings"]['set_qhy_usb_speed']:
                 success = qhycam.so.SetQHYCCDParam(qhycam.camera_params[qhycam_id]['handle'], qhycam.CONTROL_SPEED,c_double(float(self.config["camera"][self.name]["settings"]['direct_qhy_usb_speed'])))
-            plog('Set QHY USB speed to: ', success, self.config["camera"][self.name]["settings"]['direct_qhy_usb_speed'] )
+            plog('Set QHY USB speed (found) to: ', success, self.config["camera"][self.name]["settings"]['direct_qhy_usb_speed'] )
 
             self._connected = self._qhyccd_connected
             self._connect = self._qhyccd_connect

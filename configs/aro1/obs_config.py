@@ -429,41 +429,38 @@ site_config = {
                 # Columns for filter data are : ['filter', 'filter_index', 'filter_offset', 'sky_gain', 'screen_gain', 'alias']
                 #NB NB Note to WER please add cwl, bw and 'shape'.  Throughputs ADJUSTED 20240103 Eve run
                 'filter_data': [
-                        ['Air',  [0,  0], -800, 1200., [2   ,  20], 'AIR'],    #0  Gains 20230703
-                        ['Exo',  [8,  0],    0,  915., [360 , 170], 'Exoplanet - yellow, no UV or far NIR'],     #1
+                        ['Air',  [0,  0], -800, 1200.,  [2   ,  20], 'AIR'],    #0  Gains est and some from 20240106 listing
+                        ['PL',   [7,  0],    0, 1100.,  [360 , 170], 'Photo Luminance - does not pass NIR'],     #1
+                        ['Exo',  [8,  0],    0, 915.,   [360 , 170], 'Exoplanet - yellow, no UV or far NIR'], #2
+                        ['PB',   [0,  6],    0, 700,    [360 , 170], 'Photo Blue'],     #3
+                        ['gp',   [2,  0],    0, 820.,   [.77 ,  20], "Sloan g'"],       #4
+                        ['PR',   [0,  8],    0, 520.,   [.32 ,  20], 'Photo Blue'],     #5
+                        ['PG',   [0,  7],    0, 470.,   [30  , 170], 'Photo Green'],     #6
+                        ['BB',   [9,  0],    0, 500.,   [0.65,  20], 'Bessell B'],     #7
+                        ['BV',   [10, 0],    0, 540.,   [.32 ,  20], 'Bessell V'],     #8
+                        ['BR',   [11, 0],    0, 600.,   [10  , 170], 'Bessell R'],     #9
+                        ['rp',   [3,  0],    0, 560.,   [1.2 ,  20], "Sloan r'"],     #10
+                        ['NIR',  [0, 10],    0, 226.,   [0.65,  20], 'Near IR - redward of PL'],     #11  Value suspect 2023/10/23 WER
+                        ['ip',   [4,  0],    0, 250.,   [.65 ,  20], "Sloan i'"],     #12
+                        ['BI',   [12, 0],    0, 155.,   [360 , 170], 'Bessell I'],     #13
+                        ['up',   [1,  0],    0, 39.0,   [2   ,  20], "Sloan u'"],     #14
+                        ['O3',   [0,  2],    0, 36.0,   [360 , 170], 'Oxygen III'],     #15    #guess
+                        ['zp',   [0,  9],    0, 11.0,   [1.0 ,  20], "Sloan z-short"],     #16    # NB ZP is a broader filter than zs.
+                        ['CR',   [0,  5],    0, 9.0,    [360 , 170], 'Continuum Red - for Star subtraction'],  #17
+                        ['HA',   [0,  3],    0, 8.0,    [360 , 170], 'Hydrogen Alpha - aka II'],     #18
+                        ['N2',   [13, 0],    0, 4.5,    [360 , 170], 'Nitrogen II'],     #19
+                        ['S2',   [0,  4],    0, 4.5,    [0.65,  20], 'Sulphur II'],     #20
 
-                        ['PL',   [7,  0],    0, 1200., [360 , 170], 'Photo Luminance - does not pass NIR'],     #2
-                        ['PR',   [0,  8],    0, 520.,  [.32 ,  20], 'Photo Blue'],     #3
-                        ['PG',   [0,  7],    0, 470.,  [30  , 170], 'Photo Green'],     #4
-                        ['PB',   [0,  6],    0, 700,   [360 , 170], 'Photo Blue'],     #5
-                        ['NIR',  [0, 10],    0, 226.,  [0.65,  20], 'Near IR - redward of PL'],     #6  Value suspect 2023/10/23 WER
-
-                        ['O3',   [0,  2],    0, 50.0,  [360 , 170], 'Oxygen III'],     #7    #guess
-                        ['HA',   [0,  3],    0, 14.,    [360 , 170], 'Hydrogen Alpha - aka II'],     #8
-                        ['N2',   [13, 0],    0, 8.,    [360 , 170], 'Nitrogen II'],     #9
-                        ['S2',   [0,  4],    0, 8.,    [0.65,  20], 'Sulphur II'],     #10
-                        ['CR',   [0,  5],    0, 15.,   [360 , 170], 'Continuum Red - for Star subtraction'],     #11
-
-                        ['up',   [1,  0],    0, 39.,  [2   ,  20], "Sloan u'"],     #12
-                        ['BB',   [9,  0],    0, 500.,  [0.65,  20], 'Bessell B'],     #13
-                        ['gp',   [2,  0],    0, 820.,  [.77 ,  20], "Sloan g'"],     #14
-                        ['BV',   [10, 0],    0, 540.,  [.32 ,  20], 'Bessell V'],     #15
-                        ['BR',   [11, 0],    0, 600.,  [10  , 170], 'Bessell R'],     #16
-                        ['rp',   [3,  0],    0, 560.,  [1.2 ,  20], "Sloan r'"],     #17
-                        ['ip',   [4,  0],    0, 250.,  [.65 ,  20], "Sloan i'"],     #18
-                        ['BI',   [12, 0],    0, 155.,   [360 , 170], 'Bessell I'],     #19
-                        ['zp',   [0,  9],    0, 30.,   [360 , 170], "Sloan z'"],     #20    # NB I think these may be backward labeled,
-                        ['zs',   [5,  0],    0, 22.,   [1.0 ,  20], "Sloan z-short"],     #21    # NB ZP is a broader filter than zs.
-                        ['Y',    [6,  0],    0, 7.3,   [360 , 170], "Rubin Y - low throughput, defective filter in top area "],     #22
+                        ['Y',    [6,  0],    0, 7.3,    [360 , 170], "Rubin Y - low throughput, defective filter in top area "],     #21
 
 
-                        ['dark', [1,  3],    0, 0.00,  [360 , 170], 'dk']],    #23     #Not a real filter.
+                        ['dark', [1,  3],    0, 0.00,  [360 , 170], 'dk']],    #22     #Not a real filter.  Total 23
 
 
 
                 'filter_screen_sort':  ['ip'],   # don't use narrow yet,  8, 10, 9], useless to try.
-                'filter_sky_sort': ['N2','S2','HA','CR','zs','zp','up','O3','BI','NIR','ip','PR','BR',\
-                                    'rp','PG','BV','BB','PB','gp','EXO','PL','air'],
+                'filter_sky_sort': ['S2','N2','HA','CR','zs','zp','up','O3','BI','NIR','ip','PR','BR',\
+                                    'rp','PG','BV','BB','PB','gp','EXO','PL','air'],  #Needs fixing once we get a good input series. 20240106 WER
 
 
 
@@ -550,7 +547,7 @@ site_config = {
                 #The pattern before came and went. Now consitent at 50.  Changing to 45.
 
                 'set_qhy_usb_speed': True,
-                'direct_qhy_usb_speed' : 60,
+                'direct_qhy_usb_speed' : 50,    #20240106 Afternoon WER Was 60
 
                 # These options set whether an OSC gets binned or interpolated for different functions
                 # If the pixel scale is well-sampled (e.g. 0.6 arcsec per RGGB pixel or 0.3 arcsec per individual debayer pixel)
