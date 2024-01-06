@@ -745,6 +745,7 @@ class Camera:
 
         self.post_processing_queue = queue.Queue(maxsize=0)
         self.post_processing_queue_thread = threading.Thread(target=self.post_processing_process, args=())
+        self.post_processing_queue_thread.daemon = True
         self.post_processing_queue_thread.start()
 
 
@@ -761,6 +762,7 @@ class Camera:
             self.camera_updates=0
             #self.focuser_update_thread_queue = queue.Queue(maxsize=0)
             self.camera_update_thread=threading.Thread(target=self.camera_update_thread)
+            self.camera_update_thread.daemon = True
             self.camera_update_thread.start()
 
     # Note this is a thread!
@@ -997,6 +999,7 @@ class Camera:
             self.theskyxFrame = 1
         self.theskyxIsExposureComplete=False
         thread=threading.Thread(target=self.theskyx_async_expose)
+        thread.daemon=True
         thread.start()
 
     def _theskyx_stop_expose(self):
