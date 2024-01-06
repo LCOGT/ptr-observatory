@@ -317,27 +317,30 @@ class Observatory:
 
         # Create this actual thread
         self.update_status_queue = queue.Queue(maxsize=0)
-        self.update_status_thread=threading.Thread(target=self.update_status_thread)
+        self.update_status_thread=threading.Thread(target=self.update_status_thread)        
+        self.update_status_thread.setDaemon(True)
         self.update_status_thread.start()
         # Also this is true for the FULL update.
         self.currently_updating_FULL=False
 
         self.FULL_update_thread_queue = queue.Queue(maxsize=0)
         self.FULL_update_thread=threading.Thread(target=self.full_update_thread)
+        self.FULL_update_thread.setDaemon(True)
         self.FULL_update_thread.start()
 
         # ANd one for scan requests
         self.currently_scan_requesting = False
         self.scan_request_queue = queue.Queue(maxsize=0)
         self.scan_request_thread=threading.Thread(target=self.scan_request_thread)
+        self.scan_request_thread.setDaemon(True)
         self.scan_request_thread.start()
 
         # And one for updating calendar blocks
         self.currently_updating_calendar_blocks = False
         self.calendar_block_queue = queue.Queue(maxsize=0)
         self.calendar_block_thread=threading.Thread(target=self.calendar_block_thread)
+        self.calendar_block_thread.setDaemon(True)
         self.calendar_block_thread.start()
-
 
 
         self.too_hot_temperature=self.config['temperature_at_which_obs_too_hot_for_camera_cooling']
@@ -442,59 +445,72 @@ class Observatory:
         if self.config['ingest_raws_directly_to_archive']:
             self.ptrarchive_queue = queue.PriorityQueue(maxsize=0)
             self.ptrarchive_queue_thread = threading.Thread(target=self.send_to_ptrarchive, args=())
+            self.ptrarchive_queue_thread.setDaemon(True)
             self.ptrarchive_queue_thread.start()
 
 
         if self.config['save_raws_to_pipe_folder_for_nightly_processing']:
             self.pipearchive_queue = queue.Queue(maxsize=0)
             self.pipearchive_queue_thread = threading.Thread(target=self.copy_to_pipearchive, args=())
+            self.pipearchive_queue_thread.setDaemon(True)
             self.pipearchive_queue_thread.start()
 
         if self.config['save_to_alt_path'] == 'yes':
 
             self.altarchive_queue = queue.Queue(maxsize=0)
             self.altarchive_queue_thread = threading.Thread(target=self.copy_to_altarchive, args=())
+            self.altarchive_queue_thread.setDaemon(True)
             self.altarchive_queue_thread.start()
 
         self.fast_queue = queue.PriorityQueue(maxsize=0)
         self.fast_queue_thread = threading.Thread(target=self.fast_to_ui, args=())
+        self.fast_queue_thread.setDaemon(True)
         self.fast_queue_thread.start()
 
         self.mediumui_queue = queue.PriorityQueue(maxsize=0)
         self.mediumui_thread = threading.Thread(target=self.medium_to_ui, args=())
+        self.mediumui_thread.setDaemon(True)
         self.mediumui_thread.start()
 
         self.calibrationui_queue = queue.PriorityQueue(maxsize=0)
         self.calibrationui_thread = threading.Thread(target=self.calibration_to_ui, args=())
+        self.calibrationui_thread.setDaemon(True)
         self.calibrationui_thread.start()
 
         self.slow_camera_queue = queue.PriorityQueue(maxsize=0)
         self.slow_camera_queue_thread = threading.Thread(target=self.slow_camera_process, args=())
+        self.slow_camera_queue_thread.setDaemon(True)
         self.slow_camera_queue_thread.start()
 
         self.send_status_queue = queue.Queue(maxsize=0)
         self.send_status_queue_thread = threading.Thread(target=self.send_status_process, args=())
+        self.send_status_queue_thread.setDaemon(True)
         self.send_status_queue_thread.start()
 
         self.platesolve_queue = queue.Queue(maxsize=0)
         self.platesolve_queue_thread = threading.Thread(target=self.platesolve_process, args=())
+        self.platesolve_queue_thread.setDaemon(True)
         self.platesolve_queue_thread.start()
 
         self.sep_queue = queue.Queue(maxsize=0)
         self.sep_queue_thread = threading.Thread(target=self.sep_process, args=())
+        self.sep_queue_thread.setDaemon(True)
         self.sep_queue_thread.start()
 
         self.mainjpeg_queue = queue.Queue(maxsize=0)
         self.mainjpeg_queue_thread = threading.Thread(target=self.mainjpeg_process, args=())
+        self.mainjpeg_queue_thread.setDaemon(True)
         self.mainjpeg_queue_thread.start()
 
         self.laterdelete_queue = queue.Queue(maxsize=0)
         self.laterdelete_queue_thread = threading.Thread(target=self.laterdelete_process, args=())
+        self.laterdelete_queue_thread.setDaemon(True)
         self.laterdelete_queue_thread.start()
 
 
         self.sendtouser_queue = queue.Queue(maxsize=0)
         self.sendtouser_queue_thread = threading.Thread(target=self.sendtouser_process, args=())
+        self.sendtouser_queue_thread.setDaemon(True)
         self.sendtouser_queue_thread.start()
 
         self.cmd_queue = queue.Queue(
@@ -505,6 +521,7 @@ class Observatory:
             maxsize=0
         )
         self.smartstack_queue_thread = threading.Thread(target=self.smartstack_image, args=())
+        self.smartstack_queue_thread.setDaemon(True)
         self.smartstack_queue_thread.start()
 
 

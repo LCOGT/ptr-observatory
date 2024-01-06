@@ -2239,8 +2239,8 @@ class Camera:
         #focus_position=g_dev['foc'].current_focus_position
 
         if exposure_time <= 5.0:
-            #g_dev['obs'].request_scan_requests()
-            g_dev['obs'].scan_requests()
+            g_dev['obs'].request_scan_requests()
+            #g_dev['obs'].scan_requests()
             if g_dev['seq'].blockend != None:
                 g_dev['obs'].request_update_calendar_blocks()
             focus_position=g_dev['foc'].current_focus_position
@@ -2258,8 +2258,8 @@ class Camera:
                 if time.time() - exposure_scan_request_timer > 4:# and (time.time() - self.completion_time) > 4:
                     exposure_scan_request_timer=time.time()
 
-                    #g_dev['obs'].request_scan_requests()
-                    g_dev['obs'].scan_requests()
+                    g_dev['obs'].request_scan_requests()
+                    #g_dev['obs'].scan_requests()
 
 
                     # Check there hasn't been a cancel sent through
