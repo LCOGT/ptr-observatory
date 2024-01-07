@@ -1350,6 +1350,8 @@ class Mount:
         # Whether this violates the pointing principle.
         sun_coords=get_sun(Time.now())
         if skyflatspot != None:
+            plog("Inserted skip open test, line 1353 in Mount. WER  20231222")
+            skip_open_test = True
             if not skip_open_test:
 
                 if (not (g_dev['events']['Cool Down, Open'] < ephem.now() < g_dev['events']['Naut Dusk']) and \
@@ -2396,11 +2398,17 @@ class Mount:
         return
 
     def get_mount_reference(self):
-
-        mnt_shelf = shelve.open(self.obsid_path + 'ptr_night_shelf/' + 'mount1'+ str(g_dev['obs'].name))
-        delta_ra = mnt_shelf['ra_cal_offset'] + self.west_clutch_ra_correction   #Note set up at initialize time.
-        delta_dec = mnt_shelf['dec_cal_offset'] +  self.west_clutch_dec_correction
-        mnt_shelf.close()
+        try:
+            mnt_shelf = shelve.open(self.obsid_path + 'ptr_night_shelf/' + 'mount1'+ str(g_dev['obs'].name))
+            delta_ra = mnt_shelf['ra_cal_offset'] + self.west_clutch_ra_correction   #Note set up at initialize time.
+            delta_dec = mnt_shelf['dec_cal_offset'] +  self.west_clutch_dec_correction
+            mnt_shelf.close()
+        except:
+            self.reset_mount_reference()
+            delta_ra = 0.0
+            delta_dec = 0.0
+            
+            
         return delta_ra, delta_dec
 
 

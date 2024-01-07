@@ -265,7 +265,7 @@ class Camera:
             g_dev["cam"] = self
         self.config = config
         self.alias = config["camera"][self.name]["name"]
-        #breakpoint()
+
         win32com.client.pythoncom.CoInitialize()
         plog(driver, name)
         if not driver == "QHYCCD_Direct_Control":
