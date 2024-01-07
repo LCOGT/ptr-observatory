@@ -275,7 +275,7 @@ class Observatory:
         self.status_interval = 0
         self.status_count = 0
         self.status_upload_time = 0.5
-        self.time_last_status = time.time() - 3
+        self.time_last_status = time.time() -3000
         self.all_device_types = ptr_config["device_types"]  # May not be needed
         self.device_types = ptr_config["device_types"]  # ptr_config['short_status_devices']
 
@@ -283,7 +283,7 @@ class Observatory:
         # VERY TEMPORARY UNTIL MOUNT IS FIXED - MTF
         self.mount_reboot_on_first_status = True
         # This prevents ascom calls from update_status colliding with the full_update section
-        self.full_update_lock = False
+        #self.full_update_lock = False
 
         # Timers to only update status at regular specified intervals.
         self.observing_status_timer = datetime.datetime.now() - datetime.timedelta(
@@ -310,16 +310,7 @@ class Observatory:
         self.get_new_job_timer = time.time()
         self.scan_request_timer = time.time()
 
-        # Sometimes we update the status in a thread. This variable prevents multiple status updates occuring simultaneously
-        self.currently_updating_status=False
-
-
-
-        # Create this actual thread
-        self.update_status_queue = queue.Queue(maxsize=0)
-        self.update_status_thread=threading.Thread(target=self.update_status_thread)        
-        self.update_status_thread.daemon = True
-        self.update_status_thread.start()
+        
         # Also this is true for the FULL update.
         # self.currently_updating_FULL=False
 
@@ -329,7 +320,11 @@ class Observatory:
         # self.FULL_update_thread.start()
 
         # ANd one for scan requests
-        self.currently_scan_requesting = False
+        self.cmd_queue = queue.Queue(
+            maxsize=0
+        )
+
+        self.currently_scan_requesting = True
         self.scan_request_queue = queue.Queue(maxsize=0)
         self.scan_request_thread=threading.Thread(target=self.scan_request_thread)
         self.scan_request_thread.daemon = True
@@ -515,10 +510,7 @@ class Observatory:
         self.sendtouser_queue_thread.daemon = True
         self.sendtouser_queue_thread.start()
 
-        self.cmd_queue = queue.Queue(
-            maxsize=0
-        )
-
+        
         self.smartstack_queue = queue.Queue(
             maxsize=0
         )
@@ -613,6 +605,16 @@ class Observatory:
         # self.drift_tracker_dec=0
         g_dev['obs'].drift_tracker_timer=time.time()
         self.drift_tracker_counter = 0
+        
+        self.currently_scan_requesting = False
+        
+        # Sometimes we update the status in a thread. This variable prevents multiple status updates occuring simultaneously
+        self.currently_updating_status=False
+        # Create this actual thread
+        self.update_status_queue = queue.Queue(maxsize=0)
+        self.update_status_thread=threading.Thread(target=self.update_status_thread)        
+        self.update_status_thread.daemon = True
+        self.update_status_thread.start()
 
         #breakpoint()
         # Initialisation complete!
@@ -1688,21 +1690,23 @@ class Observatory:
 
         #print ("full update")
 
-        if not self.currently_updating_status:
+        
+
+        if not self.currently_updating_status and (time.time() - self.time_last_status > 10):
             self.request_update_status()
 
         if time.time() - self.get_new_job_timer > 3:
             self.get_new_job_timer = time.time()
-            try:
-                self.request_scan_requests("mount1")
-            except:
-                pass
+            # try:
+            self.request_scan_requests()
+            # except:
+            #     pass
 
 
         #self.full_update_lock=True
-        while self.currently_updating_status:
+        #while self.currently_updating_status:
             #print ('updating status')
-            time.sleep(0.5)
+        #    time.sleep(0.5)
 
 
             
@@ -1752,17 +1756,19 @@ class Observatory:
             # Keep the main thread alive, otherwise signals are ignored
             while True:
                 #if self.currently_updating_FULL==False:
-                if (time.time() - self.last_update_complete) > 3.0:
+                #if (time.time() - self.last_update_complete) > 3.0:
 
 
                     # if self.config['run_main_update_in_a_thread']:
                     #     self.request_full_update()
                     # else:
-                    self.core_command_and_sequencer_loop()
-                    self.last_update_complete=time.time()
-                    time.sleep(2.5)
-                else:
-                    time.sleep(3.0 - (time.time() - self.last_update_complete))
+                self.core_command_and_sequencer_loop()
+                #self.last_update_complete=time.time()
+                time.sleep(2.5)
+                # else:
+                #     time.sleep(3.0 - (time.time() - self.last_update_complete))
+                
+                #breakpoint()
                 # `Ctrl-C` will exit the program.
         except KeyboardInterrupt:
             plog("Finishing loops and exiting...")
@@ -2109,7 +2115,7 @@ class Observatory:
             #     print (self.full_update_lock)
 
             #if not self.full_update_lock and (not self.scan_request_queue.empty()) and one_at_a_time == 0:
-            if (not self.scan_request_queue.empty()) and one_at_a_time == 0:
+            if (not self.scan_request_queue.empty()) and one_at_a_time == 0 and not self.currently_scan_requesting:
                 one_at_a_time = 1
                 request = self.scan_request_queue.get(block=False)
                 self.currently_scan_requesting = True
@@ -2124,7 +2130,14 @@ class Observatory:
                 one_at_a_time = 0
                 time.sleep(3)
 
-
+            #Check at least every 10 seconds even if not requested
+            elif time.time() - self.get_new_job_timer > 10 and not self.currently_scan_requesting:
+                 self.get_new_job_timer = time.time()
+                 self.currently_scan_requesting = True
+                 self.scan_requests()
+                 self.currently_scan_requesting = False
+                 time.sleep(3)
+                 
             else:
                 # Need this to be as LONG as possible.  Essentially this sets the rate of checking scan requests.
                 time.sleep(3)
@@ -2166,9 +2179,9 @@ class Observatory:
         one_at_a_time = 0
 
         while True:
-
-            if not self.full_update_lock and (not self.update_status_queue.empty()) and one_at_a_time == 0:
-
+            #if not self.full_update_lock and (not self.update_status_queue.empty()) and one_at_a_time == 0:
+            
+            if (not self.update_status_queue.empty()) and one_at_a_time == 0:
                 one_at_a_time = 1
                 request = self.update_status_queue.get(block=False)
                 #print ("status updated")
@@ -2177,10 +2190,18 @@ class Observatory:
                     self.update_status(mount_only=True, dont_wait=True)
                 else:
                     self.update_status()
-                print ("updated status")
+                print ("updated status on request")
                 self.update_status_queue.task_done()
                 one_at_a_time = 0
                 time.sleep(2)
+
+            # Update status on at lest a 30s period if not requested
+            elif (time.time() - self.time_last_status) > 30:
+                self.update_status()
+                print ("updated status on timer")
+                self.time_last_status=time.time()
+                time.sleep(2)
+                
 
 
             else:
