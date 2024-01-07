@@ -1894,7 +1894,7 @@ class Camera:
 
                             # During a pre-exposure, we don't want the update to be
                             # syncronous!
-                            g_dev["obs"].request_full_update()
+                            #g_dev["obs"].request_full_update()
                             #g_dev['obs'].update()
 
 
@@ -2303,7 +2303,7 @@ class Camera:
                         # Here scan for requests
                         # During a pre-exposure, we don't want the update to be
                         # syncronous!
-                        g_dev["obs"].request_full_update()
+                        #g_dev["obs"].request_full_update()
                         #g_dev['obs'].update()
 
 
@@ -2900,12 +2900,12 @@ class Camera:
                             if g_dev['obs'].open_and_enabled_to_observe==False:
                                 plog ("No longer open and enabled to observe, cancelling out of waiting for SEP.")
                                 break
-                        if (time.time() - temptimer) > 20:
-                            # During a pre-exposure, we don't want the update to be
-                            # syncronous!
-                            g_dev["obs"].request_full_update()
-                            #g_dev['obs'].update()
-                            temptimer=time.time()
+                        # if (time.time() - temptimer) > 20:
+                        #     # During a pre-exposure, we don't want the update to be
+                        #     # syncronous!
+                        #     g_dev["obs"].request_full_update()
+                        #     #g_dev['obs'].update()
+                        #     temptimer=time.time()
 
                         time.sleep(0.2)
 
