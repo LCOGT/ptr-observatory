@@ -2262,12 +2262,7 @@ class Camera:
                     exposure_scan_request_timer=time.time()
 
                     g_dev['obs'].request_scan_requests()
-                    #g_dev['obs'].scan_requests()
-
-
-                    # TOTAL ABSOLUTE HACK TO GET THINGS WORKING WHILE I DISCOVER THE THREAD PROBLEM ELSEWHERE - MTF
-                    g_dev['obs'].scan_requests()
-                    g_dev['obs'].update_status()
+                    #g_dev['obs'].scan_requests()                   
 
 
                     # Check there hasn't been a cancel sent through
