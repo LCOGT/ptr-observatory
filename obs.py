@@ -817,7 +817,7 @@ class Observatory:
         #print (unread_commands)
         
         
-        print ("requests scanned")
+        #print ("requests scanned")
         
         # Make sure the list is sorted in the order the jobs were issued
         # Note: the ulid for a job is a unique lexicographically-sortable id.
@@ -1692,13 +1692,13 @@ class Observatory:
 
         
 
-        if not self.currently_updating_status and (time.time() - self.time_last_status > 10):
-            self.request_update_status()
+        # if not self.currently_updating_status and (time.time() - self.time_last_status > 10):
+        #     self.request_update_status()
 
-        if time.time() - self.get_new_job_timer > 3:
-            self.get_new_job_timer = time.time()
-            # try:
-            self.request_scan_requests()
+        # if time.time() - self.get_new_job_timer > 3:
+        #     self.get_new_job_timer = time.time()
+        #     # try:
+        #     self.request_scan_requests()
             # except:
             #     pass
 
