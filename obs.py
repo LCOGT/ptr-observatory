@@ -795,25 +795,28 @@ class Observatory:
 
         # To stop the scan requests getting hammered unnecessarily.
         # Which is has sometimes on net disconnections.
-        if (time.time() - self.scan_request_timer) > 1.0:
-            self.scan_request_timer = time.time()
-            url_job = "https://jobs.photonranch.org/jobs/getnewjobs"
-            body = {"site": self.name}
-            cmd = {}
-            # Get a list of new jobs to complete (this request
-            # marks the commands as "RECEIVED")
-            try:
-                unread_commands = reqs.request(
-                    "POST", url_job, data=json.dumps(body), timeout=20
-                ).json()
-            except:
-                plog("problem gathering scan requests. Likely just a connection glitch.")
-                unread_commands=[]
-        else:
+        #if (time.time() - self.scan_request_timer) > 1.0:
+        self.scan_request_timer = time.time()
+        url_job = "https://jobs.photonranch.org/jobs/getnewjobs"
+        body = {"site": self.name}
+        cmd = {}
+        # Get a list of new jobs to complete (this request
+        # marks the commands as "RECEIVED")
+        try:
+            unread_commands = reqs.request(
+                "POST", url_job, data=json.dumps(body), timeout=20
+            ).json()
+        except:
+            plog("problem gathering scan requests. Likely just a connection glitch.")
             unread_commands=[]
+        #else:
+        #    unread_commands=[]
 
         #print (unread_commands)
-
+        
+        
+        print ("requests scanned")
+        
         # Make sure the list is sorted in the order the jobs were issued
         # Note: the ulid for a job is a unique lexicographically-sortable id.
         if len(unread_commands) > 0:
@@ -1696,9 +1699,9 @@ class Observatory:
                 pass
 
 
-        self.full_update_lock=True
+        #self.full_update_lock=True
         while self.currently_updating_status:
-            print ('updating status')
+            #print ('updating status')
             time.sleep(0.5)
 
 
@@ -1739,9 +1742,9 @@ class Observatory:
 
         
 
-        self.full_update_lock=False
-        self.currently_updating_FULL=False
-        self.last_update_complete=time.time()
+        #self.full_update_lock=False
+        #self.currently_updating_FULL=False
+        #self.last_update_complete=time.time()
         # END of safety checks.
 
     def run(self):
@@ -2174,6 +2177,7 @@ class Observatory:
                     self.update_status(mount_only=True, dont_wait=True)
                 else:
                     self.update_status()
+                print ("updated status")
                 self.update_status_queue.task_done()
                 one_at_a_time = 0
                 time.sleep(2)
