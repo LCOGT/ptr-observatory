@@ -164,7 +164,7 @@ site_config = {
     'defaults': {
         'screen': 'screen1',
         'mount': 'mount1',
-        'telescope': 'telescope1',     #How do we handle selector here, if at all?
+        #'telescope': 'telescope1',     #How do we handle selector here, if at all?
         'focuser': 'focuser1',
         'rotator': 'rotator1',
         'selector': None,
@@ -174,7 +174,7 @@ site_config = {
         },
     'device_types': [
             'mount',
-            'telescope',
+            #'telescope',
             #'screen',
             #'rotator',
             'focuser',
@@ -186,7 +186,7 @@ site_config = {
     
     'short_status_devices': [
             'mount',
-            'telescope',
+            #'telescope',
             'screen',
             'rotator',
             'focuser',
@@ -260,48 +260,48 @@ site_config = {
 
     },
 
-    'telescope': {                            #Note telescope == OTA  Optical Tube Assembly.
-        'telescope1': {
-            'parent': 'mount1',
-            'name': 'Main OTA',
-            'telescop': 'eco1',
-            'ptrtel': 'CDK17',
-            'desc':  'CDK17',
-            'driver': None,                     #  Essentially this device is informational.  It is mostly about the optics.
-            'collecting_area': 100000,
-            'obscuration':  23.7,   #  %
-            'aperture': 432,
-            'focal_length': 2939,
-            'has_dew_heater':  True,
-            'screen_name': 'screen1',
-            'focuser_name':  'focuser1',
-            'rotator_name':  'rotator1',
-            'has_instrument_selector': False,   #This is a default for a single instrument system
-            'selector_positions': 1,            #Note starts with 1
-            'instrument names':  ['camera1'],
-            'instrument aliases':  ['SBIG16803'],
-            'configuration': {
-                 "position1": ["darkslide1", "filter_wheel1", "camera1"]
-                 },
-            'camera_name':  'camera1',
-            'filter_wheel_name':  'filter_wheel1',
-            'has_fans':  True,
-            'has_cover':  False,
-            'settings': {
-                'fans': ['Auto','High', 'Low', 'Off'],
-                'offset_collimation': 0.0,    #  If the mount model is current, these numbers are usually near 0.0
-                                              #  for tel1.  Units are arcseconds.
-                'offset_declination': 0.0,
-                'offset_flexure': 0.0,
-                'west_flip_ha_offset': 0.0,  #  new terms.
-                'west_flip_ca_offset': 0.0,
-                'west_flip_dec_offset': 0.0
-            },
+    # 'telescope': {                            #Note telescope == OTA  Optical Tube Assembly.
+    #     'telescope1': {
+    #         'parent': 'mount1',
+    #         'name': 'Main OTA',
+    #         'telescop': 'eco1',
+    #         'ptrtel': 'CDK17',
+    #         'desc':  'CDK17',
+    #         'driver': None,                     #  Essentially this device is informational.  It is mostly about the optics.
+    #         'collecting_area': 100000,
+    #         'obscuration':  23.7,   #  %
+    #         'aperture': 432,
+    #         'focal_length': 2939,
+    #         'has_dew_heater':  True,
+    #         'screen_name': 'screen1',
+    #         'focuser_name':  'focuser1',
+    #         'rotator_name':  'rotator1',
+    #         'has_instrument_selector': False,   #This is a default for a single instrument system
+    #         'selector_positions': 1,            #Note starts with 1
+    #         'instrument names':  ['camera1'],
+    #         'instrument aliases':  ['SBIG16803'],
+    #         'configuration': {
+    #              "position1": ["darkslide1", "filter_wheel1", "camera1"]
+    #              },
+    #         'camera_name':  'camera1',
+    #         'filter_wheel_name':  'filter_wheel1',
+    #         'has_fans':  True,
+    #         'has_cover':  False,
+    #         'settings': {
+    #             'fans': ['Auto','High', 'Low', 'Off'],
+    #             'offset_collimation': 0.0,    #  If the mount model is current, these numbers are usually near 0.0
+    #                                           #  for tel1.  Units are arcseconds.
+    #             'offset_declination': 0.0,
+    #             'offset_flexure': 0.0,
+    #             'west_flip_ha_offset': 0.0,  #  new terms.
+    #             'west_flip_ca_offset': 0.0,
+    #             'west_flip_dec_offset': 0.0
+    #         },
 
 
 
-        },
-    },
+    #     },
+    # },
 
 #     'rotator': {
 #         'rotator1': {
