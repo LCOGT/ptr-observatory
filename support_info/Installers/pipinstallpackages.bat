@@ -1,5 +1,8 @@
 pip install python-dotenv
 pip install colour-science colour_demosaicing
+wget https://aka.ms/vs/17/release/vs_BuildTools.exe -O vsBuildTools.exe
+.\vs_BuildTools.exe
+del vsBuildTools.exe
 pip install sep
 pip install Pillow
 pip install func_timeout
