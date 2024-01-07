@@ -335,13 +335,7 @@ class Observatory:
         self.scan_request_thread.daemon = True
         self.scan_request_thread.start()
         
-        # AND one for safety checks
-        # Only poll the broad safety checks (altitude and inactivity) every 5 minutes
-        self.safety_check_period = self.config['safety_check_period']
-        self.time_since_safety_checks = time.time() - (2* self.safety_check_period)        
-        self.safety_and_monitoring_checks_loop_thread=threading.Thread(target=self.safety_and_monitoring_checks_loop)
-        self.safety_and_monitoring_checks_loop_thread.daemon = True
-        self.safety_and_monitoring_checks_loop_thread.start()
+        
         
         
 
@@ -606,6 +600,14 @@ class Observatory:
 
         #MTF -TEMP
         g_dev['obs'].enc_status = g_dev['obs'].get_enclosure_status_from_aws()
+        
+        # AND one for safety checks
+        # Only poll the broad safety checks (altitude and inactivity) every 5 minutes
+        self.safety_check_period = self.config['safety_check_period']
+        self.time_since_safety_checks = time.time() - (2* self.safety_check_period)        
+        self.safety_and_monitoring_checks_loop_thread=threading.Thread(target=self.safety_and_monitoring_checks_loop)
+        self.safety_and_monitoring_checks_loop_thread.daemon = True
+        self.safety_and_monitoring_checks_loop_thread.start()
 
         # self.drift_tracker_ra=0
         # self.drift_tracker_dec=0
