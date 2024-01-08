@@ -99,12 +99,12 @@ site_config = {
     # These are the default values that will be set for the obs
     # on a reboot of obs.py. They are safety checks that 
     # can be toggled by an admin in the Observe tab.
-    'scope_in_manual_mode': False,
-    'mount_reference_model_off': True,
-    'sun_checks_on': False,
+    'scope_in_manual_mode': False,    #20231222 This makes things easier for heavy debugging
+    'mount_reference_model_off': False,
+    'sun_checks_on': True,
     'moon_checks_on': True,
     'altitude_checks_on': True,    
-    'daytime_exposure_time_safety_on': False,
+    'daytime_exposure_time_safety_on': True,
     
     
     
@@ -150,7 +150,7 @@ site_config = {
     # Minimum realistic seeing at the site.
     # This allows culling of unphysical results in photometry and other things
     # Particularly useful for focus
-    'minimum_realistic_seeing': 1.0,
+    'minimum_realistic_seeing': 1.5,
      
 
     
@@ -185,8 +185,8 @@ site_config = {
     'auto_eve_bias_dark': False,
     'auto_eve_sky_flat': True,
     
-     'time_to_wait_after_roof_opens_to_take_flats': 120,   #Just imposing a minimum in case of a restart.
-    'auto_midnight_moonless_bias_dark': True,
+    'time_to_wait_after_roof_opens_to_take_flats': 120,   #sec Just imposing a minimum in case of a restart.
+    'auto_midnight_moonless_bias_dark': False,
     'auto_morn_sky_flat': True,
     'auto_morn_bias_dark': False,
     
@@ -448,7 +448,7 @@ site_config = {
             'correct_focus_for_temperature' : True,
             'maximum_good_focus_in_arcsecond': 2.5, # highest value to consider as being in "good focus". Used to select last good focus value
 
-            'reference':  5870,    #Nominal at 20C Primary temperature, in microns not steps.            
+            'reference':  9810,    #Nominal at 20C Primary temperature, in microns not steps.            
             'z_compression': 0.0, #  microns per degree of zenith distance
             'z_coef_date':  '20221002',   # 'reference': 4375,    #   Guess 20210904  Nominal at 10C Primary temperature
             'use_local_temp':  False,
@@ -560,8 +560,8 @@ site_config = {
                                 #so screen brightens, skipping u and zs which really need sky.
                 #'filter_sky_sort':     ['S2', 'HA', 'N2', 'O3', 'ip', 'rp', 'Red', 'JV',\
                 #                        'Green','JB', 'gp',   'Blue', 'EXO',  'w','Lum',  'air']  #Least to most throughput
-                'filter_sky_sort':     ['S2', 'HA', 'N2', 'O3', 'ip', 'rp', 'JV',\
-                                        'JB', 'gp', 'EXO', 'Lum', 'w', 'air'],
+                'filter_sky_sort':     ['S2', 'HA', 'N2', 'O3', 'ip', 'rp', 'JB',\
+                                        'JV', 'gp', 'EXO', 'Lum', 'w', 'air'],
                  #Least to most throughput
 
             },
@@ -589,11 +589,11 @@ site_config = {
     'camera': {
         'camera_1_1': {
             'parent': 'telescope1',
-            'name': 'gf01sm',      #Important because this points to a server file structure by that name.
-            'desc':  'FLI GSENSE BI 4040',
-            'service_date': '20231214',
+            'name': 'OF01', #'KF04',      #Important because this points to a server file structure by that name.
+            'desc':  'FLI on-Semi 50100',  #'FLI On-semi 50100',
+            'service_date': '20231224',  #'20231222'
             #'driver':  'ASCOM.QHYCCD.Camera',   #  Maxim.CCDCamera',   #"Maxim.CCDCamera",   #'ASCOM.FLI.Kepler.Camera',  #Code must work withall three
-            'driver':  'ASCOM.FLI.Kepler.Camera',  #"QHYCCD_Direct_Control", # NB Be careful this is not QHY Camera2 or Guider  "Maxim.CCDCamera",   #'ASCOM.FLI.Kepler.Camera', "ASCOM.QHYCCD.Camera",   #
+            'driver':  'ASCOM.FLI.Camera',   #'ASCOM.FLI.Kepler.Camera',  #"QHYCCD_Direct_Control", # NB Be careful this is not QHY Camera2 or Guider  "Maxim.CCDCamera",   #'ASCOM.FLI.Kepler.Camera', "ASCOM.QHYCCD.Camera",   #
             
            
 
@@ -601,10 +601,10 @@ site_config = {
             'startup_script':  None,
             'recover_script':  None,
             'shutdown_script':  None,
-            'detector':  'GSENSE BI 4040',
+            'detector':  'On-Semi 50100',
             'manufacturer':  'FLI',
             'use_file_mode':  False,
-            'file_mode_path':  'Q:/000ptr_saf/archive/kf01/autosaves/',
+            'file_mode_path':  'Q:/000ptr_saf/archive/of01/autosaves/',
             'settings': {
                 
                 # These are the offsets in degrees of the actual telescope from the latitude and longitude of the WEMA settings
@@ -616,10 +616,17 @@ site_config = {
                 'hold_flats_in_memory': True, # If there is sufficient memory ... OR .... not many flats, it is faster to keep the flats in memory.
 
                 # Simple Camera Properties
-                'is_cmos':  True,
+                'is_cmos':  False,
+                'is_ccd': True,
                 'is_osc': False,
                 'is_color': False,  # NB we also have a is_osc key.
                 'osc_bayer': 'RGGB',
+                
+                # Does this camera have a darkslide, if so, what are the settings?
+                'has_darkslide':  False,           #was False until WER put in FLI ascom shutter mod
+                'darkslide_type' : 'ASCOM_FLI_SHUTTER', # dunno what the other one is yet.
+                'darkslide_com':  'ASCOM.FLI',    # Was "COM15" before changing to FLI.ASCOM
+                'shutter_type': "Leaf",
 
 
                 # For direct QHY usage we need to set the appropriate gain.
@@ -662,14 +669,14 @@ site_config = {
                 # then binning for focus is recommended. SEP and Platesolve can generally always be binned.
                 'interpolate_for_focus': False,
                 # This setting will bin the image for focussing rather than interpolating. Good for 1x1 pixel sizes < 0.6.
-                'bin_for_focus': False,
-                'focus_bin_value' : 1,
+                'bin_for_focus': True,
+                'focus_bin_value' : 2,
                 'interpolate_for_sep': False,
-                'bin_for_sep': False,  # This setting will bin the image for SEP photometry rather than interpolating.
-                'sep_bin_value' : 1,
+                'bin_for_sep': True,  # This setting will bin the image for SEP photometry rather than interpolating.
+                'sep_bin_value' : 2,
                 # This setting will bin the image for platesolving rather than interpolating.
-                'bin_for_platesolve': False,
-                'platesolve_bin_value' : 1,
+                'bin_for_platesolve': True,
+                'platesolve_bin_value' : 2,
                 
                 
                 # Colour image tweaks.
@@ -688,7 +695,7 @@ site_config = {
                 'flipx_fits': False,
                 'flipy_fits': False,
                 'rotate180_fits': False,  # This also should be flipxy!
-                'rotate90_fits': False,
+                'rotate90_fits': True,
                 'rotate270_fits': False,
                 'squash_on_x_axis': False,
                 
@@ -743,10 +750,14 @@ site_config = {
 
                 # This is the area for cooling related settings
                 'cooler_on': True,
-                'temp_setpoint': -25,  # Verify we can go colder
-                'has_chiller': True,                
+                'temp_setpoint': -15,  # Verify we can go colder
+                'rated_max_delta': -45, # Rated capacity for TEC to go below ambient.
+                'has_chiller': True,
+                'ambient_water_cooler':  False,  #QHY sells these.           
                 'chiller_com_port': 'COM1',
-                'chiller_ref_temp':  15.0,  # C
+                'chiller_ref_temp':  17.5,  # C  15 - 45 = -30 so do not exceed that target or run
+                                            #TEC above 85% -- better more like 80%.  FLI 50100 at -20 uses 85% power with actual ambient
+                                            # of 18C.  60% at -15C, so -17.5 seems good. Really hot days mean the TEC ha do do more work.
                 'day_warm': False,
                 'day_warm_degrees': 0,  # Number of degrees to warm during the daytime.
                 'protect_camera_from_overheating' : False,
@@ -754,12 +765,20 @@ site_config = {
                 # These are the physical values for the camera
                 # related to pixelscale. Binning only applies to single
                 # images. Stacks will always be drizzled to to drizzle value from 1x1.
-                'onebyone_pix_scale': 0.4685,    #  This is the 1x1 binning pixelscale
-                'native_bin': 1, # Needs to be simple, it will recalculate things on the 1x1 binning pixscale above.
-                'x_pixel':  9.0, # pixel size in microns
-                'y_pixel':  9.0, # pixel size in microns
                 
-                #NB 32 x 32 amin field.
+                #NB WER 20231223  FLI 50100  This does not make a lot of sense for a a 6 micron 
+                #CCD with 0.312 asec pixels @ MRC  So we might run 2x2 binned all the time
+                #esentially redefine the 1x1 binned pixel as seen by the SS annd downstream
+                #calibration and pipe system.  Readout speeds up.  The binning arithmetic
+                #appears to be a sum  However the simplicity of treating all cameras the same
+                #is compelling.  This camera has two channels so we need to look at crosstalk.
+                
+                'onebyone_pix_scale': 0.312,    #  This is the 1x1 binning pixelscale
+                'native_bin': 1, # Needs to be simple, it will recalculate things on the 1x1 binning pixscale above.
+                'x_pixel':  6.0, # pixel size in microns
+                'y_pixel':  6.0, # pixel size in microns
+                
+                #NB 43 x 32 amin field.  FLI 50100
                 # The drizzle_value is by the new pixelscale
                 # for the new resolution when stacking in the EVA pipeline
                 # Realistically you want a resolution of about 0.5 arcseconds per pixel
@@ -771,12 +790,12 @@ site_config = {
                 'dither_enabled':  True,      #Set this way for tracking testing
 
                 # This is the absolute minimum and maximum exposure for the camera
-                'min_exposure': 0.0001,
+                'min_exposure': 0.4,
                 'max_exposure': 600.,
                 # For certain shutters, short exposures aren't good for flats. Some CMOS have banding in too short an exposure. Largely applies to ccds though.
-                'min_flat_exposure': 0.0001,                
+                'min_flat_exposure': 0.4,                
                 # Realistically there is maximum flat_exposure that makes sure flats are efficient and aren't collecting actual stars.
-                'max_flat_exposure': 20.0,
+                'max_flat_exposure': 30.0,
                 # During the daytime with the daytime safety mode on, exposures will be limited to this maximum exposure
                 'max_daytime_exposure': 0.5,
 
@@ -786,18 +805,20 @@ site_config = {
                 'reject_new_flat_by_known_gain' : True,
                 # These values are just the STARTING values. Once the software has been
                 # through a few nights of calibration images, it should automatically calculate these gains.
+
                 # 'camera_gain':   2.48, #[10., 10., 10., 10.],     #  One val for each binning.
                 # 'camera_gain_stdev':   0.04, #[10., 10., 10., 10.],     #  One val for each binning.
                 # 'read_noise':  10.615, #[9, 9, 9, 9],    #  All SWAGs right now
                 # 'read_noise_stdev':   0.012, #[10., 10., 10., 10.],     #  One val for each binning.     
                 'dark_lim_adu': 0.15,   #adu/s of dark 20231229 moved down from 0.5
                 'dark_lim_std': 15,  #first guess. See above.
+
                 # Saturate is the important one. Others are informational only.
-                'fullwell_capacity': 80000,  # NB Guess
-                'saturate':   65535,
+                'fullwell_capacity': 40300,  # NB Guess
+                'saturate':   62000,
                 'max_linearity':  60000,   # Guess
                 # How long does it take to readout an image after exposure
-                'cycle_time':            0.5,
+                'cycle_time':            2,
                 # What is the base smartstack exposure time?
                 # It will vary from scope to scope and computer to computer.
                 # 30s is a good default.
@@ -807,23 +828,20 @@ site_config = {
                 
 
                 # As simple as it states, how many calibration frames to collect and how many to store.                
-                'number_of_bias_to_collect': 33,
-                'number_of_dark_to_collect': 17,
-                'number_of_flat_to_collect': 11,
-                'number_of_bias_to_store': 63,
-                'number_of_dark_to_store': 33,
-                'number_of_flat_to_store': 31,
+                'number_of_bias_to_collect': 26,
+                'number_of_dark_to_collect': 13,
+                'number_of_flat_to_collect': 5,
+                'number_of_bias_to_store': 53,
+                'number_of_dark_to_store': 27,
+                'number_of_flat_to_store': 11,
                 # Default dark exposure time.
-                'dark_exposure': 180,
+                'dark_exposure': 360,
                
                 
                 # In the EVA Pipeline, whether to run cosmic ray detection on individual images
                 'do_cosmics': False,
 
-                # Does this camera have a darkslide, if so, what are the settings?
-                'has_darkslide':  False,
-                'darkslide_com':  'COM15',
-                'shutter_type': "Electronic",
+
                
                 # 'has_screen': True,
                 # 'screen_settings':  {
