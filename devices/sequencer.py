@@ -4029,6 +4029,7 @@ class Sequencer:
         self.af_guard = True
         sim = False
         # Reset focus tracker
+        #breakpoint()
         if begin_at is None:
             foc_start = g_dev['foc'].current_focus_position
         else:
@@ -4059,12 +4060,13 @@ class Sequencer:
         focus_patch_ra=above_altitude_patches[idx,0] /15
         focus_patch_dec=above_altitude_patches[idx,1]
         focus_patch_n=above_altitude_patches[idx,2]
-
+        
 
         #g_dev['mnt'].go_coord(focus_star[0][1][1], focus_star[0][1][0])
 
         g_dev['obs'].send_to_user("Slewing to a focus field", p_level='INFO')
         g_dev['mnt'].go_command(ra=focus_patch_ra, dec=focus_patch_dec)
+        #breakpoint()
         g_dev['foc'].guarded_move((foc_start)*g_dev['foc'].micron_to_steps)
 
 

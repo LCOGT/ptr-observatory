@@ -189,6 +189,8 @@ class Focuser:
                             self.focuser_update_wincom.focMoveIn(absdifference_in_position)
                         print (self.focuser_update_wincom.focPosition())
                         self.current_focus_position=self.get_position()
+                        #self.last_known_focus= 
+
 
                      else:
 
@@ -559,6 +561,16 @@ class Focuser:
         to focus. Functionally dependent of temp, coef_c, and filter thickness."""
 
         try:
+            if g_dev['seq'].focussing:
+                return
+        except:
+            # On initialisation there is no g_dev
+            # so this just skips early checks.
+            pass
+            #plog ("skipping focussing check... DEBUG MTF")
+
+
+        try:
             if self.theskyx:
                 temp_delta = self.focuser.focTemperature - self.current_focus_temperature
             else:
@@ -717,6 +729,8 @@ class Focuser:
                 plog("Supplied relative move is lacking a sign; ignoring.")
             self.current_focus_position=self.get_position()
 
+        self.last_known_focus=self.current_focus_position
+
 
     def move_absolute_command(self, req: dict, opt: dict):
         """Sets the focus position by moving to an absolute position."""
@@ -751,7 +765,8 @@ class Focuser:
             while self.focuser.IsMoving:
                 time.sleep(0.3)
             self.current_focus_position=self.get_position()
-
+        
+        self.last_known_focus=self.current_focus_position
 
 
     def stop_command(self, req: dict, opt: dict):

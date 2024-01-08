@@ -2192,7 +2192,7 @@ class Observatory:
                     self.update_status(mount_only=True, dont_wait=True)
                 else:
                     self.update_status()
-                print ("updated status on request")
+                #print ("updated status on request")
                 self.update_status_queue.task_done()
                 one_at_a_time = 0
                 time.sleep(2)

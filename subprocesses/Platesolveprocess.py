@@ -200,8 +200,9 @@ sources = sources[sources['FWHM'] < (np.nanmedian(sources['FWHM']) + (3 * np.nan
 sources = sources[sources['flux'] > 0]
 sources = sources[sources['flux'] < 1000000]
 
+#breakpoint()
 
-if len(sources) >= 15:
+if len(sources) >= 5:
 
 
     # Get size of original image
