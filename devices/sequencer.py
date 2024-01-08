@@ -216,6 +216,8 @@ class Sequencer:
         self.rotator_has_been_homed_this_evening=False
         g_dev['obs'].request_update_calendar_blocks()
         #self.blocks=
+        
+        
 
     def wait_for_slew(self):
         """
@@ -484,10 +486,10 @@ class Sequencer:
                 g_dev['mnt'].set_tracking_on()
 
                 # Super-duper double check that darkslide is open
-                if g_dev['cam'].darkslide:
-                    g_dev['cam'].darkslide_instance.openDarkslide()
-                    g_dev['cam'].darkslide_open = True
-                    g_dev['cam'].darkslide_state = 'Open'
+                if g_dev['cam'].has_darkslide:
+                    g_dev['cam'].openDarkslide()
+                    # g_dev['cam'].darkslide_open = True
+                    # g_dev['cam'].darkslide_state = 'Open'
 
 
 
@@ -1428,10 +1430,10 @@ class Sequencer:
         else:
             ending = g_dev['events']['End Eve Bias Dark']
 
-        if g_dev['cam'].darkslide and ephem.now() < ending:
-            g_dev['cam'].darkslide_instance.closeDarkslide()
-            g_dev['cam'].darkslide_open = False
-            g_dev['cam'].darkslide_state = 'Closed'
+        if g_dev['cam'].has_darkslide and ephem.now() < ending:
+            g_dev['cam'].closeDarkslide()
+            # g_dev['cam'].darkslide_open = False
+            # g_dev['cam'].darkslide_state = 'Closed'
 
         while ephem.now() < ending :   #Do not overrun the window end
 
@@ -1575,10 +1577,10 @@ class Sequencer:
         # Never hurts to make sure the telescope is parked for the night
         self.park_and_close()
 
-        if g_dev['cam'].darkslide:
-            g_dev['cam'].darkslide_instance.closeDarkslide()
-            g_dev['cam'].darkslide_open = False
-            g_dev['cam'].darkslide_state = 'Closed'
+        if g_dev['cam'].has_darkslide:
+            g_dev['cam'].closeDarkslide()
+            # g_dev['cam'].darkslide_open = False
+            # g_dev['cam'].darkslide_state = 'Closed'
 
         self.reported_on_observing_period_beginning=False
 
@@ -2580,7 +2582,10 @@ class Sequencer:
         This is the evening and morning sky automated skyflat routine.
         """
 
-
+        if not (g_dev['obs'].enc_status['shutter_status'] == 'Open') and not (g_dev['obs'].enc_status['shutter_status'] == 'Sim. Open'):
+            plog ("NOT DOING FLATS -- THE ROOF IS SHUT!!")
+            g_dev["obs"].send_to_user("A sky flat script request was rejected as the roof is shut.")
+            return
 
         if  ((ephem.now() < g_dev['events']['Cool Down, Open']) or \
             (g_dev['events']['End Morn Sky Flats'] < ephem.now() < g_dev['events']['Nightly Reset'])):
@@ -2740,10 +2745,11 @@ class Sequencer:
         camera_gain_collector=[]
 
         # Super-duper double check that darkslide is open
-        if g_dev['cam'].darkslide:
-            g_dev['cam'].darkslide_instance.openDarkslide()
-            g_dev['cam'].darkslide_open = True
-            g_dev['cam'].darkslide_state = 'Open'
+        #NB this is the only reference to darkslide outside of the Camera and obs_config modules.
+        if g_dev['cam'].has_darkslide:   #NB we should rename to 'has_darkslide' WER
+            g_dev['cam'].openDarkslide()
+            #g_dev['cam'].darkslide_open = True
+            #g_dev['cam'].darkslide_state = 'Open'
 
 
         while len(pop_list) > 0  and ephem.now() < ending and g_dev['obs'].open_and_enabled_to_observe:
