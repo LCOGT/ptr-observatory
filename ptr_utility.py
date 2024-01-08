@@ -26,7 +26,7 @@ import ephem
 from ptr_config import site_config
 from global_yard import g_dev
 
-from datetime import timezone, timedelta #datetime, 
+from datetime import timezone, timedelta #datetime,
 #from dateutil import tz
 
 
@@ -1815,23 +1815,23 @@ def plog(*args, loud = True):
 #     return pAz
 
 
-# def transform_haDec_to_azAlt(pLocal_hour_angle, pDec, lat):
-#     latr = math.radians(lat)
-#     sinLat = math.sin(latr)
-#     cosLat = math.cos(latr)
-#     decr = math.radians(pDec)
-#     sinDec = math.sin(decr)
-#     cosDec = math.cos(decr)
-#     mHar = math.radians(15.0 * pLocal_hour_angle)
-#     sinHa = math.sin(mHar)
-#     cosHa = math.cos(mHar)
-#     altitude = math.degrees(math.asin(sinLat * sinDec + cosLat * cosDec * cosHa))
-#     y = sinHa
-#     x = cosHa * sinLat - math.tan(decr) * cosLat
-#     azimuth = math.degrees(math.atan2(y, x)) + 180
-#     # azimuth = reduceAz(azimuth)
-#     # altitude = reduceAlt(altitude)
-#     return (azimuth, altitude)  # , local_hour_angle)
+def transform_haDec_to_azAlt(pLocal_hour_angle, pDec, lat):
+    latr = math.radians(lat)
+    sinLat = math.sin(latr)
+    cosLat = math.cos(latr)
+    decr = math.radians(pDec)
+    sinDec = math.sin(decr)
+    cosDec = math.cos(decr)
+    mHar = math.radians(15.0 * pLocal_hour_angle)
+    sinHa = math.sin(mHar)
+    cosHa = math.cos(mHar)
+    altitude = math.degrees(math.asin(sinLat * sinDec + cosLat * cosDec * cosHa))
+    y = sinHa
+    x = cosHa * sinLat - math.tan(decr) * cosLat
+    azimuth = math.degrees(math.atan2(y, x)) + 180
+    # azimuth = reduceAz(azimuth)
+    # altitude = reduceAlt(altitude)
+    return (azimuth, altitude)  # , local_hour_angle)
 
 
 # def reduceAlt(pAlt):
@@ -1961,7 +1961,7 @@ def plog(*args, loud = True):
 #         )
 #     except:
 #         pass
-    
+
 #     raRefr = reduce_ha_r(appHa - obsHa) * HTOS
 #     decRefr = -reduce_dec_r(appDec - obsDec) * DTOS
 #     return reduce_ha_r(obsHa), reduce_dec_r(obsDec), refAsec

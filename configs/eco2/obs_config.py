@@ -102,7 +102,7 @@ site_config = {
     
     # Bisque mounts can't run updates in a thread ... yet... until I figure it out,
     # So this is False for Bisques and true for everyone else.
-    'run_main_update_in_a_thread': True,
+    'run_main_update_in_a_thread': False,
     'run_status_update_in_a_thread' : True,
     
     # Minimum realistic seeing at the site.
@@ -568,6 +568,7 @@ site_config = {
                 # Generally leave this at 0.5 - the optimal value for ground based
                 # observatories.... unless you have a large field of view.                
                 'drizzle_value_for_later_stacking': 1.25,
+                'dither_enabled':  True,      #Set this way for tracking testing
                 
                 'north_offset': 0.0,    #  These three are normally 0.0 for the primary telescope
                 'east_offset': 0.0,
@@ -583,10 +584,12 @@ site_config = {
                 'max_daytime_exposure': 0.0001,
                 'can_subframe':  True,
                 'min_subframe': [128,128],
-                'camera_gain':   2.417, #[10., 10., 10., 10.],     #  One val for each binning.
-                'camera_gain_stdev':   0.11, #[10., 10., 10., 10.],     #  One val for each binning.
-                'read_noise':  10.224, #[9, 9, 9, 9],    #  All SWAGs right now
-                'read_noise_stdev':   0.003, #[10., 10., 10., 10.],     #  One val for each binning.
+                # 'camera_gain':   2.417, #[10., 10., 10., 10.],     #  One val for each binning.
+                # 'camera_gain_stdev':   0.11, #[10., 10., 10., 10.],     #  One val for each binning.
+                # 'read_noise':  10.224, #[9, 9, 9, 9],    #  All SWAGs right now
+                # 'read_noise_stdev':   0.003, #[10., 10., 10., 10.],     #  One val for each binning.
+                'dark_lim_adu': 0.15,   #adu/s of dark 20231229 moved down from 0.5
+                'dark_lim_std': 15,  #first guess. See above.
                 'reference_dark': 0.2,  #  NB  Guess
                 'reference_offset': 611, #  NB Guess  ADU vaules not times in sec.
                 'fullwell_capacity': 80000,   #  NB Guess
@@ -623,6 +626,8 @@ site_config = {
                 'readout_speed':  0.4,
                 'readout_seconds': 2.4,
                 'smart_stack_exposure_time': 15,
+                
+                'smart_stack_exposure_NB_multiplier':  3,   #Michael's setting
                 'square_detector': False,
                 'square_pixels': True,
                 'areas_implemented': ['Full', 'SQR', '0.5*0.5°',  '0.7x0.7°', '1x1°', '1.4x1.4°', '2x2°', '2.8x2.8°', '4x4sq°', '5.6x5.6°'],

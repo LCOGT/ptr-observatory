@@ -133,13 +133,13 @@ site_config = {
     'enclosure_check_period': 1,    # How many minutes between enclosure checks
 
     # Turn on and off various automated calibrations at different times.
-    'auto_eve_bias_dark': True,
+    'auto_eve_bias_dark': False,
     'auto_eve_sky_flat': True,
     
      'time_to_wait_after_roof_opens_to_take_flats': 120,   #Just imposing a minimum in case of a restart.
     'auto_midnight_moonless_bias_dark': True,
     'auto_morn_sky_flat': True,
-    'auto_morn_bias_dark': True,
+    'auto_morn_bias_dark': False,
     
     # FOCUS OPTIONS
     'periodic_focus_time': 12.0, # This is a time, in hours, over which to bypass automated focussing (e.g. at the start of a project it will not refocus if a new project starts X hours after the last focus)
@@ -471,7 +471,7 @@ site_config = {
             "dual_wheel": True,
             
             #how long to wait for the filter to settle after a filter change(seconds)
-            "filter_settle_time": 1, 
+            "filter_settle_time": 5, #20240104 Upped from 1 to 5 per MF recommandatin. WER
             
             # This ignores the automatically estimated filter gains and starts with the values from the config file             
             'override_automatic_filter_throughputs': False, 
@@ -491,25 +491,26 @@ site_config = {
                 'mono_Narrowband_colour_filters': ['ha', 'o3', 's2'],
                 'mono_Narrowband_relative_weights': [1.0, 2, 2.5],
                
-                'filter_data': [['air',     [0, 0], -1000,  560.00, [2, 17], 'ai'],  # 0 357
+
+                'filter_data': [['air',     [0, 0], -1000,  3050.0,  [2, 17], 'ai'],  # 0 357  Values from 20240106 Very clean sky, start on time. OSC Camera!!!
                                 # 1  330NB NB NB If this in series should change focus about 1mm more.
-                                ['dif',     [4, 0],     0,  16.00,  [2, 17], 'df'],
-                                ['w',       [2, 0],     0,  500.468, [2, 17], 'w '],  # 2 346
-                                ['PL',      [0, 4],     0,  250.00,  [2, 17], "PL"],  # 3 317
-                                ['gp',      [0, 6],     0,  250.87,  [2, 17], 'gp'],  # 4
-                                ['PB',      [0, 1],     0,  250.25,  [2, 17], 'PB'],  # 5
-                                ['rp',      [0, 7],     0,  180.853,  [2, 17], 'rp'],  # 6
-                                ['PG',      [0, 2],     0,  120.048, [2, 17], 'PG'],  # 7
-                                ['PR',      [0, 3],     0,  70.336,  [2, 17], 'PR'],  # 8
-                                ['ip',      [0, 8],     0,  100.741,  [2, 17], 'ip'],  # 9
-                                ['z',       [5, 0],     0,  31,  [2, 17], 'z'],  # 10
-                                ['O3',      [7, 0],     0,  20,  [2, 17], '03'],  # 11
-                                ['up',      [0, 5],     0,  31,  [1, 17], 'up'],  # 12
-                                ['N2',      [3, 0],     0,  9,  [2, 17], 'N2'],  # 13
-                                ['CR',      [1, 0],     0,  15,    [2, 17], 'CR'],  # 14
-                                ['S2',      [8, 0],     0,  8,  [2, 17], 'S2'],  # 15
-                                ['HA',      [6, 0],     0,  8,  [2, 17], 'HA'],  # 16
-                                ['dark',    [8, 5],     0,   0.0,   [2, 17], 'dk']],  # 18
+                                ['dif',     [4, 0],     0,  16.00,   [2, 17], 'df'],
+                                ['w',       [2, 0],     0,  2830.0,  [2, 17], 'w '],  # 2 346
+                                ['PL',      [0, 4],     0,  2420.0,  [2, 17], "PL"],  # 3 317
+                                ['gp',      [0, 6],     0,  2180.0,  [2, 17], 'gp'],  # 4
+                                ['PB',      [0, 1],     0,  2050.0,  [2, 17], 'PB'],  # 5
+                                ['rp',      [0, 7],     0,  1000.0,  [2, 17], 'rp'],  # 6
+                                ['PG',      [0, 2],     0,  1162.0,  [2, 17], 'PG'],  # 7
+                                ['PR',      [0, 3],     0,  503.0,   [2, 17], 'PR'],  # 8
+                                ['ip',      [0, 8],     0,  440.0,   [2, 17], 'ip'],  # 9
+                                ['z',       [5, 0],     0,  69,      [2, 17], 'z'],  # 10
+                                ['O3',      [7, 0],     0,  47,      [2, 17], '03'],  # 11
+                                ['up',      [0, 5],     0,  30,      [1, 17], 'up'],  # 12
+                                ['N2',      [3, 0],     0,  19,      [2, 17], 'N2'],  # 13
+                                ['CR',      [1, 0],     0,  38,      [2, 17], 'CR'],  # 14
+                                ['S2',      [8, 0],     0,  16,      [2, 17], 'S2'],  # 15
+                                ['HA',      [6, 0],     0,  18,      [2, 17], 'HA'],  # 16
+                                ['dark',    [8, 5],     0,  0.0,     [2, 17], 'dk']],  # 18
                 
                 'focus_filter' : 'w',
 
@@ -517,7 +518,7 @@ site_config = {
                 'filter_screen_sort':  ['air', 'w', 'PL', 'gp', 'PB', 'rp', 'PG', 'PR', 'ip', 'O3', 'N2', 'CR', 'S2', 'HA'],  # 9, 21],  # 5, 17], #Most to least throughput, \
                 # so screen brightens, skipping u and zs which really need sky.
 
-                'filter_sky_sort':     ['S2', 'N2', 'CR', 'O3', 'HA', 'z', 'up', 'ip', 'PR', 'PG', 'PB', 'gp', 'rp', 'w', 'PL', 'air'],
+                'filter_sky_sort':     ['S2', 'N2', 'HA', 'up', 'CR', 'O3', 'z', 'ip', 'PR', 'rp', 'PG', 'PB', 'gp', 'PL', 'w', 'air'],
                  
             },
         },
@@ -630,9 +631,9 @@ site_config = {
                 'interpolate_for_focus': False,
                 # This setting will bin the image for focussing rather than interpolating. Good for 1x1 pixel sizes < 0.6.
                 'bin_for_focus': False,
-                'focus_bin_value' : 1,
+                'focus_bin_value' : 2,
                 'interpolate_for_sep': False,
-                'bin_for_sep': True,  # This setting will bin the image for SEP photometry rather than interpolating.
+                'bin_for_sep': False,  # This setting will bin the image for SEP photometry rather than interpolating.
                 'sep_bin_value' : 2,
                 # This setting will bin the image for platesolving rather than interpolating.
                 'bin_for_platesolve': True,
@@ -721,7 +722,7 @@ site_config = {
                 # related to pixelscale. Binning only applies to single
                 # images. Stacks will always be drizzled to to drizzle value from 1x1.
                 'onebyone_pix_scale': 0.478,    #  This is the 1x1 binning pixelscale
-                'native_bin': 2, # Needs to be simple, it will recalculate things on the 1x1 binning pixscale above.
+                'native_bin': 1, # Needs to be simple, it will recalculate things on the 1x1 binning pixscale above.
                 'x_pixel':  5.94, # pixel size in microns
                 'y_pixel':  5.94, # pixel size in microns
                 
@@ -743,6 +744,7 @@ site_config = {
                 # Generally leave this at 0.5 - the optimal value for ground based
                 # observatories.... unless you have a large field of view.                
                 'drizzle_value_for_later_stacking': 0.5,
+                'dither_enabled':  True,      #Set this way for tracking testing
 
                 
                 # This is the absolute minimum and maximum exposure for the camera
@@ -758,13 +760,15 @@ site_config = {
                 # One of the best cloud detections is to estimate the gain of the camera from the image
                 # If the variation, and hence gain, is too high according to gain + stdev, the flat can be easily rejected.
                 # Should be off for new observatories coming online until a real gain is known.
-                'reject_new_flat_by_known_gain' : False,
+                'reject_new_flat_by_known_gain' : True,
                 # These values are just the STARTING values. Once the software has been
                 # through a few nights of calibration images, it should automatically calculate these gains.
                 'camera_gain':   8.634, #[10., 10., 10., 10.],     #  One val for each binning.
                 'camera_gain_stdev':   0.4, #[10., 10., 10., 10.],     #  One val for each binning.
                 'read_noise':  47.74, #[9, 9, 9, 9],    #  All SWAGs right now
-                'read_noise_stdev':   0.03, #[10., 10., 10., 10.],     #  One val for each binning.              
+                'read_noise_stdev':   0.03, #[10., 10., 10., 10.],     #  One val for each binning. 
+                'dark_lim_adu': 0.15,   #adu/s of dark 20231229 moved down from 0.5
+                'dark_lim_std': 15,  #first guess. See above.
                 # Saturate is the important one. Others are informational only.
                 'fullwell_capacity': 80000,  # NB Guess
                 'saturate':   65535,
@@ -775,6 +779,8 @@ site_config = {
                 # It will vary from scope to scope and computer to computer.
                 # 30s is a good default.
                 'smart_stack_exposure_time': 30,
+                
+                'smart_stack_exposure_NB_multiplier':  3,   #Michael's setting
                 
                 
                 # As simple as it states, how many calibration frames to collect and how many to store.                

@@ -87,6 +87,8 @@ hduheader["IMGMED"] = ( np.nanmedian(hdufocusdata), "Median Value of Image Array
 hduheader["IMGSTDEV"] = ( np.nanstd(hdufocusdata), "Median Value of Image Array" )
 hduheader["IMGMAD"] = ( median_absolute_deviation(hdufocusdata, ignore_nan=True), "Median Absolute Deviation of Image Array" )
 
+#breakpoint()
+
 # no zero values in readnoise.
 if float(readnoise) < 0.1:
     readnoise = 0.1
@@ -129,6 +131,8 @@ if not do_sep or (float(hduheader["EXPTIME"]) < 1.0):
     rfs = np.nan
     sepsky = np.nan
 else:
+    
+    
 
     if frame_type == 'focus':
 
@@ -170,6 +174,8 @@ else:
             hdufocusdata=block_reduce(hdufocusdata,sep_bin_factor)
             binfocus=sep_bin_factor
 
+    
+    
 
     # If it is a focus image then it will get sent in a different manner to the UI for a jpeg
     if frame_type == 'focus':
@@ -224,6 +230,8 @@ else:
     try:
         # Some of these are liberated from BANZAI
 
+        
+
         bkg = sep.Background(focusimg, bw=32, bh=32, fw=3, fh=3)
         bkg.subfrom(focusimg)
 
@@ -245,7 +253,8 @@ else:
             focusimg, 3.0, err=bkg.globalrms, minarea=minarea
         )
         sources = Table(sources)
-        
+
+
         sources = sources[sources['flag'] < 8]
         image_saturation_level = saturate
         sources = sources[sources["peak"] < 0.8 * image_saturation_level * pow(binfocus, 2)]
@@ -258,15 +267,21 @@ else:
         #breakpoint()
         # BANZAI prune nans from table
         
+        
+
+        
+
         nan_in_row = np.zeros(len(sources), dtype=bool)
         for col in sources.colnames:
             nan_in_row |= np.isnan(sources[col])
         sources = sources[~nan_in_row]
 
+
+
         # Calculate the ellipticity (Thanks BANZAI)
-        
+
         sources['ellipticity'] = 1.0 - (sources['b'] / sources['a'])
-        
+
         # if frame_type == 'focus':
         #     sources = sources[sources['ellipticity'] < 0.4]  # Remove things that are not circular stars
         # else:
@@ -292,15 +307,20 @@ else:
 
         # Calcuate the equivilent of flux_auto (Thanks BANZAI)
         # This is the preferred best photometry SEP can do.
-        flux, fluxerr, flag = sep.sum_ellipse(focusimg, sources['x'], sources['y'],
-                                          sources['a'], sources['b'],
-                                          np.pi / 2.0, 2.5 * kronrad,
-                                          subpix=1, err=uncertainty)
+        # But sometimes it fails, so we try and except
+        try:
+            flux, fluxerr, flag = sep.sum_ellipse(focusimg, sources['x'], sources['y'],
+                                              sources['a'], sources['b'],
+                                              np.pi / 2.0, 2.5 * kronrad,
+                                              subpix=1, err=uncertainty)
+            sources['flux'] = flux
+            sources['fluxerr'] = fluxerr
+            sources['flag'] |= flag
+        except:
+            pass
 
 
-        sources['flux'] = flux
-        sources['fluxerr'] = fluxerr
-        sources['flag'] |= flag
+
         sources['FWHM'], _ = sep.flux_radius(focusimg, sources['x'], sources['y'], sources['a'], 0.5,
                                              subpix=5)
         # If image has been binned for focus we need to multiply some of these things by the binning
@@ -317,7 +337,7 @@ else:
         sources['cpeak'] = (sources['cpeak']) / pow(binfocus, 2)
 
 
-
+        #print (sources)
 
         # Need to reject any stars that have FWHM that are less than a extremely
         # perfect night as artifacts
@@ -331,16 +351,17 @@ else:
 
         sources.remove_columns(source_delete)
 
-         
+        #print (sources)
 
         # BANZAI prune nans from table
         nan_in_row = np.zeros(len(sources), dtype=bool)
         for col in sources.colnames:
             nan_in_row |= np.isnan(sources[col])
         sources = sources[~nan_in_row]
-        
+
         #breakpoint()
-               
+        #print (sources)
+        #breakpoint()
 
         sources.write(im_path + text_name.replace('.txt', '.sep'), format='csv', overwrite=True)
 

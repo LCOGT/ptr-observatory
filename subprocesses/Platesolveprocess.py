@@ -2,7 +2,7 @@
 """
 This is the main platesolve sub-process for solving frames.
 
-Platsolving is relatively costly in time, so we don't solve each frame.
+Platesolving is relatively costly in time, so we don't solve each frame.
 It is also not necessary - the platesolve we do is FAST (for windows)
 but only spits out RA, Dec, Pixelscale and rotation. Which is actually all
 we need to monitor pointing and keep scopes dead on target.
@@ -112,10 +112,10 @@ crop_height = int(crop_height)
 if crop_width > 0 or crop_height > 0:
     hdufocusdata = hdufocusdata[crop_width:-crop_width, crop_height:-crop_height]
 
-binfocus = 1
-if bin_for_platesolve:
-    hdufocusdata=block_reduce(hdufocusdata,platesolve_bin_factor)
-    binfocus=platesolve_bin_factor
+# binfocus = 1
+# if bin_for_platesolve:
+#     hdufocusdata=block_reduce(hdufocusdata,platesolve_bin_factor)
+#     binfocus=platesolve_bin_factor
 
 focusimg = np.array(
     hdufocusdata, order="C"
@@ -142,8 +142,8 @@ sources = sep.extract(
 
 sources = Table(sources)
 sources = sources[sources['flag'] < 8]
-sources = sources[sources["peak"] < 0.8 * image_saturation_level * pow(binfocus, 2)]
-sources = sources[sources["cpeak"] < 0.8 * image_saturation_level * pow(binfocus, 2)]
+sources = sources[sources["peak"] < 0.8 * image_saturation_level]
+sources = sources[sources["cpeak"] < 0.8 * image_saturation_level]
 sources = sources[sources["flux"] > 2000]
 sources = sources[sources["x"] < iy -50]
 sources = sources[sources["x"] > 50]
@@ -172,11 +172,13 @@ sources['kronrad'] = kronrad
 uncertainty = float(readnoise) * np.ones(focusimg.shape,
                                          dtype=focusimg.dtype) / float(readnoise)
 
-
-flux, fluxerr, flag = sep.sum_ellipse(focusimg, sources['x'], sources['y'],
-                                  sources['a'], sources['b'],
-                                  np.pi / 2.0, 2.5 * kronrad,
-                                  subpix=1, err=uncertainty)
+try:
+    flux, fluxerr, flag = sep.sum_ellipse(focusimg, sources['x'], sources['y'],
+                                      sources['a'], sources['b'],
+                                      np.pi / 2.0, 2.5 * kronrad,
+                                      subpix=1, err=uncertainty)
+except:
+    pass
 
 sources['flux'] = flux
 sources['fluxerr'] = fluxerr
@@ -236,7 +238,7 @@ if len(sources) >= 15:
             synthetic_image[y-3:y+4,x-3:x+4] += peak*modelstar
         except Exception as e:
             print (e)
-            # breakpoint()
+            #breakpoint()
 
 
 

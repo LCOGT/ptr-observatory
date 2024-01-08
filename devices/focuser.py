@@ -767,21 +767,21 @@ class Focuser:
         plog(f"focuser cmd: auto")
 
     def set_focal_ref(self, ref):
-        cam_shelf = shelve.open(self.obsid_path + "ptr_night_shelf/" + self.camera_name + str(g_dev['obs'].name))
+        cam_shelf = shelve.open(self.obsid_path + "ptr_night_shelf/focuslog_" + self.camera_name + str(g_dev['obs'].name))
         cam_shelf["focus_ref"] = ref
         cam_shelf.close()
         return
 
     def set_focal_ref_reset_log(self, ref):
         try:
-            cam_shelf = shelve.open(self.obsid_path + "ptr_night_shelf/" + self.camera_name + str(g_dev['obs'].name))
+            cam_shelf = shelve.open(self.obsid_path + "ptr_night_shelf/focuslog_" + self.camera_name + str(g_dev['obs'].name))
         except:
             plog ("Focus log file corrupt, creating new ones")
             import os
-            os.remove(self.obsid_path + "ptr_night_shelf/" + self.camera_name + g_dev['obs'].name +".dat")
-            os.remove(self.obsid_path + "ptr_night_shelf/" + self.camera_name + g_dev['obs'].name +".bak")
-            os.remove(self.obsid_path + "ptr_night_shelf/" + self.camera_name + g_dev['obs'].name +".dir")
-            cam_shelf = shelve.open(self.obsid_path + "ptr_night_shelf/" + self.camera_name + str(g_dev['obs'].name))
+            os.remove(self.obsid_path + "ptr_night_shelf/focuslog_" + self.camera_name + g_dev['obs'].name +".dat")
+            os.remove(self.obsid_path + "ptr_night_shelf/focuslog_" + self.camera_name + g_dev['obs'].name +".bak")
+            os.remove(self.obsid_path + "ptr_night_shelf/focuslog_" + self.camera_name + g_dev['obs'].name +".dir")
+            cam_shelf = shelve.open(self.obsid_path + "ptr_night_shelf/focuslog_" + self.camera_name + str(g_dev['obs'].name))
 
         cam_shelf["focus_ref"] = ref
         cam_shelf["af_log"] = []
@@ -794,7 +794,7 @@ class Focuser:
         # Note once focus comp is in place this data
         # needs to be combined with great care.
         cam_shelf = shelve.open(
-            self.obsid_path + "ptr_night_shelf/" + self.camera_name + str(g_dev['obs'].name), writeback=True
+            self.obsid_path + "ptr_night_shelf/focuslog_" + self.camera_name + str(g_dev['obs'].name), writeback=True
         )
         try:
             f_temp=self.current_focus_temperature
@@ -828,7 +828,7 @@ class Focuser:
 
         try:
             cam_shelf = shelve.open(
-                self.obsid_path + "ptr_night_shelf/" + self.camera_name + str(g_dev['obs'].name), writeback=True
+                self.obsid_path + "ptr_night_shelf/focuslog_" + self.camera_name + str(g_dev['obs'].name), writeback=True
             )
 
             max_arcsecond=self.config['maximum_good_focus_in_arcsecond']
@@ -871,7 +871,7 @@ class Focuser:
             plog("There is no focus log on the night shelf.")
 
     def get_focal_ref(self):
-        cam_shelf = shelve.open(self.obsid_path + "ptr_night_shelf/" + self.camera_name + str(g_dev['obs'].name))
+        cam_shelf = shelve.open(self.obsid_path + "ptr_night_shelf/focuslog_" + self.camera_name + str(g_dev['obs'].name))
         focus_ref = cam_shelf["focus_ref"]
         # NB Should we also return and use the ref temp?
         cam_shelf.close()

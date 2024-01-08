@@ -2,7 +2,7 @@
 This is the smartstack process where stacks are .... stacked PURELY for the UI.
 
 To make the stacking work, a lot of laziness is accepted to make it fast enough
-to run faster than the exposures being taken. 
+to run faster than the exposures being taken.
 """
 
 import pickle
@@ -16,7 +16,7 @@ import astroalign as aa
 from auto_stretch.stretch import Stretch
 from PIL import Image, ImageEnhance
 import subprocess
-
+from math import sqrt
 input_sstk_info=pickle.load(sys.stdin.buffer)
 #input_sstk_info=pickle.load(open('testsmartstackpickle','rb'))
 
@@ -43,7 +43,7 @@ nativebin=input_sstk_info[15]
 readnoise=input_sstk_info[16]
 minimum_realistic_seeing=input_sstk_info[17]
 osc_brightness_enhance=input_sstk_info[18]
-osc_contrast_enhance=input_sstk_info[19] 
+osc_contrast_enhance=input_sstk_info[19]
 osc_colour_enhance=input_sstk_info[20]
 osc_saturation_enhance=input_sstk_info[21]
 osc_sharpness_enhance=input_sstk_info[22]
@@ -52,6 +52,11 @@ yb = input_sstk_info[24]
 yt = input_sstk_info[25]
 xl = input_sstk_info[26]
 xr = input_sstk_info[27]
+try:
+    zoom_factor = input_sstk_info[28]
+    print("Mainjpeg received:", zoom_factor)
+except:
+    print("Zoom_factor paramater faulted.")
 
 try:
     os.remove(paths["im_path"] + 'smartstack.pickle')
@@ -70,7 +75,7 @@ imgdata = np.load(paths["red_path"] + paths["red_name01"].replace('.fits','.npy'
 if not os.path.exists(obsid_path+ "smartstacks/"):
             os.makedirs(obsid_path+ "smartstacks/")
 reprojection_failed = False
-                   
+
 # Pick up some header items for smartstacking later
 ssfilter = str(img[0].header["FILTER"]).replace('@','at').replace('.','d').replace(' ','')
 ssobject = str(img[0].header["OBJECT"]).replace('@','at').replace(':','d').replace('.','d').replace(' ','').replace('-','')
@@ -96,11 +101,11 @@ smartStackFilename = (
 if not is_osc:
 
     while not os.path.exists(paths["im_path"] + paths["text_name00"].replace('.txt','.sep')):
-        time.sleep(1)                        
-    
+        time.sleep(1)
+
     #plog("Now to figure out how to get sep into a csv.")
     sstack_process_timer = time.time()
-    sources = Table.read(paths["im_path"] + paths["text_name00"].replace('.txt', '.sep'), format='csv')    
+    sources = Table.read(paths["im_path"] + paths["text_name00"].replace('.txt', '.sep'), format='csv')
 
     # IF SMARSTACK NPY FILE EXISTS ADD next image to the stack, OTHERWISE THIS IMAGE IS THE START OF A SMARTSTACK
     reprojection_failed = False
@@ -138,15 +143,15 @@ if not is_osc:
         minarea= -9.2421 * pixscale + 16.553
         if minarea < 5:  # There has to be a min minarea though!
             minarea = 5
-            
+
         if len(sources) > 5:
-            try:                                    
+            try:
                 sources=np.column_stack((sources['x'],sources['y']))
                 ref_sources=np.column_stack((ref_sources['x'],ref_sources['y']))
                 transf, (source_list, target_list) = aa.find_transform(sources, ref_sources)
-                reprojectedimage= aa.apply_transform(transf, imgdata, storedsStack)[0]                            
+                reprojectedimage= aa.apply_transform(transf, imgdata, storedsStack)[0]
                 storedsStack = reprojectedimage + storedsStack
-                
+
                 # Save new stack to disk
                 np.save(
                     obsid_path
@@ -183,7 +188,7 @@ if not is_osc:
 
     iy, ix = stretched_data_uint8.shape
     final_image = Image.fromarray(stretched_data_uint8)
-    
+
     # These steps flip and rotate the jpeg according to the settings in the site-config for this camera
     if transpose_jpeg:
         final_image = final_image.transpose(Image.Transpose.TRANSPOSE)
@@ -210,12 +215,54 @@ if not is_osc:
         paths["im_path"] + paths['jpeg_name10'].replace('EX10', 'EX20')
     )
     # Resizing the array to an appropriate shape for the jpg and the small fits
-
+    #insert Debify routine here.  NB NB Note LCO '30-amin Sq field not implemented.'
+    print('Zoom factor is:  ', zoom_factor)
+    if zoom_factor is not False:
+        if zoom_factor in ['full', 'Full', '100%']:
+            zoom = (0.0, 0.0, 0.0, 0.0)   #  Trim nothing
+        elif zoom_factor in ['square', 'Sqr.', 'small sq.']:
+            zoom = ((ix/iy -1)/2, 0.0, (ix/iy -1)/2, 0.00,)    #  3:2 ->> 2:2, QHY600 sides trim.
+        elif zoom_factor in ['71%', '70.7%', '1.4X', '1.5X']:
+            r_sq2 = (1 - 1/sqrt(2))/2
+            zoom = (r_sq2, r_sq2, r_sq2, r_sq2,)    #  0.14644, sides trim.
+        elif zoom_factor in ['50%', '2X']:
+            r_sq2 = (1 - 0.5)/2
+            zoom = (r_sq2, r_sq2, r_sq2, r_sq2,)    #  0.14644, sides trim.
+        elif zoom_factor in ['35%', '2.8X', '3X']:
+            r_sq2 = (1 - 0.5/sqrt(2))/2
+            zoom = (r_sq2, r_sq2, r_sq2, r_sq2,)    #  0.14644, sides trim.
+        elif zoom_factor in ['25%', '4X']:
+            r_sq2 = (1 - 0.25)/2
+            zoom = (r_sq2, r_sq2, r_sq2, r_sq2,)    #  0.14644, sides trim.
+        elif zoom_factor in ['18%', '5.7X', '6X']:
+            r_sq2 = (1 - 0.25/sqrt(2))/2
+            zoom = (r_sq2, r_sq2, r_sq2, r_sq2,)    #  0.14644, sides trim.
+        elif zoom_factor in ['12.5%', '13%', '12%', '8X']:
+            r_sq2 = (1 - 0.125)/2
+            zoom = (r_sq2, r_sq2, r_sq2, r_sq2,)    #  0.14644, sides trim.
+        elif zoom_factor in ['9%', '11.3X', '11X', '12X']:
+            r_sq2 = (1 - 0.125/sqrt(2))/2
+            zoom = (r_sq2, r_sq2, r_sq2, r_sq2,)    #  0.14644, sides trim.
+        elif zoom_factor in ['6%', '6.3%', '16X']:
+            r_sq2 = (1 - 0.0625)/2
+            zoom = (r_sq2, r_sq2, r_sq2, r_sq2,)
+        else:
+            zoom = (1.0, 1.0, 1.0, 1.0)
+        #breakpoint()
+        xl, yt, xr, yb = zoom
+        xl *= ix
+        yt *= iy
+        xr *= ix
+        yb *= iy
+        trial_image=final_image.crop((int(xl),int(yt),int(ix-xr),int(iy-yb)))
+        ix, iy = trial_image.size
+        print("Zoomed Image size:", ix, iy)
+        final_image = trial_image
     if iy == ix:
         final_image = final_image.resize(
             (900, 900)
         )
-    else:                            
+    else:
         if squash_on_x_axis:
             final_image = final_image.resize(
                 (int(900 * iy / ix), 900)
@@ -238,44 +285,44 @@ else:
     if is_osc:
         sstack_process_timer = time.time()
         if osc_bayer == 'RGGB':
-            
+
             newhdured = imgdata[::2, ::2]
             newhdugreen = imgdata[::2, 1::2]
             newhdublue = imgdata[1::2, 1::2]
-            
+
         else:
             pass
 
-        # HERE is where to do a simultaneous red, green, blue 
+        # HERE is where to do a simultaneous red, green, blue
         # multithreaded sep.
         pixscale=pixscale
-        
+
         im_path=paths["im_path"]
         text_name=paths["text_name00"]
-        
+
         pickler=[newhdured,pixscale,image_saturation_level,nativebin,readnoise,minimum_realistic_seeing,im_path,text_name,'red']
         red_sep_subprocess=subprocess.Popen(['python','subprocesses/OSC_AA_SEPprocess.py'],stdin=subprocess.PIPE,stdout=subprocess.PIPE,bufsize=0)
         pickle.dump(pickler, red_sep_subprocess.stdin)
-                                    
+
         pickler[0]=newhdugreen
         pickler[8]='green'
         green_sep_subprocess=subprocess.Popen(['python','subprocesses/OSC_AA_SEPprocess.py'],stdin=subprocess.PIPE,stdout=subprocess.PIPE,bufsize=0)
         pickle.dump(pickler, green_sep_subprocess.stdin)
-        
-        pickler[0]=newhdublue       
+
+        pickler[0]=newhdublue
         pickler[8]='blue'
         blue_sep_subprocess=subprocess.Popen(['python','subprocesses/OSC_AA_SEPprocess.py'],stdin=subprocess.PIPE,stdout=subprocess.PIPE,bufsize=0)
         pickle.dump(pickler, blue_sep_subprocess.stdin)
-        
+
         # Essentially wait until each subprocess is complete
         red_sep_subprocess.communicate()
         green_sep_subprocess.communicate()
         blue_sep_subprocess.communicate()
-        
+
         redsources=pickle.load(open(im_path + 'oscaasep.picklered', 'rb'))
         greensources=pickle.load(open(im_path + 'oscaasep.picklegreen', 'rb'))
-        bluesources=pickle.load(open(im_path + 'oscaasep.pickleblue', 'rb'))        
-                
+        bluesources=pickle.load(open(im_path + 'oscaasep.pickleblue', 'rb'))
+
         if len(greensources) > 5:
         # IF SMARSTACK NPY FILE EXISTS DO STUFF, OTHERWISE THIS IMAGE IS THE START OF A SMARTSTACK
             reprojection_failed = False
@@ -295,12 +342,12 @@ else:
                                                              smartstackid + str(colstack)),
                                 newhdublue,
                             )
-                            
+
                             bluesources.write(obsid_path
                             + "smartstacks/"
                             + smartStackFilename.replace('.npy','blue.sep'), format='csv', overwrite=True)
-                        
-                            
+
+
                         if colstack == 'green':
                             np.save(
                                 obsid_path
@@ -333,11 +380,11 @@ else:
                         obsid_path + "smartstacks/" +
                         smartStackFilename.replace(smartstackid, smartstackid + str(colstack))
                     )
-                    
+
                     ref_sources=ref_sources = Table.read(obsid_path
                     + "smartstacks/"
                     + smartStackFilename.replace('.npy',str(colstack)+'.sep'), format='csv')
-                    
+
                     if colstack == 'blue':
                         sources=bluesources
                         imgdata=newhdublue
@@ -347,20 +394,20 @@ else:
                     if colstack == 'green':
                         sources=greensources
                         imgdata=newhdugreen
-                    
-                    
+
+
                     sources=np.column_stack((sources['x'],sources['y']))
-                    ref_sources=np.column_stack((ref_sources['x'],ref_sources['y']))                                        
+                    ref_sources=np.column_stack((ref_sources['x'],ref_sources['y']))
 
                     if len(greensources) > 5:
-                        
+
                         try:
                             transf, (source_list, target_list) = aa.find_transform(sources, ref_sources)
-                            
+
                             reprojectedimage= aa.apply_transform(transf, imgdata, storedsStack)[0]
-                            
+
                             storedsStack = reprojectedimage + storedsStack
-                            
+
                             # Save new stack to disk
                             np.save(
                                 obsid_path
@@ -370,12 +417,12 @@ else:
                                 storedsStack,
                             )
 
-                            
-                            if colstack == 'green':                                                    
+
+                            if colstack == 'green':
                                 newhdugreen = storedsStack
-                            if colstack == 'red':                                                    
+                            if colstack == 'red':
                                 newhdured = storedsStack
-                            if colstack == 'blue':                                                    
+                            if colstack == 'blue':
                                 newhdublue = storedsStack
                             del storedsStack
                             reprojection_failed = False
@@ -389,16 +436,16 @@ else:
         # NOW THAT WE HAVE THE INDIVIDUAL IMAGES THEN PUT THEM TOGETHER
         xshape = newhdugreen.shape[0]
         yshape = newhdugreen.shape[1]
-    
-        blue_stretched_data_float = Stretch().stretch(newhdublue)*256                            
+
+        blue_stretched_data_float = Stretch().stretch(newhdublue)*256
         del newhdublue
 
         green_stretched_data_float = Stretch().stretch(newhdugreen)*256
         del newhdugreen
 
-        red_stretched_data_float = Stretch().stretch(newhdured)*256                       
+        red_stretched_data_float = Stretch().stretch(newhdured)*256
         del newhdured
-        
+
         rgbArray = np.empty((xshape, yshape, 3), 'uint8')
         rgbArray[..., 0] = red_stretched_data_float  # *256
         rgbArray[..., 1] = green_stretched_data_float  # *256
@@ -472,13 +519,58 @@ else:
 
         # Resizing the array to an appropriate shape for the jpg and the small fits
         iy, ix = final_image.size
+        #insert Debify routine here.  NB NB Note LCO '30-amin Sq field not implemented.'
+        print('Zoom factor is:  ', zoom_factor)
+        if zoom_factor is not False:
+            if not (zoom_factor in ['full', 'Full', '100%']):
+            #     zoom = (0.0, 0.0, 0.0, 0.0)   #  Trim nothing
+            # el
+                if zoom_factor in ['square', 'Sqr.', 'small sq.']:
+                    zoom = ((ix/iy -1)/2, 0.0, (ix/iy -1)/2, 0.00,)    #  3:2 ->> 2:2, QHY600 sides trim.
+                elif zoom_factor in ['71%', '70.7%', '1.4X', '1.5X']:
+                    r_sq2 = (1 - 1/sqrt(2))/2
+                    zoom = (r_sq2, r_sq2, r_sq2, r_sq2,)    #  0.14644, sides trim.
+                elif zoom_factor in ['50%', '2X']:
+                    r_sq2 = (1 - 0.5)/2
+                    zoom = (r_sq2, r_sq2, r_sq2, r_sq2,)    #  0.14644, sides trim.
+                elif zoom_factor in ['35%', '2.8X', '3X']:
+                    r_sq2 = (1 - 0.5/sqrt(2))/2
+                    zoom = (r_sq2, r_sq2, r_sq2, r_sq2,)    #  0.14644, sides trim.
+                elif zoom_factor in ['25%', '4X']:
+                    r_sq2 = (1 - 0.25)/2
+                    zoom = (r_sq2, r_sq2, r_sq2, r_sq2,)    #  0.14644, sides trim.
+                elif zoom_factor in ['18%', '5.7X', '6X']:
+                    r_sq2 = (1 - 0.25/sqrt(2))/2
+                    zoom = (r_sq2, r_sq2, r_sq2, r_sq2,)    #  0.14644, sides trim.
+                elif zoom_factor in ['12.5%', '13%', '12%', '8X']:
+                    r_sq2 = (1 - 0.125)/2
+                    zoom = (r_sq2, r_sq2, r_sq2, r_sq2,)    #  0.14644, sides trim.
+                elif zoom_factor in ['9%', '11.3X', '11X', '12X']:
+                    r_sq2 = (1 - 0.125/sqrt(2))/2
+                    zoom = (r_sq2, r_sq2, r_sq2, r_sq2,)    #  0.14644, sides trim.
+                elif zoom_factor in ['6%', '6.3%', '16X']:
+                    r_sq2 = (1 - 0.0625)/2
+                    zoom = (r_sq2, r_sq2, r_sq2, r_sq2,)
+                else:
+                    zoom = (1.0, 1.0, 1.0, 1.0)
+                #breakpoint()
+                xl, yt, xr, yb = zoom
+                xl *= ix
+                yt *= iy
+                xr *= ix
+                yb *= iy
+                trial_image=final_image.crop((int(xl),int(yt),int(ix-xr),int(iy-yb)))
+                ix, iy = trial_image.size
+                print("Zoomed Image size:", ix, iy)
+                final_image = trial_image
+                
         if (
             crop_preview
             == True
         ):
             final_image=final_image.crop((xl,yt,xr,yb))
             iy, ix = final_image.size
-            
+
         if iy == ix:
             final_image = final_image.resize((900, 900))
         else:

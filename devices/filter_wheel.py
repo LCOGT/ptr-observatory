@@ -271,7 +271,7 @@ class FilterWheel:
                     self.filterwheel_update_wincom.LinkEnabled = True
                 except:
                     plog(traceback.format_exc())
-                    
+
 
 
         # try:
