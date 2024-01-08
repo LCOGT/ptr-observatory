@@ -2198,7 +2198,7 @@ class Observatory:
             # Update status on at lest a 30s period if not requested
             elif (time.time() - self.time_last_status) > 30:
                 self.update_status()
-                print ("updated status on timer")
+                #print ("updated status on timer")
                 self.time_last_status=time.time()
                 time.sleep(2)
                 
