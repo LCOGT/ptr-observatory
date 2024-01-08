@@ -765,6 +765,38 @@ class Camera:
             self.camera_update_thread.daemon = True
             self.camera_update_thread.start()
 
+
+    def openDarkslide(self):
+        if self.darkslide_state != 'Open':
+            if self.darkslide_type=='COM':
+                self.darkslide_instance.openDarkslide()
+            elif self.darkslide_type=='ASCOM_FLI_SHUTTER':
+                self.camera.Action('SetShutter', 'open')
+            self.darkslide_open = True
+            self.darkslide_state = 'Open'
+            
+        
+        
+        
+    
+    
+    def closeDarkslide(self):
+        if self.darkslide_state != 'Closed':
+            if self.darkslide_type=='COM':
+                self.darkslide_instance.closeDarkslide()
+            elif self.darkslide_type=='ASCOM_FLI_SHUTTER':
+                self.camera.Action('SetShutter', 'close')
+            
+            self.darkslide_open = False
+            self.darkslide_state = 'Closed'
+    
+    # #I assume we might be able to read the shutter state...
+    
+    # def query_Darkslide(self):
+    #   #breakpoint
+    #     pass
+
+
     # Note this is a thread!
     def camera_update_thread(self):
 
