@@ -830,7 +830,7 @@ class Observatory:
 
 
                         if cmd["action"] in ["cancel_all_commands", "stop"] or cmd["action"].lower() in ["stop", "cancel"] or (cmd["action"] == "run" and cmd["required_params"]["script"] == "stopScript"):
-                            breakpoint()
+                            #breakpoint()
                             # A stop script command flags to the running scripts that it is time to stop
                             # activity and return. This period runs for about 30 seconds.
                             g_dev["obs"].send_to_user(

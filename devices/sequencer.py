@@ -2419,15 +2419,19 @@ class Sequencer:
                         #f.write ("Camera Gain Sigma Clipped Estimates: " + str(np.nanmedian(estimated_flat_gain)) + " std " + str(np.std(estimated_flat_gain)) + " N " + str(len(estimated_flat_gain))+ "\n")
 
                         est_read_noise=[]
-                        for rnentry in post_readnoise_array:
-                            est_read_noise.append( (rnentry * np.nanmedian(estimated_flat_gain)) / 1.414)
-
-                        est_read_noise=np.array(est_read_noise)
-                        #plog ("Non Sigma Clipped Readnoise with this gain: " + str(np.nanmedian(est_read_noise)) + " std: " + str(np.nanstd(est_read_noise)))
-                        f.write ("Non Sigma Clipped Readnoise with this gain: " + str(np.nanmedian(est_read_noise)) + " std: " + str(np.nanstd(est_read_noise))+ "\n")
-                        est_read_noise = sigma_clip(est_read_noise, masked=False, axis=None)
-                        #plog ("Non Sigma Clipped Readnoise with this gain: " + str(np.nanmedian(est_read_noise)) + " std: " + str(np.nanstd(est_read_noise)))
-                        f.write ("Non Sigma Clipped Readnoise with this gain: " + str(np.nanmedian(est_read_noise)) + " std: " + str(np.nanstd(est_read_noise))+ "\n")
+                        try:
+                            for rnentry in post_readnoise_array:
+                                est_read_noise.append( (rnentry * np.nanmedian(estimated_flat_gain)) / 1.414)
+    
+                            est_read_noise=np.array(est_read_noise)
+                            #plog ("Non Sigma Clipped Readnoise with this gain: " + str(np.nanmedian(est_read_noise)) + " std: " + str(np.nanstd(est_read_noise)))
+                            f.write ("Non Sigma Clipped Readnoise with this gain: " + str(np.nanmedian(est_read_noise)) + " std: " + str(np.nanstd(est_read_noise))+ "\n")
+                            est_read_noise = sigma_clip(est_read_noise, masked=False, axis=None)
+                            #plog ("Non Sigma Clipped Readnoise with this gain: " + str(np.nanmedian(est_read_noise)) + " std: " + str(np.nanstd(est_read_noise)))
+                            f.write ("Non Sigma Clipped Readnoise with this gain: " + str(np.nanmedian(est_read_noise)) + " std: " + str(np.nanstd(est_read_noise))+ "\n")
+                        except:
+                            plog ("Did not estimate readnoise as probs no previous known gains.")
+                            #plog(traceback.format_exc())
 
                         plog ("Gains by filter")
                         for filterline in flat_gains:

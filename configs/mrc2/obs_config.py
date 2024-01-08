@@ -186,7 +186,7 @@ site_config = {
     'auto_eve_sky_flat': True,
     
     'time_to_wait_after_roof_opens_to_take_flats': 120,   #sec Just imposing a minimum in case of a restart.
-    'auto_midnight_moonless_bias_dark': False,
+    'auto_midnight_moonless_bias_dark': True,
     'auto_morn_sky_flat': True,
     'auto_morn_bias_dark': False,
     
@@ -448,7 +448,7 @@ site_config = {
             'correct_focus_for_temperature' : True,
             'maximum_good_focus_in_arcsecond': 2.5, # highest value to consider as being in "good focus". Used to select last good focus value
 
-            'reference':  7700,    #Nominal at 20C Primary temperature, in microns not steps.            
+            'reference':  7187,    #Nominal at 20C Primary temperature, in microns not steps.            
             'z_compression': 0.0, #  microns per degree of zenith distance
             'z_coef_date':  '20221002',   # 'reference': 4375,    #   Guess 20210904  Nominal at 10C Primary temperature
             'use_local_temp':  False,
@@ -714,7 +714,7 @@ site_config = {
                 'flipx_jpeg': False,
                 'flipy_jpeg': False,
                 'rotate180_jpeg': False,
-                'rotate90_jpeg': False,
+                'rotate90_jpeg': True,
                 'rotate270_jpeg': False,
 
                 # This is purely to crop the preview jpeg for the UI                

@@ -2612,8 +2612,28 @@ class Camera:
                     object_name = RAstring + "ra" + DECstring + "dec"
                     object_specf = "no"
 
-
-
+                # If NOT an expose image going into the post-process thread, rotate the fits here.
+                if not(not frame_type[-4:] == "flat" and not frame_type in ["bias", "dark"] and not focus_image and not frame_type=='pointing'):
+                    # Flip flat fits around to correct orientation
+                    if self.config["camera"][self.name]["settings"]["transpose_fits"]:
+                        outputimg=outputimg.transpose().astype('float32')
+                    elif self.config["camera"][self.name]["settings"]["flipx_fits"]:
+                        outputimg=np.fliplr(outputimg.astype('float32')
+                        )
+                    elif self.config["camera"][self.name]["settings"]["flipy_fits"]:
+                        outputimg=np.flipud(outputimg.astype('float32')
+                        )
+                    elif self.config["camera"][self.name]["settings"]["rotate90_fits"]:
+                        outputimg=np.rot90(outputimg.astype('float32')
+                        )
+                    elif self.config["camera"][self.name]["settings"]["rotate180_fits"]:
+                        outputimg=np.rot90(outputimg.astype('float32'),2)
+                        
+                    elif self.config["camera"][self.name]["settings"]["rotate270_fits"]:
+                        outputimg= np.rot90(outputimg.astype('float32'),3)
+                        
+                    else:
+                        outputimg=outputimg.astype('float32')
 
                 # Specific dark and bias save area
                 if frame_type in ["bias", "dark"] and not manually_requested_calibration:
@@ -2643,32 +2663,32 @@ class Camera:
 
 
 
-                    # Flip flat fits around to correct orientation
-                    if self.config["camera"][self.name]["settings"]["transpose_fits"]:
-                        hdu = fits.PrimaryHDU(
-                            outputimg.transpose().astype('float32'))
-                    elif self.config["camera"][self.name]["settings"]["flipx_fits"]:
-                        hdu = fits.PrimaryHDU(
-                            np.fliplr(outputimg.astype('float32'))
-                        )
-                    elif self.config["camera"][self.name]["settings"]["flipy_fits"]:
-                        hdu = fits.PrimaryHDU(
-                            np.flipud(outputimg.astype('float32'))
-                        )
-                    elif self.config["camera"][self.name]["settings"]["rotate90_fits"]:
-                        hdu = fits.PrimaryHDU(
-                            np.rot90(outputimg.astype('float32'))
-                        )
-                    elif self.config["camera"][self.name]["settings"]["rotate180_fits"]:
-                        hdu = fits.PrimaryHDU(
-                            np.rot90(outputimg.astype('float32'),2)
-                        )
-                    elif self.config["camera"][self.name]["settings"]["rotate270_fits"]:
-                        hdu = fits.PrimaryHDU(
-                            np.rot90(outputimg.astype('float32'),3)
-                        )
-                    else:
-                        hdu = fits.PrimaryHDU(
+                    # # Flip flat fits around to correct orientation
+                    # if self.config["camera"][self.name]["settings"]["transpose_fits"]:
+                    #     hdu = fits.PrimaryHDU(
+                    #         outputimg.transpose().astype('float32'))
+                    # elif self.config["camera"][self.name]["settings"]["flipx_fits"]:
+                    #     hdu = fits.PrimaryHDU(
+                    #         np.fliplr(outputimg.astype('float32'))
+                    #     )
+                    # elif self.config["camera"][self.name]["settings"]["flipy_fits"]:
+                    #     hdu = fits.PrimaryHDU(
+                    #         np.flipud(outputimg.astype('float32'))
+                    #     )
+                    # elif self.config["camera"][self.name]["settings"]["rotate90_fits"]:
+                    #     hdu = fits.PrimaryHDU(
+                    #         np.rot90(outputimg.astype('float32'))
+                    #     )
+                    # elif self.config["camera"][self.name]["settings"]["rotate180_fits"]:
+                    #     hdu = fits.PrimaryHDU(
+                    #         np.rot90(outputimg.astype('float32'),2)
+                    #     )
+                    # elif self.config["camera"][self.name]["settings"]["rotate270_fits"]:
+                    #     hdu = fits.PrimaryHDU(
+                    #         np.rot90(outputimg.astype('float32'),3)
+                    #     )
+                    # else:
+                    hdu = fits.PrimaryHDU(
                             outputimg.astype('float32')
                         )
                     del outputimg
