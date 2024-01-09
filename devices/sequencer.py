@@ -3072,52 +3072,68 @@ class Sequencer:
                                 self.eve_sky_flat_latch = False
                                 self.morn_sky_flat_latch = False
                                 return
+                            
+                            
+                            # If camera has not already rejected taking the image
+                            # usually because the temperature isn't cold enough. 
+                            if not bright == None:
 
-                            if g_dev["fil"].null_filterwheel == False:
-                                if sky_lux != None:
-                                    plog(current_filter,' New Throughput Value: ', round(bright/(sky_lux*collecting_area*pixel_area*exp_time), 3), '\n\n')
-                                    new_throughput_value = round(bright/(sky_lux*collecting_area*pixel_area*exp_time), 3)
+                                if g_dev["fil"].null_filterwheel == False:
+                                    if sky_lux != None:
+                                        plog(current_filter,' New Throughput Value: ', round(bright/(sky_lux*collecting_area*pixel_area*exp_time), 3), '\n\n')
+                                        new_throughput_value = round(bright/(sky_lux*collecting_area*pixel_area*exp_time), 3)
+                                    else:
+                                        plog(current_filter,' New Throughput Value: ', round(bright/(collecting_area*pixel_area*exp_time), 3), '\n\n')
+                                        new_throughput_value = round(bright/(collecting_area*pixel_area*exp_time), 3)
                                 else:
-                                    plog(current_filter,' New Throughput Value: ', round(bright/(collecting_area*pixel_area*exp_time), 3), '\n\n')
-                                    new_throughput_value = round(bright/(collecting_area*pixel_area*exp_time), 3)
-                            else:
-                                if sky_lux != None:
-                                    plog('New Throughput Value: ', round(bright/(sky_lux*collecting_area*pixel_area*exp_time), 3), '\n\n')
-                                    new_throughput_value = round(bright/(sky_lux*collecting_area*pixel_area*exp_time), 3)
+                                    if sky_lux != None:
+                                        try:
+                                            
+                                            plog('New Throughput Value: ', round(bright/(sky_lux*collecting_area*pixel_area*exp_time), 3), '\n\n')
+                                        except:
+                                            plog ("this seems to be a bug that occurs when the temperature is out of range, here is a breakpoint for you to test it")
+                                            breakpoint()
+                                        new_throughput_value = round(bright/(sky_lux*collecting_area*pixel_area*exp_time), 3)
+                                    else:
+                                        plog('New Throughput Value: ', round(bright/(collecting_area*pixel_area*exp_time), 3), '\n\n')
+                                        new_throughput_value = round(bright/(collecting_area*pixel_area*exp_time), 3)
+    
+                                if g_dev['cam'].config["camera"][g_dev['cam'].name]["settings"]["is_osc"]:
+    
+                                    if (
+                                        bright
+                                        <= 0.8* flat_saturation_level and
+    
+                                        bright
+                                        >= 0.5 * flat_saturation_level
+                                    ):
+                                        acquired_count += 1
+                                        self.filter_throughput_shelf[current_filter]=new_throughput_value
+                                        try:
+                                            camera_gain_collector.append(fred["camera_gain"])
+                                        except:
+                                            plog ("camera gain not avails")
                                 else:
-                                    plog('New Throughput Value: ', round(bright/(collecting_area*pixel_area*exp_time), 3), '\n\n')
-                                    new_throughput_value = round(bright/(collecting_area*pixel_area*exp_time), 3)
+                                    if (
+                                        bright
+                                        <= 0.75* flat_saturation_level and
+    
+                                        bright
+                                        >= 0.25 * flat_saturation_level
+                                    ):
+                                        acquired_count += 1
+                                        self.filter_throughput_shelf[current_filter]=new_throughput_value
+                                        try:
+                                            camera_gain_collector.append(fred["camera_gain"])
+                                        except:
+                                            plog ("camera gain not avails")
 
-                            if g_dev['cam'].config["camera"][g_dev['cam'].name]["settings"]["is_osc"]:
 
-                                if (
-                                    bright
-                                    <= 0.8* flat_saturation_level and
-
-                                    bright
-                                    >= 0.5 * flat_saturation_level
-                                ):
-                                    acquired_count += 1
-                                    self.filter_throughput_shelf[current_filter]=new_throughput_value
-                                    try:
-                                        camera_gain_collector.append(fred["camera_gain"])
-                                    except:
-                                        plog ("camera gain not avails")
-                            else:
-                                if (
-                                    bright
-                                    <= 0.75* flat_saturation_level and
-
-                                    bright
-                                    >= 0.25 * flat_saturation_level
-                                ):
-                                    acquired_count += 1
-                                    self.filter_throughput_shelf[current_filter]=new_throughput_value
-                                    try:
-                                        camera_gain_collector.append(fred["camera_gain"])
-                                    except:
-                                        plog ("camera gain not avails")
-
+                            if bright == None:
+                                plog ("Seems like the camera isn't liking taking flats. This is usually because it hasn't been able to cool sufficiently, bailing out of flats. ")
+                                
+                                acquired_count = flat_count + 1 # trigger end of loop
+                            
                             
                             if acquired_count == flat_count:
                                 pop_list.pop(0)

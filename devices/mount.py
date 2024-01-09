@@ -1383,8 +1383,8 @@ class Mount:
         # Whether this violates the pointing principle.
         sun_coords=get_sun(Time.now())
         if skyflatspot != None:
-            plog("Inserted skip open test, line 1353 in Mount. WER  20231222")
-            skip_open_test = True
+            #plog("Inserted skip open test, line 1353 in Mount. WER  20231222")
+            #skip_open_test = True
             if not skip_open_test:
 
                 if (not (g_dev['events']['Cool Down, Open'] < ephem.now() < g_dev['events']['Naut Dusk']) and \
