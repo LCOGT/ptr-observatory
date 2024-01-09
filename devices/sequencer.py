@@ -3092,11 +3092,12 @@ class Sequencer:
 
                                 if (
                                     bright
-                                    <= 0.75* flat_saturation_level and
+                                    <= 0.8* flat_saturation_level and
 
                                     bright
                                     >= 0.5 * flat_saturation_level
                                 ):
+                                    acquired_count += 1
                                     self.filter_throughput_shelf[current_filter]=new_throughput_value
                                     try:
                                         camera_gain_collector.append(fred["camera_gain"])
@@ -3110,13 +3111,14 @@ class Sequencer:
                                     bright
                                     >= 0.25 * flat_saturation_level
                                 ):
+                                    acquired_count += 1
                                     self.filter_throughput_shelf[current_filter]=new_throughput_value
                                     try:
                                         camera_gain_collector.append(fred["camera_gain"])
                                     except:
                                         plog ("camera gain not avails")
 
-                            acquired_count += 1
+                            
                             if acquired_count == flat_count:
                                 pop_list.pop(0)
                                 scale = 1
