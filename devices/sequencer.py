@@ -4866,13 +4866,22 @@ class Sequencer:
                 if result == 'calendarend':
                     plog ("Calendar Item containing block removed from calendar")
                     plog ("Site bailing out of Centering")
-                    return
+                    return               
+                    
 
                 if result == 'roofshut':
                     plog ("Roof Shut, Site bailing out of Centering")
                     return
+                
+                if not g_dev['obs'].assume_roof_open and not g_dev['obs'].scope_in_manual_mode and 'Closed' in g_dev['obs'].enc_status['shutter_status']:
+                    plog ("Roof Shut, Site bailing out of Centering")
+                    return
+
 
                 if result == 'outsideofnighttime':
+                    plog ("Outside of Night Time. Site bailing out of Centering")
+                    return
+                if not g_dev['obs'].scope_in_manual_mode and g_dev['events']['Observing Ends'] < ephem.Date(ephem.now()):
                     plog ("Outside of Night Time. Site bailing out of Centering")
                     return
 
