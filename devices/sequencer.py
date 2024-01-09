@@ -3085,6 +3085,7 @@ class Sequencer:
                                     else:
                                         plog(current_filter,' New Throughput Value: ', round(bright/(collecting_area*pixel_area*exp_time), 3), '\n\n')
                                         new_throughput_value = round(bright/(collecting_area*pixel_area*exp_time), 3)
+
                                 else:
                                     if sky_lux != None:
                                         try:

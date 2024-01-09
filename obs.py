@@ -1159,7 +1159,7 @@ class Observatory:
 
                 try:
                     if not g_dev['mnt'].return_slewing() and self.open_and_enabled_to_observe and self.sun_checks_on:
-    
+                        #breakpoint()
                         sun_coords = get_sun(Time.now())
                         temppointing = SkyCoord((g_dev['mnt'].current_icrs_ra)*u.hour,
                                                 (g_dev['mnt'].current_icrs_dec)*u.degree, frame='icrs')
