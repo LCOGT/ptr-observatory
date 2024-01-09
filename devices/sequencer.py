@@ -4587,6 +4587,11 @@ class Sequencer:
 
             return
 
+        # Don't try forever if focussing
+        if self.focussing:
+            try_hard=True
+            try_forever=False
+
 
         req = {'time': self.config['pointing_exposure_time'],  'alias':  str(self.config['camera']['camera_1_1']['name']), 'image_type': 'pointing'}   #  NB Should pick up filter and constats from config
         opt = {'count': 1, 'filter': 'pointing'}
@@ -4700,6 +4705,8 @@ class Sequencer:
             self.mosaic_center_ra=g_dev['mnt'].return_right_ascension()
             self.mosaic_center_dec=g_dev['mnt'].return_declination()
             return result
+        
+        
 
         if (try_hard or try_forever) and not successful_platesolve:
             plog("Didn't get a successful platesolve at an important time for pointing, trying a double exposure")
@@ -4806,6 +4813,8 @@ class Sequencer:
                         pass
                 plog ("Time Taken for queue to clear post-exposure: " + str(time.time() - queue_clear_time))
 
+
+        
         if try_forever and (g_dev['obs'].last_platesolved_ra == np.nan or str(g_dev['obs'].last_platesolved_ra) == 'nan'):
 
             while g_dev['obs'].last_platesolved_ra == np.nan or str(g_dev['obs'].last_platesolved_ra) == 'nan':
