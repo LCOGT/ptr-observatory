@@ -2148,7 +2148,7 @@ class Camera:
                         )  # NB all these parameters are crazy!
                         self.exposure_busy = False
                         self.retry_camera = 0
-                        self.currently_in_smartstack_loop=False
+                        #self.currently_in_smartstack_loop=False
                         break
                     except Exception as e:
                         plog("Exception in camera retry loop:  ", e)
@@ -2156,8 +2156,9 @@ class Camera:
                         self.retry_camera -= 1
                         num_retries += 1
                         self.exposure_busy = False
-                        self.currently_in_smartstack_loop=False
+                        #self.currently_in_smartstack_loop=False
                         continue
+            self.currently_in_smartstack_loop=False
         #  This is the loop point for the seq count loop
         self.exposure_busy = False
         self.currently_in_smartstack_loop=False

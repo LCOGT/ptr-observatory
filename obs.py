@@ -3431,27 +3431,31 @@ class Observatory:
                     continue
 
                 # Here we parse the file, set up and send to AWS
-                filename = pri_image[1][1]
-                filepath = pri_image[1][0] + filename  # Full path to file on disk
-                aws_resp = authenticated_request("POST", "/upload/", {"object_name": filename})
-                with open(filepath, "rb") as fileobj:
-                    files = {"file": (filepath, fileobj)}
-                    #while True:
-                    try:
-                        reqs.post(aws_resp["url"], data=aws_resp["fields"], files=files, timeout=10)
-                        #plog("SUCCESS FOR:" + filename)
-                    except Exception as e:
-                        if 'timeout' in str(e).lower() or 'SSLWantWriteError' or 'RemoteDisconnected' in str(e):
-                            plog("Seems to have been a timeout on the file posted: " + str(e) + "Putting it back in the queue.")
-                            plog(filename)
-                            #breakpoint()
-                            self.fast_queue.put((100, pri_image[1]), block=False)
-                        else:
-                            plog("Fatal connection glitch for a file posted: " + str(e))
-                            plog(files)
-                            plog((traceback.format_exc()))
-                            #breakpoint()
-                        #time.sleep(5)
+                try:
+                    filename = pri_image[1][1]
+                    filepath = pri_image[1][0] + filename  # Full path to file on disk
+                    aws_resp = authenticated_request("POST", "/upload/", {"object_name": filename})
+                    with open(filepath, "rb") as fileobj:
+                        files = {"file": (filepath, fileobj)}
+                        #while True:
+                        try:
+                            reqs.post(aws_resp["url"], data=aws_resp["fields"], files=files, timeout=10)
+                            #plog("SUCCESS FOR:" + filename)
+                        except Exception as e:
+                            if 'timeout' in str(e).lower() or 'SSLWantWriteError' or 'RemoteDisconnected' in str(e):
+                                plog("Seems to have been a timeout on the file posted: " + str(e) + "Putting it back in the queue.")
+                                plog(filename)
+                                #breakpoint()
+                                self.fast_queue.put((100, pri_image[1]), block=False)
+                            else:
+                                plog("Fatal connection glitch for a file posted: " + str(e))
+                                plog(files)
+                                plog((traceback.format_exc()))
+                                #breakpoint()
+                            #time.sleep(5)
+                except:
+                    plog ("something strange in the UI uploader")
+                    plog((traceback.format_exc()))
                 self.fast_queue.task_done()
                 one_at_a_time = 0
                 time.sleep(0.1)
@@ -3485,35 +3489,38 @@ class Observatory:
                     self.calibrationui_queue.task_done()
                     one_at_a_time = 0
                     continue
-
-                # Here we parse the file, set up and send to AWS
-                filename = pri_image[1][1]
-                filepath = pri_image[1][0] + filename  # Full path to file on disk
-                aws_resp = authenticated_request("POST", "/upload/", {"object_name": filename})
-                with open(filepath, "rb") as fileobj:
-                    files = {"file": (filepath, fileobj)}
-                    #while True:
-                    try:
-                        # Different timeouts for different filesizes.
-                        # Large filesizes are usually calibration files during the daytime
-                        # So need and can have longer timeouts to get it up the pipe.
-                        # However small UI files need to get up in some reasonable amount of time
-                        # and have a reasonable timeout so the UI doesn't glitch out.
-                        reqs.post(aws_resp["url"], data=aws_resp["fields"], files=files, timeout=1800)
-
-                        #plog("SUCCESS FOR:" + filename)
-                    except Exception as e:
-                        if 'timeout' in str(e).lower() or 'SSLWantWriteError' or 'RemoteDisconnected' in str(e):
-                            plog("Seems to have been a timeout on the file posted: " + str(e) + "Putting it back in the queue.")
-                            plog(filename)
-                            #breakpoint()
-                            self.calibrationui_queue.put((100, pri_image[1]), block=False)
-                        else:
-                            plog("Fatal connection glitch for a file posted: " + str(e))
-                            plog(files)
-                            plog((traceback.format_exc()))
-                            #breakpoint()
-                        #time.sleep(5)
+                try:
+                    # Here we parse the file, set up and send to AWS
+                    filename = pri_image[1][1]
+                    filepath = pri_image[1][0] + filename  # Full path to file on disk
+                    aws_resp = authenticated_request("POST", "/upload/", {"object_name": filename})
+                    with open(filepath, "rb") as fileobj:
+                        files = {"file": (filepath, fileobj)}
+                        #while True:
+                        try:
+                            # Different timeouts for different filesizes.
+                            # Large filesizes are usually calibration files during the daytime
+                            # So need and can have longer timeouts to get it up the pipe.
+                            # However small UI files need to get up in some reasonable amount of time
+                            # and have a reasonable timeout so the UI doesn't glitch out.
+                            reqs.post(aws_resp["url"], data=aws_resp["fields"], files=files, timeout=1800)
+    
+                            #plog("SUCCESS FOR:" + filename)
+                        except Exception as e:
+                            if 'timeout' in str(e).lower() or 'SSLWantWriteError' or 'RemoteDisconnected' in str(e):
+                                plog("Seems to have been a timeout on the file posted: " + str(e) + "Putting it back in the queue.")
+                                plog(filename)
+                                #breakpoint()
+                                self.calibrationui_queue.put((100, pri_image[1]), block=False)
+                            else:
+                                plog("Fatal connection glitch for a file posted: " + str(e))
+                                plog(files)
+                                plog((traceback.format_exc()))
+                                #breakpoint()
+                            #time.sleep(5)
+                except:
+                    plog ("something strange in the calibration uploader")
+                    plog((traceback.format_exc()))
                 self.calibrationui_queue.task_done()
                 one_at_a_time = 0
                 time.sleep(10)
@@ -3547,29 +3554,32 @@ class Observatory:
                     self.mediumui_queue.task_done()
                     one_at_a_time = 0
                     continue
-
-                # Here we parse the file, set up and send to AWS
-                filename = pri_image[1][1]
-                filepath = pri_image[1][0] + filename  # Full path to file on disk
-                aws_resp = authenticated_request("POST", "/upload/", {"object_name": filename})
-                with open(filepath, "rb") as fileobj:
-                    files = {"file": (filepath, fileobj)}
-                    #while True:
-                    try:
-                        reqs.post(aws_resp["url"], data=aws_resp["fields"], files=files, timeout=300)
-                        #plog("SUCCESS FOR:" + filename)
-                    except Exception as e:
-                        if 'timeout' in str(e).lower() or 'SSLWantWriteError' or 'RemoteDisconnected' in str(e):
-                            plog("Seems to have been a timeout on the file posted: " + str(e) + "Putting it back in the queue.")
-                            plog(filename)
-                            #breakpoint()
-                            self.mediumui_queue.put((100, pri_image[1]), block=False)
-                        else:
-                            plog("Fatal connection glitch for a file posted: " + str(e))
-                            plog(files)
-                            plog((traceback.format_exc()))
-                            #breakpoint()
-                        #time.sleep(5)
+                try:
+                    # Here we parse the file, set up and send to AWS
+                    filename = pri_image[1][1]
+                    filepath = pri_image[1][0] + filename  # Full path to file on disk
+                    aws_resp = authenticated_request("POST", "/upload/", {"object_name": filename})
+                    with open(filepath, "rb") as fileobj:
+                        files = {"file": (filepath, fileobj)}
+                        #while True:
+                        try:
+                            reqs.post(aws_resp["url"], data=aws_resp["fields"], files=files, timeout=300)
+                            #plog("SUCCESS FOR:" + filename)
+                        except Exception as e:
+                            if 'timeout' in str(e).lower() or 'SSLWantWriteError' or 'RemoteDisconnected' in str(e):
+                                plog("Seems to have been a timeout on the file posted: " + str(e) + "Putting it back in the queue.")
+                                plog(filename)
+                                #breakpoint()
+                                self.mediumui_queue.put((100, pri_image[1]), block=False)
+                            else:
+                                plog("Fatal connection glitch for a file posted: " + str(e))
+                                plog(files)
+                                plog((traceback.format_exc()))
+                                #breakpoint()
+                            #time.sleep(5)
+                except:
+                    plog ("something strange in the medium-UI uploader")
+                    plog((traceback.format_exc()))
                 self.mediumui_queue.task_done()
                 one_at_a_time = 0
                 time.sleep(0.5)
@@ -4069,7 +4079,7 @@ def wait_for_slew():
                     movement_reporting_timer = time.time()
                 if not g_dev['obs'].currently_updating_status and g_dev['obs'].update_status_queue.empty():
                     g_dev['mnt'].get_mount_coordinates()
-                    g_dev['obs'].request_update_status(mount_only=True, dont_wait=True)
+                    g_dev['obs'].request_update_status(mount_only=True)#, dont_wait=True)
                     #g_dev['obs'].update_status(mount_only=True, dont_wait=True)
             #g_dev['mnt'].currently_slewing= False
 
