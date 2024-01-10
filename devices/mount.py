@@ -519,7 +519,7 @@ class Mount:
                         #self.mount_update_wincom.DeclinationRate = 5 #gets reset on the slew
                         self.mount_update_wincom.SlewToCoordinatesAsync(self.slewtoRA , self.slewtoDEC)
                         self.mount_update_wincom.DeclinationRate = 0
-                        plog("dec rate set to: ", self.mount_update_wincom.DeclinationRate)
+                        #plog("dec rate set to: ", self.mount_update_wincom.DeclinationRate)
                         #print ("successful slew")
 
                     if self.request_tracking_on:
@@ -560,8 +560,9 @@ class Mount:
 
                         self.rapid_park_indicator=copy.deepcopy(self.mount_update_wincom.AtPark)
                         #if self.can_report_pierside:
-                        self.rapid_pier_indicator=copy.deepcopy(self.mount_update_wincom.sideOfPier)
-                        self.current_tracking_state=self.mount_update_wincom.Tracking
+                        if not self.rapid_park_indicator:
+                            self.rapid_pier_indicator=copy.deepcopy(self.mount_update_wincom.sideOfPier)
+                            self.current_tracking_state=self.mount_update_wincom.Tracking
 
                     self.right_ascension_directly_from_mount = copy.deepcopy(self.mount_update_wincom.RightAscension)
                     self.declination_directly_from_mount = copy.deepcopy(self.mount_update_wincom.Declination)
@@ -1384,7 +1385,7 @@ class Mount:
         sun_coords=get_sun(Time.now())
         if skyflatspot != None:
             #plog("Inserted skip open test, line 1353 in Mount. WER  20231222")
-            #skip_open_test = True
+
             if not skip_open_test:
 
                 if (not (g_dev['events']['Cool Down, Open'] < ephem.now() < g_dev['events']['Naut Dusk']) and \

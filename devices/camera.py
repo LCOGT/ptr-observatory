@@ -509,11 +509,11 @@ class Camera:
             success = qhycam.so.SetQHYCCDParam(qhycam.camera_params[qhycam_id]['handle'], qhycam.CONTROL_GAIN, c_double(float(self.config["camera"][self.name]["settings"]['direct_qhy_gain'])))
             success = qhycam.so.SetQHYCCDParam(qhycam.camera_params[qhycam_id]['handle'], qhycam.CONTROL_OFFSET, c_double(float(self.config["camera"][self.name]["settings"]['direct_qhy_offset'])))
             #success = qhycam.so.SetQHYCCDParam(qhycam.camera_params[qhycam_id]['handle'], qhycam.CONTROL_USBTRAFFIC,c_double(float(self.config["camera"][self.name]["settings"]['direct_qhy_usb_speed'])))
-            success = qhycam.so.SetQHYCCDParam(qhycam.camera_params[qhycam_id]['handle'], qhycam.CONTROL_USBTRAFFIC,c_double(float(self.config["camera"][self.name]["settings"]['direct_qhy_usb_traffic'])))
+            #success = qhycam.so.SetQHYCCDParam(qhycam.camera_params[qhycam_id]['handle'], qhycam.CONTROL_USBTRAFFIC,c_double(float(self.config["camera"][self.name]["settings"]['direct_qhy_usb_traffic'])))
 
             if self.config["camera"][self.name]["settings"]['set_qhy_usb_speed']:
-                success = qhycam.so.SetQHYCCDParam(qhycam.camera_params[qhycam_id]['handle'], qhycam.CONTROL_SPEED,c_double(float(self.config["camera"][self.name]["settings"]['direct_qhy_usb_speed'])))
-            plog('Set QHY USB speed (found) to: ', success, self.config["camera"][self.name]["settings"]['direct_qhy_usb_speed'] )
+                success = qhycam.so.SetQHYCCDParam(qhycam.camera_params[qhycam_id]['handle'], qhycam.CONTROL_SPEED,c_double(float(self.config["camera"][self.name]["settings"]['direct_qhy_usb_traffic'])))
+            plog('Set QHY USB speed to: ', self.config["camera"][self.name]["settings"]['direct_qhy_usb_traffic'])  # NB NB ideally we should read this back to verify.
 
             self._connected = self._qhyccd_connected
             self._connect = self._qhyccd_connect
@@ -602,11 +602,15 @@ class Camera:
         else:
             temp, humid, pressure =self._temperature()
         plog("Cooling beginning @:  ", temp)
-        if not humid > 100.:
+        if 1 <= humid <= 100 or 1 <= pressure <=1100:
             plog("Humidity and pressure:  ", humid, pressure)
+        else:
+            plog("Camera temp and pressure is not reported.")
 
         if self.maxim == True:
             plog("TEC  % load:  ", self._maxim_cooler_power())
+        else:
+            plog("TEC% load is  not reported.")
 
         self.exposure_busy = False
         self.currently_in_smartstack_loop=False
@@ -695,7 +699,7 @@ class Camera:
             self.darkslide_type=self.config["camera"][self.name]["settings"]['darkslide_type']
 
             com_port = self.config["camera"][self.name]["settings"]["darkslide_com"]
-            if self.darkslide_type=='COM':
+            if self.darkslide_type=='bistable':
                 self.darkslide_instance = Darkslide(com_port)
             #elif self.darkslide_type='ASCOM_FLI_SHUTTER':  #this must be the Fli.ASCOM version
                 #self.darkslide_instance = self.camera
@@ -704,13 +708,13 @@ class Camera:
             # As it takes 12seconds to open, make sure it is either Open or Shut at startup
             if self.darkslide_state != 'Open':
 
-                if self.darkslide_type=='COM':
+                if self.darkslide_type is not None:
                     self.darkslide_instance.openDarkslide()
                     ####I think we just need to add open and closeDarkslide methods to the camera class and
                     ####make the calls outlined in the PDF  note lower case open and close strings to the ASCOM driver
                     self.darkslide_open = True
                     self.darkslide_state = 'Open'
-                elif self.darkslide_type=='ASCOM_FLI_SHUTTER':
+                elif self.darkslide_type=='ASCOM_FLI_KEPLER':
                     self.camera.Action('SetShutter', 'open')
                     self.darkslide_open = True
                     self.darkslide_state = 'Open'
@@ -794,7 +798,7 @@ class Camera:
 
     def openDarkslide(self):
         if self.darkslide_state != 'Open':
-            if self.darkslide_type=='COM':
+            if self.darkslide_type is not None:
                 self.darkslide_instance.openDarkslide()
             elif self.darkslide_type=='ASCOM_FLI_SHUTTER':
                 self.camera.Action('SetShutter', 'open')
@@ -808,9 +812,9 @@ class Camera:
     
     def closeDarkslide(self):
         if self.darkslide_state != 'Closed':
-            if self.darkslide_type=='COM':
+            if self.darkslide_type is not None:
                 self.darkslide_instance.closeDarkslide()
-            elif self.darkslide_type=='ASCOM_FLI_SHUTTER':
+            elif self.darkslide_type=='ASCOM_FLI_Kepler':    #NB NB this logic is faulty wer
                 self.camera.Action('SetShutter', 'close')
             
             self.darkslide_open = False
@@ -2144,7 +2148,7 @@ class Camera:
                         )  # NB all these parameters are crazy!
                         self.exposure_busy = False
                         self.retry_camera = 0
-                        self.currently_in_smartstack_loop=False
+                        #self.currently_in_smartstack_loop=False
                         break
                     except Exception as e:
                         plog("Exception in camera retry loop:  ", e)
@@ -2152,8 +2156,9 @@ class Camera:
                         self.retry_camera -= 1
                         num_retries += 1
                         self.exposure_busy = False
-                        self.currently_in_smartstack_loop=False
+                        #self.currently_in_smartstack_loop=False
                         continue
+            self.currently_in_smartstack_loop=False
         #  This is the loop point for the seq count loop
         self.exposure_busy = False
         self.currently_in_smartstack_loop=False
@@ -3662,7 +3667,7 @@ def post_exposure_process(payload):
 
             hdu.header["CAMUSBT"] = (selfconfig["camera"][selfname][
                 "settings"
-            ]['direct_qhy_usb_speed'], "Camera USB traffic")
+            ]['direct_qhy_usb_traffic'], "Camera USB traffic")
             hdu.header["READMODE"] = (selfconfig["camera"][selfname][
                 "settings"
             ]['direct_qhy_readout_mode'], "QHY Readout Mode")

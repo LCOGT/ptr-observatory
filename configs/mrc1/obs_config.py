@@ -492,25 +492,26 @@ site_config = {
                 'mono_Narrowband_relative_weights': [1.0, 2, 2.5],
                
 
-                'filter_data': [['air',     [0, 0], -1000,  3050.0,  [2, 17], 'ai'],  # 0 357  Values from 20240106 Very clean sky, start on time. OSC Camera!!!
+                'filter_data': [['air',     [0, 0], -1000,  2960,    [2, 17], 'ai'],  # 0 Surface ws 1400Lux at end of night run  Sun Akt 0,97 degrees
                                 # 1  330NB NB NB If this in series should change focus about 1mm more.
                                 ['dif',     [4, 0],     0,  16.00,   [2, 17], 'df'],
-                                ['w',       [2, 0],     0,  2830.0,  [2, 17], 'w '],  # 2 346
-                                ['PL',      [0, 4],     0,  2420.0,  [2, 17], "PL"],  # 3 317
-                                ['gp',      [0, 6],     0,  2180.0,  [2, 17], 'gp'],  # 4
-                                ['PB',      [0, 1],     0,  2050.0,  [2, 17], 'PB'],  # 5
-                                ['rp',      [0, 7],     0,  1000.0,  [2, 17], 'rp'],  # 6
-                                ['PG',      [0, 2],     0,  1162.0,  [2, 17], 'PG'],  # 7
-                                ['PR',      [0, 3],     0,  503.0,   [2, 17], 'PR'],  # 8
-                                ['ip',      [0, 8],     0,  440.0,   [2, 17], 'ip'],  # 9
-                                ['z',       [5, 0],     0,  69,      [2, 17], 'z'],  # 10
-                                ['O3',      [7, 0],     0,  47,      [2, 17], '03'],  # 11
-                                ['up',      [0, 5],     0,  30,      [1, 17], 'up'],  # 12
-                                ['N2',      [3, 0],     0,  19,      [2, 17], 'N2'],  # 13
-                                ['CR',      [1, 0],     0,  38,      [2, 17], 'CR'],  # 14
-                                ['S2',      [8, 0],     0,  16,      [2, 17], 'S2'],  # 15
-                                ['HA',      [6, 0],     0,  18,      [2, 17], 'HA'],  # 16
-                                ['dark',    [8, 5],     0,  0.0,     [2, 17], 'dk']],  # 18
+                                ['w',       [2, 0],     0,  2740,    [2, 17], 'w '],  # 2 346
+                                ['PL',      [0, 4],     0,  2430,    [2, 17], "PL"],  # 3 317
+                                ['gp',      [0, 6],     0,  2200,    [2, 17], 'gp'],  # 4
+                                ['PB',      [0, 1],     0,  2050,    [2, 17], 'PB'],  # 5
+                                ['PG',      [0, 2],     0,  1185,    [2, 17], 'PG'],  # 6
+                                ['rp',      [0, 7],     0,  920,     [2, 17], 'rp'],  # 7
+                                ['PR',      [0, 3],     0,  450,     [2, 17], 'PR'],  # 8
+                                ['ip',      [0, 8],     0,  327,     [2, 17], 'ip'],  # 9
+                                ['z',       [5, 0],     0,  58,      [2, 17], 'z'],  # 10
+                                ['O3',      [7, 0],     0,  43,      [2, 17], '03'],  # 11
+                                ['CR',      [1, 0],     0,  33,      [2, 17], 'CR'],  # 12
+                                ['up',      [0, 5],     0,  29,      [1, 17], 'up'],  # 13
+                                ['N2',      [3, 0],     0,  17,      [2, 17], 'N2'],  # 14
+                                ['HA',      [6, 0],     0,  15.5,    [2, 17], 'HA'],  # 15
+                                ['S2',      [8, 0],     0,  15,      [2, 17], 'S2'],  # 16 20240109 eve  Clear bright sky perfect evening
+                                
+                                ['dark',    [8, 5],     0,  0.0,     [2, 17], 'dk']],  # 17
                 
                 'focus_filter' : 'w',
 
@@ -518,7 +519,7 @@ site_config = {
                 'filter_screen_sort':  ['air', 'w', 'PL', 'gp', 'PB', 'rp', 'PG', 'PR', 'ip', 'O3', 'N2', 'CR', 'S2', 'HA'],  # 9, 21],  # 5, 17], #Most to least throughput, \
                 # so screen brightens, skipping u and zs which really need sky.
 
-                'filter_sky_sort':     ['S2', 'N2', 'HA', 'up', 'CR', 'O3', 'z', 'ip', 'PR', 'rp', 'PG', 'PB', 'gp', 'PL', 'w', 'air'],
+                'filter_sky_sort':     ['S2', 'HA', 'n2', 'up', 'CR', 'O3', 'z', 'ip', 'PR', 'rp', 'PG', 'PB', 'gp', 'PL', 'w', 'air'],
                  
             },
         },
@@ -614,11 +615,9 @@ site_config = {
                                
                 'direct_qhy_gain': 0,
                 'direct_qhy_offset': 9,
-                
-                'direct_qhy_usb_traffic' : 60,
-                
-                'set_qhy_usb_speed': False,
-                'direct_qhy_usb_speed' : 0,
+                'set_qhy_usb_speed': True,
+                'direct_qhy_usb_traffic' : 60,     #NB NB Why two keys/
+                'direct_qhy_usb_speed' : 60,      #NB used in saving the image header.
 
                 
 
@@ -801,6 +800,7 @@ site_config = {
                 'has_darkslide':  True,
                 'darkslide_com':  'COM15',
                 'shutter_type': "Electronic",
+                'darkslide_type': "bistable",
                 
                 # 'has_screen': True,
                 # 'screen_settings':  {

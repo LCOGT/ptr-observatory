@@ -2500,6 +2500,7 @@ class Sequencer:
 
 
     def check_zenith_and_move_to_flat_spot(self, ending=None):
+
         too_close_to_zenith=True
         while too_close_to_zenith:
             alt, az = g_dev['mnt'].flat_spot_now()
@@ -2785,7 +2786,7 @@ class Sequencer:
                         filter_throughput = g_dev['fil'].return_filter_throughput({"filter": current_filter}, {})
                     else:
                         filter_throughput = float(self.config['filter_wheel']['filter_wheel1']['flat_sky_gain'])
-                    plog ("Using initial gain from config : "+ str(filter_throughput))
+                    plog ("Using initial throughput from config : "+ str(filter_throughput))
 
 
                 # Pick up previous camera_gain specific for this filter
