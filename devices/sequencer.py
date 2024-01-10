@@ -2777,16 +2777,42 @@ class Sequencer:
                     current_filter='No Filter'
                     plog("Beginning flat run for filterless observation")
 
+                
+                min_exposure = float(self.config['camera']['camera_1_1']['settings']['min_flat_exposure'])
+                max_exposure = float(self.config['camera']['camera_1_1']['settings']['max_flat_exposure'])
+
                 g_dev['obs'].send_to_user("\n\nBeginning flat run for filter: " + str(current_filter) )
-                if (current_filter in self.filter_throughput_shelf.keys()) and (not self.config['filter_wheel']['filter_wheel1']['override_automatic_filter_throughputs']):
+                if (current_filter in self.filter_throughput_shelf.keys()):# and (not self.config['filter_wheel']['filter_wheel1']['override_automatic_filter_throughputs']):
                     filter_throughput=self.filter_throughput_shelf[current_filter]
                     plog ("Using stored throughput : " + str(filter_throughput))
+                    known_throughput= True
                 else:
                     if g_dev["fil"].null_filterwheel == False:
-                        filter_throughput = g_dev['fil'].return_filter_throughput({"filter": current_filter}, {})
+                        filter_throughput = 150.0
+                        plog ("Using initial attempt at a throughput : "+ str(filter_throughput))
+                        plog ("Widening min and max exposure times to find a good estimate also.")
+                        plog ("Normal exposure limits will return once a good throughput is found.")
+                        min_exposure=min_exposure*0.33
+                        max_exposure=max_exposure*3
+                        flat_count=2
+                        known_throughput=False
+                        
                     else:
                         filter_throughput = float(self.config['filter_wheel']['filter_wheel1']['flat_sky_gain'])
-                    plog ("Using initial throughput from config : "+ str(filter_throughput))
+                        plog ("Using initial throughput from config : "+ str(filter_throughput))
+                        plog ("Widening min and max exposure times to find a good estimate also.")
+                        plog ("Normal exposure limits will return once a good throughput is found.")
+                        min_exposure=min_exposure*0.33
+                        max_exposure=max_exposure*3
+                        flat_count=2
+                        known_throughput=False
+                
+                # else:
+                #     if g_dev["fil"].null_filterwheel == False:
+                #         filter_throughput = g_dev['fil'].return_filter_throughput({"filter": current_filter}, {})
+                #     else:
+                #         filter_throughput = float(self.config['filter_wheel']['filter_wheel1']['flat_sky_gain'])
+                #     plog ("Using initial throughput from config : "+ str(filter_throughput))
 
 
                 # Pick up previous camera_gain specific for this filter
@@ -2798,7 +2824,12 @@ class Sequencer:
                     self.current_filter_last_camera_gain=200
                     self.current_filter_last_camera_gain_stdev=200
                 self.filter_camera_gain_shelf.close()
-
+                
+                
+                # If the known_throughput is false, then do not reject flats by camera gain.
+                if known_throughput==False:
+                    self.current_filter_last_camera_gain=200
+                    self.current_filter_last_camera_gain_stdev=200
 
                 acquired_count = 0
                 flat_saturation_level = g_dev['cam'].config["camera"][g_dev['cam'].name]["settings"]["saturate"]
@@ -2851,8 +2882,9 @@ class Sequencer:
                         if self.estimated_first_flat_exposure == False:
                             self.estimated_first_flat_exposure = True
                             if sky_lux != None:
-
-                                pixel_area=pow(float(g_dev['cam'].config["camera"][g_dev['cam'].name]["settings"]["onebyone_pix_scale"]),2)
+                                    
+                                #pixel_area=pow(float(g_dev['cam'].config["camera"][g_dev['cam'].name]["settings"]["onebyone_pix_scale"]),2)
+                                pixel_area=pow(float(g_dev['cam'].pixscale),2)
                                 exp_time = target_flat/(collecting_area*pixel_area*sky_lux*float(filter_throughput))  #g_dev['ocn'].calc_HSI_lux)  #meas_sky_lux)
 
                             else:
