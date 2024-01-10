@@ -540,6 +540,64 @@ class FilterWheel:
         self.set_name_command({"filter": self.config["filter_wheel1"]["settings"]['default_filter']}, {})
 
 
+    def get_starting_throughput_value(self, requested_filter: str):
+        """Returns an approximate throughput value for a
+        filter when a throughput has yet to be calculated during flats
+        """
+
+        requested_filter=requested_filter.lower()
+
+        filter_default_throughputs = {}
+        
+        filter_default_throughputs['air'] = 2800.0
+        filter_default_throughputs['bb'] = 750.0
+        filter_default_throughputs['bi'] = 53.0
+        filter_default_throughputs['br'] = 443.0
+        filter_default_throughputs['bv'] = 623.0
+        filter_default_throughputs['bu'] = 40.0
+        
+        
+        filter_default_throughputs['cr'] = 8.0
+        filter_default_throughputs['exo'] = 1570.0
+        filter_default_throughputs['gp'] = 1420.0
+        
+        filter_default_throughputs['ha'] = 8.0
+        filter_default_throughputs['ip'] = 230.0
+        
+        filter_default_throughputs['jb'] = 750.0
+        filter_default_throughputs['ji'] = 53.0
+        filter_default_throughputs['jr'] = 443.0
+        filter_default_throughputs['jv'] = 623.0
+        filter_default_throughputs['ju'] = 40.0
+        
+        
+        filter_default_throughputs['n2'] = 5.0        
+        filter_default_throughputs['nir'] = 81.0
+        filter_default_throughputs['o3'] = 40.0
+        filter_default_throughputs['pb'] = 1040.0
+        filter_default_throughputs['pg'] = 575.0
+        filter_default_throughputs['pl'] = 2090.0
+        filter_default_throughputs['pr'] = 360.0
+        
+        filter_default_throughputs['rp'] = 460.0
+        
+        filter_default_throughputs['s2'] = 5.0
+        filter_default_throughputs['up'] = 40.0
+        filter_default_throughputs['w'] = 2100.0
+        filter_default_throughputs['zp'] = 62
+        filter_default_throughputs['zp'] = 11.0
+        filter_default_throughputs['zs'] = 8.6
+        
+        try:
+            plog ("found default filter throughput value: " + str(filter_default_throughputs[requested_filter] ))
+            return filter_default_throughputs[requested_filter] 
+        except:
+            plog ("did not find a default filter value for that filter, taking a swing with a standard 150.0 throughput value")
+            return 150.0 
+
+
+
+
     def substitute_filter(self, requested_filter: str):
         """Returns an alternative filter if requested filter not at site.
 
