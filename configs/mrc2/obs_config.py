@@ -695,7 +695,7 @@ site_config = {
                 'flipx_fits': False,
                 'flipy_fits': False,
                 'rotate180_fits': False,  # This also should be flipxy!
-                'rotate90_fits': True,
+                'rotate90_fits': False,
                 'rotate270_fits': False,
                 'squash_on_x_axis': False,
                 
