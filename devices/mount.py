@@ -560,8 +560,9 @@ class Mount:
 
                         self.rapid_park_indicator=copy.deepcopy(self.mount_update_wincom.AtPark)
                         #if self.can_report_pierside:
-                        self.rapid_pier_indicator=copy.deepcopy(self.mount_update_wincom.sideOfPier)
-                        self.current_tracking_state=self.mount_update_wincom.Tracking
+                        if not self.rapid_park_indicator:
+                            self.rapid_pier_indicator=copy.deepcopy(self.mount_update_wincom.sideOfPier)
+                            self.current_tracking_state=self.mount_update_wincom.Tracking
 
                     self.right_ascension_directly_from_mount = copy.deepcopy(self.mount_update_wincom.RightAscension)
                     self.declination_directly_from_mount = copy.deepcopy(self.mount_update_wincom.Declination)
