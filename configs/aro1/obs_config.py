@@ -713,6 +713,7 @@ site_config = {
 
                 # Does this camera have a darkslide, if so, what are the settings?
                 'has_darkslide':  True,
+                'darkslide_type' : 'VINCENT',
                 'darkslide_com':  'COM10',
                 'shutter_type': "Electronic",
 
