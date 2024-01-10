@@ -1889,6 +1889,8 @@ class Camera:
                     # If not, stop running block
                     if not calendar_event_id == None:
                         #print ("ccccccc")
+                        
+                        
 
                         foundcalendar=False
 

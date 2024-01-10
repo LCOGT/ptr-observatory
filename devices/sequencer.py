@@ -996,7 +996,7 @@ class Sequencer:
             # Otherwise everyone will get slightly off-pointing images
             # Necessary
             plog ("Taking a quick pointing check and re_seek for new project block")
-            result = self.centering_exposure(no_confirmation=True, try_hard=True, try_forever=True)
+            result = self.centering_exposure(no_confirmation=True, try_hard=True, try_forever=True, calendar_event_id=calendar_event_id)
             self.mosaic_center_ra=g_dev['mnt'].return_right_ascension()
             self.mosaic_center_dec=g_dev['mnt'].return_declination()
             # Don't do a second repointing in the first pane of a mosaic
@@ -1173,7 +1173,7 @@ class Sequencer:
                         # Otherwise everyone will get slightly off-pointing images
                         # Necessary
                         plog ("Taking a quick pointing check and re_seek for new mosaic block")
-                        result = self.centering_exposure(no_confirmation=True, try_hard=True, try_forever=True)
+                        result = self.centering_exposure(no_confirmation=True, try_hard=True, try_forever=True, calendar_event_id=calendar_event_id)
                         self.mosaic_center_ra=g_dev['mnt'].return_right_ascension()
                         self.mosaic_center_dec=g_dev['mnt'].return_declination()
 
@@ -3456,7 +3456,7 @@ class Sequencer:
         if extensive_focus == None:
             g_dev['obs'].send_to_user("Running a quick platesolve to center the focus field", p_level='INFO')
 
-            result = self.centering_exposure(no_confirmation=True, try_hard=True, try_forever=True)
+            result = self.centering_exposure(no_confirmation=True, try_hard=True)#), try_forever=True)
             # Wait for platesolve
             reported=0
             temptimer=time.time()
@@ -4107,7 +4107,7 @@ class Sequencer:
         if no_auto_after_solve == False:
             g_dev['obs'].send_to_user("Running a quick platesolve to center the focus field", p_level='INFO')
 
-            result = self.centering_exposure(no_confirmation=True, try_hard=True, try_forever=True)
+            result = self.centering_exposure(no_confirmation=True, try_hard=True)#), try_forever=True)
             # Wait for platesolve
             #queue_clear_time = time.time()
             reported=0
@@ -4572,7 +4572,7 @@ class Sequencer:
         return
 
 
-    def centering_exposure(self, no_confirmation=False, try_hard=False, try_forever=False):
+    def centering_exposure(self, no_confirmation=False, try_hard=False, try_forever=False, calendar_event_id=None):
 
         """
         A pretty regular occurance - the pointing on the scopes isn't great usually.
@@ -4824,6 +4824,39 @@ class Sequencer:
                 g_dev["obs"].send_to_user("Still haven't got a pointing lock at an important time. Waiting then trying again.")
 
                 g_dev['obs'].time_of_last_slew=time.time()
+                
+                
+                
+                if result == 'blockend':
+                    plog ("End of Block, exiting Centering.")
+                    return
+
+                if result == 'calendarend':
+                    plog ("Calendar Item containing block removed from calendar")
+                    plog ("Site bailing out of Centering")
+                    return               
+                    
+
+                if result == 'roofshut':
+                    plog ("Roof Shut, Site bailing out of Centering")
+                    return
+                
+                if not g_dev['obs'].assume_roof_open and not g_dev['obs'].scope_in_manual_mode and 'Closed' in g_dev['obs'].enc_status['shutter_status']:
+                    plog ("Roof Shut, Site bailing out of Centering")
+                    return
+
+
+                if result == 'outsideofnighttime':
+                    plog ("Outside of Night Time. Site bailing out of Centering")
+                    return
+                if not g_dev['obs'].scope_in_manual_mode and g_dev['events']['Observing Ends'] < ephem.Date(ephem.now()):
+                    plog ("Outside of Night Time. Site bailing out of Centering")
+                    return
+
+                if g_dev["obs"].stop_all_activity:
+                    plog('stop_all_activity cancelling out of centering')
+                    return
+                
 
                 wait_a_minute=time.time()
                 while (time.time() - wait_a_minute < 60):
@@ -4860,6 +4893,21 @@ class Sequencer:
                 result = g_dev['cam'].expose_command(req, opt, user_id='Tobor', user_name='Tobor', user_roles='system', no_AWS=True, solve_it=True)
 
 
+
+                # test for blockend
+                if g_dev['seq'].blockend != None:
+                    g_dev['obs'].request_update_calendar_blocks()
+                    endOfExposure = datetime.datetime.utcnow() + datetime.timedelta(seconds=float(self.config['pointing_exposure_time']) * 3)
+                    now_date_timeZ = endOfExposure.isoformat().split('.')[0] +'Z'
+
+                    #plog (now_date_timeZ)
+                    #plog (g_dev['seq'].blockend)
+
+                    blockended = now_date_timeZ  >= g_dev['seq'].blockend
+                    if blockended:
+                        plog ("End of Block, exiting Centering.")
+                        return
+
                 if result == 'blockend':
                     plog ("End of Block, exiting Centering.")
                     return
@@ -4868,6 +4916,27 @@ class Sequencer:
                     plog ("Calendar Item containing block removed from calendar")
                     plog ("Site bailing out of Centering")
                     return               
+                
+                if not calendar_event_id == None:
+                    #print ("ccccccc")
+                    
+                    foundcalendar=False
+
+                    for tempblock in g_dev['seq'].blocks:
+                        try:
+                            if tempblock['event_id'] == calendar_event_id :
+                                foundcalendar=True
+                                g_dev['seq'].blockend=tempblock['end']
+
+                                #breakpoint()
+                        except:
+                            plog("glitch in calendar finder")
+                            plog(str(tempblock))
+                    now_date_timeZ = datetime.datetime.utcnow().isoformat().split('.')[0] +'Z'
+                    if foundcalendar == False or now_date_timeZ >= g_dev['seq'].blockend:
+                        plog ("could not find calendar entry, cancelling out of block.")
+                        plog ("And Cancelling SmartStacks.")                        
+                        return 'calendarend'
                     
 
                 if result == 'roofshut':
