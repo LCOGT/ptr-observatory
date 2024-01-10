@@ -686,8 +686,8 @@ class Observatory:
                     device = Camera(driver, name, self.config)
                 elif dev_type == "sequencer":
                     device = Sequencer(driver, name, self.config, self.astro_events)
-                else:
-                    plog(f"Unknown device: {name}")
+                # else:
+                #     plog(f"Unknown device: {name}")
                 # Add the instantiated device to the collection of all devices.
                 self.all_devices[dev_type][name] = device
 
@@ -2405,7 +2405,7 @@ class Observatory:
 
                 jpeg_subprocess=subprocess.Popen(['python','subprocesses/mainjpeg.py'],stdin=subprocess.PIPE,stdout=subprocess.PIPE,bufsize=0)
 
-                plog("@ Pickle point:  ", zoom_factor)
+                #plog("@ Pickle point:  ", zoom_factor)
                 if True:
                     #
                     pickle.dump([hdusmalldata, smartstackid, paths, pier_side, is_osc, osc_bayer, osc_background_cut,osc_brightness_enhance, osc_contrast_enhance,\
