@@ -3829,6 +3829,8 @@ class Sequencer:
             except:
 
                 plog('Autofocus quadratic equation not converge. Moving back to starting focus:  ', focus_start)
+                
+                g_dev['obs'].send_to_user("Autofocus was not successful. Returning to original focus setting and pointing.")
 
                 g_dev['foc'].guarded_move((focus_start)*g_dev['foc'].micron_to_steps)
 
@@ -3878,7 +3880,7 @@ class Sequencer:
                     foc_pos4 = False
                     plog ("spot4 failed ")
                 plog('\nFound best focus at:  ', foc_pos4,' measured FWHM is:  ',  round(spot4, 2), '\n')
-                g_dev['obs'].send_to_user('Found best focus at:  ' +str(foc_pos4) +' measured FWHM is:  ' + str(round(spot4, 2)), p_level='INFO')
+                g_dev['obs'].send_to_user('Successful focus complete at:  ' +str(foc_pos4) +' measured FWHM is:  ' + str(round(spot4, 2)), p_level='INFO')
                 if not dont_log_focus:
                     g_dev['foc'].af_log(foc_pos4, spot4, new_spot)
                 try:
@@ -4006,7 +4008,7 @@ class Sequencer:
                     foc_pos4 = False
                     plog ("spot4 failed ")
                 plog('\nFound best focus position at:  ', foc_pos4,' measured FWHM is:  ',  round(spot4, 2), '\n')
-                g_dev['obs'].send_to_user('Found best focus at: ' + str(foc_pos4) +' measured FWHM is: ' + str(round(spot4, 2)), p_level='INFO')
+                g_dev['obs'].send_to_user('Successfully focussed at: ' + str(foc_pos4) +' measured FWHM is: ' + str(round(spot4, 2)), p_level='INFO')
                 if not dont_log_focus:
                     g_dev['foc'].af_log(foc_pos4, spot4, new_spot)
                 plog("Returning to RA:  " +str(start_ra) + " Dec: " + str(start_dec))
@@ -4121,7 +4123,7 @@ class Sequencer:
                     foc_pos4 = False
                     plog ("spot4 failed ")
                 plog('\nFound best focus position at:  ', foc_pos4,' measured FWHM is:  ',  round(spot4, 2), '\n')
-                g_dev['obs'].send_to_user('Found best focus at: ' + str(foc_pos4) +' measured FWHM is: ' + str(round(spot4, 2)), p_level='INFO')
+                g_dev['obs'].send_to_user('Successfully found focus at: ' + str(foc_pos4) +' measured FWHM is: ' + str(round(spot4, 2)), p_level='INFO')
                 if not dont_log_focus:
                     g_dev['foc'].af_log(foc_pos4, spot4, new_spot)
                 plog("Returning to RA:  " +str(start_ra) + " Dec: " + str(start_dec))
