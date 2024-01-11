@@ -772,7 +772,7 @@ site_config = {
 
                 # This is the area for cooling related settings
                 'cooler_on': True,
-                'temp_setpoint': -15,  # Verify we can go colder
+                'temp_setpoint': -18,  # Verify we can go colder
                 'rated_max_delta': -45, # Rated capacity for TEC to go below ambient.
                 'has_chiller': True,
                 'ambient_water_cooler':  False,  #QHY sells these.           
@@ -812,10 +812,10 @@ site_config = {
                 'dither_enabled':  True,      #Set this way for tracking testing
 
                 # This is the absolute minimum and maximum exposure for the camera
-                'min_exposure': 0.4,
+                'min_exposure': 0.5,
                 'max_exposure': 600.,
                 # For certain shutters, short exposures aren't good for flats. Some CMOS have banding in too short an exposure. Largely applies to ccds though.
-                'min_flat_exposure': 0.4,                
+                'min_flat_exposure': 1.5, # WER 20240111 changed from 0.4   #just for now for CCD camera testing            
                 # Realistically there is maximum flat_exposure that makes sure flats are efficient and aren't collecting actual stars.
                 'max_flat_exposure': 30.0,
                 # During the daytime with the daytime safety mode on, exposures will be limited to this maximum exposure
@@ -852,7 +852,7 @@ site_config = {
                 # As simple as it states, how many calibration frames to collect and how many to store.                
                 'number_of_bias_to_collect': 26,
                 'number_of_dark_to_collect': 13,
-                'number_of_flat_to_collect': 5,
+                'number_of_flat_to_collect': 7,   #just for now for CCD camera testing
                 'number_of_bias_to_store': 53,
                 'number_of_dark_to_store': 27,
                 'number_of_flat_to_store': 11,
