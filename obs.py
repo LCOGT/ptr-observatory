@@ -263,6 +263,11 @@ class Observatory:
         except:
             pass
 
+        try:
+            os.system("taskkill /IM PWI4.exe /F")
+        except:
+            pass
+
         listOfProcessIds = findProcessIdByName('maxim_dl')
         for pid in listOfProcessIds:
             pid_num = pid['pid']
@@ -667,6 +672,17 @@ class Observatory:
                 settings = devices_of_type[name].get("settings", {})
 
                 if dev_type == "mount":
+                    #breakpoint()
+                    
+                    # make sure PWI4 is booted up and connected before creating PW mount device
+                    if 'PWI4' in driver:
+                        #subprocess.Popen('"C:\Program Files (x86)\PlaneWave Instruments\PlaneWave Interface 4\PWI4.exe"',stdin=None,stdout=None,bufsize=0)
+                        subprocess.Popen('"C:\Program Files (x86)\PlaneWave Instruments\PlaneWave Interface 4\PWI4.exe"')
+                        time.sleep(10)
+                        #trigger a connect via the http server
+                        urllib.request.urlopen('http://localhost:8220/mount/connect')
+                        time.sleep(5)
+
                     device = Mount(
                         driver, name, settings, self.config, self.astro_events, tel=True
                     )  # NB this needs to be straightened out.

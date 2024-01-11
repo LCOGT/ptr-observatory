@@ -2695,7 +2695,8 @@ class Sequencer:
                 #print (entry[0])
                 list_of_filters_for_this_run.append(entry[0])
             print (list_of_filters_for_this_run)
-            list_of_filters_for_this_run.remove('dark')
+            if 'dark' in list_of_filters_for_this_run:
+                list_of_filters_for_this_run.remove('dark')
             
             # Second, check that that all filters have a stored throughput value
             # If not, we will only run on those filters that have yet to get a throughput recorded

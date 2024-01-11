@@ -156,14 +156,10 @@ class Mount:
 
         try:
             self.mount.Connected = True
-        except Exception as e:
+        except:
             self.mount_busy=False
-            print (e)
-            if 'PWI4_ASCOM' in str(e):
-                os.system('"C:\Program Files (x86)\PlaneWave Instruments\PlaneWave Interface 4\PWI4.exe"')
-            else:
-                plog(traceback.format_exc())
-                ######breakpoint()
+            plog(traceback.format_exc())
+
 
         self.driver = driver
 
@@ -171,6 +167,8 @@ class Mount:
             self.theskyx = True
         else:
             self.theskyx = False
+
+        
 
         self.site_coordinates = EarthLocation(lat=float(g_dev['evnt'].wema_config['latitude'])*u.deg, \
                                 lon=float(g_dev['evnt'].wema_config['longitude'])*u.deg,
