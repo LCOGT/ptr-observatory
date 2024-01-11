@@ -3439,9 +3439,13 @@ class Sequencer:
 
     def filter_focus_offset_estimator_script(self):
         
-        plog ("Determining offsets between filters")
-        
+        plog ("Determining offsets between filters")       
+                
         plog ("First doing a normal run on the 'focus' filter first")
+        
+        
+        # Slewing to a relatively random high spot
+        g_dev['mnt'].go_command(alt=75,az= 70)
         
         req2 = {'target': 'near_tycho_star'}
         opt = {}
