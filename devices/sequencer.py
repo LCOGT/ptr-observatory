@@ -3443,8 +3443,14 @@ class Sequencer:
         
         plog ("First doing a normal run on the 'focus' filter first")
         
-        foc_pos, foc_fwhm=self.auto_focus_script(filter_choice='focus')
+        req2 = {'target': 'near_tycho_star'}
+        opt = {}
+        foc_pos, foc_fwhm=self.auto_focus_script(req2, opt, filter_choice='focus')
         
+        plog ("focus position: " + str(foc_pos))
+        plog ("focus fwhm: " + str(foc_pos))
+        
+        focus_filter_focus_point=foc_pos
         
         # First get the list of filters from the config list.
         list_of_filters_for_this_run=[]
@@ -3456,14 +3462,14 @@ class Sequencer:
             list_of_filters_for_this_run.remove('dark')
             
         for chosen_filter in list_of_filters_for_this_run:
-            foc_pos, foc_fwhm=self.auto_focus_script(filter_choice=chosen_filter)
+            foc_pos, foc_fwhm=self.auto_focus_script(req2, opt, begin_at=focus_filter_focus_point, filter_choice=chosen_filter)
             plog ("focus position: " + str(foc_pos))
             plog ("focus fwhm: " + str(foc_pos))
         
         
         
 
-    def auto_focus_script(self, req, opt, throw=None, skip_timer_check=False, extensive_focus=None, filter_choice='focus'):
+    def auto_focus_script(self, req, opt, throw=None, begin_at=None, skip_timer_check=False, extensive_focus=None, filter_choice='focus'):
         '''
         V curve is a big move focus designed to fit two lines adjacent to the more normal focus curve.
         It finds the approximate focus, particulary for a new instrument. It requires 8 points plus
@@ -3541,7 +3547,10 @@ class Sequencer:
         start_ra = g_dev['mnt'].return_right_ascension()   #Read these to go back.  NB NB Need to cleanly pass these on so we can return to proper target.
         start_dec = g_dev['mnt'].return_declination()
         #focus_start = g_dev['foc'].current_focus_position
-        if not extensive_focus == None:
+        
+        if not begin_at is None:            
+            focus_start = begin_at  #In this case we start at a place close to a 3 point minimum.            
+        elif not extensive_focus == None:
             focus_start=extensive_focus
         else:
             focus_start=g_dev['foc'].current_focus_position
