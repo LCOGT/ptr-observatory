@@ -565,7 +565,7 @@ class FilterWheel:
         filter_default_throughputs['bv'] = 623.0
         filter_default_throughputs['bu'] = 40.0
         
-        
+        filter_default_throughputs['clear'] = 2100.0
         filter_default_throughputs['cr'] = 8.0
         filter_default_throughputs['dif'] = 1000.0
         filter_default_throughputs['exo'] = 1570.0
@@ -579,7 +579,7 @@ class FilterWheel:
         filter_default_throughputs['jr'] = 443.0
         filter_default_throughputs['jv'] = 623.0
         filter_default_throughputs['ju'] = 40.0
-        filter_default_throughputs['lum'] = 2800.0
+        filter_default_throughputs['lum'] = 2100.0
         
         filter_default_throughputs['n2'] = 5.0        
         filter_default_throughputs['nir'] = 81.0

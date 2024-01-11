@@ -595,8 +595,15 @@ class Observatory:
         #self.auto_centering_off = True
 
 
-        #MTF -TEMP
+        # On bootup, detect the roof status and set the obs to observe or not.
         g_dev['obs'].enc_status = g_dev['obs'].get_enclosure_status_from_aws()
+        # If the roof is open, then it is open and enabled to observe
+        if not g_dev['obs'].enc_status == None:
+            if 'Open' in g_dev['obs'].enc_status['shutter_status']:
+                if (not 'NoObs' in g_dev['obs'].enc_status['shutter_status'] and not self.net_connection_dead) or self.assume_roof_open:
+                    self.open_and_enabled_to_observe = True
+                else:
+                    self.open_and_enabled_to_observe = False
         
         # AND one for safety checks
         # Only poll the broad safety checks (altitude and inactivity) every 5 minutes
