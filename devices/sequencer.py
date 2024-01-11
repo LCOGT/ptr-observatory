@@ -3429,6 +3429,20 @@ class Sequencer:
         
         plog ("Determining offsets between filters")
         
+        # First get the list of filters from the config list.
+        list_of_filters_for_this_run=[]
+        for entry in g_dev['fil'].filter_data:
+            #print (entry[0])
+            list_of_filters_for_this_run.append(entry[0])
+        print (list_of_filters_for_this_run)
+        if 'dark' in list_of_filters_for_this_run:
+            list_of_filters_for_this_run.remove('dark')
+            
+        for chosen_filter in list_of_filters_for_this_run:
+            foc_pos, foc_fwhm=self.auto_focus_script(filter_choice=chosen_filter)
+            plog ("focus position: " + str(foc_pos))
+            plog ("focus fwhm: " + str(foc_pos))
+        
         
         
 
@@ -3441,13 +3455,15 @@ class Sequencer:
         Fine focus consists of five points plus a verify.
         Optionally individual images can be multiples of one to average out seeing.
         NBNBNB This code needs to go to known stars to be moe relaible and permit subframes
-        Result format:
-                        result['mean_focus'] = avg_foc[1]
-                        result['mean_rotation'] = avg_rot[1]
-                        result['FWHM'] = spot   What is returned is a close proxy to real fitted FWHM.
-                        result['half_FD'] = None
-                        result['patch'] = cal_result
-                        result['temperature'] = avg_foc[2]  This is probably tube not reported by Gemini.
+        # Result format:
+        #                 result['mean_focus'] = avg_foc[1]
+        #                 result['mean_rotation'] = avg_rot[1]
+        #                 result['FWHM'] = spot   What is returned is a close proxy to real fitted FWHM.
+        #                 result['half_FD'] = None
+        #                 result['patch'] = cal_result
+        #                 result['temperature'] = avg_foc[2]  This is probably tube not reported by Gemini.
+        
+        returns foc_pos - the focus position and foc_fwhm - the estimated fwhm
         '''
 
         self.focussing=True
@@ -3461,7 +3477,7 @@ class Sequencer:
             plog ("NOT DOING AUTO FOCUS -- IT IS THE DAYTIME!!")
             g_dev["obs"].send_to_user("An auto focus was rejected as it is during the daytime.")
             self.focussing=False
-            return
+            return np.nan, np.nan
 
         # First check how long it has been since the last focus
         plog ("Time of last focus")
@@ -3473,11 +3489,11 @@ class Sequencer:
         if self.stop_script_called:
             g_dev["obs"].send_to_user("Cancelling out of autofocus script as stop script has been called.")
             self.focussing=False
-            return
+            return np.nan, np.nan
         if not g_dev['obs'].open_and_enabled_to_observe:
             g_dev["obs"].send_to_user("Cancelling out of activity as no longer open and enabled to observe.")
             self.focussing=False
-            return
+            return np.nan, np.nan
 
 
         plog ("Threshold time between auto focus routines (hours)")
@@ -3490,7 +3506,7 @@ class Sequencer:
             else:
                 plog ("too soon since last autofacus")
                 self.focussing=False
-                return
+                return np.nan, np.nan
 
 
         g_dev['foc'].time_of_last_focus = datetime.datetime.utcnow()
@@ -3562,12 +3578,12 @@ class Sequencer:
         if self.stop_script_called:
             g_dev["obs"].send_to_user("Cancelling out of autofocus script as stop script has been called.")
             self.focussing=False
-            return
+            return np.nan, np.nan
 
         if not g_dev['obs'].open_and_enabled_to_observe:
             g_dev["obs"].send_to_user("Cancelling out of activity as no longer open and enabled to observe.")
             self.focussing=False
-            return
+            return np.nan, np.nan
 
 
         g_dev['foc'].guarded_move((focus_start)*g_dev['foc'].micron_to_steps)
@@ -3594,11 +3610,11 @@ class Sequencer:
                     if self.stop_script_called:
                         g_dev["obs"].send_to_user("Cancelling out of autofocus script as stop script has been called.")
                         self.focussing=False
-                        return
+                        return np.nan, np.nan
                     if not g_dev['obs'].open_and_enabled_to_observe:
                         g_dev["obs"].send_to_user("Cancelling out of activity as no longer open and enabled to observe.")
                         self.focussing=False
-                        return
+                        return np.nan, np.nan
                     pass
 
             g_dev['obs'].send_to_user("Focus Field Centered", p_level='INFO')
@@ -3607,11 +3623,11 @@ class Sequencer:
         if self.stop_script_called:
             g_dev["obs"].send_to_user("Cancelling out of autofocus script as stop script has been called.")
             self.focussing=False
-            return
+            return np.nan, np.nan
         if not g_dev['obs'].open_and_enabled_to_observe:
             g_dev["obs"].send_to_user("Cancelling out of activity as no longer open and enabled to observe.")
             self.focussing=False
-            return
+            return np.nan, np.nan
 
 
 
@@ -3642,11 +3658,11 @@ class Sequencer:
                 if self.stop_script_called:
                     g_dev["obs"].send_to_user("Cancelling out of autofocus script as stop script has been called.")
                     self.focussing=False
-                    return
+                    return np.nan, np.nan
                 if not g_dev['obs'].open_and_enabled_to_observe:
                     g_dev["obs"].send_to_user("Cancelling out of activity as no longer open and enabled to observe.")
                     self.focussing=False
-                    return
+                    return np.nan, np.nan
 
             else:
 
@@ -3684,11 +3700,11 @@ class Sequencer:
             if self.stop_script_called:
                 g_dev["obs"].send_to_user("Cancelling out of autofocus script as stop script has been called.")
                 self.focussing=False
-                return
+                return np.nan, np.nan
             if not g_dev['obs'].open_and_enabled_to_observe:
                 g_dev["obs"].send_to_user("Cancelling out of activity as no longer open and enabled to observe.")
                 self.focussing=False
-                return
+                return np.nan, np.nan
         else:
             g_dev['obs'].fwhmresult['FWHM'] = 4
             g_dev['obs'].fwhmresult['mean_focus'] = g_dev['foc'].current_focus_position
@@ -3714,11 +3730,11 @@ class Sequencer:
             if self.stop_script_called:
                 g_dev["obs"].send_to_user("Cancelling out of autofocus script as stop script has been called.")
                 self.focussing=False
-                return
+                return np.nan, np.nan
             if not g_dev['obs'].open_and_enabled_to_observe:
                 g_dev["obs"].send_to_user("Cancelling out of activity as no longer open and enabled to observe.")
                 self.focussing=False
-                return
+                return np.nan, np.nan
         else:
             g_dev['obs'].fwhmresult['FWHM'] = 4.5
             g_dev['obs'].fwhmresult['mean_focus'] = g_dev['foc'].current_focus_position
@@ -3750,7 +3766,7 @@ class Sequencer:
 
             self.af_guard = False
             self.focussing=False
-            return
+            return np.nan, np.nan
         elif spot1 < spot2 and spot1 < spot3:
             try:
                 #Digits are to help out pdb commands!
@@ -3769,7 +3785,7 @@ class Sequencer:
 
                 self.af_guard = False
                 self.focussing=False
-                return
+                return np.nan, np.nan
 
             if min(x) <= d1 <= max(x):
                 plog ('Moving to Solved focus:  ', round(d1, 2), ' calculated:  ',  new_spot)
@@ -3793,11 +3809,11 @@ class Sequencer:
                     if self.stop_script_called:
                         g_dev["obs"].send_to_user("Cancelling out of autofocus script as stop script has been called.")
                         self.focussing=False
-                        return
+                        return np.nan, np.nan
                     if not g_dev['obs'].open_and_enabled_to_observe:
                         g_dev["obs"].send_to_user("Cancelling out of activity as no longer open and enabled to observe.")
                         self.focussing=False
-                        return
+                        return np.nan, np.nan
                 else:
                     g_dev['obs'].fwhmresult['FWHM'] = new_spot
                     g_dev['obs'].fwhmresult['mean_focus'] = g_dev['foc'].current_focus_position
@@ -3811,24 +3827,26 @@ class Sequencer:
                 plog('\nFound best focus at:  ', foc_pos4,' measured FWHM is:  ',  round(spot4, 2), '\n')
                 g_dev['obs'].send_to_user('Found best focus at:  ' +str(foc_pos4) +' measured FWHM is:  ' + str(round(spot4, 2)), p_level='INFO')
                 g_dev['foc'].af_log(foc_pos4, spot4, new_spot)
+                try:
+                    g_dev['foc'].last_focus_fwhm = round(spot4, 2)
+                except:
+                    plog("MTF hunting this bug")
+                    plog(traceback.format_exc())
                 #g_dev["obs"].request_full_update()
                 plog("Returning to RA:  " +str(start_ra) + " Dec: " + str(start_dec))
                 g_dev["obs"].send_to_user("Returning to RA:  " +str(start_ra) + " Dec: " + str(start_dec))
                 g_dev['mnt'].go_command(ra=start_ra, dec=start_dec)
                 self.wait_for_slew()
+                
 
-            if sim:
-                g_dev['foc'].guarded_move((focus_start)*g_dev['foc'].micron_to_steps)
+            # if sim:
+            #     g_dev['foc'].guarded_move((focus_start)*g_dev['foc'].micron_to_steps)
 
             self.af_guard = False
-            try:
-                g_dev['foc'].last_focus_fwhm = round(spot1, 2)
-            except:
-                plog("MTF hunting this bug")
-                plog(traceback.format_exc())
-                #
+                
+                    #
             self.focussing=False
-            return
+            return foc_pos4, spot4
 
         elif spot2  <= spot1 < spot3:      #Add to the inside
             pass
@@ -3840,11 +3858,11 @@ class Sequencer:
                 if self.stop_script_called:
                     g_dev["obs"].send_to_user("Cancelling out of autofocus script as stop script has been called.")
                     self.focussing=False
-                    return
+                    return np.nan, np.nan
                 if not g_dev['obs'].open_and_enabled_to_observe:
                     g_dev["obs"].send_to_user("Cancelling out of activity as no longer open and enabled to observe.")
                     self.focussing=False
-                    return
+                    return np.nan, np.nan
             else:
                 g_dev['obs'].fwhmresult['FWHM'] = 6
                 g_dev['obs'].fwhmresult['mean_focus'] = g_dev['foc'].current_focus_position
@@ -3880,7 +3898,7 @@ class Sequencer:
                     g_dev['mnt'].go_command(ra=start_ra, dec=start_dec)
                     self.wait_for_slew()
                     self.focussing=False
-                    return
+                    return np.nan, np.nan
                 else:
                     plog('Autofocus quadratic equation not converge. Moving back to extensive focus:  ', extensive_focus)
                     g_dev['obs'].send_to_user('V-curve focus failed, Moving back to extensive focus: ' + str(extensive_focus))
@@ -3897,7 +3915,7 @@ class Sequencer:
 
                     self.af_guard = False
                     self.focussing=False
-                    return
+                    return np.nan, np.nan
 
             if min(x) <= d1 <= max(x):
                 plog ('Moving to Solved focus:  ', round(d1, 2), ' calculated:  ',  new_spot)
@@ -3918,11 +3936,11 @@ class Sequencer:
                     if self.stop_script_called:
                         g_dev["obs"].send_to_user("Cancelling out of autofocus script as stop script has been called.")
                         self.focussing=False
-                        return
+                        return np.nan, np.nan
                     if not g_dev['obs'].open_and_enabled_to_observe:
                         g_dev["obs"].send_to_user("Cancelling out of activity as no longer open and enabled to observe.")
                         self.focussing=False
-                        return
+                        return np.nan, np.nan
                 else:
                     g_dev['obs'].fwhmresult['FWHM'] = new_spot
                     g_dev['obs'].fwhmresult['mean_focus'] = g_dev['foc'].current_focus_position
@@ -3940,14 +3958,14 @@ class Sequencer:
                 g_dev["obs"].send_to_user("Returning to RA:  " +str(start_ra) + " Dec: " + str(start_dec))
                 g_dev['mnt'].go_command(ra=start_ra, dec=start_dec) #Return to pre-focus pointing.
                 self.wait_for_slew()
-            if sim:
+            # if sim:
 
-                g_dev['foc'].guarded_move((focus_start)*g_dev['foc'].micron_to_steps)
+            #     g_dev['foc'].guarded_move((focus_start)*g_dev['foc'].micron_to_steps)
 
             self.af_guard = False
             g_dev['foc'].last_focus_fwhm = round(spot4, 2)
             self.focussing=False
-            return
+            return foc_pos4, spot4
 
         elif spot2 > spot1 >= spot3:       #Add to the outside
             pass
@@ -3960,11 +3978,11 @@ class Sequencer:
                 if self.stop_script_called:
                     g_dev["obs"].send_to_user("Cancelling out of autofocus script as stop script has been called.")
                     self.focussing=False
-                    return
+                    return np.nan, np.nan
                 if not g_dev['obs'].open_and_enabled_to_observe:
                     g_dev["obs"].send_to_user("Cancelling out of activity as no longer open and enabled to observe.")
                     self.focussing=False
-                    return
+                    return np.nan, np.nan
             else:
                 g_dev['obs'].fwhmresult['FWHM'] = 5.5
                 g_dev['obs'].fwhmresult['mean_focus'] = g_dev['foc'].current_focus_position
@@ -3998,7 +4016,7 @@ class Sequencer:
                     g_dev['mnt'].go_command(ra=start_ra, dec=start_dec)  #Return to pre-focus pointing.
                     self.wait_for_slew()
                     self.focussing=False
-                    return
+                    return np.nan, np.nan
                 else:
                     plog('Autofocus quadratic equation not converge. Moving back to extensive focus:  ', extensive_focus)
                     g_dev['foc'].guarded_move((extensive_focus)*g_dev['foc'].micron_to_steps)
@@ -4013,7 +4031,7 @@ class Sequencer:
 
                     self.af_guard = False
                     self.focussing=False
-                    return
+                    return np.nan, np.nan
 
             if min(x) <= d1 <= max(x):
                 plog ('Moving to Solved focus:  ', round(d1, 2), ' calculated:  ',  new_spot)
@@ -4032,11 +4050,11 @@ class Sequencer:
                     if self.stop_script_called:
                         g_dev["obs"].send_to_user("Cancelling out of autofocus script as stop script has been called.")
                         self.focussing=False
-                        return
+                        return np.nan, np.nan
                     if not g_dev['obs'].open_and_enabled_to_observe:
                         g_dev["obs"].send_to_user("Cancelling out of activity as no longer open and enabled to observe.")
                         self.focussing=False
-                        return
+                        return np.nan, np.nan
                 else:
                     g_dev['obs'].fwhmresult['FWHM'] = new_spot
                     g_dev['obs'].fwhmresult['mean_focus'] = g_dev['foc'].current_focus_position
@@ -4069,7 +4087,7 @@ class Sequencer:
                     g_dev['mnt'].go_command(ra=start_ra, dec=start_dec)  #Return to pre-focus pointing.
                     self.wait_for_slew()
                     self.focussing=False
-                    return
+                    return np.nan, np.nan
                 else:
                     plog('Autofocus quadratic equation not converge. Moving back to extensive focus:  ', extensive_focus)
                     g_dev['foc'].guarded_move((extensive_focus)*g_dev['foc'].micron_to_steps)
@@ -4083,18 +4101,18 @@ class Sequencer:
 
                     self.af_guard = False
                     self.focussing=False
-                    return
+                    return np.nan, np.nan
 
 
-            if sim:
+            # if sim:
 
-                g_dev['foc'].guarded_move((focus_start)*g_dev['foc'].micron_to_steps)
+            #     g_dev['foc'].guarded_move((focus_start)*g_dev['foc'].micron_to_steps)
 
             self.af_guard = False
 
             g_dev['foc'].last_focus_fwhm = round(spot4, 2)
             self.focussing=False
-            return
+            return foc_pos4, spot4
 
         else:
 
@@ -4111,7 +4129,7 @@ class Sequencer:
                 g_dev['mnt'].go_command(ra=start_ra, dec=start_dec)
                 self.wait_for_slew()
                 self.focussing=False
-                return
+                return np.nan, np.nan
             else:
                 plog('Autofocus quadratic equation not converge. Moving back to extensive focus:  ', extensive_focus)
                 g_dev['foc'].guarded_move((extensive_focus)*g_dev['foc'].micron_to_steps)
@@ -4123,7 +4141,7 @@ class Sequencer:
                 self.wait_for_slew()
                 self.af_guard = False
                 self.focussing=False
-                return
+                return np.nan, np.nan
 
        #breakpoint()
 
@@ -4134,13 +4152,13 @@ class Sequencer:
 
        #breakpoint()
 
-        if sim:
-            g_dev['foc'].guarded_move((focus_start)*g_dev['foc'].micron_to_steps)
+        # if sim:
+        #     g_dev['foc'].guarded_move((focus_start)*g_dev['foc'].micron_to_steps)
 
 
         self.af_guard = False
         self.focussing=False
-        return
+        return np.nan, np.nan
 
 
     def extensive_focus_script(self, req, opt, throw=None, begin_at=None, no_auto_after_solve=False, filter_choice='focus'):
