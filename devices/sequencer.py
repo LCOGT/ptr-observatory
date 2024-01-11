@@ -3295,6 +3295,11 @@ class Sequencer:
         plog('\nSky flat sequence complete.\n')
         g_dev["obs"].send_to_user("Sky flat collection complete.")
 
+        # Park scope at the end of flats but not if it is just about to do another run.
+        if not self.new_throughtputs_detected_in_flat_run:
+            g_dev['mnt'].park_command({}, {}) # You actually always want it to park, TheSkyX can't stop the telescope tracking, so park is safer... it is before focus anyway.
+            plog ("Scope parked at the end of flats.")
+
         if morn:
             self.morn_flats_done = True
         else:
@@ -3304,8 +3309,8 @@ class Sequencer:
         self.eve_sky_flat_latch = False
         self.morn_sky_flat_latch = False
 
-        g_dev['mnt'].park_command({}, {}) # You actually always want it to park, TheSkyX can't stop the telescope tracking, so park is safer... it is before focus anyway.
-        plog ("Scope parked at the end of flats.")
+        
+        
 
     def screen_flat_script(self, req, opt):
 
