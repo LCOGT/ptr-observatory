@@ -38,9 +38,9 @@ class FilterWheel:
             self.dual_filter = self.config["filter_wheel1"]["dual_wheel"]
             self.ip = str(self.config["filter_wheel1"]["ip_string"])
             self.filter_data = self.config["filter_wheel1"]["settings"]["filter_data"]
-            self.filter_screen_sort = self.config["filter_wheel1"]["settings"][
-                "filter_screen_sort"
-            ]
+            # self.filter_screen_sort = self.config["filter_wheel1"]["settings"][
+            #     "filter_screen_sort"
+            # ]
             self.wait_time_after_filter_change=self.config["filter_wheel1"]["filter_settle_time"]
 
             self.filter_message = "-"
@@ -567,6 +567,7 @@ class FilterWheel:
         
         
         filter_default_throughputs['cr'] = 8.0
+        filter_default_throughputs['dif'] = 1000.0
         filter_default_throughputs['exo'] = 1570.0
         filter_default_throughputs['gp'] = 1420.0
         

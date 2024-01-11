@@ -2672,7 +2672,7 @@ class Sequencer:
         #     plog ("Config is set to not use the automatically estimated")
         #     plog ("Filter throughputs. Starting with config throughput entries.")
         
-        list_of_filters_for_this_run=[]
+        
         
         if len(self.filter_throughput_shelf)==0:
             plog ("Looks like a new filter throughput shelf.")            
@@ -2683,7 +2683,53 @@ class Sequencer:
             for filtertempgain in list(self.filter_throughput_shelf.keys()):
                 plog (str(filtertempgain) + " " + str(self.filter_throughput_shelf[filtertempgain]))
 
-        breakpoint()
+        #  Pick up list of filters in sky flat order of lowest to highest transparency.
+        if g_dev["fil"].null_filterwheel == True:
+            plog ("No Filter Wheel, just getting non-filtered flats")
+            pop_list = [0]
+        else:
+
+            # First get the list of filters from the config list.
+            list_of_filters_for_this_run=[]
+            for entry in g_dev['fil'].filter_data:
+                #print (entry[0])
+                list_of_filters_for_this_run.append(entry[0])
+            print (list_of_filters_for_this_run)
+            list_of_filters_for_this_run.remove('dark')
+            
+            # Second, check that that all filters have a stored throughput value
+            # If not, we will only run on those filters that have yet to get a throughput recorded
+            # After we have a throughput, the sequencer should re-run a normal run with all filters
+            
+            all_throughputs_known=True
+            no_throughputs_filters=[]
+            for entry in list_of_filters_for_this_run:
+                if not entry in self.filter_throughput_shelf.keys():
+                    plog (entry + " is not in known throughputs lis. Prioritising collecting this flat.")
+                    no_throughputs_filters.append(entry)
+                    all_throughputs_known=False
+            
+            temp_filter_sort_dict={}
+            
+            if all_throughputs_known == False:
+                for entry in no_throughputs_filters:    
+                    temp_filter_sort_dict[entry]= g_dev['fil'].get_starting_throughput_value(entry)
+            else:
+                for entry in list_of_filters_for_this_run:
+                    temp_filter_sort_dict[entry]= self.filter_throughput_shelf[entry]
+    
+    
+            # This sorts the filters by throughput. Smallest first, so appropriate for a eve flats run. 
+            # A future command reverses the pop_list for the morn
+            temp_filter_sort_dict = dict(sorted(temp_filter_sort_dict.items(), key=lambda temp_filter_sort_dict: temp_filter_sort_dict[1]))
+            
+            
+            pop_list = list(temp_filter_sort_dict.keys())
+            
+    
+
+        #create pop list
+        #breakpoint()
         
 
 
@@ -2697,32 +2743,29 @@ class Sequencer:
         #causes the automatic throughuts to be smaller than otherwise.
 
 
-        #  Pick up list of filters in sky flat order of lowest to highest transparency.
-        if g_dev["fil"].null_filterwheel == True:
-            plog ("No Filter Wheel, just getting non-filtered flats")
-            pop_list = [0]
+        
+        # else:
+        #     pop_list = self.config['filter_wheel']['filter_wheel1']['settings']['filter_sky_sort'].copy()
+
+        #     # Check that filters are actually in the filter_list
+        #     for filter_name in pop_list:
+        #         filter_identified=0
+        #         for match in range(
+        #             len(g_dev['fil'].filter_data)
+        #         ):
+
+        #             if filter_name.lower() in str(g_dev['fil'].filter_data[match][0]).lower():
+        #                 filter_identified = 1
+
+        #         if filter_identified == 0:
+        #             plog ("Could not find filter: "+str(filter_name) +" in main filter list. Removing it from flat filter list.")
+        #             pop_list.remove(filter_name)
+
+        if morn:
+            pop_list.reverse()
+            plog('filters by high to low transmission:  ', pop_list)
         else:
-            pop_list = self.config['filter_wheel']['filter_wheel1']['settings']['filter_sky_sort'].copy()
-
-            # Check that filters are actually in the filter_list
-            for filter_name in pop_list:
-                filter_identified=0
-                for match in range(
-                    len(g_dev['fil'].filter_data)
-                ):
-
-                    if filter_name.lower() in str(g_dev['fil'].filter_data[match][0]).lower():
-                        filter_identified = 1
-
-                if filter_identified == 0:
-                    plog ("Could not find filter: "+str(filter_name) +" in main filter list. Removing it from flat filter list.")
-                    pop_list.remove(filter_name)
-
-            if morn:
-                pop_list.reverse()
-                plog('filters by high to low transmission:  ', pop_list)
-            else:
-                plog('filters by low to high transmission:  ', pop_list)
+            plog('filters by low to high transmission:  ', pop_list)
 
         if morn:
             ending = g_dev['events']['End Morn Sky Flats']

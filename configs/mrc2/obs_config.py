@@ -577,14 +577,14 @@ site_config = {
 
                 
                 
-                'filter_screen_sort':  ['0', '1', '2', '10', '7', '6', '18', '12', '11', '13', '8',  '3', \
-                                        '14', '15', '4', '16'],   #  '9', '21'],  # '5', '17'], #Most to least throughput, \
-                                #so screen brightens, skipping u and zs which really need sky.
-                #'filter_sky_sort':     ['S2', 'HA', 'N2', 'O3', 'ip', 'rp', 'Red', 'JV',\
-                #                        'Green','JB', 'gp',   'Blue', 'EXO',  'w','Lum',  'air']  #Least to most throughput
-                'filter_sky_sort':     ['S2', 'HA', 'N2', 'O3', 'ip', 'rp', 'JB',\
-                                        'JV', 'gp', 'EXO', 'Lum', 'w', 'air'],
-                 #Least to most throughput
+                # 'filter_screen_sort':  ['0', '1', '2', '10', '7', '6', '18', '12', '11', '13', '8',  '3', \
+                #                         '14', '15', '4', '16'],   #  '9', '21'],  # '5', '17'], #Most to least throughput, \
+                #                 #so screen brightens, skipping u and zs which really need sky.
+                # #'filter_sky_sort':     ['S2', 'HA', 'N2', 'O3', 'ip', 'rp', 'Red', 'JV',\
+                # #                        'Green','JB', 'gp',   'Blue', 'EXO',  'w','Lum',  'air']  #Least to most throughput
+                # 'filter_sky_sort':     ['S2', 'HA', 'N2', 'O3', 'ip', 'rp', 'JB',\
+                #                         'JV', 'gp', 'EXO', 'Lum', 'w', 'air'],
+                #  #Least to most throughput
 
             },
         },
