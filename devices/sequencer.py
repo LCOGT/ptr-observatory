@@ -2864,6 +2864,10 @@ class Sequencer:
                     filter_throughput=self.filter_throughput_shelf[current_filter]
                     plog ("Using stored throughput : " + str(filter_throughput))
                     known_throughput= True
+                    
+                    
+                    
+                    
                 else:
                     if g_dev["fil"].null_filterwheel == False:
                         #filter_throughput = float(self.config['filter_wheel']['filter_wheel1']['flat_sky_gain'])
@@ -2901,7 +2905,10 @@ class Sequencer:
                 self.filter_camera_gain_shelf = shelve.open(g_dev['obs'].obsid_path + 'ptr_night_shelf/' + 'filtercameragain' + g_dev['cam'].alias + str(g_dev['obs'].name))
                 try:
                     self.current_filter_last_camera_gain=self.filter_camera_gain_shelf[current_filter.lower()][0]
-                    self.current_filter_last_camera_gain_stdev=self.filter_camera_gain_shelf[current_filter.lower()][1]
+                    if self.filter_camera_gain_shelf[current_filter.lower()][1] > 5:
+                        self.current_filter_last_camera_gain_stdev=self.filter_camera_gain_shelf[current_filter.lower()][1]
+                    else:
+                        self.current_filter_last_camera_gain_stdev=200
                 except:
                     self.current_filter_last_camera_gain=200
                     self.current_filter_last_camera_gain_stdev=200
