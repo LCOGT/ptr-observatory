@@ -2905,7 +2905,7 @@ class Sequencer:
                 self.filter_camera_gain_shelf = shelve.open(g_dev['obs'].obsid_path + 'ptr_night_shelf/' + 'filtercameragain' + g_dev['cam'].alias + str(g_dev['obs'].name))
                 try:
                     self.current_filter_last_camera_gain=self.filter_camera_gain_shelf[current_filter.lower()][0]
-                    if self.filter_camera_gain_shelf[current_filter.lower()][1] > 5:
+                    if self.filter_camera_gain_shelf[current_filter.lower()][1] > 15:
                         self.current_filter_last_camera_gain_stdev=self.filter_camera_gain_shelf[current_filter.lower()][1]
                     else:
                         self.current_filter_last_camera_gain_stdev=200
@@ -3449,7 +3449,7 @@ class Sequencer:
         
         req2 = {'target': 'near_tycho_star'}
         opt = {}
-        foc_pos, foc_fwhm=self.auto_focus_script(req2, opt, filter_choice='focus')
+        foc_pos, foc_fwhm=self.auto_focus_script(req2, opt, skip_timer_check=True, filter_choice='focus')
         
         plog ("focus position: " + str(foc_pos))
         plog ("focus fwhm: " + str(foc_pos))
@@ -3466,7 +3466,7 @@ class Sequencer:
             list_of_filters_for_this_run.remove('dark')
             
         for chosen_filter in list_of_filters_for_this_run:
-            foc_pos, foc_fwhm=self.auto_focus_script(req2, opt, begin_at=focus_filter_focus_point, filter_choice=chosen_filter)
+            foc_pos, foc_fwhm=self.auto_focus_script(req2, opt, skip_timer_check=True, begin_at=focus_filter_focus_point, filter_choice=chosen_filter)
             plog ("focus position: " + str(foc_pos))
             plog ("focus fwhm: " + str(foc_pos))
         
