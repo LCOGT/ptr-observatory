@@ -190,7 +190,7 @@ class Focuser:
                         print (self.focuser_update_wincom.focPosition())
                         self.current_focus_position=self.get_position()
                         #self.last_known_focus= 
-
+                        time.sleep(self.config['focuser_movement_settle_time'])
 
                      else:
 
@@ -203,6 +203,9 @@ class Focuser:
                                 plog("Focuser is moving.....")
                                 movement_report=1
                             time.sleep(0.3)
+                        
+                        time.sleep(self.config['focuser_movement_settle_time'])
+                        
                         self.current_focus_position=self.get_position()
 
 

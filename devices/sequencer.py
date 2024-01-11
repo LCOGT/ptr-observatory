@@ -3444,7 +3444,7 @@ class Sequencer:
         plog ("First doing a normal run on the 'focus' filter first")
         
         
-        # Slewing to a relatively random high spot
+        # Slewing to a relatively random high spot        
         g_dev['mnt'].go_command(alt=75,az= 70)
         
         req2 = {'target': 'near_tycho_star'}
@@ -3452,7 +3452,11 @@ class Sequencer:
         foc_pos, foc_fwhm=self.auto_focus_script(req2, opt, skip_timer_check=True, filter_choice='focus')
         
         plog ("focus position: " + str(foc_pos))
-        plog ("focus fwhm: " + str(foc_pos))
+        plog ("focus fwhm: " + str(foc_fwhm))
+        
+        if np.isnan(foc_pos):
+            plog ("initial focus on offset run failed, so bailing out. Perhaps try again?")
+            return
         
         focus_filter_focus_point=foc_pos
         
@@ -3464,16 +3468,35 @@ class Sequencer:
         print (list_of_filters_for_this_run)
         if 'dark' in list_of_filters_for_this_run:
             list_of_filters_for_this_run.remove('dark')
-            
+        
+        
+        filter_offset_collector={}
+        
         for chosen_filter in list_of_filters_for_this_run:
-            foc_pos, foc_fwhm=self.auto_focus_script(req2, opt, skip_timer_check=True, begin_at=focus_filter_focus_point, filter_choice=chosen_filter)
+            plog ("Running offset test for " + str(chosen_filter))
+            foc_pos, foc_fwhm=self.auto_focus_script(req2, opt, skip_timer_check=True, skip_pointing=True, begin_at=focus_filter_focus_point, filter_choice=chosen_filter)
             plog ("focus position: " + str(foc_pos))
-            plog ("focus fwhm: " + str(foc_pos))
+            plog ("focus fwhm: " + str(foc_fwhm))
+            if not np.isnan(foc_pos):
+                filter_offset_collector[chosen_filter]=focus_filter_focus_point-foc_pos
+                filteroffset_shelf = shelve.open(g_dev['obs'].obsid_path + 'ptr_night_shelf/' + 'filteroffsets_' + g_dev['cam'].alias + str(g_dev['obs'].name))
+                filteroffset_shelf[chosen_filter]=focus_filter_focus_point-foc_pos
+                filteroffset_shelf.close()
+                
+        plog ("Final determined offsets this run")
+        plog (filter_offset_collector)
+        plog ("Current filter offset shelf")
+        filteroffset_shelf = shelve.open(g_dev['obs'].obsid_path + 'ptr_night_shelf/' + 'filteroffsets_' + g_dev['cam'].alias + str(g_dev['obs'].name))
+        plog (filteroffset_shelf)
+        filteroffset_shelf.close()
+        
+                
+            
         
         
         
 
-    def auto_focus_script(self, req, opt, throw=None, begin_at=None, skip_timer_check=False, extensive_focus=None, filter_choice='focus'):
+    def auto_focus_script(self, req, opt, throw=None, begin_at=None, skip_timer_check=False, skip_pointing=False, extensive_focus=None, filter_choice='focus'):
         '''
         V curve is a big move focus designed to fit two lines adjacent to the more normal focus curve.
         It finds the approximate focus, particulary for a new instrument. It requires 8 points plus
@@ -3567,87 +3590,87 @@ class Sequencer:
 # =============================================================================
         plog("Saved  *mounting* ra, dec, focus:  ", start_ra, start_dec, focus_start)
 
-
-        # Trim catalogue so that only fields 45 degrees altitude are in there.
-        self.focus_catalogue_skycoord= SkyCoord(ra = self.focus_catalogue[:,0]*u.deg, dec = self.focus_catalogue[:,1]*u.deg)
-        aa = AltAz (location=g_dev['mnt'].site_coordinates, obstime=Time.now())
-        self.focus_catalogue_altitudes=self.focus_catalogue_skycoord.transform_to(aa)
-        above_altitude_patches=[]
-
-        for ctr in range(len(self.focus_catalogue_altitudes)):
-            if self.focus_catalogue_altitudes[ctr].alt /u.deg > 45.0:
-                above_altitude_patches.append([self.focus_catalogue[ctr,0], self.focus_catalogue[ctr,1], self.focus_catalogue[ctr,2]])
-        above_altitude_patches=np.asarray(above_altitude_patches)
-        self.focus_catalogue_skycoord= SkyCoord(ra = above_altitude_patches[:,0]*u.deg, dec = above_altitude_patches[:,1]*u.deg)
-
-        # d2d of the closest field.
-        teststar = SkyCoord(ra = g_dev['mnt'].current_icrs_ra*15*u.deg, dec = g_dev['mnt'].current_icrs_dec*u.deg)
-        idx, d2d, _ = teststar.match_to_catalog_sky(self.focus_catalogue_skycoord)
-
-        focus_patch_ra=above_altitude_patches[idx,0] /15
-        focus_patch_dec=above_altitude_patches[idx,1]
-        focus_patch_n=above_altitude_patches[idx,2]
-
-        g_dev['obs'].request_scan_requests()
-        g_dev['obs'].send_to_user("Slewing to a focus field", p_level='INFO')
-        try:
-            plog("\nGoing to near focus patch of " + str(int(focus_patch_n)) + " 9th to 12th mag stars " + str(d2d.deg[0]) + "  degrees away.\n")
-            g_dev['mnt'].go_command(ra=focus_patch_ra, dec=focus_patch_dec)
-        except Exception as e:
-            plog ("Issues pointing to a focus patch. Focussing at the current pointing." , e)
-            plog(traceback.format_exc())
-        #g_dev["obs"].request_full_update()
-        req = {'time': self.config['focus_exposure_time'],  'alias':  str(self.config['camera']['camera_1_1']['name']), 'image_type': 'focus'}   #  NB Should pick up filter and constats from config
-
-        opt = { 'count': 1, 'filter': 'focus'}
-
-        foc_pos0 = focus_start
-        result = {}
-
-
-        if self.stop_script_called:
-            g_dev["obs"].send_to_user("Cancelling out of autofocus script as stop script has been called.")
-            self.focussing=False
-            return np.nan, np.nan
-
-        if not g_dev['obs'].open_and_enabled_to_observe:
-            g_dev["obs"].send_to_user("Cancelling out of activity as no longer open and enabled to observe.")
-            self.focussing=False
-            return np.nan, np.nan
-
-
-        g_dev['foc'].guarded_move((focus_start)*g_dev['foc'].micron_to_steps)
-
-
-        # If no extensive_focus has been done, centre the focus field.
-        if extensive_focus == None:
-            g_dev['obs'].send_to_user("Running a quick platesolve to center the focus field", p_level='INFO')
-
-            result = self.centering_exposure(no_confirmation=True, try_hard=True)#), try_forever=True)
-            # Wait for platesolve
-            reported=0
-            temptimer=time.time()
-            while True:
-                if g_dev['obs'].platesolve_is_processing ==False and g_dev['obs'].platesolve_queue.empty():
-                    break
-                else:
-                    if reported ==0:
-                        plog ("PLATESOLVE: Waiting for platesolve processing to complete and queue to clear")
-                        reported=1
-                    if (time.time() - temptimer) > 20:
-                        #g_dev["obs"].request_full_update()
-                        temptimer=time.time()
-                    if self.stop_script_called:
-                        g_dev["obs"].send_to_user("Cancelling out of autofocus script as stop script has been called.")
-                        self.focussing=False
-                        return np.nan, np.nan
-                    if not g_dev['obs'].open_and_enabled_to_observe:
-                        g_dev["obs"].send_to_user("Cancelling out of activity as no longer open and enabled to observe.")
-                        self.focussing=False
-                        return np.nan, np.nan
-                    pass
-
-            g_dev['obs'].send_to_user("Focus Field Centered", p_level='INFO')
+        if not skip_pointing:
+            # Trim catalogue so that only fields 45 degrees altitude are in there.
+            self.focus_catalogue_skycoord= SkyCoord(ra = self.focus_catalogue[:,0]*u.deg, dec = self.focus_catalogue[:,1]*u.deg)
+            aa = AltAz (location=g_dev['mnt'].site_coordinates, obstime=Time.now())
+            self.focus_catalogue_altitudes=self.focus_catalogue_skycoord.transform_to(aa)
+            above_altitude_patches=[]
+    
+            for ctr in range(len(self.focus_catalogue_altitudes)):
+                if self.focus_catalogue_altitudes[ctr].alt /u.deg > 45.0:
+                    above_altitude_patches.append([self.focus_catalogue[ctr,0], self.focus_catalogue[ctr,1], self.focus_catalogue[ctr,2]])
+            above_altitude_patches=np.asarray(above_altitude_patches)
+            self.focus_catalogue_skycoord= SkyCoord(ra = above_altitude_patches[:,0]*u.deg, dec = above_altitude_patches[:,1]*u.deg)
+    
+            # d2d of the closest field.
+            teststar = SkyCoord(ra = g_dev['mnt'].current_icrs_ra*15*u.deg, dec = g_dev['mnt'].current_icrs_dec*u.deg)
+            idx, d2d, _ = teststar.match_to_catalog_sky(self.focus_catalogue_skycoord)
+    
+            focus_patch_ra=above_altitude_patches[idx,0] /15
+            focus_patch_dec=above_altitude_patches[idx,1]
+            focus_patch_n=above_altitude_patches[idx,2]
+    
+            g_dev['obs'].request_scan_requests()
+            g_dev['obs'].send_to_user("Slewing to a focus field", p_level='INFO')
+            try:
+                plog("\nGoing to near focus patch of " + str(int(focus_patch_n)) + " 9th to 12th mag stars " + str(d2d.deg[0]) + "  degrees away.\n")
+                g_dev['mnt'].go_command(ra=focus_patch_ra, dec=focus_patch_dec)
+            except Exception as e:
+                plog ("Issues pointing to a focus patch. Focussing at the current pointing." , e)
+                plog(traceback.format_exc())
+            #g_dev["obs"].request_full_update()
+            req = {'time': self.config['focus_exposure_time'],  'alias':  str(self.config['camera']['camera_1_1']['name']), 'image_type': 'focus'}   #  NB Should pick up filter and constats from config
+    
+            opt = { 'count': 1, 'filter': 'focus'}
+    
+            foc_pos0 = focus_start
+            result = {}
+    
+    
+            if self.stop_script_called:
+                g_dev["obs"].send_to_user("Cancelling out of autofocus script as stop script has been called.")
+                self.focussing=False
+                return np.nan, np.nan
+    
+            if not g_dev['obs'].open_and_enabled_to_observe:
+                g_dev["obs"].send_to_user("Cancelling out of activity as no longer open and enabled to observe.")
+                self.focussing=False
+                return np.nan, np.nan
+    
+    
+            g_dev['foc'].guarded_move((focus_start)*g_dev['foc'].micron_to_steps)
+    
+    
+            # If no extensive_focus has been done, centre the focus field.
+            if extensive_focus == None:
+                g_dev['obs'].send_to_user("Running a quick platesolve to center the focus field", p_level='INFO')
+    
+                result = self.centering_exposure(no_confirmation=True, try_hard=True)#), try_forever=True)
+                # Wait for platesolve
+                reported=0
+                temptimer=time.time()
+                while True:
+                    if g_dev['obs'].platesolve_is_processing ==False and g_dev['obs'].platesolve_queue.empty():
+                        break
+                    else:
+                        if reported ==0:
+                            plog ("PLATESOLVE: Waiting for platesolve processing to complete and queue to clear")
+                            reported=1
+                        if (time.time() - temptimer) > 20:
+                            #g_dev["obs"].request_full_update()
+                            temptimer=time.time()
+                        if self.stop_script_called:
+                            g_dev["obs"].send_to_user("Cancelling out of autofocus script as stop script has been called.")
+                            self.focussing=False
+                            return np.nan, np.nan
+                        if not g_dev['obs'].open_and_enabled_to_observe:
+                            g_dev["obs"].send_to_user("Cancelling out of activity as no longer open and enabled to observe.")
+                            self.focussing=False
+                            return np.nan, np.nan
+                        pass
+    
+                g_dev['obs'].send_to_user("Focus Field Centered", p_level='INFO')
 
 
         if self.stop_script_called:
