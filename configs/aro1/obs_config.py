@@ -419,13 +419,13 @@ site_config = {
             "dual_wheel": True,
             'filter_reference': 'PL',
             'settings': {
-                'filter_count': 23,
-                "filter_type": "50mm_sq.",
-                "filter_manuf": "Astrodon",
-                'home_filter':  1,
+                # 'filter_count': 23,
+                # "filter_type": "50mm_sq.",
+                # "filter_manuf": "Astrodon",
+                # 'home_filter':  1,
                 'default_filter': "PL",
                 'focus_filter' : 'PL',
-                'filter_reference': 1,   # We choose to use PL as the default filter.  Gains taken at F9, Ceravolo 300mm
+                # 'filter_reference': 1,   # We choose to use PL as the default filter.  Gains taken at F9, Ceravolo 300mm
                 # Columns for filter data are : ['filter', 'filter_index', 'filter_offset', 'sky_gain', 'screen_gain', 'alias']
                 #NB NB Note to WER please add cwl, bw and 'shape'.  Throughputs ADJUSTED 20240103 Eve run
                 
@@ -486,9 +486,9 @@ site_config = {
 
                         ['dark', [1,  3],   'dk']],    #22     #Not a real filter.  Total 23
 
-                'filter_screen_sort':  ['ip'],   # don't use narrow yet,  8, 10, 9], useless to try.
-                'filter_sky_sort': ['S2','N2','HA','CR','zs','zp','up','O3','BI','NIR','ip','PR','BR',\
-                                    'rp','PG','BV','BB','PB','gp','EXO','PL','air'],  #Needs fixing once we get a good input series. 20240106 WER
+                # 'filter_screen_sort':  ['ip'],   # don't use narrow yet,  8, 10, 9], useless to try.
+                # 'filter_sky_sort': ['S2','N2','HA','CR','zs','zp','up','O3','BI','NIR','ip','PR','BR',\
+                #                     'rp','PG','BV','BB','PB','gp','EXO','PL','air'],  #Needs fixing once we get a good input series. 20240106 WER
 
 
 

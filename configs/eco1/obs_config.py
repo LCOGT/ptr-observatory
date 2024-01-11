@@ -417,26 +417,36 @@ site_config = {
                 
                 
                 # Columns for filter data are : ['filter', 'filter_index', 'filter_offset', 'sky_gain', 'screen_gain', 'alias']
+                # 'filter_data': [  
+
+                       
+                #         ['lum',    [0,  0],     0, 250, [1.00 ,  72], 'PhLum'],    #1.
+                #         ['ip',    [1,  1],     400, 155, [1.00 , 119], 'PhRed'],    #2.
+                #         ['v',    [2,  2],     400, 100, [1.00 , 113], 'PhGreen'],    #3.
+                #         ['pb',    [3,  3],     400, 54, [0.80 ,  97], 'PhBlue'],    #4.
+                #         ['ha',    [4,  4],     400, 7, [0.80 ,  97], 'PhBlue'], 
+                #         ['s2',    [5,  5],     400, 4.728, [5.00 , 200], 'Halpha'],    #5.
+                #         ['o3',    [6,  6],     400, 8, [4.00 , 200], 'OIII']],  
                 'filter_data': [  
 
                        
-                        ['lum',    [0,  0],     0, 250, [1.00 ,  72], 'PhLum'],    #1.
-                        ['ip',    [1,  1],     400, 155, [1.00 , 119], 'PhRed'],    #2.
-                        ['v',    [2,  2],     400, 100, [1.00 , 113], 'PhGreen'],    #3.
-                        ['pb',    [3,  3],     400, 54, [0.80 ,  97], 'PhBlue'],    #4.
-                        ['ha',    [4,  4],     400, 7, [0.80 ,  97], 'PhBlue'], 
-                        ['s2',    [5,  5],     400, 4.728, [5.00 , 200], 'Halpha'],    #5.
-                        ['o3',    [6,  6],     400, 8, [4.00 , 200], 'OIII']],  
+                        ['lum',    [0,  0],    'PhLum'],    #1.
+                        ['ip',    [1,  1],      'PhRed'],    #2.
+                        ['v',    [2,  2],      'PhGreen'],    #3.
+                        ['pb',    [3,  3],     'PhBlue'],    #4.
+                        ['ha',    [4,  4],     'PhBlue'], 
+                        ['s2',    [5,  5],    'Halpha'],    #5.
+                        ['o3',    [6,  6],    'OIII']],  
 
                 
                 'focus_filter' : 'lum',
 
-                'filter_screen_sort':  ['s2','o3','ha','pb','pg','pr','lum'],   #  don't use narrow yet,  8, 10, 9], useless to try.
+                # 'filter_screen_sort':  ['s2','o3','ha','pb','pg','pr','lum'],   #  don't use narrow yet,  8, 10, 9], useless to try.
 
 
                 
-                #'filter_sky_sort': ['ha','o3','s2','v','pb','ip','lum']    #No diffuser based filters
-                'filter_sky_sort': ['ha','o3','s2','v','pb','ip','lum'],
+                # #'filter_sky_sort': ['ha','o3','s2','v','pb','ip','lum']    #No diffuser based filters
+                # 'filter_sky_sort': ['ha','o3','s2','v','pb','ip','lum'],
                
             },
         },
