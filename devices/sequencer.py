@@ -3424,7 +3424,14 @@ class Sequencer:
 
 
 
-    def auto_focus_script(self, req, opt, throw=None, skip_timer_check=False, extensive_focus=None):
+    def filter_focus_offset_estimator_script(self):
+        
+        plog ("Determining offsets between filters")
+        
+        
+        
+
+    def auto_focus_script(self, req, opt, throw=None, skip_timer_check=False, extensive_focus=None, filter_choice='focus'):
         '''
         V curve is a big move focus designed to fit two lines adjacent to the more normal focus curve.
         It finds the approximate focus, particulary for a new instrument. It requires 8 points plus
@@ -3621,7 +3628,7 @@ class Sequencer:
         plog('Autofocus Starting at:  ', foc_pos0, '\n\n')
         req = {'time': self.config['focus_exposure_time'],  'alias':  str(self.config['camera']['camera_1_1']['name']), 'image_type': 'focus'}   #  NB Should pick up filter and constats from config
 
-        opt = { 'count': 1, 'filter': 'focus'}
+        opt = { 'count': 1, 'filter': filter_choice}
 
         g_dev['foc'].guarded_move((foc_pos0 - 0* throw)*g_dev['foc'].micron_to_steps)   # NB added 20220209 Nasty bug, varies with prior state
 
@@ -3865,7 +3872,7 @@ class Sequencer:
                     g_dev['obs'].send_to_user('V-curve focus failed, trying extensive focus routine')
 
                     req2 = {'target': 'near_tycho_star', 'image_type': 'focus'}
-                    opt = {'filter': 'focus'}
+                    opt = {'filter': filter_choice}
                     g_dev['seq'].extensive_focus_script(req2,opt, no_auto_after_solve=True)
                     plog("Returning to RA:  " +str(start_ra) + " Dec: " + str(start_dec))
                     g_dev["obs"].send_to_user("Returning to RA:  " +str(start_ra) + " Dec: " + str(start_dec))
@@ -4135,7 +4142,7 @@ class Sequencer:
         return
 
 
-    def extensive_focus_script(self, req, opt, throw=None, begin_at=None, no_auto_after_solve=False):
+    def extensive_focus_script(self, req, opt, throw=None, begin_at=None, no_auto_after_solve=False, filter_choice='focus'):
         '''
         This is an extensive focus that covers a wide berth of central values
         and throws.
@@ -4272,7 +4279,7 @@ class Sequencer:
             if not sim:
                 g_dev['obs'].request_scan_requests()
                 req = {'time': self.config['focus_exposure_time'],  'alias':  str(self.config['camera']['camera_1_1']['name']), 'image_type': 'focus'}   #  NB Should pick up filter and constats from config
-                opt = {'count': 1, 'filter': 'focus'}
+                opt = {'count': 1, 'filter': filter_choice}
                 result = g_dev['cam'].expose_command(req, opt, user_id='Tobor', user_name='Tobor', user_roles='system', no_AWS=True, solve_it=False)
                 if self.stop_script_called:
                     g_dev["obs"].send_to_user("Cancelling out of autofocus script as stop script has been called.")
@@ -4317,7 +4324,7 @@ class Sequencer:
             if not sim:
                 g_dev['obs'].request_scan_requests()
                 req = {'time': self.config['focus_exposure_time'],  'alias':  str(self.config['camera']['camera_1_1']['name']), 'image_type': 'focus'}   #  NB Should pick up filter and constats from config
-                opt = { 'count': 1, 'filter': 'focus'}
+                opt = { 'count': 1, 'filter': filter_choice}
                 result = g_dev['cam'].expose_command(req, opt, user_id='Tobor', user_name='Tobor', user_roles='system', no_AWS=True, solve_it=False)
                 if self.stop_script_called:
                     g_dev["obs"].send_to_user("Cancelling out of autofocus script as stop script has been called.")
