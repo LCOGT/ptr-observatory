@@ -172,6 +172,8 @@ class Mount:
         else:
             self.theskyx = False
 
+        
+
         self.site_coordinates = EarthLocation(lat=float(g_dev['evnt'].wema_config['latitude'])*u.deg, \
                                 lon=float(g_dev['evnt'].wema_config['longitude'])*u.deg,
                                 height=float(g_dev['evnt'].wema_config['elevation'])*u.m)
