@@ -3441,6 +3441,11 @@ class Sequencer:
         
         plog ("Determining offsets between filters")
         
+        plog ("First doing a normal run on the 'focus' filter first")
+        
+        foc_pos, foc_fwhm=self.auto_focus_script(filter_choice='focus')
+        
+        
         # First get the list of filters from the config list.
         list_of_filters_for_this_run=[]
         for entry in g_dev['fil'].filter_data:
