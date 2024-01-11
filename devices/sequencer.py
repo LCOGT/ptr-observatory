@@ -3474,7 +3474,7 @@ class Sequencer:
         
         for chosen_filter in list_of_filters_for_this_run:
             plog ("Running offset test for " + str(chosen_filter))
-            foc_pos, foc_fwhm=self.auto_focus_script(req2, opt, skip_timer_check=True, skip_pointing=True, begin_at=focus_filter_focus_point, filter_choice=chosen_filter)
+            foc_pos, foc_fwhm=self.auto_focus_script(req2, opt, skip_timer_check=True, dont_log_focus=True, skip_pointing=True, begin_at=focus_filter_focus_point, filter_choice=chosen_filter)
             plog ("focus position: " + str(foc_pos))
             plog ("focus fwhm: " + str(foc_fwhm))
             if not np.isnan(foc_pos):
@@ -3496,7 +3496,7 @@ class Sequencer:
         
         
 
-    def auto_focus_script(self, req, opt, throw=None, begin_at=None, skip_timer_check=False, skip_pointing=False, extensive_focus=None, filter_choice='focus'):
+    def auto_focus_script(self, req, opt, throw=None, begin_at=None, skip_timer_check=False, dont_log_focus=False, skip_pointing=False, extensive_focus=None, filter_choice='focus'):
         '''
         V curve is a big move focus designed to fit two lines adjacent to the more normal focus curve.
         It finds the approximate focus, particulary for a new instrument. It requires 8 points plus
@@ -3879,7 +3879,8 @@ class Sequencer:
                     plog ("spot4 failed ")
                 plog('\nFound best focus at:  ', foc_pos4,' measured FWHM is:  ',  round(spot4, 2), '\n')
                 g_dev['obs'].send_to_user('Found best focus at:  ' +str(foc_pos4) +' measured FWHM is:  ' + str(round(spot4, 2)), p_level='INFO')
-                g_dev['foc'].af_log(foc_pos4, spot4, new_spot)
+                if not dont_log_focus:
+                    g_dev['foc'].af_log(foc_pos4, spot4, new_spot)
                 try:
                     g_dev['foc'].last_focus_fwhm = round(spot4, 2)
                 except:
@@ -4006,7 +4007,8 @@ class Sequencer:
                     plog ("spot4 failed ")
                 plog('\nFound best focus position at:  ', foc_pos4,' measured FWHM is:  ',  round(spot4, 2), '\n')
                 g_dev['obs'].send_to_user('Found best focus at: ' + str(foc_pos4) +' measured FWHM is: ' + str(round(spot4, 2)), p_level='INFO')
-                g_dev['foc'].af_log(foc_pos4, spot4, new_spot)
+                if not dont_log_focus:
+                    g_dev['foc'].af_log(foc_pos4, spot4, new_spot)
                 plog("Returning to RA:  " +str(start_ra) + " Dec: " + str(start_dec))
                 g_dev["obs"].send_to_user("Returning to RA:  " +str(start_ra) + " Dec: " + str(start_dec))
                 g_dev['mnt'].go_command(ra=start_ra, dec=start_dec) #Return to pre-focus pointing.
@@ -4120,7 +4122,8 @@ class Sequencer:
                     plog ("spot4 failed ")
                 plog('\nFound best focus position at:  ', foc_pos4,' measured FWHM is:  ',  round(spot4, 2), '\n')
                 g_dev['obs'].send_to_user('Found best focus at: ' + str(foc_pos4) +' measured FWHM is: ' + str(round(spot4, 2)), p_level='INFO')
-                g_dev['foc'].af_log(foc_pos4, spot4, new_spot)
+                if not dont_log_focus:
+                    g_dev['foc'].af_log(foc_pos4, spot4, new_spot)
                 plog("Returning to RA:  " +str(start_ra) + " Dec: " + str(start_dec))
                 g_dev["obs"].send_to_user("Returning to RA:  " +str(start_ra) + " Dec: " + str(start_dec))
                 g_dev['mnt'].go_command(ra=start_ra, dec=start_dec)  #Return to pre-focus pointing.
