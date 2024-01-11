@@ -2604,26 +2604,31 @@ class Sequencer:
         """
         This is the evening and morning sky automated skyflat routine.
         """
+        self.flats_being_collected = True
+        self.eve_sky_flat_latch = True
+        self.morn_sky_flat_latch = True
 
         if not (g_dev['obs'].enc_status['shutter_status'] == 'Open') and not (g_dev['obs'].enc_status['shutter_status'] == 'Sim. Open'):
             plog ("NOT DOING FLATS -- THE ROOF IS SHUT!!")
             g_dev["obs"].send_to_user("A sky flat script request was rejected as the roof is shut.")
+            self.flats_being_collected = False
             return
 
         if  ((ephem.now() < g_dev['events']['Cool Down, Open']) or \
             (g_dev['events']['End Morn Sky Flats'] < ephem.now() < g_dev['events']['Nightly Reset'])):
             plog ("NOT DOING FLATS -- IT IS THE DAYTIME!!")
             g_dev["obs"].send_to_user("A sky flat script request was rejected as it is during the daytime.")
+            self.flats_being_collected = False
             return
 
         if (g_dev['events']['Naut Dusk'] < ephem.now() < g_dev['events']['Naut Dawn']) :
             plog ("NOT DOING FLATS -- IT IS THE NIGHTIME!!")
             g_dev["obs"].send_to_user("A sky flat script request was rejected as it too dark.")
+            self.flats_being_collected = False
             return
 
-        self.eve_sky_flat_latch = True
-        self.morn_sky_flat_latch = True
-        self.flats_being_collected = True
+        
+        #self.flats_being_collected = True
 
         # This variable will trigger a re-run of the flat script if it detects that it had to estimate a new throughput
         # So that a proper full flat script is run after the estimates
@@ -2648,7 +2653,7 @@ class Sequencer:
                 #return
 
 
-        self.flats_being_collected = True
+        #self.flats_being_collected = True
         plog('Sky Flat sequence Starting.')
         self.next_flat_observe = time.time()
         g_dev['obs'].send_to_user('Sky Flat sequence Starting.', p_level='INFO')
@@ -2663,15 +2668,24 @@ class Sequencer:
         # Load up the pickled list of gains or start a new one.
         self.filter_throughput_shelf = shelve.open(g_dev['obs'].obsid_path + 'ptr_night_shelf/' + 'filterthroughput' + g_dev['cam'].alias + str(g_dev['obs'].name))
 
-        if self.config['filter_wheel']['filter_wheel1']['override_automatic_filter_throughputs']:
-            plog ("Config is set to not use the automatically estimated")
-            plog ("Filter throughputs. Starting with config throughput entries.")
-        elif len(self.filter_throughput_shelf)==0:
-            plog ("Looks like a new filter throughput shelf.")
+        # if self.config['filter_wheel']['filter_wheel1']['override_automatic_filter_throughputs']:
+        #     plog ("Config is set to not use the automatically estimated")
+        #     plog ("Filter throughputs. Starting with config throughput entries.")
+        
+        list_of_filters_for_this_run=[]
+        
+        if len(self.filter_throughput_shelf)==0:
+            plog ("Looks like a new filter throughput shelf.")            
+            
+            
         else:
             plog ("Beginning stored filter throughputs")
             for filtertempgain in list(self.filter_throughput_shelf.keys()):
                 plog (str(filtertempgain) + " " + str(self.filter_throughput_shelf[filtertempgain]))
+
+        breakpoint()
+        
+
 
         #240101 WER Sometimes the throughuts can get spoiled by starting late, restarts, and the like.
         #when this happens, the throuputs get corrupt -- generally are lower. So one thing to do
