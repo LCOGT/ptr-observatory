@@ -326,7 +326,8 @@ class Focuser:
                     "focus_temperature": self.current_focus_temperature,
                     #"focus_moving": self.focuser.IsMoving,
                     "comp": reported_focus_temp_slope,
-                    "filter_offset": g_dev["fil"].filter_offset,
+                    #"filter_offset": g_dev["fil"].filter_offset,
+                    "filter_offset": 0,
                 }
             else:
                 status = {

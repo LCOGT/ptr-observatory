@@ -462,6 +462,8 @@ class FilterWheel:
         except:
             filter_name = str(req["filter_name"]).lower()
         filter_identified = 0
+        
+        
 
         for match in range(
             len(self.filter_data)
@@ -474,6 +476,7 @@ class FilterWheel:
 
         # If filter was not identified, find a substitute filter
         if filter_identified == 0:
+            
             filter_name = str(self.substitute_filter(filter_name)).lower()
             if filter_name == "none":
                 return "none"
@@ -485,23 +488,29 @@ class FilterWheel:
                     filter_identified = 1
                     break
 
+        
 
         if self.previous_filter_name==filter_name:
 
             return self.previous_filter_name, self.previous_filter_match, self.filter_offset
 
+        
+        
         try:
             plog("Filter name is:  ", self.filter_data[match][0])
             g_dev["obs"].send_to_user("Filter set to:  " + str(self.filter_data[match][0]))
         except:
             pass  # This is usually when it is just booting up and obs doesn't exist yet
+            
         try:
             self.filter_number = self.filt_pointer
             self.filter_selected = str(filter_name).lower()
             self.filter_selections = self.filter_data[self.filt_pointer][1]
-            self.filter_offset = float(self.filter_data[self.filt_pointer][2])
+            #self.filter_offset = float(self.filter_data[self.filt_pointer][2])
+            self.filter_offset = 0
         except:
             plog("Failed to change filter. Returning.")
+            #breakpoint()
             return None, None, None
 
 
@@ -585,7 +594,7 @@ class FilterWheel:
         filter_default_throughputs['up'] = 40.0
         filter_default_throughputs['w'] = 2100.0
         filter_default_throughputs['zp'] = 62
-        filter_default_throughputs['zp'] = 11.0
+        filter_default_throughputs['z'] = 11.0
         filter_default_throughputs['zs'] = 8.6
         
         try:

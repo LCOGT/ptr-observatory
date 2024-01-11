@@ -463,8 +463,18 @@ class Sequencer:
 
                 g_dev['foc'].set_initial_best_guess_for_focus()
                 g_dev['mnt'].set_tracking_on()
-
-                self.sky_flat_script({}, {}, morn=False)   #Null command dictionaries
+                
+                
+                
+                # Cycle through the flat script multiple times if new filters detected.
+                # But only three times
+                self.new_throughtputs_detected_in_flat_run=True
+                flat_run_counter=0
+                while self.new_throughtputs_detected_in_flat_run and flat_run_counter <3 and ephem_now < events['End Morn Sky Flats']:
+                    self.new_throughtputs_detected_in_flat_run=False
+                    flat_run_counter=flat_run_counter+1
+                    self.sky_flat_script({}, {}, morn=False)   #Null command dictionaries
+                
 
                 g_dev['mnt'].set_tracking_on()
 
@@ -677,8 +687,16 @@ class Sequencer:
                 self.morn_sky_flat_latch = True
 
                 self.current_script = "Morn Sky Flat script starting"
-
-                self.sky_flat_script({}, {}, morn=True)   #Null command dictionaries
+                
+                
+                # Cycle through the flat script multiple times if new filters detected.
+                # But only three times
+                self.new_throughtputs_detected_in_flat_run=True
+                flat_run_counter=0
+                while self.new_throughtputs_detected_in_flat_run and flat_run_counter <3 and ephem_now < events['End Morn Sky Flats']:
+                    self.new_throughtputs_detected_in_flat_run=False
+                    flat_run_counter=flat_run_counter+1
+                    self.sky_flat_script({}, {}, morn=True)   #Null command dictionaries
 
                 self.morn_sky_flat_latch = False
                 self.morn_flats_done = True
@@ -2607,7 +2625,9 @@ class Sequencer:
         self.morn_sky_flat_latch = True
         self.flats_being_collected = True
 
-
+        # This variable will trigger a re-run of the flat script if it detects that it had to estimate a new throughput
+        # So that a proper full flat script is run after the estimates
+        self.new_throughtputs_detected_in_flat_run=False
 
         g_dev['seq'].blockend= None
 
@@ -2788,24 +2808,28 @@ class Sequencer:
                     known_throughput= True
                 else:
                     if g_dev["fil"].null_filterwheel == False:
-                        filter_throughput = 150.0
+                        #filter_throughput = float(self.config['filter_wheel']['filter_wheel1']['flat_sky_gain'])
+                        filter_throughput = g_dev["fil"].get_starting_throughput_value(current_filter)
                         plog ("Using initial attempt at a throughput : "+ str(filter_throughput))
                         plog ("Widening min and max exposure times to find a good estimate also.")
                         plog ("Normal exposure limits will return once a good throughput is found.")
                         min_exposure=min_exposure*0.33
                         max_exposure=max_exposure*3
-                        flat_count=2
+                        flat_count=1
                         known_throughput=False
+                        self.new_throughtputs_detected_in_flat_run=True
                         
                     else:
-                        filter_throughput = float(self.config['filter_wheel']['filter_wheel1']['flat_sky_gain'])
+                        filter_throughput = 150.0
+                        
                         plog ("Using initial throughput from config : "+ str(filter_throughput))
                         plog ("Widening min and max exposure times to find a good estimate also.")
                         plog ("Normal exposure limits will return once a good throughput is found.")
                         min_exposure=min_exposure*0.33
                         max_exposure=max_exposure*3
-                        flat_count=2
+                        flat_count=1
                         known_throughput=False
+                        self.new_throughtputs_detected_in_flat_run=True
                 
                 # else:
                 #     if g_dev["fil"].null_filterwheel == False:

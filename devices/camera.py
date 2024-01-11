@@ -1693,9 +1693,12 @@ class Camera:
                             {"filter": requested_filter_name}, {}
                         )
 
-                        self.current_offset = g_dev[
-                            "fil"
-                        ].filter_offset  # TEMP   NBNBNB This needs fixing
+                        # self.current_offset = g_dev[
+                        #     "fil"
+                        # ].filter_offset  # TEMP   NBNBNB This needs fixing
+                        
+                        self.current_offset = 0
+                        
                     except:
                         plog ("Failed to change filter! Cancelling exposure.")
                         ##DEBUG Error on 20230703  System halted here. putting in

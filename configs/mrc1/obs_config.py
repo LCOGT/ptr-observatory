@@ -109,7 +109,8 @@ site_config = {
     # How many minutes with respect to eve sunset start flats
     
     'bias_dark interval':  105.,   #minutes
-    'eve_sky_flat_sunset_offset': -45.,  # 40 before Minutes  neg means before, + after.
+    'eve_sky_flat_sunset_offset': -65.,  # 40 before Minutes  neg means before, + after.
+    #'eve_sky_flat_sunset_offset': -45.,  # 40 before Minutes  neg means before, + after.
     # How many minutes after civilDusk to do....
     'end_eve_sky_flats_offset': 5 , 
     'clock_and_auto_focus_offset': 8,
