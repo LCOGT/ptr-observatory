@@ -3967,7 +3967,7 @@ class Sequencer:
 
                     req2 = {'target': 'near_tycho_star', 'image_type': 'focus'}
                     opt = {'filter': filter_choice}
-                    g_dev['seq'].extensive_focus_script(req2,opt, no_auto_after_solve=True, skip_timer_check=True, dont_log_focus=True, skip_pointing=True, chosen_filter=chosen_filter)
+                    g_dev['seq'].extensive_focus_script(req2,opt, no_auto_after_solve=True, skip_timer_check=True, dont_log_focus=True, skip_pointing=True, filter_choice=filter_choice)
                     plog("Returning to RA:  " +str(start_ra) + " Dec: " + str(start_dec))
                     g_dev["obs"].send_to_user("Returning to RA:  " +str(start_ra) + " Dec: " + str(start_dec))
                     g_dev['mnt'].go_command(ra=start_ra, dec=start_dec)
@@ -4086,7 +4086,7 @@ class Sequencer:
                     g_dev['obs'].send_to_user('V-curve focus failed, trying extensive focus')
                     req2 = {'target': 'near_tycho_star'}
                     opt = {}
-                    g_dev['seq'].extensive_focus_script(req2,opt, no_auto_after_solve=True, skip_timer_check=True, dont_log_focus=True, skip_pointing=True, chosen_filter=chosen_filter)
+                    g_dev['seq'].extensive_focus_script(req2,opt, no_auto_after_solve=True, skip_timer_check=True, dont_log_focus=True, skip_pointing=True, filter_choice=filter_choice)
                     plog("Returning to RA:  " +str(start_ra) + " Dec: " + str(start_dec))
                     g_dev["obs"].send_to_user("Returning to RA:  " +str(start_ra) + " Dec: " + str(start_dec))
                     g_dev['mnt'].go_command(ra=start_ra, dec=start_dec)  #Return to pre-focus pointing.
@@ -4158,7 +4158,7 @@ class Sequencer:
 
                     req2 = {'target': 'near_tycho_star'}
                     opt = {}
-                    g_dev['seq'].extensive_focus_script(req2,opt, no_auto_after_solve=True, skip_timer_check=True, dont_log_focus=True, skip_pointing=True, chosen_filter=chosen_filter)
+                    g_dev['seq'].extensive_focus_script(req2,opt, no_auto_after_solve=True, skip_timer_check=True, dont_log_focus=True, skip_pointing=True, filter_choice=filter_choice)
                     plog("Returning to RA:  " +str(start_ra) + " Dec: " + str(start_dec))
                     g_dev["obs"].send_to_user("Returning to RA:  " +str(start_ra) + " Dec: " + str(start_dec))
                     g_dev['mnt'].go_command(ra=start_ra, dec=start_dec)  #Return to pre-focus pointing.
@@ -4200,7 +4200,7 @@ class Sequencer:
                 g_dev['obs'].send_to_user('V-curve focus failed, trying extensive focus')
                 req2 = {'target': 'near_tycho_star'}
                 opt = {}
-                g_dev['seq'].extensive_focus_script(req2,opt, no_auto_after_solve=True, skip_timer_check=True, dont_log_focus=True, skip_pointing=True, chosen_filter=chosen_filter)
+                g_dev['seq'].extensive_focus_script(req2,opt, no_auto_after_solve=True, skip_timer_check=True, dont_log_focus=True, skip_pointing=True, filter_choice=filter_choice)
                 plog("Returning to RA:  " +str(start_ra) + " Dec: " + str(start_dec))
                 g_dev["obs"].send_to_user("Returning to RA:  " +str(start_ra) + " Dec: " + str(start_dec))
                 g_dev['mnt'].go_command(ra=start_ra, dec=start_dec)
