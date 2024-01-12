@@ -3445,7 +3445,7 @@ class Sequencer:
         
         
         # Slewing to a relatively random high spot        
-        g_dev['mnt'].go_command(alt=75,az= 70)
+        g_dev['mnt'].go_command(alt=75,az= 270)
         
         req2 = {'target': 'near_tycho_star'}
         opt = {}
@@ -3492,9 +3492,8 @@ class Sequencer:
                 plog ("focus position: " + str(foc_pos))
                 plog ("focus fwhm: " + str(foc_fwhm))
                 if np.isnan(foc_pos):
-                    plog ("Second initial focus on offset run failed, we really need a very good initial estimate, so bailing out.")
+                    plog ("Second attempt on offset run failed, couldn't update the offset for this filter.")
                     
-                    return
             
             if not np.isnan(foc_pos):
                 filter_offset_collector[chosen_filter]=focus_filter_focus_point-foc_pos
@@ -3508,6 +3507,8 @@ class Sequencer:
         filteroffset_shelf = shelve.open(g_dev['obs'].obsid_path + 'ptr_night_shelf/' + 'filteroffsets_' + g_dev['cam'].alias + str(g_dev['obs'].name))
         plog (filteroffset_shelf)
         filteroffset_shelf.close()
+        
+        breakpoint()
         
                 
             
