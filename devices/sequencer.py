@@ -3912,6 +3912,20 @@ class Sequencer:
                 g_dev["obs"].send_to_user("Returning to RA:  " +str(start_ra) + " Dec: " + str(start_dec))
                 g_dev['mnt'].go_command(ra=start_ra, dec=start_dec)
                 self.wait_for_slew()
+            else:
+                plog('Autofocus quadratic equation not converge. Moving back to starting focus:  ', focus_start)
+                
+                g_dev['obs'].send_to_user("Autofocus was not successful. Returning to original focus setting and pointing.")
+
+                g_dev['foc'].guarded_move((focus_start)*g_dev['foc'].micron_to_steps)
+
+                self.af_guard = False
+                g_dev['mnt'].go_command(ra=start_ra, dec=start_dec)  #NB NB Does this really take us back to starting point?
+                self.wait_for_slew()
+
+                self.af_guard = False
+                self.focussing=False
+                return np.nan, np.nan
                 
 
             # if sim:
