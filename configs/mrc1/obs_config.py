@@ -390,6 +390,8 @@ site_config = {
             'name': 'focuser',
             'desc':  'Optec Gemini',
             'driver': 'ASCOM.OptecGemini.Focuser',
+
+            'focuser_movement_settle_time': 3,
             
             # Override the estimated best focus and start at the provided config value
             'start_at_config_reference': False,
