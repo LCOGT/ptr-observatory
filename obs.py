@@ -430,6 +430,8 @@ class Observatory:
         g_dev["obsid"]: obsid_str
         self.g_dev = g_dev
 
+
+        self.currently_updating_status=False
         # Use the configuration to instantiate objects for all devices.
         self.create_devices()
 
@@ -631,7 +633,7 @@ class Observatory:
         #breakpoint()
         # Initialisation complete!
         
-        g_dev['seq'].filter_focus_offset_estimator_script()
+        #g_dev['seq'].filter_focus_offset_estimator_script()
 
 
 

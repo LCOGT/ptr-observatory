@@ -3508,7 +3508,7 @@ class Sequencer:
         plog (filteroffset_shelf)
         filteroffset_shelf.close()
         
-        breakpoint()
+        #breakpoint()
         
                 
             

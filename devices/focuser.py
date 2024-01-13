@@ -206,7 +206,7 @@ class Focuser:
                                 plog("Focuser is moving.....")
                                 movement_report=1
                             self.current_focus_position=int(self.focuser_update_wincom.Position * self.steps_to_micron)
-                            g_dev['obs'].request_update_status()#, dont_wait=True)
+                            #g_dev['obs'].request_update_status()#, dont_wait=True)
                             
                             time.sleep(0.3)
                         
