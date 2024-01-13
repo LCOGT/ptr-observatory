@@ -267,8 +267,10 @@ site_config = {
             'permissive_mount_reset' : 'yes', # if this is set to yes, it will reset the mount at startup and when coordinates are out significantly
             'time_inactive_until_park' : 3600.0, # How many seconds of inactivity until it will park the telescope
             #'home_after_unpark' : False,
-            'home_altitude':  0.0,
-            'home_azimuth':  210.0,
+            'home_altitude':  0.103,
+            'home_altitude':  0.103,
+            'park_azimuth':  252.628,
+            'park_azimuth':  252.628,
             'has_paddle': False,    #or a string that permits proper configuration.
             'has_ascom_altaz': True,
             'pointing_tel': 'tel1',     #This can be changed to 'tel2' by user.  This establishes a default.
@@ -576,39 +578,33 @@ site_config = {
                 #                 ['dark',    [1, 6],     'dk']], # 19
                 
                 'filter_data': [
-                                ['air',     [0, 0], 'ai'],   # 0
-                                ['Lum',     [1, 0],  'w '],   # 20
-                                #['Red',     [4, 0],     0, 15,   [2, 17], 'r '],  # 21                                ['JV (Grn)',      [0, 3],     0, 1 [2, 17], 'V '],   # 9
-                                #['Green',   [3, 0],     0, 21,   [2, 17], 'V '],   # 22
-                                #['Blue',    [1, 0],     0, 18,   [2, 17], 'B '],   # 23
-                                #['w',       [1, 0],   'w '],
-                                ['EXO',     [0, 6],    'EX'],  # 12 ,   # 1
-                                ['dif',    [2, 0],       'dif'],
-                                ['JB',      [0, 1],    'B '],   # 7
-                                ['gp',      [0, 2],    'g '],   # 8
-                                ['JV',      [0, 3],    'V '],   # 9
-                                ['rp',      [0, 4],     'r '],  # 10
-                                #['JB',      [1, 0],    'B '], 
-                                ['ip',      [0, 5],     'i '],  # 11                   
-                                ['O3',      [3, 0],   'O3'],   # 3
-                                ['HA',      [4, 0],     'HA'],   # 4
-                                ['N2',      [5, 0],     'N2'],                
-                                ['S2',      [6, 0],    'S2'],   # 5
-                                ['dark',    [6, 1],     'dk']], # 19
+                                ['air',     [0, 0],  'ai'],   # 0
+                                ['Lum',     [1, 0],  'w '],   # 1
+                                ['w',       [1, 0],  'w '],   # 2
+                                ['EXO',     [0, 6],  'EX'],   # 3
+                                ['dif',     [2, 0], 'dif'],   # 4
+                                ['JB',      [0, 1],  'B '],   # 5
+                                ['gp',      [0, 2],  'g '],   # 6
+                                ['JV',      [0, 3],  'V '],   # 7
+                                ['rp',      [0, 4],  'r '],   # 8
+                                ['ip',      [0, 5],  'i '],   # 9                   
+                                ['O3',      [3, 0],  'O3'],   # 10
+                                ['HA',      [4, 0],  'HA'],   # 11
+                                ['N2',      [5, 0],  'N2'],   # 12       
+                                ['S2',      [6, 0],  'S2'],   # 13
+                                ['dark',    [6, 1],  'dk']],  # 14
                 
                 
                 'focus_filter' : 'Lum',
 
-                
-                
-                # 'filter_screen_sort':  ['0', '1', '2', '10', '7', '6', '18', '12', '11', '13', '8',  '3', \
-                #                         '14', '15', '4', '16'],   #  '9', '21'],  # '5', '17'], #Most to least throughput, \
-                #                 #so screen brightens, skipping u and zs which really need sky.
-                # #'filter_sky_sort':     ['S2', 'HA', 'N2', 'O3', 'ip', 'rp', 'Red', 'JV',\
-                # #                        'Green','JB', 'gp',   'Blue', 'EXO',  'w','Lum',  'air']  #Least to most throughput
-                # 'filter_sky_sort':     ['S2', 'HA', 'N2', 'O3', 'ip', 'rp', 'JB',\
-                #                         'JV', 'gp', 'EXO', 'Lum', 'w', 'air'],
-                #  #Least to most throughput
+
+                #Least to most throughput
+                'filter_screen_sort':     ['S2', 'N2', 'HA', 'O3', 'ip', 'rp', 'JV',\
+                                        'JB', 'gp', 'EXO', 'w', 'air'],
+                    
+                # 'filter_sky_sort':     ['S2', 'N2', 'HA', 'O3', 'ip', 'rp', 'JB',\
+                #                         'JV', 'gp', 'EXO', 'w', 'air'],
+
 
             },
         },
