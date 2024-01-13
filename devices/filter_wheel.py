@@ -628,9 +628,11 @@ class FilterWheel:
 
 
         # if asking for a pointing filter, but it is an osc, we actually need a lum filter
-        if g_dev['cam'].is_osc:
-            requested_filter='w'
-
+        try:
+            if g_dev['cam'].is_osc and requested_filter=='pointing':
+                requested_filter='w'
+        except:
+            pass
 
         #  NB NB NB note any filter string when lower cased needs to be unique. j - Johnson,
         #  c = Cousins, p or ' implies Sloane, S is for stromgren.  Some of the mappings
