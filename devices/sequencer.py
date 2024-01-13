@@ -317,6 +317,9 @@ class Sequencer:
             g_dev['mnt'].go_command(ra=req['ra'], dec=req['dec'], calibrate=True, auto_center=True)
         elif action == 'run' and script == 'calibrateAtFieldCenter':
             g_dev['mnt'].go_command(ra=req['ra'], dec=req['dec'], calibrate=True, auto_center=False)
+        elif action == "run" and script in [ 'takeLunarStack']:
+            g_dev["obs"].send_to_user("Starting Filter Offset Run. Will take some time.")
+            self.filter_focus_offset_estimator_script()
         else:
             plog('Sequencer command:  ', command, ' not recognized.')
 
