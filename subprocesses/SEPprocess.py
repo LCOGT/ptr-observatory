@@ -17,7 +17,7 @@ import math
 from auto_stretch.stretch import Stretch
 from astropy.nddata import block_reduce
 from colour_demosaicing import (
-    #demosaicing_CFA_Bayer_bilinear,  # )#,
+    demosaicing_CFA_Bayer_bilinear,  # )#,
     # demosaicing_CFA_Bayer_Malvar2004,
     demosaicing_CFA_Bayer_Menon2007)
 from PIL import Image, ImageDraw # ImageFont, ImageDraw#, ImageEnhance
@@ -157,7 +157,8 @@ else:
     if is_osc:
 
         if frame_type == 'focus' and interpolate_for_focus:
-            hdufocusdata=demosaicing_CFA_Bayer_Menon2007(hdufocusdata, 'RGGB')[:,:,1]
+            #hdufocusdata=demosaicing_CFA_Bayer_Menon2007(hdufocusdata, 'RGGB')[:,:,1]
+            hdufocusdata=demosaicing_CFA_Bayer_bilinear(hdufocusdata, 'RGGB')[:,:,1]
             hdufocusdata=hdufocusdata.astype("float32")
             binfocus=1
         if frame_type == 'focus' and bin_for_focus:
@@ -166,7 +167,8 @@ else:
             binfocus=focus_bin_factor
 
         if frame_type != 'focus' and interpolate_for_sep:
-            hdufocusdata=demosaicing_CFA_Bayer_Menon2007(hdufocusdata, 'RGGB')[:,:,1]
+            #hdufocusdata=demosaicing_CFA_Bayer_Menon2007(hdufocusdata, 'RGGB')[:,:,1]
+            hdufocusdata=demosaicing_CFA_Bayer_bilinear(hdufocusdata, 'RGGB')[:,:,1]
             hdufocusdata=hdufocusdata.astype("float32")
             binfocus=1
         if frame_type != 'focus' and bin_for_sep:

@@ -165,7 +165,8 @@ site_config = {
     'clock_and_auto_focus_offset': 8,
     
     'astro_dark_buffer': 30,   #Min before and after AD to extend observing window
-    'morn_flat_start_offset': -10,       #min from Sunrise
+    #'morn_flat_start_offset': -10,       #min from Sunrise
+    'morn_flat_start_offset': -40,       #min from Sunrise
     'morn_flat_end_offset':  +45,        #min from Sunrise
     'end_night_processing_time':  90,   #  A guess
     'observing_begins_offset': 18,    

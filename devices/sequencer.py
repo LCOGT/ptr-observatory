@@ -10,7 +10,7 @@ from astropy.time import Time
 from astropy.io import fits
 #from astropy.utils.data import get_pkg_data_filename
 from astropy.convolution import Gaussian2DKernel, interpolate_replace_nans #convolve,
-kernel = Gaussian2DKernel(x_stddev=2,y_stddev=2)
+kernel = Gaussian2DKernel(x_stddev=4,y_stddev=4)
 from astropy.stats import sigma_clip
 import ephem
 import shelve
@@ -2310,30 +2310,63 @@ class Sequencer:
                         del finalImage
                         
                         
-                        #breakpoint()
-                        # Fix up any glitches in the flat
                         temporaryFlat[temporaryFlat == inf] = np.nan
                         temporaryFlat[temporaryFlat == -inf] = np.nan
-                        temporaryFlat[temporaryFlat < 0.000001] = np.nan
+                        temporaryFlat[temporaryFlat < 0.5] = np.nan
                         temporaryFlat[temporaryFlat > 2.0] = np.nan                      
+                        pre_num_of_nans=num_of_nans=np.count_nonzero(np.isnan(temporaryFlat))
                         
-                        
-                        num_of_nans=np.count_nonzero(np.isnan(temporaryFlat))
-                        plog ("Number of Nans in flat this iteration: " + str(num_of_nans))
-                        while num_of_nans > 0:
+                        last_num_of_nans=846753876359.0
+                        while pre_num_of_nans > 0:
+                        #breakpoint()
+                            # Fix up any glitches in the flat
                             
-                            temporaryFlat=interpolate_replace_nans(temporaryFlat, kernel)
-                            # temporaryFlat[temporaryFlat == inf] = np.nan
-                            # temporaryFlat[temporaryFlat == -inf] = np.nan
-                            # temporaryFlat[temporaryFlat < 0.000001 ] = np.nan
+                            
                             num_of_nans=np.count_nonzero(np.isnan(temporaryFlat))
                             plog ("Number of Nans in flat this iteration: " + str(num_of_nans))
+                            
+                            if num_of_nans == last_num_of_nans:
+                                break
+                            last_num_of_nans=copy.deepcopy(num_of_nans)
+                            while num_of_nans > 0:
+                                
+                                temporaryFlat=interpolate_replace_nans(temporaryFlat, kernel)
+                                # temporaryFlat[temporaryFlat == inf] = np.nan
+                                # temporaryFlat[temporaryFlat == -inf] = np.nan
+                                # temporaryFlat[temporaryFlat < 0.000001 ] = np.nan
+                                num_of_nans=np.count_nonzero(np.isnan(temporaryFlat))
+                                plog ("Number of Nans in flat this iteration: " + str(num_of_nans))
+                            
+                            
+                            
+                            
+                            plog ("Round Flat Max: " + str(np.max(temporaryFlat)))
+                            
+                            plog ("Round Flat Min: " + str(np.min(temporaryFlat)))
+                            plog ("Round Flat Median: " + str(np.median(temporaryFlat)))
+                            plog ("Round Flat Average: " + str(np.average(temporaryFlat)))
+                            plog ("Round Flat Stdev: " + str(np.std(temporaryFlat)))
+                            
+                            temporaryFlat[temporaryFlat == inf] = np.nan
+                            temporaryFlat[temporaryFlat == -inf] = np.nan
+                            temporaryFlat[temporaryFlat < 0.5] = np.nan
+                            temporaryFlat[temporaryFlat > 2.0] = np.nan                      
+                            
+                            
+                            pre_num_of_nans=num_of_nans=np.count_nonzero(np.isnan(temporaryFlat))                            
+                            
                         
-                        plog ("Final Flat Max: " + str(np.max(temporaryFlat)))
-                        plog ("Final Flat Min: " + str(np.min(temporaryFlat)))
-                        plog ("Final Flat Median: " + str(np.median(temporaryFlat)))
-                        plog ("Final Flat Average: " + str(np.average(temporaryFlat)))
-                        plog ("Final Flat Stdev: " + str(np.std(temporaryFlat)))
+                        plog ("Final Flat Max: " + str(np.nanmax(temporaryFlat)))
+                        plog ("Final Flat Min: " + str(np.nanmin(temporaryFlat)))
+                        plog ("Final Flat Median: " + str(np.nanmedian(temporaryFlat)))
+                        plog ("Final Flat Average: " + str(np.nanaverage(temporaryFlat)))
+                        plog ("Final Flat Stdev: " + str(np.nanstd(temporaryFlat)))
+
+                        if np.count_nonzero(np.isnan(temporaryFlat)) > 0:
+                            plog ("No improvement with last interpolation attempt.")
+                            plog ("Filling remaining nans with median")
+                            temporaryFlat=np.nan_to_num(np.nanmedian(temporaryFlat), nan = 1.0)
+                        
 
                         try:
                             np.save(g_dev['obs'].calib_masters_folder + 'masterFlat_'+ str(filtercode) + '_bin1.npy', temporaryFlat)
