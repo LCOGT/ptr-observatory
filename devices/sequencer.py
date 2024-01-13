@@ -2359,7 +2359,7 @@ class Sequencer:
                         plog ("Final Flat Max: " + str(np.nanmax(temporaryFlat)))
                         plog ("Final Flat Min: " + str(np.nanmin(temporaryFlat)))
                         plog ("Final Flat Median: " + str(np.nanmedian(temporaryFlat)))
-                        plog ("Final Flat Average: " + str(np.nanaverage(temporaryFlat)))
+                        plog ("Final Flat Average: " + str(np.nanmean(temporaryFlat)))  #<<WER changed average to mean
                         plog ("Final Flat Stdev: " + str(np.nanstd(temporaryFlat)))
 
                         if np.count_nonzero(np.isnan(temporaryFlat)) > 0:
