@@ -2933,9 +2933,10 @@ class Sequencer:
 
                 scale = 1
                 self.estimated_first_flat_exposure = False
+                in_wait_mode=False
 
                 slow_report_timer=time.time()-180
-
+                
                 while (acquired_count < flat_count):
                     #g_dev['obs'].request_scan_requests()
                     #g_dev["obs"].request_full_update()
@@ -2960,7 +2961,7 @@ class Sequencer:
                         self.morn_sky_flat_latch = False
                         return
 
-
+                    
                     if self.next_flat_observe < time.time():
                         try:
                             sky_lux, _ = g_dev['evnt'].illuminationNow()    # NB NB Eventually we should MEASURE this.
@@ -2978,12 +2979,14 @@ class Sequencer:
                                 #pixel_area=pow(float(g_dev['cam'].config["camera"][g_dev['cam'].name]["settings"]["onebyone_pix_scale"]),2)
                                 pixel_area=pow(float(g_dev['cam'].pixscale),2)
                                 exp_time = target_flat/(collecting_area*pixel_area*sky_lux*float(filter_throughput))  #g_dev['ocn'].calc_HSI_lux)  #meas_sky_lux)
-
+                                new_throughput_value  =filter_throughput
                             else:
                                 if morn:
                                     exp_time = 5.0
                                 else:
                                     exp_time = min_exposure
+                        elif in_wait_mode:
+                            exp_time = target_flat/(collecting_area*pixel_area*sky_lux*float(new_throughput_value ))
                         else:
                             exp_time = scale * exp_time
 
@@ -3011,18 +3014,24 @@ class Sequencer:
                              plog('Break because proposed evening exposure > maximum flat exposure: ' + str(max_exposure) + ' seconds:  ', exp_time)
                              pop_list.pop(0)
                              acquired_count = flat_count + 1 # trigger end of loop
+                             in_wait_mode=False
 
                         elif morn and exp_time < min_exposure:
                              plog('Break because proposed morning exposure < minimum flat exposure time:  ', exp_time)
                              pop_list.pop(0)
                              acquired_count = flat_count + 1 # trigger end of loop
+                             in_wait_mode=False
 
                         elif evening and exp_time < min_exposure:
                              if time.time()-slow_report_timer > 120:
                                  plog("Too bright for " + str(current_filter) + " filter, waiting. Est. Exptime: " + str(exp_time))
                                  g_dev["obs"].send_to_user("Sky is too bright for " + str(current_filter) + " filter, waiting for sky to dim. Current estimated Exposure time: " + str(round(exp_time,2)) +'s')
                                  slow_report_timer=time.time()
-                             self.estimated_first_flat_exposure = False
+                                 in_wait_mode=True
+                             
+                             #exp_time = target_flat/(collecting_area*pixel_area*sky_lux*float(new_throughput_value ))
+                               
+                             #self.estimated_first_flat_exposure = False
                              if time.time() >= self.time_of_next_slew:
                                 self.check_zenith_and_move_to_flat_spot(ending=ending)
 
@@ -3033,7 +3042,10 @@ class Sequencer:
                                  plog("Too dim for " + str(current_filter) + " filter, waiting. Est. Exptime:  " + str(exp_time))
                                  g_dev["obs"].send_to_user("Sky is too dim for " + str(current_filter) + " filter, waiting for sky to brighten. Current estimated Exposure time: " + str(round(exp_time,2))+'s')
                                  slow_report_timer=time.time()
-                             self.estimated_first_flat_exposure = False
+                                 in_wait_mode=True
+                             #self.estimated_first_flat_exposure = False
+                             #exp_time = target_flat/(collecting_area*pixel_area*sky_lux*float(new_throughput_value ))
+                               
                              if time.time() >= self.time_of_next_slew:
                                 self.check_zenith_and_move_to_flat_spot(ending=ending)
 
@@ -3041,6 +3053,7 @@ class Sequencer:
                              self.next_flat_observe = time.time() + 10
                              exp_time = min_exposure
                         else:
+                            in_wait_mode=False
                             exp_time = round(exp_time, 5)
 
                             # If scope has gone to bed due to inactivity, wake it up!
