@@ -631,7 +631,8 @@ class Observatory:
         #breakpoint()
         # Initialisation complete!
         
-        g_dev['seq'].filter_focus_offset_estimator_script()
+        #killing this in favor of triggering by using the "Take Lunar Stack" sequencer script.z
+        #g_dev['seq'].filter_focus_offset_estimator_script()
 
 
 
