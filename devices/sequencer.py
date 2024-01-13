@@ -2314,7 +2314,7 @@ class Sequencer:
                         temporaryFlat[temporaryFlat == -inf] = np.nan
                         temporaryFlat[temporaryFlat < 0.5] = np.nan
                         temporaryFlat[temporaryFlat > 2.0] = np.nan                      
-                        pre_num_of_nans=num_of_nans=np.count_nonzero(np.isnan(temporaryFlat))
+                        pre_num_of_nans=np.count_nonzero(np.isnan(temporaryFlat))
                         
                         last_num_of_nans=846753876359.0
                         while pre_num_of_nans > 0:
@@ -2359,7 +2359,7 @@ class Sequencer:
                         plog ("Final Flat Max: " + str(np.nanmax(temporaryFlat)))
                         plog ("Final Flat Min: " + str(np.nanmin(temporaryFlat)))
                         plog ("Final Flat Median: " + str(np.nanmedian(temporaryFlat)))
-                        plog ("Final Flat Average: " + str(np.nanaverage(temporaryFlat)))
+                        plog ("Final Flat Average: " + str(np.nanmean(temporaryFlat)))
                         plog ("Final Flat Stdev: " + str(np.nanstd(temporaryFlat)))
 
                         if np.count_nonzero(np.isnan(temporaryFlat)) > 0:
