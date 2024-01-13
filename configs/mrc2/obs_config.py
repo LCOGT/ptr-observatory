@@ -817,7 +817,7 @@ site_config = {
                 'min_exposure': 0.5,
                 'max_exposure': 600.,
                 # For certain shutters, short exposures aren't good for flats. Some CMOS have banding in too short an exposure. Largely applies to ccds though.
-                'min_flat_exposure': 1.5, # WER 20240111 changed from 0.4   #just for now for CCD camera testing            
+                'min_flat_exposure': 1.0, # WER 20240111 changed from 0.4   #just for now for CCD camera testing            
                 # Realistically there is maximum flat_exposure that makes sure flats are efficient and aren't collecting actual stars.
                 'max_flat_exposure': 30.0,
                 # During the daytime with the daytime safety mode on, exposures will be limited to this maximum exposure
@@ -854,7 +854,7 @@ site_config = {
                 # As simple as it states, how many calibration frames to collect and how many to store.                
                 'number_of_bias_to_collect': 26,
                 'number_of_dark_to_collect': 13,
-                'number_of_flat_to_collect': 7,   #just for now for CCD camera testing
+                'number_of_flat_to_collect': 3,   #just for now for CCD camera testing wer 20240113 (friday!)
                 'number_of_bias_to_store': 53,
                 'number_of_dark_to_store': 27,
                 'number_of_flat_to_store': 11,
