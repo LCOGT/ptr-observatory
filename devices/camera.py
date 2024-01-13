@@ -681,6 +681,12 @@ class Camera:
         else:
             self.dither_enabled = False
 
+        if self.config["camera"][self.name]["settings"]['is_osc'] == True:
+            self.is_osc = True
+        else:
+            self.is_osc = False
+
+
         self.camera_model = self.config["camera"][self.name]["desc"]
         # NB We are reading from the actual camera or setting as the case may be. For initial setup,
         # we pull from config for some of the various settings.
@@ -1675,6 +1681,8 @@ class Camera:
             if g_dev["fil"].null_filterwheel == False:
                 if imtype in ['bias','dark']:
                     requested_filter_name = 'dark'
+                elif imtype in ['pointing'] and self.config["camera"][self.name]["settings"]['is_osc']:
+                    requested_filter_name = 'lum'
                 else:
                     requested_filter_name = str(
                         optional_params.get(
@@ -2750,8 +2758,8 @@ class Camera:
                     self.post_processing_queue.put(copy.deepcopy((outputimg, g_dev["mnt"].pier_side, self.config["camera"][self.name]["settings"]['is_osc'], frame_type, self.config['camera']['camera_1_1']['settings']['reject_new_flat_by_known_gain'], avg_mnt, avg_foc, avg_rot, self.setpoint, self.tempccdtemp, self.ccd_humidity, self.ccd_pressure, self.darkslide_state, exposure_time, this_exposure_filter, exposure_filter_offset, self.pane,opt , observer_user_name, self.hint, azimuth_of_observation, altitude_of_observation, airmass_of_observation, self.pixscale, smartstackid,sskcounter,Nsmartstack, longstackid, ra_at_time_of_exposure, dec_at_time_of_exposure, manually_requested_calibration, object_name, object_specf, g_dev["mnt"].ha_corr, g_dev["mnt"].dec_corr, focus_position, self.config, self.name, self.camera_known_gain, self.camera_known_readnoise, start_time_of_observation, observer_user_id, self.camera_path,  solve_it, next_seq, zoom_factor)), block=False)
 
 
-                # print (outputimg)
-                # breakpoint()
+                #print (outputimg)
+                #breakpoint()
 
                 # If this is a pointing or a focus frame, we need to do an
                 # in-line flash reduction

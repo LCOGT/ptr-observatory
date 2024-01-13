@@ -2532,6 +2532,9 @@ class Observatory:
 
                 # Essentially wait until the subprocess is complete
                 sep_subprocess.communicate()
+                
+                
+                #breakpoint()
 
                 # LOADING UP THE SEP FILE HERE AGAIN
                 if os.path.exists(im_path + text_name.replace('.txt', '.sep')):

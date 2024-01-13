@@ -144,7 +144,7 @@ sources = Table(sources)
 sources = sources[sources['flag'] < 8]
 sources = sources[sources["peak"] < 0.8 * image_saturation_level]
 sources = sources[sources["cpeak"] < 0.8 * image_saturation_level]
-sources = sources[sources["flux"] > 2000]
+sources = sources[sources["flux"] > 1000]
 sources = sources[sources["x"] < iy -50]
 sources = sources[sources["x"] > 50]
 sources = sources[sources["y"] < ix - 50]
@@ -177,12 +177,14 @@ try:
                                       sources['a'], sources['b'],
                                       np.pi / 2.0, 2.5 * kronrad,
                                       subpix=1, err=uncertainty)
+    sources['flux'] = flux
+    sources['fluxerr'] = fluxerr
+    sources['flag'] |= flag
+    
 except:
     pass
 
-sources['flux'] = flux
-sources['fluxerr'] = fluxerr
-sources['flag'] |= flag
+
 
 sources['FWHM'], _ = sep.flux_radius(focusimg, sources['x'], sources['y'], sources['a'], 0.5,
                                      subpix=5)

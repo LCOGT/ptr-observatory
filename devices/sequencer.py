@@ -2228,6 +2228,9 @@ class Sequencer:
                             if not g_dev['cam'].config["camera"][g_dev['cam'].name]["settings"]["is_osc"]:
                                 normalising_factor=np.nanmedian(flatdebiaseddedarked)
                                 flatdebiaseddedarked = flatdebiaseddedarked/normalising_factor
+                                # Naning bad entries into master flat
+                                flatdebiaseddedarked[flatdebiaseddedarked < 0.000001] = np.nan
+                                flatdebiaseddedarked[flatdebiaseddedarked > 2.0] = np.nan   
                             else:
 
                                 debayered=[]
@@ -2254,6 +2257,9 @@ class Sequencer:
                                 flatdebiaseddedarked[::2, 1::2]=flatdebiaseddedarked[::2, 1::2]/osc_normalising_factor[1]
                                 flatdebiaseddedarked[1::2, ::2]=flatdebiaseddedarked[1::2, ::2]/osc_normalising_factor[2]
                                 flatdebiaseddedarked[1::2, 1::2]=flatdebiaseddedarked[1::2, 1::2]/osc_normalising_factor[3]
+                                # Naning bad entries into master flat
+                                flatdebiaseddedarked[flatdebiaseddedarked < 0.000001] = np.nan
+                                flatdebiaseddedarked[flatdebiaseddedarked > 2.0] = np.nan  
 
 
                             timetaken=datetime.datetime.now() -starttime
@@ -2302,14 +2308,32 @@ class Sequencer:
 
                         temporaryFlat=np.asarray(finalImage).astype(np.float32)
                         del finalImage
+                        
+                        
+                        #breakpoint()
                         # Fix up any glitches in the flat
-                        temporaryFlat[temporaryFlat < 0.1] = np.nan
-                        temporaryFlat[temporaryFlat > 2.0] = np.nan
-
-                        temporaryFlat=interpolate_replace_nans(temporaryFlat, kernel)
                         temporaryFlat[temporaryFlat == inf] = np.nan
                         temporaryFlat[temporaryFlat == -inf] = np.nan
-                        temporaryFlat[temporaryFlat < 0.1 ] = np.nan
+                        temporaryFlat[temporaryFlat < 0.000001] = np.nan
+                        temporaryFlat[temporaryFlat > 2.0] = np.nan                      
+                        
+                        
+                        num_of_nans=np.count_nonzero(np.isnan(temporaryFlat))
+                        plog ("Number of Nans in flat this iteration: " + str(num_of_nans))
+                        while num_of_nans > 0:
+                            
+                            temporaryFlat=interpolate_replace_nans(temporaryFlat, kernel)
+                            # temporaryFlat[temporaryFlat == inf] = np.nan
+                            # temporaryFlat[temporaryFlat == -inf] = np.nan
+                            # temporaryFlat[temporaryFlat < 0.000001 ] = np.nan
+                            num_of_nans=np.count_nonzero(np.isnan(temporaryFlat))
+                            plog ("Number of Nans in flat this iteration: " + str(num_of_nans))
+                        
+                        plog ("Final Flat Max: " + str(np.max(temporaryFlat)))
+                        plog ("Final Flat Min: " + str(np.min(temporaryFlat)))
+                        plog ("Final Flat Median: " + str(np.median(temporaryFlat)))
+                        plog ("Final Flat Average: " + str(np.average(temporaryFlat)))
+                        plog ("Final Flat Stdev: " + str(np.std(temporaryFlat)))
 
                         try:
                             np.save(g_dev['obs'].calib_masters_folder + 'masterFlat_'+ str(filtercode) + '_bin1.npy', temporaryFlat)
