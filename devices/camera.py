@@ -316,6 +316,9 @@ class Camera:
 
         # Just need to initialise this filter thing
         self.current_offset  = 0
+        
+        
+        self.updates_paused=False
 
         """
         This section loads in the calibration files for flash calibrations
@@ -863,7 +866,7 @@ class Camera:
         while True:
 
             # update every so often, but update rapidly if slewing.
-            if (self.camera_update_timer < time.time() - self.camera_update_period) :
+            if (self.camera_update_timer < time.time() - self.camera_update_period) and not self.updates_paused:
 
 
 

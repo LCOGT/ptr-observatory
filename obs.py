@@ -639,7 +639,7 @@ class Observatory:
         #breakpoint()
         # Initialisation complete!
         
-        g_dev['seq'].kill_and_reboot_theskyx(-1,-1)
+        #g_dev['seq'].kill_and_reboot_theskyx(-1,-1)
 
         #killing this in favor of triggering by using the "Take Lunar Stack" sequencer script.z
 
@@ -1243,8 +1243,11 @@ class Observatory:
                 g_dev["obs"].stop_all_activity = False
     
             # Good spot to check if we need to nudge the telescope as long as we aren't exposing.
-            if not g_dev["cam"].exposure_busy and not g_dev['seq'].block_guard:
-                self.check_platesolve_and_nudge()
+            try:
+                if not g_dev["cam"].exposure_busy and not g_dev['seq'].block_guard:
+                    self.check_platesolve_and_nudge()
+            except:
+                plog("platesolve not tested. Usually because camera is rebooting.")
     
             # Meridian 'pulse'. A lot of mounts will not do a meridian flip unless a
             # specific slew command is sent. So this tracks how long it has been since

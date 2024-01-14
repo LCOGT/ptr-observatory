@@ -1809,6 +1809,9 @@ class Sequencer:
         g_dev['mnt'].mount_update_paused=True
         g_dev['mnt'].wait_for_mount_update()
 
+        if g_dev['cam'].theskyx:
+            g_dev['cam'].updates_paused=True
+
         #time.sleep(10)
         print ("Paused at kill theskyx for bugtesting")
        #breakpoint()
@@ -1817,7 +1820,7 @@ class Sequencer:
 
         os.system("taskkill /IM TheSkyX.exe /F")
         os.system("taskkill /IM TheSky64.exe /F")
-        time.sleep(16)
+        time.sleep(5)
         retries=0
         
         while retries <5:
@@ -1832,27 +1835,31 @@ class Sequencer:
 
                 # If theskyx is controlling the camera and filter wheel, reconnect the camera and filter wheel
                 if g_dev['cam'].theskyx:
+                    #g_dev['cam'].updates_paused=True
+                    #time.sleep(3*g_dev['cam'].camera_update_period)
                     Camera(self.config['camera']['camera_1_1']['driver'],
                                     g_dev['cam'].name,
                                     self.config)
-                    time.sleep(10)
+                    g_dev['cam'].updates_paused=False
                     g_dev["cam"].exposure_busy=False
+                    time.sleep(5)
+                    
 
                 if self.config['filter_wheel']['filter_wheel1']['driver'] == 'CCDSoft2XAdaptor.ccdsoft5Camera':
                     FilterWheel('CCDSoft2XAdaptor.ccdsoft5Camera',
                                          g_dev['obs'].name,
                                          self.config)
 
-                    time.sleep(10)
+                    time.sleep(5)
 
                 if self.config['focuser']['focuser1']['driver'] == 'CCDSoft2XAdaptor.ccdsoft5Camera':
                     Focuser('CCDSoft2XAdaptor.ccdsoft5Camera',
                                          g_dev['obs'].name,  self.config)
-                    time.sleep(10)
+                    time.sleep(5)
 
                 
 
-                time.sleep(10)
+                time.sleep(5)
                 retries=6
             except:
                 retries=retries+1
@@ -1863,6 +1870,7 @@ class Sequencer:
 
         g_dev['mnt'].mount_update_reboot=True
         g_dev['mnt'].wait_for_mount_update()
+        g_dev['mnt'].mount_update_paused=False
         
         if returnra == -1 or returndec == -1:
             g_dev['mnt'].park_command({}, {})
