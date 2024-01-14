@@ -814,7 +814,7 @@ site_config = {
                 'number_of_flat_to_collect': 7,
                 'number_of_bias_to_store': 63,
                 'number_of_dark_to_store': 31,
-                'number_of_flat_to_store': 15,
+                'number_of_flat_to_store': 31,
                 # Default dark exposure time.
                 'dark_exposure': 180,
                
