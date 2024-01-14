@@ -267,6 +267,12 @@ class Observatory:
             os.system("taskkill /IM PWI4.exe /F")
         except:
             pass
+        
+        try:
+            os.system("taskkill /IM PWI3.exe /F")
+        except:
+            pass
+        
 
         listOfProcessIds = findProcessIdByName('maxim_dl')
         for pid in listOfProcessIds:
