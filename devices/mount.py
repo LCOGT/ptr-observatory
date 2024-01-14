@@ -455,7 +455,9 @@ class Mount:
                     self.mount_update_paused=False
                     self.mount_update_reboot=False
 
-                if (self.mount_update_timer < time.time() - self.mount_update_period) or (self.currently_slewing) and not self.mount_update_paused:
+                #plog ((self.mount_update_timer < time.time() - self.mount_update_period) )
+
+                if ((self.mount_update_timer < time.time() - self.mount_update_period) and not self.mount_update_paused) or ((self.currently_slewing) and not self.mount_update_paused):
 
                     self.currently_slewing= self.mount_update_wincom.Slewing
 
@@ -572,7 +574,9 @@ class Mount:
                     self.mount_update_timer=time.time()
 
                 else:
-                    time.sleep(0.05)
+                    self.mount_updates=self.mount_updates + 1
+                    self.mount_update_timer=time.time()
+                    time.sleep(self.mount_update_period)
 
 
 

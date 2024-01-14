@@ -639,6 +639,7 @@ class Observatory:
         #breakpoint()
         # Initialisation complete!
         
+        g_dev['seq'].kill_and_reboot_theskyx(-1,-1)
 
         #killing this in favor of triggering by using the "Take Lunar Stack" sequencer script.z
 

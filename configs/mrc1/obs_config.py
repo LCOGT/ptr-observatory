@@ -811,7 +811,7 @@ site_config = {
                 # As simple as it states, how many calibration frames to collect and how many to store.                
                 'number_of_bias_to_collect': 33,
                 'number_of_dark_to_collect': 17,
-                'number_of_flat_to_collect': 7,
+                'number_of_flat_to_collect': 15,
                 'number_of_bias_to_store': 63,
                 'number_of_dark_to_store': 31,
                 'number_of_flat_to_store': 31,

@@ -1807,7 +1807,7 @@ class Sequencer:
         g_dev['mnt'].mount_update_paused=True
         g_dev['mnt'].wait_for_mount_update()
 
-        time.sleep(10)
+        #time.sleep(10)
         print ("Paused at kill theskyx for bugtesting")
        #breakpoint()
 
@@ -1846,12 +1846,7 @@ class Sequencer:
                                          g_dev['obs'].name,  self.config)
                     time.sleep(10)
 
-                if returnra == -1 or returndec == -1:
-                    g_dev['mnt'].park_command({}, {})
-                    #pass
-                else:
-                    g_dev['mnt'].park_command({}, {})
-                    g_dev['mnt'].go_command(ra=returnra, dec=returndec)
+                
 
                 time.sleep(10)
                 retries=6
@@ -1861,7 +1856,17 @@ class Sequencer:
                 if retries ==4:
                     plog(traceback.format_exc())
                     #
+                    
         g_dev['mnt'].mount_update_reboot=True
+        g_dev['mnt'].wait_for_mount_update()
+        
+        if returnra == -1 or returndec == -1:
+            g_dev['mnt'].park_command({}, {})
+            #pass
+        else:
+            g_dev['mnt'].park_command({}, {})
+            g_dev['mnt'].go_command(ra=returnra, dec=returndec)
+        
         return
 
     def regenerate_local_masters(self):
