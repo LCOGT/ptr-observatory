@@ -1799,7 +1799,9 @@ class Sequencer:
 
         # Daily reboot of necessary windows 32 programs *Cough* Theskyx *Cough*
         if g_dev['mnt'].theskyx: # It is only the mount that is the reason theskyx needs to reset
+            
             self.kill_and_reboot_theskyx(-1,-1)
+            
 
         return
 
@@ -1811,11 +1813,13 @@ class Sequencer:
         print ("Paused at kill theskyx for bugtesting")
        #breakpoint()
 
+        
+
         os.system("taskkill /IM TheSkyX.exe /F")
         os.system("taskkill /IM TheSky64.exe /F")
         time.sleep(16)
         retries=0
-        g_dev["cam"].exposure_busy=False
+        
         while retries <5:
             try:
                 Mount(self.config['mount']['mount1']['driver'],
@@ -1856,7 +1860,7 @@ class Sequencer:
                 if retries ==4:
                     plog(traceback.format_exc())
                     #
-                    
+
         g_dev['mnt'].mount_update_reboot=True
         g_dev['mnt'].wait_for_mount_update()
         

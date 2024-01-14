@@ -625,7 +625,7 @@ site_config = {
                 'do_cosmics' : False,
                 'number_of_bias_to_collect' : 10,
                 'number_of_dark_to_collect' : 10,
-                'number_of_flat_to_collect' : 8,
+                'number_of_flat_to_collect' : 10,
                 'number_of_bias_to_store' : 64,
                 'number_of_dark_to_store' : 64,
                 'number_of_flat_to_store' : 64,
