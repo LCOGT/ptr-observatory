@@ -2944,7 +2944,9 @@ class Sequencer:
                         plog ("Using initial attempt at a throughput : "+ str(filter_throughput))
                         plog ("Widening min and max exposure times to find a good estimate also.")
                         plog ("Normal exposure limits will return once a good throughput is found.")
-                        min_exposure=min_exposure*0.33
+                        
+                        min_exposure= float(self.config['camera']['camera_1_1']['settings']['min_exposure'])
+                        
                         max_exposure=max_exposure*3
                         flat_count=1
                         known_throughput=False
@@ -3337,7 +3339,7 @@ class Sequencer:
                             if bright == None:
                                 plog ("Seems like the camera isn't liking taking flats. This is usually because it hasn't been able to cool sufficiently, bailing out of flats. ")
                                 
-                                acquired_count = flat_count + 1 # trigger end of loop
+                                acquired_count += 1 # trigger end of loop
                             
                             
                             if acquired_count == flat_count:

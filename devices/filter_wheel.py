@@ -567,14 +567,14 @@ class FilterWheel:
         
         filter_default_throughputs['clear'] = 2100.0
         filter_default_throughputs['cr'] = 8.0
-        filter_default_throughputs['dif'] = 1000.0
+        filter_default_throughputs['dif'] = 1000.0 #<< Much closer to 2000 WER
         filter_default_throughputs['exo'] = 1570.0
         filter_default_throughputs['gp'] = 1420.0
         
         filter_default_throughputs['ha'] = 8.0
         filter_default_throughputs['ip'] = 230.0
         
-        filter_default_throughputs['jb'] = 750.0
+        filter_default_throughputs['jb'] = 750.0   
         filter_default_throughputs['ji'] = 53.0
         filter_default_throughputs['jr'] = 443.0
         filter_default_throughputs['jv'] = 623.0
@@ -596,8 +596,10 @@ class FilterWheel:
         filter_default_throughputs['v'] = 623.0
         filter_default_throughputs['w'] = 2100.0
         filter_default_throughputs['zp'] = 62
-        filter_default_throughputs['z'] = 11.0
+        filter_default_throughputs['z'] = 11.0  #  z and zp are the same so far.  Maybe we should
+                                                #standardize on adding p <rime> on the Sloane's
         filter_default_throughputs['zs'] = 8.6
+                                                # 'y' will eventually be in this list. Neyle has one., but it is defective and low throughput.
         
         try:
             plog ("found default filter throughput value: " + str(filter_default_throughputs[requested_filter] ))
