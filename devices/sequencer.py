@@ -2229,8 +2229,10 @@ class Sequencer:
                                 normalising_factor=np.nanmedian(flatdebiaseddedarked)
                                 flatdebiaseddedarked = flatdebiaseddedarked/normalising_factor
                                 # Naning bad entries into master flat
-                                flatdebiaseddedarked[flatdebiaseddedarked < 0.000001] = np.nan
+                                flatdebiaseddedarked[flatdebiaseddedarked < 0.25] = np.nan
                                 flatdebiaseddedarked[flatdebiaseddedarked > 2.0] = np.nan   
+                                # Rescaling median once nan'ed
+                                flatdebiaseddedarked = flatdebiaseddedarked/np.nanmedian(flatdebiaseddedarked)
                             else:
 
                                 debayered=[]
@@ -2258,8 +2260,11 @@ class Sequencer:
                                 flatdebiaseddedarked[1::2, ::2]=flatdebiaseddedarked[1::2, ::2]/osc_normalising_factor[2]
                                 flatdebiaseddedarked[1::2, 1::2]=flatdebiaseddedarked[1::2, 1::2]/osc_normalising_factor[3]
                                 # Naning bad entries into master flat
-                                flatdebiaseddedarked[flatdebiaseddedarked < 0.000001] = np.nan
-                                flatdebiaseddedarked[flatdebiaseddedarked > 2.0] = np.nan  
+                                flatdebiaseddedarked[flatdebiaseddedarked < 0.25] = np.nan
+                                flatdebiaseddedarked[flatdebiaseddedarked > 2.0] = np.nan
+                                # Rescaling median once nan'ed
+                                flatdebiaseddedarked = flatdebiaseddedarked/np.nanmedian(flatdebiaseddedarked)
+                            
 
 
                             timetaken=datetime.datetime.now() -starttime
