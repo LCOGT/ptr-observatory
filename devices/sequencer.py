@@ -10,7 +10,7 @@ from astropy.time import Time
 from astropy.io import fits
 #from astropy.utils.data import get_pkg_data_filename
 from astropy.convolution import Gaussian2DKernel, interpolate_replace_nans #convolve,
-kernel = Gaussian2DKernel(x_stddev=4,y_stddev=4)
+kernel = Gaussian2DKernel(x_stddev=3,y_stddev=3)
 from astropy.stats import sigma_clip
 import ephem
 import shelve
@@ -2353,21 +2353,25 @@ class Sequencer:
                             temporaryFlat[temporaryFlat > 2.0] = np.nan                      
                             
                             
-                            pre_num_of_nans=num_of_nans=np.count_nonzero(np.isnan(temporaryFlat))                            
+                            pre_num_of_nans=np.count_nonzero(np.isnan(temporaryFlat))                            
                             
                         
                         plog ("Final Flat Max: " + str(np.nanmax(temporaryFlat)))
                         plog ("Final Flat Min: " + str(np.nanmin(temporaryFlat)))
                         plog ("Final Flat Median: " + str(np.nanmedian(temporaryFlat)))
-                        plog ("Final Flat Average: " + str(np.nanmean(temporaryFlat)))
-                        plog ("Final Flat Stdev: " + str(np.nanstd(temporaryFlat)))
 
+                        plog ("Final Flat Average: " + str(np.nanmean(temporaryFlat)))  #<<WER changed average to mean
+
+                        plog ("Final Flat Stdev: " + str(np.nanstd(temporaryFlat)))
+                        
+                        #breakpoint()
+                        
                         if np.count_nonzero(np.isnan(temporaryFlat)) > 0:
                             plog ("No improvement with last interpolation attempt.")
                             plog ("Filling remaining nans with median")
-                            temporaryFlat=np.nan_to_num(np.nanmedian(temporaryFlat), nan = 1.0)
+                            temporaryFlat=np.nan_to_num(temporaryFlat, nan = np.nanmedian(temporaryFlat))
                         
-
+                        
                         try:
                             np.save(g_dev['obs'].calib_masters_folder + 'masterFlat_'+ str(filtercode) + '_bin1.npy', temporaryFlat)
 
