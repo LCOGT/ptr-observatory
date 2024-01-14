@@ -327,3 +327,15 @@ if len(sources) >= 5:
         os.remove(output_file_path)
     except:
         pass
+else:
+    solve = 'error'
+    pickle.dump(solve, open(cal_path + 'platesolve.pickle', 'wb'))
+    try:
+        os.remove(cal_path + 'platesolvetemp.fits')
+    except:
+        pass
+    try:
+        os.remove(output_file_path)
+    except:
+        pass
+    
