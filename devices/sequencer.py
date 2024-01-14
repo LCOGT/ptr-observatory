@@ -3342,7 +3342,7 @@ class Sequencer:
                                 acquired_count += 1 # trigger end of loop
                             
                             
-                            if acquired_count == flat_count:
+                            if acquired_count == flat_count or acquired_count > flat_count:
                                 pop_list.pop(0)
                                 scale = 1
 
