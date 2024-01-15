@@ -400,8 +400,8 @@ class Observatory:
         # If the camera is detected as substantially (20 degrees) warmer than the setpoint
         # during safety checks, it will keep it warmer for about 20 minutes to make sure
         # the camera isn't overheating, then return it to its usual temperature.
-        #self.camera_overheat_safety_warm_on = False
-        self.camera_overheat_safety_warm_on = self.config['warm_camera_during_daytime_if_too_hot']
+        self.camera_overheat_safety_warm_on = False
+        #self.camera_overheat_safety_warm_on = self.config['warm_camera_during_daytime_if_too_hot']
         self.camera_overheat_safety_timer = time.time()
         # Some things you don't want to check until the camera has been cooling for a while.
         self.camera_time_initialised = time.time()
@@ -1294,7 +1294,7 @@ class Observatory:
                 #
                 # We don't want to run these checks EVERY status update, just every 5 minutes
                 #if time.time() - self.time_since_safety_checks > self.safety_check_period:
-                self.time_since_safety_checks = time.time()
+                #self.time_since_safety_checks = time.time()
     
                 # Adjust focus on a not-too-frequent period for temperature
                 if not g_dev["cam"].exposure_busy and not g_dev["seq"].focussing and self.open_and_enabled_to_observe:
@@ -1511,8 +1511,8 @@ class Observatory:
                     plog (ephem.now())
                     if self.camera_sufficiently_cooled_for_calibrations == False:
                         if (time.time() - self.last_time_camera_was_warm) < 1200:
-                            plog ("Camera was recently too warm for calibrations")
-                            plog ("Waiting for a 20 minute period where camera has been cooled")
+                            plog ("Camera was recently out of the temperature range for calibrations")
+                            plog ("Waiting for a 20 minute period where camera has been cooled to the right temperature")
                             plog ("Before continuing calibrations to ensure cooler is evenly cooled")
                             plog ( str(int(1200 - (time.time() - self.last_time_camera_was_warm))) + " seconds to go.")
                             plog ("Camera current temperature ("+ str(current_camera_temperature)+").")
@@ -1531,7 +1531,7 @@ class Observatory:
     
     
                 # After the observatory and camera have had time to settle....
-                if (time.time() - self.camera_time_initialised) > 1200:
+                if (time.time() - self.camera_time_initialised) > 60:
                     # Check that the camera is not overheating.
                     # If it isn't overheating check that it is at the correct temperature
                     if self.camera_overheat_safety_warm_on:
