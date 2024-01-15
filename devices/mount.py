@@ -457,7 +457,7 @@ class Mount:
                     
                     self.rapid_park_indicator=copy.deepcopy(self.mount_update_wincom.AtPark)
                     self.currently_slewing=False
-                    print (self.rapid_park_indicator)
+                    #print (self.rapid_park_indicator)
                     
                     self.mount_updates=self.mount_updates + 1
                     #self.mount_update_timer=time.time()
