@@ -53,6 +53,7 @@ site_config = {
     'degrees_to_avoid_zenith_area_for_calibrations': 0, 
     'degrees_to_avoid_zenith_area_in_general' : 0,
     'maximum_hour_angle_requestable' : 12,
+    'warm_camera_during_daytime_if_too_hot': True,
     
     'temperature_at_which_obs_too_hot_for_camera_cooling' : 23, 
     

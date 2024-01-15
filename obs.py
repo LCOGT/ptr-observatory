@@ -400,7 +400,8 @@ class Observatory:
         # If the camera is detected as substantially (20 degrees) warmer than the setpoint
         # during safety checks, it will keep it warmer for about 20 minutes to make sure
         # the camera isn't overheating, then return it to its usual temperature.
-        self.camera_overheat_safety_warm_on = False
+        #self.camera_overheat_safety_warm_on = False
+        self.camera_overheat_safety_warm_on = self.config['warm_camera_during_daytime_if_too_hot']
         self.camera_overheat_safety_timer = time.time()
         # Some things you don't want to check until the camera has been cooling for a while.
         self.camera_time_initialised = time.time()
