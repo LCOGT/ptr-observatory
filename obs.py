@@ -580,7 +580,6 @@ class Observatory:
             try:
                  with open(textfilename, 'r') as f:
                      lines=f.readlines()
-                     #print (lines)
                      for line in lines:
                          plog (line.replace('\n',''))
             except:
@@ -849,13 +848,6 @@ class Observatory:
         except:
             plog("problem gathering scan requests. Likely just a connection glitch.")
             unread_commands=[]
-        #else:
-        #    unread_commands=[]
-
-        #print (unread_commands)
-        
-        
-        #print ("requests scanned")
         
         # Make sure the list is sorted in the order the jobs were issued
         # Note: the ulid for a job is a unique lexicographically-sortable id.
@@ -990,7 +982,7 @@ class Observatory:
                                     plog ('Scope set to not automatically center.')
                                     g_dev["obs"].send_to_user('Scope set to not automatically center.')
                                 else:
-                                    print ("Unknown command: " + str(cmd))
+                                    plog ("Unknown command: " + str(cmd))
 
 
                                 self.obs_settings_upload_timer = time.time() - 2*self.obs_settings_upload_period
@@ -1067,10 +1059,6 @@ class Observatory:
 
         self.currently_updating_status=True
 
-        #print ('l')
-        #g_dev['foc'].update_focuser_temperature()
-        #print ('m')
-
         # Wait a bit between status updates otherwise
         # status updates bank up in the queue
         if dont_wait == True:
@@ -1100,23 +1088,8 @@ class Observatory:
 
                 # Get the actual device object...
                 device = devices_of_type[device_name]
-                # Currently the telescope and mount devices are the same... this will change.
-                # if 'telescope' in device_name:
-                #     status['telescope'] = copy.deepcopy(status['mount'])
-                # else:
-                    #breakpoint()
-                    # if 'mount' in device_name and self.mount_reboot_on_first_status:
-                    #     plog ("rebooting mount on first status update. Need to chase why, it is a collision I can't see yet - MTF")
-                    #     g_dev['mnt'].mount_reboot()
-                    #     self.mount_reboot_on_first_status = False
-
-                    #if not 'mount' in device_name:
+                
                 result = device.get_status()
-                    #else:
-                    #    result = None
-
-
-                        #print (result)
 
                 if result is not None:
                     status[dev_type][device_name] = result
@@ -1125,19 +1098,11 @@ class Observatory:
 
 
 
-        #status['telescope']={}
-
-        #status['telescope']['telescope1']=status['mount']['mount1']
-
-        #print (status['telescope'])
-        #print (status['mount'])
 
         if status is not None:
             lane = "device"
             if self.send_status_queue.qsize() < 7:
                 self.send_status_queue.put((obsy, lane, status), block=False)
-
-
 
 
 
@@ -1151,9 +1116,6 @@ class Observatory:
         
         while True:
         
-            # sleep until needed
-            
-            #print ("safety check")
             self.time_since_safety_checks = time.time()
         
         
@@ -1217,7 +1179,6 @@ class Observatory:
                                 return
                     except Exception as e:
                         plog(traceback.format_exc())
-                        #breakpoint()
                         plog ("Sun check didn't work for some reason")
                         if 'Object reference not set' in str(e) and g_dev['mnt'].theskyx:
         
@@ -1225,8 +1186,6 @@ class Observatory:
                             plog("Usually this is because of a broken connection.")
                             plog("Killing then waiting 60 seconds then reconnecting")
                             g_dev['seq'].kill_and_reboot_theskyx(g_dev['mnt'].current_icrs_ra,g_dev['mnt'].current_icrs_dec)
-        
-                #print ("update_status")
         
                 # Keep an eye on the stop-script and exposure halt time to reset those timers.
                 if g_dev['seq'].stop_script_called and ((time.time() - g_dev['seq'].stop_script_called_time) > 35):
@@ -1579,13 +1538,13 @@ class Observatory:
     
                         plog(time.time() - self.camera_overheat_safety_timer)
                         if (time.time() - self.camera_overheat_safety_timer) > 1201:
-                            print("Camera OverHeating Safety Warm Cycle Complete. Resetting to normal temperature.")
+                            plog("Camera OverHeating Safety Warm Cycle Complete. Resetting to normal temperature.")
                             g_dev['cam']._set_setpoint(g_dev['cam'].setpoint)
                             # Some cameras need to be sent this to change the temperature also.. e.g. TheSkyX
                             g_dev['cam']._set_cooler_on()
                             self.camera_overheat_safety_warm_on = False
                         else:
-                            print("Camera Overheating Safety Warm Cycle on.")
+                            plog("Camera Overheating Safety Warm Cycle on.")
     
                     elif g_dev['cam'].protect_camera_from_overheating and (float(current_camera_temperature) - g_dev['cam'].current_setpoint) > (2 * g_dev['cam'].day_warm_degrees):
                         plog("Found cooler on, but warm.")
@@ -1595,7 +1554,6 @@ class Observatory:
                         self.camera_overheat_safety_warm_on = True
                         self.camera_overheat_safety_timer = time.time()
                         self.last_time_camera_was_warm=time.time()
-                        #print (float(g_dev['cam'].setpoint +20.0))
                         g_dev['cam']._set_setpoint(float(g_dev['cam'].setpoint + (2 * g_dev['cam'].day_warm_degrees)))
                         # Some cameras need to be sent this to change the temperature also.. e.g. TheSkyX
                         g_dev['cam']._set_cooler_on()
@@ -1665,7 +1623,7 @@ class Observatory:
                     elif g_dev['cam'].day_warm and (self.too_hot_in_observatory) and (g_dev['events']['Clock & Auto Focus'] - ephem.hour < ephem.now() < g_dev['events']['Clock & Auto Focus']):
                         plog("In Camera Cooling Ramping cycle aiming for Clock & Auto Focus")
                         frac_through_warming = 1 - (((g_dev['events']['Clock & Auto Focus']) - ephem.now()) / ephem.hour)
-                        print("Fraction through cooling cycle: " + str(frac_through_warming))
+                        plog("Fraction through cooling cycle: " + str(frac_through_warming))
                         if frac_through_warming > 0.8:
                             g_dev['cam']._set_setpoint(float(g_dev['cam'].setpoint))
                             g_dev['cam']._set_cooler_on()
@@ -1740,35 +1698,6 @@ class Observatory:
         This compact little function is the heart of the code in the sense this is repeatedly
         called. It checks for any new commands from AWS and runs them.
         """
-
-
-        # if self.currently_updating_FULL:
-        #     return
-
-
-        # self.currently_updating_FULL=True
-
-        #print ("full update")
-
-        
-
-        # if not self.currently_updating_status and (time.time() - self.time_last_status > 10):
-        #     self.request_update_status()
-
-        # if time.time() - self.get_new_job_timer > 3:
-        #     self.get_new_job_timer = time.time()
-        #     # try:
-        #     self.request_scan_requests()
-            # except:
-            #     pass
-
-
-        #self.full_update_lock=True
-        #while self.currently_updating_status:
-            #print ('updating status')
-        #    time.sleep(0.5)
-
-
             
         # Check that there isn't individual commands to be run
         if (not g_dev["cam"].exposure_busy) and not g_dev['seq'].total_sequencer_control and (not self.stop_processing_command_requests):
@@ -2168,20 +2097,13 @@ class Observatory:
 
         while True:
 
-            # if time.time()-temptimer > 4:
-            #     temptimer=time.time()
-            #     print (not self.scan_request_queue.empty())
-            #     print (one_at_a_time)
-            #     print (self.full_update_lock)
 
-            #if not self.full_update_lock and (not self.scan_request_queue.empty()) and one_at_a_time == 0:
             if (not self.scan_request_queue.empty()) and one_at_a_time == 0 and not self.currently_scan_requesting:
                 one_at_a_time = 1
                 request = self.scan_request_queue.get(block=False)
                 self.currently_scan_requesting = True
 
                 self.scan_requests()
-                # print ("scanned")
                 self.currently_scan_requesting = False
                 self.scan_request_queue.task_done()
                 # We don't want multiple requests straight after one another, so clear the queue.
@@ -2215,9 +2137,6 @@ class Observatory:
             if (not self.calendar_block_queue.empty()) and one_at_a_time == 0:
                 one_at_a_time = 1
                 request = self.calendar_block_queue.get(block=False)
-                #print ("Calendar checked")
-
-                #self.scan_requests()
                 self.currently_updating_calendar_blocks = True
                 g_dev['seq'].update_calendar_blocks()
                 self.currently_updating_calendar_blocks = False
@@ -2244,13 +2163,10 @@ class Observatory:
             if (not self.update_status_queue.empty()) and one_at_a_time == 0:
                 one_at_a_time = 1
                 request = self.update_status_queue.get(block=False)
-                #print ("status updated")
                 if request == 'mountonly':
-                    #print ("mount only")
                     self.update_status(mount_only=True, dont_wait=True)
                 else:
                     self.update_status()
-                #print ("updated status on request")
                 self.update_status_queue.task_done()
                 one_at_a_time = 0
                 time.sleep(2)
@@ -2258,7 +2174,6 @@ class Observatory:
             # Update status on at lest a 30s period if not requested
             elif (time.time() - self.time_last_status) > 30:
                 self.update_status()
-                #print ("updated status on timer")
                 self.time_last_status=time.time()
                 time.sleep(2)
                 
@@ -2268,27 +2183,6 @@ class Observatory:
                 # Need this to be as LONG as possible to allow large gaps in the GIL. Lower priority tasks should have longer sleeps.
                 time.sleep(2)
 
-    # # Note this is a thread!
-    # def full_update_thread(self):
-
-
-    #     one_at_a_time = 0
-
-
-    #     while True:
-    #         if (not self.FULL_update_thread_queue.empty()) and one_at_a_time == 0:
-
-    #             one_at_a_time = 1
-    #             self.FULL_update_thread_queue.get(block=False)
-    #             self.update()
-    #             self.FULL_update_thread_queue.task_done()
-    #             one_at_a_time = 0
-    #             time.sleep(2)
-
-
-    #         else:
-    #             # Need this to be as LONG as possible to allow large gaps in the GIL. Lower priority tasks should have longer sleeps.
-    #             time.sleep(2)
 
     # Note this is a thread!
     def send_to_ptrarchive(self):
@@ -2804,7 +2698,6 @@ class Observatory:
                                         too_long = False
 
                                 self.pixelscale_shelf['pixelscale_list'] = pixelscale_list
-                                #print (pixelscale_list)
                                 self.pixelscale_shelf.close()
 
 
@@ -2852,7 +2745,7 @@ class Observatory:
                                 if drift_timespan < 300:
                                     plog ("Drift calculations unreliable as yet because drift timescale < 300s.")
                                 plog ("Solve in drift set: " +str(self.drift_tracker_counter))
-                                print ("Drift Timespan " + str(drift_timespan))
+                                plog ("Drift Timespan " + str(drift_timespan))
                                 self.drift_tracker_ra_arcsecperhour=  ((err_ha * 15 * 3600 ) - self.drift_tracker_first_offset_ra) / (drift_timespan / 3600)
                                 self.drift_tracker_dec_arcsecperhour= ((err_dec *3600) - self.drift_tracker_first_offset_dec) / (drift_timespan / 3600)
                                 if drift_timespan < 300:
@@ -2930,7 +2823,7 @@ class Observatory:
 
                                      drift_timespan= time.time() - self.drift_tracker_timer
 
-                                     print ("Drift Timespan " + str(drift_timespan))
+                                     plog ("Drift Timespan " + str(drift_timespan))
 
                                      if drift_timespan < 300:
                                          plog ("Not calculating drift on a timescale under 5 minutes.")
@@ -3205,7 +3098,6 @@ class Observatory:
                                     hdufz.writeto(
                                         slow_process[1], overwrite=True
                                     )  # Save full fz file locally
-                                    #print (slow_process[1])
                                     try:
                                         hdufz.close()
                                     except:
@@ -4100,7 +3992,6 @@ class Observatory:
                 self.update_status_queue.put( 'mountonly', block=False)
         else:
             if mount_only:
-                #print ("mount only")
                 self.update_status(mount_only=True, dont_wait=True)
             else:
                 self.update_status()
