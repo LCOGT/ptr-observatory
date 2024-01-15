@@ -2031,19 +2031,10 @@ class Sequencer:
             counter=0
             with Pool(math.floor(os.cpu_count()*0.85)) as pool:
                 for result in pool.map(stack_nanmedian_row, mptask):
-                    #breakpoint()
-                    #return_rows.append(result)
-                    #finalImage[counter+x,:]=result
-                    #counter=counter+1
-                    #print (result)
+
                     finalImage[counter,:]=result
                     counter=counter+1
 
-            # for xi in range(shapeImage[0]):
-            #     if xi % 500 == 0:
-            #         print ("Up to Row" + str(xi))
-            #         print (datetime.datetime.now().strftime("%H:%M:%S"))
-            #     finalImage[xi,:]=np.nanmedian(PLDrive[xi,:,:], axis=1)
 
             plog(datetime.datetime.now().strftime("%H:%M:%S"))
             plog ("**********************************")
@@ -2150,20 +2141,12 @@ class Sequencer:
             counter=0
             with Pool(math.floor(os.cpu_count()*0.85)) as pool:
                 for result in pool.map(stack_nanmedian_row, mptask):
-                    #breakpoint()
-                    #return_rows.append(result)
-                    #finalImage[counter+x,:]=result
-                    #counter=counter+1
-                    #print (result)
+
                     finalImage[counter,:]=result
                     counter=counter+1
 
 
-            # for xi in range(shapeImage[0]):
-            #     if xi % 500 == 0:
-            #         print ("Up to Row" + str(xi))
-            #         print (datetime.datetime.now().strftime("%H:%M:%S"))
-            #     finalImage[xi,:]=np.nanmedian(PLDrive[xi,:,:], axis=1)
+
 
             plog (datetime.datetime.now().strftime("%H:%M:%S"))
             plog ("**********************************")
@@ -2309,22 +2292,11 @@ class Sequencer:
                         counter=0
                         with Pool(math.floor(os.cpu_count()*0.85)) as pool:
                             for result in pool.map(stack_nanmedian_row, mptask):
-                                #breakpoint()
-                                #return_rows.append(result)
-                                #finalImage[counter+x,:]=result
-                                #counter=counter+1
-                                #print (result)
+
                                 finalImage[counter,:]=result
                                 counter=counter+1
 
 
-
-                        # for xi in range(shapeImage[0]):
-                        #     if xi % 500 == 0:
-                        #         print ("Up to Row" + str(xi))
-                        #         print (datetime.datetime.now().strftime("%H:%M:%S"))
-
-                        #     finalImage[xi,:]=np.nanmedian(PLDrive[xi,:,:], axis=1)
                         plog (datetime.datetime.now().strftime("%H:%M:%S"))
                         plog ("**********************************")
 
@@ -2778,9 +2750,8 @@ class Sequencer:
             # First get the list of filters from the config list.
             list_of_filters_for_this_run=[]
             for entry in g_dev['fil'].filter_data:
-                #print (entry[0])
                 list_of_filters_for_this_run.append(entry[0])
-            print (list_of_filters_for_this_run)
+            plog (list_of_filters_for_this_run)
             if 'dark' in list_of_filters_for_this_run:
                 list_of_filters_for_this_run.remove('dark')
             
@@ -3571,9 +3542,8 @@ class Sequencer:
         # First get the list of filters from the config list.
         list_of_filters_for_this_run=[]
         for entry in g_dev['fil'].filter_data:
-            #print (entry[0])
             list_of_filters_for_this_run.append(entry[0])
-        print (list_of_filters_for_this_run)
+        plog(list_of_filters_for_this_run)
         if 'dark' in list_of_filters_for_this_run:
             list_of_filters_for_this_run.remove('dark')
         
@@ -4851,7 +4821,6 @@ class Sequencer:
             f.write(Angle(latitude,u.degree).to_string(sep=' ')+ "\n")
         for entry in deviation_catalogue_for_tpoint:
             if not np.isnan(entry[2]):
-                #print (entry[0], entry[1])
                 ra_wanted=Angle(entry[0],u.hour).to_string(sep=' ')
                 dec_wanted=Angle(entry[1],u.degree).to_string(sep=' ')
                 ra_got=Angle(entry[2],u.hour).to_string(sep=' ')
@@ -4954,10 +4923,7 @@ class Sequencer:
                     plog ("PLATESOLVE: Waiting for platesolve processing to complete and queue to clear")
                     reported=1
                 if (time.time() - temptimer) > 20:
-                    ##g_dev["obs"].request_full_update()
                     temptimer=time.time()
-                    #print (g_dev['obs'].platesolve_is_processing)
-                    #print (g_dev['obs'].platesolve_queue.empty())
                 if self.stop_script_called:
                     g_dev["obs"].send_to_user("Cancelling out of autofocus script as stop script has been called.")
                     return
