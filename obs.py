@@ -1573,6 +1573,7 @@ class Observatory:
                             (g_dev['events']['End Morn Bias Dark'] + ephem.hour < ephem.now() < g_dev['events']['Nightly Reset']):
                         plog("In Daytime: Camera set at warmer temperature")
                         g_dev['cam']._set_setpoint(float(g_dev['cam'].setpoint + g_dev['cam'].day_warm_degrees))
+                        
                         # Some cameras need to be sent this to change the temperature also.. e.g. TheSkyX
                         g_dev['cam']._set_cooler_on()
                         plog("Temp set to " + str(g_dev['cam'].current_setpoint))

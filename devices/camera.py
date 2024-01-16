@@ -1016,7 +1016,7 @@ class Camera:
 
         self.theskyx_set_setpoint_trigger=True
         self.theskyx_set_setpoint_value= float(p_temp)
-        plog ("theskyx setpoint")
+        self.current_setpoint=float(p_temp)        
         return float(p_temp)
         #self.camera.TemperatureSetpoint = float(p_temp)
         #self.current_setpoint = p_temp
