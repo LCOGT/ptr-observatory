@@ -793,7 +793,7 @@ class Camera:
 
             self.theskyx_set_cooler_on=True
             self.theskyx_cooleron=True
-            self.theskyx_set_setpoint=True
+            self.theskyx_set_setpoint_trigger=True
             self.theskyx_set_setpoint_value= self.setpoint
             self.theskyx_temperature=self.camera.Temperature, 999.9, 999.9
             self.camera_update_period=5
@@ -869,27 +869,28 @@ class Camera:
             if (self.camera_update_timer < time.time() - self.camera_update_period) and not self.updates_paused:
 
 
-
                 self.theskyx_temperature= self.camera_update_wincom.Temperature, 999.9, 999.9
 
                 self.theskyx_cooleron= self.camera_update_wincom.RegulateTemperature
 
                 if self.theskyx_set_cooler_on==True:
 
-                    self.camera_update_wincom.RegulateTemperature = True
+                    self.camera_update_wincom.RegulateTemperature = 1
                     self.theskyx_set_cooler_on=False
                     # return (
                     #     self.camera_update_wincom.RegulateTemperature
                     # )
 
-                if self.theskyx_set_setpoint==True:
+                if self.theskyx_set_setpoint_trigger==True:
                     self.camera_update_wincom.TemperatureSetpoint = float(self.theskyx_set_setpoint_value)
+                    self.camera_update_wincom.RegulateTemperature = 1
                     self.current_setpoint = self.theskyx_set_setpoint_value
-                    self.theskyx_set_setpoint=False
+                    plog ("theskyx setpoint triggered: " + str(self.theskyx_set_setpoint_value))
+                    self.theskyx_set_setpoint_trigger=False
                     
-                if self.theskyx_abort_exposure==True:
+                if self.theskyx_abort_exposure_trigger==True:
                     self.camera_update_wincom.Abort()
-                    self.theskyx_abort_exposure=False
+                    self.theskyx_abort_exposure_trigger=False
                     
 
                 # def _theskyx_set_setpoint(self, p_temp):
@@ -1013,8 +1014,9 @@ class Camera:
 
     def _theskyx_set_setpoint(self, p_temp):
 
-        self.theskyx_set_setpoint=True
+        self.theskyx_set_setpoint_trigger=True
         self.theskyx_set_setpoint_value= float(p_temp)
+        plog ("theskyx setpoint")
         return float(p_temp)
         #self.camera.TemperatureSetpoint = float(p_temp)
         #self.current_setpoint = p_temp
@@ -1078,7 +1080,7 @@ class Camera:
     def _theskyx_stop_expose(self):
         try:
             #self.camera.Abort()
-            self.theskyx_abort_exposure=True
+            self.theskyx_abort_exposure_trigger=True
         except:
             plog(traceback.format_exc())
         g_dev['cam'].expresult = {}
