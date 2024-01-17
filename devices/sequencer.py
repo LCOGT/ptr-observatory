@@ -3227,6 +3227,7 @@ class Sequencer:
                                 try:
                                     bright = fred['patch']
                                 except:
+                                    bright = None
                                     plog ("patch broken?")
                                     plog(traceback.format_exc())
                                     plog (fred)
