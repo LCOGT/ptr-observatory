@@ -1799,18 +1799,18 @@ class Sequencer:
 
         # Daily reboot of necessary windows 32 programs *Cough* Theskyx *Cough*
         if g_dev['mnt'].theskyx: # It is only the mount that is the reason theskyx needs to reset
-            
+            plog ("Got here")
             self.kill_and_reboot_theskyx(-1,-1)
-            
+            plog ("But didn't get here")
 
         return
 
     def kill_and_reboot_theskyx(self, returnra, returndec): # Return to a given ra and dec or send -1,-1 to remain at park
         g_dev['mnt'].mount_update_paused=True
-        g_dev['mnt'].wait_for_mount_update()
+        #g_dev['mnt'].wait_for_mount_update()
 
-        if g_dev['cam'].theskyx:
-            g_dev['cam'].updates_paused=True
+        # if g_dev['cam'].theskyx:
+        #     g_dev['cam'].updates_paused=True
 
         #time.sleep(10)
         print ("Paused at kill theskyx for bugtesting")
