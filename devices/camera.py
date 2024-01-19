@@ -868,29 +868,32 @@ class Camera:
             # update every so often, but update rapidly if slewing.
             if (self.camera_update_timer < time.time() - self.camera_update_period) and not self.updates_paused:
 
-
-                self.theskyx_temperature= self.camera_update_wincom.Temperature, 999.9, 999.9
-
-                self.theskyx_cooleron= self.camera_update_wincom.RegulateTemperature
-
-                if self.theskyx_set_cooler_on==True:
-
-                    self.camera_update_wincom.RegulateTemperature = 1
-                    self.theskyx_set_cooler_on=False
-                    # return (
-                    #     self.camera_update_wincom.RegulateTemperature
-                    # )
-
-                if self.theskyx_set_setpoint_trigger==True:
-                    self.camera_update_wincom.TemperatureSetpoint = float(self.theskyx_set_setpoint_value)
-                    self.camera_update_wincom.RegulateTemperature = 1
-                    self.current_setpoint = self.theskyx_set_setpoint_value
-                    plog ("theskyx setpoint triggered: " + str(self.theskyx_set_setpoint_value))
-                    self.theskyx_set_setpoint_trigger=False
-                    
-                if self.theskyx_abort_exposure_trigger==True:
-                    self.camera_update_wincom.Abort()
-                    self.theskyx_abort_exposure_trigger=False
+                try:
+                    self.theskyx_temperature= self.camera_update_wincom.Temperature, 999.9, 999.9
+    
+                    self.theskyx_cooleron= self.camera_update_wincom.RegulateTemperature
+    
+                    if self.theskyx_set_cooler_on==True:
+    
+                        self.camera_update_wincom.RegulateTemperature = 1
+                        self.theskyx_set_cooler_on=False
+                        # return (
+                        #     self.camera_update_wincom.RegulateTemperature
+                        # )
+    
+                    if self.theskyx_set_setpoint_trigger==True:
+                        self.camera_update_wincom.TemperatureSetpoint = float(self.theskyx_set_setpoint_value)
+                        self.camera_update_wincom.RegulateTemperature = 1
+                        self.current_setpoint = self.theskyx_set_setpoint_value
+                        plog ("theskyx setpoint triggered: " + str(self.theskyx_set_setpoint_value))
+                        self.theskyx_set_setpoint_trigger=False
+                        
+                    if self.theskyx_abort_exposure_trigger==True:
+                        self.camera_update_wincom.Abort()
+                        self.theskyx_abort_exposure_trigger=False
+                except:
+                    plog ("non-permanent glitch out in the camera thread.")
+                    plog(traceback.format_exc())
                     
 
                 # def _theskyx_set_setpoint(self, p_temp):
