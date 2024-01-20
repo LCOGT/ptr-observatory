@@ -868,6 +868,23 @@ class Camera:
             # update every so often, but update rapidly if slewing.
             if (self.camera_update_timer < time.time() - self.camera_update_period) and not self.updates_paused:
 
+                if self.camera_update_reboot:
+                    win32com.client.pythoncom.CoInitialize()
+                    self.camera_update_wincom = win32com.client.Dispatch(self.driver)
+                    try:
+                        self.camera_update_wincom.Connect()
+                    except:
+                        # perhaps the AP mount doesn't like this.
+                        pass
+                    self.updates_paused=False
+                    self.camera_update_reboot=False
+                    
+                    # self.rapid_park_indicator=copy.deepcopy(self.mount_update_wincom.AtPark)
+                    # self.currently_slewing=False
+                    # #print (self.rapid_park_indicator)
+                    
+                    # self.mount_updates=self.mount_updates + 1                
+
                 try:
                     self.theskyx_temperature= self.camera_update_wincom.Temperature, 999.9, 999.9
     
