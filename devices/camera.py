@@ -871,11 +871,9 @@ class Camera:
                 if self.camera_update_reboot:
                     win32com.client.pythoncom.CoInitialize()
                     self.camera_update_wincom = win32com.client.Dispatch(self.driver)
-                    try:
-                        self.camera_update_wincom.Connect()
-                    except:
-                        # perhaps the AP mount doesn't like this.
-                        pass
+                    
+                    self.camera_update_wincom.Connect()
+                    
                     self.updates_paused=False
                     self.camera_update_reboot=False
                     

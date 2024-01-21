@@ -1816,7 +1816,10 @@ class Sequencer:
         print ("Paused at kill theskyx for bugtesting")
        #breakpoint()
 
-        
+
+        if g_dev['cam'].theskyx:
+            g_dev['cam'].updates_paused=True
+            g_dev["cam"].exposure_busy=True       
 
         os.system("taskkill /IM TheSkyX.exe /F")
         os.system("taskkill /IM TheSky64.exe /F")
@@ -1840,9 +1843,12 @@ class Sequencer:
                     Camera(self.config['camera']['camera_1_1']['driver'],
                                     g_dev['cam'].name,
                                     self.config)
+                    time.sleep(5)
+                    g_dev['cam'].camera_update_reboot=True
+                    time.sleep(5)
                     g_dev['cam'].updates_paused=False
                     g_dev["cam"].exposure_busy=False
-                    time.sleep(5)
+                    
                     
 
                 if self.config['filter_wheel']['filter_wheel1']['driver'] == 'CCDSoft2XAdaptor.ccdsoft5Camera':
