@@ -624,6 +624,9 @@ class Camera:
 
         self.end_of_last_exposure_time=time.time()
 
+
+        self.camera_update_reboot=False
+
         #expresult={}
 
         # Figure out pixelscale from own observations
