@@ -316,8 +316,8 @@ class Camera:
 
         # Just need to initialise this filter thing
         self.current_offset  = 0
-        
-        
+
+
         self.updates_paused=False
 
         """
@@ -705,6 +705,7 @@ class Camera:
 
         self.has_darkslide = False
         self.darkslide_state = "N.A."   #Not Available.
+        #breakpoint()
         if self.config["camera"][self.name]["settings"]["has_darkslide"]:
             self.has_darkslide = True
             self.darkslide_state = 'Unknown'
@@ -730,8 +731,8 @@ class Camera:
                     self.camera.Action('SetShutter', 'open')
                     self.darkslide_open = True
                     self.darkslide_state = 'Open'
-                    
-                
+
+
             ###See lines around 766 for local methods
 
 
@@ -816,24 +817,24 @@ class Camera:
                 self.camera.Action('SetShutter', 'open')
             self.darkslide_open = True
             self.darkslide_state = 'Open'
-            
-        
-        
-        
-    
-    
+
+
+
+
+
+
     def closeDarkslide(self):
         if self.darkslide_state != 'Closed':
             if self.darkslide_type is not None:
                 self.darkslide_instance.closeDarkslide()
             elif self.darkslide_type=='ASCOM_FLI_Kepler':    #NB NB this logic is faulty wer
                 self.camera.Action('SetShutter', 'close')
-            
+
             self.darkslide_open = False
             self.darkslide_state = 'Closed'
-    
+
     # #I assume we might be able to read the shutter state...
-    
+
     # def query_Darkslide(self):
 
     # Note this is a thread!
@@ -874,45 +875,45 @@ class Camera:
                 if self.camera_update_reboot:
                     win32com.client.pythoncom.CoInitialize()
                     self.camera_update_wincom = win32com.client.Dispatch(self.driver)
-                    
+
                     self.camera_update_wincom.Connect()
-                    
+
                     self.updates_paused=False
                     self.camera_update_reboot=False
-                    
+
                     # self.rapid_park_indicator=copy.deepcopy(self.mount_update_wincom.AtPark)
                     # self.currently_slewing=False
                     # #print (self.rapid_park_indicator)
-                    
-                    # self.mount_updates=self.mount_updates + 1                
+
+                    # self.mount_updates=self.mount_updates + 1
 
                 try:
                     self.theskyx_temperature= self.camera_update_wincom.Temperature, 999.9, 999.9
-    
+
                     self.theskyx_cooleron= self.camera_update_wincom.RegulateTemperature
-    
+
                     if self.theskyx_set_cooler_on==True:
-    
+
                         self.camera_update_wincom.RegulateTemperature = 1
                         self.theskyx_set_cooler_on=False
                         # return (
                         #     self.camera_update_wincom.RegulateTemperature
                         # )
-    
+
                     if self.theskyx_set_setpoint_trigger==True:
                         self.camera_update_wincom.TemperatureSetpoint = float(self.theskyx_set_setpoint_value)
                         self.camera_update_wincom.RegulateTemperature = 1
                         self.current_setpoint = self.theskyx_set_setpoint_value
                         plog ("theskyx setpoint triggered: " + str(self.theskyx_set_setpoint_value))
                         self.theskyx_set_setpoint_trigger=False
-                        
+
                     if self.theskyx_abort_exposure_trigger==True:
                         self.camera_update_wincom.Abort()
                         self.theskyx_abort_exposure_trigger=False
                 except:
                     plog ("non-permanent glitch out in the camera thread.")
                     plog(traceback.format_exc())
-                    
+
 
                 # def _theskyx_set_setpoint(self, p_temp):
                 #     self.camera_update_wincom.TemperatureSetpoint = float(p_temp)
@@ -1037,7 +1038,7 @@ class Camera:
 
         self.theskyx_set_setpoint_trigger=True
         self.theskyx_set_setpoint_value= float(p_temp)
-        self.current_setpoint=float(p_temp)        
+        self.current_setpoint=float(p_temp)
         return float(p_temp)
         #self.camera.TemperatureSetpoint = float(p_temp)
         #self.current_setpoint = p_temp
@@ -1478,8 +1479,8 @@ class Camera:
                 g_dev["drk"].closeDarkslide()
             elif self.darkslide_type=='ASCOM_FLI_SHUTTER':
                 self.camera.Action('SetShutter', 'close')
-            
-            
+
+
             plog("Closing the darkslide.")
             self.darkslide_state = 'Closed'
         elif action == "darkslide_open":
@@ -1487,9 +1488,9 @@ class Camera:
                 g_dev["drk"].openDarkslide()
             elif self.darkslide_type=='ASCOM_FLI_SHUTTER':
                 self.camera.Action('SetShutter', 'open')
-                        
 
-            
+
+
             plog("Opening the darkslide.")
             self.darkslide_state = 'Open'
         elif action == "stop":
@@ -1736,9 +1737,9 @@ class Camera:
                         # self.current_offset = g_dev[
                         #     "fil"
                         # ].filter_offset  # TEMP   NBNBNB This needs fixing
-                        
+
                         self.current_offset = 0
-                        
+
                     except:
                         plog ("Failed to change filter! Cancelling exposure.")
                         ##DEBUG Error on 20230703  System halted here. putting in
@@ -1932,8 +1933,8 @@ class Camera:
                     # If not, stop running block
                     if not calendar_event_id == None:
                         #print ("ccccccc")
-                        
-                        
+
+
 
                         foundcalendar=False
 
@@ -2002,7 +2003,7 @@ class Camera:
                                         self.darkslide_instance.closeDarkslide()
                                     elif self.darkslide_type=='ASCOM_FLI_SHUTTER':
                                         self.camera.Action('SetShutter', 'close')
-                                    
+
                                     self.darkslide_open = False
                                     self.darkslide_state = 'Closed'
 
@@ -2377,14 +2378,14 @@ class Camera:
                 time.time() < self.completion_time or self.async_exposure_lock==True
             ):
 
-                
+
 
                 # Scan requests every 4 seconds... primarily hunting for a "Cancel/Stop"
                 if time.time() - exposure_scan_request_timer > 4:# and (time.time() - self.completion_time) > 4:
                     exposure_scan_request_timer=time.time()
 
                     g_dev['obs'].request_scan_requests()
-                    #g_dev['obs'].scan_requests()                   
+                    #g_dev['obs'].scan_requests()
 
 
                     # Check there hasn't been a cancel sent through
@@ -2407,7 +2408,7 @@ class Camera:
 
                 remaining = round(self.completion_time - time.time(), 1)
 
-                
+
 
                 if remaining > 0:
                     if time.time() - self.plog_exposure_time_counter_timer > 10.0:
@@ -2475,7 +2476,7 @@ class Camera:
                             if g_dev['seq'].blockend != None:
                                 g_dev['obs'].request_update_calendar_blocks()
                             block_and_focus_check_done=True
-                    
+
                     # Need to have a time sleep to release the GIL to run the other threads
                     #print ("sleeping")
                     time.sleep(min(self.completion_time - time.time()+0.00001, initialRemaining * 0.125))
@@ -2578,7 +2579,7 @@ class Camera:
 
                 if (frame_type in ["bias", "dark"] or frame_type[-4:] == ['flat']) and not manually_requested_calibration:
                     plog("Median of full-image area bias, dark or flat:  ", np.median(outputimg))
-                    
+
                     # Check that the temperature is ok before accepting
                     current_camera_temperature, cur_humidity, cur_pressure = (g_dev['cam']._temperature())
                     current_camera_temperature = float(current_camera_temperature)
@@ -2678,10 +2679,10 @@ class Camera:
                         )
                     elif self.config["camera"][self.name]["settings"]["rotate180_fits"]:
                         outputimg=np.rot90(outputimg.astype('float32'),2)
-                        
+
                     elif self.config["camera"][self.name]["settings"]["rotate270_fits"]:
                         outputimg= np.rot90(outputimg.astype('float32'),3)
-                        
+
                     else:
                         outputimg=outputimg.astype('float32')
 
@@ -4390,7 +4391,7 @@ def post_exposure_process(payload):
                         hdusmallheader['CRPIX1']=float(hdu.header['CRPIX1']) - (edge_crop * 2)
                         hdusmallheader['CRPIX2']=float(hdu.header['CRPIX2']) - (edge_crop * 2)
 
-                    
+
 
                     # bin to native binning
                     if selfnative_bin != 1:
