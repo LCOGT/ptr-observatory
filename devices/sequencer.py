@@ -3528,14 +3528,14 @@ class Sequencer:
 
         req2 = {'target': 'near_tycho_star'}
         opt = {}
-        foc_pos, foc_fwhm=self.auto_focus_script(req2, opt, skip_timer_check=True, filter_choice='focus')
+        foc_pos, foc_fwhm=self.auto_focus_script(req2, opt, dont_return_scope=True, skip_timer_check=True, filter_choice='focus')
 
         plog ("focus position: " + str(foc_pos))
         plog ("focus fwhm: " + str(foc_fwhm))
 
         if np.isnan(foc_pos):
             plog ("initial focus on offset run failed, giving it another shot after extensive focus attempt.")
-            foc_pos, foc_fwhm=self.auto_focus_script(req2, opt, skip_timer_check=True, filter_choice='focus')
+            foc_pos, foc_fwhm=self.auto_focus_script(req2, opt, dont_return_scope=True, skip_timer_check=True, filter_choice='focus')
 
             plog ("focus position: " + str(foc_pos))
             plog ("focus fwhm: " + str(foc_fwhm))
@@ -3559,13 +3559,13 @@ class Sequencer:
 
         for chosen_filter in list_of_filters_for_this_run:
             plog ("Running offset test for " + str(chosen_filter))
-            foc_pos, foc_fwhm=self.auto_focus_script(req2, opt, skip_timer_check=True, dont_log_focus=True, skip_pointing=True, begin_at=focus_filter_focus_point, filter_choice=chosen_filter)
+            foc_pos, foc_fwhm=self.auto_focus_script(req2, opt, dont_return_scope=True, skip_timer_check=True, dont_log_focus=True, skip_pointing=True, begin_at=focus_filter_focus_point, filter_choice=chosen_filter)
             plog ("focus position: " + str(foc_pos))
             plog ("focus fwhm: " + str(foc_fwhm))
 
             if np.isnan(foc_pos):
                 plog ("initial focus on offset run failed, giving it another shot after extensive focus attempt.")
-                foc_pos, foc_fwhm=self.auto_focus_script(req2, opt, skip_timer_check=True, dont_log_focus=True, skip_pointing=True, filter_choice=chosen_filter)
+                foc_pos, foc_fwhm=self.auto_focus_script(req2, opt, dont_return_scope=True, skip_timer_check=True, dont_log_focus=True, skip_pointing=True, filter_choice=chosen_filter)
 
                 plog ("focus position: " + str(foc_pos))
                 plog ("focus fwhm: " + str(foc_fwhm))
@@ -3594,7 +3594,7 @@ class Sequencer:
 
 
 
-    def auto_focus_script(self, req, opt, throw=None, begin_at=None, skip_timer_check=False, dont_log_focus=False, skip_pointing=False, extensive_focus=None, filter_choice='focus'):
+    def auto_focus_script(self, req, opt, throw=None, begin_at=None, skip_timer_check=False, dont_return_scope=False, dont_log_focus=False, skip_pointing=False, extensive_focus=None, filter_choice='focus'):
         '''
         V curve is a big move focus designed to fit two lines adjacent to the more normal focus curve.
         It finds the approximate focus, particulary for a new instrument. It requires 8 points plus
@@ -3911,9 +3911,11 @@ class Sequencer:
 
             g_dev['foc'].guarded_move((focus_start)*g_dev['foc'].micron_to_steps)  #NB NB 20221002 THis unit fix shoudl be in the routine. WER
 
-            g_dev['mnt'].go_command(ra=start_ra, dec=start_dec)
-            #g_dev["obs"].request_full_update()
-            self.wait_for_slew()
+            if not dont_return_scope:
+            
+                g_dev['mnt'].go_command(ra=start_ra, dec=start_dec)
+                #g_dev["obs"].request_full_update()
+                self.wait_for_slew()
 
             self.af_guard = False
             self.focussing=False
@@ -3933,8 +3935,10 @@ class Sequencer:
                 g_dev['foc'].guarded_move((focus_start)*g_dev['foc'].micron_to_steps)
 
                 self.af_guard = False
-                g_dev['mnt'].go_command(ra=start_ra, dec=start_dec)  #NB NB Does this really take us back to starting point?
-                self.wait_for_slew()
+                if not dont_return_scope:
+                
+                    g_dev['mnt'].go_command(ra=start_ra, dec=start_dec)  #NB NB Does this really take us back to starting point?
+                    self.wait_for_slew()
 
                 self.af_guard = False
                 self.focussing=False
@@ -3987,10 +3991,12 @@ class Sequencer:
                     plog("MTF hunting this bug")
                     plog(traceback.format_exc())
                 #g_dev["obs"].request_full_update()
-                plog("Returning to RA:  " +str(start_ra) + " Dec: " + str(start_dec))
-                g_dev["obs"].send_to_user("Returning to RA:  " +str(start_ra) + " Dec: " + str(start_dec))
-                g_dev['mnt'].go_command(ra=start_ra, dec=start_dec)
-                self.wait_for_slew()
+                if not dont_return_scope:
+                
+                    plog("Returning to RA:  " +str(start_ra) + " Dec: " + str(start_dec))
+                    g_dev["obs"].send_to_user("Returning to RA:  " +str(start_ra) + " Dec: " + str(start_dec))
+                    g_dev['mnt'].go_command(ra=start_ra, dec=start_dec)
+                    self.wait_for_slew()
             else:
                 plog('Autofocus quadratic equation not converge. Moving back to starting focus:  ', focus_start)
 
@@ -3999,8 +4005,10 @@ class Sequencer:
                 g_dev['foc'].guarded_move((focus_start)*g_dev['foc'].micron_to_steps)
 
                 self.af_guard = False
-                g_dev['mnt'].go_command(ra=start_ra, dec=start_dec)  #NB NB Does this really take us back to starting point?
-                self.wait_for_slew()
+                if not dont_return_scope:
+                
+                    g_dev['mnt'].go_command(ra=start_ra, dec=start_dec)  #NB NB Does this really take us back to starting point?
+                    self.wait_for_slew()
 
                 self.af_guard = False
                 self.focussing=False
@@ -4060,11 +4068,13 @@ class Sequencer:
 
                     req2 = {'target': 'near_tycho_star', 'image_type': 'focus'}
                     opt = {'filter': filter_choice}
-                    g_dev['seq'].extensive_focus_script(req2,opt, begin_at=focus_start, no_auto_after_solve=True, skip_timer_check=True, dont_log_focus=True, skip_pointing=True, filter_choice=filter_choice)
-                    plog("Returning to RA:  " +str(start_ra) + " Dec: " + str(start_dec))
-                    g_dev["obs"].send_to_user("Returning to RA:  " +str(start_ra) + " Dec: " + str(start_dec))
-                    g_dev['mnt'].go_command(ra=start_ra, dec=start_dec)
-                    self.wait_for_slew()
+                    g_dev['seq'].extensive_focus_script(req2,opt,dont_return_scope=dont_return_scope, begin_at=focus_start, no_auto_after_solve=True, skip_timer_check=True, dont_log_focus=True, skip_pointing=True, filter_choice=filter_choice)
+                    if not dont_return_scope:
+                    
+                        plog("Returning to RA:  " +str(start_ra) + " Dec: " + str(start_dec))
+                        g_dev["obs"].send_to_user("Returning to RA:  " +str(start_ra) + " Dec: " + str(start_dec))
+                        g_dev['mnt'].go_command(ra=start_ra, dec=start_dec)
+                        self.wait_for_slew()
                     self.focussing=False
                     return np.nan, np.nan
                 else:
@@ -4076,10 +4086,12 @@ class Sequencer:
                     g_dev['foc'].last_known_focus=(extensive_focus)
 
                     self.af_guard = False
-                    plog("Returning to RA:  " +str(start_ra) + " Dec: " + str(start_dec))
-                    g_dev["obs"].send_to_user("Returning to RA:  " +str(start_ra) + " Dec: " + str(start_dec))
-                    g_dev['mnt'].go_command(ra=start_ra, dec=start_dec)   #NB NB Does this really take us back to starting point?
-                    self.wait_for_slew()
+                    if not dont_return_scope:
+                    
+                        plog("Returning to RA:  " +str(start_ra) + " Dec: " + str(start_dec))
+                        g_dev["obs"].send_to_user("Returning to RA:  " +str(start_ra) + " Dec: " + str(start_dec))
+                        g_dev['mnt'].go_command(ra=start_ra, dec=start_dec)   #NB NB Does this really take us back to starting point?
+                        self.wait_for_slew()
 
                     self.af_guard = False
                     self.focussing=False
@@ -4123,10 +4135,12 @@ class Sequencer:
                 g_dev['obs'].send_to_user('Successfully focussed at: ' + str(foc_pos4) +' measured FWHM is: ' + str(round(spot4, 2)), p_level='INFO')
                 if not dont_log_focus:
                     g_dev['foc'].af_log(foc_pos4, spot4, new_spot)
-                plog("Returning to RA:  " +str(start_ra) + " Dec: " + str(start_dec))
-                g_dev["obs"].send_to_user("Returning to RA:  " +str(start_ra) + " Dec: " + str(start_dec))
-                g_dev['mnt'].go_command(ra=start_ra, dec=start_dec) #Return to pre-focus pointing.
-                self.wait_for_slew()
+                if not dont_return_scope:
+                    
+                    plog("Returning to RA:  " +str(start_ra) + " Dec: " + str(start_dec))
+                    g_dev["obs"].send_to_user("Returning to RA:  " +str(start_ra) + " Dec: " + str(start_dec))
+                    g_dev['mnt'].go_command(ra=start_ra, dec=start_dec) #Return to pre-focus pointing.
+                    self.wait_for_slew()
             # if sim:
 
             #     g_dev['foc'].guarded_move((focus_start)*g_dev['foc'].micron_to_steps)
@@ -4179,11 +4193,13 @@ class Sequencer:
                     g_dev['obs'].send_to_user('V-curve focus failed, trying extensive focus')
                     req2 = {'target': 'near_tycho_star'}
                     opt = {}
-                    g_dev['seq'].extensive_focus_script(req2,opt,begin_at=focus_start, no_auto_after_solve=True, skip_timer_check=True, dont_log_focus=True, skip_pointing=True, filter_choice=filter_choice)
-                    plog("Returning to RA:  " +str(start_ra) + " Dec: " + str(start_dec))
-                    g_dev["obs"].send_to_user("Returning to RA:  " +str(start_ra) + " Dec: " + str(start_dec))
-                    g_dev['mnt'].go_command(ra=start_ra, dec=start_dec)  #Return to pre-focus pointing.
-                    self.wait_for_slew()
+                    g_dev['seq'].extensive_focus_script(req2,opt,dont_return_scope=dont_return_scope,begin_at=focus_start, no_auto_after_solve=True, skip_timer_check=True, dont_log_focus=True, skip_pointing=True, filter_choice=filter_choice)
+                    if not dont_return_scope:
+                    
+                        plog("Returning to RA:  " +str(start_ra) + " Dec: " + str(start_dec))
+                        g_dev["obs"].send_to_user("Returning to RA:  " +str(start_ra) + " Dec: " + str(start_dec))
+                        g_dev['mnt'].go_command(ra=start_ra, dec=start_dec)  #Return to pre-focus pointing.
+                        self.wait_for_slew()
                     self.focussing=False
                     return np.nan, np.nan
                 else:
@@ -4193,10 +4209,12 @@ class Sequencer:
 
                     #self.sequencer_hold = False   #Allow comand checks.
                     self.af_guard = False
-                    plog("Returning to RA:  " +str(start_ra) + " Dec: " + str(start_dec))
-                    g_dev["obs"].send_to_user("Returning to RA:  " +str(start_ra) + " Dec: " + str(start_dec))
-                    g_dev['mnt'].go_command(ra=start_ra, dec=start_dec)  #NB NB Does this really take us back to starting point?
-                    self.wait_for_slew()
+                    if not dont_return_scope:
+                    
+                        plog("Returning to RA:  " +str(start_ra) + " Dec: " + str(start_dec))
+                        g_dev["obs"].send_to_user("Returning to RA:  " +str(start_ra) + " Dec: " + str(start_dec))
+                        g_dev['mnt'].go_command(ra=start_ra, dec=start_dec)  #NB NB Does this really take us back to starting point?
+                        self.wait_for_slew()
 
                     self.af_guard = False
                     self.focussing=False
@@ -4238,10 +4256,12 @@ class Sequencer:
                 g_dev['obs'].send_to_user('Successfully found focus at: ' + str(foc_pos4) +' measured FWHM is: ' + str(round(spot4, 2)), p_level='INFO')
                 if not dont_log_focus:
                     g_dev['foc'].af_log(foc_pos4, spot4, new_spot)
-                plog("Returning to RA:  " +str(start_ra) + " Dec: " + str(start_dec))
-                g_dev["obs"].send_to_user("Returning to RA:  " +str(start_ra) + " Dec: " + str(start_dec))
-                g_dev['mnt'].go_command(ra=start_ra, dec=start_dec)  #Return to pre-focus pointing.
-                self.wait_for_slew()
+                if not dont_return_scope:
+                
+                    plog("Returning to RA:  " +str(start_ra) + " Dec: " + str(start_dec))
+                    g_dev["obs"].send_to_user("Returning to RA:  " +str(start_ra) + " Dec: " + str(start_dec))
+                    g_dev['mnt'].go_command(ra=start_ra, dec=start_dec)  #Return to pre-focus pointing.
+                    self.wait_for_slew()
             else:
                 if extensive_focus == None:
 
@@ -4251,11 +4271,14 @@ class Sequencer:
 
                     req2 = {'target': 'near_tycho_star'}
                     opt = {}
-                    g_dev['seq'].extensive_focus_script(req2,opt,begin_at=focus_start, no_auto_after_solve=True, skip_timer_check=True, dont_log_focus=True, skip_pointing=True, filter_choice=filter_choice)
-                    plog("Returning to RA:  " +str(start_ra) + " Dec: " + str(start_dec))
-                    g_dev["obs"].send_to_user("Returning to RA:  " +str(start_ra) + " Dec: " + str(start_dec))
-                    g_dev['mnt'].go_command(ra=start_ra, dec=start_dec)  #Return to pre-focus pointing.
-                    self.wait_for_slew()
+                    g_dev['seq'].extensive_focus_script(req2,opt,dont_return_scope=dont_return_scope,begin_at=focus_start, no_auto_after_solve=True, skip_timer_check=True, dont_log_focus=True, skip_pointing=True, filter_choice=filter_choice)
+                    
+                    if not dont_return_scope:
+                    
+                        plog("Returning to RA:  " +str(start_ra) + " Dec: " + str(start_dec))
+                        g_dev["obs"].send_to_user("Returning to RA:  " +str(start_ra) + " Dec: " + str(start_dec))
+                        g_dev['mnt'].go_command(ra=start_ra, dec=start_dec)  #Return to pre-focus pointing.
+                        self.wait_for_slew()
                     self.focussing=False
                     return np.nan, np.nan
                 else:
@@ -4264,10 +4287,12 @@ class Sequencer:
                     g_dev['obs'].send_to_user('V-curve focus failed, Moving back to extensive focus: ', extensive_focus)
 
                     self.af_guard = False
-                    plog("Returning to RA:  " +str(start_ra) + " Dec: " + str(start_dec))
-                    g_dev["obs"].send_to_user("Returning to RA:  " +str(start_ra) + " Dec: " + str(start_dec))
-                    g_dev['mnt'].go_command(ra=start_ra, dec=start_dec)
-                    self.wait_for_slew()
+                    if not dont_return_scope:
+                    
+                        plog("Returning to RA:  " +str(start_ra) + " Dec: " + str(start_dec))
+                        g_dev["obs"].send_to_user("Returning to RA:  " +str(start_ra) + " Dec: " + str(start_dec))
+                        g_dev['mnt'].go_command(ra=start_ra, dec=start_dec)
+                        self.wait_for_slew()
 
                     self.af_guard = False
                     self.focussing=False
@@ -4293,10 +4318,12 @@ class Sequencer:
                 g_dev['obs'].send_to_user('V-curve focus failed, trying extensive focus')
                 req2 = {'target': 'near_tycho_star'}
                 opt = {}
-                g_dev['seq'].extensive_focus_script(req2,opt,begin_at=focus_start, no_auto_after_solve=True, skip_timer_check=True, dont_log_focus=True, skip_pointing=True, filter_choice=filter_choice)
-                plog("Returning to RA:  " +str(start_ra) + " Dec: " + str(start_dec))
-                g_dev["obs"].send_to_user("Returning to RA:  " +str(start_ra) + " Dec: " + str(start_dec))
-                g_dev['mnt'].go_command(ra=start_ra, dec=start_dec)
+                g_dev['seq'].extensive_focus_script(req2,opt,dont_return_scope=dont_return_scope,begin_at=focus_start, no_auto_after_solve=True, skip_timer_check=True, dont_log_focus=True, skip_pointing=True, filter_choice=filter_choice)
+                if not dont_return_scope:
+                
+                    plog("Returning to RA:  " +str(start_ra) + " Dec: " + str(start_dec))
+                    g_dev["obs"].send_to_user("Returning to RA:  " +str(start_ra) + " Dec: " + str(start_dec))
+                    g_dev['mnt'].go_command(ra=start_ra, dec=start_dec)
                 self.wait_for_slew()
                 self.focussing=False
                 return np.nan, np.nan
@@ -4305,20 +4332,23 @@ class Sequencer:
                 g_dev['foc'].guarded_move((extensive_focus)*g_dev['foc'].micron_to_steps)
                 g_dev['obs'].send_to_user('V-curve focus failed, moving back to extensive focus: ', extensive_focus)
                 self.af_guard = False
-                plog("Returning to RA:  " +str(start_ra) + " Dec: " + str(start_dec))
-                g_dev["obs"].send_to_user("Returning to RA:  " +str(start_ra) + " Dec: " + str(start_dec))
-                g_dev['mnt'].go_command(ra=start_ra, dec=start_dec)  #NB NB Does this really take us back to starting point?
-                self.wait_for_slew()
+                if not dont_return_scope:
+                
+                    plog("Returning to RA:  " +str(start_ra) + " Dec: " + str(start_dec))
+                    g_dev["obs"].send_to_user("Returning to RA:  " +str(start_ra) + " Dec: " + str(start_dec))
+                    g_dev['mnt'].go_command(ra=start_ra, dec=start_dec)  #NB NB Does this really take us back to starting point?
+                    self.wait_for_slew()
                 self.af_guard = False
                 self.focussing=False
                 return np.nan, np.nan
 
        #breakpoint()
 
-        plog("Returning to RA:  " +str(start_ra) + " Dec: " + str(start_dec))
-        g_dev["obs"].send_to_user("Returning to RA:  " +str(start_ra) + " Dec: " + str(start_dec))
-        g_dev['mnt'].go_command(ra=start_ra, dec=start_dec)
-        self.wait_for_slew()
+        if not dont_return_scope:
+            plog("Returning to RA:  " +str(start_ra) + " Dec: " + str(start_dec))
+            g_dev["obs"].send_to_user("Returning to RA:  " +str(start_ra) + " Dec: " + str(start_dec))
+            g_dev['mnt'].go_command(ra=start_ra, dec=start_dec)
+            self.wait_for_slew()
 
        #breakpoint()
 
@@ -4331,7 +4361,7 @@ class Sequencer:
         return np.nan, np.nan
 
 
-    def extensive_focus_script(self, req, opt, throw=None, begin_at=None, no_auto_after_solve=False, skip_timer_check=False, dont_log_focus=False, skip_pointing=False,  filter_choice='focus'):
+    def extensive_focus_script(self, req, opt, throw=None, begin_at=None, no_auto_after_solve=False, dont_return_scope=False, skip_timer_check=False, dont_log_focus=False, skip_pointing=False,  filter_choice='focus'):
         '''
         This is an extensive focus that covers a wide berth of central values
         and throws.
@@ -4579,7 +4609,7 @@ class Sequencer:
             except:
                 plog ("extensive focus failed :(")
             if not no_auto_after_solve:
-                self.auto_focus_script(None,None, skip_timer_check=True, extensive_focus=solved_pos)
+                self.auto_focus_script(None,None, dont_return_scope=dont_return_scope,skip_timer_check=True, extensive_focus=solved_pos)
             else:
                 try:
                     if not dont_log_focus:
@@ -4597,11 +4627,12 @@ class Sequencer:
             g_dev['obs'].send_to_user("Extensive focus attempt failed. Returning to initial focus.")
             g_dev['foc'].guarded_move((foc_start)*g_dev['foc'].micron_to_steps)
 
-
-        plog("Returning to RA:  " +str(start_ra) + " Dec: " + str(start_dec))
-        g_dev["obs"].send_to_user("Returning to RA:  " +str(start_ra) + " Dec: " + str(start_dec))
-        g_dev['mnt'].go_command(ra=start_ra, dec=start_dec)
-        self.wait_for_slew()
+        if not dont_return_scope:
+        
+            plog("Returning to RA:  " +str(start_ra) + " Dec: " + str(start_dec))
+            g_dev["obs"].send_to_user("Returning to RA:  " +str(start_ra) + " Dec: " + str(start_dec))
+            g_dev['mnt'].go_command(ra=start_ra, dec=start_dec)
+            self.wait_for_slew()
 
         self.af_guard = False
         self.focussing = False
