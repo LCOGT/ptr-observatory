@@ -84,7 +84,7 @@ site_config = {
     'ingest_raws_directly_to_archive': False,
     # LINKS TO PIPE FOLDER
     'save_raws_to_pipe_folder_for_nightly_processing': True,
-    'pipe_archive_folder_path': 'Y:/localptrarchive/',  #WER changed Z to X 20231113 @1:16 UTC
+    'pipe_archive_folder_path': 'X:/localptrarchive/',  #WER changed Z to X 20231113 @1:16 UTC
     'temporary_local_pipe_archive_to_hold_files_while_copying' : 'F:/tempfolderforpipeline',
     # LINKS FOR OBS FOLDERS
     'client_hostname':"ARO-0m30",     # Generic place for this host to stash.
@@ -160,7 +160,7 @@ site_config = {
      'auto_morn_bias_dark': True,
 
      # FOCUS OPTIONS
-     'periodic_focus_time': 1.5, # This is a time, in hours, over which to bypass automated focussing (e.g. at the start of a project it will not refocus if a new project starts X hours after the last focus)
+     'periodic_focus_time': 12, # This is a time, in hours, over which to bypass automated focussing (e.g. at the start of a project it will not refocus if a new project starts X hours after the last focus)
      'stdev_fwhm': 0.4,  # This is the expected variation in FWHM at a given telescope/camera/site combination. This is used to check if a fwhm is within normal range or the focus has shifted
      'focus_trigger': 0.6,  # What FWHM increase is needed to trigger an autofocus
 
@@ -583,11 +583,11 @@ site_config = {
                 # then binning for focus is recommended. SEP and Platesolve can generally always be binned.
                 'interpolate_for_focus': False,
                 # This setting will bin the image for focussing rather than interpolating. Good for 1x1 pixel sizes < 0.6.
-                'bin_for_focus': True,
-                'focus_bin_value' : 2,
+                'bin_for_focus': False,
+                'focus_bin_value' : 1,
                 'interpolate_for_sep': False,
-                'bin_for_sep': True,  # This setting will bin the image for SEP photometry rather than interpolating.
-                'sep_bin_value' : 2,
+                'bin_for_sep': False,  # This setting will bin the image for SEP photometry rather than interpolating.
+                'sep_bin_value' : 1,
                 # This setting will bin the image for platesolving rather than interpolating.
                 #'bin_for_platesolve': False,
                 #'platesolve_bin_value' : 1,

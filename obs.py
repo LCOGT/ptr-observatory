@@ -1202,14 +1202,14 @@ class Observatory:
                     g_dev["obs"].stop_all_activity = False
 
 
-                # If camera is rebooting, the exposure_busy term can fall out
-                while True:
-                    try:
-                        g_dev["cam"].exposure_busy
-                        break
-                    except:
-                        plog ("pausing while camera reboots")
-                        time.sleep(1)
+                # # If camera is rebooting, the exposure_busy term can fall out
+                # while True:
+                #     try:
+                #         g_dev["cam"].exposure_busy
+                #         break
+                #     except:
+                #         plog ("pausing while camera reboots")
+                #         time.sleep(1)
 
 
                 # Good spot to check if we need to nudge the telescope as long as we aren't exposing.
@@ -2356,21 +2356,23 @@ class Observatory:
                 ##  Here WER adds Zoom prototype code:
                 #zoom_factor = 'Small Sq.'   #This still needs to be passed in as a parameter.
 
-                jpeg_subprocess=subprocess.Popen(['python','subprocesses/mainjpeg.py'],stdin=subprocess.PIPE,stdout=subprocess.PIPE,bufsize=0)
-
-                #plog("@ Pickle point:  ", zoom_factor)
-                if True:
-                    #
-                    pickle.dump([hdusmalldata, smartstackid, paths, pier_side, is_osc, osc_bayer, osc_background_cut,osc_brightness_enhance, osc_contrast_enhance,\
-                          osc_colour_enhance, osc_saturation_enhance, osc_sharpness_enhance, transpose_jpeg, flipx_jpeg, flipy_jpeg, rotate180_jpeg,rotate90_jpeg, \
-                              rotate270_jpeg, crop_preview, yb, yt, xl, xr, squash_on_x_axis, zoom_factor], jpeg_subprocess.stdin)
-
                 # Here is a manual debug area which makes a pickle for debug purposes. Default is False, but can be manually set to True for code debugging
-                else:
+                if False:
                     #NB set this path to create test pickle for makejpeg routine.
                     pickle.dump([hdusmalldata, smartstackid, paths, pier_side, is_osc, osc_bayer, osc_background_cut,osc_brightness_enhance, osc_contrast_enhance,\
                         osc_colour_enhance, osc_saturation_enhance, osc_sharpness_enhance, transpose_jpeg, flipx_jpeg, flipy_jpeg, rotate180_jpeg,rotate90_jpeg, \
                             rotate270_jpeg, crop_preview, yb, yt, xl, xr, squash_on_x_axis, zoom_factor], open('testjpegpickle','wb'))
+
+
+                jpeg_subprocess=subprocess.Popen(['python','subprocesses/mainjpeg.py'],stdin=subprocess.PIPE,stdout=subprocess.PIPE,bufsize=0)
+
+                #plog("@ Pickle point:  ", zoom_factor)
+                #if True:
+                    #
+                pickle.dump([hdusmalldata, smartstackid, paths, pier_side, is_osc, osc_bayer, osc_background_cut,osc_brightness_enhance, osc_contrast_enhance,\
+                      osc_colour_enhance, osc_saturation_enhance, osc_sharpness_enhance, transpose_jpeg, flipx_jpeg, flipy_jpeg, rotate180_jpeg,rotate90_jpeg, \
+                          rotate270_jpeg, crop_preview, yb, yt, xl, xr, squash_on_x_axis, zoom_factor], jpeg_subprocess.stdin)
+
 
 
 
@@ -3703,13 +3705,22 @@ class Observatory:
                             ]
 
 
+                     # Another pickle debugger
+                    if False:
+                        pickle.dump(picklepayload, open('subprocesses/testsmartstackpickle','wb'))
+
+                    #breakpoint()
+
                     smartstack_subprocess=subprocess.Popen(['python','subprocesses/SmartStackprocess.py'],stdin=subprocess.PIPE,stdout=subprocess.PIPE,bufsize=0)
 
                     pickle.dump(picklepayload, smartstack_subprocess.stdin)
 
                     # Another pickle debugger
-                    if False:
+                    if True:
                         pickle.dump(picklepayload, open('subprocesses/testsmartstackpickle','wb'))
+
+
+
 
                     # Essentially wait until the subprocess is complete
                     smartstack_subprocess.communicate()

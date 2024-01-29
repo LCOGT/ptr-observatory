@@ -53,7 +53,7 @@ yt = input_sstk_info[25]
 xl = input_sstk_info[26]
 xr = input_sstk_info[27]
 try:
-    zoom_factor = input_sstk_info[28]
+    zoom_factor = input_sstk_info[28].lower()
     print("Mainjpeg received:", zoom_factor)
 except:
     print("Zoom_factor paramater faulted.")
@@ -220,30 +220,30 @@ if not is_osc:
     if zoom_factor is not False:
         if zoom_factor in ['full', 'Full', '100%']:
             zoom = (0.0, 0.0, 0.0, 0.0)   #  Trim nothing
-        elif zoom_factor in ['square', 'Sqr.', 'small sq.']:
+        elif zoom_factor in ['square', 'sqr.', 'small sq.']:
             zoom = ((ix/iy -1)/2, 0.0, (ix/iy -1)/2, 0.00,)    #  3:2 ->> 2:2, QHY600 sides trim.
-        elif zoom_factor in ['71%', '70.7%', '1.4X', '1.5X']:
+        elif zoom_factor in ['71%', '70.7%', '1.4x', '1.5x']:
             r_sq2 = (1 - 1/sqrt(2))/2
             zoom = (r_sq2, r_sq2, r_sq2, r_sq2,)    #  0.14644, sides trim.
-        elif zoom_factor in ['50%', '2X']:
+        elif zoom_factor in ['50%', '2x']:
             r_sq2 = (1 - 0.5)/2
             zoom = (r_sq2, r_sq2, r_sq2, r_sq2,)    #  0.14644, sides trim.
-        elif zoom_factor in ['35%', '2.8X', '3X']:
+        elif zoom_factor in ['35%', '2.8x', '3x']:
             r_sq2 = (1 - 0.5/sqrt(2))/2
             zoom = (r_sq2, r_sq2, r_sq2, r_sq2,)    #  0.14644, sides trim.
-        elif zoom_factor in ['25%', '4X']:
+        elif zoom_factor in ['25%', '4x']:
             r_sq2 = (1 - 0.25)/2
             zoom = (r_sq2, r_sq2, r_sq2, r_sq2,)    #  0.14644, sides trim.
-        elif zoom_factor in ['18%', '5.7X', '6X']:
+        elif zoom_factor in ['18%', '5.7x', '6x']:
             r_sq2 = (1 - 0.25/sqrt(2))/2
             zoom = (r_sq2, r_sq2, r_sq2, r_sq2,)    #  0.14644, sides trim.
-        elif zoom_factor in ['12.5%', '13%', '12%', '8X']:
+        elif zoom_factor in ['12.5%', '13%', '12%', '8x']:
             r_sq2 = (1 - 0.125)/2
             zoom = (r_sq2, r_sq2, r_sq2, r_sq2,)    #  0.14644, sides trim.
-        elif zoom_factor in ['9%', '11.3X', '11X', '12X']:
+        elif zoom_factor in ['9%', '11.3x', '11x', '12x']:
             r_sq2 = (1 - 0.125/sqrt(2))/2
             zoom = (r_sq2, r_sq2, r_sq2, r_sq2,)    #  0.14644, sides trim.
-        elif zoom_factor in ['6%', '6.3%', '16X']:
+        elif zoom_factor in ['6%', '6.3%', '16x']:
             r_sq2 = (1 - 0.0625)/2
             zoom = (r_sq2, r_sq2, r_sq2, r_sq2,)
         else:
@@ -563,7 +563,7 @@ else:
                 ix, iy = trial_image.size
                 print("Zoomed Image size:", ix, iy)
                 final_image = trial_image
-                
+
         if (
             crop_preview
             == True
