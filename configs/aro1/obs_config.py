@@ -84,7 +84,7 @@ site_config = {
     'ingest_raws_directly_to_archive': False,
     # LINKS TO PIPE FOLDER
     'save_raws_to_pipe_folder_for_nightly_processing': True,
-    'pipe_archive_folder_path': 'Y:/localptrarchive/',  #WER changed Z to X 20231113 @1:16 UTC
+    'pipe_archive_folder_path': 'X:/localptrarchive/',  #WER changed Z to X 20231113 @1:16 UTC
     'temporary_local_pipe_archive_to_hold_files_while_copying' : 'F:/tempfolderforpipeline',
     # LINKS FOR OBS FOLDERS
     'client_hostname':"ARO-0m30",     # Generic place for this host to stash.
@@ -152,15 +152,15 @@ site_config = {
      'enclosure_check_period': 3,    # How many minutes between enclosure checks
 
      # Turn on and off various automated calibrations at different times.
-     'auto_eve_bias_dark': False,
+     'auto_eve_bias_dark': True,
      'auto_eve_sky_flat': True,
-     'time_to_wait_after_roof_opens_to_take_flats': 10,   #Just imposing a minimum in case of a restart.
+     'time_to_wait_after_roof_opens_to_take_flats': 5,   #Just imposing a minimum in case of a restart.
      'auto_midnight_moonless_bias_dark': True,
      'auto_morn_sky_flat': True,
-     'auto_morn_bias_dark': False,
+     'auto_morn_bias_dark': True,
 
      # FOCUS OPTIONS
-     'periodic_focus_time': 1.5, # This is a time, in hours, over which to bypass automated focussing (e.g. at the start of a project it will not refocus if a new project starts X hours after the last focus)
+     'periodic_focus_time': 12, # This is a time, in hours, over which to bypass automated focussing (e.g. at the start of a project it will not refocus if a new project starts X hours after the last focus)
      'stdev_fwhm': 0.4,  # This is the expected variation in FWHM at a given telescope/camera/site combination. This is used to check if a fwhm is within normal range or the focus has shifted
      'focus_trigger': 0.6,  # What FWHM increase is needed to trigger an autofocus
 
@@ -363,7 +363,7 @@ site_config = {
             'start_at_config_reference': False,
             'correct_focus_for_temperature' : True,
             'maximum_good_focus_in_arcsecond': 2.5, # highest value to consider as being in "good focus". Used to select last good focus value
-
+            'focuser_movement_settle_time': 3,
             # # F4.9 setup
             # 'reference': 5800,    # 20210313  Nominal at 10C Primary temperature
             # 'ref_temp':  5.1,    # Update when pinning reference
@@ -428,8 +428,8 @@ site_config = {
                 # 'filter_reference': 1,   # We choose to use PL as the default filter.  Gains taken at F9, Ceravolo 300mm
                 # Columns for filter data are : ['filter', 'filter_index', 'filter_offset', 'sky_gain', 'screen_gain', 'alias']
                 #NB NB Note to WER please add cwl, bw and 'shape'.  Throughputs ADJUSTED 20240103 Eve run
-                
-                
+
+
                 # 'filter_data': [
                 #         ['Air',  [0,  0], -800, 1200.,  [2   ,  20], 'AIR'],    #0  Gains est and some from 20240106 listing
                 #         ['PL',   [7,  0],    0, 1100.,  [360 , 170], 'Photo Luminance - does not pass NIR'],     #1
@@ -459,29 +459,29 @@ site_config = {
                 #         ['dark', [1,  3],    0, 0.00,  [360 , 170], 'dk']],    #22     #Not a real filter.  Total 23
 
                 'filter_data': [
-                        ['Air',  [0,  0], 'AIR'],    #0  Gains est and some from 20240106 listing
-                        ['PL',   [7,  0],  'Photo Luminance - does not pass NIR'],     #1
-                        ['Exo',  [8,  0],  'Exoplanet - yellow, no UV or far NIR'], #2
+                        ['Air',  [0,  0],   'AIR'],    #0  Gains est and some from 20240106 listing
+                        ['PL',   [7,  0],   'Photo Luminance - does not pass NIR'],     #1
+                        ['Exo',  [8,  0],   'Exoplanet - yellow, no UV or far NIR'], #2
                         ['PB',   [0,  6],   'Photo Blue'],     #3
                         ['gp',   [2,  0],   "Sloan g'"],       #4
-                        ['PR',   [0,  8],   'Photo Blue'],     #5
+                        ['PR',   [0,  8],   'Photo Red'],     #5
                         ['PG',   [0,  7],   'Photo Green'],     #6
                         ['BB',   [9,  0],   'Bessell B'],     #7
                         ['BV',   [10, 0],   'Bessell V'],     #8
                         ['BR',   [11, 0],   'Bessell R'],     #9
                         ['rp',   [3,  0],   "Sloan r'"],     #10
                         ['NIR',  [0, 10],   'Near IR - redward of PL'],     #11  Value suspect 2023/10/23 WER
-                        ['ip',   [4,  0],    "Sloan i'"],     #12
+                        ['ip',   [4,  0],   "Sloan i'"],     #12
                         ['BI',   [12, 0],   'Bessell I'],     #13
                         ['up',   [1,  0],   "Sloan u'"],     #14
-                        ['O3',   [0,  2],    'Oxygen III'],     #15    #guess
-                        ['zp',   [0,  9],   "Sloan z-short"],     #16    # NB ZP is a broader filter than zs.
-                        ['CR',   [0,  5],    'Continuum Red - for Star subtraction'],  #17
+                        ['O3',   [0,  2],   'Oxygen III'],     #15    #guess
+                        ['zs',   [0,  9],   "Sloan z-short"],     #16    # NB ZP is a broader filter than zs.
+                        ['CR',   [0,  5],   'Continuum Red - for Star subtraction'],  #17
                         ['HA',   [0,  3],   'Hydrogen Alpha - aka II'],     #18
-                        ['N2',   [13, 0],  'Nitrogen II'],     #19
+                        ['N2',   [13, 0],   'Nitrogen II'],     #19
                         ['S2',   [0,  4],   'Sulphur II'],     #20
 
-                        ['Y',    [6,  0],   "Rubin Y - low throughput, defective filter in top area "],     #21
+                       #['Y',    [6,  0],   "Rubin Y"],     #21
 
 
                         ['dark', [1,  3],   'dk']],    #22     #Not a real filter.  Total 23
@@ -583,11 +583,11 @@ site_config = {
                 # then binning for focus is recommended. SEP and Platesolve can generally always be binned.
                 'interpolate_for_focus': False,
                 # This setting will bin the image for focussing rather than interpolating. Good for 1x1 pixel sizes < 0.6.
-                'bin_for_focus': True,
-                'focus_bin_value' : 2,
+                'bin_for_focus': False,
+                'focus_bin_value' : 1,
                 'interpolate_for_sep': False,
-                'bin_for_sep': True,  # This setting will bin the image for SEP photometry rather than interpolating.
-                'sep_bin_value' : 2,
+                'bin_for_sep': False,  # This setting will bin the image for SEP photometry rather than interpolating.
+                'sep_bin_value' : 1,
                 # This setting will bin the image for platesolving rather than interpolating.
                 #'bin_for_platesolve': False,
                 #'platesolve_bin_value' : 1,
@@ -741,7 +741,7 @@ site_config = {
 
                 # Does this camera have a darkslide, if so, what are the settings?
                 'has_darkslide':  True,
-                'darkslide_type' : 'VINCENT',
+                'darkslide_type' : 'bistable',
                 'darkslide_com':  'COM10',
                 'shutter_type': "Electronic",
 

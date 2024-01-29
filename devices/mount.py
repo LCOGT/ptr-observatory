@@ -454,125 +454,155 @@ class Mount:
                         pass
                     self.mount_update_paused=False
                     self.mount_update_reboot=False
+                    
+                    self.rapid_park_indicator=copy.deepcopy(self.mount_update_wincom.AtPark)
+                    self.currently_slewing=False
+                    #print (self.rapid_park_indicator)
+                    
+                    self.mount_updates=self.mount_updates + 1
+                    #self.mount_update_timer=time.time()
 
-                if (self.mount_update_timer < time.time() - self.mount_update_period) or (self.currently_slewing) and not self.mount_update_paused:
+                #plog ((self.mount_update_timer < time.time() - self.mount_update_period) )
 
+                #print ()
+                # print ("go")
+                # print (self.mount_update_timer)
+                # print (time.time() - self.mount_update_period)
+                # print ((self.mount_update_timer > time.time() - self.mount_update_period))
+                # print ("&")
+                # print (self.mount_update_paused)
+                if ((self.mount_update_timer < time.time() - self.mount_update_period) and not self.mount_update_paused):# or (no(self.currently_slewing) and not self.mount_update_paused):
+                    #print ("Mu")
+                    
                     self.currently_slewing= self.mount_update_wincom.Slewing
-
-                    #  Starting here ae tha varius mount commands and reads...
-                    if self.unpark_requested:
-                        self.unpark_requested=False
-                        self.mount_update_wincom.Unpark()
-
-
-                    if self.park_requested:
-                        self.park_requested=False
-                        self.mount_update_wincom.Park()
-
-
-                    if self.find_home_requested:
-                        self.find_home_requested=False
-
-
-                        #mount_at_home = self.mount_update_wincom.AtHome
-
-                        if self.mount_update_wincom.AtHome:
-                            plog("Mount is at home.")
-                        else:
-                            g_dev['obs'].time_of_last_slew=time.time()
-                            if self.mount_update_wincom.AtPark:
-                                self.mount_update_wincom.Unpark()
-
-                            while self.mount_update_wincom.Slewing:
-                                plog("waiting for slew before homing")
-                                time.sleep(0.2)
-
+                    
+                    if self.currently_slewing:
+                        self.right_ascension_directly_from_mount = copy.deepcopy(self.mount_update_wincom.RightAscension)
+                        self.declination_directly_from_mount = copy.deepcopy(self.mount_update_wincom.Declination)
+                        self.mount_updates=self.mount_updates + 1
+                        self.mount_update_timer=time.time()
+                    else:
+                        #print ("MU")
+                        #  Starting here ae tha varius mount commands and reads...
+                        if self.unpark_requested:
+                            self.unpark_requested=False
+                            self.mount_update_wincom.Unpark()
+                            self.rapid_park_indicator=False
+                            
+    
+    
+                        if self.park_requested:
+                            self.park_requested=False
+                            self.mount_update_wincom.Park()
+                            self.rapid_park_indicator=True
+    
+    
+                        if self.find_home_requested:
+                            self.find_home_requested=False
+    
+    
+                            #mount_at_home = self.mount_update_wincom.AtHome
+    
+                            if self.mount_update_wincom.AtHome:
+                                plog("Mount is at home.")
+                            else:
+                                g_dev['obs'].time_of_last_slew=time.time()
+                                if self.mount_update_wincom.AtPark:
+                                    self.mount_update_wincom.Unpark()
+    
+                                while self.mount_update_wincom.Slewing:
+                                    plog("waiting for slew before homing")
+                                    time.sleep(0.2)
+    
+                                self.mount_update_wincom.FindHome()
+    
+    
+    
+                                #self.unpark_command()
+                                #self.wait_for_slew()
+    
+                                # self.move_time = time.time()
+                                # # mount command #
+                                # while self.mount_busy:
+                                #     time.sleep(0.05)
+                                # self.mount_busy=True
+                                #self.mount.FindHome()
+                                # self.mount_busy=False
+    
+    
+    
+                        if self.abort_slew_requested:
+                            self.abort_slew_requested=False
+                            self.mount_update_wincom.AbortSlew()
+    
+    
+    
+                        if self.slewtoAsyncRequested:
+                            self.slewtoAsyncRequested=False
+                            #print ("attempting to slew")
+                            #breakpoint()  #Here is a place close to the mount to deal with Model, etc
+                            #self.mount_update_wincom.DeclinationRate = 5 #gets reset on the slew
+                            self.mount_update_wincom.SlewToCoordinatesAsync(self.slewtoRA , self.slewtoDEC)
+                            self.mount_update_wincom.DeclinationRate = 0
+                            plog("dec rate set to: ", self.mount_update_wincom.DeclinationRate)
+                            #print ("successful slew")
+    
+                        if self.request_tracking_on:
+    
+                            self.request_tracking_on = False
+                            self.mount_update_wincom.Tracking = True
+    
+                        if self.request_tracking_off:
+                            self.request_tracking_off = False
+                            self.mount_update_wincom.Tracking = False
+    
+                        if self.request_new_pierside:
+                            self.request_new_pierside=False
+                            self.new_pierside=self.mount_update_wincom.DestinationSideOfPier(self.request_new_pierside_ra, self.request_new_pierside_dec)
+    
+    
+                        if self.request_set_RightAscensionRate:
+                            self.request_set_RightAscensionRate=False
+                            self.mount_update_wincom.RightAscensionRate=self.request_new_RightAscensionRate
+                            self.RightAscensionRate=self.request_new_RightAscensionRate
+    
+                        if self.request_set_DeclinationRate:
+                            self.request_set_DeclinationRate=False
+                            self.mount_update_wincom.DeclinationRate=self.request_new_DeclinationRate
+                            self.DeclinationRate=self.request_new_DeclinationRate
+    
+    
+    
+    
+    
+                        if self.request_find_home:
+                            self.request_find_home=False
                             self.mount_update_wincom.FindHome()
-
-
-
-                            #self.unpark_command()
-                            #self.wait_for_slew()
-
-                            # self.move_time = time.time()
-                            # # mount command #
-                            # while self.mount_busy:
-                            #     time.sleep(0.05)
-                            # self.mount_busy=True
-                            #self.mount.FindHome()
-                            # self.mount_busy=False
-
-
-
-                    if self.abort_slew_requested:
-                        self.abort_slew_requested=False
-                        self.mount_update_wincom.AbortSlew()
-
-
-
-                    if self.slewtoAsyncRequested:
-                        self.slewtoAsyncRequested=False
-                        #print ("attempting to slew")
-                        #breakpoint()  #Here is a place close to the mount to deal with Model, etc
-                        #self.mount_update_wincom.DeclinationRate = 5 #gets reset on the slew
-                        self.mount_update_wincom.SlewToCoordinatesAsync(self.slewtoRA , self.slewtoDEC)
-                        self.mount_update_wincom.DeclinationRate = 0
-                        plog("dec rate set to: ", self.mount_update_wincom.DeclinationRate)
-                        #print ("successful slew")
-
-                    if self.request_tracking_on:
-
-                        self.request_tracking_on = False
-                        self.mount_update_wincom.Tracking = True
-
-                    if self.request_tracking_off:
-                        self.request_tracking_off = False
-                        self.mount_update_wincom.Tracking = False
-
-                    if self.request_new_pierside:
-                        self.request_new_pierside=False
-                        self.new_pierside=self.mount_update_wincom.DestinationSideOfPier(self.request_new_pierside_ra, self.request_new_pierside_dec)
-
-
-                    if self.request_set_RightAscensionRate:
-                        self.request_set_RightAscensionRate=False
-                        self.mount_update_wincom.RightAscensionRate=self.request_new_RightAscensionRate
-                        self.RightAscensionRate=self.request_new_RightAscensionRate
-
-                    if self.request_set_DeclinationRate:
-                        self.request_set_DeclinationRate=False
-                        self.mount_update_wincom.DeclinationRate=self.request_new_DeclinationRate
-                        self.DeclinationRate=self.request_new_DeclinationRate
-
-
-
-
-
-                    if self.request_find_home:
-                        self.request_find_home=False
-                        self.mount_update_wincom.FindHome()
-
-
-                    # Some things we don't do while slewing
-                    if not self.currently_slewing:
-
+    
+    
+                        # Some things we don't do while slewing
+                        #if not self.currently_slewing:
+    
                         self.rapid_park_indicator=copy.deepcopy(self.mount_update_wincom.AtPark)
+                        #print (self.rapid_park_indicator)
                         #if self.can_report_pierside:
                         if not self.rapid_park_indicator:
                             self.rapid_pier_indicator=copy.deepcopy(self.mount_update_wincom.sideOfPier)
                             self.current_tracking_state=self.mount_update_wincom.Tracking
-
-                    self.right_ascension_directly_from_mount = copy.deepcopy(self.mount_update_wincom.RightAscension)
-                    self.declination_directly_from_mount = copy.deepcopy(self.mount_update_wincom.Declination)
-                    self.right_ascension_rate_directly_from_mount = copy.deepcopy(self.mount_update_wincom.RightAscensionRate)
-                    self.declination_rate_directly_from_mount = copy.deepcopy(self.mount_update_wincom.DeclinationRate)
-
-
-                    self.mount_updates=self.mount_updates + 1
-                    self.mount_update_timer=time.time()
+    
+                        self.right_ascension_directly_from_mount = copy.deepcopy(self.mount_update_wincom.RightAscension)
+                        self.declination_directly_from_mount = copy.deepcopy(self.mount_update_wincom.Declination)
+                        self.right_ascension_rate_directly_from_mount = copy.deepcopy(self.mount_update_wincom.RightAscensionRate)
+                        self.declination_rate_directly_from_mount = copy.deepcopy(self.mount_update_wincom.DeclinationRate)
+    
+    
+                        self.mount_updates=self.mount_updates + 1
+                        self.mount_update_timer=time.time()
 
                 else:
-                    time.sleep(0.05)
+                    #self.mount_updates=self.mount_updates + 1
+                    #self.mount_update_timer=time.time()
+                    time.sleep(self.mount_update_period)
 
 
 
@@ -585,7 +615,7 @@ class Mount:
     def wait_for_slew(self):
 
         try:
-            if not g_dev['mnt'].rapid_park_indicator:
+            if not self.rapid_park_indicator:
                 movement_reporting_timer=time.time()
                 while self.return_slewing():
                     #self.currently_slewing=True
@@ -594,7 +624,7 @@ class Mount:
                         movement_reporting_timer=time.time()
                         g_dev['obs'].time_of_last_slew=time.time()
                     if not g_dev['obs'].currently_updating_status and g_dev['obs'].update_status_queue.empty():
-                        g_dev['mnt'].get_mount_coordinates()
+                        self.get_mount_coordinates()
                         #g_dev['obs'].request_update_status(mount_only=True, dont_wait=True)
                         g_dev['obs'].update_status(mount_only=True, dont_wait=True)
 
@@ -1477,6 +1507,9 @@ class Mount:
         else:
             self.object = 'unspecified'    #NB could possibly augment with "Near --blah--"
 
+
+        #breakpoint()
+
         self.unpark_command()   #can we qualify this?
 
 
@@ -2259,6 +2292,8 @@ class Mount:
 
     def unpark_command(self, req=None, opt=None):
         ''' unpark the telescope mount '''
+        
+        
 
         if self.can_park:
             # # mount command #
@@ -2274,6 +2309,10 @@ class Mount:
             while current_updates==self.mount_updates:
                 #print ('ping')
                 time.sleep(sleep_period)
+            
+            #print (self.rapid_park_indicator)
+            #breakpoint()
+            
             if self.rapid_park_indicator:
                 plog("mount cmd: unparking mount")
                 g_dev['obs'].send_to_user("Unparking Mount. This can take a moment.")

@@ -68,6 +68,11 @@ class Focuser:
         )  #  Note this can be a bogus value
         self.steps_to_micron = 1 / self.micron_to_steps
 
+
+        # Just to need to wait a little bit for PWI3 to boot up, otherwise it sends temperatures that are absolute zero (-273)
+        if driver == 'ASCOM.PWI3.Focuser':
+            time.sleep(4)
+
         if not self.theskyx:
             self.current_focus_position=self.focuser.Position * self.steps_to_micron            
         else:
@@ -118,6 +123,8 @@ class Focuser:
         self.best_previous_focus_point = None
 
         #self.update_focuser_temperature()
+        
+        #breakpoint()
 
         if self.theskyx:
             self.current_focus_temperature=self.focuser.focTemperature

@@ -317,6 +317,9 @@ class Camera:
         # Just need to initialise this filter thing
         self.current_offset  = 0
 
+
+        self.updates_paused=False
+
         """
         This section loads in the calibration files for flash calibrations
         """
@@ -621,6 +624,9 @@ class Camera:
 
         self.end_of_last_exposure_time=time.time()
 
+
+        self.camera_update_reboot=False
+
         #expresult={}
 
         # Figure out pixelscale from own observations
@@ -699,6 +705,7 @@ class Camera:
 
         self.has_darkslide = False
         self.darkslide_state = "N.A."   #Not Available.
+        #breakpoint()
         if self.config["camera"][self.name]["settings"]["has_darkslide"]:
             self.has_darkslide = True
             self.darkslide_state = 'Unknown'
@@ -724,8 +731,8 @@ class Camera:
                     self.camera.Action('SetShutter', 'open')
                     self.darkslide_open = True
                     self.darkslide_state = 'Open'
-                    
-                
+
+
             ###See lines around 766 for local methods
 
 
@@ -790,7 +797,7 @@ class Camera:
 
             self.theskyx_set_cooler_on=True
             self.theskyx_cooleron=True
-            self.theskyx_set_setpoint=True
+            self.theskyx_set_setpoint_trigger=True
             self.theskyx_set_setpoint_value= self.setpoint
             self.theskyx_temperature=self.camera.Temperature, 999.9, 999.9
             self.camera_update_period=5
@@ -810,24 +817,24 @@ class Camera:
                 self.camera.Action('SetShutter', 'open')
             self.darkslide_open = True
             self.darkslide_state = 'Open'
-            
-        
-        
-        
-    
-    
+
+
+
+
+
+
     def closeDarkslide(self):
         if self.darkslide_state != 'Closed':
             if self.darkslide_type is not None:
                 self.darkslide_instance.closeDarkslide()
             elif self.darkslide_type=='ASCOM_FLI_Kepler':    #NB NB this logic is faulty wer
                 self.camera.Action('SetShutter', 'close')
-            
+
             self.darkslide_open = False
             self.darkslide_state = 'Closed'
-    
+
     # #I assume we might be able to read the shutter state...
-    
+
     # def query_Darkslide(self):
 
     # Note this is a thread!
@@ -863,26 +870,50 @@ class Camera:
         while True:
 
             # update every so often, but update rapidly if slewing.
-            if (self.camera_update_timer < time.time() - self.camera_update_period) :
+            if (self.camera_update_timer < time.time() - self.camera_update_period) and not self.updates_paused:
 
+                if self.camera_update_reboot:
+                    win32com.client.pythoncom.CoInitialize()
+                    self.camera_update_wincom = win32com.client.Dispatch(self.driver)
 
+                    self.camera_update_wincom.Connect()
 
-                self.theskyx_temperature= self.camera_update_wincom.Temperature, 999.9, 999.9
+                    self.updates_paused=False
+                    self.camera_update_reboot=False
 
-                self.theskyx_cooleron= self.camera_update_wincom.RegulateTemperature
+                    # self.rapid_park_indicator=copy.deepcopy(self.mount_update_wincom.AtPark)
+                    # self.currently_slewing=False
+                    # #print (self.rapid_park_indicator)
 
-                if self.theskyx_set_cooler_on==True:
+                    # self.mount_updates=self.mount_updates + 1
 
-                    self.camera_update_wincom.RegulateTemperature = True
-                    self.theskyx_set_cooler_on=False
-                    # return (
-                    #     self.camera_update_wincom.RegulateTemperature
-                    # )
+                try:
+                    self.theskyx_temperature= self.camera_update_wincom.Temperature, 999.9, 999.9
 
-                if self.theskyx_set_setpoint==True:
-                    self.camera_update_wincom.TemperatureSetpoint = float(self.theskyx_set_setpoint_value)
-                    self.current_setpoint = self.theskyx_set_setpoint_value
-                    self.theskyx_set_setpoint=False
+                    self.theskyx_cooleron= self.camera_update_wincom.RegulateTemperature
+
+                    if self.theskyx_set_cooler_on==True:
+
+                        self.camera_update_wincom.RegulateTemperature = 1
+                        self.theskyx_set_cooler_on=False
+                        # return (
+                        #     self.camera_update_wincom.RegulateTemperature
+                        # )
+
+                    if self.theskyx_set_setpoint_trigger==True:
+                        self.camera_update_wincom.TemperatureSetpoint = float(self.theskyx_set_setpoint_value)
+                        self.camera_update_wincom.RegulateTemperature = 1
+                        self.current_setpoint = self.theskyx_set_setpoint_value
+                        plog ("theskyx setpoint triggered: " + str(self.theskyx_set_setpoint_value))
+                        self.theskyx_set_setpoint_trigger=False
+
+                    if self.theskyx_abort_exposure_trigger==True:
+                        self.camera_update_wincom.Abort()
+                        self.theskyx_abort_exposure_trigger=False
+                except:
+                    plog ("non-permanent glitch out in the camera thread.")
+                    plog(traceback.format_exc())
+
 
                 # def _theskyx_set_setpoint(self, p_temp):
                 #     self.camera_update_wincom.TemperatureSetpoint = float(p_temp)
@@ -1005,8 +1036,9 @@ class Camera:
 
     def _theskyx_set_setpoint(self, p_temp):
 
-        self.theskyx_set_setpoint=True
+        self.theskyx_set_setpoint_trigger=True
         self.theskyx_set_setpoint_value= float(p_temp)
+        self.current_setpoint=float(p_temp)
         return float(p_temp)
         #self.camera.TemperatureSetpoint = float(p_temp)
         #self.current_setpoint = p_temp
@@ -1069,7 +1101,8 @@ class Camera:
 
     def _theskyx_stop_expose(self):
         try:
-            self.camera.Abort()
+            #self.camera.Abort()
+            self.theskyx_abort_exposure_trigger=True
         except:
             plog(traceback.format_exc())
         g_dev['cam'].expresult = {}
@@ -1446,8 +1479,8 @@ class Camera:
                 g_dev["drk"].closeDarkslide()
             elif self.darkslide_type=='ASCOM_FLI_SHUTTER':
                 self.camera.Action('SetShutter', 'close')
-            
-            
+
+
             plog("Closing the darkslide.")
             self.darkslide_state = 'Closed'
         elif action == "darkslide_open":
@@ -1455,9 +1488,9 @@ class Camera:
                 g_dev["drk"].openDarkslide()
             elif self.darkslide_type=='ASCOM_FLI_SHUTTER':
                 self.camera.Action('SetShutter', 'open')
-                        
 
-            
+
+
             plog("Opening the darkslide.")
             self.darkslide_state = 'Open'
         elif action == "stop":
@@ -1704,9 +1737,9 @@ class Camera:
                         # self.current_offset = g_dev[
                         #     "fil"
                         # ].filter_offset  # TEMP   NBNBNB This needs fixing
-                        
+
                         self.current_offset = 0
-                        
+
                     except:
                         plog ("Failed to change filter! Cancelling exposure.")
                         ##DEBUG Error on 20230703  System halted here. putting in
@@ -1900,8 +1933,8 @@ class Camera:
                     # If not, stop running block
                     if not calendar_event_id == None:
                         #print ("ccccccc")
-                        
-                        
+
+
 
                         foundcalendar=False
 
@@ -1970,7 +2003,7 @@ class Camera:
                                         self.darkslide_instance.closeDarkslide()
                                     elif self.darkslide_type=='ASCOM_FLI_SHUTTER':
                                         self.camera.Action('SetShutter', 'close')
-                                    
+
                                     self.darkslide_open = False
                                     self.darkslide_state = 'Closed'
 
@@ -2345,14 +2378,14 @@ class Camera:
                 time.time() < self.completion_time or self.async_exposure_lock==True
             ):
 
-                
+
 
                 # Scan requests every 4 seconds... primarily hunting for a "Cancel/Stop"
                 if time.time() - exposure_scan_request_timer > 4:# and (time.time() - self.completion_time) > 4:
                     exposure_scan_request_timer=time.time()
 
                     g_dev['obs'].request_scan_requests()
-                    #g_dev['obs'].scan_requests()                   
+                    #g_dev['obs'].scan_requests()
 
 
                     # Check there hasn't been a cancel sent through
@@ -2375,7 +2408,7 @@ class Camera:
 
                 remaining = round(self.completion_time - time.time(), 1)
 
-                
+
 
                 if remaining > 0:
                     if time.time() - self.plog_exposure_time_counter_timer > 10.0:
@@ -2443,7 +2476,7 @@ class Camera:
                             if g_dev['seq'].blockend != None:
                                 g_dev['obs'].request_update_calendar_blocks()
                             block_and_focus_check_done=True
-                    
+
                     # Need to have a time sleep to release the GIL to run the other threads
                     #print ("sleeping")
                     time.sleep(min(self.completion_time - time.time()+0.00001, initialRemaining * 0.125))
@@ -2547,7 +2580,7 @@ class Camera:
                 plog("WER change point point for Sreen flat work. Line 2547 is Camera")
                 if (frame_type in ["bias", "dark"] or frame_type[-4:] in ['flat']):# and not manually_requested_calibration:
                     plog("Median of full-image area bias, dark or flat:  ", np.median(outputimg))
-                    
+
                     # Check that the temperature is ok before accepting
                     current_camera_temperature, cur_humidity, cur_pressure = (g_dev['cam']._temperature())
                     current_camera_temperature = float(current_camera_temperature)
@@ -2647,10 +2680,10 @@ class Camera:
                         )
                     elif self.config["camera"][self.name]["settings"]["rotate180_fits"]:
                         outputimg=np.rot90(outputimg.astype('float32'),2)
-                        
+
                     elif self.config["camera"][self.name]["settings"]["rotate270_fits"]:
                         outputimg= np.rot90(outputimg.astype('float32'),3)
-                        
+
                     else:
                         outputimg=outputimg.astype('float32')
 
@@ -4359,29 +4392,32 @@ def post_exposure_process(payload):
                         hdusmallheader['CRPIX1']=float(hdu.header['CRPIX1']) - (edge_crop * 2)
                         hdusmallheader['CRPIX2']=float(hdu.header['CRPIX2']) - (edge_crop * 2)
 
-                    
+                        # bin to native binning
+                        if selfnative_bin != 1:
+                            reduced_hdusmalldata=(block_reduce(hdusmalldata,selfnative_bin))
+                            reduced_hdusmallheader=copy.deepcopy(hdusmallheader)
+                            reduced_hdusmallheader['XBINING']=selfnative_bin
+                            reduced_hdusmallheader['YBINING']=selfnative_bin
+                            reduced_hdusmallheader['PIXSCALE']=float(hdu.header['PIXSCALE']) * selfnative_bin
+                            reduced_pixscale=float(hdu.header['PIXSCALE'])
+                            reduced_hdusmallheader['NAXIS1']=float(hdu.header['NAXIS1']) / selfnative_bin
+                            reduced_hdusmallheader['NAXIS2']=float(hdu.header['NAXIS2']) / selfnative_bin
+                            reduced_hdusmallheader['CRPIX1']=float(hdu.header['CRPIX1']) / selfnative_bin
+                            reduced_hdusmallheader['CRPIX2']=float(hdu.header['CRPIX2']) / selfnative_bin
+                            reduced_hdusmallheader['CDELT1']=float(hdu.header['CDELT1']) * selfnative_bin
+                            reduced_hdusmallheader['CDELT2']=float(hdu.header['CDELT2']) * selfnative_bin
+                            reduced_hdusmallheader['CCDXPIXE']=float(hdu.header['CCDXPIXE']) * selfnative_bin
+                            reduced_hdusmallheader['CCDYPIXE']=float(hdu.header['CCDYPIXE']) * selfnative_bin
+                            reduced_hdusmallheader['XPIXSZ']=float(hdu.header['XPIXSZ']) * selfnative_bin
+                            reduced_hdusmallheader['YPIXSZ']=float(hdu.header['YPIXSZ']) * selfnative_bin
 
-                    # bin to native binning
-                    if selfnative_bin != 1:
-                        hdusmalldata=(block_reduce(hdusmalldata,selfnative_bin))
-                        hdusmallheader['XBINING']=selfnative_bin
-                        hdusmallheader['YBINING']=selfnative_bin
-                        hdusmallheader['PIXSCALE']=float(hdu.header['PIXSCALE']) * selfnative_bin
-                        pixscale=float(hdu.header['PIXSCALE'])
-                        hdusmallheader['NAXIS1']=float(hdu.header['NAXIS1']) / selfnative_bin
-                        hdusmallheader['NAXIS2']=float(hdu.header['NAXIS2']) / selfnative_bin
-                        hdusmallheader['CRPIX1']=float(hdu.header['CRPIX1']) / selfnative_bin
-                        hdusmallheader['CRPIX2']=float(hdu.header['CRPIX2']) / selfnative_bin
-                        hdusmallheader['CDELT1']=float(hdu.header['CDELT1']) * selfnative_bin
-                        hdusmallheader['CDELT2']=float(hdu.header['CDELT2']) * selfnative_bin
-                        hdusmallheader['CCDXPIXE']=float(hdu.header['CCDXPIXE']) * selfnative_bin
-                        hdusmallheader['CCDYPIXE']=float(hdu.header['CCDYPIXE']) * selfnative_bin
-                        hdusmallheader['XPIXSZ']=float(hdu.header['XPIXSZ']) * selfnative_bin
-                        hdusmallheader['YPIXSZ']=float(hdu.header['YPIXSZ']) * selfnative_bin
+                            reduced_hdusmallheader['SATURATE']=float(hdu.header['SATURATE']) * pow( selfnative_bin,2)
+                            reduced_hdusmallheader['FULLWELL']=float(hdu.header['FULLWELL']) * pow( selfnative_bin,2)
+                            reduced_hdusmallheader['MAXLIN']=float(hdu.header['MAXLIN']) * pow( selfnative_bin,2)
 
-                        hdusmallheader['SATURATE']=float(hdu.header['SATURATE']) * pow( selfnative_bin,2)
-                        hdusmallheader['FULLWELL']=float(hdu.header['FULLWELL']) * pow( selfnative_bin,2)
-                        hdusmallheader['MAXLIN']=float(hdu.header['MAXLIN']) * pow( selfnative_bin,2)
+                            reduced_hdusmalldata=hdusmalldata+200.0
+                            reduced_hdusmallheader['PEDESTAL']=200
+
 
                     # Add a pedestal to the reduced data
                     # This is important for a variety of reasons
@@ -4418,7 +4454,7 @@ def post_exposure_process(payload):
 
                 if smartstackid == 'no':
                     if selfconfig['keep_reduced_on_disk']:
-                        g_dev['obs'].to_slow_process(1000,('reduced', red_path + red_name01, hdusmalldata, hdusmallheader, \
+                        g_dev['obs'].to_slow_process(1000,('reduced', red_path + red_name01, reduced_hdusmalldata, reduced_hdusmallheader, \
                                                frame_type, ra_at_time_of_exposure,dec_at_time_of_exposure))
 
 
@@ -4554,7 +4590,9 @@ def post_exposure_process(payload):
                 g_dev['obs'].to_slow_process(1000,('raw_alt_path', selfalt_path + g_dev["day"] + "/raw/" + raw_name00, hdu.data, hdu.header, \
                                                frame_type, g_dev["mnt"].current_icrs_ra, g_dev["mnt"].current_icrs_dec))
                 if "hdusmalldata" in locals():
-                    g_dev['obs'].to_slow_process(1000,('reduced_alt_path', selfalt_path + g_dev["day"] + "/reduced/" + red_name01, hdusmalldata, hdusmallheader, \
+
+
+                    g_dev['obs'].to_slow_process(1000,('reduced_alt_path', selfalt_path + g_dev["day"] + "/reduced/" + red_name01, reduced_hdusmalldata, reduced_hdusmallheader, \
                                                        frame_type, g_dev["mnt"].current_icrs_ra, g_dev["mnt"].current_icrs_dec))
 
 
@@ -4571,6 +4609,12 @@ def post_exposure_process(payload):
                 except:
                     pass
                 del hdusmalldata  # remove file from memory now that we are doing with it
+            if "reduced_hdusmalldata" in locals():
+                try:
+                    del reduced_hdusmalldata
+                    del reduced_hdusmallheader
+                except:
+                    pass
 
             #print ("Post-exposure process length: " + str(time.time() -post_exposure_process_timer))
         #del img

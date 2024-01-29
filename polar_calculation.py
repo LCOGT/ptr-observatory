@@ -29,7 +29,6 @@ cos_lat = cos(radians(aro_latitude))
 
 #  Direct quotes from A-P GOTO1600 Manual.
 #  "One turn of an altitude knob is approximately 0.41 degrees (24.6 arcminutes)."
-#  Tightening right hand knob as viewed from tail of mounting is a counter-clockwise adjustment.
 
 lift_asec_per_turn = 24.6*60
 lift_asec_per_spoke= lift_asec_per_turn/4.
@@ -45,9 +44,9 @@ IH = 188
 
 ID =405
 
-MA = -250 #-250
+MA = -19.48 #-250
 
-ME = -342 #-342
+ME = -822.77 #-342
 
 
 #breakpoint()

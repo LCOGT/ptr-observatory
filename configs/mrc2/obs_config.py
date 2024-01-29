@@ -879,8 +879,8 @@ site_config = {
                 'number_of_dark_to_collect': 13,
                 'number_of_flat_to_collect': 3,   #just for now for CCD camera testing wer 20240113 (friday!)
                 'number_of_bias_to_store': 53,
-                'number_of_dark_to_store': 27,
-                'number_of_flat_to_store': 11,
+                'number_of_dark_to_store': 31,
+                'number_of_flat_to_store': 31,
                 # Default dark exposure time.
                 'dark_exposure': 360,
                
