@@ -3716,8 +3716,8 @@ class Observatory:
                     pickle.dump(picklepayload, smartstack_subprocess.stdin)
 
                     # Another pickle debugger
-                    if True:
-                        pickle.dump(picklepayload, open('subprocesses/testsmartstackpickle','wb'))
+                    # if True:
+                    #     pickle.dump(picklepayload, open('subprocesses/testsmartstackpickle','wb'))
 
 
 

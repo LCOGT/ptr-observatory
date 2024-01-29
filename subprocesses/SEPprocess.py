@@ -76,7 +76,7 @@ minimum_realistic_seeing=input_sep_info[25]
 nativebin=input_sep_info[26]
 do_sep=input_sep_info[27]
 
-
+nativebin=1
 # Background clipped
 hduheader["IMGMIN"] = ( np.nanmin(hdufocusdata), "Minimum Value of Image Array" )
 hduheader["IMGMAX"] = ( np.nanmax(hdufocusdata), "Maximum Value of Image Array" )
@@ -131,8 +131,8 @@ if not do_sep or (float(hduheader["EXPTIME"]) < 1.0):
     rfs = np.nan
     sepsky = np.nan
 else:
-    
-    
+
+
 
     if frame_type == 'focus':
 
@@ -176,8 +176,8 @@ else:
             hdufocusdata=block_reduce(hdufocusdata,sep_bin_factor)
             binfocus=sep_bin_factor
 
-    
-    
+
+
 
     # If it is a focus image then it will get sent in a different manner to the UI for a jpeg
     if frame_type == 'focus':
@@ -232,7 +232,7 @@ else:
     try:
         # Some of these are liberated from BANZAI
 
-        
+
 
         bkg = sep.Background(focusimg, bw=32, bh=32, fw=3, fh=3)
         bkg.subfrom(focusimg)
@@ -268,10 +268,10 @@ else:
         #sources = sources[sources["y"] > border_x]
         #breakpoint()
         # BANZAI prune nans from table
-        
-        
 
-        
+
+
+
 
         nan_in_row = np.zeros(len(sources), dtype=bool)
         for col in sources.colnames:
