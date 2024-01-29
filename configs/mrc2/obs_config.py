@@ -267,8 +267,10 @@ site_config = {
             'permissive_mount_reset' : 'yes', # if this is set to yes, it will reset the mount at startup and when coordinates are out significantly
             'time_inactive_until_park' : 3600.0, # How many seconds of inactivity until it will park the telescope
             #'home_after_unpark' : False,
-            'home_altitude':  0.0,
-            'home_azimuth':  210.0,
+            'park_altitude':  0.5,  
+            'park_azimuth': 246.5,
+            'home_altitude':  0.5,  
+            'home_azimuth': 246.5,
             'has_paddle': False,    #or a string that permits proper configuration.
             'has_ascom_altaz': True,
             'pointing_tel': 'tel1',     #This can be changed to 'tel2' by user.  This establishes a default.
@@ -511,7 +513,7 @@ site_config = {
             'dual_wheel':  True,
             'override_automatic_filter_throughputs': False, # This ignores the automatically estimated filter gains and starts with the values from the config file
              
-            "filter_settle_time": 8, #how long to wait for the filter to settle after a filter change(seconds)
+            "filter_settle_time": 20, #how long to wait for the filter to settle after a filter change(seconds)
 
             'ip_string': 'http://127.0.0.1',
             "desc":  'Dual Apogee custom Dual 50mm sq.',
@@ -554,46 +556,49 @@ site_config = {
                 #                 ['S2',      [0, 6],     0, 3.51,  [2, 17], 'S2'],   # 5
                 #                 ['dark',    [1, 6],     0, 0.0,   [2, 17], 'dk']], # 19
                 
-                # 'filter_data': [
-                #                 ['air',     [0, 0], 'ai'],   # 0
-                #                 ['Lum',     [0, 1],  'w '],   # 20
-                #                 #['Red',     [4, 0],     0, 15,   [2, 17], 'r '],  # 21                                ['JV (Grn)',      [0, 3],     0, 1 [2, 17], 'V '],   # 9
-                #                 #['Green',   [3, 0],     0, 21,   [2, 17], 'V '],   # 22
-                #                 #['Blue',    [1, 0],     0, 18,   [2, 17], 'B '],   # 23
-                #                 ['w',       [0, 1],   'w '],
-                #                 ['EXO',     [6, 0],    'EX'],  # 12 ,   # 1
-                #                 ['dif',    [0, 2],       'dif'],
-                #                 ['JB',      [1, 0],    'B '],   # 7
-                #                 ['gp',      [2, 0],    'g '],   # 8
-                #                 ['JV',      [3, 0],    'V '],   # 9
-                #                 ['rp',      [4, 0],     'r '],  # 10
-                #                 ['JB',      [1, 0],    'B '], 
-                #                 ['ip',      [5, 0],     'i '],  # 11                   
-                #                 ['O3',      [0, 3],   'O3'],   # 3
-                #                 ['HA',      [0, 4],     'HA'],   # 4
-                #                 ['N2',      [0, 5],     'N2'],                
-                #                 ['S2',      [0, 6],    'S2'],   # 5
-                #                 ['dark',    [1, 6],     'dk']], # 19
+                'screen_data': [
+
+                                ['air',     [0, 0],   1.00,  'ai'],   # 0  Based initially on 161 screen bright, and 4 sec exposures, 0m6, FLI 50100 CCD
+                                ['w',       [1, 0],   1.03,  'w '],   # 1  Astrodon filters.
+                                ['dif',     [2, 0],   1.10, 'dif'],   # 2
+                                ['EXO',     [0, 6],   1.29,  'EX'],   # 3
+                                ['rp',      [0, 4],   1.81,  'r '],   # 4
+                                ['gp',      [0, 2],   2.63,  'g '],   # 5
+                                ['JV',      [0, 3],   2.80,  'V '],   # 6
+                                ['JB',      [0, 1],   9.91,  'B '],   # 7
+                                ['ip',      [0, 5],   25.3,  'i '],   # 8                   
+                                ['O3',      [3, 0],   74.5,  'O3'],   # 9   
+                                ['S2',      [6, 0],   79.3,  'S2'],   # 10
+                                ['HA',      [4, 0],   90.2,  'HA'],   # 11
+                                ['N2',      [5, 0],   92.4,  'N2'],   # 12  
+                                ['dark',    [6, 1],   9999,  'dk']],  # 13
+                
+                'screen_bright':  120,#Note screen is highly non-linear and also sensitive to temperature
+                'screen_wait':    300,  #seconds of warm up time.
+                
                 
                 'filter_data': [
 
                                 ['air',     [0, 0],  'ai'],   # 0
-                                #['Lum',     [1, 0],  'w '],   # 1
-                                ['w',       [1, 0],  'w '],   # 2
+                                ['w',       [1, 0],  'w '],   # 1
+                                ['dif',     [2, 0], 'dif'],   # 2
                                 ['EXO',     [0, 6],  'EX'],   # 3
-                                ['dif',     [2, 0], 'dif'],   # 4
-                                ['JB',      [0, 1],  'B '],   # 5
-                                ['gp',      [0, 2],  'g '],   # 6
-                                ['JV',      [0, 3],  'V '],   # 7
-                                ['rp',      [0, 4],  'r '],   # 8
-                                ['ip',      [0, 5],  'i '],   # 9                   
-                                ['O3',      [3, 0],  'O3'],   # 10
-                                ['HA',      [4, 0],  'HA'],   # 11
-                                ['N2',      [5, 0],  'N2'],   # 12       
-                                ['S2',      [6, 0],  'S2'],   # 13
-                                ['dark',    [6, 1],  'dk']],  # 14
+                                ['JB',      [0, 1],  'B '],   # 4
+                                ['gp',      [0, 2],  'g '],   # 5
+                                ['JV',      [0, 3],  'V '],   # 6
+                                ['rp',      [0, 4],  'r '],   # 7
+                                ['ip',      [0, 5],  'i '],   # 8                   
+                                ['O3',      [3, 0],  'O3'],   # 9
+                                ['HA',      [4, 0],  'HA'],   # 10
+                                ['N2',      [5, 0],  'N2'],   # 11       
+                                ['S2',      [6, 0],  'S2'],   # 12
+                                ['dark',    [6, 1],  'dk']],  # 13
                 'focus_filter' : 'w',
 
+                #20240114   Screen at setting 160 after a 5 min warm up and 4 sec air exposure produces 32K adu.  I think 4-5 seconds
+                #is long enough to avois shutter compensation.  That will have to be revisited once we have a shutter comp image.
+                #all other wide band flats will require longer exposures so we may increase the screen brightness once we have the
+                #various exposure ratios established.
                 
                 
                 # 'filter_screen_sort':  ['0', '1', '2', '10', '7', '6', '18', '12', '11', '13', '8',  '3', \
@@ -791,12 +796,12 @@ site_config = {
 
                 # This is the area for cooling related settings
                 'cooler_on': True,
-                'temp_setpoint': -18,  # Verify we can go colder
+                'temp_setpoint': 5.0,  # Verify we can go colder
                 'rated_max_delta': -45, # Rated capacity for TEC to go below ambient.
                 'has_chiller': True,
                 'ambient_water_cooler':  False,  #QHY sells these.           
                 'chiller_com_port': 'COM1',
-                'chiller_ref_temp':  17.5,  # C  15 - 45 = -30 so do not exceed that target or run
+                'chiller_ref_temp':  15,  # C  15 - 45 = -30 so do not exceed that target or run
                                             #TEC above 85% -- better more like 80%.  FLI 50100 at -20 uses 85% power with actual ambient
                                             # of 18C.  60% at -15C, so -17.5 seems good. Really hot days mean the TEC ha do do more work.
                 'day_warm': False,
@@ -831,14 +836,15 @@ site_config = {
                 'dither_enabled':  True,      #Set this way for tracking testing
 
                 # This is the absolute minimum and maximum exposure for the camera
-                'min_exposure': 0.5,
+                'min_exposure': 0.25,
                 'max_exposure': 600.,
-                # For certain shutters, short exposures aren't good for flats. Some CMOS have banding in too short an exposure. Largely applies to ccds though.
+                # During the daytime with the daytime safety mode on, exposures will be limited to this maximum exposure
+                'max_daytime_exposure': 0.5,
+                # For certain shutters, short exposures aren't good for flats.  Largely applies to ccds though.
                 'min_flat_exposure': 1.0, # WER 20240111 changed from 0.4   #just for now for CCD camera testing            
                 # Realistically there is maximum flat_exposure that makes sure flats are efficient and aren't collecting actual stars.
                 'max_flat_exposure': 30.0,
-                # During the daytime with the daytime safety mode on, exposures will be limited to this maximum exposure
-                'max_daytime_exposure': 0.5,
+               
 
                 # One of the best cloud detections is to estimate the gain of the camera from the image
                 # If the variation, and hence gain, is too high according to gain + stdev, the flat can be easily rejected.

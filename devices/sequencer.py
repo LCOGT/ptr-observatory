@@ -2945,7 +2945,7 @@ class Sequencer:
                         plog ("Widening min and max exposure times to find a good estimate also.")
                         plog ("Normal exposure limits will return once a good throughput is found.")
                         
-                        min_exposure= float(self.config['camera']['camera_1_1']['settings']['min_exposure'])
+                        min_exposure= float(self.config['camera']['camera_1_1']['settings']['min_flat_exposure'])   #this works! WER
                         
                         max_exposure=max_exposure*3
                         flat_count=1

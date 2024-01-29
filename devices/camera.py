@@ -401,7 +401,7 @@ class Camera:
                 plog("ASCOM camera is connected:  ", self._connect(True))
             else:
                 plog("ERROR:  ASCOM camera is not connected:  ", self._connect(True))
-            #breakpoint()
+            
 
             self.imagesize_x = self.camera.CameraXSize
             self.imagesize_y = self.camera.CameraYSize
@@ -2543,8 +2543,9 @@ class Camera:
                     self.wait_for_slew()
                     g_dev['obs'].check_platesolve_and_nudge()
 
-
-                if (frame_type in ["bias", "dark"] or frame_type[-4:] == ['flat']) and not manually_requested_calibration:
+                #breakpoint()
+                plog("WER change point point for Sreen flat work. Line 2547 is Camera")
+                if (frame_type in ["bias", "dark"] or frame_type[-4:] in ['flat']):# and not manually_requested_calibration:
                     plog("Median of full-image area bias, dark or flat:  ", np.median(outputimg))
                     
                     # Check that the temperature is ok before accepting
