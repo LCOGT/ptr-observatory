@@ -4392,32 +4392,34 @@ def post_exposure_process(payload):
                         hdusmallheader['CRPIX1']=float(hdu.header['CRPIX1']) - (edge_crop * 2)
                         hdusmallheader['CRPIX2']=float(hdu.header['CRPIX2']) - (edge_crop * 2)
 
-                        # bin to native binning
-                        if selfnative_bin != 1:
-                            reduced_hdusmalldata=(block_reduce(hdusmalldata,selfnative_bin))
-                            reduced_hdusmallheader=copy.deepcopy(hdusmallheader)
-                            reduced_hdusmallheader['XBINING']=selfnative_bin
-                            reduced_hdusmallheader['YBINING']=selfnative_bin
-                            reduced_hdusmallheader['PIXSCALE']=float(hdu.header['PIXSCALE']) * selfnative_bin
-                            reduced_pixscale=float(hdu.header['PIXSCALE'])
-                            reduced_hdusmallheader['NAXIS1']=float(hdu.header['NAXIS1']) / selfnative_bin
-                            reduced_hdusmallheader['NAXIS2']=float(hdu.header['NAXIS2']) / selfnative_bin
-                            reduced_hdusmallheader['CRPIX1']=float(hdu.header['CRPIX1']) / selfnative_bin
-                            reduced_hdusmallheader['CRPIX2']=float(hdu.header['CRPIX2']) / selfnative_bin
-                            reduced_hdusmallheader['CDELT1']=float(hdu.header['CDELT1']) * selfnative_bin
-                            reduced_hdusmallheader['CDELT2']=float(hdu.header['CDELT2']) * selfnative_bin
-                            reduced_hdusmallheader['CCDXPIXE']=float(hdu.header['CCDXPIXE']) * selfnative_bin
-                            reduced_hdusmallheader['CCDYPIXE']=float(hdu.header['CCDYPIXE']) * selfnative_bin
-                            reduced_hdusmallheader['XPIXSZ']=float(hdu.header['XPIXSZ']) * selfnative_bin
-                            reduced_hdusmallheader['YPIXSZ']=float(hdu.header['YPIXSZ']) * selfnative_bin
+                    # bin to native binning
+                    if selfnative_bin != 1:
+                        reduced_hdusmalldata=(block_reduce(hdusmalldata,selfnative_bin))
+                        reduced_hdusmallheader=copy.deepcopy(hdusmallheader)
+                        reduced_hdusmallheader['XBINING']=selfnative_bin
+                        reduced_hdusmallheader['YBINING']=selfnative_bin
+                        reduced_hdusmallheader['PIXSCALE']=float(hdu.header['PIXSCALE']) * selfnative_bin
+                        reduced_pixscale=float(hdu.header['PIXSCALE'])
+                        reduced_hdusmallheader['NAXIS1']=float(hdu.header['NAXIS1']) / selfnative_bin
+                        reduced_hdusmallheader['NAXIS2']=float(hdu.header['NAXIS2']) / selfnative_bin
+                        reduced_hdusmallheader['CRPIX1']=float(hdu.header['CRPIX1']) / selfnative_bin
+                        reduced_hdusmallheader['CRPIX2']=float(hdu.header['CRPIX2']) / selfnative_bin
+                        reduced_hdusmallheader['CDELT1']=float(hdu.header['CDELT1']) * selfnative_bin
+                        reduced_hdusmallheader['CDELT2']=float(hdu.header['CDELT2']) * selfnative_bin
+                        reduced_hdusmallheader['CCDXPIXE']=float(hdu.header['CCDXPIXE']) * selfnative_bin
+                        reduced_hdusmallheader['CCDYPIXE']=float(hdu.header['CCDYPIXE']) * selfnative_bin
+                        reduced_hdusmallheader['XPIXSZ']=float(hdu.header['XPIXSZ']) * selfnative_bin
+                        reduced_hdusmallheader['YPIXSZ']=float(hdu.header['YPIXSZ']) * selfnative_bin
 
-                            reduced_hdusmallheader['SATURATE']=float(hdu.header['SATURATE']) * pow( selfnative_bin,2)
-                            reduced_hdusmallheader['FULLWELL']=float(hdu.header['FULLWELL']) * pow( selfnative_bin,2)
-                            reduced_hdusmallheader['MAXLIN']=float(hdu.header['MAXLIN']) * pow( selfnative_bin,2)
+                        reduced_hdusmallheader['SATURATE']=float(hdu.header['SATURATE']) * pow( selfnative_bin,2)
+                        reduced_hdusmallheader['FULLWELL']=float(hdu.header['FULLWELL']) * pow( selfnative_bin,2)
+                        reduced_hdusmallheader['MAXLIN']=float(hdu.header['MAXLIN']) * pow( selfnative_bin,2)
 
-                            reduced_hdusmalldata=hdusmalldata+200.0
-                            reduced_hdusmallheader['PEDESTAL']=200
-
+                        reduced_hdusmalldata=hdusmalldata+200.0
+                        reduced_hdusmallheader['PEDESTAL']=200
+                    else:
+                        reduced_hdusmalldata=copy.deepcopy(hdusmalldata)
+                        reduced_hdusmallheader=copy.deepcopy(hdusmallheader)
 
                     # Add a pedestal to the reduced data
                     # This is important for a variety of reasons
