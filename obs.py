@@ -1202,14 +1202,16 @@ class Observatory:
                     g_dev["obs"].stop_all_activity = False
 
 
-                # # If camera is rebooting, the exposure_busy term can fall out
-                # while True:
-                #     try:
-                #         g_dev["cam"].exposure_busy
-                #         break
-                #     except:
-                #         plog ("pausing while camera reboots")
-                #         time.sleep(1)
+                # If camera is rebooting, the exposure_busy term can fall out
+                if g_dev["cam"].theskyx:
+                    while True:
+                        try:
+                            g_dev["cam"].exposure_busy
+                            plog ("theskyx camera check")
+                            break
+                        except:
+                            plog ("pausing while camera reboots")
+                            time.sleep(1)
 
 
                 # Good spot to check if we need to nudge the telescope as long as we aren't exposing.
