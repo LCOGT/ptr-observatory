@@ -31,6 +31,7 @@ class Rotator:
         g_dev["rot"] = self
         win32com.client.pythoncom.CoInitialize()
         self.driver=driver
+
         self.rotator = win32com.client.Dispatch(driver)        
         time.sleep(3)
 
