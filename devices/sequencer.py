@@ -23,6 +23,7 @@ import os
 import gc
 from pyowm import OWM
 from pyowm.utils import config
+from scipy import interpolate
 import warnings
 
 from devices.camera import Camera
@@ -59,6 +60,50 @@ def authenticated_request(method: str, uri: str, payload: dict = None) -> str:
 
     response = requests.request(**request_kwargs)
     return response.json()
+
+# def interpolate_missing_pixels(
+#         image: np.ndarray,
+#         mask: np.ndarray,
+#         method: str = 'nearest',
+#         fill_value: int = 0
+# ):
+#     """
+#     from: https://stackoverflow.com/questions/37662180/interpolate-missing-values-2d-python
+    
+#     :param image: a 2D image
+#     :param mask: a 2D boolean image, True indicates missing values
+#     :param method: interpolation method, one of
+#         'nearest', 'linear', 'cubic'.
+#     :param fill_value: which value to use for filling up data outside the
+#         convex hull of known pixel values.
+#         Default is 0, Has no effect for 'nearest'.
+#     :return: the image with missing values interpolated
+#     """
+    
+
+#     h, w = image.shape[:2]
+#     xx, yy = np.meshgrid(np.arange(w), np.arange(h))
+
+#     known_x = xx[~mask]
+#     known_y = yy[~mask]
+#     known_v = image[~mask]
+#     missing_x = xx[mask]
+#     missing_y = yy[mask]
+
+#     interp_values = interpolate.griddata(
+#         (known_x, known_y), known_v, (missing_x, missing_y),
+#         method=method, fill_value=fill_value
+#     )
+    
+#     # interp_values = interpolate.interpn(
+#     #     (known_x, known_y), known_v, (missing_x, missing_y),
+#     #     method=method, fill_value=fill_value
+#     # )
+
+#     interp_image = image.copy()
+#     interp_image[missing_y, missing_x] = interp_values
+
+#     return interp_image
 
 
 def fit_quadratic(x, y):
@@ -2325,12 +2370,102 @@ class Sequencer:
                             num_of_nans=np.count_nonzero(np.isnan(temporaryFlat))
                             plog ("Number of Nans in flat this iteration: " + str(num_of_nans))
 
+                            #breakpoint()
+
                             if num_of_nans == last_num_of_nans:
                                 break
                             last_num_of_nans=copy.deepcopy(num_of_nans)
                             while num_of_nans > 0:
-
-                                temporaryFlat=interpolate_replace_nans(temporaryFlat, kernel)
+                                timestart=time.time()
+                                #temporaryFlat=interpolate_replace_nans(temporaryFlat, kernel)
+                                
+                                
+                                
+                                
+                                
+                                # List the coordinates that are nan in the array
+                                nan_coords=np.argwhere(np.isnan(temporaryFlat))
+                                x_size=temporaryFlat.shape[0]
+                                y_size=temporaryFlat.shape[1]
+                                
+                                
+                                # For each coordinate pop out the 3x3 grid
+                                try:
+                                    for nancoord in nan_coords:
+                                        x_nancoord=nancoord[0]
+                                        y_nancoord=nancoord[1]
+                                        #print ("******************")
+                                        #print (x_nancoord)
+                                        #print (y_nancoord)
+                                        countervalue=0
+                                        countern=0
+                                        # left
+                                        if x_nancoord != 0:
+                                            value_here=temporaryFlat[x_nancoord-1,y_nancoord]
+                                            if not np.isnan(value_here):
+                                                countervalue=countervalue+value_here
+                                                countern=countern+1
+                                        # right
+                                        if x_nancoord != (x_size-1):
+                                            value_here=temporaryFlat[x_nancoord+1,y_nancoord]
+                                            if not np.isnan(value_here):
+                                                countervalue=countervalue+value_here
+                                                countern=countern+1
+                                        # below
+                                        if y_nancoord != 0:
+                                            value_here=temporaryFlat[x_nancoord,y_nancoord-1]
+                                            if not np.isnan(value_here):
+                                                countervalue=countervalue+value_here
+                                                countern=countern+1
+                                        # above
+                                        if y_nancoord != (y_size-1):
+                                            value_here=temporaryFlat[x_nancoord,y_nancoord+1]
+                                            if not np.isnan(value_here):
+                                                countervalue=countervalue+value_here
+                                                countern=countern+1
+                                        
+                                        if countern == 0:
+                                            temporaryFlat[x_nancoord,y_nancoord]=np.nan
+                                        else:
+                                            temporaryFlat[x_nancoord,y_nancoord]=countervalue/countern
+                                            
+                                        #print(countervalue/countern)
+                                
+                                except:
+                                    plog(traceback.format_exc())
+                                    breakpoint()
+                                        
+                                    
+                                
+                                
+                                # Get the above, below, left and righ tvalues where not nan
+                                
+                                
+                                # place the average value in the nan coordinate
+                                
+                                
+                                
+                                
+                            
+                                #interpolate_replace_nans(temporaryFlat, kernel)
+                                plog ("time for fitzcycle: " +str(time.time()-timestart))
+                                
+                                # #temporaryFlat=
+                                # interpolate_missing_pixels(temporaryFlat,np.isnan(temporaryFlat),method='nearest',fill_value=np.nan)
+                                # plog ("time for nearest: " +str(time.time()-timestart))
+                                # timestart=time.time()
+                                # interpolate_missing_pixels(temporaryFlat,np.isnan(temporaryFlat),method='linear',fill_value=np.nan)
+                                # plog ("time for linear: " +str(time.time()-timestart))
+                                # timestart=time.time()
+                                
+                                # interpolate_missing_pixels(temporaryFlat,np.isnan(temporaryFlat),method='slinear',fill_value=np.nan)
+                                # plog ("time for slinear: " +str(time.time()-timestart))
+                                # timestart=time.time()
+                                # temporaryFlat=interpolate_missing_pixels(temporaryFlat,np.isnan(temporaryFlat),method='cubic',fill_value=np.nan)
+                                # plog ("time for cubic: " +str(time.time()-timestart))
+                                
+                                
+                                
                                 # temporaryFlat[temporaryFlat == inf] = np.nan
                                 # temporaryFlat[temporaryFlat == -inf] = np.nan
                                 # temporaryFlat[temporaryFlat < 0.000001 ] = np.nan
