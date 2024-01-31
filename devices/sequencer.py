@@ -1652,10 +1652,10 @@ class Sequencer:
 
         self.rotator_has_been_homed_this_evening=False
 
-        self.eve_flats_done = False
-        self.morn_flats_done = False
-        self.morn_bias_done = False
-        self.eve_bias_done = False
+        # self.eve_flats_done = False
+        # self.morn_flats_done = False
+        # self.morn_bias_done = False
+        # self.eve_bias_done = False
 
         self.nightime_bias_counter = 0
         self.nightime_dark_counter = 0

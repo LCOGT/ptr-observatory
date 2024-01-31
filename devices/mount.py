@@ -1046,7 +1046,7 @@ class Mount:
             self.zen = zen
 
             #try:
-            self.current_sidereal = float((Time(datetime.datetime.utcnow(), scale='utc', location=g_dev['mnt'].site_coordinates).sidereal_time('apparent')*u.deg) / u.deg / u.hourangle)
+            self.current_sidereal = float((Time(datetime.datetime.utcnow(), scale='utc', location=self.site_coordinates).sidereal_time('apparent')*u.deg) / u.deg / u.hourangle)
             #except:
             #    plog ("Mount didn't accept request for sidereal time. Need to make a calculation for this.")
 
