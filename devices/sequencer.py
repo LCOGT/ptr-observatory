@@ -518,7 +518,7 @@ class Sequencer:
                 # But only three times
                 self.new_throughtputs_detected_in_flat_run=True
                 flat_run_counter=0
-                while self.new_throughtputs_detected_in_flat_run and flat_run_counter <3 and ephem_now < events['End Morn Sky Flats']:
+                while self.new_throughtputs_detected_in_flat_run and flat_run_counter <3 and ephem_now < events['End Eve Sky Flats']:
                     self.new_throughtputs_detected_in_flat_run=False
                     flat_run_counter=flat_run_counter+1
                     self.sky_flat_script({}, {}, morn=False)   #Null command dictionaries
