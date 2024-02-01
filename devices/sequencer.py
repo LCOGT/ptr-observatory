@@ -261,6 +261,8 @@ class Sequencer:
         self.rotator_has_been_homed_this_evening=False
         g_dev['obs'].request_update_calendar_blocks()
         #self.blocks=
+        
+        self.MTF_temporary_flat_timer=time.time()-310
 
 
 
@@ -496,14 +498,29 @@ class Sequencer:
                 self.bias_dark_script(req, opt, morn=False)
                 self.eve_bias_done = True
                 self.bias_dark_latch = False
+            
+            #print (self.MTF_temporary_flat_timer-time.time())
+            
+            if time.time()-self.MTF_temporary_flat_timer > 300:
+                self.MTF_temporary_flat_timer=time.time()
+                plog ("EVESKY FLAG HUNTING")
+                plog ("Roof open time: " + str(time.time() - g_dev['seq'].time_roof_last_opened))
+                plog ("Sky flat latch: " + str(self.eve_sky_flat_latch))
+                plog ("Scope in manual mode: " + str(g_dev['obs'].scope_in_manual_mode))
+                plog ("Eve sky start: " + str(events['Eve Sky Flats']))
+                plog ("Eve sky end: " + str(events['End Eve Sky Flats']))
+                plog ("In between: " + str((events['Eve Sky Flats'] <= ephem_now < events['End Eve Sky Flats'])))
+                plog ("Open and enabled: " + str(g_dev['obs'].open_and_enabled_to_observe))
+                plog ("Eve sky flats done: " + str(self.eve_flats_done))
+                plog ("Camera cooled: " + str(g_dev['obs'].camera_sufficiently_cooled_for_calibrations))
 
             if (time.time() - g_dev['seq'].time_roof_last_opened > \
                    self.config['time_to_wait_after_roof_opens_to_take_flats'] ) and \
                    not self.eve_sky_flat_latch and not g_dev['obs'].scope_in_manual_mode and \
-                   ((events['Eve Sky Flats'] <= ephem_now < events['End Eve Sky Flats'])  \
+                   (events['Eve Sky Flats'] <= ephem_now < events['End Eve Sky Flats'])  \
                    and self.config['auto_eve_sky_flat'] and g_dev['obs'].open_and_enabled_to_observe and\
                    not self.eve_flats_done \
-                   and g_dev['obs'].camera_sufficiently_cooled_for_calibrations):
+                   and g_dev['obs'].camera_sufficiently_cooled_for_calibrations:
 
                 self.eve_sky_flat_latch = True
                 self.current_script = "Eve Sky Flat script starting"
