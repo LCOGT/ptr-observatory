@@ -2263,6 +2263,14 @@ class Camera:
             frame_type
         )
         #plog("Finish Exposure, zoom:  ", zoom_factor)
+
+        try:
+            if opt["object_name"] == '':
+                opt["object_name"] = 'Unknown'
+        except:
+            opt["object_name"] = 'Unknown'
+
+
         try:
             plog(opt["object_name"])
         except:
