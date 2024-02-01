@@ -1807,6 +1807,8 @@ class Sequencer:
         self.clock_focus_latch = False
         self.cool_down_latch = False
         self.clock_focus_latch = False
+        
+        self.flats_being_collected = False        
 
         self.morn_bias_done = False
         self.eve_bias_done = False
