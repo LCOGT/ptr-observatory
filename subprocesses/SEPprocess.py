@@ -65,18 +65,22 @@ focus_crop_width = input_sep_info[14]
 focus_crop_height = input_sep_info[15]
 is_osc= input_sep_info[16]
 interpolate_for_focus= input_sep_info[17]
-bin_for_focus= input_sep_info[18]
-focus_bin_value= input_sep_info[19]
+#bin_for_focus= input_sep_info[18]
+#focus_bin_value= input_sep_info[19]
+#bin_for_focus= False
+#focus_bin_value= 1
 interpolate_for_sep= input_sep_info[20]
-bin_for_sep= input_sep_info[21]
-sep_bin_value= input_sep_info[22]
+# bin_for_sep= input_sep_info[21]
+# sep_bin_value= input_sep_info[22]
+#bin_for_sep= False
+#sep_bin_value= 1
 focus_jpeg_size= input_sep_info[23]
 saturate= input_sep_info[24]
 minimum_realistic_seeing=input_sep_info[25]
-nativebin=input_sep_info[26]
+#nativebin=input_sep_info[26]
 do_sep=input_sep_info[27]
 
-nativebin=1
+#nativebin=1
 # Background clipped
 hduheader["IMGMIN"] = ( np.nanmin(hdufocusdata), "Minimum Value of Image Array" )
 hduheader["IMGMAX"] = ( np.nanmax(hdufocusdata), "Maximum Value of Image Array" )
@@ -134,58 +138,168 @@ else:
 
 
 
+    # if frame_type == 'focus':
+
+    #     fx, fy = hdufocusdata.shape
+
+    #     crop_width = (fx * focus_crop_width) / 2
+    #     crop_height = (fy * focus_crop_height) / 2
+
+    #     # Make sure it is an even number for OSCs
+    #     if (crop_width % 2) != 0:
+    #         crop_width = crop_width+1
+    #     if (crop_height % 2) != 0:
+    #         crop_height = crop_height+1
+
+    #     crop_width = int(crop_width)
+    #     crop_height = int(crop_height)
+
+    #     if crop_width > 0 or crop_height > 0:
+    #         hdufocusdata = hdufocusdata[crop_width:-crop_width, crop_height:-crop_height]
+
+
+    # Realistically we can figure out the focus stuff here from first principles.
+    
     if frame_type == 'focus':
-
         fx, fy = hdufocusdata.shape
+        # We want a standard focus image size that represent 0.2 degrees - which is the size of the focus fields.
+        # However we want some flexibility in the sense that the pointing could be off by half a degree or so...
+        # So we chop the image down to a degree by a degree 
+        # This speeds up the focus software.... we don't need to solve for EVERY star in a widefield image.
+        fx_degrees = (fx * pixscale) /3600
+        fy_degrees = (fy * pixscale) /3600
+        
+        if fx_degrees > 1.0:
+            ratio_crop= 1/fx_degrees
+            crop_x = int(ratio_crop * fx)
+        if fy_degrees > 1.0:
+            ratio_crop= 1/fy_degrees
+            crop_y = int(ratio_crop * fy)
+        
+        if crop_x > 0 or crop_y > 0:
+            if crop_x == 0:
+                crop_x = 2
+            if crop_y == 0:
+                crop_y = 2    
+            # Make sure it is an even number for OSCs
+            if (crop_x % 2) != 0:
+                crop_x = crop_x+1
+            if (crop_y % 2) != 0:
+                crop_y = crop_y+1
+            hdufocusdata = hdufocusdata[crop_x:-crop_x, crop_y:-crop_y]       
+        
 
-        crop_width = (fx * focus_crop_width) / 2
-        crop_height = (fy * focus_crop_height) / 2
-
-        # Make sure it is an even number for OSCs
-        if (crop_width % 2) != 0:
-            crop_width = crop_width+1
-        if (crop_height % 2) != 0:
-            crop_height = crop_height+1
-
-        crop_width = int(crop_width)
-        crop_height = int(crop_height)
-
-        if crop_width > 0 or crop_height > 0:
-            hdufocusdata = hdufocusdata[crop_width:-crop_width, crop_height:-crop_height]
-
-    binfocus = 1
+    #binfocus = 1
     if is_osc:
+        
+        #hdufocusdata=demosaicing_CFA_Bayer_bilinear(hdufocusdata, 'RGGB')[:,:,1]
+        
+        # Wipe out red channel
+        hdufocusdata[::2, ::2]=np.nan
+        # Wipe out blue channel
+        hdufocusdata[1::2, 1::2]=np.nan
+        # Rapid interpolate
+        num_of_nans=np.count_nonzero(np.isnan(hdufocusdata))
+        while num_of_nans > 0:
+            #timestart=time.time()            
+            
+            # List the coordinates that are nan in the array
+            nan_coords=np.argwhere(np.isnan(hdufocusdata))
+            x_size=hdufocusdata.shape[0]
+            y_size=hdufocusdata.shape[1]
+            
+            
+            # For each coordinate pop out the 3x3 grid
+            
+            for nancoord in nan_coords:
+                x_nancoord=nancoord[0]
+                y_nancoord=nancoord[1]
+                #print ("******************")
+                #print (x_nancoord)
+                #print (y_nancoord)
+                countervalue=0
+                countern=0
+                # left
+                if x_nancoord != 0:
+                    value_here=hdufocusdata[x_nancoord-1,y_nancoord]
+                    if not np.isnan(value_here):
+                        countervalue=countervalue+value_here
+                        countern=countern+1
+                # right
+                if x_nancoord != (x_size-1):
+                    value_here=hdufocusdata[x_nancoord+1,y_nancoord]
+                    if not np.isnan(value_here):
+                        countervalue=countervalue+value_here
+                        countern=countern+1
+                # below
+                if y_nancoord != 0:
+                    value_here=hdufocusdata[x_nancoord,y_nancoord-1]
+                    if not np.isnan(value_here):
+                        countervalue=countervalue+value_here
+                        countern=countern+1
+                # above
+                if y_nancoord != (y_size-1):
+                    value_here=hdufocusdata[x_nancoord,y_nancoord+1]
+                    if not np.isnan(value_here):
+                        countervalue=countervalue+value_here
+                        countern=countern+1
+                
+                if countern == 0:
+                    hdufocusdata[x_nancoord,y_nancoord]=np.nan
+                else:
+                    hdufocusdata[x_nancoord,y_nancoord]=countervalue/countern
+                
+                num_of_nans=np.count_nonzero(np.isnan(hdufocusdata))
+                #print(countervalue/countern)
+        
+        
+        
+        hdufocusdata=hdufocusdata.astype("float32")
+        #binfocus=1
+        
 
-        if frame_type == 'focus' and interpolate_for_focus:
-            #hdufocusdata=demosaicing_CFA_Bayer_Menon2007(hdufocusdata, 'RGGB')[:,:,1]
-            hdufocusdata=demosaicing_CFA_Bayer_bilinear(hdufocusdata, 'RGGB')[:,:,1]
-            hdufocusdata=hdufocusdata.astype("float32")
-            binfocus=1
-        if frame_type == 'focus' and bin_for_focus:
-            focus_bin_factor=focus_bin_value
-            hdufocusdata=block_reduce(hdufocusdata,focus_bin_factor)
-            binfocus=focus_bin_factor
+        # if frame_type == 'focus' and interpolate_for_focus:
+        #     #hdufocusdata=demosaicing_CFA_Bayer_Menon2007(hdufocusdata, 'RGGB')[:,:,1]
+        #     hdufocusdata=demosaicing_CFA_Bayer_bilinear(hdufocusdata, 'RGGB')[:,:,1]
+        #     hdufocusdata=hdufocusdata.astype("float32")
+        #     binfocus=1
+        # if frame_type == 'focus' and bin_for_focus:
+        #     focus_bin_factor=focus_bin_value
+        #     hdufocusdata=block_reduce(hdufocusdata,focus_bin_factor)
+        #     binfocus=focus_bin_factor
 
-        if frame_type != 'focus' and interpolate_for_sep:
-            #hdufocusdata=demosaicing_CFA_Bayer_Menon2007(hdufocusdata, 'RGGB')[:,:,1]
-            hdufocusdata=demosaicing_CFA_Bayer_bilinear(hdufocusdata, 'RGGB')[:,:,1]
-            hdufocusdata=hdufocusdata.astype("float32")
-            binfocus=1
-        if frame_type != 'focus' and bin_for_sep:
-            sep_bin_factor=sep_bin_value
-            hdufocusdata=block_reduce(hdufocusdata,sep_bin_factor)
-            binfocus=sep_bin_factor
+        # if frame_type != 'focus' and interpolate_for_sep:
+        #     #hdufocusdata=demosaicing_CFA_Bayer_Menon2007(hdufocusdata, 'RGGB')[:,:,1]
+        #     hdufocusdata=demosaicing_CFA_Bayer_bilinear(hdufocusdata, 'RGGB')[:,:,1]
+        #     hdufocusdata=hdufocusdata.astype("float32")
+        #     binfocus=1
+        # if frame_type != 'focus' and bin_for_sep:
+        #     sep_bin_factor=sep_bin_value
+        #     hdufocusdata=block_reduce(hdufocusdata,sep_bin_factor)
+        #     binfocus=sep_bin_factor
 
 
 
 
     # If it is a focus image then it will get sent in a different manner to the UI for a jpeg
+    # In this case, the image needs to be the 0.2 degree field that the focus field is made up of
+    
     if frame_type == 'focus':
         hdusmalldata = np.array(hdufocusdata)
         fx, fy = hdusmalldata.shape
         aspect_ratio= fx/fy
-        crop_width = (fx - focus_jpeg_size) / 2
-        crop_height = (fy - (focus_jpeg_size / aspect_ratio) ) / 2
+        
+        focus_jpeg_size=0.2/(pixscale/3600)
+        
+        if focus_jpeg_size < fx:
+            crop_width = (fx - focus_jpeg_size) / 2
+        else:
+            crop_width =2
+        
+        if focus_jpeg_size < fy:            
+            crop_height = (fy - (focus_jpeg_size / aspect_ratio) ) / 2
+        else:
+            crop_height = 2
 
         # Make sure it is an even number for OSCs
         if (crop_width % 2) != 0:
@@ -220,6 +334,11 @@ else:
         draw.text((0, 0), str(focus_position), (255))
 
         final_image.save(im_path + text_name.replace('EX00.txt', 'EX10.jpg'))
+        
+        del hdusmalldata
+        del stretched_data_float
+        del final_image
+        
 
 
 
@@ -259,8 +378,8 @@ else:
 
         sources = sources[sources['flag'] < 8]
         image_saturation_level = saturate
-        sources = sources[sources["peak"] < 0.8 * image_saturation_level * pow(binfocus, 2)]
-        sources = sources[sources["cpeak"] < 0.8 * image_saturation_level * pow(binfocus, 2)]
+        sources = sources[sources["peak"] < 0.8 * image_saturation_level]
+        sources = sources[sources["cpeak"] < 0.8 * image_saturation_level]
         sources = sources[sources["flux"] > 1000]
         #sources = sources[sources["x"] < iy - border_y]
         #sources = sources[sources["x"] > border_y]
@@ -304,8 +423,8 @@ else:
 
 
         # DONUT IMAGE DETECTOR.
-        xdonut=np.median(pow(pow(sources['x'] - sources['xpeak'],2),0.5))*pixscale*binfocus
-        ydonut=np.median(pow(pow(sources['y'] - sources['ypeak'],2),0.5))*pixscale*binfocus
+        xdonut=np.median(pow(pow(sources['x'] - sources['xpeak'],2),0.5))*pixscale
+        ydonut=np.median(pow(pow(sources['y'] - sources['ypeak'],2),0.5))*pixscale
 
         # Calcuate the equivilent of flux_auto (Thanks BANZAI)
         # This is the preferred best photometry SEP can do.
@@ -327,16 +446,16 @@ else:
                                              subpix=5)
         # If image has been binned for focus we need to multiply some of these things by the binning
         # To represent the original image
-        sources['FWHM'] = (sources['FWHM'] * 2) * binfocus
-        sources['x'] = (sources['x']) * binfocus
-        sources['y'] = (sources['y']) * binfocus
-        sources['xpeak'] = (sources['xpeak']) * binfocus
-        sources['ypeak'] = (sources['ypeak']) * binfocus
-        sources['a'] = (sources['a']) * binfocus
-        sources['b'] = (sources['b']) * binfocus
-        sources['kronrad'] = (sources['kronrad']) * binfocus
-        sources['peak'] = (sources['peak']) / pow(binfocus, 2)
-        sources['cpeak'] = (sources['cpeak']) / pow(binfocus, 2)
+        sources['FWHM'] = (sources['FWHM'] * 2) 
+        sources['x'] = (sources['x']) 
+        sources['y'] = (sources['y']) 
+        sources['xpeak'] = (sources['xpeak'])
+        sources['ypeak'] = (sources['ypeak']) 
+        sources['a'] = (sources['a'])
+        sources['b'] = (sources['b']) 
+        sources['kronrad'] = (sources['kronrad']) 
+        sources['peak'] = (sources['peak']) 
+        sources['cpeak'] = (sources['cpeak'])
 
 
         #print (sources)
@@ -393,8 +512,8 @@ else:
             rfp = round(np.median(fwhmcalc), 3)
 #            rfr = round(np.median(fwhmcalc) * pixscale * nativebin, 3)
 #            rfs = round(np.std(fwhmcalc) * pixscale * nativebin, 3)
-            rfr = round(np.median(fwhmcalc) * pixscale * binfocus * nativebin, 3)
-            rfs = round(np.std(fwhmcalc) * pixscale * binfocus * nativebin, 3)
+            rfr = round(np.median(fwhmcalc) * pixscale, 3)
+            rfs = round(np.std(fwhmcalc) * pixscale, 3)
 
 
 
