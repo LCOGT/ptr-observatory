@@ -178,7 +178,7 @@ class Sequencer:
         self.af_guard = False
         self.block_guard = False
         self.bias_dark_latch = False   #NB NB NB Should these initially be defined this way?
-        self.sky_flat_latch = False
+        
         self.morn_sky_flat_latch = False
         self.morn_bias_dark_latch = False   #NB NB NB Should these initially be defined this way?
         self.cool_down_latch = False
@@ -1800,7 +1800,7 @@ class Sequencer:
         g_dev['seq'].blockend= None
         self.time_of_next_slew = time.time()
         self.bias_dark_latch = False
-        self.sky_flat_latch = False
+        
         self.eve_sky_flat_latch = False
         self.morn_sky_flat_latch = False
         self.morn_bias_dark_latch = False
@@ -2826,8 +2826,10 @@ class Sequencer:
 
         if not (g_dev['obs'].enc_status['shutter_status'] == 'Open') and not (g_dev['obs'].enc_status['shutter_status'] == 'Sim. Open'):
             plog ("NOT DOING FLATS -- THE ROOF IS SHUT!!")
-            g_dev["obs"].send_to_user("A sky flat script request was rejected as the roof is shut.")
+            g_dev["obs"].send_to_user("A sky flat script request was rejected as the roof is shut.")            
             self.flats_being_collected = False
+            self.eve_sky_flat_latch = False
+            self.morn_sky_flat_latch = False
             return
 
         if  ((ephem.now() < g_dev['events']['Cool Down, Open']) or \
@@ -2835,12 +2837,16 @@ class Sequencer:
             plog ("NOT DOING FLATS -- IT IS THE DAYTIME!!")
             g_dev["obs"].send_to_user("A sky flat script request was rejected as it is during the daytime.")
             self.flats_being_collected = False
+            self.eve_sky_flat_latch = False
+            self.morn_sky_flat_latch = False
             return
 
         if (g_dev['events']['Naut Dusk'] < ephem.now() < g_dev['events']['Naut Dawn']) :
             plog ("NOT DOING FLATS -- IT IS THE NIGHTIME!!")
             g_dev["obs"].send_to_user("A sky flat script request was rejected as it too dark.")
             self.flats_being_collected = False
+            self.eve_sky_flat_latch = False
+            self.morn_sky_flat_latch = False
             return
 
 
