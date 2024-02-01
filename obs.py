@@ -1425,7 +1425,9 @@ class Observatory:
                                     self.open_and_enabled_to_observe = True
                                 else:
                                     self.open_and_enabled_to_observe = False
-
+                            else:
+                                self.open_and_enabled_to_observe = False
+                           
 
                         else:
                             plog("g_dev['obs'].enc_status not reporting correctly")
