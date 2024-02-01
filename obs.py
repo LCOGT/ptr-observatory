@@ -2430,13 +2430,24 @@ class Observatory:
 
 
                 is_osc= self.config["camera"][g_dev['cam'].name]["settings"]["is_osc"]
-                interpolate_for_focus= self.config["camera"][g_dev['cam'].name]["settings"]['interpolate_for_focus']
-                bin_for_focus= self.config["camera"][g_dev['cam'].name]["settings"]['bin_for_focus']
-                focus_bin_value= self.config["camera"][g_dev['cam'].name]["settings"]['focus_bin_value']
-                interpolate_for_sep=self.config["camera"][g_dev['cam'].name]["settings"]['interpolate_for_sep']
-                bin_for_sep= self.config["camera"][g_dev['cam'].name]["settings"]['bin_for_sep']
-                sep_bin_value= self.config["camera"][g_dev['cam'].name]["settings"]['sep_bin_value']
-                focus_jpeg_size= self.config["camera"][g_dev['cam'].name]["settings"]['focus_jpeg_size']
+                # interpolate_for_focus= self.config["camera"][g_dev['cam'].name]["settings"]['interpolate_for_focus']
+                # bin_for_focus= self.config["camera"][g_dev['cam'].name]["settings"]['bin_for_focus']
+                # focus_bin_value= self.config["camera"][g_dev['cam'].name]["settings"]['focus_bin_value']
+                # interpolate_for_sep=self.config["camera"][g_dev['cam'].name]["settings"]['interpolate_for_sep']
+                # bin_for_sep= self.config["camera"][g_dev['cam'].name]["settings"]['bin_for_sep']
+                # sep_bin_value= self.config["camera"][g_dev['cam'].name]["settings"]['sep_bin_value']
+                # focus_jpeg_size= self.config["camera"][g_dev['cam'].name]["settings"]['focus_jpeg_size']
+                
+                # These are deprecated, just holding onto it until a cleanup at some stage
+                interpolate_for_focus= False
+                bin_for_focus= False
+                focus_bin_value= 1
+                interpolate_for_sep=False
+                bin_for_sep= False
+                sep_bin_value= 1
+                focus_jpeg_size= 500
+                
+                
                 saturate=g_dev['cam'].config["camera"][g_dev['cam'].name]["settings"]["saturate"]
                 minimum_realistic_seeing=self.config['minimum_realistic_seeing']
                 sep_subprocess=subprocess.Popen(['python','subprocesses/SEPprocess.py'],stdin=subprocess.PIPE,stdout=subprocess.PIPE,bufsize=0)
@@ -2637,7 +2648,9 @@ class Observatory:
                     try:
                         platesolve_subprocess=subprocess.Popen(['python','subprocesses/Platesolveprocess.py'],stdin=subprocess.PIPE,stdout=subprocess.PIPE,bufsize=0)
 
-                        platesolve_crop = self.config["camera"][g_dev['cam'].name]["settings"]['platesolve_image_crop']
+                        # THESE ARE ALL DEPRECATED. Waiting for a cleanup
+                        #platesolve_crop = self.config["camera"][g_dev['cam'].name]["settings"]['platesolve_image_crop']
+                        platesolve_crop = 0.0
                         #bin_for_platesolve= self.config["camera"][g_dev['cam'].name]["settings"]['bin_for_platesolve']
                         #platesolve_bin_factor=self.config["camera"][g_dev['cam'].name]["settings"]['platesolve_bin_value']
 
@@ -2685,15 +2698,15 @@ class Observatory:
                             solved_ra = solve["ra_j2000_hours"]
                             solved_dec = solve["dec_j2000_degrees"]
                             solved_arcsecperpixel = solve["arcsec_per_pixel"]
-                            plog("1x1 pixelscale solved: " + str(float(solved_arcsecperpixel/ g_dev['cam'].native_bin )))# / g_dev['cam'].native_bin)))
-                            if (g_dev['cam'].pixscale * 0.9) < float(solved_arcsecperpixel/ g_dev['cam'].native_bin) < (g_dev['cam'].pixscale * 1.1):
+                            plog("1x1 pixelscale solved: " + str(float(solved_arcsecperpixel )))# / g_dev['cam'].native_bin)))
+                            if (g_dev['cam'].pixscale * 0.9) < float(solved_arcsecperpixel) < (g_dev['cam'].pixscale * 1.1):
                                 self.pixelscale_shelf = shelve.open(g_dev['obs'].obsid_path + 'ptr_night_shelf/' + 'pixelscale' + g_dev['cam'].alias + str(g_dev['obs'].name))
                                 try:
                                     pixelscale_list=self.pixelscale_shelf['pixelscale_list']
                                 except:
                                     pixelscale_list=[]
 
-                                pixelscale_list.append(float(solved_arcsecperpixel / g_dev['cam'].native_bin))# / g_dev['cam'].native_bin))
+                                pixelscale_list.append(float(solved_arcsecperpixel))# / g_dev['cam'].native_bin))
 
                                 too_long=True
                                 while too_long:
