@@ -2534,7 +2534,7 @@ class Observatory:
                             # Then it triggers an autofocus.
                             g_dev["foc"].focus_tracker.pop(0)
                             g_dev["foc"].focus_tracker.append(round(rfr, 3))
-                            plog("Last ten FWHM (pixels): " + str(g_dev["foc"].focus_tracker) + " Median: " + str(np.nanmedian(g_dev["foc"].focus_tracker)) + " Last Solved: " + str(g_dev["foc"].last_focus_fwhm))
+                            plog("Last ten FWHM (asec): " + str(g_dev["foc"].focus_tracker) + " Median: " + str(np.nanmedian(g_dev["foc"].focus_tracker)) + " Last Solved: " + str(g_dev["foc"].last_focus_fwhm))
 
                             # If there hasn't been a focus yet, then it can't check it,
                             # so make this image the last solved focus.
