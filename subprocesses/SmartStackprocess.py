@@ -39,7 +39,9 @@ pier_side=input_sstk_info[11]
 squash_on_x_axis=input_sstk_info[12]
 osc_bayer=input_sstk_info[13]
 image_saturation_level=input_sstk_info[14]
-nativebin=input_sstk_info[15]
+# Deprecated - native bin not used in smartstacks
+#nativebin=input_sstk_info[15]
+nativebin=1
 readnoise=input_sstk_info[16]
 minimum_realistic_seeing=input_sstk_info[17]
 osc_brightness_enhance=input_sstk_info[18]

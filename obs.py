@@ -1202,14 +1202,16 @@ class Observatory:
                     g_dev["obs"].stop_all_activity = False
 
 
-                # # If camera is rebooting, the exposure_busy term can fall out
-                # while True:
-                #     try:
-                #         g_dev["cam"].exposure_busy
-                #         break
-                #     except:
-                #         plog ("pausing while camera reboots")
-                #         time.sleep(1)
+                # If camera is rebooting, the exposure_busy term can fall out
+                if g_dev["cam"].theskyx:
+                    while True:
+                        try:
+                            g_dev["cam"].exposure_busy
+                            plog ("theskyx camera check")
+                            break
+                        except:
+                            plog ("pausing while camera reboots")
+                            time.sleep(1)
 
 
                 # Good spot to check if we need to nudge the telescope as long as we aren't exposing.
@@ -1423,7 +1425,9 @@ class Observatory:
                                     self.open_and_enabled_to_observe = True
                                 else:
                                     self.open_and_enabled_to_observe = False
-
+                            else:
+                                self.open_and_enabled_to_observe = False
+                           
 
                         else:
                             plog("g_dev['obs'].enc_status not reporting correctly")
@@ -2428,22 +2432,31 @@ class Observatory:
 
 
                 is_osc= self.config["camera"][g_dev['cam'].name]["settings"]["is_osc"]
-                interpolate_for_focus= self.config["camera"][g_dev['cam'].name]["settings"]['interpolate_for_focus']
-                bin_for_focus= self.config["camera"][g_dev['cam'].name]["settings"]['bin_for_focus']
-                focus_bin_value= self.config["camera"][g_dev['cam'].name]["settings"]['focus_bin_value']
-                interpolate_for_sep=self.config["camera"][g_dev['cam'].name]["settings"]['interpolate_for_sep']
-                bin_for_sep= self.config["camera"][g_dev['cam'].name]["settings"]['bin_for_sep']
-                sep_bin_value= self.config["camera"][g_dev['cam'].name]["settings"]['sep_bin_value']
-                focus_jpeg_size= self.config["camera"][g_dev['cam'].name]["settings"]['focus_jpeg_size']
+                # interpolate_for_focus= self.config["camera"][g_dev['cam'].name]["settings"]['interpolate_for_focus']
+                # bin_for_focus= self.config["camera"][g_dev['cam'].name]["settings"]['bin_for_focus']
+                # focus_bin_value= self.config["camera"][g_dev['cam'].name]["settings"]['focus_bin_value']
+                # interpolate_for_sep=self.config["camera"][g_dev['cam'].name]["settings"]['interpolate_for_sep']
+                # bin_for_sep= self.config["camera"][g_dev['cam'].name]["settings"]['bin_for_sep']
+                # sep_bin_value= self.config["camera"][g_dev['cam'].name]["settings"]['sep_bin_value']
+                # focus_jpeg_size= self.config["camera"][g_dev['cam'].name]["settings"]['focus_jpeg_size']
+                
+                # These are deprecated, just holding onto it until a cleanup at some stage
+                interpolate_for_focus= False
+                bin_for_focus= False
+                focus_bin_value= 1
+                interpolate_for_sep=False
+                bin_for_sep= False
+                sep_bin_value= 1
+                focus_jpeg_size= 500
+                
+                
                 saturate=g_dev['cam'].config["camera"][g_dev['cam'].name]["settings"]["saturate"]
                 minimum_realistic_seeing=self.config['minimum_realistic_seeing']
                 sep_subprocess=subprocess.Popen(['python','subprocesses/SEPprocess.py'],stdin=subprocess.PIPE,stdout=subprocess.PIPE,bufsize=0)
 
 
 
-                pickle.dump([hdufocusdata, pixscale, readnoise, avg_foc, focus_image, im_path, text_name, hduheader, cal_path, cal_name, frame_type, focus_position, g_dev['events'],ephem.now(),self.config["camera"][g_dev['cam']
-                                                         .name]["settings"]['focus_image_crop_width'], self.config["camera"][g_dev['cam']
-                                                          .name]["settings"]['focus_image_crop_height'], is_osc,interpolate_for_focus,bin_for_focus,focus_bin_value,interpolate_for_sep,bin_for_sep,sep_bin_value,focus_jpeg_size,saturate,minimum_realistic_seeing,nativebin,do_sep
+                pickle.dump([hdufocusdata, pixscale, readnoise, avg_foc, focus_image, im_path, text_name, hduheader, cal_path, cal_name, frame_type, focus_position, g_dev['events'],ephem.now(),0.0,0.0, is_osc,interpolate_for_focus,bin_for_focus,focus_bin_value,interpolate_for_sep,bin_for_sep,sep_bin_value,focus_jpeg_size,saturate,minimum_realistic_seeing,nativebin,do_sep
                                                            ], sep_subprocess.stdin)
 
                 # Here is a manual debug area which makes a pickle for debug purposes. Default is False, but can be manually set to True for code debugging
@@ -2635,7 +2648,9 @@ class Observatory:
                     try:
                         platesolve_subprocess=subprocess.Popen(['python','subprocesses/Platesolveprocess.py'],stdin=subprocess.PIPE,stdout=subprocess.PIPE,bufsize=0)
 
-                        platesolve_crop = self.config["camera"][g_dev['cam'].name]["settings"]['platesolve_image_crop']
+                        # THESE ARE ALL DEPRECATED. Waiting for a cleanup
+                        #platesolve_crop = self.config["camera"][g_dev['cam'].name]["settings"]['platesolve_image_crop']
+                        platesolve_crop = 0.0
                         #bin_for_platesolve= self.config["camera"][g_dev['cam'].name]["settings"]['bin_for_platesolve']
                         #platesolve_bin_factor=self.config["camera"][g_dev['cam'].name]["settings"]['platesolve_bin_value']
 
@@ -2683,15 +2698,15 @@ class Observatory:
                             solved_ra = solve["ra_j2000_hours"]
                             solved_dec = solve["dec_j2000_degrees"]
                             solved_arcsecperpixel = solve["arcsec_per_pixel"]
-                            plog("1x1 pixelscale solved: " + str(float(solved_arcsecperpixel/ g_dev['cam'].native_bin )))# / g_dev['cam'].native_bin)))
-                            if (g_dev['cam'].pixscale * 0.9) < float(solved_arcsecperpixel/ g_dev['cam'].native_bin) < (g_dev['cam'].pixscale * 1.1):
+                            plog("1x1 pixelscale solved: " + str(float(solved_arcsecperpixel )))# / g_dev['cam'].native_bin)))
+                            if (g_dev['cam'].pixscale * 0.9) < float(solved_arcsecperpixel) < (g_dev['cam'].pixscale * 1.1):
                                 self.pixelscale_shelf = shelve.open(g_dev['obs'].obsid_path + 'ptr_night_shelf/' + 'pixelscale' + g_dev['cam'].alias + str(g_dev['obs'].name))
                                 try:
                                     pixelscale_list=self.pixelscale_shelf['pixelscale_list']
                                 except:
                                     pixelscale_list=[]
 
-                                pixelscale_list.append(float(solved_arcsecperpixel / g_dev['cam'].native_bin))# / g_dev['cam'].native_bin))
+                                pixelscale_list.append(float(solved_arcsecperpixel))# / g_dev['cam'].native_bin))
 
                                 too_long=True
                                 while too_long:

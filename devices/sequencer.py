@@ -23,6 +23,7 @@ import os
 import gc
 from pyowm import OWM
 from pyowm.utils import config
+from scipy import interpolate
 import warnings
 
 from devices.camera import Camera
@@ -59,6 +60,50 @@ def authenticated_request(method: str, uri: str, payload: dict = None) -> str:
 
     response = requests.request(**request_kwargs)
     return response.json()
+
+# def interpolate_missing_pixels(
+#         image: np.ndarray,
+#         mask: np.ndarray,
+#         method: str = 'nearest',
+#         fill_value: int = 0
+# ):
+#     """
+#     from: https://stackoverflow.com/questions/37662180/interpolate-missing-values-2d-python
+    
+#     :param image: a 2D image
+#     :param mask: a 2D boolean image, True indicates missing values
+#     :param method: interpolation method, one of
+#         'nearest', 'linear', 'cubic'.
+#     :param fill_value: which value to use for filling up data outside the
+#         convex hull of known pixel values.
+#         Default is 0, Has no effect for 'nearest'.
+#     :return: the image with missing values interpolated
+#     """
+    
+
+#     h, w = image.shape[:2]
+#     xx, yy = np.meshgrid(np.arange(w), np.arange(h))
+
+#     known_x = xx[~mask]
+#     known_y = yy[~mask]
+#     known_v = image[~mask]
+#     missing_x = xx[mask]
+#     missing_y = yy[mask]
+
+#     interp_values = interpolate.griddata(
+#         (known_x, known_y), known_v, (missing_x, missing_y),
+#         method=method, fill_value=fill_value
+#     )
+    
+#     # interp_values = interpolate.interpn(
+#     #     (known_x, known_y), known_v, (missing_x, missing_y),
+#     #     method=method, fill_value=fill_value
+#     # )
+
+#     interp_image = image.copy()
+#     interp_image[missing_y, missing_x] = interp_values
+
+#     return interp_image
 
 
 def fit_quadratic(x, y):
@@ -133,7 +178,7 @@ class Sequencer:
         self.af_guard = False
         self.block_guard = False
         self.bias_dark_latch = False   #NB NB NB Should these initially be defined this way?
-        self.sky_flat_latch = False
+        
         self.morn_sky_flat_latch = False
         self.morn_bias_dark_latch = False   #NB NB NB Should these initially be defined this way?
         self.cool_down_latch = False
@@ -216,6 +261,8 @@ class Sequencer:
         self.rotator_has_been_homed_this_evening=False
         g_dev['obs'].request_update_calendar_blocks()
         #self.blocks=
+        
+        self.MTF_temporary_flat_timer=time.time()-310
 
 
 
@@ -451,14 +498,29 @@ class Sequencer:
                 self.bias_dark_script(req, opt, morn=False)
                 self.eve_bias_done = True
                 self.bias_dark_latch = False
+            
+            #print (self.MTF_temporary_flat_timer-time.time())
+            
+            if time.time()-self.MTF_temporary_flat_timer > 300:
+                self.MTF_temporary_flat_timer=time.time()
+                plog ("EVESKY FLAG HUNTING")
+                plog ("Roof open time: " + str(time.time() - g_dev['seq'].time_roof_last_opened))
+                plog ("Sky flat latch: " + str(self.eve_sky_flat_latch))
+                plog ("Scope in manual mode: " + str(g_dev['obs'].scope_in_manual_mode))
+                plog ("Eve sky start: " + str(events['Eve Sky Flats']))
+                plog ("Eve sky end: " + str(events['End Eve Sky Flats']))
+                plog ("In between: " + str((events['Eve Sky Flats'] <= ephem_now < events['End Eve Sky Flats'])))
+                plog ("Open and enabled: " + str(g_dev['obs'].open_and_enabled_to_observe))
+                plog ("Eve sky flats done: " + str(self.eve_flats_done))
+                plog ("Camera cooled: " + str(g_dev['obs'].camera_sufficiently_cooled_for_calibrations))
 
             if (time.time() - g_dev['seq'].time_roof_last_opened > \
                    self.config['time_to_wait_after_roof_opens_to_take_flats'] ) and \
                    not self.eve_sky_flat_latch and not g_dev['obs'].scope_in_manual_mode and \
-                   ((events['Eve Sky Flats'] <= ephem_now < events['End Eve Sky Flats'])  \
+                   (events['Eve Sky Flats'] <= ephem_now < events['End Eve Sky Flats'])  \
                    and self.config['auto_eve_sky_flat'] and g_dev['obs'].open_and_enabled_to_observe and\
                    not self.eve_flats_done \
-                   and g_dev['obs'].camera_sufficiently_cooled_for_calibrations):
+                   and g_dev['obs'].camera_sufficiently_cooled_for_calibrations:
 
                 self.eve_sky_flat_latch = True
                 self.current_script = "Eve Sky Flat script starting"
@@ -473,7 +535,7 @@ class Sequencer:
                 # But only three times
                 self.new_throughtputs_detected_in_flat_run=True
                 flat_run_counter=0
-                while self.new_throughtputs_detected_in_flat_run and flat_run_counter <3 and ephem_now < events['End Morn Sky Flats']:
+                while self.new_throughtputs_detected_in_flat_run and flat_run_counter <3 and ephem_now < events['End Eve Sky Flats']:
                     self.new_throughtputs_detected_in_flat_run=False
                     flat_run_counter=flat_run_counter+1
                     self.sky_flat_script({}, {}, morn=False)   #Null command dictionaries
@@ -1607,10 +1669,10 @@ class Sequencer:
 
         self.rotator_has_been_homed_this_evening=False
 
-        self.eve_flats_done = False
-        self.morn_flats_done = False
-        self.morn_bias_done = False
-        self.eve_bias_done = False
+        # self.eve_flats_done = False
+        # self.morn_flats_done = False
+        # self.morn_bias_done = False
+        # self.eve_bias_done = False
 
         self.nightime_bias_counter = 0
         self.nightime_dark_counter = 0
@@ -1738,13 +1800,15 @@ class Sequencer:
         g_dev['seq'].blockend= None
         self.time_of_next_slew = time.time()
         self.bias_dark_latch = False
-        self.sky_flat_latch = False
+        
         self.eve_sky_flat_latch = False
         self.morn_sky_flat_latch = False
         self.morn_bias_dark_latch = False
         self.clock_focus_latch = False
         self.cool_down_latch = False
         self.clock_focus_latch = False
+        
+        self.flats_being_collected = False        
 
         self.morn_bias_done = False
         self.eve_bias_done = False
@@ -2325,12 +2389,102 @@ class Sequencer:
                             num_of_nans=np.count_nonzero(np.isnan(temporaryFlat))
                             plog ("Number of Nans in flat this iteration: " + str(num_of_nans))
 
+                            #breakpoint()
+
                             if num_of_nans == last_num_of_nans:
                                 break
                             last_num_of_nans=copy.deepcopy(num_of_nans)
                             while num_of_nans > 0:
-
-                                temporaryFlat=interpolate_replace_nans(temporaryFlat, kernel)
+                                timestart=time.time()
+                                #temporaryFlat=interpolate_replace_nans(temporaryFlat, kernel)
+                                
+                                
+                                
+                                
+                                
+                                # List the coordinates that are nan in the array
+                                nan_coords=np.argwhere(np.isnan(temporaryFlat))
+                                x_size=temporaryFlat.shape[0]
+                                y_size=temporaryFlat.shape[1]
+                                
+                                
+                                # For each coordinate pop out the 3x3 grid
+                                try:
+                                    for nancoord in nan_coords:
+                                        x_nancoord=nancoord[0]
+                                        y_nancoord=nancoord[1]
+                                        #print ("******************")
+                                        #print (x_nancoord)
+                                        #print (y_nancoord)
+                                        countervalue=0
+                                        countern=0
+                                        # left
+                                        if x_nancoord != 0:
+                                            value_here=temporaryFlat[x_nancoord-1,y_nancoord]
+                                            if not np.isnan(value_here):
+                                                countervalue=countervalue+value_here
+                                                countern=countern+1
+                                        # right
+                                        if x_nancoord != (x_size-1):
+                                            value_here=temporaryFlat[x_nancoord+1,y_nancoord]
+                                            if not np.isnan(value_here):
+                                                countervalue=countervalue+value_here
+                                                countern=countern+1
+                                        # below
+                                        if y_nancoord != 0:
+                                            value_here=temporaryFlat[x_nancoord,y_nancoord-1]
+                                            if not np.isnan(value_here):
+                                                countervalue=countervalue+value_here
+                                                countern=countern+1
+                                        # above
+                                        if y_nancoord != (y_size-1):
+                                            value_here=temporaryFlat[x_nancoord,y_nancoord+1]
+                                            if not np.isnan(value_here):
+                                                countervalue=countervalue+value_here
+                                                countern=countern+1
+                                        
+                                        if countern == 0:
+                                            temporaryFlat[x_nancoord,y_nancoord]=np.nan
+                                        else:
+                                            temporaryFlat[x_nancoord,y_nancoord]=countervalue/countern
+                                            
+                                        #print(countervalue/countern)
+                                
+                                except:
+                                    plog(traceback.format_exc())
+                                    breakpoint()
+                                        
+                                    
+                                
+                                
+                                # Get the above, below, left and righ tvalues where not nan
+                                
+                                
+                                # place the average value in the nan coordinate
+                                
+                                
+                                
+                                
+                            
+                                #interpolate_replace_nans(temporaryFlat, kernel)
+                                plog ("time for fitzcycle: " +str(time.time()-timestart))
+                                
+                                # #temporaryFlat=
+                                # interpolate_missing_pixels(temporaryFlat,np.isnan(temporaryFlat),method='nearest',fill_value=np.nan)
+                                # plog ("time for nearest: " +str(time.time()-timestart))
+                                # timestart=time.time()
+                                # interpolate_missing_pixels(temporaryFlat,np.isnan(temporaryFlat),method='linear',fill_value=np.nan)
+                                # plog ("time for linear: " +str(time.time()-timestart))
+                                # timestart=time.time()
+                                
+                                # interpolate_missing_pixels(temporaryFlat,np.isnan(temporaryFlat),method='slinear',fill_value=np.nan)
+                                # plog ("time for slinear: " +str(time.time()-timestart))
+                                # timestart=time.time()
+                                # temporaryFlat=interpolate_missing_pixels(temporaryFlat,np.isnan(temporaryFlat),method='cubic',fill_value=np.nan)
+                                # plog ("time for cubic: " +str(time.time()-timestart))
+                                
+                                
+                                
                                 # temporaryFlat[temporaryFlat == inf] = np.nan
                                 # temporaryFlat[temporaryFlat == -inf] = np.nan
                                 # temporaryFlat[temporaryFlat < 0.000001 ] = np.nan
@@ -2674,8 +2828,10 @@ class Sequencer:
 
         if not (g_dev['obs'].enc_status['shutter_status'] == 'Open') and not (g_dev['obs'].enc_status['shutter_status'] == 'Sim. Open'):
             plog ("NOT DOING FLATS -- THE ROOF IS SHUT!!")
-            g_dev["obs"].send_to_user("A sky flat script request was rejected as the roof is shut.")
+            g_dev["obs"].send_to_user("A sky flat script request was rejected as the roof is shut.")            
             self.flats_being_collected = False
+            self.eve_sky_flat_latch = False
+            self.morn_sky_flat_latch = False
             return
 
         if  ((ephem.now() < g_dev['events']['Cool Down, Open']) or \
@@ -2683,12 +2839,16 @@ class Sequencer:
             plog ("NOT DOING FLATS -- IT IS THE DAYTIME!!")
             g_dev["obs"].send_to_user("A sky flat script request was rejected as it is during the daytime.")
             self.flats_being_collected = False
+            self.eve_sky_flat_latch = False
+            self.morn_sky_flat_latch = False
             return
 
         if (g_dev['events']['Naut Dusk'] < ephem.now() < g_dev['events']['Naut Dawn']) :
             plog ("NOT DOING FLATS -- IT IS THE NIGHTIME!!")
             g_dev["obs"].send_to_user("A sky flat script request was rejected as it too dark.")
             self.flats_being_collected = False
+            self.eve_sky_flat_latch = False
+            self.morn_sky_flat_latch = False
             return
 
 

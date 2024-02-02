@@ -494,14 +494,14 @@ site_config = {
                 # If the pixel scale is well-sampled (e.g. 0.6 arcsec per RGGB pixel or 0.3 arcsec per individual debayer pixel)
                 # Then binning is probably fine for all three. For understampled pixel scales - which are likely with OSCs
                 # then binning for focus is recommended. SEP and Platesolve can generally always be binned.                
-                'interpolate_for_focus': False,
-                'bin_for_focus' : False, # This setting will bin the image for focussing rather than interpolating. Good for 1x1 pixel sizes < 0.6.
-                'focus_bin_value' : 1,
-                'interpolate_for_sep' : False,
-                'bin_for_sep' : False, # This setting will bin the image for SEP photometry rather than interpolating.
-                'sep_bin_value' : 1,
-                'bin_for_platesolve' : False, # This setting will bin the image for platesolving rather than interpolating.
-                'platesolve_bin_value' : 1,
+                # 'interpolate_for_focus': False,
+                # 'bin_for_focus' : False, # This setting will bin the image for focussing rather than interpolating. Good for 1x1 pixel sizes < 0.6.
+                # 'focus_bin_value' : 1,
+                # 'interpolate_for_sep' : False,
+                # 'bin_for_sep' : False, # This setting will bin the image for SEP photometry rather than interpolating.
+                # 'sep_bin_value' : 1,
+                # 'bin_for_platesolve' : False, # This setting will bin the image for platesolving rather than interpolating.
+                # 'platesolve_bin_value' : 1,
                 
                 
                 # ONLY TRANSFORM THE FITS IF YOU HAVE
@@ -537,16 +537,16 @@ site_config = {
                # These were originally inspired by the RASA+QHY which is 3.3 degrees on a side and regularly detects
                # tens of thousands of sources, but any crop will speed things up. Don't use SEP crop unless 
                # you clearly need to. 
-               'focus_image_crop_width': 0.0, # For excessive fields of view, to speed things up crop the image to a fraction of the full width    
-               'focus_image_crop_height': 0.0, # For excessive fields of view, to speed things up crop the image to a fraction of the full height
+               # 'focus_image_crop_width': 0.0, # For excessive fields of view, to speed things up crop the image to a fraction of the full width    
+               # 'focus_image_crop_height': 0.0, # For excessive fields of view, to speed things up crop the image to a fraction of the full height
                                
-               'focus_jpeg_size': 500, # How many pixels square to crop the focus image for the UI Jpeg
+               # 'focus_jpeg_size': 500, # How many pixels square to crop the focus image for the UI Jpeg
                # PLATESOLVE CROPS HAVE TO BE EQUAL! OTHERWISE THE PLATE CENTRE IS NOT THE POINTING CENTRE                
-               'platesolve_image_crop': 0.0, # Platesolve crops have to be symmetrical 
+               # 'platesolve_image_crop': 0.0, # Platesolve crops have to be symmetrical 
                # Really, the SEP image should not be cropped unless your field of view and number of sources
                # Are taking chunks out of the processing time. 
-               'sep_image_crop_width': 0.0, # For excessive fields of view, to speed things up crop the processed image area to a fraction of the full width    
-               'sep_image_crop_height': 0.0, # For excessive fields of view, to speed things up crop the processed image area to a fraction of the full width    
+               # 'sep_image_crop_width': 0.0, # For excessive fields of view, to speed things up crop the processed image area to a fraction of the full width    
+               # 'sep_image_crop_height': 0.0, # For excessive fields of view, to speed things up crop the processed image area to a fraction of the full width    
                
                
                 'osc_bayer' : 'RGGB',

@@ -2263,6 +2263,14 @@ class Camera:
             frame_type
         )
         #plog("Finish Exposure, zoom:  ", zoom_factor)
+
+        try:
+            if opt["object_name"] == '':
+                opt["object_name"] = 'Unknown'
+        except:
+            opt["object_name"] = 'Unknown'
+
+
         try:
             plog(opt["object_name"])
         except:
@@ -4415,11 +4423,16 @@ def post_exposure_process(payload):
                         reduced_hdusmallheader['FULLWELL']=float(hdu.header['FULLWELL']) * pow( selfnative_bin,2)
                         reduced_hdusmallheader['MAXLIN']=float(hdu.header['MAXLIN']) * pow( selfnative_bin,2)
 
+
                         reduced_hdusmalldata=hdusmalldata+200.0
                         reduced_hdusmallheader['PEDESTAL']=200
                     else:
                         reduced_hdusmalldata=copy.deepcopy(hdusmalldata)
                         reduced_hdusmallheader=copy.deepcopy(hdusmallheader)
+
+                        reduced_hdusmalldata=hdusmalldata+200.0
+                        reduced_hdusmallheader['PEDESTAL']=200
+
 
                     # Add a pedestal to the reduced data
                     # This is important for a variety of reasons
