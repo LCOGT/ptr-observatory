@@ -169,6 +169,10 @@ else:
         fx_degrees = (fx * pixscale) /3600
         fy_degrees = (fy * pixscale) /3600
         
+        crop_x=0
+        crop_y=0
+        
+        
         if fx_degrees > 1.0:
             ratio_crop= 1/fx_degrees
             crop_x = int(ratio_crop * fx)
