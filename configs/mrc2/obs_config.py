@@ -134,18 +134,18 @@ site_config = {
     'keep_focus_images_on_disk': True,  # To save space, the focus file can not be saved.   
     # A certain type of naming that sorts filenames by numberid first
     'save_reduced_file_numberid_first' : False,   
-   # Number of files to send up to the ptrarchive simultaneously.
-   'number_of_simultaneous_ptrarchive_streams' : 4,
-   # Number of files to send over to the pipearchive simultaneously.
-   'number_of_simultaneous_pipearchive_streams' : 4,
-   # Number of files to send over to the altarchive simultaneously.
-   'number_of_simultaneous_altarchive_streams' : 4,
-   
-   
-   # Bisque mounts can't run updates in a thread ... yet... until I figure it out,
-   # So this is False for Bisques and true for everyone else.
-   'run_main_update_in_a_thread': True,
-   'run_status_update_in_a_thread' : True,
+    # Number of files to send up to the ptrarchive simultaneously.
+    'number_of_simultaneous_ptrarchive_streams' : 4,
+    # Number of files to send over to the pipearchive simultaneously.
+    'number_of_simultaneous_pipearchive_streams' : 4,
+    # Number of files to send over to the altarchive simultaneously.
+    'number_of_simultaneous_altarchive_streams' : 4,
+    
+    
+    # Bisque mounts can't run updates in a thread ... yet... until I figure it out,
+    # So this is False for Bisques and true for everyone else.
+    'run_main_update_in_a_thread': True,
+    'run_status_update_in_a_thread' : True,
 
     # Minimum realistic seeing at the site.
     # This allows culling of unphysical results in photometry and other things
@@ -166,8 +166,8 @@ site_config = {
     
     'astro_dark_buffer': 30,   #Min before and after AD to extend observing window
     #'morn_flat_start_offset': -10,       #min from Sunrise
-    'morn_flat_start_offset': -40,       #min from Sunrise
-    'morn_flat_end_offset':  +45,        #min from Sunrise
+    'morn_flat_start_offset': -30,       #min from Sunrise
+    'morn_flat_end_offset':  +30,        #min from Sunrise
     'end_night_processing_time':  90,   #  A guess
     'observing_begins_offset': 18,    
     # How many minutes before civilDawn to do ....
@@ -183,11 +183,11 @@ site_config = {
     'enclosure_check_period': 1,    # How many minutes between enclosure checks
 
     # Turn on and off various automated calibrations at different times.
-    'auto_eve_bias_dark': False,
+    'auto_eve_bias_dark': True,
     'auto_eve_sky_flat': True,
     
     'time_to_wait_after_roof_opens_to_take_flats': 120,   #sec Just imposing a minimum in case of a restart.
-    'auto_midnight_moonless_bias_dark': True,
+    'auto_midnight_moonless_bias_dark': False,
     'auto_morn_sky_flat': True,
     'auto_morn_bias_dark': False,
     

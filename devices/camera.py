@@ -1600,7 +1600,8 @@ class Camera:
         # Fifth thing, check that the sky flat latch isn't on
         # (I moved the scope during flats once, it wasn't optimal)
         if not skip_calibration_check:
-            if g_dev['seq'].morn_sky_flat_latch  or g_dev['seq'].eve_sky_flat_latch or g_dev['seq'].sky_flat_latch:
+
+            if g_dev['seq'].morn_sky_flat_latch  or g_dev['seq'].eve_sky_flat_latch:   # or g_dev['seq'].sky_flat_latch:
                 g_dev['obs'].send_to_user("Refusing exposure request as the observatory is currently undertaking flats.")
                 plog("Refusing exposure request as the observatory is currently taking flats.")
                 return
