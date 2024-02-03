@@ -3998,6 +3998,7 @@ class Sequencer:
 
                 retry += 1
                 plog("Retry of central focus star)")
+                #breakpoint()
                 continue
             else:
                 break
