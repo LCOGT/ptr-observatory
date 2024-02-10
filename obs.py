@@ -2643,6 +2643,8 @@ class Observatory:
                 (hdufocusdata, hduheader, cal_path, cal_name, frame_type, time_platesolve_requested,
                  pixscale, pointing_ra, pointing_dec, firstframesmartstack) = self.platesolve_queue.get(block=False)
 
+                is_osc=g_dev['cam'].config["camera"][g_dev['cam'].name]["settings"]["is_osc"]
+
                 # Do not bother platesolving unless it is dark enough!!
                 if not (g_dev['events']['Civil Dusk'] < ephem.now() < g_dev['events']['Civil Dawn']):
                     plog("Too bright to consider platesolving!")
@@ -2657,12 +2659,12 @@ class Observatory:
                         #platesolve_bin_factor=self.config["camera"][g_dev['cam'].name]["settings"]['platesolve_bin_value']
 
                         pickle.dump([hdufocusdata, hduheader, self.local_calibration_path, cal_name, frame_type, time_platesolve_requested,
-                         pixscale, pointing_ra, pointing_dec, platesolve_crop, False, 1, g_dev['cam'].config["camera"][g_dev['cam'].name]["settings"]["saturate"], g_dev['cam'].camera_known_readnoise, self.config['minimum_realistic_seeing']], platesolve_subprocess.stdin)
+                         pixscale, pointing_ra, pointing_dec, platesolve_crop, False, 1, g_dev['cam'].config["camera"][g_dev['cam'].name]["settings"]["saturate"], g_dev['cam'].camera_known_readnoise, self.config['minimum_realistic_seeing'], is_osc], platesolve_subprocess.stdin)
 
                         # yet another pickle debugger.
-                        if False:
+                        if True:
                             pickle.dump([hdufocusdata, hduheader, self.local_calibration_path, cal_name, frame_type, time_platesolve_requested,
-                             pixscale, pointing_ra, pointing_dec, platesolve_crop, False, 1, g_dev['cam'].config["camera"][g_dev['cam'].name]["settings"]["saturate"], g_dev['cam'].camera_known_readnoise, self.config['minimum_realistic_seeing']], open('subprocesses/testplatesolvepickle','wb'))
+                             pixscale, pointing_ra, pointing_dec, platesolve_crop, False, 1, g_dev['cam'].config["camera"][g_dev['cam'].name]["settings"]["saturate"], g_dev['cam'].camera_known_readnoise, self.config['minimum_realistic_seeing'],is_osc], open('subprocesses/testplatesolvepickle','wb'))
 
                         del hdufocusdata
 

@@ -14,6 +14,7 @@ import time
 import sep
 import traceback
 import math
+from scipy import ndimage as nd
 from auto_stretch.stretch import Stretch
 from astropy.nddata import block_reduce
 from colour_demosaicing import (
@@ -129,6 +130,7 @@ np.savetxt(
 )
 
 
+
 if not do_sep or (float(hduheader["EXPTIME"]) < 1.0):
     rfp = np.nan
     rfr = np.nan
@@ -201,68 +203,93 @@ else:
     if is_osc:
 
         #hdufocusdata=demosaicing_CFA_Bayer_bilinear(hdufocusdata, 'RGGB')[:,:,1]
-
-        # Wipe out red channel
-        hdufocusdata[::2, ::2]=np.nan
-        # Wipe out blue channel
-        hdufocusdata[1::2, 1::2]=np.nan
-        # Rapid interpolate
-        num_of_nans=np.count_nonzero(np.isnan(hdufocusdata))
-        while num_of_nans > 0:
-            #timestart=time.time()
-
-            # List the coordinates that are nan in the array
-            nan_coords=np.argwhere(np.isnan(hdufocusdata))
-            x_size=hdufocusdata.shape[0]
-            y_size=hdufocusdata.shape[1]
+        #breakpoint()
 
 
-            # For each coordinate pop out the 3x3 grid
+        #pop=time.time()
+        # # Wipe out red channel
+        # hdufocusdata[::2, ::2]=np.nan
+        # # Wipe out blue channel
+        # hdufocusdata[1::2, 1::2]=np.nan       
 
-            for nancoord in nan_coords:
-                x_nancoord=nancoord[0]
-                y_nancoord=nancoord[1]
-                #print ("******************")
-                #print (x_nancoord)
-                #print (y_nancoord)
-                countervalue=0
-                countern=0
-                # left
-                if x_nancoord != 0:
-                    value_here=hdufocusdata[x_nancoord-1,y_nancoord]
-                    if not np.isnan(value_here):
-                        countervalue=countervalue+value_here
-                        countern=countern+1
-                # right
-                if x_nancoord != (x_size-1):
-                    value_here=hdufocusdata[x_nancoord+1,y_nancoord]
-                    if not np.isnan(value_here):
-                        countervalue=countervalue+value_here
-                        countern=countern+1
-                # below
-                if y_nancoord != 0:
-                    value_here=hdufocusdata[x_nancoord,y_nancoord-1]
-                    if not np.isnan(value_here):
-                        countervalue=countervalue+value_here
-                        countern=countern+1
-                # above
-                if y_nancoord != (y_size-1):
-                    value_here=hdufocusdata[x_nancoord,y_nancoord+1]
-                    if not np.isnan(value_here):
-                        countervalue=countervalue+value_here
-                        countern=countern+1
+        # ind = nd.distance_transform_edt(np.isnan(hdufocusdata), return_distances=False, return_indices=True)
+        # hdufocusdata= hdufocusdata[tuple(ind)]
+        
+        #print (time.time() - pop)
+        #breakpoint()
+        
+        
+        #hdufocusdata=block_reduce(hdufocusdata,2,func=np.nansum)
+        #hdufocusdata = hdufocusdata.repeat(2, axis=0).repeat(2, axis=1)
+        
+        
+        
+        
+        
+        
+        #breakpoint()
+        
+        # # Rapid interpolate
+        # num_of_nans=np.count_nonzero(np.isnan(hdufocusdata))
+        # while num_of_nans > 0:
+        #     #timestart=time.time()
 
-                if countern == 0:
-                    hdufocusdata[x_nancoord,y_nancoord]=np.nan
-                else:
-                    hdufocusdata[x_nancoord,y_nancoord]=countervalue/countern
+        #     print (np.count_nonzero(np.isnan(hdufocusdata)))
 
-                num_of_nans=np.count_nonzero(np.isnan(hdufocusdata))
-                #print(countervalue/countern)
+        #     # List the coordinates that are nan in the array
+        #     nan_coords=np.argwhere(np.isnan(hdufocusdata))
+        #     x_size=hdufocusdata.shape[0]
+        #     y_size=hdufocusdata.shape[1]
 
 
+        #     # For each coordinate pop out the 3x3 grid
+        #     #breakpoint()
+        #     for nancoord in nan_coords:
+        #         #print(nancoord)
+        #         x_nancoord=nancoord[0]
+        #         y_nancoord=nancoord[1]
+        #         #print ("******************")
+        #         #print (x_nancoord)
+        #         #print (y_nancoord)
+        #         countervalue=0
+        #         countern=0
+        #         # left
+        #         if x_nancoord != 0:
+        #             value_here=hdufocusdata[x_nancoord-1,y_nancoord]
+        #             if not np.isnan(value_here):
+        #                 countervalue=countervalue+value_here
+        #                 countern=countern+1
+        #         # right
+        #         if x_nancoord != (x_size-1):
+        #             value_here=hdufocusdata[x_nancoord+1,y_nancoord]
+        #             if not np.isnan(value_here):
+        #                 countervalue=countervalue+value_here
+        #                 countern=countern+1
+        #         # below
+        #         if y_nancoord != 0:
+        #             value_here=hdufocusdata[x_nancoord,y_nancoord-1]
+        #             if not np.isnan(value_here):
+        #                 countervalue=countervalue+value_here
+        #                 countern=countern+1
+        #         # above
+        #         if y_nancoord != (y_size-1):
+        #             value_here=hdufocusdata[x_nancoord,y_nancoord+1]
+        #             if not np.isnan(value_here):
+        #                 countervalue=countervalue+value_here
+        #                 countern=countern+1
 
+        #         if countern == 0:
+        #             hdufocusdata[x_nancoord,y_nancoord]=np.nan
+        #         else:
+        #             hdufocusdata[x_nancoord,y_nancoord]=countervalue/countern
+
+        #     num_of_nans=np.count_nonzero(np.isnan(hdufocusdata))
+        #         #print(countervalue/countern)
+
+        pop=time.time()
+        hdufocusdata=demosaicing_CFA_Bayer_bilinear(hdufocusdata, 'RGGB')[:,:,1]
         hdufocusdata=hdufocusdata.astype("float32")
+        print (time.time()-pop)
         #binfocus=1
 
 
@@ -287,65 +314,10 @@ else:
         #     binfocus=sep_bin_factor
 
 
+    
+    #print ("goog")
 
-
-    # If it is a focus image then it will get sent in a different manner to the UI for a jpeg
-    # In this case, the image needs to be the 0.2 degree field that the focus field is made up of
-
-    if frame_type == 'focus':
-        hdusmalldata = np.array(hdufocusdata)
-        fx, fy = hdusmalldata.shape
-        aspect_ratio= fx/fy
-
-        focus_jpeg_size=0.2/(pixscale/3600)
-
-        if focus_jpeg_size < fx:
-            crop_width = (fx - focus_jpeg_size) / 2
-        else:
-            crop_width =2
-
-        if focus_jpeg_size < fy:
-            crop_height = (fy - (focus_jpeg_size / aspect_ratio) ) / 2
-        else:
-            crop_height = 2
-
-        # Make sure it is an even number for OSCs
-        if (crop_width % 2) != 0:
-            crop_width = crop_width+1
-        if (crop_height % 2) != 0:
-            crop_height = crop_height+1
-
-        crop_width = int(crop_width)
-        crop_height = int(crop_height)
-
-        if crop_width > 0 or crop_height > 0:
-            hdusmalldata = hdusmalldata[crop_width:-crop_width, crop_height:-crop_height]
-
-        hdusmalldata = hdusmalldata - np.min(hdusmalldata)
-
-        stretched_data_float = Stretch().stretch(hdusmalldata+1000)
-        stretched_256 = 255 * stretched_data_float
-        hot = np.where(stretched_256 > 255)
-        cold = np.where(stretched_256 < 0)
-        stretched_256[hot] = 255
-        stretched_256[cold] = 0
-        stretched_data_uint8 = stretched_256.astype("uint8")
-        hot = np.where(stretched_data_uint8 > 255)
-        cold = np.where(stretched_data_uint8 < 0)
-        stretched_data_uint8[hot] = 255
-        stretched_data_uint8[cold] = 0
-
-        iy, ix = stretched_data_uint8.shape
-        final_image = Image.fromarray(stretched_data_uint8)
-        draw = ImageDraw.Draw(final_image)
-
-        draw.text((0, 0), str(focus_position), (255))
-
-        final_image.save(im_path + text_name.replace('EX00.txt', 'EX10.jpg'))
-
-        del hdusmalldata
-        del stretched_data_float
-        del final_image
+    
 
 
 
@@ -397,7 +369,7 @@ else:
         # BANZAI prune nans from table
 
 
-
+        
 
 
         nan_in_row = np.zeros(len(sources), dtype=bool)
@@ -405,7 +377,7 @@ else:
             nan_in_row |= np.isnan(sources[col])
         sources = sources[~nan_in_row]
 
-
+        #breakpoint()
 
         # Calculate the ellipticity (Thanks BANZAI)
 
@@ -437,61 +409,59 @@ else:
         # Calcuate the equivilent of flux_auto (Thanks BANZAI)
         # This is the preferred best photometry SEP can do.
         # But sometimes it fails, so we try and except
-        try:
-            flux, fluxerr, flag = sep.sum_ellipse(focusimg, sources['x'], sources['y'],
-                                              sources['a'], sources['b'],
-                                              np.pi / 2.0, 2.5 * kronrad,
-                                              subpix=1, err=uncertainty)
-            sources['flux'] = flux
-            sources['fluxerr'] = fluxerr
-            sources['flag'] |= flag
-        except:
-            pass
+        # try:
+        #     flux, fluxerr, flag = sep.sum_ellipse(focusimg, sources['x'], sources['y'],
+        #                                       sources['a'], sources['b'],
+        #                                       np.pi / 2.0, 2.5 * kronrad,
+        #                                       subpix=1, err=uncertainty)
+        #     sources['flux'] = flux
+        #     sources['fluxerr'] = fluxerr
+        #     sources['flag'] |= flag
+        # except:
+        #     pass
 
 
 
-        sources['FWHM'], _ = sep.flux_radius(focusimg, sources['x'], sources['y'], sources['a'], 0.5,
-                                             subpix=5)
+        # sources['FWHM'], _ = sep.flux_radius(focusimg, sources['x'], sources['y'], sources['a'], 0.5,
+        #                                      subpix=5)
+        
+        #breakpoint()
         # If image has been binned for focus we need to multiply some of these things by the binning
         # To represent the original image
-        sources['FWHM'] = (sources['FWHM'] * 2)
-        sources['x'] = (sources['x'])
-        sources['y'] = (sources['y'])
-        sources['xpeak'] = (sources['xpeak'])
-        sources['ypeak'] = (sources['ypeak'])
-        sources['a'] = (sources['a'])
-        sources['b'] = (sources['b'])
-        sources['kronrad'] = (sources['kronrad'])
-        sources['peak'] = (sources['peak'])
-        sources['cpeak'] = (sources['cpeak'])
+        #sources['FWHM'] = (sources['FWHM'] * 2)
 
+        sources['FWHM']=sources['kronrad'] * 2
 
         #print (sources)
 
         # Need to reject any stars that have FWHM that are less than a extremely
         # perfect night as artifacts
-        if frame_type == 'focus':
-            sources = sources[sources['FWHM'] > (0.6 / (pixscale))]
-            sources = sources[sources['FWHM'] > (minimum_realistic_seeing / pixscale)]
-            sources = sources[sources['FWHM'] != 0]
+        # if frame_type == 'focus':
+        #     sources = sources[sources['FWHM'] > (0.6 / (pixscale))]
+        #     sources = sources[sources['FWHM'] > (minimum_realistic_seeing / pixscale)]
+        #     sources = sources[sources['FWHM'] != 0]
 
         source_delete = ['thresh', 'npix', 'tnpix', 'xmin', 'xmax', 'ymin', 'ymax', 'x2', 'y2', 'xy', 'errx2',
                          'erry2', 'errxy', 'a', 'b', 'theta', 'cxx', 'cyy', 'cxy', 'cflux', 'cpeak', 'xcpeak', 'ycpeak']
 
         sources.remove_columns(source_delete)
 
-        #print (sources)
+        
 
         # BANZAI prune nans from table
         nan_in_row = np.zeros(len(sources), dtype=bool)
         for col in sources.colnames:
             nan_in_row |= np.isnan(sources[col])
         sources = sources[~nan_in_row]
+        
+        
+
+        sources = sources[sources['FWHM'] != 0]
+        #sources = sources[sources['FWHM'] > 0.6]
+        sources = sources[sources['FWHM'] > (1/pixscale)]
 
         #breakpoint()
-        #print (sources)
-        #breakpoint()
-
+        
         sources.write(im_path + text_name.replace('.txt', '.sep'), format='csv', overwrite=True)
 
         if (len(sources) < 2) or ( frame_type == 'focus' and (len(sources) < 10 or len(sources) == np.nan or str(len(sources)) =='nan' or xdonut > 3.0 or ydonut > 3.0 or np.isnan(xdonut) or np.isnan(ydonut))):
@@ -522,6 +492,10 @@ else:
 #            rfs = round(np.std(fwhmcalc) * pixscale * nativebin, 3)
             rfr = round(np.median(fwhmcalc) * pixscale, 3)
             rfs = round(np.std(fwhmcalc) * pixscale, 3)
+            
+            
+            #print (sources)
+            #breakpoint()
 
 
 
@@ -688,3 +662,66 @@ try:
     pickle.dump(slice_n_dice, open(im_path + text_name.replace('.txt', '.box'),'wb'))
 except:
     pass
+
+
+
+# If it is a focus image then it will get sent in a different manner to the UI for a jpeg
+# In this case, the image needs to be the 0.2 degree field that the focus field is made up of
+
+if frame_type == 'focus':
+    hdusmalldata = np.array(hdufocusdata)
+    fx, fy = hdusmalldata.shape
+    aspect_ratio= fx/fy
+
+    focus_jpeg_size=0.2/(pixscale/3600)
+
+    if focus_jpeg_size < fx:
+        crop_width = (fx - focus_jpeg_size) / 2
+    else:
+        crop_width =2
+
+    if focus_jpeg_size < fy:
+        crop_height = (fy - (focus_jpeg_size / aspect_ratio) ) / 2
+    else:
+        crop_height = 2
+
+    # Make sure it is an even number for OSCs
+    if (crop_width % 2) != 0:
+        crop_width = crop_width+1
+    if (crop_height % 2) != 0:
+        crop_height = crop_height+1
+
+    crop_width = int(crop_width)
+    crop_height = int(crop_height)
+
+    if crop_width > 0 or crop_height > 0:
+        hdusmalldata = hdusmalldata[crop_width:-crop_width, crop_height:-crop_height]
+
+    hdusmalldata = hdusmalldata - np.min(hdusmalldata)
+
+    stretched_data_float = Stretch().stretch(hdusmalldata+1000)
+    stretched_256 = 255 * stretched_data_float
+    hot = np.where(stretched_256 > 255)
+    cold = np.where(stretched_256 < 0)
+    stretched_256[hot] = 255
+    stretched_256[cold] = 0
+    stretched_data_uint8 = stretched_256.astype("uint8")
+    hot = np.where(stretched_data_uint8 > 255)
+    cold = np.where(stretched_data_uint8 < 0)
+    stretched_data_uint8[hot] = 255
+    stretched_data_uint8[cold] = 0
+
+    iy, ix = stretched_data_uint8.shape
+    final_image = Image.fromarray(stretched_data_uint8)
+    draw = ImageDraw.Draw(final_image)
+
+    draw.text((0, 0), str(focus_position), (255))
+
+    final_image.save(im_path + text_name.replace('EX00.txt', 'EX10.jpg'))
+
+    del hdusmalldata
+    del stretched_data_float
+    del final_image
+
+
+#breakpoint()
