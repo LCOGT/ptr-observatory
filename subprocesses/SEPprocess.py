@@ -287,8 +287,30 @@ else:
         #         #print(countervalue/countern)
 
         pop=time.time()
-        hdufocusdata=demosaicing_CFA_Bayer_bilinear(hdufocusdata, 'RGGB')[:,:,1]
-        hdufocusdata=hdufocusdata.astype("float32")
+        #hdufocusdata=demosaicing_CFA_Bayer_bilinear(hdufocusdata, 'RGGB')[:,:,1]
+        #hdufocusdata=hdufocusdata.astype("float32")
+        
+        
+        # To fill the checker board, roll the array in all four directions and take the average
+        # Which is essentially the bilinear fill without excessive math or not using numpy
+        # It moves true values onto nans and vice versa, so makes an array of true values
+        # where the original has nans and we use that as the fill
+        hduadderup=np.roll(hdufocusdata,1,axis=0)
+        hduadderdown=np.roll(hdufocusdata,-1,axis=0)
+        hduadderleft=np.roll(hdufocusdata,1,axis=1)
+        hduadderright=np.roll(hdufocusdata,-1,axis=1)
+        
+        bilinearfill=np.mean( np.array([ hduadderup, hduadderdown, hduadderleft, hduadderright ]), axis=0 )
+        
+        del hduadderup
+        del hduadderdown
+        del hduadderleft
+        del hduadderright
+        
+        hdufocusdata = np.add(hdufocusdata,bilinearfill)
+        del bilinearfill
+        
+        
         print (time.time()-pop)
         #binfocus=1
 
