@@ -81,6 +81,9 @@ minimum_realistic_seeing=input_sep_info[25]
 #nativebin=input_sep_info[26]
 do_sep=input_sep_info[27]
 
+
+#print (hdufocusdata)
+
 #nativebin=1
 # Background clipped
 hduheader["IMGMIN"] = ( np.nanmin(hdufocusdata), "Minimum Value of Image Array" )
@@ -199,145 +202,26 @@ else:
             hdufocusdata = hdufocusdata[crop_x:-crop_x, crop_y:-crop_y]
 
 
-    #binfocus = 1
-    if is_osc:
+    if is_osc:     
+        
+        # Rapidly interpolate so that it is all one channel
+        
+        # Wipe out red channel
+        hdufocusdata[::2, ::2]=np.nan
+        # Wipe out blue channel
+        hdufocusdata[1::2, 1::2]=np.nan  
 
-        #hdufocusdata=demosaicing_CFA_Bayer_bilinear(hdufocusdata, 'RGGB')[:,:,1]
-        #breakpoint()
-
-
-        #pop=time.time()
-        # # Wipe out red channel
-        # hdufocusdata[::2, ::2]=np.nan
-        # # Wipe out blue channel
-        # hdufocusdata[1::2, 1::2]=np.nan       
-
-        # ind = nd.distance_transform_edt(np.isnan(hdufocusdata), return_distances=False, return_indices=True)
-        # hdufocusdata= hdufocusdata[tuple(ind)]
-        
-        #print (time.time() - pop)
-        #breakpoint()
-        
-        
-        #hdufocusdata=block_reduce(hdufocusdata,2,func=np.nansum)
-        #hdufocusdata = hdufocusdata.repeat(2, axis=0).repeat(2, axis=1)
-        
-        
-        
-        
-        
-        
-        #breakpoint()
-        
-        # # Rapid interpolate
-        # num_of_nans=np.count_nonzero(np.isnan(hdufocusdata))
-        # while num_of_nans > 0:
-        #     #timestart=time.time()
-
-        #     print (np.count_nonzero(np.isnan(hdufocusdata)))
-
-        #     # List the coordinates that are nan in the array
-        #     nan_coords=np.argwhere(np.isnan(hdufocusdata))
-        #     x_size=hdufocusdata.shape[0]
-        #     y_size=hdufocusdata.shape[1]
-
-
-        #     # For each coordinate pop out the 3x3 grid
-        #     #breakpoint()
-        #     for nancoord in nan_coords:
-        #         #print(nancoord)
-        #         x_nancoord=nancoord[0]
-        #         y_nancoord=nancoord[1]
-        #         #print ("******************")
-        #         #print (x_nancoord)
-        #         #print (y_nancoord)
-        #         countervalue=0
-        #         countern=0
-        #         # left
-        #         if x_nancoord != 0:
-        #             value_here=hdufocusdata[x_nancoord-1,y_nancoord]
-        #             if not np.isnan(value_here):
-        #                 countervalue=countervalue+value_here
-        #                 countern=countern+1
-        #         # right
-        #         if x_nancoord != (x_size-1):
-        #             value_here=hdufocusdata[x_nancoord+1,y_nancoord]
-        #             if not np.isnan(value_here):
-        #                 countervalue=countervalue+value_here
-        #                 countern=countern+1
-        #         # below
-        #         if y_nancoord != 0:
-        #             value_here=hdufocusdata[x_nancoord,y_nancoord-1]
-        #             if not np.isnan(value_here):
-        #                 countervalue=countervalue+value_here
-        #                 countern=countern+1
-        #         # above
-        #         if y_nancoord != (y_size-1):
-        #             value_here=hdufocusdata[x_nancoord,y_nancoord+1]
-        #             if not np.isnan(value_here):
-        #                 countervalue=countervalue+value_here
-        #                 countern=countern+1
-
-        #         if countern == 0:
-        #             hdufocusdata[x_nancoord,y_nancoord]=np.nan
-        #         else:
-        #             hdufocusdata[x_nancoord,y_nancoord]=countervalue/countern
-
-        #     num_of_nans=np.count_nonzero(np.isnan(hdufocusdata))
-        #         #print(countervalue/countern)
-
-        pop=time.time()
-        #hdufocusdata=demosaicing_CFA_Bayer_bilinear(hdufocusdata, 'RGGB')[:,:,1]
-        #hdufocusdata=hdufocusdata.astype("float32")
-        
-        
         # To fill the checker board, roll the array in all four directions and take the average
         # Which is essentially the bilinear fill without excessive math or not using numpy
         # It moves true values onto nans and vice versa, so makes an array of true values
         # where the original has nans and we use that as the fill
-        hduadderup=np.roll(hdufocusdata,1,axis=0)
-        hduadderdown=np.roll(hdufocusdata,-1,axis=0)
-        hduadderleft=np.roll(hdufocusdata,1,axis=1)
-        hduadderright=np.roll(hdufocusdata,-1,axis=1)
-        
-        bilinearfill=np.mean( np.array([ hduadderup, hduadderdown, hduadderleft, hduadderright ]), axis=0 )
-        
-        del hduadderup
-        del hduadderdown
-        del hduadderleft
-        del hduadderright
-        
-        hdufocusdata = np.add(hdufocusdata,bilinearfill)
+        bilinearfill=np.mean( [ np.roll(hdufocusdata,1,axis=0), np.roll(hdufocusdata,-1,axis=0),np.roll(hdufocusdata,1,axis=1), np.roll(hdufocusdata,-1,axis=1)], axis=0 )
+
+        hdufocusdata[np.isnan(hdufocusdata)]=0
+        bilinearfill[np.isnan(bilinearfill)]=0
+        hdufocusdatab=hdufocusdata+bilinearfill
         del bilinearfill
-        
-        
-        print (time.time()-pop)
-        #binfocus=1
 
-
-        # if frame_type == 'focus' and interpolate_for_focus:
-        #     #hdufocusdata=demosaicing_CFA_Bayer_Menon2007(hdufocusdata, 'RGGB')[:,:,1]
-        #     hdufocusdata=demosaicing_CFA_Bayer_bilinear(hdufocusdata, 'RGGB')[:,:,1]
-        #     hdufocusdata=hdufocusdata.astype("float32")
-        #     binfocus=1
-        # if frame_type == 'focus' and bin_for_focus:
-        #     focus_bin_factor=focus_bin_value
-        #     hdufocusdata=block_reduce(hdufocusdata,focus_bin_factor)
-        #     binfocus=focus_bin_factor
-
-        # if frame_type != 'focus' and interpolate_for_sep:
-        #     #hdufocusdata=demosaicing_CFA_Bayer_Menon2007(hdufocusdata, 'RGGB')[:,:,1]
-        #     hdufocusdata=demosaicing_CFA_Bayer_bilinear(hdufocusdata, 'RGGB')[:,:,1]
-        #     hdufocusdata=hdufocusdata.astype("float32")
-        #     binfocus=1
-        # if frame_type != 'focus' and bin_for_sep:
-        #     sep_bin_factor=sep_bin_value
-        #     hdufocusdata=block_reduce(hdufocusdata,sep_bin_factor)
-        #     binfocus=sep_bin_factor
-
-
-    
-    #print ("goog")
 
     
 
