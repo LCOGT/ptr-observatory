@@ -14,13 +14,13 @@ import time
 import sep
 import traceback
 import math
-from scipy import ndimage as nd
+# from scipy import ndimage as nd
 from auto_stretch.stretch import Stretch
-from astropy.nddata import block_reduce
-from colour_demosaicing import (
-    demosaicing_CFA_Bayer_bilinear,  # )#,
-    # demosaicing_CFA_Bayer_Malvar2004,
-    demosaicing_CFA_Bayer_Menon2007)
+# from astropy.nddata import block_reduce
+# from colour_demosaicing import (
+#     demosaicing_CFA_Bayer_bilinear,  # )#,
+#     # demosaicing_CFA_Bayer_Malvar2004,
+#     demosaicing_CFA_Bayer_Menon2007)
 from PIL import Image, ImageDraw # ImageFont, ImageDraw#, ImageEnhance
 from astropy.table import Table
 from astropy.utils.exceptions import AstropyUserWarning

@@ -35,10 +35,10 @@ from os import getcwd
 import time
 from astropy.utils.exceptions import AstropyUserWarning
 import warnings
-from colour_demosaicing import (
-    demosaicing_CFA_Bayer_bilinear,  # )#,
-    # demosaicing_CFA_Bayer_Malvar2004,
-    demosaicing_CFA_Bayer_Menon2007)
+# from colour_demosaicing import (
+#     demosaicing_CFA_Bayer_bilinear,  # )#,
+#     # demosaicing_CFA_Bayer_Malvar2004,
+#     demosaicing_CFA_Bayer_Menon2007)
 warnings.simplefilter('ignore', category=AstropyUserWarning)
 warnings.simplefilter("ignore", category=RuntimeWarning)
 
@@ -99,12 +99,21 @@ except:
     pass
 catalog_path = os.path.expanduser("~\\Documents\\Kepler")
 
-# If OSC, fill in quickly bilinearly
-if is_osc:
+
+binnedtwo=False
+binnedthree=False
+# If OSC, just bin the image. Also if the pixelscale is unnecessarily high
+if is_osc or (pixscale < 0.5 and pixscale > 0.3):
     #hdufocusdata=demosaicing_CFA_Bayer_bilinear(hdufocusdata, 'RGGB')[:,:,1]
     #hdufocusdata=hdufocusdata.astype("float32")
     hdufocusdata=block_reduce(hdufocusdata,2,func=np.nanmean)
     pixscale=pixscale*2
+    binnedtwo=True
+elif pixscale <= 0.3:
+    hdufocusdata=block_reduce(hdufocusdata,3,func=np.nanmean)
+    pixscale=pixscale*3
+    binnedthree=True
+    
 
 # Crop the image for platesolving
 fx, fy = hdufocusdata.shape
@@ -305,8 +314,11 @@ if len(sources) >= 5:
         process.kill()
 
         solve = parse_platesolve_output(output_file_path)
-        if is_osc:
+        
+        if binnedtwo:
             solve['arcsec_per_pixel']=solve['arcsec_per_pixel']/2
+        elif binnedthree:
+            solve['arcsec_per_pixel']=solve['arcsec_per_pixel']/3
         #breakpoint()
 
     except:
@@ -336,8 +348,10 @@ if len(sources) >= 5:
             process.kill()
 
             solve = parse_platesolve_output(output_file_path)
-            if is_osc:
+            if binnedtwo:
                 solve['arcsec_per_pixel']=solve['arcsec_per_pixel']/2
+            elif binnedthree:
+                solve['arcsec_per_pixel']=solve['arcsec_per_pixel']/3
 
         except:
             process.kill()
