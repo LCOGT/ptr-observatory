@@ -501,7 +501,7 @@ class Sequencer:
             
             #print (self.MTF_temporary_flat_timer-time.time())
             
-            if time.time()-self.MTF_temporary_flat_timer > 300:
+            if False and (time.time()-self.MTF_temporary_flat_timer > 300):
                 self.MTF_temporary_flat_timer=time.time()
                 plog ("EVESKY FLAG HUNTING")
                 plog ("Roof open time: " + str(time.time() - g_dev['seq'].time_roof_last_opened))
