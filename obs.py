@@ -1427,7 +1427,7 @@ class Observatory:
                                     self.open_and_enabled_to_observe = False
                             else:
                                 self.open_and_enabled_to_observe = False
-                           
+
 
                         else:
                             plog("g_dev['obs'].enc_status not reporting correctly")
@@ -2439,7 +2439,7 @@ class Observatory:
                 # bin_for_sep= self.config["camera"][g_dev['cam'].name]["settings"]['bin_for_sep']
                 # sep_bin_value= self.config["camera"][g_dev['cam'].name]["settings"]['sep_bin_value']
                 # focus_jpeg_size= self.config["camera"][g_dev['cam'].name]["settings"]['focus_jpeg_size']
-                
+
                 # These are deprecated, just holding onto it until a cleanup at some stage
                 interpolate_for_focus= False
                 bin_for_focus= False
@@ -2448,24 +2448,26 @@ class Observatory:
                 bin_for_sep= False
                 sep_bin_value= 1
                 focus_jpeg_size= 500
-                
-                
+
+
                 saturate=g_dev['cam'].config["camera"][g_dev['cam'].name]["settings"]["saturate"]
                 minimum_realistic_seeing=self.config['minimum_realistic_seeing']
                 sep_subprocess=subprocess.Popen(['python','subprocesses/SEPprocess.py'],stdin=subprocess.PIPE,stdout=subprocess.PIPE,bufsize=0)
 
 
 
-                pickle.dump([hdufocusdata, pixscale, readnoise, avg_foc, focus_image, im_path, text_name, hduheader, cal_path, cal_name, frame_type, focus_position, g_dev['events'],ephem.now(),0.0,0.0, is_osc,interpolate_for_focus,bin_for_focus,focus_bin_value,interpolate_for_sep,bin_for_sep,sep_bin_value,focus_jpeg_size,saturate,minimum_realistic_seeing,nativebin,do_sep
-                                                           ], sep_subprocess.stdin)
-
                 # Here is a manual debug area which makes a pickle for debug purposes. Default is False, but can be manually set to True for code debugging
-                if False:
+                if True:
                     pickle.dump([hdufocusdata, pixscale, readnoise, avg_foc, focus_image, im_path, text_name, hduheader, cal_path, cal_name, frame_type, focus_position, g_dev['events'],ephem.now(),self.config["camera"][g_dev['cam']
                                                               .name]["settings"]['focus_image_crop_width'], self.config["camera"][g_dev['cam']
                                                                                                         .name]["settings"]['focus_image_crop_height'], is_osc,interpolate_for_focus,bin_for_focus,focus_bin_value,interpolate_for_sep,bin_for_sep,sep_bin_value,focus_jpeg_size,saturate,minimum_realistic_seeing,nativebin,do_sep
                                                                                                                                                                                ], open('subprocesses/testSEPpickle','wb'))
 
+
+                #breakpoint()
+
+                pickle.dump([hdufocusdata, pixscale, readnoise, avg_foc, focus_image, im_path, text_name, hduheader, cal_path, cal_name, frame_type, focus_position, g_dev['events'],ephem.now(),0.0,0.0, is_osc,interpolate_for_focus,bin_for_focus,focus_bin_value,interpolate_for_sep,bin_for_sep,sep_bin_value,focus_jpeg_size,saturate,minimum_realistic_seeing,nativebin,do_sep
+                                                           ], sep_subprocess.stdin)
 
 
                 # Essentially wait until the subprocess is complete
@@ -2641,6 +2643,8 @@ class Observatory:
                 (hdufocusdata, hduheader, cal_path, cal_name, frame_type, time_platesolve_requested,
                  pixscale, pointing_ra, pointing_dec, firstframesmartstack) = self.platesolve_queue.get(block=False)
 
+                is_osc=g_dev['cam'].config["camera"][g_dev['cam'].name]["settings"]["is_osc"]
+
                 # Do not bother platesolving unless it is dark enough!!
                 if not (g_dev['events']['Civil Dusk'] < ephem.now() < g_dev['events']['Civil Dawn']):
                     plog("Too bright to consider platesolving!")
@@ -2655,12 +2659,12 @@ class Observatory:
                         #platesolve_bin_factor=self.config["camera"][g_dev['cam'].name]["settings"]['platesolve_bin_value']
 
                         pickle.dump([hdufocusdata, hduheader, self.local_calibration_path, cal_name, frame_type, time_platesolve_requested,
-                         pixscale, pointing_ra, pointing_dec, platesolve_crop, False, 1, g_dev['cam'].config["camera"][g_dev['cam'].name]["settings"]["saturate"], g_dev['cam'].camera_known_readnoise, self.config['minimum_realistic_seeing']], platesolve_subprocess.stdin)
+                         pixscale, pointing_ra, pointing_dec, platesolve_crop, False, 1, g_dev['cam'].config["camera"][g_dev['cam'].name]["settings"]["saturate"], g_dev['cam'].camera_known_readnoise, self.config['minimum_realistic_seeing'], is_osc], platesolve_subprocess.stdin)
 
                         # yet another pickle debugger.
-                        if False:
+                        if True:
                             pickle.dump([hdufocusdata, hduheader, self.local_calibration_path, cal_name, frame_type, time_platesolve_requested,
-                             pixscale, pointing_ra, pointing_dec, platesolve_crop, False, 1, g_dev['cam'].config["camera"][g_dev['cam'].name]["settings"]["saturate"], g_dev['cam'].camera_known_readnoise, self.config['minimum_realistic_seeing']], open('subprocesses/testplatesolvepickle','wb'))
+                             pixscale, pointing_ra, pointing_dec, platesolve_crop, False, 1, g_dev['cam'].config["camera"][g_dev['cam'].name]["settings"]["saturate"], g_dev['cam'].camera_known_readnoise, self.config['minimum_realistic_seeing'],is_osc], open('subprocesses/testplatesolvepickle','wb'))
 
                         del hdufocusdata
 
