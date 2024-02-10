@@ -481,7 +481,7 @@ site_config = {
                         ['N2',   [13, 0],   'Nitrogen II'],     #19
                         ['S2',   [0,  4],   'Sulphur II'],     #20
 
-                       #['Y',    [6,  0],   "Rubin Y"],     #21
+                        ['Y',    [6,  0],   "Rubin Y"],     #21
 
 
                         ['dark', [1,  3],   'dk']],    #22     #Not a real filter.  Total 23

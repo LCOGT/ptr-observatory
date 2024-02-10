@@ -159,45 +159,49 @@ else:
 
 
     # Realistically we can figure out the focus stuff here from first principles.
-    
+
     if frame_type == 'focus':
+        #breakpoint()
         fx, fy = hdufocusdata.shape
         # We want a standard focus image size that represent 0.2 degrees - which is the size of the focus fields.
         # However we want some flexibility in the sense that the pointing could be off by half a degree or so...
-        # So we chop the image down to a degree by a degree 
+        # So we chop the image down to a degree by a degree
         # This speeds up the focus software.... we don't need to solve for EVERY star in a widefield image.
         fx_degrees = (fx * pixscale) /3600
         fy_degrees = (fy * pixscale) /3600
-        
+
         crop_x=0
         crop_y=0
-        
-        
+
+
         if fx_degrees > 1.0:
             ratio_crop= 1/fx_degrees
-            crop_x = int(ratio_crop * fx)
+            crop_x = int((fx - (ratio_crop * fx))/2)
         if fy_degrees > 1.0:
             ratio_crop= 1/fy_degrees
-            crop_y = int(ratio_crop * fy)
-        
+            crop_y = int((fy - (ratio_crop * fy))/2)
+
         if crop_x > 0 or crop_y > 0:
             if crop_x == 0:
                 crop_x = 2
             if crop_y == 0:
-                crop_y = 2    
+                crop_y = 2
             # Make sure it is an even number for OSCs
             if (crop_x % 2) != 0:
                 crop_x = crop_x+1
             if (crop_y % 2) != 0:
                 crop_y = crop_y+1
-            hdufocusdata = hdufocusdata[crop_x:-crop_x, crop_y:-crop_y]       
-        
+
+            #breakpoint()
+
+            hdufocusdata = hdufocusdata[crop_x:-crop_x, crop_y:-crop_y]
+
 
     #binfocus = 1
     if is_osc:
-        
+
         #hdufocusdata=demosaicing_CFA_Bayer_bilinear(hdufocusdata, 'RGGB')[:,:,1]
-        
+
         # Wipe out red channel
         hdufocusdata[::2, ::2]=np.nan
         # Wipe out blue channel
@@ -205,16 +209,16 @@ else:
         # Rapid interpolate
         num_of_nans=np.count_nonzero(np.isnan(hdufocusdata))
         while num_of_nans > 0:
-            #timestart=time.time()            
-            
+            #timestart=time.time()
+
             # List the coordinates that are nan in the array
             nan_coords=np.argwhere(np.isnan(hdufocusdata))
             x_size=hdufocusdata.shape[0]
             y_size=hdufocusdata.shape[1]
-            
-            
+
+
             # For each coordinate pop out the 3x3 grid
-            
+
             for nancoord in nan_coords:
                 x_nancoord=nancoord[0]
                 y_nancoord=nancoord[1]
@@ -247,20 +251,20 @@ else:
                     if not np.isnan(value_here):
                         countervalue=countervalue+value_here
                         countern=countern+1
-                
+
                 if countern == 0:
                     hdufocusdata[x_nancoord,y_nancoord]=np.nan
                 else:
                     hdufocusdata[x_nancoord,y_nancoord]=countervalue/countern
-                
+
                 num_of_nans=np.count_nonzero(np.isnan(hdufocusdata))
                 #print(countervalue/countern)
-        
-        
-        
+
+
+
         hdufocusdata=hdufocusdata.astype("float32")
         #binfocus=1
-        
+
 
         # if frame_type == 'focus' and interpolate_for_focus:
         #     #hdufocusdata=demosaicing_CFA_Bayer_Menon2007(hdufocusdata, 'RGGB')[:,:,1]
@@ -287,20 +291,20 @@ else:
 
     # If it is a focus image then it will get sent in a different manner to the UI for a jpeg
     # In this case, the image needs to be the 0.2 degree field that the focus field is made up of
-    
+
     if frame_type == 'focus':
         hdusmalldata = np.array(hdufocusdata)
         fx, fy = hdusmalldata.shape
         aspect_ratio= fx/fy
-        
+
         focus_jpeg_size=0.2/(pixscale/3600)
-        
+
         if focus_jpeg_size < fx:
             crop_width = (fx - focus_jpeg_size) / 2
         else:
             crop_width =2
-        
-        if focus_jpeg_size < fy:            
+
+        if focus_jpeg_size < fy:
             crop_height = (fy - (focus_jpeg_size / aspect_ratio) ) / 2
         else:
             crop_height = 2
@@ -338,11 +342,11 @@ else:
         draw.text((0, 0), str(focus_position), (255))
 
         final_image.save(im_path + text_name.replace('EX00.txt', 'EX10.jpg'))
-        
+
         del hdusmalldata
         del stretched_data_float
         del final_image
-        
+
 
 
 
@@ -450,15 +454,15 @@ else:
                                              subpix=5)
         # If image has been binned for focus we need to multiply some of these things by the binning
         # To represent the original image
-        sources['FWHM'] = (sources['FWHM'] * 2) 
-        sources['x'] = (sources['x']) 
-        sources['y'] = (sources['y']) 
+        sources['FWHM'] = (sources['FWHM'] * 2)
+        sources['x'] = (sources['x'])
+        sources['y'] = (sources['y'])
         sources['xpeak'] = (sources['xpeak'])
-        sources['ypeak'] = (sources['ypeak']) 
+        sources['ypeak'] = (sources['ypeak'])
         sources['a'] = (sources['a'])
-        sources['b'] = (sources['b']) 
-        sources['kronrad'] = (sources['kronrad']) 
-        sources['peak'] = (sources['peak']) 
+        sources['b'] = (sources['b'])
+        sources['kronrad'] = (sources['kronrad'])
+        sources['peak'] = (sources['peak'])
         sources['cpeak'] = (sources['cpeak'])
 
 
