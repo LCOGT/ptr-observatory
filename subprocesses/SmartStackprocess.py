@@ -73,6 +73,54 @@ img = fits.open(
 imgdata = np.load(paths["red_path"] + paths["red_name01"].replace('.fits','.npy'))
 
 
+# Check there are no nans in the image upon receipt
+# This is necessary as nans aren't interpolated in the main thread.
+# Fast next-door-neighbour in-fill algorithm  
+num_of_nans=np.count_nonzero(np.isnan(imgdata))                
+while num_of_nans > 0:         
+    # List the coordinates that are nan in the array
+    nan_coords=np.argwhere(np.isnan(imgdata))
+    x_size=imgdata.shape[0]
+    y_size=imgdata.shape[1]  
+    # For each coordinate try and find a non-nan-neighbour and steal its value
+    #try:
+    for nancoord in nan_coords:
+        x_nancoord=nancoord[0]
+        y_nancoord=nancoord[1]
+        # left
+        done=False
+        if x_nancoord != 0:                                    
+            value_here=imgdata[x_nancoord-1,y_nancoord]                                    
+            if not np.isnan(value_here):
+                imgdata[x_nancoord,y_nancoord]=value_here
+                done=True
+        # right
+        if not done:
+            if x_nancoord != (x_size-1):
+                value_here=imgdata[x_nancoord+1,y_nancoord]
+                if not np.isnan(value_here):
+                    imgdata[x_nancoord,y_nancoord]=value_here
+                    done=True
+        # below
+        if not done:
+            if y_nancoord != 0:
+                value_here=imgdata[x_nancoord,y_nancoord-1]
+                if not np.isnan(value_here):
+                    imgdata[x_nancoord,y_nancoord]=value_here
+                    done=True
+        # above
+        if not done:
+            if y_nancoord != (y_size-1):
+                value_here=imgdata[x_nancoord,y_nancoord+1]
+                if not np.isnan(value_here):
+                    imgdata[x_nancoord,y_nancoord]=value_here
+                    done=True                                        
+    #except:
+        #plog(traceback.format_exc())
+        #breakpoint()
+    num_of_nans=np.count_nonzero(np.isnan(imgdata))
+
+
 #Make sure there is a smartstack directory!
 if not os.path.exists(obsid_path+ "smartstacks/"):
             os.makedirs(obsid_path+ "smartstacks/")

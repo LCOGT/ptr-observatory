@@ -328,6 +328,8 @@ class Camera:
         self.darkFiles = {}
         self.flatFiles = {}
         self.hotFiles = {}
+        self.bpmFiles = {}
+
 
         g_dev['obs'].obs_id
         g_dev['cam'].alias
@@ -351,6 +353,20 @@ class Camera:
             del tempdarkframe
         except:
             plog("Dark frame for Binning 1 not available")
+
+        try:
+            # tempbpmframe = fits.open(self.local_calibration_path + "archive/" + self.alias + "/calibmasters" \
+            #                           + "/" + tempfrontcalib +  "badpixelmask_bin1.npy")
+
+            # tempbpmframe = np.array(tempbpmframe[0].data, dtype=np.float32)
+            tempbpmframe = np.load(self.local_calibration_path + "archive/" + self.alias + "/calibmasters/" + tempfrontcalib +  "badpixelmask_bin1.npy")
+            self.bpmFiles.update({'1': tempbpmframe})
+            del tempbpmframe
+        except:
+            plog("Dark frame for Binning 1 not available")
+
+
+        #breakpoint()
 
         try:
             fileList = glob.glob(self.local_calibration_path + "archive/" + self.alias + "/calibmasters/masterFlat*_bin1.npy")
@@ -2825,6 +2841,58 @@ class Camera:
                     except Exception as e:
                         plog("flatting light frame failed", e)
                         #plog(traceback.format_exc())
+                    
+                    try:
+                        outputimg[g_dev['cam'].bpmFiles[str(1)]] = np.nan
+
+                    except Exception as e:
+                        plog("debias/darking light frame failed: ", e)
+                        
+                    # Fast next-door-neighbour in-fill algorithm  
+                    num_of_nans=np.count_nonzero(np.isnan(outputimg))                
+                    while num_of_nans > 0:         
+                        # List the coordinates that are nan in the array
+                        nan_coords=np.argwhere(np.isnan(outputimg))
+                        x_size=outputimg.shape[0]
+                        y_size=outputimg.shape[1]  
+                        # For each coordinate try and find a non-nan-neighbour and steal its value
+                        try:
+                            for nancoord in nan_coords:
+                                x_nancoord=nancoord[0]
+                                y_nancoord=nancoord[1]
+                                # left
+                                done=False
+                                if x_nancoord != 0:                                    
+                                    value_here=outputimg[x_nancoord-1,y_nancoord]                                    
+                                    if not np.isnan(value_here):
+                                        outputimg[x_nancoord,y_nancoord]=value_here
+                                        done=True
+                                # right
+                                if not done:
+                                    if x_nancoord != (x_size-1):
+                                        value_here=outputimg[x_nancoord+1,y_nancoord]
+                                        if not np.isnan(value_here):
+                                            outputimg[x_nancoord,y_nancoord]=value_here
+                                            done=True
+                                # below
+                                if not done:
+                                    if y_nancoord != 0:
+                                        value_here=outputimg[x_nancoord,y_nancoord-1]
+                                        if not np.isnan(value_here):
+                                            outputimg[x_nancoord,y_nancoord]=value_here
+                                            done=True
+                                # above
+                                if not done:
+                                    if y_nancoord != (y_size-1):
+                                        value_here=outputimg[x_nancoord,y_nancoord+1]
+                                        if not np.isnan(value_here):
+                                            outputimg[x_nancoord,y_nancoord]=value_here
+                                            done=True                                        
+                        except:
+                            plog(traceback.format_exc())
+                            breakpoint()
+                        num_of_nans=np.count_nonzero(np.isnan(outputimg))       
+
 
                     # hdu = fits.PrimaryHDU()
 
@@ -4362,7 +4430,7 @@ def post_exposure_process(payload):
             if not manually_requested_calibration:
                 try:
                     hdusmalldata = hdusmalldata - g_dev['cam'].biasFiles[str(1)]
-                    hdusmalldata = hdusmalldata - (g_dev['cam'].darkFiles[str(1)] * exposure_time)
+                    hdusmalldata = hdusmalldata - (g_dev['cam'].darkFiles[str(1)] * exposure_time)                    
 
                 except Exception as e:
                     plog("debias/darking light frame failed: ", e)
@@ -4377,8 +4445,15 @@ def post_exposure_process(payload):
                 except Exception as e:
                     plog("flatting light frame failed", e)
                     #plog(traceback.format_exc())
+                
+                try:
+                    hdusmalldata[g_dev['cam'].bpmFiles[str(1)]] = np.nan
 
-
+                except Exception as e:
+                    plog("debias/darking light frame failed: ", e)
+                    
+                
+                
             # This saves the REDUCED file to disk
             # If this is for a smartstack, this happens immediately in the camera thread after we have a "reduced" file
             # So that the smartstack queue can start on it ASAP as smartstacks

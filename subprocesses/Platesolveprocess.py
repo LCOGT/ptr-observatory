@@ -85,6 +85,56 @@ minimum_realistic_seeing=input_psolve_info[14]
 is_osc=input_psolve_info[15]
 
 
+
+# Check there are no nans in the image upon receipt
+# This is necessary as nans aren't interpolated in the main thread.
+# Fast next-door-neighbour in-fill algorithm  
+num_of_nans=np.count_nonzero(np.isnan(hdufocusdata))                
+while num_of_nans > 0:         
+    # List the coordinates that are nan in the array
+    nan_coords=np.argwhere(np.isnan(hdufocusdata))
+    x_size=hdufocusdata.shape[0]
+    y_size=hdufocusdata.shape[1]  
+    # For each coordinate try and find a non-nan-neighbour and steal its value
+    #try:
+    for nancoord in nan_coords:
+        x_nancoord=nancoord[0]
+        y_nancoord=nancoord[1]
+        # left
+        done=False
+        if x_nancoord != 0:                                    
+            value_here=hdufocusdata[x_nancoord-1,y_nancoord]                                    
+            if not np.isnan(value_here):
+                hdufocusdata[x_nancoord,y_nancoord]=value_here
+                done=True
+        # right
+        if not done:
+            if x_nancoord != (x_size-1):
+                value_here=hdufocusdata[x_nancoord+1,y_nancoord]
+                if not np.isnan(value_here):
+                    hdufocusdata[x_nancoord,y_nancoord]=value_here
+                    done=True
+        # below
+        if not done:
+            if y_nancoord != 0:
+                value_here=hdufocusdata[x_nancoord,y_nancoord-1]
+                if not np.isnan(value_here):
+                    hdufocusdata[x_nancoord,y_nancoord]=value_here
+                    done=True
+        # above
+        if not done:
+            if y_nancoord != (y_size-1):
+                value_here=hdufocusdata[x_nancoord,y_nancoord+1]
+                if not np.isnan(value_here):
+                    hdufocusdata[x_nancoord,y_nancoord]=value_here
+                    done=True                                        
+    #except:
+        #plog(traceback.format_exc())
+        #breakpoint()
+    num_of_nans=np.count_nonzero(np.isnan(hdufocusdata))
+
+
+
 parentPath = Path(getcwd())
 PS3CLI_EXE = str(parentPath).replace('\subprocesses','') +'/subprocesses/ps3cli/ps3cli.exe'
 
