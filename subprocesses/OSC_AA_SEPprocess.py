@@ -1,7 +1,7 @@
 
 """
 This is actually a sub-sub-process.
-Each of the OSC colours needs to be SEParately SEP'ed so that 
+Each of the OSC colours needs to be SEParately SEP'ed so that
 each can be astroaligned to their separate coloured smartstack image.
 Say that three times fast.
 
@@ -39,25 +39,49 @@ channel=input_sep_info[8]
 
 # Check there are no nans in the image upon receipt
 # This is necessary as nans aren't interpolated in the main thread.
-# Fast next-door-neighbour in-fill algorithm  
-num_of_nans=np.count_nonzero(np.isnan(hdufocusdata))                
-while num_of_nans > 0:         
+# Fast next-door-neighbour in-fill algorithm
+num_of_nans=np.count_nonzero(np.isnan(hdufocusdata))
+x_size=hdufocusdata.shape[0]
+y_size=hdufocusdata.shape[1]
+# this is actually faster than np.nanmean
+edgefillvalue=np.divide(np.nansum(hdufocusdata),(x_size*y_size)-num_of_nans)
+#breakpoint()
+while num_of_nans > 0:
     # List the coordinates that are nan in the array
     nan_coords=np.argwhere(np.isnan(hdufocusdata))
-    x_size=hdufocusdata.shape[0]
-    y_size=hdufocusdata.shape[1]  
+
     # For each coordinate try and find a non-nan-neighbour and steal its value
-    #try:
     for nancoord in nan_coords:
         x_nancoord=nancoord[0]
         y_nancoord=nancoord[1]
-        # left
         done=False
-        if x_nancoord != 0:                                    
-            value_here=hdufocusdata[x_nancoord-1,y_nancoord]                                    
-            if not np.isnan(value_here):
-                hdufocusdata[x_nancoord,y_nancoord]=value_here
-                done=True
+
+        # Because edge pixels can tend to form in big clumps
+        # Masking the array just with the mean at the edges
+        # makes this MUCH faster to no visible effect for humans.
+        # Also removes overscan
+        if x_nancoord < 100:
+            hdufocusdata[x_nancoord,y_nancoord]=edgefillvalue
+            done=True
+        elif x_nancoord > (x_size-100):
+            hdufocusdata[x_nancoord,y_nancoord]=edgefillvalue
+
+            done=True
+        elif y_nancoord < 100:
+            hdufocusdata[x_nancoord,y_nancoord]=edgefillvalue
+
+            done=True
+        elif y_nancoord > (y_size-100):
+            hdufocusdata[x_nancoord,y_nancoord]=edgefillvalue
+            done=True
+
+        # left
+        if not done:
+            if x_nancoord != 0:
+                value_here=hdufocusdata[x_nancoord-1,y_nancoord]
+                if not np.isnan(value_here):
+                    hdufocusdata[x_nancoord,y_nancoord]=value_here
+                    done=True
         # right
         if not done:
             if x_nancoord != (x_size-1):
@@ -78,12 +102,9 @@ while num_of_nans > 0:
                 value_here=hdufocusdata[x_nancoord,y_nancoord+1]
                 if not np.isnan(value_here):
                     hdufocusdata[x_nancoord,y_nancoord]=value_here
-                    done=True                                        
-    #except:
-        #plog(traceback.format_exc())
-        #breakpoint()
-    num_of_nans=np.count_nonzero(np.isnan(hdufocusdata))
+                    done=True
 
+    num_of_nans=np.count_nonzero(np.isnan(hdufocusdata))
 
 
 focusimg = np.array(
@@ -129,7 +150,7 @@ sources = sources[~nan_in_row]
 # Calculate the ellipticity (Thanks BANZAI)
 sources['ellipticity'] = 1.0 - (sources['b'] / sources['a'])
 sources = sources[sources['ellipticity'] < 0.3]  # Remove things that are not circular stars
-    
+
 # Calculate the kron radius (Thanks BANZAI)
 kronrad, krflag = sep.kron_radius(focusimg, sources['x'], sources['y'],
                                   sources['a'], sources['b'],
@@ -147,7 +168,7 @@ flux, fluxerr, flag = sep.sum_ellipse(focusimg, sources['x'], sources['y'],
                                   np.pi / 2.0, 2.5 * kronrad,
                                   subpix=1, err=uncertainty)
 
-    
+
 sources['flux'] = flux
 sources['fluxerr'] = fluxerr
 sources['flag'] |= flag
@@ -156,12 +177,12 @@ sources['FWHM'], _ = sep.flux_radius(focusimg, sources['x'], sources['y'], sourc
 # If image has been binned for focus we need to multiply some of these things by the binning
 # To represent the original image
 sources['FWHM'] = (sources['FWHM'] * 2) * nativebin
-sources['x'] = (sources['x']) 
-sources['y'] = (sources['y']) 
+sources['x'] = (sources['x'])
+sources['y'] = (sources['y'])
 
-sources['a'] = (sources['a']) 
-sources['b'] = (sources['b']) 
-sources['kronrad'] = (sources['kronrad']) 
+sources['a'] = (sources['a'])
+sources['b'] = (sources['b'])
+sources['kronrad'] = (sources['kronrad'])
 sources['peak'] = (sources['peak']) / pow(nativebin, 2)
 sources['cpeak'] = (sources['cpeak']) / pow(nativebin, 2)
 
@@ -188,5 +209,5 @@ sources.remove_columns(source_delete)
 
 sources.write(im_path + text_name.replace('.txt', '.sep'), format='csv', overwrite=True)
 
- 
+
 pickle.dump(sources, open(im_path + 'oscaasep.pickle' + channel, 'wb'))

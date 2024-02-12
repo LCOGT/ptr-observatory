@@ -10,6 +10,7 @@ from PIL import Image, ImageEnhance
 import sys
 import pickle
 from math import sqrt
+import time
 
 from astropy.utils.exceptions import AstropyUserWarning
 import warnings
@@ -18,7 +19,7 @@ warnings.simplefilter('ignore', category=AstropyUserWarning)
 warnings.simplefilter("ignore", category=RuntimeWarning)
 #from ptr_utility import plog
 # Pick up the pickled array
-debug = False
+debug = True
 if not debug:
     input_jpeg_info=pickle.load(sys.stdin.buffer)
 else:
@@ -58,30 +59,54 @@ try:
     print("Mainjpeg received:", zoom_factor)
 except:
     print("Zoom_factor paramater faulted.")
-    
-    
-    
+
+
+
 # Check there are no nans in the image upon receipt
 # This is necessary as nans aren't interpolated in the main thread.
-# Fast next-door-neighbour in-fill algorithm  
-num_of_nans=np.count_nonzero(np.isnan(hdusmalldata))                
-while num_of_nans > 0:         
+# Fast next-door-neighbour in-fill algorithm
+num_of_nans=np.count_nonzero(np.isnan(hdusmalldata))
+x_size=hdusmalldata.shape[0]
+y_size=hdusmalldata.shape[1]
+# this is actually faster than np.nanmean
+edgefillvalue=np.divide(np.nansum(hdusmalldata),(x_size*y_size)-num_of_nans)
+#breakpoint()
+while num_of_nans > 0:
     # List the coordinates that are nan in the array
     nan_coords=np.argwhere(np.isnan(hdusmalldata))
-    x_size=hdusmalldata.shape[0]
-    y_size=hdusmalldata.shape[1]  
+
     # For each coordinate try and find a non-nan-neighbour and steal its value
-    #try:
     for nancoord in nan_coords:
         x_nancoord=nancoord[0]
         y_nancoord=nancoord[1]
-        # left
         done=False
-        if x_nancoord != 0:                                    
-            value_here=hdusmalldata[x_nancoord-1,y_nancoord]                                    
-            if not np.isnan(value_here):
-                hdusmalldata[x_nancoord,y_nancoord]=value_here
-                done=True
+
+        # Because edge pixels can tend to form in big clumps
+        # Masking the array just with the mean at the edges
+        # makes this MUCH faster to no visible effect for humans.
+        # Also removes overscan
+        if x_nancoord < 100:
+            hdusmalldata[x_nancoord,y_nancoord]=edgefillvalue
+            done=True
+        elif x_nancoord > (x_size-100):
+            hdusmalldata[x_nancoord,y_nancoord]=edgefillvalue
+
+            done=True
+        elif y_nancoord < 100:
+            hdusmalldata[x_nancoord,y_nancoord]=edgefillvalue
+
+            done=True
+        elif y_nancoord > (y_size-100):
+            hdusmalldata[x_nancoord,y_nancoord]=edgefillvalue
+            done=True
+
+        # left
+        if not done:
+            if x_nancoord != 0:
+                value_here=hdusmalldata[x_nancoord-1,y_nancoord]
+                if not np.isnan(value_here):
+                    hdusmalldata[x_nancoord,y_nancoord]=value_here
+                    done=True
         # right
         if not done:
             if x_nancoord != (x_size-1):
@@ -102,11 +127,10 @@ while num_of_nans > 0:
                 value_here=hdusmalldata[x_nancoord,y_nancoord+1]
                 if not np.isnan(value_here):
                     hdusmalldata[x_nancoord,y_nancoord]=value_here
-                    done=True                                        
-    #except:
-        #plog(traceback.format_exc())
-        #breakpoint()
+                    done=True
+
     num_of_nans=np.count_nonzero(np.isnan(hdusmalldata))
+
 
 # If this a bayer image, then we need to make an appropriate image that is monochrome
 # That gives the best chance of finding a focus AND for pointing while maintaining resolution.

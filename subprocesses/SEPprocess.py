@@ -85,25 +85,49 @@ do_sep=input_sep_info[27]
 
 # Check there are no nans in the image upon receipt
 # This is necessary as nans aren't interpolated in the main thread.
-# Fast next-door-neighbour in-fill algorithm  
-num_of_nans=np.count_nonzero(np.isnan(hdufocusdata))                
-while num_of_nans > 0:         
+# Fast next-door-neighbour in-fill algorithm
+num_of_nans=np.count_nonzero(np.isnan(hdufocusdata))
+x_size=hdufocusdata.shape[0]
+y_size=hdufocusdata.shape[1]
+# this is actually faster than np.nanmean
+edgefillvalue=np.divide(np.nansum(hdufocusdata),(x_size*y_size)-num_of_nans)
+#breakpoint()
+while num_of_nans > 0:
     # List the coordinates that are nan in the array
     nan_coords=np.argwhere(np.isnan(hdufocusdata))
-    x_size=hdufocusdata.shape[0]
-    y_size=hdufocusdata.shape[1]  
+
     # For each coordinate try and find a non-nan-neighbour and steal its value
-    #try:
     for nancoord in nan_coords:
         x_nancoord=nancoord[0]
         y_nancoord=nancoord[1]
-        # left
         done=False
-        if x_nancoord != 0:                                    
-            value_here=hdufocusdata[x_nancoord-1,y_nancoord]                                    
-            if not np.isnan(value_here):
-                hdufocusdata[x_nancoord,y_nancoord]=value_here
-                done=True
+
+        # Because edge pixels can tend to form in big clumps
+        # Masking the array just with the mean at the edges
+        # makes this MUCH faster to no visible effect for humans.
+        # Also removes overscan
+        if x_nancoord < 100:
+            hdufocusdata[x_nancoord,y_nancoord]=edgefillvalue
+            done=True
+        elif x_nancoord > (x_size-100):
+            hdufocusdata[x_nancoord,y_nancoord]=edgefillvalue
+
+            done=True
+        elif y_nancoord < 100:
+            hdufocusdata[x_nancoord,y_nancoord]=edgefillvalue
+
+            done=True
+        elif y_nancoord > (y_size-100):
+            hdufocusdata[x_nancoord,y_nancoord]=edgefillvalue
+            done=True
+
+        # left
+        if not done:
+            if x_nancoord != 0:
+                value_here=hdufocusdata[x_nancoord-1,y_nancoord]
+                if not np.isnan(value_here):
+                    hdufocusdata[x_nancoord,y_nancoord]=value_here
+                    done=True
         # right
         if not done:
             if x_nancoord != (x_size-1):
@@ -124,13 +148,9 @@ while num_of_nans > 0:
                 value_here=hdufocusdata[x_nancoord,y_nancoord+1]
                 if not np.isnan(value_here):
                     hdufocusdata[x_nancoord,y_nancoord]=value_here
-                    done=True                                        
-    #except:
-        #plog(traceback.format_exc())
-        #breakpoint()
-    num_of_nans=np.count_nonzero(np.isnan(hdufocusdata))
+                    done=True
 
-#print (hdufocusdata)
+    num_of_nans=np.count_nonzero(np.isnan(hdufocusdata))
 
 #nativebin=1
 # Background clipped
@@ -250,14 +270,14 @@ else:
             hdufocusdata = hdufocusdata[crop_x:-crop_x, crop_y:-crop_y]
 
 
-    if is_osc:     
-        
+    if is_osc:
+
         # Rapidly interpolate so that it is all one channel
-        
+
         # Wipe out red channel
         hdufocusdata[::2, ::2]=np.nan
         # Wipe out blue channel
-        hdufocusdata[1::2, 1::2]=np.nan  
+        hdufocusdata[1::2, 1::2]=np.nan
 
         # To fill the checker board, roll the array in all four directions and take the average
         # Which is essentially the bilinear fill without excessive math or not using numpy
@@ -271,7 +291,7 @@ else:
         del bilinearfill
 
 
-    
+
 
 
 
@@ -323,7 +343,7 @@ else:
         # BANZAI prune nans from table
 
 
-        
+
 
 
         nan_in_row = np.zeros(len(sources), dtype=bool)
@@ -378,7 +398,7 @@ else:
 
         # sources['FWHM'], _ = sep.flux_radius(focusimg, sources['x'], sources['y'], sources['a'], 0.5,
         #                                      subpix=5)
-        
+
         #breakpoint()
         # If image has been binned for focus we need to multiply some of these things by the binning
         # To represent the original image
@@ -400,22 +420,22 @@ else:
 
         sources.remove_columns(source_delete)
 
-        
+
 
         # BANZAI prune nans from table
         nan_in_row = np.zeros(len(sources), dtype=bool)
         for col in sources.colnames:
             nan_in_row |= np.isnan(sources[col])
         sources = sources[~nan_in_row]
-        
-        
+
+
 
         sources = sources[sources['FWHM'] != 0]
         #sources = sources[sources['FWHM'] > 0.6]
         sources = sources[sources['FWHM'] > (1/pixscale)]
 
         #breakpoint()
-        
+
         sources.write(im_path + text_name.replace('.txt', '.sep'), format='csv', overwrite=True)
 
         if (len(sources) < 2) or ( frame_type == 'focus' and (len(sources) < 10 or len(sources) == np.nan or str(len(sources)) =='nan' or xdonut > 3.0 or ydonut > 3.0 or np.isnan(xdonut) or np.isnan(ydonut))):
@@ -446,8 +466,8 @@ else:
 #            rfs = round(np.std(fwhmcalc) * pixscale * nativebin, 3)
             rfr = round(np.median(fwhmcalc) * pixscale, 3)
             rfs = round(np.std(fwhmcalc) * pixscale, 3)
-            
-            
+
+
             #print (sources)
             #breakpoint()
 

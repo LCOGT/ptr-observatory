@@ -88,25 +88,49 @@ is_osc=input_psolve_info[15]
 
 # Check there are no nans in the image upon receipt
 # This is necessary as nans aren't interpolated in the main thread.
-# Fast next-door-neighbour in-fill algorithm  
-num_of_nans=np.count_nonzero(np.isnan(hdufocusdata))                
-while num_of_nans > 0:         
+# Fast next-door-neighbour in-fill algorithm
+num_of_nans=np.count_nonzero(np.isnan(hdufocusdata))
+x_size=hdufocusdata.shape[0]
+y_size=hdufocusdata.shape[1]
+# this is actually faster than np.nanmean
+edgefillvalue=np.divide(np.nansum(hdufocusdata),(x_size*y_size)-num_of_nans)
+#breakpoint()
+while num_of_nans > 0:
     # List the coordinates that are nan in the array
     nan_coords=np.argwhere(np.isnan(hdufocusdata))
-    x_size=hdufocusdata.shape[0]
-    y_size=hdufocusdata.shape[1]  
+
     # For each coordinate try and find a non-nan-neighbour and steal its value
-    #try:
     for nancoord in nan_coords:
         x_nancoord=nancoord[0]
         y_nancoord=nancoord[1]
-        # left
         done=False
-        if x_nancoord != 0:                                    
-            value_here=hdufocusdata[x_nancoord-1,y_nancoord]                                    
-            if not np.isnan(value_here):
-                hdufocusdata[x_nancoord,y_nancoord]=value_here
-                done=True
+
+        # Because edge pixels can tend to form in big clumps
+        # Masking the array just with the mean at the edges
+        # makes this MUCH faster to no visible effect for humans.
+        # Also removes overscan
+        if x_nancoord < 100:
+            hdufocusdata[x_nancoord,y_nancoord]=edgefillvalue
+            done=True
+        elif x_nancoord > (x_size-100):
+            hdufocusdata[x_nancoord,y_nancoord]=edgefillvalue
+
+            done=True
+        elif y_nancoord < 100:
+            hdufocusdata[x_nancoord,y_nancoord]=edgefillvalue
+
+            done=True
+        elif y_nancoord > (y_size-100):
+            hdufocusdata[x_nancoord,y_nancoord]=edgefillvalue
+            done=True
+
+        # left
+        if not done:
+            if x_nancoord != 0:
+                value_here=hdufocusdata[x_nancoord-1,y_nancoord]
+                if not np.isnan(value_here):
+                    hdufocusdata[x_nancoord,y_nancoord]=value_here
+                    done=True
         # right
         if not done:
             if x_nancoord != (x_size-1):
@@ -127,10 +151,8 @@ while num_of_nans > 0:
                 value_here=hdufocusdata[x_nancoord,y_nancoord+1]
                 if not np.isnan(value_here):
                     hdufocusdata[x_nancoord,y_nancoord]=value_here
-                    done=True                                        
-    #except:
-        #plog(traceback.format_exc())
-        #breakpoint()
+                    done=True
+
     num_of_nans=np.count_nonzero(np.isnan(hdufocusdata))
 
 
@@ -163,7 +185,7 @@ elif pixscale <= 0.3:
     hdufocusdata=block_reduce(hdufocusdata,3,func=np.nanmean)
     pixscale=pixscale*3
     binnedthree=True
-    
+
 
 # Crop the image for platesolving
 fx, fy = hdufocusdata.shape
@@ -251,7 +273,7 @@ try:
     sources['flux'] = flux
     sources['fluxerr'] = fluxerr
     sources['flag'] |= flag
-    
+
 except:
     pass
 
@@ -364,7 +386,7 @@ if len(sources) >= 5:
         process.kill()
 
         solve = parse_platesolve_output(output_file_path)
-        
+
         if binnedtwo:
             solve['arcsec_per_pixel']=solve['arcsec_per_pixel']/2
         elif binnedthree:
@@ -427,4 +449,3 @@ else:
         os.remove(output_file_path)
     except:
         pass
-    
