@@ -35,6 +35,10 @@ from os import getcwd
 import time
 from astropy.utils.exceptions import AstropyUserWarning
 import warnings
+# from colour_demosaicing import (
+#     demosaicing_CFA_Bayer_bilinear,  # )#,
+#     # demosaicing_CFA_Bayer_Malvar2004,
+#     demosaicing_CFA_Bayer_Menon2007)
 warnings.simplefilter('ignore', category=AstropyUserWarning)
 warnings.simplefilter("ignore", category=RuntimeWarning)
 
@@ -78,6 +82,7 @@ platesolve_bin_factor=input_psolve_info[11]
 image_saturation_level = input_psolve_info[12]
 readnoise=input_psolve_info[13]
 minimum_realistic_seeing=input_psolve_info[14]
+is_osc=input_psolve_info[15]
 
 
 parentPath = Path(getcwd())
@@ -93,6 +98,22 @@ try:
 except:
     pass
 catalog_path = os.path.expanduser("~\\Documents\\Kepler")
+
+
+binnedtwo=False
+binnedthree=False
+# If OSC, just bin the image. Also if the pixelscale is unnecessarily high
+if is_osc or (pixscale < 0.5 and pixscale > 0.3):
+    #hdufocusdata=demosaicing_CFA_Bayer_bilinear(hdufocusdata, 'RGGB')[:,:,1]
+    #hdufocusdata=hdufocusdata.astype("float32")
+    hdufocusdata=block_reduce(hdufocusdata,2,func=np.nanmean)
+    pixscale=pixscale*2
+    binnedtwo=True
+elif pixscale <= 0.3:
+    hdufocusdata=block_reduce(hdufocusdata,3,func=np.nanmean)
+    pixscale=pixscale*3
+    binnedthree=True
+    
 
 # Crop the image for platesolving
 fx, fy = hdufocusdata.shape
@@ -186,9 +207,12 @@ except:
 
 
 
-sources['FWHM'], _ = sep.flux_radius(focusimg, sources['x'], sources['y'], sources['a'], 0.5,
-                                     subpix=5)
-sources['FWHM'] = 2 * sources['FWHM']
+# sources['FWHM'], _ = sep.flux_radius(focusimg, sources['x'], sources['y'], sources['a'], 0.5,
+#                                      subpix=5)
+
+sources['FWHM']=sources['kronrad'] * 2
+
+#sources['FWHM'] = 2 * sources['FWHM']
 # BANZAI prune nans from table
 # nan_in_row = np.zeros(len(sources), dtype=bool)
 # for col in sources.colnames:
@@ -196,12 +220,17 @@ sources['FWHM'] = 2 * sources['FWHM']
 # sources = sources[~nan_in_row]
 
 sources = sources[sources['FWHM'] != 0]
-sources = sources[sources['FWHM'] > 0.5]
+#sources = sources[sources['FWHM'] > 0.5]
+sources = sources[sources['FWHM'] > (1/pixscale)]
 sources = sources[sources['FWHM'] < (np.nanmedian(sources['FWHM']) + (3 * np.nanstd(sources['FWHM'])))]
 
 sources = sources[sources['flux'] > 0]
 sources = sources[sources['flux'] < 1000000]
 
+
+
+
+#breakpoint()
 #breakpoint()
 
 if len(sources) >= 5:
@@ -254,7 +283,7 @@ if len(sources) >= 5:
     hdufocus.header["NAXIS1"] = hdufocusdata.shape[0]
     hdufocus.header["NAXIS2"] = hdufocusdata.shape[1]
     hdufocus.writeto(cal_path + 'platesolvetemp.fits', overwrite=True, output_verify='silentfix')
-    pixscale = (hdufocus.header['PIXSCALE'])
+    #pixscale = (hdufocus.header['PIXSCALE'])
 
     try:
         hdufocus.close()
@@ -285,6 +314,12 @@ if len(sources) >= 5:
         process.kill()
 
         solve = parse_platesolve_output(output_file_path)
+        
+        if binnedtwo:
+            solve['arcsec_per_pixel']=solve['arcsec_per_pixel']/2
+        elif binnedthree:
+            solve['arcsec_per_pixel']=solve['arcsec_per_pixel']/3
+        #breakpoint()
 
     except:
         failed = True
@@ -313,6 +348,10 @@ if len(sources) >= 5:
             process.kill()
 
             solve = parse_platesolve_output(output_file_path)
+            if binnedtwo:
+                solve['arcsec_per_pixel']=solve['arcsec_per_pixel']/2
+            elif binnedthree:
+                solve['arcsec_per_pixel']=solve['arcsec_per_pixel']/3
 
         except:
             process.kill()

@@ -183,13 +183,13 @@ site_config = {
     'enclosure_check_period': 1,    # How many minutes between enclosure checks
 
     # Turn on and off various automated calibrations at different times.
-    'auto_eve_bias_dark': False,
+    'auto_eve_bias_dark': True,
     'auto_eve_sky_flat': True,
     
-    'time_to_wait_after_roof_opens_to_take_flats': 120,   #sec Just imposing a minimum in case of a restart.
-    'auto_midnight_moonless_bias_dark': True,
+    'time_to_wait_after_roof_opens_to_take_flats': 60,   #sec Just imposing a minimum in case of a restart.
+    'auto_midnight_moonless_bias_dark': False,
     'auto_morn_sky_flat': True,
-    'auto_morn_bias_dark': False,
+    'auto_morn_bias_dark': True,
     
     # FOCUS OPTIONS
     'periodic_focus_time': 3, # This is a time, in hours, over which to bypass automated focussing (e.g. at the start of a project it will not refocus if a new project starts X hours after the last focus)
@@ -267,8 +267,8 @@ site_config = {
             'permissive_mount_reset' : 'yes', # if this is set to yes, it will reset the mount at startup and when coordinates are out significantly
             'time_inactive_until_park' : 3600.0, # How many seconds of inactivity until it will park the telescope
             #'home_after_unpark' : False,
-            'home_altitude':  0.0,
-            'home_azimuth':  210.0,
+            'home_altitude':  0.0,   #overloaded term these are not the coordinates for a PW home. Meant now to be park position. Due South.
+            'home_azimuth':  180.0,
             'has_paddle': False,    #or a string that permits proper configuration.
             'has_ascom_altaz': True,
             'pointing_tel': 'tel1',     #This can be changed to 'tel2' by user.  This establishes a default.
@@ -581,7 +581,7 @@ site_config = {
                                 #['Lum',     [1, 0],  'w '],   # 1
                                 ['w',       [1, 0],  'w '],   # 2
                                 ['EXO',     [0, 6],  'EX'],   # 3
-                                ['dif',     [2, 0], 'dif'],   # 4
+                                ['BU',      [2, 0],  'JU '],   # 4
                                 ['JB',      [0, 1],  'B '],   # 5
                                 ['gp',      [0, 2],  'g '],   # 6
                                 ['JV',      [0, 3],  'V '],   # 7
@@ -591,7 +591,7 @@ site_config = {
                                 ['HA',      [4, 0],  'HA'],   # 11
                                 ['N2',      [5, 0],  'N2'],   # 12       
                                 ['S2',      [6, 0],  'S2'],   # 13
-                                ['dark',    [6, 1],  'dk']],  # 14
+                                ['dark',    [6, 0],  'dk']],  # 14
                 'focus_filter' : 'w',
 
                 
@@ -634,7 +634,7 @@ site_config = {
             'desc':  'FLI on-Semi 50100',  #'FLI On-semi 50100',
             'service_date': '20231224',  #'20231222'
             #'driver':  'ASCOM.QHYCCD.Camera',   #  Maxim.CCDCamera',   #"Maxim.CCDCamera",   #'ASCOM.FLI.Kepler.Camera',  #Code must work withall three
-            'driver':  'ASCOM.FLI.Camera',   #'ASCOM.FLI.Kepler.Camera',  #"QHYCCD_Direct_Control", # NB Be careful this is not QHY Camera2 or Guider  "Maxim.CCDCamera",   #'ASCOM.FLI.Kepler.Camera', "ASCOM.QHYCCD.Camera",   #
+            'driver':  '"QHYCCD_Direct_Control"',   #'ASCOM.FLI.Kepler.Camera',  #"QHYCCD_Direct_Control", # NB Be careful this is not QHY Camera2 or Guider  "Maxim.CCDCamera",   #'ASCOM.FLI.Kepler.Camera', "ASCOM.QHYCCD.Camera",   #
             
            
 
@@ -642,8 +642,8 @@ site_config = {
             'startup_script':  None,
             'recover_script':  None,
             'shutdown_script':  None,
-            'detector':  'On-Semi 50100',
-            'manufacturer':  'FLI',
+            'detector':  'Sony 455',
+            'manufacturer':  'QHY',
             'use_file_mode':  False,
             'file_mode_path':  'Q:/000ptr_saf/archive/of01/autosaves/',
             'settings': {
@@ -657,17 +657,17 @@ site_config = {
                 'hold_flats_in_memory': True, # If there is sufficient memory ... OR .... not many flats, it is faster to keep the flats in memory.
 
                 # Simple Camera Properties
-                'is_cmos':  False,
-                'is_ccd': True,
+                'is_cmos':  True,
+                'is_ccd': False,
                 'is_osc': False,
                 'is_color': False,  # NB we also have a is_osc key.
                 'osc_bayer': 'RGGB',
                 
                 # Does this camera have a darkslide, if so, what are the settings?
                 'has_darkslide':  False,           #was False until WER put in FLI ascom shutter mod
-                'darkslide_type' : 'ASCOM_FLI_SHUTTER', # dunno what the other one is yet.
-                'darkslide_com':  'ASCOM.FLI',    # Was "COM15" before changing to FLI.ASCOM
-                'shutter_type': "Leaf",
+                'darkslide_type' : 'None', # dunno what the other one is yet.
+                'darkslide_com':  'None',    # Was "COM15" before changing to FLI.ASCOM
+                'shutter_type': "electronic",
 
 
                 # For direct QHY usage we need to set the appropriate gain.
@@ -700,7 +700,7 @@ site_config = {
                 
                 'direct_qhy_usb_traffic' : 60,
                 
-                'set_qhy_usb_speed': False,
+                'set_qhy_usb_speed': True,
                 'direct_qhy_usb_speed' : 0,
                 
                 
@@ -710,14 +710,14 @@ site_config = {
                 # then binning for focus is recommended. SEP and Platesolve can generally always be binned.
                 'interpolate_for_focus': False,
                 # This setting will bin the image for focussing rather than interpolating. Good for 1x1 pixel sizes < 0.6.
-                'bin_for_focus': False,
-                'focus_bin_value' : 1,
+                'bin_for_focus': True,
+                'focus_bin_value' : 21,
                 'interpolate_for_sep': False,
-                'bin_for_sep': False,  # This setting will bin the image for SEP photometry rather than interpolating.
-                'sep_bin_value' : 1,
+                'bin_for_sep': True,  # This setting will bin the image for SEP photometry rather than interpolating.
+                'sep_bin_value' : 2,
                 # This setting will bin the image for platesolving rather than interpolating.
-                'bin_for_platesolve': False,
-                'platesolve_bin_value' : 1,
+                'bin_for_platesolve': True,
+                'platesolve_bin_value' : 2,
                 
                 
                 # Colour image tweaks.
@@ -755,7 +755,7 @@ site_config = {
                 'flipx_jpeg': False,
                 'flipy_jpeg': False,
                 'rotate180_jpeg': False,
-                'rotate90_jpeg': True,
+                'rotate90_jpeg': False,
                 'rotate270_jpeg': False,
 
                 # This is purely to crop the preview jpeg for the UI                
@@ -791,16 +791,16 @@ site_config = {
 
                 # This is the area for cooling related settings
                 'cooler_on': True,
-                'temp_setpoint': -18,  # Verify we can go colder
-                'rated_max_delta': -45, # Rated capacity for TEC to go below ambient.
+                'temp_setpoint': -15,  # Verify we can go colder
+                'rated_max_delta': -30, # Rated capacity for TEC to go below ambient.
                 'has_chiller': True,
                 'ambient_water_cooler':  False,  #QHY sells these.           
                 'chiller_com_port': 'COM1',
-                'chiller_ref_temp':  17.5,  # C  15 - 45 = -30 so do not exceed that target or run
+                'chiller_ref_temp':  15.0,  # C  15 - 45 = -30 so do not exceed that target or run
                                             #TEC above 85% -- better more like 80%.  FLI 50100 at -20 uses 85% power with actual ambient
                                             # of 18C.  60% at -15C, so -17.5 seems good. Really hot days mean the TEC ha do do more work.
                 'day_warm': False,
-                'day_warm_degrees': 0,  # Number of degrees to warm during the daytime.
+                'day_warm_degrees': 5,  # Number of degrees to warm during the daytime.
                 'protect_camera_from_overheating' : False,
 
                 # These are the physical values for the camera
@@ -814,10 +814,10 @@ site_config = {
                 #appears to be a sum  However the simplicity of treating all cameras the same
                 #is compelling.  This camera has two channels so we need to look at crosstalk.
                 
-                'onebyone_pix_scale': 0.312,    #  This is the 1x1 binning pixelscale
-                'native_bin': 1, # Needs to be simple, it will recalculate things on the 1x1 binning pixscale above.
-                'x_pixel':  6.0, # pixel size in microns
-                'y_pixel':  6.0, # pixel size in microns
+                'onebyone_pix_scale':0.195739,    #  This is the 1x1 binning pixelscale
+                'native_bin': 3, # Needs to be simple, it will recalculate things on the 1x1 binning pixscale above.
+                'x_pixel':  3.76, # pixel size in microns
+                'y_pixel':  3.76, # pixel size in microns
                 
                 #NB 43 x 32 amin field.  FLI 50100
                 # The drizzle_value is by the new pixelscale
@@ -831,12 +831,12 @@ site_config = {
                 'dither_enabled':  True,      #Set this way for tracking testing
 
                 # This is the absolute minimum and maximum exposure for the camera
-                'min_exposure': 0.5,
+                'min_exposure': 0.0001,
                 'max_exposure': 600.,
                 # For certain shutters, short exposures aren't good for flats. Some CMOS have banding in too short an exposure. Largely applies to ccds though.
-                'min_flat_exposure': 1.0, # WER 20240111 changed from 0.4   #just for now for CCD camera testing            
+                'min_flat_exposure': 0.001, # WER 20240111 changed from 0.4   #just for now for CCD camera testing            
                 # Realistically there is maximum flat_exposure that makes sure flats are efficient and aren't collecting actual stars.
-                'max_flat_exposure': 30.0,
+                'max_flat_exposure': 20,
                 # During the daytime with the daytime safety mode on, exposures will be limited to this maximum exposure
                 'max_daytime_exposure': 0.5,
 
@@ -871,10 +871,10 @@ site_config = {
                 # As simple as it states, how many calibration frames to collect and how many to store.                
                 'number_of_bias_to_collect': 26,
                 'number_of_dark_to_collect': 13,
-                'number_of_flat_to_collect': 3,   #just for now for CCD camera testing wer 20240113 (friday!)
+                'number_of_flat_to_collect': 7,   #
                 'number_of_bias_to_store': 53,
                 'number_of_dark_to_store': 31,
-                'number_of_flat_to_store': 31,
+                'number_of_flat_to_store': 15,
                 # Default dark exposure time.
                 'dark_exposure': 360,
                
