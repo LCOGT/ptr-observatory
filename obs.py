@@ -2489,15 +2489,15 @@ class Observatory:
                         # DONUT IMAGE DETECTOR.
                         # The brightest pixel and the centre of flux must be within a few pixels of each other
                         # If not, it is highly likely to be a donut and hence, FWHM doesn't make sense to calculate
-                        binfocus=1
-                        if frame_type == 'focus' and self.config["camera"][g_dev['cam'].name]["settings"]['bin_for_focus']:
-                            binfocus=self.config["camera"][g_dev['cam'].name]["settings"]['focus_bin_value']
+                        #binfocus=1
+                        # if frame_type == 'focus' and self.config["camera"][g_dev['cam'].name]["settings"]['bin_for_focus']:
+                        #     binfocus=self.config["camera"][g_dev['cam'].name]["settings"]['focus_bin_value']
 
-                        if frame_type != 'focus' and self.config["camera"][g_dev['cam'].name]["settings"]['bin_for_sep']:
-                            binfocus=self.config["camera"][g_dev['cam'].name]["settings"]['sep_bin_value']
+                        # if frame_type != 'focus' and self.config["camera"][g_dev['cam'].name]["settings"]['bin_for_sep']:
+                        #     binfocus=self.config["camera"][g_dev['cam'].name]["settings"]['sep_bin_value']
 
-                        xdonut=np.median(pow(pow(sources['x'] - sources['xpeak'],2),0.5))*pixscale*binfocus
-                        ydonut=np.median(pow(pow(sources['y'] - sources['ypeak'],2),0.5))*pixscale*binfocus
+                        xdonut=np.median(pow(pow(sources['x'] - sources['xpeak'],2),0.5))*pixscale#*binfocus
+                        ydonut=np.median(pow(pow(sources['y'] - sources['ypeak'],2),0.5))*pixscale#*binfocus
                         if xdonut > 3.0 or ydonut > 3.0 or np.isnan(xdonut) or np.isnan(ydonut):
                             plog ("Possible donut image detected.")
                             plog('x ' + str(xdonut))
