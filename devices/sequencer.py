@@ -2330,7 +2330,7 @@ class Sequencer:
                             img_temp_median=np.nanmedian(flatdebiaseddedarked)
                             img_temp_stdev=np.nanstd(flatdebiaseddedarked)
                             above_array=(flatdebiaseddedarked > (img_temp_median + (4 * img_temp_stdev)))
-                            below_array=(flatdebiaseddedarked < (img_temp_median - (4 * img_temp_stdev)))                
+                            below_array=(flatdebiaseddedarked < (img_temp_median - (6 * img_temp_stdev)))                
                             print ("Bad pixels above: " + str(above_array.sum()))
                             print ("Bad pixels below: " + str(below_array.sum()))                
                             bad_pixel_mapper_array=bad_pixel_mapper_array+above_array+below_array
