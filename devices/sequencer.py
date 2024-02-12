@@ -2329,8 +2329,8 @@ class Sequencer:
                             # Bad pixel accumulator
                             img_temp_median=np.nanmedian(flatdebiaseddedarked)
                             img_temp_stdev=np.nanstd(flatdebiaseddedarked)
-                            above_array=(flatdebiaseddedarked > (img_temp_median + (6 * img_temp_stdev)))
-                            below_array=(flatdebiaseddedarked < (img_temp_median - (6 * img_temp_stdev)))                
+                            above_array=(flatdebiaseddedarked > (img_temp_median + (4 * img_temp_stdev)))
+                            below_array=(flatdebiaseddedarked < (img_temp_median - (4 * img_temp_stdev)))                
                             print ("Bad pixels above: " + str(above_array.sum()))
                             print ("Bad pixels below: " + str(below_array.sum()))                
                             bad_pixel_mapper_array=bad_pixel_mapper_array+above_array+below_array
@@ -2667,7 +2667,7 @@ class Sequencer:
 
 
                 # Create the bad pixel map fits and npy
-                # Save the boolean array
+                # Save the local boolean array
                 plog ("Total bad pixels in image: " + str(bad_pixel_mapper_array.sum()))
                 plog ("Writing out bad pixel map npy and fits.")
                 np.save(g_dev['obs'].calib_masters_folder + tempfrontcalib + 'badpixelmask_bin1.npy', bad_pixel_mapper_array)
@@ -2676,6 +2676,22 @@ class Sequencer:
                 
                 #breakpoint()
                 fits.writeto(g_dev['obs'].calib_masters_folder + tempfrontcalib + 'badpixelmask_bin1.fits', bad_pixel_mapper_array*1,  overwrite=True)
+                
+                filepathaws=g_dev['obs'].calib_masters_folder
+                filenameaws=tempfrontcalib + 'badpixelmask_bin1.fits'
+                g_dev['obs'].enqueue_for_calibrationUI(50, filepathaws,filenameaws)
+
+                # Store a version of the flat for the archive too
+                fits.writeto(g_dev['obs'].calib_masters_folder + 'ARCHIVE_' +  archiveDate + '_' + tempfrontcalib + 'badpixelmask_bin1.fits', bad_pixel_mapper_array*1, overwrite=True)
+
+                filepathaws=g_dev['obs'].calib_masters_folder
+                filenameaws='ARCHIVE_' +  archiveDate + '_' + tempfrontcalib + 'badpixelmask_bin1.fits'
+                g_dev['obs'].enqueue_for_calibrationUI(80, filepathaws,filenameaws)
+                if g_dev['obs'].config['save_raws_to_pipe_folder_for_nightly_processing']:
+                    fits.writeto(pipefolder + '/' + tempfrontcalib + 'badpixelmask_bin1.fits', bad_pixel_mapper_array*1,  overwrite=True)
+                    fits.writeto(pipefolder + '/' + 'ARCHIVE_' +  archiveDate + '_' + tempfrontcalib + 'badpixelmask_bin1.fits', bad_pixel_mapper_array*1,  overwrite=True)
+
+                
                 
 
                 # Bung in the readnoise estimates and then
