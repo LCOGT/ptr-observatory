@@ -1879,7 +1879,8 @@ class Camera:
 
 
                 # If the pier just flipped, trigger a recentering exposure.
-                if not g_dev['mnt'].rapid_park_indicator and not (g_dev['events']['Civil Dusk'] < ephem.now() < g_dev['events']['Civil Dawn']):
+                #if not g_dev['mnt'].rapid_park_indicator:# and not (g_dev['events']['Civil Dusk'] < ephem.now() < g_dev['events']['Civil Dawn']):
+                if not g_dev['mnt'].rapid_park_indicator and (g_dev['events']['Civil Dusk'] < ephem.now() < g_dev['events']['Civil Dawn']):
                     if not (g_dev['mnt'].previous_pier_side==g_dev['mnt'].rapid_pier_indicator) :
                         plog ("PIERFLIP DETECTED, RECENTERING.")
                         g_dev["obs"].send_to_user("Pier Flip detected, recentering.")
