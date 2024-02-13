@@ -637,26 +637,26 @@ site_config = {
                 'crop_preview_xleft': 2,
                 'crop_preview_xright': 2,
 
-                # For large fields of view, crop the images down to solve faster.
-                # Realistically the "focus fields" have a size of 0.2 degrees, so anything larger than 0.5 degrees is unnecesary
-                # Probably also similar for platesolving.
-                # for either pointing or platesolving even on more modest size fields of view.
-                # These were originally inspired by the RASA+QHY which is 3.3 degrees on a side and regularly detects
-                # tens of thousands of sources, but any crop will speed things up. Don't use SEP crop unless
-                # you clearly need to.
-                'focus_image_crop_width': 0.0,  # For excessive fields of view, to speed things up crop the image to a fraction of the full width
-                'focus_image_crop_height': 0.0,  # For excessive fields of view, to speed things up crop the image to a fraction of the full height
-                'focus_jpeg_size': 1500, # How many pixels square to crop the focus image for the UI Jpeg
+                # # For large fields of view, crop the images down to solve faster.
+                # # Realistically the "focus fields" have a size of 0.2 degrees, so anything larger than 0.5 degrees is unnecesary
+                # # Probably also similar for platesolving.
+                # # for either pointing or platesolving even on more modest size fields of view.
+                # # These were originally inspired by the RASA+QHY which is 3.3 degrees on a side and regularly detects
+                # # tens of thousands of sources, but any crop will speed things up. Don't use SEP crop unless
+                # # you clearly need to.
+                # 'focus_image_crop_width': 0.0,  # For excessive fields of view, to speed things up crop the image to a fraction of the full width
+                # 'focus_image_crop_height': 0.0,  # For excessive fields of view, to speed things up crop the image to a fraction of the full height
+                # 'focus_jpeg_size': 1500, # How many pixels square to crop the focus image for the UI Jpeg
 
-                # PLATESOLVE CROPS HAVE TO BE EQUAL! OTHERWISE THE PLATE CENTRE IS NOT THE POINTING CENTRE
-                'platesolve_image_crop': 0.0,  # Platesolve crops have to be symmetrical
+                # # PLATESOLVE CROPS HAVE TO BE EQUAL! OTHERWISE THE PLATE CENTRE IS NOT THE POINTING CENTRE
+                # 'platesolve_image_crop': 0.0,  # Platesolve crops have to be symmetrical
 
-                # Really, the SEP image should not be cropped unless your field of view and number of sources
-                # Are taking chunks out of the processing time.
-                # For excessive fields of view, to speed things up crop the processed image area to a fraction of the full width
-                'sep_image_crop_width': 0.0,
-                # For excessive fields of view, to speed things up crop the processed image area to a fraction of the full width
-                'sep_image_crop_height': 0.0,
+                # # Really, the SEP image should not be cropped unless your field of view and number of sources
+                # # Are taking chunks out of the processing time.
+                # # For excessive fields of view, to speed things up crop the processed image area to a fraction of the full width
+                # 'sep_image_crop_width': 0.0,
+                # # For excessive fields of view, to speed things up crop the processed image area to a fraction of the full width
+                # 'sep_image_crop_height': 0.0,
 
                 # This is the area for cooling related settings
                 'cooler_on': True,
@@ -676,9 +676,9 @@ site_config = {
                 'native_bin': 2, # Needs to be simple, it will recalculate things on the 1x1 binning pixscale above.
                 'x_pixel':  3.76, # pixel size in microns
                 'y_pixel':  3.76, # pixel size in microns
-                'field_x':  1.3992,   #4770*2*0.528/3600
-                'field_y':  0.9331,    #3181*2*0.528/3600
-                'field_sq_deg':  1.3056,
+                # 'field_x':  1.3992,   #4770*2*0.528/3600
+                # 'field_y':  0.9331,    #3181*2*0.528/3600
+                # 'field_sq_deg':  1.3056,
                 # The drizzle_value is by the new pixelscale
                 # for the new resolution when stacking in the EVA pipeline
                 # Realistically you want a resolution of about 0.5 arcseconds per pixel

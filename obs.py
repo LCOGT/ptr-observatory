@@ -2521,6 +2521,8 @@ class Observatory:
                             fwhmcalc = sources['FWHM']
                             fwhmcalc = fwhmcalc[fwhmcalc != 0]  # Remove 0 entries
 
+                            sep_to_moffat_factor = 1.45
+
                             # sigma clipping iterator to reject large variations
                             templen = len(fwhmcalc)
                             while True:
@@ -2531,11 +2533,11 @@ class Observatory:
                                     templen = len(fwhmcalc)
 
                             fwhmcalc = fwhmcalc[fwhmcalc > np.median(fwhmcalc) - 3 * np.std(fwhmcalc)]
-                            rfp = round(np.median(fwhmcalc), 3)
+                            rfp = round(np.median(fwhmcalc), 3) * sep_to_moffat_factor
                             #rfr = round(np.median(fwhmcalc) * pixscale * g_dev['cam'].native_bin, 3)
                             #rfs = round(np.std(fwhmcalc) * pixscale * g_dev['cam'].native_bin, 3)
-                            rfr = round(np.median(fwhmcalc) * pixscale , 3)
-                            rfs = round(np.std(fwhmcalc) * pixscale, 3)
+                            rfr = round(np.median(fwhmcalc) * pixscale , 3) * sep_to_moffat_factor
+                            rfs = round(np.std(fwhmcalc) * pixscale, 3) * sep_to_moffat_factor
                             plog("\nImage FWHM:  " + str(rfr) + "+/-" + str(rfs) + " arcsecs, " + str(rfp)
                                  + " pixels.")
                             self.fwhmresult={}
