@@ -403,7 +403,7 @@ else:
         #breakpoint()
         # If image has been binned for focus we need to multiply some of these things by the binning
         # To represent the original image
-        #sources['FWHM'] = (sources['FWHM'] * 2)
+        sources['FWHM'] = (sources['FWHM'] * 2)
 
         #sources['FWHM']=sources['kronrad'] * 2
 
