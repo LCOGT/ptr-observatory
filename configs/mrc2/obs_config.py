@@ -187,7 +187,7 @@ site_config = {
     'auto_eve_sky_flat': True,
     
     'time_to_wait_after_roof_opens_to_take_flats': 60,   #sec Just imposing a minimum in case of a restart.
-    'auto_midnight_moonless_bias_dark': False,
+    'auto_midnight_moonless_bias_dark': True,
     'auto_morn_sky_flat': True,
     'auto_morn_bias_dark': True,
     
@@ -451,9 +451,9 @@ site_config = {
             'correct_focus_for_temperature' : True,
             'maximum_good_focus_in_arcsecond': 2.5, # highest value to consider as being in "good focus". Used to select last good focus value
 
-            'reference':  7187,    #Nominal at 20C Primary temperature, in microns not steps.            
+            'reference':  6063,    #Nominal at 20C Primary temperature, in microns not steps.            
             'z_compression': 0.0, #  microns per degree of zenith distance
-            'z_coef_date':  '20221002',   # 'reference': 4375,    #   Guess 20210904  Nominal at 10C Primary temperature
+            'z_coef_date':  '20240210',   # 'reference': 4375,    #   Guess 20210904  Nominal at 10C Primary temperature
             'use_local_temp':  False,
             'minimum': 0,    #NB this needs clarifying, we are mixing steps and microns.
             'maximum': 12700,
@@ -511,7 +511,7 @@ site_config = {
             'dual_wheel':  True,
             'override_automatic_filter_throughputs': False, # This ignores the automatically estimated filter gains and starts with the values from the config file
              
-            "filter_settle_time": 8, #how long to wait for the filter to settle after a filter change(seconds)
+            "filter_settle_time": 2, #how long to wait for the filter to settle after a filter change(seconds)
 
             'ip_string': 'http://127.0.0.1',
             "desc":  'Dual Apogee custom Dual 50mm sq.',
@@ -630,11 +630,11 @@ site_config = {
     'camera': {
         'camera_1_1': {
             'parent': 'telescope1',
-            'name': 'OF01', #'KF04',      #Important because this points to a server file structure by that name.
-            'desc':  'FLI on-Semi 50100',  #'FLI On-semi 50100',
-            'service_date': '20231224',  #'20231222'
+            'name': 'SQ007',# 'OF01', #'KF04',      #Important because this points to a server file structure by that name.
+            'desc':  'QHY 600 Pro Mono',  #'FLI On-semi 50100',
+            'service_date': '20240210',  #'20231222'
             #'driver':  'ASCOM.QHYCCD.Camera',   #  Maxim.CCDCamera',   #"Maxim.CCDCamera",   #'ASCOM.FLI.Kepler.Camera',  #Code must work withall three
-            'driver':  '"QHYCCD_Direct_Control"',   #'ASCOM.FLI.Kepler.Camera',  #"QHYCCD_Direct_Control", # NB Be careful this is not QHY Camera2 or Guider  "Maxim.CCDCamera",   #'ASCOM.FLI.Kepler.Camera', "ASCOM.QHYCCD.Camera",   #
+            'driver':  'QHYCCD_Direct_Control',   #'ASCOM.FLI.Kepler.Camera',  #"QHYCCD_Direct_Control", # NB Be careful this is not QHY Camera2 or Guider  "Maxim.CCDCamera",   #'ASCOM.FLI.Kepler.Camera', "ASCOM.QHYCCD.Camera",   #
             
            
 
@@ -645,7 +645,7 @@ site_config = {
             'detector':  'Sony 455',
             'manufacturer':  'QHY',
             'use_file_mode':  False,
-            'file_mode_path':  'Q:/000ptr_saf/archive/of01/autosaves/',
+            #'file_mode_path':  'Q:/000ptr_saf/archive/of01/autosaves/',
             'settings': {
                 
                 # These are the offsets in degrees of the actual telescope from the latitude and longitude of the WEMA settings
@@ -708,16 +708,16 @@ site_config = {
                 # If the pixel scale is well-sampled (e.g. 0.6 arcsec per RGGB pixel or 0.3 arcsec per individual debayer pixel)
                 # Then binning is probably fine for all three. For understampled pixel scales - which are likely with OSCs
                 # then binning for focus is recommended. SEP and Platesolve can generally always be binned.
-                'interpolate_for_focus': False,
-                # This setting will bin the image for focussing rather than interpolating. Good for 1x1 pixel sizes < 0.6.
-                'bin_for_focus': True,
-                'focus_bin_value' : 21,
-                'interpolate_for_sep': False,
-                'bin_for_sep': True,  # This setting will bin the image for SEP photometry rather than interpolating.
-                'sep_bin_value' : 2,
-                # This setting will bin the image for platesolving rather than interpolating.
-                'bin_for_platesolve': True,
-                'platesolve_bin_value' : 2,
+                # 'interpolate_for_focus': False,
+                # # This setting will bin the image for focussing rather than interpolating. Good for 1x1 pixel sizes < 0.6.
+                # 'bin_for_focus': True,
+                # 'focus_bin_value' : 2,
+                # 'interpolate_for_sep': False,
+                # 'bin_for_sep': True,  # This setting will bin the image for SEP photometry rather than interpolating.
+                # 'sep_bin_value' : 2,
+                # # This setting will bin the image for platesolving rather than interpolating.
+                # 'bin_for_platesolve': True,
+                # 'platesolve_bin_value' : 2,
                 
                 
                 # Colour image tweaks.
@@ -774,9 +774,9 @@ site_config = {
                # These were originally inspired by the RASA+QHY which is 3.3 degrees on a side and regularly detects
                # tens of thousands of sources, but any crop will speed things up. Don't use SEP crop unless
                # you clearly need to.
-               #'focus_image_crop_width': 0.0,  # For excessive fields of view, to speed things up crop the image to a fraction of the full width
-               #'focus_image_crop_height': 0.0,  # For excessive fields of view, to speed things up crop the image to a fraction of the full height                
-               #'focus_jpeg_size': 1500, # How many pixels square to crop the focus image for the UI Jpeg
+               'focus_image_crop_width': 0.0,  # For excessive fields of view, to speed things up crop the image to a fraction of the full width
+               'focus_image_crop_height': 0.0,  # For excessive fields of view, to speed things up crop the image to a fraction of the full height                
+               'focus_jpeg_size': 1500, # How many pixels square to crop the focus image for the UI Jpeg
 
                # PLATESOLVE CROPS HAVE TO BE EQUAL! OTHERWISE THE PLATE CENTRE IS NOT THE POINTING CENTRE
                'platesolve_image_crop': 0.0,  # Platesolve crops have to be symmetrical
@@ -832,7 +832,7 @@ site_config = {
 
                 # This is the absolute minimum and maximum exposure for the camera
                 'min_exposure': 0.0001,
-                'max_exposure': 600.,
+                'max_exposure': 600.0,
                 # For certain shutters, short exposures aren't good for flats. Some CMOS have banding in too short an exposure. Largely applies to ccds though.
                 'min_flat_exposure': 0.001, # WER 20240111 changed from 0.4   #just for now for CCD camera testing            
                 # Realistically there is maximum flat_exposure that makes sure flats are efficient and aren't collecting actual stars.

@@ -40,7 +40,8 @@ def radial_profile(data, center):
     radialprofile = tbin / nr
     return radialprofile
 
-
+# The SEP code underestimates the moffat FWHM by some factor. This corrects for it.
+sep_to_moffat_factor=1.45
 
 input_sep_info=pickle.load(sys.stdin.buffer)
 #input_sep_info=pickle.load(open('testSEPpickle','rb'))
@@ -396,15 +397,15 @@ else:
 
 
 
-        # sources['FWHM'], _ = sep.flux_radius(focusimg, sources['x'], sources['y'], sources['a'], 0.5,
-        #                                      subpix=5)
+        sources['FWHM'], _ = sep.flux_radius(focusimg, sources['x'], sources['y'], sources['a'], 0.5,
+                                              subpix=5)
 
         #breakpoint()
         # If image has been binned for focus we need to multiply some of these things by the binning
         # To represent the original image
         #sources['FWHM'] = (sources['FWHM'] * 2)
 
-        sources['FWHM']=sources['kronrad'] * 2
+        #sources['FWHM']=sources['kronrad'] * 2
 
         #print (sources)
 
@@ -461,11 +462,11 @@ else:
                     templen = len(fwhmcalc)
 
             fwhmcalc = fwhmcalc[fwhmcalc > np.median(fwhmcalc) - 3 * np.std(fwhmcalc)]
-            rfp = round(np.median(fwhmcalc), 3)
+            rfp = round(np.median(fwhmcalc), 3) * sep_to_moffat_factor
 #            rfr = round(np.median(fwhmcalc) * pixscale * nativebin, 3)
 #            rfs = round(np.std(fwhmcalc) * pixscale * nativebin, 3)
-            rfr = round(np.median(fwhmcalc) * pixscale, 3)
-            rfs = round(np.std(fwhmcalc) * pixscale, 3)
+            rfr = round(np.median(fwhmcalc) * pixscale, 3) * sep_to_moffat_factor
+            rfs = round(np.std(fwhmcalc) * pixscale, 3) * sep_to_moffat_factor
 
 
             #print (sources)

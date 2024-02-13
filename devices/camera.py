@@ -268,6 +268,7 @@ class Camera:
 
         win32com.client.pythoncom.CoInitialize()
         plog(driver, name)
+
         if not driver == "QHYCCD_Direct_Control":
             self.camera = win32com.client.Dispatch(driver)
         else:
