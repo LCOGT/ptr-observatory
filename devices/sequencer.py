@@ -69,7 +69,7 @@ def authenticated_request(method: str, uri: str, payload: dict = None) -> str:
 # ):
 #     """
 #     from: https://stackoverflow.com/questions/37662180/interpolate-missing-values-2d-python
-    
+
 #     :param image: a 2D image
 #     :param mask: a 2D boolean image, True indicates missing values
 #     :param method: interpolation method, one of
@@ -79,7 +79,7 @@ def authenticated_request(method: str, uri: str, payload: dict = None) -> str:
 #         Default is 0, Has no effect for 'nearest'.
 #     :return: the image with missing values interpolated
 #     """
-    
+
 
 #     h, w = image.shape[:2]
 #     xx, yy = np.meshgrid(np.arange(w), np.arange(h))
@@ -94,7 +94,7 @@ def authenticated_request(method: str, uri: str, payload: dict = None) -> str:
 #         (known_x, known_y), known_v, (missing_x, missing_y),
 #         method=method, fill_value=fill_value
 #     )
-    
+
 #     # interp_values = interpolate.interpn(
 #     #     (known_x, known_y), known_v, (missing_x, missing_y),
 #     #     method=method, fill_value=fill_value
@@ -178,7 +178,7 @@ class Sequencer:
         self.af_guard = False
         self.block_guard = False
         self.bias_dark_latch = False   #NB NB NB Should these initially be defined this way?
-        
+
         self.morn_sky_flat_latch = False
         self.morn_bias_dark_latch = False   #NB NB NB Should these initially be defined this way?
         self.cool_down_latch = False
@@ -261,7 +261,7 @@ class Sequencer:
         self.rotator_has_been_homed_this_evening=False
         g_dev['obs'].request_update_calendar_blocks()
         #self.blocks=
-        
+
         self.MTF_temporary_flat_timer=time.time()-310
 
 
@@ -498,9 +498,9 @@ class Sequencer:
                 self.bias_dark_script(req, opt, morn=False)
                 self.eve_bias_done = True
                 self.bias_dark_latch = False
-            
+
             #print (self.MTF_temporary_flat_timer-time.time())
-            
+
             if False and (time.time()-self.MTF_temporary_flat_timer > 300):
                 self.MTF_temporary_flat_timer=time.time()
                 plog ("EVESKY FLAG HUNTING")
@@ -1800,15 +1800,15 @@ class Sequencer:
         g_dev['seq'].blockend= None
         self.time_of_next_slew = time.time()
         self.bias_dark_latch = False
-        
+
         self.eve_sky_flat_latch = False
         self.morn_sky_flat_latch = False
         self.morn_bias_dark_latch = False
         self.clock_focus_latch = False
         self.cool_down_latch = False
         self.clock_focus_latch = False
-        
-        self.flats_being_collected = False        
+
+        self.flats_being_collected = False
 
         self.morn_bias_done = False
         self.eve_bias_done = False
@@ -2043,9 +2043,9 @@ class Sequencer:
                 plog ("corrupt bias skipped: " + str(file))
                 inputList.remove(file)
 
-        
-        
-        
+
+
+
 
         # have to remove flats from memory to make room for.... flats!
         try:
@@ -2086,17 +2086,17 @@ class Sequencer:
                 #hdu1data = np.load(file, mmap_mode='r')
                 hdu1data = np.load(file)
                 #breakpoint()
-                
+
                 # Bad pixel accumulator
                 img_temp_median=np.nanmedian(hdu1data)
                 img_temp_stdev=np.nanstd(hdu1data)
                 above_array=(hdu1data > (img_temp_median + (10 * img_temp_stdev)))
-                below_array=(hdu1data < (img_temp_median - (10 * img_temp_stdev)))                
+                below_array=(hdu1data < (img_temp_median - (10 * img_temp_stdev)))
                 print ("Bad pixels above: " + str(above_array.sum()))
-                print ("Bad pixels below: " + str(below_array.sum()))                
+                print ("Bad pixels below: " + str(below_array.sum()))
                 bad_pixel_mapper_array=bad_pixel_mapper_array+above_array+below_array
-                
-                
+
+
                 timetaken=datetime.datetime.now() -starttime
                 plog ("Time Taken to load array: " + str(timetaken))
 
@@ -2207,16 +2207,16 @@ class Sequencer:
                 hdu1exp=float(file.split('_')[-2])
                 darkdeexp=(hdu1data-masterBias)/hdu1exp
                 del hdu1data
-                
+
                 # Bad pixel accumulator
                 img_temp_median=np.nanmedian(darkdeexp)
                 img_temp_stdev=np.nanstd(darkdeexp)
                 above_array=(darkdeexp > 20)
-                #below_array=(darkdeexp < (img_temp_median - (10 * img_temp_stdev)))                
+                #below_array=(darkdeexp < (img_temp_median - (10 * img_temp_stdev)))
                 print ("Bad pixels above: " + str(above_array.sum()))
-                #print ("Bad pixels below: " + str(below_array.sum()))                
+                #print ("Bad pixels below: " + str(below_array.sum()))
                 bad_pixel_mapper_array=bad_pixel_mapper_array+above_array+below_array
-                
+
                 timetaken=datetime.datetime.now() -starttime
                 plog ("Time Taken to load array and debias and divide dark: " + str(timetaken))
                 starttime=datetime.datetime.now()
@@ -2325,18 +2325,18 @@ class Sequencer:
 
                             flatdebiaseddedarked=(hdu1data-masterBias)-(masterDark*hdu1exp)
                             del hdu1data
-                            
+
                             # Bad pixel accumulator
                             img_temp_median=np.nanmedian(flatdebiaseddedarked)
                             img_temp_stdev=np.nanstd(flatdebiaseddedarked)
                             above_array=(flatdebiaseddedarked > (img_temp_median + (4 * img_temp_stdev)))
-                            below_array=(flatdebiaseddedarked < (img_temp_median - (6 * img_temp_stdev)))                
+                            below_array=(flatdebiaseddedarked < (img_temp_median - (6 * img_temp_stdev)))
                             print ("Bad pixels above: " + str(above_array.sum()))
-                            print ("Bad pixels below: " + str(below_array.sum()))                
+                            print ("Bad pixels below: " + str(below_array.sum()))
                             bad_pixel_mapper_array=bad_pixel_mapper_array+above_array+below_array
-                            
-                            
-                            
+
+
+
                             # Normalising flat file
                             if not g_dev['cam'].config["camera"][g_dev['cam'].name]["settings"]["is_osc"]:
                                 normalising_factor=np.nanmedian(flatdebiaseddedarked)
@@ -2440,17 +2440,17 @@ class Sequencer:
                             while num_of_nans > 0:
                                 timestart=time.time()
                                 #temporaryFlat=interpolate_replace_nans(temporaryFlat, kernel)
-                                
-                                
-                                
-                                
-                                
+
+
+
+
+
                                 # List the coordinates that are nan in the array
                                 nan_coords=np.argwhere(np.isnan(temporaryFlat))
                                 x_size=temporaryFlat.shape[0]
                                 y_size=temporaryFlat.shape[1]
-                                
-                                
+
+
                                 # For each coordinate pop out the 3x3 grid
                                 try:
                                     for nancoord in nan_coords:
@@ -2485,33 +2485,33 @@ class Sequencer:
                                             if not np.isnan(value_here):
                                                 countervalue=countervalue+value_here
                                                 countern=countern+1
-                                        
+
                                         if countern == 0:
                                             temporaryFlat[x_nancoord,y_nancoord]=np.nan
                                         else:
                                             temporaryFlat[x_nancoord,y_nancoord]=countervalue/countern
-                                            
+
                                         #print(countervalue/countern)
-                                
+
                                 except:
                                     plog(traceback.format_exc())
                                     breakpoint()
-                                        
-                                    
-                                
-                                
+
+
+
+
                                 # Get the above, below, left and righ tvalues where not nan
-                                
-                                
+
+
                                 # place the average value in the nan coordinate
-                                
-                                
-                                
-                                
-                            
+
+
+
+
+
                                 #interpolate_replace_nans(temporaryFlat, kernel)
                                 plog ("time for fitzcycle: " +str(time.time()-timestart))
-                                
+
                                 # #temporaryFlat=
                                 # interpolate_missing_pixels(temporaryFlat,np.isnan(temporaryFlat),method='nearest',fill_value=np.nan)
                                 # plog ("time for nearest: " +str(time.time()-timestart))
@@ -2519,15 +2519,15 @@ class Sequencer:
                                 # interpolate_missing_pixels(temporaryFlat,np.isnan(temporaryFlat),method='linear',fill_value=np.nan)
                                 # plog ("time for linear: " +str(time.time()-timestart))
                                 # timestart=time.time()
-                                
+
                                 # interpolate_missing_pixels(temporaryFlat,np.isnan(temporaryFlat),method='slinear',fill_value=np.nan)
                                 # plog ("time for slinear: " +str(time.time()-timestart))
                                 # timestart=time.time()
                                 # temporaryFlat=interpolate_missing_pixels(temporaryFlat,np.isnan(temporaryFlat),method='cubic',fill_value=np.nan)
                                 # plog ("time for cubic: " +str(time.time()-timestart))
-                                
-                                
-                                
+
+
+
                                 # temporaryFlat[temporaryFlat == inf] = np.nan
                                 # temporaryFlat[temporaryFlat == -inf] = np.nan
                                 # temporaryFlat[temporaryFlat < 0.000001 ] = np.nan
@@ -2671,12 +2671,12 @@ class Sequencer:
                 plog ("Total bad pixels in image: " + str(bad_pixel_mapper_array.sum()))
                 plog ("Writing out bad pixel map npy and fits.")
                 np.save(g_dev['obs'].calib_masters_folder + tempfrontcalib + 'badpixelmask_bin1.npy', bad_pixel_mapper_array)
-                
-                # convert the boolean 
-                
+
+                # convert the boolean
+
                 #breakpoint()
                 fits.writeto(g_dev['obs'].calib_masters_folder + tempfrontcalib + 'badpixelmask_bin1.fits', bad_pixel_mapper_array*1,  overwrite=True)
-                
+
                 filepathaws=g_dev['obs'].calib_masters_folder
                 filenameaws=tempfrontcalib + 'badpixelmask_bin1.fits'
                 g_dev['obs'].enqueue_for_calibrationUI(50, filepathaws,filenameaws)
@@ -2691,8 +2691,8 @@ class Sequencer:
                     fits.writeto(pipefolder + '/' + tempfrontcalib + 'badpixelmask_bin1.fits', bad_pixel_mapper_array*1,  overwrite=True)
                     fits.writeto(pipefolder + '/' + 'ARCHIVE_' +  archiveDate + '_' + tempfrontcalib + 'badpixelmask_bin1.fits', bad_pixel_mapper_array*1,  overwrite=True)
 
-                
-                
+
+
 
                 # Bung in the readnoise estimates and then
                 # Close up the filter camera gain shelf.
@@ -2792,7 +2792,7 @@ class Sequencer:
                 g_dev['cam'].darkFiles.update({'1': masterDark})
             except:
                 plog("Dark frame master re-upload did not work.")
-                
+
             try:
                 g_dev['cam'].bpmFiles.update({'1': bad_pixel_mapper_array})
             except:
@@ -2806,13 +2806,13 @@ class Sequencer:
                 del masterDark
             except:
                 pass
-            
-            
+
+
             try:
                 del bad_pixel_mapper_array
             except:
                 pass
-            
+
         g_dev["obs"].send_to_user("All calibration frames completed.")
 
         self.total_sequencer_control = False
@@ -2913,7 +2913,7 @@ class Sequencer:
 
         if not (g_dev['obs'].enc_status['shutter_status'] == 'Open') and not (g_dev['obs'].enc_status['shutter_status'] == 'Sim. Open'):
             plog ("NOT DOING FLATS -- THE ROOF IS SHUT!!")
-            g_dev["obs"].send_to_user("A sky flat script request was rejected as the roof is shut.")            
+            g_dev["obs"].send_to_user("A sky flat script request was rejected as the roof is shut.")
             self.flats_being_collected = False
             self.eve_sky_flat_latch = False
             self.morn_sky_flat_latch = False
@@ -4161,7 +4161,7 @@ class Sequencer:
             g_dev['foc'].guarded_move((focus_start)*g_dev['foc'].micron_to_steps)  #NB NB 20221002 THis unit fix shoudl be in the routine. WER
 
             if not dont_return_scope:
-            
+
                 g_dev['mnt'].go_command(ra=start_ra, dec=start_dec)
                 #g_dev["obs"].request_full_update()
                 self.wait_for_slew()
@@ -4185,7 +4185,7 @@ class Sequencer:
 
                 self.af_guard = False
                 if not dont_return_scope:
-                
+
                     g_dev['mnt'].go_command(ra=start_ra, dec=start_dec)  #NB NB Does this really take us back to starting point?
                     self.wait_for_slew()
 
@@ -4241,7 +4241,7 @@ class Sequencer:
                     plog(traceback.format_exc())
                 #g_dev["obs"].request_full_update()
                 if not dont_return_scope:
-                
+
                     plog("Returning to RA:  " +str(start_ra) + " Dec: " + str(start_dec))
                     g_dev["obs"].send_to_user("Returning to RA:  " +str(start_ra) + " Dec: " + str(start_dec))
                     g_dev['mnt'].go_command(ra=start_ra, dec=start_dec)
@@ -4255,7 +4255,7 @@ class Sequencer:
 
                 self.af_guard = False
                 if not dont_return_scope:
-                
+
                     g_dev['mnt'].go_command(ra=start_ra, dec=start_dec)  #NB NB Does this really take us back to starting point?
                     self.wait_for_slew()
 
@@ -4319,7 +4319,7 @@ class Sequencer:
                     opt = {'filter': filter_choice}
                     g_dev['seq'].extensive_focus_script(req2,opt,dont_return_scope=dont_return_scope, begin_at=focus_start, no_auto_after_solve=True, skip_timer_check=True, dont_log_focus=True, skip_pointing=True, filter_choice=filter_choice)
                     if not dont_return_scope:
-                    
+
                         plog("Returning to RA:  " +str(start_ra) + " Dec: " + str(start_dec))
                         g_dev["obs"].send_to_user("Returning to RA:  " +str(start_ra) + " Dec: " + str(start_dec))
                         g_dev['mnt'].go_command(ra=start_ra, dec=start_dec)
@@ -4336,7 +4336,7 @@ class Sequencer:
 
                     self.af_guard = False
                     if not dont_return_scope:
-                    
+
                         plog("Returning to RA:  " +str(start_ra) + " Dec: " + str(start_dec))
                         g_dev["obs"].send_to_user("Returning to RA:  " +str(start_ra) + " Dec: " + str(start_dec))
                         g_dev['mnt'].go_command(ra=start_ra, dec=start_dec)   #NB NB Does this really take us back to starting point?
@@ -4385,7 +4385,7 @@ class Sequencer:
                 if not dont_log_focus:
                     g_dev['foc'].af_log(foc_pos4, spot4, new_spot)
                 if not dont_return_scope:
-                    
+
                     plog("Returning to RA:  " +str(start_ra) + " Dec: " + str(start_dec))
                     g_dev["obs"].send_to_user("Returning to RA:  " +str(start_ra) + " Dec: " + str(start_dec))
                     g_dev['mnt'].go_command(ra=start_ra, dec=start_dec) #Return to pre-focus pointing.
@@ -4444,7 +4444,7 @@ class Sequencer:
                     opt = {}
                     g_dev['seq'].extensive_focus_script(req2,opt,dont_return_scope=dont_return_scope,begin_at=focus_start, no_auto_after_solve=True, skip_timer_check=True, dont_log_focus=True, skip_pointing=True, filter_choice=filter_choice)
                     if not dont_return_scope:
-                    
+
                         plog("Returning to RA:  " +str(start_ra) + " Dec: " + str(start_dec))
                         g_dev["obs"].send_to_user("Returning to RA:  " +str(start_ra) + " Dec: " + str(start_dec))
                         g_dev['mnt'].go_command(ra=start_ra, dec=start_dec)  #Return to pre-focus pointing.
@@ -4459,7 +4459,7 @@ class Sequencer:
                     #self.sequencer_hold = False   #Allow comand checks.
                     self.af_guard = False
                     if not dont_return_scope:
-                    
+
                         plog("Returning to RA:  " +str(start_ra) + " Dec: " + str(start_dec))
                         g_dev["obs"].send_to_user("Returning to RA:  " +str(start_ra) + " Dec: " + str(start_dec))
                         g_dev['mnt'].go_command(ra=start_ra, dec=start_dec)  #NB NB Does this really take us back to starting point?
@@ -4506,7 +4506,7 @@ class Sequencer:
                 if not dont_log_focus:
                     g_dev['foc'].af_log(foc_pos4, spot4, new_spot)
                 if not dont_return_scope:
-                
+
                     plog("Returning to RA:  " +str(start_ra) + " Dec: " + str(start_dec))
                     g_dev["obs"].send_to_user("Returning to RA:  " +str(start_ra) + " Dec: " + str(start_dec))
                     g_dev['mnt'].go_command(ra=start_ra, dec=start_dec)  #Return to pre-focus pointing.
@@ -4521,9 +4521,9 @@ class Sequencer:
                     req2 = {'target': 'near_tycho_star'}
                     opt = {}
                     g_dev['seq'].extensive_focus_script(req2,opt,dont_return_scope=dont_return_scope,begin_at=focus_start, no_auto_after_solve=True, skip_timer_check=True, dont_log_focus=True, skip_pointing=True, filter_choice=filter_choice)
-                    
+
                     if not dont_return_scope:
-                    
+
                         plog("Returning to RA:  " +str(start_ra) + " Dec: " + str(start_dec))
                         g_dev["obs"].send_to_user("Returning to RA:  " +str(start_ra) + " Dec: " + str(start_dec))
                         g_dev['mnt'].go_command(ra=start_ra, dec=start_dec)  #Return to pre-focus pointing.
@@ -4537,7 +4537,7 @@ class Sequencer:
 
                     self.af_guard = False
                     if not dont_return_scope:
-                    
+
                         plog("Returning to RA:  " +str(start_ra) + " Dec: " + str(start_dec))
                         g_dev["obs"].send_to_user("Returning to RA:  " +str(start_ra) + " Dec: " + str(start_dec))
                         g_dev['mnt'].go_command(ra=start_ra, dec=start_dec)
@@ -4569,7 +4569,7 @@ class Sequencer:
                 opt = {}
                 g_dev['seq'].extensive_focus_script(req2,opt,dont_return_scope=dont_return_scope,begin_at=focus_start, no_auto_after_solve=True, skip_timer_check=True, dont_log_focus=True, skip_pointing=True, filter_choice=filter_choice)
                 if not dont_return_scope:
-                
+
                     plog("Returning to RA:  " +str(start_ra) + " Dec: " + str(start_dec))
                     g_dev["obs"].send_to_user("Returning to RA:  " +str(start_ra) + " Dec: " + str(start_dec))
                     g_dev['mnt'].go_command(ra=start_ra, dec=start_dec)
@@ -4582,7 +4582,7 @@ class Sequencer:
                 g_dev['obs'].send_to_user('V-curve focus failed, moving back to extensive focus: ', extensive_focus)
                 self.af_guard = False
                 if not dont_return_scope:
-                
+
                     plog("Returning to RA:  " +str(start_ra) + " Dec: " + str(start_dec))
                     g_dev["obs"].send_to_user("Returning to RA:  " +str(start_ra) + " Dec: " + str(start_dec))
                     g_dev['mnt'].go_command(ra=start_ra, dec=start_dec)  #NB NB Does this really take us back to starting point?
@@ -4877,7 +4877,7 @@ class Sequencer:
             g_dev['foc'].guarded_move((foc_start)*g_dev['foc'].micron_to_steps)
 
         if not dont_return_scope:
-        
+
             plog("Returning to RA:  " +str(start_ra) + " Dec: " + str(start_dec))
             g_dev["obs"].send_to_user("Returning to RA:  " +str(start_ra) + " Dec: " + str(start_dec))
             g_dev['mnt'].go_command(ra=start_ra, dec=start_dec)
@@ -4889,7 +4889,7 @@ class Sequencer:
 
 
 
-    def sky_grid_pointing_run(self, max_pointings=25, alt_minimum=35):
+    def sky_grid_pointing_run(self, max_pointings=50, alt_minimum=30):
 
         #breakpoint()
         g_dev['obs'].get_enclosure_status_from_aws()
