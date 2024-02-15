@@ -3736,7 +3736,7 @@ class Observatory:
 
 
                      # Another pickle debugger
-                    if False:
+                    if True:
                         pickle.dump(picklepayload, open('subprocesses/testsmartstackpickle','wb'))
 
                     #breakpoint()
@@ -3759,8 +3759,13 @@ class Observatory:
                     self.fast_queue.put((15, (paths["im_path"], paths["jpeg_name10"])), block=False)
                     self.fast_queue.put(
                         (150, (paths["im_path"], paths["jpeg_name10"].replace('EX10', 'EX20'))), block=False)
-
-                    reprojection_failed=pickle.load(open(paths["im_path"] + 'smartstack.pickle', 'rb'))
+                    
+                    try:
+                        reprojection_failed=pickle.load(open(paths["im_path"] + 'smartstack.pickle', 'rb'))
+                    except:
+                        plog ("Couldn't find smartstack pickle?")
+                        plog (traceback.format_exc())
+                        reprojection_failed=True
                     try:
                         os.remove(paths["im_path"] + 'smartstack.pickle')
                     except:
