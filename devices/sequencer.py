@@ -3284,7 +3284,10 @@ class Sequencer:
                             if sky_lux != None:
 
                                 #pixel_area=pow(float(g_dev['cam'].config["camera"][g_dev['cam'].name]["settings"]["onebyone_pix_scale"]),2)
-                                pixel_area=pow(float(g_dev['cam'].pixscale),2)
+                                if g_dev['cam'].pixscale == None:
+                                    pixel_area=0.25
+                                else:
+                                    pixel_area=pow(float(g_dev['cam'].pixscale),2)
                                 exp_time = target_flat/(collecting_area*pixel_area*sky_lux*float(filter_throughput))  #g_dev['ocn'].calc_HSI_lux)  #meas_sky_lux)
                                 new_throughput_value  =filter_throughput
                             else:
@@ -5179,10 +5182,19 @@ class Sequencer:
         if self.focussing:
             try_hard=True
             try_forever=False
+            
+            
+        #breakpoint()
+        
+        if g_dev['cam'].pixscale == None:
+            plog ("Finding pixelscale for the first time. This could take a whilE!")
+            g_dev["obs"].send_to_user("Finding pixelscale for the first time. This could take a whilE!")
+            req = {'time': 180,  'alias':  str(self.config['camera']['camera_1_1']['name']), 'image_type': 'pointing'}   #  NB Should pick up filter and constats from config
+            opt = {'count': 1, 'filter': 'focus'}
 
-
-        req = {'time': self.config['pointing_exposure_time'],  'alias':  str(self.config['camera']['camera_1_1']['name']), 'image_type': 'pointing'}   #  NB Should pick up filter and constats from config
-        opt = {'count': 1, 'filter': 'pointing'}
+        else:
+            req = {'time': self.config['pointing_exposure_time'],  'alias':  str(self.config['camera']['camera_1_1']['name']), 'image_type': 'pointing'}   #  NB Should pick up filter and constats from config
+            opt = {'count': 1, 'filter': 'pointing'}
 
         successful_platesolve=False
 
@@ -5296,8 +5308,15 @@ class Sequencer:
         if (try_hard or try_forever) and not successful_platesolve:
             plog("Didn't get a successful platesolve at an important time for pointing, trying a double exposure")
 
-            req = {'time': float(self.config['pointing_exposure_time']) * 2,  'alias':  str(self.config['camera']['camera_1_1']['name']), 'image_type': 'pointing'}   #  NB Should pick up filter and constats from config
-            opt = {'count': 1, 'filter': 'pointing'}
+            if g_dev['cam'].pixscale == None:
+                plog ("Didn't find a solution with the first exposure, trying again.")
+                g_dev["obs"].send_to_user("Finding pixelscale for the second time. This could take a whilE!")
+                req = {'time': 300,  'alias':  str(self.config['camera']['camera_1_1']['name']), 'image_type': 'pointing'}   #  NB Should pick up filter and constats from config
+                opt = {'count': 1, 'filter': 'focus'}
+            else:
+
+                req = {'time': float(self.config['pointing_exposure_time']) * 2,  'alias':  str(self.config['camera']['camera_1_1']['name']), 'image_type': 'pointing'}   #  NB Should pick up filter and constats from config
+                opt = {'count': 1, 'filter': 'pointing'}
 
             result = g_dev['cam'].expose_command(req, opt, user_id='Tobor', user_name='Tobor', user_roles='system', no_AWS=True, solve_it=True)
 

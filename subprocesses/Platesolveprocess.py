@@ -35,6 +35,9 @@ from os import getcwd
 import time
 from astropy.utils.exceptions import AstropyUserWarning
 import warnings
+# import requests
+# from requests import ConnectionError, HTTPError
+import traceback
 # from colour_demosaicing import (
 #     demosaicing_CFA_Bayer_bilinear,  # )#,
 #     # demosaicing_CFA_Bayer_Malvar2004,
@@ -83,7 +86,7 @@ image_saturation_level = input_psolve_info[12]
 readnoise=input_psolve_info[13]
 minimum_realistic_seeing=input_psolve_info[14]
 is_osc=input_psolve_info[15]
-
+useastrometrynet=True
 
 
 # Check there are no nans in the image upon receipt
@@ -171,20 +174,25 @@ except:
     pass
 catalog_path = os.path.expanduser("~\\Documents\\Kepler")
 
+if pixscale != None:
+    binnedtwo=False
+    binnedthree=False
+    # If OSC, just bin the image. Also if the pixelscale is unnecessarily high
+    if is_osc or (pixscale < 0.5 and pixscale > 0.3):
+        #hdufocusdata=demosaicing_CFA_Bayer_bilinear(hdufocusdata, 'RGGB')[:,:,1]
+        #hdufocusdata=hdufocusdata.astype("float32")
+        hdufocusdata=block_reduce(hdufocusdata,2,func=np.nanmean)
+        pixscale=pixscale*2
+        binnedtwo=True
+    elif pixscale <= 0.3:
+        hdufocusdata=block_reduce(hdufocusdata,3,func=np.nanmean)
+        pixscale=pixscale*3
+        binnedthree=True
+# else:
+#     hdufocusdata=block_reduce(hdufocusdata,2,func=np.nanmean)
+#     #pixscale=pixscale*2
+#     binnedtwo=True
 
-binnedtwo=False
-binnedthree=False
-# If OSC, just bin the image. Also if the pixelscale is unnecessarily high
-if is_osc or (pixscale < 0.5 and pixscale > 0.3):
-    #hdufocusdata=demosaicing_CFA_Bayer_bilinear(hdufocusdata, 'RGGB')[:,:,1]
-    #hdufocusdata=hdufocusdata.astype("float32")
-    hdufocusdata=block_reduce(hdufocusdata,2,func=np.nanmean)
-    pixscale=pixscale*2
-    binnedtwo=True
-elif pixscale <= 0.3:
-    hdufocusdata=block_reduce(hdufocusdata,3,func=np.nanmean)
-    pixscale=pixscale*3
-    binnedthree=True
 
 
 # Crop the image for platesolving
@@ -225,9 +233,14 @@ sep.set_extract_pixstack(int(ix*iy - 1))
 #This minarea is totally fudgetastically emprical comparing a 0.138 pixelscale QHY Mono
 # to a 1.25/2.15 QHY OSC. Seems to work, so thats good enough.
 # Makes the minarea small enough for blocky pixels, makes it large enough for oversampling
-minarea= -9.2421 * (pixscale*platesolve_bin_factor) + 16.553
-if minarea < 5:  # There has to be a min minarea though!
-    minarea = 5
+if pixscale != None:
+    minarea= -9.2421 * (pixscale*platesolve_bin_factor) + 16.553
+    if minarea < 5:  # There has to be a min minarea though!
+        minarea = 5
+else:
+    minarea=5
+
+
 
 sources = sep.extract(
     focusimg, 3, err=bkg.globalrms, minarea=minarea
@@ -279,12 +292,12 @@ except:
 
 
 
-# sources['FWHM'], _ = sep.flux_radius(focusimg, sources['x'], sources['y'], sources['a'], 0.5,
-#                                      subpix=5)
+sources['FWHM'], _ = sep.flux_radius(focusimg, sources['x'], sources['y'], sources['a'], 0.5,
+                                      subpix=5)
 
-sources['FWHM']=sources['kronrad'] * 2
+#sources['FWHM']=sources['kronrad'] * 2
 
-#sources['FWHM'] = 2 * sources['FWHM']
+sources['FWHM'] = 2 * sources['FWHM']
 # BANZAI prune nans from table
 # nan_in_row = np.zeros(len(sources), dtype=bool)
 # for col in sources.colnames:
@@ -293,7 +306,8 @@ sources['FWHM']=sources['kronrad'] * 2
 
 sources = sources[sources['FWHM'] != 0]
 #sources = sources[sources['FWHM'] > 0.5]
-sources = sources[sources['FWHM'] > (1/pixscale)]
+if pixscale != None:
+    sources = sources[sources['FWHM'] > (1/pixscale)]
 sources = sources[sources['FWHM'] < (np.nanmedian(sources['FWHM']) + (3 * np.nanstd(sources['FWHM'])))]
 
 sources = sources[sources['flux'] > 0]
@@ -304,7 +318,7 @@ sources = sources[sources['flux'] < 1000000]
 
 #breakpoint()
 #breakpoint()
-
+#breakpoint() 
 if len(sources) >= 5:
 
 
@@ -364,6 +378,8 @@ if len(sources) >= 5:
     del hdufocusdata
     del hdufocus
 
+
+    
 
     try:
         args = [
@@ -428,6 +444,133 @@ if len(sources) >= 5:
         except:
             process.kill()
             solve = 'error'
+    
+    # if unknown pixelscale do a search
+    if pixscale == None or useastrometrynet:
+        
+        
+        from astropy.table import Table
+        from astroquery.astrometry_net import AstrometryNet
+        
+        ast = AstrometryNet()
+        ast.api_key = 'pdxlsqwookogoivt'
+        ast.key = 'pdxlsqwookogoivt'
+        
+        #sources = Table.read('catalog.fits')
+        # Sort sources in ascending order
+        #sources.sort('FLUX')
+        # Reverse to get descending order
+        #sources.reverse()
+        
+        #breakpoint()
+        
+        sources.sort('flux')
+        sources.reverse()
+        #sources=sources[:,200]
+        
+        image_width = fx
+        image_height = fy
+        try:
+            wcs_header = ast.solve_from_source_list(sources['x'], sources['y'],
+                                                    image_width, image_height, center_dec= pointing_dec, scale_lower=0.04, scale_upper=8.0, scale_units='arcsecperpix', center_ra = pointing_ra*15,radius=5.0,
+                                                    solve_timeout=300)
+            solve={}
+            solve["ra_j2000_hours"] = wcs_header['CRVAL1']/15
+            solve["dec_j2000_degrees"] = wcs_header['CRVAL2']
+            solve["arcsec_per_pixel"] = wcs_header['CD1_1'] *3600
+        except:
+            print(traceback.format_exc())
+            solve = 'error'
+            #breakpoint()
+        
+        #breakpoint()
+        
+        
+        
+        
+        # This section is lifted from the BANZAI code
+        
+        
+        # image_catalog=sources
+        # image_catalog.sort('flux')
+        # image_catalog.reverse()
+
+        # catalog_payload = {'X': list(image_catalog['x'])[:200],
+        #                    'Y': list(image_catalog['y'])[:200],
+        #                    'FLUX': list(image_catalog['flux'])[:200],
+        #                    'pixel_scale': 0.5,
+        #                    'naxis': 2,
+        #                    'naxis1':  fx,
+        #                    'naxis2':  fy,
+        #                    'ra': pointing_ra,
+        #                    'dec': pointing_dec,
+        #                    'statistics': False,
+        #                    'filename': cal_path + 'platesolvetemp.fits'}
+        
+        # ASTROMETRY_SERVICE_URL =  'http://astrometry.lco.gtn/catalog/'
+        
+        # astrometry_response = requests.post(ASTROMETRY_SERVICE_URL, json=catalog_payload)
+        # astrometry_response.raise_for_status()
+        
+        # breakpoint()
+        
+        # pixscale = 0.05
+        # while pixscale < 10:
+        #     pixscale=pixscale + 0.05
+            
+        #     print ("Attempting " + str(pixscale))
+        #     try:
+        #         # Try again with a lower pixelscale... yes it makes no sense
+        #         # But I didn't write PS3.exe ..... but it works (MTF)
+        #         args = [
+        #             PS3CLI_EXE,
+        #             cal_path + 'platesolvetemp.fits',
+        #             str(float(pixscale/2)),
+        #             output_file_path,
+        #             catalog_path
+        #         ]
+    
+        #         process = Popen(
+        #                 args,
+        #                 stdout=PIPE,
+        #                 stderr=PIPE
+        #                 )
+        #         (stdout, stderr) = process.communicate()  # Obtain stdout and stderr output from the wcs tool
+        #         exit_code = process.wait() # Wait for process to complete and obtain the exit code
+                
+        #         print (stdout)
+        #         print (exit_code)
+        #         time.sleep(1)
+        #         process.kill()
+        #         #breakpoint()
+                
+                
+    
+        #         solve = parse_platesolve_output(output_file_path)
+        #         if binnedtwo:
+        #             solve['arcsec_per_pixel']=solve['arcsec_per_pixel']/2
+        #         elif binnedthree:
+        #             solve['arcsec_per_pixel']=solve['arcsec_per_pixel']/3
+                    
+        #         print (solve)
+        #         break
+        #         # if binnedtwo:
+        #         #     solve['arcsec_per_pixel']=solve['arcsec_per_pixel']/2
+        #         # elif binnedthree:
+        #         #     solve['arcsec_per_pixel']=solve['arcsec_per_pixel']/3
+    
+        #     except:
+        #         process.kill()
+        #         solve = 'error'
+        #         tryagain=True
+            
+        #     if pixscale==9.0:
+        #         process.kill()
+        #         solve = 'error'
+        #         break
+                
+            
+    
     pickle.dump(solve, open(cal_path + 'platesolve.pickle', 'wb'))
 
     try:
@@ -449,3 +592,5 @@ else:
         os.remove(output_file_path)
     except:
         pass
+
+

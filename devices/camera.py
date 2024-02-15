@@ -657,10 +657,11 @@ class Camera:
 
         self.pixelscale_shelf.close()
 
-        if len(pixelscale_list) > 25:
+        if len(pixelscale_list) > 5:
             self.pixscale = np.nanmedian(pixelscale_list)
         else:
-            self.pixscale = float(self.config["camera"][self.name]["settings"]["onebyone_pix_scale"])
+            self.pixscale = None
+            #self.pixscale = 0.198
 
         plog('1x1 pixel scale: ' + str(self.pixscale))
 

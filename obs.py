@@ -2662,7 +2662,7 @@ class Observatory:
                          pixscale, pointing_ra, pointing_dec, platesolve_crop, False, 1, g_dev['cam'].config["camera"][g_dev['cam'].name]["settings"]["saturate"], g_dev['cam'].camera_known_readnoise, self.config['minimum_realistic_seeing'], is_osc], platesolve_subprocess.stdin)
 
                         # yet another pickle debugger.
-                        if False:
+                        if True:
                             pickle.dump([hdufocusdata, hduheader, self.local_calibration_path, cal_name, frame_type, time_platesolve_requested,
                              pixscale, pointing_ra, pointing_dec, platesolve_crop, False, 1, g_dev['cam'].config["camera"][g_dev['cam'].name]["settings"]["saturate"], g_dev['cam'].camera_known_readnoise, self.config['minimum_realistic_seeing'],is_osc], open('subprocesses/testplatesolvepickle','wb'))
 
@@ -2687,6 +2687,10 @@ class Observatory:
                             self.last_platesolved_ra_err = np.nan
                             self.last_platesolved_dec_err = np.nan
                             self.platesolve_errors_in_a_row=self.platesolve_errors_in_a_row+1
+                            
+                            
+                            
+                            
                         else:
                             try:
                                 plog(
@@ -2703,6 +2707,10 @@ class Observatory:
                             solved_dec = solve["dec_j2000_degrees"]
                             solved_arcsecperpixel = solve["arcsec_per_pixel"]
                             plog("1x1 pixelscale solved: " + str(float(solved_arcsecperpixel )))# / g_dev['cam'].native_bin)))
+                            # If this is the first pixelscalle gotten, then it is the pixelscale!
+                            if g_dev['cam'].pixscale == None:
+                                g_dev['cam'].pixscale = solved_arcsecperpixel
+                                
                             if (g_dev['cam'].pixscale * 0.9) < float(solved_arcsecperpixel) < (g_dev['cam'].pixscale * 1.1):
                                 self.pixelscale_shelf = shelve.open(g_dev['obs'].obsid_path + 'ptr_night_shelf/' + 'pixelscale' + g_dev['cam'].alias + str(g_dev['obs'].name))
                                 try:
