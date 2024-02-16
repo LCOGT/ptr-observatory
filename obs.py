@@ -1154,7 +1154,7 @@ class Observatory:
                 # Check that the mount hasn't slewed too close to the sun
                 # If the roof is open and enabled to observe
                 # Don't do sun checks at nightime!
-                if not ((g_dev['events']['Observing Begins']  <= ephem.now() < g_dev['events']['Observing Ends'])):
+                if not ((g_dev['events']['Observing Begins']  <= ephem.now() < g_dev['events']['Observing Ends'])) and not g_dev['mnt'].currently_slewing:
 
                     try:
                         if not g_dev['mnt'].return_slewing() and self.open_and_enabled_to_observe and self.sun_checks_on:
@@ -1225,7 +1225,7 @@ class Observatory:
                 # a slew and sends a slew command to the exact coordinates it is already pointing on
                 # at least a 5 minute basis.
                 self.time_of_last_pulse = max(self.time_of_last_slew, self.time_of_last_pulse)
-                if (time.time() - self.time_of_last_pulse) > 300 :
+                if (time.time() - self.time_of_last_pulse) > 300 and not g_dev['mnt'].currently_slewing:
                     # Check no other commands or exposures are happening
                     if g_dev['obs'].cmd_queue.empty() and not g_dev["cam"].exposure_busy and not g_dev['cam'].currently_in_smartstack_loop and not g_dev["seq"].focussing:
                         if not g_dev['mnt'].rapid_park_indicator and not g_dev['mnt'].return_slewing() and g_dev['mnt'].return_tracking() :
@@ -1299,7 +1299,7 @@ class Observatory:
                 #self.time_since_safety_checks = time.time()
 
                 # Adjust focus on a not-too-frequent period for temperature
-                if not g_dev["cam"].exposure_busy and not g_dev["seq"].focussing and self.open_and_enabled_to_observe:
+                if not g_dev["cam"].exposure_busy and not g_dev["seq"].focussing and self.open_and_enabled_to_observe and not g_dev['mnt'].currently_slewing:
                     g_dev['foc'].adjust_focus()
 
                 # Check nightly_reset is all good
@@ -1307,7 +1307,7 @@ class Observatory:
                     g_dev['seq'].nightly_reset_complete = False
 
                 # Don't do sun checks at nightime!
-                if not ((g_dev['events']['Observing Begins']  <= ephem.now() < g_dev['events']['Observing Ends'])):
+                if not ((g_dev['events']['Observing Begins']  <= ephem.now() < g_dev['events']['Observing Ends'])) and not g_dev['mnt'].currently_slewing:
                     if not g_dev['mnt'].rapid_park_indicator and self.open_and_enabled_to_observe and self.sun_checks_on: # Only do the sun check if scope isn't parked
                         # Check that the mount hasn't slewed too close to the sun
                         sun_coords = get_sun(Time.now())
@@ -1437,7 +1437,7 @@ class Observatory:
                 # if got here, mount is connected. NB Plumb in PW startup code
 
                 # Check that the mount hasn't tracked too low or an odd slew hasn't sent it pointing to the ground.
-                if self.altitude_checks_on:
+                if self.altitude_checks_on and not g_dev['mnt'].currently_slewing:
                     try:
 
                         mount_altitude = float(g_dev['mnt'].previous_status['altitude'])
@@ -1466,7 +1466,7 @@ class Observatory:
                            pass
 
                 # If no activity for an hour, park the scope
-                if not self.scope_in_manual_mode:
+                if not self.scope_in_manual_mode and not g_dev['mnt'].currently_slewing:
                     if time.time() - self.time_of_last_slew > self.config['mount']['mount1']['time_inactive_until_park'] and time.time() - self.time_of_last_exposure > self.config['mount']['mount1']['time_inactive_until_park']:
                         if not g_dev['mnt'].rapid_park_indicator:
                             plog("Parking scope due to inactivity")
