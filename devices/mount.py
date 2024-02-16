@@ -168,7 +168,7 @@ class Mount:
         else:
             self.theskyx = False
 
-        
+
 
         self.site_coordinates = EarthLocation(lat=float(g_dev['evnt'].wema_config['latitude'])*u.deg, \
                                 lon=float(g_dev['evnt'].wema_config['longitude'])*u.deg,
@@ -456,11 +456,11 @@ class Mount:
                     self.mount_update_paused=False
                     self.mount_update_reboot=False
                     self.pier_flip_detected=False
-                    
+
                     self.rapid_park_indicator=copy.deepcopy(self.mount_update_wincom.AtPark)
                     self.currently_slewing=False
                     #print (self.rapid_park_indicator)
-                    
+
                     self.mount_updates=self.mount_updates + 1
                     #self.mount_update_timer=time.time()
 
@@ -475,9 +475,9 @@ class Mount:
                 # print (self.mount_update_paused)
                 if ((self.mount_update_timer < time.time() - self.mount_update_period) and not self.mount_update_paused):# or (no(self.currently_slewing) and not self.mount_update_paused):
                     #print ("Mu")
-                    
+
                     self.currently_slewing= self.mount_update_wincom.Slewing
-                    
+
                     if self.currently_slewing:
                         self.pier_flip_detected=False
                         self.right_ascension_directly_from_mount = copy.deepcopy(self.mount_update_wincom.RightAscension)
@@ -487,46 +487,46 @@ class Mount:
                     else:
                         #print ("MU")
                         #  Starting here ae tha varius mount commands and reads...
-                        
-                        
-                        
+
+
+
                         if self.unpark_requested:
                             self.unpark_requested=False
                             self.mount_update_wincom.Unpark()
                             self.rapid_park_indicator=False
-                            
-    
-    
+
+
+
                         if self.park_requested:
                             self.park_requested=False
                             self.mount_update_wincom.Park()
                             self.rapid_park_indicator=True
-    
-    
+
+
                         if self.find_home_requested:
                             self.find_home_requested=False
-    
-    
+
+
                             #mount_at_home = self.mount_update_wincom.AtHome
-    
+
                             if self.mount_update_wincom.AtHome:
                                 plog("Mount is at home.")
                             else:
                                 g_dev['obs'].time_of_last_slew=time.time()
                                 if self.mount_update_wincom.AtPark:
                                     self.mount_update_wincom.Unpark()
-    
+
                                 while self.mount_update_wincom.Slewing:
                                     plog("waiting for slew before homing")
                                     time.sleep(0.2)
-    
+
                                 self.mount_update_wincom.FindHome()
-    
-    
-    
+
+
+
                                 #self.unpark_command()
                                 #self.wait_for_slew()
-    
+
                                 # self.move_time = time.time()
                                 # # mount command #
                                 # while self.mount_busy:
@@ -534,15 +534,15 @@ class Mount:
                                 # self.mount_busy=True
                                 #self.mount.FindHome()
                                 # self.mount_busy=False
-    
-    
-    
+
+
+
                         if self.abort_slew_requested:
                             self.abort_slew_requested=False
                             self.mount_update_wincom.AbortSlew()
-    
-    
-    
+
+
+
                         if self.slewtoAsyncRequested:
                             self.slewtoAsyncRequested=False
                             #print ("attempting to slew")
@@ -552,60 +552,61 @@ class Mount:
                             self.mount_update_wincom.DeclinationRate = 0
                             plog("dec rate set to: ", self.mount_update_wincom.DeclinationRate)
                             #print ("successful slew")
-    
+
                         if self.request_tracking_on:
-    
+
                             self.request_tracking_on = False
                             self.mount_update_wincom.Tracking = True
-    
+
                         if self.request_tracking_off:
                             self.request_tracking_off = False
                             self.mount_update_wincom.Tracking = False
-    
+
                         if self.request_new_pierside:
                             self.request_new_pierside=False
                             self.new_pierside=self.mount_update_wincom.DestinationSideOfPier(self.request_new_pierside_ra, self.request_new_pierside_dec)
-    
-    
+
+
                         if self.request_set_RightAscensionRate:
                             self.request_set_RightAscensionRate=False
                             self.mount_update_wincom.RightAscensionRate=self.request_new_RightAscensionRate
                             self.RightAscensionRate=self.request_new_RightAscensionRate
-    
+
                         if self.request_set_DeclinationRate:
                             self.request_set_DeclinationRate=False
                             self.mount_update_wincom.DeclinationRate=self.request_new_DeclinationRate
                             self.DeclinationRate=self.request_new_DeclinationRate
-    
-    
-    
-    
-    
+
+
+
+
+
                         if self.request_find_home:
                             self.request_find_home=False
                             self.mount_update_wincom.FindHome()
-    
-    
+
+
                         # Some things we don't do while slewing
                         #if not self.currently_slewing:
-    
+
                         self.rapid_park_indicator=copy.deepcopy(self.mount_update_wincom.AtPark)
                         #print (self.rapid_park_indicator)
                         #if self.can_report_pierside:
                         if not self.rapid_park_indicator:
                             self.rapid_pier_indicator=copy.deepcopy(self.mount_update_wincom.sideOfPier)
                             self.current_tracking_state=self.mount_update_wincom.Tracking
-                            
+
                             if not (g_dev['mnt'].pier_side_last_check==g_dev['mnt'].rapid_pier_indicator):
                                 self.pier_flip_detected=True
+                                print ("PERIPEIREPIPRE PIERFLIP DETECTED!")
                             g_dev['mnt'].pier_side_last_check=copy.deepcopy(self.rapid_pier_indicator)
-    
+
                         self.right_ascension_directly_from_mount = copy.deepcopy(self.mount_update_wincom.RightAscension)
                         self.declination_directly_from_mount = copy.deepcopy(self.mount_update_wincom.Declination)
                         self.right_ascension_rate_directly_from_mount = copy.deepcopy(self.mount_update_wincom.RightAscensionRate)
                         self.declination_rate_directly_from_mount = copy.deepcopy(self.mount_update_wincom.DeclinationRate)
-    
-    
+
+
                         self.mount_updates=self.mount_updates + 1
                         self.mount_update_timer=time.time()
 
@@ -2303,8 +2304,8 @@ class Mount:
 
     def unpark_command(self, req=None, opt=None):
         ''' unpark the telescope mount '''
-        
-        
+
+
 
         if self.can_park:
             # # mount command #
@@ -2320,10 +2321,10 @@ class Mount:
             while current_updates==self.mount_updates:
                 #print ('ping')
                 time.sleep(sleep_period)
-            
+
             #print (self.rapid_park_indicator)
             #breakpoint()
-            
+
             if self.rapid_park_indicator:
                 plog("mount cmd: unparking mount")
                 g_dev['obs'].send_to_user("Unparking Mount. This can take a moment.")
@@ -2481,8 +2482,8 @@ class Mount:
             self.reset_mount_reference()
             delta_ra = 0.0
             delta_dec = 0.0
-            
-            
+
+
         return delta_ra, delta_dec
 
 
