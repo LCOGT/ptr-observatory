@@ -1559,7 +1559,8 @@ class Camera:
         calendar_event_id=None,
         skip_open_check=False,
         skip_daytime_check=False,
-        manually_requested_calibration=False
+        manually_requested_calibration=False,
+        useastrometrynet=False
     ):
         """
         This is Phase 1:  Setup the camera.
@@ -2211,7 +2212,8 @@ class Camera:
                             manually_requested_calibration=manually_requested_calibration,
                             initial_smartstack_ra=initial_smartstack_ra,
                             initial_smartstack_dec= initial_smartstack_dec,
-                            zoom_factor=self.zoom_factor
+                            zoom_factor=self.zoom_factor,
+                            useastrometrynet=useastrometrynet
                         )  # NB all these parameters are crazy!
                         self.exposure_busy = False
                         self.retry_camera = 0
@@ -2273,7 +2275,8 @@ class Camera:
         manually_requested_calibration=False,
         initial_smartstack_ra=None,
         initial_smartstack_dec=None,
-        zoom_factor=False
+        zoom_factor=False,
+        useastrometrynet=False
 
     ):
 
@@ -2968,7 +2971,7 @@ class Camera:
 
                     #wait_for_slew()
                     g_dev['obs'].platesolve_is_processing =True
-                    g_dev['obs'].to_platesolve((outputimg, hdusmallheader, cal_path, cal_name, frame_type, time.time(), self.pixscale, ra_at_time_of_exposure,dec_at_time_of_exposure, False, False))
+                    g_dev['obs'].to_platesolve((outputimg, hdusmallheader, cal_path, cal_name, frame_type, time.time(), self.pixscale, ra_at_time_of_exposure,dec_at_time_of_exposure, False, useastrometrynet))
                     # If it is the last of a set of smartstacks, we actually want to
                     # wait for the platesolve and nudge before starting the next smartstack.
 
@@ -4638,7 +4641,7 @@ def post_exposure_process(payload):
                             firstframesmartstack = False
 
 
-                        g_dev['obs'].to_platesolve((hdusmalldata, hdusmallheader, cal_path, cal_name, frame_type, time.time(), pixscale, ra_at_time_of_exposure,dec_at_time_of_exposure, firstframesmartstack, False))
+                        g_dev['obs'].to_platesolve((hdusmalldata, hdusmallheader, cal_path, cal_name, frame_type, time.time(), pixscale, ra_at_time_of_exposure,dec_at_time_of_exposure, firstframesmartstack, useastrometrynet))
                         # If it is the last of a set of smartstacks, we actually want to
                         # wait for the platesolve and nudge before starting the next smartstack.
 

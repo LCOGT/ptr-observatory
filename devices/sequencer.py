@@ -5233,7 +5233,7 @@ class Sequencer:
             p_level="INFO",
         )
         # Take a pointing shot to reposition
-        result = g_dev['cam'].expose_command(req, opt, user_id='Tobor', user_name='Tobor', user_roles='system', no_AWS=True, solve_it=True)
+        result = g_dev['cam'].expose_command(req, opt, user_id='Tobor', user_name='Tobor', user_roles='system', no_AWS=True, solve_it=True,useastrometrynet=False)
 
         if result == 'blockend':
             plog ("End of Block, exiting Centering.")
@@ -5318,7 +5318,7 @@ class Sequencer:
                 req = {'time': float(self.config['pointing_exposure_time']) * 2,  'alias':  str(self.config['camera']['camera_1_1']['name']), 'image_type': 'pointing'}   #  NB Should pick up filter and constats from config
                 opt = {'count': 1, 'filter': 'pointing'}
 
-            result = g_dev['cam'].expose_command(req, opt, user_id='Tobor', user_name='Tobor', user_roles='system', no_AWS=True, solve_it=True)
+            result = g_dev['cam'].expose_command(req, opt, user_id='Tobor', user_name='Tobor', user_roles='system', no_AWS=True, solve_it=True,useastrometrynet=True)
 
             if result == 'blockend':
                 plog ("End of Block, exiting Centering.")
@@ -5370,7 +5370,7 @@ class Sequencer:
                 req = {'time': float(self.config['pointing_exposure_time']) * 2.5,  'alias':  str(self.config['camera']['camera_1_1']['name']), 'image_type': 'pointing'}   #  NB Should pick up filter and constats from config
                 opt = {'count': 1, 'filter': 'Lum'}
 
-                result = g_dev['cam'].expose_command(req, opt, user_id='Tobor', user_name='Tobor', user_roles='system', no_AWS=True, solve_it=True)
+                result = g_dev['cam'].expose_command(req, opt, user_id='Tobor', user_name='Tobor', user_roles='system', no_AWS=True, solve_it=True,useastrometrynet=True)
 
                 if result == 'blockend':
                     plog ("End of Block, exiting Centering.")
@@ -5493,7 +5493,7 @@ class Sequencer:
 
                 req = {'time': float(self.config['pointing_exposure_time']) * 3,  'alias':  str(self.config['camera']['camera_1_1']['name']), 'image_type': 'pointing'}   #  NB Should pick up filter and constats from config
                 opt = {'count': 1, 'filter': 'pointing'}
-                result = g_dev['cam'].expose_command(req, opt, user_id='Tobor', user_name='Tobor', user_roles='system', no_AWS=True, solve_it=True)
+                result = g_dev['cam'].expose_command(req, opt, user_id='Tobor', user_name='Tobor', user_roles='system', no_AWS=True, solve_it=True,useastrometrynet=True)
 
 
 

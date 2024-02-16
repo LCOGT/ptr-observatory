@@ -87,6 +87,7 @@ readnoise=input_psolve_info[13]
 minimum_realistic_seeing=input_psolve_info[14]
 is_osc=input_psolve_info[15]
 useastrometrynet=input_psolve_info[16]
+#useastrometrynet=True
 
 
 # Check there are no nans in the image upon receipt
@@ -472,7 +473,7 @@ if len(sources) >= 5:
         image_height = fy
         try:
             wcs_header = ast.solve_from_source_list(sources['x'], sources['y'],
-                                                    image_width, image_height, center_dec= pointing_dec, scale_lower=0.04, scale_upper=8.0, scale_units='arcsecperpix', center_ra = pointing_ra*15,radius=5.0,
+                                                    image_width, image_height, crpix_center=True, center_dec= pointing_dec, scale_lower=0.04, scale_upper=8.0, scale_units='arcsecperpix', center_ra = pointing_ra*15,radius=5.0,
                                                     solve_timeout=300)
             solve={}
             solve["ra_j2000_hours"] = wcs_header['CRVAL1']/15
@@ -594,3 +595,4 @@ else:
         pass
 
 
+#breakpoint()
