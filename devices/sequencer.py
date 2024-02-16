@@ -5182,7 +5182,9 @@ class Sequencer:
         if self.focussing:
             try_hard=True
             try_forever=False
-            
+        
+        # Turn off the pier flip detection if we enter a centering exposure to fix the pier flip
+        g_dev['mnt'].pier_flip_detected=False
             
         #breakpoint()
         

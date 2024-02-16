@@ -296,7 +296,7 @@ class Mount:
         self.EquatorialSystem = self.mount.EquatorialSystem
 
         self.previous_pier_side = self.mount.sideOfPier
-
+        self.pier_side_last_check = self.mount.sideOfPier
         self.request_new_pierside=False
         self.request_new_pierside_ra=1.0
         self.request_new_pierside_dec=1.0
@@ -336,6 +336,7 @@ class Mount:
         # This is a latch to prevent multiple commands being sent to latch at the same time.
         self.mount_busy=False
 
+        self.pier_flip_detected=False
 
         tempunparked=False
         # if mount is parked, temporarily unpark it quickly to test pierside functions.
@@ -454,6 +455,7 @@ class Mount:
                         pass
                     self.mount_update_paused=False
                     self.mount_update_reboot=False
+                    self.pier_flip_detected=False
                     
                     self.rapid_park_indicator=copy.deepcopy(self.mount_update_wincom.AtPark)
                     self.currently_slewing=False
@@ -477,6 +479,7 @@ class Mount:
                     self.currently_slewing= self.mount_update_wincom.Slewing
                     
                     if self.currently_slewing:
+                        self.pier_flip_detected=False
                         self.right_ascension_directly_from_mount = copy.deepcopy(self.mount_update_wincom.RightAscension)
                         self.declination_directly_from_mount = copy.deepcopy(self.mount_update_wincom.Declination)
                         self.mount_updates=self.mount_updates + 1
@@ -484,6 +487,9 @@ class Mount:
                     else:
                         #print ("MU")
                         #  Starting here ae tha varius mount commands and reads...
+                        
+                        
+                        
                         if self.unpark_requested:
                             self.unpark_requested=False
                             self.mount_update_wincom.Unpark()
@@ -589,6 +595,10 @@ class Mount:
                         if not self.rapid_park_indicator:
                             self.rapid_pier_indicator=copy.deepcopy(self.mount_update_wincom.sideOfPier)
                             self.current_tracking_state=self.mount_update_wincom.Tracking
+                            
+                            if not (g_dev['mnt'].pier_side_last_check==g_dev['mnt'].rapid_pier_indicator):
+                                self.pier_flip_detected=True
+                            g_dev['mnt'].pier_side_last_check=copy.deepcopy(self.rapid_pier_indicator)
     
                         self.right_ascension_directly_from_mount = copy.deepcopy(self.mount_update_wincom.RightAscension)
                         self.declination_directly_from_mount = copy.deepcopy(self.mount_update_wincom.Declination)
@@ -602,7 +612,8 @@ class Mount:
                 else:
                     #self.mount_updates=self.mount_updates + 1
                     #self.mount_update_timer=time.time()
-                    time.sleep(self.mount_update_period)
+                    if not self.currently_slewing:
+                        time.sleep(self.mount_update_period)
 
 
 
