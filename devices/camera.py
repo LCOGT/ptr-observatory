@@ -1899,7 +1899,7 @@ class Camera:
                     else:
                         #plog ("MTF temp reporting. No pierflip.")
                         pass
-                g_dev['mnt'].previous_pier_side=g_dev['mnt'].rapid_pier_indicator
+                #g_dev['mnt'].previous_pier_side=g_dev['mnt'].rapid_pier_indicator
 
                 if g_dev['obs'].pointing_recentering_requested_by_platesolve_thread:
                     plog ("Major shift detected, recentering.")
@@ -2110,8 +2110,7 @@ class Camera:
 
                             #plog ("pre-exposure overhead: " + str(time.time() -pre_exposure_overhead_timer) +"s.")
                             self.wait_for_slew()
-                            start_time_of_observation=time.time()
-                            self.start_time_of_observation=time.time()
+                            
 
                             # Check there hasn't been a cancel sent through
                             if g_dev["obs"].stop_all_activity:
@@ -2122,6 +2121,19 @@ class Camera:
                                 return 'cancelled'
 
                             #plog ("Time between end of last exposure and start of next minus exposure time: " + str(time.time() -  self.end_of_last_exposure_time - exposure_time))
+                            if g_dev['mnt'].pier_flip_detected==True:
+                                plog("Detected a pier flip just before exposure!")
+                                g_dev["obs"].send_to_user("Pier Flip detected, recentering.")
+                                g_dev['obs'].pointing_recentering_requested_by_platesolve_thread = True
+                                g_dev['obs'].pointing_correction_request_time = time.time()
+                                g_dev['obs'].pointing_correction_request_ra = g_dev["mnt"].last_ra_requested
+                                g_dev['obs'].pointing_correction_request_dec = g_dev["mnt"].last_dec_requested
+                                g_dev['obs'].pointing_correction_request_ra_err = 0
+                                g_dev['obs'].pointing_correction_request_dec_err = 0
+                                g_dev['obs'].check_platesolve_and_nudge()
+                            
+                            start_time_of_observation=time.time()
+                            self.start_time_of_observation=time.time()
                             self._expose(exposure_time, bias_dark_or_light_type_frame)
                             self.end_of_last_exposure_time=time.time()
 
@@ -2524,7 +2536,7 @@ class Camera:
 
                 # Immediately nudge scope to a different point in the smartstack dither except for the last frame and after the last frame.
 
-                if self.dither_enabled:
+                if self.dither_enabled and not g_dev['mnt'].pier_flip_detected and not g_dev['mnt'].currently_slewing:
                     if Nsmartstack > 1 and not ((Nsmartstack == sskcounter+1) or (Nsmartstack == sskcounter+2)):
                         ra_random_dither=(((random.randint(0,50)-25) * self.pixscale / 3600 ) / 15)
                         dec_random_dither=((random.randint(0,50)-25) * self.pixscale /3600 )
