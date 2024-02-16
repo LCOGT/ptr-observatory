@@ -86,7 +86,7 @@ image_saturation_level = input_psolve_info[12]
 readnoise=input_psolve_info[13]
 minimum_realistic_seeing=input_psolve_info[14]
 is_osc=input_psolve_info[15]
-useastrometrynet=True
+useastrometrynet=input_psolve_info[16]
 
 
 # Check there are no nans in the image upon receipt
@@ -318,7 +318,7 @@ sources = sources[sources['flux'] < 1000000]
 
 #breakpoint()
 #breakpoint()
-#breakpoint() 
+#breakpoint()
 if len(sources) >= 5:
 
 
@@ -379,7 +379,7 @@ if len(sources) >= 5:
     del hdufocus
 
 
-    
+
 
     try:
         args = [
@@ -444,30 +444,30 @@ if len(sources) >= 5:
         except:
             process.kill()
             solve = 'error'
-    
+
     # if unknown pixelscale do a search
     if pixscale == None or useastrometrynet:
-        
-        
+
+
         from astropy.table import Table
         from astroquery.astrometry_net import AstrometryNet
-        
+
         ast = AstrometryNet()
         ast.api_key = 'pdxlsqwookogoivt'
         ast.key = 'pdxlsqwookogoivt'
-        
+
         #sources = Table.read('catalog.fits')
         # Sort sources in ascending order
         #sources.sort('FLUX')
         # Reverse to get descending order
         #sources.reverse()
-        
+
         #breakpoint()
-        
+
         sources.sort('flux')
         sources.reverse()
         #sources=sources[:,200]
-        
+
         image_width = fx
         image_height = fy
         try:
@@ -482,15 +482,15 @@ if len(sources) >= 5:
             print(traceback.format_exc())
             solve = 'error'
             #breakpoint()
-        
+
         #breakpoint()
-        
-        
-        
-        
+
+
+
+
         # This section is lifted from the BANZAI code
-        
-        
+
+
         # image_catalog=sources
         # image_catalog.sort('flux')
         # image_catalog.reverse()
@@ -506,18 +506,18 @@ if len(sources) >= 5:
         #                    'dec': pointing_dec,
         #                    'statistics': False,
         #                    'filename': cal_path + 'platesolvetemp.fits'}
-        
+
         # ASTROMETRY_SERVICE_URL =  'http://astrometry.lco.gtn/catalog/'
-        
+
         # astrometry_response = requests.post(ASTROMETRY_SERVICE_URL, json=catalog_payload)
         # astrometry_response.raise_for_status()
-        
+
         # breakpoint()
-        
+
         # pixscale = 0.05
         # while pixscale < 10:
         #     pixscale=pixscale + 0.05
-            
+
         #     print ("Attempting " + str(pixscale))
         #     try:
         #         # Try again with a lower pixelscale... yes it makes no sense
@@ -529,7 +529,7 @@ if len(sources) >= 5:
         #             output_file_path,
         #             catalog_path
         #         ]
-    
+
         #         process = Popen(
         #                 args,
         #                 stdout=PIPE,
@@ -537,40 +537,40 @@ if len(sources) >= 5:
         #                 )
         #         (stdout, stderr) = process.communicate()  # Obtain stdout and stderr output from the wcs tool
         #         exit_code = process.wait() # Wait for process to complete and obtain the exit code
-                
+
         #         print (stdout)
         #         print (exit_code)
         #         time.sleep(1)
         #         process.kill()
         #         #breakpoint()
-                
-                
-    
+
+
+
         #         solve = parse_platesolve_output(output_file_path)
         #         if binnedtwo:
         #             solve['arcsec_per_pixel']=solve['arcsec_per_pixel']/2
         #         elif binnedthree:
         #             solve['arcsec_per_pixel']=solve['arcsec_per_pixel']/3
-                    
+
         #         print (solve)
         #         break
         #         # if binnedtwo:
         #         #     solve['arcsec_per_pixel']=solve['arcsec_per_pixel']/2
         #         # elif binnedthree:
         #         #     solve['arcsec_per_pixel']=solve['arcsec_per_pixel']/3
-    
+
         #     except:
         #         process.kill()
         #         solve = 'error'
         #         tryagain=True
-            
+
         #     if pixscale==9.0:
         #         process.kill()
         #         solve = 'error'
         #         break
-                
-            
-    
+
+
+
     pickle.dump(solve, open(cal_path + 'platesolve.pickle', 'wb'))
 
     try:

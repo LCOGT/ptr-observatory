@@ -2968,7 +2968,7 @@ class Camera:
 
                     #wait_for_slew()
                     g_dev['obs'].platesolve_is_processing =True
-                    g_dev['obs'].to_platesolve((outputimg, hdusmallheader, cal_path, cal_name, frame_type, time.time(), self.pixscale, ra_at_time_of_exposure,dec_at_time_of_exposure, False))
+                    g_dev['obs'].to_platesolve((outputimg, hdusmallheader, cal_path, cal_name, frame_type, time.time(), self.pixscale, ra_at_time_of_exposure,dec_at_time_of_exposure, False, False))
                     # If it is the last of a set of smartstacks, we actually want to
                     # wait for the platesolve and nudge before starting the next smartstack.
 
@@ -4638,7 +4638,7 @@ def post_exposure_process(payload):
                             firstframesmartstack = False
 
 
-                        g_dev['obs'].to_platesolve((hdusmalldata, hdusmallheader, cal_path, cal_name, frame_type, time.time(), pixscale, ra_at_time_of_exposure,dec_at_time_of_exposure, firstframesmartstack))
+                        g_dev['obs'].to_platesolve((hdusmalldata, hdusmallheader, cal_path, cal_name, frame_type, time.time(), pixscale, ra_at_time_of_exposure,dec_at_time_of_exposure, firstframesmartstack, False))
                         # If it is the last of a set of smartstacks, we actually want to
                         # wait for the platesolve and nudge before starting the next smartstack.
 

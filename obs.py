@@ -2641,7 +2641,7 @@ class Observatory:
                 self.platesolve_is_processing = True
 
                 (hdufocusdata, hduheader, cal_path, cal_name, frame_type, time_platesolve_requested,
-                 pixscale, pointing_ra, pointing_dec, firstframesmartstack) = self.platesolve_queue.get(block=False)
+                 pixscale, pointing_ra, pointing_dec, firstframesmartstack, useastronometrynet) = self.platesolve_queue.get(block=False)
 
                 is_osc=g_dev['cam'].config["camera"][g_dev['cam'].name]["settings"]["is_osc"]
 
@@ -2659,12 +2659,12 @@ class Observatory:
                         #platesolve_bin_factor=self.config["camera"][g_dev['cam'].name]["settings"]['platesolve_bin_value']
 
                         pickle.dump([hdufocusdata, hduheader, self.local_calibration_path, cal_name, frame_type, time_platesolve_requested,
-                         pixscale, pointing_ra, pointing_dec, platesolve_crop, False, 1, g_dev['cam'].config["camera"][g_dev['cam'].name]["settings"]["saturate"], g_dev['cam'].camera_known_readnoise, self.config['minimum_realistic_seeing'], is_osc], platesolve_subprocess.stdin)
+                         pixscale, pointing_ra, pointing_dec, platesolve_crop, False, 1, g_dev['cam'].config["camera"][g_dev['cam'].name]["settings"]["saturate"], g_dev['cam'].camera_known_readnoise, self.config['minimum_realistic_seeing'], is_osc, useastronometrynet], platesolve_subprocess.stdin)
 
                         # yet another pickle debugger.
                         if True:
                             pickle.dump([hdufocusdata, hduheader, self.local_calibration_path, cal_name, frame_type, time_platesolve_requested,
-                             pixscale, pointing_ra, pointing_dec, platesolve_crop, False, 1, g_dev['cam'].config["camera"][g_dev['cam'].name]["settings"]["saturate"], g_dev['cam'].camera_known_readnoise, self.config['minimum_realistic_seeing'],is_osc], open('subprocesses/testplatesolvepickle','wb'))
+                             pixscale, pointing_ra, pointing_dec, platesolve_crop, False, 1, g_dev['cam'].config["camera"][g_dev['cam'].name]["settings"]["saturate"], g_dev['cam'].camera_known_readnoise, self.config['minimum_realistic_seeing'],is_osc,useastronometrynet], open('subprocesses/testplatesolvepickle','wb'))
 
                         del hdufocusdata
 
@@ -2687,10 +2687,10 @@ class Observatory:
                             self.last_platesolved_ra_err = np.nan
                             self.last_platesolved_dec_err = np.nan
                             self.platesolve_errors_in_a_row=self.platesolve_errors_in_a_row+1
-                            
-                            
-                            
-                            
+
+
+
+
                         else:
                             try:
                                 plog(
@@ -2710,7 +2710,7 @@ class Observatory:
                             # If this is the first pixelscalle gotten, then it is the pixelscale!
                             if g_dev['cam'].pixscale == None:
                                 g_dev['cam'].pixscale = solved_arcsecperpixel
-                                
+
                             if (g_dev['cam'].pixscale * 0.9) < float(solved_arcsecperpixel) < (g_dev['cam'].pixscale * 1.1):
                                 self.pixelscale_shelf = shelve.open(g_dev['obs'].obsid_path + 'ptr_night_shelf/' + 'pixelscale' + g_dev['cam'].alias + str(g_dev['obs'].name))
                                 try:
@@ -3759,7 +3759,7 @@ class Observatory:
                     self.fast_queue.put((15, (paths["im_path"], paths["jpeg_name10"])), block=False)
                     self.fast_queue.put(
                         (150, (paths["im_path"], paths["jpeg_name10"].replace('EX10', 'EX20'))), block=False)
-                    
+
                     try:
                         reprojection_failed=pickle.load(open(paths["im_path"] + 'smartstack.pickle', 'rb'))
                     except:
