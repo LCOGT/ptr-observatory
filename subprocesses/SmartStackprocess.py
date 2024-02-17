@@ -59,6 +59,7 @@ try:
     print("Mainjpeg received:", zoom_factor)
 except:
     print("Zoom_factor paramater faulted.")
+    zoom_factor=False
 
 try:
     os.remove(paths["im_path"] + 'smartstack.pickle')
