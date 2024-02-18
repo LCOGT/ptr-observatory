@@ -1884,8 +1884,9 @@ class Camera:
 
                 # If the pier just flipped, trigger a recentering exposure.
                 #if not g_dev['mnt'].rapid_park_indicator:# and not (g_dev['events']['Civil Dusk'] < ephem.now() < g_dev['events']['Civil Dawn']):
-                if not g_dev['mnt'].rapid_park_indicator and (g_dev['events']['Civil Dusk'] < ephem.now() < g_dev['events']['Civil Dawn']):
+                if not g_dev['mnt'].rapid_park_indicator:# and (g_dev['events']['Civil Dusk'] < ephem.now() < g_dev['events']['Civil Dawn']):
                     #if not (g_dev['mnt'].previous_pier_side==g_dev['mnt'].rapid_pier_indicator) :
+                    self.wait_for_slew()
                     if g_dev['mnt'].pier_flip_detected==True:
                         plog ("PIERFLIP DETECTED, RECENTERING.")
                         g_dev["obs"].send_to_user("Pier Flip detected, recentering.")
@@ -2121,6 +2122,7 @@ class Camera:
                                 return 'cancelled'
 
                             #plog ("Time between end of last exposure and start of next minus exposure time: " + str(time.time() -  self.end_of_last_exposure_time - exposure_time))
+                            self.wait_for_slew()
                             if g_dev['mnt'].pier_flip_detected==True:
                                 plog("Detected a pier flip just before exposure!")
                                 g_dev["obs"].send_to_user("Pier Flip detected, recentering.")
@@ -2243,6 +2245,29 @@ class Camera:
                         #self.currently_in_smartstack_loop=False
                         continue
             self.currently_in_smartstack_loop=False
+            
+        
+        # If the pier just flipped, trigger a recentering exposure.
+        # This is here because a single exposure may have a flip in it, hence 
+        # we check here.
+        #if not g_dev['mnt'].rapid_park_indicator:# and not (g_dev['events']['Civil Dusk'] < ephem.now() < g_dev['events']['Civil Dawn']):
+        if not g_dev['mnt'].rapid_park_indicator: # and (g_dev['events']['Civil Dusk'] < ephem.now() < g_dev['events']['Civil Dawn']):
+            self.wait_for_slew()
+            #if not (g_dev['mnt'].previous_pier_side==g_dev['mnt'].rapid_pier_indicator) :
+            if g_dev['mnt'].pier_flip_detected==True:
+                plog ("PIERFLIP DETECTED, RECENTERING.")
+                g_dev["obs"].send_to_user("Pier Flip detected, recentering.")
+                g_dev['obs'].pointing_recentering_requested_by_platesolve_thread = True
+                g_dev['obs'].pointing_correction_request_time = time.time()
+                g_dev['obs'].pointing_correction_request_ra = g_dev["mnt"].last_ra_requested
+                g_dev['obs'].pointing_correction_request_dec = g_dev["mnt"].last_dec_requested
+                g_dev['obs'].pointing_correction_request_ra_err = 0
+                g_dev['obs'].pointing_correction_request_dec_err = 0
+                g_dev['obs'].check_platesolve_and_nudge()
+            else:
+                #plog ("MTF temp reporting. No pierflip.")
+                pass
+            
         #  This is the loop point for the seq count loop
         self.exposure_busy = False
         self.currently_in_smartstack_loop=False
