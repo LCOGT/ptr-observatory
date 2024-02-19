@@ -16,7 +16,7 @@ import time
 import traceback
 import ephem
 import copy
-#import json
+import json
 import random
 from astropy.io import fits
 from astropy.time import Time
@@ -2293,10 +2293,43 @@ class Camera:
                 #plog ("MTF temp reporting. No pierflip.")
                 pass
 
+        self.write_out_realtimefiles_token_to_disk(real_time_token,real_time_files)
+
         #  This is the loop point for the seq count loop
         self.exposure_busy = False
         self.currently_in_smartstack_loop=False
         return expresult
+    
+    def write_out_realtimefiles_token_to_disk(self,token_name,real_time_files):
+        
+        if self.config['save_raws_to_pipe_folder_for_nightly_processing']:
+            print ("WRITING OUT TOKEN TO LOCAL PIPE FOLDER")
+            print (token_name)
+            print (real_time_files)
+            #pipefolder = self.config['temporary_local_pipe_archive_to_hold_files_while_copying'] +'/'+ str(g_dev["day"]) +'/'+ str(self.alias)
+            
+            
+            
+            # if not os.path.exists(self.config['temporary_local_pipe_archive_to_hold_files_while_copying']+'/'+ str(g_dev["day"])):
+            #     os.makedirs(self.config['temporary_local_pipe_archive_to_hold_files_while_copying'] +'/'+ str(g_dev["day"]))
+
+            # if not os.path.exists(self.config['temporary_local_pipe_archive_to_hold_files_while_copying'] +'/'+ str(g_dev["day"]) +'/'+ str(self.alias)):
+            #     os.makedirs(self.config['temporary_local_pipe_archive_to_hold_files_while_copying'] +'/'+ str(g_dev["day"]) +'/'+ str(self.alias))
+
+
+            pipetokenfolder = self.config['temporary_local_pipe_archive_to_hold_files_while_copying'] +'/tokens'
+            if not os.path.exists(self.config['temporary_local_pipe_archive_to_hold_files_while_copying'] +'/tokens'):
+                os.makedirs(self.config['temporary_local_pipe_archive_to_hold_files_while_copying'] +'/tokens')
+
+                        
+
+            with open(pipetokenfolder + "/" + token_name, 'w') as f:
+                # indent=2 is not needed but makes the file human-readable 
+                # if the data is nested
+                json.dump(real_time_files, f, indent=2) 
+            
+        
+        
 
     def stop_command(self, required_params, optional_params):
         """Stop the current exposure and return the camera to Idle state."""
