@@ -1896,7 +1896,11 @@ class Camera:
                         g_dev['obs'].pointing_correction_request_dec = g_dev["mnt"].last_dec_requested
                         g_dev['obs'].pointing_correction_request_ra_err = 0
                         g_dev['obs'].pointing_correction_request_dec_err = 0
-                        g_dev['obs'].check_platesolve_and_nudge()
+                        g_dev['obs'].check_platesolve_and_nudge(no_confirmation=False)
+                        Nsmartstack=1
+                        sskcounter=2
+                        self.currently_in_smartstack_loop=False
+                        break
                     else:
                         #plog ("MTF temp reporting. No pierflip.")
                         pass
@@ -2132,7 +2136,11 @@ class Camera:
                                 g_dev['obs'].pointing_correction_request_dec = g_dev["mnt"].last_dec_requested
                                 g_dev['obs'].pointing_correction_request_ra_err = 0
                                 g_dev['obs'].pointing_correction_request_dec_err = 0
-                                g_dev['obs'].check_platesolve_and_nudge()
+                                g_dev['obs'].check_platesolve_and_nudge(no_confirmation=False)        
+                                Nsmartstack=1
+                                sskcounter=2
+                                self.currently_in_smartstack_loop=False
+                                break
                             
                             start_time_of_observation=time.time()
                             self.start_time_of_observation=time.time()
@@ -2263,7 +2271,8 @@ class Camera:
                 g_dev['obs'].pointing_correction_request_dec = g_dev["mnt"].last_dec_requested
                 g_dev['obs'].pointing_correction_request_ra_err = 0
                 g_dev['obs'].pointing_correction_request_dec_err = 0
-                g_dev['obs'].check_platesolve_and_nudge()
+                g_dev['obs'].check_platesolve_and_nudge(no_confirmation=False)
+                
             else:
                 #plog ("MTF temp reporting. No pierflip.")
                 pass

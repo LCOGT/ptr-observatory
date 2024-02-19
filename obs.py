@@ -3795,7 +3795,7 @@ class Observatory:
             else:
                 time.sleep(3)
 
-    def check_platesolve_and_nudge(self):
+    def check_platesolve_and_nudge(self,no_confirmation=True):
 
         """
         A function periodically called to check if there is a telescope nudge to re-center to undertake.
@@ -3806,7 +3806,7 @@ class Observatory:
                 self.pointing_recentering_requested_by_platesolve_thread = False
                 self.pointing_correction_requested_by_platesolve_thread = False
                 g_dev['mnt'].go_command(ra=self.pointing_correction_request_ra, dec=self.pointing_correction_request_dec)
-                g_dev['seq'].centering_exposure(no_confirmation=True, try_hard=True, try_forever=True)
+                g_dev['seq'].centering_exposure(no_confirmation=no_confirmation, try_hard=True, try_forever=True)
                 #self.drift_tracker_ra=g_dev['mnt'].return_right_ascension()
                 #self.drift_tracker_dec=g_dev['mnt'].return_declination()
                 #self.drift_tracker_ra=0
@@ -3860,7 +3860,7 @@ class Observatory:
                     if not g_dev['mnt'].previous_pier_side==g_dev['mnt'].return_side_of_pier():
                         self.send_to_user("Detected pier flip in re-centering. Re-centering telescope again.")
                         g_dev['mnt'].go_command(ra=self.pointing_correction_request_ra, dec=self.pointing_correction_request_dec)
-                        g_dev['seq'].centering_exposure(no_confirmation=True, try_hard=True, try_forever=True)
+                        g_dev['seq'].centering_exposure(no_confirmation=no_confirmation, try_hard=True, try_forever=True)
                     g_dev['obs'].time_of_last_slew = time.time()
                     wait_for_slew()
 

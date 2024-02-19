@@ -5650,6 +5650,7 @@ class Sequencer:
                 return
 
             g_dev["obs"].send_to_user("Pointing confirmation exposure complete. Slew & Center complete.")
+            g_dev['obs'].check_platesolve_and_nudge()            
             self.mosaic_center_ra=g_dev['mnt'].return_right_ascension()
             self.mosaic_center_dec=g_dev['mnt'].return_declination()
             return result
