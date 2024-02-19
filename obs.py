@@ -388,7 +388,7 @@ class Observatory:
         self.mount_reference_model_off = self.config['mount_reference_model_off']
         self.admin_owner_commands_only = False
         self.assume_roof_open = False
-        self.auto_centering_off = False  #WER 20231239 Toggled to True
+        self.auto_centering_off = False
 
         # Instantiate the helper class for astronomical events
         # Soon the primary event / time values can come from AWS.  NB NB   I send them there! Why do we want to put that code in AWS???
@@ -442,7 +442,7 @@ class Observatory:
         # Use the configuration to instantiate objects for all devices.
         self.create_devices()
 
-        self.last_update_complete = time.time() -5
+        self.last_update_complete = time.time() - 5
 
         # Reset mount reference for delta_ra and delta_dec on bootup
         #g_dev["mnt"].reset_mount_reference()
@@ -544,7 +544,7 @@ class Observatory:
         #self.request_update_status()
 
 
-        # A dictionary that holds focusresults for the SEP queue.
+        # A dictionary that holds focus results for the SEP queue.
         self.fwhmresult={}
         self.fwhmresult["error"] = True
         self.fwhmresult['FWHM'] = np.nan

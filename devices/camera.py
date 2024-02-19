@@ -604,6 +604,11 @@ class Camera:
 
         # Camera cooling setup
         self.setpoint = float(self.config["camera"][self.name]["settings"]["temp_setpoint"]) # This is the config setpoint
+        try:
+            self.temp_tolerance = float(self.config["camera"][self.name]["settings"]["temp_setpoint_tolarance"])
+        except:
+            self.temp_tolerance = 1.5
+            plog ("temp tolerance isn't set in obs config, using 1.5 degrees")
         self.current_setpoint =  float(self.config["camera"][self.name]["settings"]["temp_setpoint"]) # This setpoint can change if there is camera warming during the day etc.
         self._set_setpoint(self.setpoint)
         self.day_warm = float(self.config["camera"][self.name]["settings"]['day_warm'])
@@ -2098,8 +2103,8 @@ class Camera:
                                 # Check that the temperature is ok before accepting
                                 current_camera_temperature, cur_humidity, cur_pressure = (g_dev['cam']._temperature())
                                 current_camera_temperature = float(current_camera_temperature)
-                                if abs(float(current_camera_temperature) - float(g_dev['cam'].setpoint)) > 1.5:
-                                    plog ("temperature out of range for calibrations ("+ str(current_camera_temperature)+"), NOT attempting calibration frame")
+                                if abs(float(current_camera_temperature) - float(g_dev['cam'].setpoint)) > self.temp_tolerance:
+                                    plog ("temperature out of +/- range for calibrations ("+ str(current_camera_temperature)+"), NOT attempting calibration frame")
                                     g_dev['obs'].camera_sufficiently_cooled_for_calibrations = False
                                     expresult = {}
                                     expresult["error"] = True
@@ -2115,7 +2120,7 @@ class Camera:
 
                             #plog ("pre-exposure overhead: " + str(time.time() -pre_exposure_overhead_timer) +"s.")
                             self.wait_for_slew()
-                            
+
 
                             # Check there hasn't been a cancel sent through
                             if g_dev["obs"].stop_all_activity:
@@ -2136,12 +2141,13 @@ class Camera:
                                 g_dev['obs'].pointing_correction_request_dec = g_dev["mnt"].last_dec_requested
                                 g_dev['obs'].pointing_correction_request_ra_err = 0
                                 g_dev['obs'].pointing_correction_request_dec_err = 0
-                                g_dev['obs'].check_platesolve_and_nudge(no_confirmation=False)        
+                                g_dev['obs'].check_platesolve_and_nudge(no_confirmation=False)
                                 Nsmartstack=1
                                 sskcounter=2
                                 self.currently_in_smartstack_loop=False
                                 break
-                            
+
+
                             start_time_of_observation=time.time()
                             self.start_time_of_observation=time.time()
                             self._expose(exposure_time, bias_dark_or_light_type_frame)
@@ -2253,10 +2259,10 @@ class Camera:
                         #self.currently_in_smartstack_loop=False
                         continue
             self.currently_in_smartstack_loop=False
-            
-        
+
+
         # If the pier just flipped, trigger a recentering exposure.
-        # This is here because a single exposure may have a flip in it, hence 
+        # This is here because a single exposure may have a flip in it, hence
         # we check here.
         #if not g_dev['mnt'].rapid_park_indicator:# and not (g_dev['events']['Civil Dusk'] < ephem.now() < g_dev['events']['Civil Dawn']):
         if not g_dev['mnt'].rapid_park_indicator: # and (g_dev['events']['Civil Dusk'] < ephem.now() < g_dev['events']['Civil Dawn']):
@@ -2272,11 +2278,11 @@ class Camera:
                 g_dev['obs'].pointing_correction_request_ra_err = 0
                 g_dev['obs'].pointing_correction_request_dec_err = 0
                 g_dev['obs'].check_platesolve_and_nudge(no_confirmation=False)
-                
+
             else:
                 #plog ("MTF temp reporting. No pierflip.")
                 pass
-            
+
         #  This is the loop point for the seq count loop
         self.exposure_busy = False
         self.currently_in_smartstack_loop=False
@@ -2664,7 +2670,7 @@ class Camera:
                     # Check that the temperature is ok before accepting
                     current_camera_temperature, cur_humidity, cur_pressure = (g_dev['cam']._temperature())
                     current_camera_temperature = float(current_camera_temperature)
-                    if abs(float(current_camera_temperature) - float(g_dev['cam'].setpoint)) > 1.5:
+                    if abs(float(current_camera_temperature) - float(g_dev['cam'].setpoint)) > 1.5:   #NB NB this might best be a config item.
                         plog ("temperature out of range for calibrations ("+ str(current_camera_temperature)+"), rejecting calibration frame")
                         g_dev['obs'].camera_sufficiently_cooled_for_calibrations = False
                         expresult = {}
@@ -2917,6 +2923,9 @@ class Camera:
                                 y_nancoord=nancoord[1]
                                 # left
                                 done=False
+                                #NB NB WER: Here I would do a median-8, except at edges.
+                                #That will first-order also deal with Telegraph Noise.
+                                #Second the substitue pixel will be less correlated with its neighbors.
                                 if x_nancoord != 0:
                                     value_here=outputimg[x_nancoord-1,y_nancoord]
                                     if not np.isnan(value_here):
