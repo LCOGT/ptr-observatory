@@ -1831,13 +1831,13 @@ class Camera:
             # retry-3-times framework with an additional timeout included in it.
 
             g_dev["obs"].request_update_status()
-            
-            
+
+
             # Create a unique yet arbitrary code for the token
             real_time_token=g_dev['name'] + '_' + self.alias + '_' + str(datetime.datetime.now()).replace(' ','').replace('-','').replace(':','').replace('.','')
             real_time_files=[]
-            
-            
+
+
 
             #if seq > 0:
             #    g_dev["obs"].update_status()
@@ -3510,8 +3510,13 @@ class Camera:
                 expresult["filter"] = self.current_filter
                 expresult["error"] = False
                 # filename same as raw_filename00 in post_exposure process
-                expresult["real_time_filename"] =  self.config["obs_id"]+ "-"+ self.alias + '_' + str(frame_type) + '_' + str(this_exposure_filter)+ "-"+ g_dev["day"]+ "-"+ next_seq+ "-"+ im_type+ "00.fits"
-                
+
+                try:
+                    im_type = "EX"
+                    expresult["real_time_filename"] =  self.config["obs_id"]+ "-"+ self.alias + '_' + str(frame_type) + '_' + str(this_exposure_filter)+ "-"+ g_dev["day"]+ "-"+ next_seq+ "-"+ im_type+ "00.fits"
+                except:
+                    plog(traceback.format_exc())
+                    breakpoint()
                 self.exposure_busy = False
 
                 plog("Exposure Complete")
