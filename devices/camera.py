@@ -1831,6 +1831,13 @@ class Camera:
             # retry-3-times framework with an additional timeout included in it.
 
             g_dev["obs"].request_update_status()
+            
+            
+            # Create a unique yet arbitrary code for the token
+            real_time_token=g_dev['name'] + '_' + self.alias + '_' + str(datetime.datetime.now()).replace(' ','').replace('-','').replace(':','').replace('.','')
+            real_time_files=[]
+            
+            
 
             #if seq > 0:
             #    g_dev["obs"].update_status()
@@ -2249,6 +2256,9 @@ class Camera:
                         self.exposure_busy = False
                         self.retry_camera = 0
                         #self.currently_in_smartstack_loop=False
+                        print ("EXPRESULT: " + str(expresult))
+                        real_time_files.append(str(expresult["real_time_filename"]))
+                        print ("REAL TIME FILES LIST: " + str(real_time_files))
                         break
                     except Exception as e:
                         plog("Exception in camera retry loop:  ", e)
@@ -3498,7 +3508,10 @@ class Camera:
                 expresult["temperature"] = 0  # avg_foc[2]
                 expresult["gain"] = 0
                 expresult["filter"] = self.current_filter
-                expresult["error"] == False
+                expresult["error"] = False
+                # filename same as raw_filename00 in post_exposure process
+                expresult["real_time_filename"] =  self.config["obs_id"]+ "-"+ self.alias + '_' + str(frame_type) + '_' + str(this_exposure_filter)+ "-"+ g_dev["day"]+ "-"+ next_seq+ "-"+ im_type+ "00.fits"
+                
                 self.exposure_busy = False
 
                 plog("Exposure Complete")
@@ -3557,153 +3570,6 @@ def post_exposure_process(payload):
 
 
     image_saturation_level = g_dev['cam'].config["camera"][g_dev['cam'].name]["settings"]["saturate"]
-
-    # # For OSC's flats are a bit more tricky! We need to get
-    # # the brightest part of the bayer range to be in the upper range.
-    # if is_osc:
-    #     temp_is_osc=True
-    #     osc_fits=copy.deepcopy(img)
-
-    #     debayered=[]
-    #     max_median=0
-
-    #     debayered.append(osc_fits[::2, ::2])
-    #     debayered.append(osc_fits[::2, 1::2])
-    #     debayered.append(osc_fits[1::2, ::2])
-    #     debayered.append(osc_fits[1::2, 1::2])
-
-    #     # crop each of the images to the central region
-    #     oscounter=0
-    #     for oscimage in debayered:
-    #         cropx = int( (oscimage.shape[0] -500)/2)
-    #         cropy = int((oscimage.shape[1] -500) /2)
-    #         oscimage=oscimage[cropx:-cropx, cropy:-cropy]
-    #         oscmedian=np.nanmedian(oscimage)
-    #         if oscmedian > max_median:
-    #             max_median=copy.deepcopy(oscmedian)
-    #             brightest_bayer=copy.deepcopy(oscounter)
-    #         oscounter=oscounter+1
-
-    #     del osc_fits
-    #     del debayered
-
-    #     central_median=max_median
-
-    # else:
-    #     temp_is_osc=False
-    #     osc_fits=copy.deepcopy(img)
-    #     cropx = int( (osc_fits.shape[0] -500)/2)
-    #     cropy = int((osc_fits.shape[1] -500) /2)
-    #     osc_fits=osc_fits[cropx:-cropx, cropy:-cropy]
-    #     central_median=np.nanmedian(osc_fits)
-    #     del osc_fits
-
-    # if frame_type[-4:] == "flat":
-
-    #     if (
-    #         central_median
-    #         >= 0.80* image_saturation_level
-    #     ):
-    #         plog("Flat rejected, center is too bright:  ", central_median)
-    #         g_dev["obs"].send_to_user(
-    #             "Flat rejected, too bright.", p_level="INFO"
-    #         )
-
-    #         expresult["error"] = True
-    #         expresult["patch"] = central_median
-    #         expresult["camera_gain"] = np.nan
-    #         return expresult  # signals to flat routine image was rejected, prompt return
-
-    #     elif (
-    #         central_median
-    #         <= 0.25 * image_saturation_level
-    #     ) and not temp_is_osc:
-    #         plog("Flat rejected, center is too dim:  ", central_median)
-    #         g_dev["obs"].send_to_user(
-    #             "Flat rejected, too dim.", p_level="INFO"
-    #         )
-    #         expresult["error"] = True
-    #         expresult["patch"] = central_median
-    #         expresult["camera_gain"] = np.nan
-    #         return expresult  # signals to flat routine image was rejected, prompt return
-    #     elif (
-    #         central_median
-    #         <= 0.5 * image_saturation_level
-    #     ) and temp_is_osc:
-    #         plog("Flat rejected, center is too dim:  ", central_median)
-    #         g_dev["obs"].send_to_user(
-    #             "Flat rejected, too dim.", p_level="INFO"
-    #         )
-    #         expresult["error"] = True
-    #         expresult["patch"] = central_median
-    #         expresult["camera_gain"] = np.nan
-    #         return expresult  # signals to flat routine image was rejected, prompt return
-    #     else:
-
-    #         # Now estimate camera gain.
-    #         camera_gain_estimate_image=copy.deepcopy(img)
-
-    #         try:
-
-    #             # Get the brightest bayer layer for gains
-    #             if is_osc:
-    #                 if brightest_bayer == 0:
-    #                     camera_gain_estimate_image=camera_gain_estimate_image[::2, ::2]
-    #                 elif brightest_bayer == 1:
-    #                     camera_gain_estimate_image=camera_gain_estimate_image[::2, 1::2]
-    #                 elif brightest_bayer == 2:
-    #                     camera_gain_estimate_image=camera_gain_estimate_image[1::2, ::2]
-    #                 elif brightest_bayer == 3:
-    #                     camera_gain_estimate_image=camera_gain_estimate_image[1::2, 1::2]
-
-    #             cropx = int( (camera_gain_estimate_image.shape[0] -500)/2)
-    #             cropy = int((camera_gain_estimate_image.shape[1] -500) /2)
-    #             camera_gain_estimate_image=camera_gain_estimate_image[cropx:-cropx, cropy:-cropy]
-    #             camera_gain_estimate_image = sigma_clip(camera_gain_estimate_image, masked=False, axis=None)
-
-    #             cge_median=np.nanmedian(camera_gain_estimate_image)
-    #             cge_stdev=np.nanstd(camera_gain_estimate_image)
-    #             cge_sqrt=pow(cge_median,0.5)
-    #             cge_gain=1/pow(cge_sqrt/cge_stdev, 2)
-
-
-    #             plog( g_dev['seq'].current_filter_last_camera_gain)
-    #             # low values SHOULD be ok.
-    #             if cge_gain < (g_dev['seq'].current_filter_last_camera_gain + 3 *g_dev['seq'].current_filter_last_camera_gain_stdev):
-    #                 g_dev["obs"].send_to_user('Good flat value:  ' +str(int(central_median)) + ' Good Gain: ' + str(round(cge_gain,2)))
-    #                 plog('Good flat value:  ' +str(central_median) + ' Good Gain: ' + str(cge_gain))
-
-    #             elif (not reject_flat_by_known_gain):
-    #                 g_dev["obs"].send_to_user('Good flat value:  ' +str(int(central_median)) + ' Bad Gain: ' + str(round(cge_gain,2)) + ' Flat rejection by gain is off.')
-    #                 plog('Good flat value:  ' +str(central_median) + ' Bad Gain: ' + str(cge_gain) + ' Flat rejection by gain is off.')
-
-    #             else:
-    #                 g_dev["obs"].send_to_user('Good flat value:  ' +str(int(central_median)) + ' Bad Gain: ' + str(round(cge_gain,2)) + ' Flat rejected.')
-    #                 plog('Good flat value:  ' +str(central_median) + ' Bad Gain: ' + str(cge_gain) + ' Flat rejected.')
-    #                 expresult["error"] = True
-    #                 expresult["patch"] = central_median
-    #                 expresult["camera_gain"] = np.nan
-    #                 return expresult  # signals to flat routine image was rejected, prompt return
-
-    #             expresult["camera_gain"] = cge_gain
-
-
-    #         except Exception as e:
-    #             plog("Could not estimate the camera gain from this flat.")
-    #             plog(e)
-    #             expresult["camera_gain"] = np.nan
-    #         del camera_gain_estimate_image
-    #         expresult["error"] = False
-    #         expresult["patch"] = central_median
-
-    # if not g_dev["cam"].exposure_busy:
-    #     expresult = {"stopped": True}
-    #     plog ("exposure busy cancelling out of camera")
-    #     return expresult
-
-
-    #counter = 0
-
 
 
 
