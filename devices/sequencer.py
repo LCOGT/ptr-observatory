@@ -2147,6 +2147,7 @@ class Sequencer:
                 if g_dev['obs'].config['save_raws_to_pipe_folder_for_nightly_processing']:
                     fits.writeto(pipefolder + '/' +tempfrontcalib + 'BIAS_master_bin1.fits', masterBias,  overwrite=True)
                     fits.writeto(pipefolder + '/' + 'ARCHIVE_' +  archiveDate + '_' +tempfrontcalib + 'BIAS_master_bin1.fits', masterBias,  overwrite=True)
+                    np.save(pipefolder + '/' + 'ARCHIVE_' +  archiveDate + '_' +tempfrontcalib + 'BIAS_master_bin1.npy', masterBias)
             except Exception as e:
                 plog ("Could not save bias frame: ",e)
 
@@ -2268,6 +2269,7 @@ class Sequencer:
                 if g_dev['obs'].config['save_raws_to_pipe_folder_for_nightly_processing']:
                     fits.writeto(pipefolder + '/' + tempfrontcalib + 'DARK_master_bin1.fits', masterDark,  overwrite=True)
                     fits.writeto(pipefolder + '/' + 'ARCHIVE_' +  archiveDate + '_' + tempfrontcalib + 'DARK_master_bin1.fits', masterDark,  overwrite=True)
+                    np.save(pipefolder + '/' + 'ARCHIVE_' +  archiveDate + '_' + tempfrontcalib + 'DARK_master_bin1.npy', masterDark)
 
             except Exception as e:
                 plog ("Could not save dark frame: ",e)
@@ -2588,6 +2590,7 @@ class Sequencer:
                             if g_dev['obs'].config['save_raws_to_pipe_folder_for_nightly_processing']:
                                 fits.writeto(pipefolder + '/' + tempfrontcalib + 'masterFlat_'+ str(filtercode) + '_bin1.fits', temporaryFlat,  overwrite=True)
                                 fits.writeto(pipefolder + '/' + 'ARCHIVE_' +  archiveDate + '_' + tempfrontcalib + 'masterFlat_'+ str(filtercode) + '_bin1.fits', temporaryFlat,  overwrite=True)
+                                np.save(pipefolder + '/' + 'ARCHIVE_' +  archiveDate + '_' + tempfrontcalib + 'masterFlat_'+ str(filtercode) + '_bin1.npy', temporaryFlat)
 
                         except Exception as e:
                             plog ("Could not save flat frame: ",e)
@@ -2690,6 +2693,7 @@ class Sequencer:
                 if g_dev['obs'].config['save_raws_to_pipe_folder_for_nightly_processing']:
                     fits.writeto(pipefolder + '/' + tempfrontcalib + 'badpixelmask_bin1.fits', bad_pixel_mapper_array*1,  overwrite=True)
                     fits.writeto(pipefolder + '/' + 'ARCHIVE_' +  archiveDate + '_' + tempfrontcalib + 'badpixelmask_bin1.fits', bad_pixel_mapper_array*1,  overwrite=True)
+                    np.save(pipefolder + '/' + 'ARCHIVE_' +  archiveDate + '_' + tempfrontcalib + 'badpixelmask_bin1.npy', bad_pixel_mapper_array)
 
 
 

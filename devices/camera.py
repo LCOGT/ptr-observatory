@@ -1834,7 +1834,7 @@ class Camera:
 
 
             # Create a unique yet arbitrary code for the token
-            real_time_token=g_dev['name'] + '_' + self.alias + '_' + str(datetime.datetime.now()).replace(' ','').replace('-','').replace(':','').replace('.','')
+            real_time_token=g_dev['name'] + '_' + self.alias + '_' + g_dev["day"] + '_' + self.current_filter.lower() + '_' + str(datetime.datetime.now()).replace(' ','').replace('-','').replace(':','').replace('.','')
             real_time_files=[]
 
 
