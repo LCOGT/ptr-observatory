@@ -171,7 +171,7 @@ smartStackFilename = (
 )
 
 # For OSC, we need to smartstack individual frames.
-if not is_osc:
+if not is_osc:   #This is the monochrome camera processing path.
 
     while not os.path.exists(paths["im_path"] + paths["text_name00"].replace('.txt','.sep')):
         time.sleep(1)
@@ -223,7 +223,7 @@ if not is_osc:
                 ref_sources=np.column_stack((ref_sources['x'],ref_sources['y']))
                 transf, (source_list, target_list) = aa.find_transform(sources, ref_sources)
                 reprojectedimage= aa.apply_transform(transf, imgdata, storedsStack)[0]
-                storedsStack = reprojectedimage + storedsStack
+                storedsStack += reprojectedimage  # + storedsStack   A WER experiment!
 
                 # Save new stack to disk
                 np.save(
