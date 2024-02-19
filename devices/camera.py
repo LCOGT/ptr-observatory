@@ -1813,7 +1813,7 @@ class Camera:
                         if g_dev["obs"].stop_all_activity:
                             Nsmartstack=1
                             sskcounter=2
-                            plog('stop_all_activity cancelling camera exposure')
+                            plog('stop_all_activity cancelling camera exposure')                            
                             return
 
 
@@ -1943,6 +1943,7 @@ class Camera:
                         self.exposure_busy = False
                         #plog ("stop_all_activity cancelling out of camera exposure")
                         self.currently_in_smartstack_loop=False
+                        self.write_out_realtimefiles_token_to_disk(real_time_token,real_time_files)
                         return
 
                     # Check that the block isn't ending during normal observing time (don't check while biasing, flats etc.)
@@ -1967,6 +1968,7 @@ class Camera:
                             sskcounter=2
                             self.exposure_busy = False
                             self.currently_in_smartstack_loop=False
+                            self.write_out_realtimefiles_token_to_disk(real_time_token,real_time_files)
                             return 'blockend'
 
                     # Check that the calendar event that is running the exposure
@@ -1998,6 +2000,7 @@ class Camera:
                             Nsmartstack=1
                             sskcounter=2
                             self.currently_in_smartstack_loop=False
+                            self.write_out_realtimefiles_token_to_disk(real_time_token,real_time_files)
                             return 'calendarend'
 
                     # # Check that the roof hasn't shut
@@ -2020,6 +2023,7 @@ class Camera:
                         Nsmartstack=1
                         sskcounter=2
                         self.currently_in_smartstack_loop=False
+                        self.write_out_realtimefiles_token_to_disk(real_time_token,real_time_files)
                         return 'roofshut'
 
 
@@ -2103,6 +2107,7 @@ class Camera:
                                              sskcounter=2
                                              plog ("stop_all_activity cancelling out of camera exposure")
                                              self.currently_in_smartstack_loop=False
+                                             self.write_out_realtimefiles_token_to_disk(real_time_token,real_time_files)
                                              return
 
                             if (bias_dark_or_light_type_frame in ["bias", "dark"] or 'flat' in frame_type) and not manually_requested_calibration:
@@ -2118,6 +2123,7 @@ class Camera:
                                     expresult["patch"] = None
                                     self.exposure_busy = False
                                     self.currently_in_smartstack_loop=False
+                                    self.write_out_realtimefiles_token_to_disk(real_time_token,real_time_files)
                                     return expresult
 
                                 else:
@@ -2135,6 +2141,7 @@ class Camera:
                                 Nsmartstack=1
                                 sskcounter=2
                                 self.currently_in_smartstack_loop=False
+                                self.write_out_realtimefiles_token_to_disk(real_time_token,real_time_files)
                                 return 'cancelled'
 
                             #plog ("Time between end of last exposure and start of next minus exposure time: " + str(time.time() -  self.end_of_last_exposure_time - exposure_time))
@@ -2198,6 +2205,7 @@ class Camera:
                             expresult["error"] = True
                             self.exposure_busy = False
                             self.currently_in_smartstack_loop=False
+                            self.write_out_realtimefiles_token_to_disk(real_time_token,real_time_files)
                             return expresult
 
                         self.pre_mnt = []
