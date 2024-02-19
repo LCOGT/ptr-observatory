@@ -1160,7 +1160,7 @@ class Sequencer:
                         pass
 
                     zoom_factor = exposure['zoom'].lower()
-                    plog("*****Zoom supplied line 1074 seq is:  ", zoom_factor)
+                    #plog("*****Zoom supplied line 1074 seq is:  ", zoom_factor)
                     #breakpoint()
                     if exposure['zoom'].lower() in ["full", 'Full'] or 'X' in exposure['zoom'] \
                         or  '%' in exposure['zoom'] or ( exposure['zoom'].lower() == 'small sq.') \
@@ -1390,7 +1390,7 @@ class Sequencer:
                                     self.currently_mosaicing = False
                                     return
                             #g_dev["obs"].request_full_update()
-                            plog("*****Line 1304 Seg. Right before call expose:  req, opt:  ", req, opt)
+                            #plog("*****Line 1304 Seg. Right before call expose:  req, opt:  ", req, opt)
                             result = g_dev['cam'].expose_command(req, opt, user_name=user_name, user_id=user_id, user_roles=user_roles, no_AWS=False, solve_it=False, calendar_event_id=calendar_event_id) #, zoom_factor=zoom_factor)
                             #g_dev["obs"].request_full_update()
                             try:
@@ -5182,12 +5182,12 @@ class Sequencer:
         if self.focussing:
             try_hard=True
             try_forever=False
-        
+
         # Turn off the pier flip detection if we enter a centering exposure to fix the pier flip
         g_dev['mnt'].pier_flip_detected=False
-            
+
         #breakpoint()
-        
+
         if g_dev['cam'].pixscale == None:
             plog ("Finding pixelscale for the first time. This could take a whilE!")
             g_dev["obs"].send_to_user("Finding pixelscale for the first time. This could take a whilE!")
@@ -5650,7 +5650,7 @@ class Sequencer:
                 return
 
             g_dev["obs"].send_to_user("Pointing confirmation exposure complete. Slew & Center complete.")
-            g_dev['obs'].check_platesolve_and_nudge()            
+            g_dev['obs'].check_platesolve_and_nudge()
             self.mosaic_center_ra=g_dev['mnt'].return_right_ascension()
             self.mosaic_center_dec=g_dev['mnt'].return_declination()
             return result
