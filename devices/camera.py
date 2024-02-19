@@ -2325,9 +2325,9 @@ class Camera:
             #     os.makedirs(self.config['temporary_local_pipe_archive_to_hold_files_while_copying'] +'/'+ str(g_dev["day"]) +'/'+ str(self.alias))
 
 
-            pipetokenfolder = self.config['temporary_local_pipe_archive_to_hold_files_while_copying'] +'/tokens'
-            if not os.path.exists(self.config['temporary_local_pipe_archive_to_hold_files_while_copying'] +'/tokens'):
-                os.makedirs(self.config['temporary_local_pipe_archive_to_hold_files_while_copying'] +'/tokens')
+            pipetokenfolder = self.config['pipe_archive_folder_path'] +'/tokens'
+            if not os.path.exists(self.config['pipe_archive_folder_path'] +'/tokens'):
+                os.makedirs(self.config['pipe_archive_folder_path'] +'/tokens')
 
                         
 
