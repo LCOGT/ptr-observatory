@@ -1813,7 +1813,7 @@ class Camera:
                         if g_dev["obs"].stop_all_activity:
                             Nsmartstack=1
                             sskcounter=2
-                            plog('stop_all_activity cancelling camera exposure')                            
+                            plog('stop_all_activity cancelling camera exposure')
                             return
 
 
@@ -2265,8 +2265,10 @@ class Camera:
                         self.retry_camera = 0
                         #self.currently_in_smartstack_loop=False
                         print ("EXPRESULT: " + str(expresult))
-                        real_time_files.append(str(expresult["real_time_filename"]))
-                        print ("REAL TIME FILES LIST: " + str(real_time_files))
+                        if not frame_type[-4:] == "flat" and not frame_type in ["bias", "dark"] and frame_type=='focus' and not frame_type=='pointing':
+
+                            real_time_files.append(str(expresult["real_time_filename"]))
+                            print ("REAL TIME FILES LIST: " + str(real_time_files))
                         break
                     except Exception as e:
                         plog("Exception in camera retry loop:  ", e)
@@ -2307,17 +2309,17 @@ class Camera:
         self.exposure_busy = False
         self.currently_in_smartstack_loop=False
         return expresult
-    
+
     def write_out_realtimefiles_token_to_disk(self,token_name,real_time_files):
-        
+
         if self.config['save_raws_to_pipe_folder_for_nightly_processing']:
             print ("WRITING OUT TOKEN TO LOCAL PIPE FOLDER")
             print (token_name)
             print (real_time_files)
             #pipefolder = self.config['temporary_local_pipe_archive_to_hold_files_while_copying'] +'/'+ str(g_dev["day"]) +'/'+ str(self.alias)
-            
-            
-            
+
+
+
             # if not os.path.exists(self.config['temporary_local_pipe_archive_to_hold_files_while_copying']+'/'+ str(g_dev["day"])):
             #     os.makedirs(self.config['temporary_local_pipe_archive_to_hold_files_while_copying'] +'/'+ str(g_dev["day"]))
 
@@ -2329,15 +2331,15 @@ class Camera:
             if not os.path.exists(self.config['pipe_archive_folder_path'] +'/tokens'):
                 os.makedirs(self.config['pipe_archive_folder_path'] +'/tokens')
 
-                        
+
 
             with open(pipetokenfolder + "/" + token_name, 'w') as f:
-                # indent=2 is not needed but makes the file human-readable 
+                # indent=2 is not needed but makes the file human-readable
                 # if the data is nested
-                json.dump(real_time_files, f, indent=2) 
-            
-        
-        
+                json.dump(real_time_files, f, indent=2)
+
+
+
 
     def stop_command(self, required_params, optional_params):
         """Stop the current exposure and return the camera to Idle state."""

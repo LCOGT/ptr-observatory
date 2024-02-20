@@ -1485,7 +1485,7 @@ class Observatory:
                     if abs(float(current_camera_temperature) - float(g_dev['cam'].setpoint)) > 1.5:
                         self.camera_sufficiently_cooled_for_calibrations = False
                         self.last_time_camera_was_warm=time.time()
-                    elif (time.time()-self.last_time_camera_was_warm) < 1200:
+                    elif (time.time()-self.last_time_camera_was_warm) < 600:
                         self.camera_sufficiently_cooled_for_calibrations = False
                     else:
                         self.camera_sufficiently_cooled_for_calibrations = True
@@ -1514,11 +1514,11 @@ class Observatory:
                 if (time.time() - self.last_time_report_to_console) > 600:
                     plog (ephem.now())
                     if self.camera_sufficiently_cooled_for_calibrations == False:
-                        if (time.time() - self.last_time_camera_was_warm) < 1200:
+                        if (time.time() - self.last_time_camera_was_warm) < 600:
                             plog ("Camera was recently out of the temperature range for calibrations")
-                            plog ("Waiting for a 20 minute period where camera has been cooled to the right temperature")
+                            plog ("Waiting for a 10 minute period where camera has been cooled to the right temperature")
                             plog ("Before continuing calibrations to ensure cooler is evenly cooled")
-                            plog ( str(int(1200 - (time.time() - self.last_time_camera_was_warm))) + " seconds to go.")
+                            plog ( str(int(600 - (time.time() - self.last_time_camera_was_warm))) + " seconds to go.")
                             plog ("Camera current temperature ("+ str(current_camera_temperature)+").")
                             plog ("Difference from setpoint: " + str( (current_camera_temperature - g_dev['cam'].setpoint)))
                         else:
