@@ -1849,6 +1849,16 @@ class Camera:
                     plog ("Sorry, exposures are outside of night time.")
                     self.exposure_busy = False
                     return 'outsideofnighttime'
+                if g_dev['events']['Sun Set'] > g_dev['events']['End Eve Sky Flats']: 
+                    if not g_dev['obs'].scope_in_manual_mode and not (g_dev['events']['Sun Set'] < ephem.Date(ephem.now()+ (exposure_time *ephem.second))):
+                        plog ("Sorry, exposures are outside of night time.")
+                        self.exposure_busy = False
+                        return 'outsideofnighttime'
+                if g_dev['events']['Sun Set'] < g_dev['events']['End Eve Sky Flats']: 
+                    if not g_dev['obs'].scope_in_manual_mode and not (g_dev['events']['End Eve Sky Flats'] < ephem.Date(ephem.now()+ (exposure_time *ephem.second))):
+                        plog ("Sorry, exposures are outside of night time.")
+                        self.exposure_busy = False
+                        return 'outsideofnighttime'
 
             self.pre_mnt = []
             self.pre_rot = []
