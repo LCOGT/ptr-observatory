@@ -1849,12 +1849,12 @@ class Camera:
                     plog ("Sorry, exposures are outside of night time.")
                     self.exposure_busy = False
                     return 'outsideofnighttime'
-                if g_dev['events']['Sun Set'] > g_dev['events']['End Eve Sky Flats']: 
+                if g_dev['events']['Sun Set'] > g_dev['events']['End Eve Sky Flats']:
                     if not g_dev['obs'].scope_in_manual_mode and not (g_dev['events']['Sun Set'] < ephem.Date(ephem.now()+ (exposure_time *ephem.second))):
                         plog ("Sorry, exposures are outside of night time.")
                         self.exposure_busy = False
                         return 'outsideofnighttime'
-                if g_dev['events']['Sun Set'] < g_dev['events']['End Eve Sky Flats']: 
+                if g_dev['events']['Sun Set'] < g_dev['events']['End Eve Sky Flats']:
                     if not g_dev['obs'].scope_in_manual_mode and not (g_dev['events']['End Eve Sky Flats'] < ephem.Date(ephem.now()+ (exposure_time *ephem.second))):
                         plog ("Sorry, exposures are outside of night time.")
                         self.exposure_busy = False
@@ -2327,30 +2327,31 @@ class Camera:
     def write_out_realtimefiles_token_to_disk(self,token_name,real_time_files):
 
         if self.config['save_raws_to_pipe_folder_for_nightly_processing']:
-            print ("WRITING OUT TOKEN TO LOCAL PIPE FOLDER")
-            print (token_name)
-            print (real_time_files)
-            #pipefolder = self.config['temporary_local_pipe_archive_to_hold_files_while_copying'] +'/'+ str(g_dev["day"]) +'/'+ str(self.alias)
+            if len(real_time_files) > 0:
+                print ("WRITING OUT TOKEN TO LOCAL PIPE FOLDER")
+                print (token_name)
+                print (real_time_files)
+                #pipefolder = self.config['temporary_local_pipe_archive_to_hold_files_while_copying'] +'/'+ str(g_dev["day"]) +'/'+ str(self.alias)
 
 
 
-            # if not os.path.exists(self.config['temporary_local_pipe_archive_to_hold_files_while_copying']+'/'+ str(g_dev["day"])):
-            #     os.makedirs(self.config['temporary_local_pipe_archive_to_hold_files_while_copying'] +'/'+ str(g_dev["day"]))
+                # if not os.path.exists(self.config['temporary_local_pipe_archive_to_hold_files_while_copying']+'/'+ str(g_dev["day"])):
+                #     os.makedirs(self.config['temporary_local_pipe_archive_to_hold_files_while_copying'] +'/'+ str(g_dev["day"]))
 
-            # if not os.path.exists(self.config['temporary_local_pipe_archive_to_hold_files_while_copying'] +'/'+ str(g_dev["day"]) +'/'+ str(self.alias)):
-            #     os.makedirs(self.config['temporary_local_pipe_archive_to_hold_files_while_copying'] +'/'+ str(g_dev["day"]) +'/'+ str(self.alias))
-
-
-            pipetokenfolder = self.config['pipe_archive_folder_path'] +'/tokens'
-            if not os.path.exists(self.config['pipe_archive_folder_path'] +'/tokens'):
-                os.makedirs(self.config['pipe_archive_folder_path'] +'/tokens')
+                # if not os.path.exists(self.config['temporary_local_pipe_archive_to_hold_files_while_copying'] +'/'+ str(g_dev["day"]) +'/'+ str(self.alias)):
+                #     os.makedirs(self.config['temporary_local_pipe_archive_to_hold_files_while_copying'] +'/'+ str(g_dev["day"]) +'/'+ str(self.alias))
 
 
+                pipetokenfolder = self.config['pipe_archive_folder_path'] +'/tokens'
+                if not os.path.exists(self.config['pipe_archive_folder_path'] +'/tokens'):
+                    os.makedirs(self.config['pipe_archive_folder_path'] +'/tokens')
 
-            with open(pipetokenfolder + "/" + token_name, 'w') as f:
-                # indent=2 is not needed but makes the file human-readable
-                # if the data is nested
-                json.dump(real_time_files, f, indent=2)
+
+
+                with open(pipetokenfolder + "/" + token_name, 'w') as f:
+                    # indent=2 is not needed but makes the file human-readable
+                    # if the data is nested
+                    json.dump(real_time_files, f, indent=2)
 
 
 

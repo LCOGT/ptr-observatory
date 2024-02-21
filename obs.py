@@ -1915,6 +1915,7 @@ class Observatory:
                 try:
                     shutil.copy(filename, pipefolder +'/'+ filename.split('/')[-1])
                 except:
+                    plog(traceback.format_exc())
                     plog ("Couldn't copy " + str(filename) + ". Broken.")
                     broken =1
 
