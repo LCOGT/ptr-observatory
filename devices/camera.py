@@ -2265,10 +2265,14 @@ class Camera:
                         self.retry_camera = 0
                         #self.currently_in_smartstack_loop=False
                         print ("EXPRESULT: " + str(expresult))
-                        if not frame_type[-4:] == "flat" and not frame_type in ["bias", "dark"] and frame_type=='focus' and not frame_type=='pointing':
-
-                            real_time_files.append(str(expresult["real_time_filename"]))
-                            print ("REAL TIME FILES LIST: " + str(real_time_files))
+                        if not frame_type[-4:] == "flat" and not frame_type.lower() in ["bias", "dark"] and not frame_type.lower()=='focus' and not frame_type=='pointing':
+                            try:
+                                real_time_files.append(str(expresult["real_time_filename"]))
+                                print ("REAL TIME FILES LIST: " + str(real_time_files))
+                            except:
+                                print (frame_type)
+                                print ("real time filename did not work")
+                                plog(traceback.format_exc())
                         break
                     except Exception as e:
                         plog("Exception in camera retry loop:  ", e)
