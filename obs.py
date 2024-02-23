@@ -2566,7 +2566,7 @@ class Observatory:
                                     g_dev["foc"].focus_needed = True
                                     g_dev["obs"].send_to_user(
                                         "Focus has drifted to "
-                                        + str(np.nanmedian(g_dev["foc"].focus_tracker))
+                                        + str(round(np.nanmedian(g_dev["foc"].focus_tracker),2))
                                         + " from "
                                         + str(g_dev["foc"].last_focus_fwhm)
                                         + ".",
