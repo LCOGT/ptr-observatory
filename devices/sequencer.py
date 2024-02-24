@@ -2284,6 +2284,7 @@ class Sequencer:
             plog ("**********************************")
 
             masterBias=np.asarray(finalImage).astype(np.float32)
+            del finalImage
 
             # Bad pixel accumulator
             img_temp_median=np.nanmedian(masterBias)
@@ -2376,14 +2377,14 @@ class Sequencer:
                 darkdeexp=(hdu1data-masterBias)/hdu1exp
                 del hdu1data
 
-                # Bad pixel accumulator
-                img_temp_median=np.nanmedian(darkdeexp)
-                img_temp_stdev=np.nanstd(darkdeexp)
-                above_array=(darkdeexp > 20)
-                #below_array=(darkdeexp < (img_temp_median - (10 * img_temp_stdev)))
-                print ("Bad pixels above: " + str(above_array.sum()))
-                #print ("Bad pixels below: " + str(below_array.sum()))
-                bad_pixel_mapper_array=bad_pixel_mapper_array+above_array+below_array
+                # # Bad pixel accumulator
+                # img_temp_median=np.nanmedian(darkdeexp)
+                # img_temp_stdev=np.nanstd(darkdeexp)
+                # above_array=(darkdeexp > 20)
+                # #below_array=(darkdeexp < (img_temp_median - (10 * img_temp_stdev)))
+                # print ("Bad pixels above: " + str(above_array.sum()))
+                # #print ("Bad pixels below: " + str(below_array.sum()))
+                # bad_pixel_mapper_array=bad_pixel_mapper_array+above_array+below_array
 
                 timetaken=datetime.datetime.now() -starttime
                 plog ("Time Taken to load array and debias and divide dark: " + str(timetaken))
@@ -2421,6 +2422,17 @@ class Sequencer:
             plog ("**********************************")
 
             masterDark=np.asarray(finalImage).astype(np.float32)
+            del finalImage
+            
+            # Bad pixel accumulator
+            img_temp_median=np.nanmedian(masterDark)
+            img_temp_stdev=np.nanstd(masterDark)
+            above_array=(masterDark > 20)
+            #below_array=(darkdeexp < (img_temp_median - (10 * img_temp_stdev)))
+            print ("Bad pixels above: " + str(above_array.sum()))
+            #print ("Bad pixels below: " + str(below_array.sum()))
+            bad_pixel_mapper_array=bad_pixel_mapper_array+above_array+below_array
+            
             try:
                 fits.writeto(g_dev['obs'].calib_masters_folder + tempfrontcalib + 'DARK_master_bin1.fits', masterDark,  overwrite=True)
                 filepathaws=g_dev['obs'].calib_masters_folder
@@ -2527,6 +2539,9 @@ class Sequencer:
             plog ("**********************************")
 
             halfsecond_masterDark=np.asarray(finalImage).astype(np.float32)
+            del finalImage
+            
+            
             try:
                 fits.writeto(g_dev['obs'].calib_masters_folder + tempfrontcalib + 'halfsecondDARK_master_bin1.fits', halfsecond_masterDark,  overwrite=True)
                 filepathaws=g_dev['obs'].calib_masters_folder
@@ -2633,6 +2648,8 @@ class Sequencer:
             plog ("**********************************")
 
             twosecond_masterDark=np.asarray(finalImage).astype(np.float32)
+            del finalImage
+            
             try:
                 fits.writeto(g_dev['obs'].calib_masters_folder + tempfrontcalib + '2secondDARK_master_bin1.fits', twosecond_masterDark,  overwrite=True)
                 filepathaws=g_dev['obs'].calib_masters_folder
@@ -2739,6 +2756,8 @@ class Sequencer:
             plog ("**********************************")
 
             tensecond_masterDark=np.asarray(finalImage).astype(np.float32)
+            del finalImage
+            
             try:
                 fits.writeto(g_dev['obs'].calib_masters_folder + tempfrontcalib + '10secondDARK_master_bin1.fits', tensecond_masterDark,  overwrite=True)
                 filepathaws=g_dev['obs'].calib_masters_folder
@@ -2781,7 +2800,7 @@ class Sequencer:
 
             # NOW for the broadband smartstack darks and biasdarks
             plog (datetime.datetime.now().strftime("%H:%M:%S"))
-            plog ("Regenerating smartstack exposure darks and biasdarks")
+            plog ("Regenerating smartstack broadband exposure darks and biasdarks")
             inputList=(glob(g_dev['obs'].local_dark_folder+ 'broadbanddarks/' +'*.n*'))
 
             # Test each flat file actually opens
@@ -2845,6 +2864,18 @@ class Sequencer:
             plog ("**********************************")
 
             broadbandss_masterDark=np.asarray(finalImage).astype(np.float32)
+            del finalImage
+            
+            # Bad pixel accumulator
+            img_temp_median=np.nanmedian(broadbandss_masterDark)
+            img_temp_stdev=np.nanstd(broadbandss_masterDark)
+            above_array=(broadbandss_masterDark > 20)
+            #below_array=(darkdeexp < (img_temp_median - (10 * img_temp_stdev)))
+            print ("Bad pixels above: " + str(above_array.sum()))
+            #print ("Bad pixels below: " + str(below_array.sum()))
+            bad_pixel_mapper_array=bad_pixel_mapper_array+above_array+below_array
+            
+            
             try:
                 fits.writeto(g_dev['obs'].calib_masters_folder + tempfrontcalib + 'broadbandssDARK_master_bin1.fits', broadbandss_masterDark,  overwrite=True)
                 filepathaws=g_dev['obs'].calib_masters_folder
@@ -2927,6 +2958,8 @@ class Sequencer:
             plog ("**********************************")
 
             broadbandss_masterBiasDark=np.asarray(finalImage).astype(np.float32)
+            del finalImage
+            
             try:
                 fits.writeto(g_dev['obs'].calib_masters_folder + tempfrontcalib + 'broadbandssBIASDARK_master_bin1.fits', broadbandss_masterBiasDark,  overwrite=True)
                 filepathaws=g_dev['obs'].calib_masters_folder
@@ -3030,6 +3063,20 @@ class Sequencer:
             plog ("**********************************")
 
             narrowbandss_masterDark=np.asarray(finalImage).astype(np.float32)
+            del finalImage
+            
+            
+            # Bad pixel accumulator
+            img_temp_median=np.nanmedian(narrowbandss_masterDark)
+            img_temp_stdev=np.nanstd(narrowbandss_masterDark)
+            above_array=(narrowbandss_masterDark > 20)
+            #below_array=(darkdeexp < (img_temp_median - (10 * img_temp_stdev)))
+            print ("Bad pixels above: " + str(above_array.sum()))
+            #print ("Bad pixels below: " + str(below_array.sum()))
+            bad_pixel_mapper_array=bad_pixel_mapper_array+above_array+below_array
+            
+            
+            
             try:
                 fits.writeto(g_dev['obs'].calib_masters_folder + tempfrontcalib + 'narrowbandssDARK_master_bin1.fits', narrowbandss_masterDark,  overwrite=True)
                 filepathaws=g_dev['obs'].calib_masters_folder
@@ -3112,6 +3159,8 @@ class Sequencer:
             plog ("**********************************")
 
             narrowbandss_masterBiasDark=np.asarray(finalImage).astype(np.float32)
+            del finalImage
+            
             try:
                 fits.writeto(g_dev['obs'].calib_masters_folder + tempfrontcalib + 'narrowbandssBIASDARK_master_bin1.fits', narrowbandss_masterBiasDark,  overwrite=True)
                 filepathaws=g_dev['obs'].calib_masters_folder
