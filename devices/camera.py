@@ -1828,6 +1828,7 @@ class Camera:
                 'broadband_ss_biasdark',
                 'narrowband_ss_biasdark','short_exposure_dark','halfsec_exposure_dark','tensec_exposure_dark']:
                     requested_filter_name = 'dark'
+
                 elif imtype in ['pointing'] and self.config["camera"][self.name]["settings"]['is_osc']:
                     requested_filter_name = 'lum'
                 else:
@@ -1921,7 +1922,7 @@ class Camera:
             g_dev["obs"].request_update_status()
 
 
-            
+
 
 
             #if seq > 0:
@@ -1956,9 +1957,9 @@ class Camera:
             ssExp=self.config["camera"][self.name]["settings"]['smart_stack_exposure_time']
             ssNBmult=self.config["camera"][self.name]["settings"]['smart_stack_exposure_NB_multiplier']
             dark_exp_time = self.config['camera']['camera_1_1']['settings']['dark_exposure']
-            
-            
-            
+
+
+
             if g_dev["fil"].null_filterwheel == False:
                 if self.current_filter.lower() in ['ha', 'o3', 's2', 'n2', 'y', 'up', 'u']:
                     ssExp = ssExp * ssNBmult # For narrowband and low throughput filters, increase base exposure time.
@@ -1968,17 +1969,17 @@ class Camera:
                 SmartStackID='no'
                 smartstackinfo='no'
                 exposure_time=incoming_exposure_time
-                
+
             elif (self.smartstack == 'yes' or self.smartstack == True) and (incoming_exposure_time > ssExp):
                 Nsmartstack=np.ceil(incoming_exposure_time / ssExp)
-                exposure_time=ssExp                
+                exposure_time=ssExp
                 SmartStackID=(datetime.datetime.now().strftime("%d%m%y%H%M%S"))
-                if self.current_filter.lower() in ['ha', 'o3', 's2', 'n2', 'y', 'up', 'u'] :         
+                if self.current_filter.lower() in ['ha', 'o3', 's2', 'n2', 'y', 'up', 'u'] :
                     smartstackinfo='narrowband'
                 else:
                     smartstackinfo='broadband'
-                
-                
+
+
             else:
                 Nsmartstack=1
                 SmartStackID='no'
@@ -1986,7 +1987,7 @@ class Camera:
                 exposure_time=incoming_exposure_time
 
             # Create a unique yet arbitrary code for the token
-            
+
             real_time_token=g_dev['name'] + '_' + self.alias + '_' + g_dev["day"] + '_' + self.current_filter.lower() + '_' + smartstackinfo + '_' + str(ssBaseExp) + "_" + str( ssBaseExp * ssNBmult) + '_' + str(dark_exp_time) + '_' + str(datetime.datetime.now()).replace(' ','').replace('-','').replace(':','').replace('.','')
             real_time_files=[]
 
@@ -2277,7 +2278,12 @@ class Camera:
                                 self.currently_in_smartstack_loop=False
                                 break
 
-
+                            if imtype in ['bias','dark'
+                            'broadband_ss_biasdark',
+                            'narrowband_ss_biasdark','short_exposure_dark','halfsec_exposure_dark','tensec_exposure_dark']:
+                                # Artifical wait time for bias and dark
+                                # calibrations to allow pixels to cool
+                                time.sleep(1)
                             start_time_of_observation=time.time()
                             self.start_time_of_observation=time.time()
                             self._expose(exposure_time, bias_dark_or_light_type_frame)
