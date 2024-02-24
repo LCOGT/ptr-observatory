@@ -4007,6 +4007,12 @@ class Sequencer:
 
         exp_time = min_exposure
 
+
+        broadband_ss_biasdark_exp_time = float(self.config['camera']['camera_1_1']['settings']['smart_stack_exposure_time'])
+        narrowband_ss_biasdark_exp_time = float(broadband_ss_biasdark_exp_time * self.config['camera']['camera_1_1']['settings']['smart_stack_exposure_NB_multiplier'])
+
+        sky_exposure_snap_to_grid = [ 0.05,0.1, 0.25, 0.5 , 0.75, 1, 1.5,2.0, 5.0, 10, 15, 20, broadband_ss_biasdark_exp_time, narrowband_ss_biasdark_exp_time]
+
         # Load up the pickled list of gains or start a new one.
         self.filter_throughput_shelf = shelve.open(g_dev['obs'].obsid_path + 'ptr_night_shelf/' + 'filterthroughput' + g_dev['cam'].alias + str(g_dev['obs'].name))
 
@@ -4322,16 +4328,28 @@ class Sequencer:
                                 else:
                                     pixel_area=pow(float(g_dev['cam'].pixscale),2)
                                 exp_time = target_flat/(collecting_area*pixel_area*sky_lux*float(filter_throughput))  #g_dev['ocn'].calc_HSI_lux)  #meas_sky_lux)
+                                # snap the exposure time to a discrete grid
+                                exp_time=min(sky_exposure_snap_to_grid, key=lambda x:abs(x-exp_time))                                
+                                
                                 new_throughput_value  =filter_throughput
                             else:
                                 if morn:
                                     exp_time = 5.0
                                 else:
                                     exp_time = min_exposure
+                                    # snap the exposure time to a discrete grid
+                                    exp_time=min(sky_exposure_snap_to_grid, key=lambda x:abs(x-exp_time))
+                                    
                         elif in_wait_mode:
                             exp_time = target_flat/(collecting_area*pixel_area*sky_lux*float(new_throughput_value ))
+                            # snap the exposure time to a discrete grid
+                            exp_time=min(sky_exposure_snap_to_grid, key=lambda x:abs(x-exp_time))
+                            
                         else:
                             exp_time = scale * exp_time
+                            # snap the exposure time to a discrete grid
+                            exp_time=min(sky_exposure_snap_to_grid, key=lambda x:abs(x-exp_time))
+                            
 
                         if self.stop_script_called:
                             g_dev["obs"].send_to_user("Cancelling out of calibration script as stop script has been called.")
@@ -4395,9 +4413,15 @@ class Sequencer:
                                 self.time_of_next_slew = time.time() + 45
                              self.next_flat_observe = time.time() + 10
                              exp_time = min_exposure
+                             # snap the exposure time to a discrete grid
+                             exp_time=min(sky_exposure_snap_to_grid, key=lambda x:abs(x-exp_time))
+                             
                         else:
                             in_wait_mode=False
                             exp_time = round(exp_time, 5)
+                            # snap the exposure time to a discrete grid
+                            exp_time=min(sky_exposure_snap_to_grid, key=lambda x:abs(x-exp_time))
+                            
 
                             # If scope has gone to bed due to inactivity, wake it up!
                             if g_dev['mnt'].rapid_park_indicator:
