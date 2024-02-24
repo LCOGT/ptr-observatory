@@ -353,7 +353,89 @@ class Camera:
             self.darkFiles.update({'1': tempdarkframe})
             del tempdarkframe
         except:
-            plog("Dark frame for Binning 1 not available")
+            plog("Long Dark frame for Binning 1 not available")
+                 
+            
+        # try:
+        #     tempdarkframe = fits.open(self.local_calibration_path + "archive/" + self.alias + "/calibmasters" \
+        #                               + "/" + tempfrontcalib +  "DARK_master_bin1.fits")
+
+        #     tempdarkframe = np.array(tempdarkframe[0].data, dtype=np.float32)
+        #     self.darkFiles.update({'1': tempdarkframe})
+        #     del tempdarkframe
+        # except:
+        #     plog("Long Dark frame for Binning 1 not available")
+            
+    
+        try:
+            tempdarkframe = fits.open(self.local_calibration_path + "archive/" + self.alias + "/calibmasters" \
+                                      + "/" + tempfrontcalib +  "halfsecondDARK_master_bin1.fits")
+
+            tempdarkframe = np.array(tempdarkframe[0].data, dtype=np.float32)
+            self.darkFiles.update({'halfsec_exposure_dark': tempdarkframe})
+            del tempdarkframe
+        except:
+            plog("0.5s Dark frame for Binning 1 not available")
+            
+        try:
+            tempdarkframe = fits.open(self.local_calibration_path + "archive/" + self.alias + "/calibmasters" \
+                                      + "/" + tempfrontcalib +  "2secondDARK_master_bin1.fits")
+
+            tempdarkframe = np.array(tempdarkframe[0].data, dtype=np.float32)
+            self.darkFiles.update({'short_exposure_dark': tempdarkframe})
+            del tempdarkframe
+        except:
+            plog("2.0s Dark frame for Binning 1 not available")
+            
+        try:
+            tempdarkframe = fits.open(self.local_calibration_path + "archive/" + self.alias + "/calibmasters" \
+                                      + "/" + tempfrontcalib +  "10secondDARK_master_bin1.fits")
+
+            tempdarkframe = np.array(tempdarkframe[0].data, dtype=np.float32)
+            self.darkFiles.update({'tensec_exposure_dark': tempdarkframe})
+            del tempdarkframe
+        except:
+            plog("10.0s Dark frame for Binning 1 not available")
+            
+        try:
+            tempdarkframe = fits.open(self.local_calibration_path + "archive/" + self.alias + "/calibmasters" \
+                                      + "/" + tempfrontcalib +  "broadbandssDARK_master_bin1.fits")
+
+            tempdarkframe = np.array(tempdarkframe[0].data, dtype=np.float32)
+            self.darkFiles.update({'broadband_ss_dark': tempdarkframe})
+            del tempdarkframe
+        except:
+            plog("Broadband Smartstack Length Dark frame for Binning 1 not available")
+        
+        try:
+            tempdarkframe = fits.open(self.local_calibration_path + "archive/" + self.alias + "/calibmasters" \
+                                      + "/" + tempfrontcalib +  "broadbandssBIASDARK_master_bin1.fits")
+
+            tempdarkframe = np.array(tempdarkframe[0].data, dtype=np.float32)
+            self.darkFiles.update({'broadband_ss_biasdark': tempdarkframe})
+            del tempdarkframe
+        except:
+            plog("Broadband Smartstack Length Bias Dark frame for Binning 1 not available")
+        
+        try:
+            tempdarkframe = fits.open(self.local_calibration_path + "archive/" + self.alias + "/calibmasters" \
+                                      + "/" + tempfrontcalib +  "narrowbandssDARK_master_bin1.fits")
+
+            tempdarkframe = np.array(tempdarkframe[0].data, dtype=np.float32)
+            self.darkFiles.update({'narrowband_ss_dark': tempdarkframe})
+            del tempdarkframe
+        except:
+            plog("Narrowband Smartstack Length Dark frame for Binning 1 not available")
+        
+        try:
+            tempdarkframe = fits.open(self.local_calibration_path + "archive/" + self.alias + "/calibmasters" \
+                                      + "/" + tempfrontcalib +  "narrowbandssBIASDARK_master_bin1.fits")
+
+            tempdarkframe = np.array(tempdarkframe[0].data, dtype=np.float32)
+            self.darkFiles.update({'narrowband_ss_biasdark': tempdarkframe})
+            del tempdarkframe
+        except:
+            plog("Narrowband Smartstack Length Bias Dark frame for Binning 1 not available")
 
         try:
             # tempbpmframe = fits.open(self.local_calibration_path + "archive/" + self.alias + "/calibmasters" \
