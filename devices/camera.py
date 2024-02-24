@@ -354,8 +354,8 @@ class Camera:
             del tempdarkframe
         except:
             plog("Long Dark frame for Binning 1 not available")
-                 
-            
+
+
         # try:
         #     tempdarkframe = fits.open(self.local_calibration_path + "archive/" + self.alias + "/calibmasters" \
         #                               + "/" + tempfrontcalib +  "DARK_master_bin1.fits")
@@ -365,8 +365,8 @@ class Camera:
         #     del tempdarkframe
         # except:
         #     plog("Long Dark frame for Binning 1 not available")
-            
-    
+
+
         try:
             tempdarkframe = fits.open(self.local_calibration_path + "archive/" + self.alias + "/calibmasters" \
                                       + "/" + tempfrontcalib +  "halfsecondDARK_master_bin1.fits")
@@ -376,7 +376,7 @@ class Camera:
             del tempdarkframe
         except:
             plog("0.5s Dark frame for Binning 1 not available")
-            
+
         try:
             tempdarkframe = fits.open(self.local_calibration_path + "archive/" + self.alias + "/calibmasters" \
                                       + "/" + tempfrontcalib +  "2secondDARK_master_bin1.fits")
@@ -386,7 +386,7 @@ class Camera:
             del tempdarkframe
         except:
             plog("2.0s Dark frame for Binning 1 not available")
-            
+
         try:
             tempdarkframe = fits.open(self.local_calibration_path + "archive/" + self.alias + "/calibmasters" \
                                       + "/" + tempfrontcalib +  "10secondDARK_master_bin1.fits")
@@ -396,7 +396,7 @@ class Camera:
             del tempdarkframe
         except:
             plog("10.0s Dark frame for Binning 1 not available")
-            
+
         try:
             tempdarkframe = fits.open(self.local_calibration_path + "archive/" + self.alias + "/calibmasters" \
                                       + "/" + tempfrontcalib +  "broadbandssDARK_master_bin1.fits")
@@ -406,7 +406,7 @@ class Camera:
             del tempdarkframe
         except:
             plog("Broadband Smartstack Length Dark frame for Binning 1 not available")
-        
+
         try:
             tempdarkframe = fits.open(self.local_calibration_path + "archive/" + self.alias + "/calibmasters" \
                                       + "/" + tempfrontcalib +  "broadbandssBIASDARK_master_bin1.fits")
@@ -416,7 +416,7 @@ class Camera:
             del tempdarkframe
         except:
             plog("Broadband Smartstack Length Bias Dark frame for Binning 1 not available")
-        
+
         try:
             tempdarkframe = fits.open(self.local_calibration_path + "archive/" + self.alias + "/calibmasters" \
                                       + "/" + tempfrontcalib +  "narrowbandssDARK_master_bin1.fits")
@@ -426,7 +426,7 @@ class Camera:
             del tempdarkframe
         except:
             plog("Narrowband Smartstack Length Dark frame for Binning 1 not available")
-        
+
         try:
             tempdarkframe = fits.open(self.local_calibration_path + "archive/" + self.alias + "/calibmasters" \
                                       + "/" + tempfrontcalib +  "narrowbandssBIASDARK_master_bin1.fits")
@@ -3042,8 +3042,57 @@ class Camera:
                 if frame_type=='pointing' or focus_image == True:
                     # Make sure any dither or return nudge has finished before platesolution
                     try:
-                        outputimg = outputimg - g_dev['cam'].biasFiles[str(1)]
-                        outputimg = outputimg - (g_dev['cam'].darkFiles[str(1)] * exposure_time)
+                        broadband_ss_biasdark_exp_time = self.config['camera']['camera_1_1']['settings']['smart_stack_exposure_time']
+                        narrowband_ss_biasdark_exp_time = broadband_ss_biasdark_exp_time * self.config['camera']['camera_1_1']['settings']['smart_stack_exposure_NB_multiplier']
+                        dark_exp_time = self.config['camera']['camera_1_1']['settings']['dark_exposure']
+
+                        # If not a smartstack use a scaled masterdark
+                        if smartstackid == 'no':
+                            # Initially debias the image
+                            outputimg = outputimg - g_dev['cam'].biasFiles[str(1)]
+
+                            # Sort out an intermediate dark
+                            fraction_through_range=0
+                            if exposure_time < 0.5:
+                                outputimg=outputimg-(g_dev['cam'].darkFiles['halfsec_exposure_dark']*exposure_time)
+                            elif exposure_time < 2.0:
+                                fraction_through_range=(exposure_time-0.5)/(2.0-0.5)
+                                tempmasterDark=(fraction_through_range * g_dev['cam'].darkFiles['short_exposure_dark']) + ((1-fraction_through_range) * g_dev['cam'].darkFiles['halfsec_exposure_dark'])
+                                outputimg=outputimg-(tempmasterDark*exposure_time)
+                                del tempmasterDark
+                            elif exposure_time < 10.0:
+                                fraction_through_range=(exposure_time-2)/(10.0-2.0)
+                                tempmasterDark=(fraction_through_range * g_dev['cam'].darkFiles['tensec_exposure_dark']) + ((1-fraction_through_range) * g_dev['cam'].darkFiles['short_exposure_dark'])
+                                outputimg=outputimg-(tempmasterDark*exposure_time)
+                                del tempmasterDark
+                            elif exposure_time < broadband_ss_biasdark_exp_time:
+                                fraction_through_range=(exposure_time-10)/(broadband_ss_biasdark_exp_time-10.0)
+                                tempmasterDark=(fraction_through_range * g_dev['cam'].darkFiles['broadband_ss_dark']) + ((1-fraction_through_range) * g_dev['cam'].darkFiles['tensec_exposure_dark'])
+                                outputimg=outputimg-(tempmasterDark*exposure_time)
+                                del tempmasterDark
+                            elif exposure_time < narrowband_ss_biasdark_exp_time:
+                                fraction_through_range=(exposure_time-broadband_ss_biasdark_exp_time)/(narrowband_ss_biasdark_exp_time-broadband_ss_biasdark_exp_time)
+                                tempmasterDark=(fraction_through_range * g_dev['cam'].darkFiles['narrowband_ss_dark']) + ((1-fraction_through_range) * g_dev['cam'].darkFiles['broadband_ss_dark'])
+                                outputimg=outputimg-(tempmasterDark*exposure_time)
+                                del tempmasterDark
+                            elif dark_exp_time > narrowband_ss_biasdark_exp_time:
+                                fraction_through_range=(exposure_time-narrowband_ss_biasdark_exp_time)/(dark_exp_time -narrowband_ss_biasdark_exp_time)
+                                tempmasterDark=(fraction_through_range * g_dev['cam'].darkFiles[str(1)]) + ((1-fraction_through_range) * g_dev['cam'].darkFiles['narrowband_ss_dark'])
+                                outputimg=outputimg-(tempmasterDark*exposure_time)
+                                del tempmasterDark
+                            else:
+                                outputimg=outputimg-(g_dev['cam'].darkFiles['narrowband_ss_dark']*exposure_time)
+                        elif exposure_time == broadband_ss_biasdark_exp_time:
+                            outputimg = outputimg - (g_dev['cam'].darkFiles['broadband_ss_biasdark'])
+                            plog ("broadband biasdark success")
+                        elif exposure_time == narrowband_ss_biasdark_exp_time:
+                            outputimg = outputimg - (g_dev['cam'].darkFiles['narrowband_ss_biasdark'])
+                            plog ("narrowband biasdark success")
+
+                        else:
+                            plog ("DUNNO WHAT HAPPENED!")
+                            outputimg = outputimg - g_dev['cam'].biasFiles[str(1)]
+                            outputimg = outputimg - (g_dev['cam'].darkFiles[str(1)] * exposure_time)
 
                     except Exception as e:
                         plog("debias/darking light frame failed: ", e)
@@ -4482,13 +4531,59 @@ def post_exposure_process(payload):
         # Quick flash bias and dark frame
         selfnative_bin = selfconfig["camera"][selfname]["settings"]["native_bin"]
 
+        broadband_ss_biasdark_exp_time = selfconfig['camera']['camera_1_1']['settings']['smart_stack_exposure_time']
+        narrowband_ss_biasdark_exp_time = broadband_ss_biasdark_exp_time * selfconfig['camera']['camera_1_1']['settings']['smart_stack_exposure_NB_multiplier']
+        dark_exp_time = selfconfig['camera']['camera_1_1']['settings']['dark_exposure']
 
         if not manually_requested_calibration:
             try:
-                
-                breakpoint()
-                hdusmalldata = hdusmalldata - g_dev['cam'].biasFiles[str(1)]
-                hdusmalldata = hdusmalldata - (g_dev['cam'].darkFiles[str(1)] * exposure_time)
+                # If not a smartstack use a scaled masterdark
+                if smartstackid == 'no':
+                    # Initially debias the image
+                    hdusmalldata = hdusmalldata - g_dev['cam'].biasFiles[str(1)]
+
+                    # Sort out an intermediate dark
+                    fraction_through_range=0
+                    if exposure_time < 0.5:
+                        hdusmalldata=hdusmalldata-(g_dev['cam'].darkFiles['halfsec_exposure_dark']*exposure_time)
+                    elif exposure_time < 2.0:
+                        fraction_through_range=(exposure_time-0.5)/(2.0-0.5)
+                        tempmasterDark=(fraction_through_range * g_dev['cam'].darkFiles['short_exposure_dark']) + ((1-fraction_through_range) * g_dev['cam'].darkFiles['halfsec_exposure_dark'])
+                        hdusmalldata=hdusmalldata-(tempmasterDark*exposure_time)
+                        del tempmasterDark
+                    elif exposure_time < 10.0:
+                        fraction_through_range=(exposure_time-2)/(10.0-2.0)
+                        tempmasterDark=(fraction_through_range * g_dev['cam'].darkFiles['tensec_exposure_dark']) + ((1-fraction_through_range) * g_dev['cam'].darkFiles['short_exposure_dark'])
+                        hdusmalldata=hdusmalldata-(tempmasterDark*exposure_time)
+                        del tempmasterDark
+                    elif exposure_time < broadband_ss_biasdark_exp_time:
+                        fraction_through_range=(exposure_time-10)/(broadband_ss_biasdark_exp_time-10.0)
+                        tempmasterDark=(fraction_through_range * g_dev['cam'].darkFiles['broadband_ss_dark']) + ((1-fraction_through_range) * g_dev['cam'].darkFiles['tensec_exposure_dark'])
+                        hdusmalldata=hdusmalldata-(tempmasterDark*exposure_time)
+                        del tempmasterDark
+                    elif exposure_time < narrowband_ss_biasdark_exp_time:
+                        fraction_through_range=(exposure_time-broadband_ss_biasdark_exp_time)/(narrowband_ss_biasdark_exp_time-broadband_ss_biasdark_exp_time)
+                        tempmasterDark=(fraction_through_range * g_dev['cam'].darkFiles['narrowband_ss_dark']) + ((1-fraction_through_range) * g_dev['cam'].darkFiles['broadband_ss_dark'])
+                        hdusmalldata=hdusmalldata-(tempmasterDark*exposure_time)
+                        del tempmasterDark
+                    elif dark_exp_time > narrowband_ss_biasdark_exp_time:
+                        fraction_through_range=(exposure_time-narrowband_ss_biasdark_exp_time)/(dark_exp_time -narrowband_ss_biasdark_exp_time)
+                        tempmasterDark=(fraction_through_range * g_dev['cam'].darkFiles[str(1)]) + ((1-fraction_through_range) * g_dev['cam'].darkFiles['narrowband_ss_dark'])
+                        hdusmalldata=hdusmalldata-(tempmasterDark*exposure_time)
+                        del tempmasterDark
+                    else:
+                        hdusmalldata=hdusmalldata-(g_dev['cam'].darkFiles['narrowband_ss_dark']*exposure_time)
+                elif exposure_time == broadband_ss_biasdark_exp_time:
+                    hdusmalldata = hdusmalldata - (g_dev['cam'].darkFiles['broadband_ss_biasdark'])
+                    plog ("broadband biasdark success")
+                elif exposure_time == narrowband_ss_biasdark_exp_time:
+                    hdusmalldata = hdusmalldata - (g_dev['cam'].darkFiles['narrowband_ss_biasdark'])
+                    plog ("narrowband biasdark success")
+
+                else:
+                    plog ("DUNNO WHAT HAPPENED!")
+                    hdusmalldata = hdusmalldata - g_dev['cam'].biasFiles[str(1)]
+                    hdusmalldata = hdusmalldata - (g_dev['cam'].darkFiles[str(1)] * exposure_time)
 
             except Exception as e:
                 plog("debias/darking light frame failed: ", e)
