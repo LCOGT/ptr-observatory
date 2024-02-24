@@ -3063,7 +3063,7 @@ class Camera:
                         broadband_ss_biasdark_exp_time = self.config['camera']['camera_1_1']['settings']['smart_stack_exposure_time']
                         narrowband_ss_biasdark_exp_time = broadband_ss_biasdark_exp_time * self.config['camera']['camera_1_1']['settings']['smart_stack_exposure_NB_multiplier']
                         dark_exp_time = self.config['camera']['camera_1_1']['settings']['dark_exposure']
-
+                        timetakenquickdark=time.time()
                         # If not a smartstack use a scaled masterdark
                         if smartstackid == 'no':
                             # Initially debias the image
@@ -3111,7 +3111,8 @@ class Camera:
                             plog ("DUNNO WHAT HAPPENED!")
                             outputimg = outputimg - g_dev['cam'].biasFiles[str(1)]
                             outputimg = outputimg - (g_dev['cam'].darkFiles[str(1)] * exposure_time)
-
+                        plog ("time taken quickdark")
+                        plog (str(time.time() - timetakenquickdark))
                     except Exception as e:
                         plog("debias/darking light frame failed: ", e)
 
@@ -4556,6 +4557,7 @@ def post_exposure_process(payload):
         if not manually_requested_calibration:
             try:
                 # If not a smartstack use a scaled masterdark
+                timetakenquickdark=time.time()
                 if smartstackid == 'no':
                     # Initially debias the image
                     hdusmalldata = hdusmalldata - g_dev['cam'].biasFiles[str(1)]
@@ -4602,7 +4604,8 @@ def post_exposure_process(payload):
                     plog ("DUNNO WHAT HAPPENED!")
                     hdusmalldata = hdusmalldata - g_dev['cam'].biasFiles[str(1)]
                     hdusmalldata = hdusmalldata - (g_dev['cam'].darkFiles[str(1)] * exposure_time)
-
+                plog ("time taken quickdark")
+                plog (str(time.time() - timetakenquickdark))
             except Exception as e:
                 plog("debias/darking light frame failed: ", e)
 
