@@ -2297,9 +2297,9 @@ class Mount:
                 self.rapid_park_indicator=True
 
                 self.wait_for_slew()
-            if self.settle_time_after_park > 0:
-                time.sleep(self.settle_time_after_park)
-                plog("Waiting " + str(self.settle_time_after_park) + " seconds for mount to settle.")
+                if self.settle_time_after_park > 0:
+                    time.sleep(self.settle_time_after_park)
+                    plog("Waiting " + str(self.settle_time_after_park) + " seconds for mount to settle.")
             try:
                 g_dev['fil'].current_filter, _, _ = g_dev["fil"].set_name_command(
                     {"filter": 'dark'}, {}

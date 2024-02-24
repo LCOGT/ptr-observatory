@@ -214,7 +214,7 @@ class Observatory:
 
         self.calib_masters_folder = self.local_calibration_path + "archive/" + camera_name + "/calibmasters" + '/'
         self.local_dark_folder = self.local_calibration_path + "archive/" + camera_name + "/localcalibrations/darks" + '/'
-        
+
         self.local_bias_folder = self.local_calibration_path + "archive/" + camera_name + "/localcalibrations/biases" + '/'
         self.local_flat_folder = self.local_calibration_path + "archive/" + camera_name + "/localcalibrations/flats" + '/'
 
@@ -2991,10 +2991,10 @@ class Observatory:
                                     n_files = len(list_of_files)
                                     oldest_file = min(list_of_files, key=os.path.getctime)
                                     os.remove(oldest_file)
-                                    
+
                             elif slow_process[4] == 'broadband_ss_biasdark':
                                 tempexposure = temphduheader['EXPTIME']
-                                tempfilename = self.local_dark_folder + 'broadbanddarks' + \
+                                tempfilename = self.local_dark_folder + 'broadbanddarks/' + \
                                     slow_process[1].replace('.fits', '_' + str(tempexposure) + '_.npy')
                                 max_files = self.config['camera']['camera_1_1']['settings']['number_of_dark_to_store']
                                 n_files = len(glob.glob(self.local_dark_folder + 'broadbanddarks'+  '*.n*'))
@@ -3003,10 +3003,10 @@ class Observatory:
                                     n_files = len(list_of_files)
                                     oldest_file = min(list_of_files, key=os.path.getctime)
                                     os.remove(oldest_file)
-                            
+
                             elif slow_process[4] == 'narrowband_ss_biasdark':
                                 tempexposure = temphduheader['EXPTIME']
-                                tempfilename = self.local_dark_folder + 'narrowbanddarks' + \
+                                tempfilename = self.local_dark_folder + 'narrowbanddarks/' + \
                                     slow_process[1].replace('.fits', '_' + str(tempexposure) + '_.npy')
                                 max_files = self.config['camera']['camera_1_1']['settings']['number_of_dark_to_store']
                                 n_files = len(glob.glob(self.local_dark_folder  + 'narrowbanddarks'+ '*.n*'))
@@ -3015,10 +3015,10 @@ class Observatory:
                                     n_files = len(list_of_files)
                                     oldest_file = min(list_of_files, key=os.path.getctime)
                                     os.remove(oldest_file)
-                            
+
                             elif slow_process[4] == 'short_exposure_dark':
                                 tempexposure = temphduheader['EXPTIME']
-                                tempfilename = self.local_dark_folder + 'shortdarks' + \
+                                tempfilename = self.local_dark_folder + 'shortdarks/' + \
                                     slow_process[1].replace('.fits', '_' + str(tempexposure) + '_.npy')
                                 max_files = self.config['camera']['camera_1_1']['settings']['number_of_dark_to_store']
                                 n_files = len(glob.glob(self.local_dark_folder + 'shortdarks'+ '*.n*'))
