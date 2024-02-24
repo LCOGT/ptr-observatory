@@ -1601,7 +1601,7 @@ class Camera:
             "bias",
             "dark",
             'broadband_ss_biasdark',
-            'narrowband_ss_biasdark','short_exposure_dark',
+            'narrowband_ss_biasdark','short_exposure_dark','tensec_exposure_dark',
             "screen flat",
             "sky flat",
             "near flat",
@@ -1672,7 +1672,7 @@ class Camera:
             bias_dark_or_light_type_frame = 'bias'  # don't open the shutter.
             frame_type = imtype.replace(" ", "")
 
-        elif imtype.lower() in ("dark", "lamp flat", 'broadband_ss_biasdark', 'narrowband_ss_biasdark','short_exposure_dark'):
+        elif imtype.lower() in ("dark", "lamp flat", 'broadband_ss_biasdark', 'narrowband_ss_biasdark','short_exposure_dark','tensec_exposure_dark'):
 
             bias_dark_or_light_type_frame = 'dark'  # don't open the shutter.
             lamps = "turn on led+tungsten lamps here, if lampflat"
@@ -1744,7 +1744,7 @@ class Camera:
             if g_dev["fil"].null_filterwheel == False:
                 if imtype in ['bias','dark'
                 'broadband_ss_biasdark',
-                'narrowband_ss_biasdark','short_exposure_dark']:
+                'narrowband_ss_biasdark','short_exposure_dark','tensec_exposure_dark']:
                     requested_filter_name = 'dark'
                 elif imtype in ['pointing'] and self.config["camera"][self.name]["settings"]['is_osc']:
                     requested_filter_name = 'lum'
@@ -1810,7 +1810,7 @@ class Camera:
                 while g_dev['rot'].rotator.IsMoving:
                         if rot_report == 0 and imtype not in ['bias', 'dark',
                         'broadband_ss_biasdark',
-                        'narrowband_ss_biasdark','short_exposure_dark']:
+                        'narrowband_ss_biasdark','short_exposure_dark','tensec_exposure_dark']:
                             plog("Waiting for camera rotator to catch up. ")
                             g_dev["obs"].send_to_user("Waiting for camera rotator to catch up before exposing.")
 
@@ -2022,7 +2022,7 @@ class Camera:
                     # # Check that the roof hasn't shut
                     # g_dev['obs'].get_enclosure_status_from_aws()
 
-                    if not g_dev['obs'].assume_roof_open and not g_dev['obs'].scope_in_manual_mode and 'Closed' in g_dev['obs'].enc_status['shutter_status'] and imtype not in ['bias', 'dark','broadband_ss_biasdark','narrowband_ss_biasdark','short_exposure_dark']:
+                    if not g_dev['obs'].assume_roof_open and not g_dev['obs'].scope_in_manual_mode and 'Closed' in g_dev['obs'].enc_status['shutter_status'] and imtype not in ['bias', 'dark','broadband_ss_biasdark','narrowband_ss_biasdark','short_exposure_dark','tensec_exposure_dark']:
 
                         plog("Roof shut, exposures cancelled.")
                         g_dev["obs"].send_to_user("Roof shut, exposures cancelled.")
@@ -2281,7 +2281,7 @@ class Camera:
                         self.retry_camera = 0
                         #self.currently_in_smartstack_loop=False
                         print ("EXPRESULT: " + str(expresult))
-                        if not frame_type[-4:] == "flat" and not frame_type.lower() in ['broadband_ss_biasdark','narrowband_ss_biasdark','short_exposure_dark', "bias", "dark"] and not frame_type.lower()=='focus' and not frame_type=='pointing':
+                        if not frame_type[-4:] == "flat" and not frame_type.lower() in ['broadband_ss_biasdark','narrowband_ss_biasdark','short_exposure_dark','tensec_exposure_dark', "bias", "dark"] and not frame_type.lower()=='focus' and not frame_type=='pointing':
                             try:
                                 real_time_files.append(str(expresult["real_time_filename"]))
                                 print ("REAL TIME FILES LIST: " + str(real_time_files))
@@ -2441,7 +2441,7 @@ class Camera:
             "dark",
             "bias",
             'broadband_ss_biasdark',
-            'narrowband_ss_biasdark','short_exposure_dark'
+            'narrowband_ss_biasdark','short_exposure_dark','tensec_exposure_dark'
         ):
             g_dev["obs"].send_to_user(
                 "Starting "
@@ -2740,7 +2740,7 @@ class Camera:
                     g_dev['obs'].check_platesolve_and_nudge()
 
 
-                if (frame_type in ['broadband_ss_biasdark','narrowband_ss_biasdark','short_exposure_dark',"bias", "dark"] or frame_type[-4:] == ['flat']) and not manually_requested_calibration:
+                if (frame_type in ['broadband_ss_biasdark','narrowband_ss_biasdark','short_exposure_dark','tensec_exposure_dark',"bias", "dark"] or frame_type[-4:] == ['flat']) and not manually_requested_calibration:
                     plog("Median of full-image area bias, dark or flat:  ", np.median(outputimg))
 
                     # Check that the temperature is ok before accepting
@@ -2760,7 +2760,7 @@ class Camera:
 
                     # For a dark, check that the debiased dark has an adequately low value
                     # If there is no master bias, it will just skip this check
-                    if frame_type in ["dark",'broadband_ss_biasdark','narrowband_ss_biasdark','short_exposure_dark']:
+                    if frame_type in ["dark",'broadband_ss_biasdark','narrowband_ss_biasdark','short_exposure_dark','tensec_exposure_dark']:
                         #try:
                         dark_limit_adu =   self.config["camera"][self.name]["settings"]['dark_lim_adu']
                         if len(self.biasFiles) > 0:
@@ -2827,7 +2827,7 @@ class Camera:
                     object_specf = "no"
 
                 # If NOT an expose image going into the post-process thread, rotate the fits here.
-                if not(not frame_type[-4:] == "flat" and not frame_type in ['broadband_ss_biasdark','narrowband_ss_biasdark','short_exposure_dark',"bias", "dark"] and not focus_image and not frame_type=='pointing'):
+                if not(not frame_type[-4:] == "flat" and not frame_type in ['broadband_ss_biasdark','narrowband_ss_biasdark','short_exposure_dark','tensec_exposure_dark',"bias", "dark"] and not focus_image and not frame_type=='pointing'):
                     # Flip flat fits around to correct orientation
                     if self.config["camera"][self.name]["settings"]["transpose_fits"]:
                         outputimg=outputimg.transpose().astype('float32')
@@ -2850,7 +2850,7 @@ class Camera:
                         outputimg=outputimg.astype('float32')
 
                 # Specific dark and bias save area
-                if frame_type in ['broadband_ss_biasdark','narrowband_ss_biasdark','short_exposure_dark',"bias", "dark"] and not manually_requested_calibration:
+                if frame_type in ['broadband_ss_biasdark','narrowband_ss_biasdark','short_exposure_dark','tensec_exposure_dark',"bias", "dark"] and not manually_requested_calibration:
                     # Save good flat
                     im_path_r = self.camera_path
                     raw_path = im_path_r + g_dev["day"] + "/raw/"
@@ -2948,7 +2948,7 @@ class Camera:
 
 
                #if not frame_type[-4:] == "flat" and (not frame_type in ["bias", "dark"] or (frame_type in ["bias", "dark"] and manually_requested_calibration)) and not focus_image == True and not frame_type=='pointing':
-                if not frame_type[-4:] == "flat" and not frame_type in ['broadband_ss_biasdark','narrowband_ss_biasdark','short_exposure_dark',"bias", "dark"] and not focus_image and not frame_type=='pointing':
+                if not frame_type[-4:] == "flat" and not frame_type in ['broadband_ss_biasdark','narrowband_ss_biasdark','short_exposure_dark','tensec_exposure_dark',"bias", "dark"] and not focus_image and not frame_type=='pointing':
                     focus_position=g_dev['foc'].current_focus_position
 
                     self.post_processing_queue.put(copy.deepcopy((outputimg, g_dev["mnt"].pier_side, self.config["camera"][self.name]["settings"]['is_osc'], frame_type, self.config['camera']['camera_1_1']['settings']['reject_new_flat_by_known_gain'], avg_mnt, avg_foc, avg_rot, self.setpoint, self.tempccdtemp, self.ccd_humidity, self.ccd_pressure, self.darkslide_state, exposure_time, this_exposure_filter, exposure_filter_offset, self.pane,opt , observer_user_name, self.hint, azimuth_of_observation, altitude_of_observation, airmass_of_observation, self.pixscale, smartstackid,sskcounter,Nsmartstack, longstackid, ra_at_time_of_exposure, dec_at_time_of_exposure, manually_requested_calibration, object_name, object_specf, g_dev["mnt"].ha_corr, g_dev["mnt"].dec_corr, focus_position, self.config, self.name, self.camera_known_gain, self.camera_known_readnoise, start_time_of_observation, observer_user_id, self.camera_path,  solve_it, next_seq, zoom_factor, useastrometrynet)), block=False)
@@ -3549,7 +3549,7 @@ class Camera:
                 expresult["error"] = False
                 # filename same as raw_filename00 in post_exposure process
 
-                if not frame_type[-4:] == "flat" and not frame_type in ['broadband_ss_biasdark','narrowband_ss_biasdark','short_exposure_dark',"bias", "dark"] and not focus_image and not frame_type=='pointing':
+                if not frame_type[-4:] == "flat" and not frame_type in ['broadband_ss_biasdark','narrowband_ss_biasdark','short_exposure_dark','tensec_exposure_dark',"bias", "dark"] and not focus_image and not frame_type=='pointing':
                     try:
                         im_type = "EX"
                         expresult["real_time_filename"] =  self.config["obs_id"]+ "-"+ self.alias + '_' + str(frame_type) + '_' + str(this_exposure_filter)+ "-"+ g_dev["day"]+ "-"+ next_seq+ "-"+ im_type+ "00.fits"

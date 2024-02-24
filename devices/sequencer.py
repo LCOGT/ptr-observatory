@@ -1543,7 +1543,7 @@ class Sequencer:
             b_d_to_do = bias_count + dark_count
             try:
                 stride = bias_count//dark_count
-                plog("Tobor will interleave a dark every  " + str(stride) + "  biases.")
+                plog("Tobor will interleave a long exposure dark every  " + str(stride) + "  biasdarks, short darks and biases.")
                 single_dark = True
             except:
                 stride = bias_count   #Just do all of the biases first.
@@ -1623,6 +1623,27 @@ class Sequencer:
                 # COLLECTING A SHORT EXPOSURE DARK FRAME
                 plog("Expose " + str(stride) +" 1x1 short exposure dark frames.")
                 req = {'time': 2,  'script': 'True', 'image_type': 'short_exposure_dark'}
+                opt = {'count': min_to_do,  \
+                       'filter': 'dark'}
+
+                # Check it is in the park position and not pointing at the sky.
+                # It can be pointing at the sky if cool down open is triggered during the biasdark process
+                g_dev['mnt'].park_command({}, {})
+                g_dev['cam'].expose_command(req, opt, user_id='Tobor', user_name='Tobor', user_roles='system', no_AWS=False, \
+                                do_sep=False, quick=False, skip_open_check=True,skip_daytime_check=True)                
+
+                if self.stop_script_called:
+                    g_dev["obs"].send_to_user("Cancelling out of calibration script as stop script has been called.")
+                    self.bias_dark_latch = False
+                    return
+                if ephem.now() + (dark_exp_time + cycle_time + 30)/86400 > ending:
+                    self.bias_dark_latch = False
+                    break
+                g_dev['obs'].request_scan_requests()
+                
+                # COLLECTING A TEN SECOND EXPOSURE DARK FRAME
+                plog("Expose " + str(stride) +" 1x1 ten second exposure dark frames.")
+                req = {'time': 10,  'script': 'True', 'image_type': 'tensec_exposure_dark'}
                 opt = {'count': min_to_do,  \
                        'filter': 'dark'}
 
