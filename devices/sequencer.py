@@ -3149,6 +3149,11 @@ class Sequencer:
 
             flat_gains={}
 
+            broadband_ss_biasdark_exp_time = self.config['camera']['camera_1_1']['settings']['smart_stack_exposure_time']
+            narrowband_ss_biasdark_exp_time = broadband_ss_biasdark_exp_time * self.config['camera']['camera_1_1']['settings']['smart_stack_exposure_NB_multiplier']
+            dark_exp_time = self.config['camera']['camera_1_1']['settings']['dark_exposure']
+            
+
             if len(tempfilters) == 0:
                 plog ("there are no filter directories, so not processing flats")
             else:
@@ -3168,9 +3173,6 @@ class Sequencer:
                             inputList.remove(file)
 
                     # Generate temp memmap
-                    broadband_ss_biasdark_exp_time = self.config['camera']['camera_1_1']['settings']['smart_stack_exposure_time']
-                    narrowband_ss_biasdark_exp_time = broadband_ss_biasdark_exp_time * self.config['camera']['camera_1_1']['settings']['smart_stack_exposure_NB_multiplier']
-
                     single_filter_camera_gains=[]
                     if len(inputList) == 0 or len(inputList) == 1:
                         plog ("Not doing " + str(filtercode) + " flat. Not enough available files in directory.")
@@ -3186,14 +3188,57 @@ class Sequencer:
                             hdu1data = np.load(file, mmap_mode='r')
                             hdu1exp=float(file.split('_')[-2])
             
-                            if hdu1exp < 6:
-                                flatdebiaseddedarked=(hdu1data-masterBias)-(twosecond_masterDark*hdu1exp)                            
-                            elif hdu1exp < (10 + broadband_ss_biasdark_exp_time)/2:
-                                flatdebiaseddedarked=(hdu1data-masterBias)-(tensecond_masterDark*hdu1exp)
-                            elif hdu1exp < (broadband_ss_biasdark_exp_time + narrowband_ss_biasdark_exp_time)/2:                                
-                                flatdebiaseddedarked=(hdu1data-masterBias)-(broadbandss_masterDark*hdu1exp)
-                            else:
-                                flatdebiaseddedarked=(hdu1data-masterBias)-(narrowbandss_masterDark*hdu1exp)        
+            
+                            #breakpoint()
+                            
+                                       
+                            print ("EXP")
+                            print (hdu1exp)
+                            fraction_through_range=0
+                            
+                            if hdu1exp < 0.5:
+                                flatdebiaseddedarked=(hdu1data-masterBias)-(halfsecond_masterDark*hdu1exp)
+                            elif hdu1exp < 2.0:
+                                fraction_through_range=(hdu1exp-0.5)/(2.0-0.5)
+                                tempmasterDark=(fraction_through_range * twosecond_masterDark) + ((1-fraction_through_range) * halfsecond_masterDark)
+                                flatdebiaseddedarked=(hdu1data-masterBias)-(tempmasterDark*hdu1exp)
+                                del tempmasterDark
+                            elif hdu1exp < 10.0:
+                                fraction_through_range=(hdu1exp-2)/(10.0-2.0)
+                                tempmasterDark=(fraction_through_range * tensecond_masterDark) + ((1-fraction_through_range) * twosecond_masterDark)
+                                flatdebiaseddedarked=(hdu1data-masterBias)-(tempmasterDark*hdu1exp)
+                                del tempmasterDark
+                            elif hdu1exp < broadband_ss_biasdark_exp_time:
+                                fraction_through_range=(hdu1exp-10)/(broadband_ss_biasdark_exp_time-10.0)
+                                tempmasterDark=(fraction_through_range * broadbandss_masterDark) + ((1-fraction_through_range) * tensecond_masterDark)
+                                flatdebiaseddedarked=(hdu1data-masterBias)-(tempmasterDark*hdu1exp)
+                                del tempmasterDark
+                            elif hdu1exp < narrowband_ss_biasdark_exp_time:
+                                fraction_through_range=(hdu1exp-broadband_ss_biasdark_exp_time)/(narrowband_ss_biasdark_exp_time-broadband_ss_biasdark_exp_time)
+                                tempmasterDark=(fraction_through_range * narrowbandss_masterDark) + ((1-fraction_through_range) * broadband_ss_biasdark_exp_time)
+                                flatdebiaseddedarked=(hdu1data-masterBias)-(tempmasterDark*hdu1exp)
+                                del tempmasterDark
+                            elif dark_exp_time > narrowband_ss_biasdark_exp_time:
+                                fraction_through_range=(hdu1exp-narrowband_ss_biasdark_exp_time)/(dark_exp_time -narrowband_ss_biasdark_exp_time)
+                                tempmasterDark=(fraction_through_range * masterDark) + ((1-fraction_through_range) * narrowband_ss_biasdark_exp_time)
+                                flatdebiaseddedarked=(hdu1data-masterBias)-(tempmasterDark*hdu1exp)
+                                del tempmasterDark
+                            else:                                
+                                flatdebiaseddedarked=(hdu1data-masterBias)-(narrowbandss_masterDark*hdu1exp)
+                
+                            print ("Fraction through range")
+                            print (fraction_through_range)
+            
+            
+            
+                            # if hdu1exp < 6:
+                            #     flatdebiaseddedarked=(hdu1data-masterBias)-(twosecond_masterDark*hdu1exp)                            
+                            # elif hdu1exp < (10 + broadband_ss_biasdark_exp_time)/2:
+                            #     flatdebiaseddedarked=(hdu1data-masterBias)-(tensecond_masterDark*hdu1exp)
+                            # elif hdu1exp < (broadband_ss_biasdark_exp_time + narrowband_ss_biasdark_exp_time)/2:                                
+                            #     flatdebiaseddedarked=(hdu1data-masterBias)-(broadbandss_masterDark*hdu1exp)
+                            # else:
+                            #     flatdebiaseddedarked=(hdu1data-masterBias)-(narrowbandss_masterDark*hdu1exp)        
                                 
                             # Use a linearly interpolated masterdark frame
                             
