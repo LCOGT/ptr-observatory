@@ -1524,10 +1524,10 @@ class Sequencer:
             dark_count = self.config['camera']['camera_1_1']['settings']['number_of_dark_to_collect']
             dark_exp_time = self.config['camera']['camera_1_1']['settings']['dark_exposure']
             cycle_time = self.config['camera']['camera_1_1']['settings']['cycle_time']
-            
-            # For 95% of our exposures we can collect biasdarks... so we don't have to 
+
+            # For 95% of our exposures we can collect biasdarks... so we don't have to
             # scale the darks with a master bias for our most common exposures
-            # Non-scaled darks with the bias still contained IS better, 
+            # Non-scaled darks with the bias still contained IS better,
             # Just uncommon for observatories where there is all sorts of different exposure times.
             # But for PTR, we have some very frequent used exposure times, so this is a worthwhile endeavour.
             broadband_ss_biasdark_exp_time = self.config['camera']['camera_1_1']['settings']['smart_stack_exposure_time']
@@ -1554,8 +1554,8 @@ class Sequencer:
                 g_dev['obs'].request_scan_requests()
                 min_to_do = min(b_d_to_do, stride)
                 b_d_to_do -= min_to_do
-                
-                
+
+
                 # COLLECTING A BIAS FRAME
                 plog("Expose " + str(stride) +" 1x1 bias frames.")
                 req = {'time': 0.0,  'script': 'True', 'image_type': 'bias'}
@@ -1566,7 +1566,7 @@ class Sequencer:
                 # It can be pointing at the sky if cool down open is triggered during the biasdark process
                 g_dev['mnt'].park_command({}, {})
                 g_dev['cam'].expose_command(req, opt, user_id='Tobor', user_name='Tobor', user_roles='system', no_AWS=False, \
-                                do_sep=False, quick=False, skip_open_check=True,skip_daytime_check=True)                
+                                do_sep=False, quick=False, skip_open_check=True,skip_daytime_check=True)
 
                 if self.stop_script_called:
                     g_dev["obs"].send_to_user("Cancelling out of calibration script as stop script has been called.")
@@ -1576,7 +1576,7 @@ class Sequencer:
                     self.bias_dark_latch = False
                     break
                 g_dev['obs'].request_scan_requests()
-                
+
                 # COLLECTING A BROADBAND SMARTSTACK BIASDARK FRAME
                 plog("Expose " + str(stride) +" 1x1 broadband smstack biasdark frames.")
                 req = {'time': broadband_ss_biasdark_exp_time,  'script': 'True', 'image_type': 'broadband_ss_biasdark'}
@@ -1587,7 +1587,7 @@ class Sequencer:
                 # It can be pointing at the sky if cool down open is triggered during the biasdark process
                 g_dev['mnt'].park_command({}, {})
                 g_dev['cam'].expose_command(req, opt, user_id='Tobor', user_name='Tobor', user_roles='system', no_AWS=False, \
-                                do_sep=False, quick=False, skip_open_check=True,skip_daytime_check=True)                
+                                do_sep=False, quick=False, skip_open_check=True,skip_daytime_check=True)
 
                 if self.stop_script_called:
                     g_dev["obs"].send_to_user("Cancelling out of calibration script as stop script has been called.")
@@ -1597,19 +1597,19 @@ class Sequencer:
                     self.bias_dark_latch = False
                     break
                 g_dev['obs'].request_scan_requests()
-                
-                
+
+
                 # COLLECTING A Half Second EXPOSURE DARK FRAME
-                plog("Expose " + str(stride) +" 1x1 half-second exposure dark frames.")
+                plog("Expose " + str(5*stride) +" 1x1 half-second exposure dark frames.")
                 req = {'time': 0.5,  'script': 'True', 'image_type': 'halfsec_exposure_dark'}
-                opt = {'count': min_to_do,  \
+                opt = {'count': 5* min_to_do,  \
                        'filter': 'dark'}
 
                 # Check it is in the park position and not pointing at the sky.
                 # It can be pointing at the sky if cool down open is triggered during the biasdark process
                 g_dev['mnt'].park_command({}, {})
                 g_dev['cam'].expose_command(req, opt, user_id='Tobor', user_name='Tobor', user_roles='system', no_AWS=False, \
-                                do_sep=False, quick=False, skip_open_check=True,skip_daytime_check=True)                
+                                do_sep=False, quick=False, skip_open_check=True,skip_daytime_check=True)
 
                 if self.stop_script_called:
                     g_dev["obs"].send_to_user("Cancelling out of calibration script as stop script has been called.")
@@ -1619,7 +1619,7 @@ class Sequencer:
                     self.bias_dark_latch = False
                     break
                 g_dev['obs'].request_scan_requests()
-                
+
                 # COLLECTING A NARROWBAND SMARTSTACK BIASDARK FRAME
                 plog("Expose " + str(stride) +" 1x1 narrowband smstack biasdark frames.")
                 req = {'time': narrowband_ss_biasdark_exp_time,  'script': 'True', 'image_type': 'narrowband_ss_biasdark'}
@@ -1630,7 +1630,7 @@ class Sequencer:
                 # It can be pointing at the sky if cool down open is triggered during the biasdark process
                 g_dev['mnt'].park_command({}, {})
                 g_dev['cam'].expose_command(req, opt, user_id='Tobor', user_name='Tobor', user_roles='system', no_AWS=False, \
-                                do_sep=False, quick=False, skip_open_check=True,skip_daytime_check=True)                
+                                do_sep=False, quick=False, skip_open_check=True,skip_daytime_check=True)
 
                 if self.stop_script_called:
                     g_dev["obs"].send_to_user("Cancelling out of calibration script as stop script has been called.")
@@ -1640,19 +1640,19 @@ class Sequencer:
                     self.bias_dark_latch = False
                     break
                 g_dev['obs'].request_scan_requests()
-                
-                
+
+
                 # COLLECTING A SHORT EXPOSURE DARK FRAME
-                plog("Expose " + str(stride) +" 1x1 short exposure dark frames.")
+                plog("Expose " + str(5*stride) +" 1x1 short exposure dark frames.")
                 req = {'time': 2,  'script': 'True', 'image_type': 'short_exposure_dark'}
-                opt = {'count': min_to_do,  \
+                opt = {'count': 5*min_to_do,  \
                        'filter': 'dark'}
 
                 # Check it is in the park position and not pointing at the sky.
                 # It can be pointing at the sky if cool down open is triggered during the biasdark process
                 g_dev['mnt'].park_command({}, {})
                 g_dev['cam'].expose_command(req, opt, user_id='Tobor', user_name='Tobor', user_roles='system', no_AWS=False, \
-                                do_sep=False, quick=False, skip_open_check=True,skip_daytime_check=True)                
+                                do_sep=False, quick=False, skip_open_check=True,skip_daytime_check=True)
 
                 if self.stop_script_called:
                     g_dev["obs"].send_to_user("Cancelling out of calibration script as stop script has been called.")
@@ -1662,18 +1662,18 @@ class Sequencer:
                     self.bias_dark_latch = False
                     break
                 g_dev['obs'].request_scan_requests()
-                
+
                 # COLLECTING A TEN SECOND EXPOSURE DARK FRAME
-                plog("Expose " + str(stride) +" 1x1 ten second exposure dark frames.")
+                plog("Expose " + str(2*stride) +" 1x1 ten second exposure dark frames.")
                 req = {'time': 10,  'script': 'True', 'image_type': 'tensec_exposure_dark'}
-                opt = {'count': min_to_do,  \
+                opt = {'count': 2*min_to_do,  \
                        'filter': 'dark'}
 
                 # Check it is in the park position and not pointing at the sky.
                 # It can be pointing at the sky if cool down open is triggered during the biasdark process
                 g_dev['mnt'].park_command({}, {})
                 g_dev['cam'].expose_command(req, opt, user_id='Tobor', user_name='Tobor', user_roles='system', no_AWS=False, \
-                                do_sep=False, quick=False, skip_open_check=True,skip_daytime_check=True)                
+                                do_sep=False, quick=False, skip_open_check=True,skip_daytime_check=True)
 
                 if self.stop_script_called:
                     g_dev["obs"].send_to_user("Cancelling out of calibration script as stop script has been called.")
@@ -2126,29 +2126,29 @@ class Sequencer:
             os.remove(g_dev['obs'].calib_masters_folder + tempfrontcalib + '2secondDARK_master_bin1.fits')
         except:
             plog ("Could not remove " + str(g_dev['obs'].calib_masters_folder + tempfrontcalib + '2secondDARK_master_bin1.fits'))
-        
+
         try:
             os.remove(g_dev['obs'].calib_masters_folder + tempfrontcalib + '10secondDARK_master_bin1.fits')
         except:
             plog ("Could not remove " + str(g_dev['obs'].calib_masters_folder + tempfrontcalib + '10secondDARK_master_bin1.fits'))
-            
-        
-            
+
+
+
         try:
             os.remove(g_dev['obs'].calib_masters_folder + tempfrontcalib + 'broadbandssDARK_master_bin1.fits')
         except:
             plog ("Could not remove " + str(g_dev['obs'].calib_masters_folder + tempfrontcalib + 'broadbandssDARK_master_bin1.fits'))
-            
+
         try:
             os.remove(g_dev['obs'].calib_masters_folder + tempfrontcalib + 'broadbandssBIASDARK_master_bin1.fits')
         except:
             plog ("Could not remove " + str(g_dev['obs'].calib_masters_folder + tempfrontcalib + 'broadbandssBIASDARK_master_bin1.fits'))
-            
+
         try:
             os.remove(g_dev['obs'].calib_masters_folder + tempfrontcalib + 'narrowbandssDARK_master_bin1.fits')
         except:
             plog ("Could not remove " + str(g_dev['obs'].calib_masters_folder + tempfrontcalib + 'narrowbandssDARK_master_bin1.fits'))
-            
+
         try:
             os.remove(g_dev['obs'].calib_masters_folder + tempfrontcalib + 'narrowbandssBIASDARK_master_bin1.fits')
         except:
@@ -2240,14 +2240,14 @@ class Sequencer:
                 hdu1data = np.load(file)
                 #breakpoint()
 
-                # Bad pixel accumulator
-                img_temp_median=np.nanmedian(hdu1data)
-                img_temp_stdev=np.nanstd(hdu1data)
-                above_array=(hdu1data > (img_temp_median + (10 * img_temp_stdev)))
-                below_array=(hdu1data < (img_temp_median - (10 * img_temp_stdev)))
-                print ("Bad pixels above: " + str(above_array.sum()))
-                print ("Bad pixels below: " + str(below_array.sum()))
-                bad_pixel_mapper_array=bad_pixel_mapper_array+above_array+below_array
+                # # Bad pixel accumulator
+                # img_temp_median=np.nanmedian(hdu1data)
+                # img_temp_stdev=np.nanstd(hdu1data)
+                # above_array=(hdu1data > (img_temp_median + (10 * img_temp_stdev)))
+                # below_array=(hdu1data < (img_temp_median - (10 * img_temp_stdev)))
+                # print ("Bad pixels above: " + str(above_array.sum()))
+                # print ("Bad pixels below: " + str(below_array.sum()))
+                # bad_pixel_mapper_array=bad_pixel_mapper_array+above_array+below_array
 
 
                 timetaken=datetime.datetime.now() -starttime
@@ -2284,6 +2284,20 @@ class Sequencer:
             plog ("**********************************")
 
             masterBias=np.asarray(finalImage).astype(np.float32)
+
+            # Bad pixel accumulator
+            img_temp_median=np.nanmedian(masterBias)
+            img_temp_stdev=np.nanstd(masterBias)
+            above_array=(masterBias > (img_temp_median + (10 * img_temp_stdev)))
+            below_array=(masterBias < (img_temp_median - (10 * img_temp_stdev)))
+            print ("Bad pixels above: " + str(above_array.sum()))
+            print ("Bad pixels below: " + str(below_array.sum()))
+            bad_pixel_mapper_array=bad_pixel_mapper_array+above_array+below_array
+
+
+
+
+
             tempfrontcalib=g_dev['obs'].obs_id + '_' + g_dev['cam'].alias +'_'
             try:
                 fits.writeto(g_dev['obs'].calib_masters_folder + tempfrontcalib + 'BIAS_master_bin1.fits', masterBias,  overwrite=True)
@@ -2433,19 +2447,19 @@ class Sequencer:
             os.remove(g_dev['obs'].local_dark_folder  + 'tempfile')
 
             g_dev["obs"].send_to_user("Long Exposure Dark calibration frame created.")
-            
+
             ##############################################################################################
             ##############################################################################################
             ##############################################################################################
             ##############################################################################################
             ##############################################################################################
             ##############################################################################################
-            
-            
-            
+
+
+
             # NOW for the half second darks
             plog (datetime.datetime.now().strftime("%H:%M:%S"))
-            plog ("Regenerating 2 second exposure dark")
+            plog ("Regenerating 0.5 second exposure dark")
             inputList=(glob(g_dev['obs'].local_dark_folder+ 'halfsecdarks/' +'*.n*'))
 
             # Test each flat file actually opens
@@ -2468,14 +2482,14 @@ class Sequencer:
                 darkdeexp=(hdu1data-masterBias)/hdu1exp
                 del hdu1data
 
-                # Bad pixel accumulator
-                img_temp_median=np.nanmedian(darkdeexp)
-                img_temp_stdev=np.nanstd(darkdeexp)
-                above_array=(darkdeexp > 20)
-                #below_array=(darkdeexp < (img_temp_median - (10 * img_temp_stdev)))
-                print ("Bad pixels above: " + str(above_array.sum()))
-                #print ("Bad pixels below: " + str(below_array.sum()))
-                bad_pixel_mapper_array=bad_pixel_mapper_array+above_array+below_array
+                # # Bad pixel accumulator
+                # img_temp_median=np.nanmedian(darkdeexp)
+                # img_temp_stdev=np.nanstd(darkdeexp)
+                # above_array=(darkdeexp > 20)
+                # #below_array=(darkdeexp < (img_temp_median - (10 * img_temp_stdev)))
+                # print ("Bad pixels above: " + str(above_array.sum()))
+                # #print ("Bad pixels below: " + str(below_array.sum()))
+                # bad_pixel_mapper_array=bad_pixel_mapper_array+above_array+below_array
 
                 timetaken=datetime.datetime.now() -starttime
                 plog ("Time Taken to load array and debias and divide dark: " + str(timetaken))
@@ -2539,16 +2553,16 @@ class Sequencer:
             os.remove(g_dev['obs'].local_dark_folder  + 'tempfile')
 
             g_dev["obs"].send_to_user("Two Second Dark calibration frame created.")
-            
+
             ##############################################################################################
             ##############################################################################################
             ##############################################################################################
             ##############################################################################################
             ##############################################################################################
             ##############################################################################################
-            
-            
-            
+
+
+
             # NOW for the 2 second darks
             plog (datetime.datetime.now().strftime("%H:%M:%S"))
             plog ("Regenerating 2 second exposure dark")
@@ -2574,14 +2588,14 @@ class Sequencer:
                 darkdeexp=(hdu1data-masterBias)/hdu1exp
                 del hdu1data
 
-                # Bad pixel accumulator
-                img_temp_median=np.nanmedian(darkdeexp)
-                img_temp_stdev=np.nanstd(darkdeexp)
-                above_array=(darkdeexp > 20)
-                #below_array=(darkdeexp < (img_temp_median - (10 * img_temp_stdev)))
-                print ("Bad pixels above: " + str(above_array.sum()))
-                #print ("Bad pixels below: " + str(below_array.sum()))
-                bad_pixel_mapper_array=bad_pixel_mapper_array+above_array+below_array
+                # # Bad pixel accumulator
+                # img_temp_median=np.nanmedian(darkdeexp)
+                # img_temp_stdev=np.nanstd(darkdeexp)
+                # above_array=(darkdeexp > 20)
+                # #below_array=(darkdeexp < (img_temp_median - (10 * img_temp_stdev)))
+                # print ("Bad pixels above: " + str(above_array.sum()))
+                # #print ("Bad pixels below: " + str(below_array.sum()))
+                # bad_pixel_mapper_array=bad_pixel_mapper_array+above_array+below_array
 
                 timetaken=datetime.datetime.now() -starttime
                 plog ("Time Taken to load array and debias and divide dark: " + str(timetaken))
@@ -2645,19 +2659,19 @@ class Sequencer:
             os.remove(g_dev['obs'].local_dark_folder  + 'tempfile')
 
             g_dev["obs"].send_to_user("Two Second Dark calibration frame created.")
-            
+
             ##############################################################################################
             ##############################################################################################
             ##############################################################################################
             ##############################################################################################
             ##############################################################################################
             ##############################################################################################
-            
-            
-            
+
+
+
             # NOW for the 10 second darks
             plog (datetime.datetime.now().strftime("%H:%M:%S"))
-            plog ("Regenerating 2 second exposure dark")
+            plog ("Regenerating 10 second exposure dark")
             inputList=(glob(g_dev['obs'].local_dark_folder+ 'tensecdarks/' +'*.n*'))
 
             # Test each flat file actually opens
@@ -2680,14 +2694,14 @@ class Sequencer:
                 darkdeexp=(hdu1data-masterBias)/hdu1exp
                 del hdu1data
 
-                # Bad pixel accumulator
-                img_temp_median=np.nanmedian(darkdeexp)
-                img_temp_stdev=np.nanstd(darkdeexp)
-                above_array=(darkdeexp > 20)
-                #below_array=(darkdeexp < (img_temp_median - (10 * img_temp_stdev)))
-                print ("Bad pixels above: " + str(above_array.sum()))
-                #print ("Bad pixels below: " + str(below_array.sum()))
-                bad_pixel_mapper_array=bad_pixel_mapper_array+above_array+below_array
+                # # Bad pixel accumulator
+                # img_temp_median=np.nanmedian(darkdeexp)
+                # img_temp_stdev=np.nanstd(darkdeexp)
+                # above_array=(darkdeexp > 20)
+                # #below_array=(darkdeexp < (img_temp_median - (10 * img_temp_stdev)))
+                # print ("Bad pixels above: " + str(above_array.sum()))
+                # #print ("Bad pixels below: " + str(below_array.sum()))
+                # bad_pixel_mapper_array=bad_pixel_mapper_array+above_array+below_array
 
                 timetaken=datetime.datetime.now() -starttime
                 plog ("Time Taken to load array and debias and divide dark: " + str(timetaken))
@@ -2751,20 +2765,20 @@ class Sequencer:
             os.remove(g_dev['obs'].local_dark_folder  + 'tempfile')
 
             g_dev["obs"].send_to_user("Ten Second Dark calibration frame created.")
-            
-            
-            
-            
-            
+
+
+
+
+
             ##############################################################################################
             ##############################################################################################
             ##############################################################################################
             ##############################################################################################
             ##############################################################################################
             ##############################################################################################
-            
-            
-            
+
+
+
             # NOW for the broadband smartstack darks and biasdarks
             plog (datetime.datetime.now().strftime("%H:%M:%S"))
             plog ("Regenerating smartstack exposure darks and biasdarks")
@@ -2780,7 +2794,7 @@ class Sequencer:
 
             # Begin with just the normal masterdark of this length
             PLDrive = np.memmap(g_dev['obs'].local_dark_folder  + 'tempfile', dtype='float32', mode= 'w+', shape = (shapeImage[0],shapeImage[1],len(inputList)))
-            
+
             # D  frames and stick them in the memmap
             i=0
             for file in inputList:
@@ -2792,14 +2806,14 @@ class Sequencer:
                 darkdeexp=(hdu1data-masterBias)/hdu1exp
                 del hdu1data
 
-                # Bad pixel accumulator
-                img_temp_median=np.nanmedian(darkdeexp)
-                img_temp_stdev=np.nanstd(darkdeexp)
-                above_array=(darkdeexp > 20)
-                #below_array=(darkdeexp < (img_temp_median - (10 * img_temp_stdev)))
-                print ("Bad pixels above: " + str(above_array.sum()))
-                #print ("Bad pixels below: " + str(below_array.sum()))
-                bad_pixel_mapper_array=bad_pixel_mapper_array+above_array+below_array
+                # # Bad pixel accumulator
+                # img_temp_median=np.nanmedian(darkdeexp)
+                # img_temp_stdev=np.nanstd(darkdeexp)
+                # above_array=(darkdeexp > 20)
+                # #below_array=(darkdeexp < (img_temp_median - (10 * img_temp_stdev)))
+                # print ("Bad pixels above: " + str(above_array.sum()))
+                # #print ("Bad pixels below: " + str(below_array.sum()))
+                # bad_pixel_mapper_array=bad_pixel_mapper_array+above_array+below_array
 
                 timetaken=datetime.datetime.now() -starttime
                 plog ("Time Taken to load array and debias and divide dark: " + str(timetaken))
@@ -2857,11 +2871,11 @@ class Sequencer:
             os.remove(g_dev['obs'].local_dark_folder  + 'tempfile')
 
             g_dev["obs"].send_to_user("Broadband Smarstack length dark calibration frame created.")
-            
+
             ######################################## NOW DO BIASDARK
             # Begin with just the biasdark of this length
             PLDrive = np.memmap(g_dev['obs'].local_dark_folder  + 'tempfile', dtype='float32', mode= 'w+', shape = (shapeImage[0],shapeImage[1],len(inputList)))
-            
+
             # D  frames and stick them in the memmap
             i=0
             for file in inputList:
@@ -2939,17 +2953,17 @@ class Sequencer:
             os.remove(g_dev['obs'].local_dark_folder  + 'tempfile')
 
             g_dev["obs"].send_to_user("Broadband Smarstack length bias-dark calibration frame created.")
-            
-            
+
+
             ##############################################################################################
             ##############################################################################################
             ##############################################################################################
             ##############################################################################################
             ##############################################################################################
             ##############################################################################################
-            
-            
-            
+
+
+
             # NOW for the narrowband smartstack darks and biasdarks
             plog (datetime.datetime.now().strftime("%H:%M:%S"))
             plog ("Regenerating smartstack narrowband exposure darks and biasdarks")
@@ -2965,7 +2979,7 @@ class Sequencer:
 
             # Begin with just the normal masterdark of this length
             PLDrive = np.memmap(g_dev['obs'].local_dark_folder  + 'tempfile', dtype='float32', mode= 'w+', shape = (shapeImage[0],shapeImage[1],len(inputList)))
-            
+
             # D  frames and stick them in the memmap
             i=0
             for file in inputList:
@@ -2977,14 +2991,14 @@ class Sequencer:
                 darkdeexp=(hdu1data-masterBias)/hdu1exp
                 del hdu1data
 
-                # Bad pixel accumulator
-                img_temp_median=np.nanmedian(darkdeexp)
-                img_temp_stdev=np.nanstd(darkdeexp)
-                above_array=(darkdeexp > 20)
-                #below_array=(darkdeexp < (img_temp_median - (10 * img_temp_stdev)))
-                print ("Bad pixels above: " + str(above_array.sum()))
-                #print ("Bad pixels below: " + str(below_array.sum()))
-                bad_pixel_mapper_array=bad_pixel_mapper_array+above_array+below_array
+                # # Bad pixel accumulator
+                # img_temp_median=np.nanmedian(darkdeexp)
+                # img_temp_stdev=np.nanstd(darkdeexp)
+                # above_array=(darkdeexp > 20)
+                # #below_array=(darkdeexp < (img_temp_median - (10 * img_temp_stdev)))
+                # print ("Bad pixels above: " + str(above_array.sum()))
+                # #print ("Bad pixels below: " + str(below_array.sum()))
+                # bad_pixel_mapper_array=bad_pixel_mapper_array+above_array+below_array
 
                 timetaken=datetime.datetime.now() -starttime
                 plog ("Time Taken to load array and debias and divide dark: " + str(timetaken))
@@ -3042,11 +3056,11 @@ class Sequencer:
             os.remove(g_dev['obs'].local_dark_folder  + 'tempfile')
 
             g_dev["obs"].send_to_user("narrowband Smarstack length dark calibration frame created.")
-            
+
             ######################################## NOW DO BIASDARK
             # Begin with just the biasdark of this length
             PLDrive = np.memmap(g_dev['obs'].local_dark_folder  + 'tempfile', dtype='float32', mode= 'w+', shape = (shapeImage[0],shapeImage[1],len(inputList)))
-            
+
             # D  frames and stick them in the memmap
             i=0
             for file in inputList:
@@ -3124,20 +3138,20 @@ class Sequencer:
             os.remove(g_dev['obs'].local_dark_folder  + 'tempfile')
 
             g_dev["obs"].send_to_user("narrowband Smarstack length bias-dark calibration frame created.")
-            
-            
+
+
             ##############################################################################################
             ##############################################################################################
             ##############################################################################################
             ##############################################################################################
             ##############################################################################################
             ##############################################################################################
-            
-            
-            
-            
-            
-            
+
+
+
+
+
+
 
             # NOW that we have a master bias and a master dark, time to step through the flat frames!
             tempfilters=glob(g_dev['obs'].local_flat_folder + "*/")
@@ -3152,7 +3166,7 @@ class Sequencer:
             broadband_ss_biasdark_exp_time = self.config['camera']['camera_1_1']['settings']['smart_stack_exposure_time']
             narrowband_ss_biasdark_exp_time = broadband_ss_biasdark_exp_time * self.config['camera']['camera_1_1']['settings']['smart_stack_exposure_NB_multiplier']
             dark_exp_time = self.config['camera']['camera_1_1']['settings']['dark_exposure']
-            
+
 
             if len(tempfilters) == 0:
                 plog ("there are no filter directories, so not processing flats")
@@ -3187,15 +3201,15 @@ class Sequencer:
                             plog("Storing flat in a memmap array: " + str(file))
                             hdu1data = np.load(file, mmap_mode='r')
                             hdu1exp=float(file.split('_')[-2])
-            
-            
+
+
                             #breakpoint()
-                            
-                                       
+
+
                             print ("EXP")
                             print (hdu1exp)
                             fraction_through_range=0
-                            
+
                             if hdu1exp < 0.5:
                                 flatdebiaseddedarked=(hdu1data-masterBias)-(halfsecond_masterDark*hdu1exp)
                             elif hdu1exp <= 2.0:
@@ -3223,28 +3237,28 @@ class Sequencer:
                                 tempmasterDark=(fraction_through_range * masterDark) + ((1-fraction_through_range) * narrowbandss_masterDark)
                                 flatdebiaseddedarked=(hdu1data-masterBias)-(tempmasterDark*hdu1exp)
                                 del tempmasterDark
-                            else:                                
+                            else:
                                 flatdebiaseddedarked=(hdu1data-masterBias)-(narrowbandss_masterDark*hdu1exp)
-                
+
                             print ("Fraction through range")
                             print (fraction_through_range)
-            
-            
-            
+
+
+
                             # if hdu1exp < 6:
-                            #     flatdebiaseddedarked=(hdu1data-masterBias)-(twosecond_masterDark*hdu1exp)                            
+                            #     flatdebiaseddedarked=(hdu1data-masterBias)-(twosecond_masterDark*hdu1exp)
                             # elif hdu1exp < (10 + broadband_ss_biasdark_exp_time)/2:
                             #     flatdebiaseddedarked=(hdu1data-masterBias)-(tensecond_masterDark*hdu1exp)
-                            # elif hdu1exp < (broadband_ss_biasdark_exp_time + narrowband_ss_biasdark_exp_time)/2:                                
+                            # elif hdu1exp < (broadband_ss_biasdark_exp_time + narrowband_ss_biasdark_exp_time)/2:
                             #     flatdebiaseddedarked=(hdu1data-masterBias)-(broadbandss_masterDark*hdu1exp)
                             # else:
-                            #     flatdebiaseddedarked=(hdu1data-masterBias)-(narrowbandss_masterDark*hdu1exp)        
-                                
+                            #     flatdebiaseddedarked=(hdu1data-masterBias)-(narrowbandss_masterDark*hdu1exp)
+
                             # Use a linearly interpolated masterdark frame
-                            
-                            
-                                
-                                
+
+
+
+
                             del hdu1data
 
                             # Bad pixel accumulator
@@ -3714,17 +3728,17 @@ class Sequencer:
             try:
                 g_dev['cam'].darkFiles.update({'1': masterDark})
                 g_dev['cam'].darkFiles.update({'halfsec_exposure_dark': halfsecond_masterDark})
-                
+
                 g_dev['cam'].darkFiles.update({'short_exposure_dark': twosecond_masterDark})
-               
+
                 g_dev['cam'].darkFiles.update({'tensec_exposure_dark': tensecond_masterDark})
-                
+
                 g_dev['cam'].darkFiles.update({'broadband_ss_dark': broadbandss_masterDark})
-                
+
                 g_dev['cam'].darkFiles.update({'broadband_ss_biasdark': broadbandss_masterBiasDark})
-                
+
                 g_dev['cam'].darkFiles.update({'narrowband_ss_dark': narrowbandss_masterDark})
-                
+
                 g_dev['cam'].darkFiles.update({'narrowband_ss_biasdark': narrowbandss_masterBiasDark})
 
             except:
@@ -3736,9 +3750,9 @@ class Sequencer:
                 plog("Dark frame master re-upload did not work.")
 
 
-            
-           
-            
+
+
+
 
 
             try:
@@ -3749,7 +3763,7 @@ class Sequencer:
                 del masterDark
             except:
                 pass
-            
+
             try:
                 del twosecond_masterDark
             except:
