@@ -3029,7 +3029,7 @@ class Observatory:
                                     os.remove(oldest_file)
                             elif slow_process[4] == 'tensec_exposure_dark':
                                 tempexposure = temphduheader['EXPTIME']
-                                tempfilename = self.local_dark_folder + 'tensecdarks' + \
+                                tempfilename = self.local_dark_folder + 'tensecdarks/' + \
                                     slow_process[1].replace('.fits', '_' + str(tempexposure) + '_.npy')
                                 max_files = self.config['camera']['camera_1_1']['settings']['number_of_dark_to_store']
                                 n_files = len(glob.glob(self.local_dark_folder + 'tensecdarks' + '*.n*'))
