@@ -3198,22 +3198,22 @@ class Sequencer:
                             
                             if hdu1exp < 0.5:
                                 flatdebiaseddedarked=(hdu1data-masterBias)-(halfsecond_masterDark*hdu1exp)
-                            elif hdu1exp < 2.0:
+                            elif hdu1exp <= 2.0:
                                 fraction_through_range=(hdu1exp-0.5)/(2.0-0.5)
                                 tempmasterDark=(fraction_through_range * twosecond_masterDark) + ((1-fraction_through_range) * halfsecond_masterDark)
                                 flatdebiaseddedarked=(hdu1data-masterBias)-(tempmasterDark*hdu1exp)
                                 del tempmasterDark
-                            elif hdu1exp < 10.0:
+                            elif hdu1exp <= 10.0:
                                 fraction_through_range=(hdu1exp-2)/(10.0-2.0)
                                 tempmasterDark=(fraction_through_range * tensecond_masterDark) + ((1-fraction_through_range) * twosecond_masterDark)
                                 flatdebiaseddedarked=(hdu1data-masterBias)-(tempmasterDark*hdu1exp)
                                 del tempmasterDark
-                            elif hdu1exp < broadband_ss_biasdark_exp_time:
+                            elif hdu1exp <= broadband_ss_biasdark_exp_time:
                                 fraction_through_range=(hdu1exp-10)/(broadband_ss_biasdark_exp_time-10.0)
                                 tempmasterDark=(fraction_through_range * broadbandss_masterDark) + ((1-fraction_through_range) * tensecond_masterDark)
                                 flatdebiaseddedarked=(hdu1data-masterBias)-(tempmasterDark*hdu1exp)
                                 del tempmasterDark
-                            elif hdu1exp < narrowband_ss_biasdark_exp_time:
+                            elif hdu1exp <= narrowband_ss_biasdark_exp_time:
                                 fraction_through_range=(hdu1exp-broadband_ss_biasdark_exp_time)/(narrowband_ss_biasdark_exp_time-broadband_ss_biasdark_exp_time)
                                 tempmasterDark=(fraction_through_range * narrowbandss_masterDark) + ((1-fraction_through_range) * broadbandss_masterDark)
                                 flatdebiaseddedarked=(hdu1data-masterBias)-(tempmasterDark*hdu1exp)
