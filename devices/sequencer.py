@@ -3215,12 +3215,12 @@ class Sequencer:
                                 del tempmasterDark
                             elif hdu1exp < narrowband_ss_biasdark_exp_time:
                                 fraction_through_range=(hdu1exp-broadband_ss_biasdark_exp_time)/(narrowband_ss_biasdark_exp_time-broadband_ss_biasdark_exp_time)
-                                tempmasterDark=(fraction_through_range * narrowbandss_masterDark) + ((1-fraction_through_range) * broadband_ss_biasdark_exp_time)
+                                tempmasterDark=(fraction_through_range * narrowbandss_masterDark) + ((1-fraction_through_range) * broadbandss_masterDark)
                                 flatdebiaseddedarked=(hdu1data-masterBias)-(tempmasterDark*hdu1exp)
                                 del tempmasterDark
                             elif dark_exp_time > narrowband_ss_biasdark_exp_time:
                                 fraction_through_range=(hdu1exp-narrowband_ss_biasdark_exp_time)/(dark_exp_time -narrowband_ss_biasdark_exp_time)
-                                tempmasterDark=(fraction_through_range * masterDark) + ((1-fraction_through_range) * narrowband_ss_biasdark_exp_time)
+                                tempmasterDark=(fraction_through_range * masterDark) + ((1-fraction_through_range) * narrowbandss_masterDark)
                                 flatdebiaseddedarked=(hdu1data-masterBias)-(tempmasterDark*hdu1exp)
                                 del tempmasterDark
                             else:                                
