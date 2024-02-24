@@ -3933,11 +3933,11 @@ def post_exposure_process(payload):
         # THINGS CHANGE LATER
         hdu.header["OSCMATCH"] = 'no'
         hdu.header['OSCSEP'] = 'no'
-        if g_dev["scr"] is not None and frame_type == "screenflat":
-            hdu.header["SCREEN"] = (
-                int(g_dev["scr"].bright_setting),
-                "Screen brightness setting",
-            )
+        # if g_dev["scr"] is not None and frame_type == "screenflat":
+        #     hdu.header["SCREEN"] = (
+        #         int(g_dev["scr"].bright_setting),
+        #         "Screen brightness setting",
+        #     )
         # try:
         #     hdu.header["DATASEC"] = selfconfig["camera"][selfname][
         #         "settings"
@@ -4019,16 +4019,16 @@ def post_exposure_process(payload):
 
 
 
-        if frame_type in (
-            "bias",
-            "dark",
-            "lampflat",
-            "skyflat",
-            "screenflat",
-            "solarflat",
-            "arc",
-        ):
-            hdu.header["OBJECT"] = frame_type
+        # if frame_type in (
+        #     "bias",
+        #     "dark",'broadband_ss_biasdark','narrowband_ss_biasdark','short_exposure_dark','halfsec_exposure_dark','tensec_exposure_dark',
+        #     "lampflat",
+        #     "skyflat",
+        #     "screenflat",
+        #     "solarflat",
+        #     "arc",
+        # ):
+        #     hdu.header["OBJECT"] = frame_type
         if not any("OBJECT" in s for s in hdu.header.keys()):
             RAtemp = ra_at_time_of_exposure
             DECtemp = dec_at_time_of_exposure
@@ -4241,33 +4241,33 @@ def post_exposure_process(payload):
         im_type = "EX"  # or EN for engineering....
         f_ext = ""
 
-        if frame_type in (
-            "bias",
-            "dark",
-            "lampflat",
-            "skyflat",
-            "screenflat",
-            "solarflat",
-            "arc",
-        ):
-            f_ext = "-"
-            if frame_type[0:4] in ("bias", "dark"):
-                f_ext += frame_type[0] + "_" + str(1)
-            if frame_type in (
-                "lampflat",
-                "skyflat",
-                "screenflat",
-                "solarflat",
-                "arc",
-                "expose",
-            ):
-                f_ext += (
-                    frame_type[:2]
-                    + "_"
-                    + str(1)
-                    + "_"
-                    + str(this_exposure_filter)
-                )
+        # if frame_type in (
+        #     "bias",
+        #     "dark",'broadband_ss_biasdark','narrowband_ss_biasdark','short_exposure_dark','halfsec_exposure_dark','tensec_exposure_dark',
+        #     "lampflat",
+        #     "skyflat",
+        #     "screenflat",
+        #     "solarflat",
+        #     "arc",
+        # ):
+        #     f_ext = "-"
+        #     if frame_type[0:4] in ("bias", "dark"):
+        #         f_ext += frame_type[0] + "_" + str(1)
+        #     if frame_type in (
+        #         "lampflat",
+        #         "skyflat",
+        #         "screenflat",
+        #         "solarflat",
+        #         "arc",
+        #         "expose",
+        #     ):
+        #         f_ext += (
+        #             frame_type[:2]
+        #             + "_"
+        #             + str(1)
+        #             + "_"
+        #             + str(this_exposure_filter)
+        #         )
         cal_name = (
             selfconfig["obs_id"]
             + "-"
@@ -4470,104 +4470,106 @@ def post_exposure_process(payload):
         #breakpoint()
         # If the file isn't a calibration frame, then undertake a flash reduction quickly
         # To make a palatable jpg AS SOON AS POSSIBLE to send to AWS
-        if (not frame_type.lower() in (
-            "bias",
-            "dark",
-            "flat",
-            "screenflat",
-            "skyflat",
-        )) or (manually_requested_calibration):  # Don't process jpgs or small fits for biases and darks
+        # if (not frame_type.lower() in (
+        #     "bias",
+        #     "dark",
+        #     "flat",
+        #     "screenflat",
+        #     "skyflat",
+        # )) or (manually_requested_calibration):  # Don't process jpgs or small fits for biases and darks
 
-            hdusmalldata=copy.deepcopy(hdu.data)
-            # Quick flash bias and dark frame
-            selfnative_bin = selfconfig["camera"][selfname]["settings"]["native_bin"]
+        hdusmalldata=copy.deepcopy(hdu.data)
+        # Quick flash bias and dark frame
+        selfnative_bin = selfconfig["camera"][selfname]["settings"]["native_bin"]
 
 
+        if not manually_requested_calibration:
+            try:
+                
+                breakpoint()
+                hdusmalldata = hdusmalldata - g_dev['cam'].biasFiles[str(1)]
+                hdusmalldata = hdusmalldata - (g_dev['cam'].darkFiles[str(1)] * exposure_time)
+
+            except Exception as e:
+                plog("debias/darking light frame failed: ", e)
+
+            # Quick flat flat frame
+            try:
+                if selfconfig['camera'][selfname]['settings']['hold_flats_in_memory']:
+                    hdusmalldata = np.divide(hdusmalldata, g_dev['cam'].flatFiles[g_dev['cam'].current_filter])
+                else:
+                    hdusmalldata = np.divide(hdusmalldata, np.load(g_dev['cam'].flatFiles[str(g_dev['cam'].current_filter + "_bin" + str(1))]))
+
+            except Exception as e:
+                plog("flatting light frame failed", e)
+                #plog(traceback.format_exc())
+
+            try:
+                hdusmalldata[g_dev['cam'].bpmFiles[str(1)]] = np.nan
+
+            except Exception as e:
+                plog("debias/darking light frame failed: ", e)
+
+
+
+        # This saves the REDUCED file to disk
+        # If this is for a smartstack, this happens immediately in the camera thread after we have a "reduced" file
+        # So that the smartstack queue can start on it ASAP as smartstacks
+        # are by far the longest task to undertake.
+        # If it isn't a smartstack, it gets saved in the slow process queue.
+        if "hdusmalldata" in locals():
+
+            # Set up reduced header
+            hdusmallheader=copy.deepcopy(hdu.header)
             if not manually_requested_calibration:
-                try:
-                    hdusmalldata = hdusmalldata - g_dev['cam'].biasFiles[str(1)]
-                    hdusmalldata = hdusmalldata - (g_dev['cam'].darkFiles[str(1)] * exposure_time)
+                #From the reduced data, crop around the edges of the
+                #raw 1x1 image to get rid of overscan and crusty edge bits
+                edge_crop=selfconfig["camera"][selfname]["settings"]['reduced_image_edge_crop']
+                #breakpoint()
+                if edge_crop > 0:
+                    hdusmalldata=hdusmalldata[edge_crop:-edge_crop,edge_crop:-edge_crop]
 
-                except Exception as e:
-                    plog("debias/darking light frame failed: ", e)
+                    hdusmallheader['NAXIS1']=float(hdu.header['NAXIS1']) - (edge_crop * 2)
+                    hdusmallheader['NAXIS2']=float(hdu.header['NAXIS2']) - (edge_crop * 2)
+                    hdusmallheader['CRPIX1']=float(hdu.header['CRPIX1']) - (edge_crop * 2)
+                    hdusmallheader['CRPIX2']=float(hdu.header['CRPIX2']) - (edge_crop * 2)
 
-                # Quick flat flat frame
-                try:
-                    if selfconfig['camera'][selfname]['settings']['hold_flats_in_memory']:
-                        hdusmalldata = np.divide(hdusmalldata, g_dev['cam'].flatFiles[g_dev['cam'].current_filter])
-                    else:
-                        hdusmalldata = np.divide(hdusmalldata, np.load(g_dev['cam'].flatFiles[str(g_dev['cam'].current_filter + "_bin" + str(1))]))
+                # bin to native binning
+                if selfnative_bin != 1:
+                    reduced_hdusmalldata=(block_reduce(hdusmalldata,selfnative_bin))
+                    reduced_hdusmallheader=copy.deepcopy(hdusmallheader)
+                    reduced_hdusmallheader['XBINING']=selfnative_bin
+                    reduced_hdusmallheader['YBINING']=selfnative_bin
+                    reduced_hdusmallheader['PIXSCALE']=float(hdu.header['PIXSCALE']) * selfnative_bin
+                    reduced_pixscale=float(hdu.header['PIXSCALE'])
+                    reduced_hdusmallheader['NAXIS1']=float(hdu.header['NAXIS1']) / selfnative_bin
+                    reduced_hdusmallheader['NAXIS2']=float(hdu.header['NAXIS2']) / selfnative_bin
+                    reduced_hdusmallheader['CRPIX1']=float(hdu.header['CRPIX1']) / selfnative_bin
+                    reduced_hdusmallheader['CRPIX2']=float(hdu.header['CRPIX2']) / selfnative_bin
+                    reduced_hdusmallheader['CDELT1']=float(hdu.header['CDELT1']) * selfnative_bin
+                    reduced_hdusmallheader['CDELT2']=float(hdu.header['CDELT2']) * selfnative_bin
+                    reduced_hdusmallheader['CCDXPIXE']=float(hdu.header['CCDXPIXE']) * selfnative_bin
+                    reduced_hdusmallheader['CCDYPIXE']=float(hdu.header['CCDYPIXE']) * selfnative_bin
+                    reduced_hdusmallheader['XPIXSZ']=float(hdu.header['XPIXSZ']) * selfnative_bin
+                    reduced_hdusmallheader['YPIXSZ']=float(hdu.header['YPIXSZ']) * selfnative_bin
 
-                except Exception as e:
-                    plog("flatting light frame failed", e)
-                    #plog(traceback.format_exc())
+                    reduced_hdusmallheader['SATURATE']=float(hdu.header['SATURATE']) * pow( selfnative_bin,2)
+                    reduced_hdusmallheader['FULLWELL']=float(hdu.header['FULLWELL']) * pow( selfnative_bin,2)
+                    reduced_hdusmallheader['MAXLIN']=float(hdu.header['MAXLIN']) * pow( selfnative_bin,2)
 
-                try:
-                    hdusmalldata[g_dev['cam'].bpmFiles[str(1)]] = np.nan
-
-                except Exception as e:
-                    plog("debias/darking light frame failed: ", e)
-
-
-
-            # This saves the REDUCED file to disk
-            # If this is for a smartstack, this happens immediately in the camera thread after we have a "reduced" file
-            # So that the smartstack queue can start on it ASAP as smartstacks
-            # are by far the longest task to undertake.
-            # If it isn't a smartstack, it gets saved in the slow process queue.
-            if "hdusmalldata" in locals():
-
-                # Set up reduced header
-                hdusmallheader=copy.deepcopy(hdu.header)
-                if not manually_requested_calibration:
-                    #From the reduced data, crop around the edges of the
-                    #raw 1x1 image to get rid of overscan and crusty edge bits
-                    edge_crop=selfconfig["camera"][selfname]["settings"]['reduced_image_edge_crop']
-                    #breakpoint()
-                    if edge_crop > 0:
-                        hdusmalldata=hdusmalldata[edge_crop:-edge_crop,edge_crop:-edge_crop]
-
-                        hdusmallheader['NAXIS1']=float(hdu.header['NAXIS1']) - (edge_crop * 2)
-                        hdusmallheader['NAXIS2']=float(hdu.header['NAXIS2']) - (edge_crop * 2)
-                        hdusmallheader['CRPIX1']=float(hdu.header['CRPIX1']) - (edge_crop * 2)
-                        hdusmallheader['CRPIX2']=float(hdu.header['CRPIX2']) - (edge_crop * 2)
-
-                    # bin to native binning
-                    if selfnative_bin != 1:
-                        reduced_hdusmalldata=(block_reduce(hdusmalldata,selfnative_bin))
-                        reduced_hdusmallheader=copy.deepcopy(hdusmallheader)
-                        reduced_hdusmallheader['XBINING']=selfnative_bin
-                        reduced_hdusmallheader['YBINING']=selfnative_bin
-                        reduced_hdusmallheader['PIXSCALE']=float(hdu.header['PIXSCALE']) * selfnative_bin
-                        reduced_pixscale=float(hdu.header['PIXSCALE'])
-                        reduced_hdusmallheader['NAXIS1']=float(hdu.header['NAXIS1']) / selfnative_bin
-                        reduced_hdusmallheader['NAXIS2']=float(hdu.header['NAXIS2']) / selfnative_bin
-                        reduced_hdusmallheader['CRPIX1']=float(hdu.header['CRPIX1']) / selfnative_bin
-                        reduced_hdusmallheader['CRPIX2']=float(hdu.header['CRPIX2']) / selfnative_bin
-                        reduced_hdusmallheader['CDELT1']=float(hdu.header['CDELT1']) * selfnative_bin
-                        reduced_hdusmallheader['CDELT2']=float(hdu.header['CDELT2']) * selfnative_bin
-                        reduced_hdusmallheader['CCDXPIXE']=float(hdu.header['CCDXPIXE']) * selfnative_bin
-                        reduced_hdusmallheader['CCDYPIXE']=float(hdu.header['CCDYPIXE']) * selfnative_bin
-                        reduced_hdusmallheader['XPIXSZ']=float(hdu.header['XPIXSZ']) * selfnative_bin
-                        reduced_hdusmallheader['YPIXSZ']=float(hdu.header['YPIXSZ']) * selfnative_bin
-
-                        reduced_hdusmallheader['SATURATE']=float(hdu.header['SATURATE']) * pow( selfnative_bin,2)
-                        reduced_hdusmallheader['FULLWELL']=float(hdu.header['FULLWELL']) * pow( selfnative_bin,2)
-                        reduced_hdusmallheader['MAXLIN']=float(hdu.header['MAXLIN']) * pow( selfnative_bin,2)
-
-                        reduced_hdusmalldata=hdusmalldata+200.0
-                        reduced_hdusmallheader['PEDESTAL']=200
-                    else:
-                        reduced_hdusmalldata=copy.deepcopy(hdusmalldata)
-                        reduced_hdusmallheader=copy.deepcopy(hdusmallheader)
+                    reduced_hdusmalldata=hdusmalldata+200.0
+                    reduced_hdusmallheader['PEDESTAL']=200
+                else:
+                    reduced_hdusmalldata=copy.deepcopy(hdusmalldata)
+                    reduced_hdusmallheader=copy.deepcopy(hdusmallheader)
 
 
-                    # Add a pedestal to the reduced data
-                    # This is important for a variety of reasons
-                    # Some functions don't work with arrays with negative values
-                    # 200 SHOULD be enough.
-                    hdusmalldata=hdusmalldata+200.0
-                    hdusmallheader['PEDESTAL']=200
+                # Add a pedestal to the reduced data
+                # This is important for a variety of reasons
+                # Some functions don't work with arrays with negative values
+                # 200 SHOULD be enough.
+                hdusmalldata=hdusmalldata+200.0
+                hdusmallheader['PEDESTAL']=200
 
 
                 # Every Image gets SEP'd and gets it's catalogue sent up pronto ahead of the big fits
@@ -4605,7 +4607,7 @@ def post_exposure_process(payload):
                 # And gets it underway ASAP.
                 if ( not frame_type.lower() in [
                     "bias",
-                    "dark",
+                    "dark",'broadband_ss_biasdark','narrowband_ss_biasdark','short_exposure_dark','halfsec_exposure_dark','tensec_exposure_dark',
                     "flat",
                     "solar",
                     "lunar",
@@ -4699,7 +4701,7 @@ def post_exposure_process(payload):
             # We turn back to getting the bigger raw, reduced and fz files dealt with
             if not ( frame_type.lower() in [
                 "bias",
-                "dark",
+                "dark",'broadband_ss_biasdark','narrowband_ss_biasdark','short_exposure_dark','halfsec_exposure_dark','tensec_exposure_dark',
                 "flat",
                 "focus",
                 "skyflat",
@@ -4709,13 +4711,13 @@ def post_exposure_process(payload):
 
 
             # If the files are local calibrations, save them out to the local calibration directory
-            if not manually_requested_calibration and ( frame_type.lower() in [
-                "bias",
-                "dark",
-                "flat",
+            # if not manually_requested_calibration and ( frame_type.lower() in [
+            #     "bias",
+            #     "dark",'broadband_ss_biasdark','narrowband_ss_biasdark','short_exposure_dark','halfsec_exposure_dark','tensec_exposure_dark',
+            #     "flat",
 
-                "skyflat"]):
-                g_dev['obs'].to_slow_process(200000000, ('localcalibration', raw_name00, hdu.data, hdu.header, frame_type, g_dev["mnt"].current_icrs_ra, g_dev["mnt"].current_icrs_dec))
+            #     "skyflat"]):
+            #     g_dev['obs'].to_slow_process(200000000, ('localcalibration', raw_name00, hdu.data, hdu.header, frame_type, g_dev["mnt"].current_icrs_ra, g_dev["mnt"].current_icrs_dec))
 
             # Similarly to the above. This saves the RAW file to disk
             # it works 99.9999% of the time.
