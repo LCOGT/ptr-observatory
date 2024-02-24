@@ -3713,6 +3713,20 @@ class Sequencer:
 
             try:
                 g_dev['cam'].darkFiles.update({'1': masterDark})
+                g_dev['cam'].darkFiles.update({'halfsec_exposure_dark': halfsecond_masterDark})
+                
+                g_dev['cam'].darkFiles.update({'short_exposure_dark': twosecond_masterDark})
+               
+                g_dev['cam'].darkFiles.update({'tensec_exposure_dark': tensecond_masterDark})
+                
+                g_dev['cam'].darkFiles.update({'broadband_ss_dark': broadbandss_masterDark})
+                
+                g_dev['cam'].darkFiles.update({'broadband_ss_biasdark': broadbandss_masterBiasDark})
+                
+                g_dev['cam'].darkFiles.update({'narrowband_ss_dark': narrowbandss_masterDark})
+                
+                g_dev['cam'].darkFiles.update({'narrowband_ss_biasdark': narrowbandss_masterBiasDark})
+
             except:
                 plog("Dark frame master re-upload did not work.")
 
@@ -3720,6 +3734,12 @@ class Sequencer:
                 g_dev['cam'].bpmFiles.update({'1': bad_pixel_mapper_array})
             except:
                 plog("Dark frame master re-upload did not work.")
+
+
+            
+           
+            
+
 
             try:
                 del masterBias

@@ -1921,10 +1921,7 @@ class Camera:
             g_dev["obs"].request_update_status()
 
 
-            # Create a unique yet arbitrary code for the token
-            real_time_token=g_dev['name'] + '_' + self.alias + '_' + g_dev["day"] + '_' + self.current_filter.lower() + '_' + str(datetime.datetime.now()).replace(' ','').replace('-','').replace(':','').replace('.','')
-            real_time_files=[]
-
+            
 
 
             #if seq > 0:
@@ -1955,8 +1952,13 @@ class Camera:
 
             # Within each count - which is a single requested exposure, IF it is a smartstack
             # Then we divide each count up into individual smartstack exposures.
+            ssBaseExp=self.config["camera"][self.name]["settings"]['smart_stack_exposure_time']
             ssExp=self.config["camera"][self.name]["settings"]['smart_stack_exposure_time']
             ssNBmult=self.config["camera"][self.name]["settings"]['smart_stack_exposure_NB_multiplier']
+            dark_exp_time = self.config['camera']['camera_1_1']['settings']['dark_exposure']
+            
+            
+            
             if g_dev["fil"].null_filterwheel == False:
                 if self.current_filter.lower() in ['ha', 'o3', 's2', 'n2', 'y', 'up', 'u']:
                     ssExp = ssExp * ssNBmult # For narrowband and low throughput filters, increase base exposure time.
@@ -1964,15 +1966,31 @@ class Camera:
             if not imtype.lower() in ["light", "expose"]:
                 Nsmartstack=1
                 SmartStackID='no'
+                smartstackinfo='no'
                 exposure_time=incoming_exposure_time
+                
             elif (self.smartstack == 'yes' or self.smartstack == True) and (incoming_exposure_time > ssExp):
                 Nsmartstack=np.ceil(incoming_exposure_time / ssExp)
-                exposure_time=ssExp
+                exposure_time=ssExp                
                 SmartStackID=(datetime.datetime.now().strftime("%d%m%y%H%M%S"))
+                if self.current_filter.lower() in ['ha', 'o3', 's2', 'n2', 'y', 'up', 'u'] :         
+                    smartstackinfo='narrowband'
+                else:
+                    smartstackinfo='broadband'
+                
+                
             else:
                 Nsmartstack=1
                 SmartStackID='no'
+                smartstackinfo='no'
                 exposure_time=incoming_exposure_time
+
+            # Create a unique yet arbitrary code for the token
+            
+            real_time_token=g_dev['name'] + '_' + self.alias + '_' + g_dev["day"] + '_' + self.current_filter.lower() + '_' + smartstackinfo + '_' + str(ssBaseExp) + "_" + str( ssBaseExp * ssNBmult) + '_' + str(dark_exp_time) + '_' + str(datetime.datetime.now()).replace(' ','').replace('-','').replace(':','').replace('.','')
+            real_time_files=[]
+
+
 
             self.retry_camera = 1
             self.retry_camera_start_time = time.time()
