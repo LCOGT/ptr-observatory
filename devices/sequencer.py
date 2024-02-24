@@ -1598,6 +1598,28 @@ class Sequencer:
                     break
                 g_dev['obs'].request_scan_requests()
                 
+                
+                # COLLECTING A Half Second EXPOSURE DARK FRAME
+                plog("Expose " + str(stride) +" 1x1 half-second exposure dark frames.")
+                req = {'time': 0.5,  'script': 'True', 'image_type': 'halfsec_exposure_dark'}
+                opt = {'count': min_to_do,  \
+                       'filter': 'dark'}
+
+                # Check it is in the park position and not pointing at the sky.
+                # It can be pointing at the sky if cool down open is triggered during the biasdark process
+                g_dev['mnt'].park_command({}, {})
+                g_dev['cam'].expose_command(req, opt, user_id='Tobor', user_name='Tobor', user_roles='system', no_AWS=False, \
+                                do_sep=False, quick=False, skip_open_check=True,skip_daytime_check=True)                
+
+                if self.stop_script_called:
+                    g_dev["obs"].send_to_user("Cancelling out of calibration script as stop script has been called.")
+                    self.bias_dark_latch = False
+                    return
+                if ephem.now() + (dark_exp_time + cycle_time + 30)/86400 > ending:
+                    self.bias_dark_latch = False
+                    break
+                g_dev['obs'].request_scan_requests()
+                
                 # COLLECTING A NARROWBAND SMARTSTACK BIASDARK FRAME
                 plog("Expose " + str(stride) +" 1x1 narrowband smstack biasdark frames.")
                 req = {'time': narrowband_ss_biasdark_exp_time,  'script': 'True', 'image_type': 'narrowband_ss_biasdark'}
@@ -2094,6 +2116,12 @@ class Sequencer:
         except:
             plog ("Could not remove " + str(g_dev['obs'].calib_masters_folder + tempfrontcalib + 'DARK_master_bin1.fits'))
 
+
+        try:
+            os.remove(g_dev['obs'].calib_masters_folder + tempfrontcalib + 'halfsecondDARK_master_bin1.fits')
+        except:
+            plog ("Could not remove " + str(g_dev['obs'].calib_masters_folder + tempfrontcalib + 'halfsecondDARK_master_bin1.fits'))
+
         try:
             os.remove(g_dev['obs'].calib_masters_folder + tempfrontcalib + '2secondDARK_master_bin1.fits')
         except:
@@ -2103,6 +2131,8 @@ class Sequencer:
             os.remove(g_dev['obs'].calib_masters_folder + tempfrontcalib + '10secondDARK_master_bin1.fits')
         except:
             plog ("Could not remove " + str(g_dev['obs'].calib_masters_folder + tempfrontcalib + '10secondDARK_master_bin1.fits'))
+            
+        
             
         try:
             os.remove(g_dev['obs'].calib_masters_folder + tempfrontcalib + 'broadbandssDARK_master_bin1.fits')
@@ -2404,7 +2434,111 @@ class Sequencer:
 
             g_dev["obs"].send_to_user("Long Exposure Dark calibration frame created.")
             
+            ##############################################################################################
+            ##############################################################################################
+            ##############################################################################################
+            ##############################################################################################
+            ##############################################################################################
+            ##############################################################################################
             
+            
+            
+            # NOW for the half second darks
+            plog (datetime.datetime.now().strftime("%H:%M:%S"))
+            plog ("Regenerating 2 second exposure dark")
+            inputList=(glob(g_dev['obs'].local_dark_folder+ 'halfsecdarks/' +'*.n*'))
+
+            # Test each flat file actually opens
+            for file in inputList:
+                try:
+                    hdu1data = np.load(file, mmap_mode='r')
+                except:
+                    plog ("corrupt dark skipped: " + str(file))
+                    inputList.remove(file)
+
+            PLDrive = np.memmap(g_dev['obs'].local_dark_folder  + 'tempfile', dtype='float32', mode= 'w+', shape = (shapeImage[0],shapeImage[1],len(inputList)))
+            # D  frames and stick them in the memmap
+            i=0
+            for file in inputList:
+                plog (datetime.datetime.now().strftime("%H:%M:%S"))
+                starttime=datetime.datetime.now()
+                plog("Storing dark in a memmap array: " + str(file))
+                hdu1data = np.load(file, mmap_mode='r')
+                hdu1exp=float(file.split('_')[-2])
+                darkdeexp=(hdu1data-masterBias)/hdu1exp
+                del hdu1data
+
+                # Bad pixel accumulator
+                img_temp_median=np.nanmedian(darkdeexp)
+                img_temp_stdev=np.nanstd(darkdeexp)
+                above_array=(darkdeexp > 20)
+                #below_array=(darkdeexp < (img_temp_median - (10 * img_temp_stdev)))
+                print ("Bad pixels above: " + str(above_array.sum()))
+                #print ("Bad pixels below: " + str(below_array.sum()))
+                bad_pixel_mapper_array=bad_pixel_mapper_array+above_array+below_array
+
+                timetaken=datetime.datetime.now() -starttime
+                plog ("Time Taken to load array and debias and divide dark: " + str(timetaken))
+                starttime=datetime.datetime.now()
+                PLDrive[:,:,i] = np.asarray(darkdeexp,dtype=np.float32)
+                del darkdeexp
+                timetaken=datetime.datetime.now() -starttime
+                plog ("Time Taken to put in memmap: " + str(timetaken))
+                i=i+1
+
+            plog ("**********************************")
+            plog ("Median Stacking each darkframe row individually ")
+            plog (datetime.datetime.now().strftime("%H:%M:%S"))
+            # Go through each pixel and calculate nanmedian. Can't do all arrays at once as it is hugely memory intensive
+            finalImage=np.zeros(shapeImage,dtype=float)
+
+
+            mptask=[]
+            counter=0
+            for goog in range(shapeImage[0]):
+                mptask.append((g_dev['obs'].local_dark_folder + 'tempfile',counter, (shapeImage[0],shapeImage[1],len(inputList))))
+                counter=counter+1
+
+            counter=0
+            with Pool(math.floor(os.cpu_count()*0.85)) as pool:
+                for result in pool.map(stack_nanmedian_row, mptask):
+
+                    finalImage[counter,:]=result
+                    counter=counter+1
+
+
+
+
+            plog (datetime.datetime.now().strftime("%H:%M:%S"))
+            plog ("**********************************")
+
+            halfsecond_masterDark=np.asarray(finalImage).astype(np.float32)
+            try:
+                fits.writeto(g_dev['obs'].calib_masters_folder + tempfrontcalib + 'halfsecondDARK_master_bin1.fits', halfsecond_masterDark,  overwrite=True)
+                filepathaws=g_dev['obs'].calib_masters_folder
+                filenameaws=tempfrontcalib + 'halfsecondDARK_master_bin1.fits'
+                g_dev['obs'].enqueue_for_calibrationUI(50, filepathaws,filenameaws)
+
+                # Store a version of the dark for the archive too
+                fits.writeto(g_dev['obs'].calib_masters_folder + 'ARCHIVE_' +  archiveDate + '_' + tempfrontcalib + 'halfsecondDARK_master_bin1.fits', halfsecond_masterDark, overwrite=True)
+
+                filepathaws=g_dev['obs'].calib_masters_folder
+                filenameaws='ARCHIVE_' +  archiveDate + '_' + tempfrontcalib + 'halfsecondDARK_master_bin1.fits'
+                g_dev['obs'].enqueue_for_calibrationUI(80, filepathaws,filenameaws)
+                if g_dev['obs'].config['save_raws_to_pipe_folder_for_nightly_processing']:
+                    fits.writeto(pipefolder + '/' + tempfrontcalib + 'halfsecondDARK_master_bin1.fits', halfsecond_masterDark,  overwrite=True)
+                    fits.writeto(pipefolder + '/' + 'ARCHIVE_' +  archiveDate + '_' + tempfrontcalib + 'halfsecondDARK_master_bin1.fits', halfsecond_masterDark,  overwrite=True)
+                    np.save(pipefolder + '/' + 'ARCHIVE_' +  archiveDate + '_' + tempfrontcalib + 'halfsecondDARK_master_bin1.npy', halfsecond_masterDark)
+
+            except Exception as e:
+                plog ("Could not save dark frame: ",e)
+
+            PLDrive._mmap.close()
+            del PLDrive
+            gc.collect()
+            os.remove(g_dev['obs'].local_dark_folder  + 'tempfile')
+
+            g_dev["obs"].send_to_user("Two Second Dark calibration frame created.")
             
             ##############################################################################################
             ##############################################################################################
@@ -3060,6 +3194,12 @@ class Sequencer:
                                 flatdebiaseddedarked=(hdu1data-masterBias)-(broadbandss_masterDark*hdu1exp)
                             else:
                                 flatdebiaseddedarked=(hdu1data-masterBias)-(narrowbandss_masterDark*hdu1exp)        
+                                
+                            # Use a linearly interpolated masterdark frame
+                            
+                            
+                                
+                                
                             del hdu1data
 
                             # Bad pixel accumulator
@@ -3231,7 +3371,7 @@ class Sequencer:
 
                                 except:
                                     plog(traceback.format_exc())
-                                    breakpoint()
+                                    #breakpoint()
 
 
 
@@ -3542,6 +3682,31 @@ class Sequencer:
                 pass
             try:
                 del masterDark
+            except:
+                pass
+            
+            try:
+                del twosecond_masterDark
+            except:
+                pass
+            try:
+                del tensecond_masterDark
+            except:
+                pass
+            try:
+                del broadbandss_masterDark
+            except:
+                pass
+            try:
+                del broadbandss_masterBiasDark
+            except:
+                pass
+            try:
+                del narrowbandss_masterDark
+            except:
+                pass
+            try:
+                del narrowbandss_masterBiasDark
             except:
                 pass
 
