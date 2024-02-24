@@ -3003,6 +3003,9 @@ class Sequencer:
                             inputList.remove(file)
 
                     # Generate temp memmap
+                    broadband_ss_biasdark_exp_time = self.config['camera']['camera_1_1']['settings']['smart_stack_exposure_time']
+                    narrowband_ss_biasdark_exp_time = broadband_ss_biasdark_exp_time * self.config['camera']['camera_1_1']['settings']['smart_stack_exposure_NB_multiplier']
+
                     single_filter_camera_gains=[]
                     if len(inputList) == 0 or len(inputList) == 1:
                         plog ("Not doing " + str(filtercode) + " flat. Not enough available files in directory.")
@@ -3017,8 +3020,15 @@ class Sequencer:
                             plog("Storing flat in a memmap array: " + str(file))
                             hdu1data = np.load(file, mmap_mode='r')
                             hdu1exp=float(file.split('_')[-2])
-
-                            flatdebiaseddedarked=(hdu1data-masterBias)-(masterDark*hdu1exp)
+            
+                            if hdu1exp < 6:
+                                flatdebiaseddedarked=(hdu1data-masterBias)-(twosecond_masterDark*hdu1exp)                            
+                            elif hdu1exp < (10 + broadband_ss_biasdark_exp_time)/2:
+                                flatdebiaseddedarked=(hdu1data-masterBias)-(tensecond_masterDark*hdu1exp)
+                            elif hdu1exp < (broadband_ss_biasdark_exp_time + narrowband_ss_biasdark_exp_time)/2:                                
+                                flatdebiaseddedarked=(hdu1data-masterBias)-(broadbandss_masterDark*hdu1exp)
+                            else:
+                                flatdebiaseddedarked=(hdu1data-masterBias)-(narrowbandss_masterDark*hdu1exp)        
                             del hdu1data
 
                             # Bad pixel accumulator
