@@ -2483,14 +2483,14 @@ class Sequencer:
                 # bad_pixel_mapper_array=bad_pixel_mapper_array+above_array+below_array
 
 
-                timetaken=datetime.datetime.now() -starttime
-                plog ("Time Taken to load array: " + str(timetaken))
+                #timetaken=datetime.datetime.now() -starttime
+                #plog ("Time Taken to load array: " + str(timetaken))
 
-                starttime=datetime.datetime.now()
+                #starttime=datetime.datetime.now()
                 PLDrive[:,:,i] = hdu1data
                 del hdu1data
-                timetaken=datetime.datetime.now() -starttime
-                plog ("Time Taken to put in memmap: " + str(timetaken), "To Go:  ", n - i -1)
+                #timetaken=datetime.datetime.now() -starttime
+                #plog ("Time Taken to put in memmap: " + str(timetaken), "To Go:  ", n - i -1)
                 i=i+1
 
             plog ("**********************************")
@@ -2602,9 +2602,9 @@ class Sequencer:
             # D  frames and stick them in the memmap
             i=0
             for file in inputList:
-                plog (datetime.datetime.now().strftime("%H:%M:%S"))
-                starttime=datetime.datetime.now()
-                plog("Storing dark in a memmap array: " + str(file))
+                #plog (datetime.datetime.now().strftime("%H:%M:%S"))
+                #starttime=datetime.datetime.now()
+                #plog("Storing dark in a memmap array: " + str(file))
                 hdu1data = np.load(file, mmap_mode='r')
                 hdu1exp=float(file.split('_')[-2])
                 darkdeexp=(hdu1data-masterBias)/hdu1exp
@@ -2619,13 +2619,13 @@ class Sequencer:
                 # #print ("Bad pixels below: " + str(below_array.sum()))
                 # bad_pixel_mapper_array=bad_pixel_mapper_array+above_array+below_array
 
-                timetaken=datetime.datetime.now() -starttime
-                plog ("Time Taken to load array and debias and divide dark: " + str(timetaken))
+                #timetaken=datetime.datetime.now() -starttime
+                #plog ("Time Taken to load array and debias and divide dark: " + str(timetaken))
                 starttime=datetime.datetime.now()
                 PLDrive[:,:,i] = np.asarray(darkdeexp,dtype=np.float32)
                 del darkdeexp
-                timetaken=datetime.datetime.now() -starttime
-                plog ("Time Taken to put in memmap: " + str(timetaken))
+                #timetaken=datetime.datetime.now() -starttime
+                #plog ("Time Taken to put in memmap: " + str(timetaken))
                 i=i+1
 
             plog ("**********************************")
@@ -3598,21 +3598,21 @@ class Sequencer:
             # D  frames and stick them in the memmap
             i=0
             for file in inputList:
-                plog (datetime.datetime.now().strftime("%H:%M:%S"))
-                starttime=datetime.datetime.now()
-                plog("Storing dark in a memmap array: " + str(file))
+                #plog (datetime.datetime.now().strftime("%H:%M:%S"))
+                #starttime=datetime.datetime.now()
+                #plog("Storing dark in a memmap array: " + str(file))
                 hdu1data = np.load(file, mmap_mode='r')
                 hdu1exp=float(file.split('_')[-2])
                 darkdeexp=(hdu1data-masterBias)/hdu1exp
                 del hdu1data
 
-                timetaken=datetime.datetime.now() -starttime
-                plog ("Time Taken to load array and debias and divide dark: " + str(timetaken))
-                starttime=datetime.datetime.now()
+                #timetaken=datetime.datetime.now() -starttime
+                #plog ("Time Taken to load array and debias and divide dark: " + str(timetaken))
+                #starttime=datetime.datetime.now()
                 PLDrive[:,:,i] = np.asarray(darkdeexp,dtype=np.float32)
                 del darkdeexp
-                timetaken=datetime.datetime.now() -starttime
-                plog ("Time Taken to put in memmap: " + str(timetaken))
+                #timetaken=datetime.datetime.now() -starttime
+                #plog ("Time Taken to put in memmap: " + str(timetaken))
                 i=i+1
 
             plog ("**********************************")
@@ -3694,9 +3694,9 @@ class Sequencer:
             # D  frames and stick them in the memmap
             i=0
             for file in inputList:
-                plog (datetime.datetime.now().strftime("%H:%M:%S"))
-                starttime=datetime.datetime.now()
-                plog("Storing dark in a memmap array: " + str(file))
+                #plog (datetime.datetime.now().strftime("%H:%M:%S"))
+                #starttime=datetime.datetime.now()
+                #plog("Storing dark in a memmap array: " + str(file))
                 hdu1data = np.load(file, mmap_mode='r')
                 hdu1exp=float(file.split('_')[-2])
                 darkdeexp=(hdu1data-masterBias)/hdu1exp
@@ -3711,13 +3711,13 @@ class Sequencer:
                 # #print ("Bad pixels below: " + str(below_array.sum()))
                 # bad_pixel_mapper_array=bad_pixel_mapper_array+above_array+below_array
 
-                timetaken=datetime.datetime.now() -starttime
-                plog ("Time Taken to load array and debias and divide dark: " + str(timetaken))
-                starttime=datetime.datetime.now()
+                #timetaken=datetime.datetime.now() -starttime
+                #plog ("Time Taken to load array and debias and divide dark: " + str(timetaken))
+                #starttime=datetime.datetime.now()
                 PLDrive[:,:,i] = np.asarray(darkdeexp,dtype=np.float32)
                 del darkdeexp
                 timetaken=datetime.datetime.now() -starttime
-                plog ("Time Taken to put in memmap: " + str(timetaken))
+                #plog ("Time Taken to put in memmap: " + str(timetaken))
                 i=i+1
 
             plog ("**********************************")
@@ -3808,9 +3808,9 @@ class Sequencer:
             # D  frames and stick them in the memmap
             i=0
             for file in inputList:
-                plog (datetime.datetime.now().strftime("%H:%M:%S"))
-                starttime=datetime.datetime.now()
-                plog("Storing dark in a memmap array: " + str(file))
+                #plog (datetime.datetime.now().strftime("%H:%M:%S"))
+                #starttime=datetime.datetime.now()
+                #plog("Storing dark in a memmap array: " + str(file))
                 hdu1data = np.load(file, mmap_mode='r')
                 hdu1exp=float(file.split('_')[-2])
                 darkdeexp=(hdu1data-masterBias)/hdu1exp
@@ -3825,13 +3825,13 @@ class Sequencer:
                 # #print ("Bad pixels below: " + str(below_array.sum()))
                 # bad_pixel_mapper_array=bad_pixel_mapper_array+above_array+below_array
 
-                timetaken=datetime.datetime.now() -starttime
-                plog ("Time Taken to load array and debias and divide dark: " + str(timetaken))
-                starttime=datetime.datetime.now()
+                #timetaken=datetime.datetime.now() -starttime
+                #plog ("Time Taken to load array and debias and divide dark: " + str(timetaken))
+                #starttime=datetime.datetime.now()
                 PLDrive[:,:,i] = np.asarray(darkdeexp,dtype=np.float32)
                 del darkdeexp
-                timetaken=datetime.datetime.now() -starttime
-                plog ("Time Taken to put in memmap: " + str(timetaken))
+                #timetaken=datetime.datetime.now() -starttime
+                #plog ("Time Taken to put in memmap: " + str(timetaken))
                 i=i+1
 
             plog ("**********************************")
@@ -3901,8 +3901,8 @@ class Sequencer:
             # D  frames and stick them in the memmap
             i=0
             for file in inputList:
-                plog (datetime.datetime.now().strftime("%H:%M:%S"))
-                starttime=datetime.datetime.now()
+                #plog (datetime.datetime.now().strftime("%H:%M:%S"))
+                #starttime=datetime.datetime.now()
                 plog("Storing dark in a memmap array: " + str(file))
                 darkdeexp = np.load(file, mmap_mode='r')
                 #hdu1exp=float(file.split('_')[-2])
@@ -3919,13 +3919,13 @@ class Sequencer:
                 # #print ("Bad pixels below: " + str(below_array.sum()))
                 # bad_pixel_mapper_array=bad_pixel_mapper_array+above_array+below_array
 
-                timetaken=datetime.datetime.now() -starttime
-                plog ("Time Taken to load array and debias and divide dark: " + str(timetaken))
-                starttime=datetime.datetime.now()
+                #timetaken=datetime.datetime.now() -starttime
+                #plog ("Time Taken to load array and debias and divide dark: " + str(timetaken))
+                #starttime=datetime.datetime.now()
                 PLDrive[:,:,i] = np.asarray(darkdeexp,dtype=np.float32)
                 del darkdeexp
-                timetaken=datetime.datetime.now() -starttime
-                plog ("Time Taken to put in memmap: " + str(timetaken))
+                #timetaken=datetime.datetime.now() -starttime
+                #plog ("Time Taken to put in memmap: " + str(timetaken))
                 i=i+1
 
             plog ("**********************************")
@@ -4007,9 +4007,9 @@ class Sequencer:
             # D  frames and stick them in the memmap
             i=0
             for file in inputList:
-                plog (datetime.datetime.now().strftime("%H:%M:%S"))
-                starttime=datetime.datetime.now()
-                plog("Storing dark in a memmap array: " + str(file))
+                #plog (datetime.datetime.now().strftime("%H:%M:%S"))
+                #starttime=datetime.datetime.now()
+                #plog("Storing dark in a memmap array: " + str(file))
                 hdu1data = np.load(file, mmap_mode='r')
                 hdu1exp=float(file.split('_')[-2])
                 darkdeexp=(hdu1data-masterBias)/hdu1exp
@@ -4024,13 +4024,13 @@ class Sequencer:
                 # #print ("Bad pixels below: " + str(below_array.sum()))
                 # bad_pixel_mapper_array=bad_pixel_mapper_array+above_array+below_array
 
-                timetaken=datetime.datetime.now() -starttime
-                plog ("Time Taken to load array and debias and divide dark: " + str(timetaken))
-                starttime=datetime.datetime.now()
+                #timetaken=datetime.datetime.now() -starttime
+                #plog ("Time Taken to load array and debias and divide dark: " + str(timetaken))
+                #starttime=datetime.datetime.now()
                 PLDrive[:,:,i] = np.asarray(darkdeexp,dtype=np.float32)
                 del darkdeexp
-                timetaken=datetime.datetime.now() -starttime
-                plog ("Time Taken to put in memmap: " + str(timetaken))
+                #timetaken=datetime.datetime.now() -starttime
+                #plog ("Time Taken to put in memmap: " + str(timetaken))
                 i=i+1
 
             plog ("**********************************")
@@ -4102,8 +4102,8 @@ class Sequencer:
             # D  frames and stick them in the memmap
             i=0
             for file in inputList:
-                plog (datetime.datetime.now().strftime("%H:%M:%S"))
-                starttime=datetime.datetime.now()
+                #plog (datetime.datetime.now().strftime("%H:%M:%S"))
+                #starttime=datetime.datetime.now()
                 plog("Storing dark in a memmap array: " + str(file))
                 darkdeexp = np.load(file, mmap_mode='r')
                 #hdu1exp=float(file.split('_')[-2])
@@ -4120,13 +4120,13 @@ class Sequencer:
                 # #print ("Bad pixels below: " + str(below_array.sum()))
                 # bad_pixel_mapper_array=bad_pixel_mapper_array+above_array+below_array
 
-                timetaken=datetime.datetime.now() -starttime
-                plog ("Time Taken to load array and debias and divide dark: " + str(timetaken))
-                starttime=datetime.datetime.now()
+                #timetaken=datetime.datetime.now() -starttime
+                #plog ("Time Taken to load array and debias and divide dark: " + str(timetaken))
+                #starttime=datetime.datetime.now()
                 PLDrive[:,:,i] = np.asarray(darkdeexp,dtype=np.float32)
                 del darkdeexp
-                timetaken=datetime.datetime.now() -starttime
-                plog ("Time Taken to put in memmap: " + str(timetaken))
+                #timetaken=datetime.datetime.now() -starttime
+                #plog ("Time Taken to put in memmap: " + str(timetaken))
                 i=i+1
 
             plog ("**********************************")
@@ -4236,8 +4236,8 @@ class Sequencer:
                         # Debias and dedark flat frames and stick them in the memmap
                         i=0
                         for file in inputList:
-                            plog (datetime.datetime.now().strftime("%H:%M:%S"))
-                            starttime=datetime.datetime.now()
+                            #plog (datetime.datetime.now().strftime("%H:%M:%S"))
+                            #starttime=datetime.datetime.now()
                             plog("Storing flat in a memmap array: " + str(file))
                             hdu1data = np.load(file, mmap_mode='r')
                             hdu1exp=float(file.split('_')[-2])
