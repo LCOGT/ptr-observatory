@@ -1549,6 +1549,8 @@ class Sequencer:
             g_dev['mnt'].park_command({}, {}) # Get there early
 
             # Wait a significant fraction of time for darkslides, filters, scopes to settle
+            plog ("Waiting a few minutes for everything to settle down before taking bias and darks.")
+            plog ("To avoid light leaks from slow systems (e.g. darkslides, filter wheels etc.).")
             dark_wait_time=time.time()
             while (time.time() - dark_wait_time < 180):
                 if self.stop_script_called:
