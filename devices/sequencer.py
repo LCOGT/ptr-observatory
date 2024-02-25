@@ -4117,7 +4117,7 @@ class Sequencer:
                 # above_array=(darkdeexp > 20)
                 # #below_array=(darkdeexp < (img_temp_median - (10 * img_temp_stdev)))
                 # print ("Bad pixels above: " + str(above_array.sum()))
-                # #print ("Bad pixels below: " + str(below_array.sum()))
+                # #plog ("Bad pixels below: " + str(below_array.sum()))
                 # bad_pixel_mapper_array=bad_pixel_mapper_array+above_array+below_array
 
                 #timetaken=datetime.datetime.now() -starttime
@@ -4207,8 +4207,8 @@ class Sequencer:
             narrowband_ss_biasdark_exp_time = broadband_ss_biasdark_exp_time * self.config['camera']['camera_1_1']['settings']['smart_stack_exposure_NB_multiplier']
             dark_exp_time = self.config['camera']['camera_1_1']['settings']['dark_exposure']
 
-            print ("flat_biasdarks")
-            print (flat_biasdarks)
+            plog ("flat_biasdarks")
+            plog (flat_biasdarks)
             if len(tempfilters) == 0:
                 plog ("there are no filter directories, so not processing flats")
             else:
@@ -4247,8 +4247,8 @@ class Sequencer:
                             #breakpoint()
 
 
-                            print ("EXP")
-                            print (hdu1exp)
+                            plog ("EXP")
+                            plog (hdu1exp)
                             fraction_through_range=0
 
 
@@ -4256,46 +4256,46 @@ class Sequencer:
 
                             if hdu1exp == 0.05 and 'fivepercent' in flat_biasdarks:
                                 flatdebiaseddedarked=hdu1data -flat_biasdarks['fivepercent']
-                                print("five percent")
+                                plog("five percent")
                             elif hdu1exp == 0.1 and 'tenpercent' in flat_biasdarks:
                                 flatdebiaseddedarked=hdu1data -flat_biasdarks['tenpercent']
-                                print("ten percent")
+                                plog("ten percent")
                             elif hdu1exp == 0.25 and 'quartersec' in flat_biasdarks:
                                 flatdebiaseddedarked=hdu1data -flat_biasdarks['quartersec']
-                                print("quartersec")
+                                plog("quartersec")
                             elif hdu1exp == 0.5 and 'halfsec' in flat_biasdarks:
                                 flatdebiaseddedarked=hdu1data -flat_biasdarks['halfsec']
-                                print("halfsec")
+                                plog("halfsec")
                             elif hdu1exp == 0.75 and 'sevenfivepercent' in flat_biasdarks:
                                 flatdebiaseddedarked=hdu1data -flat_biasdarks['sevenfivepercent']
-                                print("sevenfivepercent")
+                                plog("sevenfivepercent")
                             elif hdu1exp == 1.0 and 'onesec' in flat_biasdarks:
                                 flatdebiaseddedarked=hdu1data -flat_biasdarks['onesec']
-                                print("onesec")
+                                plog("onesec")
                             elif hdu1exp == 1.5 and 'oneandahalfsec' in flat_biasdarks:
                                 flatdebiaseddedarked=hdu1data -flat_biasdarks['oneandahalfsec']
-                                print("one and a half sec")
+                                plog("one and a half sec")
                             elif hdu1exp == 2.0 and 'twosec' in flat_biasdarks:
                                 flatdebiaseddedarked=hdu1data -flat_biasdarks['twosec']
-                                print("two sec")
+                                plog("two sec")
                             elif hdu1exp == 5.0 and 'fivesec' in flat_biasdarks:
                                 flatdebiaseddedarked=hdu1data -flat_biasdarks['fivesec']
-                                print("five sec")
+                                plog("five sec")
                             elif hdu1exp == 10.0 and 'tensec' in flat_biasdarks:
                                 flatdebiaseddedarked=hdu1data -flat_biasdarks['tensec']
-                                print("ten sec")
+                                plog("ten sec")
                             elif hdu1exp == 15.0 and 'fifteensec' in flat_biasdarks:
                                 flatdebiaseddedarked=hdu1data -flat_biasdarks['fifteensec']
-                                print("fiveteen sec")
+                                plog("fiveteen sec")
                             elif hdu1exp == 20.0 and 'twenty' in flat_biasdarks:
                                 flatdebiaseddedarked=hdu1data -flat_biasdarks['twentysec']
-                                print("twenty sec")
+                                plog("twenty sec")
                             elif hdu1exp == broadband_ss_biasdark_exp_time:
                                 flatdebiaseddedarked=hdu1data -narrowbandss_masterBiasDark
-                                print ("broady")
+                                plog ("broady")
                             elif hdu1exp == narrowband_ss_biasdark_exp_time:
                                 flatdebiaseddedarked=hdu1data -broadbandss_masterBiasDark
-                                print ("Narrowy")
+                                plog ("Narrowy")
                             elif hdu1exp < 0.5:
                                 flatdebiaseddedarked=(hdu1data-masterBias)-(halfsecond_masterDark*hdu1exp)
                             elif hdu1exp <= 2.0:
@@ -4326,8 +4326,8 @@ class Sequencer:
                             else:
                                 flatdebiaseddedarked=(hdu1data-masterBias)-(narrowbandss_masterDark*hdu1exp)
 
-                            print ("Fraction through range")
-                            print (fraction_through_range)
+                            plog ("Fraction through range")
+                            plog (fraction_through_range)
 
 
 
@@ -4431,23 +4431,23 @@ class Sequencer:
                         nanmedian_collector=[]
                         nanstd_collector=[]
                         for flat_component in range(len(inputList)):
-                            print (flat_component)
+                            plog (flat_component)
                             tempdivide=PLDrive[:,:,flat_component] / finalImage
                             tempnanmedian=np.nanmedian(tempdivide)
                             tempstd=np.nanstd(tempdivide)
-                            print ("nanmedian: " + str(tempnanmedian ))
-                            print ("nanstdev: " + str(tempstd))
+                            plog ("nanmedian: " + str(tempnanmedian ))
+                            plog ("nanstdev: " + str(tempstd))
                             nanmedian_collector.append(tempnanmedian)
                             nanstd_collector.append(tempstd)
 
-                        print ("*********************************")
-                        print (nanmedian_collector)
-                        print (nanstd_collector)
-                        print ("Median of median: " + str(np.array(np.nanmedian(nanmedian_collector))))
-                        print ("Stdev of median: " + str(np.array(np.stdev(nanmedian_collector))))
-                        print ("Median of stdev: " + str(np.array(np.nanmedian(nanstd_collector))))
-                        print ("Stdev of stdev: " + str(np.array(np.stdev(nanstd_collector))))
-                        print ("*********************************")
+                        plog ("*********************************")
+                        plog (nanmedian_collector)
+                        plog (nanstd_collector)
+                        plog ("Median of median: " + str(np.array(np.nanmedian(nanmedian_collector))))
+                        plog ("Stdev of median: " + str(np.array(np.stdev(nanmedian_collector))))
+                        plog ("Median of stdev: " + str(np.array(np.nanmedian(nanstd_collector))))
+                        plog ("Stdev of stdev: " + str(np.array(np.stdev(nanstd_collector))))
+                        plog ("*********************************")
 
 
                         temporaryFlat=np.asarray(finalImage).astype(np.float32)
@@ -4459,8 +4459,8 @@ class Sequencer:
                         above_array=(temporaryFlat > (img_temp_median + (10 * img_temp_stdev)))
                         # BELOW IS A BAD IDEA FOR FLATS, BECAUSE HEAVY VIGNETTING WILL CAUSE BAD PIXELS
                         #below_array=(temporaryFlat < (img_temp_median - (10 * img_temp_stdev)))
-                        print ("Bad pixels above: " + str(above_array.sum()))
-                        #print ("Bad pixels below: " + str(below_array.sum()))
+                        plog ("Bad pixels above: " + str(above_array.sum()))
+                        #plog ("Bad pixels below: " + str(below_array.sum()))
                         bad_pixel_mapper_array=bad_pixel_mapper_array+above_array+below_array
 
 
