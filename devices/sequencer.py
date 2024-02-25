@@ -3489,9 +3489,9 @@ class Sequencer:
             # D  frames and stick them in the memmap
             i=0
             for file in inputList:
-                plog (datetime.datetime.now().strftime("%H:%M:%S"))
-                starttime=datetime.datetime.now()
-                plog("Storing dark in a memmap array: " + str(file))
+                #plog (datetime.datetime.now().strftime("%H:%M:%S"))
+                #starttime=datetime.datetime.now()
+                #plog("Storing dark in a memmap array: " + str(file))
                 hdu1data = np.load(file, mmap_mode='r')
                 hdu1exp=float(file.split('_')[-2])
                 darkdeexp=(hdu1data-masterBias)/hdu1exp
@@ -3903,7 +3903,7 @@ class Sequencer:
             for file in inputList:
                 #plog (datetime.datetime.now().strftime("%H:%M:%S"))
                 #starttime=datetime.datetime.now()
-                plog("Storing dark in a memmap array: " + str(file))
+                #plog("Storing dark in a memmap array: " + str(file))
                 darkdeexp = np.load(file, mmap_mode='r')
                 #hdu1exp=float(file.split('_')[-2])
                 #darkdeexp=(hdu1data-masterBias)/hdu1exp
@@ -4104,7 +4104,7 @@ class Sequencer:
             for file in inputList:
                 #plog (datetime.datetime.now().strftime("%H:%M:%S"))
                 #starttime=datetime.datetime.now()
-                plog("Storing dark in a memmap array: " + str(file))
+                #plog("Storing dark in a memmap array: " + str(file))
                 darkdeexp = np.load(file, mmap_mode='r')
                 #hdu1exp=float(file.split('_')[-2])
                 #darkdeexp=(hdu1data-masterBias)/hdu1exp
@@ -4444,9 +4444,9 @@ class Sequencer:
                         plog (nanmedian_collector)
                         plog (nanstd_collector)
                         plog ("Median of median: " + str(np.array(np.nanmedian(nanmedian_collector))))
-                        plog ("Stdev of median: " + str(np.array(np.stdev(nanmedian_collector))))
+                        plog ("Std of median: " + str(np.array(np.std(nanmedian_collector))))
                         plog ("Median of stdev: " + str(np.array(np.nanmedian(nanstd_collector))))
-                        plog ("Stdev of stdev: " + str(np.array(np.stdev(nanstd_collector))))
+                        plog ("Std of stdev: " + str(np.array(np.std(nanstd_collector))))
                         plog ("*********************************")
 
 
