@@ -9,8 +9,8 @@ from astropy import units as u
 from astropy.time import Time
 from astropy.io import fits
 #from astropy.utils.data import get_pkg_data_filename
-from astropy.convolution import Gaussian2DKernel, interpolate_replace_nans #convolve,
-kernel = Gaussian2DKernel(x_stddev=3,y_stddev=3)
+#from astropy.convolution import Gaussian2DKernel, interpolate_replace_nans #convolve,
+#kernel = Gaussian2DKernel(x_stddev=3,y_stddev=3)
 from astropy.stats import sigma_clip
 import ephem
 import shelve
@@ -21,9 +21,9 @@ import numpy as np
 from numpy import inf
 import os
 import gc
-from pyowm import OWM
-from pyowm.utils import config
-from scipy import interpolate
+#from pyowm import OWM
+#from pyowm.utils import config
+#from scipy import interpolate
 import warnings
 
 from devices.camera import Camera
@@ -4232,222 +4232,205 @@ class Sequencer:
                     if len(inputList) == 0 or len(inputList) == 1:
                         plog ("Not doing " + str(filtercode) + " flat. Not enough available files in directory.")
                     else:
-                        PLDrive = np.memmap(g_dev['obs'].local_flat_folder  + 'tempfile', dtype='float32', mode= 'w+', shape = (shapeImage[0],shapeImage[1],len(inputList)))
-
-                        # Debias and dedark flat frames and stick them in the memmap
-                        i=0
-                        for file in inputList:
-                            #plog (datetime.datetime.now().strftime("%H:%M:%S"))
-                            #starttime=datetime.datetime.now()
-                            plog("Storing flat in a memmap array: " + str(file))
-                            hdu1data = np.load(file, mmap_mode='r')
-                            hdu1exp=float(file.split('_')[-2])
-
-
-                            #breakpoint()
-
-
-                            plog ("EXP")
-                            plog (hdu1exp)
-                            fraction_through_range=0
-
-
-                            #flat_biasdarks
-
-                            if hdu1exp == 0.05 and 'fivepercent' in flat_biasdarks:
-                                flatdebiaseddedarked=hdu1data -flat_biasdarks['fivepercent']
-                                plog("five percent")
-                            elif hdu1exp == 0.1 and 'tenpercent' in flat_biasdarks:
-                                flatdebiaseddedarked=hdu1data -flat_biasdarks['tenpercent']
-                                plog("ten percent")
-                            elif hdu1exp == 0.25 and 'quartersec' in flat_biasdarks:
-                                flatdebiaseddedarked=hdu1data -flat_biasdarks['quartersec']
-                                plog("quartersec")
-                            elif hdu1exp == 0.5 and 'halfsec' in flat_biasdarks:
-                                flatdebiaseddedarked=hdu1data -flat_biasdarks['halfsec']
-                                plog("halfsec")
-                            elif hdu1exp == 0.75 and 'sevenfivepercent' in flat_biasdarks:
-                                flatdebiaseddedarked=hdu1data -flat_biasdarks['sevenfivepercent']
-                                plog("sevenfivepercent")
-                            elif hdu1exp == 1.0 and 'onesec' in flat_biasdarks:
-                                flatdebiaseddedarked=hdu1data -flat_biasdarks['onesec']
-                                plog("onesec")
-                            elif hdu1exp == 1.5 and 'oneandahalfsec' in flat_biasdarks:
-                                flatdebiaseddedarked=hdu1data -flat_biasdarks['oneandahalfsec']
-                                plog("one and a half sec")
-                            elif hdu1exp == 2.0 and 'twosec' in flat_biasdarks:
-                                flatdebiaseddedarked=hdu1data -flat_biasdarks['twosec']
-                                plog("two sec")
-                            elif hdu1exp == 5.0 and 'fivesec' in flat_biasdarks:
-                                flatdebiaseddedarked=hdu1data -flat_biasdarks['fivesec']
-                                plog("five sec")
-                            elif hdu1exp == 10.0 and 'tensec' in flat_biasdarks:
-                                flatdebiaseddedarked=hdu1data -flat_biasdarks['tensec']
-                                plog("ten sec")
-                            elif hdu1exp == 15.0 and 'fifteensec' in flat_biasdarks:
-                                flatdebiaseddedarked=hdu1data -flat_biasdarks['fifteensec']
-                                plog("fiveteen sec")
-                            elif hdu1exp == 20.0 and 'twenty' in flat_biasdarks:
-                                flatdebiaseddedarked=hdu1data -flat_biasdarks['twentysec']
-                                plog("twenty sec")
-                            elif hdu1exp == broadband_ss_biasdark_exp_time:
-                                flatdebiaseddedarked=hdu1data -narrowbandss_masterBiasDark
-                                plog ("broady")
-                            elif hdu1exp == narrowband_ss_biasdark_exp_time:
-                                flatdebiaseddedarked=hdu1data -broadbandss_masterBiasDark
-                                plog ("Narrowy")
-                            elif hdu1exp < 0.5:
-                                flatdebiaseddedarked=(hdu1data-masterBias)-(halfsecond_masterDark*hdu1exp)
-                            elif hdu1exp <= 2.0:
-                                fraction_through_range=(hdu1exp-0.5)/(2.0-0.5)
-                                tempmasterDark=(fraction_through_range * twosecond_masterDark) + ((1-fraction_through_range) * halfsecond_masterDark)
-                                flatdebiaseddedarked=(hdu1data-masterBias)-(tempmasterDark*hdu1exp)
-                                del tempmasterDark
-                            elif hdu1exp <= 10.0:
-                                fraction_through_range=(hdu1exp-2)/(10.0-2.0)
-                                tempmasterDark=(fraction_through_range * tensecond_masterDark) + ((1-fraction_through_range) * twosecond_masterDark)
-                                flatdebiaseddedarked=(hdu1data-masterBias)-(tempmasterDark*hdu1exp)
-                                del tempmasterDark
-                            elif hdu1exp <= broadband_ss_biasdark_exp_time:
-                                fraction_through_range=(hdu1exp-10)/(broadband_ss_biasdark_exp_time-10.0)
-                                tempmasterDark=(fraction_through_range * broadbandss_masterDark) + ((1-fraction_through_range) * tensecond_masterDark)
-                                flatdebiaseddedarked=(hdu1data-masterBias)-(tempmasterDark*hdu1exp)
-                                del tempmasterDark
-                            elif hdu1exp <= narrowband_ss_biasdark_exp_time:
-                                fraction_through_range=(hdu1exp-broadband_ss_biasdark_exp_time)/(narrowband_ss_biasdark_exp_time-broadband_ss_biasdark_exp_time)
-                                tempmasterDark=(fraction_through_range * narrowbandss_masterDark) + ((1-fraction_through_range) * broadbandss_masterDark)
-                                flatdebiaseddedarked=(hdu1data-masterBias)-(tempmasterDark*hdu1exp)
-                                del tempmasterDark
-                            elif dark_exp_time > narrowband_ss_biasdark_exp_time:
-                                fraction_through_range=(hdu1exp-narrowband_ss_biasdark_exp_time)/(dark_exp_time -narrowband_ss_biasdark_exp_time)
-                                tempmasterDark=(fraction_through_range * masterDark) + ((1-fraction_through_range) * narrowbandss_masterDark)
-                                flatdebiaseddedarked=(hdu1data-masterBias)-(tempmasterDark*hdu1exp)
-                                del tempmasterDark
-                            else:
-                                flatdebiaseddedarked=(hdu1data-masterBias)-(narrowbandss_masterDark*hdu1exp)
-
-                            plog ("Fraction through range")
-                            plog (fraction_through_range)
-
-
-
-                            # if hdu1exp < 6:
-                            #     flatdebiaseddedarked=(hdu1data-masterBias)-(twosecond_masterDark*hdu1exp)
-                            # elif hdu1exp < (10 + broadband_ss_biasdark_exp_time)/2:
-                            #     flatdebiaseddedarked=(hdu1data-masterBias)-(tensecond_masterDark*hdu1exp)
-                            # elif hdu1exp < (broadband_ss_biasdark_exp_time + narrowband_ss_biasdark_exp_time)/2:
-                            #     flatdebiaseddedarked=(hdu1data-masterBias)-(broadbandss_masterDark*hdu1exp)
-                            # else:
-                            #     flatdebiaseddedarked=(hdu1data-masterBias)-(narrowbandss_masterDark*hdu1exp)
-
-                            # Use a linearly interpolated masterdark frame
-
-
-
-
-                            del hdu1data
-
-
-
-
-
-                            # Normalising flat file
-                            if not g_dev['cam'].config["camera"][g_dev['cam'].name]["settings"]["is_osc"]:
-                                normalising_factor=np.nanmedian(flatdebiaseddedarked)
-                                flatdebiaseddedarked = flatdebiaseddedarked/normalising_factor
-                                # Naning bad entries into master flat
-                                flatdebiaseddedarked[flatdebiaseddedarked < 0.25] = np.nan
-                                flatdebiaseddedarked[flatdebiaseddedarked > 2.0] = np.nan
-                                # Rescaling median once nan'ed
-                                flatdebiaseddedarked = flatdebiaseddedarked/np.nanmedian(flatdebiaseddedarked)
-                            else:
-
-                                debayered=[]
-                                max_median=0
-
-                                debayered.append(flatdebiaseddedarked[::2, ::2])
-                                debayered.append(flatdebiaseddedarked[::2, 1::2])
-                                debayered.append(flatdebiaseddedarked[1::2, ::2])
-                                debayered.append(flatdebiaseddedarked[1::2, 1::2])
-
-                                osc_normalising_factor=[]
-                                # crop each of the images to the central region
-
-                                for oscimage in debayered:
-                                    cropx = int( (oscimage.shape[0] -500)/2)
-                                    cropy = int((oscimage.shape[1] -500) /2)
-                                    oscimage=oscimage[cropx:-cropx, cropy:-cropy]
-                                    oscmedian=np.nanmedian(oscimage)
-                                    osc_normalising_factor.append(oscmedian)
-
-                                del debayered
-
-                                flatdebiaseddedarked[::2, ::2]=flatdebiaseddedarked[::2, ::2]/osc_normalising_factor[0]
-                                flatdebiaseddedarked[::2, 1::2]=flatdebiaseddedarked[::2, 1::2]/osc_normalising_factor[1]
-                                flatdebiaseddedarked[1::2, ::2]=flatdebiaseddedarked[1::2, ::2]/osc_normalising_factor[2]
-                                flatdebiaseddedarked[1::2, 1::2]=flatdebiaseddedarked[1::2, 1::2]/osc_normalising_factor[3]
-                                # Naning bad entries into master flat
-                                flatdebiaseddedarked[flatdebiaseddedarked < 0.25] = np.nan
-                                flatdebiaseddedarked[flatdebiaseddedarked > 2.0] = np.nan
-                                # Rescaling median once nan'ed
-                                flatdebiaseddedarked = flatdebiaseddedarked/np.nanmedian(flatdebiaseddedarked)
-
-
-
-                            #timetaken=datetime.datetime.now() -starttime
-                            #plog ("Time Taken to load array and debias and dedark and normalise flat: " + str(timetaken))
-
-                            #starttime=datetime.datetime.now()
-                            PLDrive[:,:,i] = flatdebiaseddedarked
-                            del flatdebiaseddedarked
-                            #timetaken=datetime.datetime.now() -starttime
-                            #plog ("Time Taken to put in memmap: " + str(timetaken))
-                            i=i+1
-
-                        plog ("**********************************")
-                        plog ("Median Stacking each " + str (filtercode) + " flat frame row individually")
-                        plog (datetime.datetime.now().strftime("%H:%M:%S"))
-                        # Go through each pixel and calculate nanmedian. Can't do all arrays at once as it is hugely memory intensive
-                        finalImage=np.zeros(shapeImage,dtype=float)
-
-                        mptask=[]
-                        counter=0
-                        for goog in range(shapeImage[0]):
-                            mptask.append((g_dev['obs'].local_flat_folder + 'tempfile',counter, (shapeImage[0],shapeImage[1],len(inputList))))
-                            counter=counter+1
-
-                        counter=0
-                        with Pool(math.floor(os.cpu_count()*0.85)) as pool:
-                            for result in pool.map(stack_nanmedian_row, mptask):
-
-                                finalImage[counter,:]=result
+                        
+                        while True:
+                        
+                            PLDrive = np.memmap(g_dev['obs'].local_flat_folder  + 'tempfile', dtype='float32', mode= 'w+', shape = (shapeImage[0],shapeImage[1],len(inputList)))
+    
+                            # Debias and dedark flat frames and stick them in the memmap
+                            i=0
+                            for file in inputList:
+                                plog("Storing flat in a memmap array: " + str(file))
+                                hdu1data = np.load(file, mmap_mode='r')
+                                hdu1exp=float(file.split('_')[-2])
+                                plog ("EXP")
+                                plog (hdu1exp)
+                                fraction_through_range=0
+    
+                                if hdu1exp == 0.05 and 'fivepercent' in flat_biasdarks:
+                                    flatdebiaseddedarked=hdu1data -flat_biasdarks['fivepercent']
+                                    plog("five percent")
+                                elif hdu1exp == 0.1 and 'tenpercent' in flat_biasdarks:
+                                    flatdebiaseddedarked=hdu1data -flat_biasdarks['tenpercent']
+                                    plog("ten percent")
+                                elif hdu1exp == 0.25 and 'quartersec' in flat_biasdarks:
+                                    flatdebiaseddedarked=hdu1data -flat_biasdarks['quartersec']
+                                    plog("quartersec")
+                                elif hdu1exp == 0.5 and 'halfsec' in flat_biasdarks:
+                                    flatdebiaseddedarked=hdu1data -flat_biasdarks['halfsec']
+                                    plog("halfsec")
+                                elif hdu1exp == 0.75 and 'sevenfivepercent' in flat_biasdarks:
+                                    flatdebiaseddedarked=hdu1data -flat_biasdarks['sevenfivepercent']
+                                    plog("sevenfivepercent")
+                                elif hdu1exp == 1.0 and 'onesec' in flat_biasdarks:
+                                    flatdebiaseddedarked=hdu1data -flat_biasdarks['onesec']
+                                    plog("onesec")
+                                elif hdu1exp == 1.5 and 'oneandahalfsec' in flat_biasdarks:
+                                    flatdebiaseddedarked=hdu1data -flat_biasdarks['oneandahalfsec']
+                                    plog("one and a half sec")
+                                elif hdu1exp == 2.0 and 'twosec' in flat_biasdarks:
+                                    flatdebiaseddedarked=hdu1data -flat_biasdarks['twosec']
+                                    plog("two sec")
+                                elif hdu1exp == 5.0 and 'fivesec' in flat_biasdarks:
+                                    flatdebiaseddedarked=hdu1data -flat_biasdarks['fivesec']
+                                    plog("five sec")
+                                elif hdu1exp == 10.0 and 'tensec' in flat_biasdarks:
+                                    flatdebiaseddedarked=hdu1data -flat_biasdarks['tensec']
+                                    plog("ten sec")
+                                elif hdu1exp == 15.0 and 'fifteensec' in flat_biasdarks:
+                                    flatdebiaseddedarked=hdu1data -flat_biasdarks['fifteensec']
+                                    plog("fiveteen sec")
+                                elif hdu1exp == 20.0 and 'twenty' in flat_biasdarks:
+                                    flatdebiaseddedarked=hdu1data -flat_biasdarks['twentysec']
+                                    plog("twenty sec")
+                                elif hdu1exp == broadband_ss_biasdark_exp_time:
+                                    flatdebiaseddedarked=hdu1data -narrowbandss_masterBiasDark
+                                    plog ("broady")
+                                elif hdu1exp == narrowband_ss_biasdark_exp_time:
+                                    flatdebiaseddedarked=hdu1data -broadbandss_masterBiasDark
+                                    plog ("Narrowy")
+                                elif hdu1exp < 0.5:
+                                    flatdebiaseddedarked=(hdu1data-masterBias)-(halfsecond_masterDark*hdu1exp)
+                                elif hdu1exp <= 2.0:
+                                    fraction_through_range=(hdu1exp-0.5)/(2.0-0.5)
+                                    tempmasterDark=(fraction_through_range * twosecond_masterDark) + ((1-fraction_through_range) * halfsecond_masterDark)
+                                    flatdebiaseddedarked=(hdu1data-masterBias)-(tempmasterDark*hdu1exp)
+                                    del tempmasterDark
+                                elif hdu1exp <= 10.0:
+                                    fraction_through_range=(hdu1exp-2)/(10.0-2.0)
+                                    tempmasterDark=(fraction_through_range * tensecond_masterDark) + ((1-fraction_through_range) * twosecond_masterDark)
+                                    flatdebiaseddedarked=(hdu1data-masterBias)-(tempmasterDark*hdu1exp)
+                                    del tempmasterDark
+                                elif hdu1exp <= broadband_ss_biasdark_exp_time:
+                                    fraction_through_range=(hdu1exp-10)/(broadband_ss_biasdark_exp_time-10.0)
+                                    tempmasterDark=(fraction_through_range * broadbandss_masterDark) + ((1-fraction_through_range) * tensecond_masterDark)
+                                    flatdebiaseddedarked=(hdu1data-masterBias)-(tempmasterDark*hdu1exp)
+                                    del tempmasterDark
+                                elif hdu1exp <= narrowband_ss_biasdark_exp_time:
+                                    fraction_through_range=(hdu1exp-broadband_ss_biasdark_exp_time)/(narrowband_ss_biasdark_exp_time-broadband_ss_biasdark_exp_time)
+                                    tempmasterDark=(fraction_through_range * narrowbandss_masterDark) + ((1-fraction_through_range) * broadbandss_masterDark)
+                                    flatdebiaseddedarked=(hdu1data-masterBias)-(tempmasterDark*hdu1exp)
+                                    del tempmasterDark
+                                elif dark_exp_time > narrowband_ss_biasdark_exp_time:
+                                    fraction_through_range=(hdu1exp-narrowband_ss_biasdark_exp_time)/(dark_exp_time -narrowband_ss_biasdark_exp_time)
+                                    tempmasterDark=(fraction_through_range * masterDark) + ((1-fraction_through_range) * narrowbandss_masterDark)
+                                    flatdebiaseddedarked=(hdu1data-masterBias)-(tempmasterDark*hdu1exp)
+                                    del tempmasterDark
+                                else:
+                                    flatdebiaseddedarked=(hdu1data-masterBias)-(narrowbandss_masterDark*hdu1exp)
+    
+                                plog ("Fraction through range")
+                                plog (fraction_through_range)
+                                del hdu1data
+    
+                                # Normalising flat file
+                                if not g_dev['cam'].config["camera"][g_dev['cam'].name]["settings"]["is_osc"]:
+                                    normalising_factor=np.nanmedian(flatdebiaseddedarked)
+                                    flatdebiaseddedarked = flatdebiaseddedarked/normalising_factor
+                                    # Naning bad entries into master flat
+                                    flatdebiaseddedarked[flatdebiaseddedarked < 0.25] = np.nan
+                                    flatdebiaseddedarked[flatdebiaseddedarked > 2.0] = np.nan
+                                    # Rescaling median once nan'ed
+                                    flatdebiaseddedarked = flatdebiaseddedarked/np.nanmedian(flatdebiaseddedarked)
+                                else:
+    
+                                    debayered=[]
+                                    max_median=0
+    
+                                    debayered.append(flatdebiaseddedarked[::2, ::2])
+                                    debayered.append(flatdebiaseddedarked[::2, 1::2])
+                                    debayered.append(flatdebiaseddedarked[1::2, ::2])
+                                    debayered.append(flatdebiaseddedarked[1::2, 1::2])
+    
+                                    osc_normalising_factor=[]
+                                    # crop each of the images to the central region
+    
+                                    for oscimage in debayered:
+                                        cropx = int( (oscimage.shape[0] -500)/2)
+                                        cropy = int((oscimage.shape[1] -500) /2)
+                                        oscimage=oscimage[cropx:-cropx, cropy:-cropy]
+                                        oscmedian=np.nanmedian(oscimage)
+                                        osc_normalising_factor.append(oscmedian)
+    
+                                    del debayered
+    
+                                    flatdebiaseddedarked[::2, ::2]=flatdebiaseddedarked[::2, ::2]/osc_normalising_factor[0]
+                                    flatdebiaseddedarked[::2, 1::2]=flatdebiaseddedarked[::2, 1::2]/osc_normalising_factor[1]
+                                    flatdebiaseddedarked[1::2, ::2]=flatdebiaseddedarked[1::2, ::2]/osc_normalising_factor[2]
+                                    flatdebiaseddedarked[1::2, 1::2]=flatdebiaseddedarked[1::2, 1::2]/osc_normalising_factor[3]
+                                    # Naning bad entries into master flat
+                                    flatdebiaseddedarked[flatdebiaseddedarked < 0.25] = np.nan
+                                    flatdebiaseddedarked[flatdebiaseddedarked > 2.0] = np.nan
+                                    # Rescaling median once nan'ed
+                                    flatdebiaseddedarked = flatdebiaseddedarked/np.nanmedian(flatdebiaseddedarked)
+    
+                                PLDrive[:,:,i] = flatdebiaseddedarked
+                                del flatdebiaseddedarked
+                                i=i+1
+    
+                            plog ("**********************************")
+                            plog ("Median Stacking each " + str (filtercode) + " flat frame row individually")
+                            plog (datetime.datetime.now().strftime("%H:%M:%S"))
+                            # Go through each pixel and calculate nanmedian. Can't do all arrays at once as it is hugely memory intensive
+                            finalImage=np.zeros(shapeImage,dtype=float)
+    
+                            mptask=[]
+                            counter=0
+                            for goog in range(shapeImage[0]):
+                                mptask.append((g_dev['obs'].local_flat_folder + 'tempfile',counter, (shapeImage[0],shapeImage[1],len(inputList))))
                                 counter=counter+1
-
-
-                        plog (datetime.datetime.now().strftime("%H:%M:%S"))
-                        plog ("**********************************")
-
-                        plog ("Flat component report")
-                        nanmedian_collector=[]
-                        nanstd_collector=[]
-                        for flat_component in range(len(inputList)):
-                            plog (flat_component)
-                            tempdivide=PLDrive[:,:,flat_component] / finalImage
-                            tempnanmedian=np.nanmedian(tempdivide)
-                            tempstd=np.nanstd(tempdivide)
-                            plog ("nanmedian: " + str(tempnanmedian ))
-                            plog ("nanstdev: " + str(tempstd))
-                            nanmedian_collector.append(tempnanmedian)
-                            nanstd_collector.append(tempstd)
-
-                        plog ("*********************************")
-                        plog (nanmedian_collector)
-                        plog (nanstd_collector)
-                        plog ("Median of median: " + str(np.array(np.nanmedian(nanmedian_collector))))
-                        plog ("Std of median: " + str(np.array(np.std(nanmedian_collector))))
-                        plog ("Median of stdev: " + str(np.array(np.nanmedian(nanstd_collector))))
-                        plog ("Std of stdev: " + str(np.array(np.std(nanstd_collector))))
-                        plog ("*********************************")
+    
+                            counter=0
+                            with Pool(math.floor(os.cpu_count()*0.85)) as pool:
+                                for result in pool.map(stack_nanmedian_row, mptask):
+                                    finalImage[counter,:]=result
+                                    counter=counter+1
+    
+                            plog (datetime.datetime.now().strftime("%H:%M:%S"))
+                            plog ("**********************************")
+    
+                            plog ("Flat component report")
+                            #nanmedian_collector=[]
+                            nanstd_collector=[]
+                            for flat_component in range(len(inputList)):
+                                plog (flat_component)
+                                tempdivide=PLDrive[:,:,flat_component] / finalImage
+                                #tempnanmedian=np.nanmedian(tempdivide)
+                                tempstd=np.nanstd(tempdivide)
+                                #plog ("nanmedian: " + str(tempnanmedian ))
+                                plog ("nanstdev: " + str(tempstd))
+                                #nanmedian_collector.append(tempnanmedian)
+                                nanstd_collector.append(tempstd)
+    
+                            plog ("*********************************")
+                            #plog (nanmedian_collector)
+                            plog (nanstd_collector)
+                            #plog ("Median of median: " + str(np.array(np.nanmedian(nanmedian_collector))))
+                            #plog ("Std of median: " + str(np.array(np.std(nanmedian_collector))))
+                            plog ("Median of stdev: " + str(np.array(np.nanmedian(nanstd_collector))))
+                            plog ("Std of stdev: " + str(np.array(np.std(nanstd_collector))))
+                            med_std=np.array(np.nanmedian(nanstd_collector))
+                            std_std=np.array(np.std(nanstd_collector))
+                            plog ("*********************************")
+    
+                            delete_flat_components=[]
+                            for counterflat in range(len(nanstd_collector)):
+                                print ("Image " + str(counterflat) + " assessment")
+                                if nanstd_collector[counterflat] > (med_std + 3 * std_std):
+                                    print ("FOUND A REJECTION: " + str(round(nanstd_collector[counterflat],5)) + " > " + str(round(med_std + 3 * std_std,5)))
+                                    delete_flat_components.append(counterflat)
+                            
+                            if len(delete_flat_components) == 0:
+                                break
+                            
+                            # Remove problematic flat images from squishener so we can re-run the flat.
+                            for index in sorted(delete_flat_components, reverse=True):
+                                del inputList[index]                                
+                            PLDrive._mmap.close()
+                            del PLDrive
+                            gc.collect()
+                            os.remove(g_dev['obs'].local_flat_folder  + 'tempfile')
+                            
 
 
                         temporaryFlat=np.asarray(finalImage).astype(np.float32)
@@ -4472,40 +4455,27 @@ class Sequencer:
 
                         last_num_of_nans=846753876359.0
                         while pre_num_of_nans > 0:
-                        #breakpoint()
                             # Fix up any glitches in the flat
 
 
                             num_of_nans=np.count_nonzero(np.isnan(temporaryFlat))
                             plog ("Number of Nans in flat this iteration: " + str(num_of_nans))
 
-                            #breakpoint()
-
                             if num_of_nans == last_num_of_nans:
                                 break
                             last_num_of_nans=copy.deepcopy(num_of_nans)
-                            while num_of_nans > 0:
-                                timestart=time.time()
-                                #temporaryFlat=interpolate_replace_nans(temporaryFlat, kernel)
-
-
-
-
+                            while num_of_nans > 0:                               
 
                                 # List the coordinates that are nan in the array
                                 nan_coords=np.argwhere(np.isnan(temporaryFlat))
                                 x_size=temporaryFlat.shape[0]
                                 y_size=temporaryFlat.shape[1]
 
-
                                 # For each coordinate pop out the 3x3 grid
                                 try:
                                     for nancoord in nan_coords:
                                         x_nancoord=nancoord[0]
                                         y_nancoord=nancoord[1]
-                                        #print ("******************")
-                                        #print (x_nancoord)
-                                        #print (y_nancoord)
                                         countervalue=0
                                         countern=0
                                         # left
@@ -4538,46 +4508,10 @@ class Sequencer:
                                         else:
                                             temporaryFlat[x_nancoord,y_nancoord]=countervalue/countern
 
-                                        #print(countervalue/countern)
 
                                 except:
                                     plog(traceback.format_exc())
-                                    #breakpoint()
 
-
-
-
-                                # Get the above, below, left and righ tvalues where not nan
-
-
-                                # place the average value in the nan coordinate
-
-
-
-
-
-                                #interpolate_replace_nans(temporaryFlat, kernel)
-                                plog ("time for fitzcycle: " +str(time.time()-timestart))
-
-                                # #temporaryFlat=
-                                # interpolate_missing_pixels(temporaryFlat,np.isnan(temporaryFlat),method='nearest',fill_value=np.nan)
-                                # plog ("time for nearest: " +str(time.time()-timestart))
-                                # timestart=time.time()
-                                # interpolate_missing_pixels(temporaryFlat,np.isnan(temporaryFlat),method='linear',fill_value=np.nan)
-                                # plog ("time for linear: " +str(time.time()-timestart))
-                                # timestart=time.time()
-
-                                # interpolate_missing_pixels(temporaryFlat,np.isnan(temporaryFlat),method='slinear',fill_value=np.nan)
-                                # plog ("time for slinear: " +str(time.time()-timestart))
-                                # timestart=time.time()
-                                # temporaryFlat=interpolate_missing_pixels(temporaryFlat,np.isnan(temporaryFlat),method='cubic',fill_value=np.nan)
-                                # plog ("time for cubic: " +str(time.time()-timestart))
-
-
-
-                                # temporaryFlat[temporaryFlat == inf] = np.nan
-                                # temporaryFlat[temporaryFlat == -inf] = np.nan
-                                # temporaryFlat[temporaryFlat < 0.000001 ] = np.nan
                                 num_of_nans=np.count_nonzero(np.isnan(temporaryFlat))
                                 plog ("Number of Nans in flat this iteration: " + str(num_of_nans))
 
