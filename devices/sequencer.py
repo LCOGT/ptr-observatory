@@ -2622,7 +2622,7 @@ class Sequencer:
 
             masterDark=np.asarray(finalImage).astype(np.float32)
             del finalImage
-            
+
             # Bad pixel accumulator
             img_temp_median=np.nanmedian(masterDark)
             img_temp_stdev=np.nanstd(masterDark)
@@ -2631,7 +2631,7 @@ class Sequencer:
             print ("Bad pixels above: " + str(above_array.sum()))
             #print ("Bad pixels below: " + str(below_array.sum()))
             bad_pixel_mapper_array=bad_pixel_mapper_array+above_array+below_array
-            
+
             try:
                 fits.writeto(g_dev['obs'].calib_masters_folder + tempfrontcalib + 'DARK_master_bin1.fits', masterDark,  overwrite=True)
                 filepathaws=g_dev['obs'].calib_masters_folder
@@ -3509,8 +3509,8 @@ class Sequencer:
 
             halfsecond_masterDark=np.asarray(finalImage).astype(np.float32)
             del finalImage
-            
-            
+
+
             try:
                 fits.writeto(g_dev['obs'].calib_masters_folder + tempfrontcalib + 'halfsecondDARK_master_bin1.fits', halfsecond_masterDark,  overwrite=True)
                 filepathaws=g_dev['obs'].calib_masters_folder
@@ -3606,7 +3606,7 @@ class Sequencer:
 
             twosecond_masterDark=np.asarray(finalImage).astype(np.float32)
             del finalImage
-            
+
             try:
                 fits.writeto(g_dev['obs'].calib_masters_folder + tempfrontcalib + '2secondDARK_master_bin1.fits', twosecond_masterDark,  overwrite=True)
                 filepathaws=g_dev['obs'].calib_masters_folder
@@ -3714,7 +3714,7 @@ class Sequencer:
 
             tensecond_masterDark=np.asarray(finalImage).astype(np.float32)
             del finalImage
-            
+
             try:
                 fits.writeto(g_dev['obs'].calib_masters_folder + tempfrontcalib + '10secondDARK_master_bin1.fits', tensecond_masterDark,  overwrite=True)
                 filepathaws=g_dev['obs'].calib_masters_folder
@@ -3822,7 +3822,7 @@ class Sequencer:
 
             broadbandss_masterDark=np.asarray(finalImage).astype(np.float32)
             del finalImage
-            
+
             # Bad pixel accumulator
             img_temp_median=np.nanmedian(broadbandss_masterDark)
             img_temp_stdev=np.nanstd(broadbandss_masterDark)
@@ -3831,8 +3831,8 @@ class Sequencer:
             print ("Bad pixels above: " + str(above_array.sum()))
             #print ("Bad pixels below: " + str(below_array.sum()))
             bad_pixel_mapper_array=bad_pixel_mapper_array+above_array+below_array
-            
-            
+
+
             try:
                 fits.writeto(g_dev['obs'].calib_masters_folder + tempfrontcalib + 'broadbandssDARK_master_bin1.fits', broadbandss_masterDark,  overwrite=True)
                 filepathaws=g_dev['obs'].calib_masters_folder
@@ -3916,7 +3916,7 @@ class Sequencer:
 
             broadbandss_masterBiasDark=np.asarray(finalImage).astype(np.float32)
             del finalImage
-            
+
             try:
                 fits.writeto(g_dev['obs'].calib_masters_folder + tempfrontcalib + 'broadbandssBIASDARK_master_bin1.fits', broadbandss_masterBiasDark,  overwrite=True)
                 filepathaws=g_dev['obs'].calib_masters_folder
@@ -4021,8 +4021,8 @@ class Sequencer:
 
             narrowbandss_masterDark=np.asarray(finalImage).astype(np.float32)
             del finalImage
-            
-            
+
+
             # Bad pixel accumulator
             img_temp_median=np.nanmedian(narrowbandss_masterDark)
             img_temp_stdev=np.nanstd(narrowbandss_masterDark)
@@ -4031,9 +4031,9 @@ class Sequencer:
             print ("Bad pixels above: " + str(above_array.sum()))
             #print ("Bad pixels below: " + str(below_array.sum()))
             bad_pixel_mapper_array=bad_pixel_mapper_array+above_array+below_array
-            
-            
-            
+
+
+
             try:
                 fits.writeto(g_dev['obs'].calib_masters_folder + tempfrontcalib + 'narrowbandssDARK_master_bin1.fits', narrowbandss_masterDark,  overwrite=True)
                 filepathaws=g_dev['obs'].calib_masters_folder
@@ -4117,7 +4117,7 @@ class Sequencer:
 
             narrowbandss_masterBiasDark=np.asarray(finalImage).astype(np.float32)
             del finalImage
-            
+
             try:
                 fits.writeto(g_dev['obs'].calib_masters_folder + tempfrontcalib + 'narrowbandssBIASDARK_master_bin1.fits', narrowbandss_masterBiasDark,  overwrite=True)
                 filepathaws=g_dev['obs'].calib_masters_folder
@@ -4312,7 +4312,7 @@ class Sequencer:
 
                             del hdu1data
 
-                            
+
 
 
 
@@ -4422,9 +4422,10 @@ class Sequencer:
                         img_temp_median=np.nanmedian(temporaryFlat)
                         img_temp_stdev=np.nanstd(temporaryFlat)
                         above_array=(temporaryFlat > (img_temp_median + (10 * img_temp_stdev)))
-                        below_array=(temporaryFlat < (img_temp_median - (10 * img_temp_stdev)))
+                        # BELOW IS A BAD IDEA FOR FLATS, BECAUSE HEAVY VIGNETTING WILL CAUSE BAD PIXELS
+                        #below_array=(temporaryFlat < (img_temp_median - (10 * img_temp_stdev)))
                         print ("Bad pixels above: " + str(above_array.sum()))
-                        print ("Bad pixels below: " + str(below_array.sum()))
+                        #print ("Bad pixels below: " + str(below_array.sum()))
                         bad_pixel_mapper_array=bad_pixel_mapper_array+above_array+below_array
 
 
@@ -5354,8 +5355,8 @@ class Sequencer:
                                     pixel_area=pow(float(g_dev['cam'].pixscale),2)
                                 exp_time = target_flat/(collecting_area*pixel_area*sky_lux*float(filter_throughput))  #g_dev['ocn'].calc_HSI_lux)  #meas_sky_lux)
                                 # snap the exposure time to a discrete grid
-                                exp_time=min(sky_exposure_snap_to_grid, key=lambda x:abs(x-exp_time))                                
-                                
+                                exp_time=min(sky_exposure_snap_to_grid, key=lambda x:abs(x-exp_time))
+
                                 new_throughput_value  =filter_throughput
                             else:
                                 if morn:
@@ -5364,17 +5365,17 @@ class Sequencer:
                                     exp_time = min_exposure
                                     # snap the exposure time to a discrete grid
                                     exp_time=min(sky_exposure_snap_to_grid, key=lambda x:abs(x-exp_time))
-                                    
+
                         elif in_wait_mode:
                             exp_time = target_flat/(collecting_area*pixel_area*sky_lux*float(new_throughput_value ))
                             # snap the exposure time to a discrete grid
                             exp_time=min(sky_exposure_snap_to_grid, key=lambda x:abs(x-exp_time))
-                            
+
                         else:
                             exp_time = scale * exp_time
                             # snap the exposure time to a discrete grid
                             exp_time=min(sky_exposure_snap_to_grid, key=lambda x:abs(x-exp_time))
-                            
+
 
                         if self.stop_script_called:
                             g_dev["obs"].send_to_user("Cancelling out of calibration script as stop script has been called.")
@@ -5440,13 +5441,13 @@ class Sequencer:
                              exp_time = min_exposure
                              # snap the exposure time to a discrete grid
                              exp_time=min(sky_exposure_snap_to_grid, key=lambda x:abs(x-exp_time))
-                             
+
                         else:
                             in_wait_mode=False
                             exp_time = round(exp_time, 5)
                             # snap the exposure time to a discrete grid
                             exp_time=min(sky_exposure_snap_to_grid, key=lambda x:abs(x-exp_time))
-                            
+
 
                             # If scope has gone to bed due to inactivity, wake it up!
                             if g_dev['mnt'].rapid_park_indicator:

@@ -4626,7 +4626,7 @@ def post_exposure_process(payload):
                 hdusmalldata[g_dev['cam'].bpmFiles[str(1)]] = np.nan
 
             except Exception as e:
-                plog("debias/darking light frame failed: ", e)
+                plog("Bad Pixel Masking light frame failed: ", e)
 
 
 
