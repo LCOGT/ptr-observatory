@@ -382,7 +382,7 @@ class Camera:
                                       + "/" + tempfrontcalib +  "2secondDARK_master_bin1.fits")
 
             tempdarkframe = np.array(tempdarkframe[0].data, dtype=np.float32)
-            self.darkFiles.update({'short_exposure_dark': tempdarkframe})
+            self.darkFiles.update({'twosec_exposure_dark': tempdarkframe})
             del tempdarkframe
         except:
             plog("2.0s Dark frame for Binning 1 not available")
@@ -1679,11 +1679,14 @@ class Camera:
         skip_daytime_check=False
         skip_calibration_check=False
 
+        if imtype.lower() in ['fivepercent_exposure_dark','tenpercent_exposure_dark', 'quartersec_exposure_dark', 'halfsec_exposure_dark','threequartersec_exposure_dark','onesec_exposure_dark', 'oneandahalfsec_exposure_dark', 'twosec_exposure_dark', 'fivesec_exposure_dark', 'tensec_exposure_dark', 'fifteensec_exposure_dark', 'twentysec_exposure_dark', 'broadband_ss_biasdark', 'narrowband_ss_biasdark']:
+            a_dark_exposure=True
+        else:
+            a_dark_exposure=False
+
         if imtype.lower() in (
             "bias",
             "dark",
-            'broadband_ss_biasdark',
-            'narrowband_ss_biasdark','short_exposure_dark','halfsec_exposure_dark','tensec_exposure_dark',
             "screen flat",
             "sky flat",
             "near flat",
@@ -1691,7 +1694,7 @@ class Camera:
             "arc flat",
             "lamp flat",
             "solar flat",
-        ):
+        ) or a_dark_exposure:
             skip_daytime_check=True
             skip_calibration_check=True
 
@@ -1754,7 +1757,7 @@ class Camera:
             bias_dark_or_light_type_frame = 'bias'  # don't open the shutter.
             frame_type = imtype.replace(" ", "")
 
-        elif imtype.lower() in ("dark", "lamp flat", 'broadband_ss_biasdark', 'narrowband_ss_biasdark','short_exposure_dark','halfsec_exposure_dark','tensec_exposure_dark'):
+        elif imtype.lower() in ("dark", "lamp flat") or a_dark_exposure:
 
             bias_dark_or_light_type_frame = 'dark'  # don't open the shutter.
             lamps = "turn on led+tungsten lamps here, if lampflat"
@@ -1824,9 +1827,7 @@ class Camera:
         # Here we set up the filter, and later on possibly rotational composition.
         try:
             if g_dev["fil"].null_filterwheel == False:
-                if imtype in ['bias','dark'
-                'broadband_ss_biasdark',
-                'narrowband_ss_biasdark','short_exposure_dark','halfsec_exposure_dark','tensec_exposure_dark']:
+                if imtype in ['bias','dark'] or a_dark_exposure:
                     requested_filter_name = 'dark'
 
                 elif imtype in ['pointing'] and self.config["camera"][self.name]["settings"]['is_osc']:
@@ -1891,9 +1892,7 @@ class Camera:
             if not g_dev['mnt'].rapid_park_indicator and not g_dev['obs'].rotator_has_been_checked_since_last_slew:
                 g_dev['obs'].rotator_has_been_checked_since_last_slew = True
                 while g_dev['rot'].rotator.IsMoving:
-                        if rot_report == 0 and imtype not in ['bias', 'dark',
-                        'broadband_ss_biasdark',
-                        'narrowband_ss_biasdark','short_exposure_dark','halfsec_exposure_dark','tensec_exposure_dark']:
+                        if rot_report == 0 and (imtype not in ['bias', 'dark'] or a_dark_exposure):
                             plog("Waiting for camera rotator to catch up. ")
                             g_dev["obs"].send_to_user("Waiting for camera rotator to catch up before exposing.")
 
@@ -2123,7 +2122,7 @@ class Camera:
                     # # Check that the roof hasn't shut
                     # g_dev['obs'].get_enclosure_status_from_aws()
 
-                    if not g_dev['obs'].assume_roof_open and not g_dev['obs'].scope_in_manual_mode and 'Closed' in g_dev['obs'].enc_status['shutter_status'] and imtype not in ['bias', 'dark','broadband_ss_biasdark','narrowband_ss_biasdark','short_exposure_dark','halfsec_exposure_dark','tensec_exposure_dark']:
+                    if not g_dev['obs'].assume_roof_open and not g_dev['obs'].scope_in_manual_mode and 'Closed' in g_dev['obs'].enc_status['shutter_status'] and imtype not in ['bias', 'dark'] and not a_dark_exposure:
 
                         plog("Roof shut, exposures cancelled.")
                         g_dev["obs"].send_to_user("Roof shut, exposures cancelled.")
@@ -2227,7 +2226,7 @@ class Camera:
                                              self.write_out_realtimefiles_token_to_disk(real_time_token,real_time_files)
                                              return
 
-                            if (bias_dark_or_light_type_frame in ["bias", "dark"] or 'flat' in frame_type) and not manually_requested_calibration:
+                            if (bias_dark_or_light_type_frame in ["bias", "dark"] or 'flat' in frame_type or a_dark_exposure) and not manually_requested_calibration:
 
                                 # Check that the temperature is ok before accepting
                                 current_camera_temperature, cur_humidity, cur_pressure = (g_dev['cam']._temperature())
@@ -2278,9 +2277,7 @@ class Camera:
                                 self.currently_in_smartstack_loop=False
                                 break
 
-                            if imtype in ['bias','dark'
-                            'broadband_ss_biasdark',
-                            'narrowband_ss_biasdark','short_exposure_dark','halfsec_exposure_dark','tensec_exposure_dark']:
+                            if imtype in ['bias','dark'] or a_dark_exposure:
                                 # Artifical wait time for bias and dark
                                 # calibrations to allow pixels to cool
                                 time.sleep(1)
@@ -2381,13 +2378,14 @@ class Camera:
                             initial_smartstack_ra=initial_smartstack_ra,
                             initial_smartstack_dec= initial_smartstack_dec,
                             zoom_factor=self.zoom_factor,
-                            useastrometrynet=useastrometrynet
+                            useastrometrynet=useastrometrynet,
+                            a_dark_exposure=a_dark_exposure
                         )  # NB all these parameters are crazy!
                         self.exposure_busy = False
                         self.retry_camera = 0
                         #self.currently_in_smartstack_loop=False
                         print ("EXPRESULT: " + str(expresult))
-                        if not frame_type[-4:] == "flat" and not frame_type.lower() in ['broadband_ss_biasdark','narrowband_ss_biasdark','short_exposure_dark','halfsec_exposure_dark','tensec_exposure_dark', "bias", "dark"] and not frame_type.lower()=='focus' and not frame_type=='pointing':
+                        if not frame_type[-4:] == "flat" and not frame_type.lower() in ["bias", "dark"] and not a_dark_exposure and not frame_type.lower()=='focus' and not frame_type=='pointing':
                             try:
                                 real_time_files.append(str(expresult["real_time_filename"]))
                                 print ("REAL TIME FILES LIST: " + str(real_time_files))
@@ -2511,7 +2509,8 @@ class Camera:
         initial_smartstack_ra=None,
         initial_smartstack_dec=None,
         zoom_factor=False,
-        useastrometrynet=False
+        useastrometrynet=False,
+        a_dark_exposure=False
 
     ):
 
@@ -2545,10 +2544,7 @@ class Camera:
             "screenflat",
             "skyflat",
             "dark",
-            "bias",
-            'broadband_ss_biasdark',
-            'narrowband_ss_biasdark','short_exposure_dark','halfsec_exposure_dark','tensec_exposure_dark'
-        ):
+            "bias") or a_dark_exposure:
             g_dev["obs"].send_to_user(
                 "Starting "
                 + str(exposure_time)
@@ -2846,7 +2842,7 @@ class Camera:
                     g_dev['obs'].check_platesolve_and_nudge()
 
 
-                if (frame_type in ['broadband_ss_biasdark','narrowband_ss_biasdark','short_exposure_dark','halfsec_exposure_dark','tensec_exposure_dark',"bias", "dark"] or frame_type[-4:] == ['flat']) and not manually_requested_calibration:
+                if (frame_type in ["bias", "dark"]  or a_dark_exposure or frame_type[-4:] == ['flat']) and not manually_requested_calibration:
                     plog("Median of full-image area bias, dark or flat:  ", np.median(outputimg))
 
                     # Check that the temperature is ok before accepting
@@ -2866,7 +2862,7 @@ class Camera:
 
                     # For a dark, check that the debiased dark has an adequately low value
                     # If there is no master bias, it will just skip this check
-                    if frame_type in ["dark",'broadband_ss_biasdark','narrowband_ss_biasdark','short_exposure_dark','halfsec_exposure_dark','tensec_exposure_dark']:
+                    if frame_type in ["dark"]  or a_dark_exposure :
                         #try:
                         dark_limit_adu =   self.config["camera"][self.name]["settings"]['dark_lim_adu']
                         if len(self.biasFiles) > 0:
@@ -2933,7 +2929,7 @@ class Camera:
                     object_specf = "no"
 
                 # If NOT an expose image going into the post-process thread, rotate the fits here.
-                if not(not frame_type[-4:] == "flat" and not frame_type in ['broadband_ss_biasdark','narrowband_ss_biasdark','short_exposure_dark','halfsec_exposure_dark','tensec_exposure_dark',"bias", "dark"] and not focus_image and not frame_type=='pointing'):
+                if not(not frame_type[-4:] == "flat" and not frame_type in ["bias", "dark"] and not a_dark_exposure and not focus_image and not frame_type=='pointing'):
                     # Flip flat fits around to correct orientation
                     if self.config["camera"][self.name]["settings"]["transpose_fits"]:
                         outputimg=outputimg.transpose().astype('float32')
@@ -2956,7 +2952,7 @@ class Camera:
                         outputimg=outputimg.astype('float32')
 
                 # Specific dark and bias save area
-                if frame_type in ['broadband_ss_biasdark','narrowband_ss_biasdark','short_exposure_dark','halfsec_exposure_dark','tensec_exposure_dark',"bias", "dark"] and not manually_requested_calibration:
+                if (frame_type in ["bias", "dark"] or a_dark_exposure) and not manually_requested_calibration:
                     # Save good flat
                     im_path_r = self.camera_path
                     raw_path = im_path_r + g_dev["day"] + "/raw/"
@@ -3054,7 +3050,7 @@ class Camera:
 
 
                #if not frame_type[-4:] == "flat" and (not frame_type in ["bias", "dark"] or (frame_type in ["bias", "dark"] and manually_requested_calibration)) and not focus_image == True and not frame_type=='pointing':
-                if not frame_type[-4:] == "flat" and not frame_type in ['broadband_ss_biasdark','narrowband_ss_biasdark','short_exposure_dark','halfsec_exposure_dark','tensec_exposure_dark',"bias", "dark"] and not focus_image and not frame_type=='pointing':
+                if not frame_type[-4:] == "flat" and not frame_type in ["bias", "dark"]  and not a_dark_exposure and not focus_image and not frame_type=='pointing':
                     focus_position=g_dev['foc'].current_focus_position
 
                     self.post_processing_queue.put(copy.deepcopy((outputimg, g_dev["mnt"].pier_side, self.config["camera"][self.name]["settings"]['is_osc'], frame_type, self.config['camera']['camera_1_1']['settings']['reject_new_flat_by_known_gain'], avg_mnt, avg_foc, avg_rot, self.setpoint, self.tempccdtemp, self.ccd_humidity, self.ccd_pressure, self.darkslide_state, exposure_time, this_exposure_filter, exposure_filter_offset, self.pane,opt , observer_user_name, self.hint, azimuth_of_observation, altitude_of_observation, airmass_of_observation, self.pixscale, smartstackid,sskcounter,Nsmartstack, longstackid, ra_at_time_of_exposure, dec_at_time_of_exposure, manually_requested_calibration, object_name, object_specf, g_dev["mnt"].ha_corr, g_dev["mnt"].dec_corr, focus_position, self.config, self.name, self.camera_known_gain, self.camera_known_readnoise, start_time_of_observation, observer_user_id, self.camera_path,  solve_it, next_seq, zoom_factor, useastrometrynet)), block=False)
@@ -3081,12 +3077,12 @@ class Camera:
                                 outputimg=outputimg-(g_dev['cam'].darkFiles['halfsec_exposure_dark']*exposure_time)
                             elif exposure_time < 2.0:
                                 fraction_through_range=(exposure_time-0.5)/(2.0-0.5)
-                                tempmasterDark=(fraction_through_range * g_dev['cam'].darkFiles['short_exposure_dark']) + ((1-fraction_through_range) * g_dev['cam'].darkFiles['halfsec_exposure_dark'])
+                                tempmasterDark=(fraction_through_range * g_dev['cam'].darkFiles['twosec_exposure_dark']) + ((1-fraction_through_range) * g_dev['cam'].darkFiles['halfsec_exposure_dark'])
                                 outputimg=outputimg-(tempmasterDark*exposure_time)
                                 del tempmasterDark
                             elif exposure_time < 10.0:
                                 fraction_through_range=(exposure_time-2)/(10.0-2.0)
-                                tempmasterDark=(fraction_through_range * g_dev['cam'].darkFiles['tensec_exposure_dark']) + ((1-fraction_through_range) * g_dev['cam'].darkFiles['short_exposure_dark'])
+                                tempmasterDark=(fraction_through_range * g_dev['cam'].darkFiles['tensec_exposure_dark']) + ((1-fraction_through_range) * g_dev['cam'].darkFiles['twosec_exposure_dark'])
                                 outputimg=outputimg-(tempmasterDark*exposure_time)
                                 del tempmasterDark
                             elif exposure_time < broadband_ss_biasdark_exp_time:
@@ -3705,7 +3701,7 @@ class Camera:
                 expresult["error"] = False
                 # filename same as raw_filename00 in post_exposure process
 
-                if not frame_type[-4:] == "flat" and not frame_type in ['broadband_ss_biasdark','narrowband_ss_biasdark','short_exposure_dark','halfsec_exposure_dark','tensec_exposure_dark',"bias", "dark"] and not focus_image and not frame_type=='pointing':
+                if not frame_type[-4:] == "flat" and not frame_type in ["bias", "dark"]  and not a_dark_exposure and not focus_image and not frame_type=='pointing':
                     try:
                         im_type = "EX"
                         expresult["real_time_filename"] =  self.config["obs_id"]+ "-"+ self.alias + '_' + str(frame_type) + '_' + str(this_exposure_filter)+ "-"+ g_dev["day"]+ "-"+ next_seq+ "-"+ im_type+ "00.fits"
@@ -4095,7 +4091,7 @@ def post_exposure_process(payload):
 
         # if frame_type in (
         #     "bias",
-        #     "dark",'broadband_ss_biasdark','narrowband_ss_biasdark','short_exposure_dark','halfsec_exposure_dark','tensec_exposure_dark',
+        #     "dark",'broadband_ss_biasdark','narrowband_ss_biasdark','twosec_exposure_dark','halfsec_exposure_dark','tensec_exposure_dark',
         #     "lampflat",
         #     "skyflat",
         #     "screenflat",
@@ -4317,7 +4313,7 @@ def post_exposure_process(payload):
 
         # if frame_type in (
         #     "bias",
-        #     "dark",'broadband_ss_biasdark','narrowband_ss_biasdark','short_exposure_dark','halfsec_exposure_dark','tensec_exposure_dark',
+        #     "dark",'broadband_ss_biasdark','narrowband_ss_biasdark','twosec_exposure_dark','halfsec_exposure_dark','tensec_exposure_dark',
         #     "lampflat",
         #     "skyflat",
         #     "screenflat",
@@ -4574,12 +4570,12 @@ def post_exposure_process(payload):
                         hdusmalldata=hdusmalldata-(g_dev['cam'].darkFiles['halfsec_exposure_dark']*exposure_time)
                     elif exposure_time < 2.0:
                         fraction_through_range=(exposure_time-0.5)/(2.0-0.5)
-                        tempmasterDark=(fraction_through_range * g_dev['cam'].darkFiles['short_exposure_dark']) + ((1-fraction_through_range) * g_dev['cam'].darkFiles['halfsec_exposure_dark'])
+                        tempmasterDark=(fraction_through_range * g_dev['cam'].darkFiles['twosec_exposure_dark']) + ((1-fraction_through_range) * g_dev['cam'].darkFiles['halfsec_exposure_dark'])
                         hdusmalldata=hdusmalldata-(tempmasterDark*exposure_time)
                         del tempmasterDark
                     elif exposure_time < 10.0:
                         fraction_through_range=(exposure_time-2)/(10.0-2.0)
-                        tempmasterDark=(fraction_through_range * g_dev['cam'].darkFiles['tensec_exposure_dark']) + ((1-fraction_through_range) * g_dev['cam'].darkFiles['short_exposure_dark'])
+                        tempmasterDark=(fraction_through_range * g_dev['cam'].darkFiles['tensec_exposure_dark']) + ((1-fraction_through_range) * g_dev['cam'].darkFiles['twosec_exposure_dark'])
                         hdusmalldata=hdusmalldata-(tempmasterDark*exposure_time)
                         del tempmasterDark
                     elif exposure_time < broadband_ss_biasdark_exp_time:
@@ -4727,9 +4723,15 @@ def post_exposure_process(payload):
 
                 # This puts the file into the smartstack queue
                 # And gets it underway ASAP.
+                
+                if frame_type.lower() in ['fivepercent_exposure_dark','tenpercent_exposure_dark', 'quartersec_exposure_dark', 'halfsec_exposure_dark','threequartersec_exposure_dark','onesec_exposure_dark', 'oneandahalfsec_exposure_dark', 'twosec_exposure_dark', 'fivesec_exposure_dark', 'tensec_exposure_dark', 'fifteensec_exposure_dark', 'twentysec_exposure_dark', 'broadband_ss_biasdark', 'narrowband_ss_biasdark']:
+                    a_dark_exposure=True
+                else:
+                    a_dark_exposure=False
+                
                 if ( not frame_type.lower() in [
                     "bias",
-                    "dark",'broadband_ss_biasdark','narrowband_ss_biasdark','short_exposure_dark','halfsec_exposure_dark','tensec_exposure_dark',
+                    "dark",
                     "flat",
                     "solar",
                     "lunar",
@@ -4739,7 +4741,7 @@ def post_exposure_process(payload):
                     "auto_focus",
                     "focus",
                     "pointing"
-                ]) and smartstackid != 'no' :
+                ]) and smartstackid != 'no' and not a_dark_exposure :
                     g_dev['obs'].to_smartstack((paths, pixscale, smartstackid, sskcounter, Nsmartstack, pier_side, zoom_factor))
                 else:
                     if not selfconfig['keep_reduced_on_disk']:
@@ -4823,19 +4825,19 @@ def post_exposure_process(payload):
             # We turn back to getting the bigger raw, reduced and fz files dealt with
             if not ( frame_type.lower() in [
                 "bias",
-                "dark",'broadband_ss_biasdark','narrowband_ss_biasdark','short_exposure_dark','halfsec_exposure_dark','tensec_exposure_dark',
+                "dark"
                 "flat",
                 "focus",
                 "skyflat",
                 "pointing"
-                ]):
+                ]) and not a_dark_exposure:
                 g_dev['obs'].to_slow_process(5,('fz_and_send', raw_path + raw_name00 + ".fz", copy.deepcopy(hdu.data), copy.deepcopy(hdu.header), frame_type, ra_at_time_of_exposure,dec_at_time_of_exposure))
 
 
             # If the files are local calibrations, save them out to the local calibration directory
             # if not manually_requested_calibration and ( frame_type.lower() in [
             #     "bias",
-            #     "dark",'broadband_ss_biasdark','narrowband_ss_biasdark','short_exposure_dark','halfsec_exposure_dark','tensec_exposure_dark',
+            #     "dark",'broadband_ss_biasdark','narrowband_ss_biasdark','twosec_exposure_dark','halfsec_exposure_dark','tensec_exposure_dark',
             #     "flat",
 
             #     "skyflat"]):
