@@ -1568,7 +1568,7 @@ class Sequencer:
                 self.bias_dark_latch = False
                 break     #Terminate Bias dark phase if within taking a dark woudl run over.
 
-            
+
 
             b_d_to_do = bias_count + dark_count
             try:
@@ -1733,8 +1733,8 @@ class Sequencer:
                     self.bias_dark_latch = False
                     break
                 g_dev['obs'].request_scan_requests()
-                
-                
+
+
                 # COLLECTING A 0.05 Second EXPOSURE DARK FRAME
                 plog("Expose " + str(5*stride) +" 1x1 0.05 second exposure dark frames.")
                 req = {'time': 0.05,  'script': 'True', 'image_type': 'fivepercent_exposure_dark'}
@@ -1776,8 +1776,8 @@ class Sequencer:
                     self.bias_dark_latch = False
                     break
                 g_dev['obs'].request_scan_requests()
-                
-                
+
+
                 # COLLECTING A 0.25 Second EXPOSURE DARK FRAME
                 plog("Expose " + str(5*stride) +" 1x1 0.25 second exposure dark frames.")
                 req = {'time': 0.25,  'script': 'True', 'image_type': 'quartersec_exposure_dark'}
@@ -1835,7 +1835,7 @@ class Sequencer:
                 g_dev['cam'].expose_command(req, opt, user_id='Tobor', user_name='Tobor', user_roles='system', no_AWS=False, \
                                 do_sep=False, quick=False, skip_open_check=True,skip_daytime_check=True)
 
-                
+
 
                 if self.stop_script_called:
                     g_dev["obs"].send_to_user("Cancelling out of calibration script as stop script has been called.")
@@ -1846,7 +1846,7 @@ class Sequencer:
                     break
                 g_dev['obs'].request_scan_requests()
 
-                
+
 
                 # COLLECTING A one Second EXPOSURE DARK FRAME
                 plog("Expose " + str(5*stride) +" 1x1  1 second exposure dark frames.")
@@ -1893,7 +1893,7 @@ class Sequencer:
 
                 # COLLECTING A BIAS FRAME
                 # COLLECT BIAS FRAMES LATER as there is no way to know whether bias frames are affected
-                # by slowly-closing shutters... whereas darks can be rejected. 
+                # by slowly-closing shutters... whereas darks can be rejected.
                 plog("Expose " + str(stride) +" 1x1 bias frames.")
                 req = {'time': 0.0,  'script': 'True', 'image_type': 'bias'}
                 opt = {'count': min_to_do,  \
@@ -3584,7 +3584,7 @@ class Sequencer:
             # NOW for the 2 second darks
             plog (datetime.datetime.now().strftime("%H:%M:%S"))
             plog ("Regenerating 2 second exposure dark")
-            inputList=(glob(g_dev['obs'].local_dark_folder+ 'shortdarks/' +'*.n*'))
+            inputList=(glob(g_dev['obs'].local_dark_folder+ 'twosecdarks/' +'*.n*'))
 
             # Test each flat file actually opens
             for file in inputList:
@@ -4712,6 +4712,10 @@ class Sequencer:
                     g_dev["obs"].send_to_user(str(filtercode) + " flat calibration frame created.")
 
 
+
+                # Now finished with the biasdarks specifically for flats,
+                # delete them
+                del flat_biasdarks
 
                 # Create the bad pixel map fits and npy
                 # Save the local boolean array
