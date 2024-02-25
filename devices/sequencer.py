@@ -1533,12 +1533,40 @@ class Sequencer:
             broadband_ss_biasdark_exp_time = self.config['camera']['camera_1_1']['settings']['smart_stack_exposure_time']
             narrowband_ss_biasdark_exp_time = broadband_ss_biasdark_exp_time * self.config['camera']['camera_1_1']['settings']['smart_stack_exposure_NB_multiplier']
 
+            # Before parking, set the darkslide to close
+            if g_dev['cam'].has_darkslide:
+                if g_dev['cam'].darkslide_state != 'Closed':
+                    if g_dev['cam'].darkslide_type=='COM':
+                        g_dev['cam'].darkslide_instance.closeDarkslide()
+                    elif g_dev['cam'].darkslide_type=='ASCOM_FLI_SHUTTER':
+                        g_dev['cam'].camera.Action('SetShutter', 'close')
+
+                    g_dev['cam'].darkslide_open = False
+                    g_dev['cam'].darkslide_state = 'Closed'
+            # Before parking, set the dark filter
+            self.current_filter, filt_pointer, filter_offset = g_dev["fil"].set_name_command({"filter": 'dark'}, {})
+
+            g_dev['mnt'].park_command({}, {}) # Get there early
+
+            # Wait a significant fraction of time for darkslides, filters, scopes to settle
+            dark_wait_time=time.time()
+            while (time.time() - dark_wait_time < 180):
+                if self.stop_script_called:
+                    g_dev["obs"].send_to_user("Cancelling out of calibration script as stop script has been called.")
+                    self.bias_dark_latch = False
+                    return
+                if ephem.now() + (dark_exp_time + cycle_time + 30)/86400 > ending:
+                    self.bias_dark_latch = False
+                    break
+                g_dev['obs'].request_scan_requests()
+                time.sleep(5)
+
 
             if ephem.now() + (dark_exp_time + cycle_time + 30)/86400 > ending:   #ephem is units of a day
                 self.bias_dark_latch = False
                 break     #Terminate Bias dark phase if within taking a dark woudl run over.
 
-            g_dev['mnt'].park_command({}, {}) # Get there early
+            
 
             b_d_to_do = bias_count + dark_count
             try:
@@ -1677,6 +1705,8 @@ class Sequencer:
                 g_dev['cam'].expose_command(req, opt, user_id='Tobor', user_name='Tobor', user_roles='system', no_AWS=False, \
                                 do_sep=False, quick=False, skip_open_check=True,skip_daytime_check=True)
 
+                
+
                 if self.stop_script_called:
                     g_dev["obs"].send_to_user("Cancelling out of calibration script as stop script has been called.")
                     self.bias_dark_latch = False
@@ -1686,7 +1716,7 @@ class Sequencer:
                     break
                 g_dev['obs'].request_scan_requests()
 
-
+                
 
                 # COLLECTING A one Second EXPOSURE DARK FRAME
                 plog("Expose " + str(5*stride) +" 1x1  1 second exposure dark frames.")
@@ -1754,7 +1784,7 @@ class Sequencer:
 
                 # COLLECTING A FIVE SECOND EXPOSURE DARK FRAME
                 plog("Expose " + str(5*stride) +" 1x1 5s exposure dark frames.")
-                req = {'time': 2,  'script': 'True', 'image_type': 'fivesec_exposure_dark'}
+                req = {'time': 5,  'script': 'True', 'image_type': 'fivesec_exposure_dark'}
                 opt = {'count': 3*min_to_do,  \
                        'filter': 'dark'}
 
