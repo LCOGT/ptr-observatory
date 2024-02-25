@@ -591,7 +591,7 @@ site_config = {
                                 ['HA',      [4, 0],  'HA'],   # 11
                                 ['N2',      [5, 0],  'N2'],   # 12       
                                 ['S2',      [6, 0],  'S2'],   # 13
-                                ['dark',    [6, 0],  'dk']],  # 14
+                                ['dark',    [6, 1],  'dk']],  # 14
                 'focus_filter' : 'w',
 
                 
@@ -630,19 +630,22 @@ site_config = {
     'camera': {
         'camera_1_1': {
             'parent': 'telescope1',
+
             'name': 'SQ007',# 'OF01', #'KF04',      #Important because this points to a server file structure by that name.
             'desc':  'QHY 600 Pro Mono',  #'FLI On-semi 50100',
             'service_date': '20240210',  #'20231222'
             #'driver':  'ASCOM.QHYCCD.Camera',   #  Maxim.CCDCamera',   #"Maxim.CCDCamera",   #'ASCOM.FLI.Kepler.Camera',  #Code must work withall three
             'driver':  'QHYCCD_Direct_Control',   #'ASCOM.FLI.Kepler.Camera',  #"QHYCCD_Direct_Control", # NB Be careful this is not QHY Camera2 or Guider  "Maxim.CCDCamera",   #'ASCOM.FLI.Kepler.Camera', "ASCOM.QHYCCD.Camera",   #
-            
-           
+
 
             
             'startup_script':  None,
             'recover_script':  None,
             'shutdown_script':  None,
-            'detector':  'Sony 455',
+
+
+            'detector':  'Sony IMX-455',
+
             'manufacturer':  'QHY',
             'use_file_mode':  False,
             #'file_mode_path':  'Q:/000ptr_saf/archive/of01/autosaves/',
@@ -657,18 +660,20 @@ site_config = {
                 'hold_flats_in_memory': True, # If there is sufficient memory ... OR .... not many flats, it is faster to keep the flats in memory.
 
                 # Simple Camera Properties
-                'is_cmos':  True,
-                'is_ccd': False,
-                'is_osc': False,
-                'is_color': False,  # NB we also have a is_osc key.
+
+                'is_cmos':   True,
+                'is_ccd':    False,
+                'is_osc':    False,
+                'is_color':  False,  # NB we also have a is_osc key.
+
                 'osc_bayer': 'RGGB',
                 
                 # Does this camera have a darkslide, if so, what are the settings?
                 'has_darkslide':  False,           #was False until WER put in FLI ascom shutter mod
-                'darkslide_type' : 'None', # dunno what the other one is yet.
-                'darkslide_com':  'None',    # Was "COM15" before changing to FLI.ASCOM
-                'shutter_type': "electronic",
 
+                'darkslide_type': None, #'ASCOM_FLI_SHUTTER', # dunno what the other one is yet.
+                'darkslide_com':  None, #  'ASCOM.FLI',    # Was "COM15" before changing to FLI.ASCOM
+                'shutter_type':   None,  # "Leaf",
 
                 # For direct QHY usage we need to set the appropriate gain.
                 # This changes from site to site. "Fast" scopes like the RASA need lower gain then "slow".
@@ -698,11 +703,12 @@ site_config = {
                 'direct_qhy_gain' : 26,
                 'direct_qhy_offset' : 60,
                 
-                'direct_qhy_usb_traffic' : 60,
+                'direct_qhy_usb_traffic' : 55,
                 
                 'set_qhy_usb_speed': True,
-                'direct_qhy_usb_speed' : 0,
-                
+
+                'direct_qhy_usb_speed' : 55,
+
                 
                 # These options set whether an OSC gets binned or interpolated for different functions
                 # If the pixel scale is well-sampled (e.g. 0.6 arcsec per RGGB pixel or 0.3 arcsec per individual debayer pixel)
@@ -791,17 +797,19 @@ site_config = {
 
                 # This is the area for cooling related settings
                 'cooler_on': True,
-                'temp_setpoint': -15,  # Verify we can go colder
-                'rated_max_delta': -30, # Rated capacity for TEC to go below ambient.
+
+                'temp_setpoint': -5.0,  # Verify we can go colder
+                'rated_max_delta': -45, # Rated capacity for TEC to go below ambient.
                 'has_chiller': True,
                 'ambient_water_cooler':  False,  #QHY sells these.           
                 'chiller_com_port': 'COM1',
-                'chiller_ref_temp':  15.0,  # C  15 - 45 = -30 so do not exceed that target or run
+                'chiller_ref_temp':  14,  # C  15 - 45 = -30 so do not exceed that target or run
                                             #TEC above 85% -- better more like 80%.  FLI 50100 at -20 uses 85% power with actual ambient
                                             # of 18C.  60% at -15C, so -17.5 seems good. Really hot days mean the TEC ha do do more work.
                 'day_warm': False,
-                'day_warm_degrees': 5,  # Number of degrees to warm during the daytime.
+                'day_warm_degrees': 0,  # Number of degrees to warm during the daytime.
                 'protect_camera_from_overheating' : False,
+
 
                 # These are the physical values for the camera
                 # related to pixelscale. Binning only applies to single
@@ -814,7 +822,9 @@ site_config = {
                 #appears to be a sum  However the simplicity of treating all cameras the same
                 #is compelling.  This camera has two channels so we need to look at crosstalk.
                 
-                #'onebyone_pix_scale':0.195739,    #  This is the 1x1 binning pixelscale
+   
+                #'onebyone_pix_scale': 0.15874,    #  This is the 1x1 binning pixelscale
+
                 'native_bin': 3, # Needs to be simple, it will recalculate things on the 1x1 binning pixscale above.
                 'x_pixel':  3.76, # pixel size in microns
                 'y_pixel':  3.76, # pixel size in microns
@@ -831,14 +841,17 @@ site_config = {
                 'dither_enabled':  True,      #Set this way for tracking testing
 
                 # This is the absolute minimum and maximum exposure for the camera
-                'min_exposure': 0.0001,
-                'max_exposure': 600.0,
-                # For certain shutters, short exposures aren't good for flats. Some CMOS have banding in too short an exposure. Largely applies to ccds though.
+
+                'min_exposure': 0.001,
+                'max_exposure': 360.,
+                # During the daytime with the daytime safety mode on, exposures will be limited to this maximum exposure
+                'max_daytime_exposure': 2,
+                # For certain shutters, short exposures aren't good for flats.  Largely applies to ccds though.
                 'min_flat_exposure': 0.001, # WER 20240111 changed from 0.4   #just for now for CCD camera testing            
                 # Realistically there is maximum flat_exposure that makes sure flats are efficient and aren't collecting actual stars.
-                'max_flat_exposure': 20,
-                # During the daytime with the daytime safety mode on, exposures will be limited to this maximum exposure
-                'max_daytime_exposure': 0.5,
+                'max_flat_exposure': 20.0,
+               
+
 
                 # One of the best cloud detections is to estimate the gain of the camera from the image
                 # If the variation, and hence gain, is too high according to gain + stdev, the flat can be easily rejected.
@@ -855,7 +868,7 @@ site_config = {
                 'dark_lim_std': 15,  #first guess. See above.
 
                 # Saturate is the important one. Others are informational only.
-                'fullwell_capacity': 40300,  # NB Guess
+                'fullwell_capacity': 85000,  # e- NB Guess
                 'saturate':   62000,
                 'max_linearity':  60000,   # Guess
                 # How long does it take to readout an image after exposure
@@ -869,12 +882,14 @@ site_config = {
                 
 
                 # As simple as it states, how many calibration frames to collect and how many to store.                
-                'number_of_bias_to_collect': 26,
+                'number_of_bias_to_collect': 27,
                 'number_of_dark_to_collect': 13,
-                'number_of_flat_to_collect': 7,   #
+
+                'number_of_flat_to_collect': 5,   #just for now for CCD camera testing wer 20240113 (friday!)
                 'number_of_bias_to_store': 53,
                 'number_of_dark_to_store': 31,
-                'number_of_flat_to_store': 15,
+                'number_of_flat_to_store': 17,
+
                 # Default dark exposure time.
                 'dark_exposure': 360,
                

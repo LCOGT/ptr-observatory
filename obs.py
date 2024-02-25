@@ -213,7 +213,7 @@ class Observatory:
         if not os.path.exists(self.local_calibration_path + "archive/" + camera_name + "/localcalibrations/darks/halfsecdarks"):
             os.makedirs(self.local_calibration_path + "archive/" + camera_name + "/localcalibrations/darks/halfsecdarks")
         if not os.path.exists(self.local_calibration_path + "archive/" + camera_name + "/localcalibrations/darks/sevenfivepercentdarks"):
-            os.makedirs(self.local_calibration_path + "archive/" + camera_name + "/localcalibrations/darks/sevenfivepercentsecdarks")
+            os.makedirs(self.local_calibration_path + "archive/" + camera_name + "/localcalibrations/darks/sevenfivepercentdarks")
         if not os.path.exists(self.local_calibration_path + "archive/" + camera_name + "/localcalibrations/darks/onesecdarks"):
             os.makedirs(self.local_calibration_path + "archive/" + camera_name + "/localcalibrations/darks/onesecdarks")
         if not os.path.exists(self.local_calibration_path + "archive/" + camera_name + "/localcalibrations/darks/oneandahalfsecdarks"):
