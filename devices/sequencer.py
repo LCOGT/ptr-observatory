@@ -2621,7 +2621,7 @@ class Sequencer:
 
                 #timetaken=datetime.datetime.now() -starttime
                 #plog ("Time Taken to load array and debias and divide dark: " + str(timetaken))
-                starttime=datetime.datetime.now()
+                #starttime=datetime.datetime.now()
                 PLDrive[:,:,i] = np.asarray(darkdeexp,dtype=np.float32)
                 del darkdeexp
                 #timetaken=datetime.datetime.now() -starttime
@@ -3506,13 +3506,13 @@ class Sequencer:
                 # #print ("Bad pixels below: " + str(below_array.sum()))
                 # bad_pixel_mapper_array=bad_pixel_mapper_array+above_array+below_array
 
-                timetaken=datetime.datetime.now() -starttime
-                plog ("Time Taken to load array and debias and divide dark: " + str(timetaken))
-                starttime=datetime.datetime.now()
+                #timetaken=datetime.datetime.now() -starttime
+                #plog ("Time Taken to load array and debias and divide dark: " + str(timetaken))
+                #starttime=datetime.datetime.now()
                 PLDrive[:,:,i] = np.asarray(darkdeexp,dtype=np.float32)
                 del darkdeexp
-                timetaken=datetime.datetime.now() -starttime
-                plog ("Time Taken to put in memmap: " + str(timetaken))
+                #timetaken=datetime.datetime.now() -starttime
+                #plog ("Time Taken to put in memmap: " + str(timetaken))
                 i=i+1
 
             plog ("**********************************")
@@ -3716,7 +3716,7 @@ class Sequencer:
                 #starttime=datetime.datetime.now()
                 PLDrive[:,:,i] = np.asarray(darkdeexp,dtype=np.float32)
                 del darkdeexp
-                timetaken=datetime.datetime.now() -starttime
+                #timetaken=datetime.datetime.now() -starttime
                 #plog ("Time Taken to put in memmap: " + str(timetaken))
                 i=i+1
 
