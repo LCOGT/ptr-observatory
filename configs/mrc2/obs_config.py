@@ -186,7 +186,7 @@ site_config = {
     'auto_eve_bias_dark': True,
     'auto_eve_sky_flat': True,
     
-    'time_to_wait_after_roof_opens_to_take_flats': 60,   #sec Just imposing a minimum in case of a restart.
+    'time_to_wait_after_roof_opens_to_take_flats': 30,   #sec Just imposing a minimum in case of a restart.
     'auto_midnight_moonless_bias_dark': True,
     'auto_morn_sky_flat': True,
     'auto_morn_bias_dark': True,
