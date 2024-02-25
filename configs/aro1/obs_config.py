@@ -131,7 +131,7 @@ site_config = {
     # TIMING FOR CALENDAR EVENTS
     # How many minutes with respect to eve sunset start flats
     'bias_dark interval':  105.,   #minutes
-    'eve_sky_flat_sunset_offset': -45.,  # Before Sunset Minutes  neg means before, + after.
+    'eve_sky_flat_sunset_offset': -55.,  # Before Sunset Minutes  neg means before, + after.
     'end_eve_sky_flats_offset': -1 ,      # How many minutes after civilDusk to do....
     'clock_and_auto_focus_offset':-10,   #min before start of observing
     'astro_dark_buffer': 15,   #Min before and after AD to extend observing window
@@ -661,6 +661,7 @@ site_config = {
                 # This is the area for cooling related settings
                 'cooler_on': True,
                 'temp_setpoint': -7.5,  # Verify we can go colder
+                'temp_setpoint_tolerance': 1.0, #down from 1.5 that was built into the code.
                 'has_chiller': True,
                 'chiller_com_port': 'COM1',
                 'chiller_ref_temp':  15.0,  # C
@@ -732,7 +733,7 @@ site_config = {
                 'number_of_flat_to_collect': 5,   #increased from 5  20231226 WER
                 'number_of_bias_to_store': 63,
                 'number_of_dark_to_store': 27,
-                'number_of_flat_to_store': 9,
+                'number_of_flat_to_store': 32,
                 # Default dark exposure time.
                 'dark_exposure': 360,
 

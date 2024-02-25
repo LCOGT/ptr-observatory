@@ -199,6 +199,37 @@ class Observatory:
             os.makedirs(self.local_calibration_path + "archive/" + camera_name + "/localcalibrations")
         if not os.path.exists(self.local_calibration_path + "archive/" + camera_name + "/localcalibrations/darks"):
             os.makedirs(self.local_calibration_path + "archive/" + camera_name + "/localcalibrations/darks")
+        if not os.path.exists(self.local_calibration_path + "archive/" + camera_name + "/localcalibrations/darks/narrowbanddarks"):
+            os.makedirs(self.local_calibration_path + "archive/" + camera_name + "/localcalibrations/darks/narrowbanddarks")
+        if not os.path.exists(self.local_calibration_path + "archive/" + camera_name + "/localcalibrations/darks/broadbanddarks"):
+            os.makedirs(self.local_calibration_path + "archive/" + camera_name + "/localcalibrations/darks/broadbanddarks")
+        if not os.path.exists(self.local_calibration_path + "archive/" + camera_name + "/localcalibrations/darks/fivepercentdarks"):
+            os.makedirs(self.local_calibration_path + "archive/" + camera_name + "/localcalibrations/darks/fivepercentdarks")
+        if not os.path.exists(self.local_calibration_path + "archive/" + camera_name + "/localcalibrations/darks/tenpercentdarks"):
+            os.makedirs(self.local_calibration_path + "archive/" + camera_name + "/localcalibrations/darks/tenpercentdarks")
+        if not os.path.exists(self.local_calibration_path + "archive/" + camera_name + "/localcalibrations/darks/quartersecdarks"):
+            os.makedirs(self.local_calibration_path + "archive/" + camera_name + "/localcalibrations/darks/quartersecdarks")
+
+        if not os.path.exists(self.local_calibration_path + "archive/" + camera_name + "/localcalibrations/darks/halfsecdarks"):
+            os.makedirs(self.local_calibration_path + "archive/" + camera_name + "/localcalibrations/darks/halfsecdarks")
+        if not os.path.exists(self.local_calibration_path + "archive/" + camera_name + "/localcalibrations/darks/sevenfivepercentdarks"):
+            os.makedirs(self.local_calibration_path + "archive/" + camera_name + "/localcalibrations/darks/sevenfivepercentdarks")
+        if not os.path.exists(self.local_calibration_path + "archive/" + camera_name + "/localcalibrations/darks/onesecdarks"):
+            os.makedirs(self.local_calibration_path + "archive/" + camera_name + "/localcalibrations/darks/onesecdarks")
+        if not os.path.exists(self.local_calibration_path + "archive/" + camera_name + "/localcalibrations/darks/oneandahalfsecdarks"):
+            os.makedirs(self.local_calibration_path + "archive/" + camera_name + "/localcalibrations/darks/oneandahalfsecdarks")
+
+
+        if not os.path.exists(self.local_calibration_path + "archive/" + camera_name + "/localcalibrations/darks/twosecdarks"):
+            os.makedirs(self.local_calibration_path + "archive/" + camera_name + "/localcalibrations/darks/twosecdarks")
+        if not os.path.exists(self.local_calibration_path + "archive/" + camera_name + "/localcalibrations/darks/fivesecdarks"):
+            os.makedirs(self.local_calibration_path + "archive/" + camera_name + "/localcalibrations/darks/fivesecdarks")
+        if not os.path.exists(self.local_calibration_path + "archive/" + camera_name + "/localcalibrations/darks/tensecdarks"):
+            os.makedirs(self.local_calibration_path + "archive/" + camera_name + "/localcalibrations/darks/tensecdarks")
+        if not os.path.exists(self.local_calibration_path + "archive/" + camera_name + "/localcalibrations/darks/fifteensecdarks"):
+            os.makedirs(self.local_calibration_path + "archive/" + camera_name + "/localcalibrations/darks/fifteensecdarks")
+        if not os.path.exists(self.local_calibration_path + "archive/" + camera_name + "/localcalibrations/darks/twentysecdarks"):
+            os.makedirs(self.local_calibration_path + "archive/" + camera_name + "/localcalibrations/darks/twentysecdarks")
         if not os.path.exists(self.local_calibration_path + "archive/" + camera_name + "/localcalibrations/biases"):
             os.makedirs(self.local_calibration_path + "archive/" + camera_name + "/localcalibrations/biases")
         if not os.path.exists(self.local_calibration_path + "archive/" + camera_name + "/localcalibrations/flats"):
@@ -206,6 +237,7 @@ class Observatory:
 
         self.calib_masters_folder = self.local_calibration_path + "archive/" + camera_name + "/calibmasters" + '/'
         self.local_dark_folder = self.local_calibration_path + "archive/" + camera_name + "/localcalibrations/darks" + '/'
+
         self.local_bias_folder = self.local_calibration_path + "archive/" + camera_name + "/localcalibrations/biases" + '/'
         self.local_flat_folder = self.local_calibration_path + "archive/" + camera_name + "/localcalibrations/flats" + '/'
 
@@ -388,7 +420,7 @@ class Observatory:
         self.mount_reference_model_off = self.config['mount_reference_model_off']
         self.admin_owner_commands_only = False
         self.assume_roof_open = False
-        self.auto_centering_off = False  #WER 20231239 Toggled to True
+        self.auto_centering_off = False
 
         # Instantiate the helper class for astronomical events
         # Soon the primary event / time values can come from AWS.  NB NB   I send them there! Why do we want to put that code in AWS???
@@ -442,7 +474,7 @@ class Observatory:
         # Use the configuration to instantiate objects for all devices.
         self.create_devices()
 
-        self.last_update_complete = time.time() -5
+        self.last_update_complete = time.time() - 5
 
         # Reset mount reference for delta_ra and delta_dec on bootup
         #g_dev["mnt"].reset_mount_reference()
@@ -544,7 +576,7 @@ class Observatory:
         #self.request_update_status()
 
 
-        # A dictionary that holds focusresults for the SEP queue.
+        # A dictionary that holds focus results for the SEP queue.
         self.fwhmresult={}
         self.fwhmresult["error"] = True
         self.fwhmresult['FWHM'] = np.nan
@@ -1485,7 +1517,7 @@ class Observatory:
                     if abs(float(current_camera_temperature) - float(g_dev['cam'].setpoint)) > 1.5:
                         self.camera_sufficiently_cooled_for_calibrations = False
                         self.last_time_camera_was_warm=time.time()
-                    elif (time.time()-self.last_time_camera_was_warm) < 1200:
+                    elif (time.time()-self.last_time_camera_was_warm) < 600:
                         self.camera_sufficiently_cooled_for_calibrations = False
                     else:
                         self.camera_sufficiently_cooled_for_calibrations = True
@@ -1514,11 +1546,11 @@ class Observatory:
                 if (time.time() - self.last_time_report_to_console) > 600:
                     plog (ephem.now())
                     if self.camera_sufficiently_cooled_for_calibrations == False:
-                        if (time.time() - self.last_time_camera_was_warm) < 1200:
+                        if (time.time() - self.last_time_camera_was_warm) < 600:
                             plog ("Camera was recently out of the temperature range for calibrations")
-                            plog ("Waiting for a 20 minute period where camera has been cooled to the right temperature")
+                            plog ("Waiting for a 10 minute period where camera has been cooled to the right temperature")
                             plog ("Before continuing calibrations to ensure cooler is evenly cooled")
-                            plog ( str(int(1200 - (time.time() - self.last_time_camera_was_warm))) + " seconds to go.")
+                            plog ( str(int(600 - (time.time() - self.last_time_camera_was_warm))) + " seconds to go.")
                             plog ("Camera current temperature ("+ str(current_camera_temperature)+").")
                             plog ("Difference from setpoint: " + str( (current_camera_temperature - g_dev['cam'].setpoint)))
                         else:
@@ -1915,6 +1947,7 @@ class Observatory:
                 try:
                     shutil.copy(filename, pipefolder +'/'+ filename.split('/')[-1])
                 except:
+                    plog(traceback.format_exc())
                     plog ("Couldn't copy " + str(filename) + ". Broken.")
                     broken =1
 
@@ -2361,7 +2394,7 @@ class Observatory:
                 #zoom_factor = 'Small Sq.'   #This still needs to be passed in as a parameter.
 
                 # Here is a manual debug area which makes a pickle for debug purposes. Default is False, but can be manually set to True for code debugging
-                if False:
+                if True:
                     #NB set this path to create test pickle for makejpeg routine.
                     pickle.dump([hdusmalldata, smartstackid, paths, pier_side, is_osc, osc_bayer, osc_background_cut,osc_brightness_enhance, osc_contrast_enhance,\
                         osc_colour_enhance, osc_saturation_enhance, osc_sharpness_enhance, transpose_jpeg, flipx_jpeg, flipy_jpeg, rotate180_jpeg,rotate90_jpeg, \
@@ -2565,7 +2598,7 @@ class Observatory:
                                     g_dev["foc"].focus_needed = True
                                     g_dev["obs"].send_to_user(
                                         "Focus has drifted to "
-                                        + str(np.nanmedian(g_dev["foc"].focus_tracker))
+                                        + str(round(np.nanmedian(g_dev["foc"].focus_tracker),2))
                                         + " from "
                                         + str(g_dev["foc"].last_focus_fwhm)
                                         + ".",
@@ -2662,7 +2695,7 @@ class Observatory:
                          pixscale, pointing_ra, pointing_dec, platesolve_crop, False, 1, g_dev['cam'].config["camera"][g_dev['cam'].name]["settings"]["saturate"], g_dev['cam'].camera_known_readnoise, self.config['minimum_realistic_seeing'], is_osc, useastronometrynet], platesolve_subprocess.stdin)
 
                         # yet another pickle debugger.
-                        if True:
+                        if False:
                             pickle.dump([hdufocusdata, hduheader, self.local_calibration_path, cal_name, frame_type, time_platesolve_requested,
                              pixscale, pointing_ra, pointing_dec, platesolve_crop, False, 1, g_dev['cam'].config["camera"][g_dev['cam'].name]["settings"]["saturate"], g_dev['cam'].camera_known_readnoise, self.config['minimum_realistic_seeing'],is_osc,useastronometrynet], open('subprocesses/testplatesolvepickle','wb'))
 
@@ -2978,6 +3011,176 @@ class Observatory:
                                 n_files = len(glob.glob(self.local_dark_folder + '*.n*'))
                                 while n_files > max_files:
                                     list_of_files = glob.glob(self.local_dark_folder + '*.n*')
+                                    n_files = len(list_of_files)
+                                    oldest_file = min(list_of_files, key=os.path.getctime)
+                                    os.remove(oldest_file)
+
+                            elif slow_process[4] == 'broadband_ss_biasdark':
+                                tempexposure = temphduheader['EXPTIME']
+                                tempfilename = self.local_dark_folder + 'broadbanddarks/' + \
+                                    slow_process[1].replace('.fits', '_' + str(tempexposure) + '_.npy')
+                                max_files = 2*self.config['camera']['camera_1_1']['settings']['number_of_dark_to_store']
+                                n_files = len(glob.glob(self.local_dark_folder + 'broadbanddarks/'+  '*.n*'))
+                                while n_files > max_files:
+                                    list_of_files = glob.glob(self.local_dark_folder+ 'broadbanddarks/'+ '*.n*')
+                                    n_files = len(list_of_files)
+                                    oldest_file = min(list_of_files, key=os.path.getctime)
+                                    os.remove(oldest_file)
+
+                            elif slow_process[4] == 'narrowband_ss_biasdark':
+                                tempexposure = temphduheader['EXPTIME']
+                                tempfilename = self.local_dark_folder + 'narrowbanddarks/' + \
+                                    slow_process[1].replace('.fits', '_' + str(tempexposure) + '_.npy')
+                                max_files = 2*self.config['camera']['camera_1_1']['settings']['number_of_dark_to_store']
+                                n_files = len(glob.glob(self.local_dark_folder  + 'narrowbanddarks/'+ '*.n*'))
+                                while n_files > max_files:
+                                    list_of_files = glob.glob(self.local_dark_folder + 'narrowbanddarks/'  + '*.n*')
+                                    n_files = len(list_of_files)
+                                    oldest_file = min(list_of_files, key=os.path.getctime)
+                                    os.remove(oldest_file)
+
+                            elif slow_process[4] == 'fivepercent_exposure_dark':
+                                tempexposure = temphduheader['EXPTIME']
+                                tempfilename = self.local_dark_folder + 'fivepercentdarks/' + \
+                                    slow_process[1].replace('.fits', '_' + str(tempexposure) + '_.npy')
+                                max_files = 2 * self.config['camera']['camera_1_1']['settings']['number_of_dark_to_store']
+                                n_files = len(glob.glob(self.local_dark_folder + 'fivepercentdarks/'+ '*.n*'))
+                                while n_files > max_files:
+                                    list_of_files = glob.glob(self.local_dark_folder + 'fivepercentdarks/' + '*.n*')
+                                    n_files = len(list_of_files)
+                                    oldest_file = min(list_of_files, key=os.path.getctime)
+                                    os.remove(oldest_file)
+
+                            elif slow_process[4] == 'tenpercent_exposure_dark':
+                                tempexposure = temphduheader['EXPTIME']
+                                tempfilename = self.local_dark_folder + 'tenpercentdarks/' + \
+                                    slow_process[1].replace('.fits', '_' + str(tempexposure) + '_.npy')
+                                max_files = 2 * self.config['camera']['camera_1_1']['settings']['number_of_dark_to_store']
+                                n_files = len(glob.glob(self.local_dark_folder + 'tenpercentdarks/'+ '*.n*'))
+                                while n_files > max_files:
+                                    list_of_files = glob.glob(self.local_dark_folder + 'tenpercentdarks/' + '*.n*')
+                                    n_files = len(list_of_files)
+                                    oldest_file = min(list_of_files, key=os.path.getctime)
+                                    os.remove(oldest_file)
+
+                            elif slow_process[4] == 'quartersec_exposure_dark':
+                                tempexposure = temphduheader['EXPTIME']
+                                tempfilename = self.local_dark_folder + 'quartersecdarks/' + \
+                                    slow_process[1].replace('.fits', '_' + str(tempexposure) + '_.npy')
+                                max_files = 2 * self.config['camera']['camera_1_1']['settings']['number_of_dark_to_store']
+                                n_files = len(glob.glob(self.local_dark_folder + 'quartersecdarks/'+ '*.n*'))
+                                while n_files > max_files:
+                                    list_of_files = glob.glob(self.local_dark_folder + 'quartersecdarks/' + '*.n*')
+                                    n_files = len(list_of_files)
+                                    oldest_file = min(list_of_files, key=os.path.getctime)
+                                    os.remove(oldest_file)
+
+
+
+                            elif slow_process[4] == 'halfsec_exposure_dark':
+                                tempexposure = temphduheader['EXPTIME']
+                                tempfilename = self.local_dark_folder + 'halfsecdarks/' + \
+                                    slow_process[1].replace('.fits', '_' + str(tempexposure) + '_.npy')
+                                max_files = 2 * self.config['camera']['camera_1_1']['settings']['number_of_dark_to_store']
+                                n_files = len(glob.glob(self.local_dark_folder + 'halfsecdarks/'+ '*.n*'))
+                                while n_files > max_files:
+                                    list_of_files = glob.glob(self.local_dark_folder + 'halfsecdarks/' + '*.n*')
+                                    n_files = len(list_of_files)
+                                    oldest_file = min(list_of_files, key=os.path.getctime)
+                                    os.remove(oldest_file)
+
+                            elif slow_process[4] == 'threequartersec_exposure_dark':
+                                tempexposure = temphduheader['EXPTIME']
+                                tempfilename = self.local_dark_folder + 'sevenfivepercentdarks/' + \
+                                    slow_process[1].replace('.fits', '_' + str(tempexposure) + '_.npy')
+                                max_files = 2 * self.config['camera']['camera_1_1']['settings']['number_of_dark_to_store']
+                                n_files = len(glob.glob(self.local_dark_folder + 'sevenfivepercentdarks/'+ '*.n*'))
+                                while n_files > max_files:
+                                    list_of_files = glob.glob(self.local_dark_folder + 'sevenfivepercentdarks/' + '*.n*')
+                                    n_files = len(list_of_files)
+                                    oldest_file = min(list_of_files, key=os.path.getctime)
+                                    os.remove(oldest_file)
+
+                            elif slow_process[4] == 'onesec_exposure_dark':
+                                tempexposure = temphduheader['EXPTIME']
+                                tempfilename = self.local_dark_folder + 'onesecdarks/' + \
+                                    slow_process[1].replace('.fits', '_' + str(tempexposure) + '_.npy')
+                                max_files = 2 * self.config['camera']['camera_1_1']['settings']['number_of_dark_to_store']
+                                n_files = len(glob.glob(self.local_dark_folder + 'onesecdarks/'+ '*.n*'))
+                                while n_files > max_files:
+                                    list_of_files = glob.glob(self.local_dark_folder + 'onesecdarks/' + '*.n*')
+                                    n_files = len(list_of_files)
+                                    oldest_file = min(list_of_files, key=os.path.getctime)
+                                    os.remove(oldest_file)
+
+                            elif slow_process[4] == 'oneandahalfsec_exposure_dark':
+                                tempexposure = temphduheader['EXPTIME']
+                                tempfilename = self.local_dark_folder + 'oneandahalfsecdarks/' + \
+                                    slow_process[1].replace('.fits', '_' + str(tempexposure) + '_.npy')
+                                max_files = 2 * self.config['camera']['camera_1_1']['settings']['number_of_dark_to_store']
+                                n_files = len(glob.glob(self.local_dark_folder + 'oneandahalfsecdarks/'+ '*.n*'))
+                                while n_files > max_files:
+                                    list_of_files = glob.glob(self.local_dark_folder + 'oneandahalfsecdarks/' + '*.n*')
+                                    n_files = len(list_of_files)
+                                    oldest_file = min(list_of_files, key=os.path.getctime)
+                                    os.remove(oldest_file)
+
+                            elif slow_process[4] == 'twosec_exposure_dark':
+                                tempexposure = temphduheader['EXPTIME']
+                                tempfilename = self.local_dark_folder + 'twosecdarks/' + \
+                                    slow_process[1].replace('.fits', '_' + str(tempexposure) + '_.npy')
+                                max_files = 2 * self.config['camera']['camera_1_1']['settings']['number_of_dark_to_store']
+                                n_files = len(glob.glob(self.local_dark_folder + 'twosecdarks/'+ '*.n*'))
+                                while n_files > max_files:
+                                    list_of_files = glob.glob(self.local_dark_folder + 'twosecdarks/' + '*.n*')
+                                    n_files = len(list_of_files)
+                                    oldest_file = min(list_of_files, key=os.path.getctime)
+                                    os.remove(oldest_file)
+
+                            elif slow_process[4] == 'fivesec_exposure_dark':
+                                tempexposure = temphduheader['EXPTIME']
+                                tempfilename = self.local_dark_folder + 'fivesecdarks/' + \
+                                    slow_process[1].replace('.fits', '_' + str(tempexposure) + '_.npy')
+                                max_files = 2 * self.config['camera']['camera_1_1']['settings']['number_of_dark_to_store']
+                                n_files = len(glob.glob(self.local_dark_folder + 'fivesecdarks/'+ '*.n*'))
+                                while n_files > max_files:
+                                    list_of_files = glob.glob(self.local_dark_folder + 'fivesecdarks/' + '*.n*')
+                                    n_files = len(list_of_files)
+                                    oldest_file = min(list_of_files, key=os.path.getctime)
+                                    os.remove(oldest_file)
+
+                            elif slow_process[4] == 'tensec_exposure_dark':
+                                tempexposure = temphduheader['EXPTIME']
+                                tempfilename = self.local_dark_folder + 'tensecdarks/' + \
+                                    slow_process[1].replace('.fits', '_' + str(tempexposure) + '_.npy')
+                                max_files = 2 * self.config['camera']['camera_1_1']['settings']['number_of_dark_to_store']
+                                n_files = len(glob.glob(self.local_dark_folder + 'tensecdarks/' + '*.n*'))
+                                while n_files > max_files:
+                                    list_of_files = glob.glob(self.local_dark_folder + 'tensecdarks/' + '*.n*')
+                                    n_files = len(list_of_files)
+                                    oldest_file = min(list_of_files, key=os.path.getctime)
+                                    os.remove(oldest_file)
+
+                            elif slow_process[4] == 'fifteensec_exposure_dark':
+                                tempexposure = temphduheader['EXPTIME']
+                                tempfilename = self.local_dark_folder + 'fifteensecdarks/' + \
+                                    slow_process[1].replace('.fits', '_' + str(tempexposure) + '_.npy')
+                                max_files = self.config['camera']['camera_1_1']['settings']['number_of_dark_to_store']
+                                n_files = len(glob.glob(self.local_dark_folder + 'fifteensecdarks/' + '*.n*'))
+                                while n_files > max_files:
+                                    list_of_files = glob.glob(self.local_dark_folder + 'fifteensecdarks/' + '*.n*')
+                                    n_files = len(list_of_files)
+                                    oldest_file = min(list_of_files, key=os.path.getctime)
+                                    os.remove(oldest_file)
+
+                            elif slow_process[4] == 'twentysec_exposure_dark':
+                                tempexposure = temphduheader['EXPTIME']
+                                tempfilename = self.local_dark_folder + 'twentysecdarks/' + \
+                                    slow_process[1].replace('.fits', '_' + str(tempexposure) + '_.npy')
+                                max_files = self.config['camera']['camera_1_1']['settings']['number_of_dark_to_store']
+                                n_files = len(glob.glob(self.local_dark_folder + 'twentysecdarks/' + '*.n*'))
+                                while n_files > max_files:
+                                    list_of_files = glob.glob(self.local_dark_folder + 'twentysecdarks/' + '*.n*')
                                     n_files = len(list_of_files)
                                     oldest_file = min(list_of_files, key=os.path.getctime)
                                     os.remove(oldest_file)
@@ -3736,7 +3939,7 @@ class Observatory:
 
 
                      # Another pickle debugger
-                    if True:
+                    if False:
                         pickle.dump(picklepayload, open('subprocesses/testsmartstackpickle','wb'))
 
                     #breakpoint()
@@ -3795,7 +3998,7 @@ class Observatory:
             else:
                 time.sleep(3)
 
-    def check_platesolve_and_nudge(self):
+    def check_platesolve_and_nudge(self,no_confirmation=True):
 
         """
         A function periodically called to check if there is a telescope nudge to re-center to undertake.
@@ -3806,7 +4009,7 @@ class Observatory:
                 self.pointing_recentering_requested_by_platesolve_thread = False
                 self.pointing_correction_requested_by_platesolve_thread = False
                 g_dev['mnt'].go_command(ra=self.pointing_correction_request_ra, dec=self.pointing_correction_request_dec)
-                g_dev['seq'].centering_exposure(no_confirmation=True, try_hard=True, try_forever=True)
+                g_dev['seq'].centering_exposure(no_confirmation=no_confirmation, try_hard=True, try_forever=True)
                 #self.drift_tracker_ra=g_dev['mnt'].return_right_ascension()
                 #self.drift_tracker_dec=g_dev['mnt'].return_declination()
                 #self.drift_tracker_ra=0
@@ -3860,7 +4063,7 @@ class Observatory:
                     if not g_dev['mnt'].previous_pier_side==g_dev['mnt'].return_side_of_pier():
                         self.send_to_user("Detected pier flip in re-centering. Re-centering telescope again.")
                         g_dev['mnt'].go_command(ra=self.pointing_correction_request_ra, dec=self.pointing_correction_request_dec)
-                        g_dev['seq'].centering_exposure(no_confirmation=True, try_hard=True, try_forever=True)
+                        g_dev['seq'].centering_exposure(no_confirmation=no_confirmation, try_hard=True, try_forever=True)
                     g_dev['obs'].time_of_last_slew = time.time()
                     wait_for_slew()
 

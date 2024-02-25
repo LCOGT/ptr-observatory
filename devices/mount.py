@@ -1422,61 +1422,66 @@ class Mount:
 
         # First thing to do is check the position of the sun and
         # Whether this violates the pointing principle.
-        sun_coords=get_sun(Time.now())
-        if skyflatspot != None:
-            #plog("Inserted skip open test, line 1353 in Mount. WER  20231222")
-            #skip_open_test = False
-            if not skip_open_test:
+        try:
+            sun_coords=get_sun(Time.now())
+            if skyflatspot != None:
+                #plog("Inserted skip open test, line 1353 in Mount. WER  20231222")
+                #skip_open_test = False
+                if not skip_open_test:
 
-                if (not (g_dev['events']['Cool Down, Open'] < ephem.now() < g_dev['events']['Naut Dusk']) and \
-                    not (g_dev['events']['Naut Dawn'] < ephem.now() < g_dev['events']['Close and Park'])):
-                    g_dev['obs'].send_to_user("Refusing skyflat pointing request as it is outside skyflat time")
-                    plog("Refusing pointing request as it is outside of skyflat pointing time.")
-                    return 'refused'
+                    if (not (g_dev['events']['Cool Down, Open'] < ephem.now() < g_dev['events']['Naut Dusk']) and \
+                        not (g_dev['events']['Naut Dawn'] < ephem.now() < g_dev['events']['Close and Park'])):
+                        g_dev['obs'].send_to_user("Refusing skyflat pointing request as it is outside skyflat time")
+                        plog("Refusing pointing request as it is outside of skyflat pointing time.")
+                        return 'refused'
 
-                if g_dev['obs'].open_and_enabled_to_observe==False :
-                    g_dev['obs'].send_to_user("Refusing skyflat pointing request as the observatory is not enabled to observe.")
-                    plog("Refusing skyflat pointing request as the observatory is not enabled to observe.")
-                    return 'refused'
+                    if g_dev['obs'].open_and_enabled_to_observe==False :
+                        g_dev['obs'].send_to_user("Refusing skyflat pointing request as the observatory is not enabled to observe.")
+                        plog("Refusing skyflat pointing request as the observatory is not enabled to observe.")
+                        return 'refused'
 
-            alt, az = self.flat_spot_now()
-            temppointing = AltAz(location=self.site_coordinates, obstime=Time.now(), alt=alt*u.deg, az=az*u.deg)
-            altazskycoord=SkyCoord(alt=alt*u.deg, az=az*u.deg, obstime=Time.now(), location=self.site_coordinates, frame='altaz')
-            ra = altazskycoord.icrs.ra.deg /15
-            dec = altazskycoord.icrs.dec.deg
+                alt, az = self.flat_spot_now()
+                temppointing = AltAz(location=self.site_coordinates, obstime=Time.now(), alt=alt*u.deg, az=az*u.deg)
+                altazskycoord=SkyCoord(alt=alt*u.deg, az=az*u.deg, obstime=Time.now(), location=self.site_coordinates, frame='altaz')
+                ra = altazskycoord.icrs.ra.deg /15
+                dec = altazskycoord.icrs.dec.deg
 
-            plog ("Requested Flat Spot, az: " + str(az) + " alt: " + str(alt))
+                plog ("Requested Flat Spot, az: " + str(az) + " alt: " + str(alt))
 
-            if self.config['degrees_to_avoid_zenith_area_for_calibrations'] > 0:
-                #######breakpoint()
-                if (90-alt) < self.config['degrees_to_avoid_zenith_area_for_calibrations']:
-                    g_dev['obs'].send_to_user("Refusing skyflat pointing request as it is too close to the zenith for this scope.")
-                    plog("Refusing skyflat pointing request as it is too close to the zenith for this scope.")
-                    return 'refused'
+                if self.config['degrees_to_avoid_zenith_area_for_calibrations'] > 0:
+                    #######breakpoint()
+                    if (90-alt) < self.config['degrees_to_avoid_zenith_area_for_calibrations']:
+                        g_dev['obs'].send_to_user("Refusing skyflat pointing request as it is too close to the zenith for this scope.")
+                        plog("Refusing skyflat pointing request as it is too close to the zenith for this scope.")
+                        return 'refused'
 
-        elif ra != None:   #implying RA and Dec are supplied. Compute resulting altitude
-            ra = float(ra)
-            dec = float(dec)
-            temppointing=SkyCoord(ra*u.hour, dec*u.degree, frame='icrs')
-            temppointingaltaz=temppointing.transform_to(AltAz(location=self.site_coordinates, obstime=Time.now()))
-            alt = temppointingaltaz.alt.degree
-            az = temppointingaltaz.az.degree
+            elif ra != None:   #implying RA and Dec are supplied. Compute resulting altitude
+                ra = float(ra)
+                dec = float(dec)
+                temppointing=SkyCoord(ra*u.hour, dec*u.degree, frame='icrs')
+                temppointingaltaz=temppointing.transform_to(AltAz(location=self.site_coordinates, obstime=Time.now()))
+                alt = temppointingaltaz.alt.degree
+                az = temppointingaltaz.az.degree
 
-        elif az != None:
-            az = float(az)
-            alt = float(alt)
-            temppointing = AltAz(location=self.site_coordinates, obstime=Time.now(), alt=alt*u.deg, az=az*u.deg)
-            altazskycoord=SkyCoord(alt=alt*u.deg, az=az*u.deg, obstime=Time.now(), location=self.site_coordinates, frame='altaz')
-            ra = altazskycoord.icrs.ra.deg /15
-            dec = altazskycoord.icrs.dec.deg
-        elif ha != None:
-            ha = float(ha)
-            dec = float(dec)
-            az, alt = ptr_utility.transform_haDec_to_azAlt(ha, dec, lat=self.config['latitude'])
-            temppointing = AltAz(location=self.site_coordinates, obstime=Time.now(), alt=alt*u.deg, az=az*u.deg)
-            altazskycoord=SkyCoord(alt=alt*u.deg, az=az*u.deg, obstime=Time.now(), location=self.site_coordinates, frame='altaz')
-            ra = altazskycoord.icrs.ra.deg /15
-            dec = altazskycoord.icrs.dec.deg
+            elif az != None:
+                az = float(az)
+                alt = float(alt)
+                temppointing = AltAz(location=self.site_coordinates, obstime=Time.now(), alt=alt*u.deg, az=az*u.deg)
+                altazskycoord=SkyCoord(alt=alt*u.deg, az=az*u.deg, obstime=Time.now(), location=self.site_coordinates, frame='altaz')
+                ra = altazskycoord.icrs.ra.deg /15
+                dec = altazskycoord.icrs.dec.deg
+            elif ha != None:
+                ha = float(ha)
+                dec = float(dec)
+                az, alt = ptr_utility.transform_haDec_to_azAlt(ha, dec, lat=self.config['latitude'])
+                temppointing = AltAz(location=self.site_coordinates, obstime=Time.now(), alt=alt*u.deg, az=az*u.deg)
+                altazskycoord=SkyCoord(alt=alt*u.deg, az=az*u.deg, obstime=Time.now(), location=self.site_coordinates, frame='altaz')
+                ra = altazskycoord.icrs.ra.deg /15
+                dec = altazskycoord.icrs.dec.deg
+        except:
+            plog("something went wrong dealing with coordinates")
+            plog (traceback.format_exc())
+            return 'refused'
 
         sun_dist = sun_coords.separation(temppointing)
         if g_dev['obs'].sun_checks_on:
@@ -2292,9 +2297,9 @@ class Mount:
                 self.rapid_park_indicator=True
 
                 self.wait_for_slew()
-            if self.settle_time_after_park > 0:
-                time.sleep(self.settle_time_after_park)
-                plog("Waiting " + str(self.settle_time_after_park) + " seconds for mount to settle.")
+                if self.settle_time_after_park > 0:
+                    time.sleep(self.settle_time_after_park)
+                    plog("Waiting " + str(self.settle_time_after_park) + " seconds for mount to settle.")
             try:
                 g_dev['fil'].current_filter, _, _ = g_dev["fil"].set_name_command(
                     {"filter": 'dark'}, {}
