@@ -1588,47 +1588,7 @@ class Sequencer:
 
                
 
-                # COLLECTING A 0.05 Second EXPOSURE DARK FRAME
-                plog("Expose " + str(5*stride) +" 1x1 0.05 second exposure dark frames.")
-                req = {'time': 0.05,  'script': 'True', 'image_type': 'fivepercent_exposure_dark'}
-                opt = {'count': 2* min_to_do,  \
-                       'filter': 'dark'}
-
-                # Check it is in the park position and not pointing at the sky.
-                # It can be pointing at the sky if cool down open is triggered during the biasdark process
-                g_dev['mnt'].park_command({}, {})
-                g_dev['cam'].expose_command(req, opt, user_id='Tobor', user_name='Tobor', user_roles='system', no_AWS=False, \
-                                do_sep=False, quick=False, skip_open_check=True,skip_daytime_check=True)
-
-                if self.stop_script_called:
-                    g_dev["obs"].send_to_user("Cancelling out of calibration script as stop script has been called.")
-                    self.bias_dark_latch = False
-                    return
-                if ephem.now() + (dark_exp_time + cycle_time + 30)/86400 > ending:
-                    self.bias_dark_latch = False
-                    break
-                g_dev['obs'].request_scan_requests()
-
-                # COLLECTING A 0.1 Second EXPOSURE DARK FRAME
-                plog("Expose " + str(5*stride) +" 1x1 0.1 second exposure dark frames.")
-                req = {'time': 0.1,  'script': 'True', 'image_type': 'tenpercent_exposure_dark'}
-                opt = {'count': 2* min_to_do,  \
-                       'filter': 'dark'}
-
-                # Check it is in the park position and not pointing at the sky.
-                # It can be pointing at the sky if cool down open is triggered during the biasdark process
-                g_dev['mnt'].park_command({}, {})
-                g_dev['cam'].expose_command(req, opt, user_id='Tobor', user_name='Tobor', user_roles='system', no_AWS=False, \
-                                do_sep=False, quick=False, skip_open_check=True,skip_daytime_check=True)
-
-                if self.stop_script_called:
-                    g_dev["obs"].send_to_user("Cancelling out of calibration script as stop script has been called.")
-                    self.bias_dark_latch = False
-                    return
-                if ephem.now() + (dark_exp_time + cycle_time + 30)/86400 > ending:
-                    self.bias_dark_latch = False
-                    break
-                g_dev['obs'].request_scan_requests()
+                
 
 
                 
@@ -1782,6 +1742,50 @@ class Sequencer:
                     self.bias_dark_latch = False
                     break
                 g_dev['obs'].request_scan_requests()
+                
+                
+                # COLLECTING A 0.05 Second EXPOSURE DARK FRAME
+                plog("Expose " + str(5*stride) +" 1x1 0.05 second exposure dark frames.")
+                req = {'time': 0.05,  'script': 'True', 'image_type': 'fivepercent_exposure_dark'}
+                opt = {'count': 2* min_to_do,  \
+                       'filter': 'dark'}
+
+                # Check it is in the park position and not pointing at the sky.
+                # It can be pointing at the sky if cool down open is triggered during the biasdark process
+                g_dev['mnt'].park_command({}, {})
+                g_dev['cam'].expose_command(req, opt, user_id='Tobor', user_name='Tobor', user_roles='system', no_AWS=False, \
+                                do_sep=False, quick=False, skip_open_check=True,skip_daytime_check=True)
+
+                if self.stop_script_called:
+                    g_dev["obs"].send_to_user("Cancelling out of calibration script as stop script has been called.")
+                    self.bias_dark_latch = False
+                    return
+                if ephem.now() + (dark_exp_time + cycle_time + 30)/86400 > ending:
+                    self.bias_dark_latch = False
+                    break
+                g_dev['obs'].request_scan_requests()
+
+                # COLLECTING A 0.1 Second EXPOSURE DARK FRAME
+                plog("Expose " + str(5*stride) +" 1x1 0.1 second exposure dark frames.")
+                req = {'time': 0.1,  'script': 'True', 'image_type': 'tenpercent_exposure_dark'}
+                opt = {'count': 2* min_to_do,  \
+                       'filter': 'dark'}
+
+                # Check it is in the park position and not pointing at the sky.
+                # It can be pointing at the sky if cool down open is triggered during the biasdark process
+                g_dev['mnt'].park_command({}, {})
+                g_dev['cam'].expose_command(req, opt, user_id='Tobor', user_name='Tobor', user_roles='system', no_AWS=False, \
+                                do_sep=False, quick=False, skip_open_check=True,skip_daytime_check=True)
+
+                if self.stop_script_called:
+                    g_dev["obs"].send_to_user("Cancelling out of calibration script as stop script has been called.")
+                    self.bias_dark_latch = False
+                    return
+                if ephem.now() + (dark_exp_time + cycle_time + 30)/86400 > ending:
+                    self.bias_dark_latch = False
+                    break
+                g_dev['obs'].request_scan_requests()
+                
                 
                 # COLLECTING A 0.25 Second EXPOSURE DARK FRAME
                 plog("Expose " + str(5*stride) +" 1x1 0.25 second exposure dark frames.")
