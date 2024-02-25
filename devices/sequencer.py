@@ -4207,7 +4207,8 @@ class Sequencer:
             narrowband_ss_biasdark_exp_time = broadband_ss_biasdark_exp_time * self.config['camera']['camera_1_1']['settings']['smart_stack_exposure_NB_multiplier']
             dark_exp_time = self.config['camera']['camera_1_1']['settings']['dark_exposure']
 
-
+            print ("flat_biasdarks")
+            print (flat_biasdarks)
             if len(tempfilters) == 0:
                 plog ("there are no filter directories, so not processing flats")
             else:
@@ -4434,8 +4435,8 @@ class Sequencer:
                             tempdivide=PLDrive[:,:,flat_component] / finalImage
                             tempnanmedian=np.nanmedian(tempdivide)
                             tempstd=np.nanstd(tempdivide)
-                            print ("nanmedian: " + tempnanmedian )
-                            print ("nanstdev: " + tempstd)
+                            print ("nanmedian: " + str(tempnanmedian ))
+                            print ("nanstdev: " + str(tempstd))
                             nanmedian_collector.append(tempnanmedian)
                             nanstd_collector.append(tempstd)
 
