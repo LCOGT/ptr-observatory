@@ -204,12 +204,12 @@ class Observatory:
         if not os.path.exists(self.local_calibration_path + "archive/" + camera_name + "/localcalibrations/darks/broadbanddarks"):
             os.makedirs(self.local_calibration_path + "archive/" + camera_name + "/localcalibrations/darks/broadbanddarks")
         if not os.path.exists(self.local_calibration_path + "archive/" + camera_name + "/localcalibrations/darks/fivepercentdarks"):
-            os.makedirs(self.local_calibration_path + "archive/" + camera_name + "/localcalibrations/darks/fivepercentdarks")   
+            os.makedirs(self.local_calibration_path + "archive/" + camera_name + "/localcalibrations/darks/fivepercentdarks")
         if not os.path.exists(self.local_calibration_path + "archive/" + camera_name + "/localcalibrations/darks/tenpercentdarks"):
-            os.makedirs(self.local_calibration_path + "archive/" + camera_name + "/localcalibrations/darks/tenpercentdarks")       
+            os.makedirs(self.local_calibration_path + "archive/" + camera_name + "/localcalibrations/darks/tenpercentdarks")
         if not os.path.exists(self.local_calibration_path + "archive/" + camera_name + "/localcalibrations/darks/quartersecdarks"):
             os.makedirs(self.local_calibration_path + "archive/" + camera_name + "/localcalibrations/darks/quartersecdarks")
-            
+
         if not os.path.exists(self.local_calibration_path + "archive/" + camera_name + "/localcalibrations/darks/halfsecdarks"):
             os.makedirs(self.local_calibration_path + "archive/" + camera_name + "/localcalibrations/darks/halfsecdarks")
         if not os.path.exists(self.local_calibration_path + "archive/" + camera_name + "/localcalibrations/darks/sevenfivepercentdarks"):
@@ -218,12 +218,12 @@ class Observatory:
             os.makedirs(self.local_calibration_path + "archive/" + camera_name + "/localcalibrations/darks/onesecdarks")
         if not os.path.exists(self.local_calibration_path + "archive/" + camera_name + "/localcalibrations/darks/oneandahalfsecdarks"):
             os.makedirs(self.local_calibration_path + "archive/" + camera_name + "/localcalibrations/darks/oneandahalfsecdarks")
-        
-            
+
+
         if not os.path.exists(self.local_calibration_path + "archive/" + camera_name + "/localcalibrations/darks/twosecdarks"):
             os.makedirs(self.local_calibration_path + "archive/" + camera_name + "/localcalibrations/darks/twosecdarks")
-            if not os.path.exists(self.local_calibration_path + "archive/" + camera_name + "/localcalibrations/darks/fivesecdarks"):
-                os.makedirs(self.local_calibration_path + "archive/" + camera_name + "/localcalibrations/darks/fivesecdarks")
+        if not os.path.exists(self.local_calibration_path + "archive/" + camera_name + "/localcalibrations/darks/fivesecdarks"):
+            os.makedirs(self.local_calibration_path + "archive/" + camera_name + "/localcalibrations/darks/fivesecdarks")
         if not os.path.exists(self.local_calibration_path + "archive/" + camera_name + "/localcalibrations/darks/tensecdarks"):
             os.makedirs(self.local_calibration_path + "archive/" + camera_name + "/localcalibrations/darks/tensecdarks")
         if not os.path.exists(self.local_calibration_path + "archive/" + camera_name + "/localcalibrations/darks/fifteensecdarks"):
@@ -3050,7 +3050,7 @@ class Observatory:
                                     n_files = len(list_of_files)
                                     oldest_file = min(list_of_files, key=os.path.getctime)
                                     os.remove(oldest_file)
-                            
+
                             elif slow_process[4] == 'tenpercent_exposure_dark':
                                 tempexposure = temphduheader['EXPTIME']
                                 tempfilename = self.local_dark_folder + 'tenpercentdarks/' + \
@@ -3062,7 +3062,7 @@ class Observatory:
                                     n_files = len(list_of_files)
                                     oldest_file = min(list_of_files, key=os.path.getctime)
                                     os.remove(oldest_file)
-                            
+
                             elif slow_process[4] == 'quartersec_exposure_dark':
                                 tempexposure = temphduheader['EXPTIME']
                                 tempfilename = self.local_dark_folder + 'quartersecdarks/' + \
@@ -3074,8 +3074,8 @@ class Observatory:
                                     n_files = len(list_of_files)
                                     oldest_file = min(list_of_files, key=os.path.getctime)
                                     os.remove(oldest_file)
-                            
-                            
+
+
 
                             elif slow_process[4] == 'halfsec_exposure_dark':
                                 tempexposure = temphduheader['EXPTIME']
@@ -3088,7 +3088,7 @@ class Observatory:
                                     n_files = len(list_of_files)
                                     oldest_file = min(list_of_files, key=os.path.getctime)
                                     os.remove(oldest_file)
-                                    
+
                             elif slow_process[4] == 'threequartersec_exposure_dark':
                                 tempexposure = temphduheader['EXPTIME']
                                 tempfilename = self.local_dark_folder + 'sevenfivepercentdarks/' + \
@@ -3100,7 +3100,7 @@ class Observatory:
                                     n_files = len(list_of_files)
                                     oldest_file = min(list_of_files, key=os.path.getctime)
                                     os.remove(oldest_file)
-                            
+
                             elif slow_process[4] == 'onesec_exposure_dark':
                                 tempexposure = temphduheader['EXPTIME']
                                 tempfilename = self.local_dark_folder + 'onesecdarks/' + \
@@ -3112,7 +3112,7 @@ class Observatory:
                                     n_files = len(list_of_files)
                                     oldest_file = min(list_of_files, key=os.path.getctime)
                                     os.remove(oldest_file)
-                                
+
                             elif slow_process[4] == 'oneandahalfsec_exposure_dark':
                                 tempexposure = temphduheader['EXPTIME']
                                 tempfilename = self.local_dark_folder + 'oneandahalfsecdarks/' + \
@@ -3136,7 +3136,7 @@ class Observatory:
                                     n_files = len(list_of_files)
                                     oldest_file = min(list_of_files, key=os.path.getctime)
                                     os.remove(oldest_file)
-                                    
+
                             elif slow_process[4] == 'fivesec_exposure_dark':
                                 tempexposure = temphduheader['EXPTIME']
                                 tempfilename = self.local_dark_folder + 'fivesecdarks/' + \
@@ -3172,7 +3172,7 @@ class Observatory:
                                     n_files = len(list_of_files)
                                     oldest_file = min(list_of_files, key=os.path.getctime)
                                     os.remove(oldest_file)
-                                    
+
                             elif slow_process[4] == 'twentysec_exposure_dark':
                                 tempexposure = temphduheader['EXPTIME']
                                 tempfilename = self.local_dark_folder + 'twentysecdarks/' + \

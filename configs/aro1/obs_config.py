@@ -131,7 +131,7 @@ site_config = {
     # TIMING FOR CALENDAR EVENTS
     # How many minutes with respect to eve sunset start flats
     'bias_dark interval':  105.,   #minutes
-    'eve_sky_flat_sunset_offset': -45.,  # Before Sunset Minutes  neg means before, + after.
+    'eve_sky_flat_sunset_offset': -55.,  # Before Sunset Minutes  neg means before, + after.
     'end_eve_sky_flats_offset': -1 ,      # How many minutes after civilDusk to do....
     'clock_and_auto_focus_offset':-10,   #min before start of observing
     'astro_dark_buffer': 15,   #Min before and after AD to extend observing window

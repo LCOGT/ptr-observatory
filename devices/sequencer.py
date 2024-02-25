@@ -1597,7 +1597,7 @@ class Sequencer:
                     self.bias_dark_latch = False
                     break
                 g_dev['obs'].request_scan_requests()
-                
+
                 # COLLECTING A 0.1 Second EXPOSURE DARK FRAME
                 plog("Expose " + str(5*stride) +" 1x1 0.1 second exposure dark frames.")
                 req = {'time': 0.1,  'script': 'True', 'image_type': 'tenpercent_exposure_dark'}
@@ -1618,8 +1618,8 @@ class Sequencer:
                     self.bias_dark_latch = False
                     break
                 g_dev['obs'].request_scan_requests()
-                
-                
+
+
                 # COLLECTING A 0.25 Second EXPOSURE DARK FRAME
                 plog("Expose " + str(5*stride) +" 1x1 0.25 second exposure dark frames.")
                 req = {'time': 0.25,  'script': 'True', 'image_type': 'quartersec_exposure_dark'}
@@ -1640,8 +1640,8 @@ class Sequencer:
                     self.bias_dark_latch = False
                     break
                 g_dev['obs'].request_scan_requests()
-                
-                
+
+
 
                 # COLLECTING A Half Second EXPOSURE DARK FRAME
                 plog("Expose " + str(5*stride) +" 1x1 half-second exposure dark frames.")
@@ -1708,7 +1708,7 @@ class Sequencer:
                     self.bias_dark_latch = False
                     break
                 g_dev['obs'].request_scan_requests()
-                
+
                 # COLLECTING A one and a half Second EXPOSURE DARK FRAME
                 plog("Expose " + str(5*stride) +" 1x1  1.5 second exposure dark frames.")
                 req = {'time': 1.5,  'script': 'True', 'image_type': 'oneandahalfsec_exposure_dark'}
@@ -1751,7 +1751,7 @@ class Sequencer:
                     self.bias_dark_latch = False
                     break
                 g_dev['obs'].request_scan_requests()
-                
+
                 # COLLECTING A FIVE SECOND EXPOSURE DARK FRAME
                 plog("Expose " + str(5*stride) +" 1x1 5s exposure dark frames.")
                 req = {'time': 2,  'script': 'True', 'image_type': 'fivesec_exposure_dark'}
@@ -1793,8 +1793,8 @@ class Sequencer:
                     self.bias_dark_latch = False
                     break
                 g_dev['obs'].request_scan_requests()
-                
-                
+
+
                 # COLLECTING A FIFTEEN SECOND EXPOSURE DARK FRAME
                 plog("Expose " + str(2*stride) +" 1x1 15 second exposure dark frames.")
                 req = {'time': 15,  'script': 'True', 'image_type': 'fifteensec_exposure_dark'}
@@ -1902,8 +1902,8 @@ class Sequencer:
                              + str(dark_count) + " using exposure:  " + str(dark_exp_time) )
                     req = {'time': dark_exp_time,  'script': 'True', 'image_type': 'dark'}
                     opt = {'count': 1, 'filter': 'dark'}
-                    g_dev['cam'].expose_command(req, opt, user_id='Tobor', user_name='Tobor', user_roles='system', no_AWS=False, \
-                                       do_sep=False, quick=False, skip_open_check=True,skip_daytime_check=True)
+                    # g_dev['cam'].expose_command(req, opt, user_id='Tobor', user_name='Tobor', user_roles='system', no_AWS=False, \
+                    #                    do_sep=False, quick=False, skip_open_check=True,skip_daytime_check=True)
                     if self.stop_script_called:
                         g_dev["obs"].send_to_user("Cancelling out of calibration script as stop script has been called.")
                         self.bias_dark_latch = False
@@ -2412,10 +2412,10 @@ class Sequencer:
             g_dev['cam'].flatFiles = {}
             g_dev['cam'].hotFiles = {}
             gc.collect()
-            
-            
+
+
             flat_biasdarks={}
-            
+
 
             hdutest=np.load(inputList[0], mmap_mode='r')
             shapeImage=hdutest.shape
@@ -2658,8 +2658,8 @@ class Sequencer:
             os.remove(g_dev['obs'].local_dark_folder  + 'tempfile')
 
             g_dev["obs"].send_to_user("Long Exposure Dark calibration frame created.")
-            
-            
+
+
             ##############################################################################################
             ##############################################################################################
             ##############################################################################################
@@ -2680,13 +2680,13 @@ class Sequencer:
                     plog ("corrupt dark skipped: " + str(file))
                     inputList.remove(file)
 
-            # just construct the biasdarks           
+            # just construct the biasdarks
             PLDrive = np.memmap(g_dev['obs'].local_dark_folder  + 'tempfile', dtype='float32', mode= 'w+', shape = (shapeImage[0],shapeImage[1],len(inputList)))
 
             # D  frames and stick them in the memmap
             i=0
-            for file in inputList:                
-                PLDrive[:,:,i] = np.asarray(np.load(file, mmap_mode='r'),dtype=np.float32)                
+            for file in inputList:
+                PLDrive[:,:,i] = np.asarray(np.load(file, mmap_mode='r'),dtype=np.float32)
                 i=i+1
 
             plog ("**********************************")
@@ -2705,10 +2705,10 @@ class Sequencer:
                     finalImage[counter,:]=result
                     counter=counter+1
             plog (datetime.datetime.now().strftime("%H:%M:%S"))
-            plog ("**********************************")            
-            
-            flat_biasdarks['fivepercent']=np.asarray(finalImage).astype(np.float32)            
-            
+            plog ("**********************************")
+
+            flat_biasdarks['fivepercent']=np.asarray(finalImage).astype(np.float32)
+
             try:
                 if g_dev['obs'].config['save_raws_to_pipe_folder_for_nightly_processing']:
                     np.save(pipefolder + '/'  + tempfrontcalib + 'fivepercentBIASDARK_master_bin1.npy', np.asarray(finalImage).astype(np.float32))
@@ -2724,7 +2724,7 @@ class Sequencer:
             g_dev["obs"].send_to_user("five percent bias-dark calibration frame created.")
 
 
-            
+
             ##############################################################################################
             ##############################################################################################
             ##############################################################################################
@@ -2745,13 +2745,13 @@ class Sequencer:
                     plog ("corrupt dark skipped: " + str(file))
                     inputList.remove(file)
 
-            # just construct the biasdarks           
+            # just construct the biasdarks
             PLDrive = np.memmap(g_dev['obs'].local_dark_folder  + 'tempfile', dtype='float32', mode= 'w+', shape = (shapeImage[0],shapeImage[1],len(inputList)))
 
             # D  frames and stick them in the memmap
             i=0
-            for file in inputList:                
-                PLDrive[:,:,i] = np.asarray(np.load(file, mmap_mode='r'),dtype=np.float32)                
+            for file in inputList:
+                PLDrive[:,:,i] = np.asarray(np.load(file, mmap_mode='r'),dtype=np.float32)
                 i=i+1
 
             plog ("**********************************")
@@ -2770,10 +2770,10 @@ class Sequencer:
                     finalImage[counter,:]=result
                     counter=counter+1
             plog (datetime.datetime.now().strftime("%H:%M:%S"))
-            plog ("**********************************")            
-            
-            flat_biasdarks['tenpercent']=np.asarray(finalImage).astype(np.float32)            
-            
+            plog ("**********************************")
+
+            flat_biasdarks['tenpercent']=np.asarray(finalImage).astype(np.float32)
+
             try:
                 if g_dev['obs'].config['save_raws_to_pipe_folder_for_nightly_processing']:
                     np.save(pipefolder + '/'  + tempfrontcalib + 'tenpercentBIASDARK_master_bin1.npy', np.asarray(finalImage).astype(np.float32))
@@ -2787,9 +2787,9 @@ class Sequencer:
             gc.collect()
             os.remove(g_dev['obs'].local_dark_folder  + 'tempfile')
             g_dev["obs"].send_to_user("ten percent bias-dark calibration frame created.")
-            
-            
-            
+
+
+
             ##############################################################################################
             ##############################################################################################
             ##############################################################################################
@@ -2810,13 +2810,13 @@ class Sequencer:
                     plog ("corrupt dark skipped: " + str(file))
                     inputList.remove(file)
 
-            # just construct the biasdarks           
+            # just construct the biasdarks
             PLDrive = np.memmap(g_dev['obs'].local_dark_folder  + 'tempfile', dtype='float32', mode= 'w+', shape = (shapeImage[0],shapeImage[1],len(inputList)))
 
             # D  frames and stick them in the memmap
             i=0
-            for file in inputList:                
-                PLDrive[:,:,i] = np.asarray(np.load(file, mmap_mode='r'),dtype=np.float32)                
+            for file in inputList:
+                PLDrive[:,:,i] = np.asarray(np.load(file, mmap_mode='r'),dtype=np.float32)
                 i=i+1
 
             plog ("**********************************")
@@ -2835,10 +2835,10 @@ class Sequencer:
                     finalImage[counter,:]=result
                     counter=counter+1
             plog (datetime.datetime.now().strftime("%H:%M:%S"))
-            plog ("**********************************")            
-            
-            flat_biasdarks['quartersec']=np.asarray(finalImage).astype(np.float32)            
-            
+            plog ("**********************************")
+
+            flat_biasdarks['quartersec']=np.asarray(finalImage).astype(np.float32)
+
             try:
                 if g_dev['obs'].config['save_raws_to_pipe_folder_for_nightly_processing']:
                     np.save(pipefolder + '/'  + tempfrontcalib + 'quartersecBIASDARK_master_bin1.npy', np.asarray(finalImage).astype(np.float32))
@@ -2854,7 +2854,7 @@ class Sequencer:
             g_dev["obs"].send_to_user("five percent bias-dark calibration frame created.")
 
 
-            
+
             ##############################################################################################
             ##############################################################################################
             ##############################################################################################
@@ -2875,13 +2875,13 @@ class Sequencer:
                     plog ("corrupt dark skipped: " + str(file))
                     inputList.remove(file)
 
-            # just construct the biasdarks           
+            # just construct the biasdarks
             PLDrive = np.memmap(g_dev['obs'].local_dark_folder  + 'tempfile', dtype='float32', mode= 'w+', shape = (shapeImage[0],shapeImage[1],len(inputList)))
 
             # D  frames and stick them in the memmap
             i=0
-            for file in inputList:                
-                PLDrive[:,:,i] = np.asarray(np.load(file, mmap_mode='r'),dtype=np.float32)                
+            for file in inputList:
+                PLDrive[:,:,i] = np.asarray(np.load(file, mmap_mode='r'),dtype=np.float32)
                 i=i+1
 
             plog ("**********************************")
@@ -2900,10 +2900,10 @@ class Sequencer:
                     finalImage[counter,:]=result
                     counter=counter+1
             plog (datetime.datetime.now().strftime("%H:%M:%S"))
-            plog ("**********************************")            
-            
-            flat_biasdarks['halfsec']=np.asarray(finalImage).astype(np.float32)            
-            
+            plog ("**********************************")
+
+            flat_biasdarks['halfsec']=np.asarray(finalImage).astype(np.float32)
+
             try:
                 if g_dev['obs'].config['save_raws_to_pipe_folder_for_nightly_processing']:
                     np.save(pipefolder + '/'  + tempfrontcalib + 'halfsecBIASDARK_master_bin1.npy', np.asarray(finalImage).astype(np.float32))
@@ -2939,13 +2939,13 @@ class Sequencer:
                     plog ("corrupt dark skipped: " + str(file))
                     inputList.remove(file)
 
-            # just construct the biasdarks           
+            # just construct the biasdarks
             PLDrive = np.memmap(g_dev['obs'].local_dark_folder  + 'tempfile', dtype='float32', mode= 'w+', shape = (shapeImage[0],shapeImage[1],len(inputList)))
 
             # D  frames and stick them in the memmap
             i=0
-            for file in inputList:                
-                PLDrive[:,:,i] = np.asarray(np.load(file, mmap_mode='r'),dtype=np.float32)                
+            for file in inputList:
+                PLDrive[:,:,i] = np.asarray(np.load(file, mmap_mode='r'),dtype=np.float32)
                 i=i+1
 
             plog ("**********************************")
@@ -2964,10 +2964,10 @@ class Sequencer:
                     finalImage[counter,:]=result
                     counter=counter+1
             plog (datetime.datetime.now().strftime("%H:%M:%S"))
-            plog ("**********************************")            
-            
-            flat_biasdarks['sevenfivepercent']=np.asarray(finalImage).astype(np.float32)            
-            
+            plog ("**********************************")
+
+            flat_biasdarks['sevenfivepercent']=np.asarray(finalImage).astype(np.float32)
+
             try:
                 if g_dev['obs'].config['save_raws_to_pipe_folder_for_nightly_processing']:
                     np.save(pipefolder + '/'  + tempfrontcalib + 'sevenfivepercentBIASDARK_master_bin1.npy', np.asarray(finalImage).astype(np.float32))
@@ -2981,8 +2981,8 @@ class Sequencer:
             gc.collect()
             os.remove(g_dev['obs'].local_dark_folder  + 'tempfile')
             g_dev["obs"].send_to_user("sevenfivepercent bias-dark calibration frame created.")
-            
-            
+
+
             ##############################################################################################
             ##############################################################################################
             ##############################################################################################
@@ -3003,13 +3003,13 @@ class Sequencer:
                     plog ("corrupt dark skipped: " + str(file))
                     inputList.remove(file)
 
-            # just construct the biasdarks           
+            # just construct the biasdarks
             PLDrive = np.memmap(g_dev['obs'].local_dark_folder  + 'tempfile', dtype='float32', mode= 'w+', shape = (shapeImage[0],shapeImage[1],len(inputList)))
 
             # D  frames and stick them in the memmap
             i=0
-            for file in inputList:                
-                PLDrive[:,:,i] = np.asarray(np.load(file, mmap_mode='r'),dtype=np.float32)                
+            for file in inputList:
+                PLDrive[:,:,i] = np.asarray(np.load(file, mmap_mode='r'),dtype=np.float32)
                 i=i+1
 
             plog ("**********************************")
@@ -3028,10 +3028,10 @@ class Sequencer:
                     finalImage[counter,:]=result
                     counter=counter+1
             plog (datetime.datetime.now().strftime("%H:%M:%S"))
-            plog ("**********************************")            
-            
-            flat_biasdarks['onesec']=np.asarray(finalImage).astype(np.float32)            
-            
+            plog ("**********************************")
+
+            flat_biasdarks['onesec']=np.asarray(finalImage).astype(np.float32)
+
             try:
                 if g_dev['obs'].config['save_raws_to_pipe_folder_for_nightly_processing']:
                     np.save(pipefolder + '/'  + tempfrontcalib + 'onesecBIASDARK_master_bin1.npy', np.asarray(finalImage).astype(np.float32))
@@ -3045,8 +3045,8 @@ class Sequencer:
             gc.collect()
             os.remove(g_dev['obs'].local_dark_folder  + 'tempfile')
             g_dev["obs"].send_to_user("onesec bias-dark calibration frame created.")
-            
-            
+
+
             ##############################################################################################
             ##############################################################################################
             ##############################################################################################
@@ -3067,13 +3067,13 @@ class Sequencer:
                     plog ("corrupt dark skipped: " + str(file))
                     inputList.remove(file)
 
-            # just construct the biasdarks           
+            # just construct the biasdarks
             PLDrive = np.memmap(g_dev['obs'].local_dark_folder  + 'tempfile', dtype='float32', mode= 'w+', shape = (shapeImage[0],shapeImage[1],len(inputList)))
 
             # D  frames and stick them in the memmap
             i=0
-            for file in inputList:                
-                PLDrive[:,:,i] = np.asarray(np.load(file, mmap_mode='r'),dtype=np.float32)                
+            for file in inputList:
+                PLDrive[:,:,i] = np.asarray(np.load(file, mmap_mode='r'),dtype=np.float32)
                 i=i+1
 
             plog ("**********************************")
@@ -3092,10 +3092,10 @@ class Sequencer:
                     finalImage[counter,:]=result
                     counter=counter+1
             plog (datetime.datetime.now().strftime("%H:%M:%S"))
-            plog ("**********************************")            
-            
-            flat_biasdarks['oneandahalfsec']=np.asarray(finalImage).astype(np.float32)            
-            
+            plog ("**********************************")
+
+            flat_biasdarks['oneandahalfsec']=np.asarray(finalImage).astype(np.float32)
+
             try:
                 if g_dev['obs'].config['save_raws_to_pipe_folder_for_nightly_processing']:
                     np.save(pipefolder + '/'  + tempfrontcalib + 'oneandahalfsecBIASDARK_master_bin1.npy', np.asarray(finalImage).astype(np.float32))
@@ -3109,8 +3109,8 @@ class Sequencer:
             gc.collect()
             os.remove(g_dev['obs'].local_dark_folder  + 'tempfile')
             g_dev["obs"].send_to_user("oneandahalfsec bias-dark calibration frame created.")
-            
-            
+
+
             ##############################################################################################
             ##############################################################################################
             ##############################################################################################
@@ -3131,13 +3131,13 @@ class Sequencer:
                     plog ("corrupt dark skipped: " + str(file))
                     inputList.remove(file)
 
-            # just construct the biasdarks           
+            # just construct the biasdarks
             PLDrive = np.memmap(g_dev['obs'].local_dark_folder  + 'tempfile', dtype='float32', mode= 'w+', shape = (shapeImage[0],shapeImage[1],len(inputList)))
 
             # D  frames and stick them in the memmap
             i=0
-            for file in inputList:                
-                PLDrive[:,:,i] = np.asarray(np.load(file, mmap_mode='r'),dtype=np.float32)                
+            for file in inputList:
+                PLDrive[:,:,i] = np.asarray(np.load(file, mmap_mode='r'),dtype=np.float32)
                 i=i+1
 
             plog ("**********************************")
@@ -3156,10 +3156,10 @@ class Sequencer:
                     finalImage[counter,:]=result
                     counter=counter+1
             plog (datetime.datetime.now().strftime("%H:%M:%S"))
-            plog ("**********************************")            
-            
-            flat_biasdarks['twosec']=np.asarray(finalImage).astype(np.float32)            
-            
+            plog ("**********************************")
+
+            flat_biasdarks['twosec']=np.asarray(finalImage).astype(np.float32)
+
             try:
                 if g_dev['obs'].config['save_raws_to_pipe_folder_for_nightly_processing']:
                     np.save(pipefolder + '/'  + tempfrontcalib + 'twosecBIASDARK_master_bin1.npy', np.asarray(finalImage).astype(np.float32))
@@ -3173,8 +3173,8 @@ class Sequencer:
             gc.collect()
             os.remove(g_dev['obs'].local_dark_folder  + 'tempfile')
             g_dev["obs"].send_to_user("two bias-dark calibration frame created.")
-            
-            
+
+
             ##############################################################################################
             ##############################################################################################
             ##############################################################################################
@@ -3195,13 +3195,13 @@ class Sequencer:
                     plog ("corrupt dark skipped: " + str(file))
                     inputList.remove(file)
 
-            # just construct the biasdarks           
+            # just construct the biasdarks
             PLDrive = np.memmap(g_dev['obs'].local_dark_folder  + 'tempfile', dtype='float32', mode= 'w+', shape = (shapeImage[0],shapeImage[1],len(inputList)))
 
             # D  frames and stick them in the memmap
             i=0
-            for file in inputList:                
-                PLDrive[:,:,i] = np.asarray(np.load(file, mmap_mode='r'),dtype=np.float32)                
+            for file in inputList:
+                PLDrive[:,:,i] = np.asarray(np.load(file, mmap_mode='r'),dtype=np.float32)
                 i=i+1
 
             plog ("**********************************")
@@ -3220,10 +3220,10 @@ class Sequencer:
                     finalImage[counter,:]=result
                     counter=counter+1
             plog (datetime.datetime.now().strftime("%H:%M:%S"))
-            plog ("**********************************")            
-            
-            flat_biasdarks['fivesec']=np.asarray(finalImage).astype(np.float32)            
-            
+            plog ("**********************************")
+
+            flat_biasdarks['fivesec']=np.asarray(finalImage).astype(np.float32)
+
             try:
                 if g_dev['obs'].config['save_raws_to_pipe_folder_for_nightly_processing']:
                     np.save(pipefolder + '/'  + tempfrontcalib + 'fivesecBIASDARK_master_bin1.npy', np.asarray(finalImage).astype(np.float32))
@@ -3237,7 +3237,7 @@ class Sequencer:
             gc.collect()
             os.remove(g_dev['obs'].local_dark_folder  + 'tempfile')
             g_dev["obs"].send_to_user("five bias-dark calibration frame created.")
-        
+
             ##############################################################################################
             ##############################################################################################
             ##############################################################################################
@@ -3258,13 +3258,13 @@ class Sequencer:
                     plog ("corrupt dark skipped: " + str(file))
                     inputList.remove(file)
 
-            # just construct the biasdarks           
+            # just construct the biasdarks
             PLDrive = np.memmap(g_dev['obs'].local_dark_folder  + 'tempfile', dtype='float32', mode= 'w+', shape = (shapeImage[0],shapeImage[1],len(inputList)))
 
             # D  frames and stick them in the memmap
             i=0
-            for file in inputList:                
-                PLDrive[:,:,i] = np.asarray(np.load(file, mmap_mode='r'),dtype=np.float32)                
+            for file in inputList:
+                PLDrive[:,:,i] = np.asarray(np.load(file, mmap_mode='r'),dtype=np.float32)
                 i=i+1
 
             plog ("**********************************")
@@ -3283,10 +3283,10 @@ class Sequencer:
                     finalImage[counter,:]=result
                     counter=counter+1
             plog (datetime.datetime.now().strftime("%H:%M:%S"))
-            plog ("**********************************")            
-            
-            flat_biasdarks['tensec']=np.asarray(finalImage).astype(np.float32)            
-            
+            plog ("**********************************")
+
+            flat_biasdarks['tensec']=np.asarray(finalImage).astype(np.float32)
+
             try:
                 if g_dev['obs'].config['save_raws_to_pipe_folder_for_nightly_processing']:
                     np.save(pipefolder + '/'  + tempfrontcalib + 'tensecBIASDARK_master_bin1.npy', np.asarray(finalImage).astype(np.float32))
@@ -3300,7 +3300,7 @@ class Sequencer:
             gc.collect()
             os.remove(g_dev['obs'].local_dark_folder  + 'tempfile')
             g_dev["obs"].send_to_user("ten bias-dark calibration frame created.")
-            
+
             ##############################################################################################
             ##############################################################################################
             ##############################################################################################
@@ -3321,13 +3321,13 @@ class Sequencer:
                     plog ("corrupt dark skipped: " + str(file))
                     inputList.remove(file)
 
-            # just construct the biasdarks           
+            # just construct the biasdarks
             PLDrive = np.memmap(g_dev['obs'].local_dark_folder  + 'tempfile', dtype='float32', mode= 'w+', shape = (shapeImage[0],shapeImage[1],len(inputList)))
 
             # D  frames and stick them in the memmap
             i=0
-            for file in inputList:                
-                PLDrive[:,:,i] = np.asarray(np.load(file, mmap_mode='r'),dtype=np.float32)                
+            for file in inputList:
+                PLDrive[:,:,i] = np.asarray(np.load(file, mmap_mode='r'),dtype=np.float32)
                 i=i+1
 
             plog ("**********************************")
@@ -3346,10 +3346,10 @@ class Sequencer:
                     finalImage[counter,:]=result
                     counter=counter+1
             plog (datetime.datetime.now().strftime("%H:%M:%S"))
-            plog ("**********************************")            
-            
-            flat_biasdarks['fifteensec']=np.asarray(finalImage).astype(np.float32)            
-            
+            plog ("**********************************")
+
+            flat_biasdarks['fifteensec']=np.asarray(finalImage).astype(np.float32)
+
             try:
                 if g_dev['obs'].config['save_raws_to_pipe_folder_for_nightly_processing']:
                     np.save(pipefolder + '/'  + tempfrontcalib + 'fifteensecBIASDARK_master_bin1.npy', np.asarray(finalImage).astype(np.float32))
@@ -3385,13 +3385,13 @@ class Sequencer:
                     plog ("corrupt dark skipped: " + str(file))
                     inputList.remove(file)
 
-            # just construct the biasdarks           
+            # just construct the biasdarks
             PLDrive = np.memmap(g_dev['obs'].local_dark_folder  + 'tempfile', dtype='float32', mode= 'w+', shape = (shapeImage[0],shapeImage[1],len(inputList)))
 
             # D  frames and stick them in the memmap
             i=0
-            for file in inputList:                
-                PLDrive[:,:,i] = np.asarray(np.load(file, mmap_mode='r'),dtype=np.float32)                
+            for file in inputList:
+                PLDrive[:,:,i] = np.asarray(np.load(file, mmap_mode='r'),dtype=np.float32)
                 i=i+1
 
             plog ("**********************************")
@@ -3410,10 +3410,10 @@ class Sequencer:
                     finalImage[counter,:]=result
                     counter=counter+1
             plog (datetime.datetime.now().strftime("%H:%M:%S"))
-            plog ("**********************************")            
-            
-            flat_biasdarks['twentysec']=np.asarray(finalImage).astype(np.float32)            
-            
+            plog ("**********************************")
+
+            flat_biasdarks['twentysec']=np.asarray(finalImage).astype(np.float32)
+
             try:
                 if g_dev['obs'].config['save_raws_to_pipe_folder_for_nightly_processing']:
                     np.save(pipefolder + '/'  + tempfrontcalib + 'twentysecBIASDARK_master_bin1.npy', np.asarray(finalImage).astype(np.float32))
@@ -4215,16 +4215,16 @@ class Sequencer:
                             print ("EXP")
                             print (hdu1exp)
                             fraction_through_range=0
-                            
-                            
+
+
                             #flat_biasdarks
-                            
+
                             if hdu1exp == 0.05 and 'fivepercent' in flat_biasdarks:
                                 flatdebiaseddedarked=hdu1data -flat_biasdarks['fivepercent']
                                 print("five percent")
                             elif hdu1exp == 0.1 and 'tenpercent' in flat_biasdarks:
                                 flatdebiaseddedarked=hdu1data -flat_biasdarks['tenpercent']
-                                print("ten percent")                                
+                                print("ten percent")
                             elif hdu1exp == 0.25 and 'quartersec' in flat_biasdarks:
                                 flatdebiaseddedarked=hdu1data -flat_biasdarks['quartersec']
                                 print("quartersec")
@@ -4259,7 +4259,7 @@ class Sequencer:
                                 flatdebiaseddedarked=hdu1data -narrowbandss_masterBiasDark
                                 print ("broady")
                             elif hdu1exp == narrowband_ss_biasdark_exp_time:
-                                flatdebiaseddedarked=hdu1data -broadbandss_masterBiasDark                                
+                                flatdebiaseddedarked=hdu1data -broadbandss_masterBiasDark
                                 print ("Narrowy")
                             elif hdu1exp < 0.5:
                                 flatdebiaseddedarked=(hdu1data-masterBias)-(halfsecond_masterDark*hdu1exp)
@@ -4404,7 +4404,7 @@ class Sequencer:
                             print ("nanstdev: " + tempstd)
                             nanmedian_collector.append(tempnanmedian)
                             nanstd_collector.append(tempstd)
-                            
+
                         print ("*********************************")
                         print (nanmedian_collector)
                         print (nanstd_collector)
