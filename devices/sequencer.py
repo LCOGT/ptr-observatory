@@ -4423,6 +4423,7 @@ class Sequencer:
                             if len(delete_flat_components) == 0:
                                 break
                             
+                            print ("REPROCESSING FLAT WITH BAD COMPONENTS REMOVED")
                             # Remove problematic flat images from squishener so we can re-run the flat.
                             for index in sorted(delete_flat_components, reverse=True):
                                 del inputList[index]                                
