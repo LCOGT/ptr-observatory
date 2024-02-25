@@ -2464,10 +2464,10 @@ class Sequencer:
             i=0
             n = len(inputList)
             for file in inputList:
-                plog (datetime.datetime.now().strftime("%H:%M:%S"))
+                #plog (datetime.datetime.now().strftime("%H:%M:%S"))
 
-                starttime=datetime.datetime.now()
-                plog("Storing in a memmap array: " + str(file))
+                #starttime=datetime.datetime.now()
+                #plog("Storing in a memmap array: " + str(file))
 
                 #hdu1data = np.load(file, mmap_mode='r')
                 hdu1data = np.load(file)
