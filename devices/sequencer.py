@@ -1585,15 +1585,6 @@ class Sequencer:
                 min_to_do = min(b_d_to_do, stride)
                 b_d_to_do -= min_to_do
 
-
-               
-
-                
-
-
-                
-
-
                 # COLLECTING A TWO SECOND EXPOSURE DARK FRAME
                 plog("Expose " + str(5*stride) +" 1x1 2s exposure dark frames.")
                 req = {'time': 2,  'script': 'True', 'image_type': 'twosec_exposure_dark'}
@@ -1945,8 +1936,8 @@ class Sequencer:
                              + str(dark_count) + " using exposure:  " + str(dark_exp_time) )
                     req = {'time': dark_exp_time,  'script': 'True', 'image_type': 'dark'}
                     opt = {'count': 1, 'filter': 'dark'}
-                    # g_dev['cam'].expose_command(req, opt, user_id='Tobor', user_name='Tobor', user_roles='system', no_AWS=False, \
-                    #                    do_sep=False, quick=False, skip_open_check=True,skip_daytime_check=True)
+                    g_dev['cam'].expose_command(req, opt, user_id='Tobor', user_name='Tobor', user_roles='system', no_AWS=False, \
+                                        do_sep=False, quick=False, skip_open_check=True,skip_daytime_check=True)
                     if self.stop_script_called:
                         g_dev["obs"].send_to_user("Cancelling out of calibration script as stop script has been called.")
                         self.bias_dark_latch = False
