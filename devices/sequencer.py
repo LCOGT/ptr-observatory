@@ -4393,14 +4393,14 @@ class Sequencer:
 
 
 
-                            timetaken=datetime.datetime.now() -starttime
-                            plog ("Time Taken to load array and debias and dedark and normalise flat: " + str(timetaken))
+                            #timetaken=datetime.datetime.now() -starttime
+                            #plog ("Time Taken to load array and debias and dedark and normalise flat: " + str(timetaken))
 
-                            starttime=datetime.datetime.now()
+                            #starttime=datetime.datetime.now()
                             PLDrive[:,:,i] = flatdebiaseddedarked
                             del flatdebiaseddedarked
-                            timetaken=datetime.datetime.now() -starttime
-                            plog ("Time Taken to put in memmap: " + str(timetaken))
+                            #timetaken=datetime.datetime.now() -starttime
+                            #plog ("Time Taken to put in memmap: " + str(timetaken))
                             i=i+1
 
                         plog ("**********************************")
