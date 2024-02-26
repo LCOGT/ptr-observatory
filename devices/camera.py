@@ -2890,7 +2890,16 @@ class Camera:
                         if len(self.biasFiles) > 0:
                             debiaseddarkmedian= np.nanmedian(outputimg - self.biasFiles[str(1)]) / exposure_time
                             plog ("Debiased 1s Dark Median is " + str(debiaseddarkmedian))
-                            if debiaseddarkmedian > dark_limit_adu:   # was 0.5, NB later add in an std based second rejection criterion
+                            
+                            #Short exposures are inherently much more variable, so their limit is set much higher.
+                            if frame_type in ['fivepercent_exposure_dark','tenpercent_exposure_dark', 'quartersec_exposure_dark', 'halfsec_exposure_dark','threequartersec_exposure_dark','onesec_exposure_dark', 'oneandahalfsec_exposure_dark']:
+                                if debiaseddarkmedian > 4*dark_limit_adu:   # was 0.5, NB later add in an std based second rejection criterion
+                                    plog ("Reject! This Dark seems to be light affected. ")
+                                    expresult = {}
+                                    expresult["error"] = True
+                                    self.exposure_busy = False
+                                    return expresult                            
+                            elif debiaseddarkmedian > dark_limit_adu:   # was 0.5, NB later add in an std based second rejection criterion
                                 plog ("Reject! This Dark seems to be light affected. ")
                                 expresult = {}
                                 expresult["error"] = True
