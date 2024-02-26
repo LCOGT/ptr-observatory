@@ -3878,6 +3878,28 @@ class Observatory:
                         g_dev['obs'].to_slow_process(1000,('reduced', paths["red_path"] + paths["red_name01"], imgdata, img[0].header, \
                                                'EXPOSE', g_dev["mnt"].current_icrs_ra, g_dev["mnt"].current_icrs_dec))
 
+                    crop_preview=self.config["camera"][g_dev['cam'].name]["settings"]["crop_preview"]
+                    yb=self.config["camera"][g_dev['cam'].name]["settings"][
+                        "crop_preview_ybottom"
+                    ]
+                    yt=self.config["camera"][g_dev['cam'].name]["settings"][
+                        "crop_preview_ytop"
+                    ]
+                    xl=self.config["camera"][g_dev['cam'].name]["settings"][
+                        "crop_preview_xleft"
+                    ]
+                    xr=self.config["camera"][g_dev['cam'].name]["settings"][
+                        "crop_preview_xright"
+                    ]
+                    
+                    
+                    if g_dev['cam'].dither_enabled:
+                        crop_preview=True 
+                        yb=yb+50
+                        yt=yt+50
+                        xl=xl+50
+                        xr=xr+50
+
                     if self.config["camera"][g_dev['cam'].name]["settings"]["is_osc"]:
                         picklepayload=[
                             paths,
@@ -3903,19 +3925,7 @@ class Observatory:
                             self.config["camera"][g_dev['cam'].name]["settings"]['osc_colour_enhance'] ,
                             self.config["camera"][g_dev['cam'].name]["settings"]['osc_saturation_enhance'],
                             self.config["camera"][g_dev['cam'].name]["settings"]['osc_sharpness_enhance'],
-                            self.config["camera"][g_dev['cam'].name]["settings"]["crop_preview"],
-                            self.config["camera"][g_dev['cam'].name]["settings"][
-                                "crop_preview_ybottom"
-                            ],
-                            self.config["camera"][g_dev['cam'].name]["settings"][
-                                "crop_preview_ytop"
-                            ],
-                            self.config["camera"][g_dev['cam'].name]["settings"][
-                                "crop_preview_xleft"
-                            ],
-                            self.config["camera"][g_dev['cam'].name]["settings"][
-                                "crop_preview_xright"
-                            ],
+                            crop_preview,yb,yt,xl,xr,
                             zoom_factor,
                             ]
                     else:
@@ -3939,19 +3949,7 @@ class Observatory:
                             g_dev['cam'].camera_known_readnoise,
                             self.config['minimum_realistic_seeing'],
                             0,0,0,0,0,
-                            self.config["camera"][g_dev['cam'].name]["settings"]["crop_preview"],
-                            self.config["camera"][g_dev['cam'].name]["settings"][
-                                "crop_preview_ybottom"
-                            ],
-                            self.config["camera"][g_dev['cam'].name]["settings"][
-                                "crop_preview_ytop"
-                            ],
-                            self.config["camera"][g_dev['cam'].name]["settings"][
-                                "crop_preview_xleft"
-                            ],
-                            self.config["camera"][g_dev['cam'].name]["settings"][
-                                "crop_preview_xright"
-                            ],
+                            crop_preview,yb,yt,xl,xr,
                             zoom_factor,
                             ]
 
