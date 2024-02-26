@@ -2677,32 +2677,37 @@ class Camera:
                 # THE EXPOSURE IS RUNNING
                 if frame_type=='pointing' or focus_image == True and not pointingfocus_masterdark_done and  smartstackid == 'no':
                     
-                    # Sort out an intermediate dark
-                    fraction_through_range=0
-                    if exposure_time < 0.5:
-                        intermediate_tempdark=(g_dev['cam'].darkFiles['halfsec_exposure_dark']*exposure_time)
-                    elif exposure_time < 2.0:
-                        fraction_through_range=(exposure_time-0.5)/(2.0-0.5)
-                        intermediate_tempdark=(fraction_through_range * g_dev['cam'].darkFiles['twosec_exposure_dark']) + ((1-fraction_through_range) * g_dev['cam'].darkFiles['halfsec_exposure_dark'])
-                        
-                    elif exposure_time < 10.0:
-                        fraction_through_range=(exposure_time-2)/(10.0-2.0)
-                        intermediate_tempdark=(fraction_through_range * g_dev['cam'].darkFiles['tensec_exposure_dark']) + ((1-fraction_through_range) * g_dev['cam'].darkFiles['twosec_exposure_dark'])
-                        
-                    elif exposure_time < broadband_ss_biasdark_exp_time:
-                        fraction_through_range=(exposure_time-10)/(broadband_ss_biasdark_exp_time-10.0)
-                        intermediate_tempdark=(fraction_through_range * g_dev['cam'].darkFiles['broadband_ss_dark']) + ((1-fraction_through_range) * g_dev['cam'].darkFiles['tensec_exposure_dark'])
-                        
-                    elif exposure_time < narrowband_ss_biasdark_exp_time:
-                        fraction_through_range=(exposure_time-broadband_ss_biasdark_exp_time)/(narrowband_ss_biasdark_exp_time-broadband_ss_biasdark_exp_time)
-                        intermediate_tempdark=(fraction_through_range * g_dev['cam'].darkFiles['narrowband_ss_dark']) + ((1-fraction_through_range) * g_dev['cam'].darkFiles['broadband_ss_dark'])
-                        
-                    elif dark_exp_time > narrowband_ss_biasdark_exp_time:
-                        fraction_through_range=(exposure_time-narrowband_ss_biasdark_exp_time)/(dark_exp_time -narrowband_ss_biasdark_exp_time)
-                        intermediate_tempdark=(fraction_through_range * g_dev['cam'].darkFiles[str(1)]) + ((1-fraction_through_range) * g_dev['cam'].darkFiles['narrowband_ss_dark'])
-                        
-                    else:
-                        intermediate_tempdark=(g_dev['cam'].darkFiles['narrowband_ss_dark']*exposure_time)
+                    try:
+                        # Sort out an intermediate dark
+                        fraction_through_range=0
+                        if exposure_time < 0.5:
+                            intermediate_tempdark=(g_dev['cam'].darkFiles['halfsec_exposure_dark']*exposure_time)
+                        elif exposure_time < 2.0:
+                            fraction_through_range=(exposure_time-0.5)/(2.0-0.5)
+                            intermediate_tempdark=(fraction_through_range * g_dev['cam'].darkFiles['twosec_exposure_dark']) + ((1-fraction_through_range) * g_dev['cam'].darkFiles['halfsec_exposure_dark'])
+                            
+                        elif exposure_time < 10.0:
+                            fraction_through_range=(exposure_time-2)/(10.0-2.0)
+                            intermediate_tempdark=(fraction_through_range * g_dev['cam'].darkFiles['tensec_exposure_dark']) + ((1-fraction_through_range) * g_dev['cam'].darkFiles['twosec_exposure_dark'])
+                            
+                        elif exposure_time < broadband_ss_biasdark_exp_time:
+                            fraction_through_range=(exposure_time-10)/(broadband_ss_biasdark_exp_time-10.0)
+                            intermediate_tempdark=(fraction_through_range * g_dev['cam'].darkFiles['broadband_ss_dark']) + ((1-fraction_through_range) * g_dev['cam'].darkFiles['tensec_exposure_dark'])
+                            
+                        elif exposure_time < narrowband_ss_biasdark_exp_time:
+                            fraction_through_range=(exposure_time-broadband_ss_biasdark_exp_time)/(narrowband_ss_biasdark_exp_time-broadband_ss_biasdark_exp_time)
+                            intermediate_tempdark=(fraction_through_range * g_dev['cam'].darkFiles['narrowband_ss_dark']) + ((1-fraction_through_range) * g_dev['cam'].darkFiles['broadband_ss_dark'])
+                            
+                        elif dark_exp_time > narrowband_ss_biasdark_exp_time:
+                            fraction_through_range=(exposure_time-narrowband_ss_biasdark_exp_time)/(dark_exp_time -narrowband_ss_biasdark_exp_time)
+                            intermediate_tempdark=(fraction_through_range * g_dev['cam'].darkFiles[str(1)]) + ((1-fraction_through_range) * g_dev['cam'].darkFiles['narrowband_ss_dark'])                            
+                        else:
+                            intermediate_tempdark=(g_dev['cam'].darkFiles['narrowband_ss_dark'])
+                    except:
+                        try:
+                            intermediate_tempdark=(g_dev['cam'].darkFiles['1'])
+                        except:
+                            pass
 
                 if remaining > 0:
                     if time.time() - self.plog_exposure_time_counter_timer > 10.0:
@@ -4348,51 +4353,59 @@ def post_exposure_process(payload):
             try:
                 # If not a smartstack use a scaled masterdark
                 timetakenquickdark=time.time()
-                if smartstackid == 'no':
-                    # Initially debias the image
-                    hdusmalldata = hdusmalldata - g_dev['cam'].biasFiles[str(1)]
-                    # Sort out an intermediate dark
-                    fraction_through_range=0
-                    if exposure_time < 0.5:
-                        hdusmalldata=hdusmalldata-(g_dev['cam'].darkFiles['halfsec_exposure_dark']*exposure_time)
-                    elif exposure_time < 2.0:
-                        fraction_through_range=(exposure_time-0.5)/(2.0-0.5)
-                        tempmasterDark=(fraction_through_range * g_dev['cam'].darkFiles['twosec_exposure_dark']) + ((1-fraction_through_range) * g_dev['cam'].darkFiles['halfsec_exposure_dark'])
-                        hdusmalldata=hdusmalldata-(tempmasterDark*exposure_time)
-                        del tempmasterDark
-                    elif exposure_time < 10.0:
-                        fraction_through_range=(exposure_time-2)/(10.0-2.0)
-                        tempmasterDark=(fraction_through_range * g_dev['cam'].darkFiles['tensec_exposure_dark']) + ((1-fraction_through_range) * g_dev['cam'].darkFiles['twosec_exposure_dark'])
-                        hdusmalldata=hdusmalldata-(tempmasterDark*exposure_time)
-                        del tempmasterDark
-                    elif exposure_time < broadband_ss_biasdark_exp_time:
-                        fraction_through_range=(exposure_time-10)/(broadband_ss_biasdark_exp_time-10.0)
-                        tempmasterDark=(fraction_through_range * g_dev['cam'].darkFiles['broadband_ss_dark']) + ((1-fraction_through_range) * g_dev['cam'].darkFiles['tensec_exposure_dark'])
-                        hdusmalldata=hdusmalldata-(tempmasterDark*exposure_time)
-                        del tempmasterDark
-                    elif exposure_time < narrowband_ss_biasdark_exp_time:
-                        fraction_through_range=(exposure_time-broadband_ss_biasdark_exp_time)/(narrowband_ss_biasdark_exp_time-broadband_ss_biasdark_exp_time)
-                        tempmasterDark=(fraction_through_range * g_dev['cam'].darkFiles['narrowband_ss_dark']) + ((1-fraction_through_range) * g_dev['cam'].darkFiles['broadband_ss_dark'])
-                        hdusmalldata=hdusmalldata-(tempmasterDark*exposure_time)
-                        del tempmasterDark
-                    elif dark_exp_time > narrowband_ss_biasdark_exp_time:
-                        fraction_through_range=(exposure_time-narrowband_ss_biasdark_exp_time)/(dark_exp_time -narrowband_ss_biasdark_exp_time)
-                        tempmasterDark=(fraction_through_range * g_dev['cam'].darkFiles[str(1)]) + ((1-fraction_through_range) * g_dev['cam'].darkFiles['narrowband_ss_dark'])
-                        hdusmalldata=hdusmalldata-(tempmasterDark*exposure_time)
-                        del tempmasterDark
+                try:
+                    if smartstackid == 'no':
+                        # Initially debias the image
+                        hdusmalldata = hdusmalldata - g_dev['cam'].biasFiles[str(1)]
+                        # Sort out an intermediate dark
+                        fraction_through_range=0
+                        if exposure_time < 0.5:
+                            hdusmalldata=hdusmalldata-(g_dev['cam'].darkFiles['halfsec_exposure_dark']*exposure_time)
+                        elif exposure_time < 2.0:
+                            fraction_through_range=(exposure_time-0.5)/(2.0-0.5)
+                            tempmasterDark=(fraction_through_range * g_dev['cam'].darkFiles['twosec_exposure_dark']) + ((1-fraction_through_range) * g_dev['cam'].darkFiles['halfsec_exposure_dark'])
+                            hdusmalldata=hdusmalldata-(tempmasterDark*exposure_time)
+                            del tempmasterDark
+                        elif exposure_time < 10.0:
+                            fraction_through_range=(exposure_time-2)/(10.0-2.0)
+                            tempmasterDark=(fraction_through_range * g_dev['cam'].darkFiles['tensec_exposure_dark']) + ((1-fraction_through_range) * g_dev['cam'].darkFiles['twosec_exposure_dark'])
+                            hdusmalldata=hdusmalldata-(tempmasterDark*exposure_time)
+                            del tempmasterDark
+                        elif exposure_time < broadband_ss_biasdark_exp_time:
+                            fraction_through_range=(exposure_time-10)/(broadband_ss_biasdark_exp_time-10.0)
+                            tempmasterDark=(fraction_through_range * g_dev['cam'].darkFiles['broadband_ss_dark']) + ((1-fraction_through_range) * g_dev['cam'].darkFiles['tensec_exposure_dark'])
+                            hdusmalldata=hdusmalldata-(tempmasterDark*exposure_time)
+                            del tempmasterDark
+                        elif exposure_time < narrowband_ss_biasdark_exp_time:
+                            fraction_through_range=(exposure_time-broadband_ss_biasdark_exp_time)/(narrowband_ss_biasdark_exp_time-broadband_ss_biasdark_exp_time)
+                            tempmasterDark=(fraction_through_range * g_dev['cam'].darkFiles['narrowband_ss_dark']) + ((1-fraction_through_range) * g_dev['cam'].darkFiles['broadband_ss_dark'])
+                            hdusmalldata=hdusmalldata-(tempmasterDark*exposure_time)
+                            del tempmasterDark
+                        elif dark_exp_time > narrowband_ss_biasdark_exp_time:
+                            fraction_through_range=(exposure_time-narrowband_ss_biasdark_exp_time)/(dark_exp_time -narrowband_ss_biasdark_exp_time)
+                            tempmasterDark=(fraction_through_range * g_dev['cam'].darkFiles[str(1)]) + ((1-fraction_through_range) * g_dev['cam'].darkFiles['narrowband_ss_dark'])
+                            hdusmalldata=hdusmalldata-(tempmasterDark*exposure_time)
+                            del tempmasterDark
+                        else:
+                            hdusmalldata=hdusmalldata-(g_dev['cam'].darkFiles['narrowband_ss_dark']*exposure_time)
+                    elif exposure_time == broadband_ss_biasdark_exp_time:
+                        hdusmalldata = hdusmalldata - (g_dev['cam'].darkFiles['broadband_ss_biasdark'])
+                        plog ("broadband biasdark success")
+                    elif exposure_time == narrowband_ss_biasdark_exp_time:
+                        hdusmalldata = hdusmalldata - (g_dev['cam'].darkFiles['narrowband_ss_biasdark'])
+                        plog ("narrowband biasdark success")
+                        
                     else:
-                        hdusmalldata=hdusmalldata-(g_dev['cam'].darkFiles['narrowband_ss_dark']*exposure_time)
-                elif exposure_time == broadband_ss_biasdark_exp_time:
-                    hdusmalldata = hdusmalldata - (g_dev['cam'].darkFiles['broadband_ss_biasdark'])
-                    plog ("broadband biasdark success")
-                elif exposure_time == narrowband_ss_biasdark_exp_time:
-                    hdusmalldata = hdusmalldata - (g_dev['cam'].darkFiles['narrowband_ss_biasdark'])
-                    plog ("narrowband biasdark success")
-
-                else:
-                    plog ("DUNNO WHAT HAPPENED!")
-                    hdusmalldata = hdusmalldata - g_dev['cam'].biasFiles[str(1)]
-                    hdusmalldata = hdusmalldata - (g_dev['cam'].darkFiles[str(1)] * exposure_time)
+                        plog ("DUNNO WHAT HAPPENED!")
+                        hdusmalldata = hdusmalldata - g_dev['cam'].biasFiles[str(1)]
+                        hdusmalldata = hdusmalldata - (g_dev['cam'].darkFiles[str(1)] * exposure_time)
+                except:
+                    try:
+                        hdusmalldata = hdusmalldata - g_dev['cam'].biasFiles[str(1)]
+                        hdusmalldata = hdusmalldata - (g_dev['cam'].darkFiles[str(1)] * exposure_time)
+                    except:
+                        pass
+                        
                 plog ("time taken quickdark")
                 plog (str(time.time() - timetakenquickdark))
             except Exception as e:

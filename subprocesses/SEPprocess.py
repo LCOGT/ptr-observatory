@@ -8,7 +8,7 @@ Created on Sun Apr 23 04:37:30 2023
 import numpy as np
 from astropy.stats import median_absolute_deviation
 from astropy.nddata.utils import extract_array
-#import sys
+import sys
 import pickle
 import time
 import sep
@@ -51,8 +51,8 @@ def radial_profile(data, center):
 # The SEP code underestimates the moffat FWHM by some factor. This corrects for it.
 sep_to_moffat_factor=1.45
 
-#input_sep_info=pickle.load(sys.stdin.buffer)
-input_sep_info=pickle.load(open('testSEPpickle','rb'))
+input_sep_info=pickle.load(sys.stdin.buffer)
+#input_sep_info=pickle.load(open('testSEPpickle','rb'))
 
 #print ("HERE IS THE INCOMING. ")
 #print (input_sep_info)
