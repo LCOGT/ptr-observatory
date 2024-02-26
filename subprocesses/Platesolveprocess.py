@@ -43,7 +43,7 @@ import traceback
 #     demosaicing_CFA_Bayer_bilinear,  # )#,
 #     # demosaicing_CFA_Bayer_Malvar2004,
 #     demosaicing_CFA_Bayer_Menon2007)
-
+#import matplotlib.pyplot as plt
 
 warnings.simplefilter('ignore', category=AstropyUserWarning)
 warnings.simplefilter("ignore", category=RuntimeWarning)
@@ -99,76 +99,77 @@ useastrometrynet=input_psolve_info[16]
 #useastrometrynet=True
 
 
-googtime=time.time()
 
-# Check there are no nans in the image upon receipt
-# # This is necessary as nans aren't interpolated in the main thread.
-# # Fast next-door-neighbour in-fill algorithm
-# num_of_nans=np.count_nonzero(np.isnan(hdufocusdata))
-# x_size=hdufocusdata.shape[0]
-# y_size=hdufocusdata.shape[1]
-# # this is actually faster than np.nanmean
-# edgefillvalue=np.divide(np.nansum(hdufocusdata),(x_size*y_size)-num_of_nans)
-# #breakpoint()
-# while num_of_nans > 0:
-#     # List the coordinates that are nan in the array
-#     nan_coords=np.argwhere(np.isnan(hdufocusdata))
 
-#     # For each coordinate try and find a non-nan-neighbour and steal its value
-#     for nancoord in nan_coords:
-#         x_nancoord=nancoord[0]
-#         y_nancoord=nancoord[1]
-#         done=False
+#Check there are no nans in the image upon receipt
+# This is necessary as nans aren't interpolated in the main thread.
+# Fast next-door-neighbour in-fill algorithm
+num_of_nans=np.count_nonzero(np.isnan(hdufocusdata))
+x_size=hdufocusdata.shape[0]
+y_size=hdufocusdata.shape[1]
+# this is actually faster than np.nanmean
+edgefillvalue=np.divide(np.nansum(hdufocusdata),(x_size*y_size)-num_of_nans)
+#breakpoint()
+while num_of_nans > 0:
+    # List the coordinates that are nan in the array
+    nan_coords=np.argwhere(np.isnan(hdufocusdata))
 
-#         # Because edge pixels can tend to form in big clumps
-#         # Masking the array just with the mean at the edges
-#         # makes this MUCH faster to no visible effect for humans.
-#         # Also removes overscan
-#         if x_nancoord < 100:
-#             hdufocusdata[x_nancoord,y_nancoord]=edgefillvalue
-#             done=True
-#         elif x_nancoord > (x_size-100):
-#             hdufocusdata[x_nancoord,y_nancoord]=edgefillvalue
+    # For each coordinate try and find a non-nan-neighbour and steal its value
+    for nancoord in nan_coords:
+        x_nancoord=nancoord[0]
+        y_nancoord=nancoord[1]
+        done=False
 
-#             done=True
-#         elif y_nancoord < 100:
-#             hdufocusdata[x_nancoord,y_nancoord]=edgefillvalue
+        # Because edge pixels can tend to form in big clumps
+        # Masking the array just with the mean at the edges
+        # makes this MUCH faster to no visible effect for humans.
+        # Also removes overscan
+        if x_nancoord < 100:
+            hdufocusdata[x_nancoord,y_nancoord]=edgefillvalue
+            done=True
+        elif x_nancoord > (x_size-100):
+            hdufocusdata[x_nancoord,y_nancoord]=edgefillvalue
 
-#             done=True
-#         elif y_nancoord > (y_size-100):
-#             hdufocusdata[x_nancoord,y_nancoord]=edgefillvalue
-#             done=True
+            done=True
+        elif y_nancoord < 100:
+            hdufocusdata[x_nancoord,y_nancoord]=edgefillvalue
 
-#         # left
-#         if not done:
-#             if x_nancoord != 0:
-#                 value_here=hdufocusdata[x_nancoord-1,y_nancoord]
-#                 if not np.isnan(value_here):
-#                     hdufocusdata[x_nancoord,y_nancoord]=value_here
-#                     done=True
-#         # right
-#         if not done:
-#             if x_nancoord != (x_size-1):
-#                 value_here=hdufocusdata[x_nancoord+1,y_nancoord]
-#                 if not np.isnan(value_here):
-#                     hdufocusdata[x_nancoord,y_nancoord]=value_here
-#                     done=True
-#         # below
-#         if not done:
-#             if y_nancoord != 0:
-#                 value_here=hdufocusdata[x_nancoord,y_nancoord-1]
-#                 if not np.isnan(value_here):
-#                     hdufocusdata[x_nancoord,y_nancoord]=value_here
-#                     done=True
-#         # above
-#         if not done:
-#             if y_nancoord != (y_size-1):
-#                 value_here=hdufocusdata[x_nancoord,y_nancoord+1]
-#                 if not np.isnan(value_here):
-#                     hdufocusdata[x_nancoord,y_nancoord]=value_here
-#                     done=True
+            done=True
+        elif y_nancoord > (y_size-100):
+            hdufocusdata[x_nancoord,y_nancoord]=edgefillvalue
+            done=True
 
-#     num_of_nans=np.count_nonzero(np.isnan(hdufocusdata))
+        # left
+        if not done:
+            if x_nancoord != 0:
+                value_here=hdufocusdata[x_nancoord-1,y_nancoord]
+                if not np.isnan(value_here):
+                    hdufocusdata[x_nancoord,y_nancoord]=value_here
+                    done=True
+        # right
+        if not done:
+            if x_nancoord != (x_size-1):
+                value_here=hdufocusdata[x_nancoord+1,y_nancoord]
+                if not np.isnan(value_here):
+                    hdufocusdata[x_nancoord,y_nancoord]=value_here
+                    done=True
+        # below
+        if not done:
+            if y_nancoord != 0:
+                value_here=hdufocusdata[x_nancoord,y_nancoord-1]
+                if not np.isnan(value_here):
+                    hdufocusdata[x_nancoord,y_nancoord]=value_here
+                    done=True
+        # above
+        if not done:
+            if y_nancoord != (y_size-1):
+                value_here=hdufocusdata[x_nancoord,y_nancoord+1]
+                if not np.isnan(value_here):
+                    hdufocusdata[x_nancoord,y_nancoord]=value_here
+                    done=True
+
+    num_of_nans=np.count_nonzero(np.isnan(hdufocusdata))
+
 
 
 
@@ -193,11 +194,11 @@ if pixscale != None:
     if is_osc or (pixscale < 0.5 and pixscale > 0.3):
         #hdufocusdata=demosaicing_CFA_Bayer_bilinear(hdufocusdata, 'RGGB')[:,:,1]
         #hdufocusdata=hdufocusdata.astype("float32")
-        hdufocusdata=block_reduce(hdufocusdata,2,func=np.nanmean)
+        hdufocusdata=np.divide(block_reduce(hdufocusdata,2,func=np.sum),2)
         pixscale=pixscale*2
         binnedtwo=True
     elif pixscale <= 0.3:
-        hdufocusdata=block_reduce(hdufocusdata,3,func=np.nanmean)
+        hdufocusdata=np.divide(block_reduce(hdufocusdata,3,func=np.sum),2)
         pixscale=pixscale*3
         binnedthree=True
 # else:
@@ -224,6 +225,8 @@ crop_height = int(crop_height)
 
 if crop_width > 0 or crop_height > 0:
     hdufocusdata = hdufocusdata[crop_width:-crop_width, crop_height:-crop_height]
+
+
 
 # binfocus = 1
 # if bin_for_platesolve:
@@ -353,11 +356,12 @@ def localMax(a, include_diagonal=True, threshold=-np.inf) :
 
     return np.argwhere(adjacentmax & diagonalmax)
 
+
 fx, fy = hdufocusdata.shape
 #hdufocusdata[np.isnan(hdufocusdata)] = imageMode
 hdufocusdata=hdufocusdata-np.nanmedian(hdufocusdata)
 tempstd=np.std(hdufocusdata)
-threshold=3* np.std(hdufocusdata[hdufocusdata < (5*tempstd)])
+threshold=2.5* np.std(hdufocusdata[hdufocusdata < (5*tempstd)])
 list_of_local_maxima=localMax(hdufocusdata, threshold=threshold)
 # Assess each point
 pointvalues=np.zeros([len(list_of_local_maxima),3],dtype=float)
@@ -385,7 +389,7 @@ for point in list_of_local_maxima:
             pointvalues[counter][2]=np.nan                       
         
         # If not saturated and far away from the edge
-        elif value_at_point < 0.8*image_saturation_level:
+        elif value_at_point < 0.9*image_saturation_level:
             pointvalues[counter][2]=value_at_point
         
         else:
@@ -404,92 +408,105 @@ pointvalues=pointvalues[~np.isnan(pointvalues).any(axis=1)]
 pointvalues=pointvalues[pointvalues[:,2].argsort()[::-1]]
 
 
-# Keep top 200
-if len(pointvalues) > 200:
-    pointvalues=pointvalues[:200,:]
 
-# # radial profile
-# fwhmlist=[]
-# sources=[]
-# radius_of_radialprofile=(20)
-# # Round up to nearest odd number to make a symmetrical array
-# radius_of_radialprofile=(radius_of_radialprofile // 2 *2 +1)
-# centre_of_radialprofile=int((radius_of_radialprofile /2)+1)
-# for i in range(min(len(pointvalues),200)):
-#     cx= (pointvalues[i][0])
-#     cy= (pointvalues[i][1])
-#     cvalue=hdufocusdata[int(cx)][int(cy)]
-#     try:
-#         temp_array=extract_array(hdufocusdata, (radius_of_radialprofile,radius_of_radialprofile), (cx,cy))
-#     except:
-#         print(traceback.format_exc())
-#         breakpoint()
-#     #crad=radial_profile(np.asarray(temp_array),[centre_of_radialprofile,centre_of_radialprofile])
+
+#breakpoint()
+# radial profile
+fwhmlist=[]
+sources=[]
+radius_of_radialprofile=(20)
+# Round up to nearest odd number to make a symmetrical array
+radius_of_radialprofile=(radius_of_radialprofile // 2 *2 +1)
+centre_of_radialprofile=int((radius_of_radialprofile /2)+1)
+
+sources=[]
+
+for i in range(min(len(pointvalues),200)):
+    cx= (pointvalues[i][0])
+    cy= (pointvalues[i][1])
+    cvalue=hdufocusdata[int(cx)][int(cy)]
+    try:
+        temp_array=extract_array(hdufocusdata, (radius_of_radialprofile,radius_of_radialprofile), (cx,cy))
+    except:
+        print(traceback.format_exc())
+        breakpoint()
+    #crad=radial_profile(np.asarray(temp_array),[centre_of_radialprofile,centre_of_radialprofile])
     
-#     #construct radial profile            
-#     cut_x,cut_y=temp_array.shape
-#     cut_x_center=(cut_x/2)-1
-#     cut_y_center=(cut_y/2)-1
-#     radprofile=np.zeros([cut_x*cut_y,2],dtype=float)
-#     counter=0
-#     brightest_pixel_rdist=0
-#     brightest_pixel_value=0
-#     bailout=False
-#     for q in range(cut_x):
-#         if bailout==True:
-#             break
-#         for t in range(cut_y):
-#             #breakpoint()
-#             r_dist=pow(pow((q-cut_x_center),2) + pow((t-cut_y_center),2),0.5)
-#             if q-cut_x_center < 0:# or t-cut_y_center < 0:
-#                 r_dist=r_dist*-1
-#             radprofile[counter][0]=r_dist
-#             radprofile[counter][1]=temp_array[q][t]
-#             if temp_array[q][t] > brightest_pixel_value:
-#                 brightest_pixel_rdist=r_dist
-#                 brightest_pixel_value=temp_array[q][t]
-#             counter=counter+1
+    #construct radial profile            
+    cut_x,cut_y=temp_array.shape
+    cut_x_center=(cut_x/2)-1
+    cut_y_center=(cut_y/2)-1
+    radprofile=np.zeros([cut_x*cut_y,2],dtype=float)
+    counter=0
+    brightest_pixel_rdist=0
+    brightest_pixel_value=0
+    bailout=False
+    for q in range(cut_x):
+        if bailout==True:
+            break
+        for t in range(cut_y):
+            #breakpoint()
+            r_dist=pow(pow((q-cut_x_center),2) + pow((t-cut_y_center),2),0.5)
+            if q-cut_x_center < 0:# or t-cut_y_center < 0:
+                r_dist=r_dist*-1
+            radprofile[counter][0]=r_dist
+            radprofile[counter][1]=temp_array[q][t]
+            if temp_array[q][t] > brightest_pixel_value:
+                brightest_pixel_rdist=r_dist
+                brightest_pixel_value=temp_array[q][t]
+            counter=counter+1
             
     
     
     
-#     # If the brightest pixel is in the center-ish
-#     # then attempt a fit
-#     if abs(brightest_pixel_rdist) < 4:
+    # If the brightest pixel is in the center-ish
+    # then attempt a fit
+    if abs(brightest_pixel_rdist) < 4:
         
-#         try:
-#             popt, _ = optimize.curve_fit(gaussian, radprofile[:,0], radprofile[:,1])
+        try:
+            popt, _ = optimize.curve_fit(gaussian, radprofile[:,0], radprofile[:,1])
             
-#             # Amplitude has to be a substantial fraction of the peak value
-#             # and the center of the gaussian needs to be near the center
-#             if popt[0] > (0.5 * cvalue) and abs(popt[1]) < 3 :
-#                 # print ("amplitude: " + str(popt[0]) + " center " + str(popt[1]) + " stdev? " +str(popt[2]))
-#                 # print ("Brightest pixel at : " + str(brightest_pixel_rdist))
-#                 # plt.scatter(radprofile[:,0],radprofile[:,1])
-#                 # plt.plot(radprofile[:,0], gaussian(radprofile[:,0], *popt),color = 'r')
-#                 # plt.axvline(x = 0, color = 'g', label = 'axvline - full height')
-#                 # plt.show()
+            # Amplitude has to be a substantial fraction of the peak value
+            # and the center of the gaussian needs to be near the center
+            if popt[0] > (0.5 * cvalue) and abs(popt[1]) < 3 :
+                # print ("amplitude: " + str(popt[0]) + " center " + str(popt[1]) + " stdev? " +str(popt[2]))
+                # print ("Brightest pixel at : " + str(brightest_pixel_rdist))
+                # plt.scatter(radprofile[:,0],radprofile[:,1])
+                # plt.plot(radprofile[:,0], gaussian(radprofile[:,0], *popt),color = 'r')
+                # plt.axvline(x = 0, color = 'g', label = 'axvline - full height')
+                # plt.show()
+                
+                sources.append([cx,cy,cvalue])
             
-#                 # FWHM is 2.355 * std for a gaussian
-#                 fwhmlist.append(popt[2])
-#                 sources.append([cx,cy,radprofile,temp_array])
-#                 # If we've got more than 50, good
-#                 if len(fwhmlist) > 50:
-#                     bailout=True
-#                     break
-#                 # #If we've got more than ten and we are getting dim, bail out.
-#                 # if len(fwhmlist) > 10 and brightest_pixel_value < (0.2*saturate):
-#                 #     bailout=True
-#                 #     break
-#         except:
-#             pass   
+                # FWHM is 2.355 * std for a gaussian
+                #fwhmlist.append(popt[2])
+                #sources.append([cx,cy,radprofile,temp_array])
+                # If we've got more than 50, good
+                #if len(fwhmlist) > 50:
+                #    bailout=True
+                #    break
+                # #If we've got more than ten and we are getting dim, bail out.
+                # if len(fwhmlist) > 10 and brightest_pixel_value < (0.2*saturate):
+                #     bailout=True
+                #     break
+        except:
+            pass   
+
+
+# Keep top 200
+sources=np.asarray(sources)
+if len(sources) > 200:
+    sources=sources[:200,:]
+
+
 
 print ("Constructor " + str(time.time()-googtime))
+googtime=time.time()
 #breakpoint()
 #breakpoint()
 #breakpoint()
 #breakpoint()
-if len(pointvalues) >= 5:
+if len(sources) >= 5:
 
 
     # Get size of original image
@@ -529,7 +546,7 @@ if len(pointvalues) >= 5:
     #         #breakpoint()
 
     # Add bullseye stars to blank image
-    for addingstar in pointvalues:
+    for addingstar in sources:
         x = round(addingstar[1] -1)
         y = round(addingstar[0] -1)
         peak = int(addingstar[2])
@@ -775,7 +792,7 @@ else:
 
 
 
-print (time.time()-googtime)
+print ("solver: " +str(time.time()-googtime))
 
 
 #breakpoint()
