@@ -4263,78 +4263,85 @@ class Sequencer:
                                 plog ("EXP")
                                 plog (hdu1exp)
                                 fraction_through_range=0
+                                
+                                
+                                # This try/except is here because if there is a missing dark
+                                # we can always just revert to using the long dark.
+                                try:
     
-                                if hdu1exp == 0.05 and 'fivepercent' in flat_biasdarks:
-                                    flatdebiaseddedarked=hdu1data -flat_biasdarks['fivepercent']
-                                    plog("five percent")
-                                elif hdu1exp == 0.1 and 'tenpercent' in flat_biasdarks:
-                                    flatdebiaseddedarked=hdu1data -flat_biasdarks['tenpercent']
-                                    plog("ten percent")
-                                elif hdu1exp == 0.25 and 'quartersec' in flat_biasdarks:
-                                    flatdebiaseddedarked=hdu1data -flat_biasdarks['quartersec']
-                                    plog("quartersec")
-                                elif hdu1exp == 0.5 and 'halfsec' in flat_biasdarks:
-                                    flatdebiaseddedarked=hdu1data -flat_biasdarks['halfsec']
-                                    plog("halfsec")
-                                elif hdu1exp == 0.75 and 'sevenfivepercent' in flat_biasdarks:
-                                    flatdebiaseddedarked=hdu1data -flat_biasdarks['sevenfivepercent']
-                                    plog("sevenfivepercent")
-                                elif hdu1exp == 1.0 and 'onesec' in flat_biasdarks:
-                                    flatdebiaseddedarked=hdu1data -flat_biasdarks['onesec']
-                                    plog("onesec")
-                                elif hdu1exp == 1.5 and 'oneandahalfsec' in flat_biasdarks:
-                                    flatdebiaseddedarked=hdu1data -flat_biasdarks['oneandahalfsec']
-                                    plog("one and a half sec")
-                                elif hdu1exp == 2.0 and 'twosec' in flat_biasdarks:
-                                    flatdebiaseddedarked=hdu1data -flat_biasdarks['twosec']
-                                    plog("two sec")
-                                elif hdu1exp == 5.0 and 'fivesec' in flat_biasdarks:
-                                    flatdebiaseddedarked=hdu1data -flat_biasdarks['fivesec']
-                                    plog("five sec")
-                                elif hdu1exp == 10.0 and 'tensec' in flat_biasdarks:
-                                    flatdebiaseddedarked=hdu1data -flat_biasdarks['tensec']
-                                    plog("ten sec")
-                                elif hdu1exp == 15.0 and 'fifteensec' in flat_biasdarks:
-                                    flatdebiaseddedarked=hdu1data -flat_biasdarks['fifteensec']
-                                    plog("fiveteen sec")
-                                elif hdu1exp == 20.0 and 'twenty' in flat_biasdarks:
-                                    flatdebiaseddedarked=hdu1data -flat_biasdarks['twentysec']
-                                    plog("twenty sec")
-                                elif hdu1exp == broadband_ss_biasdark_exp_time:
-                                    flatdebiaseddedarked=hdu1data -narrowbandss_masterBiasDark
-                                    plog ("broady")
-                                elif hdu1exp == narrowband_ss_biasdark_exp_time:
-                                    flatdebiaseddedarked=hdu1data -broadbandss_masterBiasDark
-                                    plog ("Narrowy")
-                                elif hdu1exp < 0.5:
-                                    flatdebiaseddedarked=(hdu1data-masterBias)-(halfsecond_masterDark*hdu1exp)
-                                elif hdu1exp <= 2.0:
-                                    fraction_through_range=(hdu1exp-0.5)/(2.0-0.5)
-                                    tempmasterDark=(fraction_through_range * twosecond_masterDark) + ((1-fraction_through_range) * halfsecond_masterDark)
-                                    flatdebiaseddedarked=(hdu1data-masterBias)-(tempmasterDark*hdu1exp)
-                                    del tempmasterDark
-                                elif hdu1exp <= 10.0:
-                                    fraction_through_range=(hdu1exp-2)/(10.0-2.0)
-                                    tempmasterDark=(fraction_through_range * tensecond_masterDark) + ((1-fraction_through_range) * twosecond_masterDark)
-                                    flatdebiaseddedarked=(hdu1data-masterBias)-(tempmasterDark*hdu1exp)
-                                    del tempmasterDark
-                                elif hdu1exp <= broadband_ss_biasdark_exp_time:
-                                    fraction_through_range=(hdu1exp-10)/(broadband_ss_biasdark_exp_time-10.0)
-                                    tempmasterDark=(fraction_through_range * broadbandss_masterDark) + ((1-fraction_through_range) * tensecond_masterDark)
-                                    flatdebiaseddedarked=(hdu1data-masterBias)-(tempmasterDark*hdu1exp)
-                                    del tempmasterDark
-                                elif hdu1exp <= narrowband_ss_biasdark_exp_time:
-                                    fraction_through_range=(hdu1exp-broadband_ss_biasdark_exp_time)/(narrowband_ss_biasdark_exp_time-broadband_ss_biasdark_exp_time)
-                                    tempmasterDark=(fraction_through_range * narrowbandss_masterDark) + ((1-fraction_through_range) * broadbandss_masterDark)
-                                    flatdebiaseddedarked=(hdu1data-masterBias)-(tempmasterDark*hdu1exp)
-                                    del tempmasterDark
-                                elif dark_exp_time > narrowband_ss_biasdark_exp_time:
-                                    fraction_through_range=(hdu1exp-narrowband_ss_biasdark_exp_time)/(dark_exp_time -narrowband_ss_biasdark_exp_time)
-                                    tempmasterDark=(fraction_through_range * masterDark) + ((1-fraction_through_range) * narrowbandss_masterDark)
-                                    flatdebiaseddedarked=(hdu1data-masterBias)-(tempmasterDark*hdu1exp)
-                                    del tempmasterDark
-                                else:
-                                    flatdebiaseddedarked=(hdu1data-masterBias)-(narrowbandss_masterDark*hdu1exp)
+                                    if hdu1exp == 0.05 and 'fivepercent' in flat_biasdarks:
+                                        flatdebiaseddedarked=hdu1data -flat_biasdarks['fivepercent']
+                                        plog("five percent")
+                                    elif hdu1exp == 0.1 and 'tenpercent' in flat_biasdarks:
+                                        flatdebiaseddedarked=hdu1data -flat_biasdarks['tenpercent']
+                                        plog("ten percent")
+                                    elif hdu1exp == 0.25 and 'quartersec' in flat_biasdarks:
+                                        flatdebiaseddedarked=hdu1data -flat_biasdarks['quartersec']
+                                        plog("quartersec")
+                                    elif hdu1exp == 0.5 and 'halfsec' in flat_biasdarks:
+                                        flatdebiaseddedarked=hdu1data -flat_biasdarks['halfsec']
+                                        plog("halfsec")
+                                    elif hdu1exp == 0.75 and 'sevenfivepercent' in flat_biasdarks:
+                                        flatdebiaseddedarked=hdu1data -flat_biasdarks['sevenfivepercent']
+                                        plog("sevenfivepercent")
+                                    elif hdu1exp == 1.0 and 'onesec' in flat_biasdarks:
+                                        flatdebiaseddedarked=hdu1data -flat_biasdarks['onesec']
+                                        plog("onesec")
+                                    elif hdu1exp == 1.5 and 'oneandahalfsec' in flat_biasdarks:
+                                        flatdebiaseddedarked=hdu1data -flat_biasdarks['oneandahalfsec']
+                                        plog("one and a half sec")
+                                    elif hdu1exp == 2.0 and 'twosec' in flat_biasdarks:
+                                        flatdebiaseddedarked=hdu1data -flat_biasdarks['twosec']
+                                        plog("two sec")
+                                    elif hdu1exp == 5.0 and 'fivesec' in flat_biasdarks:
+                                        flatdebiaseddedarked=hdu1data -flat_biasdarks['fivesec']
+                                        plog("five sec")
+                                    elif hdu1exp == 10.0 and 'tensec' in flat_biasdarks:
+                                        flatdebiaseddedarked=hdu1data -flat_biasdarks['tensec']
+                                        plog("ten sec")
+                                    elif hdu1exp == 15.0 and 'fifteensec' in flat_biasdarks:
+                                        flatdebiaseddedarked=hdu1data -flat_biasdarks['fifteensec']
+                                        plog("fiveteen sec")
+                                    elif hdu1exp == 20.0 and 'twenty' in flat_biasdarks:
+                                        flatdebiaseddedarked=hdu1data -flat_biasdarks['twentysec']
+                                        plog("twenty sec")
+                                    elif hdu1exp == broadband_ss_biasdark_exp_time:
+                                        flatdebiaseddedarked=hdu1data -narrowbandss_masterBiasDark
+                                        plog ("broady")
+                                    elif hdu1exp == narrowband_ss_biasdark_exp_time:
+                                        flatdebiaseddedarked=hdu1data -broadbandss_masterBiasDark
+                                        plog ("Narrowy")
+                                    elif hdu1exp < 0.5:
+                                        flatdebiaseddedarked=(hdu1data-masterBias)-(halfsecond_masterDark*hdu1exp)
+                                    elif hdu1exp <= 2.0:
+                                        fraction_through_range=(hdu1exp-0.5)/(2.0-0.5)
+                                        tempmasterDark=(fraction_through_range * twosecond_masterDark) + ((1-fraction_through_range) * halfsecond_masterDark)
+                                        flatdebiaseddedarked=(hdu1data-masterBias)-(tempmasterDark*hdu1exp)
+                                        del tempmasterDark
+                                    elif hdu1exp <= 10.0:
+                                        fraction_through_range=(hdu1exp-2)/(10.0-2.0)
+                                        tempmasterDark=(fraction_through_range * tensecond_masterDark) + ((1-fraction_through_range) * twosecond_masterDark)
+                                        flatdebiaseddedarked=(hdu1data-masterBias)-(tempmasterDark*hdu1exp)
+                                        del tempmasterDark
+                                    elif hdu1exp <= broadband_ss_biasdark_exp_time:
+                                        fraction_through_range=(hdu1exp-10)/(broadband_ss_biasdark_exp_time-10.0)
+                                        tempmasterDark=(fraction_through_range * broadbandss_masterDark) + ((1-fraction_through_range) * tensecond_masterDark)
+                                        flatdebiaseddedarked=(hdu1data-masterBias)-(tempmasterDark*hdu1exp)
+                                        del tempmasterDark
+                                    elif hdu1exp <= narrowband_ss_biasdark_exp_time:
+                                        fraction_through_range=(hdu1exp-broadband_ss_biasdark_exp_time)/(narrowband_ss_biasdark_exp_time-broadband_ss_biasdark_exp_time)
+                                        tempmasterDark=(fraction_through_range * narrowbandss_masterDark) + ((1-fraction_through_range) * broadbandss_masterDark)
+                                        flatdebiaseddedarked=(hdu1data-masterBias)-(tempmasterDark*hdu1exp)
+                                        del tempmasterDark
+                                    elif dark_exp_time > narrowband_ss_biasdark_exp_time:
+                                        fraction_through_range=(hdu1exp-narrowband_ss_biasdark_exp_time)/(dark_exp_time -narrowband_ss_biasdark_exp_time)
+                                        tempmasterDark=(fraction_through_range * masterDark) + ((1-fraction_through_range) * narrowbandss_masterDark)
+                                        flatdebiaseddedarked=(hdu1data-masterBias)-(tempmasterDark*hdu1exp)
+                                        del tempmasterDark
+                                    else:
+                                        flatdebiaseddedarked=(hdu1data-masterBias)-(narrowbandss_masterDark*hdu1exp)
+                                except:
+                                    flatdebiaseddedarked=(hdu1data-masterBias)-(masterDark*hdu1exp)
     
                                 plog ("Fraction through range")
                                 plog (fraction_through_range)
