@@ -3070,6 +3070,7 @@ class Camera:
                         plog("applying bad pixel mask to light frame failed: ", e)
 
                     # Fast next-door-neighbour in-fill algorithm
+                    bpmtime=time.time()
                     num_of_nans=np.count_nonzero(np.isnan(outputimg))
                     while num_of_nans > 0:
                         # List the coordinates that are nan in the array
@@ -3119,6 +3120,7 @@ class Camera:
                             plog(traceback.format_exc())
                             breakpoint()
                         num_of_nans=np.count_nonzero(np.isnan(outputimg))
+                    plog ("bad pixel time monitor " + str(time.time()-bpmtime))
 
 
 

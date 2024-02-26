@@ -14,6 +14,7 @@ import time
 import sep
 import traceback
 import math
+import json
 # from scipy import ndimage as nd
 from auto_stretch.stretch import Stretch
 # from astropy.nddata import block_reduce
@@ -27,7 +28,7 @@ from astropy.utils.exceptions import AstropyUserWarning
 import warnings
 warnings.simplefilter('ignore', category=AstropyUserWarning)
 warnings.simplefilter("ignore", category=RuntimeWarning)
-#import matplotlib.pyplot as plt
+import matplotlib.pyplot as plt
 
 
 from scipy import optimize
@@ -217,7 +218,7 @@ hduheader["IMGMODE"] = ( imageMode, "Mode Value of Image Array" )
 #####
 # HACK TO EXPERIMENT
 #####
-frame_type='focus'
+#frame_type='focus'
 
 
 
@@ -332,9 +333,8 @@ else:
             hdufocusdata[np.isnan(hdufocusdata)] = imageMode
             hdufocusdata=hdufocusdata-imageMode
             tempstd=np.std(hdufocusdata)
-            threshold=3* np.std(hdufocusdata[hdufocusdata > (5*tempstd)])
+            threshold=3* np.std(hdufocusdata[hdufocusdata < (5*tempstd)])
             list_of_local_maxima=localMax(hdufocusdata, threshold=threshold)
-            
             # Assess each point
             pointvalues=np.zeros([len(list_of_local_maxima),3],dtype=float)
             counter=0
@@ -356,7 +356,7 @@ else:
                         breakpoint()
                         
                     # Check it isn't just a dot
-                    if value_at_neighbours < (0.5*value_at_point):
+                    if value_at_neighbours < (0.6*value_at_point):
                         #print ("BAH " + str(value_at_point) + " " + str(value_at_neighbours) )
                         pointvalues[counter][2]=np.nan                       
                     
@@ -366,7 +366,11 @@ else:
                     
                     else:
                         pointvalues[counter][2]=np.nan
+                        
                 counter=counter+1
+            
+            
+            # Trim list to remove things that have too many other things close to them.
             
             # remove nan rows
             pointvalues=pointvalues[~np.isnan(pointvalues).any(axis=1)]
@@ -398,8 +402,11 @@ else:
                 cut_y_center=(cut_y/2)-1
                 radprofile=np.zeros([cut_x*cut_y,2],dtype=float)
                 counter=0
+                brightest_pixel_rdist=0
+                brightest_pixel_value=0
+                bailout=False
                 for q in range(cut_x):
-                    if len(fwhmlist) > 50:
+                    if bailout==True:
                         break
                     for t in range(cut_y):
                         #breakpoint()
@@ -408,33 +415,61 @@ else:
                             r_dist=r_dist*-1
                         radprofile[counter][0]=r_dist
                         radprofile[counter][1]=temp_array[q][t]
+                        if temp_array[q][t] > brightest_pixel_value:
+                            brightest_pixel_rdist=r_dist
+                            brightest_pixel_value=temp_array[q][t]
                         counter=counter+1
                         
-                try:
-                    popt, _ = optimize.curve_fit(gaussian, radprofile[:,0], radprofile[:,1])
+                
+                
+                
+                # If the brightest pixel is in the center-ish
+                # then attempt a fit
+                if abs(brightest_pixel_rdist) < 4:
                     
-                    # Amplitude has to be a substantial fraction of the peak value
-                    if popt[0] > (0.5 * cvalue):
-                        #print ("amplitude: " + str(popt[0]) + " center " + str(popt[1]) + " stdev? " +str(popt[2]))
-                        # plt.scatter(radprofile[:,0],radprofile[:,1])
-                        # plt.plot(radprofile[:,0], gaussian(radprofile[:,0], *popt),color = 'r')
-                        # plt.axvline(x = 0, color = 'g', label = 'axvline - full height')
-                        # plt.show()
-                    
-                        # FWHM is 2.355 * std for a gaussian
-                        fwhmlist.append(2.355*popt[2])
-                        sources.append([cx,cy,radprofile,temp_array])
-                        if len(fwhmlist) > 50:
-                            break
-                except:
-                    pass        
+                    try:
+                        popt, _ = optimize.curve_fit(gaussian, radprofile[:,0], radprofile[:,1])
+                        
+                        # Amplitude has to be a substantial fraction of the peak value
+                        # and the center of the gaussian needs to be near the center
+                        if popt[0] > (0.5 * cvalue) and abs(popt[1]) < 3 :
+                            # print ("amplitude: " + str(popt[0]) + " center " + str(popt[1]) + " stdev? " +str(popt[2]))
+                            # print ("Brightest pixel at : " + str(brightest_pixel_rdist))
+                            # plt.scatter(radprofile[:,0],radprofile[:,1])
+                            # plt.plot(radprofile[:,0], gaussian(radprofile[:,0], *popt),color = 'r')
+                            # plt.axvline(x = 0, color = 'g', label = 'axvline - full height')
+                            # plt.show()
+                        
+                            # FWHM is 2.355 * std for a gaussian
+                            fwhmlist.append(popt[2])
+                            sources.append([cx,cy,radprofile,temp_array])
+                            # If we've got more than 50, good
+                            if len(fwhmlist) > 50:
+                                bailout=True
+                                break
+                            #If we've got more than ten and we are getting dim, bail out.
+                            if len(fwhmlist) > 10 and brightest_pixel_value < (0.2*saturate):
+                                bailout=True
+                                break
+                    except:
+                        pass        
             
             
-            rfp = np.nanmedian(fwhmlist)
+            rfp = abs(np.nanmedian(fwhmlist)) * 4.710
             rfr = rfp * pixscale            
             rfs = np.nanstd(fwhmlist) * pixscale
             sepsky = imageMode
+            fwhm_file={}
+            fwhm_file['rfp']=str(rfp)
+            fwhm_file['rfr']=str(rfr)
+            fwhm_file['rfs']=str(rfs)
+            fwhm_file['sky']=str(imageMode)
+            fwhm_file['sources']=str(len(fwhmlist))
+            # dump the settings files into the temp directory
+            with open(im_path + text_name.replace('.txt', '.fwhm'), 'w') as f:
+                json.dump(fwhm_file, f)
             
+            #breakpoint()
         
             # for i in range(len(sources)):        
             #     plt.imshow(sources[i][3])
@@ -635,7 +670,15 @@ else:
                 #print (sources)
                 #breakpoint()
     
-    
+            fwhm_file={}
+            fwhm_file['rfp']=str(rfp)
+            fwhm_file['rfr']=str(rfr)
+            fwhm_file['rfs']=str(rfs)
+            fwhm_file['sky']=str(sepsky)
+            fwhm_file['sources']=str(len(sources))
+            # dump the settings files into the temp directory
+            with open(im_path + text_name.replace('.txt', '.fwhm'), 'w') as f:
+                json.dump(fwhm_file, f)
     
     
     
@@ -647,6 +690,15 @@ else:
             rfr = np.nan
             rfs = np.nan
             sepsky = np.nan
+            fwhm_file={}
+            fwhm_file['rfp']=str(rfp)
+            fwhm_file['rfr']=str(rfr)
+            fwhm_file['rfs']=str(rfs)
+            fwhm_file['sky']=str(sepsky)
+            fwhm_file['sources']=str(len(sources))
+            # dump the settings files into the temp directory
+            with open(im_path + text_name.replace('.txt', '.fwhm'), 'w') as f:
+                json.dump(fwhm_file, f)
 
 
 # Value-added header items for the UI
@@ -680,6 +732,9 @@ except:
     hduheader["NSTARS"] = ( -99, 'Number of star-like sources in image')
 
 hduheader['PIXSCALE']=float(input_sep_info[1])
+
+
+
 
 try:
     text = open(
@@ -866,6 +921,6 @@ if frame_type == 'focus':
     del stretched_data_float
     del final_image
 
-print (time.time()-googtime)
+#print (time.time()-googtime)
 
 #breakpoint()

@@ -2508,7 +2508,18 @@ class Observatory:
                 #breakpoint()
 
                 # LOADING UP THE SEP FILE HERE AGAIN
-                if os.path.exists(im_path + text_name.replace('.txt', '.sep')):
+                if os.path.exists(im_path + text_name.replace('.txt', '.fwhm')):
+                    with open(im_path + text_name.replace('.txt', '.fwhm'), 'r') as f:
+                        fwhm_info = json.load(f)
+                        
+                    self.fwhmresult={}
+                    self.fwhmresult["FWHM"] = float(fwhm_info['rfr'])
+                    rfr=float(fwhm_info['rfr'])
+                    self.fwhmresult["mean_focus"] = avg_foc
+                    self.fwhmresult['No_of_sources'] =float(fwhm_info['sources'])
+                
+                
+                elif os.path.exists(im_path + text_name.replace('.txt', '.sep')):
                     try:
                         sources = Table.read(im_path + text_name.replace('.txt', '.sep'), format='csv')
 
@@ -2527,12 +2538,12 @@ class Observatory:
                         # if frame_type != 'focus' and self.config["camera"][g_dev['cam'].name]["settings"]['bin_for_sep']:
                         #     binfocus=self.config["camera"][g_dev['cam'].name]["settings"]['sep_bin_value']
 
-                        xdonut=np.median(pow(pow(sources['x'] - sources['xpeak'],2),0.5))*pixscale#*binfocus
-                        ydonut=np.median(pow(pow(sources['y'] - sources['ypeak'],2),0.5))*pixscale#*binfocus
-                        if xdonut > 3.0 or ydonut > 3.0 or np.isnan(xdonut) or np.isnan(ydonut):
-                            plog ("Possible donut image detected.")
-                            plog('x ' + str(xdonut))
-                            plog('y ' + str(ydonut))
+                        # xdonut=np.median(pow(pow(sources['x'] - sources['xpeak'],2),0.5))*pixscale#*binfocus
+                        # ydonut=np.median(pow(pow(sources['y'] - sources['ypeak'],2),0.5))*pixscale#*binfocus
+                        # if xdonut > 3.0 or ydonut > 3.0 or np.isnan(xdonut) or np.isnan(ydonut):
+                        #     plog ("Possible donut image detected.")
+                        #     plog('x ' + str(xdonut))
+                        #     plog('y ' + str(ydonut))
 
 
                         if (len(sources) < 2) or ( frame_type == 'focus' and (len(sources) < 10 or len(sources) == np.nan or str(len(sources)) =='nan' or xdonut > 3.0 or ydonut > 3.0 or np.isnan(xdonut) or np.isnan(ydonut))):
@@ -2577,36 +2588,14 @@ class Observatory:
                             self.fwhmresult['No_of_sources'] = len(sources)
 
 
-                        if focus_image != True:
-                            # Focus tracker code. This keeps track of the focus and if it drifts
-                            # Then it triggers an autofocus.
-                            g_dev["foc"].focus_tracker.pop(0)
-                            g_dev["foc"].focus_tracker.append(round(rfr, 3))
-                            plog("Last ten FWHM (pixels): " + str(g_dev["foc"].focus_tracker) + " Median: " + str(np.nanmedian(g_dev["foc"].focus_tracker)) + " Last Solved: " + str(g_dev["foc"].last_focus_fwhm))
-
-                            # If there hasn't been a focus yet, then it can't check it,
-                            # so make this image the last solved focus.
-                            if g_dev["foc"].last_focus_fwhm == None:
-                                g_dev["foc"].last_focus_fwhm = rfr
-                            else:
-                                # Very dumb focus slip deteector
-                                if (
-                                    np.nanmedian(g_dev["foc"].focus_tracker)
-                                    > g_dev["foc"].last_focus_fwhm
-                                    + self.config["focus_trigger"]
-                                ):
-                                    g_dev["foc"].focus_needed = True
-                                    g_dev["obs"].send_to_user(
-                                        "Focus has drifted to "
-                                        + str(round(np.nanmedian(g_dev["foc"].focus_tracker),2))
-                                        + " from "
-                                        + str(g_dev["foc"].last_focus_fwhm)
-                                        + ".",
-                                        p_level="INFO",
-                                    )
+                        
+                                    
                     except Exception as e:
                         plog ("something odd occured in the reinterpretation of the SEP file", e)
                         plog(traceback.format_exc())
+                    
+                    
+                    
 
                 else:
                     #plog ("Did not find a source list from SEP for this image.")
@@ -2614,6 +2603,34 @@ class Observatory:
                     self.fwhmresult['FWHM'] = np.nan
                     self.fwhmresult["mean_focus"] = np.nan
                     self.fwhmresult['No_of_sources'] = np.nan
+
+                if focus_image != True and not np.isnan(self.fwhmresult['FWHM']):
+                    # Focus tracker code. This keeps track of the focus and if it drifts
+                    # Then it triggers an autofocus.
+                    
+                    g_dev["foc"].focus_tracker.pop(0)
+                    g_dev["foc"].focus_tracker.append(round(rfr, 3))
+                    plog("Last ten FWHM (pixels): " + str(g_dev["foc"].focus_tracker) + " Median: " + str(np.nanmedian(g_dev["foc"].focus_tracker)) + " Last Solved: " + str(g_dev["foc"].last_focus_fwhm))
+
+                    # If there hasn't been a focus yet, then it can't check it,
+                    # so make this image the last solved focus.
+                    if g_dev["foc"].last_focus_fwhm == None:
+                        g_dev["foc"].last_focus_fwhm = rfr
+                    else:
+                        # Very dumb focus slip deteector
+                        if (
+                            np.nanmedian(g_dev["foc"].focus_tracker)
+                            > g_dev["foc"].last_focus_fwhm
+                            + self.config["focus_trigger"]
+                        ):
+                            g_dev["foc"].focus_needed = True
+                            g_dev["obs"].send_to_user(
+                                "Focus has drifted to "
+                                + str(round(np.nanmedian(g_dev["foc"].focus_tracker),2))
+                                + " from "
+                                + str(g_dev["foc"].last_focus_fwhm)
+                                + ".",
+                                p_level="INFO")
 
 
                 if os.path.exists(im_path + text_name.replace('.txt', '.rad')):
@@ -2625,10 +2642,11 @@ class Observatory:
                 if frame_type == 'focus':
                     self.enqueue_for_fastUI(100, im_path, text_name.replace('EX00.txt', 'EX10.jpg'))
 
-                try:
-                    self.enqueue_for_mediumUI(180, im_path, text_name.replace('.txt', '.his'))
-                except:
-                    plog("Failed to send HIS up for some reason")
+                if os.path.exists(im_path + text_name.replace('.txt', '.his')):
+                    try:
+                        self.enqueue_for_mediumUI(180, im_path, text_name.replace('.txt', '.his'))
+                    except:
+                        plog("Failed to send HIS up for some reason")
                 if os.path.exists(im_path + text_name.replace('.txt', '.box')):
                     try:
                         self.enqueue_for_mediumUI(180, im_path, text_name.replace('.txt', '.box'))
