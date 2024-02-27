@@ -1544,7 +1544,8 @@ class Sequencer:
                     g_dev['cam'].darkslide_open = False
                     g_dev['cam'].darkslide_state = 'Closed'
             # Before parking, set the dark filter
-            self.current_filter, filt_pointer, filter_offset = g_dev["fil"].set_name_command({"filter": 'dark'}, {})
+            if g_dev["fil"].null_filterwheel == False:
+                self.current_filter, filt_pointer, filter_offset = g_dev["fil"].set_name_command({"filter": 'dark'}, {})
 
             g_dev['mnt'].park_command({}, {}) # Get there early
 
