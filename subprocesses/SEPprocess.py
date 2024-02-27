@@ -28,7 +28,7 @@ from astropy.utils.exceptions import AstropyUserWarning
 import warnings
 warnings.simplefilter('ignore', category=AstropyUserWarning)
 warnings.simplefilter("ignore", category=RuntimeWarning)
-import matplotlib.pyplot as plt
+#import matplotlib.pyplot as plt
 
 
 from scipy import optimize
@@ -91,6 +91,7 @@ minimum_realistic_seeing=input_sep_info[25]
 #nativebin=input_sep_info[26]
 do_sep=input_sep_info[27]
 
+#frame_type='expose'
 
 # https://stackoverflow.com/questions/9111711/get-coordinates-of-local-maxima-in-2d-array-above-certain-value
 def localMax(a, include_diagonal=True, threshold=-np.inf) :
@@ -249,7 +250,7 @@ if frame_type=='expose':
         histogramdata, delimiter=','
     )
 
-    json_snippets['histogram']= histogramdata
+    json_snippets['histogram']= str(histogramdata)
 
 if not do_sep or (float(hduheader["EXPTIME"]) < 1.0):
     rfp = np.nan
@@ -734,8 +735,19 @@ except:
 hduheader['PIXSCALE']=float(input_sep_info[1])
 
 
+# parse header to a json-y type thing
+headerdict={}
+counter = 0
+for line in hduheader:
+    #print (line)
+    #print (hduheader[counter])
+    counter=counter+1
+    try:
+        headerdict[line]=str(hduheader[counter])
+    except:
+        pass
 
-
+#breakpoint()
 try:
     text = open(
         im_path + text_name, "w"
@@ -745,7 +757,7 @@ try:
 except:
     pass
 
-json_snippets['header']=hduheader
+json_snippets['header']=headerdict
 
 # Create radial profiles for UI
 # Determine radial profiles of top 20 star-ish sources
@@ -853,7 +865,9 @@ if do_sep and (not frame_type=='focus'):
 
 
         pickle.dump(radials, open(im_path + text_name.replace('.txt', '.rad'),'wb'))
-        json_snippets['radialprofiles']=radials
+        json_snippets['radialprofiles']=str(radials)
+        
+        #breakpoint()
         
         
 
@@ -942,9 +956,13 @@ if do_sep and (not frame_type=='focus'):
     
         pickle.dump(slice_n_dice, open(im_path + text_name.replace('.txt', '.box'),'wb'))
         
-        json_snippets['sliceanddice']=slice_n_dice
+        json_snippets['sliceanddice']=str(slice_n_dice)
     except:
         pass
+
+
+
+#breakpoint()
     
 with open(im_path + text_name.replace('.txt', '.json'), 'w') as f:
     json.dump(json_snippets, f)
