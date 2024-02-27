@@ -4678,32 +4678,7 @@ class Sequencer:
                 # delete them
                 del flat_biasdarks
 
-                # Create the bad pixel map fits and npy
-                # Save the local boolean array
-                plog ("Total bad pixels in image: " + str(bad_pixel_mapper_array.sum()))
-                plog ("Writing out bad pixel map npy and fits.")
-                np.save(g_dev['obs'].calib_masters_folder + tempfrontcalib + 'badpixelmask_bin1.npy', bad_pixel_mapper_array)
-
-                # convert the boolean
-
-                #breakpoint()
-                fits.writeto(g_dev['obs'].calib_masters_folder + tempfrontcalib + 'badpixelmask_bin1.fits', bad_pixel_mapper_array*1,  overwrite=True)
-
-                filepathaws=g_dev['obs'].calib_masters_folder
-                filenameaws=tempfrontcalib + 'badpixelmask_bin1.fits'
-                g_dev['obs'].enqueue_for_calibrationUI(50, filepathaws,filenameaws)
-
-                # Store a version of the flat for the archive too
-                fits.writeto(g_dev['obs'].calib_masters_folder + 'ARCHIVE_' +  archiveDate + '_' + tempfrontcalib + 'badpixelmask_bin1.fits', bad_pixel_mapper_array*1, overwrite=True)
-
-                filepathaws=g_dev['obs'].calib_masters_folder
-                filenameaws='ARCHIVE_' +  archiveDate + '_' + tempfrontcalib + 'badpixelmask_bin1.fits'
-                g_dev['obs'].enqueue_for_calibrationUI(80, filepathaws,filenameaws)
-                if g_dev['obs'].config['save_raws_to_pipe_folder_for_nightly_processing']:
-                    fits.writeto(pipefolder + '/' + tempfrontcalib + 'badpixelmask_bin1.fits', bad_pixel_mapper_array*1,  overwrite=True)
-                    fits.writeto(pipefolder + '/' + 'ARCHIVE_' +  archiveDate + '_' + tempfrontcalib + 'badpixelmask_bin1.fits', bad_pixel_mapper_array*1,  overwrite=True)
-                    np.save(pipefolder + '/' + 'ARCHIVE_' +  archiveDate + '_' + tempfrontcalib + 'badpixelmask_bin1.npy', bad_pixel_mapper_array)
-
+                
 
 
 
@@ -4764,6 +4739,33 @@ class Sequencer:
                     plog ("hit some snag with reporting gains")
                     plog(traceback.format_exc())
                     #
+
+
+                # Create the bad pixel map fits and npy
+                # Save the local boolean array
+                plog ("Total bad pixels in image: " + str(bad_pixel_mapper_array.sum()))
+                plog ("Writing out bad pixel map npy and fits.")
+                np.save(g_dev['obs'].calib_masters_folder + tempfrontcalib + 'badpixelmask_bin1.npy', bad_pixel_mapper_array)
+
+                # convert the boolean
+
+                #breakpoint()
+                fits.writeto(g_dev['obs'].calib_masters_folder + tempfrontcalib + 'badpixelmask_bin1.fits', bad_pixel_mapper_array*1,  overwrite=True)
+
+                filepathaws=g_dev['obs'].calib_masters_folder
+                filenameaws=tempfrontcalib + 'badpixelmask_bin1.fits'
+                g_dev['obs'].enqueue_for_calibrationUI(50, filepathaws,filenameaws)
+
+                # Store a version of the flat for the archive too
+                fits.writeto(g_dev['obs'].calib_masters_folder + 'ARCHIVE_' +  archiveDate + '_' + tempfrontcalib + 'badpixelmask_bin1.fits', bad_pixel_mapper_array*1, overwrite=True)
+
+                filepathaws=g_dev['obs'].calib_masters_folder
+                filenameaws='ARCHIVE_' +  archiveDate + '_' + tempfrontcalib + 'badpixelmask_bin1.fits'
+                g_dev['obs'].enqueue_for_calibrationUI(80, filepathaws,filenameaws)
+                if g_dev['obs'].config['save_raws_to_pipe_folder_for_nightly_processing']:
+                    fits.writeto(pipefolder + '/' + tempfrontcalib + 'badpixelmask_bin1.fits', bad_pixel_mapper_array*1,  overwrite=True)
+                    fits.writeto(pipefolder + '/' + 'ARCHIVE_' +  archiveDate + '_' + tempfrontcalib + 'badpixelmask_bin1.fits', bad_pixel_mapper_array*1,  overwrite=True)
+                    np.save(pipefolder + '/' + 'ARCHIVE_' +  archiveDate + '_' + tempfrontcalib + 'badpixelmask_bin1.npy', bad_pixel_mapper_array)
 
 
                 # THEN reload them to use for the next night.

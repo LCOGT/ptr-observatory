@@ -623,14 +623,14 @@ site_config = {
                 
                 
                 'do_cosmics' : False,
-                'number_of_bias_to_collect' : 10,
-                'number_of_dark_to_collect' : 10,
-                'number_of_flat_to_collect' : 2,
+                'number_of_bias_to_collect' : 64,
+                'number_of_dark_to_collect' : 64,
+                'number_of_flat_to_collect' : 3,
                 'number_of_bias_to_store' : 64,
                 'number_of_dark_to_store' : 64,
                 'number_of_flat_to_store' : 64,
                 
-                'dark_exposure': 75,
+                'dark_exposure': 180,
                 'has_darkslide':  False,
                 'darkslide_com':  None,
                 'shutter_type': "Electronic",
