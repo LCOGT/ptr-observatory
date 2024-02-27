@@ -37,7 +37,7 @@ def gaussian(x, amplitude, mean, stddev):
     return amplitude * np.exp(-((x - mean) / 4 / stddev)**2)
 
 
-
+json_snippets={}
 
 def radial_profile(data, center):
     y, x = np.indices((data.shape))
@@ -249,7 +249,7 @@ if frame_type=='expose':
         histogramdata, delimiter=','
     )
 
-
+    json_snippets['histogram']= histogramdata
 
 if not do_sep or (float(hduheader["EXPTIME"]) < 1.0):
     rfp = np.nan
@@ -381,7 +381,7 @@ else:
             # radial profile
             fwhmlist=[]
             sources=[]
-            radius_of_radialprofile=(20)
+            radius_of_radialprofile=(30)
             # Round up to nearest odd number to make a symmetrical array
             radius_of_radialprofile=(radius_of_radialprofile // 2 *2 +1)
             centre_of_radialprofile=int((radius_of_radialprofile /2)+1)
@@ -700,7 +700,7 @@ else:
             with open(im_path + text_name.replace('.txt', '.fwhm'), 'w') as f:
                 json.dump(fwhm_file, f)
 
-
+            json_snippets['fwhm']=fwhm_file
 # Value-added header items for the UI
 
 
@@ -745,6 +745,8 @@ try:
 except:
     pass
 
+json_snippets['header']=hduheader
+
 # Create radial profiles for UI
 # Determine radial profiles of top 20 star-ish sources
 if do_sep and (not frame_type=='focus'):
@@ -756,21 +758,104 @@ if do_sep and (not frame_type=='focus'):
         sources.sort('flux')
         sources.reverse()
 
-        radtime=time.time()
-        dodgylist=[]
+        # radtime=time.time()
+        # dodgylist=[]
+        # radius_of_radialprofile=(5*math.ceil(rfp))
+        # # Round up to nearest odd number to make a symmetrical array
+        # radius_of_radialprofile=(radius_of_radialprofile // 2 *2 +1)
+        # centre_of_radialprofile=int((radius_of_radialprofile /2)+1)
+        # for i in range(min(len(sources),200)):
+        #     cx= (sources[i]['x'])
+        #     cy= (sources[i]['y'])
+        #     temp_array=extract_array(hdufocusdata, (radius_of_radialprofile,radius_of_radialprofile), (cy,cx))
+        #     crad=radial_profile(np.asarray(temp_array),[centre_of_radialprofile,centre_of_radialprofile])
+        #     dodgylist.append([cx,cy,crad,temp_array])
+
+
+
+
+        # radial profile
+        fwhmlist=[]
+        radials=[]
+        #radius_of_radialprofile=(30)
         radius_of_radialprofile=(5*math.ceil(rfp))
         # Round up to nearest odd number to make a symmetrical array
         radius_of_radialprofile=(radius_of_radialprofile // 2 *2 +1)
         centre_of_radialprofile=int((radius_of_radialprofile /2)+1)
-        for i in range(min(len(sources),200)):
-            cx= (sources[i]['x'])
-            cy= (sources[i]['y'])
-            temp_array=extract_array(hdufocusdata, (radius_of_radialprofile,radius_of_radialprofile), (cy,cx))
-            crad=radial_profile(np.asarray(temp_array),[centre_of_radialprofile,centre_of_radialprofile])
-            dodgylist.append([cx,cy,crad,temp_array])
+        for i in range(min(len(pointvalues),200)):
+            cx= (pointvalues[i][0])
+            cy= (pointvalues[i][1])
+            cvalue=hdufocusdata[int(cx)][int(cy)]
+            try:
+                temp_array=extract_array(hdufocusdata, (radius_of_radialprofile,radius_of_radialprofile), (cx,cy))
+            except:
+                print(traceback.format_exc())
+                breakpoint()
+            #crad=radial_profile(np.asarray(temp_array),[centre_of_radialprofile,centre_of_radialprofile])
+            
+            #construct radial profile            
+            cut_x,cut_y=temp_array.shape
+            cut_x_center=(cut_x/2)-1
+            cut_y_center=(cut_y/2)-1
+            radprofile=np.zeros([cut_x*cut_y,2],dtype=float)
+            counter=0
+            brightest_pixel_rdist=0
+            brightest_pixel_value=0
+            bailout=False
+            for q in range(cut_x):
+                # if bailout==True:
+                #     break
+                for t in range(cut_y):
+                    #breakpoint()
+                    r_dist=pow(pow((q-cut_x_center),2) + pow((t-cut_y_center),2),0.5)
+                    if q-cut_x_center < 0:# or t-cut_y_center < 0:
+                        r_dist=r_dist*-1
+                    radprofile[counter][0]=r_dist
+                    radprofile[counter][1]=temp_array[q][t]
+                    if temp_array[q][t] > brightest_pixel_value:
+                        brightest_pixel_rdist=r_dist
+                        brightest_pixel_value=temp_array[q][t]
+                    counter=counter+1
+                    
+            
+            
+            
+            # If the brightest pixel is in the center-ish
+            # then attempt a fit
+            if abs(brightest_pixel_rdist) < 4:
+                
+                try:
+                    popt, _ = optimize.curve_fit(gaussian, radprofile[:,0], radprofile[:,1])
+                    
+                    # Amplitude has to be a substantial fraction of the peak value
+                    # and the center of the gaussian needs to be near the center
+                    if popt[0] > (0.5 * cvalue) and abs(popt[1]) < 3 :
+                        # print ("amplitude: " + str(popt[0]) + " center " + str(popt[1]) + " stdev? " +str(popt[2]))
+                        # print ("Brightest pixel at : " + str(brightest_pixel_rdist))
+                        # plt.scatter(radprofile[:,0],radprofile[:,1])
+                        # plt.plot(radprofile[:,0], gaussian(radprofile[:,0], *popt),color = 'r')
+                        # plt.axvline(x = 0, color = 'g', label = 'axvline - full height')
+                        # plt.show()
+                    
+                        # FWHM is 2.355 * std for a gaussian
+                        #fwhmlist.append(popt[2])
+                        radials.append([cx,cy,radprofile,temp_array,popt])
+                        # If we've got more than 50, good
+                        # if len(fwhmlist) > 50:
+                        #     bailout=True
+                        #     break
+                        # #If we've got more than ten and we are getting dim, bail out.
+                        # if len(fwhmlist) > 10 and brightest_pixel_value < (0.2*saturate):
+                        #     bailout=True
+                        #     break
+                except:
+                    pass        
 
 
-        pickle.dump(dodgylist, open(im_path + text_name.replace('.txt', '.rad'),'wb'))
+        pickle.dump(radials, open(im_path + text_name.replace('.txt', '.rad'),'wb'))
+        json_snippets['radialprofiles']=radials
+        
+        
 
     except:
         pass
@@ -856,10 +941,13 @@ if do_sep and (not frame_type=='focus'):
         slice_n_dice['boxstats']=boxstats
     
         pickle.dump(slice_n_dice, open(im_path + text_name.replace('.txt', '.box'),'wb'))
+        
+        json_snippets['sliceanddice']=slice_n_dice
     except:
         pass
     
-
+with open(im_path + text_name.replace('.txt', '.json'), 'w') as f:
+    json.dump(json_snippets, f)
 
 # If it is a focus image then it will get sent in a different manner to the UI for a jpeg
 # In this case, the image needs to be the 0.2 degree field that the focus field is made up of
