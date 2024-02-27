@@ -2546,7 +2546,7 @@ class Observatory:
                         #     plog('y ' + str(ydonut))
 
 
-                        if (len(sources) < 2) or ( frame_type == 'focus' and (len(sources) < 10 or len(sources) == np.nan or str(len(sources)) =='nan' or xdonut > 3.0 or ydonut > 3.0 or np.isnan(xdonut) or np.isnan(ydonut))):
+                        if (len(sources) < 2) or ( frame_type == 'focus' and (len(sources) < 10 or len(sources) == np.nan or str(len(sources)) =='nan')):
                             plog ("Did not find an acceptable FWHM for this image.")
                             self.fwhmresult={}
                             self.fwhmresult["error"] = True
