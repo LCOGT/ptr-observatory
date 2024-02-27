@@ -1698,6 +1698,12 @@ class Sequencer:
             ending = g_dev['events']['End Morn Bias Dark']
         else:
             ending = g_dev['events']['End Eve Bias Dark']
+            
+        # Set a timer. It is possible to ask for bias darks and it takes until the end of time. So we should put a limit on it for manually 
+        # requested collection. Auto-collection is limited by the events schedule.
+        bias_darks_started=time.time()
+        
+        
 
         if g_dev['cam'].has_darkslide and ephem.now() < ending:
             g_dev['cam'].closeDarkslide()
@@ -1705,6 +1711,11 @@ class Sequencer:
             # g_dev['cam'].darkslide_state = 'Closed'
 
         while ephem.now() < ending :   #Do not overrun the window end
+
+            # If we've been collecting bias darks for TWO HOURS, bail out... someone has asked for too many!
+            if time.time() - bias_darks_started > 7200:               
+                self.bias_dark_latch = False
+                break
 
             bias_count = self.config['camera']['camera_1_1']['settings']['number_of_bias_to_collect']
             dark_count = self.config['camera']['camera_1_1']['settings']['number_of_dark_to_collect']
@@ -1921,6 +1932,11 @@ class Sequencer:
                     break
                 g_dev['obs'].request_scan_requests()
 
+
+                # If we've been collecting bias darks for TWO HOURS, bail out... someone has asked for too many!
+                if time.time() - bias_darks_started > 7200:               
+                    self.bias_dark_latch = False
+                    break
 
                 # COLLECTING A 0.05 Second EXPOSURE DARK FRAME
                 plog("Expose " + str(5*stride) +" 1x1 0.05 second exposure dark frames.")
