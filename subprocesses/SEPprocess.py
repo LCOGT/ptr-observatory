@@ -8,6 +8,8 @@ Created on Sun Apr 23 04:37:30 2023
 import numpy as np
 # Need this line to output the full array to text for the json
 np.set_printoptions(threshold=np.inf)
+
+import re
 from astropy.stats import median_absolute_deviation
 from astropy.nddata.utils import extract_array
 import sys
@@ -39,7 +41,8 @@ def gaussian(x, amplitude, mean, stddev):
     return amplitude * np.exp(-((x - mean) / 4 / stddev)**2)
 
 
-json_snippets={}
+imageinspection_json_snippets={}
+starinspection_json_snippets={}
 
 def radial_profile(data, center):
     y, x = np.indices((data.shape))
@@ -252,7 +255,9 @@ if frame_type=='expose':
         histogramdata, delimiter=','
     )
 
-    json_snippets['histogram']= str(histogramdata)
+    imageinspection_json_snippets['histogram']= re.sub('\s+',' ',str(histogramdata))
+    #starinspection_json_snippets={}
+   # json_snippets
 
 if not do_sep or (float(hduheader["EXPTIME"]) < 1.0):
     rfp = np.nan
@@ -703,7 +708,9 @@ else:
             with open(im_path + text_name.replace('.txt', '.fwhm'), 'w') as f:
                 json.dump(fwhm_file, f)
 
-            json_snippets['fwhm']=fwhm_file
+            #json_snippets['fwhm']=fwhm_file
+            imageinspection_json_snippets['fwhm']=fwhm_file
+            starinspection_json_snippets['fwhm']=fwhm_file
 # Value-added header items for the UI
 
 
@@ -759,7 +766,9 @@ try:
 except:
     pass
 
-json_snippets['header']=headerdict
+imageinspection_json_snippets['header']=headerdict
+starinspection_json_snippets['header']=headerdict
+#json_snippets['header']=headerdict
 
 # Create radial profiles for UI
 # Determine radial profiles of top 20 star-ish sources
@@ -867,7 +876,9 @@ if do_sep and (not frame_type=='focus'):
 
 
         pickle.dump(radials, open(im_path + text_name.replace('.txt', '.rad'),'wb'))
-        json_snippets['radialprofiles']=str(radials)
+        #json_snippets['radialprofiles']=str(radials)
+        #imageinspection_json_snippets['header']=headerdict
+        starinspection_json_snippets['radialprofiles']=re.sub('\s+',' ',str(radials))
 
         #breakpoint()
 
@@ -883,27 +894,27 @@ if do_sep and (not frame_type=='focus'):
 
         # row slices
         slicerow=int(image_size_x * 0.1)
-        slice_n_dice['row10percent']=hdufocusdata[slicerow,:]
-        slice_n_dice['row20percent']=hdufocusdata[slicerow*2,:]
-        slice_n_dice['row30percent']=hdufocusdata[slicerow*3,:]
-        slice_n_dice['row40percent']=hdufocusdata[slicerow*4,:]
-        slice_n_dice['row50percent']=hdufocusdata[slicerow*5,:]
-        slice_n_dice['row60percent']=hdufocusdata[slicerow*6,:]
-        slice_n_dice['row70percent']=hdufocusdata[slicerow*7,:]
-        slice_n_dice['row80percent']=hdufocusdata[slicerow*8,:]
-        slice_n_dice['row90percent']=hdufocusdata[slicerow*9,:]
+        slice_n_dice['row10percent']=hdufocusdata[slicerow,:].astype(int)
+        slice_n_dice['row20percent']=hdufocusdata[slicerow*2,:].astype(int)
+        slice_n_dice['row30percent']=hdufocusdata[slicerow*3,:].astype(int)
+        slice_n_dice['row40percent']=hdufocusdata[slicerow*4,:].astype(int)
+        slice_n_dice['row50percent']=hdufocusdata[slicerow*5,:].astype(int)
+        slice_n_dice['row60percent']=hdufocusdata[slicerow*6,:].astype(int)
+        slice_n_dice['row70percent']=hdufocusdata[slicerow*7,:].astype(int)
+        slice_n_dice['row80percent']=hdufocusdata[slicerow*8,:].astype(int)
+        slice_n_dice['row90percent']=hdufocusdata[slicerow*9,:].astype(int)
 
         # column slices
         slicecolumn=int(image_size_y * 0.1)
-        slice_n_dice['column10percent']=hdufocusdata[:,slicecolumn]
-        slice_n_dice['column20percent']=hdufocusdata[:,slicecolumn*2]
-        slice_n_dice['column30percent']=hdufocusdata[:,slicecolumn*3]
-        slice_n_dice['column40percent']=hdufocusdata[:,slicecolumn*4]
-        slice_n_dice['column50percent']=hdufocusdata[:,slicecolumn*5]
-        slice_n_dice['column60percent']=hdufocusdata[:,slicecolumn*6]
-        slice_n_dice['column70percent']=hdufocusdata[:,slicecolumn*7]
-        slice_n_dice['column80percent']=hdufocusdata[:,slicecolumn*8]
-        slice_n_dice['column90percent']=hdufocusdata[:,slicecolumn*9]
+        slice_n_dice['column10percent']=hdufocusdata[:,slicecolumn].astype(int)
+        slice_n_dice['column20percent']=hdufocusdata[:,slicecolumn*2].astype(int)
+        slice_n_dice['column30percent']=hdufocusdata[:,slicecolumn*3].astype(int)
+        slice_n_dice['column40percent']=hdufocusdata[:,slicecolumn*4].astype(int)
+        slice_n_dice['column50percent']=hdufocusdata[:,slicecolumn*5].astype(int)
+        slice_n_dice['column60percent']=hdufocusdata[:,slicecolumn*6].astype(int)
+        slice_n_dice['column70percent']=hdufocusdata[:,slicecolumn*7].astype(int)
+        slice_n_dice['column80percent']=hdufocusdata[:,slicecolumn*8].astype(int)
+        slice_n_dice['column90percent']=hdufocusdata[:,slicecolumn*9].astype(int)
 
         # diagonals... not so easy as you might think! Easy for square arrays.
         aspectratio=image_size_x/image_size_y
@@ -958,7 +969,9 @@ if do_sep and (not frame_type=='focus'):
 
         pickle.dump(slice_n_dice, open(im_path + text_name.replace('.txt', '.box'),'wb'))
 
-        json_snippets['sliceanddice']=str(slice_n_dice)
+        #json_snippets['sliceanddice']=str(slice_n_dice)
+        imageinspection_json_snippets['sliceanddice']=re.sub('\s+',' ',str(slice_n_dice)).replace('dtype=float32','').replace('array','')
+        #starinspection_json_snippets['radialprofiles']=str(radials)
     except:
         pass
 
@@ -966,8 +979,11 @@ if do_sep and (not frame_type=='focus'):
 
 #breakpoint()
 
-with open(im_path + text_name.replace('.txt', '.json'), 'w') as f:
-    json.dump(json_snippets, f)
+with open(im_path + 'image_' + text_name.replace('.txt', '.json'), 'w') as f:
+    json.dump(imageinspection_json_snippets, f)
+    
+with open(im_path + 'star_' + text_name.replace('.txt', '.json'), 'w') as f:
+    json.dump(starinspection_json_snippets, f)
 
 # If it is a focus image then it will get sent in a different manner to the UI for a jpeg
 # In this case, the image needs to be the 0.2 degree field that the focus field is made up of
