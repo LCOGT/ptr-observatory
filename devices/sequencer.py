@@ -839,7 +839,7 @@ class Sequencer:
                                             dark_exp_time = self.config['camera']['camera_1_1']['settings']['dark_exposure']
                                             broadband_ss_biasdark_exp_time = self.config['camera']['camera_1_1']['settings']['smart_stack_exposure_time']
                                             narrowband_ss_biasdark_exp_time = broadband_ss_biasdark_exp_time * self.config['camera']['camera_1_1']['settings']['smart_stack_exposure_NB_multiplier']
-                                            
+
                                             # plog("Exposing 1x1 dark exposure:  " + str(dark_exp_time) )
                                             # req = {'time': dark_exp_time ,  'script': 'True', 'image_type': 'dark'}
                                             # opt = { 'count': 1,  \
@@ -847,7 +847,7 @@ class Sequencer:
                                             # self.nightime_dark_counter = self.nightime_dark_counter + 1
                                             # g_dev['cam'].expose_command(req, opt, user_id='Tobor', user_name='Tobor', user_roles='system', no_AWS=False, \
                                             #                    do_sep=False, quick=False, skip_open_check=True,skip_daytime_check=True)
-                                            
+
                                             stride=1
                                             min_to_do=1
                                             # COLLECTING A TWO SECOND EXPOSURE DARK FRAME
@@ -859,30 +859,30 @@ class Sequencer:
                                                             do_sep=False, quick=False, skip_open_check=True,skip_daytime_check=True)
                                             g_dev['obs'].request_scan_requests()
                                             if self.stop_script_called or g_dev['obs'].open_and_enabled_to_observe or ( not (events['Astro Dark'] <=  ephem.now() < events['End Astro Dark'])): # Essentially if stop script of the roof opens or it is out of astrodark, bail out of calibrations
-                                                return   
+                                                return
 
 
                                             # COLLECTING A FIVE SECOND EXPOSURE DARK FRAME
                                             plog("Expose " + str(5*stride) +" 1x1 5s exposure dark frames.")
                                             req = {'time': 5,  'script': 'True', 'image_type': 'fivesec_exposure_dark'}
                                             opt = {'count': 3*min_to_do,  \
-                                                   'filter': 'dark'} 
+                                                   'filter': 'dark'}
                                             g_dev['cam'].expose_command(req, opt, user_id='Tobor', user_name='Tobor', user_roles='system', no_AWS=False, \
                                                             do_sep=False, quick=False, skip_open_check=True,skip_daytime_check=True)
                                             g_dev['obs'].request_scan_requests()
                                             if self.stop_script_called or g_dev['obs'].open_and_enabled_to_observe or ( not (events['Astro Dark'] <=  ephem.now() < events['End Astro Dark'])): # Essentially if stop script of the roof opens or it is out of astrodark, bail out of calibrations
-                                                return   
+                                                return
 
                                             # COLLECTING A TEN SECOND EXPOSURE DARK FRAME
                                             plog("Expose " + str(2*stride) +" 1x1 ten second exposure dark frames.")
                                             req = {'time': 10,  'script': 'True', 'image_type': 'tensec_exposure_dark'}
                                             opt = {'count': 2*min_to_do,  \
-                                                   'filter': 'dark'}  
+                                                   'filter': 'dark'}
                                             g_dev['cam'].expose_command(req, opt, user_id='Tobor', user_name='Tobor', user_roles='system', no_AWS=False, \
                                                             do_sep=False, quick=False, skip_open_check=True,skip_daytime_check=True)
                                             g_dev['obs'].request_scan_requests()
                                             if self.stop_script_called or g_dev['obs'].open_and_enabled_to_observe or ( not (events['Astro Dark'] <=  ephem.now() < events['End Astro Dark'])): # Essentially if stop script of the roof opens or it is out of astrodark, bail out of calibrations
-                                                return   
+                                                return
 
                                             # COLLECTING A FIFTEEN SECOND EXPOSURE DARK FRAME
                                             plog("Expose " + str(2*stride) +" 1x1 15 second exposure dark frames.")
@@ -893,7 +893,7 @@ class Sequencer:
                                                             do_sep=False, quick=False, skip_open_check=True,skip_daytime_check=True)
                                             g_dev['obs'].request_scan_requests()
                                             if self.stop_script_called or g_dev['obs'].open_and_enabled_to_observe or ( not (events['Astro Dark'] <=  ephem.now() < events['End Astro Dark'])): # Essentially if stop script of the roof opens or it is out of astrodark, bail out of calibrations
-                                                return   
+                                                return
 
 
                                             # COLLECTING A TWENTY SECOND EXPOSURE DARK FRAME
@@ -905,7 +905,7 @@ class Sequencer:
                                                             do_sep=False, quick=False, skip_open_check=True,skip_daytime_check=True)
                                             g_dev['obs'].request_scan_requests()
                                             if self.stop_script_called or g_dev['obs'].open_and_enabled_to_observe or ( not (events['Astro Dark'] <=  ephem.now() < events['End Astro Dark'])): # Essentially if stop script of the roof opens or it is out of astrodark, bail out of calibrations
-                                                return   
+                                                return
 
                                             # COLLECTING A BROADBAND SMARTSTACK BIASDARK FRAME
                                             plog("Expose " + str(stride) +" 1x1 broadband smstack biasdark frames.")
@@ -916,7 +916,7 @@ class Sequencer:
                                                             do_sep=False, quick=False, skip_open_check=True,skip_daytime_check=True)
                                             g_dev['obs'].request_scan_requests()
                                             if self.stop_script_called or g_dev['obs'].open_and_enabled_to_observe or ( not (events['Astro Dark'] <=  ephem.now() < events['End Astro Dark'])): # Essentially if stop script of the roof opens or it is out of astrodark, bail out of calibrations
-                                                return   
+                                                return
 
                                             # COLLECTING A NARROWBAND SMARTSTACK BIASDARK FRAME
                                             plog("Expose " + str(stride) +" 1x1 narrowband smstack biasdark frames.")
@@ -927,7 +927,7 @@ class Sequencer:
                                                             do_sep=False, quick=False, skip_open_check=True,skip_daytime_check=True)
                                             g_dev['obs'].request_scan_requests()
                                             if self.stop_script_called or g_dev['obs'].open_and_enabled_to_observe or ( not (events['Astro Dark'] <=  ephem.now() < events['End Astro Dark'])): # Essentially if stop script of the roof opens or it is out of astrodark, bail out of calibrations
-                                                return   
+                                                return
 
                                             # COLLECTING A 0.05 Second EXPOSURE DARK FRAME
                                             plog("Expose " + str(5*stride) +" 1x1 0.05 second exposure dark frames.")
@@ -938,7 +938,7 @@ class Sequencer:
                                                             do_sep=False, quick=False, skip_open_check=True,skip_daytime_check=True)
                                             g_dev['obs'].request_scan_requests()
                                             if self.stop_script_called or g_dev['obs'].open_and_enabled_to_observe or ( not (events['Astro Dark'] <=  ephem.now() < events['End Astro Dark'])): # Essentially if stop script of the roof opens or it is out of astrodark, bail out of calibrations
-                                                return   
+                                                return
 
                                             # COLLECTING A 0.1 Second EXPOSURE DARK FRAME
                                             plog("Expose " + str(5*stride) +" 1x1 0.1 second exposure dark frames.")
@@ -949,7 +949,7 @@ class Sequencer:
                                                             do_sep=False, quick=False, skip_open_check=True,skip_daytime_check=True)
                                             g_dev['obs'].request_scan_requests()
                                             if self.stop_script_called or g_dev['obs'].open_and_enabled_to_observe or ( not (events['Astro Dark'] <=  ephem.now() < events['End Astro Dark'])): # Essentially if stop script of the roof opens or it is out of astrodark, bail out of calibrations
-                                                return   
+                                                return
 
 
                                             # COLLECTING A 0.25 Second EXPOSURE DARK FRAME
@@ -961,7 +961,7 @@ class Sequencer:
                                                             do_sep=False, quick=False, skip_open_check=True,skip_daytime_check=True)
                                             g_dev['obs'].request_scan_requests()
                                             if self.stop_script_called or g_dev['obs'].open_and_enabled_to_observe or ( not (events['Astro Dark'] <=  ephem.now() < events['End Astro Dark'])): # Essentially if stop script of the roof opens or it is out of astrodark, bail out of calibrations
-                                                return   
+                                                return
 
                                             # COLLECTING A Half Second EXPOSURE DARK FRAME
                                             plog("Expose " + str(5*stride) +" 1x1 half-second exposure dark frames.")
@@ -972,7 +972,7 @@ class Sequencer:
                                                             do_sep=False, quick=False, skip_open_check=True,skip_daytime_check=True)
                                             g_dev['obs'].request_scan_requests()
                                             if self.stop_script_called or g_dev['obs'].open_and_enabled_to_observe or ( not (events['Astro Dark'] <=  ephem.now() < events['End Astro Dark'])): # Essentially if stop script of the roof opens or it is out of astrodark, bail out of calibrations
-                                                return   
+                                                return
 
                                             # COLLECTING A 0.75 Second EXPOSURE DARK FRAME
                                             plog("Expose " + str(5*stride) +" 1x1 0.75 second exposure dark frames.")
@@ -983,7 +983,7 @@ class Sequencer:
                                                             do_sep=False, quick=False, skip_open_check=True,skip_daytime_check=True)
                                             g_dev['obs'].request_scan_requests()
                                             if self.stop_script_called or g_dev['obs'].open_and_enabled_to_observe or ( not (events['Astro Dark'] <=  ephem.now() < events['End Astro Dark'])): # Essentially if stop script of the roof opens or it is out of astrodark, bail out of calibrations
-                                                return   
+                                                return
 
                                             # COLLECTING A one Second EXPOSURE DARK FRAME
                                             plog("Expose " + str(5*stride) +" 1x1  1 second exposure dark frames.")
@@ -994,7 +994,7 @@ class Sequencer:
                                                             do_sep=False, quick=False, skip_open_check=True,skip_daytime_check=True)
                                             g_dev['obs'].request_scan_requests()
                                             if self.stop_script_called or g_dev['obs'].open_and_enabled_to_observe or ( not (events['Astro Dark'] <=  ephem.now() < events['End Astro Dark'])): # Essentially if stop script of the roof opens or it is out of astrodark, bail out of calibrations
-                                                return   
+                                                return
 
                                             # COLLECTING A one and a half Second EXPOSURE DARK FRAME
                                             plog("Expose " + str(5*stride) +" 1x1  1.5 second exposure dark frames.")
@@ -1005,7 +1005,7 @@ class Sequencer:
                                                             do_sep=False, quick=False, skip_open_check=True,skip_daytime_check=True)
                                             g_dev['obs'].request_scan_requests()
                                             if self.stop_script_called or g_dev['obs'].open_and_enabled_to_observe or ( not (events['Astro Dark'] <=  ephem.now() < events['End Astro Dark'])): # Essentially if stop script of the roof opens or it is out of astrodark, bail out of calibrations
-                                                return   
+                                                return
 
                                             # COLLECTING A BIAS FRAME
                                             # COLLECT BIAS FRAMES LATER as there is no way to know whether bias frames are affected
@@ -1018,7 +1018,7 @@ class Sequencer:
                                                             do_sep=False, quick=False, skip_open_check=True,skip_daytime_check=True)
                                             g_dev['obs'].request_scan_requests()
                                             if self.stop_script_called or g_dev['obs'].open_and_enabled_to_observe or ( not (events['Astro Dark'] <=  ephem.now() < events['End Astro Dark'])): # Essentially if stop script of the roof opens or it is out of astrodark, bail out of calibrations
-                                                return   
+                                                return
 
 
                                             plog("Expose 1x1 dark of " \
@@ -1027,9 +1027,9 @@ class Sequencer:
                                             opt = {'count': 1, 'filter': 'dark'}
                                             g_dev['cam'].expose_command(req, opt, user_id='Tobor', user_name='Tobor', user_roles='system', no_AWS=False, \
                                                                do_sep=False, quick=False, skip_open_check=True,skip_daytime_check=True)
-                                            
-                                            
-                                            
+
+
+
                                             # these exposures shouldn't reset these timers
                                             g_dev['obs'].time_of_last_exposure = time.time() - 840
                                             g_dev['obs'].time_of_last_slew = time.time() - 840
@@ -1698,12 +1698,12 @@ class Sequencer:
             ending = g_dev['events']['End Morn Bias Dark']
         else:
             ending = g_dev['events']['End Eve Bias Dark']
-            
-        # Set a timer. It is possible to ask for bias darks and it takes until the end of time. So we should put a limit on it for manually 
+
+        # Set a timer. It is possible to ask for bias darks and it takes until the end of time. So we should put a limit on it for manually
         # requested collection. Auto-collection is limited by the events schedule.
         bias_darks_started=time.time()
-        
-        
+
+
 
         if g_dev['cam'].has_darkslide and ephem.now() < ending:
             g_dev['cam'].closeDarkslide()
@@ -1713,7 +1713,7 @@ class Sequencer:
         while ephem.now() < ending :   #Do not overrun the window end
 
             # If we've been collecting bias darks for TWO HOURS, bail out... someone has asked for too many!
-            if time.time() - bias_darks_started > 7200:               
+            if time.time() - bias_darks_started > 7200:
                 self.bias_dark_latch = False
                 break
 
@@ -1934,7 +1934,7 @@ class Sequencer:
 
 
                 # If we've been collecting bias darks for TWO HOURS, bail out... someone has asked for too many!
-                if time.time() - bias_darks_started > 7200:               
+                if time.time() - bias_darks_started > 7200:
                     self.bias_dark_latch = False
                     break
 
@@ -2919,13 +2919,13 @@ class Sequencer:
             if len(inputList) > 0:
                 # just construct the biasdarks
                 PLDrive = np.memmap(g_dev['obs'].local_dark_folder  + 'tempfile', dtype='float32', mode= 'w+', shape = (shapeImage[0],shapeImage[1],len(inputList)))
-    
+
                 # D  frames and stick them in the memmap
                 i=0
                 for file in inputList:
                     PLDrive[:,:,i] = np.asarray(np.load(file, mmap_mode='r'),dtype=np.float32)
                     i=i+1
-    
+
                 plog ("**********************************")
                 plog ("Median Stacking each darkframe row individually ")
                 plog (datetime.datetime.now().strftime("%H:%M:%S"))
@@ -2943,16 +2943,16 @@ class Sequencer:
                         counter=counter+1
                 plog (datetime.datetime.now().strftime("%H:%M:%S"))
                 plog ("**********************************")
-    
+
                 flat_biasdarks['fivepercent']=np.asarray(finalImage).astype(np.float32)
-    
+
                 try:
                     if g_dev['obs'].config['save_raws_to_pipe_folder_for_nightly_processing']:
                         np.save(pipefolder + '/'  + tempfrontcalib + 'fivepercentBIASDARK_master_bin1.npy', np.asarray(finalImage).astype(np.float32))
-    
+
                 except Exception as e:
                     plog ("Could not save dark frame: ",e)
-    
+
                 del finalImage
                 PLDrive._mmap.close()
                 del PLDrive
@@ -2985,13 +2985,13 @@ class Sequencer:
             if len(inputList) > 0:
                 # just construct the biasdarks
                 PLDrive = np.memmap(g_dev['obs'].local_dark_folder  + 'tempfile', dtype='float32', mode= 'w+', shape = (shapeImage[0],shapeImage[1],len(inputList)))
-    
+
                 # D  frames and stick them in the memmap
                 i=0
                 for file in inputList:
                     PLDrive[:,:,i] = np.asarray(np.load(file, mmap_mode='r'),dtype=np.float32)
                     i=i+1
-    
+
                 plog ("**********************************")
                 plog ("Median Stacking each darkframe row individually ")
                 plog (datetime.datetime.now().strftime("%H:%M:%S"))
@@ -3009,24 +3009,24 @@ class Sequencer:
                         counter=counter+1
                 plog (datetime.datetime.now().strftime("%H:%M:%S"))
                 plog ("**********************************")
-    
+
                 flat_biasdarks['tenpercent']=np.asarray(finalImage).astype(np.float32)
-    
+
                 try:
                     if g_dev['obs'].config['save_raws_to_pipe_folder_for_nightly_processing']:
                         np.save(pipefolder + '/'  + tempfrontcalib + 'tenpercentBIASDARK_master_bin1.npy', np.asarray(finalImage).astype(np.float32))
-    
+
                 except Exception as e:
                     plog ("Could not save dark frame: ",e)
-    
+
                 del finalImage
                 PLDrive._mmap.close()
                 del PLDrive
                 gc.collect()
                 os.remove(g_dev['obs'].local_dark_folder  + 'tempfile')
                 g_dev["obs"].send_to_user("ten percent bias-dark calibration frame created.")
-    
-    
+
+
 
             ##############################################################################################
             ##############################################################################################
@@ -3051,13 +3051,13 @@ class Sequencer:
             if len(inputList) > 0:
                 # just construct the biasdarks
                 PLDrive = np.memmap(g_dev['obs'].local_dark_folder  + 'tempfile', dtype='float32', mode= 'w+', shape = (shapeImage[0],shapeImage[1],len(inputList)))
-    
+
                 # D  frames and stick them in the memmap
                 i=0
                 for file in inputList:
                     PLDrive[:,:,i] = np.asarray(np.load(file, mmap_mode='r'),dtype=np.float32)
                     i=i+1
-    
+
                 plog ("**********************************")
                 plog ("Median Stacking each darkframe row individually ")
                 plog (datetime.datetime.now().strftime("%H:%M:%S"))
@@ -3075,23 +3075,23 @@ class Sequencer:
                         counter=counter+1
                 plog (datetime.datetime.now().strftime("%H:%M:%S"))
                 plog ("**********************************")
-    
+
                 flat_biasdarks['quartersec']=np.asarray(finalImage).astype(np.float32)
-    
+
                 try:
                     if g_dev['obs'].config['save_raws_to_pipe_folder_for_nightly_processing']:
                         np.save(pipefolder + '/'  + tempfrontcalib + 'quartersecBIASDARK_master_bin1.npy', np.asarray(finalImage).astype(np.float32))
-    
+
                 except Exception as e:
                     plog ("Could not save dark frame: ",e)
-    
+
                 del finalImage
                 PLDrive._mmap.close()
                 del PLDrive
                 gc.collect()
                 os.remove(g_dev['obs'].local_dark_folder  + 'tempfile')
                 g_dev["obs"].send_to_user("five percent bias-dark calibration frame created.")
-    
+
 
 
             ##############################################################################################
@@ -3117,13 +3117,13 @@ class Sequencer:
             if len(inputList) > 0:
                 # just construct the biasdarks
                 PLDrive = np.memmap(g_dev['obs'].local_dark_folder  + 'tempfile', dtype='float32', mode= 'w+', shape = (shapeImage[0],shapeImage[1],len(inputList)))
-    
+
                 # D  frames and stick them in the memmap
                 i=0
                 for file in inputList:
                     PLDrive[:,:,i] = np.asarray(np.load(file, mmap_mode='r'),dtype=np.float32)
                     i=i+1
-    
+
                 plog ("**********************************")
                 plog ("Median Stacking each darkframe row individually ")
                 plog (datetime.datetime.now().strftime("%H:%M:%S"))
@@ -3141,23 +3141,23 @@ class Sequencer:
                         counter=counter+1
                 plog (datetime.datetime.now().strftime("%H:%M:%S"))
                 plog ("**********************************")
-    
+
                 flat_biasdarks['halfsec']=np.asarray(finalImage).astype(np.float32)
-    
+
                 try:
                     if g_dev['obs'].config['save_raws_to_pipe_folder_for_nightly_processing']:
                         np.save(pipefolder + '/'  + tempfrontcalib + 'halfsecBIASDARK_master_bin1.npy', np.asarray(finalImage).astype(np.float32))
-    
+
                 except Exception as e:
                     plog ("Could not save dark frame: ",e)
-    
+
                 del finalImage
                 PLDrive._mmap.close()
                 del PLDrive
                 gc.collect()
                 os.remove(g_dev['obs'].local_dark_folder  + 'tempfile')
                 g_dev["obs"].send_to_user("five percent bias-dark calibration frame created.")
-    
+
 
             ##############################################################################################
             ##############################################################################################
@@ -3183,13 +3183,13 @@ class Sequencer:
 
                 # just construct the biasdarks
                 PLDrive = np.memmap(g_dev['obs'].local_dark_folder  + 'tempfile', dtype='float32', mode= 'w+', shape = (shapeImage[0],shapeImage[1],len(inputList)))
-    
+
                 # D  frames and stick them in the memmap
                 i=0
                 for file in inputList:
                     PLDrive[:,:,i] = np.asarray(np.load(file, mmap_mode='r'),dtype=np.float32)
                     i=i+1
-    
+
                 plog ("**********************************")
                 plog ("Median Stacking each darkframe row individually ")
                 plog (datetime.datetime.now().strftime("%H:%M:%S"))
@@ -3207,23 +3207,23 @@ class Sequencer:
                         counter=counter+1
                 plog (datetime.datetime.now().strftime("%H:%M:%S"))
                 plog ("**********************************")
-    
+
                 flat_biasdarks['sevenfivepercent']=np.asarray(finalImage).astype(np.float32)
-    
+
                 try:
                     if g_dev['obs'].config['save_raws_to_pipe_folder_for_nightly_processing']:
                         np.save(pipefolder + '/'  + tempfrontcalib + 'sevenfivepercentBIASDARK_master_bin1.npy', np.asarray(finalImage).astype(np.float32))
-    
+
                 except Exception as e:
                     plog ("Could not save dark frame: ",e)
-    
+
                 del finalImage
                 PLDrive._mmap.close()
                 del PLDrive
                 gc.collect()
                 os.remove(g_dev['obs'].local_dark_folder  + 'tempfile')
                 g_dev["obs"].send_to_user("sevenfivepercent bias-dark calibration frame created.")
-    
+
 
             ##############################################################################################
             ##############################################################################################
@@ -3248,13 +3248,13 @@ class Sequencer:
             if len(inputList) > 0:
                 # just construct the biasdarks
                 PLDrive = np.memmap(g_dev['obs'].local_dark_folder  + 'tempfile', dtype='float32', mode= 'w+', shape = (shapeImage[0],shapeImage[1],len(inputList)))
-    
+
                 # D  frames and stick them in the memmap
                 i=0
                 for file in inputList:
                     PLDrive[:,:,i] = np.asarray(np.load(file, mmap_mode='r'),dtype=np.float32)
                     i=i+1
-    
+
                 plog ("**********************************")
                 plog ("Median Stacking each darkframe row individually ")
                 plog (datetime.datetime.now().strftime("%H:%M:%S"))
@@ -3272,23 +3272,23 @@ class Sequencer:
                         counter=counter+1
                 plog (datetime.datetime.now().strftime("%H:%M:%S"))
                 plog ("**********************************")
-    
+
                 flat_biasdarks['onesec']=np.asarray(finalImage).astype(np.float32)
-    
+
                 try:
                     if g_dev['obs'].config['save_raws_to_pipe_folder_for_nightly_processing']:
                         np.save(pipefolder + '/'  + tempfrontcalib + 'onesecBIASDARK_master_bin1.npy', np.asarray(finalImage).astype(np.float32))
-    
+
                 except Exception as e:
                     plog ("Could not save dark frame: ",e)
-    
+
                 del finalImage
                 PLDrive._mmap.close()
                 del PLDrive
                 gc.collect()
                 os.remove(g_dev['obs'].local_dark_folder  + 'tempfile')
                 g_dev["obs"].send_to_user("onesec bias-dark calibration frame created.")
-    
+
 
             ##############################################################################################
             ##############################################################################################
@@ -3309,17 +3309,17 @@ class Sequencer:
                 except:
                     plog ("corrupt dark skipped: " + str(file))
                     inputList.remove(file)
-                    
+
             if len(inputList) > 0:
                 # just construct the biasdarks
                 PLDrive = np.memmap(g_dev['obs'].local_dark_folder  + 'tempfile', dtype='float32', mode= 'w+', shape = (shapeImage[0],shapeImage[1],len(inputList)))
-    
+
                 # D  frames and stick them in the memmap
                 i=0
                 for file in inputList:
                     PLDrive[:,:,i] = np.asarray(np.load(file, mmap_mode='r'),dtype=np.float32)
                     i=i+1
-    
+
                 plog ("**********************************")
                 plog ("Median Stacking each darkframe row individually ")
                 plog (datetime.datetime.now().strftime("%H:%M:%S"))
@@ -3337,16 +3337,16 @@ class Sequencer:
                         counter=counter+1
                 plog (datetime.datetime.now().strftime("%H:%M:%S"))
                 plog ("**********************************")
-    
+
                 flat_biasdarks['oneandahalfsec']=np.asarray(finalImage).astype(np.float32)
-    
+
                 try:
                     if g_dev['obs'].config['save_raws_to_pipe_folder_for_nightly_processing']:
                         np.save(pipefolder + '/'  + tempfrontcalib + 'oneandahalfsecBIASDARK_master_bin1.npy', np.asarray(finalImage).astype(np.float32))
-    
+
                 except Exception as e:
                     plog ("Could not save dark frame: ",e)
-    
+
                 del finalImage
                 PLDrive._mmap.close()
                 del PLDrive
@@ -3377,13 +3377,13 @@ class Sequencer:
             if len(inputList) > 0:
                 # just construct the biasdarks
                 PLDrive = np.memmap(g_dev['obs'].local_dark_folder  + 'tempfile', dtype='float32', mode= 'w+', shape = (shapeImage[0],shapeImage[1],len(inputList)))
-    
+
                 # D  frames and stick them in the memmap
                 i=0
                 for file in inputList:
                     PLDrive[:,:,i] = np.asarray(np.load(file, mmap_mode='r'),dtype=np.float32)
                     i=i+1
-    
+
                 plog ("**********************************")
                 plog ("Median Stacking each darkframe row individually ")
                 plog (datetime.datetime.now().strftime("%H:%M:%S"))
@@ -3401,23 +3401,23 @@ class Sequencer:
                         counter=counter+1
                 plog (datetime.datetime.now().strftime("%H:%M:%S"))
                 plog ("**********************************")
-    
+
                 flat_biasdarks['twosec']=np.asarray(finalImage).astype(np.float32)
-    
+
                 try:
                     if g_dev['obs'].config['save_raws_to_pipe_folder_for_nightly_processing']:
                         np.save(pipefolder + '/'  + tempfrontcalib + 'twosecBIASDARK_master_bin1.npy', np.asarray(finalImage).astype(np.float32))
-    
+
                 except Exception as e:
                     plog ("Could not save dark frame: ",e)
-    
+
                 del finalImage
                 PLDrive._mmap.close()
                 del PLDrive
                 gc.collect()
                 os.remove(g_dev['obs'].local_dark_folder  + 'tempfile')
                 g_dev["obs"].send_to_user("two bias-dark calibration frame created.")
-    
+
 
             ##############################################################################################
             ##############################################################################################
@@ -3438,17 +3438,17 @@ class Sequencer:
                 except:
                     plog ("corrupt dark skipped: " + str(file))
                     inputList.remove(file)
-            
+
             if len(inputList) > 0:
                 # just construct the biasdarks
                 PLDrive = np.memmap(g_dev['obs'].local_dark_folder  + 'tempfile', dtype='float32', mode= 'w+', shape = (shapeImage[0],shapeImage[1],len(inputList)))
-    
+
                 # D  frames and stick them in the memmap
                 i=0
                 for file in inputList:
                     PLDrive[:,:,i] = np.asarray(np.load(file, mmap_mode='r'),dtype=np.float32)
                     i=i+1
-    
+
                 plog ("**********************************")
                 plog ("Median Stacking each darkframe row individually ")
                 plog (datetime.datetime.now().strftime("%H:%M:%S"))
@@ -3466,16 +3466,16 @@ class Sequencer:
                         counter=counter+1
                 plog (datetime.datetime.now().strftime("%H:%M:%S"))
                 plog ("**********************************")
-    
+
                 flat_biasdarks['fivesec']=np.asarray(finalImage).astype(np.float32)
-    
+
                 try:
                     if g_dev['obs'].config['save_raws_to_pipe_folder_for_nightly_processing']:
                         np.save(pipefolder + '/'  + tempfrontcalib + 'fivesecBIASDARK_master_bin1.npy', np.asarray(finalImage).astype(np.float32))
-    
+
                 except Exception as e:
                     plog ("Could not save dark frame: ",e)
-    
+
                 del finalImage
                 PLDrive._mmap.close()
                 del PLDrive
@@ -3506,13 +3506,13 @@ class Sequencer:
             if len(inputList) > 0:
                 # just construct the biasdarks
                 PLDrive = np.memmap(g_dev['obs'].local_dark_folder  + 'tempfile', dtype='float32', mode= 'w+', shape = (shapeImage[0],shapeImage[1],len(inputList)))
-    
+
                 # D  frames and stick them in the memmap
                 i=0
                 for file in inputList:
                     PLDrive[:,:,i] = np.asarray(np.load(file, mmap_mode='r'),dtype=np.float32)
                     i=i+1
-    
+
                 plog ("**********************************")
                 plog ("Median Stacking each darkframe row individually ")
                 plog (datetime.datetime.now().strftime("%H:%M:%S"))
@@ -3530,16 +3530,16 @@ class Sequencer:
                         counter=counter+1
                 plog (datetime.datetime.now().strftime("%H:%M:%S"))
                 plog ("**********************************")
-    
+
                 flat_biasdarks['tensec']=np.asarray(finalImage).astype(np.float32)
-    
+
                 try:
                     if g_dev['obs'].config['save_raws_to_pipe_folder_for_nightly_processing']:
                         np.save(pipefolder + '/'  + tempfrontcalib + 'tensecBIASDARK_master_bin1.npy', np.asarray(finalImage).astype(np.float32))
-    
+
                 except Exception as e:
                     plog ("Could not save dark frame: ",e)
-    
+
                 del finalImage
                 PLDrive._mmap.close()
                 del PLDrive
@@ -3570,13 +3570,13 @@ class Sequencer:
             if len(inputList) > 0:
                 # just construct the biasdarks
                 PLDrive = np.memmap(g_dev['obs'].local_dark_folder  + 'tempfile', dtype='float32', mode= 'w+', shape = (shapeImage[0],shapeImage[1],len(inputList)))
-    
+
                 # D  frames and stick them in the memmap
                 i=0
                 for file in inputList:
                     PLDrive[:,:,i] = np.asarray(np.load(file, mmap_mode='r'),dtype=np.float32)
                     i=i+1
-    
+
                 plog ("**********************************")
                 plog ("Median Stacking each darkframe row individually ")
                 plog (datetime.datetime.now().strftime("%H:%M:%S"))
@@ -3594,16 +3594,16 @@ class Sequencer:
                         counter=counter+1
                 plog (datetime.datetime.now().strftime("%H:%M:%S"))
                 plog ("**********************************")
-    
+
                 flat_biasdarks['fifteensec']=np.asarray(finalImage).astype(np.float32)
-    
+
                 try:
                     if g_dev['obs'].config['save_raws_to_pipe_folder_for_nightly_processing']:
                         np.save(pipefolder + '/'  + tempfrontcalib + 'fifteensecBIASDARK_master_bin1.npy', np.asarray(finalImage).astype(np.float32))
-    
+
                 except Exception as e:
                     plog ("Could not save dark frame: ",e)
-    
+
                 del finalImage
                 PLDrive._mmap.close()
                 del PLDrive
@@ -3635,13 +3635,13 @@ class Sequencer:
             if len(inputList) > 0:
                 # just construct the biasdarks
                 PLDrive = np.memmap(g_dev['obs'].local_dark_folder  + 'tempfile', dtype='float32', mode= 'w+', shape = (shapeImage[0],shapeImage[1],len(inputList)))
-    
+
                 # D  frames and stick them in the memmap
                 i=0
                 for file in inputList:
                     PLDrive[:,:,i] = np.asarray(np.load(file, mmap_mode='r'),dtype=np.float32)
                     i=i+1
-    
+
                 plog ("**********************************")
                 plog ("Median Stacking each darkframe row individually ")
                 plog (datetime.datetime.now().strftime("%H:%M:%S"))
@@ -3659,16 +3659,16 @@ class Sequencer:
                         counter=counter+1
                 plog (datetime.datetime.now().strftime("%H:%M:%S"))
                 plog ("**********************************")
-    
+
                 flat_biasdarks['twentysec']=np.asarray(finalImage).astype(np.float32)
-    
+
                 try:
                     if g_dev['obs'].config['save_raws_to_pipe_folder_for_nightly_processing']:
                         np.save(pipefolder + '/'  + tempfrontcalib + 'twentysecBIASDARK_master_bin1.npy', np.asarray(finalImage).astype(np.float32))
-    
+
                 except Exception as e:
                     plog ("Could not save dark frame: ",e)
-    
+
                 del finalImage
                 PLDrive._mmap.close()
                 del PLDrive
@@ -3711,7 +3711,7 @@ class Sequencer:
                     hdu1exp=float(file.split('_')[-2])
                     darkdeexp=(hdu1data-masterBias)/hdu1exp
                     del hdu1data
-    
+
                     # # Bad pixel accumulator
                     # img_temp_median=np.nanmedian(darkdeexp)
                     # img_temp_stdev=np.nanstd(darkdeexp)
@@ -3720,7 +3720,7 @@ class Sequencer:
                     # print ("Bad pixels above: " + str(above_array.sum()))
                     # #print ("Bad pixels below: " + str(below_array.sum()))
                     # bad_pixel_mapper_array=bad_pixel_mapper_array+above_array+below_array
-    
+
                     #timetaken=datetime.datetime.now() -starttime
                     #plog ("Time Taken to load array and debias and divide dark: " + str(timetaken))
                     #starttime=datetime.datetime.now()
@@ -3729,46 +3729,46 @@ class Sequencer:
                     #timetaken=datetime.datetime.now() -starttime
                     #plog ("Time Taken to put in memmap: " + str(timetaken))
                     i=i+1
-    
+
                 plog ("**********************************")
                 plog ("Median Stacking each darkframe row individually ")
                 plog (datetime.datetime.now().strftime("%H:%M:%S"))
                 # Go through each pixel and calculate nanmedian. Can't do all arrays at once as it is hugely memory intensive
                 finalImage=np.zeros(shapeImage,dtype=float)
-    
-    
+
+
                 mptask=[]
                 counter=0
                 for goog in range(shapeImage[0]):
                     mptask.append((g_dev['obs'].local_dark_folder + 'tempfile',counter, (shapeImage[0],shapeImage[1],len(inputList))))
                     counter=counter+1
-    
+
                 counter=0
                 with Pool(math.floor(os.cpu_count()*0.85)) as pool:
                     for result in pool.map(stack_nanmedian_row, mptask):
-    
+
                         finalImage[counter,:]=result
                         counter=counter+1
-    
-    
-    
-    
+
+
+
+
                 plog (datetime.datetime.now().strftime("%H:%M:%S"))
                 plog ("**********************************")
-    
+
                 halfsecond_masterDark=np.asarray(finalImage).astype(np.float32)
                 del finalImage
-    
-    
+
+
                 try:
                     fits.writeto(g_dev['obs'].calib_masters_folder + tempfrontcalib + 'halfsecondDARK_master_bin1.fits', halfsecond_masterDark,  overwrite=True)
                     filepathaws=g_dev['obs'].calib_masters_folder
                     filenameaws=tempfrontcalib + 'halfsecondDARK_master_bin1.fits'
                     g_dev['obs'].enqueue_for_calibrationUI(50, filepathaws,filenameaws)
-    
+
                     # Store a version of the dark for the archive too
                     fits.writeto(g_dev['obs'].calib_masters_folder + 'ARCHIVE_' +  archiveDate + '_' + tempfrontcalib + 'halfsecondDARK_master_bin1.fits', halfsecond_masterDark, overwrite=True)
-    
+
                     filepathaws=g_dev['obs'].calib_masters_folder
                     filenameaws='ARCHIVE_' +  archiveDate + '_' + tempfrontcalib + 'halfsecondDARK_master_bin1.fits'
                     g_dev['obs'].enqueue_for_calibrationUI(80, filepathaws,filenameaws)
@@ -3776,15 +3776,15 @@ class Sequencer:
                         fits.writeto(pipefolder + '/' + tempfrontcalib + 'halfsecondDARK_master_bin1.fits', halfsecond_masterDark,  overwrite=True)
                         fits.writeto(pipefolder + '/' + 'ARCHIVE_' +  archiveDate + '_' + tempfrontcalib + 'halfsecondDARK_master_bin1.fits', halfsecond_masterDark,  overwrite=True)
                         np.save(pipefolder + '/'  + tempfrontcalib + 'halfsecondDARK_master_bin1.npy', halfsecond_masterDark)
-    
+
                 except Exception as e:
                     plog ("Could not save dark frame: ",e)
-    
+
                 PLDrive._mmap.close()
                 del PLDrive
                 gc.collect()
                 os.remove(g_dev['obs'].local_dark_folder  + 'tempfile')
-    
+
                 g_dev["obs"].send_to_user("Half Second Dark calibration frame created.")
 
             ##############################################################################################
@@ -3821,7 +3821,7 @@ class Sequencer:
                     hdu1exp=float(file.split('_')[-2])
                     darkdeexp=(hdu1data-masterBias)/hdu1exp
                     del hdu1data
-    
+
                     #timetaken=datetime.datetime.now() -starttime
                     #plog ("Time Taken to load array and debias and divide dark: " + str(timetaken))
                     #starttime=datetime.datetime.now()
@@ -3830,42 +3830,42 @@ class Sequencer:
                     #timetaken=datetime.datetime.now() -starttime
                     #plog ("Time Taken to put in memmap: " + str(timetaken))
                     i=i+1
-    
+
                 plog ("**********************************")
                 plog ("Median Stacking each darkframe row individually ")
                 plog (datetime.datetime.now().strftime("%H:%M:%S"))
                 # Go through each pixel and calculate nanmedian. Can't do all arrays at once as it is hugely memory intensive
                 finalImage=np.zeros(shapeImage,dtype=float)
-    
-    
+
+
                 mptask=[]
                 counter=0
                 for goog in range(shapeImage[0]):
                     mptask.append((g_dev['obs'].local_dark_folder + 'tempfile',counter, (shapeImage[0],shapeImage[1],len(inputList))))
                     counter=counter+1
-    
+
                 counter=0
                 with Pool(math.floor(os.cpu_count()*0.85)) as pool:
                     for result in pool.map(stack_nanmedian_row, mptask):
-    
+
                         finalImage[counter,:]=result
                         counter=counter+1
-    
+
                 plog (datetime.datetime.now().strftime("%H:%M:%S"))
                 plog ("**********************************")
-    
+
                 twosecond_masterDark=np.asarray(finalImage).astype(np.float32)
                 del finalImage
-    
+
                 try:
                     fits.writeto(g_dev['obs'].calib_masters_folder + tempfrontcalib + '2secondDARK_master_bin1.fits', twosecond_masterDark,  overwrite=True)
                     filepathaws=g_dev['obs'].calib_masters_folder
                     filenameaws=tempfrontcalib + '2secondDARK_master_bin1.fits'
                     g_dev['obs'].enqueue_for_calibrationUI(50, filepathaws,filenameaws)
-    
+
                     # Store a version of the dark for the archive too
                     fits.writeto(g_dev['obs'].calib_masters_folder + 'ARCHIVE_' +  archiveDate + '_' + tempfrontcalib + '2secondDARK_master_bin1.fits', twosecond_masterDark, overwrite=True)
-    
+
                     filepathaws=g_dev['obs'].calib_masters_folder
                     filenameaws='ARCHIVE_' +  archiveDate + '_' + tempfrontcalib + '2secondDARK_master_bin1.fits'
                     g_dev['obs'].enqueue_for_calibrationUI(80, filepathaws,filenameaws)
@@ -3873,15 +3873,15 @@ class Sequencer:
                         fits.writeto(pipefolder + '/' + tempfrontcalib + '2secondDARK_master_bin1.fits', twosecond_masterDark,  overwrite=True)
                         fits.writeto(pipefolder + '/' + 'ARCHIVE_' +  archiveDate + '_' + tempfrontcalib + '2secondDARK_master_bin1.fits', twosecond_masterDark,  overwrite=True)
                         np.save(pipefolder + '/'  + tempfrontcalib + '2secondDARK_master_bin1.npy', twosecond_masterDark)
-    
+
                 except Exception as e:
                     plog ("Could not save dark frame: ",e)
-    
+
                 PLDrive._mmap.close()
                 del PLDrive
                 gc.collect()
                 os.remove(g_dev['obs'].local_dark_folder  + 'tempfile')
-    
+
                 g_dev["obs"].send_to_user("Two Second Dark calibration frame created.")
 
             ##############################################################################################
@@ -3905,7 +3905,7 @@ class Sequencer:
                 except:
                     plog ("corrupt dark skipped: " + str(file))
                     inputList.remove(file)
-                    
+
             if len(inputList) > 0:
                 PLDrive = np.memmap(g_dev['obs'].local_dark_folder  + 'tempfile', dtype='float32', mode= 'w+', shape = (shapeImage[0],shapeImage[1],len(inputList)))
                 # D  frames and stick them in the memmap
@@ -3918,7 +3918,7 @@ class Sequencer:
                     hdu1exp=float(file.split('_')[-2])
                     darkdeexp=(hdu1data-masterBias)/hdu1exp
                     del hdu1data
-    
+
                     # # Bad pixel accumulator
                     # img_temp_median=np.nanmedian(darkdeexp)
                     # img_temp_stdev=np.nanstd(darkdeexp)
@@ -3927,7 +3927,7 @@ class Sequencer:
                     # print ("Bad pixels above: " + str(above_array.sum()))
                     # #print ("Bad pixels below: " + str(below_array.sum()))
                     # bad_pixel_mapper_array=bad_pixel_mapper_array+above_array+below_array
-    
+
                     #timetaken=datetime.datetime.now() -starttime
                     #plog ("Time Taken to load array and debias and divide dark: " + str(timetaken))
                     #starttime=datetime.datetime.now()
@@ -3936,45 +3936,45 @@ class Sequencer:
                     #timetaken=datetime.datetime.now() -starttime
                     #plog ("Time Taken to put in memmap: " + str(timetaken))
                     i=i+1
-    
+
                 plog ("**********************************")
                 plog ("Median Stacking each darkframe row individually ")
                 plog (datetime.datetime.now().strftime("%H:%M:%S"))
                 # Go through each pixel and calculate nanmedian. Can't do all arrays at once as it is hugely memory intensive
                 finalImage=np.zeros(shapeImage,dtype=float)
-    
-    
+
+
                 mptask=[]
                 counter=0
                 for goog in range(shapeImage[0]):
                     mptask.append((g_dev['obs'].local_dark_folder + 'tempfile',counter, (shapeImage[0],shapeImage[1],len(inputList))))
                     counter=counter+1
-    
+
                 counter=0
                 with Pool(math.floor(os.cpu_count()*0.85)) as pool:
                     for result in pool.map(stack_nanmedian_row, mptask):
-    
+
                         finalImage[counter,:]=result
                         counter=counter+1
-    
-    
-    
-    
+
+
+
+
                 plog (datetime.datetime.now().strftime("%H:%M:%S"))
                 plog ("**********************************")
-    
+
                 tensecond_masterDark=np.asarray(finalImage).astype(np.float32)
                 del finalImage
-    
+
                 try:
                     fits.writeto(g_dev['obs'].calib_masters_folder + tempfrontcalib + '10secondDARK_master_bin1.fits', tensecond_masterDark,  overwrite=True)
                     filepathaws=g_dev['obs'].calib_masters_folder
                     filenameaws=tempfrontcalib + '10secondDARK_master_bin1.fits'
                     g_dev['obs'].enqueue_for_calibrationUI(50, filepathaws,filenameaws)
-    
+
                     # Store a version of the dark for the archive too
                     fits.writeto(g_dev['obs'].calib_masters_folder + 'ARCHIVE_' +  archiveDate + '_' + tempfrontcalib + '10secondDARK_master_bin1.fits', tensecond_masterDark, overwrite=True)
-    
+
                     filepathaws=g_dev['obs'].calib_masters_folder
                     filenameaws='ARCHIVE_' +  archiveDate + '_' + tempfrontcalib + '10secondDARK_master_bin1.fits'
                     g_dev['obs'].enqueue_for_calibrationUI(80, filepathaws,filenameaws)
@@ -3982,20 +3982,20 @@ class Sequencer:
                         fits.writeto(pipefolder + '/' + tempfrontcalib + '10secondDARK_master_bin1.fits', tensecond_masterDark,  overwrite=True)
                         fits.writeto(pipefolder + '/' + 'ARCHIVE_' +  archiveDate + '_' + tempfrontcalib + '10secondDARK_master_bin1.fits', tensecond_masterDark,  overwrite=True)
                         np.save(pipefolder + '/'  + tempfrontcalib + '10secondDARK_master_bin1.npy', tensecond_masterDark)
-    
+
                 except Exception as e:
                     plog ("Could not save dark frame: ",e)
-    
+
                 PLDrive._mmap.close()
                 del PLDrive
                 gc.collect()
                 os.remove(g_dev['obs'].local_dark_folder  + 'tempfile')
-    
+
                 g_dev["obs"].send_to_user("Ten Second Dark calibration frame created.")
-    
-    
-    
-    
+
+
+
+
 
             ##############################################################################################
             ##############################################################################################
@@ -4022,7 +4022,7 @@ class Sequencer:
             if len(inputList) > 0:
                 # Begin with just the normal masterdark of this length
                 PLDrive = np.memmap(g_dev['obs'].local_dark_folder  + 'tempfile', dtype='float32', mode= 'w+', shape = (shapeImage[0],shapeImage[1],len(inputList)))
-    
+
                 # D  frames and stick them in the memmap
                 i=0
                 for file in inputList:
@@ -4033,7 +4033,7 @@ class Sequencer:
                     hdu1exp=float(file.split('_')[-2])
                     darkdeexp=(hdu1data-masterBias)/hdu1exp
                     del hdu1data
-    
+
                     # # Bad pixel accumulator
                     # img_temp_median=np.nanmedian(darkdeexp)
                     # img_temp_stdev=np.nanstd(darkdeexp)
@@ -4042,7 +4042,7 @@ class Sequencer:
                     # print ("Bad pixels above: " + str(above_array.sum()))
                     # #print ("Bad pixels below: " + str(below_array.sum()))
                     # bad_pixel_mapper_array=bad_pixel_mapper_array+above_array+below_array
-    
+
                     #timetaken=datetime.datetime.now() -starttime
                     #plog ("Time Taken to load array and debias and divide dark: " + str(timetaken))
                     #starttime=datetime.datetime.now()
@@ -4051,19 +4051,19 @@ class Sequencer:
                     #timetaken=datetime.datetime.now() -starttime
                     #plog ("Time Taken to put in memmap: " + str(timetaken))
                     i=i+1
-    
+
                 plog ("**********************************")
                 plog ("Median Stacking each darkframe row individually ")
                 plog (datetime.datetime.now().strftime("%H:%M:%S"))
                 # Go through each pixel and calculate nanmedian. Can't do all arrays at once as it is hugely memory intensive
                 finalImage=np.zeros(shapeImage,dtype=float)
-    
+
                 mptask=[]
                 counter=0
                 for goog in range(shapeImage[0]):
                     mptask.append((g_dev['obs'].local_dark_folder + 'tempfile',counter, (shapeImage[0],shapeImage[1],len(inputList))))
                     counter=counter+1
-    
+
                 counter=0
                 with Pool(math.floor(os.cpu_count()*0.85)) as pool:
                     for result in pool.map(stack_nanmedian_row, mptask):
@@ -4071,10 +4071,10 @@ class Sequencer:
                         counter=counter+1
                 plog (datetime.datetime.now().strftime("%H:%M:%S"))
                 plog ("**********************************")
-    
+
                 broadbandss_masterDark=np.asarray(finalImage).astype(np.float32)
                 del finalImage
-    
+
                 # Bad pixel accumulator
                 img_temp_median=np.nanmedian(broadbandss_masterDark)
                 img_temp_stdev=np.nanstd(broadbandss_masterDark)
@@ -4083,17 +4083,17 @@ class Sequencer:
                 print ("Bad pixels above: " + str(above_array.sum()))
                 #print ("Bad pixels below: " + str(below_array.sum()))
                 bad_pixel_mapper_array=bad_pixel_mapper_array+above_array+below_array
-    
-    
+
+
                 try:
                     fits.writeto(g_dev['obs'].calib_masters_folder + tempfrontcalib + 'broadbandssDARK_master_bin1.fits', broadbandss_masterDark,  overwrite=True)
                     filepathaws=g_dev['obs'].calib_masters_folder
                     filenameaws=tempfrontcalib + 'broadbandssDARK_master_bin1.fits'
                     g_dev['obs'].enqueue_for_calibrationUI(50, filepathaws,filenameaws)
-    
+
                     # Store a version of the dark for the archive too
                     fits.writeto(g_dev['obs'].calib_masters_folder + 'ARCHIVE_' +  archiveDate + '_' + tempfrontcalib + 'broadbandssDARK_master_bin1.fits', broadbandss_masterDark, overwrite=True)
-    
+
                     filepathaws=g_dev['obs'].calib_masters_folder
                     filenameaws='ARCHIVE_' +  archiveDate + '_' + tempfrontcalib + 'broadbandssDARK_master_bin1.fits'
                     g_dev['obs'].enqueue_for_calibrationUI(80, filepathaws,filenameaws)
@@ -4101,21 +4101,21 @@ class Sequencer:
                         fits.writeto(pipefolder + '/' + tempfrontcalib + 'broadbandssDARK_master_bin1.fits', broadbandss_masterDark,  overwrite=True)
                         fits.writeto(pipefolder + '/' + 'ARCHIVE_' +  archiveDate + '_' + tempfrontcalib + 'broadbandssDARK_master_bin1.fits', broadbandss_masterDark,  overwrite=True)
                         np.save(pipefolder + '/'  + tempfrontcalib + 'broadbandssDARK_master_bin1.npy', broadbandss_masterDark)
-    
+
                 except Exception as e:
                     plog ("Could not save dark frame: ",e)
-    
+
                 PLDrive._mmap.close()
                 del PLDrive
                 gc.collect()
                 os.remove(g_dev['obs'].local_dark_folder  + 'tempfile')
-    
+
                 g_dev["obs"].send_to_user("Broadband Smarstack length dark calibration frame created.")
-    
+
                 ######################################## NOW DO BIASDARK
                 # Begin with just the biasdark of this length
                 PLDrive = np.memmap(g_dev['obs'].local_dark_folder  + 'tempfile', dtype='float32', mode= 'w+', shape = (shapeImage[0],shapeImage[1],len(inputList)))
-    
+
                 # D  frames and stick them in the memmap
                 i=0
                 for file in inputList:
@@ -4127,7 +4127,7 @@ class Sequencer:
                     #darkdeexp=(hdu1data-masterBias)/hdu1exp
                     #darkdeexp=hdu1data
                     #del hdu1data
-    
+
                     # # Bad pixel accumulator
                     # img_temp_median=np.nanmedian(darkdeexp)
                     # img_temp_stdev=np.nanstd(darkdeexp)
@@ -4136,7 +4136,7 @@ class Sequencer:
                     # print ("Bad pixels above: " + str(above_array.sum()))
                     # #print ("Bad pixels below: " + str(below_array.sum()))
                     # bad_pixel_mapper_array=bad_pixel_mapper_array+above_array+below_array
-    
+
                     #timetaken=datetime.datetime.now() -starttime
                     #plog ("Time Taken to load array and debias and divide dark: " + str(timetaken))
                     #starttime=datetime.datetime.now()
@@ -4145,19 +4145,19 @@ class Sequencer:
                     #timetaken=datetime.datetime.now() -starttime
                     #plog ("Time Taken to put in memmap: " + str(timetaken))
                     i=i+1
-    
+
                 plog ("**********************************")
                 plog ("Median Stacking each darkframe row individually ")
                 plog (datetime.datetime.now().strftime("%H:%M:%S"))
                 # Go through each pixel and calculate nanmedian. Can't do all arrays at once as it is hugely memory intensive
                 finalImage=np.zeros(shapeImage,dtype=float)
-    
+
                 mptask=[]
                 counter=0
                 for goog in range(shapeImage[0]):
                     mptask.append((g_dev['obs'].local_dark_folder + 'tempfile',counter, (shapeImage[0],shapeImage[1],len(inputList))))
                     counter=counter+1
-    
+
                 counter=0
                 with Pool(math.floor(os.cpu_count()*0.85)) as pool:
                     for result in pool.map(stack_nanmedian_row, mptask):
@@ -4165,19 +4165,19 @@ class Sequencer:
                         counter=counter+1
                 plog (datetime.datetime.now().strftime("%H:%M:%S"))
                 plog ("**********************************")
-    
+
                 broadbandss_masterBiasDark=np.asarray(finalImage).astype(np.float32)
                 del finalImage
-    
+
                 try:
                     fits.writeto(g_dev['obs'].calib_masters_folder + tempfrontcalib + 'broadbandssBIASDARK_master_bin1.fits', broadbandss_masterBiasDark,  overwrite=True)
                     filepathaws=g_dev['obs'].calib_masters_folder
                     filenameaws=tempfrontcalib + 'broadbandssBIASDARK_master_bin1.fits'
                     g_dev['obs'].enqueue_for_calibrationUI(50, filepathaws,filenameaws)
-    
+
                     # Store a version of the dark for the archive too
                     fits.writeto(g_dev['obs'].calib_masters_folder + 'ARCHIVE_' +  archiveDate + '_' + tempfrontcalib + 'broadbandssBIASDARK_master_bin1.fits', broadbandss_masterBiasDark, overwrite=True)
-    
+
                     filepathaws=g_dev['obs'].calib_masters_folder
                     filenameaws='ARCHIVE_' +  archiveDate + '_' + tempfrontcalib + 'broadbandssBIASDARK_master_bin1.fits'
                     g_dev['obs'].enqueue_for_calibrationUI(80, filepathaws,filenameaws)
@@ -4185,17 +4185,17 @@ class Sequencer:
                         fits.writeto(pipefolder + '/' + tempfrontcalib + 'broadbandssBIASDARK_master_bin1.fits', broadbandss_masterBiasDark,  overwrite=True)
                         fits.writeto(pipefolder + '/' + 'ARCHIVE_' +  archiveDate + '_' + tempfrontcalib + 'broadbandssBIASDARK_master_bin1.fits', broadbandss_masterBiasDark,  overwrite=True)
                         np.save(pipefolder + '/'  + tempfrontcalib + 'broadbandssBIASDARK_master_bin1.npy', broadbandss_masterBiasDark)
-    
+
                 except Exception as e:
                     plog ("Could not save dark frame: ",e)
-    
+
                 PLDrive._mmap.close()
                 del PLDrive
                 gc.collect()
                 os.remove(g_dev['obs'].local_dark_folder  + 'tempfile')
-    
+
                 g_dev["obs"].send_to_user("Broadband Smarstack length bias-dark calibration frame created.")
-    
+
 
             ##############################################################################################
             ##############################################################################################
@@ -4223,7 +4223,7 @@ class Sequencer:
 
                 # Begin with just the normal masterdark of this length
                 PLDrive = np.memmap(g_dev['obs'].local_dark_folder  + 'tempfile', dtype='float32', mode= 'w+', shape = (shapeImage[0],shapeImage[1],len(inputList)))
-    
+
                 # D  frames and stick them in the memmap
                 i=0
                 for file in inputList:
@@ -4234,7 +4234,7 @@ class Sequencer:
                     hdu1exp=float(file.split('_')[-2])
                     darkdeexp=(hdu1data-masterBias)/hdu1exp
                     del hdu1data
-    
+
                     # # Bad pixel accumulator
                     # img_temp_median=np.nanmedian(darkdeexp)
                     # img_temp_stdev=np.nanstd(darkdeexp)
@@ -4243,7 +4243,7 @@ class Sequencer:
                     # print ("Bad pixels above: " + str(above_array.sum()))
                     # #print ("Bad pixels below: " + str(below_array.sum()))
                     # bad_pixel_mapper_array=bad_pixel_mapper_array+above_array+below_array
-    
+
                     #timetaken=datetime.datetime.now() -starttime
                     #plog ("Time Taken to load array and debias and divide dark: " + str(timetaken))
                     #starttime=datetime.datetime.now()
@@ -4252,19 +4252,19 @@ class Sequencer:
                     #timetaken=datetime.datetime.now() -starttime
                     #plog ("Time Taken to put in memmap: " + str(timetaken))
                     i=i+1
-    
+
                 plog ("**********************************")
                 plog ("Median Stacking each darkframe row individually ")
                 plog (datetime.datetime.now().strftime("%H:%M:%S"))
                 # Go through each pixel and calculate nanmedian. Can't do all arrays at once as it is hugely memory intensive
                 finalImage=np.zeros(shapeImage,dtype=float)
-    
+
                 mptask=[]
                 counter=0
                 for goog in range(shapeImage[0]):
                     mptask.append((g_dev['obs'].local_dark_folder + 'tempfile',counter, (shapeImage[0],shapeImage[1],len(inputList))))
                     counter=counter+1
-    
+
                 counter=0
                 with Pool(math.floor(os.cpu_count()*0.85)) as pool:
                     for result in pool.map(stack_nanmedian_row, mptask):
@@ -4272,11 +4272,11 @@ class Sequencer:
                         counter=counter+1
                 plog (datetime.datetime.now().strftime("%H:%M:%S"))
                 plog ("**********************************")
-    
+
                 narrowbandss_masterDark=np.asarray(finalImage).astype(np.float32)
                 del finalImage
-    
-    
+
+
                 # Bad pixel accumulator
                 img_temp_median=np.nanmedian(narrowbandss_masterDark)
                 img_temp_stdev=np.nanstd(narrowbandss_masterDark)
@@ -4285,18 +4285,18 @@ class Sequencer:
                 print ("Bad pixels above: " + str(above_array.sum()))
                 #print ("Bad pixels below: " + str(below_array.sum()))
                 bad_pixel_mapper_array=bad_pixel_mapper_array+above_array+below_array
-    
-    
-    
+
+
+
                 try:
                     fits.writeto(g_dev['obs'].calib_masters_folder + tempfrontcalib + 'narrowbandssDARK_master_bin1.fits', narrowbandss_masterDark,  overwrite=True)
                     filepathaws=g_dev['obs'].calib_masters_folder
                     filenameaws=tempfrontcalib + 'narrowbandssDARK_master_bin1.fits'
                     g_dev['obs'].enqueue_for_calibrationUI(50, filepathaws,filenameaws)
-    
+
                     # Store a version of the dark for the archive too
                     fits.writeto(g_dev['obs'].calib_masters_folder + 'ARCHIVE_' +  archiveDate + '_' + tempfrontcalib + 'narrowbandssDARK_master_bin1.fits', narrowbandss_masterDark, overwrite=True)
-    
+
                     filepathaws=g_dev['obs'].calib_masters_folder
                     filenameaws='ARCHIVE_' +  archiveDate + '_' + tempfrontcalib + 'narrowbandssDARK_master_bin1.fits'
                     g_dev['obs'].enqueue_for_calibrationUI(80, filepathaws,filenameaws)
@@ -4304,21 +4304,21 @@ class Sequencer:
                         fits.writeto(pipefolder + '/' + tempfrontcalib + 'narrowbandssDARK_master_bin1.fits', narrowbandss_masterDark,  overwrite=True)
                         fits.writeto(pipefolder + '/' + 'ARCHIVE_' +  archiveDate + '_' + tempfrontcalib + 'narrowbandssDARK_master_bin1.fits', narrowbandss_masterDark,  overwrite=True)
                         np.save(pipefolder + '/'  + tempfrontcalib + 'narrowbandssDARK_master_bin1.npy', narrowbandss_masterDark)
-    
+
                 except Exception as e:
                     plog ("Could not save dark frame: ",e)
-    
+
                 PLDrive._mmap.close()
                 del PLDrive
                 gc.collect()
                 os.remove(g_dev['obs'].local_dark_folder  + 'tempfile')
-    
+
                 g_dev["obs"].send_to_user("narrowband Smarstack length dark calibration frame created.")
-    
+
                 ######################################## NOW DO BIASDARK
                 # Begin with just the biasdark of this length
                 PLDrive = np.memmap(g_dev['obs'].local_dark_folder  + 'tempfile', dtype='float32', mode= 'w+', shape = (shapeImage[0],shapeImage[1],len(inputList)))
-    
+
                 # D  frames and stick them in the memmap
                 i=0
                 for file in inputList:
@@ -4330,7 +4330,7 @@ class Sequencer:
                     #darkdeexp=(hdu1data-masterBias)/hdu1exp
                     #darkdeexp=hdu1data
                     #del hdu1data
-    
+
                     # # Bad pixel accumulator
                     # img_temp_median=np.nanmedian(darkdeexp)
                     # img_temp_stdev=np.nanstd(darkdeexp)
@@ -4339,7 +4339,7 @@ class Sequencer:
                     # print ("Bad pixels above: " + str(above_array.sum()))
                     # #plog ("Bad pixels below: " + str(below_array.sum()))
                     # bad_pixel_mapper_array=bad_pixel_mapper_array+above_array+below_array
-    
+
                     #timetaken=datetime.datetime.now() -starttime
                     #plog ("Time Taken to load array and debias and divide dark: " + str(timetaken))
                     #starttime=datetime.datetime.now()
@@ -4348,19 +4348,19 @@ class Sequencer:
                     #timetaken=datetime.datetime.now() -starttime
                     #plog ("Time Taken to put in memmap: " + str(timetaken))
                     i=i+1
-    
+
                 plog ("**********************************")
                 plog ("Median Stacking each darkframe row individually ")
                 plog (datetime.datetime.now().strftime("%H:%M:%S"))
                 # Go through each pixel and calculate nanmedian. Can't do all arrays at once as it is hugely memory intensive
                 finalImage=np.zeros(shapeImage,dtype=float)
-    
+
                 mptask=[]
                 counter=0
                 for goog in range(shapeImage[0]):
                     mptask.append((g_dev['obs'].local_dark_folder + 'tempfile',counter, (shapeImage[0],shapeImage[1],len(inputList))))
                     counter=counter+1
-    
+
                 counter=0
                 with Pool(math.floor(os.cpu_count()*0.85)) as pool:
                     for result in pool.map(stack_nanmedian_row, mptask):
@@ -4368,19 +4368,19 @@ class Sequencer:
                         counter=counter+1
                 plog (datetime.datetime.now().strftime("%H:%M:%S"))
                 plog ("**********************************")
-    
+
                 narrowbandss_masterBiasDark=np.asarray(finalImage).astype(np.float32)
                 del finalImage
-    
+
                 try:
                     fits.writeto(g_dev['obs'].calib_masters_folder + tempfrontcalib + 'narrowbandssBIASDARK_master_bin1.fits', narrowbandss_masterBiasDark,  overwrite=True)
                     filepathaws=g_dev['obs'].calib_masters_folder
                     filenameaws=tempfrontcalib + 'narrowbandssBIASDARK_master_bin1.fits'
                     g_dev['obs'].enqueue_for_calibrationUI(50, filepathaws,filenameaws)
-    
+
                     # Store a version of the dark for the archive too
                     fits.writeto(g_dev['obs'].calib_masters_folder + 'ARCHIVE_' +  archiveDate + '_' + tempfrontcalib + 'narrowbandssBIASDARK_master_bin1.fits', narrowbandss_masterBiasDark, overwrite=True)
-    
+
                     filepathaws=g_dev['obs'].calib_masters_folder
                     filenameaws='ARCHIVE_' +  archiveDate + '_' + tempfrontcalib + 'narrowbandssBIASDARK_master_bin1.fits'
                     g_dev['obs'].enqueue_for_calibrationUI(80, filepathaws,filenameaws)
@@ -4388,17 +4388,17 @@ class Sequencer:
                         fits.writeto(pipefolder + '/' + tempfrontcalib + 'narrowbandssBIASDARK_master_bin1.fits', narrowbandss_masterBiasDark,  overwrite=True)
                         fits.writeto(pipefolder + '/' + 'ARCHIVE_' +  archiveDate + '_' + tempfrontcalib + 'narrowbandssBIASDARK_master_bin1.fits', narrowbandss_masterBiasDark,  overwrite=True)
                         np.save(pipefolder + '/' + tempfrontcalib + 'narrowbandssBIASDARK_master_bin1.npy', narrowbandss_masterBiasDark)
-    
+
                 except Exception as e:
                     plog ("Could not save dark frame: ",e)
-    
+
                 PLDrive._mmap.close()
                 del PLDrive
                 gc.collect()
                 os.remove(g_dev['obs'].local_dark_folder  + 'tempfile')
-    
+
                 g_dev["obs"].send_to_user("narrowband Smarstack length bias-dark calibration frame created.")
-    
+
 
             ##############################################################################################
             ##############################################################################################
@@ -4452,11 +4452,11 @@ class Sequencer:
                     if len(inputList) == 0 or len(inputList) == 1:
                         plog ("Not doing " + str(filtercode) + " flat. Not enough available files in directory.")
                     else:
-                        
+
                         while True:
-                        
+
                             PLDrive = np.memmap(g_dev['obs'].local_flat_folder  + 'tempfile', dtype='float32', mode= 'w+', shape = (shapeImage[0],shapeImage[1],len(inputList)))
-    
+
                             # Debias and dedark flat frames and stick them in the memmap
                             i=0
                             for file in inputList:
@@ -4466,12 +4466,12 @@ class Sequencer:
                                 plog ("EXP")
                                 plog (hdu1exp)
                                 fraction_through_range=0
-                                
-                                
+
+
                                 # This try/except is here because if there is a missing dark
                                 # we can always just revert to using the long dark.
                                 try:
-    
+
                                     if hdu1exp == 0.05 and 'fivepercent' in flat_biasdarks:
                                         flatdebiaseddedarked=hdu1data -flat_biasdarks['fivepercent']
                                         plog("five percent")
@@ -4545,11 +4545,11 @@ class Sequencer:
                                         flatdebiaseddedarked=(hdu1data-masterBias)-(narrowbandss_masterDark*hdu1exp)
                                 except:
                                     flatdebiaseddedarked=(hdu1data-masterBias)-(masterDark*hdu1exp)
-    
+
                                 plog ("Fraction through range")
                                 plog (fraction_through_range)
                                 del hdu1data
-    
+
                                 # Normalising flat file
                                 if not g_dev['cam'].config["camera"][g_dev['cam'].name]["settings"]["is_osc"]:
                                     normalising_factor=np.nanmedian(flatdebiaseddedarked)
@@ -4560,27 +4560,27 @@ class Sequencer:
                                     # Rescaling median once nan'ed
                                     flatdebiaseddedarked = flatdebiaseddedarked/np.nanmedian(flatdebiaseddedarked)
                                 else:
-    
+
                                     debayered=[]
                                     max_median=0
-    
+
                                     debayered.append(flatdebiaseddedarked[::2, ::2])
                                     debayered.append(flatdebiaseddedarked[::2, 1::2])
                                     debayered.append(flatdebiaseddedarked[1::2, ::2])
                                     debayered.append(flatdebiaseddedarked[1::2, 1::2])
-    
+
                                     osc_normalising_factor=[]
                                     # crop each of the images to the central region
-    
+
                                     for oscimage in debayered:
                                         cropx = int( (oscimage.shape[0] -500)/2)
                                         cropy = int((oscimage.shape[1] -500) /2)
                                         oscimage=oscimage[cropx:-cropx, cropy:-cropy]
                                         oscmedian=np.nanmedian(oscimage)
                                         osc_normalising_factor.append(oscmedian)
-    
+
                                     del debayered
-    
+
                                     flatdebiaseddedarked[::2, ::2]=flatdebiaseddedarked[::2, ::2]/osc_normalising_factor[0]
                                     flatdebiaseddedarked[::2, 1::2]=flatdebiaseddedarked[::2, 1::2]/osc_normalising_factor[1]
                                     flatdebiaseddedarked[1::2, ::2]=flatdebiaseddedarked[1::2, ::2]/osc_normalising_factor[2]
@@ -4590,32 +4590,32 @@ class Sequencer:
                                     flatdebiaseddedarked[flatdebiaseddedarked > 2.0] = np.nan
                                     # Rescaling median once nan'ed
                                     flatdebiaseddedarked = flatdebiaseddedarked/np.nanmedian(flatdebiaseddedarked)
-    
+
                                 PLDrive[:,:,i] = flatdebiaseddedarked
                                 del flatdebiaseddedarked
                                 i=i+1
-    
+
                             plog ("**********************************")
                             plog ("Median Stacking each " + str (filtercode) + " flat frame row individually")
                             plog (datetime.datetime.now().strftime("%H:%M:%S"))
                             # Go through each pixel and calculate nanmedian. Can't do all arrays at once as it is hugely memory intensive
                             finalImage=np.zeros(shapeImage,dtype=float)
-    
+
                             mptask=[]
                             counter=0
                             for goog in range(shapeImage[0]):
                                 mptask.append((g_dev['obs'].local_flat_folder + 'tempfile',counter, (shapeImage[0],shapeImage[1],len(inputList))))
                                 counter=counter+1
-    
+
                             counter=0
                             with Pool(math.floor(os.cpu_count()*0.85)) as pool:
                                 for result in pool.map(stack_nanmedian_row, mptask):
                                     finalImage[counter,:]=result
                                     counter=counter+1
-    
+
                             plog (datetime.datetime.now().strftime("%H:%M:%S"))
                             plog ("**********************************")
-    
+
                             plog ("Flat component report")
                             #nanmedian_collector=[]
                             nanstd_collector=[]
@@ -4628,7 +4628,7 @@ class Sequencer:
                                 plog ("nanstdev: " + str(tempstd))
                                 #nanmedian_collector.append(tempnanmedian)
                                 nanstd_collector.append(tempstd)
-    
+
                             plog ("*********************************")
                             #plog (nanmedian_collector)
                             plog (nanstd_collector)
@@ -4639,26 +4639,26 @@ class Sequencer:
                             med_std=np.array(np.nanmedian(nanstd_collector))
                             std_std=np.array(np.std(nanstd_collector))
                             plog ("*********************************")
-    
+
                             delete_flat_components=[]
                             for counterflat in range(len(nanstd_collector)):
                                 print ("Image " + str(counterflat) + " assessment")
                                 if nanstd_collector[counterflat] > (med_std + 3 * std_std):
                                     print ("FOUND A REJECTION: " + str(round(nanstd_collector[counterflat],5)) + " > " + str(round(med_std + 3 * std_std,5)))
                                     delete_flat_components.append(counterflat)
-                            
+
                             if len(delete_flat_components) == 0:
                                 break
-                            
+
                             print ("REPROCESSING FLAT WITH BAD COMPONENTS REMOVED")
                             # Remove problematic flat images from squishener so we can re-run the flat.
                             for index in sorted(delete_flat_components, reverse=True):
-                                del inputList[index]                                
+                                del inputList[index]
                             PLDrive._mmap.close()
                             del PLDrive
                             gc.collect()
                             os.remove(g_dev['obs'].local_flat_folder  + 'tempfile')
-                            
+
 
 
                         temporaryFlat=np.asarray(finalImage).astype(np.float32)
@@ -4692,7 +4692,7 @@ class Sequencer:
                             if num_of_nans == last_num_of_nans:
                                 break
                             last_num_of_nans=copy.deepcopy(num_of_nans)
-                            while num_of_nans > 0:                               
+                            while num_of_nans > 0:
 
                                 # List the coordinates that are nan in the array
                                 nan_coords=np.argwhere(np.isnan(temporaryFlat))
@@ -4880,7 +4880,7 @@ class Sequencer:
                 # delete them
                 del flat_biasdarks
 
-                
+
 
 
 
@@ -6186,7 +6186,7 @@ class Sequencer:
                 plog ("Sufficient time has passed since last focus to do auto_focus")
 
             else:
-                plog ("too soon since last autofacus")
+                plog ("too soon since last autofocus")
                 self.focussing=False
                 return np.nan, np.nan
 

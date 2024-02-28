@@ -2442,6 +2442,7 @@ class Camera:
         #  This is the loop point for the seq count loop
         self.exposure_busy = False
         self.currently_in_smartstack_loop=False
+        #breakpoint()
         return expresult
 
     def write_out_realtimefiles_token_to_disk(self,token_name,real_time_files):
@@ -2782,7 +2783,9 @@ class Camera:
                             block_and_focus_check_done=True
 
                     # Need to have a time sleep to release the GIL to run the other threads
-                    time.sleep(min(self.completion_time - time.time()+0.00001, initialRemaining * 0.125))
+                    temp_time_sleep=min(self.completion_time - time.time()+0.00001, initialRemaining * 0.125)
+                    if temp_time_sleep > 0:
+                        time.sleep(temp_time_sleep)
 
 
                 continue

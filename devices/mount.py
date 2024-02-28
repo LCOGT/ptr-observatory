@@ -598,7 +598,7 @@ class Mount:
 
                             if not (g_dev['mnt'].pier_side_last_check==g_dev['mnt'].rapid_pier_indicator):
                                 self.pier_flip_detected=True
-                                print ("PERIPEIREPIPRE PIERFLIP DETECTED!")
+                                print ("PIERFLIP DETECTED!")
                             g_dev['mnt'].pier_side_last_check=copy.deepcopy(self.rapid_pier_indicator)
 
                         self.right_ascension_directly_from_mount = copy.deepcopy(self.mount_update_wincom.RightAscension)
