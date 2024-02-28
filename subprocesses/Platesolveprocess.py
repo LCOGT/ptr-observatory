@@ -367,36 +367,36 @@ list_of_local_maxima=localMax(hdufocusdata, threshold=threshold)
 pointvalues=np.zeros([len(list_of_local_maxima),3],dtype=float)
 counter=0
 for point in list_of_local_maxima:
-    
+
     pointvalues[counter][0]=point[0]
     pointvalues[counter][1]=point[1]
     pointvalues[counter][2]=np.nan
     in_range=False
     if (point[0] > fx*0.1) and (point[1] > fy*0.1) and (point[0] < fx*0.9) and (point[1] < fy*0.9):
         in_range=True
-    
-    if in_range:                
+
+    if in_range:
         value_at_point=hdufocusdata[point[0],point[1]]
         try:
             value_at_neighbours=(hdufocusdata[point[0]-1,point[1]]+hdufocusdata[point[0]+1,point[1]]+hdufocusdata[point[0],point[1]-1]+hdufocusdata[point[0],point[1]+1])/4
         except:
             print(traceback.format_exc())
             breakpoint()
-            
+
         # Check it isn't just a dot
         if value_at_neighbours < (0.4*value_at_point):
             #print ("BAH " + str(value_at_point) + " " + str(value_at_neighbours) )
-            pointvalues[counter][2]=np.nan                       
-        
+            pointvalues[counter][2]=np.nan
+
         # If not saturated and far away from the edge
         elif value_at_point < 0.9*image_saturation_level:
             pointvalues[counter][2]=value_at_point
-        
+
         else:
             pointvalues[counter][2]=np.nan
-            
+
     counter=counter+1
-    
+
 #print (pointvalues)
 
 # Trim list to remove things that have too many other things close to them.
@@ -431,8 +431,8 @@ for i in range(min(len(pointvalues),200)):
         print(traceback.format_exc())
         breakpoint()
     #crad=radial_profile(np.asarray(temp_array),[centre_of_radialprofile,centre_of_radialprofile])
-    
-    #construct radial profile            
+
+    #construct radial profile
     cut_x,cut_y=temp_array.shape
     cut_x_center=(cut_x/2)-1
     cut_y_center=(cut_y/2)-1
@@ -455,17 +455,17 @@ for i in range(min(len(pointvalues),200)):
                 brightest_pixel_rdist=r_dist
                 brightest_pixel_value=temp_array[q][t]
             counter=counter+1
-            
-    
-    
-    
+
+
+
+
     # If the brightest pixel is in the center-ish
     # then attempt a fit
     if abs(brightest_pixel_rdist) < 4:
-        
+
         try:
             popt, _ = optimize.curve_fit(gaussian, radprofile[:,0], radprofile[:,1])
-            
+
             # Amplitude has to be a substantial fraction of the peak value
             # and the center of the gaussian needs to be near the center
             if popt[0] > (0.5 * cvalue) and abs(popt[1]) < 3 :
@@ -475,9 +475,9 @@ for i in range(min(len(pointvalues),200)):
                 # plt.plot(radprofile[:,0], gaussian(radprofile[:,0], *popt),color = 'r')
                 # plt.axvline(x = 0, color = 'g', label = 'axvline - full height')
                 # plt.show()
-                
+
                 sources.append([cx,cy,cvalue])
-            
+
                 # FWHM is 2.355 * std for a gaussian
                 #fwhmlist.append(popt[2])
                 #sources.append([cx,cy,radprofile,temp_array])
@@ -490,7 +490,7 @@ for i in range(min(len(pointvalues),200)):
                 #     bailout=True
                 #     break
         except:
-            pass   
+            pass
 
 
 # Keep top 200
@@ -665,11 +665,19 @@ if len(sources) >= 5:
         #sources.reverse()
         #sources=sources[:,200]
 
+
+        if pixscale == None:
+            scale_lower=0.04
+            scale_upper=8.0
+        else:
+            scale_lower=0.9* pixscale
+            scale_upper=1.1*pixscale
+
         image_width = fx
         image_height = fy
         try:
             wcs_header = ast.solve_from_source_list(pointvalues[:,0], pointvalues[:,1],
-                                                    image_width, image_height, crpix_center=True, center_dec= pointing_dec, scale_lower=0.04, scale_upper=8.0, scale_units='arcsecperpix', center_ra = pointing_ra*15,radius=5.0,
+                                                    image_width, image_height, crpix_center=True, center_dec= pointing_dec, scale_lower=scale_lower, scale_upper=scale_upper, scale_units='arcsecperpix', center_ra = pointing_ra*15,radius=5.0,
                                                     solve_timeout=300)
             solve={}
             solve["ra_j2000_hours"] = wcs_header['CRVAL1']/15

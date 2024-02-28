@@ -2443,6 +2443,11 @@ class Camera:
         self.exposure_busy = False
         self.currently_in_smartstack_loop=False
         #breakpoint()
+
+        # trap missing expresult (e.g. cancelled exposures etc.)
+        if not 'expresult' in locals():
+            expresult = 'error'
+
         return expresult
 
     def write_out_realtimefiles_token_to_disk(self,token_name,real_time_files):
