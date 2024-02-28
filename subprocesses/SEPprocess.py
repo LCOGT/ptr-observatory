@@ -6,6 +6,8 @@ Created on Sun Apr 23 04:37:30 2023
 """
 
 import numpy as np
+# Need this line to output the full array to text for the json
+np.set_printoptions(threshold=np.inf)
 from astropy.stats import median_absolute_deviation
 from astropy.nddata.utils import extract_array
 import sys
@@ -229,9 +231,9 @@ hduheader["IMGMODE"] = ( imageMode, "Mode Value of Image Array" )
 if frame_type=='expose':
 
     # Collect unique values and counts
-    
+
     histogramdata=np.column_stack([unique,counts]).astype(np.int32)
-    
+
     #Do some fiddle faddling to figure out the value that goes to zero less
     zeroValueArray=histogramdata[histogramdata[:,0] < imageMode]
     breaker=1
@@ -239,12 +241,12 @@ if frame_type=='expose':
     while (breaker != 0):
         counter=counter+1
         if not (imageMode-counter) in zeroValueArray[:,0]:
-    
+
             zeroValue=(imageMode-counter)
             breaker =0
     hdufocusdata[hdufocusdata < zeroValue] = imageMode
     histogramdata=histogramdata[histogramdata[:,0] > zeroValue]
-    
+
     np.savetxt(
         im_path + text_name.replace('.txt', '.his'),
         histogramdata, delimiter=','
@@ -318,7 +320,7 @@ else:
         bilinearfill=np.add(bilinearfill, np.roll(hdufocusdata,1,axis=1))
         bilinearfill=np.add(bilinearfill, np.roll(hdufocusdata,-1,axis=1))
         bilinearfill=np.divide(bilinearfill,4)
-        
+
 
         hdufocusdata[np.isnan(hdufocusdata)]=0
         bilinearfill[np.isnan(bilinearfill)]=0
@@ -329,7 +331,7 @@ else:
 
     if frame_type=='focus':
         try:
-            
+
             fx, fy = hdufocusdata.shape
             hdufocusdata[np.isnan(hdufocusdata)] = imageMode
             hdufocusdata=hdufocusdata-imageMode
@@ -340,45 +342,45 @@ else:
             pointvalues=np.zeros([len(list_of_local_maxima),3],dtype=float)
             counter=0
             for point in list_of_local_maxima:
-                
+
                 pointvalues[counter][0]=point[0]
                 pointvalues[counter][1]=point[1]
                 pointvalues[counter][2]=np.nan
                 in_range=False
                 if (point[0] > fx*0.1) and (point[1] > fy*0.1) and (point[0] < fx*0.9) and (point[1] < fy*0.9):
                     in_range=True
-                
-                if in_range:                
+
+                if in_range:
                     value_at_point=hdufocusdata[point[0],point[1]]
                     try:
                         value_at_neighbours=(hdufocusdata[point[0]-1,point[1]]+hdufocusdata[point[0]+1,point[1]]+hdufocusdata[point[0],point[1]-1]+hdufocusdata[point[0],point[1]+1])/4
                     except:
                         print(traceback.format_exc())
                         breakpoint()
-                        
+
                     # Check it isn't just a dot
                     if value_at_neighbours < (0.6*value_at_point):
                         #print ("BAH " + str(value_at_point) + " " + str(value_at_neighbours) )
-                        pointvalues[counter][2]=np.nan                       
-                    
+                        pointvalues[counter][2]=np.nan
+
                     # If not saturated and far away from the edge
                     elif value_at_point < 0.8*saturate:
                         pointvalues[counter][2]=value_at_point
-                    
+
                     else:
                         pointvalues[counter][2]=np.nan
-                        
+
                 counter=counter+1
-            
-            
+
+
             # Trim list to remove things that have too many other things close to them.
-            
+
             # remove nan rows
             pointvalues=pointvalues[~np.isnan(pointvalues).any(axis=1)]
-            
+
             # reverse sort by brightness
             pointvalues=pointvalues[pointvalues[:,2].argsort()[::-1]]
-                        
+
             # radial profile
             fwhmlist=[]
             sources=[]
@@ -396,8 +398,8 @@ else:
                     print(traceback.format_exc())
                     breakpoint()
                 #crad=radial_profile(np.asarray(temp_array),[centre_of_radialprofile,centre_of_radialprofile])
-                
-                #construct radial profile            
+
+                #construct radial profile
                 cut_x,cut_y=temp_array.shape
                 cut_x_center=(cut_x/2)-1
                 cut_y_center=(cut_y/2)-1
@@ -420,17 +422,17 @@ else:
                             brightest_pixel_rdist=r_dist
                             brightest_pixel_value=temp_array[q][t]
                         counter=counter+1
-                        
-                
-                
-                
+
+
+
+
                 # If the brightest pixel is in the center-ish
                 # then attempt a fit
                 if abs(brightest_pixel_rdist) < 4:
-                    
+
                     try:
                         popt, _ = optimize.curve_fit(gaussian, radprofile[:,0], radprofile[:,1])
-                        
+
                         # Amplitude has to be a substantial fraction of the peak value
                         # and the center of the gaussian needs to be near the center
                         if popt[0] > (0.5 * cvalue) and abs(popt[1]) < 3 :
@@ -440,7 +442,7 @@ else:
                             # plt.plot(radprofile[:,0], gaussian(radprofile[:,0], *popt),color = 'r')
                             # plt.axvline(x = 0, color = 'g', label = 'axvline - full height')
                             # plt.show()
-                        
+
                             # FWHM is 2.355 * std for a gaussian
                             fwhmlist.append(popt[2])
                             sources.append([cx,cy,radprofile,temp_array])
@@ -453,11 +455,11 @@ else:
                                 bailout=True
                                 break
                     except:
-                        pass        
-            
-            
+                        pass
+
+
             rfp = abs(np.nanmedian(fwhmlist)) * 4.710
-            rfr = rfp * pixscale            
+            rfr = rfp * pixscale
             rfs = np.nanstd(fwhmlist) * pixscale
             sepsky = imageMode
             fwhm_file={}
@@ -469,15 +471,15 @@ else:
             # dump the settings files into the temp directory
             with open(im_path + text_name.replace('.txt', '.fwhm'), 'w') as f:
                 json.dump(fwhm_file, f)
-            
+
             #breakpoint()
-        
-            # for i in range(len(sources)):        
+
+            # for i in range(len(sources)):
             #     plt.imshow(sources[i][3])
             #     plt.show()
             #     time.sleep(0.05)
-        
-        
+
+
         except:
             traceback.format_exc()
             sources = [0]
@@ -485,51 +487,51 @@ else:
             rfr = np.nan
             rfs = np.nan
             sepsky = np.nan
-        
-        
-        
+
+
+
         #breakpoint()
-        
-    
-    
-    
-    
+
+
+
+
+
 
     else:
-        
+
         actseptime = time.time()
         focusimg = np.array(
             hdufocusdata, order="C"
         )
-    
+
         try:
             # Some of these are liberated from BANZAI
-    
-    
-    
+
+
+
             bkg = sep.Background(focusimg, bw=32, bh=32, fw=3, fh=3)
             bkg.subfrom(focusimg)
-    
+
             sepsky = (np.nanmedian(bkg), "Sky background estimated by SEP")
-    
+
             ix, iy = focusimg.shape
             border_x = int(ix * 0.05)
             border_y = int(iy * 0.05)
             sep.set_extract_pixstack(int(ix*iy - 1))
-    
+
             #This minarea is totally fudgetastically emprical comparing a 0.138 pixelscale QHY Mono
             # to a 1.25/2.15 QHY OSC. Seems to work, so thats good enough.
             # Makes the minarea small enough for blocky pixels, makes it large enough for oversampling
             minarea= (-9.2421 * pixscale) + 16.553
             if minarea < 5:  # There has to be a min minarea though!
                 minarea = 5
-    
+
             sources = sep.extract(
                 focusimg, 3.0, err=bkg.globalrms, minarea=minarea
             )
             sources = Table(sources)
-    
-    
+
+
             sources = sources[sources['flag'] < 8]
             image_saturation_level = saturate
             sources = sources[sources["peak"] < 0.8 * image_saturation_level]
@@ -541,45 +543,45 @@ else:
             #sources = sources[sources["y"] > border_x]
             #breakpoint()
             # BANZAI prune nans from table
-    
-    
-    
-    
-    
+
+
+
+
+
             nan_in_row = np.zeros(len(sources), dtype=bool)
             for col in sources.colnames:
                 nan_in_row |= np.isnan(sources[col])
             sources = sources[~nan_in_row]
-    
+
             #breakpoint()
-    
+
             # Calculate the ellipticity (Thanks BANZAI)
-    
+
             sources['ellipticity'] = 1.0 - (sources['b'] / sources['a'])
-    
+
             # if frame_type == 'focus':
             #     sources = sources[sources['ellipticity'] < 0.4]  # Remove things that are not circular stars
             # else:
             #breakpoint()
             sources = sources[sources['ellipticity'] < 0.6]  # Remove things that are not circular stars
-    
+
             # Calculate the kron radius (Thanks BANZAI)
             kronrad, krflag = sep.kron_radius(focusimg, sources['x'], sources['y'],
                                               sources['a'], sources['b'],
                                               sources['theta'], 6.0)
             sources['flag'] |= krflag
             sources['kronrad'] = kronrad
-    
+
             # Calculate uncertainty of image (thanks BANZAI)
-    
+
             uncertainty = float(readnoise) * np.ones(focusimg.shape,
                                                      dtype=focusimg.dtype) / float(readnoise)
-    
-    
+
+
             # DONUT IMAGE DETECTOR.
             xdonut=np.median(pow(pow(sources['x'] - sources['xpeak'],2),0.5))*pixscale
             ydonut=np.median(pow(pow(sources['y'] - sources['ypeak'],2),0.5))*pixscale
-    
+
             # Calcuate the equivilent of flux_auto (Thanks BANZAI)
             # This is the preferred best photometry SEP can do.
             # But sometimes it fails, so we try and except
@@ -593,64 +595,64 @@ else:
             #     sources['flag'] |= flag
             # except:
             #     pass
-    
-    
-    
+
+
+
             sources['FWHM'], _ = sep.flux_radius(focusimg, sources['x'], sources['y'], sources['a'], 0.5,
                                                   subpix=5)
-    
+
             #breakpoint()
             # If image has been binned for focus we need to multiply some of these things by the binning
             # To represent the original image
             sources['FWHM'] = (sources['FWHM'] * 2)
-    
+
             #sources['FWHM']=sources['kronrad'] * 2
-    
+
             #print (sources)
-    
+
             # Need to reject any stars that have FWHM that are less than a extremely
             # perfect night as artifacts
             # if frame_type == 'focus':
             #     sources = sources[sources['FWHM'] > (0.6 / (pixscale))]
             #     sources = sources[sources['FWHM'] > (minimum_realistic_seeing / pixscale)]
             #     sources = sources[sources['FWHM'] != 0]
-    
+
             source_delete = ['thresh', 'npix', 'tnpix', 'xmin', 'xmax', 'ymin', 'ymax', 'x2', 'y2', 'xy', 'errx2',
                              'erry2', 'errxy', 'a', 'b', 'theta', 'cxx', 'cyy', 'cxy', 'cflux', 'cpeak', 'xcpeak', 'ycpeak']
-    
+
             sources.remove_columns(source_delete)
-    
-    
-    
+
+
+
             # BANZAI prune nans from table
             nan_in_row = np.zeros(len(sources), dtype=bool)
             for col in sources.colnames:
                 nan_in_row |= np.isnan(sources[col])
             sources = sources[~nan_in_row]
-    
-    
-    
+
+
+
             sources = sources[sources['FWHM'] != 0]
             #sources = sources[sources['FWHM'] > 0.6]
             sources = sources[sources['FWHM'] > (1/pixscale)]
-    
+
             #breakpoint()
-    
+
             sources.write(im_path + text_name.replace('.txt', '.sep'), format='csv', overwrite=True)
-    
+
             if (len(sources) < 2) or ( frame_type == 'focus' and (len(sources) < 10 or len(sources) == np.nan or str(len(sources)) =='nan' or xdonut > 3.0 or ydonut > 3.0 or np.isnan(xdonut) or np.isnan(ydonut))):
                 sources['FWHM'] = [np.nan] * len(sources)
                 rfp = np.nan
                 rfr = np.nan
                 rfs = np.nan
                 sources = sources
-    
+
             else:
                 # Get halflight radii
-    
+
                 fwhmcalc = sources['FWHM']
                 fwhmcalc = fwhmcalc[fwhmcalc != 0]
-    
+
                 # sigma clipping iterator to reject large variations
                 templen = len(fwhmcalc)
                 while True:
@@ -659,18 +661,18 @@ else:
                         break
                     else:
                         templen = len(fwhmcalc)
-    
+
                 fwhmcalc = fwhmcalc[fwhmcalc > np.median(fwhmcalc) - 3 * np.std(fwhmcalc)]
                 rfp = round(np.median(fwhmcalc), 3) * sep_to_moffat_factor
     #            rfr = round(np.median(fwhmcalc) * pixscale * nativebin, 3)
     #            rfs = round(np.std(fwhmcalc) * pixscale * nativebin, 3)
                 rfr = round(np.median(fwhmcalc) * pixscale, 3) * sep_to_moffat_factor
                 rfs = round(np.std(fwhmcalc) * pixscale, 3) * sep_to_moffat_factor
-    
-    
+
+
                 #print (sources)
                 #breakpoint()
-    
+
             fwhm_file={}
             fwhm_file['rfp']=str(rfp)
             fwhm_file['rfr']=str(rfr)
@@ -680,10 +682,10 @@ else:
             # dump the settings files into the temp directory
             with open(im_path + text_name.replace('.txt', '.fwhm'), 'w') as f:
                 json.dump(fwhm_file, f)
-    
-    
-    
-    
+
+
+
+
         except:
             traceback.format_exc()
             sources = [0]
@@ -804,8 +806,8 @@ if do_sep and (not frame_type=='focus'):
                 print(traceback.format_exc())
                 breakpoint()
             #crad=radial_profile(np.asarray(temp_array),[centre_of_radialprofile,centre_of_radialprofile])
-            
-            #construct radial profile            
+
+            #construct radial profile
             cut_x,cut_y=temp_array.shape
             cut_x_center=(cut_x/2)-1
             cut_y_center=(cut_y/2)-1
@@ -828,17 +830,17 @@ if do_sep and (not frame_type=='focus'):
                         brightest_pixel_rdist=r_dist
                         brightest_pixel_value=temp_array[q][t]
                     counter=counter+1
-                    
-            
-            
-            
+
+
+
+
             # If the brightest pixel is in the center-ish
             # then attempt a fit
             if abs(brightest_pixel_rdist) < 4:
-                
+
                 try:
                     popt, _ = optimize.curve_fit(gaussian, radprofile[:,0], radprofile[:,1])
-                    
+
                     # Amplitude has to be a substantial fraction of the peak value
                     # and the center of the gaussian needs to be near the center
                     if popt[0] > (0.5 * cvalue) and abs(popt[1]) < 3 :
@@ -848,7 +850,7 @@ if do_sep and (not frame_type=='focus'):
                         # plt.plot(radprofile[:,0], gaussian(radprofile[:,0], *popt),color = 'r')
                         # plt.axvline(x = 0, color = 'g', label = 'axvline - full height')
                         # plt.show()
-                    
+
                         # FWHM is 2.355 * std for a gaussian
                         #fwhmlist.append(popt[2])
                         radials.append([cx,cy,radprofile,temp_array,popt])
@@ -861,15 +863,15 @@ if do_sep and (not frame_type=='focus'):
                         #     bailout=True
                         #     break
                 except:
-                    pass        
+                    pass
 
 
         pickle.dump(radials, open(im_path + text_name.replace('.txt', '.rad'),'wb'))
         json_snippets['radialprofiles']=str(radials)
-        
+
         #breakpoint()
-        
-        
+
+
 
     except:
         pass
@@ -878,7 +880,7 @@ if do_sep and (not frame_type=='focus'):
     try:
         slice_n_dice={}
         image_size_x, image_size_y = hdufocusdata.shape
-    
+
         # row slices
         slicerow=int(image_size_x * 0.1)
         slice_n_dice['row10percent']=hdufocusdata[slicerow,:]
@@ -890,7 +892,7 @@ if do_sep and (not frame_type=='focus'):
         slice_n_dice['row70percent']=hdufocusdata[slicerow*7,:]
         slice_n_dice['row80percent']=hdufocusdata[slicerow*8,:]
         slice_n_dice['row90percent']=hdufocusdata[slicerow*9,:]
-    
+
         # column slices
         slicecolumn=int(image_size_y * 0.1)
         slice_n_dice['column10percent']=hdufocusdata[:,slicecolumn]
@@ -902,22 +904,22 @@ if do_sep and (not frame_type=='focus'):
         slice_n_dice['column70percent']=hdufocusdata[:,slicecolumn*7]
         slice_n_dice['column80percent']=hdufocusdata[:,slicecolumn*8]
         slice_n_dice['column90percent']=hdufocusdata[:,slicecolumn*9]
-    
+
         # diagonals... not so easy as you might think! Easy for square arrays.
         aspectratio=image_size_x/image_size_y
-    
+
         #topleft to bottomright
         topleftdiag=[]
         for i in range(image_size_x):
             topleftdiag.append(hdufocusdata[i,int((image_size_y-i-1)*aspectratio)])
         slice_n_dice['topleftdiag']=topleftdiag
-    
+
         #bottomleft to topright
         bottomleftdiag=[]
         for i in range(image_size_x):
             bottomleftdiag.append(hdufocusdata[i,int(i*aspectratio)])
         slice_n_dice['bottomleftdiag']=bottomleftdiag
-    
+
         # ten percent box area statistics
         boxshape=(int(0.1*image_size_x),int(0.1*image_size_y))
         boxstats=[]
@@ -930,7 +932,7 @@ if do_sep and (not frame_type=='focus'):
                 yboxdown=(y_box+0.1) * image_size_y
                 yboxmid=int((yboxup+yboxdown)/2)
                 statistic_area=extract_array(hdufocusdata, boxshape, (xboxmid,yboxmid))
-    
+
                 # Background clipped
                 imgmin = ( np.nanmin(statistic_area), "Minimum Value of Image Array" )
                 imgmax = ( np.nanmax(statistic_area), "Maximum Value of Image Array" )
@@ -938,24 +940,24 @@ if do_sep and (not frame_type=='focus'):
                 imgmed = ( np.nanmedian(statistic_area), "Median Value of Image Array" )
                 imgstdev = ( np.nanstd(statistic_area), "Median Value of Image Array" )
                 imgmad = ( median_absolute_deviation(statistic_area, ignore_nan=True), "Median Absolute Deviation of Image Array" )
-    
+
                 # Get out raw histogram construction data
                 # Get a flattened array with all nans removed
                 int_array_flattened=statistic_area.astype(int).ravel()
                 unique,counts=np.unique(int_array_flattened[~np.isnan(int_array_flattened)], return_counts=True)
                 m=counts.argmax()
                 imageMode=unique[m]
-    
+
                 imgmode = ( imageMode, "Mode Value of Image Array" )
-    
+
                 # Collect unique values and counts
                 histogramdata=np.column_stack([unique,counts]).astype(np.int32)
                 boxstats.append([x_box,y_box,imgmin,imgmax,imgmean,imgmed,imgstdev,imgmad,imgmode,histogramdata])
-    
+
         slice_n_dice['boxstats']=boxstats
-    
+
         pickle.dump(slice_n_dice, open(im_path + text_name.replace('.txt', '.box'),'wb'))
-        
+
         json_snippets['sliceanddice']=str(slice_n_dice)
     except:
         pass
@@ -963,7 +965,7 @@ if do_sep and (not frame_type=='focus'):
 
 
 #breakpoint()
-    
+
 with open(im_path + text_name.replace('.txt', '.json'), 'w') as f:
     json.dump(json_snippets, f)
 
