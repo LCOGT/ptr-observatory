@@ -243,8 +243,10 @@ if not is_osc:   #This is the monochrome camera processing path.
             try:
                 #sources=np.column_stack((sources['x'],sources['y']))
                 #ref_sources=np.column_stack((ref_sources['x'],ref_sources['y']))
-                sources=np.column_stack((sources[:,0],sources[:,1]))
-                ref_sources=np.column_stack((ref_sources[:,0],ref_sources[:,1]))
+                # sources=np.column_stack((sources[:,0],sources[:,1]))
+                # ref_sources=np.column_stack((ref_sources[:,0],ref_sources[:,1]))
+                sources=np.column_stack((sources[:,1],sources[:,0]))
+                ref_sources=np.column_stack((ref_sources[:,1],ref_sources[:,0]))
                 transf, (source_list, target_list) = aa.find_transform(sources, ref_sources)
                 reprojectedimage= aa.apply_transform(transf, imgdata, storedsStack)[0]
                 storedsStack += reprojectedimage  # + storedsStack   A WER experiment!
@@ -259,12 +261,12 @@ if not is_osc:   #This is the monochrome camera processing path.
                 reprojection_failed = False
             except aa.MaxIterError:
                 reprojection_failed = True
-                print(traceback.format_exc())
-                breakpoint()
+                # print(traceback.format_exc())
+                # breakpoint()
             except Exception:
                 reprojection_failed = True
-                print(traceback.format_exc())
-                breakpoint()
+                # print(traceback.format_exc())
+                # breakpoint()
         else:
             reprojection_failed = True
 
