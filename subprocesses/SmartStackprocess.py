@@ -211,9 +211,9 @@ if not is_osc:   #This is the monochrome camera processing path.
             
             pickle.dump(sources, open(obsid_path+ "smartstacks/" + smartStackFilename.replace('.npy','.sep'),'wb'))
             
-            sources.write(obsid_path
-            + "smartstacks/"
-            + smartStackFilename.replace('.npy','.sep'), format='csv', overwrite=True)
+            # sources.write(obsid_path
+            # + "smartstacks/"
+            # + smartStackFilename.replace('.npy','.sep'), format='csv', overwrite=True)
 
         else:
             reprojection_failed = True
