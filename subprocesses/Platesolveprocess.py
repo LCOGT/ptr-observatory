@@ -104,71 +104,74 @@ useastrometrynet=input_psolve_info[16]
 #Check there are no nans in the image upon receipt
 # This is necessary as nans aren't interpolated in the main thread.
 # Fast next-door-neighbour in-fill algorithm
-num_of_nans=np.count_nonzero(np.isnan(hdufocusdata))
+#num_of_nans=np.count_nonzero(np.isnan(hdufocusdata))
 x_size=hdufocusdata.shape[0]
 y_size=hdufocusdata.shape[1]
 # this is actually faster than np.nanmean
-edgefillvalue=np.divide(np.nansum(hdufocusdata),(x_size*y_size)-num_of_nans)
+#edgefillvalue=np.divide(np.nansum(hdufocusdata),(x_size*y_size)-num_of_nans)
+edgefillvalue=np.nanmean(hdufocusdata)
 #breakpoint()
-while num_of_nans > 0:
-    # List the coordinates that are nan in the array
-    nan_coords=np.argwhere(np.isnan(hdufocusdata))
+# while num_of_nans > 0:
+#     # List the coordinates that are nan in the array
+#     
+nan_coords=np.argwhere(np.isnan(hdufocusdata))
 
-    # For each coordinate try and find a non-nan-neighbour and steal its value
-    for nancoord in nan_coords:
-        x_nancoord=nancoord[0]
-        y_nancoord=nancoord[1]
-        done=False
+# For each coordinate try and find a non-nan-neighbour and steal its value
+for nancoord in nan_coords:
+    x_nancoord=nancoord[0]
+    y_nancoord=nancoord[1]
+    done=False
 
-        # Because edge pixels can tend to form in big clumps
-        # Masking the array just with the mean at the edges
-        # makes this MUCH faster to no visible effect for humans.
-        # Also removes overscan
-        if x_nancoord < 100:
-            hdufocusdata[x_nancoord,y_nancoord]=edgefillvalue
-            done=True
-        elif x_nancoord > (x_size-100):
-            hdufocusdata[x_nancoord,y_nancoord]=edgefillvalue
+    # Because edge pixels can tend to form in big clumps
+    # Masking the array just with the mean at the edges
+    # makes this MUCH faster to no visible effect for humans.
+    # Also removes overscan
+    if x_nancoord < 100:
+        hdufocusdata[x_nancoord,y_nancoord]=edgefillvalue
+        done=True
+    elif x_nancoord > (x_size-100):
+        hdufocusdata[x_nancoord,y_nancoord]=edgefillvalue
 
-            done=True
-        elif y_nancoord < 100:
-            hdufocusdata[x_nancoord,y_nancoord]=edgefillvalue
+        done=True
+    elif y_nancoord < 100:
+        hdufocusdata[x_nancoord,y_nancoord]=edgefillvalue
 
-            done=True
-        elif y_nancoord > (y_size-100):
-            hdufocusdata[x_nancoord,y_nancoord]=edgefillvalue
-            done=True
+        done=True
+    elif y_nancoord > (y_size-100):
+        hdufocusdata[x_nancoord,y_nancoord]=edgefillvalue
+        done=True
 
-        # left
-        if not done:
-            if x_nancoord != 0:
-                value_here=hdufocusdata[x_nancoord-1,y_nancoord]
-                if not np.isnan(value_here):
-                    hdufocusdata[x_nancoord,y_nancoord]=value_here
-                    done=True
-        # right
-        if not done:
-            if x_nancoord != (x_size-1):
-                value_here=hdufocusdata[x_nancoord+1,y_nancoord]
-                if not np.isnan(value_here):
-                    hdufocusdata[x_nancoord,y_nancoord]=value_here
-                    done=True
-        # below
-        if not done:
-            if y_nancoord != 0:
-                value_here=hdufocusdata[x_nancoord,y_nancoord-1]
-                if not np.isnan(value_here):
-                    hdufocusdata[x_nancoord,y_nancoord]=value_here
-                    done=True
-        # above
-        if not done:
-            if y_nancoord != (y_size-1):
-                value_here=hdufocusdata[x_nancoord,y_nancoord+1]
-                if not np.isnan(value_here):
-                    hdufocusdata[x_nancoord,y_nancoord]=value_here
-                    done=True
-
-    num_of_nans=np.count_nonzero(np.isnan(hdufocusdata))
+    # left
+    if not done:
+        if x_nancoord != 0:
+            value_here=hdufocusdata[x_nancoord-1,y_nancoord]
+            if not np.isnan(value_here):
+                hdufocusdata[x_nancoord,y_nancoord]=value_here
+                done=True
+    # right
+    if not done:
+        if x_nancoord != (x_size-1):
+            value_here=hdufocusdata[x_nancoord+1,y_nancoord]
+            if not np.isnan(value_here):
+                hdufocusdata[x_nancoord,y_nancoord]=value_here
+                done=True
+    # below
+    if not done:
+        if y_nancoord != 0:
+            value_here=hdufocusdata[x_nancoord,y_nancoord-1]
+            if not np.isnan(value_here):
+                hdufocusdata[x_nancoord,y_nancoord]=value_here
+                done=True
+    # above
+    if not done:
+        if y_nancoord != (y_size-1):
+            value_here=hdufocusdata[x_nancoord,y_nancoord+1]
+            if not np.isnan(value_here):
+                hdufocusdata[x_nancoord,y_nancoord]=value_here
+                done=True
+                
+hdufocusdata[np.isnan(hdufocusdata)] = edgefillvalue
+    #num_of_nans=np.count_nonzero(np.isnan(hdufocusdata))
 
 
 
@@ -359,7 +362,8 @@ def localMax(a, include_diagonal=True, threshold=-np.inf) :
 
 fx, fy = hdufocusdata.shape
 #hdufocusdata[np.isnan(hdufocusdata)] = imageMode
-hdufocusdata=hdufocusdata-np.nanmedian(hdufocusdata)
+#hdufocusdata=hdufocusdata-np.nanmedian(hdufocusdata)
+hdufocusdata=hdufocusdata-edgefillvalue
 tempstd=np.std(hdufocusdata)
 threshold=2.5* np.std(hdufocusdata[hdufocusdata < (5*tempstd)])
 list_of_local_maxima=localMax(hdufocusdata, threshold=threshold)

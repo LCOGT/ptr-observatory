@@ -59,8 +59,8 @@ def radial_profile(data, center):
 # The SEP code underestimates the moffat FWHM by some factor. This corrects for it.
 sep_to_moffat_factor=1.45
 
-#input_sep_info=pickle.load(sys.stdin.buffer)
-input_sep_info=pickle.load(open('testSEPpickle','rb'))
+input_sep_info=pickle.load(sys.stdin.buffer)
+#input_sep_info=pickle.load(open('testSEPpickle','rb'))
 
 #print ("HERE IS THE INCOMING. ")
 #print (input_sep_info)
@@ -485,6 +485,11 @@ else:
         rfp = abs(np.nanmedian(fwhmlist)) * 4.710
         rfr = rfp * pixscale
         rfs = np.nanstd(fwhmlist) * pixscale
+        if rfr < 1.0 or rfr > 6:
+            rfr= np.nan
+            rfp= np.nan
+            rfs= np.nan
+        
         sepsky = imageMode
         fwhm_file={}
         fwhm_file['rfp']=str(rfp)
@@ -492,6 +497,9 @@ else:
         fwhm_file['rfs']=str(rfs)
         fwhm_file['sky']=str(imageMode)
         fwhm_file['sources']=str(len(fwhmlist))
+        with open(im_path + text_name.replace('.txt', '.fwhm'), 'w') as f:
+            json.dump(fwhm_file, f)
+            
             # dump the settings files into the temp directory
             # with open(im_path + text_name.replace('.txt', '.fwhm'), 'w') as f:
             #     json.dump(fwhm_file, f)
@@ -724,8 +732,8 @@ else:
         fwhm_file['sky']=str(sepsky)
         fwhm_file['sources']=str(len(sources))
         # dump the settings files into the temp directory
-        # with open(im_path + text_name.replace('.txt', '.fwhm'), 'w') as f:
-        #     json.dump(fwhm_file, f)
+        with open(im_path + text_name.replace('.txt', '.fwhm'), 'w') as f:
+            json.dump(fwhm_file, f)
 
         #json_snippets['fwhm']=fwhm_file
         imageinspection_json_snippets['fwhm']=fwhm_file
@@ -776,14 +784,14 @@ for line in hduheader:
         pass
 
 #breakpoint()
-# try:
-#     text = open(
-#         im_path + text_name, "w"
-#     )
-#     text.write(str(hduheader))
-#     text.close()
-# except:
-#     pass
+try:
+    text = open(
+        im_path + text_name, "w"
+    )
+    text.write(str(hduheader))
+    text.close()
+except:
+    pass
 
 imageinspection_json_snippets['header']=headerdict
 starinspection_json_snippets['header']=headerdict

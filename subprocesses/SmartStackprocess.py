@@ -83,66 +83,68 @@ y_size=imgdata.shape[1]
 # this is actually faster than np.nanmean
 edgefillvalue=np.divide(np.nansum(imgdata),(x_size*y_size)-num_of_nans)
 #breakpoint()
-while num_of_nans > 0:
-    # List the coordinates that are nan in the array
-    nan_coords=np.argwhere(np.isnan(imgdata))
+#while num_of_nans > 0:
+# List the coordinates that are nan in the array
+nan_coords=np.argwhere(np.isnan(imgdata))
 
-    # For each coordinate try and find a non-nan-neighbour and steal its value
-    for nancoord in nan_coords:
-        x_nancoord=nancoord[0]
-        y_nancoord=nancoord[1]
-        done=False
+# For each coordinate try and find a non-nan-neighbour and steal its value
+for nancoord in nan_coords:
+    x_nancoord=nancoord[0]
+    y_nancoord=nancoord[1]
+    done=False
 
-        # Because edge pixels can tend to form in big clumps
-        # Masking the array just with the mean at the edges
-        # makes this MUCH faster to no visible effect for humans.
-        # Also removes overscan
-        if x_nancoord < 100:
-            imgdata[x_nancoord,y_nancoord]=edgefillvalue
-            done=True
-        elif x_nancoord > (x_size-100):
-            imgdata[x_nancoord,y_nancoord]=edgefillvalue
+    # Because edge pixels can tend to form in big clumps
+    # Masking the array just with the mean at the edges
+    # makes this MUCH faster to no visible effect for humans.
+    # Also removes overscan
+    if x_nancoord < 100:
+        imgdata[x_nancoord,y_nancoord]=edgefillvalue
+        done=True
+    elif x_nancoord > (x_size-100):
+        imgdata[x_nancoord,y_nancoord]=edgefillvalue
 
-            done=True
-        elif y_nancoord < 100:
-            imgdata[x_nancoord,y_nancoord]=edgefillvalue
+        done=True
+    elif y_nancoord < 100:
+        imgdata[x_nancoord,y_nancoord]=edgefillvalue
 
-            done=True
-        elif y_nancoord > (y_size-100):
-            imgdata[x_nancoord,y_nancoord]=edgefillvalue
-            done=True
+        done=True
+    elif y_nancoord > (y_size-100):
+        imgdata[x_nancoord,y_nancoord]=edgefillvalue
+        done=True
 
-        # left
-        if not done:
-            if x_nancoord != 0:
-                value_here=imgdata[x_nancoord-1,y_nancoord]
-                if not np.isnan(value_here):
-                    imgdata[x_nancoord,y_nancoord]=value_here
-                    done=True
-        # right
-        if not done:
-            if x_nancoord != (x_size-1):
-                value_here=imgdata[x_nancoord+1,y_nancoord]
-                if not np.isnan(value_here):
-                    imgdata[x_nancoord,y_nancoord]=value_here
-                    done=True
-        # below
-        if not done:
-            if y_nancoord != 0:
-                value_here=imgdata[x_nancoord,y_nancoord-1]
-                if not np.isnan(value_here):
-                    imgdata[x_nancoord,y_nancoord]=value_here
-                    done=True
-        # above
-        if not done:
-            if y_nancoord != (y_size-1):
-                value_here=imgdata[x_nancoord,y_nancoord+1]
-                if not np.isnan(value_here):
-                    imgdata[x_nancoord,y_nancoord]=value_here
-                    done=True
+    # left
+    if not done:
+        if x_nancoord != 0:
+            value_here=imgdata[x_nancoord-1,y_nancoord]
+            if not np.isnan(value_here):
+                imgdata[x_nancoord,y_nancoord]=value_here
+                done=True
+    # right
+    if not done:
+        if x_nancoord != (x_size-1):
+            value_here=imgdata[x_nancoord+1,y_nancoord]
+            if not np.isnan(value_here):
+                imgdata[x_nancoord,y_nancoord]=value_here
+                done=True
+    # below
+    if not done:
+        if y_nancoord != 0:
+            value_here=imgdata[x_nancoord,y_nancoord-1]
+            if not np.isnan(value_here):
+                imgdata[x_nancoord,y_nancoord]=value_here
+                done=True
+    # above
+    if not done:
+        if y_nancoord != (y_size-1):
+            value_here=imgdata[x_nancoord,y_nancoord+1]
+            if not np.isnan(value_here):
+                imgdata[x_nancoord,y_nancoord]=value_here
+                done=True
 
-    num_of_nans=np.count_nonzero(np.isnan(imgdata))
-
+    #num_of_nans=np.count_nonzero(np.isnan(imgdata))
+    
+# Mop up any remaining nans
+imgdata[np.isnan(imgdata)] =edgefillvalue
 
 #Make sure there is a smartstack directory!
 if not os.path.exists(obsid_path+ "smartstacks/"):
