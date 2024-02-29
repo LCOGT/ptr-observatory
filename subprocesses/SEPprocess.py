@@ -885,7 +885,9 @@ if do_sep and (not frame_type=='focus'):
         starinspection_json_snippets['radialprofiles']=re.sub('\s+',' ',str(radials))
         #print (radials)
         #breakpoint()
-
+        
+        imageinspection_json_snippets['photometry']=re.sub('\s+',' ',str(sources))
+        starinspection_json_snippets['photometry']=re.sub('\s+',' ',str(sources))
 
 
     except:
