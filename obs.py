@@ -2406,10 +2406,14 @@ class Observatory:
                 #plog("@ Pickle point:  ", zoom_factor)
                 #if True:
                     #
-                pickle.dump([hdusmalldata, smartstackid, paths, pier_side, is_osc, osc_bayer, osc_background_cut,osc_brightness_enhance, osc_contrast_enhance,\
-                      osc_colour_enhance, osc_saturation_enhance, osc_sharpness_enhance, transpose_jpeg, flipx_jpeg, flipy_jpeg, rotate180_jpeg,rotate90_jpeg, \
-                          rotate270_jpeg, crop_preview, yb, yt, xl, xr, squash_on_x_axis, zoom_factor], jpeg_subprocess.stdin)
-
+                try:
+                    pickle.dump([hdusmalldata, smartstackid, paths, pier_side, is_osc, osc_bayer, osc_background_cut,osc_brightness_enhance, osc_contrast_enhance,\
+                          osc_colour_enhance, osc_saturation_enhance, osc_sharpness_enhance, transpose_jpeg, flipx_jpeg, flipy_jpeg, rotate180_jpeg,rotate90_jpeg, \
+                              rotate270_jpeg, crop_preview, yb, yt, xl, xr, squash_on_x_axis, zoom_factor], jpeg_subprocess.stdin)
+                except:
+                    plog ("Problem in the jpeg pickle dump")
+                    plog(traceback.format_exc())
+                    
 
 
 
@@ -2496,10 +2500,12 @@ class Observatory:
 
 
                 #breakpoint()
-
-                pickle.dump([hdufocusdata, pixscale, readnoise, avg_foc, focus_image, im_path, text_name, hduheader, cal_path, cal_name, frame_type, focus_position, g_dev['events'],ephem.now(),0.0,0.0, is_osc,interpolate_for_focus,bin_for_focus,focus_bin_value,interpolate_for_sep,bin_for_sep,sep_bin_value,focus_jpeg_size,saturate,minimum_realistic_seeing,nativebin,do_sep
-                                                           ], sep_subprocess.stdin)
-
+                try:
+                    pickle.dump([hdufocusdata, pixscale, readnoise, avg_foc, focus_image, im_path, text_name, hduheader, cal_path, cal_name, frame_type, focus_position, g_dev['events'],ephem.now(),0.0,0.0, is_osc,interpolate_for_focus,bin_for_focus,focus_bin_value,interpolate_for_sep,bin_for_sep,sep_bin_value,focus_jpeg_size,saturate,minimum_realistic_seeing,nativebin,do_sep
+                                                               ], sep_subprocess.stdin)
+                except:
+                    plog ("Problem in the SEP pickle dump")
+                    plog(traceback.format_exc())
 
                 # Essentially wait until the subprocess is complete
                 sep_subprocess.communicate()
@@ -2709,9 +2715,13 @@ class Observatory:
                         #bin_for_platesolve= self.config["camera"][g_dev['cam'].name]["settings"]['bin_for_platesolve']
                         #platesolve_bin_factor=self.config["camera"][g_dev['cam'].name]["settings"]['platesolve_bin_value']
 
-                        pickle.dump([hdufocusdata, hduheader, self.local_calibration_path, cal_name, frame_type, time_platesolve_requested,
-                         pixscale, pointing_ra, pointing_dec, platesolve_crop, False, 1, g_dev['cam'].config["camera"][g_dev['cam'].name]["settings"]["saturate"], g_dev['cam'].camera_known_readnoise, self.config['minimum_realistic_seeing'], is_osc, useastronometrynet], platesolve_subprocess.stdin)
-
+                        try:
+                            pickle.dump([hdufocusdata, hduheader, self.local_calibration_path, cal_name, frame_type, time_platesolve_requested,
+                             pixscale, pointing_ra, pointing_dec, platesolve_crop, False, 1, g_dev['cam'].config["camera"][g_dev['cam'].name]["settings"]["saturate"], g_dev['cam'].camera_known_readnoise, self.config['minimum_realistic_seeing'], is_osc, useastronometrynet], platesolve_subprocess.stdin)
+                        except:
+                            plog ("Problem in the platesolve pickle dump")
+                            plog(traceback.format_exc())
+                            
                         # yet another pickle debugger.
                         if True:
                             pickle.dump([hdufocusdata, hduheader, self.local_calibration_path, cal_name, frame_type, time_platesolve_requested,
@@ -3962,8 +3972,11 @@ class Observatory:
 
                     smartstack_subprocess=subprocess.Popen(['python','subprocesses/SmartStackprocess.py'],stdin=subprocess.PIPE,stdout=subprocess.PIPE,bufsize=0)
 
-                    pickle.dump(picklepayload, smartstack_subprocess.stdin)
-
+                    try:
+                        pickle.dump(picklepayload, smartstack_subprocess.stdin)
+                    except:
+                        plog ("Problem in the smartstack pickle dump")
+                        plog(traceback.format_exc())
                     # Another pickle debugger
                     # if True:
                     #     pickle.dump(picklepayload, open('subprocesses/testsmartstackpickle','wb'))
