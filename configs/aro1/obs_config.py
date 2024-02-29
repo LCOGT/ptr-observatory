@@ -152,12 +152,12 @@ site_config = {
      'enclosure_check_period': 3,    # How many minutes between enclosure checks
 
      # Turn on and off various automated calibrations at different times.
-     'auto_eve_bias_dark': True,
+     'auto_eve_bias_dark': False,
      'auto_eve_sky_flat': True,
      'time_to_wait_after_roof_opens_to_take_flats': 5,   #Just imposing a minimum in case of a restart.
      'auto_midnight_moonless_bias_dark': True,
      'auto_morn_sky_flat': True,
-     'auto_morn_bias_dark': True,
+     'auto_morn_bias_dark': False,
 
      # FOCUS OPTIONS
      'periodic_focus_time': 12, # This is a time, in hours, over which to bypass automated focussing (e.g. at the start of a project it will not refocus if a new project starts X hours after the last focus)

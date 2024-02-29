@@ -769,7 +769,7 @@ except:
 imageinspection_json_snippets['header']=headerdict
 starinspection_json_snippets['header']=headerdict
 #json_snippets['header']=headerdict
-
+#breakpoint()
 # Create radial profiles for UI
 # Determine radial profiles of top 20 star-ish sources
 if do_sep and (not frame_type=='focus'):
@@ -805,15 +805,19 @@ if do_sep and (not frame_type=='focus'):
         # Round up to nearest odd number to make a symmetrical array
         radius_of_radialprofile=(radius_of_radialprofile // 2 *2 +1)
         centre_of_radialprofile=int((radius_of_radialprofile /2)+1)
-        for i in range(min(len(pointvalues),200)):
-            cx= (pointvalues[i][0])
-            cy= (pointvalues[i][1])
-            cvalue=hdufocusdata[int(cx)][int(cy)]
+        # for i in range(min(len(pointvalues),200)):
+        #     cx= (pointvalues[i][0])
+        #     cy= (pointvalues[i][1])
+        #     cvalue=hdufocusdata[int(cx)][int(cy)]
+        for i in range(min(len(sources),200)):
+            cx= (sources[i]['y'])
+            cy= (sources[i]['x'])
+            cvalue=(sources[i]['peak'])
             try:
                 temp_array=extract_array(hdufocusdata, (radius_of_radialprofile,radius_of_radialprofile), (cx,cy))
             except:
                 print(traceback.format_exc())
-                breakpoint()
+                #breakpoint()
             #crad=radial_profile(np.asarray(temp_array),[centre_of_radialprofile,centre_of_radialprofile])
 
             #construct radial profile
@@ -879,7 +883,7 @@ if do_sep and (not frame_type=='focus'):
         #json_snippets['radialprofiles']=str(radials)
         #imageinspection_json_snippets['header']=headerdict
         starinspection_json_snippets['radialprofiles']=re.sub('\s+',' ',str(radials))
-
+        #print (radials)
         #breakpoint()
 
 
@@ -981,7 +985,7 @@ if do_sep and (not frame_type=='focus'):
 
 with open(im_path + 'image_' + text_name.replace('.txt', '.json'), 'w') as f:
     json.dump(imageinspection_json_snippets, f)
-    
+
 with open(im_path + 'star_' + text_name.replace('.txt', '.json'), 'w') as f:
     json.dump(starinspection_json_snippets, f)
 
