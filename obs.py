@@ -1239,7 +1239,7 @@ class Observatory:
                     while True:
                         try:
                             g_dev["cam"].exposure_busy
-                            plog ("theskyx camera check")
+                            #plog ("theskyx camera check")
                             break
                         except:
                             plog ("pausing while camera reboots")

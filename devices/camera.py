@@ -551,8 +551,11 @@ class Camera:
             self._stop_expose()
             tempcamera.Frame=2
             tempcamera.ExposureTime=0
+            tempcamera.ImageReduction=0
             tempcamera.TakeImage()
             imageTempOpen=fits.open(tempcamera.LastImageFileName, uint=False)[0].data.astype("float32")
+            
+            
             del tempcamera
 
             try:

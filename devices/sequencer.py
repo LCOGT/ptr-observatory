@@ -5173,6 +5173,9 @@ class Sequencer:
         self.eve_sky_flat_latch = True
         self.morn_sky_flat_latch = True
 
+        # morn=True
+        # skip_moon_check=True 
+        
         if not (g_dev['obs'].enc_status['shutter_status'] == 'Open') and not (g_dev['obs'].enc_status['shutter_status'] == 'Sim. Open'):
             plog ("NOT DOING FLATS -- THE ROOF IS SHUT!!")
             g_dev["obs"].send_to_user("A sky flat script request was rejected as the roof is shut.")
