@@ -536,6 +536,10 @@ else:
                     else:
                         reprojection_failed = True
 
+        newhdugreen[np.isnan(newhdugreen)] =edgefillvalue
+        newhdured[np.isnan(newhdured)] =edgefillvalue
+        newhdublue[np.isnan(newhdublue)] =edgefillvalue
+
         # NOW THAT WE HAVE THE INDIVIDUAL IMAGES THEN PUT THEM TOGETHER
         xshape = newhdugreen.shape[0]
         yshape = newhdugreen.shape[1]
