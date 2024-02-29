@@ -3061,7 +3061,7 @@ class Camera:
                     # Make sure any dither or return nudge has finished before platesolution
                     try:
 
-                        timetakenquickdark=time.time()
+                        # timetakenquickdark=time.time()
                         # If not a smartstack use a scaled masterdark
                         if smartstackid == 'no':
                             # Initially debias the image
@@ -3078,8 +3078,8 @@ class Camera:
                             plog ("DUNNO WHAT HAPPENED!")
                             outputimg = outputimg - g_dev['cam'].biasFiles[str(1)]
                             outputimg = outputimg - (g_dev['cam'].darkFiles[str(1)] * exposure_time)
-                        plog ("time taken quickdark")
-                        plog (str(time.time() - timetakenquickdark))
+                        # plog ("time taken quickdark")
+                        # plog (str(time.time() - timetakenquickdark))
                     except Exception as e:
                         plog("debias/darking light frame failed: ", e)
 
@@ -3099,58 +3099,58 @@ class Camera:
                     except Exception as e:
                         plog("applying bad pixel mask to light frame failed: ", e)
 
-                    # Fast next-door-neighbour in-fill algorithm
-                    bpmtime=time.time()
-                    num_of_nans=np.count_nonzero(np.isnan(outputimg))
-                    while num_of_nans > 0:
-                        # List the coordinates that are nan in the array
-                        nan_coords=np.argwhere(np.isnan(outputimg))
-                        x_size=outputimg.shape[0]
-                        y_size=outputimg.shape[1]
-                        # For each coordinate try and find a non-nan-neighbour and steal its value
-                        try:
-                            for nancoord in nan_coords:
-                                x_nancoord=nancoord[0]
-                                y_nancoord=nancoord[1]
-                                # left
-                                done=False
-                                #NB NB WER: Here I would do a median-8, except at edges.
-                                #That will first-order also deal with Telegraph Noise.
-                                #Second the substitue pixel will be less correlated with its neighbors.
-                                #NB NB MTF: That is too slow. Here we are just making a reduced image
-                                # As quick as possible to extract what we need -- FWHM.
-                                # This is happening in-line rather than a subprocess, so the faster the better.
-                                if x_nancoord != 0:
-                                    value_here=outputimg[x_nancoord-1,y_nancoord]
-                                    if not np.isnan(value_here):
-                                        outputimg[x_nancoord,y_nancoord]=value_here
-                                        done=True
-                                # right
-                                if not done:
-                                    if x_nancoord != (x_size-1):
-                                        value_here=outputimg[x_nancoord+1,y_nancoord]
-                                        if not np.isnan(value_here):
-                                            outputimg[x_nancoord,y_nancoord]=value_here
-                                            done=True
-                                # below
-                                if not done:
-                                    if y_nancoord != 0:
-                                        value_here=outputimg[x_nancoord,y_nancoord-1]
-                                        if not np.isnan(value_here):
-                                            outputimg[x_nancoord,y_nancoord]=value_here
-                                            done=True
-                                # above
-                                if not done:
-                                    if y_nancoord != (y_size-1):
-                                        value_here=outputimg[x_nancoord,y_nancoord+1]
-                                        if not np.isnan(value_here):
-                                            outputimg[x_nancoord,y_nancoord]=value_here
-                                            done=True
-                        except:
-                            plog(traceback.format_exc())
-                            breakpoint()
-                        num_of_nans=np.count_nonzero(np.isnan(outputimg))
-                    plog ("bad pixel time monitor " + str(time.time()-bpmtime))
+                    # # Fast next-door-neighbour in-fill algorithm
+                    # bpmtime=time.time()
+                    # num_of_nans=np.count_nonzero(np.isnan(outputimg))
+                    # while num_of_nans > 0:
+                    #     # List the coordinates that are nan in the array
+                    #     nan_coords=np.argwhere(np.isnan(outputimg))
+                    #     x_size=outputimg.shape[0]
+                    #     y_size=outputimg.shape[1]
+                    #     # For each coordinate try and find a non-nan-neighbour and steal its value
+                    #     try:
+                    #         for nancoord in nan_coords:
+                    #             x_nancoord=nancoord[0]
+                    #             y_nancoord=nancoord[1]
+                    #             # left
+                    #             done=False
+                    #             #NB NB WER: Here I would do a median-8, except at edges.
+                    #             #That will first-order also deal with Telegraph Noise.
+                    #             #Second the substitue pixel will be less correlated with its neighbors.
+                    #             #NB NB MTF: That is too slow. Here we are just making a reduced image
+                    #             # As quick as possible to extract what we need -- FWHM.
+                    #             # This is happening in-line rather than a subprocess, so the faster the better.
+                    #             if x_nancoord != 0:
+                    #                 value_here=outputimg[x_nancoord-1,y_nancoord]
+                    #                 if not np.isnan(value_here):
+                    #                     outputimg[x_nancoord,y_nancoord]=value_here
+                    #                     done=True
+                    #             # right
+                    #             if not done:
+                    #                 if x_nancoord != (x_size-1):
+                    #                     value_here=outputimg[x_nancoord+1,y_nancoord]
+                    #                     if not np.isnan(value_here):
+                    #                         outputimg[x_nancoord,y_nancoord]=value_here
+                    #                         done=True
+                    #             # below
+                    #             if not done:
+                    #                 if y_nancoord != 0:
+                    #                     value_here=outputimg[x_nancoord,y_nancoord-1]
+                    #                     if not np.isnan(value_here):
+                    #                         outputimg[x_nancoord,y_nancoord]=value_here
+                    #                         done=True
+                    #             # above
+                    #             if not done:
+                    #                 if y_nancoord != (y_size-1):
+                    #                     value_here=outputimg[x_nancoord,y_nancoord+1]
+                    #                     if not np.isnan(value_here):
+                    #                         outputimg[x_nancoord,y_nancoord]=value_here
+                    #                         done=True
+                    #     except:
+                    #         plog(traceback.format_exc())
+                    #         breakpoint()
+                    #     num_of_nans=np.count_nonzero(np.isnan(outputimg))
+                    # plog ("bad pixel time monitor " + str(time.time()-bpmtime))
 
 
 

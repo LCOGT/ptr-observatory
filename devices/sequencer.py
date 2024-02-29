@@ -4,7 +4,7 @@ from datetime import timedelta
 import copy
 import json
 from global_yard import g_dev
-from astropy.coordinates import SkyCoord, AltAz, get_moon, Angle
+from astropy.coordinates import SkyCoord, AltAz, get_moon, Angle, get_body
 from astropy import units as u
 from astropy.time import Time
 from astropy.io import fits
@@ -703,7 +703,8 @@ class Sequencer:
                             temppointingaltaz=temppointing.transform_to(AltAz(location=g_dev['mnt'].site_coordinates, obstime=Time.now()))
                             alt = temppointingaltaz.alt.degree
                             # Check the moon isn't right in front of the project target
-                            moon_coords=get_moon(Time.now())
+                            #moon_coords=get_moon(Time.now())
+                            moon_coords=get_body("moon", time=Time.now())
                             moon_dist = moon_coords.separation(temppointing)
                             if moon_dist.degree <  self.config['closest_distance_to_the_moon']:
                                 g_dev['obs'].send_to_user("Not running project as it is too close to the moon: " + str(moon_dist.degree) + " degrees.")
@@ -816,7 +817,8 @@ class Sequencer:
                             if 'Closed' in enc_status['shutter_status']  or 'closed' in enc_status['shutter_status']:
                                 # Check the temperature is in range
                                 currentaltazframe = AltAz(location=g_dev['mnt'].site_coordinates, obstime=Time.now())
-                                moondata=get_moon(Time.now()).transform_to(currentaltazframe)
+                                #moondata=get_moon(Time.now()).transform_to(currentaltazframe)
+                                moondata=get_body("moon", time=Time.now()).transform_to(currentaltazframe)
                                 if (moondata.alt.deg < -15):
                                     # If the moon is way below the horizon
                                     if g_dev['obs'].camera_sufficiently_cooled_for_calibrations:
@@ -5214,7 +5216,9 @@ class Sequencer:
         if (skip_moon_check==False):
             # Moon current alt/az
             currentaltazframe = AltAz(location=g_dev['mnt'].site_coordinates, obstime=Time.now())
-            moondata=get_moon(Time.now()).transform_to(currentaltazframe)
+            #moondata=get_moon(Time.now()).transform_to(currentaltazframe)
+            moondata=get_body("moon", time=Time.now()).transform_to(currentaltazframe)
+            
             # Flatspot position.
             flatspotalt, flatspotaz = g_dev['mnt'].flat_spot_now()
             temp_separation=((ephem.separation( (flatspotaz,flatspotalt), (moondata.az.deg,moondata.alt.deg))))
