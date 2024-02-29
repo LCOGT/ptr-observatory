@@ -211,54 +211,14 @@ hdufocusdata[np.isnan(hdufocusdata)] =edgefillvalue
 print ("De-nanning image initially: " +str(time.time()-googtime))
 
 
-# These broad image statistics also take a few seconds on a QHY600 image
-# But are not needed for a focus image. 
-if not frame_type == 'focus':
-    googtime=time.time()
-    hduheader["IMGMIN"] = ( np.min(hdufocusdata), "Minimum Value of Image Array" )
-    hduheader["IMGMAX"] = ( np.max(hdufocusdata), "Maximum Value of Image Array" )
-    hduheader["IMGMEAN"] = ( np.mean(hdufocusdata), "Mean Value of Image Array" )
-    hduheader["IMGMODE"] = ( imageMode, "Mode Value of Image Array" )
-    hduheader["IMGMED"] = ( np.median(hdufocusdata), "Median Value of Image Array" )
 
-
-    hduheader["IMGSTDEV"] = ( np.std(hdufocusdata), "Median Value of Image Array" )
-    hduheader["IMGMAD"] = ( median_absolute_deviation(hdufocusdata), "Median Absolute Deviation of Image Array" )
-    print ("Basic Image Stats: " +str(time.time()-googtime))
-    
 # no zero values in readnoise.
 if float(readnoise) < 0.1:
     readnoise = 0.1
 
 
 
-# We don't need to calculate the histogram 
-# If we aren't keeping the image.
-if frame_type=='expose':
 
-    googtime=time.time()   
-
-    # Collect unique values and counts    
-    histogramdata=np.column_stack([unique,counts]).astype(np.int32)
-
-    #Do some fiddle faddling to figure out the value that goes to zero less
-    zeroValueArray=histogramdata[histogramdata[:,0] < imageMode]
-    breaker=1
-    counter=0
-    while (breaker != 0):
-        counter=counter+1
-        if not (imageMode-counter) in zeroValueArray[:,0]:
-
-            zeroValue=(imageMode-counter)
-            breaker =0
-    hdufocusdata[hdufocusdata < zeroValue] = imageMode
-    histogramdata=histogramdata[histogramdata[:,0] > zeroValue]
-    
-    
-    print ("Histogram: " + str(time.time()-googtime)) 
-
-    imageinspection_json_snippets['histogram']= re.sub('\s+',' ',str(histogramdata))
-    
 
 if not do_sep or (float(hduheader["EXPTIME"]) < 1.0):
     rfp = np.nan
@@ -332,10 +292,14 @@ else:
         
         fx, fy = hdufocusdata.shape        #
         hdufocusdata=hdufocusdata-imageMode
-        if frame_type == 'focus':       # This hasn't been calculated yet for focus, but already has for a normal image.
-            tempstd=np.std(hdufocusdata)
-        else:
-            tempstd=float(hduheader["IMGSTDEV"])
+        
+        
+        #if frame_type == 'focus':       # This hasn't been calculated yet for focus, but already has for a normal image.
+        tempstd=np.std(hdufocusdata)
+        #hduheader["IMGSTDEV"]=tempstd
+        hduheader["IMGSTDEV"] = ( tempstd, "Median Value of Image Array" )
+        # else:
+        #     tempstd=float(hduheader["IMGSTDEV"])
         threshold=max(3* np.std(hdufocusdata[hdufocusdata < (5*tempstd)]),(200*pixscale)) # Don't bother with stars with peaks smaller than 100 counts per arcsecond
         googtime=time.time()
         list_of_local_maxima=localMax(hdufocusdata, threshold=threshold)
@@ -499,7 +463,10 @@ else:
         fwhm_file['sources']=str(len(fwhmlist))
         with open(im_path + text_name.replace('.txt', '.fwhm'), 'w') as f:
             json.dump(fwhm_file, f)
-            
+        
+        
+        #sources.write(im_path + text_name.replace('.txt', '.sep'), format='csv', overwrite=True)
+        
             # dump the settings files into the temp directory
             # with open(im_path + text_name.replace('.txt', '.fwhm'), 'w') as f:
             #     json.dump(fwhm_file, f)
@@ -740,6 +707,60 @@ else:
         starinspection_json_snippets['fwhm']=fwhm_file
 # Value-added header items for the UI
 #breakpoint()
+
+# Save out the "sep" file
+#breakpoint()
+
+#with 
+pickle.dump(photometry, open(im_path + text_name.replace('.txt', '.sep'),'wb'))
+print (im_path + text_name.replace('.txt', '.sep'))
+
+
+# These broad image statistics also take a few seconds on a QHY600 image
+# But are not needed for a focus image. 
+if not frame_type == 'focus':
+    googtime=time.time()
+    hduheader["IMGMIN"] = ( np.min(hdufocusdata), "Minimum Value of Image Array" )
+    hduheader["IMGMAX"] = ( np.max(hdufocusdata), "Maximum Value of Image Array" )
+    hduheader["IMGMEAN"] = ( np.mean(hdufocusdata), "Mean Value of Image Array" )
+    hduheader["IMGMODE"] = ( imageMode, "Mode Value of Image Array" )
+    hduheader["IMGMED"] = ( np.median(hdufocusdata), "Median Value of Image Array" )
+
+
+    
+    hduheader["IMGMAD"] = ( median_absolute_deviation(hdufocusdata), "Median Absolute Deviation of Image Array" )
+    print ("Basic Image Stats: " +str(time.time()-googtime))
+    
+
+# We don't need to calculate the histogram 
+# If we aren't keeping the image.
+if frame_type=='expose':
+
+    googtime=time.time()   
+
+    # Collect unique values and counts    
+    histogramdata=np.column_stack([unique,counts]).astype(np.int32)
+
+    #Do some fiddle faddling to figure out the value that goes to zero less
+    zeroValueArray=histogramdata[histogramdata[:,0] < imageMode]
+    breaker=1
+    counter=0
+    while (breaker != 0):
+        counter=counter+1
+        if not (imageMode-counter) in zeroValueArray[:,0]:
+
+            zeroValue=(imageMode-counter)
+            breaker =0
+    hdufocusdata[hdufocusdata < zeroValue] = imageMode
+    histogramdata=histogramdata[histogramdata[:,0] > zeroValue]
+    
+    
+    print ("Histogram: " + str(time.time()-googtime)) 
+
+    imageinspection_json_snippets['histogram']= re.sub('\s+',' ',str(histogramdata))
+    
+    
+    
 
 try:
     #hduheader["SEPSKY"] = str(sepsky)

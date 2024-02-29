@@ -17,6 +17,7 @@ from auto_stretch.stretch import Stretch
 from PIL import Image, ImageEnhance
 import subprocess
 from math import sqrt
+import traceback
 input_sstk_info=pickle.load(sys.stdin.buffer)
 #input_sstk_info=pickle.load(open('testsmartstackpickle','rb'))
 
@@ -87,6 +88,8 @@ edgefillvalue=np.divide(np.nansum(imgdata),(x_size*y_size)-num_of_nans)
 # List the coordinates that are nan in the array
 nan_coords=np.argwhere(np.isnan(imgdata))
 
+
+
 # For each coordinate try and find a non-nan-neighbour and steal its value
 for nancoord in nan_coords:
     x_nancoord=nancoord[0]
@@ -142,7 +145,7 @@ for nancoord in nan_coords:
                 done=True
 
     #num_of_nans=np.count_nonzero(np.isnan(imgdata))
-    
+#breakpoint() 
 # Mop up any remaining nans
 imgdata[np.isnan(imgdata)] =edgefillvalue
 
@@ -174,13 +177,18 @@ smartStackFilename = (
 
 # For OSC, we need to smartstack individual frames.
 if not is_osc:   #This is the monochrome camera processing path.
-
+    #breakpoint()
     while not os.path.exists(paths["im_path"] + paths["text_name00"].replace('.txt','.sep')):
         time.sleep(1)
 
     #plog("Now to figure out how to get sep into a csv.")
     sstack_process_timer = time.time()
-    sources = Table.read(paths["im_path"] + paths["text_name00"].replace('.txt', '.sep'), format='csv')
+    #sources = Table.read(paths["im_path"] + paths["text_name00"].replace('.txt', '.sep'), format='csv')
+    
+    sources = pickle.load(open(paths["im_path"] + paths["text_name00"].replace('.txt', '.sep'),'rb'))
+    sources=np.asarray(sources)
+    
+    #breakpoint()
 
     # IF SMARSTACK NPY FILE EXISTS ADD next image to the stack, OTHERWISE THIS IMAGE IS THE START OF A SMARTSTACK
     reprojection_failed = False
@@ -195,6 +203,12 @@ if not is_osc:   #This is the monochrome camera processing path.
                 + smartStackFilename,
                 imgdata ,
             )
+            # sources.write(obsid_path
+            # + "smartstacks/"
+            # + smartStackFilename.replace('.npy','.sep'), format='csv', overwrite=True)
+            
+            pickle.dump(sources, open(obsid_path+ "smartstacks/" + smartStackFilename.replace('.npy','.sep'),'wb'))
+            
             sources.write(obsid_path
             + "smartstacks/"
             + smartStackFilename.replace('.npy','.sep'), format='csv', overwrite=True)
@@ -208,9 +222,13 @@ if not is_osc:   #This is the monochrome camera processing path.
             obsid_path + "smartstacks/" + smartStackFilename
         )
         # Collect stored SEP for first smartstack image
-        ref_sources = Table.read(obsid_path
+        # ref_sources = Table.read(obsid_path
+        # + "smartstacks/"
+        # + smartStackFilename.replace('.npy','.sep'), format='csv')
+        ref_sources=pickle.load(open(obsid_path
         + "smartstacks/"
-        + smartStackFilename.replace('.npy','.sep'), format='csv')
+        + smartStackFilename.replace('.npy','.sep'),'rb'))
+        ref_sources=np.asarray(ref_sources)
 
         #This minarea is totally fudgetastically emprical comparing a 0.138 pixelscale QHY Mono
         # to a 1.25/2.15 QHY OSC. Seems to work, so thats good enough.
@@ -221,8 +239,10 @@ if not is_osc:   #This is the monochrome camera processing path.
 
         if len(sources) > 5:
             try:
-                sources=np.column_stack((sources['x'],sources['y']))
-                ref_sources=np.column_stack((ref_sources['x'],ref_sources['y']))
+                #sources=np.column_stack((sources['x'],sources['y']))
+                #ref_sources=np.column_stack((ref_sources['x'],ref_sources['y']))
+                sources=np.column_stack((sources[:,0],sources[:,1]))
+                ref_sources=np.column_stack((ref_sources[:,0],ref_sources[:,1]))
                 transf, (source_list, target_list) = aa.find_transform(sources, ref_sources)
                 reprojectedimage= aa.apply_transform(transf, imgdata, storedsStack)[0]
                 storedsStack += reprojectedimage  # + storedsStack   A WER experiment!
@@ -237,8 +257,12 @@ if not is_osc:   #This is the monochrome camera processing path.
                 reprojection_failed = False
             except aa.MaxIterError:
                 reprojection_failed = True
+                print(traceback.format_exc())
+                breakpoint()
             except Exception:
                 reprojection_failed = True
+                print(traceback.format_exc())
+                breakpoint()
         else:
             reprojection_failed = True
 

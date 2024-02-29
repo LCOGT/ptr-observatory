@@ -3965,7 +3965,7 @@ class Observatory:
 
 
                      # Another pickle debugger
-                    if False:
+                    if True:
                         pickle.dump(picklepayload, open('subprocesses/testsmartstackpickle','wb'))
 
                     #breakpoint()
