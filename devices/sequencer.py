@@ -1,6 +1,7 @@
 import time
 import datetime
-from datetime import timedelta
+from datetime import timedelta,timezone
+from dateutil import tz
 import copy
 import json
 from global_yard import g_dev
@@ -5175,8 +5176,24 @@ class Sequencer:
         self.eve_sky_flat_latch = True
         self.morn_sky_flat_latch = True
 
-        # morn=True
-        # skip_moon_check=True 
+        #morn=True
+        #skip_moon_check=True 
+        #breakpoint()
+        
+        #breakpoint()
+        to_zone = tz.gettz(g_dev['evnt'].wema_config['TZ_database_name'])
+        hourtime=datetime.datetime.now().astimezone(to_zone).hour
+        
+        if hourtime > 0 and hourtime < 12:
+            morn = True
+        else:
+            morn = False
+    
+        
+        
+        
+        if not self.moon_checks_on:
+            skip_moon_check=True 
         
         if not (g_dev['obs'].enc_status['shutter_status'] == 'Open') and not (g_dev['obs'].enc_status['shutter_status'] == 'Sim. Open'):
             plog ("NOT DOING FLATS -- THE ROOF IS SHUT!!")
