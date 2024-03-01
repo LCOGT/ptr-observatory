@@ -398,7 +398,7 @@ site_config = {
             "name": "SBIG 8-position wheel" ,  #"LCO filter wheel FW50_001d",
             'service_date': '20180101',
             
-            "filter_settle_time": 3, #how long to wait for the filter to settle after a filter change(seconds)
+            "filter_settle_time": 6, #how long to wait for the filter to settle after a filter change(seconds)
             'override_automatic_filter_throughputs': False, # This ignores the automatically estimated filter gains and starts with the values from the config file
             
             "driver":   "CCDSoft2XAdaptor.ccdsoft5Camera",   #"LCO.dual",  #  'ASCOM.FLI.FilterWheel',
@@ -625,7 +625,7 @@ site_config = {
                 'do_cosmics' : False,
                 'number_of_bias_to_collect' : 64,
                 'number_of_dark_to_collect' : 64,
-                'number_of_flat_to_collect' : 4,
+                'number_of_flat_to_collect' : 3,
                 'number_of_bias_to_store' : 64,
                 'number_of_dark_to_store' : 64,
                 'number_of_flat_to_store' : 64,
