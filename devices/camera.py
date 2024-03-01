@@ -2294,8 +2294,24 @@ class Camera:
                                 # Artifical wait time for bias and dark
                                 # calibrations to allow pixels to cool
                                 time.sleep(1)
+                            
+                            if not imtype in ['bias','dark'] and not a_dark_exposure and not frame_type[-4:] == "flat" and not g_dev['obs'].scope_in_manual_mode:
+                                
+                                if g_dev['events']['Morn Sky Flats'] < g_dev['events']['Sun Rise']:
+                                    last_time = g_dev['events']['Morn Sky Flats']
+                                else:
+                                    last_time = g_dev['events']['Sun Rise']
+                                
+                                if last_time < ephem.Date(ephem.now()):
+                                    plog("Observing has ended for the evening, cancelling out of exposures.")
+                                    g_dev["obs"].send_to_user("Observing has ended for the evening, cancelling out of exposures.")
+                                    Nsmartstack=1
+                                    sskcounter=2
+                                    self.currently_in_smartstack_loop=False
+                                    break
+                            
                             start_time_of_observation=time.time()
-                            self.start_time_of_observation=time.time()
+                            self.start_time_of_observation=time.time()                          
                             self._expose(exposure_time, bias_dark_or_light_type_frame)
                             self.end_of_last_exposure_time=time.time()
 
