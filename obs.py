@@ -2524,81 +2524,85 @@ class Observatory:
                     self.fwhmresult["mean_focus"] = avg_foc
                     self.fwhmresult['No_of_sources'] =float(fwhm_info['sources'])
                 
+                # try:
+                #     self.enqueue_for_mediumUI(200, im_path, text_name.replace('.txt', '.sep'))
+                # except:
+                #     plog("Failed to send SEP up for some reason")
                 
-                elif os.path.exists(im_path + text_name.replace('.txt', '.sep')):
-                    try:
-                        sources = Table.read(im_path + text_name.replace('.txt', '.sep'), format='csv')
+                # elif os.path.exists(im_path + text_name.replace('.txt', '.sep')):
+                #     try:
+                #         sources = Table.read(im_path + text_name.replace('.txt', '.sep'), format='csv')
 
-                        try:
-                            self.enqueue_for_mediumUI(200, im_path, text_name.replace('.txt', '.sep'))
-                        except:
-                            plog("Failed to send SEP up for some reason")
+                #         try:
+                #             self.enqueue_for_mediumUI(200, im_path, text_name.replace('.txt', '.sep'))
+                #         except:
+                #             plog("Failed to send SEP up for some reason")
 
-                        # DONUT IMAGE DETECTOR.
-                        # The brightest pixel and the centre of flux must be within a few pixels of each other
-                        # If not, it is highly likely to be a donut and hence, FWHM doesn't make sense to calculate
-                        #binfocus=1
-                        # if frame_type == 'focus' and self.config["camera"][g_dev['cam'].name]["settings"]['bin_for_focus']:
-                        #     binfocus=self.config["camera"][g_dev['cam'].name]["settings"]['focus_bin_value']
+                #         # DONUT IMAGE DETECTOR.
+                #         # The brightest pixel and the centre of flux must be within a few pixels of each other
+                #         # If not, it is highly likely to be a donut and hence, FWHM doesn't make sense to calculate
+                #         #binfocus=1
+                #         # if frame_type == 'focus' and self.config["camera"][g_dev['cam'].name]["settings"]['bin_for_focus']:
+                #         #     binfocus=self.config["camera"][g_dev['cam'].name]["settings"]['focus_bin_value']
 
-                        # if frame_type != 'focus' and self.config["camera"][g_dev['cam'].name]["settings"]['bin_for_sep']:
-                        #     binfocus=self.config["camera"][g_dev['cam'].name]["settings"]['sep_bin_value']
+                #         # if frame_type != 'focus' and self.config["camera"][g_dev['cam'].name]["settings"]['bin_for_sep']:
+                #         #     binfocus=self.config["camera"][g_dev['cam'].name]["settings"]['sep_bin_value']
 
-                        # xdonut=np.median(pow(pow(sources['x'] - sources['xpeak'],2),0.5))*pixscale#*binfocus
-                        # ydonut=np.median(pow(pow(sources['y'] - sources['ypeak'],2),0.5))*pixscale#*binfocus
-                        # if xdonut > 3.0 or ydonut > 3.0 or np.isnan(xdonut) or np.isnan(ydonut):
-                        #     plog ("Possible donut image detected.")
-                        #     plog('x ' + str(xdonut))
-                        #     plog('y ' + str(ydonut))
+                #         # xdonut=np.median(pow(pow(sources['x'] - sources['xpeak'],2),0.5))*pixscale#*binfocus
+                #         # ydonut=np.median(pow(pow(sources['y'] - sources['ypeak'],2),0.5))*pixscale#*binfocus
+                #         # if xdonut > 3.0 or ydonut > 3.0 or np.isnan(xdonut) or np.isnan(ydonut):
+                #         #     plog ("Possible donut image detected.")
+                #         #     plog('x ' + str(xdonut))
+                #         #     plog('y ' + str(ydonut))
 
 
-                        if (len(sources) < 2) or ( frame_type == 'focus' and (len(sources) < 10 or len(sources) == np.nan or str(len(sources)) =='nan')):
-                            plog ("Did not find an acceptable FWHM for this image.")
-                            self.fwhmresult={}
-                            self.fwhmresult["error"] = True
-                            self.fwhmresult['FWHM'] = np.nan
-                            self.fwhmresult["mean_focus"] = avg_foc
-                            self.fwhmresult['No_of_sources'] = np.nan
-                            sources['FWHM'] = [np.nan] * len(sources)
-                            rfp = np.nan
-                            rfr = np.nan
-                            rfs = np.nan
-                            sources = sources
-                        else:
-                            # Get halflight radii
-                            fwhmcalc = sources['FWHM']
-                            fwhmcalc = fwhmcalc[fwhmcalc != 0]  # Remove 0 entries
+                #         if (len(sources) < 2) or ( frame_type == 'focus' and (len(sources) < 10 or len(sources) == np.nan or str(len(sources)) =='nan')):
+                #             plog ("Did not find an acceptable FWHM for this image.")
+                #             self.fwhmresult={}
+                #             self.fwhmresult["error"] = True
+                #             self.fwhmresult['FWHM'] = np.nan
+                #             self.fwhmresult["mean_focus"] = avg_foc
+                #             self.fwhmresult['No_of_sources'] = np.nan
+                #             sources['FWHM'] = [np.nan] * len(sources)
+                #             rfp = np.nan
+                #             rfr = np.nan
+                #             rfs = np.nan
+                #             sources = sources
+                #         else:
+                #             # Get halflight radii
+                #             fwhmcalc = sources['FWHM']
+                #             fwhmcalc = fwhmcalc[fwhmcalc != 0]  # Remove 0 entries
 
-                            sep_to_moffat_factor = 1.45
+                #             sep_to_moffat_factor = 1.45
 
-                            # sigma clipping iterator to reject large variations
-                            templen = len(fwhmcalc)
-                            while True:
-                                fwhmcalc = fwhmcalc[fwhmcalc < np.median(fwhmcalc) + 3 * np.std(fwhmcalc)]
-                                if len(fwhmcalc) == templen:
-                                    break
-                                else:
-                                    templen = len(fwhmcalc)
+                #             # sigma clipping iterator to reject large variations
+                #             templen = len(fwhmcalc)
+                #             while True:
+                #                 fwhmcalc = fwhmcalc[fwhmcalc < np.median(fwhmcalc) + 3 * np.std(fwhmcalc)]
+                #                 if len(fwhmcalc) == templen:
+                #                     break
+                #                 else:
+                #                     templen = len(fwhmcalc)
 
-                            fwhmcalc = fwhmcalc[fwhmcalc > np.median(fwhmcalc) - 3 * np.std(fwhmcalc)]
-                            rfp = round(np.median(fwhmcalc), 3) * sep_to_moffat_factor
-                            #rfr = round(np.median(fwhmcalc) * pixscale * g_dev['cam'].native_bin, 3)
-                            #rfs = round(np.std(fwhmcalc) * pixscale * g_dev['cam'].native_bin, 3)
-                            rfr = round(np.median(fwhmcalc) * pixscale , 3) * sep_to_moffat_factor
-                            rfs = round(np.std(fwhmcalc) * pixscale, 3) * sep_to_moffat_factor
-                            plog("\nImage FWHM:  " + str(rfr) + "+/-" + str(rfs) + " arcsecs, " + str(rfp)
-                                 + " pixels.")
-                            self.fwhmresult={}
-                            self.fwhmresult["FWHM"] = rfr
-                            self.fwhmresult["mean_focus"] = avg_foc
-                            self.fwhmresult['No_of_sources'] = len(sources)
+                #             fwhmcalc = fwhmcalc[fwhmcalc > np.median(fwhmcalc) - 3 * np.std(fwhmcalc)]
+                #             rfp = round(np.median(fwhmcalc), 3) * sep_to_moffat_factor
+                #             #rfr = round(np.median(fwhmcalc) * pixscale * g_dev['cam'].native_bin, 3)
+                #             #rfs = round(np.std(fwhmcalc) * pixscale * g_dev['cam'].native_bin, 3)
+                #             rfr = round(np.median(fwhmcalc) * pixscale , 3) * sep_to_moffat_factor
+                #             rfs = round(np.std(fwhmcalc) * pixscale, 3) * sep_to_moffat_factor
+                #             plog("\nImage FWHM:  " + str(rfr) + "+/-" + str(rfs) + " arcsecs, " + str(rfp)
+                #                  + " pixels.")
+                #             self.fwhmresult={}
+                #             self.fwhmresult["FWHM"] = rfr
+                #             self.fwhmresult["mean_focus"] = avg_foc
+                #             self.fwhmresult['No_of_sources'] = len(sources)
 
 
                         
                                     
-                    except Exception as e:
-                        plog ("something odd occured in the reinterpretation of the SEP file", e)
-                        plog(traceback.format_exc())
+                #     except Exception as e:
+                #         plog ("something odd occured in the reinterpretation of the SEP file", e)
+                #         plog(traceback.format_exc())
                     
                     
                     
@@ -2639,25 +2643,28 @@ class Observatory:
                                 p_level="INFO")
 
 
-                if os.path.exists(im_path + text_name.replace('.txt', '.rad')):
-                    try:
-                        self.enqueue_for_mediumUI(250, im_path, text_name.replace('.txt', '.rad'))
-                    except:
-                        plog("Failed to send RAD up for some reason")
+                # if os.path.exists(im_path + text_name.replace('.txt', '.rad')):
+                #     try:
+                #         self.enqueue_for_mediumUI(250, im_path, text_name.replace('.txt', '.rad'))
+                #     except:
+                #         plog("Failed to send RAD up for some reason")
 
                 if frame_type == 'focus':
-                    self.enqueue_for_fastUI(100, im_path, text_name.replace('EX00.txt', 'EX10.jpg'))
+                    try:
+                        self.enqueue_for_fastUI(100, im_path, text_name.replace('EX00.txt', 'EX10.jpg'))
+                    except:
+                        plog("Failed to send FOCUS IMAGE up for some reason")
 
-                if os.path.exists(im_path + text_name.replace('.txt', '.his')):
-                    try:
-                        self.enqueue_for_mediumUI(180, im_path, text_name.replace('.txt', '.his'))
-                    except:
-                        plog("Failed to send HIS up for some reason")
-                if os.path.exists(im_path + text_name.replace('.txt', '.box')):
-                    try:
-                        self.enqueue_for_mediumUI(180, im_path, text_name.replace('.txt', '.box'))
-                    except:
-                        plog("Failed to send BOX up for some reason")
+                # if os.path.exists(im_path + text_name.replace('.txt', '.his')):
+                #     try:
+                #         self.enqueue_for_mediumUI(180, im_path, text_name.replace('.txt', '.his'))
+                #     except:
+                #         plog("Failed to send HIS up for some reason")
+                # if os.path.exists(im_path + text_name.replace('.txt', '.box')):
+                #     try:
+                #         self.enqueue_for_mediumUI(180, im_path, text_name.replace('.txt', '.box'))
+                #     except:
+                #         plog("Failed to send BOX up for some reason")
 
                 if self.config['keep_focus_images_on_disk']:
                     g_dev['obs'].to_slow_process(1000, ('focus', cal_path + cal_name, hdufocusdata, hduheader,
@@ -2666,9 +2673,11 @@ class Observatory:
                     if self.config["save_to_alt_path"] == "yes":
                         g_dev['obs'].to_slow_process(1000, ('raw_alt_path', self.alt_path + g_dev["day"] + "/calib/" + cal_name, hdufocusdata, hduheader,
                                                             frame_type, g_dev["mnt"].current_icrs_ra, g_dev["mnt"].current_icrs_dec))
-
-                self.enqueue_for_fastUI(10, im_path, text_name)
-
+                if os.path.exists(im_path + text_name.replace('.txt')):
+                    self.enqueue_for_fastUI(10, im_path, text_name)
+                else:
+                    plog ("Couldn't find file to send up")
+                    plog (im_path + text_name.replace('.txt'))
                 del hdufocusdata
 
                 self.sep_processing = False
