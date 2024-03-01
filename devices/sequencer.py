@@ -5192,7 +5192,7 @@ class Sequencer:
         
         
         
-        if not self.moon_checks_on:
+        if not g_dev['obs'].moon_checks_on:
             skip_moon_check=True 
         
         if not (g_dev['obs'].enc_status['shutter_status'] == 'Open') and not (g_dev['obs'].enc_status['shutter_status'] == 'Sim. Open'):
