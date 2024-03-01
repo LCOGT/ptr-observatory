@@ -2673,7 +2673,7 @@ class Observatory:
                     if self.config["save_to_alt_path"] == "yes":
                         g_dev['obs'].to_slow_process(1000, ('raw_alt_path', self.alt_path + g_dev["day"] + "/calib/" + cal_name, hdufocusdata, hduheader,
                                                             frame_type, g_dev["mnt"].current_icrs_ra, g_dev["mnt"].current_icrs_dec))
-                if os.path.exists(im_path + text_name.replace('.txt')):
+                if os.path.exists(im_path + text_name):
                     self.enqueue_for_fastUI(10, im_path, text_name)
                 else:
                     plog ("Couldn't find file to send up")
