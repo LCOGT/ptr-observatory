@@ -25,7 +25,8 @@ if not debug:
 else:
     #breakpoint()
     #NB Use this input file for debugging this code.
-    input_jpeg_info=pickle.load(open('C:\\Users\\user\\Documents\\GitHub\\ptr-observatory\\testjpegpickle','rb'))
+    #input_jpeg_info=pickle.load(open('C:\\Users\\user\\Documents\\GitHub\\ptr-observatory\\testjpegpickle','rb'))
+    input_jpeg_info=pickle.load(open('../testjpegpickle','rb'))
     print("HERE IS THE INCOMING: ")
     print(input_jpeg_info)
 
@@ -259,10 +260,12 @@ if smartstackid == 'no':
             paths["im_path"] + paths['jpeg_name10'].replace('EX10', 'EX20')
         )
 
+
+        
         # Resizing the array to an appropriate shape for the small jpg
         iy, ix = final_image.size
         if (crop_preview == True):
-            final_image=final_image.crop((xl,yt,ix-xr,iy-yb))
+            final_image=final_image.crop((xl,yt,iy-xr,ix-yb))
             iy, ix = final_image.size
             #insert Debify routine here.  NB NB Note LCO '30-amin Sq field not implemented.'
         print('Zoom factor is:  ', zoom_factor)
@@ -303,10 +306,12 @@ if smartstackid == 'no':
             yt *= iy
             xr *= ix
             yb *= iy
-            trial_image=final_image.crop((int(xl),int(yt),int(ix-xr),int(iy-yb)))
+            trial_image=final_image.crop((int(xl),int(yt),int(iy-xr),int(ix-yb)))
             ix, iy = trial_image.size
             print("Zoomed Image size:", ix, iy)
             final_image = trial_image
+            
+        #breakpoint()
 
         iy, ix = final_image.size
         if ix == iy:
@@ -367,6 +372,8 @@ if smartstackid == 'no':
             paths["im_path"] + paths['jpeg_name10'].replace('EX10', 'EX20')
         )
 
+
+        
         # Resizing the array to an appropriate shape for the jpg and the small fits
         ix, iy = final_image.size
         print('Zoom factor is:  ', zoom_factor)
