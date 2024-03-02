@@ -62,7 +62,7 @@ def mid_stretch_jpeg(data):
     """
 
     try:
-        data = data / numpy.max(data)
+        data = data / np.max(data)
     except:
         data = data    #NB this avoids div by 0 is image is a very flat bias    
     
@@ -72,10 +72,10 @@ def mid_stretch_jpeg(data):
     Args:
         data (np.array): array of floats, presumably the image data
     """
-    median = numpy.median(data.ravel())
+    median = np.median(data.ravel())
     n = data.size
-    avg_dev = numpy.sum( numpy.absolute(data-median) / n )    
-    c0 = numpy.clip(median + (shadows_clip * avg_dev), 0, 1)
+    avg_dev = np.sum( np.absolute(data-median) / n )    
+    c0 = np.clip(median + (shadows_clip * avg_dev), 0, 1)
     x= median - c0
     
     """Midtones Transfer Function
@@ -104,7 +104,7 @@ def mid_stretch_jpeg(data):
     zeros = x==0
     halfs = x==target_bkg
     ones = x==1
-    others = numpy.logical_xor((x==x), (zeros + halfs + ones))
+    others = np.logical_xor((x==x), (zeros + halfs + ones))
     x[zeros] = 0
     x[halfs] = 0.5
     x[ones] = 1
@@ -152,7 +152,7 @@ def mid_stretch_jpeg(data):
     zeros = x==0
     halfs = x==m
     ones = x==1
-    others = numpy.logical_xor((x==x), (zeros + halfs + ones))
+    others = np.logical_xor((x==x), (zeros + halfs + ones))
     x[zeros] = 0
     x[halfs] = 0.5
     x[ones] = 1
