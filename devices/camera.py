@@ -1299,12 +1299,12 @@ class Camera:
                     # Amplitude has to be a substantial fraction of the peak value
                     # and the center of the gaussian needs to be near the center
                     if popt[0] > (0.5 * cvalue) and abs(popt[1]) < 3 :
-                        print ("amplitude: " + str(popt[0]) + " center " + str(popt[1]) + " stdev? " +str(popt[2]))
-                        print ("Brightest pixel at : " + str(brightest_pixel_rdist))
-                        plt.scatter(radprofile[:,0],radprofile[:,1])
-                        plt.plot(radprofile[:,0], gaussian(radprofile[:,0], *popt),color = 'r')
-                        plt.axvline(x = 0, color = 'g', label = 'axvline - full height')
-                        plt.show()
+                        # print ("amplitude: " + str(popt[0]) + " center " + str(popt[1]) + " stdev? " +str(popt[2]))
+                        # print ("Brightest pixel at : " + str(brightest_pixel_rdist))
+                        # plt.scatter(radprofile[:,0],radprofile[:,1])
+                        # plt.plot(radprofile[:,0], gaussian(radprofile[:,0], *popt),color = 'r')
+                        # plt.axvline(x = 0, color = 'g', label = 'axvline - full height')
+                        # plt.show()
         
                         # FWHM is 2.355 * std for a gaussian
                         fwhmlist.append(popt[2])
