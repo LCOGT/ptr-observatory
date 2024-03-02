@@ -8,7 +8,7 @@ Created on Tue Apr 20 22:19:25 2021
 #import copy
 import datetime
 import os
-
+#from auto_stretch.stretch import Stretch
 import queue
 #import math
 import shelve
@@ -29,18 +29,166 @@ import win32com.client
 from astropy.stats import sigma_clip
 import math
 import threading
-
+from scipy import optimize
 from astropy.utils.exceptions import AstropyUserWarning
 import warnings
 warnings.simplefilter('ignore', category=AstropyUserWarning)
 
 warnings.simplefilter("ignore", category=RuntimeWarning)
 from devices.darkslide import Darkslide
-
+from PIL import Image, ImageDraw
 from global_yard import g_dev
 from ptr_utility import plog
 from ctypes import *
 
+
+def mid_stretch_jpeg(data):
+    """
+    This product is based on software from the PixInsight project, developed by
+    Pleiades Astrophoto and its contributors (http://pixinsight.com/).
+    
+    And also Tim Beccue with a minor flourishing/speedup by Michael Fitzgerald.
+    """
+    target_bkg=0.25
+    shadows_clip=-1.25
+    
+    """ Stretch the image.
+
+    Args:
+        data (np.array): the original image data array.
+
+    Returns:
+        np.array: the stretched image data
+    """
+
+    try:
+        data = data / numpy.max(data)
+    except:
+        data = data    #NB this avoids div by 0 is image is a very flat bias    
+    
+    
+    """Return the average deviation from the median.
+
+    Args:
+        data (np.array): array of floats, presumably the image data
+    """
+    median = numpy.median(data.ravel())
+    n = data.size
+    avg_dev = numpy.sum( numpy.absolute(data-median) / n )    
+    c0 = numpy.clip(median + (shadows_clip * avg_dev), 0, 1)
+    x= median - c0
+    
+    """Midtones Transfer Function
+
+    MTF(m, x) = {
+        0                for x == 0,
+        1/2              for x == m,
+        1                for x == 1,
+
+        (m - 1)x
+        --------------   otherwise.
+        (2m - 1)x - m
+    }
+
+    See the section "Midtones Balance" from
+    https://pixinsight.com/doc/tools/HistogramTransformation/HistogramTransformation.html
+
+    Args:
+        m (float): midtones balance parameter
+                   a value below 0.5 darkens the midtones
+                   a value above 0.5 lightens the midtones
+        x (np.array): the data that we want to copy and transform.
+    """
+    shape = x.shape
+    x = x.ravel()    
+    zeros = x==0
+    halfs = x==target_bkg
+    ones = x==1
+    others = numpy.logical_xor((x==x), (zeros + halfs + ones))
+    x[zeros] = 0
+    x[halfs] = 0.5
+    x[ones] = 1
+    x[others] = (target_bkg - 1) * x[others] / ((((2 * target_bkg) - 1) * x[others]) - target_bkg)
+    m= x.reshape(shape)
+    
+    stretch_params = {
+        "c0": c0,
+        #"c1": 1,
+        "m": m
+    }  
+    
+    m = stretch_params["m"]
+    c0 = stretch_params["c0"]
+    above = data >= c0
+
+    # Clip everything below the shadows clipping point
+    data[data < c0] = 0   
+    # For the rest of the pixels: apply the midtones transfer function
+    x=(data[above] - c0)/(1 - c0)
+    
+    """Midtones Transfer Function
+
+    MTF(m, x) = {
+        0                for x == 0,
+        1/2              for x == m,
+        1                for x == 1,
+
+        (m - 1)x
+        --------------   otherwise.
+        (2m - 1)x - m
+    }
+
+    See the section "Midtones Balance" from
+    https://pixinsight.com/doc/tools/HistogramTransformation/HistogramTransformation.html
+
+    Args:
+        m (float): midtones balance parameter
+                   a value below 0.5 darkens the midtones
+                   a value above 0.5 lightens the midtones
+        x (np.array): the data that we want to copy and transform.
+    """
+    shape = x.shape
+    x = x.ravel()    
+    zeros = x==0
+    halfs = x==m
+    ones = x==1
+    others = numpy.logical_xor((x==x), (zeros + halfs + ones))
+    x[zeros] = 0
+    x[halfs] = 0.5
+    x[ones] = 1
+    x[others] = (m - 1) * x[others] / ((((2 * m) - 1) * x[others]) - m)
+    data[above]= x.reshape(shape)  
+    
+    return data
+
+def gaussian(x, amplitude, mean, stddev):
+    return amplitude * np.exp(-((x - mean) / 4 / stddev)**2)
+
+# https://stackoverflow.com/questions/9111711/get-coordinates-of-local-maxima-in-2d-array-above-certain-value
+def localMax(a, include_diagonal=True, threshold=-np.inf) :
+    # Pad array so we can handle edges
+    ap = np.pad(a, ((1,1),(1,1)), constant_values=-np.inf )
+
+    # Determines if each location is bigger than adjacent neighbors
+    adjacentmax =(
+    (ap[1:-1,1:-1] > threshold) &
+    (ap[0:-2,1:-1] <= ap[1:-1,1:-1]) &
+    (ap[2:,  1:-1] <= ap[1:-1,1:-1]) &
+    (ap[1:-1,0:-2] <= ap[1:-1,1:-1]) &
+    (ap[1:-1,2:  ] <= ap[1:-1,1:-1])
+    )
+    if not include_diagonal :
+        return np.argwhere(adjacentmax)
+
+    # Determines if each location is bigger than diagonal neighbors
+    diagonalmax =(
+    (ap[0:-2,0:-2] <= ap[1:-1,1:-1]) &
+    (ap[2:  ,2:  ] <= ap[1:-1,1:-1]) &
+    (ap[0:-2,2:  ] <= ap[1:-1,1:-1]) &
+    (ap[2:  ,0:-2] <= ap[1:-1,1:-1])
+    )
+
+    return np.argwhere(adjacentmax & diagonalmax)
 
 """
 This device works on cameras and getting images and header info back to the obs queues.
@@ -952,6 +1100,288 @@ class Camera:
 
             self.darkslide_open = False
             self.darkslide_state = 'Closed'
+            
+    def in_line_quick_focus(self, hdufocusdata, im_path, text_name):
+
+        googtime=time.time()
+        # Check there are no nans in the image upon receipt
+        # This is necessary as nans aren't interpolated in the main thread.
+        # Fast next-door-neighbour in-fill algorithm
+        #num_of_nans=np.count_nonzero(np.isnan(hdufocusdata))
+        #x_size=hdufocusdata.shape[0]
+        #y_size=hdufocusdata.shape[1]
+        # this is actually faster than np.nanmean
+        imageMedian=np.nanmedian(hdufocusdata)
+        # Mop up any remaining nans
+        hdufocusdata[np.isnan(hdufocusdata)] =imageMedian
+        
+        # Cut down focus image to central degree
+        fx, fy = hdufocusdata.shape
+        # We want a standard focus image size that represent 0.2 degrees - which is the size of the focus fields.
+        # However we want some flexibility in the sense that the pointing could be off by half a degree or so...
+        # So we chop the image down to a degree by a degree
+        # This speeds up the focus software.... we don't need to solve for EVERY star in a widefield image.
+        fx_degrees = (fx * self.pixscale) /3600
+        fy_degrees = (fy * self.pixscale) /3600
+        
+        crop_x=0
+        crop_y=0
+        
+        
+        if fx_degrees > 1.0:
+            ratio_crop= 1/fx_degrees
+            crop_x = int((fx - (ratio_crop * fx))/2)
+        if fy_degrees > 1.0:
+            ratio_crop= 1/fy_degrees
+            crop_y = int((fy - (ratio_crop * fy))/2)
+        
+        if crop_x > 0 or crop_y > 0:
+            if crop_x == 0:
+                crop_x = 2
+            if crop_y == 0:
+                crop_y = 2
+            # Make sure it is an even number for OSCs
+            if (crop_x % 2) != 0:
+                crop_x = crop_x+1
+            if (crop_y % 2) != 0:
+                crop_y = crop_y+1
+            hdufocusdata = hdufocusdata[crop_x:-crop_x, crop_y:-crop_y]
+        
+        # Just quick bin if an osc.
+        if self.is_osc:
+            hdufocusdata=np.divide(block_reduce(hdufocusdata,2,func=np.sum),2)
+        
+        
+        fx, fy = hdufocusdata.shape        #
+        hdufocusdata=hdufocusdata-imageMedian       
+        tempstd=np.std(hdufocusdata)
+        saturate = g_dev['cam'].config["camera"][g_dev['cam'].name]["settings"]["saturate"]
+        
+        threshold=max(3* np.std(hdufocusdata[hdufocusdata < (5*tempstd)]),(200*self.pixscale)) # Don't bother with stars with peaks smaller than 100 counts per arcsecond
+        googtime=time.time()
+        list_of_local_maxima=localMax(hdufocusdata, threshold=threshold)
+        print ("Finding Local Maxima: " + str(time.time()-googtime))
+        
+        # Assess each point
+        pointvalues=np.zeros([len(list_of_local_maxima),3],dtype=float)
+        counter=0
+        googtime=time.time()
+        for point in list_of_local_maxima:
+            pointvalues[counter][0]=point[0]
+            pointvalues[counter][1]=point[1]
+            pointvalues[counter][2]=np.nan
+            in_range=False
+            if (point[0] > fx*0.1) and (point[1] > fy*0.1) and (point[0] < fx*0.9) and (point[1] < fy*0.9):
+                in_range=True
+            if in_range:
+                value_at_point=hdufocusdata[point[0],point[1]]
+                try:
+                    value_at_neighbours=(hdufocusdata[point[0]-1,point[1]]+hdufocusdata[point[0]+1,point[1]]+hdufocusdata[point[0],point[1]-1]+hdufocusdata[point[0],point[1]+1])/4
+                except:
+                    print(traceback.format_exc())
+                    breakpoint()
+                # Check it isn't just a dot
+                if value_at_neighbours < (0.6*value_at_point):
+                    #print ("BAH " + str(value_at_point) + " " + str(value_at_neighbours) )
+                    pointvalues[counter][2]=np.nan
+                # If not saturated and far away from the edge
+                elif value_at_point < 0.8*saturate:
+                    pointvalues[counter][2]=value_at_point
+                else:
+                    pointvalues[counter][2]=np.nan
+            counter=counter+1
+        print ("Sorting out bad pixels from the mix: " + str(time.time()-googtime))
+        
+        
+        # Trim list to remove things that have too many other things close to them.
+        googtime=time.time()
+        # remove nan rows
+        pointvalues=pointvalues[~np.isnan(pointvalues).any(axis=1)]
+        # reverse sort by brightness
+        pointvalues=pointvalues[pointvalues[:,2].argsort()[::-1]]
+        #From...... NOW
+        #timer_for_bailing=time.time()
+        # radial profile
+        fwhmlist=[]
+        #sources=[]
+        #photometry=[]
+        #radius_of_radialprofile=(30)
+        # The radius should be related to arcseconds on sky
+        # And a reasonable amount - 12'
+        radius_of_radialprofile=int(12/self.pixscale)
+        # Round up to nearest odd number to make a symmetrical array
+        radius_of_radialprofile=int(radius_of_radialprofile // 2 *2 +1)
+        halfradius_of_radialprofile=math.ceil(0.5*radius_of_radialprofile)
+        #centre_of_radialprofile=int((radius_of_radialprofile /2)+1)
+        googtime=time.time()
+        
+        amount=min(len(pointvalues),50)
+        
+        for i in range(amount):
+        
+            # # Don't take too long!
+            # if ((time.time() - timer_for_bailing) > time_limit):# and good_radials > 20:
+            #     print ("Time limit reached! Bailout!")
+            #     break
+        
+            cx= int(pointvalues[i][0])
+            cy= int(pointvalues[i][1])
+            cvalue=hdufocusdata[int(cx)][int(cy)]
+            try:
+                #temp_array=extract_array(hdufocusdata, (radius_of_radialprofile,radius_of_radialprofile), (cx,cy))
+                temp_array=hdufocusdata[cx-halfradius_of_radialprofile:cx+halfradius_of_radialprofile,cy-halfradius_of_radialprofile:cy+halfradius_of_radialprofile]
+                #breakpoint()
+                #temp_numpy=hdufocusdata[cx-radius_of_radialprofile:cx+radius_of_radialprofile,cy-radius_of_radialprofile:cy+radius_of_radialprofile]
+            except:
+                print(traceback.format_exc())
+                breakpoint()
+            #crad=radial_profile(np.asarray(temp_array),[centre_of_radialprofile,centre_of_radialprofile])
+        
+            #construct radial profile
+            cut_x,cut_y=temp_array.shape
+            cut_x_center=(cut_x/2)-1
+            cut_y_center=(cut_y/2)-1
+            radprofile=np.zeros([cut_x*cut_y,2],dtype=float)
+            counter=0
+            brightest_pixel_rdist=0
+            brightest_pixel_value=0
+            bailout=False
+            for q in range(cut_x):
+                if bailout==True:
+                    break
+                for t in range(cut_y):
+                    #breakpoint()
+                    r_dist=pow(pow((q-cut_x_center),2) + pow((t-cut_y_center),2),0.5)
+                    if q-cut_x_center < 0:# or t-cut_y_center < 0:
+                        r_dist=r_dist*-1
+                    radprofile[counter][0]=r_dist
+                    radprofile[counter][1]=temp_array[q][t]
+                    if temp_array[q][t] > brightest_pixel_value:
+                        brightest_pixel_rdist=r_dist
+                        brightest_pixel_value=temp_array[q][t]
+                    counter=counter+1
+        
+            # If the brightest pixel is in the center-ish
+            # then attempt a fit
+            if abs(brightest_pixel_rdist) < 4:
+                try:
+                    popt, _ = optimize.curve_fit(gaussian, radprofile[:,0], radprofile[:,1])
+                    # Amplitude has to be a substantial fraction of the peak value
+                    # and the center of the gaussian needs to be near the center
+                    if popt[0] > (0.5 * cvalue) and abs(popt[1]) < 3 :
+                        # print ("amplitude: " + str(popt[0]) + " center " + str(popt[1]) + " stdev? " +str(popt[2]))
+                        # print ("Brightest pixel at : " + str(brightest_pixel_rdist))
+                        # plt.scatter(radprofile[:,0],radprofile[:,1])
+                        # plt.plot(radprofile[:,0], gaussian(radprofile[:,0], *popt),color = 'r')
+                        # plt.axvline(x = 0, color = 'g', label = 'axvline - full height')
+                        # plt.show()
+        
+                        # FWHM is 2.355 * std for a gaussian
+                        fwhmlist.append(popt[2])
+                        # Area under a gaussian is (amplitude * Stdev / 0.3989)
+                        #breakpoint()
+                        # if good_radials < number_of_good_radials_to_get:
+                        #     sources.append([cx,cy,radprofile,temp_array,cvalue, popt[0]*popt[2]/0.3989,popt[0],popt[1],popt[2],'r'])
+                        #     good_radials=good_radials+1
+                        # else:
+                        #     sources.append([cx,cy,0,0,cvalue, popt[0]*popt[2]/0.3989,popt[0],popt[1],popt[2],'n'])
+                        # photometry.append([cx,cy,cvalue,popt[0],popt[2]*4.710])
+        
+                        #breakpoint()
+                        # If we've got more than 50 for a focus
+                        # We only need some good ones.
+                        
+                        if len(fwhmlist) > 50:
+                            bailout=True
+                            break
+                        #If we've got more than ten and we are getting dim, bail out.
+                        if len(fwhmlist) > 10 and brightest_pixel_value < (0.2*saturate):
+                            bailout=True
+                            break
+                except:
+                    pass
+        
+        print ("Extracting and Gaussianingx: " + str(time.time()-googtime))
+                #breakpoint()
+        
+        
+        rfp = abs(np.nanmedian(fwhmlist)) * 4.710
+        rfr = rfp * self.pixscale
+        rfs = np.nanstd(fwhmlist) * self.pixscale
+        if rfr < 1.0 or rfr > 6:
+            rfr= np.nan
+            rfp= np.nan
+            rfs= np.nan
+        
+        #sepsky = imageMode
+        fwhm_file={}
+        fwhm_file['rfp']=str(rfp)
+        fwhm_file['rfr']=str(rfr)
+        fwhm_file['rfs']=str(rfs)
+        fwhm_file['sky']=str(imageMedian)
+        fwhm_file['sources']=str(len(fwhmlist))
+        
+        
+        # If it is a focus image then it will get sent in a different manner to the UI for a jpeg
+        # In this case, the image needs to be the 0.2 degree field that the focus field is made up of
+        hdusmalldata = np.array(hdufocusdata)
+        fx, fy = hdusmalldata.shape
+        aspect_ratio= fx/fy
+        
+        focus_jpeg_size=0.2/(self.pixscale/3600)
+        
+        if focus_jpeg_size < fx:
+            crop_width = (fx - focus_jpeg_size) / 2
+        else:
+            crop_width =2
+        
+        if focus_jpeg_size < fy:
+            crop_height = (fy - (focus_jpeg_size / aspect_ratio) ) / 2
+        else:
+            crop_height = 2
+        
+        # Make sure it is an even number for OSCs
+        if (crop_width % 2) != 0:
+            crop_width = crop_width+1
+        if (crop_height % 2) != 0:
+            crop_height = crop_height+1
+        
+        crop_width = int(crop_width)
+        crop_height = int(crop_height)
+        
+        if crop_width > 0 or crop_height > 0:
+            hdusmalldata = hdusmalldata[crop_width:-crop_width, crop_height:-crop_height]
+        
+        hdusmalldata = hdusmalldata - np.min(hdusmalldata)
+        
+        stretched_data_float = mid_stretch_jpeg(hdusmalldata+1000)
+        stretched_256 = 255 * stretched_data_float
+        hot = np.where(stretched_256 > 255)
+        cold = np.where(stretched_256 < 0)
+        stretched_256[hot] = 255
+        stretched_256[cold] = 0
+        stretched_data_uint8 = stretched_256.astype("uint8")
+        hot = np.where(stretched_data_uint8 > 255)
+        cold = np.where(stretched_data_uint8 < 0)
+        stretched_data_uint8[hot] = 255
+        stretched_data_uint8[cold] = 0
+        
+        iy, ix = stretched_data_uint8.shape
+        final_image = Image.fromarray(stretched_data_uint8)
+        draw = ImageDraw.Draw(final_image)
+        
+        #draw.text((0, 0), str(focus_position), (255))
+        draw.text((0, 0), str('MEANT TO BE FOCUS POSITION'), (255))
+        try:
+            final_image.save(im_path + text_name.replace('EX00.txt', 'EX10.jpg'))
+        except:
+            pass
+        
+        del hdusmalldata
+        del stretched_data_float
+        del final_image
+        
+        return fwhm_file
 
     # #I assume we might be able to read the shutter state...
 
@@ -3315,33 +3745,35 @@ class Camera:
                     hdusmallheader=copy.deepcopy(hdu.header)
                     del hdu
                     focus_position=g_dev['foc'].current_focus_position
-                    g_dev['obs'].sep_processing=True
-                    g_dev['obs'].to_sep((outputimg, self.pixscale, self.camera_known_readnoise, avg_foc[1], focus_image, im_path, text_name, hdusmallheader, cal_path, cal_name, frame_type, focus_position, self.native_bin))
+                    #g_dev['obs'].sep_processing=True
+                    #g_dev['obs'].to_sep((outputimg, self.pixscale, self.camera_known_readnoise, avg_foc[1], focus_image, im_path, text_name, hdusmallheader, cal_path, cal_name, frame_type, focus_position, self.native_bin))
 
                     reported=0
                     temptimer=time.time()
                     plog ("Exposure Complete")
                     g_dev["obs"].send_to_user("Exposure Complete")
-                    while True:
-                        if g_dev['obs'].sep_processing==False and g_dev['obs'].sep_queue.empty():
-                            break
-                        else:
-                            if reported ==0:
-                                plog ("FOCUS: Waiting for SEP processing to complete and queue to clear")
-                                reported=1
-                            pass
+                    # while True:
+                    #     if g_dev['obs'].sep_processing==False and g_dev['obs'].sep_queue.empty():
+                    #         break
+                    #     else:
+                    #         if reported ==0:
+                    #             plog ("FOCUS: Waiting for SEP processing to complete and queue to clear")
+                    #             reported=1
+                    #         pass
 
-                            if g_dev['obs'].open_and_enabled_to_observe==False:
-                                plog ("No longer open and enabled to observe, cancelling out of waiting for SEP.")
-                                break
+                    #         if g_dev['obs'].open_and_enabled_to_observe==False:
+                    #             plog ("No longer open and enabled to observe, cancelling out of waiting for SEP.")
+                    #             break
 
-                        time.sleep(0.2)
+                    #     time.sleep(0.2)
+                    
+                    fwhm_dict=self.in_line_quick_focus(outputimg, im_path, text_name)
 
-                    print ("sep time: " + str(time.time() - temptimer))
+                    print ("focus analysis time: " + str(time.time() - temptimer))
                     focus_image = False
+                    breakpoint()
 
                     expresult['FWHM']=g_dev['obs'].fwhmresult['FWHM']
-
                     expresult["mean_focus"]=g_dev['obs'].fwhmresult["mean_focus"]
                     expresult['No_of_sources']=g_dev['obs'].fwhmresult['No_of_sources']
 
