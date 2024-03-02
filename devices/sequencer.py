@@ -6226,6 +6226,17 @@ class Sequencer:
 
         req2 = copy.deepcopy(req)
 
+        #unpark before anything else.
+        position_after_unpark=False
+        if self.rapid_park_indicator:
+            position_after_unpark=True
+        g_dev['mnt'].unpark_command({}, {})
+        if position_after_unpark:
+            g_dev['mnt'].go_command(alt=70,az= 70)
+            g_dev['mnt'].set_tracking_on()
+        
+    
+
         sim = False
         start_ra = g_dev['mnt'].return_right_ascension()   #Read these to go back.  NB NB Need to cleanly pass these on so we can return to proper target.
         start_dec = g_dev['mnt'].return_declination()
