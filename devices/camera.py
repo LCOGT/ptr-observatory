@@ -33,7 +33,7 @@ from scipy import optimize
 from astropy.utils.exceptions import AstropyUserWarning
 import warnings
 warnings.simplefilter('ignore', category=AstropyUserWarning)
-
+import matplotlib.pyplot as plt
 warnings.simplefilter("ignore", category=RuntimeWarning)
 from devices.darkslide import Darkslide
 from PIL import Image, ImageDraw
@@ -1215,9 +1215,9 @@ class Camera:
         #centre_of_radialprofile=int((radius_of_radialprofile /2)+1)
         googtime=time.time()
         
-        amount=min(len(pointvalues),50)
+        #amount=min(len(pointvalues),50)
         
-        for i in range(amount):
+        for i in range(len(pointvalues)):
         
             # # Don't take too long!
             # if ((time.time() - timer_for_bailing) > time_limit):# and good_radials > 20:
@@ -1269,12 +1269,12 @@ class Camera:
                     # Amplitude has to be a substantial fraction of the peak value
                     # and the center of the gaussian needs to be near the center
                     if popt[0] > (0.5 * cvalue) and abs(popt[1]) < 3 :
-                        # print ("amplitude: " + str(popt[0]) + " center " + str(popt[1]) + " stdev? " +str(popt[2]))
-                        # print ("Brightest pixel at : " + str(brightest_pixel_rdist))
-                        # plt.scatter(radprofile[:,0],radprofile[:,1])
-                        # plt.plot(radprofile[:,0], gaussian(radprofile[:,0], *popt),color = 'r')
-                        # plt.axvline(x = 0, color = 'g', label = 'axvline - full height')
-                        # plt.show()
+                        print ("amplitude: " + str(popt[0]) + " center " + str(popt[1]) + " stdev? " +str(popt[2]))
+                        print ("Brightest pixel at : " + str(brightest_pixel_rdist))
+                        plt.scatter(radprofile[:,0],radprofile[:,1])
+                        plt.plot(radprofile[:,0], gaussian(radprofile[:,0], *popt),color = 'r')
+                        plt.axvline(x = 0, color = 'g', label = 'axvline - full height')
+                        plt.show()
         
                         # FWHM is 2.355 * std for a gaussian
                         fwhmlist.append(popt[2])
@@ -1303,7 +1303,7 @@ class Camera:
         
         print ("Extracting and Gaussianingx: " + str(time.time()-googtime))
                 #breakpoint()
-        
+        breakpoint()
         
         rfp = abs(np.nanmedian(fwhmlist)) * 4.710
         rfr = rfp * self.pixscale
@@ -3773,7 +3773,7 @@ class Camera:
 
                     print ("focus analysis time: " + str(time.time() - temptimer))
                     focus_image = False
-                    breakpoint()
+                    #breakpoint()
 
                     expresult['FWHM']=g_dev['obs'].fwhmresult['FWHM']
                     expresult["mean_focus"]=g_dev['obs'].fwhmresult["mean_focus"]
