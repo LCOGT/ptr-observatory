@@ -1147,9 +1147,39 @@ class Camera:
                 crop_y = crop_y+1
             hdufocusdata = hdufocusdata[crop_x:-crop_x, crop_y:-crop_y]
         
-        # Just quick bin if an osc.
+        # # Just quick bin if an osc.
+        # if self.is_osc:
+        #     hdufocusdata=np.divide(block_reduce(hdufocusdata,2,func=np.sum),2)
+        
+        
         if self.is_osc:
-            hdufocusdata=np.divide(block_reduce(hdufocusdata,2,func=np.sum),2)
+
+            # Rapidly interpolate so that it is all one channel
+    
+            # Wipe out red channel
+            hdufocusdata[::2, ::2]=np.nan
+            # Wipe out blue channel
+            hdufocusdata[1::2, 1::2]=np.nan
+    
+            # To fill the checker board, roll the array in all four directions and take the average
+            # Which is essentially the bilinear fill without excessive math or not using numpy
+            # It moves true values onto nans and vice versa, so makes an array of true values
+            # where the original has nans and we use that as the fill
+            #bilinearfill=np.mean( [ np.roll(hdufocusdata,1,axis=0), np.roll(hdufocusdata,-1,axis=0),np.roll(hdufocusdata,1,axis=1), np.roll(hdufocusdata,-1,axis=1)], axis=0 )
+            #bilinearfill=np.divide(np.add( np.roll(hdufocusdata,1,axis=0), np.roll(hdufocusdata,-1,axis=0),np.roll(hdufocusdata,1,axis=1), np.roll(hdufocusdata,-1,axis=1),4))#, axis=0 )
+    
+            bilinearfill=np.roll(hdufocusdata,1,axis=0)
+            bilinearfill=np.add(bilinearfill, np.roll(hdufocusdata,-1,axis=0))
+            bilinearfill=np.add(bilinearfill, np.roll(hdufocusdata,1,axis=1))
+            bilinearfill=np.add(bilinearfill, np.roll(hdufocusdata,-1,axis=1))
+            bilinearfill=np.divide(bilinearfill,4)
+    
+            hdufocusdata[np.isnan(hdufocusdata)]=0
+            bilinearfill[np.isnan(bilinearfill)]=0
+            hdufocusdata=hdufocusdata+bilinearfill
+            del bilinearfill
+        
+        
         
         
         fx, fy = hdufocusdata.shape        #
@@ -1303,12 +1333,12 @@ class Camera:
         
         print ("Extracting and Gaussianingx: " + str(time.time()-googtime))
                 #breakpoint()
-        breakpoint()
+        #breakpoint()
         
         rfp = abs(np.nanmedian(fwhmlist)) * 4.710
         rfr = rfp * self.pixscale
         rfs = np.nanstd(fwhmlist) * self.pixscale
-        if rfr < 1.0 or rfr > 6:
+        if rfr < 1.0 or rfr > 8:
             rfr= np.nan
             rfp= np.nan
             rfs= np.nan
@@ -3775,9 +3805,9 @@ class Camera:
                     focus_image = False
                     #breakpoint()
 
-                    expresult['FWHM']=g_dev['obs'].fwhmresult['FWHM']
-                    expresult["mean_focus"]=g_dev['obs'].fwhmresult["mean_focus"]
-                    expresult['No_of_sources']=g_dev['obs'].fwhmresult['No_of_sources']
+                    expresult['FWHM']=fwhm_dict['rfr']
+                    expresult["mean_focus"]=focus_position
+                    expresult['No_of_sources']=fwhm_dict['sources']
 
                     return expresult
 
