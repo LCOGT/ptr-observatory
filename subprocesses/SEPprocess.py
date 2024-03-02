@@ -395,7 +395,7 @@ else:
         for i in range(amount):
 
             # Don't take too long!
-            if (time.time() - timer_for_bailing) > time_limit:
+            if ((time.time() - timer_for_bailing) > time_limit) and good_radials > 20:
                 print ("Time limit reached! Bailout!")
                 break
 
