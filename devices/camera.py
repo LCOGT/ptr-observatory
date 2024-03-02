@@ -3806,6 +3806,7 @@ class Camera:
                     #breakpoint()
                     
                     g_dev['obs'].fwhmresult['FWHM']=float(fwhm_dict['rfr'])
+                    g_dev['obs'].fwhmresult['No_of_sources']= float(fwhm_dict['sources'])
                     #foc_pos1 = g_dev['obs'].fwhmresult['mean_focus']
                     foc_pos1=focus_position
 
