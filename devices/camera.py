@@ -4452,10 +4452,10 @@ def post_exposure_process(payload):
                         hdusmalldata = hdusmalldata - g_dev['cam'].biasFiles[str(1)]
                         hdusmalldata = hdusmalldata - (g_dev['cam'].darkFiles[str(1)] * exposure_time)
                     except:
-                        pass
+                        plog ("Something odd in the flash reduction?")
+                        plog(traceback.format_exc())
 
-                plog ("time taken quickdark")
-                plog (str(time.time() - timetakenquickdark))
+                plog ("time taken for flash reduction: " + str(time.time() - timetakenquickdark))
             except Exception as e:
                 plog("debias/darking light frame failed: ", e)
 
