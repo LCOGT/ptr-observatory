@@ -98,6 +98,12 @@ minimum_realistic_seeing=input_sep_info[25]
 #nativebin=input_sep_info[26]
 do_sep=input_sep_info[27]
 
+
+# The photometry has a timelimit that is half of the exposure time
+time_limit=float(hduheader['EXPTIME'])/0.5
+
+minimum_exposure_for_extended_stuff = 10
+
 #frame_type='focus'
 
 # https://stackoverflow.com/questions/9111711/get-coordinates-of-local-maxima-in-2d-array-above-certain-value
@@ -128,15 +134,18 @@ def localMax(a, include_diagonal=True, threshold=-np.inf) :
 
 
 # For a QHY600, it takes a few seconds to calculate the mode. We don't need it for a focus frame.
-if not frame_type == 'focus':
+# If the exposure time is short then just take the median
+if not frame_type == 'focus' and float(hduheader['EXPTIME']) > minimum_exposure_for_extended_stuff :
     googtime=time.time()
     int_array_flattened=hdufocusdata.astype(int).ravel()
     unique,counts=np.unique(int_array_flattened[~np.isnan(int_array_flattened)], return_counts=True)
     m=counts.argmax()
     imageMode=unique[m]
     print ("Calculating Mode: " +str(time.time()-googtime))
+    real_mode=True
 else:
     imageMode=np.nanmedian(hdufocusdata)
+    real_mode=False
 
 
 googtime=time.time()
@@ -263,7 +272,7 @@ else:
     if is_osc:
 
         # Rapidly interpolate so that it is all one channel
-       
+
         # Wipe out red channel
         hdufocusdata[::2, ::2]=np.nan
         # Wipe out blue channel
@@ -289,11 +298,11 @@ else:
 
 
     try:
-        
+
         fx, fy = hdufocusdata.shape        #
         hdufocusdata=hdufocusdata-imageMode
-        
-        
+
+
         #if frame_type == 'focus':       # This hasn't been calculated yet for focus, but already has for a normal image.
         tempstd=np.std(hdufocusdata)
         #hduheader["IMGSTDEV"]=tempstd
@@ -304,7 +313,7 @@ else:
         googtime=time.time()
         list_of_local_maxima=localMax(hdufocusdata, threshold=threshold)
         print ("Finding Local Maxima: " + str(time.time()-googtime))
-        
+
         # Assess each point
         pointvalues=np.zeros([len(list_of_local_maxima),3],dtype=float)
         counter=0
@@ -341,7 +350,7 @@ else:
             counter=counter+1
 
         print ("Sorting out bad pixels from the mix: " + str(time.time()-googtime))
-        
+
 
         # Trim list to remove things that have too many other things close to them.
 
@@ -351,28 +360,53 @@ else:
 
         # reverse sort by brightness
         pointvalues=pointvalues[pointvalues[:,2].argsort()[::-1]]
-        
+
+        #From...... NOW
+        timer_for_bailing=time.time()
+
+
+
         # radial profile
         fwhmlist=[]
         sources=[]
         photometry=[]
-        radius_of_radialprofile=(30)
+        #radius_of_radialprofile=(30)
+        # The radius should be related to arcseconds on sky
+        # And a reasonable amount - 12'
+        radius_of_radialprofile=int(12/pixscale)
         # Round up to nearest odd number to make a symmetrical array
-        radius_of_radialprofile=(radius_of_radialprofile // 2 *2 +1)
+        radius_of_radialprofile=int(radius_of_radialprofile // 2 *2 +1)
+        halfradius_of_radialprofile=math.ceil(0.5*radius_of_radialprofile)
         centre_of_radialprofile=int((radius_of_radialprofile /2)+1)
         googtime=time.time()
-        
+
         if frame_type == 'focus': # Only bother with the first couple of hundred at most for focus
-            amount=min(len(pointvalues),200)
+            amount=min(len(pointvalues),50)
         else:
-            amount=len(pointvalues)
-        
+            amount=min(len(pointvalues),800)
+
+        number_of_good_radials_to_get = 50
+
+
+        print (amount)
+
+        good_radials=0
+
         for i in range(amount):
-            cx= (pointvalues[i][0])
-            cy= (pointvalues[i][1])
+
+            # Don't take too long!
+            if (time.time() - timer_for_bailing) > time_limit:
+                print ("Time limit reached! Bailout!")
+                break
+
+            cx= int(pointvalues[i][0])
+            cy= int(pointvalues[i][1])
             cvalue=hdufocusdata[int(cx)][int(cy)]
             try:
-                temp_array=extract_array(hdufocusdata, (radius_of_radialprofile,radius_of_radialprofile), (cx,cy))
+                #temp_array=extract_array(hdufocusdata, (radius_of_radialprofile,radius_of_radialprofile), (cx,cy))
+                temp_array=hdufocusdata[cx-halfradius_of_radialprofile:cx+halfradius_of_radialprofile,cy-halfradius_of_radialprofile:cy+halfradius_of_radialprofile]
+                #breakpoint()
+                #temp_numpy=hdufocusdata[cx-radius_of_radialprofile:cx+radius_of_radialprofile,cy-radius_of_radialprofile:cy+radius_of_radialprofile]
             except:
                 print(traceback.format_exc())
                 breakpoint()
@@ -425,12 +459,17 @@ else:
                         # FWHM is 2.355 * std for a gaussian
                         fwhmlist.append(popt[2])
                         # Area under a gaussian is (amplitude * Stdev / 0.3989)
-                        sources.append([cx,cy,radprofile,temp_array,cvalue, popt[0]*popt[2]/0.3989,popt[0],popt[1],popt[2]])
+                        #breakpoint()
+                        if good_radials < number_of_good_radials_to_get:
+                            sources.append([cx,cy,radprofile,temp_array,cvalue, popt[0]*popt[2]/0.3989,popt[0],popt[1],popt[2],'r'])
+                            good_radials=good_radials+1
+                        else:
+                            sources.append([cx,cy,0,0,cvalue, popt[0]*popt[2]/0.3989,popt[0],popt[1],popt[2],'n'])
                         photometry.append([cx,cy,cvalue,popt[0],popt[2]*4.710])
-                        
+
                         #breakpoint()
                         # If we've got more than 50 for a focus
-                        # We only need some good ones. 
+                        # We only need some good ones.
                         if frame_type == 'focus':
                             if len(fwhmlist) > 50:
                                 bailout=True
@@ -453,7 +492,7 @@ else:
             rfr= np.nan
             rfp= np.nan
             rfs= np.nan
-        
+
         sepsky = imageMode
         fwhm_file={}
         fwhm_file['rfp']=str(rfp)
@@ -463,13 +502,13 @@ else:
         fwhm_file['sources']=str(len(fwhmlist))
         with open(im_path + text_name.replace('.txt', '.fwhm'), 'w') as f:
             json.dump(fwhm_file, f)
-        
+
         pickle.dump(photometry, open(im_path + text_name.replace('.txt', '.sep'),'wb'))
         print (im_path + text_name.replace('.txt', '.sep'))
-        
-        
+
+
         #sources.write(im_path + text_name.replace('.txt', '.sep'), format='csv', overwrite=True)
-        
+
             # dump the settings files into the temp directory
             # with open(im_path + text_name.replace('.txt', '.fwhm'), 'w') as f:
             #     json.dump(fwhm_file, f)
@@ -714,12 +753,12 @@ else:
 # Save out the "sep" file
 #breakpoint()
 
-#with 
+#with
 
 
 
 # These broad image statistics also take a few seconds on a QHY600 image
-# But are not needed for a focus image. 
+# But are not needed for a focus image.
 if not frame_type == 'focus':
     googtime=time.time()
     hduheader["IMGMIN"] = ( np.min(hdufocusdata), "Minimum Value of Image Array" )
@@ -729,18 +768,25 @@ if not frame_type == 'focus':
     hduheader["IMGMED"] = ( np.median(hdufocusdata), "Median Value of Image Array" )
 
 
-    
+
     hduheader["IMGMAD"] = ( median_absolute_deviation(hdufocusdata), "Median Absolute Deviation of Image Array" )
     print ("Basic Image Stats: " +str(time.time()-googtime))
-    
 
-# We don't need to calculate the histogram 
+
+# We don't need to calculate the histogram
 # If we aren't keeping the image.
 if frame_type=='expose':
 
-    googtime=time.time()   
+    googtime=time.time()
 
-    # Collect unique values and counts    
+
+    #breakpoint()
+    if float(hduheader['EXPTIME']) <= minimum_exposure_for_extended_stuff :
+        int_array_flattened=hdufocusdata.astype(int).ravel()
+        unique,counts=np.unique(int_array_flattened[~np.isnan(int_array_flattened)], return_counts=True)
+
+
+    # Collect unique values and counts
     histogramdata=np.column_stack([unique,counts]).astype(np.int32)
 
     #Do some fiddle faddling to figure out the value that goes to zero less
@@ -755,14 +801,14 @@ if frame_type=='expose':
             breaker =0
     hdufocusdata[hdufocusdata < zeroValue] = imageMode
     histogramdata=histogramdata[histogramdata[:,0] > zeroValue]
-    
-    
-    print ("Histogram: " + str(time.time()-googtime)) 
+
+
+    print ("Histogram: " + str(time.time()-googtime))
 
     imageinspection_json_snippets['histogram']= re.sub('\s+',' ',str(histogramdata))
-    
-    
-    
+
+
+
 
 try:
     #hduheader["SEPSKY"] = str(sepsky)
@@ -816,8 +862,12 @@ try:
 except:
     pass
 
+#googtime=time.time()
 imageinspection_json_snippets['header']=headerdict
+#print ("Writing out image inspection: " + str(time.time()-googtime))
+#googtime=time.time()
 starinspection_json_snippets['header']=headerdict
+#print ("Writing out star inspection: " + str(time.time()-googtime))
 #json_snippets['header']=headerdict
 #breakpoint()
 # # Create radial profiles for UI
@@ -932,18 +982,18 @@ starinspection_json_snippets['header']=headerdict
         # pickle.dump(radials, open(im_path + text_name.replace('.txt', '.rad'),'wb'))
         #json_snippets['radialprofiles']=str(radials)
         #imageinspection_json_snippets['header']=headerdict
-starinspection_json_snippets['radialprofiles']=re.sub('\s+',' ',str(sources))
+
         #print (radials)
         #breakpoint()
-
+googtime=time.time()
 imageinspection_json_snippets['photometry']=re.sub('\s+',' ',str(photometry))
 #starinspection_json_snippets['photometry']=re.sub('\s+',' ',str(sources))
-
+print ("Writing out Photometry: " + str(time.time()-googtime))
 
     # except:
     #     pass
 if do_sep and (not frame_type=='focus'):
-    
+
     # Constructing the slices and dices
     try:
         googtime=time.time()
@@ -1034,14 +1084,26 @@ if do_sep and (not frame_type=='focus'):
         pass
 
 
+if not frame_type == 'focus':
+    #breakpoint()
+    googtime=time.time()
+    with open(im_path + 'image_' + text_name.replace('.txt', '.json'), 'w') as f:
+        json.dump(imageinspection_json_snippets, f)
+    print ("Writing out image inspection: " + str(time.time()-googtime))
 
-#breakpoint()
 
-with open(im_path + 'image_' + text_name.replace('.txt', '.json'), 'w') as f:
-    json.dump(imageinspection_json_snippets, f)
+    # Writing out the radial profile snippets
+    # This seems to take the longest time, so down here it goes
+    googtime=time.time()
+    starinspection_json_snippets['radialprofiles']=re.sub('\s+',' ',str(sources))
+    print ("ASCIIing Radial Profiles: " + str(time.time()-googtime))
+    googtime=time.time()
+    with open(im_path + 'star_' + text_name.replace('.txt', '.json'), 'w') as f:
+        json.dump(starinspection_json_snippets, f)
+    print ("Writing out star inspection: " + str(time.time()-googtime))
 
-with open(im_path + 'star_' + text_name.replace('.txt', '.json'), 'w') as f:
-    json.dump(starinspection_json_snippets, f)
+
+
 
 # If it is a focus image then it will get sent in a different manner to the UI for a jpeg
 # In this case, the image needs to be the 0.2 degree field that the focus field is made up of
@@ -1102,6 +1164,10 @@ if frame_type == 'focus':
     del hdusmalldata
     del stretched_data_float
     del final_image
+
+
+
+
 
 #print (time.time()-googtime)
 
