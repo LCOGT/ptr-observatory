@@ -6228,7 +6228,7 @@ class Sequencer:
 
         #unpark before anything else.
         position_after_unpark=False
-        if self.rapid_park_indicator:
+        if g_dev['mnt'].rapid_park_indicator:
             position_after_unpark=True
         g_dev['mnt'].unpark_command({}, {})
         if position_after_unpark:
