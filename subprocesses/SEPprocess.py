@@ -464,6 +464,9 @@ else:
         with open(im_path + text_name.replace('.txt', '.fwhm'), 'w') as f:
             json.dump(fwhm_file, f)
         
+        pickle.dump(photometry, open(im_path + text_name.replace('.txt', '.sep'),'wb'))
+        print (im_path + text_name.replace('.txt', '.sep'))
+        
         
         #sources.write(im_path + text_name.replace('.txt', '.sep'), format='csv', overwrite=True)
         
@@ -712,8 +715,7 @@ else:
 #breakpoint()
 
 #with 
-pickle.dump(photometry, open(im_path + text_name.replace('.txt', '.sep'),'wb'))
-print (im_path + text_name.replace('.txt', '.sep'))
+
 
 
 # These broad image statistics also take a few seconds on a QHY600 image

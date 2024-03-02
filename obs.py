@@ -2677,7 +2677,7 @@ class Observatory:
                     self.enqueue_for_fastUI(10, im_path, text_name)
                 else:
                     plog ("Couldn't find file to send up")
-                    plog (im_path + text_name.replace('.txt'))
+                    plog (im_path + text_name)
                 del hdufocusdata
 
                 self.sep_processing = False
