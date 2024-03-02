@@ -3805,7 +3805,7 @@ class Camera:
                     focus_image = False
                     #breakpoint()
                     
-                    g_dev['obs'].fwhmresult['FWHM']=fwhm_dict['rfr']
+                    g_dev['obs'].fwhmresult['FWHM']=float(fwhm_dict['rfr'])
                     #foc_pos1 = g_dev['obs'].fwhmresult['mean_focus']
                     foc_pos1=focus_position
 
