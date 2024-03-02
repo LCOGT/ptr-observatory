@@ -262,7 +262,7 @@ if smartstackid == 'no':
         # Resizing the array to an appropriate shape for the small jpg
         iy, ix = final_image.size
         if (crop_preview == True):
-            final_image=final_image.crop((xl,yt,xr,yb))
+            final_image=final_image.crop((xl,yt,ix-xr,iy-yb))
             iy, ix = final_image.size
             #insert Debify routine here.  NB NB Note LCO '30-amin Sq field not implemented.'
             print('Zoom factor is:  ', zoom_factor)
