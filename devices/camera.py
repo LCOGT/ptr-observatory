@@ -3804,6 +3804,10 @@ class Camera:
                     print ("focus analysis time: " + str(time.time() - temptimer))
                     focus_image = False
                     #breakpoint()
+                    
+                    g_dev['obs'].fwhmresult['FWHM']=fwhm_dict['rfr']
+                    #foc_pos1 = g_dev['obs'].fwhmresult['mean_focus']
+                    foc_pos1=focus_position
 
                     expresult['FWHM']=fwhm_dict['rfr']
                     expresult["mean_focus"]=focus_position
