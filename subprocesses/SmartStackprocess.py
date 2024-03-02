@@ -692,13 +692,15 @@ else:
         # Resizing the array to an appropriate shape for the small jpg
         
         iy, ix = final_image.size
+        #breakpoint()
         if (crop_preview == True):
-            final_image=final_image.crop((xl,yt,ix-xr,iy-yb))
+            #final_image=final_image.crop((xl,yt,ix-xr,iy-yb))
+            final_image=final_image.crop((xl,yt,iy-xr,ix-yb))
             #iy, ix = final_image.size
             #insert Debify routine here.  NB NB Note LCO '30-amin Sq field not implemented.'
-        
+        #breakpoint()
         print('Zoom factor is:  ', zoom_factor)
-        if zoom_factor is not False:
+        if zoom_factor is not False and not zoom_factor in ['full', 'Full', '100%'] :
             if zoom_factor in ['full', 'Full', '100%']:
                 zoom = (0.0, 0.0, 0.0, 0.0)   #  Trim nothing
             elif zoom_factor in ['square', 'sqr.', 'small sq.']:
@@ -728,18 +730,21 @@ else:
                 r_sq2 = (1 - 0.0625)/2
                 zoom = (r_sq2, r_sq2, r_sq2, r_sq2,)
             else:
-                zoom = (1.0, 1.0, 1.0, 1.0)
+                zoom = (0.0, 0.0, 0.0, 0.0)
             #breakpoint()
             xl, yt, xr, yb = zoom
             xl *= ix
             yt *= iy
             xr *= ix
             yb *= iy
-            trial_image=final_image.crop((int(xl),int(yt),int(ix-xr),int(iy-yb)))
+            #trial_image=final_image.crop((int(xl),int(yt),int(ix-xr),int(iy-yb)))
+            trial_image=final_image.crop((int(xl),int(yt),int(iy-xr),int(ix-yb)))
             ix, iy = trial_image.size
             print("Zoomed Image size:", ix, iy)
             final_image = trial_image
-            
+        
+        
+        
         iy, ix = final_image.size
         if iy == ix:
             final_image = final_image.resize((900, 900))
@@ -747,12 +752,15 @@ else:
             if squash_on_x_axis:
                 final_image = final_image.resize((int(900 * iy / ix), 900))
             else:
-                final_image = final_image.resize(900, (int(900 * iy / ix)))
+                final_image = final_image.resize((900, int(900 * iy / ix)))
 
         final_image.save(
             paths["im_path"] + paths["jpeg_name10"]
         )
         del final_image
+        
+        
+        #breakpoint()
 
 try:
     imgdata.close()
