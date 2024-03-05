@@ -5068,7 +5068,7 @@ class Sequencer:
                         both_debanded_image=both_debanded_image+1
                         
                         #both_debanded_image = thresh(both_debanded_image, image_saturation_level)
-                        
+                        temporaryFlat=both_debanded_image
 
 
                         try:
