@@ -2413,7 +2413,7 @@ class Observatory:
                 except:
                     plog ("Problem in the jpeg pickle dump")
                     plog(traceback.format_exc())
-                    
+
 
 
 
@@ -2517,18 +2517,18 @@ class Observatory:
                 if os.path.exists(im_path + text_name.replace('.txt', '.fwhm')):
                     with open(im_path + text_name.replace('.txt', '.fwhm'), 'r') as f:
                         fwhm_info = json.load(f)
-                        
+
                     self.fwhmresult={}
                     self.fwhmresult["FWHM"] = float(fwhm_info['rfr'])
                     rfr=float(fwhm_info['rfr'])
                     self.fwhmresult["mean_focus"] = avg_foc
                     self.fwhmresult['No_of_sources'] =float(fwhm_info['sources'])
-                
+
                 # try:
                 #     self.enqueue_for_mediumUI(200, im_path, text_name.replace('.txt', '.sep'))
                 # except:
                 #     plog("Failed to send SEP up for some reason")
-                
+
                 # elif os.path.exists(im_path + text_name.replace('.txt', '.sep')):
                 #     try:
                 #         sources = Table.read(im_path + text_name.replace('.txt', '.sep'), format='csv')
@@ -2598,14 +2598,14 @@ class Observatory:
                 #             self.fwhmresult['No_of_sources'] = len(sources)
 
 
-                        
-                                    
+
+
                 #     except Exception as e:
                 #         plog ("something odd occured in the reinterpretation of the SEP file", e)
                 #         plog(traceback.format_exc())
-                    
-                    
-                    
+
+
+
 
                 else:
                     #plog ("Did not find a source list from SEP for this image.")
@@ -2617,7 +2617,7 @@ class Observatory:
                 if focus_image != True and not np.isnan(self.fwhmresult['FWHM']):
                     # Focus tracker code. This keeps track of the focus and if it drifts
                     # Then it triggers an autofocus.
-                    
+
                     g_dev["foc"].focus_tracker.pop(0)
                     g_dev["foc"].focus_tracker.append(round(rfr, 3))
                     plog("Last ten FWHM (pixels): " + str(g_dev["foc"].focus_tracker) + " Median: " + str(np.nanmedian(g_dev["foc"].focus_tracker)) + " Last Solved: " + str(g_dev["foc"].last_focus_fwhm))
@@ -2635,7 +2635,7 @@ class Observatory:
                         ):
                             g_dev["foc"].focus_needed = True
                             g_dev["obs"].send_to_user(
-                                "Focus has drifted to "
+                                "FWHM has drifted to:  "
                                 + str(round(np.nanmedian(g_dev["foc"].focus_tracker),2))
                                 + " from "
                                 + str(g_dev["foc"].last_focus_fwhm)
@@ -2730,7 +2730,7 @@ class Observatory:
                         except:
                             plog ("Problem in the platesolve pickle dump")
                             plog(traceback.format_exc())
-                            
+
                         # yet another pickle debugger.
                         if True:
                             pickle.dump([hdufocusdata, hduheader, self.local_calibration_path, cal_name, frame_type, time_platesolve_requested,
@@ -3910,10 +3910,10 @@ class Observatory:
                     xr=self.config["camera"][g_dev['cam'].name]["settings"][
                         "crop_preview_xright"
                     ]
-                    
-                    
+
+
                     if g_dev['cam'].dither_enabled:
-                        crop_preview=True 
+                        crop_preview=True
                         yb=yb+50
                         yt=yt+50
                         xl=xl+50

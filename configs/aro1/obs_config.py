@@ -94,7 +94,7 @@ site_config = {
 
     'save_to_alt_path' : 'yes',
     'local_calibration_path': 'F:/ptr/', # THIS FOLDER HAS TO BE ON A LOCAL DRIVE, not a network drive due to the necessity of huge memmap files
-    'archive_age' : 10.0, # Number of days to keep files in the local archive before deletion. Negative means never delete
+    'archive_age' : 4.0, # Number of days to keep files in the local archive before deletion. Negative means never delete
 
     'redis_available':  True,
     'redis_ip': "10.0.0.174:6379",
@@ -152,23 +152,23 @@ site_config = {
      'enclosure_check_period': 3,    # How many minutes between enclosure checks
 
      # Turn on and off various automated calibrations at different times.
-     'auto_eve_bias_dark': False,
+     'auto_eve_bias_dark': True,
      'auto_eve_sky_flat': True,
-     'time_to_wait_after_roof_opens_to_take_flats': 5,   #Just imposing a minimum in case of a restart.
-     'auto_midnight_moonless_bias_dark': True,
+     'time_to_wait_after_roof_opens_to_take_flats': 2,   #  Units??  Just imposing a minimum in case of a restart.
+     'auto_midnight_moonless_bias_dark': False,  # WER 20240303 Afternoon, changed from True
      'auto_morn_sky_flat': True,
-     'auto_morn_bias_dark': False,
+     'auto_morn_bias_dark': True,
 
      # FOCUS OPTIONS
-     'periodic_focus_time': 12, # This is a time, in hours, over which to bypass automated focussing (e.g. at the start of a project it will not refocus if a new project starts X hours after the last focus)
+     'periodic_focus_time': 2, # This is a time, in hours, over which to bypass automated focussing (e.g. at the start of a project it will not refocus if a new project starts X hours after the last focus)
      'stdev_fwhm': 0.4,  # This is the expected variation in FWHM at a given telescope/camera/site combination. This is used to check if a fwhm is within normal range or the focus has shifted
-     'focus_trigger': 0.6,  # What FWHM increase is needed to trigger an autofocus
+     'focus_trigger': 0.5,  # What FWHM increase is needed to trigger an autofocus
 
      # PLATESOLVE options
      'solve_nth_image': 1,  # Only solve every nth image
      'solve_timer': 0.05,  # Only solve every X minutes    NB WER  3 seconds????
      'threshold_mount_update': 45,  # only update mount zero point when X arcseconds away
-     'limit_mount_tweak': 15,   #maximum radial drift allowed for a correction when running a block
+     'limit_mount_tweak': 15,   # units?  maximum radial drift allowed for a correction when running a block
 
 
     'defaults': {
@@ -411,7 +411,7 @@ site_config = {
             'service_date': '20210716',
 
 
-            "filter_settle_time": 5, # WER 20240103 continuing test.  how long to wait for the filter to settle after a filter change(seconds)
+            "filter_settle_time": 2, #sec  WER 20240303 continuing test.  how long to wait for the filter to settle after a filter change(seconds)
             'override_automatic_filter_throughputs': False, # This ignores the automatically estimated filter gains and starts with the values from the config file
 
             "driver": "LCO.dual",  # 'ASCOM.FLI.FilterWheel',   #'MAXIM',
@@ -481,7 +481,7 @@ site_config = {
                         ['N2',   [13, 0],   'Nitrogen II'],     #19
                         ['S2',   [0,  4],   'Sulphur II'],     #20
 
-                        ['Y',    [6,  0],   "Rubin Y"],     #21
+                        #['Y',    [6,  0],   "Rubin Y"],     #21
 
 
                         ['dark', [1,  3],   'dk']],    #22     #Not a real filter.  Total 23
@@ -573,9 +573,9 @@ site_config = {
                 #'direct_qhy_usb_speed' : 50,
                 'direct_qhy_usb_traffic' : 45,  #Early 20240103 = 50, not clear earlier but better than before.
                 #The pattern before came and went. Now consitent at 50.  Changing to 45.
-
+                #Which one of these is actually used?
                 'set_qhy_usb_speed': True,
-                'direct_qhy_usb_speed' : 50,    #20240106 Afternoon WER Was 60
+                'direct_qhy_usb_speed' : 45,    #20240106 Afternoon WER Was 60
 
                 # These options set whether an OSC gets binned or interpolated for different functions
                 # If the pixel scale is well-sampled (e.g. 0.6 arcsec per RGGB pixel or 0.3 arcsec per individual debayer pixel)
