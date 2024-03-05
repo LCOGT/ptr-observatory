@@ -4960,6 +4960,115 @@ class Sequencer:
                             plog ("No improvement with last interpolation attempt.")
                             plog ("Filling remaining nans with median")
                             temporaryFlat=np.nan_to_num(temporaryFlat, nan = np.nanmedian(temporaryFlat))
+                            
+                            
+                            
+                            
+                            
+                            
+                            
+
+                        ###### We have to deband the flat to stop banded flats band light images.
+                        # If that makes sense.
+                        
+                        # Remove horizontal and vertical banding
+                        # If there isn't banding this should not alter the array really
+                        sigma_clipped_array=copy.deepcopy(temporaryFlat)
+
+                        # REMOVE LOW VALUES
+
+                        #Do some fiddle faddling to figure out the value that goes to zero less
+                        int_array_flattened=sigma_clipped_array.astype(int).ravel()
+                        unique,counts=np.unique(int_array_flattened[~np.isnan(int_array_flattened)], return_counts=True)
+                        m=counts.argmax()
+                        imageMode=unique[m]
+
+                        # Collect unique values and counts
+                        histogramdata=np.column_stack([unique,counts]).astype(np.int32)
+                        zeroValueArray=histogramdata[histogramdata[:,0] < imageMode]
+                        breaker=1
+                        counter=0
+                        while (breaker != 0):
+                            counter=counter+1
+                            if not (imageMode-counter) in zeroValueArray[:,0]:
+
+                                zeroValue=(imageMode-counter)
+                                breaker =0
+                        sigma_clipped_array[sigma_clipped_array < zeroValue] = np.nan
+                        #histogramdata=histogramdata[histogramdata[:,0] > zeroValue]
+                        
+                        # REMOVE HIGH VALUES
+                        while True:
+                            tempstd=np.nanstd(sigma_clipped_array)
+                            tempmedian=np.nanmedian(sigma_clipped_array)
+                            clipped_areas=sigma_clipped_array > tempmedian + 4*tempstd
+                            if np.sum(clipped_areas) == 0:
+                                break
+                            print (np.sum(clipped_areas))
+                            sigma_clipped_array[clipped_areas] = np.nan
+                            #breakpoint()
+
+                        # REMOVE LOW VALUES
+                        while True:
+                            tempstd=np.nanstd(sigma_clipped_array)
+                            tempmedian=np.nanmedian(sigma_clipped_array)
+                            clipped_areas=sigma_clipped_array < tempmedian - 4*tempstd
+                            if np.sum(clipped_areas) == 0:
+                                break
+                            print (np.sum(clipped_areas))
+                            sigma_clipped_array[clipped_areas] = np.nan
+                            #breakpoint()
+                            
+                        
+                        # Do rows
+                        rows_median = np.nanmedian(sigma_clipped_array,axis=1)
+                        #rows_x = np.arange(0,len(rows_median),1.0)
+                        #plt.scatter(columns_median)
+                        rows_median[np.isnan(rows_median)] = np.nanmedian(rows_median) # This should bea more thorough nearest neighbour thing when I get to it
+
+                        row_debanded_image= temporaryFlat-rows_median[:,None]
+                        #debanded_rows_median=np.nanmedian(row_debanded_image,axis=1)
+                        #plt.scatter(columns_x,debanded_columns_medain)
+
+                        print ("Done rows. Now columns.")
+
+                        # Then run this on columns
+                        sigma_clipped_array=copy.deepcopy(row_debanded_image)
+                        # REMOVE HIGH VALUES
+                        while True:
+                            tempstd=np.nanstd(sigma_clipped_array)
+                            tempmedian=np.nanmedian(sigma_clipped_array)
+                            clipped_areas=sigma_clipped_array > tempmedian + 4*tempstd
+                            if np.sum(clipped_areas) == 0:
+                                break
+                            print (np.sum(clipped_areas))
+                            sigma_clipped_array[clipped_areas] = np.nan
+                            #breakpoint()
+
+                        # REMOVE LOW VALUES
+                        while True:
+                            tempstd=np.nanstd(sigma_clipped_array)
+                            tempmedian=np.nanmedian(sigma_clipped_array)
+                            clipped_areas=sigma_clipped_array < tempmedian - 4*tempstd
+                            if np.sum(clipped_areas) == 0:
+                                break
+                            print (np.sum(clipped_areas))
+                            sigma_clipped_array[clipped_areas] = np.nan
+                            #breakpoint()
+                            
+
+                        columns_median = np.nanmedian(sigma_clipped_array,axis=0)
+                        #columns_x = np.arange(0,len(columns_median),1.0)
+                        columns_median[np.isnan(columns_median)] = np.nanmedian(columns_median)
+
+                        both_debanded_image= row_debanded_image-columns_median[None,:]
+                        #debanded_both_median=np.nanmedian(both_debanded_image,axis=0)
+
+                        # Reinstitute pedestal
+                        both_debanded_image=both_debanded_image+1
+                        
+                        #both_debanded_image = thresh(both_debanded_image, image_saturation_level)
+                        
 
 
                         try:
