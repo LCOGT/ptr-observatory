@@ -1850,8 +1850,8 @@ class Sequencer:
                     self.bias_dark_latch = False
                     break
                 g_dev['obs'].request_scan_requests()
-                
-                
+
+
                 # COLLECTING A SEVENPOINTFIVE SECOND EXPOSURE DARK FRAME
                 plog("Expose " + str(5*stride) +" 1x1 7.5s exposure dark frames.")
                 req = {'time': 7.5,  'script': 'True', 'image_type': 'sevenpointfivesec_exposure_dark'}
@@ -2729,8 +2729,8 @@ class Sequencer:
                 # img_temp_stdev=np.nanstd(hdu1data)
                 # above_array=(hdu1data > (img_temp_median + (10 * img_temp_stdev)))
                 # below_array=(hdu1data < (img_temp_median - (10 * img_temp_stdev)))
-                # print ("Bad pixels above: " + str(above_array.sum()))
-                # print ("Bad pixels below: " + str(below_array.sum()))
+                # plog ("Bad pixels above: " + str(above_array.sum()))
+                # plog ("Bad pixels below: " + str(below_array.sum()))
                 # bad_pixel_mapper_array=bad_pixel_mapper_array+above_array+below_array
 
 
@@ -2775,8 +2775,8 @@ class Sequencer:
             img_temp_stdev=np.nanstd(masterBias)
             above_array=(masterBias > (img_temp_median + (10 * img_temp_stdev)))
             below_array=(masterBias < (img_temp_median - (10 * img_temp_stdev)))
-            print ("Bad pixels above: " + str(above_array.sum()))
-            print ("Bad pixels below: " + str(below_array.sum()))
+            plog ("Bad pixels above: " + str(above_array.sum()))
+            plog ("Bad pixels below: " + str(below_array.sum()))
             bad_pixel_mapper_array=bad_pixel_mapper_array+above_array+below_array
 
 
@@ -2866,8 +2866,8 @@ class Sequencer:
                 # img_temp_stdev=np.nanstd(darkdeexp)
                 # above_array=(darkdeexp > 20)
                 # #below_array=(darkdeexp < (img_temp_median - (10 * img_temp_stdev)))
-                # print ("Bad pixels above: " + str(above_array.sum()))
-                # #print ("Bad pixels below: " + str(below_array.sum()))
+                # plog ("Bad pixels above: " + str(above_array.sum()))
+                # #plog ("Bad pixels below: " + str(below_array.sum()))
                 # bad_pixel_mapper_array=bad_pixel_mapper_array+above_array+below_array
 
                 #timetaken=datetime.datetime.now() -starttime
@@ -2913,8 +2913,8 @@ class Sequencer:
             img_temp_stdev=np.nanstd(masterDark)
             above_array=(masterDark > 20)
             #below_array=(darkdeexp < (img_temp_median - (10 * img_temp_stdev)))
-            print ("Bad pixels above: " + str(above_array.sum()))
-            #print ("Bad pixels below: " + str(below_array.sum()))
+            plog ("Bad pixels above: " + str(above_array.sum()))
+            #plog ("Bad pixels below: " + str(below_array.sum()))
             bad_pixel_mapper_array=bad_pixel_mapper_array+above_array+below_array
 
             try:
@@ -3594,9 +3594,9 @@ class Sequencer:
                 gc.collect()
                 os.remove(g_dev['obs'].local_dark_folder  + 'tempfile')
                 g_dev["obs"].send_to_user("five bias-dark calibration frame created.")
-                
-                
-            
+
+
+
             ##############################################################################################
             ##############################################################################################
             ##############################################################################################
@@ -3895,8 +3895,8 @@ class Sequencer:
                     # img_temp_stdev=np.nanstd(darkdeexp)
                     # above_array=(darkdeexp > 20)
                     # #below_array=(darkdeexp < (img_temp_median - (10 * img_temp_stdev)))
-                    # print ("Bad pixels above: " + str(above_array.sum()))
-                    # #print ("Bad pixels below: " + str(below_array.sum()))
+                    # plog ("Bad pixels above: " + str(above_array.sum()))
+                    # #plog ("Bad pixels below: " + str(below_array.sum()))
                     # bad_pixel_mapper_array=bad_pixel_mapper_array+above_array+below_array
 
                     #timetaken=datetime.datetime.now() -starttime
@@ -4102,8 +4102,8 @@ class Sequencer:
                     # img_temp_stdev=np.nanstd(darkdeexp)
                     # above_array=(darkdeexp > 20)
                     # #below_array=(darkdeexp < (img_temp_median - (10 * img_temp_stdev)))
-                    # print ("Bad pixels above: " + str(above_array.sum()))
-                    # #print ("Bad pixels below: " + str(below_array.sum()))
+                    # plog ("Bad pixels above: " + str(above_array.sum()))
+                    # #plog ("Bad pixels below: " + str(below_array.sum()))
                     # bad_pixel_mapper_array=bad_pixel_mapper_array+above_array+below_array
 
                     #timetaken=datetime.datetime.now() -starttime
@@ -4217,8 +4217,8 @@ class Sequencer:
                     # img_temp_stdev=np.nanstd(darkdeexp)
                     # above_array=(darkdeexp > 20)
                     # #below_array=(darkdeexp < (img_temp_median - (10 * img_temp_stdev)))
-                    # print ("Bad pixels above: " + str(above_array.sum()))
-                    # #print ("Bad pixels below: " + str(below_array.sum()))
+                    # plog ("Bad pixels above: " + str(above_array.sum()))
+                    # #plog ("Bad pixels below: " + str(below_array.sum()))
                     # bad_pixel_mapper_array=bad_pixel_mapper_array+above_array+below_array
 
                     #timetaken=datetime.datetime.now() -starttime
@@ -4258,8 +4258,8 @@ class Sequencer:
                 img_temp_stdev=np.nanstd(broadbandss_masterDark)
                 above_array=(broadbandss_masterDark > 20)
                 #below_array=(darkdeexp < (img_temp_median - (10 * img_temp_stdev)))
-                print ("Bad pixels above: " + str(above_array.sum()))
-                #print ("Bad pixels below: " + str(below_array.sum()))
+                plog ("Bad pixels above: " + str(above_array.sum()))
+                #plog ("Bad pixels below: " + str(below_array.sum()))
                 bad_pixel_mapper_array=bad_pixel_mapper_array+above_array+below_array
 
 
@@ -4311,8 +4311,8 @@ class Sequencer:
                     # img_temp_stdev=np.nanstd(darkdeexp)
                     # above_array=(darkdeexp > 20)
                     # #below_array=(darkdeexp < (img_temp_median - (10 * img_temp_stdev)))
-                    # print ("Bad pixels above: " + str(above_array.sum()))
-                    # #print ("Bad pixels below: " + str(below_array.sum()))
+                    # plog ("Bad pixels above: " + str(above_array.sum()))
+                    # #plog ("Bad pixels below: " + str(below_array.sum()))
                     # bad_pixel_mapper_array=bad_pixel_mapper_array+above_array+below_array
 
                     #timetaken=datetime.datetime.now() -starttime
@@ -4418,8 +4418,8 @@ class Sequencer:
                     # img_temp_stdev=np.nanstd(darkdeexp)
                     # above_array=(darkdeexp > 20)
                     # #below_array=(darkdeexp < (img_temp_median - (10 * img_temp_stdev)))
-                    # print ("Bad pixels above: " + str(above_array.sum()))
-                    # #print ("Bad pixels below: " + str(below_array.sum()))
+                    # plog ("Bad pixels above: " + str(above_array.sum()))
+                    # #plog ("Bad pixels below: " + str(below_array.sum()))
                     # bad_pixel_mapper_array=bad_pixel_mapper_array+above_array+below_array
 
                     #timetaken=datetime.datetime.now() -starttime
@@ -4460,8 +4460,8 @@ class Sequencer:
                 img_temp_stdev=np.nanstd(narrowbandss_masterDark)
                 above_array=(narrowbandss_masterDark > 20)
                 #below_array=(darkdeexp < (img_temp_median - (10 * img_temp_stdev)))
-                print ("Bad pixels above: " + str(above_array.sum()))
-                #print ("Bad pixels below: " + str(below_array.sum()))
+                plog ("Bad pixels above: " + str(above_array.sum()))
+                #plog ("Bad pixels below: " + str(below_array.sum()))
                 bad_pixel_mapper_array=bad_pixel_mapper_array+above_array+below_array
 
 
@@ -4514,7 +4514,7 @@ class Sequencer:
                     # img_temp_stdev=np.nanstd(darkdeexp)
                     # above_array=(darkdeexp > 20)
                     # #below_array=(darkdeexp < (img_temp_median - (10 * img_temp_stdev)))
-                    # print ("Bad pixels above: " + str(above_array.sum()))
+                    # plog ("Bad pixels above: " + str(above_array.sum()))
                     # #plog ("Bad pixels below: " + str(below_array.sum()))
                     # bad_pixel_mapper_array=bad_pixel_mapper_array+above_array+below_array
 
@@ -4826,15 +4826,15 @@ class Sequencer:
 
                             delete_flat_components=[]
                             for counterflat in range(len(nanstd_collector)):
-                                print ("Image " + str(counterflat) + " assessment")
-                                if nanstd_collector[counterflat] > (med_std + 3 * std_std):
-                                    print ("FOUND A REJECTION: " + str(round(nanstd_collector[counterflat],5)) + " > " + str(round(med_std + 3 * std_std,5)))
+                                plog ("Image " + str(counterflat) + " assessment")
+                                if nanstd_collector[counterflat] > (med_std + 5 * std_std):
+                                    plog ("FOUND A REJECTION: " + str(round(nanstd_collector[counterflat],5)) + " > " + str(round(med_std + 3 * std_std,5)))
                                     delete_flat_components.append(counterflat)
 
                             if len(delete_flat_components) == 0:
                                 break
 
-                            print ("REPROCESSING FLAT WITH BAD COMPONENTS REMOVED")
+                            plog ("REPROCESSING FLAT WITH BAD COMPONENTS REMOVED")
                             # Remove problematic flat images from squishener so we can re-run the flat.
                             for index in sorted(delete_flat_components, reverse=True):
                                 del inputList[index]
@@ -4960,17 +4960,17 @@ class Sequencer:
                             plog ("No improvement with last interpolation attempt.")
                             plog ("Filling remaining nans with median")
                             temporaryFlat=np.nan_to_num(temporaryFlat, nan = np.nanmedian(temporaryFlat))
-                            
-                            
-                            
-                            
-                            
-                            
-                            
+
+
+
+
+
+
+
 
                         ###### We have to deband the flat to stop banded flats band light images.
                         # If that makes sense.
-                        
+
                         # Remove horizontal and vertical banding
                         # If there isn't banding this should not alter the array really
                         sigma_clipped_array=copy.deepcopy(temporaryFlat)
@@ -4996,7 +4996,7 @@ class Sequencer:
                                 breaker =0
                         sigma_clipped_array[sigma_clipped_array < zeroValue] = np.nan
                         #histogramdata=histogramdata[histogramdata[:,0] > zeroValue]
-                        
+
                         # REMOVE HIGH VALUES
                         while True:
                             tempstd=np.nanstd(sigma_clipped_array)
@@ -5004,7 +5004,7 @@ class Sequencer:
                             clipped_areas=sigma_clipped_array > tempmedian + 4*tempstd
                             if np.sum(clipped_areas) == 0:
                                 break
-                            print (np.sum(clipped_areas))
+                            plog (np.sum(clipped_areas))
                             sigma_clipped_array[clipped_areas] = np.nan
                             #breakpoint()
 
@@ -5015,11 +5015,11 @@ class Sequencer:
                             clipped_areas=sigma_clipped_array < tempmedian - 4*tempstd
                             if np.sum(clipped_areas) == 0:
                                 break
-                            print (np.sum(clipped_areas))
+                            plog (np.sum(clipped_areas))
                             sigma_clipped_array[clipped_areas] = np.nan
                             #breakpoint()
-                            
-                        
+
+
                         # Do rows
                         rows_median = np.nanmedian(sigma_clipped_array,axis=1)
                         #rows_x = np.arange(0,len(rows_median),1.0)
@@ -5030,7 +5030,7 @@ class Sequencer:
                         #debanded_rows_median=np.nanmedian(row_debanded_image,axis=1)
                         #plt.scatter(columns_x,debanded_columns_medain)
 
-                        print ("Done rows. Now columns.")
+                        plog ("Done rows. Now columns.")
 
                         # Then run this on columns
                         sigma_clipped_array=copy.deepcopy(row_debanded_image)
@@ -5041,7 +5041,7 @@ class Sequencer:
                             clipped_areas=sigma_clipped_array > tempmedian + 4*tempstd
                             if np.sum(clipped_areas) == 0:
                                 break
-                            print (np.sum(clipped_areas))
+                            plog (np.sum(clipped_areas))
                             sigma_clipped_array[clipped_areas] = np.nan
                             #breakpoint()
 
@@ -5052,10 +5052,10 @@ class Sequencer:
                             clipped_areas=sigma_clipped_array < tempmedian - 4*tempstd
                             if np.sum(clipped_areas) == 0:
                                 break
-                            print (np.sum(clipped_areas))
+                            plog (np.sum(clipped_areas))
                             sigma_clipped_array[clipped_areas] = np.nan
                             #breakpoint()
-                            
+
 
                         columns_median = np.nanmedian(sigma_clipped_array,axis=0)
                         #columns_x = np.arange(0,len(columns_median),1.0)
@@ -5066,7 +5066,7 @@ class Sequencer:
 
                         # Reinstitute pedestal
                         both_debanded_image=both_debanded_image+1
-                        
+
                         #both_debanded_image = thresh(both_debanded_image, image_saturation_level)
                         temporaryFlat=both_debanded_image
 
@@ -5467,24 +5467,24 @@ class Sequencer:
         self.morn_sky_flat_latch = True
 
         #morn=True
-        #skip_moon_check=True 
+        #skip_moon_check=True
         #breakpoint()
-        
+
         #breakpoint()
         to_zone = tz.gettz(g_dev['evnt'].wema_config['TZ_database_name'])
         hourtime=datetime.datetime.now().astimezone(to_zone).hour
-        
+
         if hourtime > 0 and hourtime < 12:
             morn = True
         else:
             morn = False
-    
-        
-        
-        
+
+
+
+
         if not g_dev['obs'].moon_checks_on:
-            skip_moon_check=True 
-        
+            skip_moon_check=True
+
         if not (g_dev['obs'].enc_status['shutter_status'] == 'Open') and not (g_dev['obs'].enc_status['shutter_status'] == 'Sim. Open'):
             plog ("NOT DOING FLATS -- THE ROOF IS SHUT!!")
             g_dev["obs"].send_to_user("A sky flat script request was rejected as the roof is shut.")
@@ -5525,7 +5525,7 @@ class Sequencer:
             currentaltazframe = AltAz(location=g_dev['mnt'].site_coordinates, obstime=Time.now())
             #moondata=get_moon(Time.now()).transform_to(currentaltazframe)
             moondata=get_body("moon", time=Time.now()).transform_to(currentaltazframe)
-            
+
             # Flatspot position.
             flatspotalt, flatspotaz = g_dev['mnt'].flat_spot_now()
             temp_separation=((ephem.separation( (flatspotaz,flatspotalt), (moondata.az.deg,moondata.alt.deg))))
@@ -6524,8 +6524,8 @@ class Sequencer:
         if position_after_unpark:
             g_dev['mnt'].go_command(alt=70,az= 70)
             g_dev['mnt'].set_tracking_on()
-        
-    
+
+
 
         sim = False
         start_ra = g_dev['mnt'].return_right_ascension()   #Read these to go back.  NB NB Need to cleanly pass these on so we can return to proper target.
@@ -7584,7 +7584,7 @@ class Sequencer:
                 return
 
             if len(finalCatalogue) > max_pointings:
-                print ("still too many:  ", len(finalCatalogue))
+                plog ("still too many:  ", len(finalCatalogue))
                 if len(finalCatalogue) < 20:
                     spread=spread+2400
                 elif len(finalCatalogue) < 10:
