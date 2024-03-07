@@ -171,7 +171,7 @@ except KeyError:
 
 os.makedirs(plog_path, exist_ok=True)
 
-print (plog_path)
+#print (plog_path)
 
 
 # Here is the key code to update a parallel GUI module. These are

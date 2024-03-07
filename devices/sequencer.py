@@ -4606,8 +4606,8 @@ class Sequencer:
             narrowband_ss_biasdark_exp_time = broadband_ss_biasdark_exp_time * self.config['camera']['camera_1_1']['settings']['smart_stack_exposure_NB_multiplier']
             dark_exp_time = self.config['camera']['camera_1_1']['settings']['dark_exposure']
 
-            plog ("flat_biasdarks")
-            plog (flat_biasdarks)
+            #plog ("flat_biasdarks")
+            #plog (flat_biasdarks)
             if len(tempfilters) == 0:
                 plog ("there are no filter directories, so not processing flats")
             else:
