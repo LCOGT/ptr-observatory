@@ -4626,6 +4626,7 @@ class Sequencer:
                             inputList.remove(file)
 
                     # Generate temp memmap
+                    plog ("Loading files into memmap")
                     single_filter_camera_gains=[]
                     if len(inputList) == 0 or len(inputList) == 1:
                         plog ("Not doing " + str(filtercode) + " flat. Not enough available files in directory.")
@@ -4638,11 +4639,11 @@ class Sequencer:
                             # Debias and dedark flat frames and stick them in the memmap
                             i=0
                             for file in inputList:
-                                plog("Storing flat in a memmap array: " + str(file))
+                                #plog("Storing flat in a memmap array: " + str(file))
                                 hdu1data = np.load(file, mmap_mode='r')
                                 hdu1exp=float(file.split('_')[-2])
-                                plog ("EXP")
-                                plog (hdu1exp)
+                                #plog ("EXP")
+                                #plog (hdu1exp)
                                 fraction_through_range=0
 
 
@@ -4652,52 +4653,52 @@ class Sequencer:
 
                                     if hdu1exp == 0.05 and 'fivepercent' in flat_biasdarks:
                                         flatdebiaseddedarked=hdu1data -flat_biasdarks['fivepercent']
-                                        plog("five percent")
+                                        #print("five percent")
                                     elif hdu1exp == 0.1 and 'tenpercent' in flat_biasdarks:
                                         flatdebiaseddedarked=hdu1data -flat_biasdarks['tenpercent']
-                                        plog("ten percent")
+                                        #print("ten percent")
                                     elif hdu1exp == 0.25 and 'quartersec' in flat_biasdarks:
                                         flatdebiaseddedarked=hdu1data -flat_biasdarks['quartersec']
-                                        plog("quartersec")
+                                        #print("quartersec")
                                     elif hdu1exp == 0.5 and 'halfsec' in flat_biasdarks:
                                         flatdebiaseddedarked=hdu1data -flat_biasdarks['halfsec']
-                                        plog("halfsec")
+                                        #plog("halfsec")
                                     elif hdu1exp == 0.75 and 'sevenfivepercent' in flat_biasdarks:
                                         flatdebiaseddedarked=hdu1data -flat_biasdarks['sevenfivepercent']
-                                        plog("sevenfivepercent")
+                                        #plog("sevenfivepercent")
                                     elif hdu1exp == 1.0 and 'onesec' in flat_biasdarks:
                                         flatdebiaseddedarked=hdu1data -flat_biasdarks['onesec']
-                                        plog("onesec")
+                                        #plog("onesec")
                                     elif hdu1exp == 1.5 and 'oneandahalfsec' in flat_biasdarks:
                                         flatdebiaseddedarked=hdu1data -flat_biasdarks['oneandahalfsec']
-                                        plog("one and a half sec")
+                                        #plog("one and a half sec")
                                     elif hdu1exp == 2.0 and 'twosec' in flat_biasdarks:
                                         flatdebiaseddedarked=hdu1data -flat_biasdarks['twosec']
-                                        plog("two sec")
+                                        #plog("two sec")
                                     elif hdu1exp == 3.5 and 'threepointfivesec' in flat_biasdarks:
                                         flatdebiaseddedarked=hdu1data -flat_biasdarks['threepointfivesec']
-                                        plog("threepointfive sec")
+                                        #plog("threepointfive sec")
                                     elif hdu1exp == 5.0 and 'fivesec' in flat_biasdarks:
                                         flatdebiaseddedarked=hdu1data -flat_biasdarks['fivesec']
-                                        plog("five sec")
+                                        #plog("five sec")
                                     elif hdu1exp == 7.5 and 'sevenpointfivesec' in flat_biasdarks:
                                         flatdebiaseddedarked=hdu1data -flat_biasdarks['sevenpointfivesec']
-                                        plog("sevenpointfive sec")
+                                        #plog("sevenpointfive sec")
                                     elif hdu1exp == 10.0 and 'tensec' in flat_biasdarks:
                                         flatdebiaseddedarked=hdu1data -flat_biasdarks['tensec']
-                                        plog("ten sec")
+                                        #plog("ten sec")
                                     elif hdu1exp == 15.0 and 'fifteensec' in flat_biasdarks:
                                         flatdebiaseddedarked=hdu1data -flat_biasdarks['fifteensec']
-                                        plog("fiveteen sec")
+                                        #plog("fiveteen sec")
                                     elif hdu1exp == 20.0 and 'twenty' in flat_biasdarks:
                                         flatdebiaseddedarked=hdu1data -flat_biasdarks['twentysec']
-                                        plog("twenty sec")
+                                        #plog("twenty sec")
                                     elif hdu1exp == broadband_ss_biasdark_exp_time:
                                         flatdebiaseddedarked=hdu1data -narrowbandss_masterBiasDark
-                                        plog ("broady")
+                                        #plog ("broady")
                                     elif hdu1exp == narrowband_ss_biasdark_exp_time:
                                         flatdebiaseddedarked=hdu1data -broadbandss_masterBiasDark
-                                        plog ("Narrowy")
+                                        #plog ("Narrowy")
                                     elif hdu1exp < 0.5:
                                         flatdebiaseddedarked=(hdu1data-masterBias)-(halfsecond_masterDark*hdu1exp)
                                     elif hdu1exp <= 2.0:
@@ -4730,8 +4731,8 @@ class Sequencer:
                                 except:
                                     flatdebiaseddedarked=(hdu1data-masterBias)-(masterDark*hdu1exp)
 
-                                plog ("Fraction through range")
-                                plog (fraction_through_range)
+                                #plog ("Fraction through range")
+                                #plog (fraction_through_range)
                                 del hdu1data
 
                                 # Normalising flat file
@@ -4804,12 +4805,12 @@ class Sequencer:
                             #nanmedian_collector=[]
                             nanstd_collector=[]
                             for flat_component in range(len(inputList)):
-                                plog (flat_component)
+                                #plog (flat_component)
                                 tempdivide=PLDrive[:,:,flat_component] / finalImage
                                 #tempnanmedian=np.nanmedian(tempdivide)
                                 tempstd=np.nanstd(tempdivide)
                                 #plog ("nanmedian: " + str(tempnanmedian ))
-                                plog ("nanstdev: " + str(tempstd))
+                                #plog ("nanstdev: " + str(tempstd))
                                 #nanmedian_collector.append(tempnanmedian)
                                 nanstd_collector.append(tempstd)
 
@@ -4823,10 +4824,11 @@ class Sequencer:
                             med_std=np.array(np.nanmedian(nanstd_collector))
                             std_std=np.array(np.std(nanstd_collector))
                             plog ("*********************************")
+                            plog ("Assessing component flat fits to stacked flat")
 
                             delete_flat_components=[]
                             for counterflat in range(len(nanstd_collector)):
-                                plog ("Image " + str(counterflat) + " assessment")
+                                #plog ("Image " + str(counterflat) + " assessment")
                                 if nanstd_collector[counterflat] > (med_std + 5 * std_std):
                                     plog ("FOUND A REJECTION: " + str(round(nanstd_collector[counterflat],5)) + " > " + str(round(med_std + 3 * std_std,5)))
                                     delete_flat_components.append(counterflat)
