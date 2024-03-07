@@ -856,7 +856,7 @@ class Sequencer:
                                             # COLLECTING A TWO SECOND EXPOSURE DARK FRAME
                                             plog("Expose " + str(5*stride) +" 1x1 2s exposure dark frames.")
                                             req = {'time': 2,  'script': 'True', 'image_type': 'twosec_exposure_dark'}
-                                            opt = {'count': 2*min_to_do,  \
+                                            opt = {'count': min_to_do,  \
                                                    'filter': 'dark'}
                                             g_dev['cam'].expose_command(req, opt, user_id='Tobor', user_name='Tobor', user_roles='system', no_AWS=False, \
                                                             do_sep=False, quick=False, skip_open_check=True,skip_daytime_check=True)
@@ -868,7 +868,7 @@ class Sequencer:
                                             # COLLECTING A FIVE SECOND EXPOSURE DARK FRAME
                                             plog("Expose " + str(5*stride) +" 1x1 5s exposure dark frames.")
                                             req = {'time': 5,  'script': 'True', 'image_type': 'fivesec_exposure_dark'}
-                                            opt = {'count': 3*min_to_do,  \
+                                            opt = {'count': min_to_do,  \
                                                    'filter': 'dark'}
                                             g_dev['cam'].expose_command(req, opt, user_id='Tobor', user_name='Tobor', user_roles='system', no_AWS=False, \
                                                             do_sep=False, quick=False, skip_open_check=True,skip_daytime_check=True)
@@ -879,7 +879,7 @@ class Sequencer:
                                             # COLLECTING A TEN SECOND EXPOSURE DARK FRAME
                                             plog("Expose " + str(2*stride) +" 1x1 ten second exposure dark frames.")
                                             req = {'time': 10,  'script': 'True', 'image_type': 'tensec_exposure_dark'}
-                                            opt = {'count': 2*min_to_do,  \
+                                            opt = {'count': min_to_do,  \
                                                    'filter': 'dark'}
                                             g_dev['cam'].expose_command(req, opt, user_id='Tobor', user_name='Tobor', user_roles='system', no_AWS=False, \
                                                             do_sep=False, quick=False, skip_open_check=True,skip_daytime_check=True)
@@ -913,7 +913,7 @@ class Sequencer:
                                             # COLLECTING A BROADBAND SMARTSTACK BIASDARK FRAME
                                             plog("Expose " + str(stride) +" 1x1 broadband smstack biasdark frames.")
                                             req = {'time': broadband_ss_biasdark_exp_time,  'script': 'True', 'image_type': 'broadband_ss_biasdark'}
-                                            opt = {'count': min_to_do,  \
+                                            opt = {'count': 2*min_to_do,  \
                                                    'filter': 'dark'}
                                             g_dev['cam'].expose_command(req, opt, user_id='Tobor', user_name='Tobor', user_roles='system', no_AWS=False, \
                                                             do_sep=False, quick=False, skip_open_check=True,skip_daytime_check=True)
@@ -924,7 +924,7 @@ class Sequencer:
                                             # COLLECTING A NARROWBAND SMARTSTACK BIASDARK FRAME
                                             plog("Expose " + str(stride) +" 1x1 narrowband smstack biasdark frames.")
                                             req = {'time': narrowband_ss_biasdark_exp_time,  'script': 'True', 'image_type': 'narrowband_ss_biasdark'}
-                                            opt = {'count': min_to_do,  \
+                                            opt = {'count': 2*min_to_do,  \
                                                    'filter': 'dark'}
                                             g_dev['cam'].expose_command(req, opt, user_id='Tobor', user_name='Tobor', user_roles='system', no_AWS=False, \
                                                             do_sep=False, quick=False, skip_open_check=True,skip_daytime_check=True)
@@ -935,7 +935,7 @@ class Sequencer:
                                             # COLLECTING A 0.05 Second EXPOSURE DARK FRAME
                                             plog("Expose " + str(5*stride) +" 1x1 0.05 second exposure dark frames.")
                                             req = {'time': 0.05,  'script': 'True', 'image_type': 'fivepercent_exposure_dark'}
-                                            opt = {'count': 2* min_to_do,  \
+                                            opt = {'count':  min_to_do,  \
                                                    'filter': 'dark'}
                                             g_dev['cam'].expose_command(req, opt, user_id='Tobor', user_name='Tobor', user_roles='system', no_AWS=False, \
                                                             do_sep=False, quick=False, skip_open_check=True,skip_daytime_check=True)
@@ -946,7 +946,7 @@ class Sequencer:
                                             # COLLECTING A 0.1 Second EXPOSURE DARK FRAME
                                             plog("Expose " + str(5*stride) +" 1x1 0.1 second exposure dark frames.")
                                             req = {'time': 0.1,  'script': 'True', 'image_type': 'tenpercent_exposure_dark'}
-                                            opt = {'count': 2* min_to_do,  \
+                                            opt = {'count':  min_to_do,  \
                                                    'filter': 'dark'}
                                             g_dev['cam'].expose_command(req, opt, user_id='Tobor', user_name='Tobor', user_roles='system', no_AWS=False, \
                                                             do_sep=False, quick=False, skip_open_check=True,skip_daytime_check=True)
@@ -958,7 +958,7 @@ class Sequencer:
                                             # COLLECTING A 0.25 Second EXPOSURE DARK FRAME
                                             plog("Expose " + str(5*stride) +" 1x1 0.25 second exposure dark frames.")
                                             req = {'time': 0.25,  'script': 'True', 'image_type': 'quartersec_exposure_dark'}
-                                            opt = {'count': 2* min_to_do,  \
+                                            opt = {'count':  min_to_do,  \
                                                    'filter': 'dark'}
                                             g_dev['cam'].expose_command(req, opt, user_id='Tobor', user_name='Tobor', user_roles='system', no_AWS=False, \
                                                             do_sep=False, quick=False, skip_open_check=True,skip_daytime_check=True)
@@ -969,7 +969,7 @@ class Sequencer:
                                             # COLLECTING A Half Second EXPOSURE DARK FRAME
                                             plog("Expose " + str(5*stride) +" 1x1 half-second exposure dark frames.")
                                             req = {'time': 0.5,  'script': 'True', 'image_type': 'halfsec_exposure_dark'}
-                                            opt = {'count': 2* min_to_do,  \
+                                            opt = {'count':  min_to_do,  \
                                                    'filter': 'dark'}
                                             g_dev['cam'].expose_command(req, opt, user_id='Tobor', user_name='Tobor', user_roles='system', no_AWS=False, \
                                                             do_sep=False, quick=False, skip_open_check=True,skip_daytime_check=True)
@@ -980,7 +980,7 @@ class Sequencer:
                                             # COLLECTING A 0.75 Second EXPOSURE DARK FRAME
                                             plog("Expose " + str(5*stride) +" 1x1 0.75 second exposure dark frames.")
                                             req = {'time': 0.75,  'script': 'True', 'image_type': 'threequartersec_exposure_dark'}
-                                            opt = {'count': 2* min_to_do,  \
+                                            opt = {'count':  min_to_do,  \
                                                    'filter': 'dark'}
                                             g_dev['cam'].expose_command(req, opt, user_id='Tobor', user_name='Tobor', user_roles='system', no_AWS=False, \
                                                             do_sep=False, quick=False, skip_open_check=True,skip_daytime_check=True)
@@ -991,7 +991,7 @@ class Sequencer:
                                             # COLLECTING A one Second EXPOSURE DARK FRAME
                                             plog("Expose " + str(5*stride) +" 1x1  1 second exposure dark frames.")
                                             req = {'time': 1,  'script': 'True', 'image_type': 'onesec_exposure_dark'}
-                                            opt = {'count': 2* min_to_do,  \
+                                            opt = {'count':  min_to_do,  \
                                                    'filter': 'dark'}
                                             g_dev['cam'].expose_command(req, opt, user_id='Tobor', user_name='Tobor', user_roles='system', no_AWS=False, \
                                                             do_sep=False, quick=False, skip_open_check=True,skip_daytime_check=True)
@@ -1002,7 +1002,7 @@ class Sequencer:
                                             # COLLECTING A one and a half Second EXPOSURE DARK FRAME
                                             plog("Expose " + str(5*stride) +" 1x1  1.5 second exposure dark frames.")
                                             req = {'time': 1.5,  'script': 'True', 'image_type': 'oneandahalfsec_exposure_dark'}
-                                            opt = {'count': 2* min_to_do,  \
+                                            opt = {'count':  min_to_do,  \
                                                    'filter': 'dark'}
                                             g_dev['cam'].expose_command(req, opt, user_id='Tobor', user_name='Tobor', user_roles='system', no_AWS=False, \
                                                             do_sep=False, quick=False, skip_open_check=True,skip_daytime_check=True)
@@ -1789,7 +1789,7 @@ class Sequencer:
                 # COLLECTING A TWO SECOND EXPOSURE DARK FRAME
                 plog("Expose " + str(5*stride) +" 1x1 2s exposure dark frames.")
                 req = {'time': 2,  'script': 'True', 'image_type': 'twosec_exposure_dark'}
-                opt = {'count': 2*min_to_do,  \
+                opt = {'count': min_to_do,  \
                        'filter': 'dark'}
 
                 # Check it is in the park position and not pointing at the sky.
@@ -1811,7 +1811,7 @@ class Sequencer:
                 # COLLECTING A THREEPOINTFIVE SECOND EXPOSURE DARK FRAME
                 plog("Expose " + str(5*stride) +" 1x1 3.5s exposure dark frames.")
                 req = {'time': 3.5,  'script': 'True', 'image_type': 'threepointfivesec_exposure_dark'}
-                opt = {'count': 2*min_to_do,  \
+                opt = {'count': min_to_do,  \
                        'filter': 'dark'}
 
                 # Check it is in the park position and not pointing at the sky.
@@ -1833,7 +1833,7 @@ class Sequencer:
                 # COLLECTING A FIVE SECOND EXPOSURE DARK FRAME
                 plog("Expose " + str(5*stride) +" 1x1 5s exposure dark frames.")
                 req = {'time': 5,  'script': 'True', 'image_type': 'fivesec_exposure_dark'}
-                opt = {'count': 2*min_to_do,  \
+                opt = {'count': min_to_do,  \
                        'filter': 'dark'}
 
                 # Check it is in the park position and not pointing at the sky.
@@ -1855,7 +1855,7 @@ class Sequencer:
                 # COLLECTING A SEVENPOINTFIVE SECOND EXPOSURE DARK FRAME
                 plog("Expose " + str(5*stride) +" 1x1 7.5s exposure dark frames.")
                 req = {'time': 7.5,  'script': 'True', 'image_type': 'sevenpointfivesec_exposure_dark'}
-                opt = {'count': 2*min_to_do,  \
+                opt = {'count': min_to_do,  \
                        'filter': 'dark'}
 
                 # Check it is in the park position and not pointing at the sky.
@@ -1876,7 +1876,7 @@ class Sequencer:
                 # COLLECTING A TEN SECOND EXPOSURE DARK FRAME
                 plog("Expose " + str(2*stride) +" 1x1 ten second exposure dark frames.")
                 req = {'time': 10,  'script': 'True', 'image_type': 'tensec_exposure_dark'}
-                opt = {'count': 2*min_to_do,  \
+                opt = {'count': min_to_do,  \
                        'filter': 'dark'}
 
                 # Check it is in the park position and not pointing at the sky.
@@ -1941,7 +1941,7 @@ class Sequencer:
                 # COLLECTING A BROADBAND SMARTSTACK BIASDARK FRAME
                 plog("Expose " + str(stride) +" 1x1 broadband smstack biasdark frames.")
                 req = {'time': broadband_ss_biasdark_exp_time,  'script': 'True', 'image_type': 'broadband_ss_biasdark'}
-                opt = {'count': min_to_do,  \
+                opt = {'count': 2*min_to_do,  \
                        'filter': 'dark'}
 
                 # Check it is in the park position and not pointing at the sky.
@@ -1962,7 +1962,7 @@ class Sequencer:
                 # COLLECTING A NARROWBAND SMARTSTACK BIASDARK FRAME
                 plog("Expose " + str(stride) +" 1x1 narrowband smstack biasdark frames.")
                 req = {'time': narrowband_ss_biasdark_exp_time,  'script': 'True', 'image_type': 'narrowband_ss_biasdark'}
-                opt = {'count': min_to_do,  \
+                opt = {'count': 2*min_to_do,  \
                        'filter': 'dark'}
 
                 # Check it is in the park position and not pointing at the sky.
@@ -1989,7 +1989,7 @@ class Sequencer:
                 # COLLECTING A 0.05 Second EXPOSURE DARK FRAME
                 plog("Expose " + str(5*stride) +" 1x1 0.05 second exposure dark frames.")
                 req = {'time': 0.05,  'script': 'True', 'image_type': 'fivepercent_exposure_dark'}
-                opt = {'count': 2* min_to_do,  \
+                opt = {'count':  min_to_do,  \
                        'filter': 'dark'}
 
                 # Check it is in the park position and not pointing at the sky.
@@ -2010,7 +2010,7 @@ class Sequencer:
                 # COLLECTING A 0.1 Second EXPOSURE DARK FRAME
                 plog("Expose " + str(5*stride) +" 1x1 0.1 second exposure dark frames.")
                 req = {'time': 0.1,  'script': 'True', 'image_type': 'tenpercent_exposure_dark'}
-                opt = {'count': 2* min_to_do,  \
+                opt = {'count':  min_to_do,  \
                        'filter': 'dark'}
 
                 # Check it is in the park position and not pointing at the sky.
@@ -2032,7 +2032,7 @@ class Sequencer:
                 # COLLECTING A 0.25 Second EXPOSURE DARK FRAME
                 plog("Expose " + str(5*stride) +" 1x1 0.25 second exposure dark frames.")
                 req = {'time': 0.25,  'script': 'True', 'image_type': 'quartersec_exposure_dark'}
-                opt = {'count': 2* min_to_do,  \
+                opt = {'count':  min_to_do,  \
                        'filter': 'dark'}
 
                 # Check it is in the park position and not pointing at the sky.
@@ -2055,7 +2055,7 @@ class Sequencer:
                 # COLLECTING A Half Second EXPOSURE DARK FRAME
                 plog("Expose " + str(5*stride) +" 1x1 half-second exposure dark frames.")
                 req = {'time': 0.5,  'script': 'True', 'image_type': 'halfsec_exposure_dark'}
-                opt = {'count': 2* min_to_do,  \
+                opt = {'count':  min_to_do,  \
                        'filter': 'dark'}
 
                 # Check it is in the park position and not pointing at the sky.
@@ -2077,7 +2077,7 @@ class Sequencer:
                 # COLLECTING A 0.75 Second EXPOSURE DARK FRAME
                 plog("Expose " + str(5*stride) +" 1x1 0.75 second exposure dark frames.")
                 req = {'time': 0.75,  'script': 'True', 'image_type': 'threequartersec_exposure_dark'}
-                opt = {'count': 2* min_to_do,  \
+                opt = {'count': min_to_do,  \
                        'filter': 'dark'}
 
                 # Check it is in the park position and not pointing at the sky.
@@ -2102,7 +2102,7 @@ class Sequencer:
                 # COLLECTING A one Second EXPOSURE DARK FRAME
                 plog("Expose " + str(5*stride) +" 1x1  1 second exposure dark frames.")
                 req = {'time': 1,  'script': 'True', 'image_type': 'onesec_exposure_dark'}
-                opt = {'count': 2* min_to_do,  \
+                opt = {'count':  min_to_do,  \
                        'filter': 'dark'}
 
                 # Check it is in the park position and not pointing at the sky.
@@ -2123,7 +2123,7 @@ class Sequencer:
                 # COLLECTING A one and a half Second EXPOSURE DARK FRAME
                 plog("Expose " + str(5*stride) +" 1x1  1.5 second exposure dark frames.")
                 req = {'time': 1.5,  'script': 'True', 'image_type': 'oneandahalfsec_exposure_dark'}
-                opt = {'count': 2* min_to_do,  \
+                opt = {'count':  min_to_do,  \
                        'filter': 'dark'}
 
                 # Check it is in the park position and not pointing at the sky.
