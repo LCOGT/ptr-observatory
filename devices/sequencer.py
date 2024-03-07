@@ -2781,7 +2781,7 @@ class Sequencer:
                 i=i+1
 
             #plog ("**********************************")
-            plog ("Median Stacking each bias row individually")
+            #plog ("Median Stacking each bias row individually")
             #plog (datetime.datetime.now().strftime("%H:%M:%S"))
             # Go through each pixel and calculate nanmedian. Can't do all arrays at once as it is hugely memory intensive
             finalImage=np.zeros(shapeImage,dtype=float)
@@ -2870,8 +2870,14 @@ class Sequencer:
                 #plog ("Raw Readnoise outputs: " +str(readnoise_array))
 
                 #plog ("Final Readnoise: " + str(np.nanmedian(readnoise_array)) + " std: " + str(np.nanstd(readnoise_array)))
-            else:
-                plog ("Skipping readnoise estimation as we don't currently have a reliable camera gain estimate.")
+           # else:
+                #plog ("Skipping readnoise estimation as we don't currently have a reliable camera gain estimate.")
+
+            try:
+                g_dev['cam'].biasFiles.update({'1': masterBias})
+            except:
+                plog("Bias frame master re-upload did not work.")
+
 
             plog ("Bias reconstructed: " +str(time.time()-calibration_timer))
             calibration_timer=time.time()
@@ -2983,6 +2989,12 @@ class Sequencer:
             del PLDrive
             gc.collect()
             os.remove(g_dev['obs'].local_dark_folder  + 'tempfile')
+
+            try:
+                g_dev['cam'].darkFiles.update({'1': masterDark})
+            except:
+                plog("Dark frame master re-upload did not work.")
+            
 
             plog ("Long Exposure Dark reconstructed: " +str(time.time()-calibration_timer))
             calibration_timer=time.time()
@@ -5391,17 +5403,12 @@ class Sequencer:
 
             plog ("Re-loading Bias and Dark masters into memory.")
             # Reload the bias and dark frames
-            g_dev['cam'].biasFiles = {}
-            g_dev['cam'].darkFiles = {}
-            g_dev['cam'].bpmFiles = {}
-
+            
+            #g_dev['cam'].darkFiles = {}
+            
+            
             try:
-                g_dev['cam'].biasFiles.update({'1': masterBias})
-            except:
-                plog("Bias frame master re-upload did not work.")
-
-            try:
-                g_dev['cam'].darkFiles.update({'1': masterDark})
+                #g_dev['cam'].darkFiles.update({'1': masterDark})
                 g_dev['cam'].darkFiles.update({'halfsec_exposure_dark': halfsecond_masterDark})
 
                 g_dev['cam'].darkFiles.update({'twosec_exposure_dark': twosecond_masterDark})
@@ -5420,6 +5427,7 @@ class Sequencer:
                 plog("Dark frame master re-upload did not work.")
 
             try:
+                g_dev['cam'].bpmFiles = {}
                 g_dev['cam'].bpmFiles.update({'1': bad_pixel_mapper_array})
             except:
                 plog("Dark frame master re-upload did not work.")
