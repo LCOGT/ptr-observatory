@@ -3951,8 +3951,8 @@ class Sequencer:
                     filenameaws='ARCHIVE_' +  archiveDate + '_' + tempfrontcalib + 'halfsecondDARK_master_bin1.fits'
                     g_dev['obs'].enqueue_for_calibrationUI(80, filepathaws,filenameaws)
                     if g_dev['obs'].config['save_raws_to_pipe_folder_for_nightly_processing']:
-                        fits.writeto(pipefolder + '/' + tempfrontcalib + 'halfsecondDARK_master_bin1.fits', halfsecond_masterDark,  overwrite=True)
-                        fits.writeto(pipefolder + '/' + 'ARCHIVE_' +  archiveDate + '_' + tempfrontcalib + 'halfsecondDARK_master_bin1.fits', halfsecond_masterDark,  overwrite=True)
+                        #fits.writeto(pipefolder + '/' + tempfrontcalib + 'halfsecondDARK_master_bin1.fits', halfsecond_masterDark,  overwrite=True)
+                        #fits.writeto(pipefolder + '/' + 'ARCHIVE_' +  archiveDate + '_' + tempfrontcalib + 'halfsecondDARK_master_bin1.fits', halfsecond_masterDark,  overwrite=True)
                         np.save(pipefolder + '/'  + tempfrontcalib + 'halfsecondDARK_master_bin1.npy', halfsecond_masterDark)
 
                 except Exception as e:
@@ -4048,8 +4048,8 @@ class Sequencer:
                     filenameaws='ARCHIVE_' +  archiveDate + '_' + tempfrontcalib + '2secondDARK_master_bin1.fits'
                     g_dev['obs'].enqueue_for_calibrationUI(80, filepathaws,filenameaws)
                     if g_dev['obs'].config['save_raws_to_pipe_folder_for_nightly_processing']:
-                        fits.writeto(pipefolder + '/' + tempfrontcalib + '2secondDARK_master_bin1.fits', twosecond_masterDark,  overwrite=True)
-                        fits.writeto(pipefolder + '/' + 'ARCHIVE_' +  archiveDate + '_' + tempfrontcalib + '2secondDARK_master_bin1.fits', twosecond_masterDark,  overwrite=True)
+                        #fits.writeto(pipefolder + '/' + tempfrontcalib + '2secondDARK_master_bin1.fits', twosecond_masterDark,  overwrite=True)
+                        #fits.writeto(pipefolder + '/' + 'ARCHIVE_' +  archiveDate + '_' + tempfrontcalib + '2secondDARK_master_bin1.fits', twosecond_masterDark,  overwrite=True)
                         np.save(pipefolder + '/'  + tempfrontcalib + '2secondDARK_master_bin1.npy', twosecond_masterDark)
 
                 except Exception as e:
@@ -4157,8 +4157,8 @@ class Sequencer:
                     filenameaws='ARCHIVE_' +  archiveDate + '_' + tempfrontcalib + '10secondDARK_master_bin1.fits'
                     g_dev['obs'].enqueue_for_calibrationUI(80, filepathaws,filenameaws)
                     if g_dev['obs'].config['save_raws_to_pipe_folder_for_nightly_processing']:
-                        fits.writeto(pipefolder + '/' + tempfrontcalib + '10secondDARK_master_bin1.fits', tensecond_masterDark,  overwrite=True)
-                        fits.writeto(pipefolder + '/' + 'ARCHIVE_' +  archiveDate + '_' + tempfrontcalib + '10secondDARK_master_bin1.fits', tensecond_masterDark,  overwrite=True)
+                        #fits.writeto(pipefolder + '/' + tempfrontcalib + '10secondDARK_master_bin1.fits', tensecond_masterDark,  overwrite=True)
+                        #fits.writeto(pipefolder + '/' + 'ARCHIVE_' +  archiveDate + '_' + tempfrontcalib + '10secondDARK_master_bin1.fits', tensecond_masterDark,  overwrite=True)
                         np.save(pipefolder + '/'  + tempfrontcalib + '10secondDARK_master_bin1.npy', tensecond_masterDark)
 
                 except Exception as e:
@@ -4276,8 +4276,8 @@ class Sequencer:
                     filenameaws='ARCHIVE_' +  archiveDate + '_' + tempfrontcalib + 'broadbandssDARK_master_bin1.fits'
                     g_dev['obs'].enqueue_for_calibrationUI(80, filepathaws,filenameaws)
                     if g_dev['obs'].config['save_raws_to_pipe_folder_for_nightly_processing']:
-                        fits.writeto(pipefolder + '/' + tempfrontcalib + 'broadbandssDARK_master_bin1.fits', broadbandss_masterDark,  overwrite=True)
-                        fits.writeto(pipefolder + '/' + 'ARCHIVE_' +  archiveDate + '_' + tempfrontcalib + 'broadbandssDARK_master_bin1.fits', broadbandss_masterDark,  overwrite=True)
+                        #fits.writeto(pipefolder + '/' + tempfrontcalib + 'broadbandssDARK_master_bin1.fits', broadbandss_masterDark,  overwrite=True)
+                        #fits.writeto(pipefolder + '/' + 'ARCHIVE_' +  archiveDate + '_' + tempfrontcalib + 'broadbandssDARK_master_bin1.fits', broadbandss_masterDark,  overwrite=True)
                         np.save(pipefolder + '/'  + tempfrontcalib + 'broadbandssDARK_master_bin1.npy', broadbandss_masterDark)
 
                 except Exception as e:
@@ -4360,8 +4360,8 @@ class Sequencer:
                     filenameaws='ARCHIVE_' +  archiveDate + '_' + tempfrontcalib + 'broadbandssBIASDARK_master_bin1.fits'
                     g_dev['obs'].enqueue_for_calibrationUI(80, filepathaws,filenameaws)
                     if g_dev['obs'].config['save_raws_to_pipe_folder_for_nightly_processing']:
-                        fits.writeto(pipefolder + '/' + tempfrontcalib + 'broadbandssBIASDARK_master_bin1.fits', broadbandss_masterBiasDark,  overwrite=True)
-                        fits.writeto(pipefolder + '/' + 'ARCHIVE_' +  archiveDate + '_' + tempfrontcalib + 'broadbandssBIASDARK_master_bin1.fits', broadbandss_masterBiasDark,  overwrite=True)
+                        #fits.writeto(pipefolder + '/' + tempfrontcalib + 'broadbandssBIASDARK_master_bin1.fits', broadbandss_masterBiasDark,  overwrite=True)
+                        #fits.writeto(pipefolder + '/' + 'ARCHIVE_' +  archiveDate + '_' + tempfrontcalib + 'broadbandssBIASDARK_master_bin1.fits', broadbandss_masterBiasDark,  overwrite=True)
                         np.save(pipefolder + '/'  + tempfrontcalib + 'broadbandssBIASDARK_master_bin1.npy', broadbandss_masterBiasDark)
 
                 except Exception as e:
@@ -4479,8 +4479,8 @@ class Sequencer:
                     filenameaws='ARCHIVE_' +  archiveDate + '_' + tempfrontcalib + 'narrowbandssDARK_master_bin1.fits'
                     g_dev['obs'].enqueue_for_calibrationUI(80, filepathaws,filenameaws)
                     if g_dev['obs'].config['save_raws_to_pipe_folder_for_nightly_processing']:
-                        fits.writeto(pipefolder + '/' + tempfrontcalib + 'narrowbandssDARK_master_bin1.fits', narrowbandss_masterDark,  overwrite=True)
-                        fits.writeto(pipefolder + '/' + 'ARCHIVE_' +  archiveDate + '_' + tempfrontcalib + 'narrowbandssDARK_master_bin1.fits', narrowbandss_masterDark,  overwrite=True)
+                        #fits.writeto(pipefolder + '/' + tempfrontcalib + 'narrowbandssDARK_master_bin1.fits', narrowbandss_masterDark,  overwrite=True)
+                        #fits.writeto(pipefolder + '/' + 'ARCHIVE_' +  archiveDate + '_' + tempfrontcalib + 'narrowbandssDARK_master_bin1.fits', narrowbandss_masterDark,  overwrite=True)
                         np.save(pipefolder + '/'  + tempfrontcalib + 'narrowbandssDARK_master_bin1.npy', narrowbandss_masterDark)
 
                 except Exception as e:
@@ -4563,8 +4563,8 @@ class Sequencer:
                     filenameaws='ARCHIVE_' +  archiveDate + '_' + tempfrontcalib + 'narrowbandssBIASDARK_master_bin1.fits'
                     g_dev['obs'].enqueue_for_calibrationUI(80, filepathaws,filenameaws)
                     if g_dev['obs'].config['save_raws_to_pipe_folder_for_nightly_processing']:
-                        fits.writeto(pipefolder + '/' + tempfrontcalib + 'narrowbandssBIASDARK_master_bin1.fits', narrowbandss_masterBiasDark,  overwrite=True)
-                        fits.writeto(pipefolder + '/' + 'ARCHIVE_' +  archiveDate + '_' + tempfrontcalib + 'narrowbandssBIASDARK_master_bin1.fits', narrowbandss_masterBiasDark,  overwrite=True)
+                        #fits.writeto(pipefolder + '/' + tempfrontcalib + 'narrowbandssBIASDARK_master_bin1.fits', narrowbandss_masterBiasDark,  overwrite=True)
+                        #fits.writeto(pipefolder + '/' + 'ARCHIVE_' +  archiveDate + '_' + tempfrontcalib + 'narrowbandssBIASDARK_master_bin1.fits', narrowbandss_masterBiasDark,  overwrite=True)
                         np.save(pipefolder + '/' + tempfrontcalib + 'narrowbandssBIASDARK_master_bin1.npy', narrowbandss_masterBiasDark)
 
                 except Exception as e:
@@ -4867,13 +4867,14 @@ class Sequencer:
                         temporaryFlat[temporaryFlat > 2.0] = np.nan
                         pre_num_of_nans=np.count_nonzero(np.isnan(temporaryFlat))
 
+                        plog ("Interpolating Nans")
                         last_num_of_nans=846753876359.0
                         while pre_num_of_nans > 0:
                             # Fix up any glitches in the flat
 
 
                             num_of_nans=np.count_nonzero(np.isnan(temporaryFlat))
-                            plog ("Number of Nans in flat this iteration: " + str(num_of_nans))
+                            #plog ("Number of Nans in flat this iteration: " + str(num_of_nans))
 
                             if num_of_nans == last_num_of_nans:
                                 break
@@ -5090,16 +5091,19 @@ class Sequencer:
                             filenameaws='ARCHIVE_' +  archiveDate + '_' + tempfrontcalib + 'masterFlat_'+ str(filtercode) + '_bin1.fits'
                             g_dev['obs'].enqueue_for_calibrationUI(80, filepathaws,filenameaws)
                             if g_dev['obs'].config['save_raws_to_pipe_folder_for_nightly_processing']:
-                                fits.writeto(pipefolder + '/' + tempfrontcalib + 'masterFlat_'+ str(filtercode) + '_bin1.fits', temporaryFlat,  overwrite=True)
-                                fits.writeto(pipefolder + '/' + 'ARCHIVE_' +  archiveDate + '_' + tempfrontcalib + 'masterFlat_'+ str(filtercode) + '_bin1.fits', temporaryFlat,  overwrite=True)
-                                np.save(pipefolder + '/' + 'ARCHIVE_' +  archiveDate + '_' + tempfrontcalib + 'masterFlat_'+ str(filtercode) + '_bin1.npy', temporaryFlat)
+                                #fits.writeto(pipefolder + '/' + tempfrontcalib + 'masterFlat_'+ str(filtercode) + '_bin1.fits', temporaryFlat,  overwrite=True)
+                                #fits.writeto(pipefolder + '/' + 'ARCHIVE_' +  archiveDate + '_' + tempfrontcalib + 'masterFlat_'+ str(filtercode) + '_bin1.fits', temporaryFlat,  overwrite=True)
+                                #np.save(pipefolder + '/' + 'ARCHIVE_' +  archiveDate + '_' + tempfrontcalib + 'masterFlat_'+ str(filtercode) + '_bin1.npy', temporaryFlat)
+                                np.save(pipefolder + '/' + tempfrontcalib + 'masterFlat_'+ str(filtercode) + '_bin1.npy', temporaryFlat)
 
                         except Exception as e:
                             plog ("Could not save flat frame: ",e)
 
                         # Now to estimate gain from flats
                         for fullflat in inputList:
-                            hdu1data = np.load(fullflat, mmap_mode='r')
+                            #hdu1data = np.load(fullflat, mmap_mode='r')
+                            hdu1data = np.load(fullflat)
+
                             hdu1exp=float(file.split('_')[-2])
 
                             camera_gain_estimate_image=((hdu1data-masterBias)-(masterDark*hdu1exp))
@@ -5260,9 +5264,9 @@ class Sequencer:
                 filenameaws='ARCHIVE_' +  archiveDate + '_' + tempfrontcalib + 'badpixelmask_bin1.fits'
                 g_dev['obs'].enqueue_for_calibrationUI(80, filepathaws,filenameaws)
                 if g_dev['obs'].config['save_raws_to_pipe_folder_for_nightly_processing']:
-                    fits.writeto(pipefolder + '/' + tempfrontcalib + 'badpixelmask_bin1.fits', bad_pixel_mapper_array*1,  overwrite=True)
-                    fits.writeto(pipefolder + '/' + 'ARCHIVE_' +  archiveDate + '_' + tempfrontcalib + 'badpixelmask_bin1.fits', bad_pixel_mapper_array*1,  overwrite=True)
-                    np.save(pipefolder + '/' + 'ARCHIVE_' +  archiveDate + '_' + tempfrontcalib + 'badpixelmask_bin1.npy', bad_pixel_mapper_array)
+                    #fits.writeto(pipefolder + '/' + tempfrontcalib + 'badpixelmask_bin1.fits', bad_pixel_mapper_array*1,  overwrite=True)
+                    #fits.writeto(pipefolder + '/' + 'ARCHIVE_' +  archiveDate + '_' + tempfrontcalib + 'badpixelmask_bin1.fits', bad_pixel_mapper_array*1,  overwrite=True)
+                    np.save(pipefolder + '/' + tempfrontcalib + 'badpixelmask_bin1.npy', bad_pixel_mapper_array)
 
 
                 # THEN reload them to use for the next night.
