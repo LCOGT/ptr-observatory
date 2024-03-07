@@ -2797,9 +2797,10 @@ class Sequencer:
                 filenameaws='ARCHIVE_' +  archiveDate + '_' + tempfrontcalib + 'BIAS_master_bin1.fits'
                 g_dev['obs'].enqueue_for_calibrationUI(80, filepathaws,filenameaws)
                 if g_dev['obs'].config['save_raws_to_pipe_folder_for_nightly_processing']:
-                    fits.writeto(pipefolder + '/' +tempfrontcalib + 'BIAS_master_bin1.fits', masterBias,  overwrite=True)
-                    fits.writeto(pipefolder + '/' + 'ARCHIVE_' +  archiveDate + '_' +tempfrontcalib + 'BIAS_master_bin1.fits', masterBias,  overwrite=True)
-                    np.save(pipefolder + '/'+tempfrontcalib + 'BIAS_master_bin1.npy', masterBias)
+                    #fits.writeto(pipefolder + '/' +tempfrontcalib + 'BIAS_master_bin1.fits', masterBias,  overwrite=True)
+                    #fits.writeto(pipefolder + '/' + 'ARCHIVE_' +  archiveDate + '_' +tempfrontcalib + 'BIAS_master_bin1.fits', masterBias,  overwrite=True)
+                    #np.save(pipefolder + '/'+tempfrontcalib + 'BIAS_master_bin1.npy', masterBias)
+                    g_dev['obs'].to_slow_process(200000000, ('numpy_array_save',pipefolder + '/'+tempfrontcalib + 'BIAS_master_bin1.npy',copy.deepcopy(masterBias)))
             except Exception as e:
                 plog ("Could not save bias frame: ",e)
 
@@ -2930,10 +2931,10 @@ class Sequencer:
                 filenameaws='ARCHIVE_' +  archiveDate + '_' + tempfrontcalib + 'DARK_master_bin1.fits'
                 g_dev['obs'].enqueue_for_calibrationUI(80, filepathaws,filenameaws)
                 if g_dev['obs'].config['save_raws_to_pipe_folder_for_nightly_processing']:
-                    fits.writeto(pipefolder + '/' + tempfrontcalib + 'DARK_master_bin1.fits', masterDark,  overwrite=True)
-                    fits.writeto(pipefolder + '/' + 'ARCHIVE_' +  archiveDate + '_' + tempfrontcalib + 'DARK_master_bin1.fits', masterDark,  overwrite=True)
-                    np.save(pipefolder + '/'  + tempfrontcalib + 'DARK_master_bin1.npy', masterDark)
-
+                    #fits.writeto(pipefolder + '/' + tempfrontcalib + 'DARK_master_bin1.fits', masterDark,  overwrite=True)
+                    #fits.writeto(pipefolder + '/' + 'ARCHIVE_' +  archiveDate + '_' + tempfrontcalib + 'DARK_master_bin1.fits', masterDark,  overwrite=True)
+                    #np.save(pipefolder + '/'  + tempfrontcalib + 'DARK_master_bin1.npy', masterDark)
+                    g_dev['obs'].to_slow_process(200000000, ('numpy_array_save', pipefolder + '/'  + tempfrontcalib + 'DARK_master_bin1.npy', copy.deepcopy(masterDark)))
             except Exception as e:
                 plog ("Could not save dark frame: ",e)
 
@@ -2996,8 +2997,8 @@ class Sequencer:
 
                 try:
                     if g_dev['obs'].config['save_raws_to_pipe_folder_for_nightly_processing']:
-                        np.save(pipefolder + '/'  + tempfrontcalib + 'fivepercentBIASDARK_master_bin1.npy', np.asarray(finalImage).astype(np.float32))
-
+                        #np.save(pipefolder + '/'  + tempfrontcalib + 'fivepercentBIASDARK_master_bin1.npy', np.asarray(finalImage).astype(np.float32))
+                        g_dev['obs'].to_slow_process(200000000, ('numpy_array_save', pipefolder + '/'  + tempfrontcalib + 'fivepercentBIASDARK_master_bin1.npy', copy.deepcopy(np.asarray(finalImage).astype(np.float32))))
                 except Exception as e:
                     plog ("Could not save dark frame: ",e)
 
@@ -3062,8 +3063,8 @@ class Sequencer:
 
                 try:
                     if g_dev['obs'].config['save_raws_to_pipe_folder_for_nightly_processing']:
-                        np.save(pipefolder + '/'  + tempfrontcalib + 'tenpercentBIASDARK_master_bin1.npy', np.asarray(finalImage).astype(np.float32))
-
+                        #np.save(pipefolder + '/'  + tempfrontcalib + 'tenpercentBIASDARK_master_bin1.npy', np.asarray(finalImage).astype(np.float32))
+                        g_dev['obs'].to_slow_process(200000000, ('numpy_array_save', pipefolder + '/'  + tempfrontcalib + 'tenpercentBIASDARK_master_bin1.npy', copy.deepcopy(np.asarray(finalImage).astype(np.float32))))
                 except Exception as e:
                     plog ("Could not save dark frame: ",e)
 
@@ -3128,8 +3129,8 @@ class Sequencer:
 
                 try:
                     if g_dev['obs'].config['save_raws_to_pipe_folder_for_nightly_processing']:
-                        np.save(pipefolder + '/'  + tempfrontcalib + 'quartersecBIASDARK_master_bin1.npy', np.asarray(finalImage).astype(np.float32))
-
+                        #np.save(pipefolder + '/'  + tempfrontcalib + 'quartersecBIASDARK_master_bin1.npy', np.asarray(finalImage).astype(np.float32))
+                        g_dev['obs'].to_slow_process(200000000, ('numpy_array_save', pipefolder + '/'  + tempfrontcalib + 'quartersecBIASDARK_master_bin1.npy', copy.deepcopy(np.asarray(finalImage).astype(np.float32))))
                 except Exception as e:
                     plog ("Could not save dark frame: ",e)
 
@@ -3194,8 +3195,8 @@ class Sequencer:
 
                 try:
                     if g_dev['obs'].config['save_raws_to_pipe_folder_for_nightly_processing']:
-                        np.save(pipefolder + '/'  + tempfrontcalib + 'halfsecBIASDARK_master_bin1.npy', np.asarray(finalImage).astype(np.float32))
-
+                        #np.save(pipefolder + '/'  + tempfrontcalib + 'halfsecBIASDARK_master_bin1.npy', np.asarray(finalImage).astype(np.float32))
+                        g_dev['obs'].to_slow_process(200000000, ('numpy_array_save',pipefolder + '/'  + tempfrontcalib + 'halfsecBIASDARK_master_bin1.npy', copy.deepcopy(np.asarray(finalImage).astype(np.float32))))
                 except Exception as e:
                     plog ("Could not save dark frame: ",e)
 
@@ -3260,8 +3261,8 @@ class Sequencer:
 
                 try:
                     if g_dev['obs'].config['save_raws_to_pipe_folder_for_nightly_processing']:
-                        np.save(pipefolder + '/'  + tempfrontcalib + 'sevenfivepercentBIASDARK_master_bin1.npy', np.asarray(finalImage).astype(np.float32))
-
+                        #np.save(pipefolder + '/'  + tempfrontcalib + 'sevenfivepercentBIASDARK_master_bin1.npy', np.asarray(finalImage).astype(np.float32))
+                        g_dev['obs'].to_slow_process(200000000, ('numpy_array_save', pipefolder + '/'  + tempfrontcalib + 'sevenfivepercentBIASDARK_master_bin1.npy', copy.deepcopy(np.asarray(finalImage).astype(np.float32))))
                 except Exception as e:
                     plog ("Could not save dark frame: ",e)
 
@@ -3325,8 +3326,8 @@ class Sequencer:
 
                 try:
                     if g_dev['obs'].config['save_raws_to_pipe_folder_for_nightly_processing']:
-                        np.save(pipefolder + '/'  + tempfrontcalib + 'onesecBIASDARK_master_bin1.npy', np.asarray(finalImage).astype(np.float32))
-
+                        #np.save(pipefolder + '/'  + tempfrontcalib + 'onesecBIASDARK_master_bin1.npy', np.asarray(finalImage).astype(np.float32))
+                        g_dev['obs'].to_slow_process(200000000, ('numpy_array_save', pipefolder + '/'  + tempfrontcalib + 'onesecBIASDARK_master_bin1.npy', copy.deepcopy(np.asarray(finalImage).astype(np.float32))))
                 except Exception as e:
                     plog ("Could not save dark frame: ",e)
 
@@ -3390,8 +3391,8 @@ class Sequencer:
 
                 try:
                     if g_dev['obs'].config['save_raws_to_pipe_folder_for_nightly_processing']:
-                        np.save(pipefolder + '/'  + tempfrontcalib + 'oneandahalfsecBIASDARK_master_bin1.npy', np.asarray(finalImage).astype(np.float32))
-
+                        #np.save(pipefolder + '/'  + tempfrontcalib + 'oneandahalfsecBIASDARK_master_bin1.npy', np.asarray(finalImage).astype(np.float32))
+                        g_dev['obs'].to_slow_process(200000000, ('numpy_array_save', pipefolder + '/'  + tempfrontcalib + 'oneandahalfsecBIASDARK_master_bin1.npy', copy.deepcopy(np.asarray(finalImage).astype(np.float32))))
                 except Exception as e:
                     plog ("Could not save dark frame: ",e)
 
@@ -3454,8 +3455,8 @@ class Sequencer:
 
                 try:
                     if g_dev['obs'].config['save_raws_to_pipe_folder_for_nightly_processing']:
-                        np.save(pipefolder + '/'  + tempfrontcalib + 'twosecBIASDARK_master_bin1.npy', np.asarray(finalImage).astype(np.float32))
-
+                        #np.save(pipefolder + '/'  + tempfrontcalib + 'twosecBIASDARK_master_bin1.npy', np.asarray(finalImage).astype(np.float32))
+                        g_dev['obs'].to_slow_process(200000000, ('numpy_array_save', pipefolder + '/'  + tempfrontcalib + 'twosecBIASDARK_master_bin1.npy', copy.deepcopy(np.asarray(finalImage).astype(np.float32))))
                 except Exception as e:
                     plog ("Could not save dark frame: ",e)
 
@@ -3519,8 +3520,8 @@ class Sequencer:
 
                 try:
                     if g_dev['obs'].config['save_raws_to_pipe_folder_for_nightly_processing']:
-                        np.save(pipefolder + '/'  + tempfrontcalib + 'threepointfivesecBIASDARK_master_bin1.npy', np.asarray(finalImage).astype(np.float32))
-
+                        #np.save(pipefolder + '/'  + tempfrontcalib + 'threepointfivesecBIASDARK_master_bin1.npy', np.asarray(finalImage).astype(np.float32))
+                        g_dev['obs'].to_slow_process(200000000, ('numpy_array_save', pipefolder + '/'  + tempfrontcalib + 'threepointfivesecBIASDARK_master_bin1.npy', copy.deepcopy(np.asarray(finalImage).astype(np.float32))))
                 except Exception as e:
                     plog ("Could not save dark frame: ",e)
 
@@ -3583,8 +3584,8 @@ class Sequencer:
 
                 try:
                     if g_dev['obs'].config['save_raws_to_pipe_folder_for_nightly_processing']:
-                        np.save(pipefolder + '/'  + tempfrontcalib + 'fivesecBIASDARK_master_bin1.npy', np.asarray(finalImage).astype(np.float32))
-
+                        #np.save(pipefolder + '/'  + tempfrontcalib + 'fivesecBIASDARK_master_bin1.npy', np.asarray(finalImage).astype(np.float32))
+                        g_dev['obs'].to_slow_process(200000000, ('numpy_array_save', pipefolder + '/'  + tempfrontcalib + 'fivesecBIASDARK_master_bin1.npy', copy.deepcopy(np.asarray(finalImage).astype(np.float32))))
                 except Exception as e:
                     plog ("Could not save dark frame: ",e)
 
@@ -3649,8 +3650,8 @@ class Sequencer:
 
                 try:
                     if g_dev['obs'].config['save_raws_to_pipe_folder_for_nightly_processing']:
-                        np.save(pipefolder + '/'  + tempfrontcalib + 'sevenpointfivesecBIASDARK_master_bin1.npy', np.asarray(finalImage).astype(np.float32))
-
+                        #np.save(pipefolder + '/'  + tempfrontcalib + 'sevenpointfivesecBIASDARK_master_bin1.npy', np.asarray(finalImage).astype(np.float32))
+                        g_dev['obs'].to_slow_process(200000000, ('numpy_array_save',pipefolder + '/'  + tempfrontcalib + 'sevenpointfivesecBIASDARK_master_bin1.npy', copy.deepcopy(np.asarray(finalImage).astype(np.float32))))
                 except Exception as e:
                     plog ("Could not save dark frame: ",e)
 
@@ -3713,8 +3714,8 @@ class Sequencer:
 
                 try:
                     if g_dev['obs'].config['save_raws_to_pipe_folder_for_nightly_processing']:
-                        np.save(pipefolder + '/'  + tempfrontcalib + 'tensecBIASDARK_master_bin1.npy', np.asarray(finalImage).astype(np.float32))
-
+                        #np.save(pipefolder + '/'  + tempfrontcalib + 'tensecBIASDARK_master_bin1.npy', np.asarray(finalImage).astype(np.float32))
+                        g_dev['obs'].to_slow_process(200000000, ('numpy_array_save', pipefolder + '/'  + tempfrontcalib + 'tensecBIASDARK_master_bin1.npy', copy.deepcopy(np.asarray(finalImage).astype(np.float32))))
                 except Exception as e:
                     plog ("Could not save dark frame: ",e)
 
@@ -3777,8 +3778,8 @@ class Sequencer:
 
                 try:
                     if g_dev['obs'].config['save_raws_to_pipe_folder_for_nightly_processing']:
-                        np.save(pipefolder + '/'  + tempfrontcalib + 'fifteensecBIASDARK_master_bin1.npy', np.asarray(finalImage).astype(np.float32))
-
+                        #np.save(pipefolder + '/'  + tempfrontcalib + 'fifteensecBIASDARK_master_bin1.npy', np.asarray(finalImage).astype(np.float32))
+                        g_dev['obs'].to_slow_process(200000000, ('numpy_array_save', pipefolder + '/'  + tempfrontcalib + 'fifteensecBIASDARK_master_bin1.npy', copy.deepcopy(np.asarray(finalImage).astype(np.float32))))
                 except Exception as e:
                     plog ("Could not save dark frame: ",e)
 
@@ -3842,8 +3843,8 @@ class Sequencer:
 
                 try:
                     if g_dev['obs'].config['save_raws_to_pipe_folder_for_nightly_processing']:
-                        np.save(pipefolder + '/'  + tempfrontcalib + 'twentysecBIASDARK_master_bin1.npy', np.asarray(finalImage).astype(np.float32))
-
+                        #np.save(pipefolder + '/'  + tempfrontcalib + 'twentysecBIASDARK_master_bin1.npy', np.asarray(finalImage).astype(np.float32))
+                        g_dev['obs'].to_slow_process(200000000, ('numpy_array_save', pipefolder + '/'  + tempfrontcalib + 'twentysecBIASDARK_master_bin1.npy', copy.deepcopy(np.asarray(finalImage).astype(np.float32))))
                 except Exception as e:
                     plog ("Could not save dark frame: ",e)
 
@@ -3953,8 +3954,8 @@ class Sequencer:
                     if g_dev['obs'].config['save_raws_to_pipe_folder_for_nightly_processing']:
                         #fits.writeto(pipefolder + '/' + tempfrontcalib + 'halfsecondDARK_master_bin1.fits', halfsecond_masterDark,  overwrite=True)
                         #fits.writeto(pipefolder + '/' + 'ARCHIVE_' +  archiveDate + '_' + tempfrontcalib + 'halfsecondDARK_master_bin1.fits', halfsecond_masterDark,  overwrite=True)
-                        np.save(pipefolder + '/'  + tempfrontcalib + 'halfsecondDARK_master_bin1.npy', halfsecond_masterDark)
-
+                        #np.save(pipefolder + '/'  + tempfrontcalib + 'halfsecondDARK_master_bin1.npy', halfsecond_masterDark)
+                        g_dev['obs'].to_slow_process(200000000, ('numpy_array_save', pipefolder + '/'  + tempfrontcalib + 'halfsecondDARK_master_bin1.npy', copy.deepcopy(halfsecond_masterDark)))
                 except Exception as e:
                     plog ("Could not save dark frame: ",e)
 
@@ -4050,8 +4051,8 @@ class Sequencer:
                     if g_dev['obs'].config['save_raws_to_pipe_folder_for_nightly_processing']:
                         #fits.writeto(pipefolder + '/' + tempfrontcalib + '2secondDARK_master_bin1.fits', twosecond_masterDark,  overwrite=True)
                         #fits.writeto(pipefolder + '/' + 'ARCHIVE_' +  archiveDate + '_' + tempfrontcalib + '2secondDARK_master_bin1.fits', twosecond_masterDark,  overwrite=True)
-                        np.save(pipefolder + '/'  + tempfrontcalib + '2secondDARK_master_bin1.npy', twosecond_masterDark)
-
+                        #np.save(pipefolder + '/'  + tempfrontcalib + '2secondDARK_master_bin1.npy', twosecond_masterDark)
+                        g_dev['obs'].to_slow_process(200000000, ('numpy_array_save', pipefolder + '/'  + tempfrontcalib + '2secondDARK_master_bin1.npy', copy.deepcopy(twosecond_masterDark)))
                 except Exception as e:
                     plog ("Could not save dark frame: ",e)
 
@@ -4159,8 +4160,8 @@ class Sequencer:
                     if g_dev['obs'].config['save_raws_to_pipe_folder_for_nightly_processing']:
                         #fits.writeto(pipefolder + '/' + tempfrontcalib + '10secondDARK_master_bin1.fits', tensecond_masterDark,  overwrite=True)
                         #fits.writeto(pipefolder + '/' + 'ARCHIVE_' +  archiveDate + '_' + tempfrontcalib + '10secondDARK_master_bin1.fits', tensecond_masterDark,  overwrite=True)
-                        np.save(pipefolder + '/'  + tempfrontcalib + '10secondDARK_master_bin1.npy', tensecond_masterDark)
-
+                        #np.save(pipefolder + '/'  + tempfrontcalib + '10secondDARK_master_bin1.npy', tensecond_masterDark)
+                        g_dev['obs'].to_slow_process(200000000, ('numpy_array_save', pipefolder + '/'  + tempfrontcalib + '10secondDARK_master_bin1.npy', copy.deepcopy(tensecond_masterDark)))
                 except Exception as e:
                     plog ("Could not save dark frame: ",e)
 
@@ -4278,8 +4279,8 @@ class Sequencer:
                     if g_dev['obs'].config['save_raws_to_pipe_folder_for_nightly_processing']:
                         #fits.writeto(pipefolder + '/' + tempfrontcalib + 'broadbandssDARK_master_bin1.fits', broadbandss_masterDark,  overwrite=True)
                         #fits.writeto(pipefolder + '/' + 'ARCHIVE_' +  archiveDate + '_' + tempfrontcalib + 'broadbandssDARK_master_bin1.fits', broadbandss_masterDark,  overwrite=True)
-                        np.save(pipefolder + '/'  + tempfrontcalib + 'broadbandssDARK_master_bin1.npy', broadbandss_masterDark)
-
+                        #np.save(pipefolder + '/'  + tempfrontcalib + 'broadbandssDARK_master_bin1.npy', broadbandss_masterDark)
+                        g_dev['obs'].to_slow_process(200000000, ('numpy_array_save', pipefolder + '/'  + tempfrontcalib + 'broadbandssDARK_master_bin1.npy', copy.deepcopy(broadbandss_masterDark)))
                 except Exception as e:
                     plog ("Could not save dark frame: ",e)
 
@@ -4362,8 +4363,8 @@ class Sequencer:
                     if g_dev['obs'].config['save_raws_to_pipe_folder_for_nightly_processing']:
                         #fits.writeto(pipefolder + '/' + tempfrontcalib + 'broadbandssBIASDARK_master_bin1.fits', broadbandss_masterBiasDark,  overwrite=True)
                         #fits.writeto(pipefolder + '/' + 'ARCHIVE_' +  archiveDate + '_' + tempfrontcalib + 'broadbandssBIASDARK_master_bin1.fits', broadbandss_masterBiasDark,  overwrite=True)
-                        np.save(pipefolder + '/'  + tempfrontcalib + 'broadbandssBIASDARK_master_bin1.npy', broadbandss_masterBiasDark)
-
+                        #np.save(pipefolder + '/'  + tempfrontcalib + 'broadbandssBIASDARK_master_bin1.npy', broadbandss_masterBiasDark)
+                        g_dev['obs'].to_slow_process(200000000, ('numpy_array_save', pipefolder + '/'  + tempfrontcalib + 'broadbandssBIASDARK_master_bin1.npy', copy.deepcopy(broadbandss_masterBiasDark)))
                 except Exception as e:
                     plog ("Could not save dark frame: ",e)
 
@@ -4481,8 +4482,8 @@ class Sequencer:
                     if g_dev['obs'].config['save_raws_to_pipe_folder_for_nightly_processing']:
                         #fits.writeto(pipefolder + '/' + tempfrontcalib + 'narrowbandssDARK_master_bin1.fits', narrowbandss_masterDark,  overwrite=True)
                         #fits.writeto(pipefolder + '/' + 'ARCHIVE_' +  archiveDate + '_' + tempfrontcalib + 'narrowbandssDARK_master_bin1.fits', narrowbandss_masterDark,  overwrite=True)
-                        np.save(pipefolder + '/'  + tempfrontcalib + 'narrowbandssDARK_master_bin1.npy', narrowbandss_masterDark)
-
+                        #np.save(pipefolder + '/'  + tempfrontcalib + 'narrowbandssDARK_master_bin1.npy', narrowbandss_masterDark)
+                        g_dev['obs'].to_slow_process(200000000, ('numpy_array_save',pipefolder + '/'  + tempfrontcalib + 'narrowbandssDARK_master_bin1.npy', copy.deepcopy(narrowbandss_masterDark)))
                 except Exception as e:
                     plog ("Could not save dark frame: ",e)
 
@@ -4565,8 +4566,8 @@ class Sequencer:
                     if g_dev['obs'].config['save_raws_to_pipe_folder_for_nightly_processing']:
                         #fits.writeto(pipefolder + '/' + tempfrontcalib + 'narrowbandssBIASDARK_master_bin1.fits', narrowbandss_masterBiasDark,  overwrite=True)
                         #fits.writeto(pipefolder + '/' + 'ARCHIVE_' +  archiveDate + '_' + tempfrontcalib + 'narrowbandssBIASDARK_master_bin1.fits', narrowbandss_masterBiasDark,  overwrite=True)
-                        np.save(pipefolder + '/' + tempfrontcalib + 'narrowbandssBIASDARK_master_bin1.npy', narrowbandss_masterBiasDark)
-
+                        #np.save(pipefolder + '/' + tempfrontcalib + 'narrowbandssBIASDARK_master_bin1.npy', narrowbandss_masterBiasDark)
+                        g_dev['obs'].to_slow_process(200000000, ('numpy_array_save', pipefolder + '/' + tempfrontcalib + 'narrowbandssBIASDARK_master_bin1.npy', copy.deepcopy(narrowbandss_masterBiasDark)))
                 except Exception as e:
                     plog ("Could not save dark frame: ",e)
 
@@ -5044,7 +5045,7 @@ class Sequencer:
                             clipped_areas=sigma_clipped_array > tempmedian + 4*tempstd
                             if np.sum(clipped_areas) == 0:
                                 break
-                            plog (np.sum(clipped_areas))
+                            #plog (np.sum(clipped_areas))
                             sigma_clipped_array[clipped_areas] = np.nan
                             #breakpoint()
 
@@ -5055,7 +5056,7 @@ class Sequencer:
                             clipped_areas=sigma_clipped_array < tempmedian - 4*tempstd
                             if np.sum(clipped_areas) == 0:
                                 break
-                            plog (np.sum(clipped_areas))
+                            #plog (np.sum(clipped_areas))
                             sigma_clipped_array[clipped_areas] = np.nan
                             #breakpoint()
 
@@ -5094,7 +5095,10 @@ class Sequencer:
                                 #fits.writeto(pipefolder + '/' + tempfrontcalib + 'masterFlat_'+ str(filtercode) + '_bin1.fits', temporaryFlat,  overwrite=True)
                                 #fits.writeto(pipefolder + '/' + 'ARCHIVE_' +  archiveDate + '_' + tempfrontcalib + 'masterFlat_'+ str(filtercode) + '_bin1.fits', temporaryFlat,  overwrite=True)
                                 #np.save(pipefolder + '/' + 'ARCHIVE_' +  archiveDate + '_' + tempfrontcalib + 'masterFlat_'+ str(filtercode) + '_bin1.npy', temporaryFlat)
-                                np.save(pipefolder + '/' + tempfrontcalib + 'masterFlat_'+ str(filtercode) + '_bin1.npy', temporaryFlat)
+                                #np.save(pipefolder + '/' + tempfrontcalib + 'masterFlat_'+ str(filtercode) + '_bin1.npy', temporaryFlat)
+                                g_dev['obs'].to_slow_process(200000000, ('numpy_array_save', pipefolder + '/' + tempfrontcalib + 'masterFlat_'+ str(filtercode) + '_bin1.npy', copy.deepcopy(temporaryFlat)))#, hdu.header, frame_type, g_dev["mnt"].current_icrs_ra, g_dev["mnt"].current_icrs_dec))
+
+
 
                         except Exception as e:
                             plog ("Could not save flat frame: ",e)

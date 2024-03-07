@@ -2341,9 +2341,10 @@ class Observatory:
                         reqs.post(url_log, body, timeout=5)
                     except:
                         plog("Log did not send, usually not fatal.")
+                        plog(traceback.format_exc())
 
                     self.sendtouser_queue.task_done()
-                time.sleep(1)
+                #time.sleep(1)
 
             else:
                 time.sleep(1)
@@ -3003,8 +3004,10 @@ class Observatory:
                 # Set up RA and DEC headers
                 # needs to be done AFTER text file is sent up.
                 # Text file RA and Dec and PTRarchive RA and Dec are formatted different
-
-                temphduheader = slow_process[3]
+                try:
+                    temphduheader = slow_process[3]
+                except:
+                    temphduheader = None
 
                 if slow_process[0] == 'focus':
                     hdufocus = fits.PrimaryHDU()
@@ -3025,6 +3028,10 @@ class Observatory:
                     except:
                         pass
                     del hdufocus
+
+                if slow_process[0] == 'numpy_array_save':
+                    np.save(slow_process[1],slow_process[2])
+
 
                 if slow_process[0] == 'localcalibration':
 

@@ -19,7 +19,7 @@ import glob
 path_removals = []
 for q in range(len(sys.path)):
     if "ptr-observatory" in sys.path[q] and "configs" in sys.path[q]:
-        print("Removing old config path: " + str(sys.path[q]))
+        #print("Removing old config path: " + str(sys.path[q]))
         path_removals.append(sys.path[q])
 
 for remover in path_removals:
@@ -33,7 +33,7 @@ hwd = cwd.replace("ptr-observatory", "")
 hostname_file = glob.glob(hwd + "hostname*")
 
 try:
-    site_name = hostname_file[0].replace('.txt','').split("hostname")[1]   
+    site_name = hostname_file[0].replace('.txt','').split("hostname")[1]
     sys.path.append(os.path.join(pathlib.Path().resolve(), "configs", site_name))
     pathdone = 1
 except OSError:
