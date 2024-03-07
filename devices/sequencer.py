@@ -2697,8 +2697,10 @@ class Sequencer:
         # NOW to get to the business of constructing the local calibrations
         # Start with biases
         # Get list of biases
-        plog (datetime.datetime.now().strftime("%H:%M:%S"))
+        #plog (datetime.datetime.now().strftime("%H:%M:%S"))
         plog ("Regenerating bias")
+        calibration_timer=time.time()
+        
         darkinputList=(glob(g_dev['obs'].local_dark_folder +'*.n*'))
         inputList=(glob(g_dev['obs'].local_bias_folder +'*.n*'))
         archiveDate=str(datetime.date.today()).replace('-','')
@@ -2778,9 +2780,9 @@ class Sequencer:
                 #plog ("Time Taken to put in memmap: " + str(timetaken), "To Go:  ", n - i -1)
                 i=i+1
 
-            plog ("**********************************")
+            #plog ("**********************************")
             plog ("Median Stacking each bias row individually")
-            plog (datetime.datetime.now().strftime("%H:%M:%S"))
+            #plog (datetime.datetime.now().strftime("%H:%M:%S"))
             # Go through each pixel and calculate nanmedian. Can't do all arrays at once as it is hugely memory intensive
             finalImage=np.zeros(shapeImage,dtype=float)
 
@@ -2798,8 +2800,10 @@ class Sequencer:
                     counter=counter+1
 
 
-            plog(datetime.datetime.now().strftime("%H:%M:%S"))
-            plog ("**********************************")
+            #plog(datetime.datetime.now().strftime("%H:%M:%S"))
+            #plog ("**********************************")
+
+            
 
             masterBias=np.asarray(finalImage).astype(np.float32)
             del finalImage
@@ -2809,8 +2813,8 @@ class Sequencer:
             img_temp_stdev=np.nanstd(masterBias)
             above_array=(masterBias > (img_temp_median + (10 * img_temp_stdev)))
             below_array=(masterBias < (img_temp_median - (10 * img_temp_stdev)))
-            plog ("Bad pixels above: " + str(above_array.sum()))
-            plog ("Bad pixels below: " + str(below_array.sum()))
+            #plog ("Bad pixels above: " + str(above_array.sum()))
+            #plog ("Bad pixels below: " + str(below_array.sum()))
             bad_pixel_mapper_array=bad_pixel_mapper_array+above_array+below_array
 
 
@@ -2842,13 +2846,15 @@ class Sequencer:
             del PLDrive
             gc.collect()
             os.remove(g_dev['obs'].local_bias_folder  + 'tempfile')
+            
+            
 
             # Now that we have the master bias, we can estimate the readnoise actually
             # by comparing the standard deviations between the bias and the masterbias
             if g_dev['cam'].camera_known_gain <1000:
                 readnoise_array=[]
                 post_readnoise_array=[]
-                plog ("Calculating Readnoise. Please Wait.")
+                #plog ("Calculating Readnoise. Please Wait.")
                 for file in inputList:
                     hdu1data = np.load(file, mmap_mode='r')
                     hdu1data=hdu1data-masterBias
@@ -2861,19 +2867,20 @@ class Sequencer:
                     post_readnoise_array.append(stddiffimage)
 
                 readnoise_array=np.array(readnoise_array)
-                plog ("Raw Readnoise outputs: " +str(readnoise_array))
+                #plog ("Raw Readnoise outputs: " +str(readnoise_array))
 
-                plog ("Final Readnoise: " + str(np.nanmedian(readnoise_array)) + " std: " + str(np.nanstd(readnoise_array)))
+                #plog ("Final Readnoise: " + str(np.nanmedian(readnoise_array)) + " std: " + str(np.nanstd(readnoise_array)))
             else:
                 plog ("Skipping readnoise estimation as we don't currently have a reliable camera gain estimate.")
 
-
+            plog ("Bias reconstructed: " +str(time.time()-calibration_timer))
+            calibration_timer=time.time()
             g_dev["obs"].send_to_user("Bias calibration frame created.")
 
 
             # NOW we have the master bias, we can move onto the dark frames
-            plog (datetime.datetime.now().strftime("%H:%M:%S"))
-            plog ("Regenerating long exposure dark")
+            #plog (datetime.datetime.now().strftime("%H:%M:%S"))
+            #plog ("Regenerating long exposure dark")
             inputList=(glob(g_dev['obs'].local_dark_folder +'*.n*'))
 
             # Test each flat file actually opens
@@ -2914,9 +2921,9 @@ class Sequencer:
                 #plog ("Time Taken to put in memmap: " + str(timetaken))
                 i=i+1
 
-            plog ("**********************************")
-            plog ("Median Stacking each darkframe row individually ")
-            plog (datetime.datetime.now().strftime("%H:%M:%S"))
+            #plog ("**********************************")
+            #plog ("Median Stacking each darkframe row individually ")
+            #plog (datetime.datetime.now().strftime("%H:%M:%S"))
             # Go through each pixel and calculate nanmedian. Can't do all arrays at once as it is hugely memory intensive
             finalImage=np.zeros(shapeImage,dtype=float)
 
@@ -2937,8 +2944,8 @@ class Sequencer:
 
 
 
-            plog (datetime.datetime.now().strftime("%H:%M:%S"))
-            plog ("**********************************")
+            #plog (datetime.datetime.now().strftime("%H:%M:%S"))
+            #plog ("**********************************")
 
             masterDark=np.asarray(finalImage).astype(np.float32)
             del finalImage
@@ -2948,7 +2955,7 @@ class Sequencer:
             img_temp_stdev=np.nanstd(masterDark)
             above_array=(masterDark > 20)
             #below_array=(darkdeexp < (img_temp_median - (10 * img_temp_stdev)))
-            plog ("Bad pixels above: " + str(above_array.sum()))
+            #plog ("Bad pixels above: " + str(above_array.sum()))
             #plog ("Bad pixels below: " + str(below_array.sum()))
             bad_pixel_mapper_array=bad_pixel_mapper_array+above_array+below_array
 
@@ -2977,6 +2984,8 @@ class Sequencer:
             gc.collect()
             os.remove(g_dev['obs'].local_dark_folder  + 'tempfile')
 
+            plog ("Long Exposure Dark reconstructed: " +str(time.time()-calibration_timer))
+            calibration_timer=time.time()
             g_dev["obs"].send_to_user("Long Exposure Dark calibration frame created.")
 
 
@@ -2988,8 +2997,8 @@ class Sequencer:
             ##############################################################################################
 
             # NOW for the five percent flat darks and biasdarks
-            plog (datetime.datetime.now().strftime("%H:%M:%S"))
-            plog ("Regenerating five percent biasdarks")
+            #plog (datetime.datetime.now().strftime("%H:%M:%S"))
+            #plog ("Regenerating five percent biasdarks")
             inputList=(glob(g_dev['obs'].local_dark_folder+ 'fivepercentdarks/' +'*.n*'))
 
             # Test each flat file actually opens
@@ -3009,9 +3018,9 @@ class Sequencer:
                     PLDrive[:,:,i] = np.asarray(np.load(file, mmap_mode='r'),dtype=np.float32)
                     i=i+1
 
-                plog ("**********************************")
-                plog ("Median Stacking each darkframe row individually ")
-                plog (datetime.datetime.now().strftime("%H:%M:%S"))
+                #plog ("**********************************")
+                #plog ("Median Stacking each darkframe row individually ")
+                #plog (datetime.datetime.now().strftime("%H:%M:%S"))
                 # Go through each pixel and calculate nanmedian. Can't do all arrays at once as it is hugely memory intensive
                 finalImage=np.zeros(shapeImage,dtype=float)
                 mptask=[]
@@ -3024,8 +3033,8 @@ class Sequencer:
                     for result in pool.map(stack_nanmedian_row, mptask):
                         finalImage[counter,:]=result
                         counter=counter+1
-                plog (datetime.datetime.now().strftime("%H:%M:%S"))
-                plog ("**********************************")
+                #plog (datetime.datetime.now().strftime("%H:%M:%S"))
+                #plog ("**********************************")
 
                 flat_biasdarks['fivepercent']=np.asarray(finalImage).astype(np.float32)
 
@@ -3041,6 +3050,8 @@ class Sequencer:
                 del PLDrive
                 gc.collect()
                 os.remove(g_dev['obs'].local_dark_folder  + 'tempfile')
+                plog ("Five percent bias-dark reconstructed: " +str(time.time()-calibration_timer))
+                calibration_timer=time.time()
                 g_dev["obs"].send_to_user("five percent bias-dark calibration frame created.")
 
 
@@ -3053,8 +3064,8 @@ class Sequencer:
             ##############################################################################################
 
             # NOW for the five percent flat darks and biasdarks
-            plog (datetime.datetime.now().strftime("%H:%M:%S"))
-            plog ("Regenerating ten percent biasdarks")
+            # plog (datetime.datetime.now().strftime("%H:%M:%S"))
+            # plog ("Regenerating ten percent biasdarks")
             inputList=(glob(g_dev['obs'].local_dark_folder+ 'tenpercentdarks/' +'*.n*'))
 
             # Test each flat file actually opens
@@ -3075,9 +3086,9 @@ class Sequencer:
                     PLDrive[:,:,i] = np.asarray(np.load(file, mmap_mode='r'),dtype=np.float32)
                     i=i+1
 
-                plog ("**********************************")
-                plog ("Median Stacking each darkframe row individually ")
-                plog (datetime.datetime.now().strftime("%H:%M:%S"))
+                # plog ("**********************************")
+                # plog ("Median Stacking each darkframe row individually ")
+                # plog (datetime.datetime.now().strftime("%H:%M:%S"))
                 # Go through each pixel and calculate nanmedian. Can't do all arrays at once as it is hugely memory intensive
                 finalImage=np.zeros(shapeImage,dtype=float)
                 mptask=[]
@@ -3090,8 +3101,8 @@ class Sequencer:
                     for result in pool.map(stack_nanmedian_row, mptask):
                         finalImage[counter,:]=result
                         counter=counter+1
-                plog (datetime.datetime.now().strftime("%H:%M:%S"))
-                plog ("**********************************")
+                # plog (datetime.datetime.now().strftime("%H:%M:%S"))
+                # plog ("**********************************")
 
                 flat_biasdarks['tenpercent']=np.asarray(finalImage).astype(np.float32)
 
@@ -3108,6 +3119,8 @@ class Sequencer:
                 gc.collect()
                 os.remove(g_dev['obs'].local_dark_folder  + 'tempfile')
                 g_dev["obs"].send_to_user("ten percent bias-dark calibration frame created.")
+                plog ("Ten percent bias-dark reconstructed: " +str(time.time()-calibration_timer))
+                calibration_timer=time.time()
 
 
 
@@ -3119,8 +3132,8 @@ class Sequencer:
             ##############################################################################################
 
             # NOW for the five percent flat darks and biasdarks
-            plog (datetime.datetime.now().strftime("%H:%M:%S"))
-            plog ("Regenerating quarter second biasdarks")
+            # plog (datetime.datetime.now().strftime("%H:%M:%S"))
+            # plog ("Regenerating quarter second biasdarks")
             inputList=(glob(g_dev['obs'].local_dark_folder+ 'quartersecdarks/' +'*.n*'))
 
             # Test each flat file actually opens
@@ -3141,9 +3154,9 @@ class Sequencer:
                     PLDrive[:,:,i] = np.asarray(np.load(file, mmap_mode='r'),dtype=np.float32)
                     i=i+1
 
-                plog ("**********************************")
-                plog ("Median Stacking each darkframe row individually ")
-                plog (datetime.datetime.now().strftime("%H:%M:%S"))
+                # plog ("**********************************")
+                # plog ("Median Stacking each darkframe row individually ")
+                # plog (datetime.datetime.now().strftime("%H:%M:%S"))
                 # Go through each pixel and calculate nanmedian. Can't do all arrays at once as it is hugely memory intensive
                 finalImage=np.zeros(shapeImage,dtype=float)
                 mptask=[]
@@ -3156,8 +3169,8 @@ class Sequencer:
                     for result in pool.map(stack_nanmedian_row, mptask):
                         finalImage[counter,:]=result
                         counter=counter+1
-                plog (datetime.datetime.now().strftime("%H:%M:%S"))
-                plog ("**********************************")
+                # plog (datetime.datetime.now().strftime("%H:%M:%S"))
+                # plog ("**********************************")
 
                 flat_biasdarks['quartersec']=np.asarray(finalImage).astype(np.float32)
 
@@ -3173,7 +3186,9 @@ class Sequencer:
                 del PLDrive
                 gc.collect()
                 os.remove(g_dev['obs'].local_dark_folder  + 'tempfile')
-                g_dev["obs"].send_to_user("five percent bias-dark calibration frame created.")
+                g_dev["obs"].send_to_user("quarter sec bias-dark calibration frame created.")
+                plog ("Quarter0sec bias-dark reconstructed: " +str(time.time()-calibration_timer))
+                calibration_timer=time.time()
 
 
 
@@ -3185,8 +3200,8 @@ class Sequencer:
             ##############################################################################################
 
             # NOW for the five percent flat darks and biasdarks
-            plog (datetime.datetime.now().strftime("%H:%M:%S"))
-            plog ("Regenerating half second biasdarks")
+            # plog (datetime.datetime.now().strftime("%H:%M:%S"))
+            # plog ("Regenerating half second biasdarks")
             inputList=(glob(g_dev['obs'].local_dark_folder+ 'halfsecdarks/' +'*.n*'))
 
             # Test each flat file actually opens
@@ -3207,9 +3222,9 @@ class Sequencer:
                     PLDrive[:,:,i] = np.asarray(np.load(file, mmap_mode='r'),dtype=np.float32)
                     i=i+1
 
-                plog ("**********************************")
-                plog ("Median Stacking each darkframe row individually ")
-                plog (datetime.datetime.now().strftime("%H:%M:%S"))
+                # plog ("**********************************")
+                # plog ("Median Stacking each darkframe row individually ")
+                # plog (datetime.datetime.now().strftime("%H:%M:%S"))
                 # Go through each pixel and calculate nanmedian. Can't do all arrays at once as it is hugely memory intensive
                 finalImage=np.zeros(shapeImage,dtype=float)
                 mptask=[]
@@ -3222,8 +3237,8 @@ class Sequencer:
                     for result in pool.map(stack_nanmedian_row, mptask):
                         finalImage[counter,:]=result
                         counter=counter+1
-                plog (datetime.datetime.now().strftime("%H:%M:%S"))
-                plog ("**********************************")
+                # plog (datetime.datetime.now().strftime("%H:%M:%S"))
+                # plog ("**********************************")
 
                 flat_biasdarks['halfsec']=np.asarray(finalImage).astype(np.float32)
 
@@ -3239,7 +3254,9 @@ class Sequencer:
                 del PLDrive
                 gc.collect()
                 os.remove(g_dev['obs'].local_dark_folder  + 'tempfile')
-                g_dev["obs"].send_to_user("five percent bias-dark calibration frame created.")
+                g_dev["obs"].send_to_user("half second bias-dark calibration frame created.")
+                plog ("Half Second bias-dark reconstructed: " +str(time.time()-calibration_timer))
+                calibration_timer=time.time()
 
 
             ##############################################################################################
@@ -3250,8 +3267,8 @@ class Sequencer:
             ##############################################################################################
 
             # NOW for the five percent flat darks and biasdarks
-            plog (datetime.datetime.now().strftime("%H:%M:%S"))
-            plog ("Regenerating seventyfive percent biasdarks")
+            # plog (datetime.datetime.now().strftime("%H:%M:%S"))
+            # plog ("Regenerating seventyfive percent biasdarks")
             inputList=(glob(g_dev['obs'].local_dark_folder+ 'sevenfivepercentdarks/' +'*.n*'))
 
             # Test each flat file actually opens
@@ -3273,9 +3290,9 @@ class Sequencer:
                     PLDrive[:,:,i] = np.asarray(np.load(file, mmap_mode='r'),dtype=np.float32)
                     i=i+1
 
-                plog ("**********************************")
-                plog ("Median Stacking each darkframe row individually ")
-                plog (datetime.datetime.now().strftime("%H:%M:%S"))
+                # plog ("**********************************")
+                # plog ("Median Stacking each darkframe row individually ")
+                # plog (datetime.datetime.now().strftime("%H:%M:%S"))
                 # Go through each pixel and calculate nanmedian. Can't do all arrays at once as it is hugely memory intensive
                 finalImage=np.zeros(shapeImage,dtype=float)
                 mptask=[]
@@ -3288,8 +3305,8 @@ class Sequencer:
                     for result in pool.map(stack_nanmedian_row, mptask):
                         finalImage[counter,:]=result
                         counter=counter+1
-                plog (datetime.datetime.now().strftime("%H:%M:%S"))
-                plog ("**********************************")
+                # plog (datetime.datetime.now().strftime("%H:%M:%S"))
+                # plog ("**********************************")
 
                 flat_biasdarks['sevenfivepercent']=np.asarray(finalImage).astype(np.float32)
 
@@ -3306,6 +3323,8 @@ class Sequencer:
                 gc.collect()
                 os.remove(g_dev['obs'].local_dark_folder  + 'tempfile')
                 g_dev["obs"].send_to_user("sevenfivepercent bias-dark calibration frame created.")
+                plog ("Seven Five percent bias-dark reconstructed: " +str(time.time()-calibration_timer))
+                calibration_timer=time.time()
 
 
             ##############################################################################################
@@ -3316,8 +3335,8 @@ class Sequencer:
             ##############################################################################################
 
             # NOW for the five percent flat darks and biasdarks
-            plog (datetime.datetime.now().strftime("%H:%M:%S"))
-            plog ("Regenerating seventyfive percent biasdarks")
+            # plog (datetime.datetime.now().strftime("%H:%M:%S"))
+            # plog ("Regenerating seventyfive percent biasdarks")
             inputList=(glob(g_dev['obs'].local_dark_folder+ 'onesecdarks/' +'*.n*'))
 
             # Test each flat file actually opens
@@ -3338,9 +3357,9 @@ class Sequencer:
                     PLDrive[:,:,i] = np.asarray(np.load(file, mmap_mode='r'),dtype=np.float32)
                     i=i+1
 
-                plog ("**********************************")
-                plog ("Median Stacking each darkframe row individually ")
-                plog (datetime.datetime.now().strftime("%H:%M:%S"))
+                # plog ("**********************************")
+                # plog ("Median Stacking each darkframe row individually ")
+                # plog (datetime.datetime.now().strftime("%H:%M:%S"))
                 # Go through each pixel and calculate nanmedian. Can't do all arrays at once as it is hugely memory intensive
                 finalImage=np.zeros(shapeImage,dtype=float)
                 mptask=[]
@@ -3353,8 +3372,8 @@ class Sequencer:
                     for result in pool.map(stack_nanmedian_row, mptask):
                         finalImage[counter,:]=result
                         counter=counter+1
-                plog (datetime.datetime.now().strftime("%H:%M:%S"))
-                plog ("**********************************")
+                # plog (datetime.datetime.now().strftime("%H:%M:%S"))
+                # plog ("**********************************")
 
                 flat_biasdarks['onesec']=np.asarray(finalImage).astype(np.float32)
 
@@ -3371,6 +3390,8 @@ class Sequencer:
                 gc.collect()
                 os.remove(g_dev['obs'].local_dark_folder  + 'tempfile')
                 g_dev["obs"].send_to_user("onesec bias-dark calibration frame created.")
+                plog ("One Second bias-dark reconstructed: " +str(time.time()-calibration_timer))
+                calibration_timer=time.time()
 
 
             ##############################################################################################
@@ -3381,8 +3402,8 @@ class Sequencer:
             ##############################################################################################
 
             # NOW for the five percent flat darks and biasdarks
-            plog (datetime.datetime.now().strftime("%H:%M:%S"))
-            plog ("Regenerating one and a half sec biasdarks")
+            # plog (datetime.datetime.now().strftime("%H:%M:%S"))
+            # plog ("Regenerating one and a half sec biasdarks")
             inputList=(glob(g_dev['obs'].local_dark_folder+ 'oneandahalfsecdarks/' +'*.n*'))
 
             # Test each flat file actually opens
@@ -3403,9 +3424,9 @@ class Sequencer:
                     PLDrive[:,:,i] = np.asarray(np.load(file, mmap_mode='r'),dtype=np.float32)
                     i=i+1
 
-                plog ("**********************************")
-                plog ("Median Stacking each darkframe row individually ")
-                plog (datetime.datetime.now().strftime("%H:%M:%S"))
+                # plog ("**********************************")
+                # plog ("Median Stacking each darkframe row individually ")
+                # plog (datetime.datetime.now().strftime("%H:%M:%S"))
                 # Go through each pixel and calculate nanmedian. Can't do all arrays at once as it is hugely memory intensive
                 finalImage=np.zeros(shapeImage,dtype=float)
                 mptask=[]
@@ -3418,8 +3439,8 @@ class Sequencer:
                     for result in pool.map(stack_nanmedian_row, mptask):
                         finalImage[counter,:]=result
                         counter=counter+1
-                plog (datetime.datetime.now().strftime("%H:%M:%S"))
-                plog ("**********************************")
+                # plog (datetime.datetime.now().strftime("%H:%M:%S"))
+                # plog ("**********************************")
 
                 flat_biasdarks['oneandahalfsec']=np.asarray(finalImage).astype(np.float32)
 
@@ -3436,6 +3457,8 @@ class Sequencer:
                 gc.collect()
                 os.remove(g_dev['obs'].local_dark_folder  + 'tempfile')
                 g_dev["obs"].send_to_user("oneandahalfsec bias-dark calibration frame created.")
+                plog ("One and a half second bias-dark reconstructed: " +str(time.time()-calibration_timer))
+                calibration_timer=time.time()
 
 
             ##############################################################################################
@@ -3446,8 +3469,8 @@ class Sequencer:
             ##############################################################################################
 
             # NOW for the five percent flat darks and biasdarks
-            plog (datetime.datetime.now().strftime("%H:%M:%S"))
-            plog ("Regenerating two sec biasdarks")
+            # plog (datetime.datetime.now().strftime("%H:%M:%S"))
+            # plog ("Regenerating two sec biasdarks")
             inputList=(glob(g_dev['obs'].local_dark_folder+ 'twosecdarks/' +'*.n*'))
 
             # Test each flat file actually opens
@@ -3467,9 +3490,9 @@ class Sequencer:
                     PLDrive[:,:,i] = np.asarray(np.load(file, mmap_mode='r'),dtype=np.float32)
                     i=i+1
 
-                plog ("**********************************")
-                plog ("Median Stacking each darkframe row individually ")
-                plog (datetime.datetime.now().strftime("%H:%M:%S"))
+                # plog ("**********************************")
+                # plog ("Median Stacking each darkframe row individually ")
+                # plog (datetime.datetime.now().strftime("%H:%M:%S"))
                 # Go through each pixel and calculate nanmedian. Can't do all arrays at once as it is hugely memory intensive
                 finalImage=np.zeros(shapeImage,dtype=float)
                 mptask=[]
@@ -3482,8 +3505,8 @@ class Sequencer:
                     for result in pool.map(stack_nanmedian_row, mptask):
                         finalImage[counter,:]=result
                         counter=counter+1
-                plog (datetime.datetime.now().strftime("%H:%M:%S"))
-                plog ("**********************************")
+                # plog (datetime.datetime.now().strftime("%H:%M:%S"))
+                # plog ("**********************************")
 
                 flat_biasdarks['twosec']=np.asarray(finalImage).astype(np.float32)
 
@@ -3499,7 +3522,9 @@ class Sequencer:
                 del PLDrive
                 gc.collect()
                 os.remove(g_dev['obs'].local_dark_folder  + 'tempfile')
-                g_dev["obs"].send_to_user("two bias-dark calibration frame created.")
+                g_dev["obs"].send_to_user("two second bias-dark calibration frame created.")
+                plog ("Two Second bias-dark reconstructed: " +str(time.time()-calibration_timer))
+                calibration_timer=time.time()
 
 
             ##############################################################################################
@@ -3510,8 +3535,8 @@ class Sequencer:
             ##############################################################################################
 
             # NOW for the three point five second flat darks and biasdarks
-            plog (datetime.datetime.now().strftime("%H:%M:%S"))
-            plog ("Regenerating 3.five sec biasdarks")
+            # plog (datetime.datetime.now().strftime("%H:%M:%S"))
+            # plog ("Regenerating 3.five sec biasdarks")
             inputList=(glob(g_dev['obs'].local_dark_folder+ 'threepointfivesecdarks/' +'*.n*'))
 
             # Test each flat file actually opens
@@ -3532,9 +3557,9 @@ class Sequencer:
                     PLDrive[:,:,i] = np.asarray(np.load(file, mmap_mode='r'),dtype=np.float32)
                     i=i+1
 
-                plog ("**********************************")
-                plog ("Median Stacking each darkframe row individually ")
-                plog (datetime.datetime.now().strftime("%H:%M:%S"))
+                # plog ("**********************************")
+                # plog ("Median Stacking each darkframe row individually ")
+                # plog (datetime.datetime.now().strftime("%H:%M:%S"))
                 # Go through each pixel and calculate nanmedian. Can't do all arrays at once as it is hugely memory intensive
                 finalImage=np.zeros(shapeImage,dtype=float)
                 mptask=[]
@@ -3547,8 +3572,8 @@ class Sequencer:
                     for result in pool.map(stack_nanmedian_row, mptask):
                         finalImage[counter,:]=result
                         counter=counter+1
-                plog (datetime.datetime.now().strftime("%H:%M:%S"))
-                plog ("**********************************")
+                # plog (datetime.datetime.now().strftime("%H:%M:%S"))
+                # plog ("**********************************")
 
                 flat_biasdarks['threepointfivesec']=np.asarray(finalImage).astype(np.float32)
 
@@ -3565,6 +3590,8 @@ class Sequencer:
                 gc.collect()
                 os.remove(g_dev['obs'].local_dark_folder  + 'tempfile')
                 g_dev["obs"].send_to_user("three point five bias-dark calibration frame created.")
+                plog ("Three point five percent bias-dark reconstructed: " +str(time.time()-calibration_timer))
+                calibration_timer=time.time()
 
             ##############################################################################################
             ##############################################################################################
@@ -3574,8 +3601,8 @@ class Sequencer:
             ##############################################################################################
 
             # NOW for the five second flat darks and biasdarks
-            plog (datetime.datetime.now().strftime("%H:%M:%S"))
-            plog ("Regenerating five sec biasdarks")
+            # plog (datetime.datetime.now().strftime("%H:%M:%S"))
+            # plog ("Regenerating five sec biasdarks")
             inputList=(glob(g_dev['obs'].local_dark_folder+ 'fivesecdarks/' +'*.n*'))
 
             # Test each flat file actually opens
@@ -3596,9 +3623,9 @@ class Sequencer:
                     PLDrive[:,:,i] = np.asarray(np.load(file, mmap_mode='r'),dtype=np.float32)
                     i=i+1
 
-                plog ("**********************************")
-                plog ("Median Stacking each darkframe row individually ")
-                plog (datetime.datetime.now().strftime("%H:%M:%S"))
+                # plog ("**********************************")
+                # plog ("Median Stacking each darkframe row individually ")
+                # plog (datetime.datetime.now().strftime("%H:%M:%S"))
                 # Go through each pixel and calculate nanmedian. Can't do all arrays at once as it is hugely memory intensive
                 finalImage=np.zeros(shapeImage,dtype=float)
                 mptask=[]
@@ -3611,8 +3638,8 @@ class Sequencer:
                     for result in pool.map(stack_nanmedian_row, mptask):
                         finalImage[counter,:]=result
                         counter=counter+1
-                plog (datetime.datetime.now().strftime("%H:%M:%S"))
-                plog ("**********************************")
+                # plog (datetime.datetime.now().strftime("%H:%M:%S"))
+                # plog ("**********************************")
 
                 flat_biasdarks['fivesec']=np.asarray(finalImage).astype(np.float32)
 
@@ -3629,6 +3656,8 @@ class Sequencer:
                 gc.collect()
                 os.remove(g_dev['obs'].local_dark_folder  + 'tempfile')
                 g_dev["obs"].send_to_user("five bias-dark calibration frame created.")
+                plog ("Five second bias-dark reconstructed: " +str(time.time()-calibration_timer))
+                calibration_timer=time.time()
 
 
 
@@ -3640,8 +3669,8 @@ class Sequencer:
             ##############################################################################################
 
             # NOW for the three point five second flat darks and biasdarks
-            plog (datetime.datetime.now().strftime("%H:%M:%S"))
-            plog ("Regenerating 7.five sec biasdarks")
+            # plog (datetime.datetime.now().strftime("%H:%M:%S"))
+            # plog ("Regenerating 7.five sec biasdarks")
             inputList=(glob(g_dev['obs'].local_dark_folder+ 'sevenpointfivesecdarks/' +'*.n*'))
 
             # Test each flat file actually opens
@@ -3662,9 +3691,9 @@ class Sequencer:
                     PLDrive[:,:,i] = np.asarray(np.load(file, mmap_mode='r'),dtype=np.float32)
                     i=i+1
 
-                plog ("**********************************")
-                plog ("Median Stacking each darkframe row individually ")
-                plog (datetime.datetime.now().strftime("%H:%M:%S"))
+                # plog ("**********************************")
+                # plog ("Median Stacking each darkframe row individually ")
+                # plog (datetime.datetime.now().strftime("%H:%M:%S"))
                 # Go through each pixel and calculate nanmedian. Can't do all arrays at once as it is hugely memory intensive
                 finalImage=np.zeros(shapeImage,dtype=float)
                 mptask=[]
@@ -3677,8 +3706,8 @@ class Sequencer:
                     for result in pool.map(stack_nanmedian_row, mptask):
                         finalImage[counter,:]=result
                         counter=counter+1
-                plog (datetime.datetime.now().strftime("%H:%M:%S"))
-                plog ("**********************************")
+                # plog (datetime.datetime.now().strftime("%H:%M:%S"))
+                # plog ("**********************************")
 
                 flat_biasdarks['sevenpointfivesec']=np.asarray(finalImage).astype(np.float32)
 
@@ -3694,7 +3723,9 @@ class Sequencer:
                 del PLDrive
                 gc.collect()
                 os.remove(g_dev['obs'].local_dark_folder  + 'tempfile')
-                g_dev["obs"].send_to_user("three point five bias-dark calibration frame created.")
+                g_dev["obs"].send_to_user("seven point five bias-dark calibration frame created.")
+                plog ("Seven point five ias-dark reconstructed: " +str(time.time()-calibration_timer))
+                calibration_timer=time.time()
 
             ##############################################################################################
             ##############################################################################################
@@ -3704,8 +3735,8 @@ class Sequencer:
             ##############################################################################################
 
             # NOW for the five percent flat darks and biasdarks
-            plog (datetime.datetime.now().strftime("%H:%M:%S"))
-            plog ("Regenerating ten sec biasdarks")
+            # plog (datetime.datetime.now().strftime("%H:%M:%S"))
+            # plog ("Regenerating ten sec biasdarks")
             inputList=(glob(g_dev['obs'].local_dark_folder+ 'tensecdarks/' +'*.n*'))
 
             # Test each flat file actually opens
@@ -3726,9 +3757,9 @@ class Sequencer:
                     PLDrive[:,:,i] = np.asarray(np.load(file, mmap_mode='r'),dtype=np.float32)
                     i=i+1
 
-                plog ("**********************************")
-                plog ("Median Stacking each darkframe row individually ")
-                plog (datetime.datetime.now().strftime("%H:%M:%S"))
+                # plog ("**********************************")
+                # plog ("Median Stacking each darkframe row individually ")
+                # plog (datetime.datetime.now().strftime("%H:%M:%S"))
                 # Go through each pixel and calculate nanmedian. Can't do all arrays at once as it is hugely memory intensive
                 finalImage=np.zeros(shapeImage,dtype=float)
                 mptask=[]
@@ -3741,8 +3772,8 @@ class Sequencer:
                     for result in pool.map(stack_nanmedian_row, mptask):
                         finalImage[counter,:]=result
                         counter=counter+1
-                plog (datetime.datetime.now().strftime("%H:%M:%S"))
-                plog ("**********************************")
+                # plog (datetime.datetime.now().strftime("%H:%M:%S"))
+                # plog ("**********************************")
 
                 flat_biasdarks['tensec']=np.asarray(finalImage).astype(np.float32)
 
@@ -3758,7 +3789,9 @@ class Sequencer:
                 del PLDrive
                 gc.collect()
                 os.remove(g_dev['obs'].local_dark_folder  + 'tempfile')
-                g_dev["obs"].send_to_user("ten bias-dark calibration frame created.")
+                g_dev["obs"].send_to_user("ten second bias-dark calibration frame created.")
+                plog ("Ten second bias-dark reconstructed: " +str(time.time()-calibration_timer))
+                calibration_timer=time.time()
 
             ##############################################################################################
             ##############################################################################################
@@ -3768,8 +3801,8 @@ class Sequencer:
             ##############################################################################################
 
             # NOW for the five percent flat darks and biasdarks
-            plog (datetime.datetime.now().strftime("%H:%M:%S"))
-            plog ("Regenerating fifteen sec biasdarks")
+            # plog (datetime.datetime.now().strftime("%H:%M:%S"))
+            # plog ("Regenerating fifteen sec biasdarks")
             inputList=(glob(g_dev['obs'].local_dark_folder+ 'fifteensecdarks/' +'*.n*'))
 
             # Test each flat file actually opens
@@ -3790,9 +3823,9 @@ class Sequencer:
                     PLDrive[:,:,i] = np.asarray(np.load(file, mmap_mode='r'),dtype=np.float32)
                     i=i+1
 
-                plog ("**********************************")
-                plog ("Median Stacking each darkframe row individually ")
-                plog (datetime.datetime.now().strftime("%H:%M:%S"))
+                # plog ("**********************************")
+                # plog ("Median Stacking each darkframe row individually ")
+                # plog (datetime.datetime.now().strftime("%H:%M:%S"))
                 # Go through each pixel and calculate nanmedian. Can't do all arrays at once as it is hugely memory intensive
                 finalImage=np.zeros(shapeImage,dtype=float)
                 mptask=[]
@@ -3805,8 +3838,8 @@ class Sequencer:
                     for result in pool.map(stack_nanmedian_row, mptask):
                         finalImage[counter,:]=result
                         counter=counter+1
-                plog (datetime.datetime.now().strftime("%H:%M:%S"))
-                plog ("**********************************")
+                # plog (datetime.datetime.now().strftime("%H:%M:%S"))
+                # plog ("**********************************")
 
                 flat_biasdarks['fifteensec']=np.asarray(finalImage).astype(np.float32)
 
@@ -3822,7 +3855,9 @@ class Sequencer:
                 del PLDrive
                 gc.collect()
                 os.remove(g_dev['obs'].local_dark_folder  + 'tempfile')
-                g_dev["obs"].send_to_user("fifteen sec bias-dark calibration frame created.")
+                g_dev["obs"].send_to_user("fifteen second bias-dark calibration frame created.")
+                plog ("Fifteen second bias-dark reconstructed: " +str(time.time()-calibration_timer))
+                calibration_timer=time.time()
 
 
             ##############################################################################################
@@ -3833,8 +3868,8 @@ class Sequencer:
             ##############################################################################################
 
             # NOW for the five percent flat darks and biasdarks
-            plog (datetime.datetime.now().strftime("%H:%M:%S"))
-            plog ("Regenerating twenty sec biasdarks")
+            # plog (datetime.datetime.now().strftime("%H:%M:%S"))
+            # plog ("Regenerating twenty sec biasdarks")
             inputList=(glob(g_dev['obs'].local_dark_folder+ 'twentysecdarks/' +'*.n*'))
 
             # Test each flat file actually opens
@@ -3855,9 +3890,9 @@ class Sequencer:
                     PLDrive[:,:,i] = np.asarray(np.load(file, mmap_mode='r'),dtype=np.float32)
                     i=i+1
 
-                plog ("**********************************")
-                plog ("Median Stacking each darkframe row individually ")
-                plog (datetime.datetime.now().strftime("%H:%M:%S"))
+                # plog ("**********************************")
+                # plog ("Median Stacking each darkframe row individually ")
+                # plog (datetime.datetime.now().strftime("%H:%M:%S"))
                 # Go through each pixel and calculate nanmedian. Can't do all arrays at once as it is hugely memory intensive
                 finalImage=np.zeros(shapeImage,dtype=float)
                 mptask=[]
@@ -3870,8 +3905,8 @@ class Sequencer:
                     for result in pool.map(stack_nanmedian_row, mptask):
                         finalImage[counter,:]=result
                         counter=counter+1
-                plog (datetime.datetime.now().strftime("%H:%M:%S"))
-                plog ("**********************************")
+                # plog (datetime.datetime.now().strftime("%H:%M:%S"))
+                # plog ("**********************************")
 
                 flat_biasdarks['twentysec']=np.asarray(finalImage).astype(np.float32)
 
@@ -3887,7 +3922,9 @@ class Sequencer:
                 del PLDrive
                 gc.collect()
                 os.remove(g_dev['obs'].local_dark_folder  + 'tempfile')
-                g_dev["obs"].send_to_user("fifteen sec bias-dark calibration frame created.")
+                g_dev["obs"].send_to_user("twenty sec bias-dark calibration frame created.")
+                plog ("Twenty second bias-dark reconstructed: " +str(time.time()-calibration_timer))
+                calibration_timer=time.time()
 
 
             ##############################################################################################
@@ -3900,8 +3937,8 @@ class Sequencer:
 
 
             # NOW for the half second darks
-            plog (datetime.datetime.now().strftime("%H:%M:%S"))
-            plog ("Regenerating 0.5 second exposure dark")
+            # plog (datetime.datetime.now().strftime("%H:%M:%S"))
+            # plog ("Regenerating 0.5 second exposure dark")
             inputList=(glob(g_dev['obs'].local_dark_folder+ 'halfsecdarks/' +'*.n*'))
 
             # Test each flat file actually opens
@@ -3943,9 +3980,9 @@ class Sequencer:
                     #plog ("Time Taken to put in memmap: " + str(timetaken))
                     i=i+1
 
-                plog ("**********************************")
-                plog ("Median Stacking each darkframe row individually ")
-                plog (datetime.datetime.now().strftime("%H:%M:%S"))
+                # plog ("**********************************")
+                # plog ("Median Stacking each darkframe row individually ")
+                # plog (datetime.datetime.now().strftime("%H:%M:%S"))
                 # Go through each pixel and calculate nanmedian. Can't do all arrays at once as it is hugely memory intensive
                 finalImage=np.zeros(shapeImage,dtype=float)
 
@@ -3966,8 +4003,8 @@ class Sequencer:
 
 
 
-                plog (datetime.datetime.now().strftime("%H:%M:%S"))
-                plog ("**********************************")
+                # plog (datetime.datetime.now().strftime("%H:%M:%S"))
+                # plog ("**********************************")
 
                 halfsecond_masterDark=np.asarray(finalImage).astype(np.float32)
                 del finalImage
@@ -3999,6 +4036,8 @@ class Sequencer:
                 os.remove(g_dev['obs'].local_dark_folder  + 'tempfile')
 
                 g_dev["obs"].send_to_user("Half Second Dark calibration frame created.")
+                plog ("Half Second bias-dark reconstructed: " +str(time.time()-calibration_timer))
+                calibration_timer=time.time()
 
             ##############################################################################################
             ##############################################################################################
@@ -4010,8 +4049,8 @@ class Sequencer:
 
 
             # NOW for the 2 second darks
-            plog (datetime.datetime.now().strftime("%H:%M:%S"))
-            plog ("Regenerating 2 second exposure dark")
+            # plog (datetime.datetime.now().strftime("%H:%M:%S"))
+            # plog ("Regenerating 2 second exposure dark")
             inputList=(glob(g_dev['obs'].local_dark_folder+ 'twosecdarks/' +'*.n*'))
 
             # Test each flat file actually opens
@@ -4044,9 +4083,9 @@ class Sequencer:
                     #plog ("Time Taken to put in memmap: " + str(timetaken))
                     i=i+1
 
-                plog ("**********************************")
-                plog ("Median Stacking each darkframe row individually ")
-                plog (datetime.datetime.now().strftime("%H:%M:%S"))
+                # plog ("**********************************")
+                # plog ("Median Stacking each darkframe row individually ")
+                # plog (datetime.datetime.now().strftime("%H:%M:%S"))
                 # Go through each pixel and calculate nanmedian. Can't do all arrays at once as it is hugely memory intensive
                 finalImage=np.zeros(shapeImage,dtype=float)
 
@@ -4064,8 +4103,8 @@ class Sequencer:
                         finalImage[counter,:]=result
                         counter=counter+1
 
-                plog (datetime.datetime.now().strftime("%H:%M:%S"))
-                plog ("**********************************")
+                # plog (datetime.datetime.now().strftime("%H:%M:%S"))
+                # plog ("**********************************")
 
                 twosecond_masterDark=np.asarray(finalImage).astype(np.float32)
                 del finalImage
@@ -4096,6 +4135,8 @@ class Sequencer:
                 os.remove(g_dev['obs'].local_dark_folder  + 'tempfile')
 
                 g_dev["obs"].send_to_user("Two Second Dark calibration frame created.")
+                plog ("Two Second bias-dark reconstructed: " +str(time.time()-calibration_timer))
+                calibration_timer=time.time()
 
             ##############################################################################################
             ##############################################################################################
@@ -4107,8 +4148,8 @@ class Sequencer:
 
 
             # NOW for the 10 second darks
-            plog (datetime.datetime.now().strftime("%H:%M:%S"))
-            plog ("Regenerating 10 second exposure dark")
+            # plog (datetime.datetime.now().strftime("%H:%M:%S"))
+            # plog ("Regenerating 10 second exposure dark")
             inputList=(glob(g_dev['obs'].local_dark_folder+ 'tensecdarks/' +'*.n*'))
 
             # Test each flat file actually opens
@@ -4150,9 +4191,9 @@ class Sequencer:
                     #plog ("Time Taken to put in memmap: " + str(timetaken))
                     i=i+1
 
-                plog ("**********************************")
-                plog ("Median Stacking each darkframe row individually ")
-                plog (datetime.datetime.now().strftime("%H:%M:%S"))
+                # plog ("**********************************")
+                # plog ("Median Stacking each darkframe row individually ")
+                # plog (datetime.datetime.now().strftime("%H:%M:%S"))
                 # Go through each pixel and calculate nanmedian. Can't do all arrays at once as it is hugely memory intensive
                 finalImage=np.zeros(shapeImage,dtype=float)
 
@@ -4173,8 +4214,8 @@ class Sequencer:
 
 
 
-                plog (datetime.datetime.now().strftime("%H:%M:%S"))
-                plog ("**********************************")
+                # plog (datetime.datetime.now().strftime("%H:%M:%S"))
+                # plog ("**********************************")
 
                 tensecond_masterDark=np.asarray(finalImage).astype(np.float32)
                 del finalImage
@@ -4205,6 +4246,8 @@ class Sequencer:
                 os.remove(g_dev['obs'].local_dark_folder  + 'tempfile')
 
                 g_dev["obs"].send_to_user("Ten Second Dark calibration frame created.")
+                plog ("Ten Second dark reconstructed: " +str(time.time()-calibration_timer))
+                calibration_timer=time.time()
 
 
 
@@ -4220,8 +4263,8 @@ class Sequencer:
 
 
             # NOW for the broadband smartstack darks and biasdarks
-            plog (datetime.datetime.now().strftime("%H:%M:%S"))
-            plog ("Regenerating smartstack broadband exposure darks and biasdarks")
+            # plog (datetime.datetime.now().strftime("%H:%M:%S"))
+            # plog ("Regenerating smartstack broadband exposure darks and biasdarks")
             inputList=(glob(g_dev['obs'].local_dark_folder+ 'broadbanddarks/' +'*.n*'))
 
             # Test each flat file actually opens
@@ -4265,9 +4308,9 @@ class Sequencer:
                     #plog ("Time Taken to put in memmap: " + str(timetaken))
                     i=i+1
 
-                plog ("**********************************")
-                plog ("Median Stacking each darkframe row individually ")
-                plog (datetime.datetime.now().strftime("%H:%M:%S"))
+                # plog ("**********************************")
+                # plog ("Median Stacking each darkframe row individually ")
+                # plog (datetime.datetime.now().strftime("%H:%M:%S"))
                 # Go through each pixel and calculate nanmedian. Can't do all arrays at once as it is hugely memory intensive
                 finalImage=np.zeros(shapeImage,dtype=float)
 
@@ -4282,8 +4325,8 @@ class Sequencer:
                     for result in pool.map(stack_nanmedian_row, mptask):
                         finalImage[counter,:]=result
                         counter=counter+1
-                plog (datetime.datetime.now().strftime("%H:%M:%S"))
-                plog ("**********************************")
+                # plog (datetime.datetime.now().strftime("%H:%M:%S"))
+                # plog ("**********************************")
 
                 broadbandss_masterDark=np.asarray(finalImage).astype(np.float32)
                 del finalImage
@@ -4293,7 +4336,7 @@ class Sequencer:
                 img_temp_stdev=np.nanstd(broadbandss_masterDark)
                 above_array=(broadbandss_masterDark > 20)
                 #below_array=(darkdeexp < (img_temp_median - (10 * img_temp_stdev)))
-                plog ("Bad pixels above: " + str(above_array.sum()))
+                # plog ("Bad pixels above: " + str(above_array.sum()))
                 #plog ("Bad pixels below: " + str(below_array.sum()))
                 bad_pixel_mapper_array=bad_pixel_mapper_array+above_array+below_array
 
@@ -4324,6 +4367,8 @@ class Sequencer:
                 os.remove(g_dev['obs'].local_dark_folder  + 'tempfile')
 
                 g_dev["obs"].send_to_user("Broadband Smarstack length dark calibration frame created.")
+                plog ("Broadband Smartstack dark reconstructed: " +str(time.time()-calibration_timer))
+                calibration_timer=time.time()
 
                 ######################################## NOW DO BIASDARK
                 # Begin with just the biasdark of this length
@@ -4359,9 +4404,9 @@ class Sequencer:
                     #plog ("Time Taken to put in memmap: " + str(timetaken))
                     i=i+1
 
-                plog ("**********************************")
-                plog ("Median Stacking each darkframe row individually ")
-                plog (datetime.datetime.now().strftime("%H:%M:%S"))
+                # plog ("**********************************")
+                # plog ("Median Stacking each darkframe row individually ")
+                # plog (datetime.datetime.now().strftime("%H:%M:%S"))
                 # Go through each pixel and calculate nanmedian. Can't do all arrays at once as it is hugely memory intensive
                 finalImage=np.zeros(shapeImage,dtype=float)
 
@@ -4376,8 +4421,8 @@ class Sequencer:
                     for result in pool.map(stack_nanmedian_row, mptask):
                         finalImage[counter,:]=result
                         counter=counter+1
-                plog (datetime.datetime.now().strftime("%H:%M:%S"))
-                plog ("**********************************")
+                # plog (datetime.datetime.now().strftime("%H:%M:%S"))
+                # plog ("**********************************")
 
                 broadbandss_masterBiasDark=np.asarray(finalImage).astype(np.float32)
                 del finalImage
@@ -4407,7 +4452,9 @@ class Sequencer:
                 gc.collect()
                 os.remove(g_dev['obs'].local_dark_folder  + 'tempfile')
 
-                g_dev["obs"].send_to_user("Broadband Smarstack length bias-dark calibration frame created.")
+                g_dev["obs"].send_to_user("Broadband Smartstack length bias-dark calibration frame created.")
+                plog ("Broadband Smartstack bias-dark reconstructed: " +str(time.time()-calibration_timer))
+                calibration_timer=time.time()
 
 
             ##############################################################################################
@@ -4420,8 +4467,8 @@ class Sequencer:
 
 
             # NOW for the narrowband smartstack darks and biasdarks
-            plog (datetime.datetime.now().strftime("%H:%M:%S"))
-            plog ("Regenerating smartstack narrowband exposure darks and biasdarks")
+            # plog (datetime.datetime.now().strftime("%H:%M:%S"))
+            # plog ("Regenerating smartstack narrowband exposure darks and biasdarks")
             inputList=(glob(g_dev['obs'].local_dark_folder+ 'narrowbanddarks/' +'*.n*'))
 
             # Test each flat file actually opens
@@ -4466,9 +4513,9 @@ class Sequencer:
                     #plog ("Time Taken to put in memmap: " + str(timetaken))
                     i=i+1
 
-                plog ("**********************************")
-                plog ("Median Stacking each darkframe row individually ")
-                plog (datetime.datetime.now().strftime("%H:%M:%S"))
+                # plog ("**********************************")
+                # plog ("Median Stacking each darkframe row individually ")
+                # plog (datetime.datetime.now().strftime("%H:%M:%S"))
                 # Go through each pixel and calculate nanmedian. Can't do all arrays at once as it is hugely memory intensive
                 finalImage=np.zeros(shapeImage,dtype=float)
 
@@ -4483,8 +4530,8 @@ class Sequencer:
                     for result in pool.map(stack_nanmedian_row, mptask):
                         finalImage[counter,:]=result
                         counter=counter+1
-                plog (datetime.datetime.now().strftime("%H:%M:%S"))
-                plog ("**********************************")
+                # plog (datetime.datetime.now().strftime("%H:%M:%S"))
+                # plog ("**********************************")
 
                 narrowbandss_masterDark=np.asarray(finalImage).astype(np.float32)
                 del finalImage
@@ -4495,7 +4542,7 @@ class Sequencer:
                 img_temp_stdev=np.nanstd(narrowbandss_masterDark)
                 above_array=(narrowbandss_masterDark > 20)
                 #below_array=(darkdeexp < (img_temp_median - (10 * img_temp_stdev)))
-                plog ("Bad pixels above: " + str(above_array.sum()))
+                # plog ("Bad pixels above: " + str(above_array.sum()))
                 #plog ("Bad pixels below: " + str(below_array.sum()))
                 bad_pixel_mapper_array=bad_pixel_mapper_array+above_array+below_array
 
@@ -4526,7 +4573,9 @@ class Sequencer:
                 gc.collect()
                 os.remove(g_dev['obs'].local_dark_folder  + 'tempfile')
 
-                g_dev["obs"].send_to_user("narrowband Smarstack length dark calibration frame created.")
+                g_dev["obs"].send_to_user("narrowband Smartstack length dark calibration frame created.")
+                plog ("Narrowband Smartstack dark reconstructed: " +str(time.time()-calibration_timer))
+                calibration_timer=time.time()
 
                 ######################################## NOW DO BIASDARK
                 # Begin with just the biasdark of this length
@@ -4562,9 +4611,9 @@ class Sequencer:
                     #plog ("Time Taken to put in memmap: " + str(timetaken))
                     i=i+1
 
-                plog ("**********************************")
-                plog ("Median Stacking each darkframe row individually ")
-                plog (datetime.datetime.now().strftime("%H:%M:%S"))
+                # plog ("**********************************")
+                # plog ("Median Stacking each darkframe row individually ")
+                # plog (datetime.datetime.now().strftime("%H:%M:%S"))
                 # Go through each pixel and calculate nanmedian. Can't do all arrays at once as it is hugely memory intensive
                 finalImage=np.zeros(shapeImage,dtype=float)
 
@@ -4579,8 +4628,8 @@ class Sequencer:
                     for result in pool.map(stack_nanmedian_row, mptask):
                         finalImage[counter,:]=result
                         counter=counter+1
-                plog (datetime.datetime.now().strftime("%H:%M:%S"))
-                plog ("**********************************")
+                # plog (datetime.datetime.now().strftime("%H:%M:%S"))
+                # plog ("**********************************")
 
                 narrowbandss_masterBiasDark=np.asarray(finalImage).astype(np.float32)
                 del finalImage
@@ -4610,7 +4659,9 @@ class Sequencer:
                 gc.collect()
                 os.remove(g_dev['obs'].local_dark_folder  + 'tempfile')
 
-                g_dev["obs"].send_to_user("narrowband Smarstack length bias-dark calibration frame created.")
+                g_dev["obs"].send_to_user("narrowband Smartstack length bias-dark calibration frame created.")
+                plog ("Narrowband Smartstack bias-dark reconstructed: " +str(time.time()-calibration_timer))
+                calibration_timer=time.time()
 
 
             ##############################################################################################
@@ -4628,9 +4679,9 @@ class Sequencer:
 
             # NOW that we have a master bias and a master dark, time to step through the flat frames!
             tempfilters=glob(g_dev['obs'].local_flat_folder + "*/")
-            plog (datetime.datetime.now().strftime("%H:%M:%S"))
-            plog ("Regenerating flats")
-            plog (tempfilters)
+            # plog (datetime.datetime.now().strftime("%H:%M:%S"))
+            # plog ("Regenerating flats")
+            # plog (tempfilters)
 
             estimated_flat_gain=[]
 
@@ -4647,9 +4698,9 @@ class Sequencer:
             else:
                 for filterfolder in tempfilters:
 
-                    plog (datetime.datetime.now().strftime("%H:%M:%S"))
+                    # plog (datetime.datetime.now().strftime("%H:%M:%S"))
                     filtercode=filterfolder.split('\\')[-2]
-                    plog ("Regenerating flat for " + str(filtercode))
+                    # plog ("Regenerating flat for " + str(filtercode))
                     inputList=(glob(g_dev['obs'].local_flat_folder + filtercode + '/*.n*'))
 
                     # Test each flat file actually opens
@@ -4661,7 +4712,7 @@ class Sequencer:
                             inputList.remove(file)
 
                     # Generate temp memmap
-                    plog ("Loading files into memmap")
+                    # plog ("Loading files into memmap")
                     single_filter_camera_gains=[]
                     if len(inputList) == 0 or len(inputList) == 1:
                         plog ("Not doing " + str(filtercode) + " flat. Not enough available files in directory.")
@@ -4815,9 +4866,9 @@ class Sequencer:
                                 del flatdebiaseddedarked
                                 i=i+1
 
-                            plog ("**********************************")
-                            plog ("Median Stacking each " + str (filtercode) + " flat frame row individually")
-                            plog (datetime.datetime.now().strftime("%H:%M:%S"))
+                            # plog ("**********************************")
+                            # plog ("Median Stacking each " + str (filtercode) + " flat frame row individually")
+                            # plog (datetime.datetime.now().strftime("%H:%M:%S"))
                             # Go through each pixel and calculate nanmedian. Can't do all arrays at once as it is hugely memory intensive
                             finalImage=np.zeros(shapeImage,dtype=float)
 
@@ -4833,10 +4884,10 @@ class Sequencer:
                                     finalImage[counter,:]=result
                                     counter=counter+1
 
-                            plog (datetime.datetime.now().strftime("%H:%M:%S"))
-                            #plog ("**********************************")
+                            # plog (datetime.datetime.now().strftime("%H:%M:%S"))
+                            # #plog ("**********************************")
 
-                            plog ("Assessing flat components")
+                            # plog ("Assessing flat components")
                             #nanmedian_collector=[]
                             nanstd_collector=[]
                             for flat_component in range(len(inputList)):
@@ -4849,29 +4900,29 @@ class Sequencer:
                                 #nanmedian_collector.append(tempnanmedian)
                                 nanstd_collector.append(tempstd)
 
-                            plog ("*********************************")
-                            #plog (nanmedian_collector)
-                            plog (nanstd_collector)
-                            #plog ("Median of median: " + str(np.array(np.nanmedian(nanmedian_collector))))
-                            #plog ("Std of median: " + str(np.array(np.std(nanmedian_collector))))
-                            plog ("Median of stdev: " + str(np.array(np.nanmedian(nanstd_collector))))
-                            plog ("Std of stdev: " + str(np.array(np.std(nanstd_collector))))
+                            # plog ("*********************************")
+                            # #plog (nanmedian_collector)
+                            # plog (nanstd_collector)
+                            # #plog ("Median of median: " + str(np.array(np.nanmedian(nanmedian_collector))))
+                            # #plog ("Std of median: " + str(np.array(np.std(nanmedian_collector))))
+                            # plog ("Median of stdev: " + str(np.array(np.nanmedian(nanstd_collector))))
+                            # plog ("Std of stdev: " + str(np.array(np.std(nanstd_collector))))
                             med_std=np.array(np.nanmedian(nanstd_collector))
                             std_std=np.array(np.std(nanstd_collector))
-                            plog ("*********************************")
-                            plog ("Assessing component flat fits to stacked flat")
+                            # plog ("*********************************")
+                            # plog ("Assessing component flat fits to stacked flat")
 
                             delete_flat_components=[]
                             for counterflat in range(len(nanstd_collector)):
                                 #plog ("Image " + str(counterflat) + " assessment")
                                 if nanstd_collector[counterflat] > (med_std + 5 * std_std):
-                                    plog ("FOUND A REJECTION: " + str(round(nanstd_collector[counterflat],5)) + " > " + str(round(med_std + 3 * std_std,5)))
+                                    # plog ("FOUND A REJECTION: " + str(round(nanstd_collector[counterflat],5)) + " > " + str(round(med_std + 3 * std_std,5)))
                                     delete_flat_components.append(counterflat)
 
                             if len(delete_flat_components) == 0:
                                 break
 
-                            plog ("REPROCESSING FLAT WITH BAD COMPONENTS REMOVED")
+                            # plog ("REPROCESSING FLAT WITH BAD COMPONENTS REMOVED")
                             # Remove problematic flat images from squishener so we can re-run the flat.
                             for index in sorted(delete_flat_components, reverse=True):
                                 del inputList[index]
@@ -4891,7 +4942,7 @@ class Sequencer:
                         above_array=(temporaryFlat > (img_temp_median + (10 * img_temp_stdev)))
                         # BELOW IS A BAD IDEA FOR FLATS, BECAUSE HEAVY VIGNETTING WILL CAUSE BAD PIXELS
                         #below_array=(temporaryFlat < (img_temp_median - (10 * img_temp_stdev)))
-                        plog ("Bad pixels above: " + str(above_array.sum()))
+                        # plog ("Bad pixels above: " + str(above_array.sum()))
                         #plog ("Bad pixels below: " + str(below_array.sum()))
                         bad_pixel_mapper_array=bad_pixel_mapper_array+above_array+below_array
 
@@ -4902,7 +4953,7 @@ class Sequencer:
                         temporaryFlat[temporaryFlat > 2.0] = np.nan
                         pre_num_of_nans=np.count_nonzero(np.isnan(temporaryFlat))
 
-                        plog ("Interpolating Nans")
+                        # plog ("Interpolating Nans")
                         last_num_of_nans=846753876359.0
                         while pre_num_of_nans > 0:
                             # Fix up any glitches in the flat
@@ -5005,7 +5056,7 @@ class Sequencer:
 
 
 
-                        plog ('debanding flatfield')
+                        # plog ('debanding flatfield')
                         ###### We have to deband the flat to stop banded flats band light images.
                         # If that makes sense.
 
@@ -5068,7 +5119,7 @@ class Sequencer:
                         #debanded_rows_median=np.nanmedian(row_debanded_image,axis=1)
                         #plt.scatter(columns_x,debanded_columns_medain)
 
-                        plog ("Done rows. Now columns.")
+                        # plog ("Done rows. Now columns.")
 
                         # Then run this on columns
                         sigma_clipped_array=copy.deepcopy(row_debanded_image)
@@ -5210,6 +5261,8 @@ class Sequencer:
                         os.remove(g_dev['obs'].local_flat_folder  + 'tempfile')
 
                     g_dev["obs"].send_to_user(str(filtercode) + " flat calibration frame created.")
+                    plog (str(filtercode) + " flat calibration frame created: " +str(time.time()-calibration_timer))
+                    calibration_timer=time.time()
 
 
 
@@ -5285,6 +5338,9 @@ class Sequencer:
                 plog ("Total bad pixels in image: " + str(bad_pixel_mapper_array.sum()))
                 plog ("Writing out bad pixel map npy and fits.")
                 np.save(g_dev['obs'].calib_masters_folder + tempfrontcalib + 'badpixelmask_bin1.npy', bad_pixel_mapper_array)
+                
+                g_dev['obs'].to_slow_process(200000000, ('numpy_array_save', pipefolder + '/' + tempfrontcalib + 'masterFlat_'+ str(filtercode) + '_bin1.npy', copy.deepcopy(temporaryFlat)))#, hdu.header, frame_type, g_dev["mnt"].current_icrs_ra, g_dev["mnt"].current_icrs_dec))
+
 
                 # convert the boolean
 
@@ -5304,7 +5360,9 @@ class Sequencer:
                 if g_dev['obs'].config['save_raws_to_pipe_folder_for_nightly_processing']:
                     #fits.writeto(pipefolder + '/' + tempfrontcalib + 'badpixelmask_bin1.fits', bad_pixel_mapper_array*1,  overwrite=True)
                     #fits.writeto(pipefolder + '/' + 'ARCHIVE_' +  archiveDate + '_' + tempfrontcalib + 'badpixelmask_bin1.fits', bad_pixel_mapper_array*1,  overwrite=True)
-                    np.save(pipefolder + '/' + tempfrontcalib + 'badpixelmask_bin1.npy', bad_pixel_mapper_array)
+                    #np.save(pipefolder + '/' + tempfrontcalib + 'badpixelmask_bin1.npy', bad_pixel_mapper_array)
+                    g_dev['obs'].to_slow_process(200000000, ('numpy_array_save', pipefolder + '/' + tempfrontcalib + 'badpixelmask_bin1.npy', copy.deepcopy( bad_pixel_mapper_array)))#, hdu.header, frame_type, g_dev["mnt"].current_icrs_ra, g_dev["mnt"].current_icrs_dec))
+
 
 
                 # THEN reload them to use for the next night.
