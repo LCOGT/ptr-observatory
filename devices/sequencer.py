@@ -4800,9 +4800,9 @@ class Sequencer:
                                     counter=counter+1
 
                             plog (datetime.datetime.now().strftime("%H:%M:%S"))
-                            plog ("**********************************")
+                            #plog ("**********************************")
 
-                            plog ("Flat component report")
+                            plog ("Assessing flat components")
                             #nanmedian_collector=[]
                             nanstd_collector=[]
                             for flat_component in range(len(inputList)):
@@ -4929,17 +4929,17 @@ class Sequencer:
                                     plog(traceback.format_exc())
 
                                 num_of_nans=np.count_nonzero(np.isnan(temporaryFlat))
-                                plog ("Number of Nans in flat this iteration: " + str(num_of_nans))
+                                #plog ("Number of Nans in flat this iteration: " + str(num_of_nans))
 
 
 
 
-                            plog ("Round Flat Max: " + str(np.max(temporaryFlat)))
+                            #plog ("Round Flat Max: " + str(np.max(temporaryFlat)))
 
-                            plog ("Round Flat Min: " + str(np.min(temporaryFlat)))
-                            plog ("Round Flat Median: " + str(np.median(temporaryFlat)))
-                            plog ("Round Flat Average: " + str(np.average(temporaryFlat)))
-                            plog ("Round Flat Stdev: " + str(np.std(temporaryFlat)))
+                            #plog ("Round Flat Min: " + str(np.min(temporaryFlat)))
+                            #plog ("Round Flat Median: " + str(np.median(temporaryFlat)))
+                            #plog ("Round Flat Average: " + str(np.average(temporaryFlat)))
+                            #plog ("Round Flat Stdev: " + str(np.std(temporaryFlat)))
 
                             temporaryFlat[temporaryFlat == inf] = np.nan
                             temporaryFlat[temporaryFlat == -inf] = np.nan
