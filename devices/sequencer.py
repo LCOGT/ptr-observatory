@@ -27,6 +27,9 @@ import gc
 #from scipy import interpolate
 import warnings
 
+import queue
+import threading
+
 from devices.camera import Camera
 from devices.filter_wheel import FilterWheel
 from devices.mount import Mount
@@ -265,7 +268,37 @@ class Sequencer:
 
         self.MTF_temporary_flat_timer=time.time()-310
 
+        self.master_restack_queue = queue.Queue(maxsize=0)
+        self.master_restack_thread = threading.Thread(target=self.master_restack, args=())
+        self.master_restack_thread.daemon = True
+        self.master_restack_thread.start()
+        
+    # Note this is a thread!
+    def master_restack(self):
+        """
+        """
 
+        one_at_a_time = 0
+        while True:
+
+            if (not self.master_restack_queue.empty()) and one_at_a_time == 0:
+                one_at_a_time = 1
+                pri_image = self.master_restack_queue.get(block=False)
+                
+                self.regenerate_local_masters()                
+                
+                self.master_restack_queue.task_done()
+                
+                # EMPTY QUEUE SO THAT ONLY HAPPENS ONCE
+                with self.master_restack_queue.mutex:
+                    self.master_restack_queue.queue.clear()
+                
+                one_at_a_time = 0
+                time.sleep(0.1)
+
+            else:
+                # Need this to be as LONG as possible to allow large gaps in the GIL. Lower priority tasks should have longer sleeps.
+                time.sleep(1)
 
     def wait_for_slew(self):
         """
@@ -337,7 +370,8 @@ class Sequencer:
         elif action == "run" and script == 'collectSkyFlats':
             self.sky_flat_script(req, opt)
         elif action == "run" and script == 'restackLocalCalibrations':
-            self.regenerate_local_masters()
+            self.master_restack_queue.put( 'g0', block=False)
+            #self.regenerate_local_masters()
         elif action == "run" and script in ['pointingRun']:
             #breakpoint()
             self.sky_grid_pointing_run(max_pointings=req['numPointingRuns'], alt_minimum=req['minAltitude'])
