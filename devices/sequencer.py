@@ -4969,7 +4969,7 @@ class Sequencer:
 
 
 
-
+                        plog ('debanding flatfield')
                         ###### We have to deband the flat to stop banded flats band light images.
                         # If that makes sense.
 
@@ -5006,7 +5006,7 @@ class Sequencer:
                             clipped_areas=sigma_clipped_array > tempmedian + 4*tempstd
                             if np.sum(clipped_areas) == 0:
                                 break
-                            plog (np.sum(clipped_areas))
+                            #plog (np.sum(clipped_areas))
                             sigma_clipped_array[clipped_areas] = np.nan
                             #breakpoint()
 
@@ -5017,7 +5017,7 @@ class Sequencer:
                             clipped_areas=sigma_clipped_array < tempmedian - 4*tempstd
                             if np.sum(clipped_areas) == 0:
                                 break
-                            plog (np.sum(clipped_areas))
+                            #plog (np.sum(clipped_areas))
                             sigma_clipped_array[clipped_areas] = np.nan
                             #breakpoint()
 
