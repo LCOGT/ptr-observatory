@@ -2739,7 +2739,7 @@ class Sequencer:
 
             flat_biasdarks={}
 
-
+            # Get the size of the camera
             hdutest=np.load(inputList[0], mmap_mode='r')
             shapeImage=hdutest.shape
             del hdutest
@@ -2747,123 +2747,37 @@ class Sequencer:
             # Make an array for the bad pixel map
             bad_pixel_mapper_array=np.full((shapeImage[0],shapeImage[1]), False)
 
-            # Make a temporary memmap file for the bias
-            #PLDrive = np.memmap(g_dev['obs'].scratch_drive_folder + '/tempfile', dtype='float32', mode= 'w+', shape = (shapeImage[0],shapeImage[1],len(inputList)))
-
+            # Array to hold loaded images
             PLDrive = np.empty((shapeImage[0],shapeImage[1],len(inputList)), dtype=np.float32)
 
             # Store the biases in the memmap file
             i=0
-            #n = len(inputList)
             for file in inputList:
                 PLDrive[:,:,i] = np.load(file)
-                #del hdu1data
                 i=i+1
-                #PLDrive.flush()
 
+            # finalImage array
             finalImage=np.zeros(shapeImage, dtype=np.float32)
-
-            # mptask=[]
-            # counter=0
-            # for goog in range(shapeImage[0]):
-            #     tempPLDrive[counter,:,:]
-            #     mptask.append((g_dev['obs'].scratch_drive_folder + '/tempfile',counter, (shapeImage[0],shapeImage[1],len(inputList))))
-            #     counter=counter+1
-
-            # counter=0
-            # with Pool(math.floor(os.cpu_count()*0.85)) as pool:
-            #     for result in pool.map(stack_nanmedian_row, mptask):
-            #         finalImage[counter,:]=result
-            #         counter=counter+1
-
-
-
-            # mptask=[]
-            # counter=0
-            # for goog in range(shapeImage[0]):
-            #     #tempPLDrive[counter,:,:]
-            #     mptask.append(PLDrive[counter,:,:])
-            #     counter=counter+1
-            #     finalImage[counter,:]=bn.nanmedian(PLDrive[counter,:,:],axis=1)
-
-
-
-            # # LINEAR VERSION
-            # counter=0
-            # for goog in range(shapeImage[0]):
-            #     try:
-            #         finalImage[counter,:]=bn.nanmedian(PLDrive[counter,:,:],axis=1)
-            #     except:
-            #         breakpoint()
-            #     counter=counter+1
-
-            plog ("arrays loaded: " +str(time.time()-calibration_timer))
-
 
             # MULTIPROCESSED VERSION
             mptask=[]
             counter=0
             for goog in range(shapeImage[0]):
-                #tempPLDrive[counter,:,:]
                 mptask.append(PLDrive[counter,:,:])
                 counter=counter+1
-                #finalImage[counter,:]=bn.nanmedian(PLDrive[counter,:,:],axis=1)
-
-            plog ("queue formed: " +str(time.time()-calibration_timer))
-
 
             counter=0
-
-
-            #lst=[None] * shapeImage[0]
             with Pool(os.cpu_count()) as pool:
                 for result in pool.map(stack_nanmedian_row, mptask):
                     finalImage[counter,:]=result
                     #lst[counter] = result
                     counter=counter+1
 
-
-            plog ("to pre-stack bias: " +str(time.time()-calibration_timer))
-
-
-            breakpoint()
-
-            # counter=0
-            # for goog in range(shapeImage[0]):
-            #     finalImage[counter,:]=stack_nanmedian_row(PLDrive[counter,:,:])
-
-            #plog ("to pre-stack bias: " +str(time.time()-calibration_timer))
-
-
-
-            counter=0
-            with Pool(os.cpu_count()) as pool:
-                for result in pool.map(stack_nanmedian_row, mptask):
-                    finalImage[counter,:]=result
-                    counter=counter+1
-                # for goog in range(shapeImage[0]):
-                #     finalImage[counter,:]=stack_nanmedian_row(PLDrive[counter,:,:])
-
-            #breakpoint()
-
-            #finalImage[counter,:]=np.nanmedian(inputline, axis=1)
-            #googleplex=np.nanmedian(PLDrive, axis=2)
-
-            plog ("to post-stack bias: " +str(time.time()-calibration_timer))
-
-
-
-
-
-            #     tempPLDrive[counter,:,:]
-            #     mptask.append((g_dev['obs'].scratch_drive_folder + '/tempfile',counter, (shapeImage[0],shapeImage[1],len(inputList))))
-            #     counter=counter+1
-
             masterBias=copy.deepcopy(np.asarray(finalImage).astype(np.float32))
             del finalImage
 
-            plog ("first part bias: " +str(time.time()-calibration_timer))
-
+            plog ("Bias File Created: " +str(time.time()-calibration_timer))
+            calibration_timer=time.time()
 
 
             # Bad pixel accumulator for the bias frame
@@ -2900,11 +2814,12 @@ class Sequencer:
                 plog ("Could not save bias frame: ",e)
 
             #PLDrive._mmap.close()
-            del PLDrive
+            #del PLDrive
             #gc.collect()
             #os.remove(g_dev['obs'].scratch_drive_folder   + 'tempfile')
 
-            plog ("second part bias: " +str(time.time()-calibration_timer))
+            plog ("Bias File Pixel Mapped and Saved: " +str(time.time()-calibration_timer))
+            calibration_timer=time.time()
 
 
 
@@ -2918,7 +2833,13 @@ class Sequencer:
                     #hdu1data = np.load(file, mmap_mode='r')
                     hdu1data = np.load(file)
 
-                    hdu1data=hdu1data-masterBias
+                #counter=0
+                i=0
+                for file in inputList:
+                    #PLDrive[:,:,i] = np.load(file)
+                    
+
+                    hdu1data=PLDrive[:,:,i]-masterBias
                     hdu1data = hdu1data[500:-500,500:-500]
                     stddiffimage=np.nanstd(pow(pow(hdu1data,2),0.5))
                     #est_read_noise= (stddiffimage * g_dev['cam'].config["camera"][g_dev['cam'].name]["settings"]["camera_gain"]) / 1.414
@@ -2926,6 +2847,7 @@ class Sequencer:
                     est_read_noise= (stddiffimage * g_dev['cam'].camera_known_gain) / 1.414
                     readnoise_array.append(est_read_noise)
                     post_readnoise_array.append(stddiffimage)
+                    i=i+1
 
                 readnoise_array=np.array(readnoise_array)
                 #plog ("Raw Readnoise outputs: " +str(readnoise_array))
@@ -2938,6 +2860,8 @@ class Sequencer:
                 g_dev['cam'].biasFiles.update({'1': masterBias})
             except:
                 plog("Bias frame master re-upload did not work.")
+
+
 
 
             plog ("Bias reconstructed: " +str(time.time()-calibration_timer))
