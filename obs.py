@@ -246,6 +246,12 @@ class Observatory:
         self.local_bias_folder = self.local_calibration_path + "archive/" + camera_name + "/localcalibrations/biases" + '/'
         self.local_flat_folder = self.local_calibration_path + "archive/" + camera_name + "/localcalibrations/flats" + '/'
 
+        # Scratch Drive Folder
+        self.scratch_drive_folder = self.config['scratch_drive_folder']
+        if not os.path.exists(self.scratch_drive_folder):
+            os.makedirs(self.scratch_drive_folder)
+
+
         # Directories for broken and orphaned upload files
         self.orphan_path=self.config['archive_path'] +'/' + self.name + '/' + 'orphans/'
         if not os.path.exists(self.orphan_path):
@@ -3035,6 +3041,13 @@ class Observatory:
                 if slow_process[0] == 'fits_file_save':
                     fits.writeto(slow_process[1], slow_process[2], temphduheader, overwrite=True)
                     #np.save(slow_process[1],slow_process[2])
+
+                if slow_process[0] == 'fits_file_save_and_UIqueue':
+                    fits.writeto(slow_process[1], slow_process[2], temphduheader, overwrite=True)
+                    #np.save(slow_process[1],slow_process[2])
+                    filepathaws=slow_process[4]
+                    filenameaws=slow_process[5]
+                    g_dev['obs'].enqueue_for_calibrationUI(50, filepathaws,filenameaws)
 
                 if slow_process[0] == 'localcalibration':
 

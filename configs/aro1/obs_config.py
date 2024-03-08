@@ -99,6 +99,9 @@ site_config = {
     'redis_available':  True,
     'redis_ip': "10.0.0.174:6379",
 
+    # Scratch drive folder
+    'scratch_drive_folder' : 'D:/obstemp/',
+
 
     # For low bandwidth sites, do not send up large files until the end of the night. set to 'no' to disable
     'send_files_at_end_of_night': 'no',

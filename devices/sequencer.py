@@ -22,6 +22,7 @@ import numpy as np
 from numpy import inf
 import os
 import gc
+import bottleneck as bn
 #from pyowm import OWM
 #from pyowm.utils import config
 #from scipy import interpolate
@@ -272,7 +273,7 @@ class Sequencer:
         self.master_restack_thread = threading.Thread(target=self.master_restack, args=())
         self.master_restack_thread.daemon = True
         self.master_restack_thread.start()
-        
+
     # Note this is a thread!
     def master_restack(self):
         """
@@ -284,15 +285,15 @@ class Sequencer:
             if (not self.master_restack_queue.empty()) and one_at_a_time == 0:
                 one_at_a_time = 1
                 pri_image = self.master_restack_queue.get(block=False)
-                
-                self.regenerate_local_masters()                
-                
+
+                self.regenerate_local_masters()
+
                 self.master_restack_queue.task_done()
-                
+
                 # EMPTY QUEUE SO THAT ONLY HAPPENS ONCE
                 with self.master_restack_queue.mutex:
                     self.master_restack_queue.queue.clear()
-                
+
                 one_at_a_time = 0
                 time.sleep(0.1)
 
@@ -2595,7 +2596,7 @@ class Sequencer:
             os.system("taskkill /IM Aladin.exe /F")
         except:
             pass
-        g_dev["obs"].send_to_user("Currently regenerating local masters. System may be unresponsive during this period.")
+        g_dev["obs"].send_to_user("Currently regenerating local masters.")
 
         if g_dev['obs'].config['save_raws_to_pipe_folder_for_nightly_processing']:
             pipefolder = g_dev['obs'].config['pipe_archive_folder_path'] +'/calibrations/'+ g_dev['cam'].alias
@@ -2701,7 +2702,7 @@ class Sequencer:
         #plog (datetime.datetime.now().strftime("%H:%M:%S"))
         plog ("Regenerating bias")
         calibration_timer=time.time()
-        
+
         darkinputList=(glob(g_dev['obs'].local_dark_folder +'*.n*'))
         inputList=(glob(g_dev['obs'].local_bias_folder +'*.n*'))
         archiveDate=str(datetime.date.today()).replace('-','')
@@ -2747,31 +2748,123 @@ class Sequencer:
             bad_pixel_mapper_array=np.full((shapeImage[0],shapeImage[1]), False)
 
             # Make a temporary memmap file for the bias
-            PLDrive = np.memmap(g_dev['obs'].local_bias_folder + 'tempfile', dtype='float32', mode= 'w+', shape = (shapeImage[0],shapeImage[1],len(inputList)))
+            #PLDrive = np.memmap(g_dev['obs'].scratch_drive_folder + '/tempfile', dtype='float32', mode= 'w+', shape = (shapeImage[0],shapeImage[1],len(inputList)))
+
+            PLDrive = np.empty((shapeImage[0],shapeImage[1],len(inputList)), dtype=np.float32)
+
             # Store the biases in the memmap file
             i=0
-            n = len(inputList)
+            #n = len(inputList)
             for file in inputList:
                 PLDrive[:,:,i] = np.load(file)
-                del hdu1data
+                #del hdu1data
                 i=i+1
+                #PLDrive.flush()
 
-            finalImage=np.zeros(shapeImage,dtype=float)
+            finalImage=np.zeros(shapeImage, dtype=np.float32)
 
+            # mptask=[]
+            # counter=0
+            # for goog in range(shapeImage[0]):
+            #     tempPLDrive[counter,:,:]
+            #     mptask.append((g_dev['obs'].scratch_drive_folder + '/tempfile',counter, (shapeImage[0],shapeImage[1],len(inputList))))
+            #     counter=counter+1
+
+            # counter=0
+            # with Pool(math.floor(os.cpu_count()*0.85)) as pool:
+            #     for result in pool.map(stack_nanmedian_row, mptask):
+            #         finalImage[counter,:]=result
+            #         counter=counter+1
+
+
+
+            # mptask=[]
+            # counter=0
+            # for goog in range(shapeImage[0]):
+            #     #tempPLDrive[counter,:,:]
+            #     mptask.append(PLDrive[counter,:,:])
+            #     counter=counter+1
+            #     finalImage[counter,:]=bn.nanmedian(PLDrive[counter,:,:],axis=1)
+
+
+
+            # # LINEAR VERSION
+            # counter=0
+            # for goog in range(shapeImage[0]):
+            #     try:
+            #         finalImage[counter,:]=bn.nanmedian(PLDrive[counter,:,:],axis=1)
+            #     except:
+            #         breakpoint()
+            #     counter=counter+1
+
+            plog ("arrays loaded: " +str(time.time()-calibration_timer))
+
+
+            # MULTIPROCESSED VERSION
             mptask=[]
             counter=0
             for goog in range(shapeImage[0]):
-                mptask.append((g_dev['obs'].local_bias_folder + 'tempfile',counter, (shapeImage[0],shapeImage[1],len(inputList))))
+                #tempPLDrive[counter,:,:]
+                mptask.append(PLDrive[counter,:,:])
                 counter=counter+1
+                #finalImage[counter,:]=bn.nanmedian(PLDrive[counter,:,:],axis=1)
+
+            plog ("queue formed: " +str(time.time()-calibration_timer))
+
 
             counter=0
-            with Pool(math.floor(os.cpu_count()*0.85)) as pool:
+
+
+            #lst=[None] * shapeImage[0]
+            with Pool(os.cpu_count()) as pool:
+                for result in pool.map(stack_nanmedian_row, mptask):
+                    finalImage[counter,:]=result
+                    #lst[counter] = result
+                    counter=counter+1
+
+
+            plog ("to pre-stack bias: " +str(time.time()-calibration_timer))
+
+
+            breakpoint()
+
+            # counter=0
+            # for goog in range(shapeImage[0]):
+            #     finalImage[counter,:]=stack_nanmedian_row(PLDrive[counter,:,:])
+
+            #plog ("to pre-stack bias: " +str(time.time()-calibration_timer))
+
+
+
+            counter=0
+            with Pool(os.cpu_count()) as pool:
                 for result in pool.map(stack_nanmedian_row, mptask):
                     finalImage[counter,:]=result
                     counter=counter+1
-                    
+                # for goog in range(shapeImage[0]):
+                #     finalImage[counter,:]=stack_nanmedian_row(PLDrive[counter,:,:])
+
+            #breakpoint()
+
+            #finalImage[counter,:]=np.nanmedian(inputline, axis=1)
+            #googleplex=np.nanmedian(PLDrive, axis=2)
+
+            plog ("to post-stack bias: " +str(time.time()-calibration_timer))
+
+
+
+
+
+            #     tempPLDrive[counter,:,:]
+            #     mptask.append((g_dev['obs'].scratch_drive_folder + '/tempfile',counter, (shapeImage[0],shapeImage[1],len(inputList))))
+            #     counter=counter+1
+
             masterBias=copy.deepcopy(np.asarray(finalImage).astype(np.float32))
             del finalImage
+
+            plog ("first part bias: " +str(time.time()-calibration_timer))
+
+
 
             # Bad pixel accumulator for the bias frame
             img_temp_median=np.nanmedian(masterBias)
@@ -2779,22 +2872,25 @@ class Sequencer:
             above_array=(masterBias > (img_temp_median + (10 * img_temp_stdev)))
             below_array=(masterBias < (img_temp_median - (10 * img_temp_stdev)))
             bad_pixel_mapper_array=bad_pixel_mapper_array+above_array+below_array
-            
+
             tempfrontcalib=g_dev['obs'].obs_id + '_' + g_dev['cam'].alias +'_'
             try:
                 #fits.writeto(g_dev['obs'].calib_masters_folder + tempfrontcalib + 'BIAS_master_bin1.fits', masterBias,  overwrite=True)
-                g_dev['obs'].to_slow_process(200000000, ('fits_file_save', g_dev['obs'].calib_masters_folder + tempfrontcalib + 'BIAS_master_bin1.fits', copy.deepcopy(masterBias)))
-                
-                filepathaws=g_dev['obs'].calib_masters_folder
-                filenameaws=tempfrontcalib + 'BIAS_master_bin1.fits'
-                g_dev['obs'].enqueue_for_calibrationUI(50, filepathaws,filenameaws)
 
-                # Store a version of the bias for the archive too
-                fits.writeto(g_dev['obs'].calib_masters_folder + 'ARCHIVE_' +  archiveDate + '_' + tempfrontcalib + 'BIAS_master_bin1.fits', masterBias, overwrite=True)
+                # Save and upload master bias
+                g_dev['obs'].to_slow_process(200000000, ('fits_file_save_and_UIqueue', g_dev['obs'].calib_masters_folder + tempfrontcalib + 'BIAS_master_bin1.fits', copy.deepcopy(masterBias), None, g_dev['obs'].calib_masters_folder, tempfrontcalib + 'BIAS_master_bin1.fits' ))
 
-                filepathaws=g_dev['obs'].calib_masters_folder
-                filenameaws='ARCHIVE_' +  archiveDate + '_' + tempfrontcalib + 'BIAS_master_bin1.fits'
-                g_dev['obs'].enqueue_for_calibrationUI(80, filepathaws,filenameaws)
+                 # Store a version of the bias for the archive too
+                g_dev['obs'].to_slow_process(200000000, ('fits_file_save_and_UIqueue', g_dev['obs'].calib_masters_folder + 'ARCHIVE_' +  archiveDate + '_' + tempfrontcalib + 'BIAS_master_bin1.fits', copy.deepcopy(masterBias), None, g_dev['obs'].calib_masters_folder, 'ARCHIVE_' +  archiveDate + '_' + tempfrontcalib + 'BIAS_master_bin1.fits' ))
+
+
+                # fits.writeto(g_dev['obs'].calib_masters_folder + 'ARCHIVE_' +  archiveDate + '_' + tempfrontcalib + 'BIAS_master_bin1.fits', masterBias, overwrite=True)
+
+                # filepathaws=g_dev['obs'].calib_masters_folder
+                # filenameaws='ARCHIVE_' +  archiveDate + '_' + tempfrontcalib + 'BIAS_master_bin1.fits'
+                # g_dev['obs'].enqueue_for_calibrationUI(80, filepathaws,filenameaws)
+
+
                 if g_dev['obs'].config['save_raws_to_pipe_folder_for_nightly_processing']:
                     #fits.writeto(pipefolder + '/' +tempfrontcalib + 'BIAS_master_bin1.fits', masterBias,  overwrite=True)
                     #fits.writeto(pipefolder + '/' + 'ARCHIVE_' +  archiveDate + '_' +tempfrontcalib + 'BIAS_master_bin1.fits', masterBias,  overwrite=True)
@@ -2803,12 +2899,14 @@ class Sequencer:
             except Exception as e:
                 plog ("Could not save bias frame: ",e)
 
-            PLDrive._mmap.close()
+            #PLDrive._mmap.close()
             del PLDrive
-            gc.collect()
-            os.remove(g_dev['obs'].local_bias_folder  + 'tempfile')
-            
-            
+            #gc.collect()
+            #os.remove(g_dev['obs'].scratch_drive_folder   + 'tempfile')
+
+            plog ("second part bias: " +str(time.time()-calibration_timer))
+
+
 
             # Now that we have the master bias, we can estimate the readnoise actually
             # by comparing the standard deviations between the bias and the masterbias
@@ -2819,7 +2917,7 @@ class Sequencer:
                 for file in inputList:
                     #hdu1data = np.load(file, mmap_mode='r')
                     hdu1data = np.load(file)
-                    
+
                     hdu1data=hdu1data-masterBias
                     hdu1data = hdu1data[500:-500,500:-500]
                     stddiffimage=np.nanstd(pow(pow(hdu1data,2),0.5))
@@ -2869,7 +2967,7 @@ class Sequencer:
                 #plog("Storing dark in a memmap array: " + str(file))
                 #hdu1data = np.load(file, mmap_mode='r')
                 hdu1data = np.load(file)
-                
+
                 hdu1exp=float(file.split('_')[-2])
                 darkdeexp=(hdu1data-masterBias)/hdu1exp
                 del hdu1data
@@ -2959,7 +3057,7 @@ class Sequencer:
                 g_dev['cam'].darkFiles.update({'1': masterDark})
             except:
                 plog("Dark frame master re-upload did not work.")
-            
+
 
             plog ("Long Exposure Dark reconstructed: " +str(time.time()-calibration_timer))
             calibration_timer=time.time()
@@ -3936,7 +4034,7 @@ class Sequencer:
                     #plog("Storing dark in a memmap array: " + str(file))
                     #hdu1data = np.load(file, mmap_mode='r')
                     hdu1data = np.load(file)
-                    
+
                     hdu1exp=float(file.split('_')[-2])
                     darkdeexp=(hdu1data-masterBias)/hdu1exp
                     del hdu1data
@@ -4707,7 +4805,7 @@ class Sequencer:
                                 #plog("Storing flat in a memmap array: " + str(file))
                                 #hdu1data = np.load(file, mmap_mode='r')
                                 hdu1data = np.load(file)
-                                
+
                                 hdu1exp=float(file.split('_')[-2])
                                 #plog ("EXP")
                                 #plog (hdu1exp)
@@ -5319,7 +5417,7 @@ class Sequencer:
                 plog ("Total bad pixels in image: " + str(bad_pixel_mapper_array.sum()))
                 plog ("Writing out bad pixel map npy and fits.")
                 np.save(g_dev['obs'].calib_masters_folder + tempfrontcalib + 'badpixelmask_bin1.npy', bad_pixel_mapper_array)
-                
+
                 # pipefolder = g_dev['obs'].config['pipe_archive_folder_path'] +'/calibrations/'+ g_dev['cam'].alias
                 # g_dev['obs'].to_slow_process(200000000, ('numpy_array_save', pipefolder + '/' + tempfrontcalib + 'masterFlat_'+ str(filtercode) + '_bin1.npy', copy.deepcopy(temporaryFlat)))#, hdu.header, frame_type, g_dev["mnt"].current_icrs_ra, g_dev["mnt"].current_icrs_dec))
 
@@ -5373,10 +5471,10 @@ class Sequencer:
 
             plog ("Re-loading Bias and Dark masters into memory.")
             # Reload the bias and dark frames
-            
+
             #g_dev['cam'].darkFiles = {}
-            
-            
+
+
             try:
                 #g_dev['cam'].darkFiles.update({'1': masterDark})
                 g_dev['cam'].darkFiles.update({'halfsec_exposure_dark': halfsecond_masterDark})
@@ -8396,11 +8494,19 @@ class Sequencer:
             plog ("A glitch found in the blocks reqs post, probably date format")
 
 
-def stack_nanmedian_row(inputinfo):
+def stack_nanmedian_row_memmapped(inputinfo):
     (pldrivetempfiletemp,counter,shape) = inputinfo
     tempPLDrive = np.memmap(pldrivetempfiletemp, dtype='float32', mode= 'r', shape = shape )
     with warnings.catch_warnings():
         warnings.simplefilter("ignore", category=RuntimeWarning)
         return np.nanmedian(tempPLDrive[counter,:,:], axis=1)
 
+
+def stack_nanmedian_row(inputline):
+    return bn.nanmedian(inputline, axis=1).astype(np.float32)
+    # (pldrivetempfiletemp,counter,shape) = inputinfo
+    # tempPLDrive = np.memmap(pldrivetempfiletemp, dtype='float32', mode= 'r', shape = shape )
+    # with warnings.catch_warnings():
+    #     warnings.simplefilter("ignore", category=RuntimeWarning)
+    #     return np.nanmedian(tempPLDrive[counter,:,:], axis=1)
 
