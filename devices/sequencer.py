@@ -2487,7 +2487,8 @@ class Sequencer:
 
         # Now time to regenerate the local masters
 
-        self.regenerate_local_masters()
+        #self.regenerate_local_masters()
+        self.master_restack_queue.put( 'g0', block=False)
 
         # Daily reboot of necessary windows 32 programs *Cough* Theskyx *Cough*
         if g_dev['mnt'].theskyx: # It is only the mount that is the reason theskyx needs to reset
@@ -2856,7 +2857,9 @@ class Sequencer:
                 post_readnoise_array=[]
                 #plog ("Calculating Readnoise. Please Wait.")
                 for file in inputList:
-                    hdu1data = np.load(file, mmap_mode='r')
+                    #hdu1data = np.load(file, mmap_mode='r')
+                    hdu1data = np.load(file)
+                    
                     hdu1data=hdu1data-masterBias
                     hdu1data = hdu1data[500:-500,500:-500]
                     stddiffimage=np.nanstd(pow(pow(hdu1data,2),0.5))
@@ -2904,7 +2907,9 @@ class Sequencer:
                 #plog (datetime.datetime.now().strftime("%H:%M:%S"))
                 #starttime=datetime.datetime.now()
                 #plog("Storing dark in a memmap array: " + str(file))
-                hdu1data = np.load(file, mmap_mode='r')
+                #hdu1data = np.load(file, mmap_mode='r')
+                hdu1data = np.load(file)
+                
                 hdu1exp=float(file.split('_')[-2])
                 darkdeexp=(hdu1data-masterBias)/hdu1exp
                 del hdu1data
@@ -3027,7 +3032,7 @@ class Sequencer:
                 # D  frames and stick them in the memmap
                 i=0
                 for file in inputList:
-                    PLDrive[:,:,i] = np.asarray(np.load(file, mmap_mode='r'),dtype=np.float32)
+                    PLDrive[:,:,i] = np.asarray(np.load(file),dtype=np.float32)
                     i=i+1
 
                 #plog ("**********************************")
@@ -3095,7 +3100,7 @@ class Sequencer:
                 # D  frames and stick them in the memmap
                 i=0
                 for file in inputList:
-                    PLDrive[:,:,i] = np.asarray(np.load(file, mmap_mode='r'),dtype=np.float32)
+                    PLDrive[:,:,i] = np.asarray(np.load(file),dtype=np.float32)
                     i=i+1
 
                 # plog ("**********************************")
@@ -3163,7 +3168,7 @@ class Sequencer:
                 # D  frames and stick them in the memmap
                 i=0
                 for file in inputList:
-                    PLDrive[:,:,i] = np.asarray(np.load(file, mmap_mode='r'),dtype=np.float32)
+                    PLDrive[:,:,i] = np.asarray(np.load(file),dtype=np.float32)
                     i=i+1
 
                 # plog ("**********************************")
@@ -3231,7 +3236,7 @@ class Sequencer:
                 # D  frames and stick them in the memmap
                 i=0
                 for file in inputList:
-                    PLDrive[:,:,i] = np.asarray(np.load(file, mmap_mode='r'),dtype=np.float32)
+                    PLDrive[:,:,i] = np.asarray(np.load(file),dtype=np.float32)
                     i=i+1
 
                 # plog ("**********************************")
@@ -3299,7 +3304,7 @@ class Sequencer:
                 # D  frames and stick them in the memmap
                 i=0
                 for file in inputList:
-                    PLDrive[:,:,i] = np.asarray(np.load(file, mmap_mode='r'),dtype=np.float32)
+                    PLDrive[:,:,i] = np.asarray(np.load(file),dtype=np.float32)
                     i=i+1
 
                 # plog ("**********************************")
@@ -3366,7 +3371,7 @@ class Sequencer:
                 # D  frames and stick them in the memmap
                 i=0
                 for file in inputList:
-                    PLDrive[:,:,i] = np.asarray(np.load(file, mmap_mode='r'),dtype=np.float32)
+                    PLDrive[:,:,i] = np.asarray(np.load(file),dtype=np.float32)
                     i=i+1
 
                 # plog ("**********************************")
@@ -3433,7 +3438,7 @@ class Sequencer:
                 # D  frames and stick them in the memmap
                 i=0
                 for file in inputList:
-                    PLDrive[:,:,i] = np.asarray(np.load(file, mmap_mode='r'),dtype=np.float32)
+                    PLDrive[:,:,i] = np.asarray(np.load(file),dtype=np.float32)
                     i=i+1
 
                 # plog ("**********************************")
@@ -3499,7 +3504,7 @@ class Sequencer:
                 # D  frames and stick them in the memmap
                 i=0
                 for file in inputList:
-                    PLDrive[:,:,i] = np.asarray(np.load(file, mmap_mode='r'),dtype=np.float32)
+                    PLDrive[:,:,i] = np.asarray(np.load(file),dtype=np.float32)
                     i=i+1
 
                 # plog ("**********************************")
@@ -3566,7 +3571,7 @@ class Sequencer:
                 # D  frames and stick them in the memmap
                 i=0
                 for file in inputList:
-                    PLDrive[:,:,i] = np.asarray(np.load(file, mmap_mode='r'),dtype=np.float32)
+                    PLDrive[:,:,i] = np.asarray(np.load(file),dtype=np.float32)
                     i=i+1
 
                 # plog ("**********************************")
@@ -3632,7 +3637,7 @@ class Sequencer:
                 # D  frames and stick them in the memmap
                 i=0
                 for file in inputList:
-                    PLDrive[:,:,i] = np.asarray(np.load(file, mmap_mode='r'),dtype=np.float32)
+                    PLDrive[:,:,i] = np.asarray(np.load(file),dtype=np.float32)
                     i=i+1
 
                 # plog ("**********************************")
@@ -3700,7 +3705,7 @@ class Sequencer:
                 # D  frames and stick them in the memmap
                 i=0
                 for file in inputList:
-                    PLDrive[:,:,i] = np.asarray(np.load(file, mmap_mode='r'),dtype=np.float32)
+                    PLDrive[:,:,i] = np.asarray(np.load(file),dtype=np.float32)
                     i=i+1
 
                 # plog ("**********************************")
@@ -3766,7 +3771,7 @@ class Sequencer:
                 # D  frames and stick them in the memmap
                 i=0
                 for file in inputList:
-                    PLDrive[:,:,i] = np.asarray(np.load(file, mmap_mode='r'),dtype=np.float32)
+                    PLDrive[:,:,i] = np.asarray(np.load(file),dtype=np.float32)
                     i=i+1
 
                 # plog ("**********************************")
@@ -3832,7 +3837,7 @@ class Sequencer:
                 # D  frames and stick them in the memmap
                 i=0
                 for file in inputList:
-                    PLDrive[:,:,i] = np.asarray(np.load(file, mmap_mode='r'),dtype=np.float32)
+                    PLDrive[:,:,i] = np.asarray(np.load(file),dtype=np.float32)
                     i=i+1
 
                 # plog ("**********************************")
@@ -3899,7 +3904,7 @@ class Sequencer:
                 # D  frames and stick them in the memmap
                 i=0
                 for file in inputList:
-                    PLDrive[:,:,i] = np.asarray(np.load(file, mmap_mode='r'),dtype=np.float32)
+                    PLDrive[:,:,i] = np.asarray(np.load(file),dtype=np.float32)
                     i=i+1
 
                 # plog ("**********************************")
@@ -3969,7 +3974,9 @@ class Sequencer:
                     #plog (datetime.datetime.now().strftime("%H:%M:%S"))
                     #starttime=datetime.datetime.now()
                     #plog("Storing dark in a memmap array: " + str(file))
-                    hdu1data = np.load(file, mmap_mode='r')
+                    #hdu1data = np.load(file, mmap_mode='r')
+                    hdu1data = np.load(file)
+                    
                     hdu1exp=float(file.split('_')[-2])
                     darkdeexp=(hdu1data-masterBias)/hdu1exp
                     del hdu1data
@@ -4081,7 +4088,7 @@ class Sequencer:
                     #plog (datetime.datetime.now().strftime("%H:%M:%S"))
                     #starttime=datetime.datetime.now()
                     #plog("Storing dark in a memmap array: " + str(file))
-                    hdu1data = np.load(file, mmap_mode='r')
+                    hdu1data = np.load(file) # Used to be mmapped
                     hdu1exp=float(file.split('_')[-2])
                     darkdeexp=(hdu1data-masterBias)/hdu1exp
                     del hdu1data
@@ -4180,7 +4187,7 @@ class Sequencer:
                     #plog (datetime.datetime.now().strftime("%H:%M:%S"))
                     #starttime=datetime.datetime.now()
                     #plog("Storing dark in a memmap array: " + str(file))
-                    hdu1data = np.load(file, mmap_mode='r')
+                    hdu1data = np.load(file) # Used to be mmapped
                     hdu1exp=float(file.split('_')[-2])
                     darkdeexp=(hdu1data-masterBias)/hdu1exp
                     del hdu1data
@@ -4297,7 +4304,7 @@ class Sequencer:
                     #plog (datetime.datetime.now().strftime("%H:%M:%S"))
                     #starttime=datetime.datetime.now()
                     #plog("Storing dark in a memmap array: " + str(file))
-                    hdu1data = np.load(file, mmap_mode='r')
+                    hdu1data = np.load(file) # Used to be mmapped
                     hdu1exp=float(file.split('_')[-2])
                     darkdeexp=(hdu1data-masterBias)/hdu1exp
                     del hdu1data
@@ -4502,7 +4509,7 @@ class Sequencer:
                     #plog (datetime.datetime.now().strftime("%H:%M:%S"))
                     #starttime=datetime.datetime.now()
                     #plog("Storing dark in a memmap array: " + str(file))
-                    hdu1data = np.load(file, mmap_mode='r')
+                    hdu1data = np.load(file) # Used to be mmapped
                     hdu1exp=float(file.split('_')[-2])
                     darkdeexp=(hdu1data-masterBias)/hdu1exp
                     del hdu1data
@@ -4738,7 +4745,9 @@ class Sequencer:
                             i=0
                             for file in inputList:
                                 #plog("Storing flat in a memmap array: " + str(file))
-                                hdu1data = np.load(file, mmap_mode='r')
+                                #hdu1data = np.load(file, mmap_mode='r')
+                                hdu1data = np.load(file)
+                                
                                 hdu1exp=float(file.split('_')[-2])
                                 #plog ("EXP")
                                 #plog (hdu1exp)
