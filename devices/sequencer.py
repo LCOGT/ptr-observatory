@@ -2752,39 +2752,10 @@ class Sequencer:
             i=0
             n = len(inputList)
             for file in inputList:
-                #plog (datetime.datetime.now().strftime("%H:%M:%S"))
-
-                #starttime=datetime.datetime.now()
-                #plog("Storing in a memmap array: " + str(file))
-
-                #hdu1data = np.load(file, mmap_mode='r')
-                hdu1data = np.load(file)
-                #breakpoint()
-
-                # # Bad pixel accumulator
-                # img_temp_median=np.nanmedian(hdu1data)
-                # img_temp_stdev=np.nanstd(hdu1data)
-                # above_array=(hdu1data > (img_temp_median + (10 * img_temp_stdev)))
-                # below_array=(hdu1data < (img_temp_median - (10 * img_temp_stdev)))
-                # plog ("Bad pixels above: " + str(above_array.sum()))
-                # plog ("Bad pixels below: " + str(below_array.sum()))
-                # bad_pixel_mapper_array=bad_pixel_mapper_array+above_array+below_array
-
-
-                #timetaken=datetime.datetime.now() -starttime
-                #plog ("Time Taken to load array: " + str(timetaken))
-
-                #starttime=datetime.datetime.now()
-                PLDrive[:,:,i] = hdu1data
+                PLDrive[:,:,i] = np.load(file)
                 del hdu1data
-                #timetaken=datetime.datetime.now() -starttime
-                #plog ("Time Taken to put in memmap: " + str(timetaken), "To Go:  ", n - i -1)
                 i=i+1
 
-            #plog ("**********************************")
-            #plog ("Median Stacking each bias row individually")
-            #plog (datetime.datetime.now().strftime("%H:%M:%S"))
-            # Go through each pixel and calculate nanmedian. Can't do all arrays at once as it is hugely memory intensive
             finalImage=np.zeros(shapeImage,dtype=float)
 
             mptask=[]
@@ -2796,35 +2767,24 @@ class Sequencer:
             counter=0
             with Pool(math.floor(os.cpu_count()*0.85)) as pool:
                 for result in pool.map(stack_nanmedian_row, mptask):
-
                     finalImage[counter,:]=result
                     counter=counter+1
-
-
-            #plog(datetime.datetime.now().strftime("%H:%M:%S"))
-            #plog ("**********************************")
-
-            
-
+                    
             masterBias=copy.deepcopy(np.asarray(finalImage).astype(np.float32))
             del finalImage
 
-            # Bad pixel accumulator
+            # Bad pixel accumulator for the bias frame
             img_temp_median=np.nanmedian(masterBias)
             img_temp_stdev=np.nanstd(masterBias)
             above_array=(masterBias > (img_temp_median + (10 * img_temp_stdev)))
             below_array=(masterBias < (img_temp_median - (10 * img_temp_stdev)))
-            #plog ("Bad pixels above: " + str(above_array.sum()))
-            #plog ("Bad pixels below: " + str(below_array.sum()))
             bad_pixel_mapper_array=bad_pixel_mapper_array+above_array+below_array
-
-
-
-
-
+            
             tempfrontcalib=g_dev['obs'].obs_id + '_' + g_dev['cam'].alias +'_'
             try:
-                fits.writeto(g_dev['obs'].calib_masters_folder + tempfrontcalib + 'BIAS_master_bin1.fits', masterBias,  overwrite=True)
+                #fits.writeto(g_dev['obs'].calib_masters_folder + tempfrontcalib + 'BIAS_master_bin1.fits', masterBias,  overwrite=True)
+                g_dev['obs'].to_slow_process(200000000, ('fits_file_save', g_dev['obs'].calib_masters_folder + tempfrontcalib + 'BIAS_master_bin1.fits', copy.deepcopy(masterBias)))
+                
                 filepathaws=g_dev['obs'].calib_masters_folder
                 filenameaws=tempfrontcalib + 'BIAS_master_bin1.fits'
                 g_dev['obs'].enqueue_for_calibrationUI(50, filepathaws,filenameaws)

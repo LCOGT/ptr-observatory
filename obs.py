@@ -3032,6 +3032,9 @@ class Observatory:
                 if slow_process[0] == 'numpy_array_save':
                     np.save(slow_process[1],slow_process[2])
 
+                if slow_process[0] == 'fits_file_save':
+                    fits.writeto(slow_process[1], slow_process[2], temphduheader, overwrite=True)
+                    #np.save(slow_process[1],slow_process[2])
 
                 if slow_process[0] == 'localcalibration':
 
