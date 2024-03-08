@@ -2805,7 +2805,7 @@ class Sequencer:
 
             
 
-            masterBias=np.asarray(finalImage).astype(np.float32)
+            masterBias=copy.deepcopy(np.asarray(finalImage).astype(np.float32))
             del finalImage
 
             # Bad pixel accumulator
@@ -2953,7 +2953,7 @@ class Sequencer:
             #plog (datetime.datetime.now().strftime("%H:%M:%S"))
             #plog ("**********************************")
 
-            masterDark=np.asarray(finalImage).astype(np.float32)
+            masterDark=copy.deepcopy(np.asarray(finalImage).astype(np.float32))
             del finalImage
 
             # Bad pixel accumulator
@@ -3048,7 +3048,7 @@ class Sequencer:
                 #plog (datetime.datetime.now().strftime("%H:%M:%S"))
                 #plog ("**********************************")
 
-                flat_biasdarks['fivepercent']=np.asarray(finalImage).astype(np.float32)
+                flat_biasdarks['fivepercent']=copy.deepcopy(np.asarray(finalImage).astype(np.float32))
 
                 try:
                     if g_dev['obs'].config['save_raws_to_pipe_folder_for_nightly_processing']:
@@ -3116,7 +3116,7 @@ class Sequencer:
                 # plog (datetime.datetime.now().strftime("%H:%M:%S"))
                 # plog ("**********************************")
 
-                flat_biasdarks['tenpercent']=np.asarray(finalImage).astype(np.float32)
+                flat_biasdarks['tenpercent']=copy.deepcopy(np.asarray(finalImage).astype(np.float32))
 
                 try:
                     if g_dev['obs'].config['save_raws_to_pipe_folder_for_nightly_processing']:
@@ -3184,7 +3184,7 @@ class Sequencer:
                 # plog (datetime.datetime.now().strftime("%H:%M:%S"))
                 # plog ("**********************************")
 
-                flat_biasdarks['quartersec']=np.asarray(finalImage).astype(np.float32)
+                flat_biasdarks['quartersec']=copy.deepcopy(np.asarray(finalImage).astype(np.float32))
 
                 try:
                     if g_dev['obs'].config['save_raws_to_pipe_folder_for_nightly_processing']:
@@ -3252,7 +3252,7 @@ class Sequencer:
                 # plog (datetime.datetime.now().strftime("%H:%M:%S"))
                 # plog ("**********************************")
 
-                flat_biasdarks['halfsec']=np.asarray(finalImage).astype(np.float32)
+                flat_biasdarks['halfsec']=copy.deepcopy(np.asarray(finalImage).astype(np.float32))
 
                 try:
                     if g_dev['obs'].config['save_raws_to_pipe_folder_for_nightly_processing']:
@@ -3320,7 +3320,7 @@ class Sequencer:
                 # plog (datetime.datetime.now().strftime("%H:%M:%S"))
                 # plog ("**********************************")
 
-                flat_biasdarks['sevenfivepercent']=np.asarray(finalImage).astype(np.float32)
+                flat_biasdarks['sevenfivepercent']=copy.deepcopy(np.asarray(finalImage).astype(np.float32))
 
                 try:
                     if g_dev['obs'].config['save_raws_to_pipe_folder_for_nightly_processing']:
@@ -3387,7 +3387,7 @@ class Sequencer:
                 # plog (datetime.datetime.now().strftime("%H:%M:%S"))
                 # plog ("**********************************")
 
-                flat_biasdarks['onesec']=np.asarray(finalImage).astype(np.float32)
+                flat_biasdarks['onesec']=copy.deepcopy(np.asarray(finalImage).astype(np.float32))
 
                 try:
                     if g_dev['obs'].config['save_raws_to_pipe_folder_for_nightly_processing']:
@@ -3454,7 +3454,7 @@ class Sequencer:
                 # plog (datetime.datetime.now().strftime("%H:%M:%S"))
                 # plog ("**********************************")
 
-                flat_biasdarks['oneandahalfsec']=np.asarray(finalImage).astype(np.float32)
+                flat_biasdarks['oneandahalfsec']=copy.deepcopy(np.asarray(finalImage).astype(np.float32))
 
                 try:
                     if g_dev['obs'].config['save_raws_to_pipe_folder_for_nightly_processing']:
@@ -3520,7 +3520,7 @@ class Sequencer:
                 # plog (datetime.datetime.now().strftime("%H:%M:%S"))
                 # plog ("**********************************")
 
-                flat_biasdarks['twosec']=np.asarray(finalImage).astype(np.float32)
+                flat_biasdarks['twosec']=copy.deepcopy(np.asarray(finalImage).astype(np.float32))
 
                 try:
                     if g_dev['obs'].config['save_raws_to_pipe_folder_for_nightly_processing']:
@@ -3587,7 +3587,7 @@ class Sequencer:
                 # plog (datetime.datetime.now().strftime("%H:%M:%S"))
                 # plog ("**********************************")
 
-                flat_biasdarks['threepointfivesec']=np.asarray(finalImage).astype(np.float32)
+                flat_biasdarks['threepointfivesec']=copy.deepcopy(np.asarray(finalImage).astype(np.float32))
 
                 try:
                     if g_dev['obs'].config['save_raws_to_pipe_folder_for_nightly_processing']:
@@ -3653,7 +3653,7 @@ class Sequencer:
                 # plog (datetime.datetime.now().strftime("%H:%M:%S"))
                 # plog ("**********************************")
 
-                flat_biasdarks['fivesec']=np.asarray(finalImage).astype(np.float32)
+                flat_biasdarks['fivesec']=copy.deepcopy(np.asarray(finalImage).astype(np.float32))
 
                 try:
                     if g_dev['obs'].config['save_raws_to_pipe_folder_for_nightly_processing']:
@@ -3721,7 +3721,7 @@ class Sequencer:
                 # plog (datetime.datetime.now().strftime("%H:%M:%S"))
                 # plog ("**********************************")
 
-                flat_biasdarks['sevenpointfivesec']=np.asarray(finalImage).astype(np.float32)
+                flat_biasdarks['sevenpointfivesec']=copy.deepcopy(np.asarray(finalImage).astype(np.float32))
 
                 try:
                     if g_dev['obs'].config['save_raws_to_pipe_folder_for_nightly_processing']:
@@ -3787,7 +3787,7 @@ class Sequencer:
                 # plog (datetime.datetime.now().strftime("%H:%M:%S"))
                 # plog ("**********************************")
 
-                flat_biasdarks['tensec']=np.asarray(finalImage).astype(np.float32)
+                flat_biasdarks['tensec']=copy.deepcopy(np.asarray(finalImage).astype(np.float32))
 
                 try:
                     if g_dev['obs'].config['save_raws_to_pipe_folder_for_nightly_processing']:
@@ -3853,7 +3853,7 @@ class Sequencer:
                 # plog (datetime.datetime.now().strftime("%H:%M:%S"))
                 # plog ("**********************************")
 
-                flat_biasdarks['fifteensec']=np.asarray(finalImage).astype(np.float32)
+                flat_biasdarks['fifteensec']=copy.deepcopy(np.asarray(finalImage).astype(np.float32))
 
                 try:
                     if g_dev['obs'].config['save_raws_to_pipe_folder_for_nightly_processing']:
@@ -3920,7 +3920,7 @@ class Sequencer:
                 # plog (datetime.datetime.now().strftime("%H:%M:%S"))
                 # plog ("**********************************")
 
-                flat_biasdarks['twentysec']=np.asarray(finalImage).astype(np.float32)
+                flat_biasdarks['twentysec']=copy.deepcopy(np.asarray(finalImage).astype(np.float32))
 
                 try:
                     if g_dev['obs'].config['save_raws_to_pipe_folder_for_nightly_processing']:
@@ -4018,7 +4018,7 @@ class Sequencer:
                 # plog (datetime.datetime.now().strftime("%H:%M:%S"))
                 # plog ("**********************************")
 
-                halfsecond_masterDark=np.asarray(finalImage).astype(np.float32)
+                halfsecond_masterDark=copy.deepcopy(np.asarray(finalImage).astype(np.float32))
                 del finalImage
 
 
@@ -4118,7 +4118,7 @@ class Sequencer:
                 # plog (datetime.datetime.now().strftime("%H:%M:%S"))
                 # plog ("**********************************")
 
-                twosecond_masterDark=np.asarray(finalImage).astype(np.float32)
+                twosecond_masterDark=copy.deepcopy(np.asarray(finalImage).astype(np.float32))
                 del finalImage
 
                 try:
@@ -4229,7 +4229,7 @@ class Sequencer:
                 # plog (datetime.datetime.now().strftime("%H:%M:%S"))
                 # plog ("**********************************")
 
-                tensecond_masterDark=np.asarray(finalImage).astype(np.float32)
+                tensecond_masterDark=copy.deepcopy(np.asarray(finalImage).astype(np.float32))
                 del finalImage
 
                 try:
@@ -4340,7 +4340,7 @@ class Sequencer:
                 # plog (datetime.datetime.now().strftime("%H:%M:%S"))
                 # plog ("**********************************")
 
-                broadbandss_masterDark=np.asarray(finalImage).astype(np.float32)
+                broadbandss_masterDark=copy.deepcopy(np.asarray(finalImage).astype(np.float32))
                 del finalImage
 
                 # Bad pixel accumulator
@@ -4436,7 +4436,7 @@ class Sequencer:
                 # plog (datetime.datetime.now().strftime("%H:%M:%S"))
                 # plog ("**********************************")
 
-                broadbandss_masterBiasDark=np.asarray(finalImage).astype(np.float32)
+                broadbandss_masterBiasDark=copy.deepcopy(np.asarray(finalImage).astype(np.float32))
                 del finalImage
 
                 try:
@@ -4545,7 +4545,7 @@ class Sequencer:
                 # plog (datetime.datetime.now().strftime("%H:%M:%S"))
                 # plog ("**********************************")
 
-                narrowbandss_masterDark=np.asarray(finalImage).astype(np.float32)
+                narrowbandss_masterDark=copy.deepcopy(np.asarray(finalImage).astype(np.float32))
                 del finalImage
 
 
@@ -4643,7 +4643,7 @@ class Sequencer:
                 # plog (datetime.datetime.now().strftime("%H:%M:%S"))
                 # plog ("**********************************")
 
-                narrowbandss_masterBiasDark=np.asarray(finalImage).astype(np.float32)
+                narrowbandss_masterBiasDark=copy.deepcopy(np.asarray(finalImage).astype(np.float32))
                 del finalImage
 
                 try:
@@ -4945,7 +4945,7 @@ class Sequencer:
 
 
 
-                        temporaryFlat=np.asarray(finalImage).astype(np.float32)
+                        temporaryFlat=copy.deepcopy(np.asarray(finalImage).astype(np.float32))
                         del finalImage
 
                         # Bad pixel accumulator
