@@ -3155,7 +3155,7 @@ class Sequencer:
                 #plog ("Skipping readnoise estimation as we don't currently have a reliable camera gain estimate.")
 
             try:
-                g_dev['cam'].biasFiles.update({'1': masterBias})
+                g_dev['cam'].biasFiles.update({'1': masterBias.astype(np.float32)})
             except:
                 plog("Bias frame master re-upload did not work.")
 
@@ -3208,7 +3208,7 @@ class Sequencer:
                 processedDark = self.make_scaled_dark(entry[0],entry[1], masterBias, shapeImage, archiveDate, pipefolder)
 
                 try:
-                    g_dev['cam'].darkFiles.update({entry[2]: processedDark})
+                    g_dev['cam'].darkFiles.update({entry[2]: processedDark.astype(np.float32)})
                 except:
                     plog("Dark frame master re-upload did not work.")
 
@@ -3223,7 +3223,7 @@ class Sequencer:
                     plog("Dark frame master re-upload did not work.")
 
                 if entry[2] ==  'broadband_ss_biasdark' or entry[2] == 'narrowband_ss_biasdark':
-                    g_dev['cam'].darkFiles.update({entry[2]: processedDark})
+                    g_dev['cam'].darkFiles.update({entry[2]: processedDark.astype(np.float32)})
 
                 #'fivepercent'
 
