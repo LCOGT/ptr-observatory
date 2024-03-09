@@ -2580,13 +2580,13 @@ class Sequencer:
             g_dev['mnt'].go_command(ra=returnra, dec=returndec)
 
         return
-    
-    
+
+
     def make_scaled_dark(self,input_folder, filename_start, masterBias, shapeImage, archiveDate, pipefolder):
 
-        
+
             calibration_timer=time.time()
-            
+
             # NOW we have the master bias, we can move onto the dark frames
             inputList=(glob( input_folder +'/*.n*'))
 
@@ -2596,15 +2596,15 @@ class Sequencer:
                     hdu1data = np.load(file, mmap_mode='r')
                 except:
                     plog ("corrupt dark skipped: " + str(file))
-                    inputList.remove(file)                  
-                    
-                    
+                    inputList.remove(file)
+
+
             # Array to hold loaded images
             PLDrive = np.empty((shapeImage[0],shapeImage[1],len(inputList)), dtype=np.float32)
-            
+
             # D  frames and stick them in the memmap
             i=0
-            for file in inputList:                
+            for file in inputList:
                 hdu1exp=float(file.split('_')[-2])
                 #darkdeexp=(np.load(file)-masterBias)/hdu1exp
                 PLDrive[:,:,i] = np.asarray((np.load(file)-masterBias)/hdu1exp,dtype=np.float32)
@@ -2630,9 +2630,9 @@ class Sequencer:
                     counter=counter+1
 
             masterDark=copy.deepcopy(np.asarray(finalImage).astype(np.float32))
-            del finalImage         
-            
-            
+            del finalImage
+
+
             tempfrontcalib=g_dev['obs'].obs_id + '_' + g_dev['cam'].alias +'_'
             try:
                 #fits.writeto(g_dev['obs'].calib_masters_folder + tempfrontcalib + 'BIAS_master_bin1.fits', masterBias,  overwrite=True)
@@ -2656,19 +2656,19 @@ class Sequencer:
                     #fits.writeto(pipefolder + '/' + 'ARCHIVE_' +  archiveDate + '_' +tempfrontcalib + 'BIAS_master_bin1.fits', masterBias,  overwrite=True)
                     #np.save(pipefolder + '/'+tempfrontcalib + 'BIAS_master_bin1.npy', masterBias)
                     g_dev['obs'].to_slow_process(200000000, ('numpy_array_save',pipefolder + '/'+tempfrontcalib + filename_start+'_master_bin1.npy',copy.deepcopy(masterBias)))
-                    
+
             except Exception as e:
                 plog ("Could not save dark frame: ",e)
-                    
-            
+
+
             plog (filename_start+ " Exposure Dark reconstructed: " +str(time.time()-calibration_timer))
-            
+
             g_dev["obs"].send_to_user(filename_start+ " Exposure Dark calibration frame created.")
-            
+
             return masterDark
-            
+
     def make_bias_dark(self,input_folder, filename_start, masterBias, shapeImage, archiveDate, pipefolder):
-            
+
             calibration_timer=time.time()
 
             # NOW we have the master bias, we can move onto the dark frames
@@ -2680,15 +2680,15 @@ class Sequencer:
                     np.load(file, mmap_mode='r')
                 except:
                     plog ("corrupt dark skipped: " + str(file))
-                    inputList.remove(file)                  
-                    
-                    
+                    inputList.remove(file)
+
+
             # Array to hold loaded images
             PLDrive = np.empty((shapeImage[0],shapeImage[1],len(inputList)), dtype=np.float32)
-            
+
             # D  frames and stick them in the memmap
             i=0
-            for file in inputList:                
+            for file in inputList:
                 hdu1exp=float(file.split('_')[-2])
                 #darkdeexp=(np.load(file)-masterBias)/hdu1exp
                 PLDrive[:,:,i] = np.asarray((np.load(file))/hdu1exp,dtype=np.float32)
@@ -2714,9 +2714,9 @@ class Sequencer:
                     counter=counter+1
 
             masterDark=copy.deepcopy(np.asarray(finalImage).astype(np.float32))
-            del finalImage         
-            
-            
+            del finalImage
+
+
             tempfrontcalib=g_dev['obs'].obs_id + '_' + g_dev['cam'].alias +'_'
             try:
                 #fits.writeto(g_dev['obs'].calib_masters_folder + tempfrontcalib + 'BIAS_master_bin1.fits', masterBias,  overwrite=True)
@@ -2740,15 +2740,15 @@ class Sequencer:
                     #fits.writeto(pipefolder + '/' + 'ARCHIVE_' +  archiveDate + '_' +tempfrontcalib + 'BIAS_master_bin1.fits', masterBias,  overwrite=True)
                     #np.save(pipefolder + '/'+tempfrontcalib + 'BIAS_master_bin1.npy', masterBias)
                     g_dev['obs'].to_slow_process(200000000, ('numpy_array_save',pipefolder + '/'+tempfrontcalib + filename_start+'_master_bin1.npy',copy.deepcopy(masterBias)))
-                    
+
             except Exception as e:
                 plog ("Could not save dark frame: ",e)
-                    
-            
+
+
             plog (filename_start+ " Exposure Dark reconstructed: " +str(time.time()-calibration_timer))
-            
+
             g_dev["obs"].send_to_user(filename_start+ " Exposure Dark calibration frame created.")
-            
+
             return masterDark
 
     def regenerate_local_masters(self):
@@ -2946,8 +2946,8 @@ class Sequencer:
             masterBias=copy.deepcopy(np.asarray(finalImage).astype(np.float32))
             del finalImage
 
-            plog ("Bias File Created: " +str(time.time()-calibration_timer))
-            calibration_timer=time.time()
+            #plog ("Bias File Created: " +str(time.time()-calibration_timer))
+            #calibration_timer=time.time()
 
 
             # Bad pixel accumulator for the bias frame
@@ -2983,9 +2983,9 @@ class Sequencer:
             except Exception as e:
                 plog ("Could not save bias frame: ",e)
 
-            
-            plog ("Bias File Pixel Mapped and Saved: " +str(time.time()-calibration_timer))
-            calibration_timer=time.time()
+
+            #plog ("Bias File Pixel Mapped and Saved: " +str(time.time()-calibration_timer))
+            #calibration_timer=time.time()
 
 
 
@@ -3003,7 +3003,7 @@ class Sequencer:
                 i=0
                 for file in inputList:
                     #PLDrive[:,:,i] = np.load(file)
-                    
+
 
                     hdu1data=PLDrive[:,:,i]-masterBias
                     hdu1data = hdu1data[500:-500,500:-500]
@@ -3039,16 +3039,16 @@ class Sequencer:
 ############################################# DARK
 
 
-            
 
 
-            scaled_darklist=[ 
+
+            scaled_darklist=[
                 [g_dev['obs'].local_dark_folder, 'DARK','1'],
                 [g_dev['obs'].local_dark_folder+ 'halfsecdarks/', 'halfsecondDARK', 'halfsec_exposure_dark' ],
                 [g_dev['obs'].local_dark_folder+ 'twosecdarks/', '2secondDARK', 'twosec_exposure_dark' ],
                 [g_dev['obs'].local_dark_folder+ 'tensecdarks/', '10secondDARK', 'tensec_exposure_dark'],
                 [g_dev['obs'].local_dark_folder+ 'broadbanddarks/', 'broadbandssDARK', 'broadband_ss_dark' ],
-                [g_dev['obs'].local_dark_folder+ 'narrowbanddarks/', 'narrowbandssDARK','narrowband_ss_dark']                 
+                [g_dev['obs'].local_dark_folder+ 'narrowbanddarks/', 'narrowbandssDARK','narrowband_ss_dark']
                 ]
 
             bias_darklist=[
@@ -3067,62 +3067,62 @@ class Sequencer:
                 [g_dev['obs'].local_dark_folder+ 'fifteensecdarks/', 'fifteensecBIASDARK','fifteensec' ],
                 [g_dev['obs'].local_dark_folder+ 'twentysecdarks/', 'twentysecBIASDARK', 'twentysec'],
                 [g_dev['obs'].local_dark_folder+ 'broadbanddarks/', 'broadbandssBIASDARK', 'broadband_ss_biasdark'],
-                [g_dev['obs'].local_dark_folder+ 'narrowbanddarks/', 'narrowbandssBIASDARK', 'narrowband_ss_biasdark']            
+                [g_dev['obs'].local_dark_folder+ 'narrowbanddarks/', 'narrowbandssBIASDARK', 'narrowband_ss_biasdark']
                 ]
-            
+
 
             for entry in scaled_darklist:
-                
+
                 processedDark = self.make_scaled_dark(entry[0],entry[1], masterBias, shapeImage, archiveDate, pipefolder)
-                
+
                 try:
                     g_dev['cam'].darkFiles.update({entry[2]: processedDark})
                 except:
                     plog("Dark frame master re-upload did not work.")
-        
+
 
             for entry in bias_darklist:
-                
+
                 processedDark = self.make_scaled_dark(entry[0],entry[1], masterBias, shapeImage, archiveDate, pipefolder)
-                
+
                 try:
                     flat_biasdarks[entry[2]]=processedDark
                 except:
                     plog("Dark frame master re-upload did not work.")
-                
+
                 if entry[2] ==  'broadband_ss_biasdark' or entry[2] == 'narrowband_ss_biasdark':
                     g_dev['cam'].darkFiles.update({entry[2]: processedDark})
-                
+
                 #'fivepercent'
 
 
 
-           
-            
 
-            # Bad pixel accumulator from long exposure dark 
+
+
+            # Bad pixel accumulator from long exposure dark
             img_temp_median=np.nanmedian(g_dev['cam'].darkFiles['1'])
             img_temp_stdev=np.nanstd(g_dev['cam'].darkFiles['1'])
             above_array=(g_dev['cam'].darkFiles['1'] > 20)
             bad_pixel_mapper_array=bad_pixel_mapper_array+above_array
 
 
-            # Bad pixel accumulator from broadband exposure dark 
+            # Bad pixel accumulator from broadband exposure dark
             img_temp_median=np.nanmedian(g_dev['cam'].darkFiles['broadband_ss_dark' ])
             img_temp_stdev=np.nanstd(g_dev['cam'].darkFiles['broadband_ss_dark' ])
             above_array=(g_dev['cam'].darkFiles['broadband_ss_dark' ] > 20)
             bad_pixel_mapper_array=bad_pixel_mapper_array+above_array
-            
-            # Bad pixel accumulator from narrowband exposure dark 
+
+            # Bad pixel accumulator from narrowband exposure dark
             img_temp_median=np.nanmedian(g_dev['cam'].darkFiles['narrowband_ss_dark'])
             img_temp_stdev=np.nanstd(g_dev['cam'].darkFiles['narrowband_ss_dark'])
             above_array=(g_dev['cam'].darkFiles['narrowband_ss_dark'] > 20)
             bad_pixel_mapper_array=bad_pixel_mapper_array+above_array
 
-    
 
 
-            breakpoint()
+
+            #breakpoint()
 
 
             # NOW that we have a master bias and a master dark, time to step through the flat frames!
@@ -3848,7 +3848,7 @@ class Sequencer:
             #g_dev['cam'].darkFiles = {}
 
 
-            
+
 
             try:
                 g_dev['cam'].bpmFiles = {}
@@ -6859,7 +6859,12 @@ def stack_nanmedian_row_memmapped(inputinfo):
 
 
 def stack_nanmedian_row(inputline):
-    return bn.nanmedian(inputline, axis=1).astype(np.float32)
+    try:
+        return bn.nanmedian(inputline, axis=1).astype(np.float32)
+    except:
+        return np.nanmedian(inputline, axis=1).astype(np.float32)
+
+
     # (pldrivetempfiletemp,counter,shape) = inputinfo
     # tempPLDrive = np.memmap(pldrivetempfiletemp, dtype='float32', mode= 'r', shape = shape )
     # with warnings.catch_warnings():
