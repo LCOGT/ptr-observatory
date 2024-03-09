@@ -2990,7 +2990,7 @@ class Sequencer:
             gc.collect()
 
 
-            flat_biasdarks={}
+            #flat_biasdarks={}
 
             # Get the size of the camera
             hdutest=np.load(inputList[0], mmap_mode='r')
@@ -3217,13 +3217,18 @@ class Sequencer:
 
                 processedDark = self.make_scaled_dark(entry[0],entry[1], masterBias, shapeImage, archiveDate, pipefolder)
 
-                try:
-                    flat_biasdarks[entry[2]]=processedDark
-                except:
-                    plog("Dark frame master re-upload did not work.")
 
                 if entry[2] ==  'broadband_ss_biasdark' or entry[2] == 'narrowband_ss_biasdark':
                     g_dev['cam'].darkFiles.update({entry[2]: processedDark.astype(np.float32)})
+                else:
+                    
+                    try:
+                        #flat_biasdarks[entry[2]]=processedDark
+                        np.save(g_dev['obs'].local_dark_folder +'/'+entry[2] +'tempbiasdark.npy', processedDark.astype(np.float32))
+                    except:
+                        plog("Dark frame master re-upload did not work.")
+
+                
 
                 #'fivepercent'
 
@@ -3338,54 +3343,56 @@ class Sequencer:
                                 #plog (hdu1exp)
                                 fraction_through_range=0
 
+                                
 
+#g_dev['obs'].local_dark_folder +'/'+'fivepercent' +'tempbiasdark.npy'
 
 
                                 # This try/except is here because if there is a missing dark
                                 # we can always just revert to using the long dark.
                                 try:
 
-                                    if hdu1exp == 0.05 and 'fivepercent' in flat_biasdarks:
-                                        flatdebiaseddedarked=hdu1data -flat_biasdarks['fivepercent']
+                                    if hdu1exp == 0.05 and os.path.exists(g_dev['obs'].local_dark_folder +'/'+'fivepercent' +'tempbiasdark.npy'):
+                                        flatdebiaseddedarked=hdu1data -np.load(g_dev['obs'].local_dark_folder +'/'+'fivepercent' +'tempbiasdark.npy')
                                         #print("five percent")
-                                    elif hdu1exp == 0.1 and 'tenpercent' in flat_biasdarks:
-                                        flatdebiaseddedarked=hdu1data -flat_biasdarks['tenpercent']
+                                    elif hdu1exp == 0.1 and os.path.exists(g_dev['obs'].local_dark_folder +'/'+'tenpercent' +'tempbiasdark.npy'):
+                                        flatdebiaseddedarked=hdu1data -np.load(g_dev['obs'].local_dark_folder +'/'+'tenpercent' +'tempbiasdark.npy')
                                         #print("ten percent")
-                                    elif hdu1exp == 0.25 and 'quartersec' in flat_biasdarks:
-                                        flatdebiaseddedarked=hdu1data -flat_biasdarks['quartersec']
+                                    elif hdu1exp == 0.25 and os.path.exists(g_dev['obs'].local_dark_folder +'/'+'quartersec' +'tempbiasdark.npy'):
+                                        flatdebiaseddedarked=hdu1data -np.load(g_dev['obs'].local_dark_folder +'/'+'quartersec' +'tempbiasdark.npy')
                                         #print("quartersec")
-                                    elif hdu1exp == 0.5 and 'halfsec' in flat_biasdarks:
-                                        flatdebiaseddedarked=hdu1data -flat_biasdarks['halfsec']
+                                    elif hdu1exp == 0.5 and os.path.exists(g_dev['obs'].local_dark_folder +'/'+'halfsec' +'tempbiasdark.npy'):
+                                        flatdebiaseddedarked=hdu1data -np.load(g_dev['obs'].local_dark_folder +'/'+'halfsec' +'tempbiasdark.npy')
                                         #plog("halfsec")
-                                    elif hdu1exp == 0.75 and 'sevenfivepercent' in flat_biasdarks:
-                                        flatdebiaseddedarked=hdu1data -flat_biasdarks['sevenfivepercent']
+                                    elif hdu1exp == 0.75 and os.path.exists(g_dev['obs'].local_dark_folder +'/'+'sevenfivepercent' +'tempbiasdark.npy'):
+                                        flatdebiaseddedarked=hdu1data -np.load(g_dev['obs'].local_dark_folder +'/'+'sevenfivepercent' +'tempbiasdark.npy')
                                         #plog("sevenfivepercent")
-                                    elif hdu1exp == 1.0 and 'onesec' in flat_biasdarks:
-                                        flatdebiaseddedarked=hdu1data -flat_biasdarks['onesec']
+                                    elif hdu1exp == 1.0 and os.path.exists(g_dev['obs'].local_dark_folder +'/'+'onesec' +'tempbiasdark.npy'):
+                                        flatdebiaseddedarked=hdu1data -np.load(g_dev['obs'].local_dark_folder +'/'+'onesec' +'tempbiasdark.npy')
                                         #plog("onesec")
-                                    elif hdu1exp == 1.5 and 'oneandahalfsec' in flat_biasdarks:
-                                        flatdebiaseddedarked=hdu1data -flat_biasdarks['oneandahalfsec']
+                                    elif hdu1exp == 1.5 and os.path.exists(g_dev['obs'].local_dark_folder +'/'+'oneandahalfsec' +'tempbiasdark.npy'):
+                                        flatdebiaseddedarked=hdu1data -np.load(g_dev['obs'].local_dark_folder +'/'+'oneandahalfsec' +'tempbiasdark.npy')
                                         #plog("one and a half sec")
-                                    elif hdu1exp == 2.0 and 'twosec' in flat_biasdarks:
-                                        flatdebiaseddedarked=hdu1data -flat_biasdarks['twosec']
+                                    elif hdu1exp == 2.0 and os.path.exists(g_dev['obs'].local_dark_folder +'/'+'twosec' +'tempbiasdark.npy'):
+                                        flatdebiaseddedarked=hdu1data -np.load(g_dev['obs'].local_dark_folder +'/'+'twosec' +'tempbiasdark.npy')
                                         #plog("two sec")
-                                    elif hdu1exp == 3.5 and 'threepointfivesec' in flat_biasdarks:
-                                        flatdebiaseddedarked=hdu1data -flat_biasdarks['threepointfivesec']
+                                    elif hdu1exp == 3.5 and os.path.exists(g_dev['obs'].local_dark_folder +'/'+'threepointfivesec' +'tempbiasdark.npy'):
+                                        flatdebiaseddedarked=hdu1data -np.load(g_dev['obs'].local_dark_folder +'/'+'threepointfivesec' +'tempbiasdark.npy')
                                         #plog("threepointfive sec")
-                                    elif hdu1exp == 5.0 and 'fivesec' in flat_biasdarks:
-                                        flatdebiaseddedarked=hdu1data -flat_biasdarks['fivesec']
+                                    elif hdu1exp == 5.0 and os.path.exists(g_dev['obs'].local_dark_folder +'/'+'fivesec' +'tempbiasdark.npy'):
+                                        flatdebiaseddedarked=hdu1data -np.load(g_dev['obs'].local_dark_folder +'/'+'fivesec' +'tempbiasdark.npy')
                                         #plog("five sec")
-                                    elif hdu1exp == 7.5 and 'sevenpointfivesec' in flat_biasdarks:
-                                        flatdebiaseddedarked=hdu1data -flat_biasdarks['sevenpointfivesec']
+                                    elif hdu1exp == 7.5 and os.path.exists(g_dev['obs'].local_dark_folder +'/'+'sevenpointfivesec' +'tempbiasdark.npy'):
+                                        flatdebiaseddedarked=hdu1data -np.load(g_dev['obs'].local_dark_folder +'/'+'sevenpointfivesec' +'tempbiasdark.npy')
                                         #plog("sevenpointfive sec")
-                                    elif hdu1exp == 10.0 and 'tensec' in flat_biasdarks:
-                                        flatdebiaseddedarked=hdu1data -flat_biasdarks['tensec']
+                                    elif hdu1exp == 10.0 and os.path.exists(g_dev['obs'].local_dark_folder +'/'+'tensec' +'tempbiasdark.npy'):
+                                        flatdebiaseddedarked=hdu1data -np.load(g_dev['obs'].local_dark_folder +'/'+'tensec' +'tempbiasdark.npy')
                                         #plog("ten sec")
-                                    elif hdu1exp == 15.0 and 'fifteensec' in flat_biasdarks:
-                                        flatdebiaseddedarked=hdu1data -flat_biasdarks['fifteensec']
+                                    elif hdu1exp == 15.0 and os.path.exists(g_dev['obs'].local_dark_folder +'/'+'fifteensec' +'tempbiasdark.npy'):
+                                        flatdebiaseddedarked=hdu1data -np.load(g_dev['obs'].local_dark_folder +'/'+'fifteensec' +'tempbiasdark.npy')
                                         #plog("fiveteen sec")
-                                    elif hdu1exp == 20.0 and 'twenty' in flat_biasdarks:
-                                        flatdebiaseddedarked=hdu1data -flat_biasdarks['twentysec']
+                                    elif hdu1exp == 20.0 and os.path.exists(g_dev['obs'].local_dark_folder +'/'+'twentysec' +'tempbiasdark.npy'):
+                                        flatdebiaseddedarked=hdu1data -np.load(g_dev['obs'].local_dark_folder +'/'+'twentysec' +'tempbiasdark.npy')
                                         #plog("twenty sec")
                                     elif hdu1exp == broadband_ss_biasdark_exp_time:
                                         flatdebiaseddedarked=hdu1data -g_dev['cam'].darkFiles['broadband_ss_biasdark']
