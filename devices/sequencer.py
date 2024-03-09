@@ -3690,13 +3690,13 @@ class Sequencer:
                             pre_num_of_nans=np.count_nonzero(np.isnan(temporaryFlat))
 
 
-                        plog ("Final Flat Max: " + str(np.nanmax(temporaryFlat)))
-                        plog ("Final Flat Min: " + str(np.nanmin(temporaryFlat)))
-                        plog ("Final Flat Median: " + str(np.nanmedian(temporaryFlat)))
+                        # plog ("Final Flat Max: " + str(np.nanmax(temporaryFlat)))
+                        # plog ("Final Flat Min: " + str(np.nanmin(temporaryFlat)))
+                        # plog ("Final Flat Median: " + str(np.nanmedian(temporaryFlat)))
 
-                        plog ("Final Flat Average: " + str(np.nanmean(temporaryFlat)))  #<<WER changed average to mean
+                        # plog ("Final Flat Average: " + str(np.nanmean(temporaryFlat)))  #<<WER changed average to mean
 
-                        plog ("Final Flat Stdev: " + str(np.nanstd(temporaryFlat)))
+                        # plog ("Final Flat Stdev: " + str(np.nanstd(temporaryFlat)))
 
                         #breakpoint()
 
@@ -3820,21 +3820,39 @@ class Sequencer:
 
 
                         try:
-                            np.save(g_dev['obs'].calib_masters_folder + 'masterFlat_'+ str(filtercode) + '_bin1.npy', temporaryFlat)
+                            
+                            
+                            
+                            
+                            g_dev['obs'].to_slow_process(200000000, ('numpy_array_save', g_dev['obs'].calib_masters_folder + 'masterFlat_'+ str(filtercode) + '_bin1.npy', copy.deepcopy(temporaryFlat)))#, hdu.header, frame_type, g_dev["mnt"].current_icrs_ra, g_dev["mnt"].current_icrs_dec))
 
-                            # Write to and upload current master flat
-                            fits.writeto(g_dev['obs'].calib_masters_folder + tempfrontcalib + 'masterFlat_'+ str(filtercode) + '_bin1.fits', temporaryFlat, overwrite=True)
+                            
+                            #np.save(g_dev['obs'].calib_masters_folder + 'masterFlat_'+ str(filtercode) + '_bin1.npy', temporaryFlat)
 
-                            filepathaws=g_dev['obs'].calib_masters_folder
-                            filenameaws=tempfrontcalib + 'masterFlat_'+ str(filtercode) + '_bin1.fits'
-                            g_dev['obs'].enqueue_for_calibrationUI(50, filepathaws,filenameaws)
+                            # # Write to and upload current master flat
+                            # fits.writeto(g_dev['obs'].calib_masters_folder + tempfrontcalib + 'masterFlat_'+ str(filtercode) + '_bin1.fits', temporaryFlat, overwrite=True)
 
-                            # Store a version of the flat for the archive too
-                            fits.writeto(g_dev['obs'].calib_masters_folder + 'ARCHIVE_' +  archiveDate + '_' + tempfrontcalib + 'masterFlat_'+ str(filtercode) + '_bin1.fits', temporaryFlat, overwrite=True)
+                            # filepathaws=g_dev['obs'].calib_masters_folder
+                            # filenameaws=tempfrontcalib + 'masterFlat_'+ str(filtercode) + '_bin1.fits'
+                            # g_dev['obs'].enqueue_for_calibrationUI(50, filepathaws,filenameaws)
 
-                            filepathaws=g_dev['obs'].calib_masters_folder
-                            filenameaws='ARCHIVE_' +  archiveDate + '_' + tempfrontcalib + 'masterFlat_'+ str(filtercode) + '_bin1.fits'
-                            g_dev['obs'].enqueue_for_calibrationUI(80, filepathaws,filenameaws)
+
+                            # Save and upload master bias
+                            g_dev['obs'].to_slow_process(200000000, ('fits_file_save_and_UIqueue', g_dev['obs'].calib_masters_folder + tempfrontcalib + 'masterFlat_'+ str(filtercode) + '_bin1.fits', copy.deepcopy(temporaryFlat), None, g_dev['obs'].calib_masters_folder, tempfrontcalib + 'masterFlat_'+ str(filtercode) + '_bin1.fits' ))
+
+
+                            # # Store a version of the flat for the archive too
+                            # fits.writeto(g_dev['obs'].calib_masters_folder + 'ARCHIVE_' +  archiveDate + '_' + tempfrontcalib + 'masterFlat_'+ str(filtercode) + '_bin1.fits', temporaryFlat, overwrite=True)
+
+                            # filepathaws=g_dev['obs'].calib_masters_folder
+                            # filenameaws='ARCHIVE_' +  archiveDate + '_' + tempfrontcalib + 'masterFlat_'+ str(filtercode) + '_bin1.fits'
+                            # g_dev['obs'].enqueue_for_calibrationUI(80, filepathaws,filenameaws)
+                            
+                            # Store a version of the bias for the archive too
+                            g_dev['obs'].to_slow_process(200000000, ('fits_file_save_and_UIqueue', g_dev['obs'].calib_masters_folder + 'ARCHIVE_' +  archiveDate + '_' + tempfrontcalib + 'masterFlat_'+ str(filtercode) + '_bin1.fits', copy.deepcopy(masterBias), None, g_dev['obs'].calib_masters_folder, 'ARCHIVE_' +  archiveDate + '_' + tempfrontcalib + 'masterFlat_'+ str(filtercode) + '_bin1.fits' ))
+
+
+                            
                             if g_dev['obs'].config['save_raws_to_pipe_folder_for_nightly_processing']:
                                 #fits.writeto(pipefolder + '/' + tempfrontcalib + 'masterFlat_'+ str(filtercode) + '_bin1.fits', temporaryFlat,  overwrite=True)
                                 #fits.writeto(pipefolder + '/' + 'ARCHIVE_' +  archiveDate + '_' + tempfrontcalib + 'masterFlat_'+ str(filtercode) + '_bin1.fits', temporaryFlat,  overwrite=True)
