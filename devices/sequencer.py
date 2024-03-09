@@ -3279,10 +3279,18 @@ class Sequencer:
                 for filterfolder in tempfilters:
 
                     calibration_timer=time.time()
-
-
-                    # plog (datetime.datetime.now().strftime("%H:%M:%S"))
                     filtercode=filterfolder.split('\\')[-2]
+
+                    # DELETE ALL TEMP FILES FROM FLAT DIRECTORY
+                    deleteList= (glob(g_dev['obs'].local_flat_folder + filtercode + '/tempcali_*.n*'))
+                    for file in deleteList:
+                        try:
+                            os.remove(file)
+                        except:
+                            plog ("couldn't remove tempflat: " + str(file))
+                            
+                    # plog (datetime.datetime.now().strftime("%H:%M:%S"))
+                    
                     # plog ("Regenerating flat for " + str(filtercode))
                     inputList=(glob(g_dev['obs'].local_flat_folder + filtercode + '/*.n*'))
 
@@ -3304,7 +3312,18 @@ class Sequencer:
                         while True:
 
                             #PLDrive = np.memmap(g_dev['obs'].local_flat_folder  + 'tempfile', dtype='float32', mode= 'w+', shape = (shapeImage[0],shapeImage[1],len(inputList)))
-                            PLDrive = np.empty((shapeImage[0],shapeImage[1],len(inputList)), dtype=np.float32)
+                            #PLDrive = np.empty((shapeImage[0],shapeImage[1],len(inputList)), dtype=np.float32)
+
+                            # DELETE ALL TEMP FILES FROM FLAT DIRECTORY
+                            deleteList= (glob(g_dev['obs'].local_flat_folder + filtercode + '/tempcali_*.n*'))
+                            for file in deleteList:
+                                try:
+                                    os.remove(file)
+                                except:
+                                    plog ("couldn't remove tempflat: " + str(file))
+                            
+                            PLDrive = [None] * len(inputList)
+
 
                             # Debias and dedark flat frames and stick them in the memmap
                             i=0
@@ -3312,6 +3331,7 @@ class Sequencer:
                                 #plog("Storing flat in a memmap array: " + str(file))
                                 #hdu1data = np.load(file, mmap_mode='r')
                                 hdu1data = np.load(file)
+                                #PLDrive[i] = np.load(file, mmap_mode='r')
 
                                 hdu1exp=float(file.split('_')[-2])
                                 #plog ("EXP")
@@ -3450,31 +3470,66 @@ class Sequencer:
                                     # Rescaling median once nan'ed
                                     flatdebiaseddedarked = flatdebiaseddedarked/np.nanmedian(flatdebiaseddedarked)
 
-                                PLDrive[:,:,i] = copy.deepcopy(flatdebiaseddedarked)
+                                #PLDrive[:,:,i] = copy.deepcopy(flatdebiaseddedarked)
+                                
+                                np.save('tempcali_'+file, flatdebiaseddedarked)
                                 del flatdebiaseddedarked
-                                i=i+1
+                                PLDrive[i] = np.load('tempcali_'+file, mmap_mode='r')
 
+                                i=i+1
+                                
                             plog ("Insert flats into megaarray: " +str(time.time()-calibration_timer))
 
+                            #
+                            
+                            finalImage=np.zeros(shapeImage, dtype=np.float32)
 
-                            # plog ("**********************************")
-                            # plog ("Median Stacking each " + str (filtercode) + " flat frame row individually")
-                            # plog (datetime.datetime.now().strftime("%H:%M:%S"))
-                            # Go through each pixel and calculate nanmedian. Can't do all arrays at once as it is hugely memory intensive
-                            finalImage=np.zeros(shapeImage,dtype=float)
+                            #try:
 
-                            mptask=[]
-                            counter=0
-                            for goog in range(shapeImage[0]):
-                                #mptask.append((g_dev['obs'].local_flat_folder + 'tempfile',counter, (shapeImage[0],shapeImage[1],len(inputList))))
-                                mptask.append(PLDrive[counter,:,:])
-                                counter=counter+1
+                            # create an empty array to hold each chunk
+                            # the size of this array will determine the amount of RAM usage
+    
+                            # Get a chunk size that evenly divides the array
+                            chunk_size=8
+                            while not ( shapeImage[0] % chunk_size ==0):
+                                chunk_size=chunk_size+1
+                                #print (chunk_size)
+                            chunk_size=int(shapeImage[0]/chunk_size)
+    
+                            holder = np.zeros([len(PLDrive),chunk_size,shapeImage[1]], dtype=np.float32)
+    
+                            # iterate through the input, replace with ones, and write to output
+                            for i in range(shapeImage[0]):
+                                if i % chunk_size == 0:
+                                    #print (i)
+                                    counter=0
+                                    for imagefile in range(len(PLDrive)):
+                                        holder[counter][0:chunk_size,:] = PLDrive[counter][i:i+chunk_size,:].astype(np.float32)
+                                        counter=counter+1
+    
+                                    finalImage[i:i+chunk_size,:]=bn.nanmedian(holder, axis=0)
+                            
 
-                            counter=0
-                            with Pool(math.floor(os.cpu_count()*0.85)) as pool:
-                                for result in pool.map(stack_nanmedian_row, mptask):
-                                    finalImage[counter,:]=result
-                                    counter=counter+1
+                            
+
+                            # # plog ("**********************************")
+                            # # plog ("Median Stacking each " + str (filtercode) + " flat frame row individually")
+                            # # plog (datetime.datetime.now().strftime("%H:%M:%S"))
+                            # # Go through each pixel and calculate nanmedian. Can't do all arrays at once as it is hugely memory intensive
+                            # finalImage=np.zeros(shapeImage,dtype=float)
+
+                            # mptask=[]
+                            # counter=0
+                            # for goog in range(shapeImage[0]):
+                            #     #mptask.append((g_dev['obs'].local_flat_folder + 'tempfile',counter, (shapeImage[0],shapeImage[1],len(inputList))))
+                            #     mptask.append(PLDrive[counter,:,:])
+                            #     counter=counter+1
+
+                            # counter=0
+                            # with Pool(math.floor(os.cpu_count()*0.85)) as pool:
+                            #     for result in pool.map(stack_nanmedian_row, mptask):
+                            #         finalImage[counter,:]=result
+                            #         counter=counter+1
 
                             # plog (datetime.datetime.now().strftime("%H:%M:%S"))
                             # #plog ("**********************************")
@@ -3485,7 +3540,9 @@ class Sequencer:
                             nanstd_collector=[]
                             for flat_component in range(len(inputList)):
                                 #plog (flat_component)
-                                tempdivide=PLDrive[:,:,flat_component] / finalImage
+                                #tempdivide=PLDrive[:,:,flat_component] / finalImage
+                                tempdivide=PLDrive[flat_component] / finalImage
+                                
                                 #tempnanmedian=np.nanmedian(tempdivide)
                                 tempstd=np.nanstd(tempdivide)
                                 #plog ("nanmedian: " + str(tempnanmedian ))
