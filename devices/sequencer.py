@@ -3382,7 +3382,7 @@ class Sequencer:
                                     # plog ("FOUND A REJECTION: " + str(round(nanstd_collector[counterflat],5)) + " > " + str(round(med_std + 3 * std_std,5)))
                                     delete_flat_components.append(counterflat)
 
-                            if len(delete_flat_components) > math.ceil(0.1*len(nanstd_collector)):
+                            if len(delete_flat_components) < math.ceil(0.1*len(nanstd_collector)):
                                 break
 
                             # plog ("REPROCESSING FLAT WITH BAD COMPONENTS REMOVED")
