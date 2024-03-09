@@ -2660,7 +2660,7 @@ class Sequencer:
                     #print (i)
                     counter=0
                     for imagefile in range(len(PLDrive)):
-                        holder[counter][0:chunk_size,:] = (PLDrive[counter][i:i+chunk_size,:]-masterBias[i:i+chunk_size,:])/exposures[counter]
+                        holder[counter][0:chunk_size,:] = (copy.deepcopy(PLDrive[counter][i:i+chunk_size,:])-masterBias[i:i+chunk_size,:])/exposures[counter]
                         counter=counter+1
 
                     finalImage[i:i+chunk_size,:]=bn.nanmedian(holder, axis=0)
@@ -2785,7 +2785,7 @@ class Sequencer:
                     #print (i)
                     counter=0
                     for imagefile in range(len(PLDrive)):
-                        holder[counter][0:chunk_size,:] = PLDrive[counter][i:i+chunk_size,:]
+                        holder[counter][0:chunk_size,:] = copy.deepcopy(PLDrive[counter][i:i+chunk_size,:])
                         counter=counter+1
 
                     finalImage[i:i+chunk_size,:]=bn.nanmedian(holder, axis=0)
@@ -3038,7 +3038,7 @@ class Sequencer:
                         #print (i)
                         counter=0
                         for imagefile in range(len(PLDrive)):
-                            holder[counter][0:chunk_size,:] = PLDrive[counter][i:i+chunk_size,:].astype(np.float32)
+                            holder[counter][0:chunk_size,:] = copy.deecopy(PLDrive[counter][i:i+chunk_size,:]).astype(np.float32)
                             counter=counter+1
 
                         finalImage[i:i+chunk_size,:]=bn.nanmedian(holder, axis=0)
@@ -3048,7 +3048,7 @@ class Sequencer:
                 plog(traceback.format_exc())
                 breakpoint()
 
-            plog ("Bias reconstructed: " +str(time.time()-calibration_timer))
+            #plog ("Bias reconstructed: " +str(time.time()-calibration_timer))
 
             #breakpoint()
             # counter=0
@@ -3504,7 +3504,7 @@ class Sequencer:
                                     #print (i)
                                     counter=0
                                     for imagefile in range(len(PLDrive)):
-                                        holder[counter][0:chunk_size,:] = PLDrive[counter][i:i+chunk_size,:].astype(np.float32)
+                                        holder[counter][0:chunk_size,:] = copy.deepcopy(PLDrive[counter][i:i+chunk_size,:]).astype(np.float32)
                                         counter=counter+1
     
                                     finalImage[i:i+chunk_size,:]=bn.nanmedian(holder, axis=0)
@@ -3582,6 +3582,9 @@ class Sequencer:
                             #os.remove(g_dev['obs'].local_flat_folder  + 'tempfile')
 
                             plog ("REDOING FLAT. TOO MANY OUTLIERS: " + str(len(delete_flat_components)))
+
+                        del PLDrive
+                        del flat_biasdarks
 
                         temporaryFlat=copy.deepcopy(np.asarray(finalImage).astype(np.float32))
                         del finalImage
