@@ -3583,6 +3583,8 @@ class Sequencer:
 
                             plog ("REDOING FLAT. TOO MANY OUTLIERS: " + str(len(delete_flat_components)))
 
+                        plog ("Checked component flats vs stacked flat: " +str(time.time()-calibration_timer))
+
                         del PLDrive
                         del flat_biasdarks
 
@@ -3920,6 +3922,9 @@ class Sequencer:
                         #del PLDrive
                         #gc.collect()
                         #os.remove(g_dev['obs'].local_flat_folder  + 'tempfile')
+                        
+                        plog (str(filtercode) + " flat camera gains measured : " +str(time.time()-calibration_timer))
+                        
 
                     g_dev["obs"].send_to_user(str(filtercode) + " flat calibration frame created.")
                     plog (str(filtercode) + " flat calibration frame created: " +str(time.time()-calibration_timer))
