@@ -2599,35 +2599,75 @@ class Sequencer:
                     inputList.remove(file)
 
 
-            # Array to hold loaded images
-            PLDrive = np.empty((shapeImage[0],shapeImage[1],len(inputList)), dtype=np.float32)
+            # # Array to hold loaded images
+            # PLDrive = np.empty((shapeImage[0],shapeImage[1],len(inputList)), dtype=np.float32)
 
-            # D  frames and stick them in the memmap
-            i=0
-            for file in inputList:
-                hdu1exp=float(file.split('_')[-2])
-                #darkdeexp=(np.load(file)-masterBias)/hdu1exp
-                PLDrive[:,:,i] = np.asarray((np.load(file)-masterBias)/hdu1exp,dtype=np.float32)
-                #del darkdeexp
-                i=i+1
+            # # D  frames and stick them in the memmap
+            # i=0
+            # for file in inputList:
+            #     hdu1exp=float(file.split('_')[-2])
+            #     #darkdeexp=(np.load(file)-masterBias)/hdu1exp
+            #     PLDrive[:,:,i] = np.asarray((np.load(file)-masterBias)/hdu1exp,dtype=np.float32)
+            #     #del darkdeexp
+            #     i=i+1
 
-            # Go through each pixel and calculate nanmedian. Can't do all arrays at once as it is hugely memory intensive
+            # # Go through each pixel and calculate nanmedian. Can't do all arrays at once as it is hugely memory intensive
+            # finalImage=np.zeros(shapeImage,dtype=float)
+
+
+            # # MULTIPROCESSED VERSION
+            # mptask=[]
+            # counter=0
+            # for goog in range(shapeImage[0]):
+            #     mptask.append(PLDrive[counter,:,:])
+            #     counter=counter+1
+
+            # counter=0
+            # with Pool(os.cpu_count()) as pool:
+            #     for result in pool.map(stack_nanmedian_row, mptask):
+            #         finalImage[counter,:]=result
+            #         #lst[counter] = result
+            #         counter=counter+1
+
+
+            # create an empty array to hold each chunk
+            # the size of this array will determine the amount of RAM usage
+
             finalImage=np.zeros(shapeImage,dtype=float)
 
+            # Store the biases in the memmap file
+            PLDrive= [None] * len(inputList)
+            exposures= [None] * len(inputList)
+            i=0
+            for file in inputList:
+                #PLDrive[:,:,i] = np.load(file, mmap_mode='r')
+                PLDrive[i] = np.load(file, mmap_mode='r')
+                exposures[i]=float(file.split('_')[-2])
+                i=i+1
 
-            # MULTIPROCESSED VERSION
-            mptask=[]
-            counter=0
-            for goog in range(shapeImage[0]):
-                mptask.append(PLDrive[counter,:,:])
-                counter=counter+1
+            # Get a chunk size that evenly divides the array
+            chunk_size=8
+            while not ( shapeImage[0] % chunk_size ==0):
+                chunk_size=chunk_size+1
+                #print (chunk_size)
+            chunk_size=int(shapeImage[0]/chunk_size)
 
-            counter=0
-            with Pool(os.cpu_count()) as pool:
-                for result in pool.map(stack_nanmedian_row, mptask):
-                    finalImage[counter,:]=result
-                    #lst[counter] = result
-                    counter=counter+1
+            holder = np.zeros([len(PLDrive),chunk_size,shapeImage[1]], dtype=np.float32)
+
+            # iterate through the input, replace with ones, and write to output
+            for i in range(shapeImage[0]):
+                if i % chunk_size == 0:
+                    #print (i)
+                    counter=0
+                    for imagefile in range(len(PLDrive)):
+                        holder[counter][0:chunk_size,:] = (PLDrive[counter][i:i+chunk_size,:]-masterBias[i:i+chunk_size,:])/exposures[counter]
+                        counter=counter+1
+
+                    finalImage[i:i+chunk_size,:]=bn.nanmedian(holder, axis=0)
+
+
+
+
 
             masterDark=copy.deepcopy(np.asarray(finalImage).astype(np.float32))
             del finalImage
@@ -2683,35 +2723,76 @@ class Sequencer:
                     inputList.remove(file)
 
 
-            # Array to hold loaded images
-            PLDrive = np.empty((shapeImage[0],shapeImage[1],len(inputList)), dtype=np.float32)
+            # # Array to hold loaded images
+            # PLDrive = np.empty((shapeImage[0],shapeImage[1],len(inputList)), dtype=np.float32)
 
-            # D  frames and stick them in the memmap
-            i=0
-            for file in inputList:
-                hdu1exp=float(file.split('_')[-2])
-                #darkdeexp=(np.load(file)-masterBias)/hdu1exp
-                PLDrive[:,:,i] = np.asarray((np.load(file))/hdu1exp,dtype=np.float32)
-                #del darkdeexp
-                i=i+1
+            # # D  frames and stick them in the memmap
+            # i=0
+            # for file in inputList:
+            #     hdu1exp=float(file.split('_')[-2])
+            #     #darkdeexp=(np.load(file)-masterBias)/hdu1exp
+            #     PLDrive[:,:,i] = np.asarray((np.load(file))/hdu1exp,dtype=np.float32)
+            #     #del darkdeexp
+            #     i=i+1
 
-            # Go through each pixel and calculate nanmedian. Can't do all arrays at once as it is hugely memory intensive
+            # # Go through each pixel and calculate nanmedian. Can't do all arrays at once as it is hugely memory intensive
+            # finalImage=np.zeros(shapeImage,dtype=float)
+
+
+            # # MULTIPROCESSED VERSION
+            # mptask=[]
+            # counter=0
+            # for goog in range(shapeImage[0]):
+            #     mptask.append(PLDrive[counter,:,:])
+            #     counter=counter+1
+
+            # counter=0
+            # with Pool(os.cpu_count()) as pool:
+            #     for result in pool.map(stack_nanmedian_row, mptask):
+            #         finalImage[counter,:]=result
+            #         #lst[counter] = result
+            #         counter=counter+1
+
+
+
+            # create an empty array to hold each chunk
+            # the size of this array will determine the amount of RAM usage
+
             finalImage=np.zeros(shapeImage,dtype=float)
 
+            # Store the biases in the memmap file
+            PLDrive= [None] * len(inputList)
+            exposures= [None] * len(inputList)
+            i=0
+            for file in inputList:
+                #PLDrive[:,:,i] = np.load(file, mmap_mode='r')
+                PLDrive[i] = np.load(file, mmap_mode='r')
+                exposures[i]=float(file.split('_')[-2])
+                i=i+1
 
-            # MULTIPROCESSED VERSION
-            mptask=[]
-            counter=0
-            for goog in range(shapeImage[0]):
-                mptask.append(PLDrive[counter,:,:])
-                counter=counter+1
+            # Get a chunk size that evenly divides the array
+            chunk_size=8
+            while not ( shapeImage[0] % chunk_size ==0):
+                chunk_size=chunk_size+1
+                #print (chunk_size)
+            chunk_size=int(shapeImage[0]/chunk_size)
 
-            counter=0
-            with Pool(os.cpu_count()) as pool:
-                for result in pool.map(stack_nanmedian_row, mptask):
-                    finalImage[counter,:]=result
-                    #lst[counter] = result
-                    counter=counter+1
+            holder = np.zeros([len(PLDrive),chunk_size,shapeImage[1]], dtype=np.float32)
+
+            # iterate through the input, replace with ones, and write to output
+            for i in range(shapeImage[0]):
+                if i % chunk_size == 0:
+                    #print (i)
+                    counter=0
+                    for imagefile in range(len(PLDrive)):
+                        holder[counter][0:chunk_size,:] = PLDrive[counter][i:i+chunk_size,:]
+                        counter=counter+1
+
+                    finalImage[i:i+chunk_size,:]=bn.nanmedian(holder, axis=0)
+
+
+
+
 
             masterDark=copy.deepcopy(np.asarray(finalImage).astype(np.float32))
             del finalImage
@@ -2920,33 +3001,82 @@ class Sequencer:
             bad_pixel_mapper_array=np.full((shapeImage[0],shapeImage[1]), False)
 
             # Array to hold loaded images
-            PLDrive = np.empty((shapeImage[0],shapeImage[1],len(inputList)), dtype=np.float32)
+            #PLDrive = np.empty((shapeImage[0],shapeImage[1],len(inputList)), dtype=np.float32)
 
             # Store the biases in the memmap file
+            PLDrive= [None] * len(inputList)
             i=0
             for file in inputList:
-                PLDrive[:,:,i] = np.load(file)
+                #PLDrive[:,:,i] = np.load(file, mmap_mode='r')
+                PLDrive[i] = np.load(file, mmap_mode='r')
                 i=i+1
+
+            #breakpoint()
 
             # finalImage array
             finalImage=np.zeros(shapeImage, dtype=np.float32)
 
-            # MULTIPROCESSED VERSION
-            mptask=[]
-            counter=0
-            for goog in range(shapeImage[0]):
-                mptask.append(PLDrive[counter,:,:])
-                counter=counter+1
 
-            counter=0
-            with Pool(os.cpu_count()) as pool:
-                for result in pool.map(stack_nanmedian_row, mptask):
-                    finalImage[counter,:]=result
-                    #lst[counter] = result
-                    counter=counter+1
+
+            try:
+
+                # create an empty array to hold each chunk
+                # the size of this array will determine the amount of RAM usage
+
+                # Get a chunk size that evenly divides the array
+                chunk_size=8
+                while not ( shapeImage[0] % chunk_size ==0):
+                    chunk_size=chunk_size+1
+                    #print (chunk_size)
+                chunk_size=int(shapeImage[0]/chunk_size)
+
+                holder = np.zeros([len(PLDrive),chunk_size,shapeImage[1]], dtype=np.float32)
+
+                # iterate through the input, replace with ones, and write to output
+                for i in range(shapeImage[0]):
+                    if i % chunk_size == 0:
+                        #print (i)
+                        counter=0
+                        for imagefile in range(len(PLDrive)):
+                            holder[counter][0:chunk_size,:] = PLDrive[counter][i:i+chunk_size,:].astype(np.float32)
+                            counter=counter+1
+
+                        finalImage[i:i+chunk_size,:]=bn.nanmedian(holder, axis=0)
+
+
+            except:
+                plog(traceback.format_exc())
+                breakpoint()
+
+            plog ("Bias reconstructed: " +str(time.time()-calibration_timer))
+
+            #breakpoint()
+            # counter=0
+            # with Pool(os.cpu_count()) as pool:
+            #     for result in pool.map(stack_nanmedian_row, mptask):
+            #         finalImage[counter,:]=result
+            #         #lst[counter] = result
+            #         counter=counter+1
+
+            # # MULTIPROCESSED VERSION
+            # mptask=[]
+            # counter=0
+            # for goog in range(shapeImage[0]):
+            #     #mptask.append(PLDrive[counter,:,:])
+            #     counter=counter+1
+
+            # counter=0
+            # with Pool(os.cpu_count()) as pool:
+            #     for result in pool.map(stack_nanmedian_row, mptask):
+            #         finalImage[counter,:]=result
+            #         #lst[counter] = result
+            #         counter=counter+1
 
             masterBias=copy.deepcopy(np.asarray(finalImage).astype(np.float32))
             del finalImage
+            del holder
+            #del PLDrive
+
 
             #plog ("Bias File Created: " +str(time.time()-calibration_timer))
             #calibration_timer=time.time()
@@ -2997,9 +3127,9 @@ class Sequencer:
                 readnoise_array=[]
                 post_readnoise_array=[]
                 #plog ("Calculating Readnoise. Please Wait.")
-                for file in inputList:
+                #for file in inputList:
                     #hdu1data = np.load(file, mmap_mode='r')
-                    hdu1data = np.load(file)
+                    #hdu1data = np.load(file)
 
                 #counter=0
                 i=0
@@ -3007,7 +3137,7 @@ class Sequencer:
                     #PLDrive[:,:,i] = np.load(file)
 
 
-                    hdu1data=PLDrive[:,:,i]-masterBias
+                    hdu1data=PLDrive[i]-masterBias
                     hdu1data = hdu1data[500:-500,500:-500]
                     stddiffimage=np.nanstd(pow(pow(hdu1data,2),0.5))
                     #est_read_noise= (stddiffimage * g_dev['cam'].config["camera"][g_dev['cam'].name]["settings"]["camera_gain"]) / 1.414
