@@ -3038,7 +3038,7 @@ class Sequencer:
                         #print (i)
                         counter=0
                         for imagefile in range(len(PLDrive)):
-                            holder[counter][0:chunk_size,:] = copy.deecopy(PLDrive[counter][i:i+chunk_size,:]).astype(np.float32)
+                            holder[counter][0:chunk_size,:] = copy.deepcopy(PLDrive[counter][i:i+chunk_size,:]).astype(np.float32)
                             counter=counter+1
 
                         finalImage[i:i+chunk_size,:]=bn.nanmedian(holder, axis=0)
@@ -3288,9 +3288,9 @@ class Sequencer:
                             os.remove(file)
                         except:
                             plog ("couldn't remove tempflat: " + str(file))
-                            
+
                     # plog (datetime.datetime.now().strftime("%H:%M:%S"))
-                    
+
                     # plog ("Regenerating flat for " + str(filtercode))
                     inputList=(glob(g_dev['obs'].local_flat_folder + filtercode + '/*.n*'))
 
@@ -3321,7 +3321,7 @@ class Sequencer:
                                     os.remove(file)
                                 except:
                                     plog ("couldn't remove tempflat: " + str(file))
-                            
+
                             PLDrive = [None] * len(inputList)
 
 
@@ -3471,33 +3471,33 @@ class Sequencer:
                                     flatdebiaseddedarked = flatdebiaseddedarked/np.nanmedian(flatdebiaseddedarked)
 
                                 #PLDrive[:,:,i] = copy.deepcopy(flatdebiaseddedarked)
-                                
+
                                 np.save('tempcali_'+file, flatdebiaseddedarked)
                                 del flatdebiaseddedarked
                                 PLDrive[i] = np.load('tempcali_'+file, mmap_mode='r')
 
                                 i=i+1
-                                
+
                             plog ("Insert flats into megaarray: " +str(time.time()-calibration_timer))
 
                             #
-                            
+
                             finalImage=np.zeros(shapeImage, dtype=np.float32)
 
                             #try:
 
                             # create an empty array to hold each chunk
                             # the size of this array will determine the amount of RAM usage
-    
+
                             # Get a chunk size that evenly divides the array
                             chunk_size=8
                             while not ( shapeImage[0] % chunk_size ==0):
                                 chunk_size=chunk_size+1
                                 #print (chunk_size)
                             chunk_size=int(shapeImage[0]/chunk_size)
-    
+
                             holder = np.zeros([len(PLDrive),chunk_size,shapeImage[1]], dtype=np.float32)
-    
+
                             # iterate through the input, replace with ones, and write to output
                             for i in range(shapeImage[0]):
                                 if i % chunk_size == 0:
@@ -3506,11 +3506,11 @@ class Sequencer:
                                     for imagefile in range(len(PLDrive)):
                                         holder[counter][0:chunk_size,:] = copy.deepcopy(PLDrive[counter][i:i+chunk_size,:]).astype(np.float32)
                                         counter=counter+1
-    
-                                    finalImage[i:i+chunk_size,:]=bn.nanmedian(holder, axis=0)
-                            
 
-                            
+                                    finalImage[i:i+chunk_size,:]=bn.nanmedian(holder, axis=0)
+
+
+
 
                             # # plog ("**********************************")
                             # # plog ("Median Stacking each " + str (filtercode) + " flat frame row individually")
@@ -3542,7 +3542,7 @@ class Sequencer:
                                 #plog (flat_component)
                                 #tempdivide=PLDrive[:,:,flat_component] / finalImage
                                 tempdivide=PLDrive[flat_component] / finalImage
-                                
+
                                 #tempnanmedian=np.nanmedian(tempdivide)
                                 tempstd=np.nanstd(tempdivide)
                                 #plog ("nanmedian: " + str(tempnanmedian ))
@@ -3820,13 +3820,13 @@ class Sequencer:
 
 
                         try:
-                            
-                            
-                            
-                            
+
+
+
+
                             g_dev['obs'].to_slow_process(200000000, ('numpy_array_save', g_dev['obs'].calib_masters_folder + 'masterFlat_'+ str(filtercode) + '_bin1.npy', copy.deepcopy(temporaryFlat)))#, hdu.header, frame_type, g_dev["mnt"].current_icrs_ra, g_dev["mnt"].current_icrs_dec))
 
-                            
+
                             #np.save(g_dev['obs'].calib_masters_folder + 'masterFlat_'+ str(filtercode) + '_bin1.npy', temporaryFlat)
 
                             # # Write to and upload current master flat
@@ -3847,12 +3847,12 @@ class Sequencer:
                             # filepathaws=g_dev['obs'].calib_masters_folder
                             # filenameaws='ARCHIVE_' +  archiveDate + '_' + tempfrontcalib + 'masterFlat_'+ str(filtercode) + '_bin1.fits'
                             # g_dev['obs'].enqueue_for_calibrationUI(80, filepathaws,filenameaws)
-                            
+
                             # Store a version of the bias for the archive too
                             g_dev['obs'].to_slow_process(200000000, ('fits_file_save_and_UIqueue', g_dev['obs'].calib_masters_folder + 'ARCHIVE_' +  archiveDate + '_' + tempfrontcalib + 'masterFlat_'+ str(filtercode) + '_bin1.fits', copy.deepcopy(masterBias), None, g_dev['obs'].calib_masters_folder, 'ARCHIVE_' +  archiveDate + '_' + tempfrontcalib + 'masterFlat_'+ str(filtercode) + '_bin1.fits' ))
 
 
-                            
+
                             if g_dev['obs'].config['save_raws_to_pipe_folder_for_nightly_processing']:
                                 #fits.writeto(pipefolder + '/' + tempfrontcalib + 'masterFlat_'+ str(filtercode) + '_bin1.fits', temporaryFlat,  overwrite=True)
                                 #fits.writeto(pipefolder + '/' + 'ARCHIVE_' +  archiveDate + '_' + tempfrontcalib + 'masterFlat_'+ str(filtercode) + '_bin1.fits', temporaryFlat,  overwrite=True)
@@ -3940,9 +3940,9 @@ class Sequencer:
                         #del PLDrive
                         #gc.collect()
                         #os.remove(g_dev['obs'].local_flat_folder  + 'tempfile')
-                        
+
                         plog (str(filtercode) + " flat camera gains measured : " +str(time.time()-calibration_timer))
-                        
+
 
                     g_dev["obs"].send_to_user(str(filtercode) + " flat calibration frame created.")
                     plog (str(filtercode) + " flat calibration frame created: " +str(time.time()-calibration_timer))
