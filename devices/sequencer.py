@@ -2751,6 +2751,8 @@ class Sequencer:
 
             return masterDark
 
+
+
     def regenerate_local_masters(self):
 
 
@@ -3146,6 +3148,9 @@ class Sequencer:
             else:
                 for filterfolder in tempfilters:
 
+                    calibration_timer=time.time()
+
+
                     # plog (datetime.datetime.now().strftime("%H:%M:%S"))
                     filtercode=filterfolder.split('\\')[-2]
                     # plog ("Regenerating flat for " + str(filtercode))
@@ -3168,7 +3173,8 @@ class Sequencer:
 
                         while True:
 
-                            PLDrive = np.memmap(g_dev['obs'].local_flat_folder  + 'tempfile', dtype='float32', mode= 'w+', shape = (shapeImage[0],shapeImage[1],len(inputList)))
+                            #PLDrive = np.memmap(g_dev['obs'].local_flat_folder  + 'tempfile', dtype='float32', mode= 'w+', shape = (shapeImage[0],shapeImage[1],len(inputList)))
+                            PLDrive = np.empty((shapeImage[0],shapeImage[1],len(inputList)), dtype=np.float32)
 
                             # Debias and dedark flat frames and stick them in the memmap
                             i=0
@@ -3314,9 +3320,12 @@ class Sequencer:
                                     # Rescaling median once nan'ed
                                     flatdebiaseddedarked = flatdebiaseddedarked/np.nanmedian(flatdebiaseddedarked)
 
-                                PLDrive[:,:,i] = flatdebiaseddedarked
+                                PLDrive[:,:,i] = copy.deepcopy(flatdebiaseddedarked)
                                 del flatdebiaseddedarked
                                 i=i+1
+
+                            plog ("Insert flats into megaarray: " +str(time.time()-calibration_timer))
+
 
                             # plog ("**********************************")
                             # plog ("Median Stacking each " + str (filtercode) + " flat frame row individually")
@@ -3327,7 +3336,8 @@ class Sequencer:
                             mptask=[]
                             counter=0
                             for goog in range(shapeImage[0]):
-                                mptask.append((g_dev['obs'].local_flat_folder + 'tempfile',counter, (shapeImage[0],shapeImage[1],len(inputList))))
+                                #mptask.append((g_dev['obs'].local_flat_folder + 'tempfile',counter, (shapeImage[0],shapeImage[1],len(inputList))))
+                                mptask.append(PLDrive[counter,:,:])
                                 counter=counter+1
 
                             counter=0
@@ -3338,6 +3348,7 @@ class Sequencer:
 
                             # plog (datetime.datetime.now().strftime("%H:%M:%S"))
                             # #plog ("**********************************")
+                            plog ("Median stack flat: " +str(time.time()-calibration_timer))
 
                             # plog ("Assessing flat components")
                             #nanmedian_collector=[]
@@ -3371,19 +3382,19 @@ class Sequencer:
                                     # plog ("FOUND A REJECTION: " + str(round(nanstd_collector[counterflat],5)) + " > " + str(round(med_std + 3 * std_std,5)))
                                     delete_flat_components.append(counterflat)
 
-                            if len(delete_flat_components) == 0:
+                            if len(delete_flat_components) > math.ceil(0.1*len(nanstd_collector)):
                                 break
 
                             # plog ("REPROCESSING FLAT WITH BAD COMPONENTS REMOVED")
                             # Remove problematic flat images from squishener so we can re-run the flat.
                             for index in sorted(delete_flat_components, reverse=True):
                                 del inputList[index]
-                            PLDrive._mmap.close()
+                            #PLDrive._mmap.close()
                             del PLDrive
-                            gc.collect()
-                            os.remove(g_dev['obs'].local_flat_folder  + 'tempfile')
+                            #gc.collect()
+                            #os.remove(g_dev['obs'].local_flat_folder  + 'tempfile')
 
-
+                            plog ("REDOING FLAT. TOO MANY OUTLIERS: " + str(len(delete_flat_components)))
 
                         temporaryFlat=copy.deepcopy(np.asarray(finalImage).astype(np.float32))
                         del finalImage
@@ -3504,6 +3515,7 @@ class Sequencer:
 
 
 
+                        plog ("Interpolated flat: " +str(time.time()-calibration_timer))
 
 
 
@@ -3611,6 +3623,9 @@ class Sequencer:
                         #both_debanded_image = thresh(both_debanded_image, image_saturation_level)
                         temporaryFlat=both_debanded_image
 
+                        plog ("Debanded flat: " +str(time.time()-calibration_timer))
+
+
 
                         try:
                             np.save(g_dev['obs'].calib_masters_folder + 'masterFlat_'+ str(filtercode) + '_bin1.npy', temporaryFlat)
@@ -3639,6 +3654,9 @@ class Sequencer:
 
                         except Exception as e:
                             plog ("Could not save flat frame: ",e)
+
+                        plog ("Saved flat: " +str(time.time()-calibration_timer))
+
 
                         # Now to estimate gain from flats
                         for fullflat in inputList:
@@ -3707,10 +3725,11 @@ class Sequencer:
                         self.filter_camera_gain_shelf[filtercode]=[np.nanmedian(single_filter_camera_gains), np.std(single_filter_camera_gains),len(single_filter_camera_gains)]
 
 
-                        PLDrive._mmap.close()
-                        del PLDrive
-                        gc.collect()
-                        os.remove(g_dev['obs'].local_flat_folder  + 'tempfile')
+
+                        #PLDrive._mmap.close()
+                        #del PLDrive
+                        #gc.collect()
+                        #os.remove(g_dev['obs'].local_flat_folder  + 'tempfile')
 
                     g_dev["obs"].send_to_user(str(filtercode) + " flat calibration frame created.")
                     plog (str(filtercode) + " flat calibration frame created: " +str(time.time()-calibration_timer))
@@ -6859,10 +6878,10 @@ def stack_nanmedian_row_memmapped(inputinfo):
 
 
 def stack_nanmedian_row(inputline):
-    try:
-        return bn.nanmedian(inputline, axis=1).astype(np.float32)
-    except:
-        return np.nanmedian(inputline, axis=1).astype(np.float32)
+    # try:
+    #     return bn.nanmedian(inputline, axis=1).astype(np.float32)
+    # except:
+    return bn.nanmedian(inputline, axis=1).astype(np.float32)
 
 
     # (pldrivetempfiletemp,counter,shape) = inputinfo
