@@ -3282,6 +3282,15 @@ class Observatory:
                                 tempfilename = self.local_flat_folder + tempfilter + '/' + \
                                     slow_process[1].replace('.fits', '_' + str(tempexposure) + '_.npy')
 
+                                # CHECK ALL TEMP FILES ARE REMOVED FROM FLAT DIRECTORY
+                                deleteList= (glob(g_dev['obs'].local_flat_folder + tempfilter + '/tempcali_*.n*'))
+                                for file in deleteList:
+                                    try:
+                                        os.remove(file)
+                                    except:
+                                        plog ("couldn't remove tempflat: " + str(file))
+
+
                                 max_files = self.config['camera']['camera_1_1']['settings']['number_of_flat_to_store']
                                 n_files = len(glob.glob(self.local_flat_folder + tempfilter + '/' + '*.n*'))
                                 while n_files > max_files:
