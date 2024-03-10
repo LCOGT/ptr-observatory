@@ -2879,9 +2879,9 @@ class Camera:
                                 real_time_files.append(str(expresult["real_time_filename"]))
                                 print ("REAL TIME FILES LIST: " + str(real_time_files))
                             except:
-                                print (frame_type)
-                                print ("real time filename did not work")
-                                plog(traceback.format_exc())
+                                #print (frame_type)
+                                print ("Did not include real time filename due to exposure cancelling (probably)")
+                                #plog(traceback.format_exc())
                         break
                     except Exception as e:
                         plog("Exception in camera retry loop:  ", e)
