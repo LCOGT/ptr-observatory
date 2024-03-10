@@ -3613,7 +3613,7 @@ class Sequencer:
                         plog ("Checked component flats vs stacked flat: " +str(time.time()-calibration_timer))
 
                         del PLDrive
-                        del flat_biasdarks
+                        #del flat_biasdarks
 
                         temporaryFlat=copy.deepcopy(np.asarray(finalImage).astype(np.float32))
                         del finalImage
@@ -3979,7 +3979,7 @@ class Sequencer:
 
                 # Now finished with the biasdarks specifically for flats,
                 # delete them
-                del flat_biasdarks
+                #del flat_biasdarks
 
 
 
