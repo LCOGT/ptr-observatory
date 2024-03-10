@@ -3088,7 +3088,10 @@ class Observatory:
                                     list_of_files = glob.glob(self.local_dark_folder + '*.n*')
                                     n_files = len(list_of_files)
                                     oldest_file = min(list_of_files, key=os.path.getctime)
-                                    os.remove(oldest_file)
+                                    try:
+                                        os.remove(oldest_file)
+                                    except:
+                                        break
 
                             elif slow_process[4] == 'broadband_ss_biasdark':
                                 tempexposure = temphduheader['EXPTIME']
@@ -3100,7 +3103,10 @@ class Observatory:
                                     list_of_files = glob.glob(self.local_dark_folder+ 'broadbanddarks/'+ '*.n*')
                                     n_files = len(list_of_files)
                                     oldest_file = min(list_of_files, key=os.path.getctime)
-                                    os.remove(oldest_file)
+                                    try:
+                                        os.remove(oldest_file)
+                                    except:
+                                        break
 
                             elif slow_process[4] == 'narrowband_ss_biasdark':
                                 tempexposure = temphduheader['EXPTIME']
@@ -3112,7 +3118,10 @@ class Observatory:
                                     list_of_files = glob.glob(self.local_dark_folder + 'narrowbanddarks/'  + '*.n*')
                                     n_files = len(list_of_files)
                                     oldest_file = min(list_of_files, key=os.path.getctime)
-                                    os.remove(oldest_file)
+                                    try:
+                                        os.remove(oldest_file)
+                                    except:
+                                        break
 
                             elif slow_process[4] == 'fivepercent_exposure_dark':
                                 tempexposure = temphduheader['EXPTIME']
@@ -3124,7 +3133,10 @@ class Observatory:
                                     list_of_files = glob.glob(self.local_dark_folder + 'fivepercentdarks/' + '*.n*')
                                     n_files = len(list_of_files)
                                     oldest_file = min(list_of_files, key=os.path.getctime)
-                                    os.remove(oldest_file)
+                                    try:
+                                        os.remove(oldest_file)
+                                    except:
+                                        break
 
                             elif slow_process[4] == 'tenpercent_exposure_dark':
                                 tempexposure = temphduheader['EXPTIME']
@@ -3136,7 +3148,10 @@ class Observatory:
                                     list_of_files = glob.glob(self.local_dark_folder + 'tenpercentdarks/' + '*.n*')
                                     n_files = len(list_of_files)
                                     oldest_file = min(list_of_files, key=os.path.getctime)
-                                    os.remove(oldest_file)
+                                    try:
+                                        os.remove(oldest_file)
+                                    except:
+                                        break
 
                             elif slow_process[4] == 'quartersec_exposure_dark':
                                 tempexposure = temphduheader['EXPTIME']
@@ -3148,7 +3163,10 @@ class Observatory:
                                     list_of_files = glob.glob(self.local_dark_folder + 'quartersecdarks/' + '*.n*')
                                     n_files = len(list_of_files)
                                     oldest_file = min(list_of_files, key=os.path.getctime)
-                                    os.remove(oldest_file)
+                                    try:
+                                        os.remove(oldest_file)
+                                    except:
+                                        break
 
 
 
@@ -3162,7 +3180,10 @@ class Observatory:
                                     list_of_files = glob.glob(self.local_dark_folder + 'halfsecdarks/' + '*.n*')
                                     n_files = len(list_of_files)
                                     oldest_file = min(list_of_files, key=os.path.getctime)
-                                    os.remove(oldest_file)
+                                    try:
+                                        os.remove(oldest_file)
+                                    except:
+                                        break
 
                             elif slow_process[4] == 'threequartersec_exposure_dark':
                                 tempexposure = temphduheader['EXPTIME']
@@ -3174,7 +3195,10 @@ class Observatory:
                                     list_of_files = glob.glob(self.local_dark_folder + 'sevenfivepercentdarks/' + '*.n*')
                                     n_files = len(list_of_files)
                                     oldest_file = min(list_of_files, key=os.path.getctime)
-                                    os.remove(oldest_file)
+                                    try:
+                                        os.remove(oldest_file)
+                                    except:
+                                        break
 
                             elif slow_process[4] == 'onesec_exposure_dark':
                                 tempexposure = temphduheader['EXPTIME']
@@ -3186,7 +3210,10 @@ class Observatory:
                                     list_of_files = glob.glob(self.local_dark_folder + 'onesecdarks/' + '*.n*')
                                     n_files = len(list_of_files)
                                     oldest_file = min(list_of_files, key=os.path.getctime)
-                                    os.remove(oldest_file)
+                                    try:
+                                        os.remove(oldest_file)
+                                    except:
+                                        break
 
                             elif slow_process[4] == 'oneandahalfsec_exposure_dark':
                                 tempexposure = temphduheader['EXPTIME']
@@ -3198,7 +3225,10 @@ class Observatory:
                                     list_of_files = glob.glob(self.local_dark_folder + 'oneandahalfsecdarks/' + '*.n*')
                                     n_files = len(list_of_files)
                                     oldest_file = min(list_of_files, key=os.path.getctime)
-                                    os.remove(oldest_file)
+                                    try:
+                                        os.remove(oldest_file)
+                                    except:
+                                        break
 
                             elif slow_process[4] == 'twosec_exposure_dark':
                                 tempexposure = temphduheader['EXPTIME']
@@ -3222,7 +3252,10 @@ class Observatory:
                                     list_of_files = glob.glob(self.local_dark_folder + 'threepointfivesecdarks/' + '*.n*')
                                     n_files = len(list_of_files)
                                     oldest_file = min(list_of_files, key=os.path.getctime)
-                                    os.remove(oldest_file)
+                                    try:
+                                        os.remove(oldest_file)
+                                    except:
+                                        break
 
                             elif slow_process[4] == 'fivesec_exposure_dark':
                                 tempexposure = temphduheader['EXPTIME']
@@ -3234,7 +3267,10 @@ class Observatory:
                                     list_of_files = glob.glob(self.local_dark_folder + 'fivesecdarks/' + '*.n*')
                                     n_files = len(list_of_files)
                                     oldest_file = min(list_of_files, key=os.path.getctime)
-                                    os.remove(oldest_file)
+                                    try:
+                                        os.remove(oldest_file)
+                                    except:
+                                        break
 
                             elif slow_process[4] == 'sevenpointfivesec_exposure_dark':
                                 tempexposure = temphduheader['EXPTIME']
@@ -3246,7 +3282,10 @@ class Observatory:
                                     list_of_files = glob.glob(self.local_dark_folder + 'sevenpointfivesecdarks/' + '*.n*')
                                     n_files = len(list_of_files)
                                     oldest_file = min(list_of_files, key=os.path.getctime)
-                                    os.remove(oldest_file)
+                                    try:
+                                        os.remove(oldest_file)
+                                    except:
+                                        break
 
                             elif slow_process[4] == 'tensec_exposure_dark':
                                 tempexposure = temphduheader['EXPTIME']
@@ -3258,7 +3297,10 @@ class Observatory:
                                     list_of_files = glob.glob(self.local_dark_folder + 'tensecdarks/' + '*.n*')
                                     n_files = len(list_of_files)
                                     oldest_file = min(list_of_files, key=os.path.getctime)
-                                    os.remove(oldest_file)
+                                    try:
+                                        os.remove(oldest_file)
+                                    except:
+                                        break
 
                             elif slow_process[4] == 'fifteensec_exposure_dark':
                                 tempexposure = temphduheader['EXPTIME']
@@ -3270,7 +3312,10 @@ class Observatory:
                                     list_of_files = glob.glob(self.local_dark_folder + 'fifteensecdarks/' + '*.n*')
                                     n_files = len(list_of_files)
                                     oldest_file = min(list_of_files, key=os.path.getctime)
-                                    os.remove(oldest_file)
+                                    try:
+                                        os.remove(oldest_file)
+                                    except:
+                                        break
 
                             elif slow_process[4] == 'twentysec_exposure_dark':
                                 tempexposure = temphduheader['EXPTIME']
@@ -3282,7 +3327,10 @@ class Observatory:
                                     list_of_files = glob.glob(self.local_dark_folder + 'twentysecdarks/' + '*.n*')
                                     n_files = len(list_of_files)
                                     oldest_file = min(list_of_files, key=os.path.getctime)
-                                    os.remove(oldest_file)
+                                    try:
+                                        os.remove(oldest_file)
+                                    except:
+                                        break
 
                             elif slow_process[4] == 'flat' or slow_process[4] == 'skyflat' or slow_process[4] == 'screenflat':
                                 tempfilter = temphduheader['FILTER']
