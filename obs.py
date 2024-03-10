@@ -3066,7 +3066,10 @@ class Observatory:
                                     list_of_files = glob.glob(self.local_bias_folder + '*.n*')
                                     n_files = len(list_of_files)
                                     oldest_file = min(list_of_files, key=os.path.getctime)
-                                    os.remove(oldest_file)
+                                    try:
+                                        os.remove(oldest_file)
+                                    except:
+                                        self.laterdelete_queue.put(oldest_file, block=False)
 
                             elif slow_process[4] == 'dark':
                                 tempexposure = temphduheader['EXPTIME']
