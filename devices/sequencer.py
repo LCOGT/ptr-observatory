@@ -2593,11 +2593,10 @@ class Sequencer:
             # Test each flat file actually opens
             for file in inputList:
                 try:
-                    hdu1data = np.load(file, mmap_mode='r')
+                    np.load(file, mmap_mode='r')
                 except:
                     plog ("corrupt dark skipped: " + str(file))
                     inputList.remove(file)
-
 
             # # Array to hold loaded images
             # PLDrive = np.empty((shapeImage[0],shapeImage[1],len(inputList)), dtype=np.float32)
@@ -2799,6 +2798,8 @@ class Sequencer:
                     for imagefile in range(len(PLDrive)):
                         holder[counter][0:chunk_size,:] = copy.deepcopy(PLDrive[counter][i:i+chunk_size,:])
                         counter=counter+1
+
+
 
                     finalImage[i:i+chunk_size,:]=bn.nanmedian(holder, axis=0)
 
@@ -3262,7 +3263,7 @@ class Sequencer:
 
             for entry in bias_darklist:
 
-                processedDark = self.make_scaled_dark(entry[0],entry[1], masterBias, shapeImage, archiveDate, pipefolder)
+                processedDark = self.make_bias_dark(entry[0],entry[1], masterBias, shapeImage, archiveDate, pipefolder)
 
 
                 if entry[2] ==  'broadband_ss_biasdark' or entry[2] == 'narrowband_ss_biasdark':
