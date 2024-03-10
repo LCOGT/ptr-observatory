@@ -2877,7 +2877,7 @@ class Camera:
                         if not frame_type[-4:] == "flat" and not frame_type.lower() in ["bias", "dark"] and not a_dark_exposure and not frame_type.lower()=='focus' and not frame_type=='pointing':
                             try:
                                 real_time_files.append(str(expresult["real_time_filename"]))
-                                print ("REAL TIME FILES LIST: " + str(real_time_files))
+                                #print ("REAL TIME FILES LIST: " + str(real_time_files))
                             except:
                                 #print (frame_type)
                                 print ("Did not include real time filename due to exposure cancelling (probably)")
@@ -2933,9 +2933,9 @@ class Camera:
 
         if self.config['save_raws_to_pipe_folder_for_nightly_processing']:
             if len(real_time_files) > 0:
-                print ("WRITING OUT TOKEN TO LOCAL PIPE FOLDER")
-                print (token_name)
-                print (real_time_files)
+                #print ("WRITING OUT TOKEN TO LOCAL PIPE FOLDER")
+                #print (token_name)
+                #print (real_time_files)
                 #pipefolder = self.config['temporary_local_pipe_archive_to_hold_files_while_copying'] +'/'+ str(g_dev["day"]) +'/'+ str(self.alias)
 
 
@@ -3546,10 +3546,10 @@ class Camera:
                             del intermediate_tempdark
                         elif exposure_time == broadband_ss_biasdark_exp_time:
                             outputimg = outputimg - (g_dev['cam'].darkFiles['broadband_ss_biasdark'])
-                            plog ("broadband biasdark success")
+                            #plog ("broadband biasdark success")
                         elif exposure_time == narrowband_ss_biasdark_exp_time:
                             outputimg = outputimg - (g_dev['cam'].darkFiles['narrowband_ss_biasdark'])
-                            plog ("narrowband biasdark success")
+                            #plog ("narrowband biasdark success")
                         else:
                             plog ("DUNNO WHAT HAPPENED!")
                             outputimg = outputimg - g_dev['cam'].biasFiles[str(1)]
@@ -4924,7 +4924,7 @@ def post_exposure_process(payload):
                         plog ("Something odd in the flash reduction?")
                         plog(traceback.format_exc())
 
-                plog ("time taken for flash reduction: " + str(time.time() - timetakenquickdark))
+                #plog ("time taken for flash reduction: " + str(time.time() - timetakenquickdark))
             except Exception as e:
                 plog("debias/darking light frame failed: ", e)
 
