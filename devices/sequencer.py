@@ -2585,6 +2585,15 @@ class Sequencer:
     def make_scaled_dark(self,input_folder, filename_start, masterBias, shapeImage, archiveDate, pipefolder):
 
 
+
+            # CLEAR OUT OLD TEMPFILES
+            darkdeleteList=(glob(input_folder +'/*tempbiasdark.n*'))
+            for file in darkdeleteList:
+                try:
+                    os.remove(file)
+                except:
+                    plog ("Couldnt remove old dark file: " + str(file))
+
             calibration_timer=time.time()
 
             # NOW we have the master bias, we can move onto the dark frames
@@ -2720,7 +2729,18 @@ class Sequencer:
 
     def make_bias_dark(self,input_folder, filename_start, masterBias, shapeImage, archiveDate, pipefolder):
 
+        
+            # CLEAR OUT OLD TEMPFILES
+            darkdeleteList=(glob(input_folder +'/*tempbiasdark.n*'))
+            for file in darkdeleteList:
+                try:
+                    os.remove(file)
+                except:
+                    plog ("Couldnt remove old dark file: " + str(file))
+
             calibration_timer=time.time()
+
+            
 
             # NOW we have the master bias, we can move onto the dark frames
             inputList=(glob( input_folder +'/*.n*'))
@@ -2732,6 +2752,8 @@ class Sequencer:
                 except:
                     plog ("corrupt dark skipped: " + str(file))
                     inputList.remove(file)
+
+
 
 
             # # Array to hold loaded images
