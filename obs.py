@@ -3072,6 +3072,16 @@ class Observatory:
                                 tempexposure = temphduheader['EXPTIME']
                                 tempfilename = self.local_dark_folder + \
                                     slow_process[1].replace('.fits', '_' + str(tempexposure) + '_.npy')
+
+                                # CHECK THAT OLD TEMPFILES ARE CLEARED OUT
+                                darkdeleteList=(glob(g_dev['obs'].local_dark_folder +'/*tempbiasdark.n*'))
+                                for file in darkdeleteList:
+                                    try:
+                                        os.remove(file)
+                                    except:
+                                        plog ("Couldnt remove old dark file: " + str(file))
+
+
                                 max_files = self.config['camera']['camera_1_1']['settings']['number_of_dark_to_store']
                                 n_files = len(glob.glob(self.local_dark_folder + '*.n*'))
                                 while n_files > max_files:
