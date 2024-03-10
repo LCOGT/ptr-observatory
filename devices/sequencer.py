@@ -3047,6 +3047,18 @@ class Sequencer:
                             counter=counter+1
 
                         finalImage[i:i+chunk_size,:]=bn.nanmedian(holder, axis=0)
+                        
+                        
+                        # Clear out memory
+                        del holder
+                        # Store the biases in the memmap file
+                        PLDrive= [None] * len(inputList)
+                        i=0
+                        for file in inputList:
+                            #PLDrive[:,:,i] = np.load(file, mmap_mode='r')
+                            PLDrive[i] = np.load(file, mmap_mode='r')
+                            i=i+1
+                        
 
 
             except:
