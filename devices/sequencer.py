@@ -3237,7 +3237,7 @@ class Sequencer:
 
 
             scaled_darklist=[
-                [g_dev['obs'].local_dark_folder, '' , 'DARK','1'],
+                [g_dev['obs'].local_dark_folder                 , 'DARK','1'],
                 [g_dev['obs'].local_dark_folder+ 'halfsecdarks/', 'halfsecondDARK', 'halfsec_exposure_dark' ],
                 [g_dev['obs'].local_dark_folder+ 'twosecdarks/', '2secondDARK', 'twosec_exposure_dark' ],
                 [g_dev['obs'].local_dark_folder+ 'tensecdarks/', '10secondDARK', 'tensec_exposure_dark'],
