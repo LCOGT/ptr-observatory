@@ -2986,12 +2986,12 @@ class Sequencer:
             plog ("Not reprocessing local masters as there are not enough biases or darks")
         else:
             # Clear held bias and darks and flats to save memory and garbage collect.
-            del g_dev['cam'].biasFiles
-            del g_dev['cam'].darkFiles
-            g_dev['cam'].biasFiles = {}
-            g_dev['cam'].darkFiles = {}
+            #del g_dev['cam'].biasFiles
+            #del g_dev['cam'].darkFiles
+            #g_dev['cam'].biasFiles = {}
+            #g_dev['cam'].darkFiles = {}
             g_dev['cam'].flatFiles = {}
-            g_dev['cam'].hotFiles = {}
+            #g_dev['cam'].hotFiles = {}
             gc.collect()
 
 
@@ -3979,6 +3979,15 @@ class Sequencer:
                         except:
                             plog ("couldn't remove tempflat: " + str(file))
 
+                    #for file in fileList:
+                    if self.config['camera'][g_dev['cam'].name]['settings']['hold_flats_in_memory']:
+                        #tempflatframe=np.load(file)
+                        #
+                        g_dev['cam'].flatFiles.update({filtercode: copy.deepcopy(temporaryFlat)})
+                        #del tempflatframe
+                    else:
+                        g_dev['cam'].flatFiles.update({filtercode: g_dev['obs'].calib_masters_folder + 'masterFlat_'+ str(filtercode) + '_bin1.npy'})
+
                     g_dev["obs"].send_to_user(str(filtercode) + " flat calibration frame created.")
                     plog (str(filtercode) + " flat calibration frame created: " +str(time.time()-calibration_timer))
                     calibration_timer=time.time()
@@ -4088,23 +4097,23 @@ class Sequencer:
                 # THEN reload them to use for the next night.
                 # First delete the calibrations out of memory.
 
-                g_dev['cam'].flatFiles = {}
-                g_dev['cam'].hotFiles = {}
-                try:
-                    fileList = glob(g_dev['obs'].calib_masters_folder + '/masterFlat*_bin1.npy')
-                    for file in fileList:
-                        if self.config['camera'][g_dev['cam'].name]['settings']['hold_flats_in_memory']:
-                            tempflatframe=np.load(file)
-                            #
-                            g_dev['cam'].flatFiles.update({file.split('_')[-2]: np.array(tempflatframe)})
-                            del tempflatframe
-                        else:
-                            g_dev['cam'].flatFiles.update({file.split("_")[1].replace ('.npy','') + '_bin1': file})
-                    # To supress occasional flatfield div errors
-                    np.seterr(divide="ignore")
-                except:
-                    plog(traceback.format_exc())
-                    plog("Flat frames not loaded or available")
+                # g_dev['cam'].flatFiles = {}
+                # g_dev['cam'].hotFiles = {}
+                # try:
+                #     fileList = glob(g_dev['obs'].calib_masters_folder + '/masterFlat*_bin1.npy')
+                #     for file in fileList:
+                #         if self.config['camera'][g_dev['cam'].name]['settings']['hold_flats_in_memory']:
+                #             tempflatframe=np.load(file)
+                #             #
+                #             g_dev['cam'].flatFiles.update({file.split('_')[-2]: np.array(tempflatframe)})
+                #             del tempflatframe
+                #         else:
+                #             g_dev['cam'].flatFiles.update({file.split("_")[1].replace ('.npy','') + '_bin1': file})
+                #     # To supress occasional flatfield div errors
+                #     np.seterr(divide="ignore")
+                # except:
+                #     plog(traceback.format_exc())
+                #     plog("Flat frames not loaded or available")
 
 
                 plog ("Regenerated Flat Masters and Re-loaded them into memory.")
