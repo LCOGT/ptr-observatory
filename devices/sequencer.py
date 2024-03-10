@@ -2642,7 +2642,12 @@ class Sequencer:
             for file in inputList:
                 #PLDrive[:,:,i] = np.load(file, mmap_mode='r')
                 PLDrive[i] = np.load(file, mmap_mode='r')
-                exposures[i]=float(file.split('_')[-2])
+                try:
+                    exposures[i]=float(file.split('_')[-2])
+                except:
+                    plog(traceback.format_exc())
+                    breakpoint()
+
                 i=i+1
 
             # Get a chunk size that evenly divides the array
@@ -3201,6 +3206,15 @@ class Sequencer:
                 [g_dev['obs'].local_dark_folder+ 'broadbanddarks/', 'broadbandssBIASDARK', 'broadband_ss_biasdark'],
                 [g_dev['obs'].local_dark_folder+ 'narrowbanddarks/', 'narrowbandssBIASDARK', 'narrowband_ss_biasdark']
                 ]
+
+            # CLEAR OUT OLD TEMPFILES
+            darkdeleteList=(glob(g_dev['obs'].local_dark_folder +'/*tempbiasdark.n*'))
+            for file in darkdeleteList:
+                try:
+                    os.remove(file)
+                except:
+                    plog ("Couldnt remove old dark file: " + str(file))
+
 
 
             for entry in scaled_darklist:
