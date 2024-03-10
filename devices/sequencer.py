@@ -3236,7 +3236,7 @@ class Sequencer:
 
 
             scaled_darklist=[
-                [g_dev['obs'].local_dark_folder, 'DARK','1'],
+                [g_dev['obs'].local_dark_folder, '' , 'DARK','1'],
                 [g_dev['obs'].local_dark_folder+ 'halfsecdarks/', 'halfsecondDARK', 'halfsec_exposure_dark' ],
                 [g_dev['obs'].local_dark_folder+ 'twosecdarks/', '2secondDARK', 'twosec_exposure_dark' ],
                 [g_dev['obs'].local_dark_folder+ 'tensecdarks/', '10secondDARK', 'tensec_exposure_dark'],
@@ -4200,7 +4200,13 @@ class Sequencer:
 
 
 
-
+            # CLEAR OUT OLD TEMPFILES
+            darkdeleteList=(glob(g_dev['obs'].local_dark_folder +'/*tempbiasdark.n*'))
+            for file in darkdeleteList:
+                try:
+                    os.remove(file)
+                except:
+                    plog ("Couldnt remove old dark file: " + str(file))
 
 
             try:
