@@ -2842,7 +2842,7 @@ class Sequencer:
     def regenerate_local_masters(self):
 
 
-        self.total_sequencer_control = True
+        #self.total_sequencer_control = True
 
 
         plog ("killing local problem programs")
@@ -4163,7 +4163,7 @@ class Sequencer:
 
         g_dev["obs"].send_to_user("All calibration frames completed.")
 
-        self.total_sequencer_control = False
+        #self.total_sequencer_control = False
 
         return
 
