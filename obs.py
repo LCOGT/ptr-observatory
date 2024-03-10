@@ -3091,7 +3091,7 @@ class Observatory:
                                     try:
                                         os.remove(oldest_file)
                                     except:
-                                        break
+                                        self.laterdelete_queue.put(oldest_file, block=False)
 
                             elif slow_process[4] == 'broadband_ss_biasdark':
                                 tempexposure = temphduheader['EXPTIME']
@@ -3106,7 +3106,7 @@ class Observatory:
                                     try:
                                         os.remove(oldest_file)
                                     except:
-                                        break
+                                        self.laterdelete_queue.put(oldest_file, block=False)
 
                             elif slow_process[4] == 'narrowband_ss_biasdark':
                                 tempexposure = temphduheader['EXPTIME']
@@ -3121,7 +3121,7 @@ class Observatory:
                                     try:
                                         os.remove(oldest_file)
                                     except:
-                                        break
+                                        self.laterdelete_queue.put(oldest_file, block=False)
 
                             elif slow_process[4] == 'fivepercent_exposure_dark':
                                 tempexposure = temphduheader['EXPTIME']
@@ -3136,7 +3136,7 @@ class Observatory:
                                     try:
                                         os.remove(oldest_file)
                                     except:
-                                        break
+                                        self.laterdelete_queue.put(oldest_file, block=False)
 
                             elif slow_process[4] == 'tenpercent_exposure_dark':
                                 tempexposure = temphduheader['EXPTIME']
@@ -3151,7 +3151,7 @@ class Observatory:
                                     try:
                                         os.remove(oldest_file)
                                     except:
-                                        break
+                                        self.laterdelete_queue.put(oldest_file, block=False)
 
                             elif slow_process[4] == 'quartersec_exposure_dark':
                                 tempexposure = temphduheader['EXPTIME']
@@ -3166,7 +3166,7 @@ class Observatory:
                                     try:
                                         os.remove(oldest_file)
                                     except:
-                                        break
+                                        self.laterdelete_queue.put(oldest_file, block=False)
 
 
 
@@ -3183,7 +3183,7 @@ class Observatory:
                                     try:
                                         os.remove(oldest_file)
                                     except:
-                                        break
+                                        self.laterdelete_queue.put(oldest_file, block=False)
 
                             elif slow_process[4] == 'threequartersec_exposure_dark':
                                 tempexposure = temphduheader['EXPTIME']
@@ -3198,7 +3198,7 @@ class Observatory:
                                     try:
                                         os.remove(oldest_file)
                                     except:
-                                        break
+                                        self.laterdelete_queue.put(oldest_file, block=False)
 
                             elif slow_process[4] == 'onesec_exposure_dark':
                                 tempexposure = temphduheader['EXPTIME']
@@ -3213,7 +3213,7 @@ class Observatory:
                                     try:
                                         os.remove(oldest_file)
                                     except:
-                                        break
+                                        self.laterdelete_queue.put(oldest_file, block=False)
 
                             elif slow_process[4] == 'oneandahalfsec_exposure_dark':
                                 tempexposure = temphduheader['EXPTIME']
@@ -3228,7 +3228,7 @@ class Observatory:
                                     try:
                                         os.remove(oldest_file)
                                     except:
-                                        break
+                                        self.laterdelete_queue.put(oldest_file, block=False)
 
                             elif slow_process[4] == 'twosec_exposure_dark':
                                 tempexposure = temphduheader['EXPTIME']
@@ -3240,7 +3240,10 @@ class Observatory:
                                     list_of_files = glob.glob(self.local_dark_folder + 'twosecdarks/' + '*.n*')
                                     n_files = len(list_of_files)
                                     oldest_file = min(list_of_files, key=os.path.getctime)
-                                    os.remove(oldest_file)
+                                    try:
+                                        os.remove(oldest_file)
+                                    except:
+                                        self.laterdelete_queue.put(oldest_file, block=False)
 
                             elif slow_process[4] == 'threepointfivesec_exposure_dark':
                                 tempexposure = temphduheader['EXPTIME']
@@ -3255,7 +3258,7 @@ class Observatory:
                                     try:
                                         os.remove(oldest_file)
                                     except:
-                                        break
+                                        self.laterdelete_queue.put(oldest_file, block=False)
 
                             elif slow_process[4] == 'fivesec_exposure_dark':
                                 tempexposure = temphduheader['EXPTIME']
@@ -3270,7 +3273,7 @@ class Observatory:
                                     try:
                                         os.remove(oldest_file)
                                     except:
-                                        break
+                                        self.laterdelete_queue.put(oldest_file, block=False)
 
                             elif slow_process[4] == 'sevenpointfivesec_exposure_dark':
                                 tempexposure = temphduheader['EXPTIME']
@@ -3285,7 +3288,7 @@ class Observatory:
                                     try:
                                         os.remove(oldest_file)
                                     except:
-                                        break
+                                        self.laterdelete_queue.put(oldest_file, block=False)
 
                             elif slow_process[4] == 'tensec_exposure_dark':
                                 tempexposure = temphduheader['EXPTIME']
@@ -3300,7 +3303,7 @@ class Observatory:
                                     try:
                                         os.remove(oldest_file)
                                     except:
-                                        break
+                                        self.laterdelete_queue.put(oldest_file, block=False)
 
                             elif slow_process[4] == 'fifteensec_exposure_dark':
                                 tempexposure = temphduheader['EXPTIME']
@@ -3315,7 +3318,7 @@ class Observatory:
                                     try:
                                         os.remove(oldest_file)
                                     except:
-                                        break
+                                        self.laterdelete_queue.put(oldest_file, block=False)
 
                             elif slow_process[4] == 'twentysec_exposure_dark':
                                 tempexposure = temphduheader['EXPTIME']
@@ -3330,7 +3333,7 @@ class Observatory:
                                     try:
                                         os.remove(oldest_file)
                                     except:
-                                        break
+                                        self.laterdelete_queue.put(oldest_file, block=False)
 
                             elif slow_process[4] == 'flat' or slow_process[4] == 'skyflat' or slow_process[4] == 'screenflat':
                                 tempfilter = temphduheader['FILTER']
