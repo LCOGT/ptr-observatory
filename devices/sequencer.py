@@ -2673,8 +2673,8 @@ class Sequencer:
                     #print (i)
                     counter=0
                     for imagefile in range(len(PLDrive)):
-                        #breakpoint()
-                        holder[counter][0:chunk_size,:] = (copy.deepcopy(PLDrive[counter][i:i+chunk_size,:])-masterBias[i:i+chunk_size,:])/exposures[counter]
+                        #breakpoint() holder[counter][0:chunk_size,:] = copy.deepcopy(PLDrive[counter][i:i+chunk_size,:]).astype(np.float32)
+                        holder[counter][0:chunk_size,:] = (copy.deepcopy(PLDrive[counter][i:i+chunk_size,:]).astype(np.float32)-copy.deepcopy(masterBias[i:i+chunk_size,:]).astype(np.float32))/exposures[counter]
                         counter=counter+1
 
                     finalImage[i:i+chunk_size,:]=bn.nanmedian(holder, axis=0)
@@ -2819,7 +2819,7 @@ class Sequencer:
                     #print (i)
                     counter=0
                     for imagefile in range(len(PLDrive)):
-                        holder[counter][0:chunk_size,:] = copy.deepcopy(PLDrive[counter][i:i+chunk_size,:])
+                        holder[counter][0:chunk_size,:] = copy.deepcopy(PLDrive[counter][i:i+chunk_size,:]).astype(np.float32)
                         counter=counter+1
 
 
