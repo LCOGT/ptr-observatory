@@ -2670,7 +2670,14 @@ class Sequencer:
 
                     finalImage[i:i+chunk_size,:]=bn.nanmedian(holder, axis=0)
 
-
+                    # Wipe and restore files in the memmap file
+                    # To clear RAM usage
+                    PLDrive= [None] * len(inputList)
+                    i=0
+                    for file in inputList:
+                        #PLDrive[:,:,i] = np.load(file, mmap_mode='r')
+                        PLDrive[i] = np.load(file, mmap_mode='r')
+                        i=i+1
 
 
 
@@ -2795,7 +2802,14 @@ class Sequencer:
 
                     finalImage[i:i+chunk_size,:]=bn.nanmedian(holder, axis=0)
 
-
+                    # Wipe and restore files in the memmap file
+                    # To clear RAM usage
+                    PLDrive= [None] * len(inputList)
+                    i=0
+                    for file in inputList:
+                        #PLDrive[:,:,i] = np.load(file, mmap_mode='r')
+                        PLDrive[i] = np.load(file, mmap_mode='r')
+                        i=i+1
 
 
 
@@ -2977,10 +2991,10 @@ class Sequencer:
 
 
         # have to remove flats from memory to make room for.... flats!
-        try:
-            del g_dev['cam'].flatFiles
-        except:
-            pass
+        # try:
+        #     del g_dev['cam'].flatFiles
+        # except:
+        #     pass
 
         if len(inputList) == 0 or len(darkinputList) == 0 or len(inputList) == 1 or len(darkinputList) == 1:
             plog ("Not reprocessing local masters as there are not enough biases or darks")
@@ -2990,9 +3004,9 @@ class Sequencer:
             #del g_dev['cam'].darkFiles
             #g_dev['cam'].biasFiles = {}
             #g_dev['cam'].darkFiles = {}
-            g_dev['cam'].flatFiles = {}
+            #g_dev['cam'].flatFiles = {}
             #g_dev['cam'].hotFiles = {}
-            gc.collect()
+            #gc.collect()
 
 
             #flat_biasdarks={}
@@ -3017,6 +3031,8 @@ class Sequencer:
                 i=i+1
 
             #breakpoint()
+
+            #PLDrive_holder = copy.deepcopy(PLDrive)
 
             # finalImage array
             finalImage=np.zeros(shapeImage, dtype=np.float32)
@@ -3047,18 +3063,23 @@ class Sequencer:
                             counter=counter+1
 
                         finalImage[i:i+chunk_size,:]=bn.nanmedian(holder, axis=0)
-                        
-                        
-                        # Clear out memory
-                        del holder
-                        # Store the biases in the memmap file
+
+
+                        # # Clear out memory
+                        # del holder
+                        # holder = np.zeros([len(PLDrive),chunk_size,shapeImage[1]], dtype=np.float32)
+
+                        # Wipe and restore files in the memmap file
+                        # To clear RAM usage
                         PLDrive= [None] * len(inputList)
                         i=0
                         for file in inputList:
                             #PLDrive[:,:,i] = np.load(file, mmap_mode='r')
                             PLDrive[i] = np.load(file, mmap_mode='r')
                             i=i+1
-                        
+
+                        #PLDrive=copy.deepcopy(PLDrive_holder)
+
 
 
             except:
@@ -3358,6 +3379,7 @@ class Sequencer:
 
                             # Debias and dedark flat frames and stick them in the memmap
                             i=0
+                            temp_flat_file_list=[]
                             for file in inputList:
                                 #plog("Storing flat in a memmap array: " + str(file))
                                 #hdu1data = np.load(file, mmap_mode='r')
@@ -3513,6 +3535,7 @@ class Sequencer:
 
                                 np.save(tempfile, flatdebiaseddedarked)
                                 del flatdebiaseddedarked
+                                temp_flat_file_list.append(tempfile)
                                 PLDrive[i] = np.load(tempfile, mmap_mode='r')
 
                                 i=i+1
@@ -3548,7 +3571,14 @@ class Sequencer:
 
                                     finalImage[i:i+chunk_size,:]=bn.nanmedian(holder, axis=0)
 
-
+                                    # Wipe and restore files in the memmap file
+                                    # To clear RAM usage
+                                    PLDrive= [None] * len(temp_flat_file_list)
+                                    i=0
+                                    for file in temp_flat_file_list:
+                                        #PLDrive[:,:,i] = np.load(file, mmap_mode='r')
+                                        PLDrive[i] = np.load(file, mmap_mode='r')
+                                        i=i+1
 
 
                             # # plog ("**********************************")
@@ -3982,7 +4012,7 @@ class Sequencer:
 
                         plog (str(filtercode) + " flat camera gains measured : " +str(time.time()-calibration_timer))
 
-                    
+
                     # DELETE ALL TEMP FILES FROM FLAT DIRECTORY
                     deleteList= (glob(g_dev['obs'].local_flat_folder + filtercode + '/tempcali_*.n*'))
                     for file in deleteList:
