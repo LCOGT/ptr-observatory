@@ -483,11 +483,11 @@ class Mount:
                             self.pier_flip_detected=False
                             self.right_ascension_directly_from_mount = copy.deepcopy(self.mount_update_wincom.RightAscension)
                             self.declination_directly_from_mount = copy.deepcopy(self.mount_update_wincom.Declination)
-                            
+
                         except:
                             plog ("Issue in slewing mount thread")
                             plog(traceback.format_exc())
-                        
+
                         self.mount_updates=self.mount_updates + 1
                         self.mount_update_timer=time.time()
                     else:
@@ -500,39 +500,39 @@ class Mount:
                                 self.unpark_requested=False
                                 self.mount_update_wincom.Unpark()
                                 self.rapid_park_indicator=False
-    
-    
-    
+
+
+
                             if self.park_requested:
                                 self.park_requested=False
                                 self.mount_update_wincom.Park()
                                 self.rapid_park_indicator=True
-    
-    
+
+
                             if self.find_home_requested:
                                 self.find_home_requested=False
-    
-    
+
+
                                 #mount_at_home = self.mount_update_wincom.AtHome
-    
+
                                 if self.mount_update_wincom.AtHome:
                                     plog("Mount is at home.")
                                 else:
                                     g_dev['obs'].time_of_last_slew=time.time()
                                     if self.mount_update_wincom.AtPark:
                                         self.mount_update_wincom.Unpark()
-    
+
                                     while self.mount_update_wincom.Slewing:
                                         plog("waiting for slew before homing")
                                         time.sleep(0.2)
-    
+
                                     self.mount_update_wincom.FindHome()
-    
-    
-    
+
+
+
                                     #self.unpark_command()
                                     #self.wait_for_slew()
-    
+
                                     # self.move_time = time.time()
                                     # # mount command #
                                     # while self.mount_busy:
@@ -540,15 +540,15 @@ class Mount:
                                     # self.mount_busy=True
                                     #self.mount.FindHome()
                                     # self.mount_busy=False
-    
-    
-    
+
+
+
                             if self.abort_slew_requested:
                                 self.abort_slew_requested=False
                                 self.mount_update_wincom.AbortSlew()
-    
-    
-    
+
+
+
                             if self.slewtoAsyncRequested:
                                 self.slewtoAsyncRequested=False
                                 #print ("attempting to slew")
@@ -556,62 +556,62 @@ class Mount:
                                 #self.mount_update_wincom.DeclinationRate = 5 #gets reset on the slew
                                 self.mount_update_wincom.SlewToCoordinatesAsync(self.slewtoRA , self.slewtoDEC)
                                 self.mount_update_wincom.DeclinationRate = 0
-                                plog("dec rate set to: ", self.mount_update_wincom.DeclinationRate)
+                                #plog("dec rate set to: ", self.mount_update_wincom.DeclinationRate)
                                 #print ("successful slew")
-    
+
                             if self.request_tracking_on:
-    
+
                                 self.request_tracking_on = False
                                 self.mount_update_wincom.Tracking = True
-    
+
                             if self.request_tracking_off:
                                 self.request_tracking_off = False
                                 self.mount_update_wincom.Tracking = False
-    
+
                             if self.request_new_pierside:
                                 self.request_new_pierside=False
                                 self.new_pierside=self.mount_update_wincom.DestinationSideOfPier(self.request_new_pierside_ra, self.request_new_pierside_dec)
-    
-    
+
+
                             if self.request_set_RightAscensionRate:
                                 self.request_set_RightAscensionRate=False
                                 self.mount_update_wincom.RightAscensionRate=self.request_new_RightAscensionRate
                                 self.RightAscensionRate=self.request_new_RightAscensionRate
-    
+
                             if self.request_set_DeclinationRate:
                                 self.request_set_DeclinationRate=False
                                 self.mount_update_wincom.DeclinationRate=self.request_new_DeclinationRate
                                 self.DeclinationRate=self.request_new_DeclinationRate
-    
-    
-    
-    
-    
+
+
+
+
+
                             if self.request_find_home:
                                 self.request_find_home=False
                                 self.mount_update_wincom.FindHome()
-    
-    
+
+
                             # Some things we don't do while slewing
                             #if not self.currently_slewing:
-    
+
                             self.rapid_park_indicator=copy.deepcopy(self.mount_update_wincom.AtPark)
                             #print (self.rapid_park_indicator)
                             #if self.can_report_pierside:
                             if not self.rapid_park_indicator:
                                 self.rapid_pier_indicator=copy.deepcopy(self.mount_update_wincom.sideOfPier)
                                 self.current_tracking_state=self.mount_update_wincom.Tracking
-    
+
                                 if not (g_dev['mnt'].pier_side_last_check==g_dev['mnt'].rapid_pier_indicator):
                                     self.pier_flip_detected=True
                                     print ("PIERFLIP DETECTED!")
                                 g_dev['mnt'].pier_side_last_check=copy.deepcopy(self.rapid_pier_indicator)
-    
+
                             self.right_ascension_directly_from_mount = copy.deepcopy(self.mount_update_wincom.RightAscension)
                             self.declination_directly_from_mount = copy.deepcopy(self.mount_update_wincom.Declination)
                             self.right_ascension_rate_directly_from_mount = copy.deepcopy(self.mount_update_wincom.RightAscensionRate)
                             self.declination_rate_directly_from_mount = copy.deepcopy(self.mount_update_wincom.DeclinationRate)
-    
+
                         except:
                             plog ("Issue in normal mount thread")
                             plog(traceback.format_exc())
@@ -1390,7 +1390,7 @@ class Mount:
 
         sun_alt=sun_coords.alt.degree
         sun_az=sun_coords.az.degree
-        plog ('sun alt: ' + str(sun_alt) + " sun az: " + str(sun_az))
+        #plog ('sun alt: ' + str(sun_alt) + " sun az: " + str(sun_az))
         flatspot_az = sun_az - 180.  # Opposite az of the Sun
         if flatspot_az < 0:
             flatspot_az += 360.
@@ -1454,7 +1454,7 @@ class Mount:
                 ra = altazskycoord.icrs.ra.deg /15
                 dec = altazskycoord.icrs.dec.deg
 
-                plog ("Requested Flat Spot, az: " + str(az) + " alt: " + str(alt))
+                plog ("Moving to requested Flat Spot, az: " + str(az) + " alt: " + str(alt))
 
                 if self.config['degrees_to_avoid_zenith_area_for_calibrations'] > 0:
                     #######breakpoint()
