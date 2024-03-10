@@ -3221,14 +3221,14 @@ class Sequencer:
                 if entry[2] ==  'broadband_ss_biasdark' or entry[2] == 'narrowband_ss_biasdark':
                     g_dev['cam'].darkFiles.update({entry[2]: processedDark.astype(np.float32)})
                 else:
-                    
+
                     try:
                         #flat_biasdarks[entry[2]]=processedDark
                         np.save(g_dev['obs'].local_dark_folder +'/'+entry[2] +'tempbiasdark.npy', processedDark.astype(np.float32))
                     except:
                         plog("Dark frame master re-upload did not work.")
 
-                
+
 
                 #'fivepercent'
 
@@ -3343,7 +3343,7 @@ class Sequencer:
                                 #plog (hdu1exp)
                                 fraction_through_range=0
 
-                                
+
 
 #g_dev['obs'].local_dark_folder +'/'+'fivepercent' +'tempbiasdark.npy'
 
@@ -3479,9 +3479,15 @@ class Sequencer:
 
                                 #PLDrive[:,:,i] = copy.deepcopy(flatdebiaseddedarked)
 
-                                np.save('tempcali_'+file, flatdebiaseddedarked)
+                                #breakpoint()
+                                # Make new filename
+                                tempfile=file.replace('\\','/').split('/')
+                                tempfile[-1]='tempcali_' + tempfile[-1]
+                                tempfile="/".join(tempfile)
+
+                                np.save(tempfile, flatdebiaseddedarked)
                                 del flatdebiaseddedarked
-                                PLDrive[i] = np.load('tempcali_'+file, mmap_mode='r')
+                                PLDrive[i] = np.load(tempfile, mmap_mode='r')
 
                                 i=i+1
 
