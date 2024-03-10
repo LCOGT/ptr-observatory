@@ -3876,7 +3876,7 @@ class Sequencer:
                             # g_dev['obs'].enqueue_for_calibrationUI(80, filepathaws,filenameaws)
 
                             # Store a version of the bias for the archive too
-                            g_dev['obs'].to_slow_process(200000000, ('fits_file_save_and_UIqueue', g_dev['obs'].calib_masters_folder + 'ARCHIVE_' +  archiveDate + '_' + tempfrontcalib + 'masterFlat_'+ str(filtercode) + '_bin1.fits', copy.deepcopy(masterBias), None, g_dev['obs'].calib_masters_folder, 'ARCHIVE_' +  archiveDate + '_' + tempfrontcalib + 'masterFlat_'+ str(filtercode) + '_bin1.fits' ))
+                            g_dev['obs'].to_slow_process(200000000, ('fits_file_save_and_UIqueue', g_dev['obs'].calib_masters_folder + 'ARCHIVE_' +  archiveDate + '_' + tempfrontcalib + 'masterFlat_'+ str(filtercode) + '_bin1.fits', copy.deepcopy(temporaryFlat), None, g_dev['obs'].calib_masters_folder, 'ARCHIVE_' +  archiveDate + '_' + tempfrontcalib + 'masterFlat_'+ str(filtercode) + '_bin1.fits' ))
 
 
 
@@ -3970,6 +3970,14 @@ class Sequencer:
 
                         plog (str(filtercode) + " flat camera gains measured : " +str(time.time()-calibration_timer))
 
+                    
+                    # DELETE ALL TEMP FILES FROM FLAT DIRECTORY
+                    deleteList= (glob(g_dev['obs'].local_flat_folder + filtercode + '/tempcali_*.n*'))
+                    for file in deleteList:
+                        try:
+                            os.remove(file)
+                        except:
+                            plog ("couldn't remove tempflat: " + str(file))
 
                     g_dev["obs"].send_to_user(str(filtercode) + " flat calibration frame created.")
                     plog (str(filtercode) + " flat calibration frame created: " +str(time.time()-calibration_timer))
