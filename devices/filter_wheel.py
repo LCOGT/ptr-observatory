@@ -483,6 +483,8 @@ class FilterWheel:
     def set_name_command(self, req: dict, opt: dict):
         """Sets the filter position by filter name."""
 
+        self.filter_changing=True
+
         try:
             filter_name = str(req["filter"]).lower()
         except:
@@ -517,6 +519,7 @@ class FilterWheel:
 
 
         if self.previous_filter_name==filter_name:
+            self.filter_changing=False
 
             return self.previous_filter_name, self.previous_filter_match, self.filter_offset
 
@@ -537,9 +540,10 @@ class FilterWheel:
         except:
             plog("Failed to change filter. Returning.")
             #breakpoint()
+            self.filter_changing=False
             return None, None, None
 
-        self.filter_changing=True
+        
         self.filter_change_requested=True
         self.wait_for_filterwheel_update()
 
