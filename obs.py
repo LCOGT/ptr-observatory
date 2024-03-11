@@ -3272,7 +3272,7 @@ class Observatory:
                                 tempexposure = temphduheader['EXPTIME']
                                 tempfilename = self.local_dark_folder + 'fivesecdarks/' + \
                                     slow_process[1].replace('.fits', '_' + str(tempexposure) + '_.npy')
-                                max_files = 2 * self.config['camera']['camera_1_1']['settings']['number_of_dark_to_store']
+                                max_files = self.config['camera']['camera_1_1']['settings']['number_of_dark_to_store']
                                 n_files = len(glob.glob(self.local_dark_folder + 'fivesecdarks/'+ '*.n*'))
                                 while n_files > max_files:
                                     list_of_files = glob.glob(self.local_dark_folder + 'fivesecdarks/' + '*.n*')
