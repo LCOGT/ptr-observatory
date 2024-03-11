@@ -299,6 +299,9 @@ class FilterWheel:
                             r1_pr = requests.put(self.ip + "/filterwheel/1/position", json=r1, timeout=5)
                             if str(r0_pr) == str(r1_pr) == "<Response [200]>":
                                 pass
+                            
+                            print ("MTF temp filterwheel report: r0_pr " + str(r0_pr) + " r1_pr " + str(r1_pr))
+                            
                             while True:
                                 r0_t = int(
                                     requests.get(self.ip + "/filterwheel/0/position", timeout=5)
@@ -315,6 +318,8 @@ class FilterWheel:
                                 else:
                                     pass
                                     break
+                            print ("MTF temp filterwheel report: r0_t " + str(r0_t) + " r1_t " + str(r1_t))
+                            
 
                         elif self.dual and not self.maxim:
                             try:
