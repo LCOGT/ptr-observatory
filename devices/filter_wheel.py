@@ -48,6 +48,7 @@ class FilterWheel:
                  & homing.")
 
             self.filter_change_requested=False
+            self.filter_changing=False
             self.filterwheel_update_period=0.2
             self.filterwheel_update_timer=time.time() - 2* self.filterwheel_update_period
             self.filterwheel_updates=0
@@ -290,6 +291,7 @@ class FilterWheel:
 
                     if self.filter_change_requested:
                         self.filter_change_requested=False
+                        self.filter_changing=True
                         if self.dual and self.custom:
                             r0 = self.r0
                             r1 = self.r1
@@ -378,6 +380,8 @@ class FilterWheel:
                                 pass
 
                             self.filter_offset = float(self.filter_data[self.filt_pointer][2])
+                        
+                        self.filter_changing=False
 
                     self.filterwheel_updates=self.filterwheel_updates+1
 

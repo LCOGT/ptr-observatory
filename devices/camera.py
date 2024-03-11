@@ -2772,6 +2772,9 @@ class Camera:
 
                             start_time_of_observation=time.time()
                             self.start_time_of_observation=time.time()
+                            while g_dev['fil'].filter_changing:
+                                plog ("Waiting for filter_change")
+                                time.sleep(0.05)
                             self._expose(exposure_time, bias_dark_or_light_type_frame)
                             self.end_of_last_exposure_time=time.time()
 
