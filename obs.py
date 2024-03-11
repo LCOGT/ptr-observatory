@@ -3077,13 +3077,15 @@ class Observatory:
                                     slow_process[1].replace('.fits', '_' + str(tempexposure) + '_.npy')
 
                                 # CHECK THAT OLD TEMPFILES ARE CLEARED OUT
-                                darkdeleteList=(glob(g_dev['obs'].local_dark_folder +'/*tempbiasdark.n*'))
-                                for file in darkdeleteList:
-                                    try:
-                                        os.remove(file)
-                                    except:
-                                        plog ("Couldnt remove old dark file: " + str(file))
-
+                                try:
+                                    darkdeleteList=(glob.glob(g_dev['obs'].local_dark_folder +'/*tempbiasdark.n*'))
+                                    for file in darkdeleteList:
+                                        try:
+                                            os.remove(file)
+                                        except:
+                                            plog ("Couldnt remove old dark file: " + str(file))
+                                except:
+                                    plog ("Strange dark error to potentially follow up.... not a major deal.... but keep an eye on it.")
 
                                 max_files = self.config['camera']['camera_1_1']['settings']['number_of_dark_to_store']
                                 n_files = len(glob.glob(self.local_dark_folder + '*.n*'))
@@ -3238,11 +3240,14 @@ class Observatory:
                                 tempfilename = self.local_dark_folder + 'twosecdarks/' + \
                                     slow_process[1].replace('.fits', '_' + str(tempexposure) + '_.npy')
                                 max_files = self.config['camera']['camera_1_1']['settings']['number_of_dark_to_store']
-                                n_files = len(glob.glob(self.local_dark_folder + 'twosecdarks/'+ '*.n*'))
+                                n_files = len(
+                                    glob.glob(self.local_dark_folder + 'twosecdarks/' + '*.n*'))
                                 while n_files > max_files:
-                                    list_of_files = glob.glob(self.local_dark_folder + 'twosecdarks/' + '*.n*')
+                                    list_of_files = glob.glob(
+                                        self.local_dark_folder + 'twosecdarks/' + '*.n*')
                                     n_files = len(list_of_files)
-                                    oldest_file = min(list_of_files, key=os.path.getctime)
+                                    oldest_file = min(
+                                        list_of_files, key=os.path.getctime)
                                     try:
                                         os.remove(oldest_file)
                                     except:
@@ -3347,7 +3352,7 @@ class Observatory:
                                     slow_process[1].replace('.fits', '_' + str(tempexposure) + '_.npy')
 
                                 # CHECK ALL TEMP FILES ARE REMOVED FROM FLAT DIRECTORY
-                                deleteList= (glob(g_dev['obs'].local_flat_folder + tempfilter + '/tempcali_*.n*'))
+                                deleteList= (glob.glob(g_dev['obs'].local_flat_folder + tempfilter + '/tempcali_*.n*'))
                                 for file in deleteList:
                                     try:
                                         os.remove(file)

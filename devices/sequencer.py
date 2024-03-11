@@ -2903,14 +2903,6 @@ class Sequencer:
                 os.makedirs(g_dev['obs'].config['pipe_archive_folder_path'] +'/calibrations/'+ g_dev['cam'].alias)
 
 
-        # for every filter hold onto an estimate of the current camera gain.
-        # Each filter will have a different flat field and variation in the flat.
-        # The 'true' camera gain is very likely to be the filter with the least
-        # variation, so we go with that as the true camera gain...... but ONLY after we have a full set of flats
-        # with which to calculate the gain. This is the shelf to hold this data.
-        # There is no hope for individual owners with a multitude of telescopes to keep up with
-        # this estimate, so we need to automate it with a first best guess given in the config.
-        self.filter_camera_gain_shelf = shelve.open(g_dev['obs'].obsid_path + 'ptr_night_shelf/' + 'filtercameragain' + g_dev['cam'].alias + str(g_dev['obs'].name))
 
 
 
@@ -4025,8 +4017,19 @@ class Sequencer:
                         flat_gains[filtercode]=[np.nanmedian(single_filter_camera_gains), np.std(single_filter_camera_gains),len(single_filter_camera_gains)]
 
                         # Chuck camera gain and number of images into the shelf
-                        self.filter_camera_gain_shelf[filtercode]=[np.nanmedian(single_filter_camera_gains), np.std(single_filter_camera_gains),len(single_filter_camera_gains)]
-
+                        try:
+                            # for every filter hold onto an estimate of the current camera gain.
+                            # Each filter will have a different flat field and variation in the flat.
+                            # The 'true' camera gain is very likely to be the filter with the least
+                            # variation, so we go with that as the true camera gain...... but ONLY after we have a full set of flats
+                            # with which to calculate the gain. This is the shelf to hold this data.
+                            # There is no hope for individual owners with a multitude of telescopes to keep up with
+                            # this estimate, so we need to automate it with a first best guess given in the config.
+                            self.filter_camera_gain_shelf = shelve.open(g_dev['obs'].obsid_path + 'ptr_night_shelf/' + 'filtercameragain' + g_dev['cam'].alias + str(g_dev['obs'].name))
+                            self.filter_camera_gain_shelf[filtercode]=[np.nanmedian(single_filter_camera_gains), np.std(single_filter_camera_gains),len(single_filter_camera_gains)]
+                            self.filter_camera_gain_shelf.close()
+                        except:
+                            plog("************* FAILED TO WRITE TO FILTER GAIN SHELF. Usually while flats are being taken at the same time. Follow-up if this becomes relatively frequent.")
 
 
                         #PLDrive._mmap.close()
@@ -4071,10 +4074,12 @@ class Sequencer:
                 # Bung in the readnoise estimates and then
                 # Close up the filter camera gain shelf.
                 try:
+                    self.filter_camera_gain_shelf = shelve.open(g_dev['obs'].obsid_path + 'ptr_night_shelf/' + 'filtercameragain' + g_dev['cam'].alias + str(g_dev['obs'].name))
                     self.filter_camera_gain_shelf['readnoise']=[np.nanmedian(post_readnoise_array) , np.nanstd(post_readnoise_array), len(post_readnoise_array)]
+                    self.filter_camera_gain_shelf.close()
                 except:
                     plog ("cannot write the readnoise array to the shelf. Probs because this is the first time estimating gains")
-                self.filter_camera_gain_shelf.close()
+
 
                 textfilename= g_dev['obs'].obsid_path + 'ptr_night_shelf/' + 'cameragain' + g_dev['cam'].alias + str(g_dev['obs'].name) +'.txt'
                 try:
