@@ -3782,7 +3782,7 @@ class Camera:
                     #g_dev['obs'].sep_processing=True
                     #g_dev['obs'].to_sep((outputimg, self.pixscale, self.camera_known_readnoise, avg_foc[1], focus_image, im_path, text_name, hdusmallheader, cal_path, cal_name, frame_type, focus_position, self.native_bin))
 
-                    reported=0
+                    #reported=0
                     temptimer=time.time()
                     plog ("Exposure Complete")
                     g_dev["obs"].send_to_user("Exposure Complete")
@@ -3812,12 +3812,70 @@ class Camera:
                     g_dev['obs'].fwhmresult['FWHM']=float(fwhm_dict['rfr'])
                     g_dev['obs'].fwhmresult['No_of_sources']= float(fwhm_dict['sources'])
                     #foc_pos1 = g_dev['obs'].fwhmresult['mean_focus']
-                    foc_pos1=focus_position
+                    #foc_pos1=focus_position
 
                     expresult['FWHM']=fwhm_dict['rfr']
                     expresult["mean_focus"]=focus_position
                     expresult['No_of_sources']=fwhm_dict['sources']
+                    
+                    plog ("Focus at " + str(focus_position) + " is " + round(float(fwhm_dict['rfr'],2)))
+                    
+                    
+                    
+                    try:
+                        #hduheader["SEPSKY"] = str(sepsky)
+                        hdusmallheader["SEPSKY"] = str(fwhm_dict['sky'])
+                    except:
+                        hdusmallheader["SEPSKY"] = -9999
+                    try:
+                        hdusmallheader["FWHM"] = (float(fwhm_dict['rfp'],2), 'FWHM in pixels')
+                        hdusmallheader["FWHMpix"] = (float(fwhm_dict['rfp'],2), 'FWHM in pixels')
+                    except:
+                        hdusmallheader["FWHM"] = (-99, 'FWHM in pixels')
+                        hdusmallheader["FWHMpix"] = (-99, 'FWHM in pixels')
 
+                    try:
+                        hdusmallheader["FWHMasec"] = (float(fwhm_dict['rfr'],2), 'FWHM in arcseconds')
+                    except:
+                        hdusmallheader["FWHMasec"] = (-99, 'FWHM in arcseconds')
+                    try:
+                        hdusmallheader["FWHMstd"] = (float(fwhm_dict['rfs'],2), 'FWHM standard deviation in arcseconds')
+                    except:
+
+                        hdusmallheader["FWHMstd"] = ( -99, 'FWHM standard deviation in arcseconds')
+
+                    try:
+                        hdusmallheader["NSTARS"] = ( str(fwhm_dict['sources']), 'Number of star-like sources in image')
+                    except:
+                        hdusmallheader["NSTARS"] = ( -99, 'Number of star-like sources in image')
+                        
+                        
+                    #breakpoint()
+                    try:
+                        text = open(
+                            im_path + text_name, "w"
+                        )
+                        text.write(str(hdusmallheader))
+                        text.close()
+                    except:
+                        plog("Failed to write out focus text up for some reason")
+                        plog(traceback.format_exc())
+                    
+                    
+                    # Fling the jpeg up
+                    try:
+                        g_dev['obs'].enqueue_for_fastUI(100, im_path, text_name.replace('EX00.txt', 'EX10.jpg'))
+                    except:
+                        plog("Failed to send FOCUS IMAGE up for some reason")
+                        plog(traceback.format_exc())
+                        
+                    if os.path.exists(im_path + text_name):
+                        try:
+                            self.enqueue_for_fastUI(10, im_path, text_name)
+                        except:
+                            plog("Failed to send FOCUS TEXT up for some reason")
+                            plog(traceback.format_exc())
+                            
                     return expresult
 
                 blockended=False
