@@ -986,10 +986,12 @@ starinspection_json_snippets['header']=headerdict
         #print (radials)
         #breakpoint()
 googtime=time.time()
-imageinspection_json_snippets['photometry']=re.sub('\s+',' ',str(photometry))
-#starinspection_json_snippets['photometry']=re.sub('\s+',' ',str(sources))
-print ("Writing out Photometry: " + str(time.time()-googtime))
-
+try:
+    imageinspection_json_snippets['photometry']=re.sub('\s+',' ',str(photometry))
+    #starinspection_json_snippets['photometry']=re.sub('\s+',' ',str(sources))
+    print ("Writing out Photometry: " + str(time.time()-googtime))
+except:
+    pass
     # except:
     #     pass
 if do_sep and (not frame_type=='focus'):
@@ -1091,17 +1093,18 @@ if not frame_type == 'focus':
         json.dump(imageinspection_json_snippets, f)
     print ("Writing out image inspection: " + str(time.time()-googtime))
 
-
-    # Writing out the radial profile snippets
-    # This seems to take the longest time, so down here it goes
-    googtime=time.time()
-    starinspection_json_snippets['radialprofiles']=re.sub('\s+',' ',str(sources))
-    print ("ASCIIing Radial Profiles: " + str(time.time()-googtime))
-    googtime=time.time()
-    with open(im_path + 'star_' + text_name.replace('.txt', '.json'), 'w') as f:
-        json.dump(starinspection_json_snippets, f)
-    print ("Writing out star inspection: " + str(time.time()-googtime))
-
+    try:
+        # Writing out the radial profile snippets
+        # This seems to take the longest time, so down here it goes
+        googtime=time.time()
+        starinspection_json_snippets['radialprofiles']=re.sub('\s+',' ',str(sources))
+        print ("ASCIIing Radial Profiles: " + str(time.time()-googtime))
+        googtime=time.time()
+        with open(im_path + 'star_' + text_name.replace('.txt', '.json'), 'w') as f:
+            json.dump(starinspection_json_snippets, f)
+        print ("Writing out star inspection: " + str(time.time()-googtime))
+    except:
+        pass
 
 
 

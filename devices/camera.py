@@ -1321,13 +1321,13 @@ class Camera:
                         # If we've got more than 50 for a focus
                         # We only need some good ones.
 
-                        if len(fwhmlist) > 50:
+                        if len(fwhmlist) > 10:
                             bailout=True
                             break
-                        #If we've got more than ten and we are getting dim, bail out.
-                        if len(fwhmlist) > 10 and brightest_pixel_value < (0.2*saturate):
-                            bailout=True
-                            break
+                        # #If we've got more than ten and we are getting dim, bail out.
+                        # if len(fwhmlist) > 10 and brightest_pixel_value < (0.2*saturate):
+                        #     bailout=True
+                        #     break
                 except:
                     pass
 
