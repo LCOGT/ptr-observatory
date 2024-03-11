@@ -539,7 +539,7 @@ class FilterWheel:
             #breakpoint()
             return None, None, None
 
-
+        self.filter_changing=True
         self.filter_change_requested=True
         self.wait_for_filterwheel_update()
 
