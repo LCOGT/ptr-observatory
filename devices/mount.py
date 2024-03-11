@@ -1420,7 +1420,7 @@ class Mount:
     def go_command(self, skyflatspot=None, ra=None, dec=None, az=None, alt=None, ha=None, \
                    objectname=None, offset=False, calibrate=False, auto_center=False, \
                    silent=False, skip_open_test=False,tracking_rate_ra = 0, \
-                   tracking_rate_dec =  0, do_centering_routine=False):
+                   tracking_rate_dec =  0, do_centering_routine=False, dont_wait_after_slew=False):
 
         ''' Slew to the given ra/dec, alt/az or ha/dec or skyflatspot coordinates. '''
         #breakpoint()
@@ -1685,12 +1685,14 @@ class Mount:
                 self.slewtoDEC = dec
                 self.slewtoAsyncRequested=True
                 self.wait_for_mount_update()
-                self.wait_for_slew()
+                if not dont_wait_after_slew:
+                    self.wait_for_slew()
                 ###################################
 
                 g_dev['obs'].rotator_has_been_checked_since_last_slew=False
                 # end mount command #
-                self.wait_for_slew()
+                if not dont_wait_after_slew:
+                    self.wait_for_slew()
                 self.get_mount_coordinates()
             except Exception:
                 self.mount_busy=False
@@ -1785,20 +1787,24 @@ class Mount:
                 self.slewtoDEC = dec
                 self.slewtoAsyncRequested=True
                 self.wait_for_mount_update()
-                self.wait_for_slew()
+                
+                if not dont_wait_after_slew:
+                    self.wait_for_slew()
                 ###################################
                 #self.mount_busy=False
                 g_dev['obs'].rotator_has_been_checked_since_last_slew=False
                 # end mount command #
-                self.wait_for_slew()
+                if not dont_wait_after_slew:
+                    self.wait_for_slew()
                 self.get_mount_coordinates()
                 successful_move=1
 
 
         if not self.current_tracking_state:
             try:
-                self.wait_for_slew()
-                self.set_tracking_on()
+                if not dont_wait_after_slew:
+                    self.wait_for_slew()
+                    self.set_tracking_on()
             except Exception:
                 # Yes, this is an awfully non-elegant way to force a mount to start
                 # Tracking when it isn't implemented in the ASCOM driver. But if anyone has any better ideas, I am all ears - MF
@@ -1845,7 +1851,8 @@ class Mount:
         g_dev['obs'].time_since_last_slew = time.time()
         g_dev['obs'].last_solve_time = datetime.datetime.now() - datetime.timedelta(days=1)
         g_dev['obs'].images_since_last_solve = 10000
-        self.wait_for_slew()
+        if not dont_wait_after_slew:
+            self.wait_for_slew()
 
 
         #g_dev['obs'].drift_tracker_ra=0

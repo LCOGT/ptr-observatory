@@ -4262,7 +4262,7 @@ class Sequencer:
         return
 
 
-    def check_zenith_and_move_to_flat_spot(self, ending=None):
+    def check_zenith_and_move_to_flat_spot(self, ending=None, dont_wait_after_slew=False):
 
         too_close_to_zenith=True
         while too_close_to_zenith:
@@ -4306,8 +4306,9 @@ class Sequencer:
                             homerotator_time_shelf['lasthome'] = time.time()
                             homerotator_time_shelf.close()
 
-                            self.check_zenith_and_move_to_flat_spot(ending=ending)
-                            self.wait_for_slew()
+                            self.check_zenith_and_move_to_flat_spot(ending=ending, dont_wait_after_slew=dont_wait_after_slew)
+                            if not dont_wait_after_slew:
+                                self.wait_for_slew()
                             while g_dev['rot'].rotator.IsMoving:
                                 plog("home rotator wait")
                                 time.sleep(1)
@@ -4339,10 +4340,10 @@ class Sequencer:
                         return 'cancel'
 
                 else:
-                    g_dev['mnt'].go_command(skyflatspot=True)
+                    g_dev['mnt'].go_command(skyflatspot=True, dont_wait_after_slew=dont_wait_after_slew)
                     too_close_to_zenith=False
             else:
-                g_dev['mnt'].go_command(skyflatspot=True)
+                g_dev['mnt'].go_command(skyflatspot=True, dont_wait_after_slew=dont_wait_after_slew)
                 too_close_to_zenith=False
 
     def sky_flat_script(self, req, opt, morn=False, skip_moon_check=False):
@@ -4619,7 +4620,7 @@ class Sequencer:
                     if g_dev['mnt'].rapid_park_indicator:
                         g_dev['mnt'].unpark_command({}, {})
 
-                    self.check_zenith_and_move_to_flat_spot(ending=ending)
+                    self.check_zenith_and_move_to_flat_spot(ending=ending, dont_wait_after_slew=True)
                     self.time_of_next_slew = time.time() + 45
 
                 #g_dev['obs'].request_scan_requests()
@@ -4824,7 +4825,7 @@ class Sequencer:
 
                              #self.estimated_first_flat_exposure = False
                              if time.time() >= self.time_of_next_slew:
-                                self.check_zenith_and_move_to_flat_spot(ending=ending)
+                                self.check_zenith_and_move_to_flat_spot(ending=ending, dont_wait_after_slew=True)
 
                                 self.time_of_next_slew = time.time() + 45
                              self.next_flat_observe = time.time() + 10
@@ -4838,7 +4839,7 @@ class Sequencer:
                              #exp_time = target_flat/(collecting_area*pixel_area*sky_lux*float(new_throughput_value ))
 
                              if time.time() >= self.time_of_next_slew:
-                                self.check_zenith_and_move_to_flat_spot(ending=ending)
+                                self.check_zenith_and_move_to_flat_spot(ending=ending, dont_wait_after_slew=True)
 
                                 self.time_of_next_slew = time.time() + 45
                              self.next_flat_observe = time.time() + 10
@@ -4856,7 +4857,7 @@ class Sequencer:
                             # If scope has gone to bed due to inactivity, wake it up!
                             if g_dev['mnt'].rapid_park_indicator:
                                 g_dev['mnt'].unpark_command({}, {})
-                                self.check_zenith_and_move_to_flat_spot(ending=ending)
+                                self.check_zenith_and_move_to_flat_spot(ending=ending, dont_wait_after_slew=True)
 
                                 self.time_of_next_slew = time.time() + 45
 
@@ -4989,7 +4990,7 @@ class Sequencer:
                             except:
                                 scale = 1.0
 
-                            self.check_zenith_and_move_to_flat_spot(ending=ending)
+                            
 
                             if self.stop_script_called:
                                 g_dev["obs"].send_to_user("Cancelling out of calibration script as stop script has been called.")
@@ -5075,6 +5076,10 @@ class Sequencer:
                             if acquired_count == flat_count or acquired_count > flat_count:
                                 pop_list.pop(0)
                                 scale = 1
+                            else:
+                                # Give it a bit of a nudge, not necessary if it is the last shot of the filter. 
+                                # There is no reason to wait for it to finish slewing either.
+                                self.check_zenith_and_move_to_flat_spot(ending=ending, dont_wait_after_slew=True)
 
 
                             continue
