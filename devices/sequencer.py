@@ -4612,16 +4612,17 @@ class Sequencer:
             #g_dev['cam'].darkslide_open = True
             #g_dev['cam'].darkslide_state = 'Open'
 
+        self.check_zenith_and_move_to_flat_spot(ending=ending)
 
         while len(pop_list) > 0  and ephem.now() < ending and g_dev['obs'].open_and_enabled_to_observe:
 
-                # This is just a very occasional slew to keep it pointing in the same general vicinity
-                if time.time() >= self.time_of_next_slew:
-                    if g_dev['mnt'].rapid_park_indicator:
-                        g_dev['mnt'].unpark_command({}, {})
+                # # This is just a very occasional slew to keep it pointing in the same general vicinity
+                # if time.time() >= self.time_of_next_slew:
+                #     if g_dev['mnt'].rapid_park_indicator:
+                #         g_dev['mnt'].unpark_command({}, {})
 
-                    self.check_zenith_and_move_to_flat_spot(ending=ending, dont_wait_after_slew=True)
-                    self.time_of_next_slew = time.time() + 45
+                #     self.check_zenith_and_move_to_flat_spot(ending=ending, dont_wait_after_slew=True)
+                #     self.time_of_next_slew = time.time() + 45
 
                 #g_dev['obs'].request_scan_requests()
                 #g_dev["obs"].request_full_update()
