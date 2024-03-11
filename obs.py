@@ -3076,19 +3076,27 @@ class Observatory:
                                 tempfilename = self.local_dark_folder + \
                                     slow_process[1].replace('.fits', '_' + str(tempexposure) + '_.npy')
 
-                                # CHECK THAT OLD TEMPFILES ARE CLEARED OUT
-                                try:
-                                    darkdeleteList=(glob.glob(g_dev['obs'].local_dark_folder +'/*tempbiasdark.n*'))
-                                    for file in darkdeleteList:
-                                        try:
-                                            os.remove(file)
-                                        except:
-                                            plog ("Couldnt remove old dark file: " + str(file))
-                                except:
-                                    plog ("Strange dark error to potentially follow up.... not a major deal.... but keep an eye on it.")
+                                # # CHECK THAT OLD TEMPFILES ARE CLEARED OUT
+                                # try:
+                                #     darkdeleteList=(glob.glob(g_dev['obs'].local_dark_folder +'/*tempbiasdark.n*'))
+                                #     for file in darkdeleteList:
+                                #         try:
+                                #             os.remove(file)
+                                #         except:
+                                #             plog ("Couldnt remove old dark file: " + str(file))
+                                # except:
+                                #     plog ("Strange dark error to potentially follow up.... not a major deal.... but keep an eye on it.")
+
+                                
+
 
                                 max_files = self.config['camera']['camera_1_1']['settings']['number_of_dark_to_store']
-                                n_files = len(glob.glob(self.local_dark_folder + '*.n*'))
+                                
+                                # Don't consider tempfiles that may be in use
+                                files_in_folder=glob.glob(self.local_dark_folder + '*.n*')
+                                files_in_folder= [ x for x in files_in_folder if "tempbiasdark" not in x ]
+                                
+                                n_files = len(files_in_folder)
                                 while n_files > max_files:
                                     list_of_files = glob.glob(self.local_dark_folder + '*.n*')
                                     n_files = len(list_of_files)
@@ -3351,17 +3359,21 @@ class Observatory:
                                 tempfilename = self.local_flat_folder + tempfilter + '/' + \
                                     slow_process[1].replace('.fits', '_' + str(tempexposure) + '_.npy')
 
-                                # CHECK ALL TEMP FILES ARE REMOVED FROM FLAT DIRECTORY
-                                deleteList= (glob.glob(g_dev['obs'].local_flat_folder + tempfilter + '/tempcali_*.n*'))
-                                for file in deleteList:
-                                    try:
-                                        os.remove(file)
-                                    except:
-                                        plog ("couldn't remove tempflat: " + str(file))
+                                # # CHECK ALL TEMP FILES ARE REMOVED FROM FLAT DIRECTORY
+                                # deleteList= (glob.glob(g_dev['obs'].local_flat_folder + tempfilter + '/tempcali_*.n*'))
+                                # for file in deleteList:
+                                #     try:
+                                #         os.remove(file)
+                                #     except:
+                                #         plog ("couldn't remove tempflat: " + str(file))
+
+                                # Don't consider tempfiles that may be in use
+                                files_in_folder=glob.glob(self.local_flat_folder + tempfilter + '/' + '*.n*')
+                                files_in_folder= [ x for x in files_in_folder if "tempcali" not in x ]
 
 
                                 max_files = self.config['camera']['camera_1_1']['settings']['number_of_flat_to_store']
-                                n_files = len(glob.glob(self.local_flat_folder + tempfilter + '/' + '*.n*'))
+                                n_files = len(files_in_folder)
                                 while n_files > max_files:
                                     list_of_files = glob.glob(self.local_flat_folder + tempfilter + '/' + '*.n*')
                                     n_files = len(list_of_files)
