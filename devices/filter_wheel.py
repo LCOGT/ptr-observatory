@@ -286,8 +286,8 @@ class FilterWheel:
         # This stopping mechanism allows for threads to close cleanly.
         while True:
             try:
-                # update every so often, but update rapidly if slewing.
-                if (self.filterwheel_update_timer < time.time() - self.filterwheel_update_period) or (self.currently_slewing):
+                # update when a filter change is requested or every so often.
+                if self.filter_change_requested or (self.filterwheel_update_timer < time.time() - self.filterwheel_update_period):
 
                     if self.filter_change_requested:
                         self.filter_change_requested=False
