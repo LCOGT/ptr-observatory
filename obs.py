@@ -3802,7 +3802,13 @@ class Observatory:
                                 plog("Seems to have been a timeout on the file posted: " + str(e) + "Putting it back in the queue.")
                                 plog(filename)
                                 #breakpoint()
-                                self.fast_queue.put((100, pri_image[1]), block=False)
+                                if "EX20" in filename:
+                                    try:
+                                        reqs.post(aws_resp["url"], data=aws_resp["fields"], files=files, timeout=20)
+                                    except:
+                                        plog ("Couldn't upload big jpeg: " + str(filename))
+                                else:
+                                    self.fast_queue.put((100, pri_image[1]), block=False)
                             else:
                                 plog("Fatal connection glitch for a file posted: " + str(e))
                                 plog(files)

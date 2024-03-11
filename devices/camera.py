@@ -4907,10 +4907,10 @@ def post_exposure_process(payload):
                             hdusmalldata=hdusmalldata-(g_dev['cam'].darkFiles['narrowband_ss_dark']*exposure_time)
                     elif exposure_time == broadband_ss_biasdark_exp_time:
                         hdusmalldata = hdusmalldata - (g_dev['cam'].darkFiles['broadband_ss_biasdark'])
-                        plog ("broadband biasdark success")
+                        #plog ("broadband biasdark success")
                     elif exposure_time == narrowband_ss_biasdark_exp_time:
                         hdusmalldata = hdusmalldata - (g_dev['cam'].darkFiles['narrowband_ss_biasdark'])
-                        plog ("narrowband biasdark success")
+                        #plog ("narrowband biasdark success")
 
                     else:
                         plog ("DUNNO WHAT HAPPENED!")
