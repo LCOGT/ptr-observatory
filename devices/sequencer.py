@@ -6782,6 +6782,9 @@ class Sequencer:
                 if not g_dev['obs'].open_and_enabled_to_observe:
                     g_dev["obs"].send_to_user("Cancelling out of activity as no longer open and enabled to observe.")
                     return
+                if g_dev["obs"].stop_all_activity:
+                    plog('stop_all_activity cancelling out of centering')
+                    return
                 pass
 
         plog ("Time Taken for queue to clear post-exposure: " + str(time.time() - queue_clear_time))
@@ -6865,6 +6868,9 @@ class Sequencer:
                     if not g_dev['obs'].open_and_enabled_to_observe:
                         g_dev["obs"].send_to_user("Cancelling out of activity as no longer open and enabled to observe.")
                         return
+                    if g_dev["obs"].stop_all_activity:
+                        plog('stop_all_activity cancelling out of centering')
+                        return
                     pass
             plog ("Time Taken for queue to clear post-exposure: " + str(time.time() - queue_clear_time))
 
@@ -6918,6 +6924,9 @@ class Sequencer:
                             return
                         if not g_dev['obs'].open_and_enabled_to_observe:
                             g_dev["obs"].send_to_user("Cancelling out of activity as no longer open and enabled to observe.")
+                            return
+                        if g_dev["obs"].stop_all_activity:
+                            plog('stop_all_activity cancelling out of centering')
                             return
                         pass
                 plog ("Time Taken for queue to clear post-exposure: " + str(time.time() - queue_clear_time))
@@ -6976,6 +6985,9 @@ class Sequencer:
                         return
                     if not g_dev['obs'].open_and_enabled_to_observe:
                         g_dev["obs"].send_to_user("Cancelling out of activity as no longer open and enabled to observe.")
+                        return
+                    if g_dev["obs"].stop_all_activity:
+                        plog('stop_all_activity cancelling out of centering')
                         return
                     time.sleep(1)
 
@@ -7085,6 +7097,9 @@ class Sequencer:
                         if not g_dev['obs'].open_and_enabled_to_observe:
                             g_dev["obs"].send_to_user("Cancelling out of activity as no longer open and enabled to observe.")
                             return
+                        if g_dev["obs"].stop_all_activity:
+                            plog('stop_all_activity cancelling out of centering')
+                            return
                         pass
 
 
@@ -7112,6 +7127,9 @@ class Sequencer:
                 return
             if not g_dev['obs'].open_and_enabled_to_observe:
                 g_dev["obs"].send_to_user("Cancelling out of activity as no longer open and enabled to observe.")
+                return
+            if g_dev["obs"].stop_all_activity:
+                plog('stop_all_activity cancelling out of centering')
                 return
 
             g_dev["obs"].send_to_user(
