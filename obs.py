@@ -203,6 +203,8 @@ class Observatory:
             os.makedirs(self.local_calibration_path + "archive/" + camera_name + "/localcalibrations/darks/narrowbanddarks")
         if not os.path.exists(self.local_calibration_path + "archive/" + camera_name + "/localcalibrations/darks/broadbanddarks"):
             os.makedirs(self.local_calibration_path + "archive/" + camera_name + "/localcalibrations/darks/broadbanddarks")
+        if not os.path.exists(self.local_calibration_path + "archive/" + camera_name + "/localcalibrations/darks/onepointfivepercentdarks"):
+            os.makedirs(self.local_calibration_path + "archive/" + camera_name + "/localcalibrations/darks/onepointfivepercentdarks")
         if not os.path.exists(self.local_calibration_path + "archive/" + camera_name + "/localcalibrations/darks/fivepercentdarks"):
             os.makedirs(self.local_calibration_path + "archive/" + camera_name + "/localcalibrations/darks/fivepercentdarks")
         if not os.path.exists(self.local_calibration_path + "archive/" + camera_name + "/localcalibrations/darks/tenpercentdarks"):
@@ -3129,6 +3131,21 @@ class Observatory:
                                 n_files = len(glob.glob(self.local_dark_folder  + 'narrowbanddarks/'+ '*.n*'))
                                 while n_files > max_files:
                                     list_of_files = glob.glob(self.local_dark_folder + 'narrowbanddarks/'  + '*.n*')
+                                    n_files = len(list_of_files)
+                                    oldest_file = min(list_of_files, key=os.path.getctime)
+                                    try:
+                                        os.remove(oldest_file)
+                                    except:
+                                        self.laterdelete_queue.put(oldest_file, block=False)
+                                        
+                            elif slow_process[4] == 'onepointfivepercent_exposure_dark':
+                                tempexposure = temphduheader['EXPTIME']
+                                tempfilename = self.local_dark_folder + 'onepointfivepercentdarks/' + \
+                                    slow_process[1].replace('.fits', '_' + str(tempexposure) + '_.npy')
+                                max_files = self.config['camera']['camera_1_1']['settings']['number_of_dark_to_store']
+                                n_files = len(glob.glob(self.local_dark_folder + 'onepointfivepercentdarks/'+ '*.n*'))
+                                while n_files > max_files:
+                                    list_of_files = glob.glob(self.local_dark_folder + 'onepointfivepercentdarks/' + '*.n*')
                                     n_files = len(list_of_files)
                                     oldest_file = min(list_of_files, key=os.path.getctime)
                                     try:
