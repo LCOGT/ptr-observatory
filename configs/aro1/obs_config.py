@@ -155,12 +155,12 @@ site_config = {
      'enclosure_check_period': 3,    # How many minutes between enclosure checks
 
      # Turn on and off various automated calibrations at different times.
-     'auto_eve_bias_dark': False,
+     'auto_eve_bias_dark': True,
      'auto_eve_sky_flat': True,
-     'time_to_wait_after_roof_opens_to_take_flats': 2,   #  Units??  Just imposing a minimum in case of a restart.
+     'time_to_wait_after_roof_opens_to_take_flats': 1,   #  Units??  Just imposing a minimum in case of a restart.
      'auto_midnight_moonless_bias_dark': False,  # WER 20240303 Afternoon, changed from True
      'auto_morn_sky_flat': True,
-     'auto_morn_bias_dark': False,
+     'auto_morn_bias_dark': True,
 
      # FOCUS OPTIONS
      'periodic_focus_time': 2, # This is a time, in hours, over which to bypass automated focussing (e.g. at the start of a project it will not refocus if a new project starts X hours after the last focus)
@@ -722,11 +722,11 @@ site_config = {
                 'min_exposure': 0.0001,
                 'max_exposure': 360.,
                 # For certain shutters, short exposures aren't good for flats. Some CMOS have banding in too short an exposure. Largely applies to ccds though.
-                'min_flat_exposure': 0.01,
+                'min_flat_exposure': 0.001,
                 # Realistically there is maximum flat_exposure that makes sure flats are efficient and aren't collecting actual stars.
                 'max_flat_exposure': 20.0,
                 # During the daytime with the daytime safety mode on, exposures will be limited to this maximum exposure
-                'max_daytime_exposure': 0.5,
+                'max_daytime_exposure': 1.0,
 
 
                 # One of the best cloud detections is to estimate the gain of the camera from the image
@@ -742,9 +742,9 @@ site_config = {
                 'dark_lim_adu': 0.15,   #adu/s of dark 20231229 moved down from 0.5
                 'dark_lim_std': 15,  #first guess. See above.
                 # Saturate is the important one. Others are informational only.
-                'fullwell_capacity': 80000,  # NB Guess
-                'saturate':   65535,
-                'max_linearity':  60000,   # Guess
+                'fullwell_capacity': 65000,  # NB Guess
+                'saturate':   62500,
+                'max_linearity':  61000,   # Guess
                 # How long does it take to readout an image after exposure
                 'cycle_time':            0.0,
                 # What is the base smartstack exposure time?
@@ -757,10 +757,10 @@ site_config = {
                 # As simple as it states, how many calibration frames to collect and how many to store.
                 'number_of_bias_to_collect': 31,
                 'number_of_dark_to_collect': 13,
-                'number_of_flat_to_collect': 5,   #increased from 5  20231226 WER
-                'number_of_bias_to_store': 32,
+                'number_of_flat_to_collect': 6,   #increased from 5  20231226 WER
+                'number_of_bias_to_store': 33,
                 'number_of_dark_to_store': 27,
-                'number_of_flat_to_store': 20,
+                'number_of_flat_to_store': 21,
                 # Default dark exposure time.
                 'dark_exposure': 360,
 
@@ -770,6 +770,7 @@ site_config = {
                 # Does this camera have a darkslide, if so, what are the settings?
                 'has_darkslide':  True,
                 'darkslide_type' : 'bistable',
+                'darkslide_can_report':  False,
                 'darkslide_com':  'COM10',
                 'shutter_type': "Electronic",
 
@@ -802,6 +803,7 @@ site_config = {
     },
 
     # I am not sure AWS needs this, but my configuration code might make use of it.
+    # This area should be re-purposed to introduce the pipeline and or an additional local mega-NAS.
     'server': {
         'server1': {
             'name': None,
