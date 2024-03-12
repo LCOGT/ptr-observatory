@@ -3260,7 +3260,7 @@ class Sequencer:
 
             bias_darklist=[
                 [g_dev['obs'].local_dark_folder+ 'onepointfivepercentdarks/', 'onepointfivepercentBIASDARK','onepointfivepercent' ],
-                
+
                 [g_dev['obs'].local_dark_folder+ 'fivepercentdarks/', 'fivepercentBIASDARK','fivepercent' ],
                 [g_dev['obs'].local_dark_folder+ 'tenpercentdarks/','tenpercentBIASDARK','tenpercent'],
                 [g_dev['obs'].local_dark_folder+ 'quartersecdarks/','quartersecBIASDARK', 'quartersec' ],
@@ -3439,7 +3439,7 @@ class Sequencer:
                                 # we can always just revert to using the long dark.
                                 try:
 
-                                    
+
                                     if hdu1exp == 0.015 and os.path.exists(g_dev['obs'].local_dark_folder +'/'+'onepointfivepercent' +'tempbiasdark.npy'):
                                         flatdebiaseddedarked=hdu1data -np.load(g_dev['obs'].local_dark_folder +'/'+'onepointfivepercent' +'tempbiasdark.npy')
                                         #print("five percent")
@@ -4884,7 +4884,7 @@ class Sequencer:
                              self.next_flat_observe = time.time() + 10
                              exp_time = min_exposure
                              # snap the exposure time to a discrete grid
-                             if exp_time > 0.0075:                             
+                             if exp_time > 0.0075:
                                  exp_time=min(sky_exposure_snap_to_grid, key=lambda x:abs(x-exp_time))
                              else:
                                  exp_time = 0.5*min_exposure

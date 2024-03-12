@@ -471,15 +471,15 @@ site_config = {
                         ['PG',   [0,  7],   'Photo Green'],     #6
                         ['BB',   [9,  0],   'Bessell B'],     #7
                         ['BV',   [10, 0],   'Bessell V'],     #8
-                        ['BR',   [11, 0],   'Bessell R'],     #9
+                        #['BR',   [11, 0],   'Bessell R'],     #9
                         ['rp',   [3,  0],   "Sloan r'"],     #10
-                        ['NIR',  [0, 10],   'Near IR - redward of PL'],     #11  Value suspect 2023/10/23 WER
+                        #['NIR',  [0, 10],   'Near IR - redward of PL'],     #11  Value suspect 2023/10/23 WER
                         ['ip',   [4,  0],   "Sloan i'"],     #12
-                        ['BI',   [12, 0],   'Bessell I'],     #13
+                        #['BI',   [12, 0],   'Bessell I'],     #13
                         ['up',   [1,  0],   "Sloan u'"],     #14
                         ['O3',   [0,  2],   'Oxygen III'],     #15    #guess
                         ['zs',   [0,  9],   "Sloan z-short"],     #16    # NB ZP is a broader filter than zs.
-                        ['CR',   [0,  5],   'Continuum Red - for Star subtraction'],  #17
+                        #['CR',   [0,  5],   'Continuum Red - for Star subtraction'],  #17
                         ['HA',   [0,  3],   'Hydrogen Alpha - aka II'],     #18
                         ['N2',   [13, 0],   'Nitrogen II'],     #19
                         ['S2',   [0,  4],   'Sulphur II'],     #20

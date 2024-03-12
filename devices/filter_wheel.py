@@ -306,7 +306,7 @@ class FilterWheel:
                                 if str(r0_pr) == str(r1_pr) == "<Response [200]>":
                                     break
                                 else:
-                                    print ("MTF temp filterwheel report: r0_pr " + str(r0_pr) + " r1_pr " + str(r1_pr))
+                                    #print ("MTF temp filterwheel report: r0_pr " + str(r0_pr) + " r1_pr " + str(r1_pr))
                                     time.sleep(0.2)
 
                             print ("MTF temp filterwheel report: r0_pr " + str(r0_pr) + " r1_pr " + str(r1_pr))
@@ -324,10 +324,10 @@ class FilterWheel:
                                 )
 
                                 if (value_0 == r0_t) and (value_1 == r1_t):
-                                    plog ("filter changed")
+                                    #plog ("filter changed")
                                     break
                                 else:
-                                    plog ("filter not right.")
+                                    plog ("filter in motion")
                                     time.sleep(0.5)
 
                                 # breakpoint()
@@ -337,7 +337,7 @@ class FilterWheel:
                                 #     pass
                                 #     break
 
-                            print ("MTF temp filterwheel report: r0_t " + str(r0_t) + " r1_t " + str(r1_t))
+                            #print ("MTF temp filterwheel report: r0_t " + str(r0_t) + " r1_t " + str(r1_t))
 
 
                         elif self.dual and not self.maxim:
@@ -380,7 +380,7 @@ class FilterWheel:
                                 pass
 
                             self.filter_offset = float(self.filter_data[self.filt_pointer][2])
-                        
+
                         self.filter_changing=False
 
                     self.filterwheel_updates=self.filterwheel_updates+1
@@ -543,7 +543,7 @@ class FilterWheel:
             self.filter_changing=False
             return None, None, None
 
-        
+
         self.filter_change_requested=True
         self.wait_for_filterwheel_update()
 

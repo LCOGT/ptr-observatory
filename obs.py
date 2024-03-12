@@ -3089,15 +3089,15 @@ class Observatory:
                                 # except:
                                 #     plog ("Strange dark error to potentially follow up.... not a major deal.... but keep an eye on it.")
 
-                                
+
 
 
                                 max_files = self.config['camera']['camera_1_1']['settings']['number_of_dark_to_store']
-                                
+
                                 # Don't consider tempfiles that may be in use
                                 files_in_folder=glob.glob(self.local_dark_folder + '*.n*')
                                 files_in_folder= [ x for x in files_in_folder if "tempbiasdark" not in x ]
-                                
+
                                 n_files = len(files_in_folder)
                                 while n_files > max_files:
                                     list_of_files = glob.glob(self.local_dark_folder + '*.n*')
@@ -3137,7 +3137,7 @@ class Observatory:
                                         os.remove(oldest_file)
                                     except:
                                         self.laterdelete_queue.put(oldest_file, block=False)
-                                        
+
                             elif slow_process[4] == 'onepointfivepercent_exposure_dark':
                                 tempexposure = temphduheader['EXPTIME']
                                 tempfilename = self.local_dark_folder + 'onepointfivepercentdarks/' + \
