@@ -5049,7 +5049,7 @@ class Sequencer:
                                 self.morn_sky_flat_latch = False
                                 return
 
-
+                            got_a_flat_this_round=False
                             # If camera has not already rejected taking the image
                             # usually because the temperature isn't cold enough.
                             if not bright == None:
@@ -5085,6 +5085,7 @@ class Sequencer:
                                         >= 0.5 * flat_saturation_level
                                     ):
                                         acquired_count += 1
+                                        got_a_flat_this_round=True
                                         self.filter_throughput_shelf[current_filter]=new_throughput_value
                                         try:
                                             camera_gain_collector.append(fred["camera_gain"])
@@ -5099,6 +5100,7 @@ class Sequencer:
                                         >= 0.25 * flat_saturation_level
                                     ):
                                         acquired_count += 1
+                                        got_a_flat_this_round=True
                                         self.filter_throughput_shelf[current_filter]=new_throughput_value
                                         try:
                                             camera_gain_collector.append(fred["camera_gain"])
@@ -5115,7 +5117,7 @@ class Sequencer:
                             if acquired_count == flat_count or acquired_count > flat_count:
                                 pop_list.pop(0)
                                 scale = 1
-                            else:
+                            elif got_a_flat_this_round: # Only nudge if you got a good flat. No point otherwise.
                                 # Give it a bit of a nudge, not necessary if it is the last shot of the filter.
                                 # There is no reason to wait for it to finish slewing either.
                                 self.check_zenith_and_move_to_flat_spot(ending=ending, dont_wait_after_slew=True)
